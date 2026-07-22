@@ -56,8 +56,6 @@ struct ApplyChangesProgressView: View {
 
                 if mode == .review {
                     reviewToolbar
-                } else if mode == .result || mode == .failed {
-                    resultToolbar
                 }
             }
         }
@@ -79,8 +77,8 @@ struct ApplyChangesProgressView: View {
             minWidth: 460,
             idealWidth: 500,
             maxWidth: 560,
-            minHeight: mode == .review ? 420 : 360,
-            idealHeight: mode == .review ? 500 : 420,
+            minHeight: mode == .review ? 420 : 380,
+            idealHeight: mode == .review ? 500 : 440,
             maxHeight: 640
         )
         #endif
@@ -105,12 +103,7 @@ struct ApplyChangesProgressView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if let summary = viewModel.state.summary {
-                        resultHeaderCard
                         summaryCard(summary)
-                        if !summary.ruleCountsByBlocker.isEmpty {
-                            extensionBreakdownCard(summary)
-                        }
-                        phaseCard
                     }
                 }
                 .padding(.horizontal, SheetDesign.contentHorizontalPadding)
@@ -134,27 +127,17 @@ struct ApplyChangesProgressView: View {
 
     private var reviewContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(
-                    String.localizedStringWithFormat(
-                        NSLocalizedString(
-                            "%d update(s) available",
-                            comment: "Apply changes review count"
-                        ),
-                        totalAvailableUpdateCount
-                    )
+            Text(
+                String.localizedStringWithFormat(
+                    NSLocalizedString(
+                        "%d update(s) available",
+                        comment: "Apply changes review count"
+                    ),
+                    totalAvailableUpdateCount
                 )
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-                Text(
-                    String(
-                        localized: "Choose which filters and scripts to download, then apply changes."
-                    )
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
+            )
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, SheetDesign.contentHorizontalPadding)
             .padding(.top, 8)
@@ -280,150 +263,45 @@ struct ApplyChangesProgressView: View {
         }
     }
 
-    // MARK: - Progress / Result
+    // MARK: - Progress
 
     private var progressOverviewCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(activePhaseTitle)
-                    .font(.title3.weight(.semibold))
-
-                if !viewModel.state.statusMessage.isEmpty {
-                    Text(viewModel.state.statusMessage)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-
-            ProgressView(value: viewModel.state.progress, total: 1)
-                .progressViewStyle(.linear)
-
-            HStack {
-                Text("\(viewModel.state.progressPercentage)%")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text(
-                    String.localizedStringWithFormat(
-                        NSLocalizedString(
-                            "%d update(s) found",
-                            comment: "Apply changes updates found caption"
-                        ),
-                        viewModel.state.updatesFound
-                    )
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                StatCard(
-                    title: String(localized: "Extensions"),
-                    value: processedText,
-                    icon: "puzzlepiece.extension",
-                    pillColor: .blue,
-                    valueColor: .primary
-                )
-                StatCard(
-                    title: String(localized: "Scripts"),
-                    value: scriptsProgressText,
-                    icon: "bolt.horizontal.circle",
-                    pillColor: .green,
-                    valueColor: .primary
-                )
-            }
-        }
-    }
-
-    private var resultHeaderCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                    .imageScale(.large)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(String(localized: "Applied"))
-                        .font(.title3.weight(.semibold))
-                    Text(resultSubtitle)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-
-            if viewModel.state.scriptsFailedCount > 0 {
-                Label(
-                    String.localizedStringWithFormat(
-                        NSLocalizedString(
-                            "%d script update(s) failed",
-                            comment: "Apply changes script failure caption"
-                        ),
-                        viewModel.state.scriptsFailedCount
-                    ),
-                    systemImage: "exclamationmark.triangle.fill"
-                )
-                .font(.caption)
-                .foregroundStyle(.orange)
-            }
-        }
-    }
-
-    private var failureCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                Image(systemName: "xmark.circle.fill")
-                    .foregroundStyle(.red)
-                    .imageScale(.large)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(String(localized: "Apply Failed"))
-                        .font(.title3.weight(.semibold))
-                    Text(
-                        viewModel.state.failureMessage.isEmpty
-                            ? String(localized: "Something went wrong while applying changes.")
-                            : viewModel.state.failureMessage
-                    )
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.red.opacity(0.08))
-        )
-    }
-
-    private var phaseCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(String(localized: "Progress"))
-                .font(.headline)
-
-            VStack(spacing: 0) {
-                ForEach(viewModel.state.phases.indices, id: \.self) { index in
-                    let step = viewModel.state.phases[index]
-                    PhaseRow(
-                        step: step,
-                        detail: detail(for: step),
-                        subProgress: subProgress(for: step.phase, status: step.status)
-                    )
-                    if index < viewModel.state.phases.count - 1 {
-                        Divider()
-                            .padding(.leading, 44)
-                    }
-                }
-            }
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(phaseCardBackground)
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+            StatCard(
+                title: String(localized: "Extensions"),
+                value: processedText,
+                icon: "puzzlepiece.extension",
+                pillColor: .blue,
+                valueColor: .primary
+            )
+            StatCard(
+                title: String(localized: "Updates"),
+                value: viewModel.state.updatesFound.formatted(),
+                icon: "arrow.down.circle",
+                pillColor: .green,
+                valueColor: .primary
             )
         }
     }
+
+    private var phaseCard: some View {
+        VStack(spacing: 0) {
+            ForEach(viewModel.state.phases.indices, id: \.self) { index in
+                let step = viewModel.state.phases[index]
+                PhaseRow(
+                    step: step,
+                    detail: detail(for: step),
+                    subProgress: subProgress(for: step.phase, status: step.status)
+                )
+                if index < viewModel.state.phases.count - 1 {
+                    Divider()
+                        .padding(.leading, 44)
+                }
+            }
+        }
+    }
+
+    // MARK: - Result
 
     private func summaryCard(_ summary: ApplyChangesSummary) -> some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -458,72 +336,54 @@ struct ApplyChangesProgressView: View {
                 )
             }
 
-            if !summary.blockersApproachingLimit.isEmpty {
+            if viewModel.state.scriptsFailedCount > 0 {
                 Label(
                     String.localizedStringWithFormat(
                         NSLocalizedString(
-                            "Near Safari limit: %@",
-                            comment: "Apply changes near-limit warning"
+                            "%d script update(s) failed",
+                            comment: "Apply changes script failure caption"
                         ),
-                        summary.blockersApproachingLimit.sorted().joined(separator: ", ")
+                        viewModel.state.scriptsFailedCount
                     ),
                     systemImage: "exclamationmark.triangle.fill"
                 )
                 .font(.caption)
                 .foregroundStyle(.orange)
             }
+
+            if !summary.blockersApproachingLimit.isEmpty {
+                Text(
+                    String.localizedStringWithFormat(
+                        NSLocalizedString(
+                            "Near Safari limit: %@",
+                            comment: "Apply changes near-limit warning"
+                        ),
+                        summary.blockersApproachingLimit.sorted().joined(separator: ", ")
+                    )
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
         }
     }
 
-    private func extensionBreakdownCard(_ summary: ApplyChangesSummary) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(String(localized: "Extensions"))
-                .font(.headline)
+    private var failureCard: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "xmark.circle.fill")
+                .foregroundStyle(.red)
+                .imageScale(.large)
 
-            VStack(spacing: 0) {
-                ForEach(summary.ruleCountsByBlocker.keys.sorted(), id: \.self) { name in
-                    let count = summary.ruleCountsByBlocker[name] ?? 0
-                    let nearLimit = summary.blockersApproachingLimit.contains(name)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(String(localized: "Apply Failed"))
+                    .font(.title3.weight(.semibold))
 
-                    HStack {
-                        Label(name, systemImage: "puzzlepiece.extension")
-                            .font(.subheadline)
-                        Spacer()
-                        Text(count.formatted())
-                            .font(.subheadline.monospacedDigit())
-                            .foregroundStyle(nearLimit ? .orange : .secondary)
-                        if nearLimit {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                        }
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-
-                    if name != summary.ruleCountsByBlocker.keys.sorted().last {
-                        Divider()
-                            .padding(.leading, 36)
-                    }
-                }
+                Text(failureText)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(phaseCardBackground)
-            )
         }
-    }
-
-    private var resultToolbar: some View {
-        SheetBottomToolbar {
-            Spacer()
-            Button(String(localized: "Done")) {
-                isPresented = false
-            }
-            .primaryActionButtonStyle()
-            .keyboardShortcut(.defaultAction)
-            Spacer()
-        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: - Actions
@@ -605,27 +465,16 @@ struct ApplyChangesProgressView: View {
         switch mode {
         case .review:
             return String(localized: "Available Updates")
-        case .progress:
-            return String(localized: "Apply Changes")
-        case .result:
-            return String(localized: "Apply Changes")
-        case .failed:
+        case .progress, .result, .failed:
             return String(localized: "Apply Changes")
         }
     }
 
-    private var activePhaseTitle: String {
-        if let active = viewModel.state.phases.first(where: { $0.status == .active }) {
-            return active.phase.title
+    private var failureText: String {
+        if viewModel.state.failureMessage.isEmpty {
+            return String(localized: "Something went wrong while applying changes.")
         }
-        return String(localized: "Apply Changes")
-    }
-
-    private var resultSubtitle: String {
-        if !viewModel.state.statusMessage.isEmpty {
-            return viewModel.state.statusMessage
-        }
-        return String(localized: "Filters and scripts applied successfully.")
+        return viewModel.state.failureMessage
     }
 
     private var processedText: String {
@@ -634,26 +483,6 @@ struct ApplyChangesProgressView: View {
             return "\(total)"
         }
         return "—"
-    }
-
-    private var scriptsProgressText: String {
-        let updated = viewModel.state.scriptsUpdatedCount
-        let failed = viewModel.state.scriptsFailedCount
-        if updated == 0 && failed == 0 {
-            return "—"
-        }
-        if failed > 0 {
-            return "\(updated)/\(updated + failed)"
-        }
-        return "\(updated)"
-    }
-
-    private var phaseCardBackground: Color {
-        #if os(iOS)
-        Color(UIColor.secondarySystemGroupedBackground)
-        #else
-        Color.primary.opacity(0.04)
-        #endif
     }
 
     private func detail(for step: ApplyChangesPhaseProgress) -> String? {
@@ -764,11 +593,6 @@ private struct PhaseRow: View {
                 statusLeading
                     .frame(width: 18, height: 18)
 
-                Image(systemName: step.phase.systemImage)
-                    .font(.subheadline)
-                    .foregroundStyle(iconColor)
-                    .frame(width: 18)
-
                 VStack(alignment: .leading, spacing: 2) {
                     Text(step.phase.title)
                         .font(.subheadline)
@@ -796,20 +620,11 @@ private struct PhaseRow: View {
                             .monospacedDigit()
                     }
                 }
-                .padding(.leading, 48)
+                .padding(.leading, 30)
             }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-    }
-
-    private var iconColor: Color {
-        switch step.status {
-        case .pending: return .secondary
-        case .active: return .accentColor
-        case .complete: return .green
-        case .failed: return .red
-        }
     }
 
     @ViewBuilder
