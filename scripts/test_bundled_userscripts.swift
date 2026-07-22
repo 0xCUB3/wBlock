@@ -120,6 +120,7 @@ for needle in [
     "crypto.subtle.digest('SHA-256'",      // k-anonymous video-id lookup
     "wblock.tubeCleaner.sponsorBlock",     // persistent SponsorBlock settings
     "data-sponsor-category",               // per-category settings UI
+    "Using SponsorBlock",                  // API data attribution
 ] {
     guard tubeSource.contains(needle) else {
         fail("Tube Cleaner is missing expected feature code: \(needle)")

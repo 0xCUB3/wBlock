@@ -683,6 +683,7 @@
         var english = {
             title: 'SponsorBlock settings', enabled: 'Enable SponsorBlock', notice: 'Show Undo after automatic skips',
             duration: 'Minimum segment length', current: 'Disable for this video', channel: 'Disable on this channel', reset: 'Reset defaults',
+            using: 'Using SponsorBlock',
             any: 'Any length', auto: 'Auto skip', ask: 'Show skip button', off: 'Disabled',
             skipped: 'segment skipped', segment: 'segment', undo: 'Undo', skip: 'Skip',
             names: ['Sponsor', 'Self-promotion', 'Interaction reminder', 'Intro', 'Outro', 'Preview or recap', 'Filler', 'Off-topic music']
@@ -702,7 +703,11 @@
         var channelLabels = { de:'Auf diesem Kanal deaktivieren', es:'Desactivar en este canal',
             fr:'Désactiver sur cette chaîne', it:'Disattiva su questo canale', pt:'Desativar neste canal',
             ja:'このチャンネルでは無効にする', ko:'이 채널에서 비활성화', ru:'Отключить на этом канале', zh:'对这个频道停用' };
+        var usingLabels = { de:'Verwendet SponsorBlock', es:'Usa SponsorBlock', fr:'Utilise SponsorBlock',
+            it:'Usa SponsorBlock', pt:'Usa SponsorBlock', ja:'SponsorBlockを使用', ko:'SponsorBlock 사용',
+            ru:'Использует SponsorBlock', zh:'使用 SponsorBlock' };
         if (!selected.channel) selected.channel = channelLabels[language] || english.channel;
+        if (!selected.using) selected.using = usingLabels[language] || english.using;
         return selected;
     }
 
@@ -1834,7 +1839,7 @@
             });
             var credit = document.createElement('a');
             credit.href = 'https://sponsor.ajay.app/'; credit.target = '_blank'; credit.rel = 'noopener noreferrer';
-            credit.textContent = 'SponsorBlock'; credit.style.cssText = 'color:#69a9ff;text-decoration:none';
+            credit.textContent = locale.using; credit.style.cssText = 'color:#69a9ff;text-decoration:none';
             footer.appendChild(reset); footer.appendChild(credit); sponsorMenu.appendChild(footer);
         }
 
