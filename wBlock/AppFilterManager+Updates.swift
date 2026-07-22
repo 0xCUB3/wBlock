@@ -93,12 +93,12 @@ extension AppFilterManager {
             self.prepareApplyRunState()
             self.showingApplyProgressSheet = true
 
-            self.applyProgressViewModel.updateStageDescription(
-                LocalizedStrings.text(
-                    "Downloading selected updates...",
-                    comment: "Selected update download status"
-                )
+            let downloadingStatus = LocalizedStrings.text(
+                "Downloading selected updates...",
+                comment: "Selected update download status"
             )
+            self.statusDescription = downloadingStatus
+            self.applyProgressViewModel.updateStageDescription(downloadingStatus)
 
             var successfullyUpdatedFilters: [FilterList] = []
             if !selectedFilters.isEmpty {
@@ -108,6 +108,7 @@ extension AppFilterManager {
                         Task { @MainActor in
                             self.progress = newProgress * 0.2
                             self.applyProgressViewModel.updateProgress(Float(newProgress * 0.2))
+                            self.applyProgressViewModel.updateStageDescription(downloadingStatus)
                         }
                     }
                 )
@@ -121,6 +122,19 @@ extension AppFilterManager {
 
             var successfullyUpdatedScripts: [UserScript] = []
             if !selectedScripts.isEmpty {
+                // Keep the first progress row active until filter downloads finish, then move on
+                // so script downloads don't still look like "Checking for Updates".
+                if !selectedFilters.isEmpty {
+                    self.applyProgressViewModel.updatePhaseCompletion(updating: true, scripts: false)
+                }
+
+                let scriptsStatus = LocalizedStrings.text(
+                    "Downloading selected scripts...",
+                    comment: "Selected script download status"
+                )
+                self.statusDescription = scriptsStatus
+                self.applyProgressViewModel.updateStageDescription(scriptsStatus)
+
                 successfullyUpdatedScripts = await self.filterUpdater.updateSelectedScripts(selectedScripts) {
                     newProgress in
                     Task { @MainActor in
@@ -128,6 +142,7 @@ extension AppFilterManager {
                         let mapped = 0.2 + (newProgress * 0.1)
                         self.progress = mapped
                         self.applyProgressViewModel.updateProgress(mapped)
+                        self.applyProgressViewModel.updateStageDescription(scriptsStatus)
                     }
                 }
 

@@ -828,6 +828,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Filters and scripts applied successfully." = "Filters and scripts applied successfully.";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Converted rules, but one or more extensions failed to reload after 5 attempts.";
 "Downloading selected updates..." = "Downloading selected updates...";
+"Downloading selected scripts..." = "Downloading selected scripts...";
 "%d update(s) available" = "%d update(s) available";
 "%d update(s) found" = "%d update(s) found";
 "Choose which filters and scripts to download, then apply changes." = "Choose which filters and scripts to download, then apply changes.";

@@ -495,6 +495,13 @@ struct ApplyChangesProgressView: View {
     private func detail(for step: ApplyChangesPhaseProgress) -> String? {
         switch step.phase {
         case .updating:
+            if step.status == .active {
+                let message = viewModel.state.statusMessage
+                if !message.isEmpty {
+                    return message
+                }
+                return nil
+            }
             if step.status == .complete {
                 let count = viewModel.state.updatesFound
                 if count > 0 {
@@ -504,6 +511,13 @@ struct ApplyChangesProgressView: View {
             }
             return nil
         case .scripts:
+            if step.status == .active {
+                let message = viewModel.state.statusMessage
+                if message.localizedCaseInsensitiveContains("script") {
+                    return message
+                }
+                return nil
+            }
             if step.status == .complete {
                 let updated = viewModel.state.scriptsUpdatedCount
                 let failed = viewModel.state.scriptsFailedCount
