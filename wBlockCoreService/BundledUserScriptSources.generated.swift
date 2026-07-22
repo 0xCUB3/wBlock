@@ -13,16 +13,16 @@ enum BundledUserScriptSources {
 // @name         Tube Cleaner
 // @namespace    com.skula.wblock
 // @version      0.1.0
-// @description  Gives YouTube Safari-native controls, chapters, SponsorBlock skipping, picture-in-picture, background playback, quality selection, and audio-only mode.
-// @description:de  Bietet YouTube native Safari-Steuerelemente, Kapitel, SponsorBlock, Bild-in-Bild, Hintergrundwiedergabe, Qualitätsauswahl und einen Nur-Audio-Modus.
-// @description:es  Añade a YouTube controles nativos de Safari, capítulos, SponsorBlock, imagen en imagen, reproducción en segundo plano, selección de calidad y modo de solo audio.
-// @description:fr  Ajoute à YouTube les commandes natives de Safari, les chapitres, SponsorBlock, l’image dans l’image, la lecture en arrière-plan, le choix de qualité et le mode audio seul.
-// @description:it  Aggiunge a YouTube controlli nativi di Safari, capitoli, SponsorBlock, picture-in-picture, riproduzione in background, selezione qualità e modalità solo audio.
-// @description:pt-BR  Adiciona ao YouTube controles nativos do Safari, capítulos, SponsorBlock, picture-in-picture, reprodução em segundo plano, seleção de qualidade e modo somente áudio.
-// @description:ja  YouTubeにSafariネイティブのコントロール、チャプター、SponsorBlock、ピクチャ・イン・ピクチャ、バックグラウンド再生、画質選択、音声のみモードを追加します。
-// @description:ko  YouTube에 Safari 네이티브 컨트롤, 챕터, SponsorBlock, PIP, 백그라운드 재생, 화질 선택 및 오디오 전용 모드를 추가합니다.
-// @description:ru  Добавляет YouTube нативные элементы управления Safari, главы, SponsorBlock, картинку-в-картинке, фоновое воспроизведение, выбор качества и аудиорежим.
-// @description:zh-Hans  为 YouTube 添加 Safari 原生控件、章节、SponsorBlock 跳过、画中画、后台播放、画质选择和纯音频模式。
+// @description  Gives YouTube Safari-native controls, chapters, subtitles, SponsorBlock skipping, picture-in-picture, background playback, quality selection, and audio-only mode.
+// @description:de  Bietet YouTube native Safari-Steuerelemente, Kapitel, Untertitel, SponsorBlock, Bild-in-Bild, Hintergrundwiedergabe, Qualitätsauswahl und einen Nur-Audio-Modus.
+// @description:es  Añade a YouTube controles nativos de Safari, capítulos, subtítulos, SponsorBlock, imagen en imagen, reproducción en segundo plano, selección de calidad y modo de solo audio.
+// @description:fr  Ajoute à YouTube les commandes natives de Safari, les chapitres, les sous-titres, SponsorBlock, l’image dans l’image, la lecture en arrière-plan, le choix de qualité et le mode audio seul.
+// @description:it  Aggiunge a YouTube controlli nativi di Safari, capitoli, sottotitoli, SponsorBlock, picture-in-picture, riproduzione in background, selezione qualità e modalità solo audio.
+// @description:pt-BR  Adiciona ao YouTube controles nativos do Safari, capítulos, legendas, SponsorBlock, picture-in-picture, reprodução em segundo plano, seleção de qualidade e modo somente áudio.
+// @description:ja  YouTubeにSafariネイティブのコントロール、チャプター、字幕、SponsorBlock、ピクチャ・イン・ピクチャ、バックグラウンド再生、画質選択、音声のみモードを追加します。
+// @description:ko  YouTube에 Safari 네이티브 컨트롤, 챕터, 자막, SponsorBlock, PIP, 백그라운드 재생, 화질 선택 및 오디오 전용 모드를 추가합니다.
+// @description:ru  Добавляет YouTube нативные элементы управления Safari, главы, субтитры, SponsorBlock, картинку-в-картинке, фоновое воспроизведение, выбор качества и аудиорежим.
+// @description:zh-Hans  为 YouTube 添加 Safari 原生控件、章节、字幕、SponsorBlock 跳过、画中画、后台播放、画质选择和纯音频模式。
 // @author       wBlock
 // @match        https://www.youtube.com/*
 // @match        https://m.youtube.com/*
@@ -575,6 +575,7 @@ enum BundledUserScriptSources {
         buildToolbar(player, video);
         setupAutoPiP(video);
         setupChapters(player, video);
+        setupNativeSubtitles(player, video);
         setupSponsorBlock(player, video);
     }
 
@@ -669,9 +670,9 @@ enum BundledUserScriptSources {
     //
     // Query SponsorBlock's k-anonymous endpoint with only five hexadecimal
     // characters of the video's SHA-256 hash. The exact YouTube id never leaves
-    // the page; the returned bucket is filtered locally. Keep this deliberately
-    // focused on the standard sponsor category so enabling Tube Cleaner does not
-    // unexpectedly remove intros, outros, or other editorial content.
+    // the page; the returned bucket is filtered locally. Deliberately fetch all
+    // supported categories once; defaults still enable only standard
+    // sponsors so Tube Cleaner does not unexpectedly remove editorial content.
     // ------------------------------------------------------------------
 
     var SPONSORBLOCK_API = 'https://sponsor.ajay.app/api/skipSegments/';
@@ -688,6 +689,26 @@ enum BundledUserScriptSources {
     ];
     var sponsorBlockDisabledVideos = {};
     var sponsorBlockSettingsCache = null;
+    // YouTube keeps the page alive across navigations. Retain a small resolved
+    // segment cache for that session so revisiting a video does not query the
+    // same hash bucket again. Empty results are cached too.
+    var sponsorBlockSegmentCache = {};
+    var sponsorBlockSegmentCacheOrder = [];
+
+    function cachedSponsorBlockSegments(videoId) {
+        return Object.prototype.hasOwnProperty.call(sponsorBlockSegmentCache, videoId) ?
+            sponsorBlockSegmentCache[videoId] : null;
+    }
+
+    function cacheSponsorBlockSegments(videoId, segments) {
+        if (!Object.prototype.hasOwnProperty.call(sponsorBlockSegmentCache, videoId)) {
+            sponsorBlockSegmentCacheOrder.push(videoId);
+        }
+        sponsorBlockSegmentCache[videoId] = segments;
+        while (sponsorBlockSegmentCacheOrder.length > 24) {
+            delete sponsorBlockSegmentCache[sponsorBlockSegmentCacheOrder.shift()];
+        }
+    }
 
     function sponsorBlockLocale() {
         var language = (navigator.language || 'en').toLowerCase().split('-')[0];
@@ -832,24 +853,78 @@ enum BundledUserScriptSources {
         var ignored = {};
         var notified = {};
         var removeNotice = null;
+        var boundaryTimer = null;
+        var boundaryKey = null;
+        var timingSuspended = false;
 
-        function onTimeUpdate() {
+        function clearBoundaryTimer() {
+            if (boundaryTimer !== null) clearTimeout(boundaryTimer);
+            boundaryTimer = null;
+            boundaryKey = null;
+        }
+
+        function segmentState(item, settings) {
+            var key = item.UUID || item.category + ':' + item.segment.join(':');
+            var mode = settings.modes[item.category] || 'off';
+            var eligible = mode !== 'off' && !ignored[key] &&
+                (!item.actionType || item.actionType === 'skip') &&
+                item.segment[1] - item.segment[0] >= settings.minimumDuration;
+            return { key: key, mode: mode, eligible: eligible };
+        }
+
+        // Keep timeupdate as a throttling/background fallback, but normally arm
+        // one timer for the next segment boundary. This avoids waiting up to a
+        // full timeupdate interval before an automatic skip.
+        function scheduleNextBoundary(settings, now, force) {
+            if (cancelled || timingSuspended || video.paused || video.ended || !settings.enabled ||
+                sponsorBlockDisabledVideos[videoId] || sponsorBlockChannelExcluded(settings)) {
+                clearBoundaryTimer();
+                return;
+            }
+            var next = null;
+            var nextState = null;
+            for (var i = 0; i < segments.length; i++) {
+                var item = segments[i];
+                var state = segmentState(item, settings);
+                if (!state.eligible || state.mode === 'ask' && notified[state.key] || item.segment[0] <= now) continue;
+                next = item;
+                nextState = state;
+                break;
+            }
+            if (!next) { clearBoundaryTimer(); return; }
+            var key = nextState.key + '@' + next.segment[0] + ':' + video.playbackRate;
+            if (!force && boundaryTimer !== null && boundaryKey === key) return;
+            clearBoundaryTimer();
+            boundaryKey = key;
+            var rate = isFinite(video.playbackRate) && video.playbackRate > 0 ? video.playbackRate : 1;
+            var delay = Math.max(0, (next.segment[0] - now) * 1000 / rate + 8);
+            boundaryTimer = setTimeout(function () {
+                boundaryTimer = null;
+                boundaryKey = null;
+                onTimeUpdate();
+            }, Math.min(delay, 2147483647));
+        }
+
+        function onTimeUpdate(forceSchedule) {
+            if (timingSuspended) { clearBoundaryTimer(); return; }
             var settings = loadSponsorBlockSettings();
-            if (!settings.enabled || sponsorBlockDisabledVideos[videoId] || sponsorBlockChannelExcluded(settings)) return;
+            if (!settings.enabled || sponsorBlockDisabledVideos[videoId] || sponsorBlockChannelExcluded(settings)) {
+                clearBoundaryTimer();
+                return;
+            }
             var now = video.currentTime;
             for (var i = 0; i < segments.length; i++) {
                 var item = segments[i];
-                var key = item.UUID || item.category + ':' + item.segment.join(':');
-                var mode = settings.modes[item.category] || 'off';
-                if (mode === 'off' || ignored[key] || item.actionType && item.actionType !== 'skip' ||
-                    item.segment[1] - item.segment[0] < settings.minimumDuration) continue;
+                var state = segmentState(item, settings);
+                if (!state.eligible) continue;
                 if (now >= item.segment[0] && now < item.segment[1] - 0.05) {
-                    if (mode === 'ask') {
-                        if (!notified[key]) {
-                            notified[key] = true;
+                    if (state.mode === 'ask') {
+                        if (!notified[state.key]) {
+                            notified[state.key] = true;
                             if (removeNotice) removeNotice();
                             removeNotice = showSponsorBlockNotice(player, video, item, ignored, 'skip');
                         }
+                        scheduleNextBoundary(settings, now, true);
                         return;
                     }
                     try { video.currentTime = item.segment[1]; } catch (e) { return; }
@@ -857,15 +932,41 @@ enum BundledUserScriptSources {
                         if (removeNotice) removeNotice();
                         removeNotice = showSponsorBlockNotice(player, video, item, ignored, 'undo');
                     }
+                    scheduleNextBoundary(settings, item.segment[1], true);
                     return;
                 }
             }
+            scheduleNextBoundary(settings, now, !!forceSchedule);
+        }
+
+        function acceptBucket(bucket) {
+            var found = [];
+            if (Array.isArray(bucket)) for (var i = 0; i < bucket.length; i++) {
+                if (bucket[i].videoID === videoId && Array.isArray(bucket[i].segments)) {
+                    found = bucket[i].segments.filter(function (item) {
+                        return item && SPONSORBLOCK_CATEGORIES.some(function (category) { return category.id === item.category; }) &&
+                            Array.isArray(item.segment) && isFinite(item.segment[0]) && isFinite(item.segment[1]) &&
+                            item.segment[1] > item.segment[0];
+                    }).sort(function (a, b) { return a.segment[0] - b.segment[0]; });
+                    break;
+                }
+            }
+            segments = found;
+            cacheSponsorBlockSegments(videoId, found);
+            onTimeUpdate(true);
         }
 
         function loadSegments() {
             var settings = loadSponsorBlockSettings();
             if (requested || cancelled || !settings.enabled || sponsorBlockDisabledVideos[videoId] ||
                 sponsorBlockChannelExcluded(settings)) return;
+            var cached = cachedSponsorBlockSegments(videoId);
+            if (cached !== null) {
+                requested = true;
+                segments = cached;
+                onTimeUpdate(true);
+                return;
+            }
             requested = true;
             controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
             crypto.subtle.digest('SHA-256', new TextEncoder().encode(videoId)).then(function (buffer) {
@@ -881,18 +982,7 @@ enum BundledUserScriptSources {
                 if (!response.ok) return [];
                 return response.json();
             }).then(function (bucket) {
-                if (cancelled || !Array.isArray(bucket)) return;
-                for (var i = 0; i < bucket.length; i++) {
-                    if (bucket[i].videoID === videoId && Array.isArray(bucket[i].segments)) {
-                        segments = bucket[i].segments.filter(function (item) {
-                            return item && SPONSORBLOCK_CATEGORIES.some(function (category) { return category.id === item.category; }) &&
-                                Array.isArray(item.segment) && isFinite(item.segment[0]) && isFinite(item.segment[1]) &&
-                                item.segment[1] > item.segment[0];
-                        }).sort(function (a, b) { return a.segment[0] - b.segment[0]; });
-                        onTimeUpdate();
-                        return;
-                    }
-                }
+                if (!cancelled) acceptBucket(bucket);
             }).catch(function (error) {
                 if (!cancelled && (!error || error.name !== 'AbortError')) log('SponsorBlock unavailable', error);
             });
@@ -901,13 +991,34 @@ enum BundledUserScriptSources {
         function onSettingsChange() {
             if (removeNotice) { removeNotice(); removeNotice = null; }
             loadSegments();
-            onTimeUpdate();
+            onTimeUpdate(true);
         }
-        video.addEventListener('timeupdate', onTimeUpdate);
+        function onTimeUpdateEvent() { onTimeUpdate(false); }
+        function onPlaybackResumed() { timingSuspended = false; onTimeUpdate(true); }
+        function onPlaybackTimingChange() { onTimeUpdate(true); }
+        function suspendBoundaryTimer() { timingSuspended = true; clearBoundaryTimer(); }
+        video.addEventListener('timeupdate', onTimeUpdateEvent);
+        video.addEventListener('playing', onPlaybackResumed);
+        video.addEventListener('seeked', onPlaybackResumed);
+        video.addEventListener('ratechange', onPlaybackTimingChange);
+        video.addEventListener('seeking', suspendBoundaryTimer);
+        video.addEventListener('waiting', suspendBoundaryTimer);
+        video.addEventListener('stalled', suspendBoundaryTimer);
+        video.addEventListener('pause', clearBoundaryTimer);
+        video.addEventListener('ended', clearBoundaryTimer);
         document.addEventListener('wblock-tc-sponsor-settings', onSettingsChange);
         registerCleanup(function () {
             cancelled = true;
-            video.removeEventListener('timeupdate', onTimeUpdate);
+            clearBoundaryTimer();
+            video.removeEventListener('timeupdate', onTimeUpdateEvent);
+            video.removeEventListener('playing', onPlaybackResumed);
+            video.removeEventListener('seeked', onPlaybackResumed);
+            video.removeEventListener('ratechange', onPlaybackTimingChange);
+            video.removeEventListener('seeking', suspendBoundaryTimer);
+            video.removeEventListener('waiting', suspendBoundaryTimer);
+            video.removeEventListener('stalled', suspendBoundaryTimer);
+            video.removeEventListener('pause', clearBoundaryTimer);
+            video.removeEventListener('ended', clearBoundaryTimer);
             document.removeEventListener('wblock-tc-sponsor-settings', onSettingsChange);
             if (controller) controller.abort();
             if (removeNotice) removeNotice();
@@ -1153,6 +1264,229 @@ enum BundledUserScriptSources {
         registerCleanup(function () {
             video.removeEventListener('loadedmetadata', onLoadedMetadata);
             stopRetry();
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // Native subtitles
+    //
+    // Safari exposes <track kind="subtitles"> entries in its native language
+    // menu. YouTube publishes signed timed-text URLs in the player response, so
+    // convert the usable WebVTT responses to blob-backed tracks without adding
+    // another custom control. Some WEB caption URLs now require a Proof-of-
+    // Origin token and return an empty HTTP 200; for those, request caption
+    // metadata through YouTube's token-free Android VR client first.
+    // ------------------------------------------------------------------
+
+    function youtubeText(value) {
+        if (!value) return '';
+        if (value.simpleText) return value.simpleText;
+        if (value.runs && value.runs.length) {
+            var text = '';
+            for (var i = 0; i < value.runs.length; i++) text += value.runs[i].text || '';
+            return text;
+        }
+        return '';
+    }
+
+    function captionTracksFromResponse(response) {
+        try {
+            var renderer = response && response.captions && response.captions.playerCaptionsTracklistRenderer;
+            return renderer && Array.isArray(renderer.captionTracks) ? renderer.captionTracks.slice(0, 24) : [];
+        } catch (e) { return []; }
+    }
+
+    function currentCaptionTracks(player) {
+        var response = null;
+        try {
+            if (player && typeof player.getPlayerResponse === 'function') response = player.getPlayerResponse();
+        } catch (e) { /* fall back */ }
+        var tracks = captionTracksFromResponse(response);
+        if (!tracks.length) tracks = captionTracksFromResponse(window.ytInitialPlayerResponse);
+        return tracks;
+    }
+
+    function youtubeConfigValue(key) {
+        try {
+            if (window.ytcfg && typeof window.ytcfg.get === 'function') {
+                var value = window.ytcfg.get(key);
+                if (value !== undefined && value !== null) return value;
+            }
+            if (window.ytcfg && window.ytcfg.data_ && window.ytcfg.data_[key] !== undefined) {
+                return window.ytcfg.data_[key];
+            }
+        } catch (e) { /* ignore */ }
+        return null;
+    }
+
+    function nativeSubtitleVideoId(player) {
+        var id = sponsorBlockVideoId();
+        if (id) return id;
+        try {
+            var data = player && typeof player.getVideoData === 'function' ? player.getVideoData() : null;
+            if (data && data.video_id) return String(data.video_id);
+        } catch (e) { /* ignore */ }
+        return null;
+    }
+
+    function captionUrl(track) {
+        if (!track || !track.baseUrl) return null;
+        try {
+            var url = new URL(track.baseUrl, location.href);
+            url.searchParams.set('fmt', 'vtt');
+            return url.href;
+        } catch (e) { return null; }
+    }
+
+    function captionsNeedAlternateClient(tracks) {
+        for (var i = 0; i < tracks.length; i++) {
+            try {
+                var url = new URL(tracks[i].baseUrl, location.href);
+                if (url.searchParams.get('exp') === 'xpe' && !url.searchParams.get('pot')) return true;
+            } catch (e) { /* try the normal URL */ }
+        }
+        return false;
+    }
+
+    function alternateCaptionTracks(videoId, signal) {
+        var apiKey = youtubeConfigValue('INNERTUBE_API_KEY');
+        if (!apiKey || !videoId) return Promise.resolve([]);
+        var visitorData = youtubeConfigValue('VISITOR_DATA');
+        if (!visitorData) {
+            var context = youtubeConfigValue('INNERTUBE_CONTEXT');
+            visitorData = context && context.client && context.client.visitorData;
+        }
+        var client = {
+            clientName: 'ANDROID_VR', clientVersion: '1.65.10', deviceMake: 'Oculus', deviceModel: 'Quest 3',
+            androidSdkVersion: 32, osName: 'Android', osVersion: '12L',
+            userAgent: 'com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12L) gzip'
+        };
+        if (visitorData) client.visitorData = visitorData;
+        var headers = {
+            'Content-Type': 'application/json',
+            'X-YouTube-Client-Name': '28',
+            'X-YouTube-Client-Version': client.clientVersion
+        };
+        if (visitorData) headers['X-Goog-Visitor-Id'] = visitorData;
+        return fetch('/youtubei/v1/player?key=' + encodeURIComponent(apiKey) + '&prettyPrint=false', {
+            method: 'POST', credentials: 'same-origin', signal: signal,
+            headers: headers,
+            body: JSON.stringify({
+                context: { client: client }, videoId: videoId,
+                contentCheckOk: true, racyCheckOk: true
+            })
+        }).then(function (response) {
+            if (!response.ok) return null;
+            return response.json();
+        }).then(captionTracksFromResponse).catch(function () { return []; });
+    }
+
+    function downloadNativeSubtitleTracks(tracks, signal) {
+        return Promise.all(tracks.map(function (track) {
+            var url = captionUrl(track);
+            if (!url) return Promise.resolve(null);
+            return fetch(url, { credentials: 'same-origin', signal: signal }).then(function (response) {
+                if (!response.ok) return '';
+                return response.text();
+            }).then(function (text) {
+                text = String(text || '').replace(/^\uFEFF/, '');
+                if (text.slice(0, 6) !== 'WEBVTT' || text.indexOf('-->') === -1 || text.length > 5000000) return null;
+                return { definition: track, vtt: text };
+            }).catch(function () { return null; });
+        })).then(function (results) {
+            return results.filter(function (result) { return !!result; });
+        });
+    }
+
+    function setupNativeSubtitles(player, video) {
+        if (!player || !video || !window.fetch || !window.Blob || !URL.createObjectURL) return;
+        var cancelled = false;
+        var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        var retryTimer = null;
+        var attempts = 0;
+        var started = false;
+        var elements = [];
+        var blobUrls = [];
+
+        function stopRetry() {
+            if (retryTimer !== null) clearInterval(retryTimer);
+            retryTimer = null;
+        }
+
+        function install(downloads) {
+            if (cancelled || !downloads.length) return;
+            var seen = {};
+            for (var i = 0; i < downloads.length; i++) {
+                var definition = downloads[i].definition;
+                var language = definition.languageCode || '';
+                var label = youtubeText(definition.name) || language || 'CC';
+                var key = definition.vssId || language + '|' + label;
+                if (seen[key]) continue;
+                seen[key] = true;
+                try {
+                    var blobUrl = URL.createObjectURL(new Blob([downloads[i].vtt], { type: 'text/vtt' }));
+                    var element = document.createElement('track');
+                    element.kind = 'subtitles';
+                    element.label = label;
+                    element.srclang = language;
+                    element.src = blobUrl;
+                    element.setAttribute('data-wblock-native-subtitle', key);
+                    video.appendChild(element);
+                    elements.push(element);
+                    blobUrls.push(blobUrl);
+                } catch (e) { /* skip one malformed track */ }
+            }
+            if (elements.length) log('applied', elements.length, 'native subtitle tracks');
+        }
+
+        function loadTracks(tracks) {
+            var signal = controller ? controller.signal : undefined;
+            var videoId = nativeSubtitleVideoId(player);
+            var useAlternateFirst = captionsNeedAlternateClient(tracks);
+            var candidates = useAlternateFirst ? alternateCaptionTracks(videoId, signal) : Promise.resolve(tracks);
+            candidates.then(function (candidateTracks) {
+                if (cancelled) return [];
+                return downloadNativeSubtitleTracks(candidateTracks.length ? candidateTracks : tracks, signal);
+            }).then(function (downloads) {
+                if (cancelled || downloads.length || useAlternateFirst) return downloads;
+                return alternateCaptionTracks(videoId, signal).then(function (alternate) {
+                    return downloadNativeSubtitleTracks(alternate, signal);
+                });
+            }).then(function (downloads) {
+                if (!cancelled && downloads) install(downloads);
+            }).catch(function (error) {
+                if (!cancelled && (!error || error.name !== 'AbortError')) log('native subtitles unavailable', error);
+            });
+        }
+
+        function tryStart() {
+            if (started || cancelled) return;
+            var tracks = currentCaptionTracks(player);
+            if (!tracks.length) return;
+            started = true;
+            stopRetry();
+            loadTracks(tracks);
+        }
+
+        tryStart();
+        if (!started) {
+            retryTimer = setInterval(function () {
+                attempts++;
+                tryStart();
+                if (attempts >= 10) stopRetry();
+            }, 500);
+        }
+
+        registerCleanup(function () {
+            cancelled = true;
+            stopRetry();
+            if (controller) controller.abort();
+            for (var i = 0; i < elements.length; i++) {
+                if (elements[i].parentNode) elements[i].remove();
+            }
+            for (var j = 0; j < blobUrls.length; j++) {
+                try { URL.revokeObjectURL(blobUrls[j]); } catch (e) { /* ignore */ }
+            }
         });
     }
 

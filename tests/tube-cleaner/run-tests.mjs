@@ -102,17 +102,62 @@ const sponsorBlockPrelude = `
 (function () {
   history.replaceState(null, '', location.pathname + '?v=dQw4w9WgXcQ');
   var nativeFetch = window.fetch;
+  window.__wblockSponsorRequestCount = 0;
   window.fetch = function (url, options) {
     if (String(url).indexOf('sponsor.ajay.app/api/skipSegments/') !== -1) {
       window.__wblockSponsorRequest = String(url);
+      window.__wblockSponsorRequestCount++;
       return Promise.resolve({ ok: true, json: function () { return Promise.resolve([{
         videoID: 'dQw4w9WgXcQ',
         segments: [
           { UUID: 'test-sponsor', category: 'sponsor', actionType: 'skip', segment: [10, 20] },
           { UUID: 'test-selfpromo', category: 'selfpromo', actionType: 'skip', segment: [30, 40] },
-          { UUID: 'test-interaction', category: 'interaction', actionType: 'skip', segment: [50, 60] }
+          { UUID: 'test-interaction', category: 'interaction', actionType: 'skip', segment: [50, 60] },
+          { UUID: 'test-timer', category: 'sponsor', actionType: 'skip', segment: [70, 80] }
         ]
       }]); }});
+    }
+    return nativeFetch.apply(this, arguments);
+  };
+})();
+`;
+
+// WEB caption URLs with exp=xpe currently require a Proof-of-Origin token. The
+// fixture exercises Tube Cleaner's lightweight Android VR metadata fallback and
+// returns two valid WebVTT documents for Safari's native subtitle menu.
+const captionDataPrelude = `
+(function () {
+  window.ytInitialPlayerResponse = window.ytInitialPlayerResponse || { videoDetails: { channelId: 'test-channel' } };
+  window.ytInitialPlayerResponse.captions = { playerCaptionsTracklistRenderer: { captionTracks: [{
+    baseUrl: 'https://captions.test/token-gated?exp=xpe&lang=en', languageCode: 'en',
+    name: { simpleText: 'English' }, vssId: '.en'
+  }] } };
+  window.ytcfg = { get: function (key) {
+    if (key === 'INNERTUBE_API_KEY') return 'fixture-api-key';
+    if (key === 'VISITOR_DATA') return 'fixture-visitor';
+    return null;
+  }};
+  var nativeFetch = window.fetch;
+  window.__wblockCaptionPlayerRequests = 0;
+  window.__wblockCaptionTextRequests = 0;
+  window.fetch = function (url, options) {
+    var value = String(url);
+    if (value.indexOf('/youtubei/v1/player') !== -1) {
+      window.__wblockCaptionPlayerRequests++;
+      return Promise.resolve({ ok: true, json: function () { return Promise.resolve({
+        captions: { playerCaptionsTracklistRenderer: { captionTracks: [
+          { baseUrl: 'https://captions.test/en?lang=en', languageCode: 'en', name: { simpleText: 'English' }, vssId: '.en' },
+          { baseUrl: 'https://captions.test/es?lang=es', languageCode: 'es', name: { simpleText: 'Español' }, vssId: '.es' }
+        ] } }
+      }); }});
+    }
+    if (value.indexOf('https://captions.test/') === 0) {
+      window.__wblockCaptionTextRequests++;
+      var language = value.indexOf('/es?') !== -1 ? 'es' : 'en';
+      var cue = language === 'es' ? 'Hola desde Tube Cleaner' : 'Hello from Tube Cleaner';
+      return Promise.resolve({ ok: true, text: function () {
+        return Promise.resolve('WEBVTT\\n\\n00:00:00.000 --> 00:00:05.000\\n' + cue + '\\n');
+      }});
     }
     return nativeFetch.apply(this, arguments);
   };
@@ -467,7 +512,7 @@ async function qualityUISelectionCheck(page, scenario) {
   const { browser, page, pageErrors } = await runScenario('desktop (macOS Safari-like)', {
     fixture: FIXTURE_URL,
     viewport: { width: 1280, height: 800 },
-    scriptSource: sponsorBlockPrelude + '\n' + chapterDataPrelude + '\n' + userscript,
+    scriptSource: sponsorBlockPrelude + '\n' + chapterDataPrelude + '\n' + captionDataPrelude + '\n' + userscript,
   });
   await commonChecks(page, 'desktop');
   await check(page, 'desktop', 'deduplicates and timestamps native chapter cues', () => {
@@ -497,6 +542,17 @@ async function qualityUISelectionCheck(page, scenario) {
     const labels = track?.cues ? Array.from(track.cues).map(c => c.text) : [];
     return { pass: labels.length === 3, detail: `labels=${labels.join(' | ')}` };
   });
+  await page.waitForFunction(() => document.querySelectorAll('track[data-wblock-native-subtitle]').length === 2);
+  await check(page, 'desktop', 'adds token-safe WebVTT tracks to Safari native subtitle controls', () => {
+    const video = document.querySelector('#movie_player video');
+    const tracks = Array.from(video?.querySelectorAll('track[data-wblock-native-subtitle]') || []);
+    const labels = tracks.map(track => `${track.srclang}:${track.label}`);
+    return {
+      pass: JSON.stringify(labels) === JSON.stringify(['en:English', 'es:Español']) &&
+        window.__wblockCaptionPlayerRequests === 1 && window.__wblockCaptionTextRequests === 2,
+      detail: `tracks=${labels.join(',')} playerRequests=${window.__wblockCaptionPlayerRequests} textRequests=${window.__wblockCaptionTextRequests}`,
+    };
+  });
   await page.waitForFunction(() => !!window.__wblockSponsorRequest);
   await page.evaluate(() => {
     const video = document.querySelector('#movie_player video');
@@ -519,6 +575,15 @@ async function qualityUISelectionCheck(page, scenario) {
     return { pass: video.currentTime > 10 && video.currentTime < 11,
       detail: `time=${video.currentTime}` };
   });
+  await page.evaluate(() => {
+    history.replaceState(null, '', location.pathname + '?v=dQw4w9WgXcQ&cache-check=1');
+    document.dispatchEvent(new Event('yt-navigate-finish'));
+  });
+  await page.waitForTimeout(300);
+  await check(page, 'desktop', 'reuses cached SponsorBlock segments across SPA activation', () => ({
+    pass: window.__wblockSponsorRequestCount === 1,
+    detail: `requests=${window.__wblockSponsorRequestCount}`,
+  }));
   await page.evaluate(() => {
     document.querySelector('.wblock-tc-sponsor-button').click();
     const selfPromo = document.querySelector('[data-sponsor-category="selfpromo"]');
@@ -558,6 +623,23 @@ async function qualityUISelectionCheck(page, scenario) {
   await check(page, 'desktop', 'manual SponsorBlock button skips the configured segment', () => {
     const video = document.querySelector('#movie_player video');
     return { pass: video.currentTime === 60, detail: `time=${video.currentTime}` };
+  });
+  await page.evaluate(() => {
+    const video = document.querySelector('#movie_player video');
+    window.__wblockSyntheticMediaTime = 69.9;
+    Object.defineProperty(video, 'currentTime', {
+      configurable: true,
+      get: () => window.__wblockSyntheticMediaTime,
+      set: value => { window.__wblockSyntheticMediaTime = value; },
+    });
+    Object.defineProperty(video, 'paused', { configurable: true, get: () => false });
+    video.dispatchEvent(new Event('playing'));
+    setTimeout(() => { window.__wblockSyntheticMediaTime = 70.1; }, 70);
+  });
+  await page.waitForTimeout(180);
+  await check(page, 'desktop', 'skips at a scheduled SponsorBlock boundary without timeupdate', () => {
+    const video = document.querySelector('#movie_player video');
+    return { pass: video.currentTime === 80, detail: `time=${video.currentTime}` };
   });
   await page.evaluate(() => {
     const channel = document.querySelector('[data-sponsor-channel="test-channel"] input');

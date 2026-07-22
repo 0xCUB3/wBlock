@@ -121,6 +121,10 @@ for needle in [
     "wblock.tubeCleaner.sponsorBlock",     // persistent SponsorBlock settings
     "data-sponsor-category",               // per-category settings UI
     "Using SponsorBlock",                  // API data attribution
+    "cacheSponsorBlockSegments",           // per-session SponsorBlock result cache
+    "scheduleNextBoundary",                // precise SponsorBlock boundary timer
+    "data-wblock-native-subtitle",          // native Safari subtitle tracks
+    "ANDROID_VR",                          // token-safe YouTube caption metadata fallback
 ] {
     guard tubeSource.contains(needle) else {
         fail("Tube Cleaner is missing expected feature code: \(needle)")

@@ -27,9 +27,11 @@ non-persistent quality-only overlay, migration out of old black-screen
 audio-only and fixed-quality loading states, visible video in portrait and
 landscape, suppression of the separate mobile YouTube controls tree,
 restoration of inline playback, preservation of the iOS ManagedMediaSource
-restriction required for SABR playback, native chapter mirroring, and
-k-anonymous SponsorBlock skipping with persistent category modes, manual skip,
-and Undo behavior. `fixture-tube-cleaner-multiple.html` models retained
+restriction required for SABR playback, native chapter and WebVTT subtitle
+mirroring (including token-gated caption metadata fallback), and k-anonymous
+SponsorBlock skipping with a bounded session cache, precise boundary timers,
+persistent category modes, manual skip, and Undo behavior.
+`fixture-tube-cleaner-multiple.html` models retained
 Shorts players and verifies native enhancements follow the visible playing
 video. `fixture-tube-cleaner-early.html` creates the YouTube player from a
 `<head>` script and enforces anti-flash CSS plus nativeization before
