@@ -120,6 +120,7 @@ struct OnboardingView: View {
         let sourceHost: String?
         let isBaselineEnabledByDefault: Bool
         let isRegional: Bool
+        let isBeta: Bool
         let languages: [String]
     }
 
@@ -164,6 +165,7 @@ struct OnboardingView: View {
                     sourceHost: script.url?.host,
                     isBaselineEnabledByDefault: isBaselineUserscriptEnabledByDefault(script),
                     isRegional: userScriptManager.builtInSection(for: script) == .foreign,
+                    isBeta: userScriptManager.isBeta(for: script),
                     languages: userScriptManager.builtInLanguages(for: script).map { $0.lowercased() }
                 )
             }
@@ -1120,8 +1122,20 @@ struct OnboardingView: View {
                     .font(.title3)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(script.name)
-                        .font(.headline)
+                    HStack(spacing: 6) {
+                        Text(script.name)
+                            .font(.headline)
+                        if script.isBeta {
+                            Text("Beta")
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.orange.opacity(0.15))
+                                .foregroundStyle(.orange)
+                                .cornerRadius(4)
+                        }
+                    }
                     Text(LocalizedStrings.text(script.description, comment: "Userscript description"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
