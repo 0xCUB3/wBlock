@@ -825,3 +825,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Web extension %@" = "網頁擴充功能 %@";
 " · Last success: %@" = " · 上次成功：%@";
 "Beta" = "Beta";
+"Ships with the app" = "隨應用提供";

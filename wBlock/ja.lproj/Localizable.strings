@@ -827,3 +827,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Web extension %@" = "Web 拡張機能 %@";
 " · Last success: %@" = " · 前回成功: %@";
 "Beta" = "Beta";
+"Ships with the app" = "アプリに同梱";

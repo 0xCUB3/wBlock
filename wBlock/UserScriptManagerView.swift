@@ -718,9 +718,27 @@ struct UserScriptManagerView: View {
 
 private struct ScriptNameAndDescriptionView: View {
     let script: UserScript
+    let isBeta: Bool
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(script.localizedDisplayName).font(.title2).fontWeight(.semibold).foregroundStyle(.primary).textSelection(.enabled)
+            HStack(alignment: .center, spacing: 8) {
+                Text(script.localizedDisplayName)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.primary)
+                    .textSelection(.enabled)
+                if isBeta {
+                    Text("Beta")
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.orange.opacity(0.15))
+                        .foregroundStyle(.orange)
+                        .cornerRadius(4)
+                }
+            }
             if !script.localizedDisplayDescription.isEmpty {
                 Text(script.localizedDisplayDescription).font(.body).foregroundStyle(.secondary).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
             }
@@ -778,10 +796,24 @@ private struct ScriptFileInfoView: View {
 
 private struct ScriptURLView: View {
     let script: UserScript
+    let isBundled: Bool
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Source URL").font(.caption).fontWeight(.medium).foregroundStyle(.secondary)
-            Text(script.url?.absoluteString ?? "N/A").font(.caption).foregroundStyle(.blue).textSelection(.enabled).lineLimit(nil).fixedSize(horizontal: false, vertical: true)
+            if isBundled {
+                Text("Ships with the app")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text(script.url?.absoluteString ?? "N/A")
+                    .font(.caption)
+                    .foregroundStyle(.blue)
+                    .textSelection(.enabled)
+                    .lineLimit(nil)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 }
@@ -911,12 +943,15 @@ struct UserScriptInfoSidebar: View {
     let contentLength: Int
     @Binding var isPatternsExpanded: Bool
     let formatFileSize: (Int) -> String
+    let isBundled: Bool
+    let isBeta: Bool
     let onUpdatesAutomaticallyChanged: (Bool) -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            ScriptNameAndDescriptionView(script: script)
+            ScriptNameAndDescriptionView(script: script, isBeta: isBeta)
             ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0)
-            if script.url != nil || script.updateURL != nil || script.downloadURL != nil {
+            // Bundled scripts update with the app, so auto-update controls are noise.
+            if !isBundled && (script.url != nil || script.updateURL != nil || script.downloadURL != nil) {
                 ScriptUpdateSettingsView(
                     updatesAutomatically: script.updatesAutomatically,
                     onChange: onUpdatesAutomaticallyChanged
@@ -925,7 +960,7 @@ struct UserScriptInfoSidebar: View {
             if contentLength > 0 {
                 ScriptFileInfoView(contentLength: contentLength, formatFileSize: formatFileSize)
             }
-            if script.url != nil { ScriptURLView(script: script) }
+            if script.url != nil { ScriptURLView(script: script, isBundled: isBundled) }
             if !script.matches.isEmpty { ScriptMatchPatternsView(script: script, isPatternsExpanded: $isPatternsExpanded) }
             Spacer()
         }
@@ -1025,6 +1060,8 @@ struct UserScriptContentView: View {
                                 contentLength: loadedContent.count,
                                 isPatternsExpanded: $isPatternsExpanded,
                                 formatFileSize: formatFileSize,
+                                isBundled: userScriptManager.isBundled(for: script),
+                                isBeta: userScriptManager.isBeta(for: script),
                                 onUpdatesAutomaticallyChanged: setUpdatesAutomatically
                             )
                             .padding(.horizontal)
@@ -1115,6 +1152,8 @@ struct UserScriptContentView: View {
                         contentLength: loadedContent.count,
                         isPatternsExpanded: $isPatternsExpanded,
                         formatFileSize: formatFileSize,
+                        isBundled: userScriptManager.isBundled(for: script),
+                        isBeta: userScriptManager.isBeta(for: script),
                         onUpdatesAutomaticallyChanged: setUpdatesAutomatically
                     )
                     .frame(minWidth: minSidebarWidth, idealWidth: sidebarWidth, maxWidth: maxSidebarWidth)

@@ -825,3 +825,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Web extension %@" = "웹 확장 %@";
 " · Last success: %@" = " · 최근 성공: %@";
 "Beta" = "Beta";
+"Ships with the app" = "앱에 포함됨";

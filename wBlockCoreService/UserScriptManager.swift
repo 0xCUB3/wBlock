@@ -636,6 +636,11 @@ public class UserScriptManager: ObservableObject {
         return BuiltInUserScripts.isBetaByURL[urlString] ?? false
     }
 
+    public func isBundled(for userScript: UserScript) -> Bool {
+        guard let urlString = userScript.url?.absoluteString else { return false }
+        return BuiltInUserScripts.bundledContent(forURL: urlString) != nil
+    }
+
     private init() {
         logger.info("🔧 UserScriptManager initializing...")
 
@@ -1240,17 +1245,13 @@ public class UserScriptManager: ObservableObject {
             }) else { continue }
 
             let existing = userScripts[index]
+            // Bundled content shipped with the app is always canonical. Compare
+            // the full source (not just version ordering) so metadata resets,
+            // description edits, and body fixes all apply immediately on launch.
+            guard existing.content != bundledContent else { continue }
+
+            let wasInstalled = existing.content.isEmpty
             let bundledVersion = bundledContentVersion(bundledContent)
-            let needsInstall = existing.content.isEmpty
-            // Bundled content shipped with the app is always canonical, so any
-            // version difference (including a reset like 4.2.6 → 0.1.0) triggers
-            // a refresh.  Using isVersionNewer here would silently skip the
-            // update when the bundled version is numerically lower.
-            let needsRefresh = !bundledVersion.isEmpty
-                && bundledVersion != existing.version
-
-            guard needsInstall || needsRefresh else { continue }
-
             var updated = existing
             applyBundledContent(to: &updated, content: bundledContent)
             // Preserve the user's enablement choice across refreshes.
@@ -1258,7 +1259,7 @@ public class UserScriptManager: ObservableObject {
             userScripts[index] = updated
             didUpdate = true
             logger.info(
-                "📦 Bundled userscript \(needsInstall ? "installed" : "refreshed"): \(definition.name) (v\(bundledVersion))"
+                "📦 Bundled userscript \(wasInstalled ? "installed" : "refreshed"): \(definition.name) (v\(bundledVersion))"
             )
         }
 

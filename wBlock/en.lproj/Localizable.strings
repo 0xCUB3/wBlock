@@ -834,3 +834,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Web extension %@" = "Web extension %@";
 " · Last success: %@" = " · Last success: %@";
 "Beta" = "Beta";
+"Ships with the app" = "Ships with the app";
