@@ -75,6 +75,28 @@ Object.defineProperty(Document.prototype, 'visibilityState', {
 });
 `;
 
+// Mirrors the chapter payload currently served for the Tau test video. YouTube
+// places two copies of the same macro-marker list in ytInitialData.
+const chapterDataPrelude = `
+(function () {
+  var chapters = [
+    ['0:00', 'Introducing Tau'],
+    ['1:03', 'Tau UI demo'],
+    ['3:43', 'Architecture: Tau AI, Tau agent, and Tau coding']
+  ];
+  function render(definition) {
+    return { macroMarkersListItemRenderer: {
+      timeDescription: { simpleText: definition[0] },
+      title: { simpleText: definition[1] }
+    }};
+  }
+  window.ytInitialData = {
+    engagementPanels: chapters.map(render),
+    playerOverlays: chapters.map(render)
+  };
+})();
+`;
+
 const resourceCounterPatch = `
 (function () {
   var counters = window.__wblockResourceCounters = {
@@ -403,8 +425,36 @@ async function qualityUISelectionCheck(page, scenario) {
   const { browser, page, pageErrors } = await runScenario('desktop (macOS Safari-like)', {
     fixture: FIXTURE_URL,
     viewport: { width: 1280, height: 800 },
+    scriptSource: chapterDataPrelude + '\n' + userscript,
   });
   await commonChecks(page, 'desktop');
+  await check(page, 'desktop', 'deduplicates and timestamps native chapter cues', () => {
+    const video = document.querySelector('#movie_player video');
+    const tracks = video ? Array.from(video.textTracks).filter(t => t.kind === 'chapters') : [];
+    const cues = tracks[0]?.cues ? Array.from(tracks[0].cues) : [];
+    const labels = cues.map(c => c.text);
+    const expected = [
+      '0:00  Introducing Tau',
+      '1:03  Tau UI demo',
+      '3:43  Architecture: Tau AI, Tau agent, and Tau coding'
+    ];
+    return {
+      pass: tracks.length === 1 && JSON.stringify(labels) === JSON.stringify(expected),
+      detail: `tracks=${tracks.length} labels=${labels.join(' | ')}`,
+    };
+  });
+  await page.evaluate(() => {
+    // YouTube can replace ytInitialData after startup. The loadedmetadata pass
+    // must retain the already-extracted chapter list instead of emptying it.
+    window.ytInitialData = {};
+    document.querySelector('#movie_player video')?.dispatchEvent(new Event('loadedmetadata'));
+  });
+  await check(page, 'desktop', 'keeps chapter cues when initial data disappears', () => {
+    const video = document.querySelector('#movie_player video');
+    const track = video ? Array.from(video.textTracks).find(t => t.kind === 'chapters') : null;
+    const labels = track?.cues ? Array.from(track.cues).map(c => c.text) : [];
+    return { pass: labels.length === 3, detail: `labels=${labels.join(' | ')}` };
+  });
   await controlsSurvivalCheck(page, 'desktop');
   await audioToggleCheck(page, 'desktop');
   await qualityUISelectionCheck(page, 'desktop');

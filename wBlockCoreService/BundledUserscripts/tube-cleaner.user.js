@@ -26,7 +26,7 @@
     'use strict';
 
     // ------------------------------------------------------------------
-    // Tube Cleaner v4.2.6
+    // Tube Cleaner v4.3.2
     //
     // Vinegar Extract approach: instead of trying to extract stream URLs
     // from the player response (which 403 due to SABR), we let YouTube's
@@ -563,6 +563,7 @@
         // Safari's native controls; playback remains owned by the video element.
         buildToolbar(player, video);
         setupAutoPiP(video);
+        setupChapters(player, video);
     }
 
     function restoreNativeMediaCapabilities(video) {
@@ -649,6 +650,247 @@
             if (!video.hasAttribute('playsinline')) { video.setAttribute('playsinline', ''); }
             if (!video.hasAttribute('webkit-playsinline')) { video.setAttribute('webkit-playsinline', ''); }
         } catch (e) { /* ignore */ }
+    }
+
+    // ------------------------------------------------------------------
+    // Chapters
+    //
+    // Safari's <video> element is backed by the same AVFoundation engine
+    // described in Apple's "Presenting chapter markers" documentation. That
+    // native API is not callable from a userscript, but its web equivalent is:
+    // attach a TextTrack of kind "chapters" with VTTCues and WebKit feeds it to
+    // the native player, which exposes the cues through its chapter menu. We
+    // read YouTube's chapter list from ytInitialData and mirror it onto the
+    // native element.
+    // ------------------------------------------------------------------
+
+    function collectChapterRenderers(node, out, seen) {
+        if (!node || typeof node !== 'object') return;
+        if (seen.indexOf(node) !== -1) return;
+        seen.push(node);
+        if (Array.isArray(node)) {
+            for (var i = 0; i < node.length; i++) {
+                collectChapterRenderers(node[i], out, seen);
+            }
+            return;
+        }
+        if (node.macroMarkersListItemRenderer) {
+            out.push(node.macroMarkersListItemRenderer);
+        }
+        for (var key in node) {
+            if (Object.prototype.hasOwnProperty.call(node, key)) {
+                collectChapterRenderers(node[key], out, seen);
+            }
+        }
+    }
+
+    // Parse "0:00", "1:23", or "1:23:45" into seconds.
+    function parseTimestamp(text) {
+        if (!text) return null;
+        var parts = String(text).trim().split(':');
+        var seconds = 0;
+        for (var i = 0; i < parts.length; i++) {
+            var n = parseInt(parts[i], 10);
+            if (isNaN(n)) return null;
+            seconds = seconds * 60 + n;
+        }
+        return seconds;
+    }
+
+    // Format seconds as m:ss or h:mm:ss for the native chapter menu label.
+    function formatTimestamp(sec) {
+        sec = Math.max(0, Math.floor(sec));
+        var h = Math.floor(sec / 3600);
+        var m = Math.floor((sec % 3600) / 60);
+        var s = sec % 60;
+        var ss = s < 10 ? '0' + s : '' + s;
+        if (h > 0) {
+            var mm = m < 10 ? '0' + m : '' + m;
+            return h + ':' + mm + ':' + ss;
+        }
+        return m + ':' + ss;
+    }
+
+    function chapterTitle(renderer) {
+        try {
+            var t = renderer.title;
+            if (!t) return '';
+            if (t.simpleText) return t.simpleText;
+            if (t.runs && t.runs.length) {
+                var s = '';
+                for (var i = 0; i < t.runs.length; i++) { s += t.runs[i].text || ''; }
+                return s;
+            }
+        } catch (e) { /* ignore */ }
+        return '';
+    }
+
+    // Extract YouTube's chapters for the current video as a sorted list of
+    // { start, title }. Returns null when the page exposes no chapters.
+    function extractChapters() {
+        var data = window.ytInitialData || window.ytInitialPlayerResponse || null;
+        if (!data) return null;
+        var renderers = [];
+        try { collectChapterRenderers(data, renderers, []); } catch (e) { return null; }
+        if (!renderers.length) return null;
+
+        var chapters = [];
+        var seenKeys = {};
+        for (var i = 0; i < renderers.length; i++) {
+            var r = renderers[i];
+            var title = chapterTitle(r);
+            var start = null;
+            if (typeof r.timeRangeStartMillis === 'number') {
+                start = r.timeRangeStartMillis / 1000;
+            } else {
+                try {
+                    start = parseTimestamp(r.timeDescription && r.timeDescription.simpleText);
+                } catch (e) { start = null; }
+            }
+            if (title && start !== null && start >= 0) {
+                // YouTube mirrors the same chapter list in several places in
+                // ytInitialData (the engagement panel, the player overlay, and
+                // framework/entity updates). The recursive walk therefore finds
+                // each chapter more than once; collapse exact duplicates.
+                var key = start + '|' + title;
+                if (seenKeys[key]) continue;
+                seenKeys[key] = true;
+                chapters.push({ start: start, title: title });
+            }
+        }
+        if (!chapters.length) return null;
+        chapters.sort(function (a, b) { return a.start - b.start; });
+        return chapters;
+    }
+
+    function currentChapterVideoId() {
+        // The URL changes before YouTube's persistent player finishes its SPA
+        // swap, so prefer it when a watch-video id is available.
+        try {
+            var queryId = new URLSearchParams(location.search).get('v');
+            if (queryId) return queryId;
+            // Shorts, embeds, and local test fixtures encode identity in their
+            // path. Keep that stable even if getVideoData() appears later.
+            if (location.pathname && location.pathname !== '/' &&
+                location.pathname !== '/watch') {
+                return location.pathname + location.search;
+            }
+        } catch (e) { /* ignore */ }
+        try {
+            var player = findPlayer();
+            var data = player && typeof player.getVideoData === 'function' ?
+                player.getVideoData() : null;
+            if (data && data.video_id) return String(data.video_id);
+        } catch (e) { /* ignore */ }
+        return location.pathname + location.search;
+    }
+
+    function clearChapterCues(track) {
+        if (!track) return;
+        try {
+            while (track.cues && track.cues.length) { track.removeCue(track.cues[0]); }
+        } catch (e) { /* ignore */ }
+    }
+
+    // Mirror YouTube's chapters onto the native element as a chapters track.
+    // YouTube may discard or replace ytInitialData after player startup, so a
+    // successful extraction is cached on the video and reused by later media
+    // events. Never erase working cues merely because a subsequent lookup is
+    // temporarily empty; only clear them when the current video id changes.
+    function applyChapters(video) {
+        if (!video) return false;
+        var track = video._wblockChaptersTrack;
+        var videoId = currentChapterVideoId();
+        var chapters = extractChapters();
+
+        if (chapters && chapters.length) {
+            video._wblockChapterData = chapters;
+            video._wblockChapterVideoId = videoId;
+        } else if (video._wblockChapterVideoId === videoId &&
+            video._wblockChapterData && video._wblockChapterData.length) {
+            chapters = video._wblockChapterData;
+        } else {
+            // This is a different video and its chapter data has not arrived (or
+            // it has no chapters). Remove the previous video's cues while the
+            // retry loop waits for current data.
+            clearChapterCues(track);
+            video._wblockChapterData = null;
+            video._wblockChapterVideoId = videoId;
+            return false;
+        }
+
+        if (!track) {
+            try {
+                track = video.addTextTrack('chapters', 'Chapters', 'en');
+            } catch (e) {
+                warn('addTextTrack(chapters) failed', e);
+                return false;
+            }
+            video._wblockChaptersTrack = track;
+        } else {
+            clearChapterCues(track);
+        }
+
+        var duration = (isFinite(video.duration) && video.duration > 0) ? video.duration : null;
+        var added = 0;
+        for (var i = 0; i < chapters.length; i++) {
+            var start = chapters[i].start;
+            var end;
+            if (i + 1 < chapters.length) {
+                end = chapters[i + 1].start;
+            } else {
+                // Last chapter runs to the end of the media. Before metadata is
+                // loaded the duration is unknown; use a placeholder that the
+                // loadedmetadata re-apply below corrects from the cached list.
+                end = duration !== null ? duration : start + 3600;
+            }
+            if (!(end > start)) { end = start + 0.5; }
+            // The native chapter menu renders the cue text verbatim, so
+            // prefix the title with its timestamp for an at-a-glance list.
+            var label = formatTimestamp(start) + '  ' + chapters[i].title;
+            try {
+                track.addCue(new VTTCue(start, end, label));
+                added++;
+            } catch (e) { /* ignore a single bad cue */ }
+        }
+        try { track.mode = 'hidden'; } catch (e) { /* ignore */ }
+        log('applied', added, 'chapters');
+        return added > 0;
+    }
+
+    function setupChapters(player, video) {
+        if (!video) return;
+        var attempts = 0;
+        var timer = null;
+
+        function stopRetry() {
+            if (timer !== null) {
+                clearInterval(timer);
+                timer = null;
+            }
+        }
+
+        // Duration is only known once metadata loads; re-apply from the cached
+        // chapter list so the final cue ends at the real media duration.
+        function onLoadedMetadata() {
+            if (applyChapters(video)) stopRetry();
+        }
+        video.addEventListener('loadedmetadata', onLoadedMetadata);
+
+        if (!applyChapters(video)) {
+            // On SPA navigation the chapter list can land a moment after the
+            // player transforms. Retry briefly until cues exist or the video is
+            // released.
+            timer = setInterval(function () {
+                attempts++;
+                if (applyChapters(video) || attempts >= 10) { stopRetry(); }
+            }, 500);
+        }
+
+        registerCleanup(function () {
+            video.removeEventListener('loadedmetadata', onLoadedMetadata);
+            stopRetry();
+        });
     }
 
     function findPlayer() {
@@ -1421,6 +1663,8 @@
             setPreferredQuality: setPreferredQuality,
             QUALITY_LABELS: QUALITY_LABELS,
             getPlayer: findPlayer,
+            getChapters: extractChapters,
+            applyChapters: function () { applyChapters(activeVideo); },
             inspectPlayer: function () {
                 var p = findPlayer();
                 if (!p) return 'no player';
