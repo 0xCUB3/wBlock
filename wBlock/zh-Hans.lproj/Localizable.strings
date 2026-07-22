@@ -22,7 +22,7 @@
 "Showing preview (%@) of %@))" = "显示预览 (%@) / %@))";
 "Applied Rules" = "已应用规则";
 "Export" = "导出";
-"Required for YouTube ad blocking and much more" = "这是拦截 YouTube 广告及更多功能所必需的";
+"Required for userscripts, advanced ad blocking, and cleaner features" = "用户脚本、高级广告拦截和清理功能所必需";
 "Ready" = "就绪";
 "Every 1 hour" = "每 1 小时";
 "%@)%" = "%@)%";
@@ -145,7 +145,7 @@
 "Cancel" = "取消";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "文件较大，滚动可能较慢";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "要拦截 YouTube 广告，必须启用 wBlock Scripts 并将其设置为 '始终允许在所有网站上'。";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "要使用用户脚本和高级拦截，必须启用 wBlock Scripts 并将其设置为“始终允许在所有网站上”。";
 "Privacy" = "隐私";
 "Rules" = "规则";
 "Enabled Lists" = "已启用列表";
@@ -210,7 +210,7 @@
 "Trust: %@" = "信任度：%@";
 "Logs will appear here as the app runs" = "应用运行时日志将显示在这里";
 "Downloaded %d updates" = "已下载 %d 个更新";
-"Enable the Safari extensions so wBlock can block ads." = "启用 Safari 扩展，这样 wBlock 才能拦截广告。";
+"Enable the Safari extensions so wBlock can block ads and run userscripts." = "启用 Safari 扩展，以便 wBlock 可以拦截广告并运行用户脚本。";
 "Setup Instructions" = "设置说明";
 "Every 1 day" = "每 1 天";
 "Reading Files" = "正在读取文件";

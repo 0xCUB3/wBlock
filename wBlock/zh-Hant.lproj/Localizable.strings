@@ -22,7 +22,7 @@
 "Showing preview (%@) of %@))" = "顯示預覽 (%@)，共 %@))";
 "Applied Rules" = "已套用規則";
 "Export" = "匯出";
-"Required for YouTube ad blocking and much more" = "封鎖 YouTube 廣告及更多功能所需";
+"Required for userscripts, advanced ad blocking, and cleaner features" = "使用者腳本、進階廣告封鎖與清理功能所必需";
 "Ready" = "已就緒";
 "Every 1 hour" = "每 1 小時";
 "%@)%" = "%@)%";
@@ -145,7 +145,7 @@
 "Cancel" = "取消";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "檔案較大，捲動可能較慢";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "必須啟用 wBlock Scripts 並設為 '在所有網站上一律允許'，才能封鎖 YouTube 廣告。";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "要使用使用者腳本與進階封鎖，必須啟用 wBlock Scripts 並設為「一律允許所有網站」。";
 "Privacy" = "隱私";
 "Rules" = "規則";
 "Enabled Lists" = "已啟用清單";
@@ -210,7 +210,7 @@
 "Trust: %@" = "信任度：%@";
 "Logs will appear here as the app runs" = "應用程式執行時，日誌會顯示在這裡";
 "Downloaded %d updates" = "已下載 %d 項更新";
-"Enable the Safari extensions so wBlock can block ads." = "啟用 Safari 延伸功能，這樣 wBlock 才能封鎖廣告。";
+"Enable the Safari extensions so wBlock can block ads and run userscripts." = "啟用 Safari 延伸功能，以便 wBlock 可以封鎖廣告並執行使用者腳本。";
 "Setup Instructions" = "設定說明";
 "Every 1 day" = "每 1 天";
 "Reading Files" = "正在讀取檔案";

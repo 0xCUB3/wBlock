@@ -22,7 +22,7 @@
 "Showing preview (%@) of %@))" = "プレビューを表示中 (%@) / %@))";
 "Applied Rules" = "適用済みルール";
 "Export" = "書き出し";
-"Required for YouTube ad blocking and much more" = "YouTube広告のブロックなどに必要です";
+"Required for userscripts, advanced ad blocking, and cleaner features" = "ユーザースクリプト、高度な広告ブロック、クリーナー機能に必要です";
 "Ready" = "準備完了";
 "Every 1 hour" = "1時間ごと";
 "%@)%" = "%@)%";
@@ -145,7 +145,7 @@
 "Cancel" = "キャンセル";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "大きなファイルのため、スクロールが遅くなる場合があります";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "YouTube広告をブロックするには、wBlock Scriptsを有効にし、'すべてのWebサイトで常に許可'に設定する必要があります。";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "ユーザースクリプトと高度なブロックのため、wBlock Scripts を有効にし「すべてのWebサイトで常に許可」に設定してください。";
 "Privacy" = "プライバシー";
 "Rules" = "ルール";
 "Enabled Lists" = "有効なリスト";
@@ -210,7 +210,7 @@
 "Trust: %@" = "信頼: %@";
 "Logs will appear here as the app runs" = "アプリの実行中にここへログが表示されます";
 "Downloaded %d updates" = "%d件の更新をダウンロード";
-"Enable the Safari extensions so wBlock can block ads." = "wBlock が広告をブロックできるように Safari 拡張機能を有効にしてください。";
+"Enable the Safari extensions so wBlock can block ads and run userscripts." = "広告ブロックとユーザースクリプト実行のため、Safari拡張機能を有効にしてください。";
 "Setup Instructions" = "設定手順";
 "Every 1 day" = "1日ごと";
 "Reading Files" = "ファイルを読み込み中";

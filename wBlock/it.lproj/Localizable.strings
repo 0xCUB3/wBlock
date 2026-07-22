@@ -22,7 +22,7 @@
 "Showing preview (%@) of %@))" = "Anteprima (%@) di %@))";
 "Applied Rules" = "Regole applicate";
 "Export" = "Esporta";
-"Required for YouTube ad blocking and much more" = "Necessario per bloccare gli annunci su YouTube e molto altro";
+"Required for userscripts, advanced ad blocking, and cleaner features" = "Necessario per userscript, blocco avanzato e funzioni di pulizia";
 "Ready" = "Pronto";
 "Every 1 hour" = "Ogni 1 ora";
 "%@)%" = "%@)%";
@@ -145,7 +145,7 @@
 "Cancel" = "Annulla";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "File grande - lo scorrimento potrebbe essere lento";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "wBlock Scripts deve essere abilitato e impostato su 'Consenti sempre su tutti i siti web' per bloccare gli annunci su YouTube.";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "wBlock Scripts deve essere abilitato e impostato su 'Consenti sempre su tutti i siti web' per userscript e blocco avanzato.";
 "Privacy" = "Privacy";
 "Rules" = "Regole";
 "Enabled Lists" = "Liste abilitate";
@@ -210,7 +210,7 @@
 "Trust: %@" = "Attendibilità: %@";
 "Logs will appear here as the app runs" = "I log appariranno qui mentre l'app è in esecuzione";
 "Downloaded %d updates" = "Scaricati %d aggiornamenti";
-"Enable the Safari extensions so wBlock can block ads." = "Abilita le estensioni Safari così wBlock può bloccare le pubblicità.";
+"Enable the Safari extensions so wBlock can block ads and run userscripts." = "Abilita le estensioni Safari così wBlock può bloccare le pubblicità ed eseguire gli userscript.";
 "Setup Instructions" = "Istruzioni di configurazione";
 "Every 1 day" = "Ogni 1 giorno";
 "Reading Files" = "Lettura file";

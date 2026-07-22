@@ -22,7 +22,7 @@
 "Showing preview (%@) of %@))" = "미리보기 표시 중 (%@ / %@))";
 "Applied Rules" = "적용된 규칙";
 "Export" = "내보내기";
-"Required for YouTube ad blocking and much more" = "YouTube 광고 차단 및 기타 기능을 위해 필요함";
+"Required for userscripts, advanced ad blocking, and cleaner features" = "유저스크립트, 고급 광고 차단, 클리너 기능에 필요합니다";
 "Ready" = "준비됨";
 "Every 1 hour" = "1시간마다";
 "%@)%" = "%@)%";
@@ -145,7 +145,7 @@
 "Cancel" = "취소";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "대용량 파일 - 스크롤이 느려질 수 있음";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "YouTube 광고를 차단하려면 wBlock Scripts를 활성화하고 '모든 웹사이트에서 항상 허용'으로 설정해야 합니다.";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "유저스크립트와 고급 차단을 위해 wBlock Scripts를 활성화하고 '모든 웹사이트에서 항상 허용'으로 설정해야 합니다.";
 "Privacy" = "개인정보 보호";
 "Rules" = "규칙";
 "Enabled Lists" = "활성화된 목록";
@@ -210,7 +210,7 @@
 "Trust: %@" = "신뢰도: %@";
 "Logs will appear here as the app runs" = "앱이 실행되면 여기에 로그가 표시됩니다";
 "Downloaded %d updates" = "업데이트 %d개 다운로드됨";
-"Enable the Safari extensions so wBlock can block ads." = "wBlock이 광고를 차단할 수 있도록 Safari 확장 프로그램을 활성화하세요.";
+"Enable the Safari extensions so wBlock can block ads and run userscripts." = "광고 차단과 유저스크립트 실행을 위해 Safari 확장을 활성화하세요.";
 "Setup Instructions" = "설정 지침";
 "Every 1 day" = "1일마다";
 "Reading Files" = "파일 읽는 중";

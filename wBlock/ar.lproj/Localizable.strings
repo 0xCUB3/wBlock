@@ -22,7 +22,7 @@
 "Showing preview (%@) of %@))" = "عرض معاينة (%@) من %@))";
 "Applied Rules" = "القواعد المطبَّقة";
 "Export" = "تصدير";
-"Required for YouTube ad blocking and much more" = "مطلوب لحظر إعلانات YouTube والمزيد";
+"Required for userscripts, advanced ad blocking, and cleaner features" = "مطلوب لسكربتات المستخدم والحظر المتقدم وميزات التنظيف";
 "Ready" = "جاهز";
 "Every 1 hour" = "كل ساعة";
 "%@)%" = "%@)%";
@@ -145,7 +145,7 @@
 "Cancel" = "إلغاء";
 "URL" = "الرابط";
 "Large file - scrolling may be slow" = "ملف كبير - قد يكون التمرير بطيئًا";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "يجب تفعيل wBlock Scripts وضبطه على 'السماح دائمًا على جميع مواقع الويب' لحظر إعلانات YouTube.";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "يجب تفعيل wBlock Scripts وضبطه على «السماح دائمًا على جميع مواقع الويب» لسكربتات المستخدم والحظر المتقدم.";
 "Privacy" = "الخصوصية";
 "Rules" = "القواعد";
 "Enabled Lists" = "القوائم المفعّلة";
@@ -210,7 +210,7 @@
 "Trust: %@" = "الثقة: %@";
 "Logs will appear here as the app runs" = "ستظهر السجلات هنا أثناء تشغيل التطبيق";
 "Downloaded %d updates" = "تم تنزيل %d تحديثات";
-"Enable the Safari extensions so wBlock can block ads." = "فعّل امتدادات Safari حتى يتمكن wBlock من حظر الإعلانات.";
+"Enable the Safari extensions so wBlock can block ads and run userscripts." = "فعّل امتدادات Safari حتى يتمكن wBlock من حظر الإعلانات وتشغيل سكربتات المستخدم.";
 "Setup Instructions" = "تعليمات الإعداد";
 "Every 1 day" = "كل يوم";
 "Reading Files" = "جارٍ قراءة الملفات";

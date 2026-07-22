@@ -930,7 +930,7 @@ struct OnboardingView: View {
 
     private var setupStep: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Enable the Safari extensions so wBlock can block ads.")
+            Text("Enable the Safari extensions so wBlock can block ads and run userscripts.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -992,20 +992,14 @@ struct OnboardingView: View {
                             .frame(width: 20, alignment: .trailing)
 
                         VStack(alignment: .leading, spacing: 2) {
-                            #if os(macOS)
                             Text("Enable 'wBlock Scripts' → Always Allow on Every Website")
                                 .font(.subheadline)
                                 .fontWeight(.medium)
-                            #else
-                            Text("Enable 'wBlock Scripts' → Always Allow on Every Website")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                            #endif
 
                             Text(
                                 detectedScriptsExtensionEnabled == false && !hasEnabledAdvanced
-                                    ? "wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads."
-                                    : "Required for YouTube ad blocking and much more"
+                                    ? "wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking."
+                                    : "Required for userscripts, advanced ad blocking, and cleaner features"
                             )
                             .font(.caption)
                             .foregroundStyle(

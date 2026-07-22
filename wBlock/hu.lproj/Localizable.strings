@@ -22,7 +22,7 @@
 "Showing preview (%@) of %@))" = "Előnézet megjelenítése (%@) / %@))";
 "Applied Rules" = "Alkalmazott szabályok";
 "Export" = "Exportálás";
-"Required for YouTube ad blocking and much more" = "Szükséges a YouTube hirdetésblokkolásához és még sok máshoz";
+"Required for userscripts, advanced ad blocking, and cleaner features" = "Szükséges a userscriptekhez, a fejlett hirdetésblokkoláshoz és a tisztító funkciókhoz";
 "Ready" = "Kész";
 "Every 1 hour" = "1 óránként";
 "%@)%" = "%@)%";
@@ -145,7 +145,7 @@
 "Cancel" = "Mégse";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "Nagy fájl - a görgetés lassú lehet";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "A YouTube-hirdetések blokkolásához a 'wBlock Scripts' bővítményt engedélyezni kell, és 'Mindig engedélyezve minden webhelyen' értékre kell állítani.";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "A userscriptekhez és a fejlett blokkoláshoz a wBlock Scripts-et engedélyezni kell, és „Mindig engedélyezés minden webhelyen” értékre kell állítani.";
 "Privacy" = "Adatvédelem";
 "Rules" = "Szabályok";
 "Enabled Lists" = "Engedélyezett listák";
@@ -210,7 +210,7 @@
 "Trust: %@" = "Megbízhatóság: %@";
 "Logs will appear here as the app runs" = "A naplók itt jelennek meg az alkalmazás futása közben";
 "Downloaded %d updates" = "%d frissítés letöltve";
-"Enable the Safari extensions so wBlock can block ads." = "Engedélyezd a Safari-bővítményeket, hogy a wBlock blokkolhassa a hirdetéseket.";
+"Enable the Safari extensions so wBlock can block ads and run userscripts." = "Engedélyezd a Safari-bővítményeket, hogy a wBlock blokkolhassa a hirdetéseket és futtathasson userscripteket.";
 "Setup Instructions" = "Beállítási útmutató";
 "Every 1 day" = "Naponta";
 "Reading Files" = "Fájlok olvasása";

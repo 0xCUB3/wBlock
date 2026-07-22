@@ -22,7 +22,7 @@
 "Showing preview (%@) of %@))" = "Показан предпросмотр (%@) из %@))";
 "Applied Rules" = "Примененные правила";
 "Export" = "Экспорт";
-"Required for YouTube ad blocking and much more" = "Требуется для блокировки рекламы на YouTube и многого другого";
+"Required for userscripts, advanced ad blocking, and cleaner features" = "Нужно для пользовательских скриптов, расширенной блокировки и функций очистки";
 "Ready" = "Готово";
 "Every 1 hour" = "Каждый 1 час";
 "%@)%" = "%@)%";
@@ -145,7 +145,7 @@
 "Cancel" = "Отмена";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "Большой файл - прокрутка может быть медленной";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "Для блокировки рекламы на YouTube необходимо включить wBlock Scripts и установить «Всегда разрешать на всех веб-сайтах».";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "wBlock Scripts должен быть включен и установлен на «Всегда разрешать на всех сайтах» для пользовательских скриптов и расширенной блокировки.";
 "Privacy" = "Конфиденциальность";
 "Rules" = "Правила";
 "Enabled Lists" = "Включенные списки";
@@ -210,7 +210,7 @@
 "Trust: %@" = "Доверие: %@";
 "Logs will appear here as the app runs" = "Журналы будут появляться здесь во время работы приложения";
 "Downloaded %d updates" = "Загружено %d обновлений";
-"Enable the Safari extensions so wBlock can block ads." = "Включите расширения Safari, чтобы wBlock мог блокировать рекламу.";
+"Enable the Safari extensions so wBlock can block ads and run userscripts." = "Включите расширения Safari, чтобы wBlock мог блокировать рекламу и запускать пользовательские скрипты.";
 "Setup Instructions" = "Инструкции по настройке";
 "Every 1 day" = "Каждый 1 день";
 "Reading Files" = "Чтение файлов";

@@ -22,7 +22,7 @@
 "Showing preview (%@) of %@))" = "Ön izleme gösteriliyor (%@) / %@))";
 "Applied Rules" = "Uygulanan kurallar";
 "Export" = "Dışa aktar";
-"Required for YouTube ad blocking and much more" = "YouTube'da reklam engelleme ve çok daha fazlası için gereklidir";
+"Required for userscripts, advanced ad blocking, and cleaner features" = "Userscript'ler, gelişmiş reklam engelleme ve temizleyici özellikleri için gereklidir";
 "Ready" = "Hazır";
 "Every 1 hour" = "Her 1 saatte";
 "%@)%" = "%@)%";
@@ -145,7 +145,7 @@
 "Cancel" = "İptal";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "Büyük dosya - kaydırma işlemi yavaş olabilir";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "YouTube reklamlarını engelleyebilmek için wBlock Scripts'in etkinleştirilmesi ve tüm web sitelerinde 'Her Zaman İzin Ver' olarak ayarlanması gerekir.";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "Userscript'ler ve gelişmiş engelleme için wBlock Scripts'in etkinleştirilmesi ve 'Tüm Web Sitelerinde Her Zaman İzin Ver' olarak ayarlanması gerekir.";
 "Privacy" = "Gizlilik";
 "Rules" = "Kural";
 "Enabled Lists" = "Etkin liste";
@@ -210,7 +210,7 @@
 "Trust: %@" = "Güven: %@";
 "Logs will appear here as the app runs" = "Uygulama çalıştıkça günlük kayıtları burada görünecektir";
 "Downloaded %d updates" = "%d güncellemesi indirildi";
-"Enable the Safari extensions so wBlock can block ads." = "wBlock'un reklamları engelleyebilmesi için Safari genişletmelerini etkinleştirin.";
+"Enable the Safari extensions so wBlock can block ads and run userscripts." = "wBlock'un reklamları engelleyebilmesi ve userscript'leri çalıştırabilmesi için Safari uzantılarını etkinleştirin.";
 "Setup Instructions" = "Kurulum Talimatları";
 "Every 1 day" = "Her 1 günde";
 "Reading Files" = "Dosyalar okunuyor";

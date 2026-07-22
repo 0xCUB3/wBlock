@@ -22,7 +22,7 @@
 "Showing preview (%@) of %@))" = "Se afișează previzualizarea (%@) din %@))";
 "Applied Rules" = "Reguli aplicate";
 "Export" = "Exportă";
-"Required for YouTube ad blocking and much more" = "Necesar pentru blocarea reclamelor YouTube și multe altele";
+"Required for userscripts, advanced ad blocking, and cleaner features" = "Necesar pentru userscripturi, blocare avansată a reclamelor și funcții de curățare";
 "Ready" = "Gata";
 "Every 1 hour" = "La fiecare 1 oră";
 "%@)%" = "%@)%";
@@ -145,7 +145,7 @@
 "Cancel" = "Anulează";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "Fișier mare - derularea poate fi lentă";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "wBlock Scripts trebuie activat și setat la 'Permite întotdeauna pe toate site-urile web' pentru a bloca reclamele YouTube.";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "wBlock Scripts trebuie activat și setat pe „Permite întotdeauna pe toate site-urile web” pentru userscripturi și blocare avansată.";
 "Privacy" = "Confidențialitate";
 "Rules" = "Reguli";
 "Enabled Lists" = "Liste activate";
@@ -210,7 +210,7 @@
 "Trust: %@" = "Încredere: %@";
 "Logs will appear here as the app runs" = "Jurnalele vor apărea aici pe măsură ce aplicația rulează";
 "Downloaded %d updates" = "S-au descărcat %d actualizări";
-"Enable the Safari extensions so wBlock can block ads." = "Activează extensiile Safari pentru ca wBlock să poată bloca reclamele.";
+"Enable the Safari extensions so wBlock can block ads and run userscripts." = "Activează extensiile Safari ca wBlock să poată bloca reclamele și să ruleze userscripturi.";
 "Setup Instructions" = "Instrucțiuni de configurare";
 "Every 1 day" = "La fiecare 1 zi";
 "Reading Files" = "Se citesc fișierele";

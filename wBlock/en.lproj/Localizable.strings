@@ -22,7 +22,7 @@
 "Showing preview (%@) of %@))" = "Showing preview (%@) of %@))";
 "Applied Rules" = "Applied Rules";
 "Export" = "Export";
-"Required for YouTube ad blocking and much more" = "Required for YouTube ad blocking and much more";
+"Required for userscripts, advanced ad blocking, and cleaner features" = "Required for userscripts, advanced ad blocking, and cleaner features";
 "Ready" = "Ready";
 "Every 1 hour" = "Every 1 hour";
 "%@)%" = "%@)%";
@@ -145,7 +145,7 @@
 "Cancel" = "Cancel";
 "URL" = "URL";
 "Large file - scrolling may be slow" = "Large file - scrolling may be slow";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads.";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking.";
 "Privacy" = "Privacy";
 "Rules" = "Rules";
 "Enabled Lists" = "Enabled Lists";
@@ -210,7 +210,7 @@
 "Trust: %@" = "Trust: %@";
 "Logs will appear here as the app runs" = "Logs will appear here as the app runs";
 "Downloaded %d updates" = "Downloaded %d updates";
-"Enable the Safari extensions so wBlock can block ads." = "Enable the Safari extensions so wBlock can block ads.";
+"Enable the Safari extensions so wBlock can block ads and run userscripts." = "Enable the Safari extensions so wBlock can block ads and run userscripts.";
 "Setup Instructions" = "Setup Instructions";
 "Every 1 day" = "Every 1 day";
 "Reading Files" = "Reading Files";
