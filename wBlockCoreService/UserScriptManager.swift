@@ -108,10 +108,13 @@ enum BuiltInUserScripts {
     // are never fetched over the network.
     static let tubeCleanerURL = "https://bundled.wblock.invalid/tube-cleaner.user.js"
     static let playerCleanerURL = "https://bundled.wblock.invalid/player-cleaner.user.js"
+    // Keep these in sync with the bare @description lines in the bundled
+    // userscript headers. applyBundledContent rewrites them from metadata on
+    // install/refresh, but placeholders should match until then.
     static let tubeCleanerDescription =
-        "Turns YouTube's own video element into a native Safari player: hides custom chrome, restores Picture-in-Picture, keeps videos playing in background tabs, and adds an audio-only mode. wBlock's content blocker handles ads separately."
+        "Replaces the YouTube player with a native HTML video element using YouTube's stream. Removes ads, restores picture-in-picture, keeps videos playing in background tabs, and adds an audio-only mode."
     static let playerCleanerDescription =
-        "Replaces custom video players on other websites with a clean HTML5 video element, restoring native controls and Picture-in-Picture. Disable it per site from the toolbar if a player misbehaves."
+        "Replaces custom video players on websites (other than YouTube) with a clean HTML5 video element, restoring native controls, Picture-in-Picture, auto PiP, and background playback. Disable it per site from the wBlock toolbar if a player misbehaves."
 
     private static func tinyShieldGroupedDefinition(
         _ domainGroup: String,

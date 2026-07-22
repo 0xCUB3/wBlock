@@ -157,7 +157,7 @@ struct OnboardingView: View {
             .map { script in
                 OnboardingUserScriptItem(
                     id: script.id.uuidString,
-                    name: script.name,
+                    name: script.localizedDisplayName,
                     description: resolvedUserscriptDescription(for: script),
                     isBaselineEnabledByDefault: isBaselineUserscriptEnabledByDefault(script),
                     isRegional: userScriptManager.builtInSection(for: script) == .foreign,
@@ -1132,7 +1132,7 @@ struct OnboardingView: View {
                                 .cornerRadius(4)
                         }
                     }
-                    Text(LocalizedStrings.text(script.description, comment: "Userscript description"))
+                    Text(script.description)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
@@ -1152,13 +1152,14 @@ struct OnboardingView: View {
     }
 
     private func resolvedUserscriptDescription(for script: UserScript) -> String {
-        // Prefer curated fallback descriptions for known scripts
+        // Prefer curated fallback descriptions for known remote scripts whose
+        // metadata may still be downloading.
         if let fallback = userscriptDescriptionFallbacksByName[script.name.lowercased()] {
             return fallback
         }
 
-        let trimmedDescription = script.description.trimmingCharacters(in: .whitespacesAndNewlines)
-        let normalizedDescription = trimmedDescription.lowercased()
+        let rawDescription = script.description.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedDescription = rawDescription.lowercased()
 
         let isPlaceholder =
             normalizedDescription.isEmpty
@@ -1166,7 +1167,10 @@ struct OnboardingView: View {
             || normalizedDescription == "default userscript - downloading..."
             || normalizedDescription == "ready to enable"
 
-        guard isPlaceholder else { return trimmedDescription }
+        // Match the userscript manager: localize known short descriptions, and
+        // leave already-resolved metadata (including locale-aware cleaner copy)
+        // untouched via NSLocalizedString identity fallback.
+        guard isPlaceholder else { return script.localizedDisplayDescription }
 
         if userScriptManager.isPrefetchingDefaultMetadata {
             return String(localized: "Loading metadata…")
