@@ -658,7 +658,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "replaced match on line $" = "$번째 줄의 일치를 바꿈";
 "on line" = "줄";
 
-"Updates Paused" = "Updates Paused";
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
@@ -825,3 +824,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Telemetry: %@" = "원격 측정: %@";
 "Web extension %@" = "웹 확장 %@";
 " · Last success: %@" = " · 최근 성공: %@";
+"Beta" = "Beta";

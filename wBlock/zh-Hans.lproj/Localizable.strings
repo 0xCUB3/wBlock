@@ -658,7 +658,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "replaced match on line $" = "已替换第 $ 行的匹配";
 "on line" = "在第";
 
-"Updates Paused" = "Updates Paused";
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
@@ -825,3 +824,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Telemetry: %@" = "遥测: %@";
 "Web extension %@" = "网页扩展 %@";
 " · Last success: %@" = " · 上次成功：%@";
+"Beta" = "Beta";

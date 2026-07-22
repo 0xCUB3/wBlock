@@ -658,7 +658,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "replaced match on line $" = "replaced match on line $";
 "on line" = "on line";
 
-"Updates Paused" = "Updates Paused";
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
@@ -834,3 +833,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Telemetry: %@" = "Telemetry: %@";
 "Web extension %@" = "Web extension %@";
 " · Last success: %@" = " · Last success: %@";
+"Beta" = "Beta";

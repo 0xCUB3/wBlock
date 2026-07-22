@@ -29,8 +29,9 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let updatesAutomatically: Bool
     let isUserStyle: Bool
     let builtInSection: BuiltInUserScriptSection?
+    let isBeta: Bool
 
-    init(script: UserScript, builtInSection: BuiltInUserScriptSection?) {
+    init(script: UserScript, builtInSection: BuiltInUserScriptSection?, isBeta: Bool = false) {
         id = script.id
         name = script.name
         localizedDisplayName = script.localizedDisplayName
@@ -45,6 +46,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
         updatesAutomatically = script.updatesAutomatically
         isUserStyle = script.isUserStyle
         self.builtInSection = builtInSection
+        self.isBeta = isBeta
     }
 }
 
@@ -352,7 +354,8 @@ struct UserScriptManagerView: View {
         scripts = userScriptManager.userScripts.map { script in
             UserScriptListItem(
                 script: script,
-                builtInSection: userScriptManager.builtInSection(for: script)
+                builtInSection: userScriptManager.builtInSection(for: script),
+                isBeta: userScriptManager.isBeta(for: script)
             )
         }
     }
@@ -516,11 +519,23 @@ struct UserScriptManagerView: View {
     private func scriptRowView(script: UserScriptListItem) -> some View {
         HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(script.localizedDisplayName)
-                    .font(.body)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 6) {
+                    Text(script.localizedDisplayName)
+                        .font(.body)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if script.isBeta {
+                        Text("Beta")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.orange.opacity(0.15))
+                            .foregroundStyle(.orange)
+                            .cornerRadius(4)
+                    }
+                }
 
                 if !script.localizedDisplayDescription.isEmpty {
                     Text(script.localizedDisplayDescription)
@@ -579,16 +594,7 @@ struct UserScriptManagerView: View {
                         .cornerRadius(4)
                 }
 
-                if !script.updatesAutomatically && (script.url != nil || script.updateURL != nil) {
-                    Text("Updates Paused")
-                        .font(.caption2)
-                        .fontWeight(.medium)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.orange.opacity(0.15))
-                        .foregroundStyle(.orange)
-                        .cornerRadius(4)
-                }
+
             }
 
             Spacer()

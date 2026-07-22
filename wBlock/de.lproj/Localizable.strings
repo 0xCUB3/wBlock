@@ -658,7 +658,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "replaced match on line $" = "Treffer in Zeile $ ersetzt";
 "on line" = "in Zeile";
 
-"Updates Paused" = "Updates Paused";
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
@@ -825,3 +824,4 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Telemetry: %@" = "Telemetrie: %@";
 "Web extension %@" = "Web-Erweiterung %@";
 " · Last success: %@" = " · Letzter Erfolg: %@";
+"Beta" = "Beta";

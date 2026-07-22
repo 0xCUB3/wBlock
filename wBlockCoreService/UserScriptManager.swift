@@ -67,6 +67,7 @@ struct BuiltInUserScriptDefinition {
     /// fetched. Content refreshes automatically when the app ships a newer
     /// bundled version.
     let bundledContent: String?
+    let isBeta: Bool
 
     init(
         name: String,
@@ -75,7 +76,8 @@ struct BuiltInUserScriptDefinition {
         section: BuiltInUserScriptSection = .general,
         description: String = "Default userscript",
         languages: [String] = [],
-        bundledContent: String? = nil
+        bundledContent: String? = nil,
+        isBeta: Bool = false
     ) {
         self.name = name
         self.url = url
@@ -84,6 +86,7 @@ struct BuiltInUserScriptDefinition {
         self.description = description
         self.languages = languages
         self.bundledContent = bundledContent
+        self.isBeta = isBeta
     }
 }
 
@@ -132,14 +135,16 @@ enum BuiltInUserScripts {
             url: tubeCleanerURL,
             isEnabledByDefault: false,
             description: tubeCleanerDescription,
-            bundledContent: BundledUserScriptSources.tubeCleaner
+            bundledContent: BundledUserScriptSources.tubeCleaner,
+            isBeta: true
         ),
         BuiltInUserScriptDefinition(
             name: "Player Cleaner",
             url: playerCleanerURL,
             isEnabledByDefault: false,
             description: playerCleanerDescription,
-            bundledContent: BundledUserScriptSources.playerCleaner
+            bundledContent: BundledUserScriptSources.playerCleaner,
+            isBeta: true
         ),
         BuiltInUserScriptDefinition(
             name: "Return YouTube Dislike",
@@ -203,6 +208,9 @@ enum BuiltInUserScripts {
         uniqueKeysWithValues: definitions.compactMap { definition in
             definition.bundledContent.map { (definition.url, $0) }
         }
+    )
+    static let isBetaByURL = Dictionary(
+        uniqueKeysWithValues: definitions.filter(\.isBeta).map { ($0.url, true) }
     )
 
     /// Returns the embedded source for a bundled userscript URL, or nil when the
@@ -621,6 +629,11 @@ public class UserScriptManager: ObservableObject {
     public func builtInLanguages(for userScript: UserScript) -> [String] {
         guard let urlString = userScript.url?.absoluteString else { return [] }
         return BuiltInUserScripts.languagesByURL[urlString] ?? []
+    }
+
+    public func isBeta(for userScript: UserScript) -> Bool {
+        guard let urlString = userScript.url?.absoluteString else { return false }
+        return BuiltInUserScripts.isBetaByURL[urlString] ?? false
     }
 
     private init() {

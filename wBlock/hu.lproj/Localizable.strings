@@ -659,7 +659,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "replaced match on line $" = "találat cserélve a(z) $ sorban";
 "on line" = "a(z) sorban";
 
-"Updates Paused" = "Updates Paused";
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
@@ -826,3 +825,4 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Telemetry: %@" = "Telemetria: %@";
 "Web extension %@" = "Webes kiterjesztés %@";
 " · Last success: %@" = " · Legutóbbi siker: %@";
+"Beta" = "Beta";

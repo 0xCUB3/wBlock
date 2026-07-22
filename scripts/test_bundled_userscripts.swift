@@ -84,7 +84,7 @@ assertMetadata(tubeSource, "// @match        https://www.youtube-nocookie.com/*"
 assertMetadata(tubeSource, "// @run-at       document-start", "Tube Cleaner")
 assertMetadata(tubeSource, "// @inject-into  page", "Tube Cleaner")
 assertMetadata(tubeSource, "// @grant        none", "Tube Cleaner")
-assertMetadata(tubeSource, "// @version      4.2.6", "Tube Cleaner")
+assertMetadata(tubeSource, "// @version      0.1.0", "Tube Cleaner")
 // Localized descriptions ride along in the metadata block.
 assertMetadata(tubeSource, "// @description:de", "Tube Cleaner")
 assertMetadata(tubeSource, "// @description:ja", "Tube Cleaner")
@@ -97,7 +97,7 @@ assertMetadata(playerSource, "// @exclude      https://www.youtube.com/*", "Play
 assertMetadata(playerSource, "// @run-at       document-start", "Player Cleaner")
 assertMetadata(playerSource, "// @inject-into  page", "Player Cleaner")
 assertMetadata(playerSource, "// @grant        none", "Player Cleaner")
-assertMetadata(playerSource, "// @version      1.5.2", "Player Cleaner")
+assertMetadata(playerSource, "// @version      0.1.0", "Player Cleaner")
 assertMetadata(playerSource, "// @description:de", "Player Cleaner")
 
 // Feature coverage: the advertised Vinegar/Baking Soda behaviors.

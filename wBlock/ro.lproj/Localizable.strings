@@ -658,7 +658,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "replaced match on line $" = "potrivire înlocuită la linia $";
 "on line" = "la linia";
 
-"Updates Paused" = "Updates Paused";
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
 "Failed to update %d script(s)." = "Failed to update %d script(s).";
@@ -825,3 +824,4 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Telemetry: %@" = "Telemetrie: %@";
 "Web extension %@" = "Extensie web %@";
 " · Last success: %@" = " · Ultimul succes: %@";
+"Beta" = "Beta";
