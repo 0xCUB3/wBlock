@@ -65,7 +65,8 @@ extension AppFilterManager {
 
         let totalUpdates = availableUpdates.count + availableScriptUpdates.count
         if totalUpdates > 0 {
-            showingUpdatePopup = true
+            applyProgressViewModel.presentReview()
+            showingApplyProgressSheet = true
             statusDescription = LocalizedStrings.format(
                 "Found %d update(s) available.",
                 comment: "Updates found status",
@@ -83,15 +84,80 @@ extension AppFilterManager {
         isLoading = false
     }
 
-    func downloadAndApplySelectedFilters(_ selectedFilters: [FilterList], showProgressSheet: Bool = false) async {
-        isLoading = true
-        progress = 0
-        if showProgressSheet {
-            statusDescription = LocalizedStrings.text(
-                "Downloading filter updates...",
-                comment: "Filter update download status"
+    /// Downloads the selected filter/script updates, then runs the shared apply pipeline.
+    func downloadAndApplySelectedUpdates(
+        filters selectedFilters: [FilterList],
+        scripts selectedScripts: [UserScript]
+    ) async {
+        prepareApplyRunState()
+        showingApplyProgressSheet = true
+
+        applyProgressViewModel.updateStageDescription(
+            LocalizedStrings.text(
+                "Downloading selected updates...",
+                comment: "Selected update download status"
+            )
+        )
+
+        var successfullyUpdatedFilters: [FilterList] = []
+        if !selectedFilters.isEmpty {
+            successfullyUpdatedFilters = await filterUpdater.updateSelectedFilters(
+                selectedFilters,
+                progressCallback: { newProgress in
+                    Task { @MainActor in
+                        self.progress = newProgress * 0.2
+                        self.applyProgressViewModel.updateProgress(Float(newProgress * 0.2))
+                    }
+                }
+            )
+
+            saveFilterListsCoalesced()
+
+            for filter in successfullyUpdatedFilters {
+                availableUpdates.removeAll { $0.id == filter.id }
+            }
+        }
+
+        var successfullyUpdatedScripts: [UserScript] = []
+        if !selectedScripts.isEmpty {
+            successfullyUpdatedScripts = await filterUpdater.updateSelectedScripts(selectedScripts) {
+                newProgress in
+                Task { @MainActor in
+                    // Keep some headroom for the shared apply pipeline after downloads.
+                    let mapped = 0.2 + (newProgress * 0.1)
+                    self.progress = mapped
+                    self.applyProgressViewModel.updateProgress(mapped)
+                }
+            }
+
+            let updatedIDs = Set(successfullyUpdatedScripts.map(\.id))
+            availableScriptUpdates.removeAll { updatedIDs.contains($0.id) }
+
+            let failedCount = selectedScripts.count - successfullyUpdatedScripts.count
+            applyProgressViewModel.updateScriptsUpdateResult(
+                updated: successfullyUpdatedScripts.count,
+                failed: max(0, failedCount)
             )
         }
+
+        applyProgressViewModel.updateUpdatesFound(
+            successfullyUpdatedFilters.count + successfullyUpdatedScripts.count
+        )
+
+        // Continue into the normal apply pipeline (convert / save / reload).
+        // Keep the existing progress sheet state so review → progress feels continuous,
+        // and skip the automatic pre-apply update pass so the user's selection is respected.
+        await applyChanges(prepareState: false, skipPreApplyUpdates: true)
+    }
+
+    func downloadAndApplySelectedFilters(_ selectedFilters: [FilterList], showProgressSheet: Bool = false) async {
+        if showProgressSheet {
+            await downloadAndApplySelectedUpdates(filters: selectedFilters, scripts: [])
+            return
+        }
+
+        isLoading = true
+        progress = 0
 
         let successfullyUpdatedFilters = await filterUpdater.updateSelectedFilters(
             selectedFilters,
@@ -110,12 +176,6 @@ extension AppFilterManager {
 
         isLoading = false
         progress = 0
-
-        if showProgressSheet {
-            showingUpdatePopup = false
-            prepareApplyRunState()
-            showingApplyProgressSheet = true
-        }
 
         await applyChanges()
     }

@@ -49,7 +49,7 @@ extension AppFilterManager {
         logMessage: String,
         metadata: [String: String] = [:],
         statusMessage: String? = nil,
-        dismissProgressSheet: Bool = true
+        dismissProgressSheet: Bool = false
     ) async {
         await ConcurrentLogManager.shared.error(
             .filterApply,
@@ -63,6 +63,7 @@ extension AppFilterManager {
             self.hasError = true
             self.statusDescription = resolvedStatusMessage
             self.isLoading = false
+            self.applyProgressViewModel.markFailed(message: resolvedStatusMessage)
             if dismissProgressSheet {
                 self.showingApplyProgressSheet = false
             }
@@ -71,11 +72,17 @@ extension AppFilterManager {
 
     // MARK: - Delegated methods
 
-    func applyChanges(allowUserInteraction: Bool = false) async {
+    func applyChanges(
+        allowUserInteraction: Bool = false,
+        prepareState: Bool = true,
+        skipPreApplyUpdates: Bool = false
+    ) async {
         suppressBlockingOverlay = allowUserInteraction
         defer { suppressBlockingOverlay = false }
 
-        await MainActor.run { self.prepareApplyRunState() }
+        if prepareState {
+            await MainActor.run { self.prepareApplyRunState() }
+        }
 
         // While blocking is globally paused, never write real rules back to disk — leave the
         // content blockers empty until the user explicitly resumes. This keeps manual Apply
@@ -124,74 +131,89 @@ extension AppFilterManager {
             .filterApply, LocalizedStrings.text("Starting filter application process"),
             metadata: ["platform": currentPlatform == .macOS ? "macOS" : "iOS"])
 
-        // First, check for and download updates for enabled filters
-        await MainActor.run {
-            self.statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Apply pipeline status")
-            self.applyProgressViewModel.updateStageDescription(
-                LocalizedStrings.text("Checking for updates...", comment: "Apply pipeline stage")
-            )
-            self.applyProgressViewModel.updatePhaseCompletion(updating: false)  // Mark as active
-        }
-
-        await updateVersionsAndCounts()
-
-        let enabledFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
-        if !enabledFilters.isEmpty {
-            guard let updatedFilters = await filterUpdater.refreshFiltersIfNeeded(
-                enabledFilters, progressCallback: { prog in
-                    Task { @MainActor in
-                        self.progress = prog * 0.1
-                        self.applyProgressViewModel.updateProgress(Float(prog * 0.1))
-                    }
-                }
-            ) else {
-                await failApplyRun(
-                    logMessage: LocalizedStrings.text("Failed to process one or more pre-apply filter updates")
-                )
-                return
-            }
-
+        if skipPreApplyUpdates {
+            // Selected updates were already downloaded in the review flow. Keep those counts and
+            // jump straight into conversion so the user's selection is respected.
             await MainActor.run {
-                self.applyProgressViewModel.updateUpdatesFound(updatedFilters.count)
-            }
-
-            if !updatedFilters.isEmpty {
-                await saveFilterLists()
-                await ConcurrentLogManager.shared.info(
-                    .filterApply, LocalizedStrings.text("Downloaded updates before applying"),
-                    metadata: ["count": "\(updatedFilters.count)"])
-            } else {
-                await ConcurrentLogManager.shared.info(
-                    .filterApply, LocalizedStrings.text("No updates available"), metadata: [:])
-            }
-        }
-
-        // Mark updating phase as complete
-        await MainActor.run {
-            self.applyProgressViewModel.updatePhaseCompletion(updating: true, scripts: false)
-            self.statusDescription = LocalizedStrings.text(
-                "Applying filters...\n(This may take a while)",
-                comment: "Apply pipeline filter application status"
-            )
-            self.applyProgressViewModel.updateStageDescription(
-                LocalizedStrings.text("Applying filters...", comment: "Apply pipeline stage")
-            )
-        }
-
-        // Auto-update enabled userscripts as part of Apply Changes (helps YouTube, etc.).
-        if let userScriptManager = filterUpdater.userScriptManager {
-            let scriptsResult = await userScriptManager.autoUpdateEnabledUserScripts()
-            await MainActor.run {
-                self.applyProgressViewModel.updateScriptsUpdateResult(
-                    updated: scriptsResult.updated,
-                    failed: scriptsResult.failed
+                self.applyProgressViewModel.updatePhaseCompletion(updating: true, scripts: true, reading: false)
+                self.statusDescription = LocalizedStrings.text(
+                    "Applying filters...\n(This may take a while)",
+                    comment: "Apply pipeline filter application status"
                 )
-                self.applyProgressViewModel.updatePhaseCompletion(scripts: true, reading: false)
+                self.applyProgressViewModel.updateStageDescription(
+                    LocalizedStrings.text("Applying filters...", comment: "Apply pipeline stage")
+                )
             }
         } else {
+            // First, check for and download updates for enabled filters
             await MainActor.run {
-                self.applyProgressViewModel.updateScriptsUpdateResult(updated: 0, failed: 0)
-                self.applyProgressViewModel.updatePhaseCompletion(scripts: true, reading: false)
+                self.statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Apply pipeline status")
+                self.applyProgressViewModel.updateStageDescription(
+                    LocalizedStrings.text("Checking for updates...", comment: "Apply pipeline stage")
+                )
+                self.applyProgressViewModel.updatePhaseCompletion(updating: false)  // Mark as active
+            }
+
+            await updateVersionsAndCounts()
+
+            let enabledFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
+            if !enabledFilters.isEmpty {
+                guard let updatedFilters = await filterUpdater.refreshFiltersIfNeeded(
+                    enabledFilters, progressCallback: { prog in
+                        Task { @MainActor in
+                            self.progress = prog * 0.1
+                            self.applyProgressViewModel.updateProgress(Float(prog * 0.1))
+                        }
+                    }
+                ) else {
+                    await failApplyRun(
+                        logMessage: LocalizedStrings.text("Failed to process one or more pre-apply filter updates")
+                    )
+                    return
+                }
+
+                await MainActor.run {
+                    self.applyProgressViewModel.updateUpdatesFound(updatedFilters.count)
+                }
+
+                if !updatedFilters.isEmpty {
+                    await saveFilterLists()
+                    await ConcurrentLogManager.shared.info(
+                        .filterApply, LocalizedStrings.text("Downloaded updates before applying"),
+                        metadata: ["count": "\(updatedFilters.count)"])
+                } else {
+                    await ConcurrentLogManager.shared.info(
+                        .filterApply, LocalizedStrings.text("No updates available"), metadata: [:])
+                }
+            }
+
+            // Mark updating phase as complete
+            await MainActor.run {
+                self.applyProgressViewModel.updatePhaseCompletion(updating: true, scripts: false)
+                self.statusDescription = LocalizedStrings.text(
+                    "Applying filters...\n(This may take a while)",
+                    comment: "Apply pipeline filter application status"
+                )
+                self.applyProgressViewModel.updateStageDescription(
+                    LocalizedStrings.text("Applying filters...", comment: "Apply pipeline stage")
+                )
+            }
+
+            // Auto-update enabled userscripts as part of Apply Changes (helps YouTube, etc.).
+            if let userScriptManager = filterUpdater.userScriptManager {
+                let scriptsResult = await userScriptManager.autoUpdateEnabledUserScripts()
+                await MainActor.run {
+                    self.applyProgressViewModel.updateScriptsUpdateResult(
+                        updated: scriptsResult.updated,
+                        failed: scriptsResult.failed
+                    )
+                    self.applyProgressViewModel.updatePhaseCompletion(scripts: true, reading: false)
+                }
+            } else {
+                await MainActor.run {
+                    self.applyProgressViewModel.updateScriptsUpdateResult(updated: 0, failed: 0)
+                    self.applyProgressViewModel.updatePhaseCompletion(scripts: true, reading: false)
+                }
             }
         }
 
@@ -803,8 +825,7 @@ extension AppFilterManager {
         progress = 0
         statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Apply pipeline status")
 
-        applyProgressViewModel.reset()
-        applyProgressViewModel.updateIsLoading(true)
+        applyProgressViewModel.beginProgressRun()
         applyProgressViewModel.updateProgress(0)
 
         sourceRulesCount = 0

@@ -1313,6 +1313,7 @@ struct OnboardingView: View {
 
         wantsCloudSync = true
 
+        filterManager.prepareApplyRunState()
         filterManager.showingApplyProgressSheet = true
         CloudSyncManager.shared.setEnabled(true, startSync: false)
 

@@ -703,19 +703,17 @@ struct ContentModifiers: ViewModifier {
             .sheet(isPresented: $showingAddFilterSheet) {
                 AddFilterListView(filterManager: filterManager)
             }
-            .sheet(isPresented: $filterManager.showingUpdatePopup) {
-                UpdatePopupView(
-                    filterManager: filterManager, userScriptManager: userScriptManager,
-                    isPresented: $filterManager.showingUpdatePopup)
-            }
             .sheet(isPresented: $filterManager.showingApplyProgressSheet) {
                 ApplyChangesProgressView(
+                    filterManager: filterManager,
                     viewModel: filterManager.applyProgressViewModel,
                     isPresented: $filterManager.showingApplyProgressSheet
                 )
             }
             .alert("No Updates Found", isPresented: $filterManager.showingNoUpdatesAlert) {
                 Button("OK", role: .cancel) {}
+            } message: {
+                Text("No updates available.")
             }
             .alert(
                 filterManager.ruleLimitWarningTitle,
@@ -760,7 +758,6 @@ struct ContentModifiers: ViewModifier {
             }
             .overlay {
                 if filterManager.isLoading && !filterManager.showingApplyProgressSheet
-                    && !filterManager.showingUpdatePopup
                     && !filterManager.suppressBlockingOverlay
                 {
                     ZStack {

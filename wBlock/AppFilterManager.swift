@@ -28,7 +28,6 @@ class AppFilterManager: ObservableObject {
     var missingUserScripts: [UserScript] = []
     @Published var availableUpdates: [FilterList] = []
     @Published var availableScriptUpdates: [UserScript] = []
-    @Published var showingUpdatePopup = false
     @Published var showingNoUpdatesAlert = false
     @Published var hasUnappliedChanges = false
     @Published var showingApplyProgressSheet = false
@@ -176,7 +175,6 @@ class AppFilterManager: ObservableObject {
         statusDescription = LocalizedStrings.text("Resetting…", comment: "Filter manager reset status")
         markCurrentStateApplied()
         showingApplyProgressSheet = false
-        showingUpdatePopup = false
         missingFilters = []
         availableUpdates = []
         availableScriptUpdates = []

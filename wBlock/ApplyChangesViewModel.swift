@@ -7,6 +7,14 @@
 
 import SwiftUI
 
+/// Presentation mode for the unified Apply Changes sheet.
+enum ApplyChangesSheetMode: Equatable {
+    case review
+    case progress
+    case result
+    case failed
+}
+
 /// The phases the apply flow walks through.
 enum ApplyChangesPhase: String, CaseIterable, Identifiable {
     case updating
@@ -69,9 +77,11 @@ struct ApplyChangesSummary: Equatable {
 
 /// Consolidated state for the apply progress presentation.
 struct ApplyChangesState: Equatable {
+    var mode: ApplyChangesSheetMode = .progress
     var isLoading: Bool = false
     var progress: Double = 0
     var statusMessage: String = ""
+    var failureMessage: String = ""
     var currentFilterName: String = ""
     var scriptsUpdatedCount: Int = 0
     var scriptsFailedCount: Int = 0
@@ -81,7 +91,9 @@ struct ApplyChangesState: Equatable {
     var convertingDone: Int = 0
     var reloadingDone: Int = 0
     var updatesFound: Int = 0
-    var phases: [ApplyChangesPhaseProgress] = ApplyChangesPhase.allCases.map { ApplyChangesPhaseProgress(phase: $0, status: .pending) }
+    var phases: [ApplyChangesPhaseProgress] = ApplyChangesPhase.allCases.map {
+        ApplyChangesPhaseProgress(phase: $0, status: .pending)
+    }
     var summary: ApplyChangesSummary? = nil
 
     var progressPercentage: Int {
@@ -89,7 +101,11 @@ struct ApplyChangesState: Equatable {
     }
 
     var isComplete: Bool {
-        summary != nil
+        mode == .result || summary != nil
+    }
+
+    var showsProgressChrome: Bool {
+        mode == .progress || mode == .result || mode == .failed
     }
 }
 
@@ -112,6 +128,21 @@ class ApplyChangesViewModel: ObservableObject {
 
     // MARK: - Public API expected by AppFilterManager
 
+    func presentReview() {
+        state = ApplyChangesState(mode: .review)
+        resetProgressTracking()
+    }
+
+    func beginProgressRun() {
+        state = ApplyChangesState(
+            mode: .progress,
+            isLoading: true,
+            statusMessage: String(localized: "Checking for updates...")
+        )
+        resetPhases()
+        resetProgressTracking()
+    }
+
     func updateProgress(_ progress: Float) {
         let value = (0...1).clamp(Double(progress))
         let now = Date()
@@ -129,18 +160,42 @@ class ApplyChangesViewModel: ObservableObject {
     func updateIsLoading(_ isLoading: Bool) {
         state.isLoading = isLoading
         if isLoading {
+            if state.mode != .progress {
+                state.mode = .progress
+            }
+            state.failureMessage = ""
+            state.summary = nil
             resetPhases()
             resetProgressTracking()
         }
     }
 
-    func updatePhaseCompletion(updating: Bool? = nil, scripts: Bool? = nil, reading: Bool? = nil, converting: Bool? = nil, saving: Bool? = nil, reloading: Bool? = nil) {
-        if let updating = updating { setPhase(.updating, isComplete: updating) }
-        if let scripts = scripts { setPhase(.scripts, isComplete: scripts) }
-        if let reading = reading { setPhase(.reading, isComplete: reading) }
-        if let converting = converting { setPhase(.converting, isComplete: converting) }
-        if let saving = saving { setPhase(.saving, isComplete: saving) }
-        if let reloading = reloading { setPhase(.reloading, isComplete: reloading) }
+    func updatePhaseCompletion(
+        updating: Bool? = nil,
+        scripts: Bool? = nil,
+        reading: Bool? = nil,
+        converting: Bool? = nil,
+        saving: Bool? = nil,
+        reloading: Bool? = nil
+    ) {
+        if let updating { setPhase(.updating, isComplete: updating) }
+        if let scripts { setPhase(.scripts, isComplete: scripts) }
+        if let reading { setPhase(.reading, isComplete: reading) }
+        if let converting { setPhase(.converting, isComplete: converting) }
+        if let saving { setPhase(.saving, isComplete: saving) }
+        if let reloading { setPhase(.reloading, isComplete: reloading) }
+    }
+
+    func markPhaseFailed(_ phase: ApplyChangesPhase, message: String? = nil) {
+        updatePhase(phase) { phaseProgress in
+            phaseProgress.status = .failed
+        }
+        state.mode = .failed
+        state.isLoading = false
+        if let message, !message.isEmpty {
+            state.failureMessage = message
+            state.statusMessage = message
+        }
     }
 
     func updateCurrentFilter(_ name: String) {
@@ -201,15 +256,30 @@ class ApplyChangesViewModel: ObservableObject {
             blockersApproachingLimit: blockersApproachingLimit
         )
         markAllPhasesComplete()
+        state.mode = .result
         state.isLoading = false
         state.progress = 1
+        state.failureMessage = ""
         lastProgressValue = 1
         lastProgressUpdate = Date()
 
         if let statusMessage, !statusMessage.isEmpty {
             state.statusMessage = statusMessage
         } else if state.statusMessage.isEmpty || state.statusMessage.lowercased().contains("reloading") {
-            state.statusMessage = String(localized: "Filters applied successfully.")
+            state.statusMessage = String(localized: "Filters and scripts applied successfully.")
+        }
+    }
+
+    func markFailed(message: String) {
+        state.mode = .failed
+        state.isLoading = false
+        state.failureMessage = message
+        state.statusMessage = message
+
+        if let activeIndex = state.phases.firstIndex(where: { $0.status == .active }) {
+            var phases = state.phases
+            phases[activeIndex].status = .failed
+            state.phases = phases
         }
     }
 
@@ -234,7 +304,9 @@ class ApplyChangesViewModel: ObservableObject {
     private func markAllPhasesComplete() {
         state.phases = state.phases.map { phase in
             var updated = phase
-            updated.status = .complete
+            if updated.status != .failed {
+                updated.status = .complete
+            }
             return updated
         }
     }

@@ -833,3 +833,13 @@ To re-enable these filters, disable other large filters and apply changes again.
 " · Last success: %@" = " · Last success: %@";
 "Beta" = "Beta";
 "Ships with the app" = "Ships with the app";
+
+"Filters and scripts applied successfully." = "Filters and scripts applied successfully.";
+"Downloading selected updates..." = "Downloading selected updates...";
+"%d update(s) available" = "%d update(s) available";
+"%d update(s) found" = "%d update(s) found";
+"Choose which filters and scripts to download, then apply changes." = "Choose which filters and scripts to download, then apply changes.";
+"Apply Failed" = "Apply Failed";
+"Something went wrong while applying changes." = "Something went wrong while applying changes.";
+"%d script update(s) failed" = "%d script update(s) failed";
+"Updated %d, %d failed" = "Updated %d, %d failed";
