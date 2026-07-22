@@ -116,8 +116,6 @@ struct OnboardingView: View {
         let id: String
         let name: String
         let description: String
-        let version: String
-        let sourceHost: String?
         let isBaselineEnabledByDefault: Bool
         let isRegional: Bool
         let isBeta: Bool
@@ -161,8 +159,6 @@ struct OnboardingView: View {
                     id: script.id.uuidString,
                     name: script.name,
                     description: resolvedUserscriptDescription(for: script),
-                    version: script.version.trimmingCharacters(in: .whitespacesAndNewlines),
-                    sourceHost: script.url?.host,
                     isBaselineEnabledByDefault: isBaselineUserscriptEnabledByDefault(script),
                     isRegional: userScriptManager.builtInSection(for: script) == .foreign,
                     isBeta: userScriptManager.isBeta(for: script),
