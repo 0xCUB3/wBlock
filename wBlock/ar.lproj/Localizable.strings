@@ -191,7 +191,6 @@
 "Default filters for balanced blocking and compatibility." = "فلاتر افتراضية لحظر متوازن وتوافق أفضل.";
 "Network" = "الشبكة";
 "\\(level.emoji) \\(level.localizedName)" = "\\(level.emoji) \\(level.localizedName)";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "يجب تفعيل wBlock Scripts وضبطه على 'السماح' في جميع المواقع لحظر إعلانات YouTube.";
 "Blocked: 1" = "المحظور: 1";
 "Checked %@" = "تم التحقق %@";
 "Actions" = "الإجراءات";

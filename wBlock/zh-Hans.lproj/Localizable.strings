@@ -191,7 +191,6 @@
 "Default filters for balanced blocking and compatibility." = "用于平衡拦截效果与兼容性的默认过滤器。";
 "Network" = "网络";
 "\\(level.emoji) \\(level.localizedName)" = "\\(level.emoji) \\(level.localizedName)";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "要拦截 YouTube 广告，必须启用 wBlock Scripts 并将其在所有网站上设置为 '允许'。";
 "Blocked: 1" = "已拦截：1";
 "Checked %@" = "已检查 %@";
 "Actions" = "操作";

@@ -191,7 +191,6 @@
 "Default filters for balanced blocking and compatibility." = "Dengeli bir engelleme ve uyumluluk için varsayılan filtreler.";
 "Network" = "Ağ";
 "\\(level.emoji) \\(level.localizedName)" = "\\(level.emoji) \\(level.localizedName)";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "YouTube reklamlarını engellemek için wBlock Scripts'in etkinleştirilmesi ve tüm web sitelerinde 'İzin Ver' olarak ayarlanması gerekir.";
 "Blocked: 1" = "Engellenen: 1";
 "Checked %@" = "%@ kontrol edildi";
 "Actions" = "Eylemler";

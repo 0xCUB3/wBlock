@@ -191,7 +191,6 @@
 "Default filters for balanced blocking and compatibility." = "Alapértelmezett szűrők kiegyensúlyozott blokkoláshoz és kompatibilitáshoz.";
 "Network" = "Hálózat";
 "\\(level.emoji) \\(level.localizedName)" = "\\(level.emoji) \\(level.localizedName)";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "A YouTube-hirdetések blokkolásához a 'wBlock Scripts' bővítményt engedélyezni kell, és minden webhelyen 'Engedélyezés' értékre kell állítani.";
 "Blocked: 1" = "Blokkolva: 1";
 "Checked %@" = "Ellenőrizve: %@";
 "Actions" = "Műveletek";

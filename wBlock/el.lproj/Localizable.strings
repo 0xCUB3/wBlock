@@ -191,7 +191,6 @@
 "Default filters for balanced blocking and compatibility." = "Προεπιλεγμένα φίλτρα για ισορροπημένο αποκλεισμό και συμβατότητα.";
 "Network" = "Δίκτυο";
 "\\(level.emoji) \\(level.localizedName)" = "\\(level.emoji) \\(level.localizedName)";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "Τα wBlock Scripts πρέπει να είναι ενεργοποιημένα και να έχουν οριστεί σε 'Να επιτρέπεται' σε όλους τους ιστότοπους για να αποκλείονται οι διαφημίσεις YouTube.";
 "Blocked: 1" = "Αποκλεισμένο: 1";
 "Checked %@" = "Ελέγχθηκε %@";
 "Actions" = "Ενέργειες";

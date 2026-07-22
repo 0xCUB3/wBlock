@@ -191,7 +191,6 @@
 "Default filters for balanced blocking and compatibility." = "提供平衡封鎖與相容性的預設過濾器。";
 "Network" = "網路";
 "\\(level.emoji) \\(level.localizedName)" = "\\(level.emoji) \\(level.localizedName)";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "必須啟用 wBlock Scripts，並在所有網站設為 '允許'，才能封鎖 YouTube 廣告。";
 "Blocked: 1" = "已封鎖：1";
 "Checked %@" = "已檢查 %@";
 "Actions" = "操作";

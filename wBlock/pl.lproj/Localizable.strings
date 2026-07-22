@@ -191,7 +191,6 @@
 "Default filters for balanced blocking and compatibility." = "Domyślne filtry dla zrównoważonego blokowania i zgodności.";
 "Network" = "Sieć";
 "\\(level.emoji) \\(level.localizedName)" = "\\(poziom.emoji) \\(poziom.localizedName)";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "Aby blokować reklamy w YouTube, wBlock Scripts musi być włączone i ustawione na 'Zezwalaj' na wszystkich witrynach.";
 "Blocked: 1" = "Zablokowane: 1";
 "Checked %@" = "Sprawdzono %@";
 "Actions" = "Akcje";
