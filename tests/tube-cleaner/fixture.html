@@ -67,6 +67,8 @@
       player.setPlaybackQualityRange = function (lo, hi) { /* SABR: no-op */ };
       player.getVideoData = function () { return { video_id: 'TESTVID123' }; };
       player.getPlayerState = function () { return state; };
+      window.__youtubeSubtitlesOn = false;
+      player.isSubtitlesOn = function () { return window.__youtubeSubtitlesOn; };
 
       // Mock YouTube's asynchronous settings -> quality submenu. The settings
       // button is a toggle: clicking twice closes it again, which catches the

@@ -1926,6 +1926,30 @@ enum BundledUserScriptSources {
         var elements = [];
         var blobUrls = [];
 
+        // YouTube's own caption renderer supports movable, styled windows. If
+        // it is active, do not also render the selected mirrored track through
+        // Safari at the bottom of the video.
+        function preferYouTubeCaptions() {
+            var hasShowingNativeTrack = false;
+            for (var i = 0; i < elements.length; i++) {
+                if (elements[i].track && elements[i].track.mode === 'showing') {
+                    hasShowingNativeTrack = true;
+                    break;
+                }
+            }
+            if (!hasShowingNativeTrack) return;
+            var youtubeCaptionsOn = false;
+            try {
+                youtubeCaptionsOn = typeof player.isSubtitlesOn === 'function' && player.isSubtitlesOn();
+            } catch (e) { /* leave Safari captions alone */ }
+            if (!youtubeCaptionsOn) return;
+            for (var j = 0; j < elements.length; j++) {
+                try {
+                    if (elements[j].track.mode === 'showing') elements[j].track.mode = 'disabled';
+                } catch (e) { /* ignore */ }
+            }
+        }
+
         function stopRetry() {
             if (retryTimer !== null) clearInterval(retryTimer);
             retryTimer = null;
@@ -1954,7 +1978,11 @@ enum BundledUserScriptSources {
                     blobUrls.push(blobUrl);
                 } catch (e) { /* skip one malformed track */ }
             }
-            if (elements.length) log('applied', elements.length, 'native subtitle tracks');
+            if (elements.length) {
+                preferYouTubeCaptions();
+                setTimeout(preferYouTubeCaptions, 0);
+                log('applied', elements.length, 'native subtitle tracks');
+            }
         }
 
         function loadTracks(tracks) {
@@ -1986,6 +2014,11 @@ enum BundledUserScriptSources {
             loadTracks(tracks);
         }
 
+        if (video.textTracks && typeof video.textTracks.addEventListener === 'function') {
+            video.textTracks.addEventListener('change', preferYouTubeCaptions);
+        }
+        video.addEventListener('timeupdate', preferYouTubeCaptions);
+
         tryStart();
         if (!started) {
             retryTimer = setInterval(function () {
@@ -1998,6 +2031,10 @@ enum BundledUserScriptSources {
         registerCleanup(function () {
             cancelled = true;
             stopRetry();
+            if (video.textTracks && typeof video.textTracks.removeEventListener === 'function') {
+                video.textTracks.removeEventListener('change', preferYouTubeCaptions);
+            }
+            video.removeEventListener('timeupdate', preferYouTubeCaptions);
             if (controller) controller.abort();
             for (var i = 0; i < elements.length; i++) {
                 if (elements[i].parentNode) elements[i].remove();

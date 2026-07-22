@@ -605,6 +605,20 @@ async function qualityUISelectionCheck(page, scenario) {
       detail: `tracks=${labels.join(',')} playerRequests=${window.__wblockCaptionPlayerRequests} textRequests=${window.__wblockCaptionTextRequests}`,
     };
   });
+  await page.evaluate(() => {
+    const video = document.querySelector('#movie_player video');
+    const track = video?.querySelector('track[data-wblock-native-subtitle]')?.track;
+    window.__youtubeSubtitlesOn = true;
+    if (track) track.mode = 'showing';
+    video?.dispatchEvent(new Event('timeupdate'));
+  });
+  await check(page, 'desktop', 'prefers movable YouTube captions over a duplicate native rendering', () => {
+    const video = document.querySelector('#movie_player video');
+    const track = video?.querySelector('track[data-wblock-native-subtitle]')?.track;
+    const mode = track?.mode;
+    window.__youtubeSubtitlesOn = false;
+    return { pass: mode === 'disabled', detail: `nativeMode=${mode}` };
+  });
   await page.waitForFunction(() => document.querySelector('#watch-metadata h1 yt-formatted-string')?.textContent === 'Accurate Watch Title' &&
     document.querySelector('ytd-compact-video-renderer #video-title')?.textContent === 'Accurate Related Title');
   await check(page, 'desktop', 'applies submitted DeArrow titles and cached thumbnails to visible YouTube branding', () => {
