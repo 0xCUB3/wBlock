@@ -247,8 +247,7 @@
         'media-theme',               // Media Chrome generic theme
         'media-theme-youtube',       // Media Chrome YouTube theme
         '.media-player',             // Media Chrome / modern wrappers
-        '.media-default-skin',       // videojs.org's modern demo wrapper
-        '.artdeco-video-player'       // LinkedIn Artdeco video player
+        '.media-default-skin'        // videojs.org's modern demo wrapper
     ];
     var PLAYER_SELECTOR = PLAYER_SELECTORS.join(',');
 
@@ -409,7 +408,7 @@
             '.flowplayer', '.mejs-container', '.mejs__container', '.clappr',
             '[data-clappr-player]', '.fluid_video_wrapper', 'mux-player',
             'media-controller', 'media-theme', 'media-theme-youtube',
-            '.media-player', '.media-default-skin', '.artdeco-video-player'];
+            '.media-player', '.media-default-skin'];
         for (var i = 0; i < wrapperSelectors.length; i++) {
             var ancestor = container.closest ? container.closest(wrapperSelectors[i]) : null;
             if (ancestor) { container = ancestor; }
@@ -454,25 +453,45 @@
         });
     }
 
-    function hideCustomOverlays(container) {
-        var overlaySelectors = [
-            '.vjs-control-bar', '.vjs-big-play-button', '.vjs-poster',
-            '.jw-controls', '.jw-display-icon-container',
-            '.plyr__controls', '.fp-ui', '.fp-header',
-            '.mejs-controls', '.mejs__controls',
-            '.clappr-media-control',
-            'media-control-bar', 'media-loading-indicator', 'media-poster-image',
-            // LinkedIn Artdeco player overlays
-            '.artdeco-video-player__controls-container',
-            '.artdeco-video-player__controls',
-            '.artdeco-video-player__overlay'
-        ];
-        for (var i = 0; i < overlaySelectors.length; i++) {
-            var overlays = container.querySelectorAll(overlaySelectors[i]);
-            for (var j = 0; j < overlays.length; j++) {
-                try { overlays[j].style.display = 'none'; } catch (e) { /* ignore */ }
+    // Generic chrome hiding. Instead of maintaining a per-library selector list
+    // (which inevitably misses bespoke players), walk every element inside the
+    // container and hide anything that is not the video, an ancestor of the
+    // video (needed for layout), or a descendant of the video (<source>,
+    // <track>).  In "aggressive" mode all such chrome is hidden; this is safe
+    // when the container is a known player wrapper or has its own positioning
+    // context (position !== 'static'), both strong signals that the element is
+    // a dedicated player shell rather than a general-purpose page wrapper.
+    // In conservative mode only positioned (absolute / fixed / sticky) elements
+    // are hidden, which covers the vast majority of overlay-style custom
+    // controls while leaving flow-layout page content intact.
+    function hideContainerChrome(container, video, aggressive) {
+        if (!container || !container.querySelectorAll) return;
+        var elements = container.querySelectorAll('*');
+        for (var i = 0; i < elements.length; i++) {
+            var el = elements[i];
+            if (el === video) continue;
+            if (video.contains(el)) continue;   // <source>, <track>
+            if (el.contains(video)) continue;   // ancestor wrappers
+            if (aggressive) {
+                try { el.style.display = 'none'; } catch (e) { /* ignore */ }
+            } else {
+                try {
+                    var pos = getComputedStyle(el).position;
+                    if (pos === 'absolute' || pos === 'fixed' || pos === 'sticky') {
+                        el.style.display = 'none';
+                    }
+                } catch (e) { /* ignore */ }
             }
         }
+    }
+
+    // Determine whether a container is a dedicated player shell (aggressive
+    // hiding is safe) or might be a general-purpose wrapper (conservative only).
+    function isPlayerShell(container) {
+        if (container.matches && container.matches(PLAYER_SELECTOR)) return true;
+        try {
+            return getComputedStyle(container).position !== 'static';
+        } catch (e) { return false; }
     }
 
     function enhanceInPlace(container, video, upgradeable) {
@@ -482,7 +501,7 @@
             // still clean the known wrapper when its API/data arrives. Re-hide
             // chrome a framework may have rendered after initial cleanup.
             if (upgradeable) { video._wblockUpgradeable = true; }
-            hideCustomOverlays(container);
+            hideContainerChrome(container, video, isPlayerShell(container));
             return;
         }
         video._wblockEnhanced = true;
@@ -504,7 +523,7 @@
 
         setupAutoPiP(video);
 
-        hideCustomOverlays(container);
+        hideContainerChrome(container, video, isPlayerShell(container));
 
         // Keep controls forced on
         guardNativeControls(video);
@@ -586,7 +605,7 @@
         var video = container.querySelector ? container.querySelector('video') : null;
         if (!video) { return; }
         if (video._wblockCleaned) {
-            hideCustomOverlays(container);
+            hideContainerChrome(container, video, isPlayerShell(container));
             return;
         }
 
@@ -878,11 +897,31 @@
         observeTreeRoot(document);
     }
 
+    // After all stylesheets have loaded, re-run chrome hiding for enhanced
+    // videos.  At DOMContentLoaded some positioned overlays may not yet have
+    // their final computed styles (external CSS not yet applied), so the
+    // conservative sweep can miss them.  The load event guarantees styles are
+    // resolved, letting isPlayerShell() and the position checks work correctly.
+    function rehideChrome() {
+        var videos = document.querySelectorAll('video[' + ATTR_DONE + ']');
+        for (var i = 0; i < videos.length; i++) {
+            var v = videos[i];
+            if (!v._wblockEnhanced && !v._wblockCleaned) continue;
+            var c = v.parentElement;
+            if (!c) continue;
+            hideContainerChrome(c, v, isPlayerShell(c));
+        }
+    }
+
     // Start at document-start. DOMContentLoaded/load scans are recovery passes
     // only; normal players are handled by the pre-paint MutationObservers.
     boot();
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () { scanAllRoots(true); }, { once: true });
-        window.addEventListener('load', function () { scanAllRoots(true); }, { once: true });
+        window.addEventListener('load', function () { scanAllRoots(true); rehideChrome(); }, { once: true });
+    } else {
+        // document-start already passed (e.g. injected late); schedule a
+        // one-time rehide after load in case stylesheets are still pending.
+        window.addEventListener('load', function () { rehideChrome(); }, { once: true });
     }
 })();

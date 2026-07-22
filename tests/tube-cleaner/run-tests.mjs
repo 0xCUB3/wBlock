@@ -909,6 +909,11 @@ async function qualityUISelectionCheck(page, scenario) {
     return { pass: ok, detail: c ? `attr=${c.getAttribute('data-wblock-player-cleaner')}` : 'no container' };
   });
 
+  await check(page, S, 'hides positioned custom chrome in bare wrapper', () => {
+    const bar = document.querySelector('#bare-enhance .custom-bar');
+    return { pass: !!(bar && bar.style.display === 'none'), detail: bar ? `display=${bar.style.display}` : 'no bar' };
+  });
+
   await check(page, S, 'bare enhanced video keeps its (opaque) source', () => {
     const v = document.querySelector('#bare-enhance video');
     const ok = !!(v && (v.src || '').indexOf('blob:') === 0);
@@ -960,12 +965,13 @@ async function qualityUISelectionCheck(page, scenario) {
   await browser.close();
 }
 
-// ---- Scenario: Player Cleaner LinkedIn Artdeco player ----------------------
-// LinkedIn wraps videos in .artdeco-video-player with custom overlay and
-// control-bar elements. Player Cleaner must detect the wrapper, hide the
-// custom chrome, and force native controls.
+// ---- Scenario: Player Cleaner unknown player (generic chrome hiding) --------
+// A player whose wrapper class is NOT in Player Cleaner's known-library list.
+// The container has position:relative, so the generic chrome hider treats it
+// as a player shell and aggressively hides all non-video chrome.  This proves
+// the approach works for any site without hardcoded selectors.
 {
-  const { browser, page, pageErrors } = await runScenario('Player Cleaner (LinkedIn Artdeco player)', {
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (unknown player, generic chrome hiding)', {
     fixture: FIXTURE_PLAYER_ARTDECO_URL,
     scriptSource: playerUserscript,
     readySignal: '[data-wblock-player-cleaner]',
@@ -974,36 +980,36 @@ async function qualityUISelectionCheck(page, scenario) {
   const S = 'player-cleaner-artdeco';
 
   await check(page, S, 'forces video.controls === true', () => {
-    const v = document.querySelector('.artdeco-video-player video');
+    const v = document.querySelector('.xq7-player-shell video');
     return { pass: !!(v && v.controls === true), detail: v ? `controls=${v.controls}` : 'no video' };
   });
 
   await check(page, S, 'marks video and container done', () => {
-    const v = document.querySelector('.artdeco-video-player video');
-    const c = document.querySelector('.artdeco-video-player');
+    const v = document.querySelector('.xq7-player-shell video');
+    const c = document.querySelector('.xq7-player-shell');
     const ok = !!(v && v.getAttribute('data-wblock-player-cleaner') === '1' &&
       c && c.getAttribute('data-wblock-player-cleaner') === '1');
     return { pass: ok, detail: `video=${v && v.getAttribute('data-wblock-player-cleaner')} container=${c && c.getAttribute('data-wblock-player-cleaner')}` };
   });
 
-  await check(page, S, 'hides Artdeco controls container', () => {
-    const el = document.querySelector('.artdeco-video-player__controls-container');
+  await check(page, S, 'hides unknown controls wrapper', () => {
+    const el = document.querySelector('.xq7-controls-wrap');
     return { pass: !!(el && el.style.display === 'none'), detail: el ? `display=${el.style.display}` : 'no element' };
   });
 
-  await check(page, S, 'hides Artdeco overlay', () => {
-    const el = document.querySelector('.artdeco-video-player__overlay');
+  await check(page, S, 'hides unknown overlay', () => {
+    const el = document.querySelector('.xq7-overlay');
     return { pass: !!(el && el.style.display === 'none'), detail: el ? `display=${el.style.display}` : 'no element' };
   });
 
-  await check(page, S, 'hides Artdeco controls bar', () => {
-    const el = document.querySelector('.artdeco-video-player__controls');
+  await check(page, S, 'hides unknown controls bar', () => {
+    const el = document.querySelector('.xq7-controls-bar');
     return { pass: !!(el && el.style.display === 'none'), detail: el ? `display=${el.style.display}` : 'no element' };
   });
 
   await page.waitForTimeout(4200);
   await check(page, S, 'native controls SURVIVE player turning them off', () => {
-    const v = document.querySelector('.artdeco-video-player video');
+    const v = document.querySelector('.xq7-player-shell video');
     if (!v) return { pass: false, detail: 'no video' };
     const hasAttr = v.hasAttribute('controls');
     return { pass: hasAttr, detail: `hasAttribute('controls')=${hasAttr} (getter=${v.controls})` };
