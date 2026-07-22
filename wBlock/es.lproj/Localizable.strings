@@ -826,6 +826,7 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Ships with the app" = "Se incluye con la app";
 
 "Filters and scripts applied successfully." = "Filters and scripts applied successfully.";
+"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Converted rules, but one or more extensions failed to reload after 5 attempts.";
 "Downloading selected updates..." = "Downloading selected updates...";
 "%d update(s) available" = "%d update(s) available";
 "%d update(s) found" = "%d update(s) found";

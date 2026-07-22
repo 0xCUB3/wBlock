@@ -833,6 +833,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Ships with the app" = "Uygulama ile birlikte gelir";
 
 "Filters and scripts applied successfully." = "Filters and scripts applied successfully.";
+"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Converted rules, but one or more extensions failed to reload after 5 attempts.";
 "Downloading selected updates..." = "Downloading selected updates...";
 "%d update(s) available" = "%d update(s) available";
 "%d update(s) found" = "%d update(s) found";

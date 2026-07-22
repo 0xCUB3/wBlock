@@ -628,18 +628,35 @@ extension AppFilterManager {
         await MainActor.run {
             self.progress = 1.0
             self.applyProgressViewModel.updateProgress(1.0)
+            self.isLoading = false
+
+            // Hard failure already presented (e.g. advanced engine). Keep that terminal state.
+            if self.applyProgressViewModel.state.mode == .failed {
+                self.applyProgressViewModel.updateIsLoading(false)
+                return
+            }
 
             let advancedEngineAvailable = advancedEngineSucceeded && !self.hasError
+            var resultWarning: String?
+
             if allReloadsSuccessful && advancedEngineAvailable {
                 self.statusDescription =
                     "Applied rules to \(filtersByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules. Advanced engine: \(advancedEngineStatus)."
                 self.markCurrentStateApplied()
-            } else if advancedEngineAvailable {
-                self.statusDescription =
-                    "Converted rules, but one or more extensions failed to reload after 5 attempts. Advanced engine: \(advancedEngineStatus)."
+            } else if !allReloadsSuccessful {
+                // Prefer the concrete reload failure names when available.
+                if self.statusDescription.lowercased().contains("failed to reload") {
+                    resultWarning = self.statusDescription
+                } else {
+                    resultWarning = LocalizedStrings.text(
+                        "Converted rules, but one or more extensions failed to reload after 5 attempts.",
+                        comment: "Apply pipeline partial reload failure warning"
+                    )
+                    self.statusDescription = resultWarning ?? self.statusDescription
+                }
+            } else if !advancedEngineAvailable {
+                resultWarning = self.statusDescription
             }
-
-            self.isLoading = false
 
             let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: self.currentPlatform)
             let ruleCountsByBlocker = Dictionary(
@@ -660,7 +677,8 @@ extension AppFilterManager {
                 reloadTime: self.lastReloadTime,
                 ruleCountsByBlocker: ruleCountsByBlocker,
                 blockersApproachingLimit: blockersApproachingLimit,
-                statusMessage: self.statusDescription
+                statusMessage: self.statusDescription,
+                resultWarning: resultWarning
             )
             self.applyProgressViewModel.updateIsLoading(false)
         }

@@ -826,6 +826,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Ships with the app" = "Livrat odată cu aplicația";
 
 "Filters and scripts applied successfully." = "Filters and scripts applied successfully.";
+"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Converted rules, but one or more extensions failed to reload after 5 attempts.";
 "Downloading selected updates..." = "Downloading selected updates...";
 "%d update(s) available" = "%d update(s) available";
 "%d update(s) found" = "%d update(s) found";

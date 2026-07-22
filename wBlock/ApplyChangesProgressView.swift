@@ -336,6 +336,13 @@ struct ApplyChangesProgressView: View {
                 )
             }
 
+            if !viewModel.state.resultWarning.isEmpty {
+                Label(viewModel.state.resultWarning, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             if viewModel.state.scriptsFailedCount > 0 {
                 Label(
                     String.localizedStringWithFormat(

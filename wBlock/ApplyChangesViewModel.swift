@@ -82,6 +82,8 @@ struct ApplyChangesState: Equatable {
     var progress: Double = 0
     var statusMessage: String = ""
     var failureMessage: String = ""
+    /// Non-fatal issues shown on the result screen (reload failures, etc.).
+    var resultWarning: String = ""
     var currentFilterName: String = ""
     var scriptsUpdatedCount: Int = 0
     var scriptsFailedCount: Int = 0
@@ -245,7 +247,8 @@ class ApplyChangesViewModel: ObservableObject {
         reloadTime: String,
         ruleCountsByBlocker: [String: Int],
         blockersApproachingLimit: Set<String>,
-        statusMessage: String? = nil
+        statusMessage: String? = nil,
+        resultWarning: String? = nil
     ) {
         state.summary = ApplyChangesSummary(
             sourceRules: sourceRules,
@@ -255,13 +258,28 @@ class ApplyChangesViewModel: ObservableObject {
             ruleCountsByBlocker: ruleCountsByBlocker,
             blockersApproachingLimit: blockersApproachingLimit
         )
-        markAllPhasesComplete()
-        state.mode = .result
         state.isLoading = false
         state.progress = 1
-        state.failureMessage = ""
         lastProgressValue = 1
         lastProgressUpdate = Date()
+
+        // Never let a summary overwrite a hard failure (e.g. advanced engine publish failed).
+        if state.mode == .failed {
+            if let statusMessage, !statusMessage.isEmpty {
+                state.statusMessage = statusMessage
+            }
+            return
+        }
+
+        markAllPhasesComplete()
+        state.mode = .result
+        state.failureMessage = ""
+
+        if let resultWarning, !resultWarning.isEmpty {
+            state.resultWarning = resultWarning
+        } else {
+            state.resultWarning = ""
+        }
 
         if let statusMessage, !statusMessage.isEmpty {
             state.statusMessage = statusMessage
@@ -275,6 +293,7 @@ class ApplyChangesViewModel: ObservableObject {
         state.isLoading = false
         state.failureMessage = message
         state.statusMessage = message
+        state.resultWarning = ""
 
         if let activeIndex = state.phases.firstIndex(where: { $0.status == .active }) {
             var phases = state.phases
