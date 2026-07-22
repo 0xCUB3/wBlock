@@ -429,10 +429,6 @@ extension AppFilterManager {
             comment: "Essential filter reset status"
         )
 
-        await MainActor.run {
-            self.prepareApplyRunState()
-            showingApplyProgressSheet = true
-        }
         await applyChanges()
     }
 

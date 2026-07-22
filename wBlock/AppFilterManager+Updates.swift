@@ -89,65 +89,74 @@ extension AppFilterManager {
         filters selectedFilters: [FilterList],
         scripts selectedScripts: [UserScript]
     ) async {
-        prepareApplyRunState()
-        showingApplyProgressSheet = true
+        let started = await performExclusiveApply {
+            self.prepareApplyRunState()
+            self.showingApplyProgressSheet = true
 
-        applyProgressViewModel.updateStageDescription(
-            LocalizedStrings.text(
-                "Downloading selected updates...",
-                comment: "Selected update download status"
+            self.applyProgressViewModel.updateStageDescription(
+                LocalizedStrings.text(
+                    "Downloading selected updates...",
+                    comment: "Selected update download status"
+                )
             )
-        )
 
-        var successfullyUpdatedFilters: [FilterList] = []
-        if !selectedFilters.isEmpty {
-            successfullyUpdatedFilters = await filterUpdater.updateSelectedFilters(
-                selectedFilters,
-                progressCallback: { newProgress in
+            var successfullyUpdatedFilters: [FilterList] = []
+            if !selectedFilters.isEmpty {
+                successfullyUpdatedFilters = await self.filterUpdater.updateSelectedFilters(
+                    selectedFilters,
+                    progressCallback: { newProgress in
+                        Task { @MainActor in
+                            self.progress = newProgress * 0.2
+                            self.applyProgressViewModel.updateProgress(Float(newProgress * 0.2))
+                        }
+                    }
+                )
+
+                self.saveFilterListsCoalesced()
+
+                for filter in successfullyUpdatedFilters {
+                    self.availableUpdates.removeAll { $0.id == filter.id }
+                }
+            }
+
+            var successfullyUpdatedScripts: [UserScript] = []
+            if !selectedScripts.isEmpty {
+                successfullyUpdatedScripts = await self.filterUpdater.updateSelectedScripts(selectedScripts) {
+                    newProgress in
                     Task { @MainActor in
-                        self.progress = newProgress * 0.2
-                        self.applyProgressViewModel.updateProgress(Float(newProgress * 0.2))
+                        // Keep some headroom for the shared apply pipeline after downloads.
+                        let mapped = 0.2 + (newProgress * 0.1)
+                        self.progress = mapped
+                        self.applyProgressViewModel.updateProgress(mapped)
                     }
                 }
-            )
 
-            saveFilterListsCoalesced()
+                let updatedIDs = Set(successfullyUpdatedScripts.map(\.id))
+                self.availableScriptUpdates.removeAll { updatedIDs.contains($0.id) }
 
-            for filter in successfullyUpdatedFilters {
-                availableUpdates.removeAll { $0.id == filter.id }
-            }
-        }
-
-        var successfullyUpdatedScripts: [UserScript] = []
-        if !selectedScripts.isEmpty {
-            successfullyUpdatedScripts = await filterUpdater.updateSelectedScripts(selectedScripts) {
-                newProgress in
-                Task { @MainActor in
-                    // Keep some headroom for the shared apply pipeline after downloads.
-                    let mapped = 0.2 + (newProgress * 0.1)
-                    self.progress = mapped
-                    self.applyProgressViewModel.updateProgress(mapped)
-                }
+                let failedCount = selectedScripts.count - successfullyUpdatedScripts.count
+                self.applyProgressViewModel.updateScriptsUpdateResult(
+                    updated: successfullyUpdatedScripts.count,
+                    failed: max(0, failedCount)
+                )
             }
 
-            let updatedIDs = Set(successfullyUpdatedScripts.map(\.id))
-            availableScriptUpdates.removeAll { updatedIDs.contains($0.id) }
-
-            let failedCount = selectedScripts.count - successfullyUpdatedScripts.count
-            applyProgressViewModel.updateScriptsUpdateResult(
-                updated: successfullyUpdatedScripts.count,
-                failed: max(0, failedCount)
+            self.applyProgressViewModel.updateUpdatesFound(
+                successfullyUpdatedFilters.count + successfullyUpdatedScripts.count
             )
+
+            // Continue into the normal apply pipeline (convert / save / reload).
+            // Keep the existing progress sheet state so review → progress feels continuous,
+            // and skip the automatic pre-apply update pass so the user's selection is respected.
+            await self.applyChanges(prepareState: false, skipPreApplyUpdates: true)
         }
 
-        applyProgressViewModel.updateUpdatesFound(
-            successfullyUpdatedFilters.count + successfullyUpdatedScripts.count
-        )
-
-        // Continue into the normal apply pipeline (convert / save / reload).
-        // Keep the existing progress sheet state so review → progress feels continuous,
-        // and skip the automatic pre-apply update pass so the user's selection is respected.
-        await applyChanges(prepareState: false, skipPreApplyUpdates: true)
+        if !started {
+            statusDescription = LocalizedStrings.text(
+                "Apply already in progress.",
+                comment: "Apply pipeline concurrency guard status"
+            )
+        }
     }
 
     func downloadAndApplySelectedFilters(_ selectedFilters: [FilterList], showProgressSheet: Bool = false) async {
@@ -156,28 +165,41 @@ extension AppFilterManager {
             return
         }
 
-        isLoading = true
-        progress = 0
+        let started = await performExclusiveApply {
+            self.isLoading = true
+            self.progress = 0
 
-        let successfullyUpdatedFilters = await filterUpdater.updateSelectedFilters(
-            selectedFilters,
-            progressCallback: { newProgress in
-                Task { @MainActor in
-                    self.progress = newProgress
+            let successfullyUpdatedFilters = await self.filterUpdater.updateSelectedFilters(
+                selectedFilters,
+                progressCallback: { newProgress in
+                    Task { @MainActor in
+                        self.progress = newProgress
+                    }
                 }
+            )
+
+            self.saveFilterListsCoalesced()
+
+            for filter in successfullyUpdatedFilters {
+                self.availableUpdates.removeAll { $0.id == filter.id }
             }
-        )
 
-        saveFilterListsCoalesced()
+            self.progress = 0
 
-        for filter in successfullyUpdatedFilters {
-            availableUpdates.removeAll { $0.id == filter.id }
+            // Already inside the exclusive session; avoid re-acquiring the lock.
+            self.prepareApplyRunState()
+            await self.applyChanges(prepareState: false, skipPreApplyUpdates: false)
         }
 
-        isLoading = false
-        progress = 0
-
-        await applyChanges()
+        if !started {
+            statusDescription = LocalizedStrings.text(
+                "Apply already in progress.",
+                comment: "Apply pipeline concurrency guard status"
+            )
+        } else {
+            isLoading = false
+            progress = 0
+        }
     }
 
     func downloadMissingItemsSilently() async {

@@ -72,10 +72,64 @@ extension AppFilterManager {
 
     // MARK: - Delegated methods
 
+    /// Runs apply-related work exclusively. Concurrent callers are skipped.
+    @discardableResult
+    func performExclusiveApply(_ work: () async -> Void) async -> Bool {
+        if isApplyInFlight {
+            await ConcurrentLogManager.shared.warning(
+                .filterApply,
+                LocalizedStrings.text(
+                    "Skipped overlapping apply request",
+                    comment: "Apply pipeline concurrency guard"
+                ),
+                metadata: [:]
+            )
+            return false
+        }
+
+        isApplyInFlight = true
+        defer { isApplyInFlight = false }
+        await work()
+        return true
+    }
+
     func applyChanges(
         allowUserInteraction: Bool = false,
         prepareState: Bool = true,
         skipPreApplyUpdates: Bool = false
+    ) async {
+        // When prepareState is false, the caller already holds the exclusive apply session
+        // (e.g. selected-update download → apply).
+        if prepareState {
+            let started = await performExclusiveApply {
+                await self.applyChangesUnlocked(
+                    allowUserInteraction: allowUserInteraction,
+                    prepareState: true,
+                    skipPreApplyUpdates: skipPreApplyUpdates
+                )
+            }
+            if !started {
+                await MainActor.run {
+                    // Avoid leaving the UI stuck in a loading state if a second apply was requested.
+                    if self.isLoading && !self.showingApplyProgressSheet {
+                        self.isLoading = false
+                    }
+                }
+            }
+            return
+        }
+
+        await applyChangesUnlocked(
+            allowUserInteraction: allowUserInteraction,
+            prepareState: false,
+            skipPreApplyUpdates: skipPreApplyUpdates
+        )
+    }
+
+    private func applyChangesUnlocked(
+        allowUserInteraction: Bool,
+        prepareState: Bool,
+        skipPreApplyUpdates: Bool
     ) async {
         suppressBlockingOverlay = allowUserInteraction
         defer { suppressBlockingOverlay = false }
@@ -790,43 +844,57 @@ extension AppFilterManager {
     /// When resuming: clears the flag and runs the standard apply pipeline to rebuild
     /// and reload the real rule sets.
     func setBlockingPaused(_ paused: Bool) async {
-        BlockingPauseStore.setPaused(paused)
-        await MainActor.run { self.isBlockingPaused = paused }
-
         if paused {
-            await MainActor.run {
-                self.statusDescription = LocalizedStrings.text(
-                    "Pausing blocking...",
-                    comment: "Apply pipeline pause status"
-                )
-                self.applyProgressViewModel.updateStageDescription(
-                    LocalizedStrings.text(
-                        "Pausing blocking...",
-                        comment: "Apply pipeline stage"
-                    )
-                )
-                self.applyProgressViewModel.updatePhaseCompletion(
-                    updating: true,
-                    scripts: true
-                )
-            }
-            let cleared = await clearAllExtensionsAndEngine()
-            await MainActor.run {
-                self.lastRuleCount = 0
-                self.ruleCountsByExtension.removeAll()
-                self.extensionsApproachingLimit.removeAll()
-                self.saveRuleCounts()
-                self.isLoading = false
-                self.showingApplyProgressSheet = false
-                if cleared {
-                    self.markCurrentStateApplied()
+            let started = await performExclusiveApply {
+                BlockingPauseStore.setPaused(true)
+                await MainActor.run { self.isBlockingPaused = true }
+
+                await MainActor.run {
                     self.statusDescription = LocalizedStrings.text(
-                        "Blocking paused",
+                        "Pausing blocking...",
                         comment: "Apply pipeline pause status"
                     )
+                    self.applyProgressViewModel.updateStageDescription(
+                        LocalizedStrings.text(
+                            "Pausing blocking...",
+                            comment: "Apply pipeline stage"
+                        )
+                    )
+                    self.applyProgressViewModel.updatePhaseCompletion(
+                        updating: true,
+                        scripts: true
+                    )
+                }
+                let cleared = await self.clearAllExtensionsAndEngine()
+                await MainActor.run {
+                    self.lastRuleCount = 0
+                    self.ruleCountsByExtension.removeAll()
+                    self.extensionsApproachingLimit.removeAll()
+                    self.saveRuleCounts()
+                    self.isLoading = false
+                    self.showingApplyProgressSheet = false
+                    if cleared {
+                        self.markCurrentStateApplied()
+                        self.statusDescription = LocalizedStrings.text(
+                            "Blocking paused",
+                            comment: "Apply pipeline pause status"
+                        )
+                    }
                 }
             }
+            if !started {
+                await ConcurrentLogManager.shared.warning(
+                    .filterApply,
+                    LocalizedStrings.text(
+                        "Skipped pause request while apply is in progress",
+                        comment: "Apply pipeline concurrency guard"
+                    ),
+                    metadata: [:]
+                )
+            }
         } else {
+            BlockingPauseStore.setPaused(false)
+            await MainActor.run { self.isBlockingPaused = false }
             await applyChanges()
             await MainActor.run {
                 self.statusDescription = LocalizedStrings.text(
@@ -854,34 +922,47 @@ extension AppFilterManager {
     public func downloadAndApplyFilters(filters: [FilterList], progress: @escaping (Float) -> Void)
         async
     {
-        isLoading = true
-        hasError = false
-        statusDescription = LocalizedStrings.text("Downloading filter lists...", comment: "Apply pipeline status")
-        progress(0)
+        let started = await performExclusiveApply {
+            self.isLoading = true
+            self.hasError = false
+            self.statusDescription = LocalizedStrings.text(
+                "Downloading filter lists...",
+                comment: "Apply pipeline status"
+            )
+            progress(0)
 
-        // Download selected filters using existing updater logic
-        let _ = await filterUpdater.updateSelectedFilters(
-            filters,
-            progressCallback: { prog in
-                Task { @MainActor in
-                    self.progress = Float(prog)
-                    progress(Float(prog))
-                }
-            })
+            // Download selected filters using existing updater logic
+            let _ = await self.filterUpdater.updateSelectedFilters(
+                filters,
+                progressCallback: { prog in
+                    Task { @MainActor in
+                        self.progress = Float(prog)
+                        progress(Float(prog))
+                    }
+                })
 
-        // Save after download
-        saveFilterListsCoalesced()
+            // Save after download
+            self.saveFilterListsCoalesced()
 
-        // Apply changes (conversion, reload, etc)
-        statusDescription = LocalizedStrings.text(
-            "Applying filters...\n(This may take a while)",
-            comment: "Apply pipeline filter application status"
-        )
-        await applyChanges()
+            // Apply changes (conversion, reload, etc)
+            self.statusDescription = LocalizedStrings.text(
+                "Applying filters...\n(This may take a while)",
+                comment: "Apply pipeline filter application status"
+            )
+            await self.applyChangesUnlocked(
+                allowUserInteraction: false,
+                prepareState: true,
+                skipPreApplyUpdates: false
+            )
 
-        isLoading = false
-        progress(1)
-        statusDescription = LocalizedStrings.text("Ready.", comment: "Filter manager idle status")
+            self.isLoading = false
+            progress(1)
+            self.statusDescription = LocalizedStrings.text("Ready.", comment: "Filter manager idle status")
+        }
+
+        if !started {
+            progress(1)
+        }
     }
 
     // MARK: - Static helpers

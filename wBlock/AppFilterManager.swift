@@ -51,6 +51,9 @@ class AppFilterManager: ObservableObject {
     // New ViewModel-based progress tracking
     @Published var applyProgressViewModel = ApplyChangesViewModel()
 
+    /// Ensures only one apply/update pipeline runs at a time across entry points.
+    var isApplyInFlight = false
+
     // Internal counters used for apply-run summary/progress math.
     var sourceRulesCount: Int = 0
     var processedFiltersCount: Int = 0
@@ -453,13 +456,31 @@ class AppFilterManager: ObservableObject {
         if !missingFilters.isEmpty || !missingUserScripts.isEmpty || forceReload
             || hasUnappliedChanges
         {
-            prepareApplyRunState()
-            showingApplyProgressSheet = true
             Task {
-                if !missingFilters.isEmpty || !missingUserScripts.isEmpty {
-                    await downloadMissingItemsSilently()
+                let started = await self.performExclusiveApply {
+                    self.prepareApplyRunState()
+                    self.showingApplyProgressSheet = true
+
+                    if !self.missingFilters.isEmpty || !self.missingUserScripts.isEmpty {
+                        await self.downloadMissingItemsSilently()
+                    }
+
+                    await self.applyChanges(
+                        prepareState: false,
+                        skipPreApplyUpdates: false
+                    )
                 }
-                await applyChanges()
+
+                if !started {
+                    await ConcurrentLogManager.shared.warning(
+                        .filterApply,
+                        LocalizedStrings.text(
+                            "Skipped overlapping apply request",
+                            comment: "Apply pipeline concurrency guard"
+                        ),
+                        metadata: ["entry": "checkAndEnableFilters"]
+                    )
+                }
             }
         }
     }

@@ -835,3 +835,6 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Something went wrong while applying changes." = "Something went wrong while applying changes.";
 "%d script update(s) failed" = "%d script update(s) failed";
 "Updated %d, %d failed" = "Updated %d, %d failed";
+"Skipped overlapping apply request" = "Skipped overlapping apply request";
+"Skipped pause request while apply is in progress" = "Skipped pause request while apply is in progress";
+"Apply already in progress." = "Apply already in progress.";
