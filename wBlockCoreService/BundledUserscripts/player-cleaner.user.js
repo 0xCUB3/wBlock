@@ -2,16 +2,16 @@
 // @name         Player Cleaner
 // @namespace    com.skula.wblock
 // @version      0.1.0
-// @description  Replaces custom video players on websites (other than YouTube) with a clean HTML5 video element, restoring native controls, Picture-in-Picture, auto PiP, and background playback. Disable it per site from the wBlock toolbar if a player misbehaves.
-// @description:de  Ersetzt benutzerdefinierte Video-Player auf Websites (außer YouTube) durch ein sauberes HTML5-Videoelement und stellt native Steuerelemente, Bild-in-Bild, automatisches PiP und Hintergrundwiedergabe wieder her. Deaktivieren Sie ihn bei Problemen pro Website in der wBlock-Symbolleiste.
-// @description:es  Reemplaza los reproductores de vídeo personalizados en sitios web (distintos de YouTube) con un elemento de vídeo HTML5 limpio, restaurando los controles nativos, Picture-in-Picture, PiP automático y reproducción en segundo plano. Desactívelo por sitio desde la barra de herramientas de wBlock si un reproductor falla.
-// @description:fr  Remplace les lecteurs vidéo personnalisés des sites web (autres que YouTube) par un élément vidéo HTML5 propre, en restaurant les commandes natives, l'image dans l'image, le PiP automatique et la lecture en arrière-plan. Désactivez-le par site depuis la barre d'outils wBlock si un lecteur se comporte mal.
-// @description:it  Sostituisce i lettori video personalizzati sui siti web (diversi da YouTube) con un elemento video HTML5 pulito, ripristinando i controlli nativi, Picture-in-Picture, PiP automatico e riproduzione in background. Disattivalo per sito dalla barra degli strumenti di wBlock se un lettore non funziona.
-// @description:pt-BR  Substitui players de vídeo personalizados em sites (diferentes do YouTube) por um elemento de vídeo HTML5 limpo, restaurando os controles nativos, Picture-in-Picture, PiP automático e reprodução em segundo plano. Desative-o por site na barra de ferramentas do wBlock se um player se comportar mal.
-// @description:ja  YouTube以外のWebサイトのカスタム動画プレーヤーをクリーンなHTML5 video要素に置き換え、ネイティブコントロール、ピクチャー・イン・ピクチャー、自動PiP、バックグラウンド再生を復元します。プレーヤーが誤動作する場合は、wBlockツールバーからサイトごとに無効にできます。
-// @description:ko  YouTube 이외의 웹사이트에서 사용자 지정 동영상 플레이어를 깨끗한 HTML5 video 요소로 대체하여 네이티브 컨트롤, PIP, 자동 PIP, 백그라운드 재생을 복원합니다. 플레이어가 오작동하면 wBlock 도구 막대에서 사이트별로 비활성화하세요.
-// @description:ru  Заменяет пользовательские видеоплееры на сайтах (кроме YouTube) чистым HTML5-элементом video, восстанавливая нативные элементы управления, картинку-в-картинке, автоматический PiP и фоновое воспроизведение. Отключите его для сайта на панели wBlock, если плеер работает некорректно.
-// @description:zh-Hans  将网站（YouTube 除外）上的自定义视频播放器替换为干净的 HTML5 video 元素，恢复原生控件、画中画、自动画中画和后台播放。如果某个播放器出现问题，可从 wBlock 工具栏按网站停用。
+// @description  Gives custom web players native controls, auto PiP, background playback, restored subtitle and chapter tracks, Now Playing metadata, and remembered playback preferences.
+// @description:de  Bietet Web-Playern native Steuerelemente, Auto-PiP, Hintergrundwiedergabe, wiederhergestellte Untertitel und Kapitel, Now-Playing-Metadaten und gespeicherte Wiedergabeeinstellungen.
+// @description:es  Añade a los reproductores web controles nativos, PiP automático, reproducción en segundo plano, subtítulos y capítulos restaurados, metadatos Now Playing y preferencias recordadas.
+// @description:fr  Ajoute aux lecteurs web les commandes natives, le PiP automatique, la lecture en arrière-plan, les sous-titres et chapitres restaurés, les métadonnées À l’écoute et les préférences mémorisées.
+// @description:it  Aggiunge ai player web controlli nativi, PiP automatico, riproduzione in background, sottotitoli e capitoli ripristinati, metadati Now Playing e preferenze memorizzate.
+// @description:pt-BR  Adiciona aos players web controles nativos, PiP automático, reprodução em segundo plano, legendas e capítulos restaurados, metadados Reproduzindo Agora e preferências lembradas.
+// @description:ja  Webプレーヤーにネイティブコントロール、自動PiP、バックグラウンド再生、字幕とチャプターの復元、再生中メタデータ、記憶される再生設定を追加します。
+// @description:ko  웹 플레이어에 네이티브 컨트롤, 자동 PIP, 백그라운드 재생, 자막과 챕터 복원, Now Playing 메타데이터 및 재생 환경설정 저장을 추가합니다.
+// @description:ru  Добавляет веб-плеерам нативные элементы управления, авто-PiP, фоновое воспроизведение, восстановленные субтитры и главы, метаданные «Исполняется» и сохранение настроек.
+// @description:zh-Hans  为网页播放器添加原生控件、自动画中画、后台播放、恢复的字幕和章节、正在播放元数据以及记忆的播放偏好。
 // @author       wBlock
 // @match        http://*/*
 // @match        https://*/*
@@ -50,6 +50,8 @@
 
     var LOG_PREFIX = '[Player Cleaner]';
     var ATTR_DONE = 'data-wblock-player-cleaner';
+    var PREFERENCES_KEY = 'wblock.playerCleaner.preferences';
+    var RESUME_KEY = 'wblock.playerCleaner.resume';
 
     // ------------------------------------------------------------------
     // Background playback — keep videos playing in background tabs
@@ -90,6 +92,7 @@
     document.addEventListener('visibilitychange', updateRealVisibility);
 
     function enableBackgroundPlayback() {
+        if (loadPlaybackPreferences().backgroundPlayback === false) return;
         try {
             Object.defineProperty(document, 'hidden', {
                 get: function () { return false; },
@@ -170,6 +173,8 @@
         video._wblockEnhanced = false;
         video._wblockUpgradeable = false;
         video._wblockCleaned = false;
+        video._wblockPreferencesHooked = false;
+        video._wblockMediaSessionHooked = false;
         try { video.removeAttribute(ATTR_DONE); } catch (e) { /* ignore */ }
     }
 
@@ -297,6 +302,283 @@
             var resolved = new URL(v, document.baseURI).href;
             return isHttpUrl(resolved) ? resolved : null;
         } catch (e) { return null; }
+    }
+
+    // ------------------------------------------------------------------
+    // Playback preferences, native tracks, and system media integration
+    // ------------------------------------------------------------------
+
+    function loadPlaybackPreferences() {
+        // Null media values mean "preserve the site's current state" until the
+        // user changes that control in a cleaned player for the first time.
+        var defaults = { playbackRate: null, volume: null, muted: null,
+            subtitleLanguage: '', backgroundPlayback: true };
+        try {
+            var saved = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || '{}');
+            for (var key in saved) if (Object.prototype.hasOwnProperty.call(defaults, key)) defaults[key] = saved[key];
+        } catch (e) { /* use defaults */ }
+        return defaults;
+    }
+
+    function savePlaybackPreference(key, value) {
+        try {
+            var preferences = loadPlaybackPreferences();
+            preferences[key] = value;
+            localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
+        } catch (e) { /* ignore */ }
+    }
+
+    function resumeIdentity(video) {
+        var pageIdentity = location.origin + location.pathname + location.search;
+        try {
+            var canonical = document.querySelector('link[rel="canonical"]');
+            if (canonical && canonical.href) pageIdentity = canonical.href;
+        } catch (e) { /* ignore */ }
+        // Distinguish multiple independent players on one page without retaining
+        // expiring CDN signatures or query tokens. Opaque MSE streams fall back
+        // to the canonical page URL, which is normally their stable identity.
+        try {
+            var source = sourceFromVideoElement(video);
+            if (source && source.indexOf('blob:') !== 0) {
+                var parsed = new URL(source, location.href);
+                return pageIdentity + '|' + parsed.origin + parsed.pathname;
+            }
+        } catch (e) { /* ignore */ }
+        return pageIdentity;
+    }
+
+    function setupPlaybackPreferences(video) {
+        if (!video || video._wblockPreferencesHooked) return;
+        video._wblockPreferencesHooked = true;
+        var preferences = loadPlaybackPreferences();
+        var applying = true;
+        var lastResumeSave = 0;
+        var resumeApplied = false;
+
+        if (typeof preferences.playbackRate === 'number' && preferences.playbackRate > 0) try {
+            video.playbackRate = Math.max(0.25, Math.min(4, preferences.playbackRate));
+        } catch (e) { /* ignore */ }
+        if (typeof preferences.volume === 'number') try {
+            video.volume = Math.max(0, Math.min(1, preferences.volume));
+        } catch (e) { /* ignore */ }
+        if (typeof preferences.muted === 'boolean') try { video.muted = preferences.muted; } catch (e) { /* ignore */ }
+        setTimeout(function () { applying = false; }, 0);
+
+        function applySubtitlePreference() {
+            var language = loadPlaybackPreferences().subtitleLanguage;
+            if (!language || !video.textTracks) return;
+            for (var i = 0; i < video.textTracks.length; i++) {
+                var track = video.textTracks[i];
+                if (track.kind !== 'subtitles' && track.kind !== 'captions') continue;
+                if (track.language === language) {
+                    try { track.mode = 'showing'; } catch (e) { /* ignore */ }
+                    return;
+                }
+            }
+        }
+
+        function restoreResumePosition() {
+            if (resumeApplied || !isFinite(video.duration) || video.duration < 60) return;
+            resumeApplied = true;
+            try {
+                var entries = JSON.parse(localStorage.getItem(RESUME_KEY) || '{}');
+                var position = Number(entries[resumeIdentity(video)] || 0);
+                if (position > 10 && position < video.duration - 15) video.currentTime = position;
+            } catch (e) { /* ignore */ }
+            applySubtitlePreference();
+        }
+
+        function saveResumePosition(force) {
+            var now = Date.now();
+            if (!force && now - lastResumeSave < 5000) return;
+            lastResumeSave = now;
+            try {
+                var entries = JSON.parse(localStorage.getItem(RESUME_KEY) || '{}');
+                var id = resumeIdentity(video);
+                if (video.ended || video.currentTime >= video.duration - 10) delete entries[id];
+                else if (video.currentTime > 10 && isFinite(video.duration) && video.duration >= 60) entries[id] = Math.floor(video.currentTime);
+                var keys = Object.keys(entries);
+                while (keys.length > 50) delete entries[keys.shift()];
+                localStorage.setItem(RESUME_KEY, JSON.stringify(entries));
+            } catch (e) { /* ignore */ }
+        }
+
+        function onRateChange() { if (!applying) savePlaybackPreference('playbackRate', video.playbackRate); }
+        function onVolumeChange() {
+            if (applying) return;
+            savePlaybackPreference('volume', video.volume);
+            savePlaybackPreference('muted', video.muted);
+        }
+        function onTextTrackChange() {
+            for (var i = 0; i < video.textTracks.length; i++) {
+                var track = video.textTracks[i];
+                if ((track.kind === 'subtitles' || track.kind === 'captions') && track.mode === 'showing') {
+                    savePlaybackPreference('subtitleLanguage', track.language || '');
+                    return;
+                }
+            }
+        }
+
+        video.addEventListener('loadedmetadata', restoreResumePosition);
+        video.addEventListener('durationchange', restoreResumePosition);
+        video.addEventListener('ratechange', onRateChange);
+        video.addEventListener('volumechange', onVolumeChange);
+        function onPauseOrEnded() { saveResumePosition(true); }
+        video.addEventListener('timeupdate', saveResumePosition);
+        video.addEventListener('pause', onPauseOrEnded);
+        video.addEventListener('ended', onPauseOrEnded);
+        if (video.textTracks) video.textTracks.addEventListener('change', onTextTrackChange);
+        restoreResumePosition();
+        registerVideoCleanup(video, function () {
+            saveResumePosition(true);
+            video.removeEventListener('loadedmetadata', restoreResumePosition);
+            video.removeEventListener('durationchange', restoreResumePosition);
+            video.removeEventListener('ratechange', onRateChange);
+            video.removeEventListener('volumechange', onVolumeChange);
+            video.removeEventListener('timeupdate', saveResumePosition);
+            video.removeEventListener('pause', onPauseOrEnded);
+            video.removeEventListener('ended', onPauseOrEnded);
+            if (video.textTracks) video.textTracks.removeEventListener('change', onTextTrackChange);
+        });
+    }
+
+    function appendNativeTrack(video, definition) {
+        if (!definition) return;
+        var source = toAbsoluteUrl(definition.src || definition.file);
+        if (!source || !isHttpUrl(source)) return;
+        var kind = String(definition.kind || 'subtitles').toLowerCase();
+        if (kind === 'captions') kind = 'subtitles';
+        if (kind !== 'subtitles' && kind !== 'chapters' && kind !== 'descriptions') return;
+        var existing = video.querySelectorAll('track');
+        for (var i = 0; i < existing.length; i++) if (existing[i].src === source) return;
+        var track = document.createElement('track');
+        track.kind = kind;
+        track.src = source;
+        track.label = definition.label || definition.name || definition.srclang || definition.language || kind;
+        if (definition.srclang || definition.language) track.srclang = definition.srclang || definition.language;
+        if (definition.default) track.default = true;
+        video.appendChild(track);
+    }
+
+    function recoverSidecarTracks(container, video) {
+        if (!container || !video) return;
+        try {
+            var domTracks = container.querySelectorAll('track[src]');
+            for (var i = 0; i < domTracks.length; i++) {
+                if (domTracks[i].parentNode !== video) appendNativeTrack(video, {
+                    src: domTracks[i].src, kind: domTracks[i].kind, label: domTracks[i].label,
+                    srclang: domTracks[i].srclang, default: domTracks[i].default
+                });
+            }
+        } catch (e) { /* ignore */ }
+        try {
+            if (window.jwplayer) {
+                var jw = window.jwplayer(container.id || container);
+                var item = jw && jw.getPlaylistItem ? jw.getPlaylistItem() : null;
+                var tracks = item && item.tracks || [];
+                for (var j = 0; j < tracks.length; j++) appendNativeTrack(video, tracks[j]);
+            }
+        } catch (e) { /* ignore */ }
+        try {
+            if (window.videojs && window.videojs.getPlayers) {
+                var players = window.videojs.getPlayers();
+                for (var id in players) {
+                    var player = players[id];
+                    var element = player && player.el ? player.el() : null;
+                    if (!element || !(container.contains(element) || element.contains(container))) continue;
+                    var source = player.currentSource ? player.currentSource() : null;
+                    var tracks = source && source.tracks || player.options_ && player.options_.tracks || [];
+                    for (var k = 0; k < tracks.length; k++) appendNativeTrack(video, tracks[k]);
+                }
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    var mediaSessionOwner = null;
+
+    function setupMediaSession(container, video) {
+        if (!video || video._wblockMediaSessionHooked || !navigator.mediaSession || typeof MediaMetadata === 'undefined') return;
+        video._wblockMediaSessionHooked = true;
+        function meta(name) {
+            var element = document.querySelector('meta[property="' + name + '"],meta[name="' + name + '"]');
+            return element && element.content || '';
+        }
+        function activate() {
+            if (navigator.mediaSession.metadata && mediaSessionOwner !== video) return;
+            mediaSessionOwner = video;
+            var title = meta('og:title') || document.title || location.hostname;
+            var artist = meta('og:site_name') || location.hostname;
+            var artworkURL = video.poster || meta('og:image');
+            var data = { title: title, artist: artist };
+            if (artworkURL) data.artwork = [{ src: artworkURL }];
+            try {
+                video._wblockMediaMetadata = new MediaMetadata(data);
+                navigator.mediaSession.metadata = video._wblockMediaMetadata;
+            } catch (e) { /* ignore */ }
+            var actions = {
+                play: function () {
+                    var request = video.play();
+                    if (request && request.catch) request.catch(function () {});
+                },
+                pause: function () { video.pause(); },
+                seekbackward: function (details) { video.currentTime = Math.max(0, video.currentTime - (details.seekOffset || 10)); },
+                seekforward: function (details) { video.currentTime = Math.min(video.duration || Infinity, video.currentTime + (details.seekOffset || 10)); },
+                seekto: function (details) { if (isFinite(details.seekTime)) video.currentTime = details.seekTime; }
+            };
+            try {
+                var jw = window.jwplayer && window.jwplayer(container.id || container);
+                var playlist = jw && jw.getPlaylist ? jw.getPlaylist() : null;
+                if (playlist && playlist.length > 1 && typeof jw.playlistItem === 'function' &&
+                    typeof jw.getPlaylistIndex === 'function') {
+                    actions.previoustrack = function () { jw.playlistItem(Math.max(0, jw.getPlaylistIndex() - 1)); };
+                    actions.nexttrack = function () { jw.playlistItem(Math.min(playlist.length - 1, jw.getPlaylistIndex() + 1)); };
+                }
+            } catch (e) { /* no JW playlist */ }
+            try {
+                if (!actions.nexttrack && window.videojs && window.videojs.getPlayers) {
+                    var players = window.videojs.getPlayers();
+                    for (var id in players) {
+                        var candidate = players[id];
+                        var element = candidate && candidate.el ? candidate.el() : null;
+                        if (!element || !(container.contains(element) || element.contains(container)) || !candidate.playlist) continue;
+                        if (typeof candidate.playlist.previous === 'function') actions.previoustrack = function () { candidate.playlist.previous(); };
+                        if (typeof candidate.playlist.next === 'function') actions.nexttrack = function () { candidate.playlist.next(); };
+                        break;
+                    }
+                }
+            } catch (e) { /* no video.js playlist plugin */ }
+            video._wblockMediaActions = Object.keys(actions);
+            for (var action in actions) try { navigator.mediaSession.setActionHandler(action, actions[action]); } catch (e) { /* unsupported action */ }
+        }
+        function updatePosition() {
+            if (mediaSessionOwner !== video || !navigator.mediaSession.setPositionState) return;
+            if (isFinite(video.duration) && video.duration > 0) try {
+                navigator.mediaSession.setPositionState({ duration: video.duration,
+                    playbackRate: video.playbackRate || 1,
+                    position: Math.max(0, Math.min(video.currentTime, video.duration)) });
+            } catch (e) { /* ignore transient media state */ }
+        }
+        video.addEventListener('play', activate);
+        video.addEventListener('timeupdate', updatePosition);
+        video.addEventListener('ratechange', updatePosition);
+        if (!video.paused) activate();
+        registerVideoCleanup(video, function () {
+            video.removeEventListener('play', activate);
+            video.removeEventListener('timeupdate', updatePosition);
+            video.removeEventListener('ratechange', updatePosition);
+            if (mediaSessionOwner === video) {
+                mediaSessionOwner = null;
+                try {
+                    if (navigator.mediaSession.metadata === video._wblockMediaMetadata)
+                        navigator.mediaSession.metadata = null;
+                } catch (e) { /* ignore */ }
+                video._wblockMediaMetadata = null;
+                (video._wblockMediaActions || []).forEach(function (action) {
+                    try { navigator.mediaSession.setActionHandler(action, null); } catch (e) { /* ignore */ }
+                });
+                video._wblockMediaActions = null;
+            }
+        });
     }
 
     // ------------------------------------------------------------------
@@ -521,7 +803,10 @@
             video.disablePictureInPicture = false;
         } catch (e) { /* ignore */ }
 
+        recoverSidecarTracks(container, video);
         setupAutoPiP(video);
+        setupPlaybackPreferences(video);
+        setupMediaSession(container, video);
 
         hideContainerChrome(container, video, isPlayerShell(container));
 
@@ -596,7 +881,10 @@
         video.style.height = '100%';
         video.style.background = '#000';
         forceNativeControls(video);
+        recoverSidecarTracks(container, video);
         setupAutoPiP(video);
+        setupPlaybackPreferences(video);
+        setupMediaSession(container, video);
         guardNativeControls(video);
         restorePlaybackState(video, state, sourceChanged);
     }

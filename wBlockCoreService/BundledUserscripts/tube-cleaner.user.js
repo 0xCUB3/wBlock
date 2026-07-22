@@ -2,16 +2,16 @@
 // @name         Tube Cleaner
 // @namespace    com.skula.wblock
 // @version      0.1.0
-// @description  Replaces the YouTube player with a native HTML video element using YouTube's stream. Removes ads, restores picture-in-picture, keeps videos playing in background tabs, and adds an audio-only mode.
-// @description:de  Ersetzt den YouTube-Player durch ein natives HTML-Videoelement mit YouTube-Stream. Entfernt Werbung, stellt Bild-in-Bild wieder her, hält Videos in Hintergrund-Tabs am Laufen und fügt einen Nur-Audio-Modus hinzu.
-// @description:es  Reemplaza el reproductor de YouTube con un elemento de video HTML nativo usando el stream de YouTube. Elimina anuncios, restaura picture-in-picture, mantiene los videos reproduciéndose en segundo plano y añade un modo de solo audio.
-// @description:fr  Remplace le lecteur YouTube par un élément vidéo HTML natif utilisant le flux YouTube. Supprime les publicités, restaure l'image dans l'image, garde les vidéos en lecture en arrière-plan et ajoute un mode audio seul.
-// @description:it  Sostituisce il lettore YouTube con un elemento video HTML nativo usando lo stream YouTube. Rimuove gli annunci, ripristina picture-in-picture, mantiene i video in riproduzione in background e aggiunge una modalità solo audio.
-// @description:pt-BR  Substitui o player do YouTube por um elemento de vídeo HTML nativo usando o stream do YouTube. Remove anúncios, restaura picture-in-picture, mantém vídeos em reprodução em segundo plano e adiciona modo somente áudio.
-// @description:ja  YouTubeのプレーヤーをネイティブHTMLビデオ要素に置き換え、YouTubeのストリームを使用します。広告を削除し、ピクチャーインピクチャーを復元し、バックグラウンドタブで動画を再生し続け、オーディオのみのモードを追加します。
-// @description:ko  YouTube 플레이어를 YouTube 스트림을 사용하는 네이티브 HTML 비디오 요소로 대체합니다. 광고를 제거하고, PIP를 복원하고, 백그라운드 탭에서 동영상 재생을 유지하고, 오디오 전용 모드를 추가합니다.
-// @description:ru  Заменяет плеер YouTube на нативный HTML-видеоэлемент, использующий поток YouTube. Удаляет рекламу, восстанавливает картинку-в-картинке, продолжает воспроизведение в фоновых вкладках и добавляет режим только аудио.
-// @description:zh-Hans  使用 YouTube 的流替换 YouTube 播放器为原生 HTML 视频元素。移除广告，恢复画中画，保持视频在后台标签页播放，并添加纯音频模式。
+// @description  Gives YouTube Safari-native controls, chapters, SponsorBlock skipping, picture-in-picture, background playback, quality selection, and audio-only mode.
+// @description:de  Bietet YouTube native Safari-Steuerelemente, Kapitel, SponsorBlock, Bild-in-Bild, Hintergrundwiedergabe, Qualitätsauswahl und einen Nur-Audio-Modus.
+// @description:es  Añade a YouTube controles nativos de Safari, capítulos, SponsorBlock, imagen en imagen, reproducción en segundo plano, selección de calidad y modo de solo audio.
+// @description:fr  Ajoute à YouTube les commandes natives de Safari, les chapitres, SponsorBlock, l’image dans l’image, la lecture en arrière-plan, le choix de qualité et le mode audio seul.
+// @description:it  Aggiunge a YouTube controlli nativi di Safari, capitoli, SponsorBlock, picture-in-picture, riproduzione in background, selezione qualità e modalità solo audio.
+// @description:pt-BR  Adiciona ao YouTube controles nativos do Safari, capítulos, SponsorBlock, picture-in-picture, reprodução em segundo plano, seleção de qualidade e modo somente áudio.
+// @description:ja  YouTubeにSafariネイティブのコントロール、チャプター、SponsorBlock、ピクチャ・イン・ピクチャ、バックグラウンド再生、画質選択、音声のみモードを追加します。
+// @description:ko  YouTube에 Safari 네이티브 컨트롤, 챕터, SponsorBlock, PIP, 백그라운드 재생, 화질 선택 및 오디오 전용 모드를 추가합니다.
+// @description:ru  Добавляет YouTube нативные элементы управления Safari, главы, SponsorBlock, картинку-в-картинке, фоновое воспроизведение, выбор качества и аудиорежим.
+// @description:zh-Hans  为 YouTube 添加 Safari 原生控件、章节、SponsorBlock 跳过、画中画、后台播放、画质选择和纯音频模式。
 // @author       wBlock
 // @match        https://www.youtube.com/*
 // @match        https://m.youtube.com/*
@@ -26,7 +26,7 @@
     'use strict';
 
     // ------------------------------------------------------------------
-    // Tube Cleaner v4.3.2
+    // Tube Cleaner v4.5.0
     //
     // Vinegar Extract approach: instead of trying to extract stream URLs
     // from the player response (which 403 due to SABR), we let YouTube's
@@ -564,6 +564,7 @@
         buildToolbar(player, video);
         setupAutoPiP(video);
         setupChapters(player, video);
+        setupSponsorBlock(player, video);
     }
 
     function restoreNativeMediaCapabilities(video) {
@@ -650,6 +651,252 @@
             if (!video.hasAttribute('playsinline')) { video.setAttribute('playsinline', ''); }
             if (!video.hasAttribute('webkit-playsinline')) { video.setAttribute('webkit-playsinline', ''); }
         } catch (e) { /* ignore */ }
+    }
+
+    // ------------------------------------------------------------------
+    // SponsorBlock
+    //
+    // Query SponsorBlock's k-anonymous endpoint with only five hexadecimal
+    // characters of the video's SHA-256 hash. The exact YouTube id never leaves
+    // the page; the returned bucket is filtered locally. Keep this deliberately
+    // focused on the standard sponsor category so enabling Tube Cleaner does not
+    // unexpectedly remove intros, outros, or other editorial content.
+    // ------------------------------------------------------------------
+
+    var SPONSORBLOCK_API = 'https://sponsor.ajay.app/api/skipSegments/';
+    var SPONSORBLOCK_SETTINGS_KEY = 'wblock.tubeCleaner.sponsorBlock';
+    var SPONSORBLOCK_CATEGORIES = [
+        { id: 'sponsor', color: '#00d400' },
+        { id: 'selfpromo', color: '#ffff00' },
+        { id: 'interaction', color: '#cc00ff' },
+        { id: 'intro', color: '#00ffff' },
+        { id: 'outro', color: '#0202ed' },
+        { id: 'preview', color: '#008fd6' },
+        { id: 'filler', color: '#7300ff' },
+        { id: 'music_offtopic', color: '#ff9900' }
+    ];
+    var sponsorBlockDisabledVideos = {};
+    var sponsorBlockSettingsCache = null;
+
+    function sponsorBlockLocale() {
+        var language = (navigator.language || 'en').toLowerCase().split('-')[0];
+        var english = {
+            title: 'SponsorBlock settings', enabled: 'Enable SponsorBlock', notice: 'Show Undo after automatic skips',
+            duration: 'Minimum segment length', current: 'Disable for this video', channel: 'Disable on this channel', reset: 'Reset defaults',
+            any: 'Any length', auto: 'Auto skip', ask: 'Show skip button', off: 'Disabled',
+            skipped: 'segment skipped', segment: 'segment', undo: 'Undo', skip: 'Skip',
+            names: ['Sponsor', 'Self-promotion', 'Interaction reminder', 'Intro', 'Outro', 'Preview or recap', 'Filler', 'Off-topic music']
+        };
+        var translations = {
+            de: { title:'SponsorBlock-Einstellungen',enabled:'SponsorBlock aktivieren',notice:'Rückgängig nach automatischem Überspringen anzeigen',duration:'Mindestlänge',current:'Für dieses Video deaktivieren',reset:'Zurücksetzen',any:'Beliebige Länge',auto:'Automatisch',ask:'Schaltfläche anzeigen',off:'Deaktiviert',skipped:'übersprungen',segment:'Segment',undo:'Rückgängig',skip:'Überspringen',names:['Sponsor','Eigenwerbung','Interaktionserinnerung','Intro','Outro','Vorschau oder Rückblick','Füllmaterial','Themenfremde Musik'] },
+            es: { title:'Ajustes de SponsorBlock',enabled:'Activar SponsorBlock',notice:'Mostrar Deshacer tras saltos automáticos',duration:'Duración mínima',current:'Desactivar para este vídeo',reset:'Restablecer',any:'Cualquier duración',auto:'Saltar automáticamente',ask:'Mostrar botón',off:'Desactivado',skipped:'omitido',segment:'segmento',undo:'Deshacer',skip:'Saltar',names:['Patrocinio','Autopromoción','Recordatorio de interacción','Introducción','Cierre','Avance o resumen','Relleno','Música no relacionada'] },
+            fr: { title:'Réglages SponsorBlock',enabled:'Activer SponsorBlock',notice:'Afficher Annuler après les sauts automatiques',duration:'Durée minimale',current:'Désactiver pour cette vidéo',reset:'Réinitialiser',any:'Toute durée',auto:'Ignorer automatiquement',ask:'Afficher le bouton',off:'Désactivé',skipped:'ignoré',segment:'segment',undo:'Annuler',skip:'Ignorer',names:['Sponsor','Autopromotion','Rappel d’interaction','Introduction','Conclusion','Aperçu ou résumé','Remplissage','Musique hors sujet'] },
+            it: { title:'Impostazioni SponsorBlock',enabled:'Attiva SponsorBlock',notice:'Mostra Annulla dopo i salti automatici',duration:'Durata minima',current:'Disattiva per questo video',reset:'Ripristina',any:'Qualsiasi durata',auto:'Salta automaticamente',ask:'Mostra pulsante',off:'Disattivato',skipped:'saltato',segment:'segmento',undo:'Annulla',skip:'Salta',names:['Sponsor','Autopromozione','Promemoria interazione','Introduzione','Finale','Anteprima o riepilogo','Riempitivo','Musica fuori tema'] },
+            pt: { title:'Configurações do SponsorBlock',enabled:'Ativar SponsorBlock',notice:'Mostrar Desfazer após pulos automáticos',duration:'Duração mínima',current:'Desativar para este vídeo',reset:'Restaurar padrões',any:'Qualquer duração',auto:'Pular automaticamente',ask:'Mostrar botão',off:'Desativado',skipped:'ignorado',segment:'segmento',undo:'Desfazer',skip:'Pular',names:['Patrocínio','Autopromoção','Lembrete de interação','Introdução','Encerramento','Prévia ou resumo','Enchimento','Música fora do tema'] },
+            ja: { title:'SponsorBlock設定',enabled:'SponsorBlockを有効にする',notice:'自動スキップ後に元に戻すを表示',duration:'最小セグメント長',current:'この動画では無効にする',reset:'初期設定に戻す',any:'すべての長さ',auto:'自動スキップ',ask:'スキップボタンを表示',off:'無効',skipped:'をスキップしました',segment:'セグメント',undo:'元に戻す',skip:'スキップ',names:['スポンサー','自己宣伝','操作のお願い','イントロ','アウトロ','予告・あらすじ','フィラー','無関係な音楽'] },
+            ko: { title:'SponsorBlock 설정',enabled:'SponsorBlock 활성화',notice:'자동 건너뛰기 후 실행 취소 표시',duration:'최소 구간 길이',current:'이 동영상에서 비활성화',reset:'기본값 복원',any:'모든 길이',auto:'자동 건너뛰기',ask:'건너뛰기 버튼 표시',off:'비활성화',skipped:'건너뜀',segment:'구간',undo:'실행 취소',skip:'건너뛰기',names:['스폰서','자기 홍보','상호작용 알림','인트로','아웃트로','미리보기 또는 요약','필러','주제와 무관한 음악'] },
+            ru: { title:'Настройки SponsorBlock',enabled:'Включить SponsorBlock',notice:'Показывать отмену после автопропуска',duration:'Минимальная длина',current:'Отключить для этого видео',reset:'Сбросить',any:'Любая длина',auto:'Пропускать автоматически',ask:'Показывать кнопку',off:'Отключено',skipped:'пропущен',segment:'фрагмент',undo:'Отменить',skip:'Пропустить',names:['Спонсор','Самореклама','Напоминание о взаимодействии','Вступление','Концовка','Анонс или обзор','Заполнитель','Музыка не по теме'] },
+            zh: { title:'SponsorBlock 设置',enabled:'启用 SponsorBlock',notice:'自动跳过后显示撤销',duration:'最短片段长度',current:'对这个视频停用',reset:'恢复默认设置',any:'任意长度',auto:'自动跳过',ask:'显示跳过按钮',off:'已停用',skipped:'已跳过',segment:'片段',undo:'撤销',skip:'跳过',names:['赞助内容','自我推广','互动提醒','片头','片尾','预告或回顾','填充内容','无关音乐'] }
+        };
+        var selected = translations[language] || english;
+        var channelLabels = { de:'Auf diesem Kanal deaktivieren', es:'Desactivar en este canal',
+            fr:'Désactiver sur cette chaîne', it:'Disattiva su questo canale', pt:'Desativar neste canal',
+            ja:'このチャンネルでは無効にする', ko:'이 채널에서 비활성화', ru:'Отключить на этом канале', zh:'对这个频道停用' };
+        if (!selected.channel) selected.channel = channelLabels[language] || english.channel;
+        return selected;
+    }
+
+    function defaultSponsorBlockSettings() {
+        var modes = {};
+        for (var i = 0; i < SPONSORBLOCK_CATEGORIES.length; i++) modes[SPONSORBLOCK_CATEGORIES[i].id] = 'off';
+        modes.sponsor = 'auto';
+        return { enabled: true, showNotice: true, minimumDuration: 0, modes: modes, excludedChannels: [] };
+    }
+
+    function loadSponsorBlockSettings() {
+        if (sponsorBlockSettingsCache) return sponsorBlockSettingsCache;
+        var settings = defaultSponsorBlockSettings();
+        try {
+            var saved = JSON.parse(localStorage.getItem(SPONSORBLOCK_SETTINGS_KEY) || '{}');
+            if (typeof saved.enabled === 'boolean') settings.enabled = saved.enabled;
+            if (typeof saved.showNotice === 'boolean') settings.showNotice = saved.showNotice;
+            if (isFinite(saved.minimumDuration)) settings.minimumDuration = Math.max(0, Number(saved.minimumDuration));
+            if (Array.isArray(saved.excludedChannels)) settings.excludedChannels = saved.excludedChannels.filter(function (id) {
+                return typeof id === 'string' && id.length < 200;
+            }).slice(0, 200);
+            if (saved.modes) for (var id in settings.modes) {
+                if (saved.modes[id] === 'auto' || saved.modes[id] === 'ask' || saved.modes[id] === 'off') settings.modes[id] = saved.modes[id];
+            }
+        } catch (e) { /* use defaults */ }
+        sponsorBlockSettingsCache = settings;
+        return settings;
+    }
+
+    function saveSponsorBlockSettings(settings) {
+        sponsorBlockSettingsCache = settings;
+        try { localStorage.setItem(SPONSORBLOCK_SETTINGS_KEY, JSON.stringify(settings)); } catch (e) { /* ignore */ }
+        document.dispatchEvent(new CustomEvent('wblock-tc-sponsor-settings'));
+    }
+
+    function sponsorBlockVideoId() {
+        try {
+            var id = new URLSearchParams(location.search).get('v');
+            if (id && /^[A-Za-z0-9_-]{11}$/.test(id)) return id;
+            var match = location.pathname.match(/^\/(?:embed|shorts)\/([A-Za-z0-9_-]{11})/);
+            return match ? match[1] : null;
+        } catch (e) { return null; }
+    }
+
+    function sponsorBlockChannelId() {
+        try {
+            var details = window.ytInitialPlayerResponse && window.ytInitialPlayerResponse.videoDetails;
+            if (details && details.channelId) return details.channelId;
+            var link = document.querySelector('#owner a[href*="/channel/"], #owner a[href^="/@"], ' +
+                'ytd-channel-name a[href], ytm-slim-owner-renderer a[href]');
+            if (link) return new URL(link.href, location.href).pathname;
+        } catch (e) { /* ignore */ }
+        return null;
+    }
+
+    function sponsorBlockChannelExcluded(settings) {
+        var channelId = sponsorBlockChannelId();
+        return !!(channelId && settings.excludedChannels.indexOf(channelId) !== -1);
+    }
+
+    function sponsorBlockCategoryName(category) {
+        var locale = sponsorBlockLocale();
+        for (var i = 0; i < SPONSORBLOCK_CATEGORIES.length; i++) {
+            if (SPONSORBLOCK_CATEGORIES[i].id === category) return locale.names[i];
+        }
+        return category;
+    }
+
+    function showSponsorBlockNotice(player, video, segment, ignored, action) {
+        var existing = player.querySelector('.wblock-tc-sponsor-notice');
+        if (existing) existing.remove();
+        var locale = sponsorBlockLocale();
+        var notice = document.createElement('div');
+        notice.className = 'wblock-tc-sponsor-notice';
+        notice.style.cssText = 'position:absolute;right:16px;top:16px;z-index:2147483647;' +
+            'display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;' +
+            'background:rgba(20,20,20,.92);color:#fff;font:13px -apple-system,BlinkMacSystemFont,sans-serif;' +
+            'box-shadow:0 3px 14px rgba(0,0,0,.35);pointer-events:auto';
+        var label = document.createElement('span');
+        label.textContent = sponsorBlockCategoryName(segment.category) + ' ' +
+            (action === 'undo' ? locale.skipped : locale.segment);
+        var actionButton = document.createElement('button');
+        actionButton.type = 'button';
+        actionButton.textContent = action === 'undo' ? locale.undo : locale.skip;
+        actionButton.style.cssText = 'border:0;background:transparent;color:#69a9ff;font:inherit;font-weight:600;' +
+            'padding:2px;cursor:pointer';
+        notice.appendChild(label);
+        notice.appendChild(actionButton);
+        player.appendChild(notice);
+        var removeTimer = setTimeout(function () { if (notice.parentNode) notice.remove(); }, 5000);
+        actionButton.addEventListener('click', function () {
+            if (action === 'undo') {
+                ignored[segment.UUID || segment.segment.join(':')] = true;
+                try { video.currentTime = segment.segment[0] + 0.01; } catch (e) { /* ignore */ }
+            } else {
+                try { video.currentTime = segment.segment[1]; } catch (e) { /* ignore */ }
+            }
+            clearTimeout(removeTimer);
+            notice.remove();
+        });
+        return function () { clearTimeout(removeTimer); if (notice.parentNode) notice.remove(); };
+    }
+
+    function setupSponsorBlock(player, video) {
+        var videoId = sponsorBlockVideoId();
+        if (!player || !video || !videoId || !window.crypto || !crypto.subtle || !window.fetch) return;
+        var cancelled = false;
+        var controller = null;
+        var requested = false;
+        var segments = [];
+        var ignored = {};
+        var notified = {};
+        var removeNotice = null;
+
+        function onTimeUpdate() {
+            var settings = loadSponsorBlockSettings();
+            if (!settings.enabled || sponsorBlockDisabledVideos[videoId] || sponsorBlockChannelExcluded(settings)) return;
+            var now = video.currentTime;
+            for (var i = 0; i < segments.length; i++) {
+                var item = segments[i];
+                var key = item.UUID || item.category + ':' + item.segment.join(':');
+                var mode = settings.modes[item.category] || 'off';
+                if (mode === 'off' || ignored[key] || item.actionType && item.actionType !== 'skip' ||
+                    item.segment[1] - item.segment[0] < settings.minimumDuration) continue;
+                if (now >= item.segment[0] && now < item.segment[1] - 0.05) {
+                    if (mode === 'ask') {
+                        if (!notified[key]) {
+                            notified[key] = true;
+                            if (removeNotice) removeNotice();
+                            removeNotice = showSponsorBlockNotice(player, video, item, ignored, 'skip');
+                        }
+                        return;
+                    }
+                    try { video.currentTime = item.segment[1]; } catch (e) { return; }
+                    if (settings.showNotice) {
+                        if (removeNotice) removeNotice();
+                        removeNotice = showSponsorBlockNotice(player, video, item, ignored, 'undo');
+                    }
+                    return;
+                }
+            }
+        }
+
+        function loadSegments() {
+            var settings = loadSponsorBlockSettings();
+            if (requested || cancelled || !settings.enabled || sponsorBlockDisabledVideos[videoId] ||
+                sponsorBlockChannelExcluded(settings)) return;
+            requested = true;
+            controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            crypto.subtle.digest('SHA-256', new TextEncoder().encode(videoId)).then(function (buffer) {
+                var bytes = new Uint8Array(buffer);
+                var hash = '';
+                var categoryIds = SPONSORBLOCK_CATEGORIES.map(function (category) { return category.id; });
+                for (var i = 0; i < bytes.length; i++) hash += ('0' + bytes[i].toString(16)).slice(-2);
+                var query = '?categories=' + encodeURIComponent(JSON.stringify(categoryIds)) +
+                    '&actionTypes=' + encodeURIComponent(JSON.stringify(['skip']));
+                return fetch(SPONSORBLOCK_API + hash.slice(0, 5) + query,
+                    controller ? { signal: controller.signal } : {});
+            }).then(function (response) {
+                if (!response.ok) return [];
+                return response.json();
+            }).then(function (bucket) {
+                if (cancelled || !Array.isArray(bucket)) return;
+                for (var i = 0; i < bucket.length; i++) {
+                    if (bucket[i].videoID === videoId && Array.isArray(bucket[i].segments)) {
+                        segments = bucket[i].segments.filter(function (item) {
+                            return item && SPONSORBLOCK_CATEGORIES.some(function (category) { return category.id === item.category; }) &&
+                                Array.isArray(item.segment) && isFinite(item.segment[0]) && isFinite(item.segment[1]) &&
+                                item.segment[1] > item.segment[0];
+                        }).sort(function (a, b) { return a.segment[0] - b.segment[0]; });
+                        onTimeUpdate();
+                        return;
+                    }
+                }
+            }).catch(function (error) {
+                if (!cancelled && (!error || error.name !== 'AbortError')) log('SponsorBlock unavailable', error);
+            });
+        }
+
+        function onSettingsChange() {
+            if (removeNotice) { removeNotice(); removeNotice = null; }
+            loadSegments();
+            onTimeUpdate();
+        }
+        video.addEventListener('timeupdate', onTimeUpdate);
+        document.addEventListener('wblock-tc-sponsor-settings', onSettingsChange);
+        registerCleanup(function () {
+            cancelled = true;
+            video.removeEventListener('timeupdate', onTimeUpdate);
+            document.removeEventListener('wblock-tc-sponsor-settings', onSettingsChange);
+            if (controller) controller.abort();
+            if (removeNotice) removeNotice();
+        });
+        loadSegments();
     }
 
     // ------------------------------------------------------------------
@@ -1270,7 +1517,7 @@
     }
 
     // ------------------------------------------------------------------
-    // Toolbar overlay (quality, audio-only, PiP)
+    // Toolbar overlay (quality, audio-only, and SponsorBlock settings)
     // ------------------------------------------------------------------
 
     function buildToolbar(player, video) {
@@ -1373,6 +1620,10 @@
 
         qualityBtn.addEventListener('click', function (e) {
             e.stopPropagation();
+            if (sponsorMenu) {
+                sponsorMenu.style.display = 'none';
+                if (sponsorBtn) sponsorBtn.setAttribute('aria-expanded', 'false');
+            }
             if (qualityMenu.style.display === 'none') {
                 buildQualityMenu();
                 if (IS_IOS) {
@@ -1431,6 +1682,188 @@
             updateAudioBtn();
         });
         if (!IS_IOS) { toolbar.appendChild(audioBtn); }
+
+        // SponsorBlock settings. This mirrors SponsorBlock's familiar category
+        // colors and Auto / Show button / Disabled choices without importing
+        // its extension-only React, chrome.storage, voting, and submission UI.
+        var sponsorWrap = document.createElement('div');
+        sponsorWrap.style.cssText = 'position:relative';
+        var sponsorBtn = document.createElement('button');
+        sponsorBtn.className = 'wblock-tc-sponsor-button';
+        sponsorBtn.type = 'button';
+        sponsorBtn.style.cssText = btnStyle;
+        sponsorBtn.textContent = 'SB';
+        sponsorBtn.setAttribute('aria-haspopup', 'dialog');
+        sponsorBtn.setAttribute('aria-expanded', 'false');
+        var sponsorMenu = document.createElement('div');
+        sponsorMenu.className = 'wblock-tc-sponsor-menu';
+        sponsorMenu.setAttribute('role', 'dialog');
+        sponsorMenu.setAttribute('aria-label', sponsorBlockLocale().title);
+        sponsorMenu.style.cssText = 'position:absolute;bottom:100%;right:0;margin-bottom:6px;box-sizing:border-box;' +
+            'width:' + (IS_IOS ? 'min(340px,calc(100vw - 16px))' : '310px') + ';max-height:65vh;overflow:auto;' +
+            'background:rgba(22,22,24,.98);border:1px solid rgba(255,255,255,.14);border-radius:10px;' +
+            'padding:12px;color:#fff;display:none;z-index:80;font:' + (IS_IOS ? '14px' : '12px') +
+            '/1.35 -apple-system,system-ui,sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.45);text-align:left';
+
+        function updateSponsorButton() {
+            var buttonSettings = loadSponsorBlockSettings();
+            var enabled = buttonSettings.enabled && !sponsorBlockDisabledVideos[sponsorBlockVideoId()] &&
+                !sponsorBlockChannelExcluded(buttonSettings);
+            sponsorBtn.style.color = enabled ? '#00d400' : '#aaa';
+            sponsorBtn.title = sponsorBlockLocale().title;
+            sponsorBtn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+        }
+
+        function sponsorCheckboxRow(labelText, checked, onChange) {
+            var label = document.createElement('label');
+            label.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer';
+            var input = document.createElement('input');
+            input.type = 'checkbox';
+            input.checked = checked;
+            input.style.cssText = 'width:16px;height:16px;accent-color:#00d400';
+            input.addEventListener('change', function () { onChange(input.checked); });
+            var text = document.createElement('span');
+            text.textContent = labelText;
+            label.appendChild(input);
+            label.appendChild(text);
+            return label;
+        }
+
+        function buildSponsorMenu() {
+            while (sponsorMenu.firstChild) sponsorMenu.removeChild(sponsorMenu.firstChild);
+            var locale = sponsorBlockLocale();
+            var settings = loadSponsorBlockSettings();
+            var heading = document.createElement('div');
+            heading.textContent = 'SponsorBlock';
+            heading.style.cssText = 'font-size:' + (IS_IOS ? '18px' : '15px') + ';font-weight:700;margin:0 0 7px';
+            sponsorMenu.appendChild(heading);
+            sponsorMenu.appendChild(sponsorCheckboxRow(locale.enabled, settings.enabled, function (checked) {
+                settings.enabled = checked;
+                saveSponsorBlockSettings(settings);
+                updateSponsorButton();
+                buildSponsorMenu();
+            }));
+
+            var divider = document.createElement('div');
+            divider.style.cssText = 'height:1px;background:rgba(255,255,255,.12);margin:5px 0';
+            sponsorMenu.appendChild(divider);
+            for (var i = 0; i < SPONSORBLOCK_CATEGORIES.length; i++) {
+                (function (category, index) {
+                    var row = document.createElement('label');
+                    row.style.cssText = 'display:grid;grid-template-columns:10px 1fr auto;align-items:center;gap:8px;padding:5px 0';
+                    var color = document.createElement('span');
+                    color.style.cssText = 'width:9px;height:9px;border-radius:2px;background:' + category.color;
+                    var name = document.createElement('span');
+                    name.textContent = locale.names[index];
+                    var select = document.createElement('select');
+                    select.setAttribute('data-sponsor-category', category.id);
+                    select.style.cssText = 'max-width:' + (IS_IOS ? '150px' : '125px') + ';background:#353538;color:#fff;' +
+                        'border:1px solid #5b5b60;border-radius:5px;padding:' + (IS_IOS ? '7px 5px' : '3px 4px') + ';font:inherit';
+                    [['auto', locale.auto], ['ask', locale.ask], ['off', locale.off]].forEach(function (optionData) {
+                        var option = document.createElement('option');
+                        option.value = optionData[0];
+                        option.textContent = optionData[1];
+                        select.appendChild(option);
+                    });
+                    select.value = settings.modes[category.id];
+                    select.disabled = !settings.enabled;
+                    select.addEventListener('change', function () {
+                        settings.modes[category.id] = select.value;
+                        saveSponsorBlockSettings(settings);
+                    });
+                    row.appendChild(color); row.appendChild(name); row.appendChild(select);
+                    sponsorMenu.appendChild(row);
+                })(SPONSORBLOCK_CATEGORIES[i], i);
+            }
+
+            var optionsDivider = divider.cloneNode(false);
+            sponsorMenu.appendChild(optionsDivider);
+            sponsorMenu.appendChild(sponsorCheckboxRow(locale.notice, settings.showNotice, function (checked) {
+                settings.showNotice = checked;
+                saveSponsorBlockSettings(settings);
+            }));
+            var durationRow = document.createElement('label');
+            durationRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0';
+            var durationLabel = document.createElement('span');
+            durationLabel.textContent = locale.duration;
+            var durationSelect = document.createElement('select');
+            durationSelect.style.cssText = 'background:#353538;color:#fff;border:1px solid #5b5b60;border-radius:5px;padding:3px 4px;font:inherit';
+            [[0, locale.any], [1, '1 s'], [2, '2 s'], [5, '5 s'], [10, '10 s']].forEach(function (value) {
+                var option = document.createElement('option'); option.value = value[0]; option.textContent = value[1];
+                durationSelect.appendChild(option);
+            });
+            durationSelect.value = String(settings.minimumDuration);
+            durationSelect.addEventListener('change', function () {
+                settings.minimumDuration = Number(durationSelect.value);
+                saveSponsorBlockSettings(settings);
+            });
+            durationRow.appendChild(durationLabel); durationRow.appendChild(durationSelect);
+            sponsorMenu.appendChild(durationRow);
+
+            var currentId = sponsorBlockVideoId();
+            sponsorMenu.appendChild(sponsorCheckboxRow(locale.current, !!sponsorBlockDisabledVideos[currentId], function (checked) {
+                if (checked) sponsorBlockDisabledVideos[currentId] = true;
+                else delete sponsorBlockDisabledVideos[currentId];
+                document.dispatchEvent(new CustomEvent('wblock-tc-sponsor-settings'));
+                updateSponsorButton();
+            }));
+            var channelId = sponsorBlockChannelId();
+            if (channelId) {
+                var channelRow = sponsorCheckboxRow(locale.channel,
+                    settings.excludedChannels.indexOf(channelId) !== -1, function (checked) {
+                        var index = settings.excludedChannels.indexOf(channelId);
+                        if (checked && index === -1) settings.excludedChannels.push(channelId);
+                        if (!checked && index !== -1) settings.excludedChannels.splice(index, 1);
+                        saveSponsorBlockSettings(settings);
+                        updateSponsorButton();
+                    });
+                channelRow.setAttribute('data-sponsor-channel', channelId);
+                sponsorMenu.appendChild(channelRow);
+            }
+            var footer = document.createElement('div');
+            footer.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;' +
+                'border-top:1px solid rgba(255,255,255,.12)';
+            var reset = document.createElement('button');
+            reset.type = 'button'; reset.textContent = locale.reset;
+            reset.style.cssText = 'background:transparent;color:#aaa;border:0;padding:3px 0;font:inherit;cursor:pointer';
+            reset.addEventListener('click', function () {
+                sponsorBlockSettingsCache = defaultSponsorBlockSettings();
+                saveSponsorBlockSettings(sponsorBlockSettingsCache);
+                updateSponsorButton();
+                buildSponsorMenu();
+            });
+            var credit = document.createElement('a');
+            credit.href = 'https://sponsor.ajay.app/'; credit.target = '_blank'; credit.rel = 'noopener noreferrer';
+            credit.textContent = 'SponsorBlock'; credit.style.cssText = 'color:#69a9ff;text-decoration:none';
+            footer.appendChild(reset); footer.appendChild(credit); sponsorMenu.appendChild(footer);
+        }
+
+        sponsorBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            qualityMenu.style.display = 'none';
+            if (sponsorMenu.style.display === 'none') {
+                buildSponsorMenu();
+                if (IS_IOS) {
+                    var playerRect = player.getBoundingClientRect();
+                    var toolbarRect = toolbar.getBoundingClientRect();
+                    sponsorMenu.style.maxHeight = Math.max(120, Math.floor(toolbarRect.top - playerRect.top - 8)) + 'px';
+                }
+                sponsorMenu.style.display = 'block';
+                sponsorBtn.setAttribute('aria-expanded', 'true');
+            } else {
+                sponsorMenu.style.display = 'none';
+                sponsorBtn.setAttribute('aria-expanded', 'false');
+            }
+        });
+        sponsorMenu.addEventListener('click', function (e) { e.stopPropagation(); });
+        function onSponsorOutsideClick() {
+            sponsorMenu.style.display = 'none';
+            sponsorBtn.setAttribute('aria-expanded', 'false');
+        }
+        document.addEventListener('click', onSponsorOutsideClick);
+        registerCleanup(function () { document.removeEventListener('click', onSponsorOutsideClick); });
+        updateSponsorButton();
+        sponsorWrap.appendChild(sponsorBtn); sponsorWrap.appendChild(sponsorMenu); toolbar.appendChild(sponsorWrap);
 
         // PiP button is intentionally omitted — Safari's native controls
         // already provide PiP. Auto PiP handles automatic PiP entry.

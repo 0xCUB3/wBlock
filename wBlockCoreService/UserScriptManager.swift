@@ -112,9 +112,9 @@ enum BuiltInUserScripts {
     // userscript headers. applyBundledContent rewrites them from metadata on
     // install/refresh, but placeholders should match until then.
     static let tubeCleanerDescription =
-        "Replaces the YouTube player with a native HTML video element using YouTube's stream. Removes ads, restores picture-in-picture, keeps videos playing in background tabs, and adds an audio-only mode."
+        "Gives YouTube Safari-native controls, chapters, SponsorBlock skipping, picture-in-picture, background playback, quality selection, and audio-only mode."
     static let playerCleanerDescription =
-        "Replaces custom video players on websites (other than YouTube) with a clean HTML5 video element, restoring native controls, Picture-in-Picture, auto PiP, and background playback. Disable it per site from the wBlock toolbar if a player misbehaves."
+        "Gives custom web players native controls, auto PiP, background playback, restored subtitle and chapter tracks, Now Playing metadata, and remembered playback preferences."
 
     private static func tinyShieldGroupedDefinition(
         _ domainGroup: String,

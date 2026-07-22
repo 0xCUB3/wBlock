@@ -116,6 +116,10 @@ for needle in [
     "safe-area-inset-bottom",    // iPhone/iPad toolbar placement
     "findPlayer",                // active Shorts player selection
     "x-webkit-airplay",          // native Safari media capabilities
+    "sponsor.ajay.app/api/skipSegments/", // SponsorBlock API
+    "crypto.subtle.digest('SHA-256'",      // k-anonymous video-id lookup
+    "wblock.tubeCleaner.sponsorBlock",     // persistent SponsorBlock settings
+    "data-sponsor-category",               // per-category settings UI
 ] {
     guard tubeSource.contains(needle) else {
         fail("Tube Cleaner is missing expected feature code: \(needle)")
@@ -158,6 +162,10 @@ for needle in [
     ".jwplayer",                 // JW Player detection
     ".plyr",                     // Plyr detection
     "playsInline",                // native controls/PiP
+    "recoverSidecarTracks",       // native subtitle/chapter recovery
+    "navigator.mediaSession",     // system Now Playing integration
+    "wblock.playerCleaner.preferences", // persistent playback preferences
+    "wblock.playerCleaner.resume",      // per-page resume positions
 ] {
     guard playerSource.contains(needle) else {
         fail("Player Cleaner is missing expected feature code: \(needle)")

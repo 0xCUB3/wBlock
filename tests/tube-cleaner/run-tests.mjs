@@ -94,7 +94,39 @@ const chapterDataPrelude = `
     engagementPanels: chapters.map(render),
     playerOverlays: chapters.map(render)
   };
+  window.ytInitialPlayerResponse = { videoDetails: { channelId: 'test-channel' } };
 })();
+`;
+
+const sponsorBlockPrelude = `
+(function () {
+  history.replaceState(null, '', location.pathname + '?v=dQw4w9WgXcQ');
+  var nativeFetch = window.fetch;
+  window.fetch = function (url, options) {
+    if (String(url).indexOf('sponsor.ajay.app/api/skipSegments/') !== -1) {
+      window.__wblockSponsorRequest = String(url);
+      return Promise.resolve({ ok: true, json: function () { return Promise.resolve([{
+        videoID: 'dQw4w9WgXcQ',
+        segments: [
+          { UUID: 'test-sponsor', category: 'sponsor', actionType: 'skip', segment: [10, 20] },
+          { UUID: 'test-selfpromo', category: 'selfpromo', actionType: 'skip', segment: [30, 40] },
+          { UUID: 'test-interaction', category: 'interaction', actionType: 'skip', segment: [50, 60] }
+        ]
+      }]); }});
+    }
+    return nativeFetch.apply(this, arguments);
+  };
+})();
+`;
+
+const playerPreferencesPrelude = `
+localStorage.setItem('wblock.playerCleaner.preferences', JSON.stringify({
+  playbackRate: 1.5, volume: 0.35, muted: true, subtitleLanguage: 'en',
+  backgroundPlayback: true
+}));
+localStorage.setItem('wblock.playerCleaner.resume', JSON.stringify({
+  [location.origin + location.pathname + location.search + '|https://example.com/media/movie.mp4']: 42
+}));
 `;
 
 const resourceCounterPatch = `
@@ -218,23 +250,33 @@ async function commonChecks(page, scenario, { expectToolbar = true } = {}) {
   });
 
   if (expectToolbar) {
-    await check(page, scenario, 'builds toolbar with quality+audio buttons', () => {
+    await check(page, scenario, 'builds toolbar with quality, audio, and SponsorBlock buttons', () => {
       const tb = document.querySelector('.wblock-tc-toolbar');
-      const btns = tb ? tb.querySelectorAll('button').length : 0;
-      return { pass: btns >= 2, detail: `${btns} buttons` };
+      const quality = tb?.querySelector('.wblock-tc-quality-button');
+      const audio = tb?.querySelector('.wblock-tc-audio-button');
+      const sponsor = tb?.querySelector('.wblock-tc-sponsor-button');
+      return { pass: !!(quality && audio && sponsor), detail: `quality=${!!quality} audio=${!!audio} sponsor=${!!sponsor}` };
     });
   } else {
-    await check(page, scenario, 'adds only quality beside Safari native controls on iOS', () => {
+    await check(page, scenario, 'adds quality and SponsorBlock beside Safari native controls on iOS', () => {
       const toolbar = document.querySelector('.wblock-tc-toolbar');
       const quality = toolbar?.querySelector('.wblock-tc-quality-button');
+      const sponsor = toolbar?.querySelector('.wblock-tc-sponsor-button');
       const audio = toolbar?.querySelector('.wblock-tc-audio-button');
-      const buttons = toolbar?.querySelectorAll('button').length || 0;
       return {
-        pass: !!toolbar && !!quality && !audio && buttons === 1 &&
+        pass: !!toolbar && !!quality && !!sponsor && !audio &&
           getComputedStyle(toolbar).pointerEvents === 'auto',
-        detail: `toolbar=${!!toolbar} quality=${!!quality} audio=${!!audio} buttons=${buttons}`,
+        detail: `toolbar=${!!toolbar} quality=${!!quality} sponsor=${!!sponsor} audio=${!!audio}`,
       };
     });
+    await page.evaluate(() => document.querySelector('.wblock-tc-sponsor-button').click());
+    await check(page, scenario, 'keeps the SponsorBlock settings panel inside the iOS viewport', () => {
+      const panel = document.querySelector('.wblock-tc-sponsor-menu');
+      const rect = panel?.getBoundingClientRect();
+      return { pass: !!rect && rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight,
+        detail: rect ? `${Math.round(rect.left)},${Math.round(rect.top)} ${Math.round(rect.width)}x${Math.round(rect.height)}` : 'no panel' };
+    });
+    await page.evaluate(() => document.querySelector('.wblock-tc-sponsor-button').click());
   }
 
   await check(page, scenario, 'overrides document.hidden (background playback)', () => {
@@ -425,7 +467,7 @@ async function qualityUISelectionCheck(page, scenario) {
   const { browser, page, pageErrors } = await runScenario('desktop (macOS Safari-like)', {
     fixture: FIXTURE_URL,
     viewport: { width: 1280, height: 800 },
-    scriptSource: chapterDataPrelude + '\n' + userscript,
+    scriptSource: sponsorBlockPrelude + '\n' + chapterDataPrelude + '\n' + userscript,
   });
   await commonChecks(page, 'desktop');
   await check(page, 'desktop', 'deduplicates and timestamps native chapter cues', () => {
@@ -454,6 +496,79 @@ async function qualityUISelectionCheck(page, scenario) {
     const track = video ? Array.from(video.textTracks).find(t => t.kind === 'chapters') : null;
     const labels = track?.cues ? Array.from(track.cues).map(c => c.text) : [];
     return { pass: labels.length === 3, detail: `labels=${labels.join(' | ')}` };
+  });
+  await page.waitForFunction(() => !!window.__wblockSponsorRequest);
+  await page.evaluate(() => {
+    const video = document.querySelector('#movie_player video');
+    video.currentTime = 12;
+    video.dispatchEvent(new Event('timeupdate'));
+  });
+  await check(page, 'desktop', 'skips sponsors through the k-anonymous SponsorBlock endpoint', () => {
+    const video = document.querySelector('#movie_player video');
+    const request = window.__wblockSponsorRequest || '';
+    const notice = document.querySelector('.wblock-tc-sponsor-notice');
+    return {
+      pass: video.currentTime === 20 && !!notice && !request.includes('dQw4w9WgXcQ') && /skipSegments\/[a-f0-9]{5}/.test(request),
+      detail: `time=${video.currentTime} notice=${!!notice} request=${request}`,
+    };
+  });
+  await page.click('.wblock-tc-sponsor-notice button');
+  await check(page, 'desktop', 'undoes a SponsorBlock skip without immediately reskipping', () => {
+    const video = document.querySelector('#movie_player video');
+    video.dispatchEvent(new Event('timeupdate'));
+    return { pass: video.currentTime > 10 && video.currentTime < 11,
+      detail: `time=${video.currentTime}` };
+  });
+  await page.evaluate(() => {
+    document.querySelector('.wblock-tc-sponsor-button').click();
+    const selfPromo = document.querySelector('[data-sponsor-category="selfpromo"]');
+    selfPromo.value = 'auto';
+    selfPromo.dispatchEvent(new Event('change', { bubbles: true }));
+    const interaction = document.querySelector('[data-sponsor-category="interaction"]');
+    interaction.value = 'ask';
+    interaction.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await check(page, 'desktop', 'persists SponsorBlock category settings from its toolbar panel', () => {
+    const panel = document.querySelector('.wblock-tc-sponsor-menu');
+    const settings = JSON.parse(localStorage.getItem('wblock.tubeCleaner.sponsorBlock') || '{}');
+    return { pass: panel?.style.display === 'block' && settings.modes?.selfpromo === 'auto' &&
+        settings.modes?.interaction === 'ask',
+      detail: `panel=${panel?.style.display} selfpromo=${settings.modes?.selfpromo} interaction=${settings.modes?.interaction}` };
+  });
+  await page.evaluate(() => {
+    const video = document.querySelector('#movie_player video');
+    video.currentTime = 35;
+    video.dispatchEvent(new Event('timeupdate'));
+  });
+  await check(page, 'desktop', 'applies newly enabled SponsorBlock categories immediately', () => {
+    const video = document.querySelector('#movie_player video');
+    return { pass: video.currentTime === 40, detail: `time=${video.currentTime}` };
+  });
+  await page.evaluate(() => {
+    const video = document.querySelector('#movie_player video');
+    video.currentTime = 55;
+    video.dispatchEvent(new Event('timeupdate'));
+  });
+  await check(page, 'desktop', 'supports SponsorBlock show-skip-button mode', () => {
+    const video = document.querySelector('#movie_player video');
+    const button = document.querySelector('.wblock-tc-sponsor-notice button');
+    return { pass: video.currentTime === 55 && !!button, detail: `time=${video.currentTime} button=${button?.textContent}` };
+  });
+  await page.evaluate(() => document.querySelector('.wblock-tc-sponsor-notice button').click());
+  await check(page, 'desktop', 'manual SponsorBlock button skips the configured segment', () => {
+    const video = document.querySelector('#movie_player video');
+    return { pass: video.currentTime === 60, detail: `time=${video.currentTime}` };
+  });
+  await page.evaluate(() => {
+    const channel = document.querySelector('[data-sponsor-channel="test-channel"] input');
+    channel.checked = true;
+    channel.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await check(page, 'desktop', 'persists SponsorBlock channel exclusions', () => {
+    const settings = JSON.parse(localStorage.getItem('wblock.tubeCleaner.sponsorBlock') || '{}');
+    const button = document.querySelector('.wblock-tc-sponsor-button');
+    return { pass: settings.excludedChannels?.includes('test-channel') && button?.getAttribute('aria-pressed') === 'false',
+      detail: `channels=${settings.excludedChannels?.join(',')} active=${button?.getAttribute('aria-pressed')}` };
   });
   await controlsSurvivalCheck(page, 'desktop');
   await audioToggleCheck(page, 'desktop');
@@ -700,7 +815,7 @@ async function qualityUISelectionCheck(page, scenario) {
 {
   const { browser, page, pageErrors } = await runScenario('Player Cleaner (clean source replacement)', {
     fixture: FIXTURE_PLAYER_REPLACE_URL,
-    scriptSource: playerUserscript,
+    scriptSource: playerPreferencesPrelude + '\n' + playerUserscript,
     readySignal: '[data-wblock-player-cleaner]',
     viewport: { width: 1280, height: 800 },
   });
@@ -741,6 +856,25 @@ async function qualityUISelectionCheck(page, scenario) {
     const v = document.querySelector('#player-replace video');
     const t = v ? v.querySelector('track') : null;
     return { pass: !!t, detail: t ? `track src=${t.getAttribute('src')}` : 'no track' };
+  });
+
+  await page.evaluate(() => {
+    const video = document.querySelector('#player-replace video');
+    Object.defineProperty(video, 'duration', { configurable: true, value: 120 });
+    Object.defineProperty(video, 'currentTime', { configurable: true, writable: true, value: 0 });
+    video.dispatchEvent(new Event('durationchange'));
+    video.dispatchEvent(new Event('play'));
+  });
+  await check(page, S, 'restores persistent playback and resume preferences', () => {
+    const video = document.querySelector('#player-replace video');
+    const english = Array.from(video.textTracks).find(track => track.language === 'en');
+    return { pass: video.playbackRate === 1.5 && Math.abs(video.volume - 0.35) < 0.01 &&
+        video.muted && video.currentTime === 42 && (!english || english.mode === 'showing'),
+      detail: `rate=${video.playbackRate} volume=${video.volume} muted=${video.muted} time=${video.currentTime}` };
+  });
+  await check(page, S, 'publishes fallback system Now Playing metadata', () => {
+    const metadata = navigator.mediaSession && navigator.mediaSession.metadata;
+    return { pass: !!(metadata && metadata.title), detail: metadata ? `title=${metadata.title}` : 'no metadata' };
   });
 
   await check(page, S, 'removes custom control chrome', () => {
@@ -819,6 +953,13 @@ async function qualityUISelectionCheck(page, scenario) {
       return { pass: ok, detail: v ? `src=${source || ''}` : 'no video' };
     }, { arg: { id, expected } });
   }
+
+  await check(page, S, 'recovers JW sidecar subtitles and chapters into native tracks', () => {
+    const video = document.querySelector('#p-jwplayer video');
+    const tracks = video ? Array.from(video.querySelectorAll('track')).map(track => `${track.kind}:${track.srclang || track.label}`) : [];
+    return { pass: tracks.includes('subtitles:en') && tracks.some(track => track.startsWith('chapters:')),
+      detail: `tracks=${tracks.join(',')}` };
+  });
 
   await check(page, S, 'every player replaced with exactly one clean video', (cases) => {
     const bad = cases.filter(([id]) => {

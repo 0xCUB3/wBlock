@@ -79,7 +79,13 @@
       window.jwplayer = function (idOrEl) {
         var id = typeof idOrEl === 'string' ? idOrEl : (idOrEl && idOrEl.id);
         if (id !== 'p-jwplayer') return null;
-        return { getPlaylistItem: function () { return { file: 'https://example.com/e.mp4' }; } };
+        return { getPlaylistItem: function () { return {
+          file: 'https://example.com/e.mp4',
+          tracks: [
+            { file: 'https://example.com/e-en.vtt', kind: 'captions', label: 'English', language: 'en' },
+            { file: 'https://example.com/e-chapters.vtt', kind: 'chapters', label: 'Chapters' }
+          ]
+        }; } };
       };
     })();
   </script>

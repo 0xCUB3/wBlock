@@ -26,8 +26,10 @@ desktop site as `MacIntel`. Mobile checks enforce Safari-native playback with a
 non-persistent quality-only overlay, migration out of old black-screen
 audio-only and fixed-quality loading states, visible video in portrait and
 landscape, suppression of the separate mobile YouTube controls tree,
-restoration of inline playback, and preservation of the iOS ManagedMediaSource
-restriction required for SABR playback. `fixture-tube-cleaner-multiple.html` models retained
+restoration of inline playback, preservation of the iOS ManagedMediaSource
+restriction required for SABR playback, native chapter mirroring, and
+k-anonymous SponsorBlock skipping with persistent category modes, manual skip,
+and Undo behavior. `fixture-tube-cleaner-multiple.html` models retained
 Shorts players and verifies native enhancements follow the visible playing
 video. `fixture-tube-cleaner-early.html` creates the YouTube player from a
 `<head>` script and enforces anti-flash CSS plus nativeization before
@@ -157,8 +159,10 @@ node probe-live.mjs https://videojs.org/  # specific URL(s)
   path, event-driven upgrade once a clean source appears, pre-paint timing for
   known wrappers, bounded per-video resources across SPA swaps, the bare-video
   fallback for unrecognized/custom players (and its ambient and
-  already-native skip guards), the background-playback override, and controls
-  surviving a fighting player. Tube Cleaner additionally distinguishes
+  already-native skip guards), sidecar subtitle/chapter recovery, persistent
+  speed/volume/mute/subtitle/resume preferences, fallback system Now Playing
+  metadata, the background-playback override, and controls surviving a fighting
+  player. Tube Cleaner additionally distinguishes
   automatically entered PiP from user-entered PiP so returning to the page does
   not close a PiP session the user requested manually.
 - Don't prove: in-video ad removal. Ads are stripped by wBlock's separate
