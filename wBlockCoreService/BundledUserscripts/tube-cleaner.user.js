@@ -423,6 +423,17 @@
         '{ touch-action: manipulation !important; }',
     ].join(' ');
 
+    // On mobile YouTube, html5-video-container is the positioned box that
+    // anchors the media within the reserved player frame. Making it static
+    // lets the native video escape into the watch-page flow, leaving an empty
+    // player-sized gap above it. Keep the container's geometry on iOS while
+    // still allowing the native controls to receive taps.
+    if (IS_IOS) {
+        CSS += ' #movie_player.wblock-tc-native .html5-video-container,' +
+            ' .wblock-tc-native .html5-video-container' +
+            ' { position:absolute !important;inset:0 !important;width:100% !important;height:100% !important; }';
+    }
+
     var AUDIO_ONLY_CSS = [
         '.wblock-tc-native video,',
         '.wblock-tc-native .html5-video-container',

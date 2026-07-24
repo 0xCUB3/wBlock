@@ -466,6 +466,21 @@ async function iosNativeControlsChecks(page, scenario) {
     const css = document.getElementById('wblock-tc-style')?.textContent || '';
     return { pass: !css.includes('::-webkit-media-controls') && !css.includes('touch-action: manipulation !important; } .wblock-tc-native video') };
   });
+  await check(page, scenario, 'keeps the native video inside the iOS player frame', () => {
+    const player = document.querySelector('#movie_player');
+    const container = player?.querySelector('.html5-video-container');
+    const video = container?.querySelector('video');
+    const playerRect = player?.getBoundingClientRect();
+    const videoRect = video?.getBoundingClientRect();
+    const position = container ? getComputedStyle(container).position : 'missing';
+    const contained = !!(playerRect && videoRect &&
+      Math.abs(videoRect.left - playerRect.left) < 1 &&
+      Math.abs(videoRect.top - playerRect.top) < 1 &&
+      Math.abs(videoRect.width - playerRect.width) < 1 &&
+      Math.abs(videoRect.height - playerRect.height) < 1);
+    return { pass: position === 'absolute' && contained,
+      detail: `position=${position} player=${playerRect?.width.toFixed(0)}x${playerRect?.height.toFixed(0)} video=${videoRect?.width.toFixed(0)}x${videoRect?.height.toFixed(0)}` };
+  });
   await check(page, scenario, 'keeps mobile YouTube controls behind the native video after unmute', () => {
     const player = document.querySelector('.wblock-tc-native');
     const video = player?.querySelector('video');
