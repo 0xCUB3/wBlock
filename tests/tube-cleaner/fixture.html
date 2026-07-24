@@ -35,6 +35,7 @@
         <div class="ytp-chrome-controls">
           <button class="ytp-play-button"></button>
           <div class="ytp-progress-bar"></div>
+          <button class="ytp-subtitles-button" aria-label="Subtitles"></button>
           <button class="ytp-settings-button" aria-label="Settings"></button>
         </div>
       </div>
@@ -69,6 +70,11 @@
       player.getPlayerState = function () { return state; };
       window.__youtubeSubtitlesOn = false;
       player.isSubtitlesOn = function () { return window.__youtubeSubtitlesOn; };
+      window.__subtitleClicks = 0;
+      player.querySelector('.ytp-subtitles-button').addEventListener('click', function () {
+        window.__subtitleClicks++;
+        window.__youtubeSubtitlesOn = false;
+      });
 
       // Mock YouTube's asynchronous settings -> quality submenu. The settings
       // button is a toggle: clicking twice closes it again, which catches the

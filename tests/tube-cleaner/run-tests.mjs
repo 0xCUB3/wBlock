@@ -612,12 +612,14 @@ async function qualityUISelectionCheck(page, scenario) {
     if (track) track.mode = 'showing';
     video?.dispatchEvent(new Event('timeupdate'));
   });
-  await check(page, 'desktop', 'prefers movable YouTube captions over a duplicate native rendering', () => {
+  await check(page, 'desktop', 'keeps the Safari caption choice enabled when YouTube reports captions on', () => {
     const video = document.querySelector('#movie_player video');
     const track = video?.querySelector('track[data-wblock-native-subtitle]')?.track;
     const mode = track?.mode;
+    const subtitleClicks = window.__subtitleClicks;
     window.__youtubeSubtitlesOn = false;
-    return { pass: mode === 'disabled', detail: `nativeMode=${mode}` };
+    return { pass: mode === 'showing' && subtitleClicks === 1,
+      detail: `nativeMode=${mode} youtubeToggleClicks=${subtitleClicks}` };
   });
   await page.waitForFunction(() => document.querySelector('#watch-metadata h1 yt-formatted-string')?.textContent === 'Accurate Watch Title' &&
     document.querySelector('ytd-compact-video-renderer #video-title')?.textContent === 'Accurate Related Title');

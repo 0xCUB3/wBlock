@@ -133,8 +133,8 @@ for needle in [
     "cacheDeArrowBranding",                 // bounded per-session branding cache
     "wblock-tc-services-row",               // SB/DA row separate from playback controls
     "data-wblock-native-subtitle",          // native Safari subtitle tracks
-    "preferYouTubeCaptions",                // avoid duplicate native + movable captions
-    "ANDROID_VR",                          // token-safe YouTube caption metadata fallback
+    "keepNativeCaptionsSelected",           // native caption choice survives YouTube state
+    "ANDROID_VR",                           // token-safe YouTube caption metadata fallback
 ] {
     guard tubeSource.contains(needle) else {
         fail("Tube Cleaner is missing expected feature code: \(needle)")
