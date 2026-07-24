@@ -132,8 +132,9 @@ for needle in [
     "Using DeArrow",                        // DeArrow attribution
     "cacheDeArrowBranding",                 // bounded per-session branding cache
     "wblock-tc-services-row",               // SB/DA row separate from playback controls
-    "data-wblock-native-subtitle",          // native Safari subtitle tracks
-    "keepNativeCaptionsSelected",           // native caption choice survives YouTube state
+    "data-wblock-native-subtitle",          // native Safari subtitle controls
+    "routeSafariCaptionSelection",          // routes caption selection to YouTube
+    "randomThumbnails",                     // opt-in DeArrow random-frame fallback
     "ANDROID_VR",                           // token-safe YouTube caption metadata fallback
 ] {
     guard tubeSource.contains(needle) else {

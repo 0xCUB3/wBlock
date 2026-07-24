@@ -142,7 +142,9 @@ const deArrowPrelude = `
         titles: [{ title: 'Accurate Related Title', original: false, votes: 2, locked: false }],
         thumbnails: [{ timestamp: 12.5, original: false, votes: 3, locked: false }]
       };
-      var payload = value.indexOf('videoID=CARDVID1234') !== -1 ? card : { dQw4w9WgXcQ: watch };
+      var randomFallback = { titles: [], thumbnails: [], videoDuration: 120, randomTime: 0.25 };
+      var payload = value.indexOf('videoID=CARDVID1234') !== -1 ? card :
+        value.indexOf('videoID=RANDOMVID01') !== -1 ? randomFallback : { dQw4w9WgXcQ: watch };
       return Promise.resolve({ ok: true, status: 200, json: function () { return Promise.resolve(payload); } });
     }
     return nativeFetch.apply(this, arguments);
@@ -595,31 +597,32 @@ async function qualityUISelectionCheck(page, scenario) {
     return { pass: labels.length === 3, detail: `labels=${labels.join(' | ')}` };
   });
   await page.waitForFunction(() => document.querySelectorAll('track[data-wblock-native-subtitle]').length === 2);
-  await check(page, 'desktop', 'adds token-safe WebVTT tracks to Safari native subtitle controls', () => {
+  await check(page, 'desktop', 'adds token-safe Safari caption controls with WebVTT fallback', () => {
     const video = document.querySelector('#movie_player video');
     const tracks = Array.from(video?.querySelectorAll('track[data-wblock-native-subtitle]') || []);
     const labels = tracks.map(track => `${track.srclang}:${track.label}`);
+    const renderers = tracks.map(track => track.getAttribute('data-wblock-subtitle-renderer'));
     return {
       pass: JSON.stringify(labels) === JSON.stringify(['en:English', 'es:Español']) &&
+        renderers.every(renderer => renderer === 'youtube') &&
         window.__wblockCaptionPlayerRequests === 1 && window.__wblockCaptionTextRequests === 2,
-      detail: `tracks=${labels.join(',')} playerRequests=${window.__wblockCaptionPlayerRequests} textRequests=${window.__wblockCaptionTextRequests}`,
+      detail: `tracks=${labels.join(',')} renderers=${renderers.join(',')} playerRequests=${window.__wblockCaptionPlayerRequests} textRequests=${window.__wblockCaptionTextRequests}`,
     };
   });
   await page.evaluate(() => {
     const video = document.querySelector('#movie_player video');
     const track = video?.querySelector('track[data-wblock-native-subtitle]')?.track;
-    window.__youtubeSubtitlesOn = true;
+    window.__youtubeSubtitlesOn = false;
     if (track) track.mode = 'showing';
     video?.dispatchEvent(new Event('timeupdate'));
   });
-  await check(page, 'desktop', 'keeps the Safari caption choice enabled when YouTube reports captions on', () => {
+  await check(page, 'desktop', 'routes Safari caption selection to YouTube without rendering the mirrored cues', () => {
     const video = document.querySelector('#movie_player video');
-    const track = video?.querySelector('track[data-wblock-native-subtitle]')?.track;
-    const mode = track?.mode;
-    const subtitleClicks = window.__subtitleClicks;
-    window.__youtubeSubtitlesOn = false;
-    return { pass: mode === 'showing' && subtitleClicks === 1,
-      detail: `nativeMode=${mode} youtubeToggleClicks=${subtitleClicks}` };
+    const element = video?.querySelector('track[data-wblock-native-subtitle]');
+    const mode = element?.track?.mode;
+    return { pass: mode === 'showing' && window.__youtubeSubtitlesOn && window.__subtitleClicks === 1 &&
+        window.__youtubeCaptionTrack === 'en' && element?.getAttribute('data-wblock-subtitle-renderer') === 'youtube',
+      detail: `nativeMode=${mode} youtubeOn=${window.__youtubeSubtitlesOn} language=${window.__youtubeCaptionTrack} clicks=${window.__subtitleClicks}` };
   });
   await page.waitForFunction(() => document.querySelector('#watch-metadata h1 yt-formatted-string')?.textContent === 'Accurate Watch Title' &&
     document.querySelector('ytd-compact-video-renderer #video-title')?.textContent === 'Accurate Related Title');
@@ -730,6 +733,25 @@ async function qualityUISelectionCheck(page, scenario) {
     pass: window.__wblockSponsorRequestCount === 1 && window.__wblockDeArrowRequests.length === 2,
     detail: `sponsorRequests=${window.__wblockSponsorRequestCount} deArrowRequests=${window.__wblockDeArrowRequests.length}`,
   }));
+  await page.evaluate(() => {
+    document.querySelector('.wblock-tc-dearrow-button').click();
+    const random = document.querySelector('[data-dearrow-setting="randomThumbnails"]');
+    random.checked = true;
+    random.dispatchEvent(new Event('change', { bubbles: true }));
+    const card = document.createElement('ytd-compact-video-renderer');
+    card.setAttribute('data-video-id', 'RANDOMVID01');
+    card.setAttribute('data-channel-id', 'other-channel');
+    card.innerHTML = '<a id="thumbnail" href="/watch?v=RANDOMVID01"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="></a><a id="video-title" href="/watch?v=RANDOMVID01">Original random video</a>';
+    document.getElementById('recommendations').appendChild(card);
+  });
+  await page.waitForFunction(() => document.querySelector('[data-video-id="RANDOMVID01"] img')?.getAttribute('src')?.includes('dearrow-thumb.ajay.app/api/v1/getThumbnail'));
+  await check(page, 'desktop', 'uses DeArrow random-time fallback when a video has no submitted thumbnail', () => {
+    const settings = JSON.parse(localStorage.getItem('wblock.tubeCleaner.deArrow') || '{}');
+    const image = document.querySelector('[data-video-id="RANDOMVID01"] img');
+    const thumbnail = image?.getAttribute('src') || '';
+    return { pass: settings.randomThumbnails === true && thumbnail.includes('time=30'),
+      detail: `enabled=${settings.randomThumbnails} thumbnail=${thumbnail}` };
+  });
   await page.evaluate(() => {
     document.querySelector('.wblock-tc-sponsor-button').click();
     const selfPromo = document.querySelector('[data-sponsor-category="selfpromo"]');

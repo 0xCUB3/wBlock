@@ -69,11 +69,16 @@
       player.getVideoData = function () { return { video_id: 'TESTVID123' }; };
       player.getPlayerState = function () { return state; };
       window.__youtubeSubtitlesOn = false;
+      window.__youtubeCaptionTrack = null;
       player.isSubtitlesOn = function () { return window.__youtubeSubtitlesOn; };
+      player.loadModule = function () {};
+      player.setOption = function (module, option, value) {
+        if (module === 'captions' && option === 'track') window.__youtubeCaptionTrack = value?.languageCode || null;
+      };
       window.__subtitleClicks = 0;
       player.querySelector('.ytp-subtitles-button').addEventListener('click', function () {
         window.__subtitleClicks++;
-        window.__youtubeSubtitlesOn = false;
+        window.__youtubeSubtitlesOn = !window.__youtubeSubtitlesOn;
       });
 
       // Mock YouTube's asynchronous settings -> quality submenu. The settings

@@ -28,14 +28,15 @@ audio-only and fixed-quality loading states, visible video in portrait and
 landscape, suppression of the separate mobile YouTube controls tree,
 restoration of inline playback, preservation of the iOS ManagedMediaSource
 restriction required for SABR playback, native chapter and WebVTT subtitle
-mirroring (including token-gated caption metadata fallback, and native captions
-remaining enabled even when YouTube reports a remembered caption choice), and k-anonymous
-SponsorBlock skipping with a bounded session cache, precise boundary timers,
-persistent category modes, manual skip, and Undo behavior. The desktop fixture
-also enables the otherwise opt-in DeArrow integration and verifies submitted
-watch/card titles, cached thumbnails, separate title/thumbnail settings,
-original-on-hover restoration, current-channel exclusions, bounded request
-reuse across SPA activation, and the dedicated SB/DA service row.
+mirroring (including token-gated caption metadata fallback and routing Safari’s
+caption selection to YouTube’s styled renderer), and k-anonymous SponsorBlock
+skipping with a bounded session cache, precise boundary timers, persistent
+category modes, manual skip, and Undo behavior. The desktop fixture also enables
+the otherwise opt-in DeArrow integration and verifies submitted watch/card titles,
+cached thumbnails, the opt-in random-frame fallback for videos without a submitted
+thumbnail, separate title/thumbnail settings, original-on-hover restoration,
+current-channel exclusions, bounded request reuse across SPA activation, and the
+dedicated SB/DA service row.
 `fixture-tube-cleaner-multiple.html` models retained
 Shorts players and verifies native enhancements follow the visible playing
 video. `fixture-tube-cleaner-early.html` creates the YouTube player from a

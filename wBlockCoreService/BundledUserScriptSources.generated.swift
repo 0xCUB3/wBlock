@@ -1034,9 +1034,8 @@ enum BundledUserScriptSources {
     // SponsorBlock server. The current watch video uses its four-character
     // SHA-256 bucket so its exact id is filtered locally. Visible feed cards use
     // DeArrow's compact single-video endpoint, matching the official extension,
-    // and are cached for the page session. We intentionally use submissions
-    // only: local video rendering, random fallbacks, voting, and title-case
-    // rewriting would add substantial machinery to this small userscript.
+    // and are cached for the page session. An optional fallback uses DeArrow's
+    // server-provided random timestamp when a video has no accepted thumbnail.
     // ------------------------------------------------------------------
 
     var DEARROW_API = 'https://sponsor.ajay.app/api/branding';
@@ -1068,6 +1067,7 @@ enum BundledUserScriptSources {
             enabled: false,
             replaceTitles: true,
             replaceThumbnails: true,
+            randomThumbnails: false,
             showOriginalOnHover: true,
             excludedChannels: []
         };
@@ -1078,7 +1078,7 @@ enum BundledUserScriptSources {
         var settings = defaultDeArrowSettings();
         try {
             var saved = JSON.parse(localStorage.getItem(DEARROW_SETTINGS_KEY) || '{}');
-            ['enabled', 'replaceTitles', 'replaceThumbnails', 'showOriginalOnHover'].forEach(function (key) {
+            ['enabled', 'replaceTitles', 'replaceThumbnails', 'randomThumbnails', 'showOriginalOnHover'].forEach(function (key) {
                 if (typeof saved[key] === 'boolean') settings[key] = saved[key];
             });
             if (Array.isArray(saved.excludedChannels)) settings.excludedChannels = saved.excludedChannels.filter(function (id) {
@@ -1099,19 +1099,20 @@ enum BundledUserScriptSources {
         var language = (navigator.language || 'en').toLowerCase().split('-')[0];
         var english = {
             title: 'DeArrow settings', enabled: 'Enable DeArrow', titles: 'Replace titles',
-            thumbnails: 'Replace thumbnails', hover: 'Show originals when hovering over a video',
-            channel: 'Disable on this channel', reset: 'Reset defaults', using: 'Using DeArrow'
+            thumbnails: 'Replace thumbnails', random: 'Use a random frame when no thumbnail is submitted',
+            hover: 'Show originals when hovering over a video', channel: 'Disable on this channel',
+            reset: 'Reset defaults', using: 'Using DeArrow'
         };
         var translations = {
-            de: { title:'DeArrow-Einstellungen',enabled:'DeArrow aktivieren',titles:'Titel ersetzen',thumbnails:'Vorschaubilder ersetzen',hover:'Originale beim Bewegen über ein Video anzeigen',channel:'Auf diesem Kanal deaktivieren',reset:'Zurücksetzen',using:'Verwendet DeArrow' },
-            es: { title:'Ajustes de DeArrow',enabled:'Activar DeArrow',titles:'Sustituir títulos',thumbnails:'Sustituir miniaturas',hover:'Mostrar originales al pasar sobre un vídeo',channel:'Desactivar en este canal',reset:'Restablecer',using:'Usa DeArrow' },
-            fr: { title:'Réglages DeArrow',enabled:'Activer DeArrow',titles:'Remplacer les titres',thumbnails:'Remplacer les miniatures',hover:'Afficher les originaux au survol d’une vidéo',channel:'Désactiver sur cette chaîne',reset:'Réinitialiser',using:'Utilise DeArrow' },
-            it: { title:'Impostazioni DeArrow',enabled:'Attiva DeArrow',titles:'Sostituisci titoli',thumbnails:'Sostituisci miniature',hover:'Mostra gli originali passando su un video',channel:'Disattiva su questo canale',reset:'Ripristina',using:'Usa DeArrow' },
-            pt: { title:'Configurações do DeArrow',enabled:'Ativar DeArrow',titles:'Substituir títulos',thumbnails:'Substituir miniaturas',hover:'Mostrar originais ao passar sobre um vídeo',channel:'Desativar neste canal',reset:'Restaurar padrões',using:'Usa DeArrow' },
-            ja: { title:'DeArrow設定',enabled:'DeArrowを有効にする',titles:'タイトルを置き換える',thumbnails:'サムネイルを置き換える',hover:'動画にカーソルを合わせたとき元を表示',channel:'このチャンネルでは無効にする',reset:'初期設定に戻す',using:'DeArrowを使用' },
-            ko: { title:'DeArrow 설정',enabled:'DeArrow 활성화',titles:'제목 바꾸기',thumbnails:'미리보기 이미지 바꾸기',hover:'동영상 위에 마우스를 놓으면 원본 표시',channel:'이 채널에서 비활성화',reset:'기본값 복원',using:'DeArrow 사용' },
-            ru: { title:'Настройки DeArrow',enabled:'Включить DeArrow',titles:'Заменять названия',thumbnails:'Заменять значки',hover:'Показывать оригиналы при наведении на видео',channel:'Отключить на этом канале',reset:'Сбросить',using:'Использует DeArrow' },
-            zh: { title:'DeArrow 设置',enabled:'启用 DeArrow',titles:'替换标题',thumbnails:'替换缩略图',hover:'悬停视频时显示原始内容',channel:'对这个频道停用',reset:'恢复默认设置',using:'使用 DeArrow' }
+            de: { title:'DeArrow-Einstellungen',enabled:'DeArrow aktivieren',titles:'Titel ersetzen',thumbnails:'Vorschaubilder ersetzen',random:'Zufälliges Einzelbild verwenden, wenn kein Vorschaubild eingereicht wurde',hover:'Originale beim Bewegen über ein Video anzeigen',channel:'Auf diesem Kanal deaktivieren',reset:'Zurücksetzen',using:'Verwendet DeArrow' },
+            es: { title:'Ajustes de DeArrow',enabled:'Activar DeArrow',titles:'Sustituir títulos',thumbnails:'Sustituir miniaturas',random:'Usar un fotograma aleatorio si no se ha enviado una miniatura',hover:'Mostrar originales al pasar sobre un vídeo',channel:'Desactivar en este canal',reset:'Restablecer',using:'Usa DeArrow' },
+            fr: { title:'Réglages DeArrow',enabled:'Activer DeArrow',titles:'Remplacer les titres',thumbnails:'Remplacer les miniatures',random:'Utiliser une image aléatoire si aucune miniature n’a été proposée',hover:'Afficher les originaux au survol d’une vidéo',channel:'Désactiver sur cette chaîne',reset:'Réinitialiser',using:'Utilise DeArrow' },
+            it: { title:'Impostazioni DeArrow',enabled:'Attiva DeArrow',titles:'Sostituisci titoli',thumbnails:'Sostituisci miniature',random:'Usa un fotogramma casuale se non è stata inviata una miniatura',hover:'Mostra gli originali passando su un video',channel:'Disattiva su questo canale',reset:'Ripristina',using:'Usa DeArrow' },
+            pt: { title:'Configurações do DeArrow',enabled:'Ativar DeArrow',titles:'Substituir títulos',thumbnails:'Substituir miniaturas',random:'Usar um quadro aleatório quando nenhuma miniatura for enviada',hover:'Mostrar originais ao passar sobre um vídeo',channel:'Desativar neste canal',reset:'Restaurar padrões',using:'Usa DeArrow' },
+            ja: { title:'DeArrow設定',enabled:'DeArrowを有効にする',titles:'タイトルを置き換える',thumbnails:'サムネイルを置き換える',random:'サムネイルが投稿されていない場合はランダムなフレームを使う',hover:'動画にカーソルを合わせたとき元を表示',channel:'このチャンネルでは無効にする',reset:'初期設定に戻す',using:'DeArrowを使用' },
+            ko: { title:'DeArrow 설정',enabled:'DeArrow 활성화',titles:'제목 바꾸기',thumbnails:'미리보기 이미지 바꾸기',random:'제출된 미리보기가 없으면 임의의 프레임 사용',hover:'동영상 위에 마우스를 놓으면 원본 표시',channel:'이 채널에서 비활성화',reset:'기본값으로 재설정',using:'DeArrow 사용' },
+            ru: { title:'Настройки DeArrow',enabled:'Включить DeArrow',titles:'Заменять названия',thumbnails:'Заменять значки',random:'Использовать случайный кадр, если миниатюра не предложена',hover:'Показывать оригиналы при наведении на видео',channel:'Отключить на этом канале',reset:'Сбросить',using:'Использует DeArrow' },
+            zh: { title:'DeArrow 设置',enabled:'启用 DeArrow',titles:'替换标题',thumbnails:'替换缩略图',random:'没有提交缩略图时使用随机画面',hover:'悬停视频时显示原始内容',channel:'对这个频道停用',reset:'恢复默认设置',using:'使用 DeArrow' }
         };
         return translations[language] || english;
     }
@@ -1135,7 +1136,10 @@ enum BundledUserScriptSources {
         if (!value || typeof value !== 'object') return null;
         return {
             titles: Array.isArray(value.titles) ? value.titles : [],
-            thumbnails: Array.isArray(value.thumbnails) ? value.thumbnails : []
+            thumbnails: Array.isArray(value.thumbnails) ? value.thumbnails : [],
+            videoDuration: isFinite(value.videoDuration) && Number(value.videoDuration) > 0 ? Number(value.videoDuration) : null,
+            randomTime: value.randomTime !== null && value.randomTime !== undefined && isFinite(value.randomTime) &&
+                Number(value.randomTime) >= 0 ? Number(value.randomTime) : null
         };
     }
 
@@ -1188,6 +1192,24 @@ enum BundledUserScriptSources {
         var thumbnail = branding && branding.thumbnails[0];
         return thumbnail && thumbnail.original !== true && isFinite(thumbnail.timestamp) && thumbnail.timestamp >= 0 &&
             (thumbnail.locked || Number(thumbnail.votes) >= 0) ? Number(thumbnail.timestamp) : null;
+    }
+
+    // DeArrow supplies a stable randomTime when it has one. The deterministic
+    // fallback avoids a thumbnail changing on every scan for older responses.
+    function deArrowRandomThumbnailTimestamp(videoId, branding) {
+        if (!branding || !isFinite(branding.videoDuration) || branding.videoDuration <= 0) return null;
+        var fraction = branding.randomTime;
+        if (!isFinite(fraction) || fraction < 0) {
+            var hash = 2166136261;
+            for (var i = 0; i < videoId.length; i++) {
+                hash ^= videoId.charCodeAt(i);
+                hash = Math.imul(hash, 16777619);
+            }
+            fraction = (hash >>> 0) / 4294967296;
+        }
+        // Match DeArrow's policy of keeping fallback frames out of the ending.
+        fraction = Math.min(Math.max(Number(fraction), 0), 0.9);
+        return fraction * branding.videoDuration;
     }
 
     function deArrowVideoIdFromUrl(value) {
@@ -1413,6 +1435,9 @@ enum BundledUserScriptSources {
             }
             var customTitle = deArrowAcceptedTitle(branding);
             var customTimestamp = deArrowAcceptedThumbnail(branding);
+            if (customTimestamp === null && currentSettings.randomThumbnails) {
+                customTimestamp = deArrowRandomThumbnailTimestamp(videoId, branding);
+            }
             var titleElement = findDeArrowCardTitle(card);
             var thumbnailElement = findDeArrowCardThumbnail(card, videoId);
             if (currentSettings.replaceTitles && customTitle) {
@@ -1927,31 +1952,74 @@ enum BundledUserScriptSources {
         var elements = [];
         var blobUrls = [];
 
-        // Safari's caption menu is the visible control after Tube Cleaner
-        // hides YouTube's player chrome. Never turn its selected track back
-        // off just because YouTube still reports a remembered caption choice.
-        // Instead, make one best-effort attempt to turn off YouTube's renderer
-        // so the two renderers do not overlap.
-        var requestedYouTubeCaptionsOff = false;
-        function keepNativeCaptionsSelected() {
-            var hasShowingNativeTrack = false;
+        // Tube Cleaner hides YouTube's controls, so Safari's captions menu is
+        // the practical caption selector. The mirrored tracks are blank control
+        // tracks: selecting one selects the matching YouTube caption track,
+        // which preserves creator styling and movable caption windows. A valid
+        // downloaded WebVTT copy remains available as a fallback.
+        var nativeCaptionSelectionObserved = false;
+
+        function captionButton() {
+            try { return player.querySelector('.ytp-subtitles-button'); } catch (e) { return null; }
+        }
+
+        function youtubeCaptionsAreOn() {
+            try { return typeof player.isSubtitlesOn === 'function' && player.isSubtitlesOn(); }
+            catch (e) { return false; }
+        }
+
+        function setYouTubeCaptionsEnabled(enabled) {
+            if (youtubeCaptionsAreOn() === enabled) return youtubeCaptionsAreOn();
+            var button = captionButton();
+            if (!button || typeof button.click !== 'function') return false;
+            try { button.click(); } catch (e) { return false; }
+            return youtubeCaptionsAreOn() === enabled;
+        }
+
+        function selectYouTubeCaptionTrack(element) {
+            var definition = element._wblockNativeSubtitleDefinition || {};
+            var language = definition.languageCode || element.srclang || '';
+            if (!language || typeof player.setOption !== 'function') return false;
+            try {
+                if (typeof player.loadModule === 'function') player.loadModule('captions');
+                player.setOption('captions', 'track', { languageCode: language });
+                return setYouTubeCaptionsEnabled(true);
+            } catch (e) { return false; }
+        }
+
+        function enableSafariCaptionFallback(element) {
+            if (!element || !element._wblockNativeSubtitleFallbackURL) return;
+            element.src = element._wblockNativeSubtitleFallbackURL;
+            element.setAttribute('data-wblock-subtitle-renderer', 'safari');
+        }
+
+        function resetSafariCaptionControl(element) {
+            if (!element || !element._wblockNativeSubtitleControlURL) return;
+            element.src = element._wblockNativeSubtitleControlURL;
+            element.setAttribute('data-wblock-subtitle-renderer', 'youtube');
+        }
+
+        function routeSafariCaptionSelection() {
+            var selected = null;
             for (var i = 0; i < elements.length; i++) {
                 if (elements[i].track && elements[i].track.mode === 'showing') {
-                    hasShowingNativeTrack = true;
+                    selected = elements[i];
                     break;
                 }
             }
-            if (!hasShowingNativeTrack) {
-                requestedYouTubeCaptionsOff = false;
+            if (!selected) {
+                if (!nativeCaptionSelectionObserved) return;
+                for (var j = 0; j < elements.length; j++) resetSafariCaptionControl(elements[j]);
+                setYouTubeCaptionsEnabled(false);
                 return;
             }
-            if (requestedYouTubeCaptionsOff) return;
-            try {
-                if (typeof player.isSubtitlesOn !== 'function' || !player.isSubtitlesOn()) return;
-                requestedYouTubeCaptionsOff = true;
-                var button = player.querySelector('.ytp-subtitles-button');
-                if (button && typeof button.click === 'function') button.click();
-            } catch (e) { /* Safari captions remain selected if this fails */ }
+            if (selected.getAttribute('data-wblock-subtitle-renderer') === 'safari') return;
+            if (!selectYouTubeCaptionTrack(selected)) enableSafariCaptionFallback(selected);
+        }
+
+        function onSafariCaptionChange() {
+            nativeCaptionSelectionObserved = true;
+            routeSafariCaptionSelection();
         }
 
         function stopRetry() {
@@ -1970,22 +2038,27 @@ enum BundledUserScriptSources {
                 if (seen[key]) continue;
                 seen[key] = true;
                 try {
-                    var blobUrl = URL.createObjectURL(new Blob([downloads[i].vtt], { type: 'text/vtt' }));
+                    var fallbackBlobUrl = URL.createObjectURL(new Blob([downloads[i].vtt], { type: 'text/vtt' }));
+                    var controlBlobUrl = URL.createObjectURL(new Blob(['WEBVTT\\n\\n'], { type: 'text/vtt' }));
                     var element = document.createElement('track');
                     element.kind = 'subtitles';
                     element.label = label;
                     element.srclang = language;
-                    element.src = blobUrl;
+                    element.src = controlBlobUrl;
+                    element._wblockNativeSubtitleDefinition = definition;
+                    element._wblockNativeSubtitleFallbackURL = fallbackBlobUrl;
+                    element._wblockNativeSubtitleControlURL = controlBlobUrl;
                     element.setAttribute('data-wblock-native-subtitle', key);
+                    element.setAttribute('data-wblock-subtitle-renderer', 'youtube');
                     video.appendChild(element);
                     elements.push(element);
-                    blobUrls.push(blobUrl);
+                    blobUrls.push(fallbackBlobUrl, controlBlobUrl);
                 } catch (e) { /* skip one malformed track */ }
             }
             if (elements.length) {
-                keepNativeCaptionsSelected();
-                setTimeout(keepNativeCaptionsSelected, 0);
-                log('applied', elements.length, 'native subtitle tracks');
+                routeSafariCaptionSelection();
+                setTimeout(routeSafariCaptionSelection, 0);
+                log('applied', elements.length, 'Safari caption controls');
             }
         }
 
@@ -2019,9 +2092,9 @@ enum BundledUserScriptSources {
         }
 
         if (video.textTracks && typeof video.textTracks.addEventListener === 'function') {
-            video.textTracks.addEventListener('change', keepNativeCaptionsSelected);
+            video.textTracks.addEventListener('change', onSafariCaptionChange);
         }
-        video.addEventListener('timeupdate', keepNativeCaptionsSelected);
+        video.addEventListener('timeupdate', routeSafariCaptionSelection);
 
         tryStart();
         if (!started) {
@@ -2036,9 +2109,9 @@ enum BundledUserScriptSources {
             cancelled = true;
             stopRetry();
             if (video.textTracks && typeof video.textTracks.removeEventListener === 'function') {
-                video.textTracks.removeEventListener('change', keepNativeCaptionsSelected);
+                video.textTracks.removeEventListener('change', onSafariCaptionChange);
             }
-            video.removeEventListener('timeupdate', keepNativeCaptionsSelected);
+            video.removeEventListener('timeupdate', routeSafariCaptionSelection);
             if (controller) controller.abort();
             for (var i = 0; i < elements.length; i++) {
                 if (elements[i].parentNode) elements[i].remove();
@@ -2864,6 +2937,10 @@ enum BundledUserScriptSources {
             deArrowMenu.appendChild(deArrowCheckboxRow(locale.thumbnails, settings.replaceThumbnails, !settings.enabled,
                 'replaceThumbnails', function (checked) {
                     settings.replaceThumbnails = checked; saveDeArrowSettings(settings);
+                }));
+            deArrowMenu.appendChild(deArrowCheckboxRow(locale.random, settings.randomThumbnails,
+                !settings.enabled || !settings.replaceThumbnails, 'randomThumbnails', function (checked) {
+                    settings.randomThumbnails = checked; saveDeArrowSettings(settings);
                 }));
             deArrowMenu.appendChild(deArrowCheckboxRow(locale.hover, settings.showOriginalOnHover, !settings.enabled,
                 'showOriginalOnHover', function (checked) {
