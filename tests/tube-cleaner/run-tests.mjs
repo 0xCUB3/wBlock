@@ -823,6 +823,29 @@ async function qualityUISelectionCheck(page, scenario) {
   await controlsSurvivalCheck(page, 'desktop');
   await audioToggleCheck(page, 'desktop');
   await qualityUISelectionCheck(page, 'desktop');
+  await page.evaluate(() => {
+    // On a real SPA navigation the persistent player can briefly expose the
+    // old ytInitialData after the URL already identifies the next video.
+    // Recreate that timing, then navigate to a video with no chapter payload.
+    window.ytInitialData = {
+      engagementPanels: [{ macroMarkersListItemRenderer: {
+        timeDescription: { simpleText: '0:00' }, title: { simpleText: 'Old chapter' }
+      }}]
+    };
+    window.ytInitialPlayerResponse = {
+      videoDetails: { videoId: 'dQw4w9WgXcQ', channelId: 'test-channel' }
+    };
+    window.__wblockTubeDebug.applyChapters();
+    history.replaceState(null, '', location.pathname + '?v=NOCHAPTERS01');
+    document.dispatchEvent(new Event('yt-navigate-finish'));
+  });
+  await page.waitForTimeout(150);
+  await check(page, 'desktop', 'clears stale chapters when the next video has none', () => {
+    const video = document.querySelector('#movie_player video');
+    const track = video ? Array.from(video.textTracks).find(t => t.kind === 'chapters') : null;
+    const labels = track?.cues ? Array.from(track.cues).map(c => c.text) : [];
+    return { pass: labels.length === 0, detail: `labels=${labels.join(' | ')}` };
+  });
   record('desktop', 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
 }

@@ -1643,10 +1643,17 @@ enum BundledUserScriptSources {
         return '';
     }
 
+    // Return the object from which chapter renderers are extracted. Keeping its
+    // identity lets applyChapters reject an old SPA payload while YouTube is
+    // still swapping the persistent player to the next video.
+    function chapterDataSource() {
+        return window.ytInitialData || window.ytInitialPlayerResponse || null;
+    }
+
     // Extract YouTube's chapters for the current video as a sorted list of
     // { start, title }. Returns null when the page exposes no chapters.
-    function extractChapters() {
-        var data = window.ytInitialData || window.ytInitialPlayerResponse || null;
+    function extractChapters(data) {
+        data = data || chapterDataSource();
         if (!data) return null;
         var renderers = [];
         try { collectChapterRenderers(data, renderers, []); } catch (e) { return null; }
@@ -1719,11 +1726,24 @@ enum BundledUserScriptSources {
         if (!video) return false;
         var track = video._wblockChaptersTrack;
         var videoId = currentChapterVideoId();
-        var chapters = extractChapters();
+        var source = chapterDataSource();
+        var chapters = extractChapters(source);
 
-        if (chapters && chapters.length) {
+        // During SPA navigation YouTube can expose the previous video's
+        // ytInitialData after the URL has changed. Do not recache those old
+        // renderers under the new id; leave the native menu empty until a new
+        // payload arrives. This is especially important when the new video has
+        // no chapters at all.
+        var sourceIsFromPreviousVideo = chapters &&
+            ((video._wblockChapterVideoId !== videoId &&
+                video._wblockChapterDataSource === source) ||
+             video._wblockChapterRejectedSource === source);
+
+        if (chapters && chapters.length && !sourceIsFromPreviousVideo) {
             video._wblockChapterData = chapters;
             video._wblockChapterVideoId = videoId;
+            video._wblockChapterDataSource = source;
+            video._wblockChapterRejectedSource = null;
         } else if (video._wblockChapterVideoId === videoId &&
             video._wblockChapterData && video._wblockChapterData.length) {
             chapters = video._wblockChapterData;
@@ -1734,6 +1754,10 @@ enum BundledUserScriptSources {
             clearChapterCues(track);
             video._wblockChapterData = null;
             video._wblockChapterVideoId = videoId;
+            video._wblockChapterDataSource = null;
+            if (sourceIsFromPreviousVideo) {
+                video._wblockChapterRejectedSource = source;
+            }
             return false;
         }
 
