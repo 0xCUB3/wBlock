@@ -1771,6 +1771,62 @@ for (const config of [
   await browser.close();
 }
 
+// ---- Scenario 13: cleaners do not enter third-party embeds --------------
+// The production injector runs in every frame. Cleaner scripts intentionally
+// use @noframes: they may transform the host page's own player, but must never
+// modify a YouTube player embedded by another site.
+{
+  console.log('\n=== Scenario: Userscript injector (embed safety) ===');
+  const S = 'injector-embed-safety';
+  const browser = await webkit.launch();
+  const page = await browser.newPage();
+  const pageErrors = [];
+  page.on('pageerror', e => pageErrors.push(e.message));
+
+  const descriptor = {
+    id: '00000000-0000-0000-0000-000000000002',
+    name: 'Embed Safety Probe',
+    namespace: 'com.skula.wblock.tests',
+    version: '1.0.0',
+    description: '',
+    runAt: 'document-start',
+    noframes: true,
+    injectInto: 'page',
+    content: 'window.__wblockEmbedSafetyProbe = (window.__wblockEmbedSafetyProbe || 0) + 1;',
+    resourceNames: [],
+    storageSnapshot: {},
+  };
+  const mockBridge = `
+    globalThis.browser = {
+      runtime: {
+        onMessage: { addListener: function () {} },
+        sendMessage: function (message) {
+          if (message && message.action === 'getUserScripts') {
+            return Promise.resolve({ userScripts: [${JSON.stringify(descriptor)}] });
+          }
+          return Promise.resolve({});
+        }
+      }
+    };
+  `;
+  await page.addInitScript(mockBridge + '\n' + injectorSource);
+  const iframe = '<!doctype html><html><body>embed</body></html>';
+  const document = '<!doctype html><html><body><iframe src="data:text/html;charset=utf-8,' +
+    encodeURIComponent(iframe) + '"></iframe></body></html>';
+  await page.goto('data:text/html;charset=utf-8,' + encodeURIComponent(document), { waitUntil: 'load' });
+  await page.waitForTimeout(100);
+
+  const embedFrame = page.frames().find(frame => frame !== page.mainFrame());
+  const topRuns = await page.evaluate(() => window.__wblockEmbedSafetyProbe || 0);
+  const embedRuns = embedFrame
+    ? await embedFrame.evaluate(() => window.__wblockEmbedSafetyProbe || 0)
+    : -1;
+  record(S, 'runs in the top-level document', topRuns === 1, `runs=${topRuns}`);
+  record(S, 'does not run in an embedded frame', embedRuns === 0, `runs=${embedRuns}`);
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
 // ---- Summary -------------------------------------------------------------
 console.log('\n================ SUMMARY ================');
 const byScenario = {};

@@ -19,6 +19,7 @@
 // @exclude      https://m.youtube.com/*
 // @exclude      https://music.youtube.com/*
 // @exclude      https://www.youtube-nocookie.com/*
+// @noframes
 // @run-at       document-start
 // @inject-into  page
 // @grant        none

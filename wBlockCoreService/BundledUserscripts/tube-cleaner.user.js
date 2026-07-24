@@ -17,6 +17,7 @@
 // @match        https://m.youtube.com/*
 // @match        https://music.youtube.com/*
 // @match        https://www.youtube-nocookie.com/*
+// @noframes
 // @run-at       document-start
 // @inject-into  page
 // @grant        none
