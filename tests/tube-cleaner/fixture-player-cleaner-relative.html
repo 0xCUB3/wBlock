@@ -25,11 +25,12 @@
 
   <script>
     (function () {
-      // Opaque blob source so sourceFromVideoElement returns null and the
-      // intended (relative) discovery path is exercised.
+      // Empty src so sourceFromVideoElement returns null and the intended
+      // (relative) discovery path is exercised.  Real pages with blob: src
+      // own a MediaSource pipeline that must not be disrupted.
       ['rel-jw', 'rel-dom'].forEach(function (id) {
         var v = document.getElementById(id).querySelector('video');
-        try { v.src = 'blob:https://example.com/00000000-0000-0000-0000-000000000000'; } catch (e) {}
+        try { v.removeAttribute('src'); } catch (e) {}
       });
 
       // Mock JW Player: only #rel-jw gets a playlist item, with a root-relative

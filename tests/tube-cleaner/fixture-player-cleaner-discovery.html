@@ -52,7 +52,11 @@
     (function () {
       // Give the opaque-source players a blob src so sourceFromVideoElement
       // returns null and the intended discovery path is exercised.
-      ['p-dom', 'p-videojs', 'p-jwplayer', 'p-poster', 'p-dash'].forEach(function (id) {
+      // p-poster and p-dash keep blob: as inert placeholders for negative
+      // tests (poster image and unplayable DASH manifest).  p-dom, p-videojs
+      // and p-jwplayer have no src so source discovery is exercised through
+      // the API and data-attribute paths.
+      ['p-poster', 'p-dash'].forEach(function (id) {
         var v = document.getElementById(id).querySelector('video');
         try { v.src = 'blob:https://example.com/00000000-0000-0000-0000-000000000000'; } catch (e) {}
       });

@@ -57,18 +57,10 @@
         try { v.src = 'blob:https://example.com/00000000-0000-0000-0000-000000000000'; } catch (e) {}
       });
 
-      // The first three are live MediaSource pipelines: the blob has already
-      // produced metadata, so Player Cleaner must leave the pipeline in place
-      // rather than swap in a discovered direct file. p-poster / p-dash stay
-      // inert placeholders (no metadata) so the cleaner may still consider them
-      // for replacement (and then decline because the discovered value is a
-      // poster image or an unplayable DASH manifest).
-      ['p-dom', 'p-videojs', 'p-jwplayer'].forEach(function (id) {
-        var v = document.getElementById(id).querySelector('video');
-        try {
-          Object.defineProperty(v, 'readyState', { get: function () { return 4; }, configurable: true });
-        } catch (e) {}
-      });
+      // All three are MSE/blob pipelines the page owns. Player Cleaner must
+      // leave pipelines in place rather than swapping in discovered direct
+      // files — even before metadata has loaded, tearing the element out of the
+      // DOM disrupts JavaScript holding a reference to it.
 
       // Mock video.js: one player whose element lives inside #p-videojs, so the
       // containment check in sourceFromVideojs only matches that container.

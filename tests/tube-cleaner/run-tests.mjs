@@ -1670,9 +1670,10 @@ async function qualityUISelectionCheck(page, scenario) {
 
 // ---- Scenario 8: Player Cleaner upgrade on loadedmetadata ----------------
 // A Plyr-style player exposes only an opaque blob: src at first scan, so Player
-// Cleaner can only enhance it in place. Its mock player API appears later without
-// mutating the DOM. loadedmetadata must trigger source discovery and structural
-// cleanup while retaining the already-buffering media element.
+// Cleaner can only enhance it in place. A blob: src that fires loadedmetadata
+// is a live MediaSource / MSE pipeline — the cleaner must NOT upgrade it even
+// if a mock player API later offers a direct URL. The pipeline is the page's
+// primary source, and enhanceInPlace already gave native controls + hidden chrome.
 {
   const { browser, page, pageErrors } = await runScenario('Player Cleaner (upgrade on loadedmetadata)', {
     fixture: FIXTURE_PLAYER_UPGRADE_URL,
@@ -1712,32 +1713,32 @@ async function qualityUISelectionCheck(page, scenario) {
       detail: v ? `src=${v.src} custom=${!!custom}` : 'no video' };
   });
 
-  // Fire loadedmetadata -> the event-driven upgrade should discover the API
-  // source, remove custom chrome, and keep the original media element.
+  // Fire loadedmetadata -> a live MSE pipeline; the cleaner must NOT upgrade.
   await page.evaluate(() => {
     const v = document.querySelector('#player-upgrade video');
     v.dispatchEvent(new Event('loadedmetadata', { bubbles: false }));
   });
 
-  await check(page, S, 'upgrades the original <video> on loadedmetadata', () => {
+  await check(page, S, 'keeps the blob pipeline on loadedmetadata (no upgrade)', () => {
     const c = document.getElementById('player-upgrade');
     const v = c ? c.querySelector('video') : null;
     if (!v) return { pass: false, detail: 'no video' };
     const retained = v.hasAttribute('data-test-original');
-    const clean = v.src === 'https://example.com/media/movie.mp4';
-    return { pass: retained && clean, detail: `retained=${retained} src=${v.src}` };
+    const blobKept = v.src.startsWith('blob:');
+    return { pass: retained && blobKept, detail: `retained=${retained} src=${v.src}` };
   });
 
-  await check(page, S, 'cleaned video has native controls + retained poster', () => {
+  await check(page, S, 'enhanced video has native controls + retained poster', () => {
     const v = document.querySelector('#player-upgrade video');
     const ok = !!(v && v.controls === true && v.getAttribute('poster') === 'https://example.com/poster.jpg');
     return { pass: ok, detail: v ? `controls=${v.controls} poster=${v.getAttribute('poster')}` : 'no video' };
   });
 
-  await check(page, S, 'removes the custom control chrome', () => {
+  await check(page, S, 'custom control chrome is hidden (not removed)', () => {
     const c = document.getElementById('player-upgrade');
     const bar = c ? c.querySelector('.plyr__controls') : null;
-    return { pass: !bar, detail: `plyr__controls present=${!!bar}` };
+    const hidden = bar && getComputedStyle(bar).display === 'none';
+    return { pass: hidden, detail: `plyr__controls present=${!!bar}${bar ? ' display=' + getComputedStyle(bar).display : ''}` };
   });
 
   await check(page, S, 'exactly one video after upgrade (idempotent)', () => {
@@ -2027,12 +2028,11 @@ for (const config of [
 
 // ---- Scenario: Player Cleaner keeps live MSE/blob pipelines intact ------
 // Regression guard for the cnn / ms.now "player errors loading the video"
-// report: a blob: source that has already loaded metadata is a live
-// MediaSource pipeline the page owns and is feeding, so the cleaner must not
-// tear it out of the DOM or re-source it. The rule is platform-agnostic
-// (based on readyState, not the user agent), so it is exercised on both a
-// mobile and a desktop profile. Clean (http) sources still get the normal
-// structural cleanup, so the guard is not over-broad.
+// report: a blob: src means a MediaSource pipeline the page owns, whether or
+// not metadata has loaded, so the cleaner must never tear it out of the DOM
+// or re-source it. The rule is platform-agnostic (based on source type, not
+// user agent or readyState), exercised on both a mobile and a desktop
+// profile. Clean (http) sources still get normal structural cleanup.
 {
   const blobCases = ['p-dom', 'p-videojs', 'p-jwplayer'];
   const cleanCases = [

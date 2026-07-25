@@ -860,18 +860,16 @@
 
     function cleanPlayer(container, video, src) {
         if (video._wblockCleaned) { return; }
-        // A blob: source whose media has already loaded metadata is a live
-        // MediaSource / MSE pipeline the page owns and is actively feeding.
+        // A blob: src means the page attached a MediaSource / MSE pipeline it
+        // owns and is actively feeding (cnn / ms.now, iOS and desktop).
         // Emptying the wrapper or overwriting src wedges that pipeline and
-        // surfaces as a player that fails to load until the page is refreshed
-        // (reported on cnn / ms.now, iOS and desktop). A blob that has not
-        // loaded yet is an inert placeholder (archive.org-style) and is safe to
-        // replace with a discovered direct file. enhanceInPlace() already gave
-        // the element native controls and hid the custom chrome in place, so
-        // leaving a live pipeline untouched loses nothing. This is a
-        // platform-agnostic rule based on whether the pipeline is live rather
-        // than on the user agent.
-        if (hasOpaqueMediaSource(video) && video.readyState >= 1) { return; }
+        // surfaces as a player that fails to load until the page is refreshed.
+        // enhanceInPlace() already gave the element native controls and hid
+        // the custom chrome, so leaving the pipeline untouched loses nothing.
+        // This is a platform-agnostic rule based on the source type, not the
+        // user agent or the readyState (which may still be 0 when the pipeline
+        // is being set up).
+        if (hasOpaqueMediaSource(video)) { return; }
         var state = capturePlaybackState(video);
         // If the browser is already playing a direct source, retain it exactly:
         // changing src would discard buffered media, selected tracks, and time.
