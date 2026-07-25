@@ -112,21 +112,11 @@ enum BundledUserScriptSources {
             (video && video.webkitPresentationMode === 'picture-in-picture');
     }
 
-    function enterPiP(video, resumePausedVideo) {
+    function enterPiP(video) {
         if (!video || !autoPiPEnabled) return;
         if (isPiPActive(video)) return;
-        if (video.ended || (video.paused && !resumePausedVideo)) return;
+        if (video.paused || video.ended) return;
         try {
-            // iOS pauses media immediately before it reports that Safari is
-            // leaving the foreground. Resume the just-paused video before
-            // asking WebKit for PiP; otherwise the old paused guard makes
-            // mobile Auto PiP a no-op.
-            if (resumePausedVideo && video.paused && typeof video.play === 'function') {
-                var playRequest = video.play();
-                if (playRequest && playRequest.catch) {
-                    playRequest.catch(function (e) { log('PiP resume rejected', e); });
-                }
-            }
             if (video.webkitSupportsPresentationMode &&
                 typeof video.webkitSetPresentationMode === 'function') {
                 // Track only PiP entered by Tube Cleaner. PiP entered manually
@@ -180,32 +170,16 @@ enum BundledUserScriptSources {
         // Tab switch: enter PiP when tab hides, exit when visible.
         // Note: enableBackgroundPlayback() overrides document.hidden to always
         // return false, so we use _realHidden which tracks the true state.
-        // iOS pauses the media just before visibilitychange/pagehide, so retain
-        // a short playback window and resume it as we move into PiP.
-        var lastPlayingAt = video.paused ? 0 : Date.now();
-        function onPlaying() { lastPlayingAt = Date.now(); }
-        function wasPlayingBeforeMobileBackground() {
-            return !video.ended && (!video.paused || Date.now() - lastPlayingAt < 1000);
-        }
-        function enterMobileBackgroundPiP() {
-            if (!IS_IOS || !autoPiPEnabled || !wasPlayingBeforeMobileBackground()) return;
-            enterPiP(video, true);
-        }
         function onVisibilityChange() {
             if (!autoPiPEnabled) return;
             if (_realHidden) {
-                if (IS_IOS) {
-                    enterMobileBackgroundPiP();
-                } else if (!video.paused && !video.ended) {
+                if (!video.paused && !video.ended) {
                     enterPiP(video);
                 }
             } else if (document.hasFocus() && isPiPActive(video)) {
                 exitPiP(video);
             }
         }
-        // pagehide and freeze cover mobile Safari paths where JavaScript is
-        // suspended before or without a final visibilitychange delivery.
-        function onMobilePageLeave() { enterMobileBackgroundPiP(); }
 
         // Losing keyboard focus does not mean the video is obscured on macOS:
         // another visible window may simply be active beside Safari. Enter PiP
@@ -220,11 +194,6 @@ enum BundledUserScriptSources {
 
         document.addEventListener('visibilitychange', onVisibilityChange);
         window.addEventListener('focus', onFocus);
-        if (IS_IOS) {
-            video.addEventListener('playing', onPlaying);
-            window.addEventListener('pagehide', onMobilePageLeave);
-            document.addEventListener('freeze', onMobilePageLeave);
-        }
 
         // Scroll out of view: use IntersectionObserver
         var scrollObserver = new IntersectionObserver(function (entries) {
@@ -255,11 +224,6 @@ enum BundledUserScriptSources {
         registerCleanup(function () {
             document.removeEventListener('visibilitychange', onVisibilityChange);
             window.removeEventListener('focus', onFocus);
-            if (IS_IOS) {
-                video.removeEventListener('playing', onPlaying);
-                window.removeEventListener('pagehide', onMobilePageLeave);
-                document.removeEventListener('freeze', onMobilePageLeave);
-            }
             try { scrollObserver.disconnect(); } catch (e) { /* ignore */ }
             video.removeEventListener('webkitpresentationmodechanged', onPresentationModeChange);
             video.removeEventListener('leavepictureinpicture', onLeavePictureInPicture);
@@ -2690,9 +2654,10 @@ enum BundledUserScriptSources {
 
         var toolbar = document.createElement('div');
         toolbar.className = 'wblock-tc-toolbar';
-        // Position at bottom-right above Safari's native controls. On iOS the
-        // native controls consume touch events, so this toolbar must stay visible
-        // rather than relying on a tap bubbling through the media-controls layer.
+        // Position at bottom-right above Safari's native controls. The mobile
+        // toolbar auto-hides and reappears on a tap to the video surface (see
+        // the auto-hide wiring below); it only needs to stay out of the native
+        // control strip at the very bottom.
         var toolbarBottom = IS_IOS ? 'calc(56px + env(safe-area-inset-bottom, 0px))' : '42px';
         var toolbarRight = IS_IOS ? 'max(8px, env(safe-area-inset-right, 0px))' : '8px';
         var toolbarOpacity = IS_IOS ? '1' : '0.75';
@@ -3208,12 +3173,77 @@ enum BundledUserScriptSources {
         // PiP button is intentionally omitted — Safari's native controls
         // already provide PiP. Auto PiP handles automatic PiP entry.
 
-        // Keep the compact mobile toolbar visible. Native iOS media controls
-        // consume taps before they bubble to #movie_player, so tap-to-reveal is
-        // not reliable on actual iPhone/iPad hardware.
         if (IS_IOS) {
-            toolbar.style.opacity = '1';
-            toolbar.style.pointerEvents = 'auto';
+            // The mobile toolbar auto-hides a few seconds after playback
+            // resumes and reappears on a tap to the video surface, mirroring
+            // Safari's own control-chrome behavior. It stays visible while a
+            // settings panel is open and while the video is paused. Native iOS
+            // media controls occupy the bottom strip, but taps on the rest of
+            // the video bubble through to the element's own click listener.
+            var toolbarTimer = null;
+            var TOOLBAR_HIDE_DELAY = 3000;
+
+            function showToolbar() {
+                toolbar.style.opacity = '1';
+                toolbar.style.pointerEvents = 'auto';
+                clearTimeout(toolbarTimer);
+            }
+            function hideToolbar() {
+                // Never hide while a settings panel is open — the controls
+                // that opened it must remain reachable to close it again.
+                var panels = [qualityMenu, sponsorMenu, deArrowMenu];
+                var anyOpen = panels.some(function (p) {
+                    return p && p.style.display !== 'none' && p.style.display !== '';
+                });
+                if (anyOpen) { scheduleHideToolbar(); return; }
+                toolbar.style.opacity = '0';
+                toolbar.style.pointerEvents = 'none';
+            }
+            function scheduleHideToolbar() {
+                clearTimeout(toolbarTimer);
+                toolbarTimer = setTimeout(hideToolbar, TOOLBAR_HIDE_DELAY);
+            }
+
+            function isToolbarVisible() {
+                return toolbar.style.opacity === '1';
+            }
+
+            // Tap the video surface to toggle the toolbar.
+            function onVideoTap(e) {
+                // Let taps on the toolbar's own buttons reach their handlers;
+                // the toolbar is a sibling of the video, not a child, so this
+                // listener only fires for taps on the video itself.
+                if (isToolbarVisible()) {
+                    hideToolbar();
+                } else {
+                    showToolbar();
+                    if (!video.paused && !video.ended) { scheduleHideToolbar(); }
+                }
+            }
+            video.addEventListener('click', onVideoTap);
+
+            // Keep visible while the toolbar itself is being touched.
+            toolbar.addEventListener('touchstart', function () {
+                showToolbar();
+                if (!video.paused && !video.ended) { scheduleHideToolbar(); }
+            });
+
+            // Auto-hide shortly after playback starts; show again on pause.
+            function onVideoPlay() { scheduleHideToolbar(); }
+            function onVideoPause() { showToolbar(); }
+            video.addEventListener('play', onVideoPlay);
+            video.addEventListener('pause', onVideoPause);
+
+            // Initial state: visible if paused, auto-hide once playing.
+            showToolbar();
+            if (!video.paused && !video.ended) { scheduleHideToolbar(); }
+
+            registerCleanup(function () {
+                clearTimeout(toolbarTimer);
+                video.removeEventListener('click', onVideoTap);
+                video.removeEventListener('play', onVideoPlay);
+                video.removeEventListener('pause', onVideoPause);
+            });
         } else {
             // Start hidden on desktop — it appears with native controls
             toolbar.style.opacity = '0';
@@ -3536,10 +3566,6 @@ enum BundledUserScriptSources {
     var ATTR_DONE = 'data-wblock-player-cleaner';
     var PREFERENCES_KEY = 'wblock.playerCleaner.preferences';
     var RESUME_KEY = 'wblock.playerCleaner.resume';
-
-    // iPadOS requesting the desktop site reports "MacIntel" with touch support.
-    var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
     // A blob: src on the media element means the page attached a MediaSource /
     // ManagedMediaSource (Player Cleaner never assigns blob urls itself).
@@ -4347,15 +4373,18 @@ enum BundledUserScriptSources {
 
     function cleanPlayer(container, video, src) {
         if (video._wblockCleaned) { return; }
-        // On iOS a blob: source means the page owns a MediaSource / MSE pipeline.
-        // Emptying the wrapper or overwriting src with a discovered url wedges
-        // that pipeline and surfaces as a player that fails to load until the
-        // page is refreshed (reported on cnn / ms.now). enhanceInPlace() already
-        // gave the element native controls and hid the custom chrome in place,
-        // so leave the working pipeline untouched and skip structural cleanup.
-        // Desktop keeps the original behaviour (archive.org-style placeholders
-        // whose blob is replaced by a resolved direct file).
-        if (IS_IOS && hasOpaqueMediaSource(video)) { return; }
+        // A blob: source whose media has already loaded metadata is a live
+        // MediaSource / MSE pipeline the page owns and is actively feeding.
+        // Emptying the wrapper or overwriting src wedges that pipeline and
+        // surfaces as a player that fails to load until the page is refreshed
+        // (reported on cnn / ms.now, iOS and desktop). A blob that has not
+        // loaded yet is an inert placeholder (archive.org-style) and is safe to
+        // replace with a discovered direct file. enhanceInPlace() already gave
+        // the element native controls and hid the custom chrome in place, so
+        // leaving a live pipeline untouched loses nothing. This is a
+        // platform-agnostic rule based on whether the pipeline is live rather
+        // than on the user agent.
+        if (hasOpaqueMediaSource(video) && video.readyState >= 1) { return; }
         var state = capturePlaybackState(video);
         // If the browser is already playing a direct source, retain it exactly:
         // changing src would discard buffered media, selected tracks, and time.

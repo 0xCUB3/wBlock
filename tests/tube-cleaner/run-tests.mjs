@@ -31,6 +31,7 @@ const FIXTURE_TUBE_MULTIPLE_URL = pathToFileURL(join(__dirname, 'fixture-tube-cl
 const FIXTURE_PLAYER_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner.html')).href;
 const FIXTURE_PLAYER_REPLACE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-replace.html')).href;
 const FIXTURE_PLAYER_DISCOVERY_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-discovery.html')).href;
+const FIXTURE_PLAYER_LIVE_BLOB_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-live-blob.html')).href;
 const FIXTURE_PLAYER_SHADOW_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-shadow.html')).href;
 const FIXTURE_PLAYER_BARE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-bare.html')).href;
 const FIXTURE_PLAYER_RELATIVE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-relative.html')).href;
@@ -550,6 +551,60 @@ async function iosLandscapeCheck(page, scenario) {
   });
 }
 
+// The mobile toolbar auto-hides a few seconds after playback resumes and
+// reappears on a tap to the video surface, mirroring Safari's control chrome.
+// It must stay visible while paused and while a settings panel is open.
+async function iosAutoHideCheck(page, scenario) {
+  const videoSel = '#movie_player video';
+  const setPlaying = async () => page.evaluate((v) => {
+    const el = document.querySelector(v);
+    Object.defineProperty(el, 'paused', { configurable: true, get: () => false });
+    Object.defineProperty(el, 'ended', { configurable: true, get: () => false });
+    el.dispatchEvent(new Event('play'));
+  }, videoSel);
+  const setPaused = async () => page.evaluate((v) => {
+    const el = document.querySelector(v);
+    Object.defineProperty(el, 'paused', { configurable: true, get: () => true });
+    el.dispatchEvent(new Event('pause'));
+  }, videoSel);
+
+  // Auto-hide after play.
+  await setPlaying();
+  await page.waitForFunction(() => document.querySelector('.wblock-tc-toolbar')?.style.opacity === '0', undefined, { timeout: 4000 });
+  await check(page, scenario, 'iOS toolbar auto-hides after playback resumes', () => ({ pass: true, detail: 'hidden after play' }));
+
+  // Tap the video to reveal.
+  await page.evaluate((v) => document.querySelector(v).click(), videoSel);
+  await check(page, scenario, 'iOS tap reveals the hidden toolbar', () => {
+    const o = document.querySelector('.wblock-tc-toolbar')?.style.opacity;
+    return { pass: o === '1', detail: `opacity=${o}` };
+  });
+
+  // Tap again hides (toggle).
+  await page.evaluate((v) => document.querySelector(v).click(), videoSel);
+  await check(page, scenario, 'iOS tap hides the visible toolbar', () => {
+    const o = document.querySelector('.wblock-tc-toolbar')?.style.opacity;
+    return { pass: o === '0', detail: `opacity=${o}` };
+  });
+
+  // Pause shows the toolbar and keeps it visible.
+  await setPaused();
+  await check(page, scenario, 'iOS pause reveals the toolbar', () => {
+    const o = document.querySelector('.wblock-tc-toolbar')?.style.opacity;
+    return { pass: o === '1', detail: `opacity=${o}` };
+  });
+
+  // While a settings panel is open, the auto-hide timer must not hide it.
+  await page.evaluate(() => document.querySelector('.wblock-tc-sponsor-button').click());
+  await setPlaying();
+  await page.waitForTimeout(3200);
+  await check(page, scenario, 'iOS toolbar stays visible while a settings panel is open', () => {
+    const o = document.querySelector('.wblock-tc-toolbar')?.style.opacity;
+    return { pass: o === '1', detail: `opacity=${o}` };
+  });
+  await page.evaluate(() => document.querySelector('.wblock-tc-sponsor-button').click());
+}
+
 // On iOS the SABR player often reports only the rendition buffered so far
 // (frequently just 360p). The quality picker must still offer the canonical
 // ladder so a tap can request a higher rendition on demand, and choosing one
@@ -957,6 +1012,7 @@ async function qualityUISelectionCheck(page, scenario) {
   await iosNativeControlsChecks(page, 'iPhone');
   await iosQualityLadderCheck(page, 'iPhone');
   await iosLandscapeCheck(page, 'iPhone');
+  await iosAutoHideCheck(page, 'iPhone');
   await controlsSurvivalCheck(page, 'iPhone', { preserveIOSMMSRestrictions: true });
   record('iPhone', 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
@@ -1774,9 +1830,6 @@ async function qualityUISelectionCheck(page, scenario) {
 for (const config of [
   { name: 'Tube Cleaner', key: 'tube-cleaner-visibility', fixture: FIXTURE_URL,
     source: visibilityPrelude + '\n' + userscript, selector: '#movie_player video', ready: '.wblock-tc-toolbar' },
-  { name: 'Tube Cleaner iOS', key: 'tube-cleaner-ios-visibility', fixture: FIXTURE_URL,
-    source: visibilityPrelude + '\n' + userscript, selector: '#movie_player video', ready: '.wblock-tc-toolbar',
-    device: devices['iPhone 13'], mobile: true },
   { name: 'Player Cleaner', key: 'player-cleaner-visibility', fixture: FIXTURE_PLAYER_URL,
     source: visibilityPrelude + '\n' + playerUserscript, selector: '.video-js video', ready: '[data-wblock-player-cleaner]' },
 ]) {
@@ -1784,13 +1837,11 @@ for (const config of [
     fixture: config.fixture,
     scriptSource: config.source,
     readySignal: config.ready,
-    device: config.device,
-    viewport: config.device ? undefined : { width: 1280, height: 800 },
+    viewport: { width: 1280, height: 800 },
   });
   await page.evaluate((selector) => {
     const video = document.querySelector(selector);
-    window.__wblockVideoPaused = false;
-    Object.defineProperty(video, 'paused', { configurable: true, get: () => window.__wblockVideoPaused });
+    Object.defineProperty(video, 'paused', { configurable: true, get: () => false });
     Object.defineProperty(video, 'ended', { configurable: true, get: () => false });
     video.webkitSupportsPresentationMode = true;
     video.webkitPresentationMode = 'inline';
@@ -1799,7 +1850,6 @@ for (const config of [
       window.__wblockPiPMode = mode;
     };
     window.__wblockPiPMode = 'inline';
-    video.dispatchEvent(new Event('playing'));
     Object.defineProperty(document, 'hasFocus', {
       configurable: true,
       value: () => false,
@@ -1811,20 +1861,12 @@ for (const config of [
     pass: window.__wblockPiPMode === 'inline',
     detail: `pip=${window.__wblockPiPMode}`,
   }));
-  await page.evaluate((mobile) => {
-    // iOS pauses the video immediately before it backgrounds. Auto PiP must
-    // retain the recent playing state and still enter PiP from this sequence.
-    if (mobile) {
-      window.__wblockVideoPaused = true;
-      document.querySelector('#movie_player video').dispatchEvent(new Event('pause'));
-    }
+  await page.evaluate(() => {
     window.__wblockNativeHidden = true;
     window.__wblockNativeVisibility = 'hidden';
     document.dispatchEvent(new Event('visibilitychange'));
-  }, config.mobile || false);
-  await check(page, config.key, config.mobile
-    ? 'enters PiP after iOS pauses video before native backgrounding'
-    : 'enters PiP from native hidden state while page sees visible', () => ({
+  });
+  await check(page, config.key, 'enters PiP from native hidden state while page sees visible', () => ({
     pass: document.hidden === false && document.visibilityState === 'visible' &&
       window.__wblockPiPMode === 'picture-in-picture',
     detail: `pageHidden=${document.hidden} pageState=${document.visibilityState} pip=${window.__wblockPiPMode}`,
@@ -1983,55 +2025,67 @@ for (const config of [
   await browser.close();
 }
 
-// ---- Scenario: Player Cleaner on iOS keeps MSE/blob pipelines intact ------
+// ---- Scenario: Player Cleaner keeps live MSE/blob pipelines intact ------
 // Regression guard for the cnn / ms.now "player errors loading the video"
-// report: on iOS a blob: source means the page owns a MediaSource pipeline that
-// must not be torn out of the DOM or re-sourced. Clean (http) sources still get
-// the normal structural cleanup, so the guard is not over-broad.
+// report: a blob: source that has already loaded metadata is a live
+// MediaSource pipeline the page owns and is feeding, so the cleaner must not
+// tear it out of the DOM or re-source it. The rule is platform-agnostic
+// (based on readyState, not the user agent), so it is exercised on both a
+// mobile and a desktop profile. Clean (http) sources still get the normal
+// structural cleanup, so the guard is not over-broad.
 {
-  const iphone = devices['iPhone 13'];
-  const { browser, page, pageErrors } = await runScenario('Player Cleaner (iOS blob preservation)', {
-    device: iphone,
-    fixture: FIXTURE_PLAYER_DISCOVERY_URL,
-    hasTouch: true,
-    scriptSource: playerUserscript,
-    readySignal: '[data-wblock-player-cleaner]',
-  });
-  const S = 'player-cleaner-ios-blob';
-
   const blobCases = ['p-dom', 'p-videojs', 'p-jwplayer'];
-  await check(page, S, 'enhances blob-source players in place on iOS (controls on, blob kept)', (blobCases) => {
-    const bad = blobCases.filter((id) => {
-      const v = document.getElementById(id).querySelector('video');
-      return !(v && v.controls === true && (v.src || '').indexOf('blob:') === 0);
-    });
-    return { pass: bad.length === 0, detail: bad.length ? `bad: ${bad.join(',')}` : '3/3 blob retained + controls' };
-  }, { arg: blobCases });
-
-  await check(page, S, 'does not structurally clean blob-source players on iOS', (blobCases) => {
-    const cleaned = blobCases.filter((id) => {
-      const v = document.getElementById(id).querySelector('video');
-      return !!(v && v._wblockCleaned);
-    });
-    return { pass: cleaned.length === 0, detail: cleaned.length ? `cleaned: ${cleaned.join(',')}` : '0/3 cleaned (pipeline preserved)' };
-  }, { arg: blobCases });
-
   const cleanCases = [
     ['p-src', 'https://example.com/a.mp4'],
     ['p-source-child', 'https://example.com/b.mp4'],
   ];
-  await check(page, S, 'still cleans direct http-source players on iOS', (cleanCases) => {
-    const bad = cleanCases.filter(([id, expected]) => {
-      const v = document.getElementById(id).querySelector('video');
-      const source = v && (v.currentSrc || v.getAttribute('src') ||
-        (v.querySelector('source') && v.querySelector('source').src));
-      return !(v && v._wblockCleaned && v.controls === true && source === expected);
-    });
-    return { pass: bad.length === 0, detail: bad.length ? `bad: ${bad.map(([id]) => id).join(',')}` : '2/2 cleaned' };
-  }, { arg: cleanCases });
 
-  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
-  await browser.close();
+  for (const [deviceKey, label] of [
+    ['iPhone 13', 'mobile'],
+    [null, 'desktop'],
+  ]) {
+    const device = deviceKey ? devices[deviceKey] : null;
+    const { browser, page, pageErrors } = await runScenario(
+      'Player Cleaner (live blob preservation)',
+      {
+        device,
+        fixture: FIXTURE_PLAYER_LIVE_BLOB_URL,
+        hasTouch: !!deviceKey,
+        scriptSource: playerUserscript,
+        readySignal: '[data-wblock-player-cleaner]',
+      }
+    );
+    const S = 'player-cleaner-live-blob-' + label;
+
+    await check(page, S, 'enhances live blob-source players in place (controls on, blob kept)', (blobCases) => {
+      const bad = blobCases.filter((id) => {
+        const v = document.getElementById(id).querySelector('video');
+        return !(v && v.controls === true && (v.src || '').indexOf('blob:') === 0);
+      });
+      return { pass: bad.length === 0, detail: bad.length ? `bad: ${bad.join(',')}` : '3/3 blob retained + controls' };
+    }, { arg: blobCases });
+
+    await check(page, S, 'does not structurally clean live blob-source players', (blobCases) => {
+      const cleaned = blobCases.filter((id) => {
+        const v = document.getElementById(id).querySelector('video');
+        return !!(v && v._wblockCleaned);
+      });
+      return { pass: cleaned.length === 0, detail: cleaned.length ? `cleaned: ${cleaned.join(',')}` : '0/3 cleaned (pipeline preserved)' };
+    }, { arg: blobCases });
+
+    await check(page, S, 'still cleans direct http-source players', (cleanCases) => {
+      const bad = cleanCases.filter(([id, expected]) => {
+        const v = document.getElementById(id).querySelector('video');
+        const source = v && (v.currentSrc || v.getAttribute('src') ||
+          (v.querySelector('source') && v.querySelector('source').src));
+        return !(v && v._wblockCleaned && v.controls === true && source === expected);
+      });
+      return { pass: bad.length === 0, detail: bad.length ? `bad: ${bad.map(([id]) => id).join(',')}` : '2/2 cleaned' };
+    }, { arg: cleanCases });
+
+    record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+    await browser.close();
+  }
 }
 
 // ---- Summary -------------------------------------------------------------

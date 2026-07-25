@@ -54,10 +54,6 @@
     var PREFERENCES_KEY = 'wblock.playerCleaner.preferences';
     var RESUME_KEY = 'wblock.playerCleaner.resume';
 
-    // iPadOS requesting the desktop site reports "MacIntel" with touch support.
-    var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
     // A blob: src on the media element means the page attached a MediaSource /
     // ManagedMediaSource (Player Cleaner never assigns blob urls itself).
     function hasOpaqueMediaSource(video) {
@@ -864,15 +860,18 @@
 
     function cleanPlayer(container, video, src) {
         if (video._wblockCleaned) { return; }
-        // On iOS a blob: source means the page owns a MediaSource / MSE pipeline.
-        // Emptying the wrapper or overwriting src with a discovered url wedges
-        // that pipeline and surfaces as a player that fails to load until the
-        // page is refreshed (reported on cnn / ms.now). enhanceInPlace() already
-        // gave the element native controls and hid the custom chrome in place,
-        // so leave the working pipeline untouched and skip structural cleanup.
-        // Desktop keeps the original behaviour (archive.org-style placeholders
-        // whose blob is replaced by a resolved direct file).
-        if (IS_IOS && hasOpaqueMediaSource(video)) { return; }
+        // A blob: source whose media has already loaded metadata is a live
+        // MediaSource / MSE pipeline the page owns and is actively feeding.
+        // Emptying the wrapper or overwriting src wedges that pipeline and
+        // surfaces as a player that fails to load until the page is refreshed
+        // (reported on cnn / ms.now, iOS and desktop). A blob that has not
+        // loaded yet is an inert placeholder (archive.org-style) and is safe to
+        // replace with a discovered direct file. enhanceInPlace() already gave
+        // the element native controls and hid the custom chrome in place, so
+        // leaving a live pipeline untouched loses nothing. This is a
+        // platform-agnostic rule based on whether the pipeline is live rather
+        // than on the user agent.
+        if (hasOpaqueMediaSource(video) && video.readyState >= 1) { return; }
         var state = capturePlaybackState(video);
         // If the browser is already playing a direct source, retain it exactly:
         // changing src would discard buffered media, selected tracks, and time.
