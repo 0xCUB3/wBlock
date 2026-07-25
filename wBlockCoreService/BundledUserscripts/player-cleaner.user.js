@@ -54,6 +54,19 @@
     var PREFERENCES_KEY = 'wblock.playerCleaner.preferences';
     var RESUME_KEY = 'wblock.playerCleaner.resume';
 
+    // iPadOS requesting the desktop site reports "MacIntel" with touch support.
+    var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    // A blob: src on the media element means the page attached a MediaSource /
+    // ManagedMediaSource (Player Cleaner never assigns blob urls itself).
+    function hasOpaqueMediaSource(video) {
+        try {
+            return !!(video && ((video.currentSrc || '').indexOf('blob:') === 0 ||
+                (video.src || '').indexOf('blob:') === 0));
+        } catch (e) { return false; }
+    }
+
     // ------------------------------------------------------------------
     // Background playback — keep videos playing in background tabs
     // ------------------------------------------------------------------
@@ -851,6 +864,15 @@
 
     function cleanPlayer(container, video, src) {
         if (video._wblockCleaned) { return; }
+        // On iOS a blob: source means the page owns a MediaSource / MSE pipeline.
+        // Emptying the wrapper or overwriting src with a discovered url wedges
+        // that pipeline and surfaces as a player that fails to load until the
+        // page is refreshed (reported on cnn / ms.now). enhanceInPlace() already
+        // gave the element native controls and hid the custom chrome in place,
+        // so leave the working pipeline untouched and skip structural cleanup.
+        // Desktop keeps the original behaviour (archive.org-style placeholders
+        // whose blob is replaced by a resolved direct file).
+        if (IS_IOS && hasOpaqueMediaSource(video)) { return; }
         var state = capturePlaybackState(video);
         // If the browser is already playing a direct source, retain it exactly:
         // changing src would discard buffered media, selected tracks, and time.

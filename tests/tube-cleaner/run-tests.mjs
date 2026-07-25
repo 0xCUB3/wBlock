@@ -547,6 +547,42 @@ async function iosLandscapeCheck(page, scenario) {
   });
 }
 
+// On iOS the SABR player often reports only the rendition buffered so far
+// (frequently just 360p). The quality picker must still offer the canonical
+// ladder so a tap can request a higher rendition on demand, and choosing one
+// must not be silently downgraded back to 360p. Regression guard for the
+// "only 360p shown on iOS, video is actually 1440p" report.
+async function iosQualityLadderCheck(page, scenario) {
+  await page.evaluate(() => {
+    const player = document.getElementById('movie_player');
+    player.__origAvailable = player.getAvailableQualityLevels;
+    player.getAvailableQualityLevels = function () { return ['medium']; };
+  });
+  await check(page, scenario, 'offers the full quality ladder on iOS even when only 360p is reported', () => {
+    const button = document.querySelector('.wblock-tc-quality-button');
+    if (!button) return { pass: false, detail: 'missing quality button' };
+    button.click();
+    const labels = Array.from(document.querySelectorAll('.wblock-tc-quality-menu > div'))
+      .map((item) => item.textContent);
+    const has = (t) => labels.includes(t);
+    const pass = has('Auto') && has('1440p') && has('1080p') && has('720p') && has('480p') && has('360p');
+    return { pass, detail: `menu=${labels.join(',')}` };
+  });
+  await check(page, scenario, 'selecting 1440p on iOS is not silently downgraded to 360p', async () => {
+    const option = Array.from(document.querySelectorAll('.wblock-tc-quality-menu > div'))
+      .find((item) => item.textContent === '1440p');
+    if (!option) return { pass: false, detail: 'missing 1440p option' };
+    option.click();
+    await new Promise((resolve) => setTimeout(resolve, 550));
+    const current = window.__wblockTubeDebug.getCurrentQuality();
+    return { pass: current === 'hd1440', detail: `current=${current}` };
+  });
+  await page.evaluate(() => {
+    const player = document.getElementById('movie_player');
+    if (player.__origAvailable) player.getAvailableQualityLevels = player.__origAvailable;
+  });
+}
+
 async function audioToggleCheck(page, scenario) {
   await check(page, scenario, 'audio-only toggle injects audio style', async () => {
     const btns = [...document.querySelectorAll('.wblock-tc-toolbar button')];
@@ -876,6 +912,7 @@ async function qualityUISelectionCheck(page, scenario) {
   });
   await commonChecks(page, 'iPhone', { expectToolbar: false });
   await iosNativeControlsChecks(page, 'iPhone');
+  await iosQualityLadderCheck(page, 'iPhone');
   await iosLandscapeCheck(page, 'iPhone');
   await controlsSurvivalCheck(page, 'iPhone', { preserveIOSMMSRestrictions: true });
   record('iPhone', 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
@@ -1885,6 +1922,57 @@ for (const config of [
     : -1;
   record(S, 'runs in the top-level document', topRuns === 1, `runs=${topRuns}`);
   record(S, 'does not run in an embedded frame', embedRuns === 0, `runs=${embedRuns}`);
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario: Player Cleaner on iOS keeps MSE/blob pipelines intact ------
+// Regression guard for the cnn / ms.now "player errors loading the video"
+// report: on iOS a blob: source means the page owns a MediaSource pipeline that
+// must not be torn out of the DOM or re-sourced. Clean (http) sources still get
+// the normal structural cleanup, so the guard is not over-broad.
+{
+  const iphone = devices['iPhone 13'];
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (iOS blob preservation)', {
+    device: iphone,
+    fixture: FIXTURE_PLAYER_DISCOVERY_URL,
+    hasTouch: true,
+    scriptSource: playerUserscript,
+    readySignal: '[data-wblock-player-cleaner]',
+  });
+  const S = 'player-cleaner-ios-blob';
+
+  const blobCases = ['p-dom', 'p-videojs', 'p-jwplayer'];
+  await check(page, S, 'enhances blob-source players in place on iOS (controls on, blob kept)', (blobCases) => {
+    const bad = blobCases.filter((id) => {
+      const v = document.getElementById(id).querySelector('video');
+      return !(v && v.controls === true && (v.src || '').indexOf('blob:') === 0);
+    });
+    return { pass: bad.length === 0, detail: bad.length ? `bad: ${bad.join(',')}` : '3/3 blob retained + controls' };
+  }, { arg: blobCases });
+
+  await check(page, S, 'does not structurally clean blob-source players on iOS', (blobCases) => {
+    const cleaned = blobCases.filter((id) => {
+      const v = document.getElementById(id).querySelector('video');
+      return !!(v && v._wblockCleaned);
+    });
+    return { pass: cleaned.length === 0, detail: cleaned.length ? `cleaned: ${cleaned.join(',')}` : '0/3 cleaned (pipeline preserved)' };
+  }, { arg: blobCases });
+
+  const cleanCases = [
+    ['p-src', 'https://example.com/a.mp4'],
+    ['p-source-child', 'https://example.com/b.mp4'],
+  ];
+  await check(page, S, 'still cleans direct http-source players on iOS', (cleanCases) => {
+    const bad = cleanCases.filter(([id, expected]) => {
+      const v = document.getElementById(id).querySelector('video');
+      const source = v && (v.currentSrc || v.getAttribute('src') ||
+        (v.querySelector('source') && v.querySelector('source').src));
+      return !(v && v._wblockCleaned && v.controls === true && source === expected);
+    });
+    return { pass: bad.length === 0, detail: bad.length ? `bad: ${bad.map(([id]) => id).join(',')}` : '2/2 cleaned' };
+  }, { arg: cleanCases });
+
   record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
 }

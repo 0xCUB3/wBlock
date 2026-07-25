@@ -998,6 +998,32 @@
         function onPlaybackResumed() { timingSuspended = false; onTimeUpdate(true); }
         function onPlaybackTimingChange() { onTimeUpdate(true); }
         function suspendBoundaryTimer() { timingSuspended = true; clearBoundaryTimer(); }
+
+        // iOS fullscreen fallback. Entering the native full-screen player can
+        // stop dispatching timeupdate to the shared element (or leave the
+        // boundary timer suspended after a waiting/seeking burst), so a segment
+        // entered while full-screen plays through instead of skipping. A low-rate
+        // poll re-checks the timeline whenever the element is advancing, and the
+        // presentation/fullscreen transitions re-arm the boundary timer. The poll
+        // never forces a skip while a seek or stall is in progress.
+        var pollTimer = null;
+        function pollBoundary() {
+            if (cancelled || timingSuspended || video.paused || video.ended) { return; }
+            onTimeUpdate(false);
+        }
+        function startPoll() {
+            if (pollTimer !== null || !IS_IOS) { return; }
+            pollTimer = setInterval(pollBoundary, 300);
+        }
+        function stopPoll() {
+            if (pollTimer !== null) { clearInterval(pollTimer); pollTimer = null; }
+        }
+        function onFullscreenChange() {
+            timingSuspended = false;
+            onTimeUpdate(true);
+            startPoll();
+        }
+
         video.addEventListener('timeupdate', onTimeUpdateEvent);
         video.addEventListener('playing', onPlaybackResumed);
         video.addEventListener('seeked', onPlaybackResumed);
@@ -1008,9 +1034,17 @@
         video.addEventListener('pause', clearBoundaryTimer);
         video.addEventListener('ended', clearBoundaryTimer);
         document.addEventListener('wblock-tc-sponsor-settings', onSettingsChange);
+        if (IS_IOS) {
+            video.addEventListener('webkitbeginfullscreen', onFullscreenChange);
+            video.addEventListener('webkitendfullscreen', onFullscreenChange);
+            document.addEventListener('fullscreenchange', onFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+            startPoll();
+        }
         registerCleanup(function () {
             cancelled = true;
             clearBoundaryTimer();
+            stopPoll();
             video.removeEventListener('timeupdate', onTimeUpdateEvent);
             video.removeEventListener('playing', onPlaybackResumed);
             video.removeEventListener('seeked', onPlaybackResumed);
@@ -1021,6 +1055,12 @@
             video.removeEventListener('pause', clearBoundaryTimer);
             video.removeEventListener('ended', clearBoundaryTimer);
             document.removeEventListener('wblock-tc-sponsor-settings', onSettingsChange);
+            if (IS_IOS) {
+                video.removeEventListener('webkitbeginfullscreen', onFullscreenChange);
+                video.removeEventListener('webkitendfullscreen', onFullscreenChange);
+                document.removeEventListener('fullscreenchange', onFullscreenChange);
+                document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
+            }
             if (controller) controller.abort();
             if (removeNotice) removeNotice();
         });
@@ -2309,6 +2349,41 @@
         'large', 'medium', 'small', 'tiny'
     ];
 
+    // A blob: src on the media element is conclusive evidence that the page
+    // attached a MediaSource / ManagedMediaSource (Tube Cleaner never assigns
+    // blob urls itself). On iOS, tearing that element out of the DOM or
+    // overwriting its src with a discovered url wedges YouTube's SABR / MMS
+    // pipeline and surfaces as a player that refuses to load until refresh.
+    function hasOpaqueMediaSource(video) {
+        try {
+            return !!(video && ((video.currentSrc || '').indexOf('blob:') === 0 ||
+                (video.src || '').indexOf('blob:') === 0));
+        } catch (e) { return false; }
+    }
+
+    // On desktop the player's reported levels are complete and authoritative.
+    // On iOS the SABR player often reports only the rendition buffered so far
+    // (frequently just 360p), which made the quality picker useless even when
+    // the video supports 1440p. Offer the canonical ladder there so a tap can
+    // request a higher rendition on demand; reported levels are merged in so
+    // any non-standard entry still appears. Selection stays best-effort and is
+    // never persisted at startup, so a stalled choice can always be reverted to
+    // Auto from the same menu.
+    function qualityMenuLevels() {
+        var reported = getAvailableQualities();
+        if (!IS_IOS) { return reported; }
+        var seen = {};
+        var levels = [];
+        for (var i = 0; i < QUALITY_ORDER.length; i++) {
+            seen[QUALITY_ORDER[i]] = true;
+            levels.push(QUALITY_ORDER[i]);
+        }
+        for (var j = 0; j < reported.length; j++) {
+            if (!seen[reported[j]]) { seen[reported[j]] = true; levels.push(reported[j]); }
+        }
+        return levels;
+    }
+
     function getAvailableQualities() {
         var player = findPlayer();
         if (!player || !player.getAvailableQualityLevels) return [];
@@ -2424,7 +2499,7 @@
             return true;
         }
 
-        var levels = getAvailableQualities();
+        var levels = qualityMenuLevels();
         if (levels.indexOf(target) === -1) {
             // Target not available, pick the closest lower quality
             var targetIdx = QUALITY_ORDER.indexOf(target);
@@ -2526,6 +2601,23 @@
     // Toolbar overlay (playback controls plus SponsorBlock and DeArrow settings)
     // ------------------------------------------------------------------
 
+    // On iOS the settings panels open upward from the toolbar with a max-height
+    // capped to the space above the button *inside the player*. In a full-screen
+    // player that space is large, but in the small inline ("webview") player it
+    // shrinks to a couple of rows, leaving the panel cramped and clipped even
+    // though there is plenty of page above the player. The player uses
+    // overflow:visible, so the panel may grow into that page space: cap the
+    // height to the distance from the button to the top of the viewport instead.
+    // That keeps every control reachable while the upward anchor (bottom:100%)
+    // guarantees the panel never spills past the top edge.
+    function fitMenuToPlayer(menu, buttonTop) {
+        if (!IS_IOS || !menu) { return; }
+        var roomAboveButton = Math.floor(buttonTop - 8);
+        if (roomAboveButton > 120) {
+            menu.style.maxHeight = roomAboveButton + 'px';
+        }
+    }
+
     function buildToolbar(player, video) {
         var existing = player.querySelector('.wblock-tc-toolbar');
         if (existing) {
@@ -2584,7 +2676,7 @@
             while (qualityMenu.firstChild) {
                 qualityMenu.removeChild(qualityMenu.firstChild);
             }
-            var levels = getAvailableQualities();
+            var levels = qualityMenuLevels();
             var preferred = getPreferredQuality();
 
             var itemPadding = IS_IOS ? '10px 16px' : '4px 12px';
@@ -2649,6 +2741,7 @@
                     var toolbarRect = toolbar.getBoundingClientRect();
                     var roomAbove = Math.floor(toolbarRect.top - playerRect.top - 8);
                     qualityMenu.style.maxHeight = Math.max(44, roomAbove) + 'px';
+                    fitMenuToPlayer(qualityMenu, toolbarRect.top);
                 }
                 qualityMenu.style.display = 'block';
             } else {
@@ -2872,6 +2965,7 @@
                     var playerRect = player.getBoundingClientRect();
                     var toolbarRect = toolbar.getBoundingClientRect();
                     sponsorMenu.style.maxHeight = Math.max(120, Math.floor(toolbarRect.top - playerRect.top - 8)) + 'px';
+                    fitMenuToPlayer(sponsorMenu, toolbarRect.top);
                 }
                 sponsorMenu.style.display = 'block';
                 sponsorBtn.setAttribute('aria-expanded', 'true');
@@ -3012,6 +3106,7 @@
                     var playerRect = player.getBoundingClientRect();
                     var toolbarRect = toolbar.getBoundingClientRect();
                     deArrowMenu.style.maxHeight = Math.max(120, Math.floor(toolbarRect.top - playerRect.top - 8)) + 'px';
+                    fitMenuToPlayer(deArrowMenu, toolbarRect.top);
                 }
                 deArrowMenu.style.display = 'block';
                 deArrowBtn.setAttribute('aria-expanded', 'true');
