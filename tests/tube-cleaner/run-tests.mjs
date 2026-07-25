@@ -10,7 +10,7 @@
 //   3. iPad desktop-site – Tube Cleaner, iPadOS requesting www.youtube.com
 //   4. Player Cleaner – opaque (blob) source, enhance-in-place + controls guard
 //   5. Player Cleaner – clean source, full replacement path (poster/tracks copy)
-//   6. Player Cleaner – source discovery across video.js/JW/Plyr/data-attr
+//   6. Player Cleaner – media-element source ownership vs external API hints
 //
 // Exit code is non-zero if any assertion fails, so this can gate CI.
 // Usage: node run-tests.mjs [--filter substring]
@@ -31,6 +31,7 @@ const FIXTURE_TUBE_MULTIPLE_URL = pathToFileURL(join(__dirname, 'fixture-tube-cl
 const FIXTURE_PLAYER_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner.html')).href;
 const FIXTURE_PLAYER_REPLACE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-replace.html')).href;
 const FIXTURE_PLAYER_DISCOVERY_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-discovery.html')).href;
+const FIXTURE_PLAYER_JW_INIT_RACE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-jw-init-race.html')).href;
 const FIXTURE_PLAYER_LIVE_BLOB_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-live-blob.html')).href;
 const FIXTURE_PLAYER_SHADOW_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-shadow.html')).href;
 const FIXTURE_PLAYER_BARE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-bare.html')).href;
@@ -1347,81 +1348,62 @@ async function qualityUISelectionCheck(page, scenario) {
   await browser.close();
 }
 
-// ---- Scenario 6: Player Cleaner source discovery -------------------------
-// Five players, each exposing its media source through a different mechanism.
-// Player Cleaner must resolve the right URL for every one and swap in a clean
-// native <video> carrying that source.
+// ---- Scenario 6: Player Cleaner media source ownership ------------------
+// Direct sources owned by the media element may be structurally cleaned.
+// URLs exposed only through APIs or data attributes may belong to a player
+// that is still initializing, so they must not authorize wrapper deletion.
 {
-  const { browser, page, pageErrors } = await runScenario('Player Cleaner (source discovery)', {
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (media source ownership)', {
     fixture: FIXTURE_PLAYER_DISCOVERY_URL,
     scriptSource: playerUserscript,
     readySignal: '[data-wblock-player-cleaner]',
     viewport: { width: 1280, height: 800 },
   });
-  const S = 'player-cleaner-discovery';
+  const S = 'player-cleaner-source-ownership';
 
-  const cases = [
-    ['p-src', 'https://example.com/a.mp4', 'video.src'],
-    ['p-source-child', 'https://example.com/b.mp4', '<source> child'],
-    ['p-dom', 'https://example.com/c.mp4', 'descendant data-src'],
-    ['p-videojs', 'https://example.com/d.mp4', 'video.js currentSource()'],
-    ['p-jwplayer', 'https://example.com/e.mp4', 'JW Player playlist item'],
+  const directCases = [
+    ['p-src', 'https://example.com/a.mp4'],
+    ['p-source-child', 'https://example.com/b.mp4'],
   ];
-  for (const [id, expected, how] of cases) {
-    await check(page, S, `resolves source via ${how}`, ({ id, expected }) => {
-      const c = document.getElementById(id);
-      const v = c ? c.querySelector('video') : null;
+  await check(page, S, 'cleans players with element-owned direct sources', (cases) => {
+    const bad = cases.filter(([id, expected]) => {
+      const v = document.querySelector(`#${id} video`);
       const source = v && (v.currentSrc || v.getAttribute('src') ||
         (v.querySelector('source') && v.querySelector('source').src));
-      const ok = source === expected;
-      return { pass: ok, detail: v ? `src=${source || ''}` : 'no video' };
-    }, { arg: { id, expected } });
-  }
+      return !(v && v._wblockCleaned && v.controls && source === expected);
+    });
+    return { pass: bad.length === 0, detail: bad.length ? `bad: ${bad.map(([id]) => id).join(',')}` : '2/2 cleaned' };
+  }, { arg: directCases });
 
-  await check(page, S, 'recovers JW sidecar subtitles and chapters into native tracks', () => {
-    const video = document.querySelector('#p-jwplayer video');
-    const tracks = video ? Array.from(video.querySelectorAll('track')).map(track => `${track.kind}:${track.srclang || track.label}`) : [];
-    return { pass: tracks.includes('subtitles:en') && tracks.some(track => track.startsWith('chapters:')),
-      detail: `tracks=${tracks.join(',')}` };
+  const initializingCases = ['p-dom', 'p-videojs', 'p-jwplayer'];
+  await check(page, S, 'does not apply external URL hints to source-less videos', (ids) => {
+    const bad = ids.filter((id) => {
+      const v = document.querySelector(`#${id} video`);
+      return !v || v.currentSrc || v.getAttribute('src') || v._wblockCleaned;
+    });
+    return { pass: bad.length === 0, detail: bad.length ? `bad: ${bad.join(',')}` : '3/3 waiting for element source' };
+  }, { arg: initializingCases });
+
+  await check(page, S, 'preserves player setup DOM while videos are source-less', (ids) => {
+    const bad = ids.filter((id) => !document.querySelector(`#${id} .setup-sentinel`));
+    return { pass: bad.length === 0, detail: bad.length ? `missing: ${bad.join(',')}` : '3/3 setup sentinels retained' };
+  }, { arg: initializingCases });
+
+  await check(page, S, 'keeps opaque MSE pipelines enhanced in place', () => {
+    const ids = ['p-poster', 'p-dash'];
+    const bad = ids.filter((id) => {
+      const v = document.querySelector(`#${id} video`);
+      return !(v && v.src.startsWith('blob:') && v.controls && !v._wblockCleaned);
+    });
+    return { pass: bad.length === 0, detail: bad.length ? `bad: ${bad.join(',')}` : '2/2 blobs retained' };
   });
 
-  await check(page, S, 'every player replaced with exactly one clean video', (cases) => {
-    const bad = cases.filter(([id]) => {
-      const c = document.getElementById(id);
-      return !c || c.querySelectorAll('video').length !== 1;
-    }).map(([id]) => id);
-    return { pass: bad.length === 0, detail: bad.length ? `bad: ${bad.join(',')}` : '5/5 single-video' };
-  }, { arg: cases });
-
-  await check(page, S, 'all clean videos have native controls', (cases) => {
-    const missing = cases.filter(([id]) => {
-      const v = document.getElementById(id).querySelector('video');
-      return !(v && v.controls === true && v.hasAttribute('controls'));
-    }).map(([id]) => id);
-    return { pass: missing.length === 0, detail: missing.length ? `missing: ${missing.join(',')}` : '5/5 controls' };
-  }, { arg: cases });
-
-  await check(page, S, 'does not mistake poster data-src for media', () => {
-    const v = document.querySelector('#p-poster video');
-    return { pass: !!(v && v.src.startsWith('blob:') && v.controls),
-      detail: v ? `src=${v.src}` : 'no video' };
-  });
-
-  await check(page, S, 'keeps DASH manifest on its working MSE/blob pipeline', () => {
-    const v = document.querySelector('#p-dash video');
-    return { pass: !!(v && v.src.startsWith('blob:') && v.controls),
-      detail: v ? `src=${v.src}` : 'no video' };
-  });
-
-  // Idempotency across recovery scans + observer.
   await page.waitForTimeout(2600);
-  await check(page, S, 'no duplicate videos after rescans (idempotent)', (cases) => {
-    const bad = cases.filter(([id]) => {
-      const c = document.getElementById(id);
-      return !c || c.querySelectorAll('video').length !== 1;
-    }).map(([id]) => id);
-    return { pass: bad.length === 0, detail: bad.length ? `duplicated: ${bad.join(',')}` : '5/5 still single' };
-  }, { arg: cases });
+  await check(page, S, 'remains idempotent across recovery scans', () => {
+    const ids = ['p-src', 'p-source-child', 'p-dom', 'p-videojs', 'p-jwplayer', 'p-poster', 'p-dash'];
+    const bad = ids.filter((id) => document.querySelectorAll(`#${id} video`).length !== 1);
+    return { pass: bad.length === 0, detail: bad.length ? `bad: ${bad.join(',')}` : '7/7 single-video' };
+  });
 
   record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
@@ -1635,34 +1617,29 @@ async function qualityUISelectionCheck(page, scenario) {
 }
 
 {
-  const { browser, page, pageErrors } = await runScenario('Player Cleaner (relative URL sources)', {
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (source-less API hints)', {
     fixture: FIXTURE_PLAYER_RELATIVE_URL,
     scriptSource: playerUserscript,
-    readySignal: '[data-wblock-player-cleaner]',
+    readySignal: '#rel-jw',
     viewport: { width: 1280, height: 800 },
   });
-  const S = 'player-cleaner-relative';
+  const S = 'player-cleaner-source-less-hints';
 
-  const cases = [
-    ['rel-jw', 'https://example.com/download/item/movie.mp4', 'JW Player root-relative file'],
-    ['rel-dom', 'https://example.com/media/dom.mp4', 'data-src root-relative URL'],
-  ];
-  for (const [id, expected, how] of cases) {
-    await check(page, S, `resolves ${how} to absolute`, ({ id, expected }) => {
-      const c = document.getElementById(id);
-      const v = c ? c.querySelector('video') : null;
-      const ok = !!(v && v.src === expected);
-      return { pass: ok, detail: v ? `src=${v.src}` : 'no video' };
-    }, { arg: { id, expected } });
-  }
+  await page.waitForTimeout(100);
+  await check(page, S, 'does not apply API/data URLs before the media element has a source', () => {
+    const ids = ['rel-jw', 'rel-dom'];
+    const bad = ids.filter((id) => {
+      const v = document.querySelector(`#${id} video`);
+      return !v || v.currentSrc || v.getAttribute('src') || v._wblockCleaned;
+    });
+    return { pass: bad.length === 0, detail: bad.length ? `bad: ${bad.join(',')}` : '2/2 source-less' };
+  });
 
-  await check(page, S, 'relative-source players replaced with a clean video', (cases) => {
-    const bad = cases.filter(([id]) => {
-      const c = document.getElementById(id);
-      return !c || c.querySelectorAll('video').length !== 1 || !c.hasAttribute('data-wblock-player-cleaner');
-    }).map(([id]) => id);
-    return { pass: bad.length === 0, detail: bad.length ? `bad: ${bad.join(',')}` : '2/2 replaced' };
-  }, { arg: cases });
+  await check(page, S, 'preserves source-less player setup DOM', () => {
+    const ids = ['rel-jw', 'rel-dom'];
+    const bad = ids.filter((id) => !document.querySelector(`#${id} .setup-sentinel`));
+    return { pass: bad.length === 0, detail: bad.length ? `missing: ${bad.join(',')}` : '2/2 preserved' };
+  });
 
   record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
@@ -2022,6 +1999,46 @@ for (const config of [
     : -1;
   record(S, 'runs in the top-level document', topRuns === 1, `runs=${topRuns}`);
   record(S, 'does not run in an embedded frame', embedRuns === 0, `runs=${embedRuns}`);
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario: cached JW Player initialization race ---------------------
+// On warm loads the player API can expose a fallback URL before the <video>
+// owns a source. Player Cleaner must not use that hint to empty the wrapper;
+// JW's controls setup still needs its mount node before attaching the MSE blob.
+{
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (cached JW initialization)', {
+    fixture: FIXTURE_PLAYER_JW_INIT_RACE_URL,
+    scriptSource: playerUserscript,
+    readySignal: '#cached-jw-player',
+    viewport: { width: 1280, height: 800 },
+  });
+  const S = 'player-cleaner-jw-init-race';
+
+  async function checkInitialization(label) {
+    await page.waitForFunction(() => window.__jwInitRace &&
+      (window.__jwInitRace.finished || window.__jwInitRace.error), null, { timeout: 5000 });
+
+    await check(page, S, `${label}: JW controls setup completes`, () => {
+      const state = window.__jwInitRace;
+      const mount = document.querySelector('#cached-jw-player [data-setup-mount]');
+      const controls = mount && mount.querySelector('[data-jw-controls-ready]');
+      return { pass: !!(state && state.finished && !state.error && controls),
+        detail: state ? `finished=${state.finished} error=${state.error || 'none'}` : 'no state' };
+    });
+
+    await check(page, S, `${label}: retains the attached MSE video in place`, () => {
+      const v = document.querySelector('#cached-jw-player video');
+      return { pass: !!(v && v.src.startsWith('blob:') && v.controls && !v._wblockCleaned),
+        detail: v ? `src=${v.src} cleaned=${!!v._wblockCleaned}` : 'no video' };
+    });
+  }
+
+  await checkInitialization('first load');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await checkInitialization('cached reload');
+
   record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
 }

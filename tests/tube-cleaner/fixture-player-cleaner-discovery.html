@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Source discovery variants (Player Cleaner test)</title>
+<title>Media source ownership variants (Player Cleaner test)</title>
 <style>
   body { margin: 0; background: #111; }
   .player { position: relative; width: 320px; aspect-ratio: 16 / 9; margin: 12px auto; background: #000; }
@@ -21,20 +21,22 @@
     <video><source src="https://example.com/b.mp4" type="video/mp4"></video>
   </div>
 
-  <!-- C: source in a descendant data attribute (sourceFromDom) -->
+  <!-- C-E: external URL hints are available while the media element is still
+       source-less. They must not authorize structural cleanup because the
+       player library may still be building this wrapper. -->
   <div class="jwplayer player" id="p-dom">
     <video></video>
-    <div data-src="https://example.com/c.mp4"></div>
+    <div class="setup-sentinel" data-src="https://example.com/c.mp4"></div>
   </div>
 
-  <!-- D: source via a mocked video.js player (sourceFromVideojs) -->
   <div class="flowplayer player" id="p-videojs">
     <video></video>
+    <div class="setup-sentinel"></div>
   </div>
 
-  <!-- E: source via a mocked JW Player instance (sourceFromJwPlayer) -->
   <div class="jwplayer player" id="p-jwplayer">
     <video></video>
+    <div class="setup-sentinel"></div>
   </div>
 
   <!-- Negative F: generic data-src is a poster, not media. Keep blob/MSE. -->
@@ -50,19 +52,15 @@
 
   <script>
     (function () {
-      // Give the opaque-source players a blob src so sourceFromVideoElement
-      // returns null and the intended discovery path is exercised.
-      // p-poster and p-dash keep blob: as inert placeholders for negative
-      // tests (poster image and unplayable DASH manifest).  p-dom, p-videojs
-      // and p-jwplayer have no src so source discovery is exercised through
-      // the API and data-attribute paths.
+      // p-poster and p-dash represent MSE pipelines. The other source-less
+      // players deliberately expose only external hints during initialization.
       ['p-poster', 'p-dash'].forEach(function (id) {
         var v = document.getElementById(id).querySelector('video');
         try { v.src = 'blob:https://example.com/00000000-0000-0000-0000-000000000000'; } catch (e) {}
       });
 
-      // Mock video.js: one player whose element lives inside #p-videojs, so the
-      // containment check in sourceFromVideojs only matches that container.
+      // APIs expose direct-looking URLs before the media elements own a source,
+      // matching the warm-cache initialization race seen with JW Player.
       window.videojs = {
         getPlayers: function () {
           return {
@@ -78,8 +76,7 @@
         }
       };
 
-      // Mock JW Player: only the #p-jwplayer container gets a playlist item, so
-      // sourceFromJwPlayer does not leak a source into the other containers.
+      // Mock JW Player: only #p-jwplayer exposes a playlist item.
       window.jwplayer = function (idOrEl) {
         var id = typeof idOrEl === 'string' ? idOrEl : (idOrEl && idOrEl.id);
         if (id !== 'p-jwplayer') return null;

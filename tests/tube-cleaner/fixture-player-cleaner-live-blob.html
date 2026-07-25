@@ -21,18 +21,18 @@
     <video><source src="https://example.com/b.mp4" type="video/mp4"></video>
   </div>
 
-  <!-- C: source in a descendant data attribute (sourceFromDom) -->
+  <!-- C: blob pipeline plus a direct-looking descendant data hint -->
   <div class="jwplayer player" id="p-dom">
     <video></video>
     <div data-src="https://example.com/c.mp4"></div>
   </div>
 
-  <!-- D: source via a mocked video.js player (sourceFromVideojs) -->
+  <!-- D: blob pipeline plus a direct-looking video.js API hint -->
   <div class="flowplayer player" id="p-videojs">
     <video></video>
   </div>
 
-  <!-- E: source via a mocked JW Player instance (sourceFromJwPlayer) -->
+  <!-- E: blob pipeline plus a direct-looking JW Player API hint -->
   <div class="jwplayer player" id="p-jwplayer">
     <video></video>
   </div>
@@ -62,8 +62,7 @@
       // files — even before metadata has loaded, tearing the element out of the
       // DOM disrupts JavaScript holding a reference to it.
 
-      // Mock video.js: one player whose element lives inside #p-videojs, so the
-      // containment check in sourceFromVideojs only matches that container.
+      // Mock video.js exposes a fallback URL alongside the working blob.
       window.videojs = {
         getPlayers: function () {
           return {
@@ -79,8 +78,7 @@
         }
       };
 
-      // Mock JW Player: only the #p-jwplayer container gets a playlist item, so
-      // sourceFromJwPlayer does not leak a source into the other containers.
+      // Mock JW Player exposes a fallback URL and sidecar tracks.
       window.jwplayer = function (idOrEl) {
         var id = typeof idOrEl === 'string' ? idOrEl : (idOrEl && idOrEl.id);
         if (id !== 'p-jwplayer') return null;

@@ -3795,27 +3795,9 @@ enum BundledUserScriptSources {
         return true;
     }
 
-    function isLikelyMediaUrl(value) {
-        if (!isPlayableUrl(value)) { return false; }
-        try {
-            return /\.(?:mp4|m4v|mov|webm|ogv|ogg|m3u8|mp3|m4a|aac|wav|flac|opus|ts)$/i
-                .test(new URL(value).pathname);
-        } catch (e) { return false; }
-    }
-
-    function looksLikeUrlValue(value) {
-        if (typeof value !== 'string') { return false; }
-        var raw = value.trim();
-        return /^(?:https?:)?\/\//i.test(raw) || /^(?:\/|\.\/|\.\.\/)/.test(raw) ||
-            /[.?&=]/.test(raw);
-    }
-
-    // Resolve a candidate media URL to an absolute http(s) URL. Many players
-    // (e.g. archive.org's JW Player) expose root-relative or protocol-relative
-    // URLs like "/download/item/movie.mp4". The browser only auto-resolves URLs
-    // it loads itself, not JS strings or data-attributes, so resolve them
-    // against the document base here. Returns null for empty/non-http(s) values
-    // (blob:, data:, javascript:, ...).
+    // Resolve a media or sidecar URL to an absolute http(s) URL. The browser
+    // resolves element attributes itself, but not JS track definitions. Returns
+    // null for empty/non-http(s) values (blob:, data:, javascript:, ...).
     function toAbsoluteUrl(value) {
         if (typeof value !== 'string') { return null; }
         var v = value.trim();
@@ -4105,7 +4087,7 @@ enum BundledUserScriptSources {
     }
 
     // ------------------------------------------------------------------
-    // Source discovery
+    // Media element source state
     // ------------------------------------------------------------------
 
     function sourceFromVideoElement(video) {
@@ -4123,82 +4105,16 @@ enum BundledUserScriptSources {
         return null;
     }
 
-    function sourceFromDom(container) {
+    function hasElementSourceSignal(video) {
         try {
-            // Data attributes commonly used to hold the media URL.
-            var candidates = container.querySelectorAll('[data-src],[data-video-src],[data-file],[data-video],[data-source],[data-url]');
-            var attrs = ['data-src', 'data-video-src', 'data-file', 'data-video', 'data-source', 'data-url'];
-            for (var i = 0; i < candidates.length; i++) {
-                for (var a = 0; a < attrs.length; a++) {
-                    var raw = candidates[i].getAttribute(attrs[a]);
-                    var value = toAbsoluteUrl(raw);
-                    if (!isPlayableUrl(value)) { continue; }
-                    // Generic data-src/data-url commonly point to poster images.
-                    // Require a media-looking extension there; media-specific
-                    // attributes may use extensionless CDN endpoints but must at
-                    // least look URL-like rather than being a player/video ID.
-                    var generic = attrs[a] === 'data-src' || attrs[a] === 'data-url';
-                    if (generic ? isLikelyMediaUrl(value) : looksLikeUrlValue(raw)) {
-                        return value;
-                    }
-                }
-            }
-            var directAttrs = ['data-src', 'data-file', 'data-video-src'];
-            for (var d = 0; d < directAttrs.length; d++) {
-                var directRaw = container.getAttribute(directAttrs[d]);
-                var direct = toAbsoluteUrl(directRaw);
-                var directGeneric = directAttrs[d] === 'data-src';
-                if (isPlayableUrl(direct) &&
-                    (directGeneric ? isLikelyMediaUrl(direct) : looksLikeUrlValue(directRaw))) {
-                    return direct;
-                }
+            if (video.srcObject) { return true; }
+            if (video.currentSrc || video.getAttribute('src')) { return true; }
+            var sources = video.getElementsByTagName('source');
+            for (var i = 0; i < sources.length; i++) {
+                if (sources[i].getAttribute('src')) { return true; }
             }
         } catch (e) { /* ignore */ }
-        return null;
-    }
-
-    function sourceFromVideojs(container) {
-        try {
-            if (!window.videojs) { return null; }
-            var players = window.videojs.getPlayers ? window.videojs.getPlayers() : {};
-            for (var id in players) {
-                var player = players[id];
-                if (!player) { continue; }
-                try {
-                    var el = player.el ? player.el() : null;
-                    if (el && (container.contains(el) || el.contains(container))) {
-                        var current = player.currentSource ? player.currentSource() : null;
-                        var currentSrc = current ? toAbsoluteUrl(current.src) : null;
-                        if (currentSrc && isPlayableUrl(currentSrc)) { return currentSrc; }
-                        var list = player.currentSources ? player.currentSources() : [];
-                        for (var i = 0; i < list.length; i++) {
-                            var listSrc = toAbsoluteUrl(list[i].src);
-                            if (isPlayableUrl(listSrc)) { return listSrc; }
-                        }
-                    }
-                } catch (e) { /* keep looking */ }
-            }
-        } catch (e) { /* ignore */ }
-        return null;
-    }
-
-    function sourceFromJwPlayer(container) {
-        try {
-            if (!window.jwplayer) { return null; }
-            var instance = window.jwplayer(container.id || container);
-            if (!instance) { return null; }
-            var item = instance.getPlaylistItem ? instance.getPlaylistItem() : null;
-            if (item) {
-                var file = toAbsoluteUrl(item.file);
-                if (isPlayableUrl(file)) { return file; }
-                var sources = item.sources || [];
-                for (var i = 0; i < sources.length; i++) {
-                    var sfile = toAbsoluteUrl(sources[i].file);
-                    if (isPlayableUrl(sfile)) { return sfile; }
-                }
-            }
-        } catch (e) { /* ignore */ }
-        return null;
+        return false;
     }
 
     // ------------------------------------------------------------------
@@ -4302,16 +4218,16 @@ enum BundledUserScriptSources {
     function enhanceInPlace(container, video, upgradeable) {
         if (video._wblockEnhanced) {
             // A video can first appear as a bare custom player and later be
-            // wrapped by a known library. Promote it so source discovery may
-            // still clean the known wrapper when its API/data arrives. Re-hide
-            // chrome a framework may have rendered after initial cleanup.
+            // wrapped by a known library. Promote it so a later element source
+            // can still clean the known wrapper. Re-hide chrome a framework may
+            // have rendered after initial cleanup.
             if (upgradeable) { video._wblockUpgradeable = true; }
             hideContainerChrome(container, video, isPlayerShell(container));
             return;
         }
         video._wblockEnhanced = true;
         // Upgradeable videos get one more replacement chance once their metadata
-        // (and therefore currentSrc) has loaded; see onLoadedMetadata. Bare
+        // (and therefore currentSrc) has loaded; see onMediaSourceReady. Bare
         // videos enhanced under unknown chrome are not upgradeable, so their
         // wrapper layout is preserved.
         video._wblockUpgradeable = !!upgradeable;
@@ -4422,7 +4338,7 @@ enum BundledUserScriptSources {
         restorePlaybackState(video, state, sourceChanged);
     }
 
-    function replacePlayer(container, allowExternalDiscovery) {
+    function replacePlayer(container, allowStructuralCleanup) {
         var video = container.querySelector ? container.querySelector('video') : null;
         if (!video) { return; }
         if (video._wblockCleaned) {
@@ -4430,9 +4346,18 @@ enum BundledUserScriptSources {
             return;
         }
 
-        // Native controls are the critical path. Apply them before querying
-        // player APIs or walking data attributes so the visible switch happens
-        // in this mutation microtask even if source discovery is not ready yet.
+        // A recognized wrapper can expose its API URL before its media element
+        // has a source. That is an initialization state, not permission to
+        // delete the wrapper: on a warm/cached load JW Player can still be
+        // building controls and will later attach its MSE blob. Wait for an
+        // element-owned source mutation so Player Cleaner cannot race setup.
+        if (!hasElementSourceSignal(video)) {
+            log('player initializing; waiting for media element source');
+            return;
+        }
+
+        // Native controls are the critical path once the media element owns a
+        // source. Apply them in this mutation microtask before the next paint.
         enableBackgroundPlayback();
         video.setAttribute(ATTR_DONE, '1');
         container.setAttribute(ATTR_DONE, '1');
@@ -4455,17 +4380,16 @@ enum BundledUserScriptSources {
         // site's own setup script has run. Native controls and hidden overlays
         // are already visible pre-paint; structural cleanup can safely wait for
         // DOMContentLoaded or a genuine media-ready event.
-        var mayClean = !!allowExternalDiscovery;
+        var mayClean = !!allowStructuralCleanup;
         if (!mayClean) { return; }
+
+        // Only a direct source owned by the media element authorizes structural
+        // cleanup. Player API and data-attribute URLs are hints, not proof that
+        // setup is complete; using them caused cached-load races where the
+        // cleaner emptied JW Player's wrapper before it attached its blob.
         var src = sourceFromVideoElement(video);
-        if (!src && mayClean) {
-            src = sourceFromVideojs(container) ||
-                sourceFromJwPlayer(container) ||
-                sourceFromDom(container) ||
-                null;
-        }
-        log('player detected', container.className, 'source:', src ? 'resolved' : 'opaque');
-        if (src && mayClean) { cleanPlayer(container, video, src); }
+        log('player detected', container.className, 'source:', src ? 'element-owned' : 'opaque');
+        if (src) { cleanPlayer(container, video, src); }
     }
 
     // A clean source is often not discoverable at first scan because the player
@@ -4509,7 +4433,7 @@ enum BundledUserScriptSources {
         return true;
     }
 
-    function scan(root, allowExternalDiscovery) {
+    function scan(root, allowStructuralCleanup) {
         var scope = root || document;
         if (!scope || !scope.querySelectorAll) { return; }
         var seen = [];
@@ -4536,7 +4460,7 @@ enum BundledUserScriptSources {
         catch (e) { known = []; }
         for (var i = 0; i < known.length; i++) { addContainer(known[i]); }
         for (var j = 0; j < seen.length; j++) {
-            try { replacePlayer(seen[j], allowExternalDiscovery); }
+            try { replacePlayer(seen[j], allowStructuralCleanup); }
             catch (e) { log('replace failed', e); }
         }
 
@@ -4653,10 +4577,10 @@ enum BundledUserScriptSources {
         // MutationObserver callbacks run at the microtask checkpoint before
         // rendering. Process affected roots now—never add a timer/debounce—so
         // custom chrome cannot survive into the next paint. Only source/video
-        // changes after parsing may trigger structural source discovery;
-        // ordinary player UI churn is nativeization-only.
-        var mayDiscover = sourceRelevant && document.readyState !== 'loading';
-        for (var r = 0; r < roots.length; r++) { scan(roots[r], mayDiscover); }
+        // changes after parsing may trigger structural cleanup; ordinary player
+        // UI churn is nativeization-only.
+        var mayClean = sourceRelevant && document.readyState !== 'loading';
+        for (var r = 0; r < roots.length; r++) { scan(roots[r], mayClean); }
         // DOM moves report a removal and addition in the same batch. Release
         // resources only for videos that remain detached after processing.
         for (var d = 0; d < detachedVideos.length; d++) {
@@ -4705,9 +4629,9 @@ enum BundledUserScriptSources {
         } catch (e) { /* fall back to discovering open roots from DOM mutations */ }
     }
 
-    function scanAllRoots(allowExternalDiscovery) {
+    function scanAllRoots(allowStructuralCleanup) {
         var roots = observedRoots.slice();
-        for (var i = 0; i < roots.length; i++) { scan(roots[i], allowExternalDiscovery); }
+        for (var i = 0; i < roots.length; i++) { scan(roots[i], allowStructuralCleanup); }
     }
 
     function boot() {
