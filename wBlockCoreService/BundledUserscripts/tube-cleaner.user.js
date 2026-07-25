@@ -101,11 +101,21 @@
             (video && video.webkitPresentationMode === 'picture-in-picture');
     }
 
-    function enterPiP(video) {
+    function enterPiP(video, resumePausedVideo) {
         if (!video || !autoPiPEnabled) return;
         if (isPiPActive(video)) return;
-        if (video.paused || video.ended) return;
+        if (video.ended || (video.paused && !resumePausedVideo)) return;
         try {
+            // iOS pauses media immediately before it reports that Safari is
+            // leaving the foreground. Resume the just-paused video before
+            // asking WebKit for PiP; otherwise the old paused guard makes
+            // mobile Auto PiP a no-op.
+            if (resumePausedVideo && video.paused && typeof video.play === 'function') {
+                var playRequest = video.play();
+                if (playRequest && playRequest.catch) {
+                    playRequest.catch(function (e) { log('PiP resume rejected', e); });
+                }
+            }
             if (video.webkitSupportsPresentationMode &&
                 typeof video.webkitSetPresentationMode === 'function') {
                 // Track only PiP entered by Tube Cleaner. PiP entered manually
@@ -159,18 +169,32 @@
         // Tab switch: enter PiP when tab hides, exit when visible.
         // Note: enableBackgroundPlayback() overrides document.hidden to always
         // return false, so we use _realHidden which tracks the true state.
+        // iOS pauses the media just before visibilitychange/pagehide, so retain
+        // a short playback window and resume it as we move into PiP.
+        var lastPlayingAt = video.paused ? 0 : Date.now();
+        function onPlaying() { lastPlayingAt = Date.now(); }
+        function wasPlayingBeforeMobileBackground() {
+            return !video.ended && (!video.paused || Date.now() - lastPlayingAt < 1000);
+        }
+        function enterMobileBackgroundPiP() {
+            if (!IS_IOS || !autoPiPEnabled || !wasPlayingBeforeMobileBackground()) return;
+            enterPiP(video, true);
+        }
         function onVisibilityChange() {
             if (!autoPiPEnabled) return;
             if (_realHidden) {
-                if (!video.paused && !video.ended) {
+                if (IS_IOS) {
+                    enterMobileBackgroundPiP();
+                } else if (!video.paused && !video.ended) {
                     enterPiP(video);
                 }
-            } else {
-                if (document.hasFocus() && isPiPActive(video)) {
-                    exitPiP(video);
-                }
+            } else if (document.hasFocus() && isPiPActive(video)) {
+                exitPiP(video);
             }
         }
+        // pagehide and freeze cover mobile Safari paths where JavaScript is
+        // suspended before or without a final visibilitychange delivery.
+        function onMobilePageLeave() { enterMobileBackgroundPiP(); }
 
         // Losing keyboard focus does not mean the video is obscured on macOS:
         // another visible window may simply be active beside Safari. Enter PiP
@@ -185,6 +209,11 @@
 
         document.addEventListener('visibilitychange', onVisibilityChange);
         window.addEventListener('focus', onFocus);
+        if (IS_IOS) {
+            video.addEventListener('playing', onPlaying);
+            window.addEventListener('pagehide', onMobilePageLeave);
+            document.addEventListener('freeze', onMobilePageLeave);
+        }
 
         // Scroll out of view: use IntersectionObserver
         var scrollObserver = new IntersectionObserver(function (entries) {
@@ -215,6 +244,11 @@
         registerCleanup(function () {
             document.removeEventListener('visibilitychange', onVisibilityChange);
             window.removeEventListener('focus', onFocus);
+            if (IS_IOS) {
+                video.removeEventListener('playing', onPlaying);
+                window.removeEventListener('pagehide', onMobilePageLeave);
+                document.removeEventListener('freeze', onMobilePageLeave);
+            }
             try { scrollObserver.disconnect(); } catch (e) { /* ignore */ }
             video.removeEventListener('webkitpresentationmodechanged', onPresentationModeChange);
             video.removeEventListener('leavepictureinpicture', onLeavePictureInPicture);
@@ -2361,17 +2395,23 @@
         } catch (e) { return false; }
     }
 
-    // On desktop the player's reported levels are complete and authoritative.
-    // On iOS the SABR player often reports only the rendition buffered so far
-    // (frequently just 360p), which made the quality picker useless even when
-    // the video supports 1440p. Offer the canonical ladder there so a tap can
-    // request a higher rendition on demand; reported levels are merged in so
-    // any non-standard entry still appears. Selection stays best-effort and is
-    // never persisted at startup, so a stalled choice can always be reverted to
-    // Auto from the same menu.
+    // SABR can initially report only the rendition buffered so far (often
+    // 360p), on both mobile and desktop Safari. Treat a standard-definition-
+    // only response as incomplete rather than making the picker useless. iOS
+    // always gets the ladder because its player commonly reports one temporary
+    // rendition even after startup. Reported non-standard levels are retained.
+    // Selection stays best-effort and is never persisted at iOS startup, so a
+    // stalled choice can always be reverted to Auto from the same menu.
     function qualityMenuLevels() {
         var reported = getAvailableQualities();
-        if (!IS_IOS) { return reported; }
+        var mediumIndex = QUALITY_ORDER.indexOf('medium');
+        var hasHigherRendition = reported.some(function (quality) {
+            var index = QUALITY_ORDER.indexOf(quality);
+            return index !== -1 && index < mediumIndex;
+        });
+        var needsCanonicalLadder = IS_IOS || !hasHigherRendition;
+        if (!needsCanonicalLadder) { return reported; }
+
         var seen = {};
         var levels = [];
         for (var i = 0; i < QUALITY_ORDER.length; i++) {
@@ -2601,21 +2641,33 @@
     // Toolbar overlay (playback controls plus SponsorBlock and DeArrow settings)
     // ------------------------------------------------------------------
 
-    // On iOS the settings panels open upward from the toolbar with a max-height
-    // capped to the space above the button *inside the player*. In a full-screen
-    // player that space is large, but in the small inline ("webview") player it
-    // shrinks to a couple of rows, leaving the panel cramped and clipped even
-    // though there is plenty of page above the player. The player uses
-    // overflow:visible, so the panel may grow into that page space: cap the
-    // height to the distance from the button to the top of the viewport instead.
-    // That keeps every control reachable while the upward anchor (bottom:100%)
-    // guarantees the panel never spills past the top edge.
-    function fitMenuToPlayer(menu, buttonTop) {
-        if (!IS_IOS || !menu) { return; }
-        var roomAboveButton = Math.floor(buttonTop - 8);
-        if (roomAboveButton > 120) {
-            menu.style.maxHeight = roomAboveButton + 'px';
-        }
+    // The player establishes a containing/stacking context on mobile Safari,
+    // which can clip even position:fixed children to its small inline frame.
+    // Portal open menus to <body> so they are genuine page overlays and can use
+    // the whole YouTube viewport.
+    function showMobilePageOverlay(menu, maxHeight) {
+        if (!IS_IOS || !menu || !document.body) { return; }
+        if (menu.parentNode !== document.body) { document.body.appendChild(menu); }
+        menu.style.position = 'fixed';
+        menu.style.top = 'auto';
+        menu.style.right = '8px';
+        menu.style.bottom = 'max(8px, env(safe-area-inset-bottom, 0px))';
+        menu.style.marginBottom = '0';
+        // Let short menus end at their final control. max-height reserves
+        // scrolling only for a panel that genuinely exceeds the viewport.
+        menu.style.height = 'auto';
+        menu.style.maxHeight = 'min(' + maxHeight + 'px, calc(100vh - 16px))';
+        menu.style.maxHeight = 'min(' + maxHeight + 'px, calc(100dvh - 16px))';
+        // A short/landscape phone can still be smaller than a full panel.
+        // Keep scrolling inside the overlay rather than growing it off-screen.
+        menu.style.overflowY = 'auto';
+        menu.style.webkitOverflowScrolling = 'touch';
+        menu.style.overscrollBehavior = 'contain';
+        menu.style.zIndex = '2147483647';
+    }
+
+    function removeMobilePageOverlay(menu) {
+        if (IS_IOS && menu && menu.parentNode === document.body) { menu.remove(); }
     }
 
     function buildToolbar(player, video) {
@@ -2680,15 +2732,22 @@
             var preferred = getPreferredQuality();
 
             var itemPadding = IS_IOS ? '10px 16px' : '4px 12px';
+            // Use real buttons rather than clickable divs. In iOS Safari, a
+            // video layer can make synthetic click targets unreliable, while
+            // buttons retain their touch activation semantics above the player.
+            var itemStyle = 'display:block;width:100%;border:0;background:transparent;font:inherit;line-height:inherit;text-align:left;padding:' +
+                itemPadding + ';cursor:pointer;color:#fff;white-space:nowrap;-webkit-appearance:none;appearance:none;touch-action:manipulation';
 
             // Auto option
-            var autoItem = document.createElement('div');
-            autoItem.style.cssText = 'padding:' + itemPadding + ';cursor:pointer;color:#fff;white-space:nowrap';
+            var autoItem = document.createElement('button');
+            autoItem.type = 'button';
+            autoItem.style.cssText = itemStyle;
             autoItem.textContent = 'Auto';
             if (preferred === 'auto') {
                 autoItem.style.color = '#4fc3f7';
             }
             autoItem.addEventListener('click', function (e) {
+                e.preventDefault();
                 e.stopPropagation();
                 setPreferredQuality('auto');
                 setQuality('auto');
@@ -2702,13 +2761,15 @@
             // Available quality levels
             for (var i = 0; i < levels.length; i++) {
                 (function (q) {
-                    var item = document.createElement('div');
-                    item.style.cssText = 'padding:' + itemPadding + ';cursor:pointer;color:#fff;white-space:nowrap';
+                    var item = document.createElement('button');
+                    item.type = 'button';
+                    item.style.cssText = itemStyle;
                     item.textContent = QUALITY_LABELS[q] || q;
                     if (preferred === q) {
                         item.style.color = '#4fc3f7';
                     }
                     item.addEventListener('click', function (e) {
+                        e.preventDefault();
                         e.stopPropagation();
                         // On iOS apply the choice to this video only. Persisted
                         // fixed ranges can wedge the next SABR stream at load.
@@ -2737,11 +2798,15 @@
             if (qualityMenu.style.display === 'none') {
                 buildQualityMenu();
                 if (IS_IOS) {
-                    var playerRect = player.getBoundingClientRect();
-                    var toolbarRect = toolbar.getBoundingClientRect();
-                    var roomAbove = Math.floor(toolbarRect.top - playerRect.top - 8);
-                    qualityMenu.style.maxHeight = Math.max(44, roomAbove) + 'px';
-                    fitMenuToPlayer(qualityMenu, toolbarRect.top);
+                    showMobilePageOverlay(qualityMenu, 520);
+                } else {
+                    qualityMenu.style.position = 'absolute';
+                    qualityMenu.style.top = 'auto';
+                    qualityMenu.style.bottom = '100%';
+                    qualityMenu.style.right = '0';
+                    qualityMenu.style.marginBottom = '4px';
+                    qualityMenu.style.height = 'auto';
+                    qualityMenu.style.maxHeight = '60vh';
                 }
                 qualityMenu.style.display = 'block';
             } else {
@@ -2959,13 +3024,17 @@
             if (sponsorMenu.style.display === 'none') {
                 buildSponsorMenu();
                 // SB sits left of DA in the service row; align its panel with
-                // the row's right edge so the wider iOS panel stays on-screen.
-                sponsorMenu.style.right = deArrowWrap ? -(deArrowWrap.offsetWidth + 6) + 'px' : '0';
+                // the row's right edge so the wider desktop panel stays on-screen.
                 if (IS_IOS) {
-                    var playerRect = player.getBoundingClientRect();
-                    var toolbarRect = toolbar.getBoundingClientRect();
-                    sponsorMenu.style.maxHeight = Math.max(120, Math.floor(toolbarRect.top - playerRect.top - 8)) + 'px';
-                    fitMenuToPlayer(sponsorMenu, toolbarRect.top);
+                    showMobilePageOverlay(sponsorMenu, 700);
+                } else {
+                    sponsorMenu.style.position = 'absolute';
+                    sponsorMenu.style.top = 'auto';
+                    sponsorMenu.style.bottom = '100%';
+                    sponsorMenu.style.marginBottom = '6px';
+                    sponsorMenu.style.height = 'auto';
+                    sponsorMenu.style.maxHeight = '65vh';
+                    sponsorMenu.style.right = deArrowWrap ? -(deArrowWrap.offsetWidth + 6) + 'px' : '0';
                 }
                 sponsorMenu.style.display = 'block';
                 sponsorBtn.setAttribute('aria-expanded', 'true');
@@ -3102,12 +3171,7 @@
             sponsorBtn.setAttribute('aria-expanded', 'false');
             if (deArrowMenu.style.display === 'none') {
                 buildDeArrowMenu();
-                if (IS_IOS) {
-                    var playerRect = player.getBoundingClientRect();
-                    var toolbarRect = toolbar.getBoundingClientRect();
-                    deArrowMenu.style.maxHeight = Math.max(120, Math.floor(toolbarRect.top - playerRect.top - 8)) + 'px';
-                    fitMenuToPlayer(deArrowMenu, toolbarRect.top);
-                }
+                if (IS_IOS) { showMobilePageOverlay(deArrowMenu, 520); }
                 deArrowMenu.style.display = 'block';
                 deArrowBtn.setAttribute('aria-expanded', 'true');
             } else {
@@ -3116,6 +3180,11 @@
             }
         });
         deArrowMenu.addEventListener('click', function (e) { e.stopPropagation(); });
+        registerCleanup(function () {
+            removeMobilePageOverlay(qualityMenu);
+            removeMobilePageOverlay(sponsorMenu);
+            removeMobilePageOverlay(deArrowMenu);
+        });
         function onDeArrowOutsideClick() {
             deArrowMenu.style.display = 'none';
             deArrowBtn.setAttribute('aria-expanded', 'false');

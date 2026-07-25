@@ -358,11 +358,13 @@ async function commonChecks(page, scenario, { expectToolbar = true } = {}) {
       };
     });
     await page.evaluate(() => document.querySelector('.wblock-tc-sponsor-button').click());
-    await check(page, scenario, 'keeps the SponsorBlock settings panel inside the iOS viewport', () => {
+    await check(page, scenario, 'shows the complete SponsorBlock settings panel in the iOS viewport', () => {
       const panel = document.querySelector('.wblock-tc-sponsor-menu');
       const rect = panel?.getBoundingClientRect();
-      return { pass: !!rect && rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight,
-        detail: rect ? `${Math.round(rect.left)},${Math.round(rect.top)} ${Math.round(rect.width)}x${Math.round(rect.height)}` : 'no panel' };
+      const allControlsFit = !!panel && panel.scrollHeight <= panel.clientHeight;
+      const pageOverlay = panel?.parentElement === document.body;
+      return { pass: !!rect && rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight && allControlsFit && pageOverlay,
+        detail: rect ? `${Math.round(rect.left)},${Math.round(rect.top)} ${Math.round(rect.width)}x${Math.round(rect.height)} content=${panel.scrollHeight}/${panel.clientHeight} pageOverlay=${pageOverlay}` : 'no panel' };
     });
     await page.evaluate(() => document.querySelector('.wblock-tc-sponsor-button').click());
     await page.evaluate(() => document.querySelector('.wblock-tc-dearrow-button').click());
@@ -371,9 +373,10 @@ async function commonChecks(page, scenario, { expectToolbar = true } = {}) {
       const rect = panel?.getBoundingClientRect();
       const enabled = panel?.querySelector('[data-dearrow-setting="enabled"]');
       const button = document.querySelector('.wblock-tc-dearrow-button');
-      return { pass: !!rect && rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight &&
+      const pageOverlay = panel?.parentElement === document.body;
+      return { pass: !!rect && rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight && pageOverlay &&
           enabled?.checked === false && button?.getAttribute('aria-pressed') === 'false',
-        detail: rect ? `${Math.round(rect.left)},${Math.round(rect.top)} ${Math.round(rect.width)}x${Math.round(rect.height)} enabled=${enabled?.checked}` : 'no panel' };
+        detail: rect ? `${Math.round(rect.left)},${Math.round(rect.top)} ${Math.round(rect.width)}x${Math.round(rect.height)} enabled=${enabled?.checked} pageOverlay=${pageOverlay}` : 'no panel' };
     });
     await page.evaluate(() => document.querySelector('.wblock-tc-dearrow-button').click());
   }
@@ -449,7 +452,7 @@ async function iosNativeControlsChecks(page, scenario) {
     const button = document.querySelector('.wblock-tc-quality-button');
     if (!button) return { pass: false, detail: 'missing quality button' };
     button.click();
-    const option = Array.from(document.querySelectorAll('.wblock-tc-quality-menu > div'))
+    const option = Array.from(document.querySelectorAll('.wblock-tc-quality-menu > button'))
       .find((item) => item.textContent === '1080p');
     if (!option) return { pass: false, detail: 'missing 1080p option' };
     option.click();
@@ -558,28 +561,67 @@ async function iosQualityLadderCheck(page, scenario) {
     player.__origAvailable = player.getAvailableQualityLevels;
     player.getAvailableQualityLevels = function () { return ['medium']; };
   });
-  await check(page, scenario, 'offers the full quality ladder on iOS even when only 360p is reported', () => {
+  await check(page, scenario, 'shows the full iOS quality ladder without a cramped scroll view', () => {
     const button = document.querySelector('.wblock-tc-quality-button');
     if (!button) return { pass: false, detail: 'missing quality button' };
     button.click();
-    const labels = Array.from(document.querySelectorAll('.wblock-tc-quality-menu > div'))
+    const menu = document.querySelector('.wblock-tc-quality-menu');
+    const labels = Array.from(document.querySelectorAll('.wblock-tc-quality-menu > button'))
+      .map((item) => item.textContent);
+    const has = (t) => labels.includes(t);
+    const allOptionsFit = !!menu && menu.scrollHeight <= menu.clientHeight;
+    const pageOverlay = menu?.parentElement === document.body;
+    const lastOption = menu?.lastElementChild;
+    const menuRect = menu?.getBoundingClientRect();
+    const lastRect = lastOption?.getBoundingClientRect();
+    const trailingSpace = menuRect && lastRect ? menuRect.bottom - lastRect.bottom : Infinity;
+    const pass = has('Auto') && has('1440p') && has('1080p') && has('720p') && has('480p') && has('360p') &&
+      allOptionsFit && pageOverlay && trailingSpace <= 12;
+    return { pass, detail: `menu=${labels.join(',')} content=${menu?.scrollHeight}/${menu?.clientHeight} trailing=${trailingSpace.toFixed(0)} pageOverlay=${pageOverlay}` };
+  });
+  const option = page.locator('.wblock-tc-quality-menu > button', { hasText: '1440p' });
+  const optionCount = await option.count();
+  if (optionCount === 1) {
+    await option.tap();
+    await page.waitForTimeout(550);
+  }
+  await check(page, scenario, 'activates 1440p from the iOS touch menu without downgrading to 360p', (optionCount) => {
+    if (optionCount !== 1) return { pass: false, detail: 'missing 1440p button' };
+    const current = window.__wblockTubeDebug.getCurrentQuality();
+    return { pass: current === 'hd1440', detail: `current=${current}` };
+  }, { arg: optionCount });
+  await page.evaluate(() => {
+    const player = document.getElementById('movie_player');
+    if (player.__origAvailable) player.getAvailableQualityLevels = player.__origAvailable;
+  });
+}
+
+// A desktop SABR player can also expose only the currently buffered 360p
+// rendition. The canonical ladder must not depend on the iOS user-agent check,
+// or this exact state leaves desktop users with only Auto and 360p.
+async function desktopPartialQualityLadderCheck(page) {
+  await page.evaluate(() => {
+    const player = document.getElementById('movie_player');
+    player.__origAvailableForDesktopPartial = player.getAvailableQualityLevels;
+    player.getAvailableQualityLevels = function () { return ['medium']; };
+  });
+  await check(page, 'desktop', 'offers the full quality ladder when desktop SABR reports only 360p', () => {
+    const button = document.querySelector('.wblock-tc-quality-button');
+    if (!button) return { pass: false, detail: 'missing quality button' };
+    button.click();
+    const labels = Array.from(document.querySelectorAll('.wblock-tc-quality-menu > button'))
       .map((item) => item.textContent);
     const has = (t) => labels.includes(t);
     const pass = has('Auto') && has('1440p') && has('1080p') && has('720p') && has('480p') && has('360p');
     return { pass, detail: `menu=${labels.join(',')}` };
   });
-  await check(page, scenario, 'selecting 1440p on iOS is not silently downgraded to 360p', async () => {
-    const option = Array.from(document.querySelectorAll('.wblock-tc-quality-menu > div'))
-      .find((item) => item.textContent === '1440p');
-    if (!option) return { pass: false, detail: 'missing 1440p option' };
-    option.click();
-    await new Promise((resolve) => setTimeout(resolve, 550));
-    const current = window.__wblockTubeDebug.getCurrentQuality();
-    return { pass: current === 'hd1440', detail: `current=${current}` };
-  });
   await page.evaluate(() => {
+    const button = document.querySelector('.wblock-tc-quality-button');
+    if (button && document.querySelector('.wblock-tc-quality-menu')?.style.display !== 'none') button.click();
     const player = document.getElementById('movie_player');
-    if (player.__origAvailable) player.getAvailableQualityLevels = player.__origAvailable;
+    if (player.__origAvailableForDesktopPartial) {
+      player.getAvailableQualityLevels = player.__origAvailableForDesktopPartial;
+    }
   });
 }
 
@@ -873,6 +915,7 @@ async function qualityUISelectionCheck(page, scenario) {
   });
   await controlsSurvivalCheck(page, 'desktop');
   await audioToggleCheck(page, 'desktop');
+  await desktopPartialQualityLadderCheck(page);
   await qualityUISelectionCheck(page, 'desktop');
   await page.evaluate(() => {
     // On a real SPA navigation the persistent player can briefly expose the
@@ -1731,6 +1774,9 @@ async function qualityUISelectionCheck(page, scenario) {
 for (const config of [
   { name: 'Tube Cleaner', key: 'tube-cleaner-visibility', fixture: FIXTURE_URL,
     source: visibilityPrelude + '\n' + userscript, selector: '#movie_player video', ready: '.wblock-tc-toolbar' },
+  { name: 'Tube Cleaner iOS', key: 'tube-cleaner-ios-visibility', fixture: FIXTURE_URL,
+    source: visibilityPrelude + '\n' + userscript, selector: '#movie_player video', ready: '.wblock-tc-toolbar',
+    device: devices['iPhone 13'], mobile: true },
   { name: 'Player Cleaner', key: 'player-cleaner-visibility', fixture: FIXTURE_PLAYER_URL,
     source: visibilityPrelude + '\n' + playerUserscript, selector: '.video-js video', ready: '[data-wblock-player-cleaner]' },
 ]) {
@@ -1738,11 +1784,13 @@ for (const config of [
     fixture: config.fixture,
     scriptSource: config.source,
     readySignal: config.ready,
-    viewport: { width: 1280, height: 800 },
+    device: config.device,
+    viewport: config.device ? undefined : { width: 1280, height: 800 },
   });
   await page.evaluate((selector) => {
     const video = document.querySelector(selector);
-    Object.defineProperty(video, 'paused', { configurable: true, get: () => false });
+    window.__wblockVideoPaused = false;
+    Object.defineProperty(video, 'paused', { configurable: true, get: () => window.__wblockVideoPaused });
     Object.defineProperty(video, 'ended', { configurable: true, get: () => false });
     video.webkitSupportsPresentationMode = true;
     video.webkitPresentationMode = 'inline';
@@ -1751,6 +1799,7 @@ for (const config of [
       window.__wblockPiPMode = mode;
     };
     window.__wblockPiPMode = 'inline';
+    video.dispatchEvent(new Event('playing'));
     Object.defineProperty(document, 'hasFocus', {
       configurable: true,
       value: () => false,
@@ -1762,12 +1811,20 @@ for (const config of [
     pass: window.__wblockPiPMode === 'inline',
     detail: `pip=${window.__wblockPiPMode}`,
   }));
-  await page.evaluate(() => {
+  await page.evaluate((mobile) => {
+    // iOS pauses the video immediately before it backgrounds. Auto PiP must
+    // retain the recent playing state and still enter PiP from this sequence.
+    if (mobile) {
+      window.__wblockVideoPaused = true;
+      document.querySelector('#movie_player video').dispatchEvent(new Event('pause'));
+    }
     window.__wblockNativeHidden = true;
     window.__wblockNativeVisibility = 'hidden';
     document.dispatchEvent(new Event('visibilitychange'));
-  });
-  await check(page, config.key, 'enters PiP from native hidden state while page sees visible', () => ({
+  }, config.mobile || false);
+  await check(page, config.key, config.mobile
+    ? 'enters PiP after iOS pauses video before native backgrounding'
+    : 'enters PiP from native hidden state while page sees visible', () => ({
     pass: document.hidden === false && document.visibilityState === 'visible' &&
       window.__wblockPiPMode === 'picture-in-picture',
     detail: `pageHidden=${document.hidden} pageState=${document.visibilityState} pip=${window.__wblockPiPMode}`,
