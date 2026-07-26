@@ -331,6 +331,28 @@ async function commonChecks(page, scenario, { expectToolbar = true } = {}) {
     return { pass: !!(v && v.controls === true), detail: v ? `controls=${v.controls}` : 'no video' };
   });
 
+  await check(page, scenario, 'centers non-standard video ratios after YouTube offsets the media element', () => {
+    const player = document.querySelector('#movie_player');
+    const video = player?.querySelector('video');
+    if (!player || !video) return { pass: false, detail: 'missing player or video' };
+
+    // YouTube puts a narrow source in its 16:9 frame by assigning a smaller
+    // width and a positive left offset. Tube Cleaner expands the element, so it
+    // must also discard that stale geometry and center the pixels with contain.
+    video.style.cssText += ';position:absolute;left:173px;top:29px;width:240px;height:360px;object-fit:fill';
+    const playerRect = player.getBoundingClientRect();
+    const videoRect = video.getBoundingClientRect();
+    const style = getComputedStyle(video);
+    const fillsFrame = Math.abs(videoRect.left - playerRect.left) < 1 &&
+      Math.abs(videoRect.top - playerRect.top) < 1 &&
+      Math.abs(videoRect.width - playerRect.width) < 1 &&
+      Math.abs(videoRect.height - playerRect.height) < 1;
+    return {
+      pass: fillsFrame && style.objectFit === 'contain' && style.objectPosition === '50% 50%',
+      detail: `frame=${playerRect.width.toFixed(0)}x${playerRect.height.toFixed(0)} video=${videoRect.left.toFixed(0)},${videoRect.top.toFixed(0)} ${videoRect.width.toFixed(0)}x${videoRect.height.toFixed(0)} fit=${style.objectFit} position=${style.objectPosition}`,
+    };
+  });
+
   if (expectToolbar) {
     await check(page, scenario, 'builds separate playback and service rows with quality, audio, SB, and DA', () => {
       const tb = document.querySelector('.wblock-tc-toolbar');
@@ -1000,7 +1022,65 @@ async function qualityUISelectionCheck(page, scenario) {
   await browser.close();
 }
 
-// ---- Scenario 2: iPhone (mobile Safari) ----------------------------------
+// ---- Scenario 2: non-standard watch-page aspect ratios ------------------
+{
+  const { browser, page, pageErrors } = await runScenario('Tube Cleaner (square video layout)', {
+    fixture: FIXTURE_URL,
+    viewport: { width: 600, height: 900 },
+    scriptSource: userscript,
+  });
+  const S = 'tube-cleaner-square-aspect';
+
+  await page.evaluate(() => {
+    const video = document.querySelector('#movie_player video');
+    window.__wblockSyntheticVideoSize = [1000, 1000];
+    Object.defineProperty(video, 'videoWidth', {
+      configurable: true,
+      get: () => window.__wblockSyntheticVideoSize[0],
+    });
+    Object.defineProperty(video, 'videoHeight', {
+      configurable: true,
+      get: () => window.__wblockSyntheticVideoSize[1],
+    });
+    video.dispatchEvent(new Event('resize'));
+  });
+  await check(page, S, 'grows a square video to the available player width', () => {
+    const wrap = document.getElementById('player-wrap')?.getBoundingClientRect();
+    const player = document.getElementById('movie_player')?.getBoundingClientRect();
+    const video = document.querySelector('#movie_player video')?.getBoundingClientRect();
+    const metadata = document.getElementById('watch-metadata')?.getBoundingClientRect();
+    const square = !!(player && Math.abs(player.width - player.height) < 1);
+    const videoFillsPlayer = !!(player && video &&
+      Math.abs(video.width - player.width) < 1 && Math.abs(video.height - player.height) < 1);
+    const pageReflowed = !!(wrap && player && metadata &&
+      Math.abs(wrap.height - player.height) < 1 && metadata.top >= player.bottom);
+    return {
+      pass: square && videoFillsPlayer && pageReflowed,
+      detail: `player=${player?.width.toFixed(0)}x${player?.height.toFixed(0)} wrap=${wrap?.height.toFixed(0)} metadataTop=${metadata?.top.toFixed(0)}`,
+    };
+  });
+
+  await page.evaluate(() => {
+    window.__wblockSyntheticVideoSize = [1600, 900];
+    document.querySelector('#movie_player video')?.dispatchEvent(new Event('resize'));
+  });
+  await check(page, S, 'restores the normal frame when the next video is 16:9', () => {
+    const player = document.getElementById('movie_player');
+    const wrap = document.getElementById('player-wrap');
+    const playerRect = player?.getBoundingClientRect();
+    const expectedHeight = (playerRect?.width || 0) * 9 / 16;
+    return {
+      pass: !!playerRect && Math.abs(playerRect.height - expectedHeight) < 1 &&
+        !player.classList.contains('wblock-tc-aspect-host') &&
+        !wrap?.classList.contains('wblock-tc-aspect-host'),
+      detail: `player=${playerRect?.width.toFixed(0)}x${playerRect?.height.toFixed(0)} expected=${expectedHeight.toFixed(0)}`,
+    };
+  });
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario 3: iPhone (mobile Safari) ----------------------------------
 {
   const iphone = devices['iPhone 13'];
   const { browser, page, pageErrors } = await runScenario('iPhone (mobile Safari)', {

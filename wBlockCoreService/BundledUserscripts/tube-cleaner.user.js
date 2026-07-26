@@ -322,9 +322,12 @@
         '#movie_player .html5-video-container',
         '{ position: static !important; }',
 
-        // Let the video fill the container.
+        // YouTube sizes and offsets the media element itself when the source is
+        // narrower than 16:9. Once width/height are overridden below, retaining
+        // that old left/top offset pushes square and vertical videos to one side.
+        // Give Safari the whole player box and let object-fit center the picture.
         '#movie_player video',
-        '{ width: 100% !important; height: 100% !important; }',
+        '{ position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; object-fit: contain !important; object-position: center center !important; }',
 
         // Hide the YouTube player container's custom cursor.
         '#movie_player',
@@ -414,7 +417,14 @@
         '{ position: static !important; overflow: visible !important; }',
 
         '.wblock-tc-native video',
-        '{ width: 100% !important; height: 100% !important; }',
+        '{ position: absolute !important; inset: 0 !important; width: 100% !important; height: 100% !important; object-fit: contain !important; object-position: center center !important; }',
+
+        // On a regular watch page, square and portrait videos can use more of a
+        // narrow viewport by growing the reserved player frame toward their
+        // natural ratio. The height is calculated in JavaScript and capped to
+        // keep very tall videos from taking over a desktop page.
+        '.wblock-tc-aspect-host',
+        '{ box-sizing: border-box !important; height: var(--wblock-tc-player-height) !important; min-height: var(--wblock-tc-player-height) !important; max-height: none !important; aspect-ratio: auto !important; padding-top: 0 !important; padding-bottom: 0 !important; }',
 
         // Prevent iOS double-tap zoom on toolbar buttons.
         '.wblock-tc-toolbar button, .wblock-tc-toolbar div',
@@ -559,6 +569,105 @@
         pipActive = false;
     }
 
+    // Grow a regular watch-page player toward a narrow video's natural aspect
+    // ratio. YouTube reserves a 16:9 frame even for square and portrait uploads;
+    // in narrow layouts that wastes most of the available width. Expand only
+    // when doing so makes the player taller, and cap the result at 85% of the
+    // viewport so a portrait upload cannot dominate a large desktop page.
+    function setupVideoAspectLayout(player, video) {
+        if (!player || !video) return;
+        var isHarness = location.protocol === 'file:';
+        var isWatchPage = /^\/watch(?:\/|$)/.test(location.pathname);
+        if (!isHarness && (!isWatchPage || location.hostname === 'music.youtube.com')) return;
+        if (/^\/shorts(?:\/|$)/.test(location.pathname)) return;
+
+        var baseAspect = 0;
+        var hosts = [];
+        var updateFrame = null;
+
+        function clearLayout() {
+            for (var i = 0; i < hosts.length; i++) {
+                hosts[i].classList.remove('wblock-tc-aspect-host');
+                hosts[i].style.removeProperty('--wblock-tc-player-height');
+            }
+        }
+
+        // Resize every consecutive wrapper that currently reserves exactly the
+        // same box as #movie_player. This moves watch metadata down with the
+        // taller player without touching unrelated page columns or the body.
+        function findHosts(rect) {
+            if (hosts.length || !rect.width || !rect.height) return;
+            var node = player;
+            for (var depth = 0; node && depth < 8; depth++) {
+                if (node === document.body || node === document.documentElement) break;
+                var nodeRect = node.getBoundingClientRect();
+                if (Math.abs(nodeRect.width - rect.width) > 4 ||
+                    Math.abs(nodeRect.height - rect.height) > 4) break;
+                hosts.push(node);
+                node = node.parentElement;
+            }
+        }
+
+        function updateLayout() {
+            updateFrame = null;
+            var rect = player.getBoundingClientRect();
+            if (!rect.width || !rect.height) return;
+            if (!baseAspect) {
+                baseAspect = rect.width / rect.height;
+                findHosts(rect);
+            }
+
+            var fullscreen = document.fullscreenElement || document.webkitFullscreenElement ||
+                player.classList.contains('ytp-fullscreen') ||
+                video.webkitPresentationMode === 'fullscreen';
+            var sourceWidth = Number(video.videoWidth) || 0;
+            var sourceHeight = Number(video.videoHeight) || 0;
+            if (fullscreen || !sourceWidth || !sourceHeight || !hosts.length) {
+                clearLayout();
+                return;
+            }
+
+            var baseHeight = rect.width / baseAspect;
+            var naturalHeight = rect.width * sourceHeight / sourceWidth;
+            var viewportHeight = document.documentElement.clientHeight || window.innerHeight || baseHeight;
+            var targetHeight = Math.min(naturalHeight, Math.max(baseHeight, viewportHeight * 0.85));
+            if (targetHeight <= baseHeight + 2) {
+                clearLayout();
+                return;
+            }
+
+            var heightValue = Math.round(targetHeight * 100) / 100 + 'px';
+            for (var i = 0; i < hosts.length; i++) {
+                hosts[i].style.setProperty('--wblock-tc-player-height', heightValue);
+                hosts[i].classList.add('wblock-tc-aspect-host');
+            }
+        }
+
+        function scheduleUpdate() {
+            if (updateFrame !== null) return;
+            updateFrame = requestAnimationFrame(updateLayout);
+        }
+
+        video.addEventListener('loadedmetadata', scheduleUpdate);
+        video.addEventListener('resize', scheduleUpdate);
+        video.addEventListener('emptied', scheduleUpdate);
+        window.addEventListener('resize', scheduleUpdate);
+        document.addEventListener('fullscreenchange', scheduleUpdate);
+        document.addEventListener('webkitfullscreenchange', scheduleUpdate);
+        scheduleUpdate();
+
+        registerCleanup(function () {
+            video.removeEventListener('loadedmetadata', scheduleUpdate);
+            video.removeEventListener('resize', scheduleUpdate);
+            video.removeEventListener('emptied', scheduleUpdate);
+            window.removeEventListener('resize', scheduleUpdate);
+            document.removeEventListener('fullscreenchange', scheduleUpdate);
+            document.removeEventListener('webkitfullscreenchange', scheduleUpdate);
+            if (updateFrame !== null) cancelAnimationFrame(updateFrame);
+            clearLayout();
+        });
+    }
+
     // Activate a video element: tear down the previous video's resources first,
     // then apply every per-video enhancement. Called on first transform and again
     // whenever the player recreates its <video> element.
@@ -567,6 +676,7 @@
         activeVideo = video;
         forceNativeControls(video);
         guardNativeControls(video);
+        setupVideoAspectLayout(player, video);
         // Keep YouTube's media listeners intact. SABR/MSE uses waiting,
         // stalled, progress, and related events to maintain the stream. The
         // iOS toolbar contains only a compact quality selector positioned above
