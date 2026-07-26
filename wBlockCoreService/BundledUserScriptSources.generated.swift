@@ -195,18 +195,27 @@ enum BundledUserScriptSources {
         document.addEventListener('visibilitychange', onVisibilityChange);
         window.addEventListener('focus', onFocus);
 
-        // Scroll out of view: use IntersectionObserver
-        var scrollObserver = new IntersectionObserver(function (entries) {
-            if (!autoPiPEnabled) return;
-            entries.forEach(function (entry) {
-                if (!entry.isIntersecting && !video.paused && !video.ended) {
-                    enterPiP(video);
-                } else if (entry.isIntersecting && isPiPActive(video)) {
-                    exitPiP(video);
-                }
-            });
-        }, { threshold: 0.1 });
-        scrollObserver.observe(video);
+        // Scroll out of view: use IntersectionObserver.
+        // On mobile YouTube the watch player is normally position:fixed (sticky).
+        // Tube Cleaner overrides it to position:absolute so it scrolls with the
+        // page. Without this guard the observer would enter PiP every time the
+        // user scrolls past the video to read comments.
+        var stickyContainer = document.getElementById('player-container-id');
+        var skipScrollPiP = !!(stickyContainer && stickyContainer.classList.contains('sticky-player'));
+        var scrollObserver = null;
+        if (!skipScrollPiP) {
+            scrollObserver = new IntersectionObserver(function (entries) {
+                if (!autoPiPEnabled) return;
+                entries.forEach(function (entry) {
+                    if (!entry.isIntersecting && !video.paused && !video.ended) {
+                        enterPiP(video);
+                    } else if (entry.isIntersecting && isPiPActive(video)) {
+                        exitPiP(video);
+                    }
+                });
+            }, { threshold: 0.1 });
+            scrollObserver.observe(video);
+        }
 
         // Listen for presentation mode changes
         function onPresentationModeChange() {
@@ -224,7 +233,7 @@ enum BundledUserScriptSources {
         registerCleanup(function () {
             document.removeEventListener('visibilitychange', onVisibilityChange);
             window.removeEventListener('focus', onFocus);
-            try { scrollObserver.disconnect(); } catch (e) { /* ignore */ }
+            try { if (scrollObserver) scrollObserver.disconnect(); } catch (e) { /* ignore */ }
             video.removeEventListener('webkitpresentationmodechanged', onPresentationModeChange);
             video.removeEventListener('leavepictureinpicture', onLeavePictureInPicture);
         });
@@ -382,6 +391,22 @@ enum BundledUserScriptSources {
         'ytm-watch-player-controls',
         '{ display: none !important; pointer-events: none !important; }',
 
+        // Mobile YouTube pins the watch player below its fixed header by adding
+        // sticky-player and position:fixed to this body-level container. Keep it
+        // at the same document position, but let it leave the viewport normally
+        // when the user scrolls down the watch page.
+        '#player-container-id.player-container',
+        '{ position: absolute !important; }',
+
+        // The related-videos filter chip bar ("All / Related / For you ...") is
+        // sticky with top: calc(96px + 56.25vw), calibrated for the stock layout
+        // where the player is position:fixed at the top of the viewport. Once the
+        // player scrolls away (position:absolute above), that offset leaves the
+        // bar floating mid-screen over the related content. Pin it to the header
+        // so it sticks at the top of the viewport when scrolling past the player.
+        'ytm-related-chip-cloud-renderer',
+        '{ top: 48px !important; }',
+
         // Do not style Safari's private ::-webkit-media-controls tree. iOS and
         // macOS use different internal layouts, and forcing display/flex on the
         // iOS shadow controls breaks both video painting and touch hit-testing.
@@ -436,6 +461,12 @@ enum BundledUserScriptSources {
         // keep very tall videos from taking over a desktop page.
         '.wblock-tc-aspect-host',
         '{ box-sizing: border-box !important; height: var(--wblock-tc-player-height) !important; min-height: var(--wblock-tc-player-height) !important; max-height: none !important; aspect-ratio: auto !important; padding-top: 0 !important; padding-bottom: 0 !important; }',
+
+        // Some YouTube layouts keep the player in an absolutely positioned,
+        // fixed-ratio wrapper. In those layouts, growing #movie_player does not
+        // move the watch content below it, so add the unreserved height there.
+        '.wblock-tc-content-offset',
+        '{ margin-top: var(--wblock-tc-content-margin) !important; }',
 
         // Prevent iOS double-tap zoom on toolbar buttons.
         '.wblock-tc-toolbar button, .wblock-tc-toolbar div',
@@ -595,12 +626,53 @@ enum BundledUserScriptSources {
         var baseAspect = 0;
         var hosts = [];
         var updateFrame = null;
+        var contentAnchor = null;
 
         function clearLayout() {
+            if (contentAnchor) {
+                contentAnchor.classList.remove('wblock-tc-content-offset');
+                contentAnchor.style.removeProperty('--wblock-tc-content-margin');
+                contentAnchor = null;
+            }
             for (var i = 0; i < hosts.length; i++) {
                 hosts[i].classList.remove('wblock-tc-aspect-host');
                 hosts[i].style.removeProperty('--wblock-tc-player-height');
             }
+        }
+
+        // Find the first watch-page block after the player. Known desktop and
+        // mobile containers are preferred; walking outward to the first visible
+        // next sibling covers YouTube experiments with different tag names.
+        function findContentAnchor(rect) {
+            var selectors = [
+                '#below',
+                'ytm-single-column-watch-next-results-renderer',
+                'ytm-watch-next-secondary-results-renderer',
+                'ytm-slim-video-metadata-section-renderer',
+                'ytd-watch-metadata',
+                '#watch-metadata'
+            ];
+            for (var i = 0; i < selectors.length; i++) {
+                var candidate = document.querySelector(selectors[i]);
+                if (!candidate || candidate.contains(player) || player.contains(candidate)) continue;
+                var candidateRect = candidate.getBoundingClientRect();
+                if (candidateRect.width && candidateRect.top >= rect.bottom - 16) return candidate;
+            }
+
+            var node = player;
+            for (var depth = 0; node && node.parentElement && depth < 12; depth++) {
+                var sibling = node.nextElementSibling;
+                while (sibling) {
+                    var siblingRect = sibling.getBoundingClientRect();
+                    if (siblingRect.width && siblingRect.height && siblingRect.top >= rect.bottom - 16) {
+                        return sibling;
+                    }
+                    sibling = sibling.nextElementSibling;
+                }
+                node = node.parentElement;
+                if (node === document.body || node === document.documentElement) break;
+            }
+            return null;
         }
 
         // Resize every consecutive wrapper that currently reserves exactly the
@@ -619,14 +691,30 @@ enum BundledUserScriptSources {
             }
         }
 
+        // Mobile YouTube keeps the player in a body-level fixed container and
+        // reserves flow space with a separate .player-placeholder div inside
+        // ytm-watch. This element may not exist when findHosts first runs, so
+        // check for it on every layout update and add it to the host list.
+        function ensurePlaceholderHost() {
+            var placeholder = document.querySelector('.player-placeholder');
+            if (placeholder && !player.contains(placeholder) && !placeholder.contains(player)) {
+                var found = false;
+                for (var i = 0; i < hosts.length; i++) {
+                    if (hosts[i] === placeholder) { found = true; break; }
+                }
+                if (!found) hosts.push(placeholder);
+            }
+        }
+
         function updateLayout() {
             updateFrame = null;
             var rect = player.getBoundingClientRect();
-            if (!rect.width || !rect.height) return;
+            if (!rect.width || !rect.height) { clearLayout(); return; }
             if (!baseAspect) {
                 baseAspect = rect.width / rect.height;
                 findHosts(rect);
             }
+            ensurePlaceholderHost();
 
             var fullscreen = document.fullscreenElement || document.webkitFullscreenElement ||
                 player.classList.contains('ytp-fullscreen') ||
@@ -647,10 +735,45 @@ enum BundledUserScriptSources {
                 return;
             }
 
+            // Apply expansion. Setting the same CSS custom property value is a
+            // visual no-op, so there is no need to clear first (which would
+            // cause a one-frame flash back to 16:9 on every resize event).
             var heightValue = Math.round(targetHeight * 100) / 100 + 'px';
             for (var i = 0; i < hosts.length; i++) {
                 hosts[i].style.setProperty('--wblock-tc-player-height', heightValue);
                 hosts[i].classList.add('wblock-tc-aspect-host');
+            }
+
+            // Content offset: when the outermost host is out of normal flow
+            // (position:fixed/absolute), growing it does not push the watch
+            // content below it. Add a margin-top to compensate. Compute this
+            // synchronously (one forced reflow) instead of a second rAF to
+            // avoid a visible one-frame jump.
+            var anchor = findContentAnchor(rect);
+            if (anchor) {
+                // Remove our previous offset so we can read the natural position.
+                if (anchor === contentAnchor) {
+                    anchor.classList.remove('wblock-tc-content-offset');
+                    anchor.style.removeProperty('--wblock-tc-content-margin');
+                }
+                var naturalTop = anchor.getBoundingClientRect().top;
+                var playerBottom = player.getBoundingClientRect().bottom;
+                var gap = playerBottom - naturalTop;
+                if (gap > 1) {
+                    // Add the gap to the element's existing margin so the total
+                    // margin pushes it below the expanded player.
+                    var existingMargin = parseFloat(getComputedStyle(anchor).marginTop) || 0;
+                    var marginValue = Math.round((existingMargin + gap) * 100) / 100 + 'px';
+                    anchor.style.setProperty('--wblock-tc-content-margin', marginValue);
+                    anchor.classList.add('wblock-tc-content-offset');
+                    contentAnchor = anchor;
+                } else {
+                    contentAnchor = null;
+                }
+            } else if (contentAnchor) {
+                contentAnchor.classList.remove('wblock-tc-content-offset');
+                contentAnchor.style.removeProperty('--wblock-tc-content-margin');
+                contentAnchor = null;
             }
         }
 

@@ -119,6 +119,9 @@ for needle in [
     "findPlayer",                // active Shorts player selection
     "setupVideoAspectLayout",    // square/portrait watch-page sizing
     "wblock-tc-aspect-host",     // coordinated player-wrapper reflow
+    "wblock-tc-content-offset",  // keeps watch content below taller players
+    "player-container-id",       // disables the mobile sticky watch player
+    "player-placeholder",        // mobile YouTube flow-space reservation
     "x-webkit-airplay",          // native Safari media capabilities
     "sponsor.ajay.app/api/skipSegments/", // SponsorBlock API
     "crypto.subtle.digest('SHA-256'",      // k-anonymous video-id lookup

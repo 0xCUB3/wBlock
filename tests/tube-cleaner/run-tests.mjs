@@ -1033,6 +1033,26 @@ async function qualityUISelectionCheck(page, scenario) {
 
   await page.evaluate(() => {
     const video = document.querySelector('#movie_player video');
+    const wrap = document.getElementById('player-wrap');
+    const metadata = document.getElementById('watch-metadata');
+
+    // Match mobile YouTube's body-level fixed-ratio player container. Its
+    // reserved 16:9 height does not grow when #movie_player grows.
+    wrap.id = 'player-container-id';
+    wrap.className = 'player-container sticky-player';
+    wrap.style.cssText = 'position:fixed;top:24px;left:0;width:600px;max-width:100%;margin:0;height:337.5px!important';
+
+    // Mobile YouTube reserves flow space with a separate placeholder div.
+    // Insert one between the player container and the metadata.
+    const placeholder = document.createElement('div');
+    placeholder.className = 'player-size player-placeholder';
+    placeholder.style.cssText = 'position:relative;width:600px;max-width:100%;height:337.5px;margin:24px auto 0';
+    metadata.parentElement.insertBefore(placeholder, metadata);
+    metadata.style.marginTop = '0';
+
+    window.__wblockBaseMetadataTop = metadata.getBoundingClientRect().top;
+    window.__wblockBasePlayerTop = document.getElementById('movie_player').getBoundingClientRect().top;
+
     window.__wblockSyntheticVideoSize = [1000, 1000];
     Object.defineProperty(video, 'videoWidth', {
       configurable: true,
@@ -1044,36 +1064,58 @@ async function qualityUISelectionCheck(page, scenario) {
     });
     video.dispatchEvent(new Event('resize'));
   });
-  await check(page, S, 'grows a square video to the available player width', () => {
-    const wrap = document.getElementById('player-wrap')?.getBoundingClientRect();
+  await page.waitForFunction(() => document.querySelector('.player-placeholder')?.classList.contains('wblock-tc-aspect-host'), { timeout: 2000 }).catch(() => {});
+  await check(page, S, 'grows a square player and moves the rest of the watch page below it', () => {
+    const wrap = document.getElementById('player-container-id');
     const player = document.getElementById('movie_player')?.getBoundingClientRect();
     const video = document.querySelector('#movie_player video')?.getBoundingClientRect();
-    const metadata = document.getElementById('watch-metadata')?.getBoundingClientRect();
+    const placeholder = document.querySelector('.player-placeholder');
+    const placeholderRect = placeholder?.getBoundingClientRect();
+    const metadata = document.getElementById('watch-metadata');
+    const metadataRect = metadata?.getBoundingClientRect();
     const square = !!(player && Math.abs(player.width - player.height) < 1);
     const videoFillsPlayer = !!(player && video &&
       Math.abs(video.width - player.width) < 1 && Math.abs(video.height - player.height) < 1);
-    const pageReflowed = !!(wrap && player && metadata &&
-      Math.abs(wrap.height - player.height) < 1 && metadata.top >= player.bottom);
+    const placeholderGrew = !!(placeholderRect && Math.abs(placeholderRect.height - player.height) < 2);
+    const contentMoved = !!(player && metadataRect && metadataRect.top >= player.bottom - 2);
     return {
-      pass: square && videoFillsPlayer && pageReflowed,
-      detail: `player=${player?.width.toFixed(0)}x${player?.height.toFixed(0)} wrap=${wrap?.height.toFixed(0)} metadataTop=${metadata?.top.toFixed(0)}`,
+      pass: square && videoFillsPlayer && placeholderGrew && contentMoved && getComputedStyle(wrap).position === 'absolute',
+      detail: `player=${player?.width.toFixed(0)}x${player?.height.toFixed(0)} placeholder=${placeholderRect?.height.toFixed(0)} metadataTop=${metadataRect?.top.toFixed(0)} position=${getComputedStyle(wrap).position}`,
     };
   });
+
+  await page.evaluate(() => scrollTo(0, 300));
+  await page.waitForTimeout(50);
+  await check(page, S, 'scrolls the expanded player with the page instead of pinning it', () => {
+    const playerTop = document.getElementById('movie_player')?.getBoundingClientRect().top;
+    const metadataTop = document.getElementById('watch-metadata')?.getBoundingClientRect().top;
+    return {
+      pass: playerTop < window.__wblockBasePlayerTop - 250 && metadataTop < 400,
+      detail: `scrollY=${scrollY} playerTop=${playerTop?.toFixed(0)} metadataTop=${metadataTop?.toFixed(0)}`,
+    };
+  });
+  await page.evaluate(() => scrollTo(0, 0));
 
   await page.evaluate(() => {
     window.__wblockSyntheticVideoSize = [1600, 900];
     document.querySelector('#movie_player video')?.dispatchEvent(new Event('resize'));
   });
-  await check(page, S, 'restores the normal frame when the next video is 16:9', () => {
+  await check(page, S, 'restores normal frame spacing when the next video is 16:9', () => {
     const player = document.getElementById('movie_player');
-    const wrap = document.getElementById('player-wrap');
+    const wrap = document.getElementById('player-container-id');
+    const metadata = document.getElementById('watch-metadata');
+    const placeholder = document.querySelector('.player-placeholder');
     const playerRect = player?.getBoundingClientRect();
+    const placeholderRect = placeholder?.getBoundingClientRect();
     const expectedHeight = (playerRect?.width || 0) * 9 / 16;
     return {
       pass: !!playerRect && Math.abs(playerRect.height - expectedHeight) < 1 &&
+        !!placeholderRect && Math.abs(placeholderRect.height - expectedHeight) < 2 &&
+        Math.abs(metadata.getBoundingClientRect().top - window.__wblockBaseMetadataTop) < 2 &&
         !player.classList.contains('wblock-tc-aspect-host') &&
-        !wrap?.classList.contains('wblock-tc-aspect-host'),
-      detail: `player=${playerRect?.width.toFixed(0)}x${playerRect?.height.toFixed(0)} expected=${expectedHeight.toFixed(0)}`,
+        !wrap?.classList.contains('wblock-tc-aspect-host') &&
+        !placeholder?.classList.contains('wblock-tc-aspect-host'),
+      detail: `player=${playerRect?.width.toFixed(0)}x${playerRect?.height.toFixed(0)} placeholder=${placeholderRect?.height.toFixed(0)} metadataTop=${metadata.getBoundingClientRect().top.toFixed(0)} expected=${expectedHeight.toFixed(0)}`,
     };
   });
   record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
