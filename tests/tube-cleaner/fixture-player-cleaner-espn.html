@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synthetic ESPN/BAM multi-video player (Player Cleaner test)</title>
+<style>
+  body { margin: 0; background: #111; }
+  .WebPlayerContainer {
+    width: 800px; max-width: 100%; margin: 24px auto; background: #000;
+  }
+  .WebPlayerContainer-player,
+  disney-web-player,
+  .btm-media-client,
+  .media-element-container {
+    display: block; width: 100%; height: 450px;
+  }
+  .media-element-container { position: relative; }
+  video { width: 100%; height: 100%; background: #222; }
+  .local-pointer-actions,
+  espn-web-player-ui {
+    position: absolute; inset: 0; z-index: 10;
+  }
+  .local-pointer-actions { background: rgba(0, 0, 0, .1); }
+  espn-web-player-ui {
+    display: block; width: 800px; height: 450px; margin: 24px auto;
+    background: rgba(0, 0, 0, .15);
+  }
+</style>
+</head>
+<body>
+  <!-- ESPN's BAM player keeps a hidden, source-less media element before the
+       active MSE video. Its pointer-action UI is a sibling of the element that
+       directly contains the videos. -->
+  <div class="WebPlayerContainer">
+    <div class="WebPlayerContainer-player">
+      <disney-web-player>
+        <div class="btm-media-client">
+          <div class="media-element-container">
+            <video id="espn-placeholder" style="display:none"></video>
+            <video id="espn-active" class="hive-video"></video>
+            <div class="local-pointer-actions">Local player chrome</div>
+          </div>
+        </div>
+      </disney-web-player>
+    </div>
+    <espn-web-player-ui>ESPN pointer-action UI</espn-web-player-ui>
+  </div>
+
+  <script>
+    (function () {
+      var video = document.getElementById('espn-active');
+      video.src = 'blob:https://www.espn.com/00000000-0000-0000-0000-000000000000';
+
+      // ESPN's player can remove native controls while updating its own UI.
+      setTimeout(function () { video.removeAttribute('controls'); }, 800);
+    })();
+  </script>
+</body>
+</html>

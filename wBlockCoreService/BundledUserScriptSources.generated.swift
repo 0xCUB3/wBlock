@@ -4008,7 +4008,8 @@ enum BundledUserScriptSources {
         'media-theme',               // Media Chrome generic theme
         'media-theme-youtube',       // Media Chrome YouTube theme
         '.media-player',             // Media Chrome / modern wrappers
-        '.media-default-skin'        // videojs.org's modern demo wrapper
+        '.media-default-skin',       // videojs.org's modern demo wrapper
+        '.WebPlayerContainer'        // ESPN / Disney BAM player
     ];
     var PLAYER_SELECTOR = PLAYER_SELECTORS.join(',');
 
@@ -4362,7 +4363,7 @@ enum BundledUserScriptSources {
             '.flowplayer', '.mejs-container', '.mejs__container', '.clappr',
             '[data-clappr-player]', '.fluid_video_wrapper', 'mux-player',
             'media-controller', 'media-theme', 'media-theme-youtube',
-            '.media-player', '.media-default-skin'];
+            '.media-player', '.media-default-skin', '.WebPlayerContainer'];
         for (var i = 0; i < wrapperSelectors.length; i++) {
             var ancestor = container.closest ? container.closest(wrapperSelectors[i]) : null;
             if (ancestor) { container = ancestor; }
@@ -4571,8 +4572,33 @@ enum BundledUserScriptSources {
         restorePlaybackState(video, state, sourceChanged);
     }
 
+    function selectContainerVideo(container) {
+        if (!container || !container.querySelectorAll) { return null; }
+        var videos = container.querySelectorAll('video');
+        if (!videos.length) { return null; }
+        var selected = videos[0];
+        var bestScore = -1;
+        for (var i = 0; i < videos.length; i++) {
+            var candidate = videos[i];
+            var score = hasElementSourceSignal(candidate) ? 100 : 0;
+            try {
+                if (candidate.currentSrc) { score += 20; }
+                if (candidate.srcObject) { score += 20; }
+                if (!candidate.paused && !candidate.ended) { score += 10; }
+                score += Math.min(candidate.readyState || 0, 4);
+                if (candidate.offsetWidth > 0 && candidate.offsetHeight > 0) { score += 5; }
+                if (getComputedStyle(candidate).display === 'none') { score -= 5; }
+            } catch (e) { /* use the source-signal score */ }
+            if (score > bestScore) {
+                bestScore = score;
+                selected = candidate;
+            }
+        }
+        return selected;
+    }
+
     function replacePlayer(container, allowStructuralCleanup) {
-        var video = container.querySelector ? container.querySelector('video') : null;
+        var video = selectContainerVideo(container);
         if (!video) { return; }
         if (video._wblockCleaned) {
             hideContainerChrome(container, video, isPlayerShell(container));
@@ -4885,8 +4911,9 @@ enum BundledUserScriptSources {
         for (var i = 0; i < videos.length; i++) {
             var v = videos[i];
             if (!v._wblockEnhanced && !v._wblockCleaned) continue;
-            var c = v.parentElement;
+            var c = (v.closest && v.closest(PLAYER_SELECTOR)) || v.parentElement;
             if (!c) continue;
+            c = normalizeContainer(c);
             hideContainerChrome(c, v, isPlayerShell(c));
         }
     }

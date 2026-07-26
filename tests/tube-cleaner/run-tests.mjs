@@ -39,6 +39,7 @@ const FIXTURE_PLAYER_RELATIVE_URL = pathToFileURL(join(__dirname, 'fixture-playe
 const FIXTURE_PLAYER_UPGRADE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-upgrade.html')).href;
 const FIXTURE_PLAYER_EARLY_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-early.html')).href;
 const FIXTURE_PLAYER_ARTDECO_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-artdeco.html')).href;
+const FIXTURE_PLAYER_ESPN_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-espn.html')).href;
 
 const userscript = readFileSync(SCRIPT_PATH, 'utf8');
 const playerUserscript = readFileSync(PLAYER_SCRIPT_PATH, 'utf8');
@@ -1679,6 +1680,54 @@ async function qualityUISelectionCheck(page, scenario) {
     const ok = counts.every(n => n === 1) && nativeCount === 1;
     return { pass: ok, detail: `counts=${counts.join(',')} native=${nativeCount}` };
   });
+
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario: Player Cleaner ESPN/BAM multi-video player ------------------
+// ESPN puts a hidden source-less <video> before its active MSE element and
+// renders pointer-action UI outside the active video's immediate parent. The
+// cleaner must select the sourced video and clean the complete player shell.
+{
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (ESPN/BAM player)', {
+    fixture: FIXTURE_PLAYER_ESPN_URL,
+    scriptSource: playerUserscript,
+    readySignal: '#espn-active[data-wblock-player-cleaner]',
+    viewport: { width: 1280, height: 800 },
+  });
+  const S = 'player-cleaner-espn';
+
+  await check(page, S, 'selects the active sourced video instead of the placeholder', () => {
+    const active = document.getElementById('espn-active');
+    const placeholder = document.getElementById('espn-placeholder');
+    const pass = !!(active && active.controls && active.getAttribute('data-wblock-player-cleaner') === '1' &&
+      placeholder && !placeholder.hasAttribute('data-wblock-player-cleaner'));
+    return { pass, detail: `active=${active?.getAttribute('data-wblock-player-cleaner')} placeholder=${placeholder?.getAttribute('data-wblock-player-cleaner')}` };
+  });
+
+  await check(page, S, 'keeps the active ESPN MSE pipeline in place', () => {
+    const video = document.getElementById('espn-active');
+    const pass = !!(video && video.src.startsWith('blob:') && !video._wblockCleaned);
+    return { pass, detail: video ? `src=${video.src} cleaned=${!!video._wblockCleaned}` : 'no video' };
+  });
+
+  await check(page, S, 'hides ESPN UI outside the media-element container', () => {
+    const ui = document.querySelector('espn-web-player-ui');
+    return { pass: !!(ui && ui.style.display === 'none'), detail: ui ? `display=${ui.style.display}` : 'no UI' };
+  });
+
+  await check(page, S, 'hides local pointer-action chrome', () => {
+    const chrome = document.querySelector('.local-pointer-actions');
+    return { pass: !!(chrome && chrome.style.display === 'none'), detail: chrome ? `display=${chrome.style.display}` : 'no chrome' };
+  });
+
+  await page.waitForTimeout(1000);
+  await check(page, S, 'keeps controls after ESPN removes the attribute', () => {
+    const video = document.getElementById('espn-active');
+    return { pass: !!(video && video.controls && video.hasAttribute('controls')),
+      detail: video ? `controls=${video.controls} attr=${video.hasAttribute('controls')}` : 'no video' };
+  }, { timeout: 2500, interval: 200 });
 
   record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
