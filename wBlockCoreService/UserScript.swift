@@ -208,12 +208,41 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         return regex
     }
     
-    /// Remove emojis from a string
+    /// Strip emoji glyphs from userscript/userstyle display metadata.
+    ///
+    /// Unicode marks ASCII digits, `#`, and `*` as emoji-capable because they can
+    /// form keycap sequences (e.g. `1️⃣`). Filtering on `isEmoji` alone therefore
+    /// deletes ordinary numbers from `@name` / `@description` (issue #484).
+    /// Keep all ASCII, drop non-ASCII emoji bases and presentation forms, and
+    /// scrub the combining marks that only exist to finish an emoji sequence.
     private func removeEmojis(from string: String) -> String {
-        return string.unicodeScalars
-            .filter { !$0.properties.isEmoji && !$0.properties.isEmojiPresentation }
-            .reduce("") { $0 + String($1) }
-            .trimmingCharacters(in: .whitespaces)
+        var result = String.UnicodeScalarView()
+        result.reserveCapacity(string.unicodeScalars.count)
+
+        for scalar in string.unicodeScalars {
+            if scalar.isASCII {
+                result.append(scalar)
+                continue
+            }
+
+            if scalar.properties.isEmojiPresentation || scalar.properties.isEmoji {
+                continue
+            }
+
+            if scalar.properties.isEmojiModifier {
+                continue
+            }
+
+            // Variation Selector-16, Combining Enclosing Keycap, Zero Width Joiner
+            let value = scalar.value
+            if value == 0xFE0F || value == 0x20E3 || value == 0x200D {
+                continue
+            }
+
+            result.append(scalar)
+        }
+
+        return String(result).trimmingCharacters(in: .whitespaces)
     }
 
     /// True when the content carries a line-anchored userscript metadata block.
