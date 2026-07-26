@@ -1838,6 +1838,13 @@ public class UserScriptManager: ObservableObject {
 
         userScripts = mergedScripts
         await persistUserScriptsNow()
+        // Flush the restored scripts to disk right away instead of relying on the
+        // debounced save. The steps that run next (setUserScriptDisabledHosts) and
+        // cross-process reloads use atomic read-modify-writes that read from disk; if
+        // the restored scripts are still only in memory when those run, they observe
+        // the stale pre-restore state and clobber the restore, leaving the userscript
+        // section empty. (#485)
+        _ = await dataManager.saveDataImmediately()
     }
 
     // MARK: - Public Methods
