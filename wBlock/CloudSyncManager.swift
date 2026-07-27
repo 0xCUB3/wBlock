@@ -107,6 +107,9 @@ final class CloudSyncManager: ObservableObject {
     private let deletedMarkerTTLDays: Double = 90
     /// Minimum interval between automatic (AppActive) syncs. Manual/Launch triggers bypass it.
     private let minimumAutomaticSyncInterval: TimeInterval = 120
+    /// Minimum interval between foreground metadata probes (see syncOnAppActive).
+    private let minimumProbeInterval: TimeInterval = 30
+    private var lastProbeAt: TimeInterval = 0
     private var lastAutomaticSyncAt: TimeInterval = 0
     private let sortedJSONEncoder: JSONEncoder = {
         let encoder = JSONEncoder()
@@ -276,14 +279,44 @@ final class CloudSyncManager: ObservableObject {
             // probe can answer without downloading the payload asset.
             let updatedAt = (record["updatedAt"] as? Date)?.timeIntervalSince1970
             let schemaVersion = record["schemaVersion"] as? Int
+            let resolvedUpdatedAt = (updatedAt ?? 0) > 0 ? updatedAt : nil
+            // Cache the observed remote timestamp so foreground probes can cheaply detect
+            // "nothing changed" without re-downloading the payload or re-running a full sync.
+            if let resolvedUpdatedAt {
+                defaults.set(resolvedUpdatedAt, forKey: Keys.lastKnownRemoteUpdatedAt)
+            }
             return RemoteConfigProbe(
                 exists: true,
-                updatedAt: (updatedAt ?? 0) > 0 ? updatedAt : nil,
+                updatedAt: resolvedUpdatedAt,
                 schemaVersion: schemaVersion
             )
         } catch {
             return RemoteConfigProbe(exists: false, updatedAt: nil, schemaVersion: nil)
         }
+    }
+
+    /// Foreground entry point. Runs a cheap metadata-only probe (throttled to once per
+    /// `minimumProbeInterval`) and only kicks off a full two-way sync when the remote
+    /// config actually changed since the last probe. This keeps pulling prompt without
+    /// hammering CloudKit on rapid app switches, replacing the previous behaviour of
+    /// dropping every AppActive sync for `minimumAutomaticSyncInterval` seconds.
+    func syncOnAppActive() async {
+        guard isEnabled, hasCompletedLaunchSetup else { return }
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastProbeAt >= minimumProbeInterval else { return }
+        lastProbeAt = now
+
+        let lastKnown = defaults.double(forKey: Keys.lastKnownRemoteUpdatedAt)
+        let probe = await probeRemoteConfig()
+        guard probe.exists, let remoteUpdatedAt = probe.updatedAt else {
+            // No remote record yet (or transiently unreachable): fall back to a normal
+            // sync so a first-time upload can still happen, respecting the auto throttle.
+            await syncNow(trigger: "AppActive")
+            return
+        }
+
+        if lastKnown > 0, remoteUpdatedAt == lastKnown { return }
+        await syncNow(trigger: "AppActive-RemoteChanged")
     }
 
     func downloadAndApplyLatestRemoteConfig(trigger: String) async -> Bool {
@@ -1782,6 +1815,7 @@ final class CloudSyncManager: ObservableObject {
         static let lastDownloadedHash = "cloudSyncLastDownloadedHash"
         static let lastDownloadedAt = "cloudSyncLastDownloadedAt"
         static let lastSyncAt = "cloudSyncLastSyncAt"
+        static let lastKnownRemoteUpdatedAt = "cloudSyncLastKnownRemoteUpdatedAt"
         static let deletedCustomURLs = "cloudSyncDeletedCustomURLs"
         static let deletedLocalUserScriptNames = "cloudSyncDeletedLocalUserScriptNames"
         static let lastSyncedLocalUserScriptNames = "cloudSyncLastSyncedLocalUserScriptNames"

@@ -65,7 +65,7 @@ struct wBlockApp: App {
                 }
                 .onChangeCompat(of: scenePhase) { newPhase in
                     guard newPhase == .active, hasCompletedLaunchSetup else { return }
-                    Task { await CloudSyncManager.shared.syncNow(trigger: "AppActive") }
+                    Task { await CloudSyncManager.shared.syncOnAppActive() }
                 }
                 #if os(macOS)
                 .handlesExternalEvents(preferring: Set(["open"]), allowing: Set(["*"]))
