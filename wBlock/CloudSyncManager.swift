@@ -149,7 +149,7 @@ final class CloudSyncManager: ObservableObject {
         }
     }
 
-    private func waitUntilLaunchSetupComplete() async {
+    func waitUntilLaunchSetupComplete() async {
         if hasCompletedLaunchSetup { return }
         await withCheckedContinuation { continuation in
             Task { @MainActor [weak self] in
@@ -293,11 +293,10 @@ final class CloudSyncManager: ObservableObject {
             let updatedAt = (record["updatedAt"] as? Date)?.timeIntervalSince1970
             let schemaVersion = record["schemaVersion"] as? Int
             let resolvedUpdatedAt = (updatedAt ?? 0) > 0 ? updatedAt : nil
-            // Cache the observed remote timestamp so foreground probes can cheaply detect
-            // "nothing changed" without re-downloading the payload or re-running a full sync.
-            if let resolvedUpdatedAt {
-                defaults.set(resolvedUpdatedAt, forKey: Keys.lastKnownRemoteUpdatedAt)
-            }
+            // Intentionally a pure read: the cached "last known remote" timestamp is
+            // recorded only after a successful converge (see recordConvergedRemoteUpdatedAt)
+            // so a transient apply/download failure can't poison the cache and skip the
+            // change indefinitely.
             return RemoteConfigProbe(
                 exists: true,
                 updatedAt: resolvedUpdatedAt,
@@ -338,7 +337,7 @@ final class CloudSyncManager: ObservableObject {
     /// happen on local saves and foreground; this path exists to catch remote changes
     /// while the app is closed.
     func performBackgroundSync() async {
-        guard isEnabled, hasCompletedLaunchSetup else { return }
+        guard isEnabled else { return }
         await dataManager.waitUntilLoaded()
         await userScriptManager.waitUntilReady()
         if isSyncing { return }
@@ -355,7 +354,7 @@ final class CloudSyncManager: ObservableObject {
     /// the remote-notification handler can await it within the push time budget. Called
     /// when a CloudKit subscription push signals that the remote config changed.
     func syncForRemoteNotification(trigger: String) async {
-        guard isEnabled, hasCompletedLaunchSetup else { return }
+        guard isEnabled else { return }
         await performTwoWaySync(trigger: trigger)
     }
 
@@ -630,6 +629,7 @@ final class CloudSyncManager: ObservableObject {
             defaults.set(savedPayload.contentHash, forKey: Keys.lastUploadedHash)
             defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastUploadedAt)
             defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
+            recordConvergedRemoteUpdatedAt(savedPayload.updatedAt)
             // The uploaded payload's local script names are now known-synced.
             setLastSyncedLocalUserScriptNames(localUserScriptNames(in: savedPayload))
             lastErrorMessage = nil
@@ -674,6 +674,7 @@ final class CloudSyncManager: ObservableObject {
             let remoteRecordUpdatedAt = (remoteRecord["updatedAt"] as? Date)?.timeIntervalSince1970
 
             if let remoteContentHash, remoteContentHash == localPayload.contentHash {
+                recordConvergedRemoteUpdatedAt(remoteRecordUpdatedAt ?? 0)
                 markUpToDate(from: localPayload)
                 return
             }
@@ -693,6 +694,7 @@ final class CloudSyncManager: ObservableObject {
                 legacyPayload = decoded
                 remoteIsNewer = decoded.updatedAt > localUpdatedAt
                 if decoded.contentHash == localPayload.contentHash {
+                    recordConvergedRemoteUpdatedAt(decoded.updatedAt)
                     markUpToDate(from: localPayload)
                     return
                 }
@@ -772,6 +774,7 @@ final class CloudSyncManager: ObservableObject {
         defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastDownloadedAt)
         defaults.set(payload.contentHash, forKey: Keys.lastUploadedHash)
         defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
+        recordConvergedRemoteUpdatedAt(payload.updatedAt)
         refreshStatusFromDefaults()
 
         // A local userscript that was never synced and isn't in the winning remote payload was
@@ -1704,6 +1707,13 @@ final class CloudSyncManager: ObservableObject {
     func ensureRemoteChangeSubscription() async {
         guard let database else { return }
         let subscription = CKDatabaseSubscription(subscriptionID: Self.subscriptionID)
+        // Without notification info the subscription fires but never requests a push.
+        // shouldSendContentAvailable makes it a silent (content-available) push, which is
+        // what AppDelegate's remote-notification handler converges on — no alert, badge,
+        // or sound, so no user-facing notification permission is involved.
+        let info = CKSubscription.NotificationInfo()
+        info.shouldSendContentAvailable = true
+        subscription.notificationInfo = info
         let op = CKModifySubscriptionsOperation(
             subscriptionsToSave: [subscription],
             subscriptionIDsToDelete: nil
@@ -1872,6 +1882,15 @@ final class CloudSyncManager: ObservableObject {
         defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
         refreshStatusFromDefaults()
         setStatus(.upToDate)
+    }
+
+    /// Records the remote `updatedAt` the device has fully converged to, so foreground/
+    /// background probes can skip a full sync when the remote is unchanged. Only call this
+    /// after a successful apply or a confirmed local==remote match — never after a bare
+    /// metadata fetch, or a later apply failure would be skipped indefinitely.
+    private func recordConvergedRemoteUpdatedAt(_ updatedAt: TimeInterval) {
+        guard updatedAt > 0 else { return }
+        defaults.set(updatedAt, forKey: Keys.lastKnownRemoteUpdatedAt)
     }
 
     // MARK: - Helpers

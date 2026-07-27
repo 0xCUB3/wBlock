@@ -460,6 +460,7 @@ extension AppDelegate: UIApplicationDelegate {
             return
         }
         Task { @MainActor in
+            await LaunchSetup.runIfNeeded()
             await CloudSyncManager.shared.syncForRemoteNotification(trigger: "RemotePush")
             completionHandler(.newData)
         }
@@ -739,6 +740,7 @@ extension AppDelegate: UIApplicationDelegate {
         let completionState = BGTaskCompletionState()
         let updateTask = Task { @MainActor in
             self.scheduleBackgroundCloudSync()
+            await LaunchSetup.runIfNeeded()
             await CloudSyncManager.shared.performBackgroundSync()
             guard await completionState.claimCompletion() else { return }
             task.setTaskCompleted(success: true)

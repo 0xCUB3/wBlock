@@ -36,16 +36,12 @@ struct wBlockApp: App {
         hasStartedLaunchSetup = true
 
         Task {
-            await dataManager.waitUntilLoaded()
-            await dataManager.migrateLegacyFilterURLs()
-            await dataManager.migrateMultipurposeToAnnoyances()
-            await dataManager.migrateAnnoyancesFilterToSplitFilters()
-            await dataManager.migrateMobileFilterToAdsCategory()
-            await dataManager.migrateAllowlistsToDedicatedCategory()
-            await UserScriptManager.shared.waitUntilReady()
+            // Setup runs through a shared idempotent coordinator so background-launch
+            // entry points (BGAppRefresh, silent push) converge on the same migrations
+            // even when onAppear never runs on a cold launch.
+            await LaunchSetup.runIfNeeded()
             await MainActor.run {
                 hasCompletedLaunchSetup = true
-                CloudSyncManager.shared.activateAfterLaunchSetup()
             }
         }
     }
