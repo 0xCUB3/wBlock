@@ -53,6 +53,10 @@ final class CloudSyncManager: ObservableObject {
 
     static let shared = CloudSyncManager()
 
+    /// Public mirror of the entitlement probe so the UI can explain why sync is
+    /// unavailable (e.g. direct-distribution macOS builds strip the iCloud entitlement).
+    static var isCloudKitAvailable: Bool { hasCloudKitEntitlement }
+
     /// Check whether the running binary was signed with the iCloud entitlement.
     /// Direct-distribution builds strip it to avoid AMFI rejection.
     private static let hasCloudKitEntitlement: Bool = {

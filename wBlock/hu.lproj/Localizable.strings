@@ -841,3 +841,4 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Skipped pause request while apply is in progress" = "Skipped pause request while apply is in progress";
 "Apply already in progress." = "Apply already in progress.";
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
+"iCloud Sync isn't available in this build of wBlock. Install wBlock from the Mac App Store to sync your configuration across devices." = "iCloud Sync isn't available in this build of wBlock. Install wBlock from the Mac App Store to sync your configuration across devices.";

@@ -383,22 +383,25 @@ struct SettingsView: View {
                     Image(systemName: "arrow.triangle.2.circlepath")
                         .symbolRenderingMode(.hierarchical)
                         .foregroundStyle(
-                            (!syncManager.isEnabled || syncManager.isSyncing)
+                            (!syncManager.isEnabled || syncManager.isSyncing || !CloudSyncManager.isCloudKitAvailable)
                                 ? .tertiary : .secondary
                         )
                 }
                 .buttonStyle(.plain)
-                .disabled(!syncManager.isEnabled || syncManager.isSyncing)
+                .disabled(!syncManager.isEnabled || syncManager.isSyncing || !CloudSyncManager.isCloudKitAvailable)
                 .accessibilityLabel("Sync Now")
 
                 Toggle("", isOn: syncEnabledBinding)
                     .labelsHidden()
                     .toggleStyle(.switch)
+                    .disabled(!CloudSyncManager.isCloudKitAvailable)
             }
         } header: {
             Text("Sync")
         } footer: {
-            if syncManager.isEnabled {
+            if !CloudSyncManager.isCloudKitAvailable {
+                Text("iCloud Sync isn't available in this build of wBlock. Install wBlock from the Mac App Store to sync your configuration across devices.")
+            } else if syncManager.isEnabled {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(syncFooterLine)
                     if let error = syncManager.lastErrorMessage {
