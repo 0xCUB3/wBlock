@@ -21,6 +21,9 @@ import wBlockCoreService
 // Define the notification name globally or in a shared place
 extension Notification.Name {
     static let applyWBlockChangesNotification = Notification.Name("applyWBlockChangesNotification_unique_identifier")
+    /// Posted by CloudSyncManager when iCloud Sync is enabled so the app delegate can
+    /// register for silent push notifications (CloudKit change subscriptions).
+    static let cloudSyncRegistrationRequested = Notification.Name("cloudSyncRegistrationRequested")
 }
 #if os(iOS)
 @MainActor
@@ -377,6 +380,19 @@ extension AppDelegate: UIApplicationDelegate {
         Task { @MainActor in
             await rescheduleBackgroundTasks(reason: "Launch")
         }
+
+        // Register for silent CloudKit push notifications so a backgrounded device is woken
+        // when the synced config changes. Re-register whenever sync is (re)enabled.
+        if CloudSyncManager.shared.isEnabled {
+            application.registerForRemoteNotifications()
+        }
+        NotificationCenter.default.addObserver(
+            forName: .cloudSyncRegistrationRequested,
+            object: nil,
+            queue: .main
+        ) { _ in
+            UIApplication.shared.registerForRemoteNotifications()
+        }
         return true
     }
 
@@ -425,6 +441,28 @@ extension AppDelegate: UIApplicationDelegate {
         filterManager?.flushPendingSave()
 
         flushProtobufDataForBackgroundTransition(reason: "Terminate")
+    }
+
+    // MARK: - Remote notifications (CloudKit change pushes)
+
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        // No-op: CloudKit subscriptions address the device automatically once a token exists.
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        os_log("Failed to register for remote notifications: %{public}@", type: .error, error.localizedDescription)
+    }
+
+    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+        // CloudKit subscription pushes carry a "ck" entry; ignore everything else.
+        guard userInfo["ck"] != nil else {
+            completionHandler(.noData)
+            return
+        }
+        Task { @MainActor in
+            await CloudSyncManager.shared.syncForRemoteNotification(trigger: "RemotePush")
+            completionHandler(.newData)
+        }
     }
     
     // MARK: - Background Task Management

@@ -92,6 +92,8 @@ final class CloudSyncManager: ObservableObject {
     }()
     private let recordID = CKRecord.ID(recordName: "wblock-sync-config")
     private let recordType = "wBlockSync"
+    /// Stable ID for the database-wide change subscription that drives silent pushes.
+    private static let subscriptionID = "wblock-private-db-changes"
 
     private var cancellables = Set<AnyCancellable>()
     private var hasActivatedObservers = false
@@ -132,6 +134,11 @@ final class CloudSyncManager: ObservableObject {
         observeLocalSaves()
         observeLocalUserScriptChanges()
         observeiCloudAccountChanges()
+
+        if isEnabled, Self.isCloudKitAvailable {
+            Task { await ensureRemoteChangeSubscription() }
+            NotificationCenter.default.post(name: .cloudSyncRegistrationRequested, object: nil)
+        }
 
         let trigger = deferredSyncTrigger ?? ((isEnabled && !hasPendingExplicitRemoteDownload) ? "Launch" : nil)
         deferredSyncTrigger = nil
@@ -213,7 +220,13 @@ final class CloudSyncManager: ObservableObject {
 
         if !enabled {
             deferredSyncTrigger = nil
+            Task { await removeRemoteChangeSubscription() }
             return
+        }
+
+        Task {
+            await ensureRemoteChangeSubscription()
+            NotificationCenter.default.post(name: .cloudSyncRegistrationRequested, object: nil)
         }
 
         if startSync {
@@ -336,6 +349,14 @@ final class CloudSyncManager: ObservableObject {
         if lastKnown > 0, remoteUpdatedAt == lastKnown { return }
 
         _ = await downloadAndApplyLatestRemoteConfig(trigger: "BGAppRefresh")
+    }
+
+    /// Runs the two-way convergence inline (no throttle, no deferred-task indirection) so
+    /// the remote-notification handler can await it within the push time budget. Called
+    /// when a CloudKit subscription push signals that the remote config changed.
+    func syncForRemoteNotification(trigger: String) async {
+        guard isEnabled, hasCompletedLaunchSetup else { return }
+        await performTwoWaySync(trigger: trigger)
     }
 
     func downloadAndApplyLatestRemoteConfig(trigger: String) async -> Bool {
@@ -1671,6 +1692,60 @@ final class CloudSyncManager: ObservableObject {
             }
         } catch {
             throw error
+        }
+    }
+
+    // MARK: - Remote change subscription (silent push)
+
+    /// Ensures a database-wide subscription exists so CloudKit wakes this device via a
+    /// silent push whenever the private database changes. Idempotent: re-saving with the
+    /// same subscription ID replaces the existing subscription. The push is delivered to
+    /// AppDelegate's remote-notification handler, which triggers a sync.
+    func ensureRemoteChangeSubscription() async {
+        guard let database else { return }
+        let subscription = CKDatabaseSubscription(subscriptionID: Self.subscriptionID)
+        let op = CKModifySubscriptionsOperation(
+            subscriptionsToSave: [subscription],
+            subscriptionIDsToDelete: nil
+        )
+        op.qualityOfService = .utility
+        do {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                op.modifySubscriptionsResultBlock = { result in
+                    switch result {
+                    case .success:
+                        continuation.resume()
+                    case let .failure(error):
+                        continuation.resume(throwing: error)
+                    }
+                }
+                database.add(op)
+            }
+            logger.info("Ensured CloudKit change subscription")
+        } catch {
+            logger.error("Failed to ensure change subscription: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    /// Removes the remote change subscription. Called when sync is disabled so CloudKit
+    /// stops sending change pushes to this device.
+    func removeRemoteChangeSubscription() async {
+        guard let database else { return }
+        let op = CKModifySubscriptionsOperation(
+            subscriptionsToSave: nil,
+            subscriptionIDsToDelete: [Self.subscriptionID]
+        )
+        op.qualityOfService = .utility
+        _ = try? await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            op.modifySubscriptionsResultBlock = { result in
+                switch result {
+                case .success:
+                    continuation.resume()
+                case let .failure(error):
+                    continuation.resume(throwing: error)
+                }
+            }
+            database.add(op)
         }
     }
 
