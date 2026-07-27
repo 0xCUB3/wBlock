@@ -319,6 +319,25 @@ final class CloudSyncManager: ObservableObject {
         await syncNow(trigger: "AppActive-RemoteChanged")
     }
 
+    /// Pull-focused sync used by the iOS background app refresh task. Probes the remote
+    /// config and only downloads/applies it when something changed, so the common case
+    /// is a single metadata fetch within the tight background time budget. Uploads still
+    /// happen on local saves and foreground; this path exists to catch remote changes
+    /// while the app is closed.
+    func performBackgroundSync() async {
+        guard isEnabled, hasCompletedLaunchSetup else { return }
+        await dataManager.waitUntilLoaded()
+        await userScriptManager.waitUntilReady()
+        if isSyncing { return }
+
+        let lastKnown = defaults.double(forKey: Keys.lastKnownRemoteUpdatedAt)
+        let probe = await probeRemoteConfig()
+        guard probe.exists, let remoteUpdatedAt = probe.updatedAt else { return }
+        if lastKnown > 0, remoteUpdatedAt == lastKnown { return }
+
+        _ = await downloadAndApplyLatestRemoteConfig(trigger: "BGAppRefresh")
+    }
+
     func downloadAndApplyLatestRemoteConfig(trigger: String) async -> Bool {
         if !hasCompletedLaunchSetup {
             hasPendingExplicitRemoteDownload = true

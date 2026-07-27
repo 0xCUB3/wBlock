@@ -85,6 +85,12 @@ class AppDelegate: NSObject {
     #if os(iOS)
     private let backgroundTaskIdentifier = "com.alexanderskula.wblock.filter-update"
     private let backgroundProcessingIdentifier = "com.alexanderskula.wblock.filter-processing"
+    private let cloudSyncTaskIdentifier = "com.alexanderskula.wblock.cloud-sync"
+
+    /// Background app-refresh interval for iCloud sync (hours). Intentionally modest: push
+    /// notifications (when registered) are the primary driver; this is a fallback for
+    /// catching remote changes when pushes aren't delivered.
+    private let cloudSyncScheduleDelayHours: Double = 3.0
 
     /// Factor to multiply interval by for app refresh scheduling (accounts for iOS discretion)
     private let appRefreshScheduleDelayFactor: Double = 0.75
@@ -367,6 +373,7 @@ extension AppDelegate: UIApplicationDelegate {
         // Schedule initial background refresh + processing tasks (also re-schedules after protobuf loads)
         scheduleBackgroundFilterUpdate()
         scheduleBackgroundProcessingUpdate()
+        scheduleBackgroundCloudSync()
         Task { @MainActor in
             await rescheduleBackgroundTasks(reason: "Launch")
         }
@@ -400,6 +407,7 @@ extension AppDelegate: UIApplicationDelegate {
         // Schedule next background tasks when entering background
         scheduleBackgroundFilterUpdate()
         scheduleBackgroundProcessingUpdate()
+        scheduleBackgroundCloudSync()
         Task { @MainActor in
             await rescheduleBackgroundTasks(reason: "EnterBackground")
         }
@@ -475,6 +483,23 @@ extension AppDelegate: UIApplicationDelegate {
         }
         if !processingRegistered {
             os_log("Failed to register BG task identifier %{public}@", type: .error, backgroundProcessingIdentifier)
+        }
+
+        let cloudSyncRegistered = BGTaskScheduler.shared.register(forTaskWithIdentifier: cloudSyncTaskIdentifier, using: nil) { task in
+            guard let refreshTask = task as? BGAppRefreshTask else {
+                os_log(
+                    "Unexpected BGTask type for %{public}@ (%{public}@)",
+                    type: .error,
+                    self.cloudSyncTaskIdentifier,
+                    String(describing: type(of: task))
+                )
+                task.setTaskCompleted(success: false)
+                return
+            }
+            self.handleBackgroundCloudSync(task: refreshTask)
+        }
+        if !cloudSyncRegistered {
+            os_log("Failed to register BG task identifier %{public}@", type: .error, cloudSyncTaskIdentifier)
         }
     }
 
@@ -559,6 +584,28 @@ extension AppDelegate: UIApplicationDelegate {
                     error: details.message
                 )
             }
+        }
+    }
+
+    @MainActor
+    private func scheduleBackgroundCloudSync() {
+        guard CloudSyncManager.shared.isEnabled else { return }
+        let request = BGAppRefreshTaskRequest(identifier: cloudSyncTaskIdentifier)
+        request.earliestBeginDate = Date(timeIntervalSinceNow: cloudSyncScheduleDelayHours * 60 * 60)
+        do {
+            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: cloudSyncTaskIdentifier)
+            try BGTaskScheduler.shared.submit(request)
+            os_log(
+                "Background cloud sync task scheduled (%.1f hrs)",
+                type: .info,
+                cloudSyncScheduleDelayHours
+            )
+        } catch {
+            os_log(
+                "Failed to schedule background cloud sync: %{public}@",
+                type: .error,
+                error.localizedDescription
+            )
         }
     }
     
@@ -649,6 +696,27 @@ extension AppDelegate: UIApplicationDelegate {
         )
     }
 
+    private func handleBackgroundCloudSync(task: BGAppRefreshTask) {
+        os_log("Background cloud sync task started", type: .info)
+        let completionState = BGTaskCompletionState()
+        let updateTask = Task { @MainActor in
+            self.scheduleBackgroundCloudSync()
+            await CloudSyncManager.shared.performBackgroundSync()
+            guard await completionState.claimCompletion() else { return }
+            task.setTaskCompleted(success: true)
+        }
+
+        task.expirationHandler = {
+            os_log("Background cloud sync expired", type: .error)
+            updateTask.cancel()
+            Task { @MainActor in
+                self.scheduleBackgroundCloudSync()
+                guard await completionState.claimCompletion() else { return }
+                task.setTaskCompleted(success: false)
+            }
+        }
+    }
+
     private func handleForcedBackgroundTask(
         task: BGTask,
         taskLabel: String,
@@ -726,6 +794,13 @@ extension AppDelegate: UIApplicationDelegate {
     @MainActor
     private func rescheduleBackgroundTasks(reason: String) async {
         await ProtobufDataManager.shared.waitUntilLoaded()
+
+        // iCloud sync runs on its own background task, independent of the auto-update setting.
+        if CloudSyncManager.shared.isEnabled {
+            scheduleBackgroundCloudSync()
+        } else {
+            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: cloudSyncTaskIdentifier)
+        }
 
         let enabled = ProtobufDataManager.shared.autoUpdateEnabled
         if !enabled {
