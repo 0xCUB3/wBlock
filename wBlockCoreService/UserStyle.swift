@@ -15,6 +15,7 @@
 //  "less" or "stylus" need a full compiler and are rejected at import.
 //
 
+import CryptoKit
 import Foundation
 
 public enum UserStyleSupport {
@@ -197,11 +198,18 @@ public enum UserStyleSupport {
     /// Results are cached by content identity; repeated per-page-load calls are cheap.
     public static func parsed(from content: String) -> ParsedStyle? {
         guard isUserStyleContent(content) else { return nil }
-        let key = content as NSString
+        // Hash the source instead of using the full string as the NSCache key.
+        // Large userstyles would otherwise keep a second full copy alive in the key.
+        let key = cacheKey(for: content)
         if let cached = parseCache.object(forKey: key) { return cached.value }
         let parsed = parse(content)
         parseCache.setObject(ParsedStyleBox(parsed), forKey: key)
         return parsed
+    }
+
+    private static func cacheKey(for content: String) -> NSString {
+        let digest = SHA256.hash(data: Data(content.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined() as NSString
     }
 
     // MARK: - Effective CSS
