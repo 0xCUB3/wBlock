@@ -220,6 +220,9 @@ extension AppDelegate: NSApplicationDelegate {
         periodicUpdateTimer?.invalidate()
         periodicUpdateTimer = nil
 
+        backgroundScheduler?.invalidate()
+        backgroundScheduler = nil
+
         // Flush any pending coalesced filter list saves
         filterManager?.flushPendingSave()
 
