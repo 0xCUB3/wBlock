@@ -12,7 +12,7 @@ struct SettingsView: View {
     @AppStorage(LogTimeZonePreference.storageKey) private var logTimeZoneIdentifier: String = LogTimeZonePreference.deviceIdentifier
     @State private var nextScheduleLine = String(localized: "Next: Loading…")
     @State private var isOverdue = false
-    @State private var timer: Timer?
+    @State private var scheduleRefreshTimer = ScheduleRefreshTimer()
     #if os(macOS)
     @State private var launchAgentStatusLine = String(localized: "Checking background agent…")
     @State private var launchAgentNeedsApproval = false
@@ -947,17 +947,48 @@ extension SettingsView {
 
     @MainActor
     private func startTimer() {
-        stopTimer()
-        guard autoUpdateEnabled else { return }
-        // Update every 30 seconds to reduce main thread load
-        timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { _ in
-            Task { await updateScheduleLine() }
+        guard autoUpdateEnabled else {
+            scheduleRefreshTimer.stop()
+            return
+        }
+        scheduleRefreshTimer.start(interval: 30) {
+            await updateScheduleLine()
         }
     }
 
     @MainActor
     private func stopTimer() {
+        scheduleRefreshTimer.stop()
+    }
+}
+
+/// Owns the settings schedule-refresh timer so it can be invalidated without
+/// relying on a SwiftUI value-type method capture staying alive.
+@MainActor
+private final class ScheduleRefreshTimer {
+    private var timer: Timer?
+    private var onTick: (@MainActor () async -> Void)?
+
+    func start(interval: TimeInterval, onTick: @escaping @MainActor () async -> Void) {
+        stop()
+        self.onTick = onTick
+        let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, let onTick = self.onTick else { return }
+                await onTick()
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
+    }
+
+    func stop() {
         timer?.invalidate()
         timer = nil
+        onTick = nil
+    }
+
+    deinit {
+        timer?.invalidate()
     }
 }
