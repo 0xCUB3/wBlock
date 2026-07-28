@@ -35,6 +35,7 @@ public actor IncludeResolver {
     public typealias FetchErrorHandler = @Sendable (URL, Int?) async -> Void
 
     private let urlSession: URLSession
+    private let ownsURLSession: Bool
     private let onFetchError: FetchErrorHandler?
 
     /// Maximum recursion depth for nested `!#include` directives (PREP-04).
@@ -62,13 +63,23 @@ public actor IncludeResolver {
     public init(urlSession: URLSession? = nil, onFetchError: FetchErrorHandler? = nil) {
         if let urlSession {
             self.urlSession = urlSession
+            self.ownsURLSession = false
         } else {
             let config = URLSessionConfiguration.default
             config.timeoutIntervalForRequest = 15
             config.timeoutIntervalForResource = 60
             self.urlSession = URLSession(configuration: config)
+            self.ownsURLSession = true
         }
         self.onFetchError = onFetchError
+    }
+
+    deinit {
+        // Only tear down sessions we created. Callers that inject a shared
+        // session keep ownership of its lifetime.
+        if ownsURLSession {
+            urlSession.invalidateAndCancel()
+        }
     }
 
     // MARK: - Public API

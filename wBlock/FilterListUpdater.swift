@@ -458,6 +458,7 @@ final class FilterListUpdater: @unchecked Sendable {
             } else {
                 let filterName = filter.name
                 let preprocessor = FilterPreprocessor(
+                    urlSession: urlSession,
                     onFetchError: { subURL, statusCode in
                         let statusStr = statusCode.map { "\($0)" } ?? "network error"
                         await ConcurrentLogManager.shared.warning(
