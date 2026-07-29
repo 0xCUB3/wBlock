@@ -8,6 +8,9 @@
 import Combine
 import Foundation
 import os.log
+#if os(macOS)
+import SafariServices
+#endif
 
 public enum UserScriptImportError: LocalizedError {
     case unsupportedType
@@ -225,6 +228,20 @@ enum BuiltInUserScripts {
 
 @MainActor
 public class UserScriptManager: ObservableObject {
+    public static func invalidateDocumentStartExecutionCache() {
+        #if os(macOS)
+        SFSafariApplication.dispatchMessage(
+            withName: "wblock:userscriptsChanged",
+            toExtensionWithIdentifier: "skula.wBlock.wBlock-Scripts",
+            userInfo: ["action": "wblock:userscriptsChanged"]
+        ) { error in
+            if let error {
+                os_log("Failed to invalidate Safari userscript cache: %{public}@", type: .error, error.localizedDescription)
+            }
+        }
+        #endif
+    }
+
     @Published public var userScripts: [UserScript] = [] {
         didSet {
             rebuildUserScriptIndex()
@@ -2618,6 +2635,13 @@ public class UserScriptManager: ObservableObject {
         #endif
 
         return runnableScripts
+    }
+
+    public func enabledDocumentStartUserScriptsForCache() async -> [UserScript] {
+        let scripts = userScripts.filter {
+            $0.isEnabled && !$0.isUserStyle && $0.runAt == "document-start"
+        }
+        return await hydrateUserScriptsFromDisk(scripts, includeResources: true)
     }
 
     /// The grouped regional tinyShield scripts are strict subsets of the full tinyShield

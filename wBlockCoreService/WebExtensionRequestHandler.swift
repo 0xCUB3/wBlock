@@ -110,6 +110,9 @@ public enum WebExtensionRequestHandler {
             case "getUserScripts":
                 handleGetUserScriptsRequest(message: message!, context: context)
                 return
+            case "getDocumentStartUserScriptCatalog":
+                handleGetDocumentStartUserScriptCatalogRequest(context: context)
+                return
             case "getUserScriptContentChunk":
                 handleUserScriptChunkRequest(message: message!, context: context, kind: .content)
                 return
@@ -704,33 +707,9 @@ public enum WebExtensionRequestHandler {
                     continue
                 }
 
-                // Prefer cached resource names, but fall back to parsing metadata so scripts
-                // installed before resource caching still request the right dependencies.
-                let resourceNames =
-                    !script.resourceContents.isEmpty
-                    ? Array(script.resourceContents.keys).sorted()
-                    : UserScriptMetadataParser.extractResourceNames(from: script.content)
                 let storageSnapshot = await UserScriptStorageManager.shared.snapshot(for: script.id.uuidString)
-                let hasUnsafeWindowGrant = script.grant.contains {
-                    $0.caseInsensitiveCompare("unsafeWindow") == .orderedSame
-                }
-                let injectInto = (script.injectInto == "auto" && hasUnsafeWindowGrant) ? "page" : script.injectInto
-                let namespace = UserScriptMetadataParser.extractValue(for: "namespace", from: script.content) ?? ""
-
-                var descriptor: [String: Any] = [
-                    "id": script.id.uuidString,
-                    "name": script.name,
-                    "namespace": namespace,
-                    "version": script.version,
-                    "description": script.description,
-                    "runAt": script.runAt,
-                    "noframes": script.noframes,
-                    "injectInto": injectInto,
-                    "updateURL": script.updateURL ?? "",
-                    "downloadURL": script.downloadURL ?? "",
-                    "resourceNames": resourceNames,
-                    "storageSnapshot": storageSnapshot
-                ]
+                var descriptor = userScriptDescriptor(script)
+                descriptor["storageSnapshot"] = storageSnapshot
                 if includeContent, !script.content.isEmpty {
                     let executableContent = script.executableContent
                     let inlinePayloadBytes = executableContent.utf8.count
@@ -761,6 +740,85 @@ public enum WebExtensionRequestHandler {
         }
     }
 
+    private static func handleGetDocumentStartUserScriptCatalogRequest(context: NSExtensionContext) {
+        guard documentStartCacheAllowed, !BlockingPauseStore.isPaused() else {
+            let response = createResponse(with: [
+                "userScripts": [],
+                "documentStartCacheAllowed": documentStartCacheAllowed
+            ])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+
+        Task { @MainActor in
+            let userScriptManager = UserScriptManager.shared
+            await userScriptManager.waitUntilReady()
+            let scripts = await userScriptManager.enabledDocumentStartUserScriptsForCache()
+            let globallyDisabledHosts = await currentDisabledSites()
+            var descriptors: [[String: Any]] = []
+            var remainingInlineBudget = totalInlineResponseBudget
+
+            for script in scripts {
+                let executableContent = script.executableContent
+                let payloadBytes = executableContent.utf8.count
+                    + script.resourceContents.values.reduce(0) { $0 + $1.utf8.count }
+                guard payloadBytes <= documentStartInlineContentCap,
+                      payloadBytes <= remainingInlineBudget
+                else { continue }
+
+                var descriptor = userScriptDescriptor(script)
+                descriptor["disabledHosts"] = ProtobufDataManager.shared.getUserScriptDisabledHosts(
+                    forScriptID: script.id.uuidString
+                )
+                descriptor["resources"] = script.resourceContents
+                descriptor["content"] = executableContent
+                descriptors.append(descriptor)
+                remainingInlineBudget -= payloadBytes
+            }
+
+            let response = createResponse(with: [
+                "userScripts": descriptors,
+                "disabledHosts": globallyDisabledHosts,
+                "documentStartCacheAllowed": true
+            ])
+            context.completeRequest(returningItems: [response])
+        }
+    }
+
+    private static func userScriptDescriptor(_ script: UserScript) -> [String: Any] {
+        let resourceNames = !script.resourceContents.isEmpty
+            ? Array(script.resourceContents.keys).sorted()
+            : UserScriptMetadataParser.extractResourceNames(from: script.content)
+        let hasUnsafeWindowGrant = script.grant.contains {
+            $0.caseInsensitiveCompare("unsafeWindow") == .orderedSame
+        }
+        let injectInto = script.injectInto == "auto" && hasUnsafeWindowGrant
+            ? "page" : script.injectInto
+
+        return [
+            "id": script.id.uuidString,
+            "name": script.name,
+            "namespace": UserScriptMetadataParser.extractValue(
+                for: "namespace", from: script.content
+            ) ?? "",
+            "version": script.version,
+            "description": script.description,
+            "sourceURL": script.url?.absoluteString ?? "",
+            "isLocal": script.isLocal,
+            "runAt": script.runAt,
+            "noframes": script.noframes,
+            "injectInto": injectInto,
+            "grant": script.grant,
+            "matches": script.matches,
+            "excludeMatches": script.excludeMatches,
+            "includes": script.includes,
+            "excludes": script.excludes,
+            "updateURL": script.updateURL ?? "",
+            "downloadURL": script.downloadURL ?? "",
+            "resourceNames": resourceNames
+        ]
+    }
+
     /// Per-script inline allowance for `document-start` userscripts. Timing-critical
     /// scripts should arrive in the first response; scripts that still exceed this
     /// after metadata stripping fall back to chunked hydration.
@@ -770,6 +828,16 @@ public enum WebExtensionRequestHandler {
     /// This prevents multiple large matching scripts from producing an oversized
     /// native-messaging response.
     private static let totalInlineResponseBudget = 16 * 1024 * 1024
+
+    private static var documentStartCacheAllowed: Bool {
+        // The containing app can proactively invalidate Safari WebExtension state
+        // only on macOS. Keep iOS on the existing fresh native-response path.
+        #if os(macOS)
+        true
+        #else
+        false
+        #endif
+    }
 
     private static func handleGetPageUserScriptsRequest(message: [String: Any?], context: NSExtensionContext) {
         // Mirrors the pause check above so the page‑level userscript listing also reports none.

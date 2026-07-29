@@ -368,6 +368,7 @@ extension ProtobufDataManager {
         
         appData = updatedData
         await saveData()
+        UserScriptManager.invalidateDocumentStartExecutionCache()
     }
     
     // MARK: - Whitelist Management
@@ -380,6 +381,7 @@ extension ProtobufDataManager {
             guard update(&data.whitelist.disabledSites) else { return }
             data.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
         }
+        UserScriptManager.invalidateDocumentStartExecutionCache()
     }
     
     public func addWhitelistedDomain(_ domain: String) async {
@@ -684,6 +686,7 @@ extension ProtobufDataManager {
         
         appData = updatedData
         await saveData()
+        UserScriptManager.invalidateDocumentStartExecutionCache()
     }
 
     /// Drops legacy embedded userscript source bodies from protobuf once they have

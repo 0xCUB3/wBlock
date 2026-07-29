@@ -231,6 +231,7 @@ extension AppDelegate: NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        UserScriptManager.invalidateDocumentStartExecutionCache()
         // Setup periodic auto-update system for macOS
         setupMacOSAutoUpdate()
         observeMacOSAutoUpdateSettingSaves()

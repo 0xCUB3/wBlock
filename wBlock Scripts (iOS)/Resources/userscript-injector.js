@@ -3,6 +3,8 @@
  * Injects and manages userscripts from the native app
  */
 
+(() => {
+
 // Debug logging flag - set to false to disable verbose console output
 var WBLOCK_DEBUG_LOGGING = false;
 
@@ -62,6 +64,30 @@ function isSandboxedWithoutScripts() {
     return false;
 }
 
+const WBLOCK_SESSION_SCRIPT_CACHE_KEY = '__wblock_document_start_scripts_v1';
+const WBLOCK_SESSION_SCRIPT_CACHE_MAX_AGE_MS = 60 * 60 * 1000;
+let wBlockSessionStorage = (() => {
+    try {
+        return window.sessionStorage;
+    } catch {
+        return null;
+    }
+})();
+
+function getWBlockSessionStorage() {
+    if (wBlockSessionStorage || !document.documentElement) return wBlockSessionStorage;
+    try {
+        // Some apps remove the storage getters from their top-level Window after
+        // startup. A transient same-origin realm still exposes the same tab store.
+        const frame = document.createElement('iframe');
+        frame.hidden = true;
+        document.documentElement.appendChild(frame);
+        wBlockSessionStorage = frame.contentWindow.sessionStorage;
+        frame.remove();
+    } catch {}
+    return wBlockSessionStorage;
+}
+
 // Prevent multiple executions of this entire script in the same context
 if (window.wBlockUserscriptInjectorHasRun) {
     wBlockLog('[wBlock] Userscript injector already ran in this frame.');
@@ -79,12 +105,15 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.pendingNativeRequests = new Map(); // requestId -> { resolve, reject, timeoutId }
             this.storageBridgeScriptIDs = new Map(); // bridgeId -> scriptId
             this.xhrBridgeTokens = new Set(); // valid GM_xmlhttpRequest bridge tokens
+            this.provisionalSessionScripts = new Map(); // script key -> untrusted early descriptor and bridge token
+            this.provisionalXhrRequests = new Map(); // bridge token -> queued requests pending native verification
             this.pageMenuBridgeElements = new Map(); // bridgeId -> script element
             this.contentMenuCommandCallbacks = new Map(); // bridgeId -> Map(commandId, callback)
             this.registeredMenuCommands = new Map(); // bridgeId -> Map(commandId, descriptor)
             this.pendingMenuInvocations = new Map(); // requestId -> { resolve, timeoutId }
             this.scriptPayloadPromises = new Map(); // scriptId -> Promise<hydrated script>
             this.documentRootPromise = null; // earliest safe page-world injection point
+            this.rydPrefetchEnabled = false;
             this.menuCommandSequence = 0;
             this.userScriptRequestRetryDelays = [500, 1500, 4000, 8000];
             wBlockLog('[wBlock] UserScriptEngine constructor called.');
@@ -110,8 +139,134 @@ if (window.wBlockUserscriptInjectorHasRun) {
             // and we forward them through the background/native layer (CORS-free).
             this.setupXhrBridge();
 
+            const injectSessionScripts = () => {
+                const sessionScripts = this.loadDocumentStartSessionCache();
+                if (sessionScripts.length > 0) this.injectUserScripts(sessionScripts);
+            };
+            if (document.documentElement) {
+                injectSessionScripts();
+            } else {
+                this.waitForDocumentRoot().then(injectSessionScripts);
+            }
+
             // Request userscripts from native app
+            this.requestCachedDocumentStartUserScripts();
             this.requestUserScripts();
+        }
+
+        clearDocumentStartSessionCache() {
+            try {
+                getWBlockSessionStorage()?.removeItem(WBLOCK_SESSION_SCRIPT_CACHE_KEY);
+            } catch {}
+        }
+
+        isDocumentStartSessionCacheEligible(script) {
+            if (!script || script.isLocal !== false || script.runAt !== 'document-start') return false;
+            if (script.injectInto !== 'page' || typeof script.content !== 'string' || script.content.length === 0) return false;
+            try {
+                if (new URL(script.sourceURL).protocol !== 'https:') return false;
+            } catch {
+                return false;
+            }
+            const safeGrants = new Set(['none', 'unsafewindow', 'gm_info', 'gm.info', 'gm_xmlhttprequest', 'gm.xmlhttprequest']);
+            const grants = Array.isArray(script.grant) ? script.grant : [];
+            if (!grants.every(grant => safeGrants.has(String(grant).toLowerCase()))) return false;
+            if ((script.includes || []).length > 0 || (script.excludes || []).length > 0 || (script.excludeMatches || []).length > 0) return false;
+
+            let pageURL;
+            try {
+                pageURL = new URL(location.href);
+            } catch {
+                return false;
+            }
+            return (script.matches || []).some(pattern => {
+                const match = String(pattern).match(/^([^:]+):\/\/([^/]+)(\/.*)$/);
+                if (!match || match[3] !== '/*') return false;
+                const schemeMatches = match[1] === '*'
+                    ? pageURL.protocol === 'http:' || pageURL.protocol === 'https:'
+                    : `${match[1].toLowerCase()}:` === pageURL.protocol;
+                if (!schemeMatches) return false;
+                const hostPattern = match[2].toLowerCase();
+                const host = pageURL.hostname.toLowerCase();
+                return hostPattern === '*'
+                    || hostPattern === host
+                    || (hostPattern.startsWith('*.') && (host === hostPattern.slice(2) || host.endsWith(`.${hostPattern.slice(2)}`)));
+            });
+        }
+
+        persistDocumentStartSessionCache(scripts) {
+            const cacheableScripts = scripts
+                .filter(script => this.isDocumentStartSessionCacheEligible(script))
+                .map(script => {
+                    const {
+                        storageBridgeId, menuBridgeId, xhrBridgeId, portBridgeId,
+                        wblockUntrustedSessionCache, wblockWaitForCspNonce, ...cached
+                    } = script;
+                    return cached;
+                });
+            const payload = JSON.stringify({
+                savedAt: Date.now(),
+                usesCspNonce: !!getCspNonce(),
+                scripts: cacheableScripts
+            });
+            try {
+                getWBlockSessionStorage()?.setItem(WBLOCK_SESSION_SCRIPT_CACHE_KEY, payload);
+            } catch {}
+        }
+
+        loadDocumentStartSessionCache() {
+            try {
+                const encoded = getWBlockSessionStorage()?.getItem(WBLOCK_SESSION_SCRIPT_CACHE_KEY);
+                if (!encoded) return [];
+                const payload = JSON.parse(encoded);
+                if (!payload || typeof payload.savedAt !== 'number' || Date.now() - payload.savedAt > WBLOCK_SESSION_SCRIPT_CACHE_MAX_AGE_MS) {
+                    this.clearDocumentStartSessionCache();
+                    return [];
+                }
+                if (!Array.isArray(payload.scripts)) return [];
+                return payload.scripts
+                    .filter(script => this.isDocumentStartSessionCacheEligible(script))
+                    .slice(0, 8)
+                    .map(script => {
+                        const untrusted = { ...script };
+                        delete untrusted.storageBridgeId;
+                        delete untrusted.menuBridgeId;
+                        delete untrusted.xhrBridgeId;
+                        delete untrusted.portBridgeId;
+                        untrusted.wblockUntrustedSessionCache = true;
+                        untrusted.wblockWaitForCspNonce = payload.usesCspNonce === true;
+                        return untrusted;
+                    });
+            } catch {
+                this.clearDocumentStartSessionCache();
+                return [];
+            }
+        }
+
+        sessionScriptFingerprint(script) {
+            const resources = Object.entries((script && script.resources) || {}).sort(([left], [right]) => left.localeCompare(right));
+            return JSON.stringify([
+                script && script.id, script && script.sourceURL, script && script.runAt,
+                script && script.injectInto, script && script.grant, script && script.matches,
+                script && script.excludeMatches, script && script.includes, script && script.excludes,
+                resources, script && script.content
+            ]);
+        }
+
+        verifyDocumentStartSessionScripts(trustedScripts) {
+            const trustedByKey = new Map((trustedScripts || []).map(script => [script.id, script]));
+            for (const [key, provisional] of this.provisionalSessionScripts) {
+                const trusted = trustedByKey.get(key);
+                const verified = trusted
+                    && this.sessionScriptFingerprint(provisional.script) === this.sessionScriptFingerprint(trusted);
+                const queuedRequests = this.provisionalXhrRequests.get(provisional.xhrBridgeId) || [];
+                this.provisionalXhrRequests.delete(provisional.xhrBridgeId);
+                if (verified) {
+                    this.xhrBridgeTokens.add(provisional.xhrBridgeId);
+                    queuedRequests.forEach(request => this.handleXhrBridgeRequest(request));
+                }
+                this.provisionalSessionScripts.delete(key);
+            }
         }
 
         waitForDocumentRoot() {
@@ -148,39 +303,78 @@ if (window.wBlockUserscriptInjectorHasRun) {
             return this.documentRootPromise;
         }
 
+        inlinePageScriptsCanRun() {
+            const marker = `data-wblock-inline-${Math.random().toString(36).slice(2)}`;
+            const probe = document.createElement('script');
+            probe.textContent = `document.documentElement.setAttribute('${marker}', '1')`;
+            document.documentElement.appendChild(probe);
+            probe.remove();
+            const executed = document.documentElement.getAttribute(marker) === '1';
+            document.documentElement.removeAttribute(marker);
+            return executed;
+        }
+
+        waitForCspNonce(timeoutMs = 1500) {
+            const currentNonce = getCspNonce();
+            if (currentNonce) return Promise.resolve(currentNonce);
+            return new Promise(resolve => {
+                const finish = () => {
+                    const nonce = getCspNonce();
+                    if (!nonce) return false;
+                    observer.disconnect();
+                    clearTimeout(timeoutId);
+                    resolve(nonce);
+                    return true;
+                };
+                const observer = new MutationObserver(finish);
+                observer.observe(document, { childList: true, subtree: true });
+                const timeoutId = setTimeout(() => {
+                    observer.disconnect();
+                    resolve('');
+                }, timeoutMs);
+                finish();
+            });
+        }
+
         setupXhrBridge() {
             window.addEventListener('message', (event) => {
                 if (event.source !== window) return;
                 const data = event.data;
                 if (!data || data.type !== 'wblock-gm-xhr-request') return;
-                // Reject requests that don't present a token we issued to an
-                // injected userscript; this stops arbitrary page scripts from
-                // using the extension as a CORS-free proxy.
-                if (typeof data.bridgeId !== 'string' || !this.xhrBridgeTokens.has(data.bridgeId)) {
+                if (typeof data.bridgeId !== 'string') return;
+                if (this.provisionalXhrRequests.has(data.bridgeId)) {
+                    const queuedRequests = this.provisionalXhrRequests.get(data.bridgeId);
+                    if (queuedRequests.length < 8) queuedRequests.push(data);
+                    return;
+                }
+                if (!this.xhrBridgeTokens.has(data.bridgeId)) {
                     wBlockWarn('[wBlock] Ignoring GM_xmlhttpRequest without a valid bridge token');
                     return;
                 }
-
-                const { id, url, method, headers, body, anonymous, responseType, timeout, redirect, overrideMimeType, portName } = data;
-
-                this.proxyXhr({ url, method, headers, body, anonymous, responseType, timeout, redirect, overrideMimeType, portName })
-                    .then(result => {
-                        window.postMessage({
-                            type: 'wblock-gm-xhr-response',
-                            id: id,
-                            success: true,
-                            result: result
-                        }, '*');
-                    })
-                    .catch(error => {
-                        window.postMessage({
-                            type: 'wblock-gm-xhr-response',
-                            id: id,
-                            success: false,
-                            error: error.message || String(error)
-                        }, '*');
-                    });
+                this.handleXhrBridgeRequest(data);
             });
+        }
+
+        handleXhrBridgeRequest(data) {
+            const { id, url, method, headers, body, anonymous, responseType, timeout, redirect, overrideMimeType, portName } = data;
+
+            this.proxyXhr({ url, method, headers, body, anonymous, responseType, timeout, redirect, overrideMimeType, portName })
+                .then(result => {
+                    window.postMessage({
+                        type: 'wblock-gm-xhr-response',
+                        id: id,
+                        success: true,
+                        result: result
+                    }, '*');
+                })
+                .catch(error => {
+                    window.postMessage({
+                        type: 'wblock-gm-xhr-response',
+                        id: id,
+                        success: false,
+                        error: error.message || String(error)
+                    }, '*');
+                });
         }
 
         setupStorageBridge() {
@@ -692,15 +886,59 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     }
 
                     const scripts = response && response.userScripts ? response.userScripts : [];
+                    this.verifyDocumentStartSessionScripts(scripts);
+                    this.enableReturnYouTubeDislikePrefetch(scripts);
                     if (scripts.length === 0) {
+                        this.persistDocumentStartSessionCache([]);
                         wBlockLog('[wBlock] No userscripts found in getUserScripts response.');
                         return;
                     }
                     this.injectUserScripts(scripts);
+                    setTimeout(() => this.persistDocumentStartSessionCache(scripts), 0);
                 })
                 .catch((error) => {
                     this.retryUserScriptRequest(attempt, error);
                 });
+        }
+
+        enableReturnYouTubeDislikePrefetch(scripts) {
+            if (this.rydPrefetchEnabled || typeof fetch !== 'function') return;
+            const hasRYD = scripts.some((script) =>
+                script && script.name === 'Return YouTube Dislike'
+                    && /^https:\/\/raw\.githubusercontent\.com\/Anarios\/return-youtube-dislike\//i.test(script.sourceURL || '')
+            );
+            if (!hasRYD) return;
+
+            this.rydPrefetchEnabled = true;
+            const prefetchCurrentVideo = () => setTimeout(() => this.prefetchReturnYouTubeDislike(), 0);
+            document.addEventListener('yt-navigate-start', prefetchCurrentVideo, true);
+            this.prefetchReturnYouTubeDislike();
+        }
+
+        prefetchReturnYouTubeDislike() {
+            const pageURL = new URL(window.location.href);
+            if (!/(^|\.)youtube\.com$/i.test(pageURL.hostname) || pageURL.hostname === 'music.youtube.com') return;
+            const videoId = pageURL.pathname.startsWith('/shorts/')
+                ? pageURL.pathname.split('/')[2]
+                : pageURL.searchParams.get('v');
+            if (!/^[A-Za-z0-9_-]{11}$/.test(videoId || '')) return;
+
+            const url = `https://returnyoutubedislikeapi.com/votes?videoId=${encodeURIComponent(videoId)}`;
+            fetch(url).then(response => response.text()).catch(() => {});
+        }
+
+        requestCachedDocumentStartUserScripts() {
+            this.sendNativeRequest('getCachedDocumentStartUserScripts', { url: window.location.href })
+                .then((response) => {
+                    const scripts = response && Array.isArray(response.userScripts)
+                        ? response.userScripts
+                        : [];
+                    if (scripts.length > 0) {
+                        this.injectUserScripts(scripts);
+                        setTimeout(() => this.persistDocumentStartSessionCache(scripts), 0);
+                    }
+                })
+                .catch(() => {});
         }
 
         retryUserScriptRequest(attempt, error) {
@@ -733,6 +971,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
                         });
                     }
 
+                    if (message && message.type === 'wblock:clearDocumentStartSessionCache') {
+                        this.clearDocumentStartSessionCache();
+                        return Promise.resolve({ ok: true });
+                    }
 
                     if (message && message.type === 'wblock:menu:invokeCommand') {
                         return this.invokeMenuCommand(message.bridgeId, message.commandId);
@@ -775,6 +1017,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
                         this.pendingNativeRequests.delete(requestId);
                         if (pending && pending.timeoutId) clearTimeout(pending.timeoutId);
                         pending.resolve(event.message);
+                        return;
+                    }
+                    if (event.name === 'wblock:clearDocumentStartSessionCache') {
+                        this.clearDocumentStartSessionCache();
                         return;
                     }
                     let scriptsToInject = null;
@@ -890,18 +1136,26 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.injectingScripts.add(script.name);
             try {
                 const fullScript = await this.ensureScriptPayload(script);
-                if (fullScript.id && !fullScript.storageBridgeId) {
+                const isUntrustedSessionScript = fullScript.wblockUntrustedSessionCache === true;
+                if (!isUntrustedSessionScript && fullScript.id && !fullScript.storageBridgeId) {
                     fullScript.storageBridgeId = this.generateSecret('gmstorage');
                     this.storageBridgeScriptIDs.set(fullScript.storageBridgeId, fullScript.id);
                 }
-                if (fullScript.id && !fullScript.menuBridgeId) {
+                if (!isUntrustedSessionScript && fullScript.id && !fullScript.menuBridgeId) {
                     fullScript.menuBridgeId = this.generateSecret('gmmenu');
                 }
                 // Every script gets an unguessable token that authorizes its
                 // GM_xmlhttpRequest calls. The page-context bridge below only
                 // honors requests carrying a known token, so arbitrary page
                 // scripts cannot borrow the extension's CORS-free network access.
-                if (!fullScript.xhrBridgeId) {
+                if (isUntrustedSessionScript) {
+                    fullScript.xhrBridgeId = this.generateSecret('gmxhr');
+                    this.provisionalSessionScripts.set(fullScript.id, {
+                        script: fullScript,
+                        xhrBridgeId: fullScript.xhrBridgeId
+                    });
+                    this.provisionalXhrRequests.set(fullScript.xhrBridgeId, []);
+                } else if (!fullScript.xhrBridgeId) {
                     fullScript.xhrBridgeId = this.generateSecret('gmxhr');
                     this.xhrBridgeTokens.add(fullScript.xhrBridgeId);
                 }
@@ -920,6 +1174,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 // exists—not until DOMContentLoaded—before appending the wrapper.
                 if (injectInto !== 'content') {
                     await this.waitForDocumentRoot();
+                    if (fullScript.runAt === 'document-start' && !getCspNonce()) {
+                        if (fullScript.wblockWaitForCspNonce || !this.inlinePageScriptsCanRun()) {
+                            await this.waitForCspNonce();
+                        }
+                    }
                 }
 
                 if (injectInto === 'content') {
@@ -2282,3 +2541,4 @@ if (window.wBlockUserscriptInjectorHasRun) {
 // Ensure that if this script is injected multiple times (e.g. in iframes),
 // each frame gets its own engine, but a single frame doesn't run it multiple times.
 // The window.wBlockUserscriptInjectorHasRun flag handles the single-frame case.
+})();

@@ -42,6 +42,10 @@ const fakeScript = {
   id: "test-script-1",
   name: "Bridge Auth Test Script",
   content: USER_SCRIPT_CONTENT,
+  sourceURL: "https://scripts.test/bridge-auth.user.js",
+  isLocal: false,
+  matches: ["https://example.com/*"],
+  grant: ["GM_xmlhttpRequest"],
   injectInto: "page",
   runAt: "document-start",
 };
@@ -73,12 +77,17 @@ function makeElement(tag) {
   };
 }
 
-function buildContentScriptSandbox() {
+function buildContentScriptSandbox(initialSessionValue = null, userScripts = [fakeScript], href = "https://example.com/page") {
   const head = makeElement("head");
   head.appendChild = (c) => {
     head.children.push(c);
     c.parentNode = head;
-    if (c.textContent) appendedScripts.push(c.textContent);
+    const inlineProbe = c.textContent.match(/^document\.documentElement\.setAttribute\('([^']+)', '1'\)$/);
+    if (inlineProbe) {
+      docEl.setAttribute(inlineProbe[1], "1");
+    } else if (c.textContent) {
+      appendedScripts.push(c.textContent);
+    }
     return c;
   };
   const docEl = makeElement("html");
@@ -89,7 +98,8 @@ function buildContentScriptSandbox() {
   sandbox.globalThis = sandbox;
   sandbox.top = sandbox;
   sandbox.self = sandbox;
-  sandbox.location = { href: "https://example.com/page", hostname: "example.com", protocol: "https:" };
+  const pageURL = new URL(href);
+  sandbox.location = { href, hostname: pageURL.hostname, protocol: pageURL.protocol };
   sandbox.addEventListener = (type, fn) => { if (type === "message") windowMessageListeners.push(fn); };
   sandbox.removeEventListener = () => {};
   sandbox.postMessage = () => {};
@@ -102,6 +112,21 @@ function buildContentScriptSandbox() {
   sandbox.Blob = class Blob { constructor(p, o) { this.parts = p; this.type = (o && o.type) || ""; } };
   sandbox.TextDecoder = TextDecoder;
   sandbox.TextEncoder = TextEncoder;
+  sandbox.__fetches = [];
+  sandbox.fetch = async (url) => {
+    sandbox.__fetches.push(String(url));
+    return { ok: true, status: 200, text: async () => "{}" };
+  };
+  const sessionValues = new Map();
+  if (initialSessionValue !== null) {
+    sessionValues.set("__wblock_document_start_scripts_v1", initialSessionValue);
+  }
+  sandbox.sessionStorage = {
+    getItem: (key) => sessionValues.get(key) ?? null,
+    setItem: (key, value) => sessionValues.set(key, String(value)),
+    removeItem: (key) => sessionValues.delete(key),
+  };
+  sandbox.__sessionValues = sessionValues;
   sandbox.document = {
     readyState: "complete",
     documentElement: docEl,
@@ -118,7 +143,7 @@ function buildContentScriptSandbox() {
     runtime: {
       sendMessage: async (msg) => {
         sentMessages.push(msg);
-        if (msg.action === "getUserScripts") return { userScripts: [fakeScript] };
+        if (msg.action === "getUserScripts") return { userScripts };
         if (msg.action === "gmXmlhttpRequest") {
           return { status: 200, responseText: "OK", responseHeaders: "", finalUrl: msg.url };
         }
@@ -134,6 +159,29 @@ function buildContentScriptSandbox() {
 const contentSandbox = buildContentScriptSandbox();
 vm.createContext(contentSandbox);
 vm.runInContext(source, contentSandbox, { filename: "userscript-injector.js" });
+let repeatedEvaluationSucceeded = true;
+try {
+  vm.runInContext(source, contentSandbox, { filename: "userscript-injector-repeat.js" });
+} catch {
+  repeatedEvaluationSucceeded = false;
+}
+check("injector can be evaluated repeatedly in one isolated world", repeatedEvaluationSucceeded);
+
+const rydScript = {
+  ...fakeScript,
+  id: "ryd-test",
+  name: "Return YouTube Dislike",
+  sourceURL: "https://raw.githubusercontent.com/Anarios/return-youtube-dislike/main/Extensions/UserScript/Return%20Youtube%20Dislike.user.js",
+};
+const rydSandbox = buildContentScriptSandbox(null, [rydScript], "https://www.youtube.com/watch?v=Z8CtXdQExek");
+vm.createContext(rydSandbox);
+vm.runInContext(source, rydSandbox, { filename: "userscript-injector-ryd-prefetch.js" });
+await tick();
+await tick();
+check(
+  "enabled Return YouTube Dislike primes the votes response cache",
+  rydSandbox.__fetches.includes("https://returnyoutubedislikeapi.com/votes?videoId=Z8CtXdQExek"),
+);
 
 // Dispatch a message event from *inside* the content-script realm so that
 // event.source is the same `window` object the listeners compare against
@@ -156,6 +204,9 @@ const xhrBridgeId = (wrapperSource.match(/const xhrBridgeId = '([^']*)';/) || []
 const portBridgeId = (wrapperSource.match(/const portBridgeId = '([^']*)';/) || [])[1] || "";
 check("wrapper embeds a non-empty xhrBridgeId", xhrBridgeId.length > 0);
 check("wrapper embeds a non-empty portBridgeId", portBridgeId.length > 0);
+
+const persistedSessionCache = contentSandbox.__sessionValues.get("__wblock_document_start_scripts_v1") || "";
+check("session cache does not persist privileged bridge IDs", !/BridgeId|gm(?:xhr|storage|menu|port)-/.test(persistedSessionCache));
 
 // ---------------------------------------------------------------------------
 // Phase 2: the engine-level XHR bridge must gate on the issued token.
@@ -188,6 +239,53 @@ vm.runInContext(
 );
 await tick();
 check("XHR bridge accepts a request with the issued token", gmXhrCalls().some((m) => m.url === "https://ok.example/"));
+
+// (d) sessionStorage is controlled by the page. A forged early descriptor may
+// run as page code, but its bridge token must remain powerless after the native
+// descriptor fails byte-for-byte verification.
+const forgedScript = { ...fakeScript, content: "window.__forgedSessionScriptRan = true;" };
+const forgedCache = JSON.stringify({ savedAt: Date.now(), usesCspNonce: false, scripts: [forgedScript] });
+const forgedWrapperIndex = appendedScripts.length;
+const forgedSandbox = buildContentScriptSandbox(forgedCache);
+vm.createContext(forgedSandbox);
+vm.runInContext(source, forgedSandbox, { filename: "userscript-injector-forged-cache.js" });
+forgedSandbox.__listeners = windowMessageListeners;
+vm.runInContext(
+  `globalThis.__fire = (data) => { for (const fn of globalThis.__listeners) fn({ source: window, data }); };`,
+  forgedSandbox,
+);
+await tick();
+await tick();
+const forgedWrapper = appendedScripts[forgedWrapperIndex] || "";
+const forgedXhrBridgeId = (forgedWrapper.match(/const xhrBridgeId = '([^']*)';/) || [])[1] || "";
+const beforeForged = gmXhrCalls().length;
+vm.runInContext(
+  `__fire({ type: 'wblock-gm-xhr-request', id: 'forged-cache', bridgeId: ${JSON.stringify(forgedXhrBridgeId)}, url: 'https://forged.example/', method: 'GET' });`,
+  forgedSandbox,
+);
+await tick();
+check("forged session cache cannot obtain GM_xmlhttpRequest authority", forgedXhrBridgeId.length > 0 && gmXhrCalls().length === beforeForged);
+
+const trustedCache = JSON.stringify({ savedAt: Date.now(), usesCspNonce: false, scripts: [fakeScript] });
+const trustedWrapperIndex = appendedScripts.length;
+const trustedSandbox = buildContentScriptSandbox(trustedCache);
+vm.createContext(trustedSandbox);
+vm.runInContext(source, trustedSandbox, { filename: "userscript-injector-trusted-cache.js" });
+trustedSandbox.__listeners = windowMessageListeners;
+vm.runInContext(
+  `globalThis.__fire = (data) => { for (const fn of globalThis.__listeners) fn({ source: window, data }); };`,
+  trustedSandbox,
+);
+await tick();
+await tick();
+const trustedWrapper = appendedScripts[trustedWrapperIndex] || "";
+const trustedXhrBridgeId = (trustedWrapper.match(/const xhrBridgeId = '([^']*)';/) || [])[1] || "";
+vm.runInContext(
+  `__fire({ type: 'wblock-gm-xhr-request', id: 'verified-cache', bridgeId: ${JSON.stringify(trustedXhrBridgeId)}, url: 'https://verified.example/', method: 'GET' });`,
+  trustedSandbox,
+);
+await tick();
+check("native-verified session cache receives GM_xmlhttpRequest authority", gmXhrCalls().some((m) => m.url === "https://verified.example/"));
 
 // ---------------------------------------------------------------------------
 // Phase 3: evaluate the wrapper as the page would, and check GM_xmlhttpRequest
