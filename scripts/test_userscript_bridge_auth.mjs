@@ -77,7 +77,7 @@ function makeElement(tag) {
   };
 }
 
-function buildContentScriptSandbox(initialSessionValue = null) {
+function buildContentScriptSandbox(initialSessionValue = null, userScripts = [fakeScript], href = "https://example.com/page") {
   const head = makeElement("head");
   head.appendChild = (c) => {
     head.children.push(c);
@@ -98,7 +98,8 @@ function buildContentScriptSandbox(initialSessionValue = null) {
   sandbox.globalThis = sandbox;
   sandbox.top = sandbox;
   sandbox.self = sandbox;
-  sandbox.location = { href: "https://example.com/page", hostname: "example.com", protocol: "https:" };
+  const pageURL = new URL(href);
+  sandbox.location = { href, hostname: pageURL.hostname, protocol: pageURL.protocol };
   sandbox.addEventListener = (type, fn) => { if (type === "message") windowMessageListeners.push(fn); };
   sandbox.removeEventListener = () => {};
   sandbox.postMessage = () => {};
@@ -111,6 +112,11 @@ function buildContentScriptSandbox(initialSessionValue = null) {
   sandbox.Blob = class Blob { constructor(p, o) { this.parts = p; this.type = (o && o.type) || ""; } };
   sandbox.TextDecoder = TextDecoder;
   sandbox.TextEncoder = TextEncoder;
+  sandbox.__fetches = [];
+  sandbox.fetch = async (url) => {
+    sandbox.__fetches.push(String(url));
+    return { ok: true, status: 200, text: async () => "{}" };
+  };
   const sessionValues = new Map();
   if (initialSessionValue !== null) {
     sessionValues.set("__wblock_document_start_scripts_v1", initialSessionValue);
@@ -137,7 +143,7 @@ function buildContentScriptSandbox(initialSessionValue = null) {
     runtime: {
       sendMessage: async (msg) => {
         sentMessages.push(msg);
-        if (msg.action === "getUserScripts") return { userScripts: [fakeScript] };
+        if (msg.action === "getUserScripts") return { userScripts };
         if (msg.action === "gmXmlhttpRequest") {
           return { status: 200, responseText: "OK", responseHeaders: "", finalUrl: msg.url };
         }
@@ -160,6 +166,22 @@ try {
   repeatedEvaluationSucceeded = false;
 }
 check("injector can be evaluated repeatedly in one isolated world", repeatedEvaluationSucceeded);
+
+const rydScript = {
+  ...fakeScript,
+  id: "ryd-test",
+  name: "Return YouTube Dislike",
+  sourceURL: "https://raw.githubusercontent.com/Anarios/return-youtube-dislike/main/Extensions/UserScript/Return%20Youtube%20Dislike.user.js",
+};
+const rydSandbox = buildContentScriptSandbox(null, [rydScript], "https://www.youtube.com/watch?v=Z8CtXdQExek");
+vm.createContext(rydSandbox);
+vm.runInContext(source, rydSandbox, { filename: "userscript-injector-ryd-prefetch.js" });
+await tick();
+await tick();
+check(
+  "enabled Return YouTube Dislike primes the votes response cache",
+  rydSandbox.__fetches.includes("https://returnyoutubedislikeapi.com/votes?videoId=Z8CtXdQExek"),
+);
 
 // Dispatch a message event from *inside* the content-script realm so that
 // event.source is the same `window` object the listeners compare against

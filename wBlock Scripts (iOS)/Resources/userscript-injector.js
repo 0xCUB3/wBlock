@@ -113,6 +113,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.pendingMenuInvocations = new Map(); // requestId -> { resolve, timeoutId }
             this.scriptPayloadPromises = new Map(); // scriptId -> Promise<hydrated script>
             this.documentRootPromise = null; // earliest safe page-world injection point
+            this.rydPrefetches = new Map();
+            this.rydPrefetchEnabled = false;
             this.menuCommandSequence = 0;
             this.userScriptRequestRetryDelays = [500, 1500, 4000, 8000];
             wBlockLog('[wBlock] UserScriptEngine constructor called.');
@@ -907,6 +909,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
                     const scripts = response && response.userScripts ? response.userScripts : [];
                     this.verifyDocumentStartSessionScripts(scripts);
+                    this.enableReturnYouTubeDislikePrefetch(scripts);
                     if (scripts.length === 0) {
                         this.persistDocumentStartSessionCache([]);
                         wBlockLog('[wBlock] No userscripts found in getUserScripts response.');
@@ -917,6 +920,51 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 })
                 .catch((error) => {
                     this.retryUserScriptRequest(attempt, error);
+                });
+        }
+
+        enableReturnYouTubeDislikePrefetch(scripts) {
+            if (this.rydPrefetchEnabled || typeof fetch !== 'function') return;
+            const hasRYD = scripts.some((script) =>
+                script && script.name === 'Return YouTube Dislike'
+                    && /^https:\/\/raw\.githubusercontent\.com\/Anarios\/return-youtube-dislike\//i.test(script.sourceURL || '')
+            );
+            if (!hasRYD) return;
+
+            this.rydPrefetchEnabled = true;
+            const prefetchCurrentVideo = () => setTimeout(() => this.prefetchReturnYouTubeDislike(), 0);
+            document.addEventListener('yt-navigate-start', prefetchCurrentVideo, true);
+            document.addEventListener('yt-navigate-finish', prefetchCurrentVideo, true);
+            window.addEventListener('popstate', prefetchCurrentVideo, true);
+            this.prefetchReturnYouTubeDislike();
+        }
+
+        prefetchReturnYouTubeDislike() {
+            let pageURL;
+            try {
+                pageURL = new URL(window.location.href);
+            } catch {
+                return;
+            }
+
+            if (!/(^|\.)youtube\.com$/i.test(pageURL.hostname) || pageURL.hostname === 'music.youtube.com') return;
+            const videoId = pageURL.pathname.startsWith('/shorts/')
+                ? pageURL.pathname.split('/')[2]
+                : pageURL.searchParams.get('v');
+            if (!/^[A-Za-z0-9_-]{11}$/.test(videoId || '')) return;
+
+            const existing = this.rydPrefetches.get(videoId);
+            if (existing && Date.now() - existing < 180000) return;
+
+            const url = `https://returnyoutubedislikeapi.com/votes?videoId=${encodeURIComponent(videoId)}`;
+            this.rydPrefetches.set(videoId, Date.now());
+            fetch(url, { cache: 'default', credentials: 'omit' })
+                .then((response) => {
+                    if (!response.ok) throw new Error(`RYD prefetch failed: ${response.status}`);
+                    return response.text();
+                })
+                .catch(() => {
+                    this.rydPrefetches.delete(videoId);
                 });
         }
 
