@@ -25431,7 +25431,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const PERSISTED_CONFIG_CACHE_KEY = "wblockConfigCacheV1";
   const PERSISTED_DOCUMENT_START_SCRIPT_CACHE_KEY = "wblockDocumentStartScriptCacheV1";
   const PERSISTED_CONFIG_CACHE_LIMIT = 40;
-  const PERSISTED_DOCUMENT_START_SCRIPT_CACHE_LIMIT = 8;
   const PERSISTED_DOCUMENT_START_SCRIPT_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
   const PERSIST_CONFIG_CACHE_DELAY_MS = 1000;
   let persistConfigCacheTimer = null;
@@ -25494,7 +25493,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   // Safari cannot dynamically register arbitrary source at document_start. Keep a
   // short-lived, extension-private copy of scripts that do not depend on mutable
   // synchronous GM state so the static injector can start them before native IPC.
-  const documentStartScriptCache = new Map();
   let documentStartScriptCatalog = [];
   let documentStartScriptCatalogDisabledHosts = [];
   const documentStartScriptCacheHydration = (async () => {
@@ -25504,13 +25502,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (!persisted || typeof persisted.savedAt !== "number" || Date.now() - persisted.savedAt > PERSISTED_DOCUMENT_START_SCRIPT_CACHE_MAX_AGE_MS) {
         await browser.storage.local.remove(PERSISTED_DOCUMENT_START_SCRIPT_CACHE_KEY);
         return;
-      }
-      const entries = persisted.entries;
-      if (!Array.isArray(entries)) return;
-      for (const entry of entries) {
-        if (Array.isArray(entry) && typeof entry[0] === "string" && Array.isArray(entry[1])) {
-          documentStartScriptCache.set(entry[0], entry[1]);
-        }
       }
       documentStartScriptCatalog = Array.isArray(persisted.catalog) ? persisted.catalog : [];
       documentStartScriptCatalogDisabledHosts = Array.isArray(persisted.disabledHosts)
@@ -25523,7 +25514,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const persistDocumentStartScriptCache = () => browser.storage.local.set({
     [PERSISTED_DOCUMENT_START_SCRIPT_CACHE_KEY]: {
       savedAt: Date.now(),
-      entries: Array.from(documentStartScriptCache.entries()).slice(-PERSISTED_DOCUMENT_START_SCRIPT_CACHE_LIMIT),
       catalog: documentStartScriptCatalog,
       disabledHosts: documentStartScriptCatalogDisabledHosts
     }
@@ -25543,7 +25533,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     } catch {}
   };
   const clearDocumentStartScriptCache = async () => {
-    documentStartScriptCache.clear();
     documentStartScriptCatalog = [];
     documentStartScriptCatalogDisabledHosts = [];
     await clearDocumentStartSessionCaches();
@@ -25562,10 +25551,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     "gm.xmlhttprequest"
   ]);
   const cacheableDocumentStartScript = script => {
-    if (!script || script.kind === "style" || script.runAt !== "document-start") return null;
+    if (!script || script.isLocal !== false || script.kind === "style" || script.runAt !== "document-start") return null;
     if (script.injectInto !== "page" || typeof script.content !== "string" || script.content.length === 0) return null;
     const grants = Array.isArray(script.grant) ? script.grant : [];
     if (!grants.every(grant => CACHE_SAFE_DOCUMENT_START_GRANTS.has(String(grant).toLowerCase()))) return null;
+    if ((script.includes || []).length || (script.excludes || []).length || (script.excludeMatches || []).length) return null;
     const resourceNames = Array.isArray(script.resourceNames) ? script.resourceNames : [];
     const resources = script.resources && typeof script.resources === "object" ? script.resources : {};
     if (resourceNames.some(name => typeof resources[name] !== "string")) return null;
@@ -25573,48 +25563,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     delete cached.storageSnapshot;
     return cached;
   };
-  const cacheDocumentStartScripts = (url, scripts) => {
-    const cacheableScripts = scripts.map(cacheableDocumentStartScript).filter(Boolean);
-    documentStartScriptCache.delete(url);
-    documentStartScriptCache.set(url, cacheableScripts);
-    while (documentStartScriptCache.size > PERSISTED_DOCUMENT_START_SCRIPT_CACHE_LIMIT) {
-      documentStartScriptCache.delete(documentStartScriptCache.keys().next().value);
-    }
-    persistDocumentStartScriptCache();
-  };
-  const wildcardPatternMatches = (pattern, value, questionWildcard = false) => {
-    let source = "";
-    for (const character of String(pattern)) {
-      if (character === "*") source += ".*";
-      else if (questionWildcard && character === "?") source += ".";
-      else source += character.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
-    }
-    try {
-      return new RegExp(`^${source}$`).test(value);
-    } catch {
-      return false;
-    }
-  };
-  const userScriptMatchPatternMatches = (pattern, url) => {
-    const separator = String(pattern).indexOf("://");
-    if (separator < 0) return wildcardPatternMatches(pattern, url.href);
-    const schemePattern = pattern.slice(0, separator).toLowerCase();
-    const remainder = pattern.slice(separator + 3);
-    const pathStart = remainder.indexOf("/");
-    if (pathStart < 0) return wildcardPatternMatches(pattern, url.href);
-    const hostPattern = remainder.slice(0, pathStart).toLowerCase();
-    const pathPattern = remainder.slice(pathStart);
-    const schemeMatches = schemePattern === "*"
-      ? url.protocol === "http:" || url.protocol === "https:" || url.protocol === "ftp:"
-      : `${schemePattern}:` === url.protocol;
-    if (!schemeMatches) return false;
-    const host = hostPattern.includes(":") ? url.host.toLowerCase() : url.hostname.toLowerCase();
-    const hostMatches = hostPattern === "*"
-      || (hostPattern.startsWith("*.")
-        ? host === hostPattern.slice(2) || host.endsWith(`.${hostPattern.slice(2)}`)
-        : wildcardPatternMatches(hostPattern, host));
-    if (!hostMatches) return false;
-    return wildcardPatternMatches(pathPattern, `${url.pathname || "/"}${url.search}${url.hash}`);
+  const simpleDocumentStartPatternMatches = (pattern, url) => {
+    const match = String(pattern).match(/^([^:]+):\/\/([^/]+)(\/.*)$/);
+    if (!match || match[3] !== "/*") return false;
+    const schemeMatches = match[1] === "*"
+      ? url.protocol === "http:" || url.protocol === "https:"
+      : `${match[1].toLowerCase()}:` === url.protocol;
+    const hostPattern = match[2].toLowerCase();
+    const host = url.hostname.toLowerCase();
+    return schemeMatches && (hostPattern === "*" || hostPattern === host
+      || (hostPattern.startsWith("*.") && (host === hostPattern.slice(2) || host.endsWith(`.${hostPattern.slice(2)}`))));
   };
   const cachedUserScriptMatchesURL = (script, urlString) => {
     let url;
@@ -25624,14 +25582,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return false;
     }
     const matches = Array.isArray(script.matches) ? script.matches : [];
-    const includes = Array.isArray(script.includes) ? script.includes : [];
-    const included = matches.some(pattern => userScriptMatchPatternMatches(pattern, url))
-      || includes.some(pattern => wildcardPatternMatches(pattern, url.href, true));
-    if (!included) return false;
-    const excludeMatches = Array.isArray(script.excludeMatches) ? script.excludeMatches : [];
-    if (excludeMatches.some(pattern => userScriptMatchPatternMatches(pattern, url))) return false;
-    const excludes = Array.isArray(script.excludes) ? script.excludes : [];
-    if (excludes.some(pattern => wildcardPatternMatches(pattern, url.href, true))) return false;
+    if (!matches.some(pattern => simpleDocumentStartPatternMatches(pattern, url))) return false;
     const host = url.hostname.toLowerCase();
     const disabledHosts = Array.isArray(script.disabledHosts) ? script.disabledHosts : [];
     return !disabledHosts.some(disabledHost => host === String(disabledHost).toLowerCase()
@@ -25648,15 +25599,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       || host.endsWith(`.${String(disabledHost).toLowerCase()}`))) {
       return [];
     }
-    const scripts = [...(documentStartScriptCache.get(url) || [])];
-    scripts.push(...documentStartScriptCatalog.filter(script => cachedUserScriptMatchesURL(script, url)));
-    const deduplicated = new Map();
-    for (const script of scripts) deduplicated.set(script.id || script.name, script);
-    const matchedScripts = Array.from(deduplicated.values());
+    const scripts = documentStartScriptCatalog.filter(script => cachedUserScriptMatchesURL(script, url));
     const fullTinyShieldURL = "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js";
     const groupedTinyShieldURLPrefix = "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/";
-    if (!matchedScripts.some(script => script.sourceURL === fullTinyShieldURL)) return matchedScripts;
-    return matchedScripts.filter(script => !String(script.sourceURL || "").startsWith(groupedTinyShieldURLPrefix));
+    if (!scripts.some(script => script.sourceURL === fullTinyShieldURL)) return scripts;
+    return scripts.filter(script => !String(script.sourceURL || "").startsWith(groupedTinyShieldURLPrefix));
   };
   let nativeMessageQueue = Promise.resolve();
   const nativeMessageTimeoutMs = request => {
@@ -25741,7 +25688,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           }, 1000);
         });
       }
-      documentStartScriptCacheHydration.then(refreshDocumentStartScriptCatalog);
     } catch (error) {
       console.warn("[wBlock] Failed to open native state port:", error);
     }
@@ -26085,9 +26031,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         const scripts = response && response.userScripts ? response.userScripts : [];
         if (response && response.error) {
           return { userScripts: scripts, error: response.error };
-        }
-        if (response && response.documentStartCacheAllowed === true) {
-          cacheDocumentStartScripts(message.url, scripts);
         }
         return { userScripts: scripts };
       } catch (error) {

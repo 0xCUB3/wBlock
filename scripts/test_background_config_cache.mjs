@@ -292,6 +292,7 @@ const runScriptInjectionScenario = async executeScript => {
   const vencord = {
     id: "vencord",
     name: "Vencord",
+    isLocal: false,
     runAt: "document-start",
     injectInto: "page",
     grant: ["GM_xmlhttpRequest", "unsafeWindow"],
@@ -312,12 +313,30 @@ const runScriptInjectionScenario = async executeScript => {
     resourceNames: [],
     content: "window.__storageTest = GM_getValue('value');"
   };
+  const fullTinyShield = {
+    ...vencord,
+    id: "tinyshield-full",
+    name: "tinyShield",
+    sourceURL: "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js",
+    matches: ["*://tinyshield.example/*"]
+  };
+  const groupedTinyShield = {
+    ...vencord,
+    id: "tinyshield-grouped",
+    name: "tinyShield (example)",
+    sourceURL: "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/e/tinyShield-example.user.js",
+    matches: ["*://tinyshield.example/*"]
+  };
   const state = loadBackground({
     storage: {},
     nativeHandler: message => {
       if (message && message.action === "getUserScripts") {
+        return { userScripts: [vencord, storageScript] };
+      }
+      if (message && message.action === "getDocumentStartUserScriptCatalog") {
         return {
-          userScripts: [vencord, storageScript],
+          userScripts: [vencord, storageScript, fullTinyShield, groupedTinyShield],
+          disabledHosts: [],
           documentStartCacheAllowed: true
         };
       }
@@ -345,32 +364,13 @@ const runScriptInjectionScenario = async executeScript => {
   await sleep(20);
 
   const persisted = state.storage[DOCUMENT_START_SCRIPT_CACHE_KEY];
-  const persistedScripts = persisted && persisted.entries && persisted.entries[0] && persisted.entries[0][1];
+  const persistedScripts = persisted && persisted.catalog;
   check("safe page-world document-start script is persisted", persistedScripts && persistedScripts.some(script => script.id === "vencord"));
   check("script with synchronous GM storage is not persisted", persistedScripts && !persistedScripts.some(script => script.id === "storage-script"));
   check(
     "storage snapshots are excluded from the early cache",
     persistedScripts && !Object.hasOwn(persistedScripts.find(script => script.id === "vencord"), "storageSnapshot")
   );
-
-  persisted.catalog = [persistedScripts.find(script => script.id === "vencord")];
-  persisted.disabledHosts = [];
-
-  const fullTinyShield = {
-    ...vencord,
-    id: "tinyshield-full",
-    name: "tinyShield",
-    sourceURL: "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js",
-    matches: ["*://tinyshield.example/*"]
-  };
-  const groupedTinyShield = {
-    ...vencord,
-    id: "tinyshield-grouped",
-    name: "tinyShield (example)",
-    sourceURL: "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/e/tinyShield-example.user.js",
-    matches: ["*://tinyshield.example/*"]
-  };
-  persisted.catalog.push(fullTinyShield, groupedTinyShield);
 
   const coldState = loadBackground({
     storage: { [DOCUMENT_START_SCRIPT_CACHE_KEY]: persisted },

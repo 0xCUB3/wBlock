@@ -624,19 +624,13 @@ public enum WebExtensionRequestHandler {
         // While blocking is globally paused, serve no userscripts so the paused state also
         // suppresses userscript/userstyle injection — not just the declarative blockers.
         if BlockingPauseStore.isPaused() {
-            let response = createResponse(with: [
-                "userScripts": [],
-                "documentStartCacheAllowed": documentStartCacheAllowed
-            ])
+            let response = createResponse(with: ["userScripts": []])
             context.completeRequest(returningItems: [response])
             return
         }
 
         guard let urlString = message["url"] as? String else {
-            let response = createResponse(with: [
-                "userScripts": [],
-                "documentStartCacheAllowed": documentStartCacheAllowed
-            ])
+            let response = createResponse(with: ["userScripts": []])
             context.completeRequest(returningItems: [response])
             return
         }
@@ -647,10 +641,7 @@ public enum WebExtensionRequestHandler {
             let disabledSites = await currentDisabledSites()
             if let url = URL(string: urlString) {
                 if HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites) {
-                    let response = createResponse(with: [
-                        "userScripts": [],
-                        "documentStartCacheAllowed": documentStartCacheAllowed
-                    ])
+                    let response = createResponse(with: ["userScripts": []])
                     context.completeRequest(returningItems: [response])
                     return
                 }
@@ -716,40 +707,9 @@ public enum WebExtensionRequestHandler {
                     continue
                 }
 
-                // Prefer cached resource names, but fall back to parsing metadata so scripts
-                // installed before resource caching still request the right dependencies.
-                let resourceNames =
-                    !script.resourceContents.isEmpty
-                    ? Array(script.resourceContents.keys).sorted()
-                    : UserScriptMetadataParser.extractResourceNames(from: script.content)
                 let storageSnapshot = await UserScriptStorageManager.shared.snapshot(for: script.id.uuidString)
-                let hasUnsafeWindowGrant = script.grant.contains {
-                    $0.caseInsensitiveCompare("unsafeWindow") == .orderedSame
-                }
-                let injectInto = (script.injectInto == "auto" && hasUnsafeWindowGrant) ? "page" : script.injectInto
-                let namespace = UserScriptMetadataParser.extractValue(for: "namespace", from: script.content) ?? ""
-
-                var descriptor: [String: Any] = [
-                    "id": script.id.uuidString,
-                    "name": script.name,
-                    "namespace": namespace,
-                    "version": script.version,
-                    "description": script.description,
-                    "sourceURL": script.url?.absoluteString ?? "",
-                    "isLocal": script.isLocal,
-                    "runAt": script.runAt,
-                    "noframes": script.noframes,
-                    "injectInto": injectInto,
-                    "grant": script.grant,
-                    "matches": script.matches,
-                    "excludeMatches": script.excludeMatches,
-                    "includes": script.includes,
-                    "excludes": script.excludes,
-                    "updateURL": script.updateURL ?? "",
-                    "downloadURL": script.downloadURL ?? "",
-                    "resourceNames": resourceNames,
-                    "storageSnapshot": storageSnapshot
-                ]
+                var descriptor = userScriptDescriptor(script)
+                descriptor["storageSnapshot"] = storageSnapshot
                 if includeContent, !script.content.isEmpty {
                     let executableContent = script.executableContent
                     let inlinePayloadBytes = executableContent.utf8.count
@@ -775,10 +735,7 @@ public enum WebExtensionRequestHandler {
                 }
             }
 
-            let response = createResponse(with: [
-                "userScripts": userScriptDescriptors,
-                "documentStartCacheAllowed": documentStartCacheAllowed
-            ])
+            let response = createResponse(with: ["userScripts": userScriptDescriptors])
             context.completeRequest(returningItems: [response])
         }
     }
@@ -802,14 +759,6 @@ public enum WebExtensionRequestHandler {
             var remainingInlineBudget = totalInlineResponseBudget
 
             for script in scripts {
-                let resourceNames = !script.resourceContents.isEmpty
-                    ? Array(script.resourceContents.keys).sorted()
-                    : UserScriptMetadataParser.extractResourceNames(from: script.content)
-                let hasUnsafeWindowGrant = script.grant.contains {
-                    $0.caseInsensitiveCompare("unsafeWindow") == .orderedSame
-                }
-                let injectInto = (script.injectInto == "auto" && hasUnsafeWindowGrant)
-                    ? "page" : script.injectInto
                 let executableContent = script.executableContent
                 let payloadBytes = executableContent.utf8.count
                     + script.resourceContents.values.reduce(0) { $0 + $1.utf8.count }
@@ -817,32 +766,13 @@ public enum WebExtensionRequestHandler {
                       payloadBytes <= remainingInlineBudget
                 else { continue }
 
-                let namespace = UserScriptMetadataParser.extractValue(
-                    for: "namespace", from: script.content
-                ) ?? ""
-                descriptors.append([
-                    "id": script.id.uuidString,
-                    "name": script.name,
-                    "namespace": namespace,
-                    "version": script.version,
-                    "description": script.description,
-                    "sourceURL": script.url?.absoluteString ?? "",
-                    "isLocal": script.isLocal,
-                    "runAt": script.runAt,
-                    "noframes": script.noframes,
-                    "injectInto": injectInto,
-                    "grant": script.grant,
-                    "matches": script.matches,
-                    "excludeMatches": script.excludeMatches,
-                    "includes": script.includes,
-                    "excludes": script.excludes,
-                    "disabledHosts": ProtobufDataManager.shared.getUserScriptDisabledHosts(
-                        forScriptID: script.id.uuidString
-                    ),
-                    "resourceNames": resourceNames,
-                    "resources": script.resourceContents,
-                    "content": executableContent
-                ])
+                var descriptor = userScriptDescriptor(script)
+                descriptor["disabledHosts"] = ProtobufDataManager.shared.getUserScriptDisabledHosts(
+                    forScriptID: script.id.uuidString
+                )
+                descriptor["resources"] = script.resourceContents
+                descriptor["content"] = executableContent
+                descriptors.append(descriptor)
                 remainingInlineBudget -= payloadBytes
             }
 
@@ -853,6 +783,40 @@ public enum WebExtensionRequestHandler {
             ])
             context.completeRequest(returningItems: [response])
         }
+    }
+
+    private static func userScriptDescriptor(_ script: UserScript) -> [String: Any] {
+        let resourceNames = !script.resourceContents.isEmpty
+            ? Array(script.resourceContents.keys).sorted()
+            : UserScriptMetadataParser.extractResourceNames(from: script.content)
+        let hasUnsafeWindowGrant = script.grant.contains {
+            $0.caseInsensitiveCompare("unsafeWindow") == .orderedSame
+        }
+        let injectInto = script.injectInto == "auto" && hasUnsafeWindowGrant
+            ? "page" : script.injectInto
+
+        return [
+            "id": script.id.uuidString,
+            "name": script.name,
+            "namespace": UserScriptMetadataParser.extractValue(
+                for: "namespace", from: script.content
+            ) ?? "",
+            "version": script.version,
+            "description": script.description,
+            "sourceURL": script.url?.absoluteString ?? "",
+            "isLocal": script.isLocal,
+            "runAt": script.runAt,
+            "noframes": script.noframes,
+            "injectInto": injectInto,
+            "grant": script.grant,
+            "matches": script.matches,
+            "excludeMatches": script.excludeMatches,
+            "includes": script.includes,
+            "excludes": script.excludes,
+            "updateURL": script.updateURL ?? "",
+            "downloadURL": script.downloadURL ?? "",
+            "resourceNames": resourceNames
+        ]
     }
 
     /// Per-script inline allowance for `document-start` userscripts. Timing-critical

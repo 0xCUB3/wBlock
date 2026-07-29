@@ -113,7 +113,6 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.pendingMenuInvocations = new Map(); // requestId -> { resolve, timeoutId }
             this.scriptPayloadPromises = new Map(); // scriptId -> Promise<hydrated script>
             this.documentRootPromise = null; // earliest safe page-world injection point
-            this.rydPrefetches = new Map();
             this.rydPrefetchEnabled = false;
             this.menuCommandSequence = 0;
             this.userScriptRequestRetryDelays = [500, 1500, 4000, 8000];
@@ -199,13 +198,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
             const cacheableScripts = scripts
                 .filter(script => this.isDocumentStartSessionCacheEligible(script))
                 .map(script => {
-                    const cached = { ...script };
-                    delete cached.storageBridgeId;
-                    delete cached.menuBridgeId;
-                    delete cached.xhrBridgeId;
-                    delete cached.portBridgeId;
-                    delete cached.wblockUntrustedSessionCache;
-                    delete cached.wblockWaitForCspNonce;
+                    const {
+                        storageBridgeId, menuBridgeId, xhrBridgeId, portBridgeId,
+                        wblockUntrustedSessionCache, wblockWaitForCspNonce, ...cached
+                    } = script;
                     return cached;
                 });
             const payload = JSON.stringify({
@@ -222,10 +218,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             try {
                 const encoded = getWBlockSessionStorage()?.getItem(WBLOCK_SESSION_SCRIPT_CACHE_KEY);
                 if (!encoded) return [];
-                const record = JSON.parse(encoded);
-                const payload = record && typeof record.payload === 'string'
-                    ? JSON.parse(record.payload)
-                    : record;
+                const payload = JSON.parse(encoded);
                 if (!payload || typeof payload.savedAt !== 'number' || Date.now() - payload.savedAt > WBLOCK_SESSION_SCRIPT_CACHE_MAX_AGE_MS) {
                     this.clearDocumentStartSessionCache();
                     return [];
@@ -250,33 +243,18 @@ if (window.wBlockUserscriptInjectorHasRun) {
             }
         }
 
-        sessionScriptKey(script) {
-            return script && (script.id || script.name || '');
-        }
-
         sessionScriptFingerprint(script) {
-            const fields = [
-                'id', 'name', 'namespace', 'version', 'description', 'sourceURL', 'isLocal',
-                'runAt', 'noframes', 'injectInto', 'grant', 'matches', 'excludeMatches',
-                'includes', 'excludes', 'updateURL', 'downloadURL', 'resourceNames',
-                'resources', 'content'
-            ];
-            const canonicalize = value => {
-                if (Array.isArray(value)) return value.map(canonicalize);
-                if (!value || typeof value !== 'object') return value;
-                return Object.keys(value).sort().reduce((result, key) => {
-                    result[key] = canonicalize(value[key]);
-                    return result;
-                }, {});
-            };
-            return JSON.stringify(canonicalize(fields.reduce((result, field) => {
-                result[field] = script ? script[field] : undefined;
-                return result;
-            }, {})));
+            const resources = Object.entries((script && script.resources) || {}).sort(([left], [right]) => left.localeCompare(right));
+            return JSON.stringify([
+                script && script.id, script && script.sourceURL, script && script.runAt,
+                script && script.injectInto, script && script.grant, script && script.matches,
+                script && script.excludeMatches, script && script.includes, script && script.excludes,
+                resources, script && script.content
+            ]);
         }
 
         verifyDocumentStartSessionScripts(trustedScripts) {
-            const trustedByKey = new Map((trustedScripts || []).map(script => [this.sessionScriptKey(script), script]));
+            const trustedByKey = new Map((trustedScripts || []).map(script => [script.id, script]));
             for (const [key, provisional] of this.provisionalSessionScripts) {
                 const trusted = trustedByKey.get(key);
                 const verified = trusted
@@ -934,38 +912,19 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.rydPrefetchEnabled = true;
             const prefetchCurrentVideo = () => setTimeout(() => this.prefetchReturnYouTubeDislike(), 0);
             document.addEventListener('yt-navigate-start', prefetchCurrentVideo, true);
-            document.addEventListener('yt-navigate-finish', prefetchCurrentVideo, true);
-            window.addEventListener('popstate', prefetchCurrentVideo, true);
             this.prefetchReturnYouTubeDislike();
         }
 
         prefetchReturnYouTubeDislike() {
-            let pageURL;
-            try {
-                pageURL = new URL(window.location.href);
-            } catch {
-                return;
-            }
-
+            const pageURL = new URL(window.location.href);
             if (!/(^|\.)youtube\.com$/i.test(pageURL.hostname) || pageURL.hostname === 'music.youtube.com') return;
             const videoId = pageURL.pathname.startsWith('/shorts/')
                 ? pageURL.pathname.split('/')[2]
                 : pageURL.searchParams.get('v');
             if (!/^[A-Za-z0-9_-]{11}$/.test(videoId || '')) return;
 
-            const existing = this.rydPrefetches.get(videoId);
-            if (existing && Date.now() - existing < 180000) return;
-
             const url = `https://returnyoutubedislikeapi.com/votes?videoId=${encodeURIComponent(videoId)}`;
-            this.rydPrefetches.set(videoId, Date.now());
-            fetch(url)
-                .then((response) => {
-                    if (!response.ok) throw new Error(`RYD prefetch failed: ${response.status}`);
-                    return response.text();
-                })
-                .catch(() => {
-                    this.rydPrefetches.delete(videoId);
-                });
+            fetch(url).then(response => response.text()).catch(() => {});
         }
 
         requestCachedDocumentStartUserScripts() {
@@ -1191,8 +1150,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 // scripts cannot borrow the extension's CORS-free network access.
                 if (isUntrustedSessionScript) {
                     fullScript.xhrBridgeId = this.generateSecret('gmxhr');
-                    const key = this.sessionScriptKey(fullScript);
-                    this.provisionalSessionScripts.set(key, {
+                    this.provisionalSessionScripts.set(fullScript.id, {
                         script: fullScript,
                         xhrBridgeId: fullScript.xhrBridgeId
                     });
