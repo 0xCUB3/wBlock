@@ -42,6 +42,10 @@ const fakeScript = {
   id: "test-script-1",
   name: "Bridge Auth Test Script",
   content: USER_SCRIPT_CONTENT,
+  sourceURL: "https://scripts.test/bridge-auth.user.js",
+  isLocal: false,
+  matches: ["https://example.com/*"],
+  grant: ["GM_xmlhttpRequest"],
   injectInto: "page",
   runAt: "document-start",
 };
@@ -73,7 +77,7 @@ function makeElement(tag) {
   };
 }
 
-function buildContentScriptSandbox() {
+function buildContentScriptSandbox(initialSessionValue = null) {
   const head = makeElement("head");
   head.appendChild = (c) => {
     head.children.push(c);
@@ -107,6 +111,16 @@ function buildContentScriptSandbox() {
   sandbox.Blob = class Blob { constructor(p, o) { this.parts = p; this.type = (o && o.type) || ""; } };
   sandbox.TextDecoder = TextDecoder;
   sandbox.TextEncoder = TextEncoder;
+  const sessionValues = new Map();
+  if (initialSessionValue !== null) {
+    sessionValues.set("__wblock_document_start_scripts_v1", initialSessionValue);
+  }
+  sandbox.sessionStorage = {
+    getItem: (key) => sessionValues.get(key) ?? null,
+    setItem: (key, value) => sessionValues.set(key, String(value)),
+    removeItem: (key) => sessionValues.delete(key),
+  };
+  sandbox.__sessionValues = sessionValues;
   sandbox.document = {
     readyState: "complete",
     documentElement: docEl,
@@ -162,6 +176,9 @@ const portBridgeId = (wrapperSource.match(/const portBridgeId = '([^']*)';/) || 
 check("wrapper embeds a non-empty xhrBridgeId", xhrBridgeId.length > 0);
 check("wrapper embeds a non-empty portBridgeId", portBridgeId.length > 0);
 
+const persistedSessionCache = contentSandbox.__sessionValues.get("__wblock_document_start_scripts_v1") || "";
+check("session cache does not persist privileged bridge IDs", !/BridgeId|gm(?:xhr|storage|menu|port)-/.test(persistedSessionCache));
+
 // ---------------------------------------------------------------------------
 // Phase 2: the engine-level XHR bridge must gate on the issued token.
 // ---------------------------------------------------------------------------
@@ -193,6 +210,53 @@ vm.runInContext(
 );
 await tick();
 check("XHR bridge accepts a request with the issued token", gmXhrCalls().some((m) => m.url === "https://ok.example/"));
+
+// (d) sessionStorage is controlled by the page. A forged early descriptor may
+// run as page code, but its bridge token must remain powerless after the native
+// descriptor fails byte-for-byte verification.
+const forgedScript = { ...fakeScript, content: "window.__forgedSessionScriptRan = true;" };
+const forgedCache = JSON.stringify({ savedAt: Date.now(), usesCspNonce: false, scripts: [forgedScript] });
+const forgedWrapperIndex = appendedScripts.length;
+const forgedSandbox = buildContentScriptSandbox(forgedCache);
+vm.createContext(forgedSandbox);
+vm.runInContext(source, forgedSandbox, { filename: "userscript-injector-forged-cache.js" });
+forgedSandbox.__listeners = windowMessageListeners;
+vm.runInContext(
+  `globalThis.__fire = (data) => { for (const fn of globalThis.__listeners) fn({ source: window, data }); };`,
+  forgedSandbox,
+);
+await tick();
+await tick();
+const forgedWrapper = appendedScripts[forgedWrapperIndex] || "";
+const forgedXhrBridgeId = (forgedWrapper.match(/const xhrBridgeId = '([^']*)';/) || [])[1] || "";
+const beforeForged = gmXhrCalls().length;
+vm.runInContext(
+  `__fire({ type: 'wblock-gm-xhr-request', id: 'forged-cache', bridgeId: ${JSON.stringify(forgedXhrBridgeId)}, url: 'https://forged.example/', method: 'GET' });`,
+  forgedSandbox,
+);
+await tick();
+check("forged session cache cannot obtain GM_xmlhttpRequest authority", forgedXhrBridgeId.length > 0 && gmXhrCalls().length === beforeForged);
+
+const trustedCache = JSON.stringify({ savedAt: Date.now(), usesCspNonce: false, scripts: [fakeScript] });
+const trustedWrapperIndex = appendedScripts.length;
+const trustedSandbox = buildContentScriptSandbox(trustedCache);
+vm.createContext(trustedSandbox);
+vm.runInContext(source, trustedSandbox, { filename: "userscript-injector-trusted-cache.js" });
+trustedSandbox.__listeners = windowMessageListeners;
+vm.runInContext(
+  `globalThis.__fire = (data) => { for (const fn of globalThis.__listeners) fn({ source: window, data }); };`,
+  trustedSandbox,
+);
+await tick();
+await tick();
+const trustedWrapper = appendedScripts[trustedWrapperIndex] || "";
+const trustedXhrBridgeId = (trustedWrapper.match(/const xhrBridgeId = '([^']*)';/) || [])[1] || "";
+vm.runInContext(
+  `__fire({ type: 'wblock-gm-xhr-request', id: 'verified-cache', bridgeId: ${JSON.stringify(trustedXhrBridgeId)}, url: 'https://verified.example/', method: 'GET' });`,
+  trustedSandbox,
+);
+await tick();
+check("native-verified session cache receives GM_xmlhttpRequest authority", gmXhrCalls().some((m) => m.url === "https://verified.example/"));
 
 // ---------------------------------------------------------------------------
 // Phase 3: evaluate the wrapper as the page would, and check GM_xmlhttpRequest

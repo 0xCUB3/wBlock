@@ -356,9 +356,30 @@ const runScriptInjectionScenario = async executeScript => {
   persisted.catalog = [persistedScripts.find(script => script.id === "vencord")];
   persisted.disabledHosts = [];
 
+  const fullTinyShield = {
+    ...vencord,
+    id: "tinyshield-full",
+    name: "tinyShield",
+    sourceURL: "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js",
+    matches: ["*://tinyshield.example/*"]
+  };
+  const groupedTinyShield = {
+    ...vencord,
+    id: "tinyshield-grouped",
+    name: "tinyShield (example)",
+    sourceURL: "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/e/tinyShield-example.user.js",
+    matches: ["*://tinyshield.example/*"]
+  };
+  persisted.catalog.push(fullTinyShield, groupedTinyShield);
+
   const coldState = loadBackground({
     storage: { [DOCUMENT_START_SCRIPT_CACHE_KEY]: persisted },
-    nativeHandler: () => new Promise(() => {})
+    nativeHandler: message => {
+      if (message && message.action === "getDocumentStartUserScriptCatalog") {
+        return new Promise(() => {});
+      }
+      return { payload: makeConfig([], 1) };
+    }
   });
   const cachedResponse = await coldState.onMessage({
     action: "getCachedDocumentStartUserScripts",
@@ -381,6 +402,15 @@ const runScriptInjectionScenario = async executeScript => {
     url: "https://example.com/"
   }, topFrameSender("https://example.com/"));
   check("catalog scripts do not run on unrelated URLs", unrelatedResponse.userScripts.length === 0);
+
+  const tinyShieldResponse = await coldState.onMessage({
+    action: "getCachedDocumentStartUserScripts",
+    url: "https://tinyshield.example/"
+  }, topFrameSender("https://tinyshield.example/"));
+  check(
+    "catalog suppresses a grouped tinyShield variant when the full script runs",
+    tinyShieldResponse.userScripts.length === 1 && tinyShieldResponse.userScripts[0].id === "tinyshield-full"
+  );
 
   await coldState.onMessage({ action: "wblock:clearCache" }, topFrameSender(pageUrl));
   check(

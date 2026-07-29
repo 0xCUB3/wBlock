@@ -25652,7 +25652,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     scripts.push(...documentStartScriptCatalog.filter(script => cachedUserScriptMatchesURL(script, url)));
     const deduplicated = new Map();
     for (const script of scripts) deduplicated.set(script.id || script.name, script);
-    return Array.from(deduplicated.values());
+    const matchedScripts = Array.from(deduplicated.values());
+    const fullTinyShieldURL = "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js";
+    const groupedTinyShieldURLPrefix = "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/";
+    if (!matchedScripts.some(script => script.sourceURL === fullTinyShieldURL)) return matchedScripts;
+    return matchedScripts.filter(script => !String(script.sourceURL || "").startsWith(groupedTinyShieldURLPrefix));
   };
   let nativeMessageQueue = Promise.resolve();
   const nativeMessageTimeoutMs = request => {
@@ -25707,11 +25711,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     });
     return documentStartCatalogRefresh;
   };
-  if (browser.runtime && typeof browser.runtime.connectNative === "function") {
+  let nativeStatePort = null;
+  let nativeStateReconnectTimer = null;
+  const connectNativeStatePort = () => {
+    if (!(browser.runtime && typeof browser.runtime.connectNative === "function") || nativeStatePort) return;
     try {
-      const nativeStatePort = browser.runtime.connectNative("application.id");
-      if (nativeStatePort && nativeStatePort.onMessage) {
-        nativeStatePort.onMessage.addListener(message => {
+      const port = browser.runtime.connectNative("application.id");
+      nativeStatePort = port;
+      if (port && port.onMessage) {
+        port.onMessage.addListener(message => {
           const action = message && (
             message.action ||
             message.name ||
@@ -25723,10 +25731,22 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           }
         });
       }
+      if (port && port.onDisconnect) {
+        port.onDisconnect.addListener(() => {
+          if (nativeStatePort === port) nativeStatePort = null;
+          if (nativeStateReconnectTimer !== null) clearTimeout(nativeStateReconnectTimer);
+          nativeStateReconnectTimer = setTimeout(() => {
+            nativeStateReconnectTimer = null;
+            connectNativeStatePort();
+          }, 1000);
+        });
+      }
+      documentStartScriptCacheHydration.then(refreshDocumentStartScriptCatalog);
     } catch (error) {
       console.warn("[wBlock] Failed to open native state port:", error);
     }
-  }
+  };
+  connectNativeStatePort();
   documentStartScriptCacheHydration.then(refreshDocumentStartScriptCatalog);
   /**
    * Returns a cache key for the given URL and top-level URL.
