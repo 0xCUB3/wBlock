@@ -857,6 +857,7 @@ extension AppFilterManager {
         if paused {
             let started = await performExclusiveApply {
                 BlockingPauseStore.setPaused(true)
+                UserScriptManager.invalidateDocumentStartExecutionCache()
                 await MainActor.run { self.isBlockingPaused = true }
 
                 await MainActor.run {
@@ -904,6 +905,7 @@ extension AppFilterManager {
             }
         } else {
             BlockingPauseStore.setPaused(false)
+            UserScriptManager.invalidateDocumentStartExecutionCache()
             await MainActor.run { self.isBlockingPaused = false }
             await applyChanges()
             await MainActor.run {

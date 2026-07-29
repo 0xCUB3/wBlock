@@ -25429,7 +25429,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * newer engine.
    */
   const PERSISTED_CONFIG_CACHE_KEY = "wblockConfigCacheV1";
+  const PERSISTED_DOCUMENT_START_SCRIPT_CACHE_KEY = "wblockDocumentStartScriptCacheV1";
   const PERSISTED_CONFIG_CACHE_LIMIT = 40;
+  const PERSISTED_DOCUMENT_START_SCRIPT_CACHE_LIMIT = 8;
+  const PERSISTED_DOCUMENT_START_SCRIPT_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
   const PERSIST_CONFIG_CACHE_DELAY_MS = 1000;
   let persistConfigCacheTimer = null;
   const persistConfigCache = () => {
@@ -25488,6 +25491,169 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.warn("[wBlock] Failed to hydrate config cache:", error);
     }
   })();
+  // Safari cannot dynamically register arbitrary source at document_start. Keep a
+  // short-lived, extension-private copy of scripts that do not depend on mutable
+  // synchronous GM state so the static injector can start them before native IPC.
+  const documentStartScriptCache = new Map();
+  let documentStartScriptCatalog = [];
+  let documentStartScriptCatalogDisabledHosts = [];
+  const documentStartScriptCacheHydration = (async () => {
+    try {
+      const stored = await browser.storage.local.get(PERSISTED_DOCUMENT_START_SCRIPT_CACHE_KEY);
+      const persisted = stored && stored[PERSISTED_DOCUMENT_START_SCRIPT_CACHE_KEY];
+      if (!persisted || typeof persisted.savedAt !== "number" || Date.now() - persisted.savedAt > PERSISTED_DOCUMENT_START_SCRIPT_CACHE_MAX_AGE_MS) {
+        await browser.storage.local.remove(PERSISTED_DOCUMENT_START_SCRIPT_CACHE_KEY);
+        return;
+      }
+      const entries = persisted.entries;
+      if (!Array.isArray(entries)) return;
+      for (const entry of entries) {
+        if (Array.isArray(entry) && typeof entry[0] === "string" && Array.isArray(entry[1])) {
+          documentStartScriptCache.set(entry[0], entry[1]);
+        }
+      }
+      documentStartScriptCatalog = Array.isArray(persisted.catalog) ? persisted.catalog : [];
+      documentStartScriptCatalogDisabledHosts = Array.isArray(persisted.disabledHosts)
+        ? persisted.disabledHosts
+        : [];
+    } catch (error) {
+      console.warn("[wBlock] Failed to hydrate document-start userscript cache:", error);
+    }
+  })();
+  const persistDocumentStartScriptCache = () => browser.storage.local.set({
+    [PERSISTED_DOCUMENT_START_SCRIPT_CACHE_KEY]: {
+      savedAt: Date.now(),
+      entries: Array.from(documentStartScriptCache.entries()).slice(-PERSISTED_DOCUMENT_START_SCRIPT_CACHE_LIMIT),
+      catalog: documentStartScriptCatalog,
+      disabledHosts: documentStartScriptCatalogDisabledHosts
+    }
+  }).catch(error => {
+    console.warn("[wBlock] Failed to persist document-start userscript cache:", error);
+  });
+  const clearDocumentStartSessionCaches = async () => {
+    if (!browser.tabs || typeof browser.tabs.query !== "function") return;
+    try {
+      const tabs = await browser.tabs.query({});
+      await Promise.all(tabs.map(tab => {
+        if (!tab || typeof tab.id !== "number") return Promise.resolve();
+        return browser.tabs.sendMessage(tab.id, {
+          type: "wblock:clearDocumentStartSessionCache"
+        }).catch(() => {});
+      }));
+    } catch {}
+  };
+  const clearDocumentStartScriptCache = async () => {
+    documentStartScriptCache.clear();
+    documentStartScriptCatalog = [];
+    documentStartScriptCatalogDisabledHosts = [];
+    await clearDocumentStartSessionCaches();
+    try {
+      await browser.storage.local.remove(PERSISTED_DOCUMENT_START_SCRIPT_CACHE_KEY);
+    } catch (error) {
+      console.warn("[wBlock] Failed to clear document-start userscript cache:", error);
+    }
+  };
+  const CACHE_SAFE_DOCUMENT_START_GRANTS = new Set([
+    "none",
+    "unsafewindow",
+    "gm_info",
+    "gm.info",
+    "gm_xmlhttprequest",
+    "gm.xmlhttprequest"
+  ]);
+  const cacheableDocumentStartScript = script => {
+    if (!script || script.kind === "style" || script.runAt !== "document-start") return null;
+    if (script.injectInto !== "page" || typeof script.content !== "string" || script.content.length === 0) return null;
+    const grants = Array.isArray(script.grant) ? script.grant : [];
+    if (!grants.every(grant => CACHE_SAFE_DOCUMENT_START_GRANTS.has(String(grant).toLowerCase()))) return null;
+    const resourceNames = Array.isArray(script.resourceNames) ? script.resourceNames : [];
+    const resources = script.resources && typeof script.resources === "object" ? script.resources : {};
+    if (resourceNames.some(name => typeof resources[name] !== "string")) return null;
+    const cached = { ...script };
+    delete cached.storageSnapshot;
+    return cached;
+  };
+  const cacheDocumentStartScripts = (url, scripts) => {
+    const cacheableScripts = scripts.map(cacheableDocumentStartScript).filter(Boolean);
+    documentStartScriptCache.delete(url);
+    documentStartScriptCache.set(url, cacheableScripts);
+    while (documentStartScriptCache.size > PERSISTED_DOCUMENT_START_SCRIPT_CACHE_LIMIT) {
+      documentStartScriptCache.delete(documentStartScriptCache.keys().next().value);
+    }
+    persistDocumentStartScriptCache();
+  };
+  const wildcardPatternMatches = (pattern, value, questionWildcard = false) => {
+    let source = "";
+    for (const character of String(pattern)) {
+      if (character === "*") source += ".*";
+      else if (questionWildcard && character === "?") source += ".";
+      else source += character.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&");
+    }
+    try {
+      return new RegExp(`^${source}$`).test(value);
+    } catch {
+      return false;
+    }
+  };
+  const userScriptMatchPatternMatches = (pattern, url) => {
+    const separator = String(pattern).indexOf("://");
+    if (separator < 0) return wildcardPatternMatches(pattern, url.href);
+    const schemePattern = pattern.slice(0, separator).toLowerCase();
+    const remainder = pattern.slice(separator + 3);
+    const pathStart = remainder.indexOf("/");
+    if (pathStart < 0) return wildcardPatternMatches(pattern, url.href);
+    const hostPattern = remainder.slice(0, pathStart).toLowerCase();
+    const pathPattern = remainder.slice(pathStart);
+    const schemeMatches = schemePattern === "*"
+      ? url.protocol === "http:" || url.protocol === "https:" || url.protocol === "ftp:"
+      : `${schemePattern}:` === url.protocol;
+    if (!schemeMatches) return false;
+    const host = hostPattern.includes(":") ? url.host.toLowerCase() : url.hostname.toLowerCase();
+    const hostMatches = hostPattern === "*"
+      || (hostPattern.startsWith("*.")
+        ? host === hostPattern.slice(2) || host.endsWith(`.${hostPattern.slice(2)}`)
+        : wildcardPatternMatches(hostPattern, host));
+    if (!hostMatches) return false;
+    return wildcardPatternMatches(pathPattern, `${url.pathname || "/"}${url.search}${url.hash}`);
+  };
+  const cachedUserScriptMatchesURL = (script, urlString) => {
+    let url;
+    try {
+      url = new URL(urlString);
+    } catch {
+      return false;
+    }
+    const matches = Array.isArray(script.matches) ? script.matches : [];
+    const includes = Array.isArray(script.includes) ? script.includes : [];
+    const included = matches.some(pattern => userScriptMatchPatternMatches(pattern, url))
+      || includes.some(pattern => wildcardPatternMatches(pattern, url.href, true));
+    if (!included) return false;
+    const excludeMatches = Array.isArray(script.excludeMatches) ? script.excludeMatches : [];
+    if (excludeMatches.some(pattern => userScriptMatchPatternMatches(pattern, url))) return false;
+    const excludes = Array.isArray(script.excludes) ? script.excludes : [];
+    if (excludes.some(pattern => wildcardPatternMatches(pattern, url.href, true))) return false;
+    const host = url.hostname.toLowerCase();
+    const disabledHosts = Array.isArray(script.disabledHosts) ? script.disabledHosts : [];
+    return !disabledHosts.some(disabledHost => host === String(disabledHost).toLowerCase()
+      || host.endsWith(`.${String(disabledHost).toLowerCase()}`));
+  };
+  const cachedDocumentStartScriptsForURL = url => {
+    let host = "";
+    try {
+      host = new URL(url).hostname.toLowerCase();
+    } catch {
+      return [];
+    }
+    if (documentStartScriptCatalogDisabledHosts.some(disabledHost => host === String(disabledHost).toLowerCase()
+      || host.endsWith(`.${String(disabledHost).toLowerCase()}`))) {
+      return [];
+    }
+    const scripts = [...(documentStartScriptCache.get(url) || [])];
+    scripts.push(...documentStartScriptCatalog.filter(script => cachedUserScriptMatchesURL(script, url)));
+    const deduplicated = new Map();
+    for (const script of scripts) deduplicated.set(script.id || script.name, script);
+    return Array.from(deduplicated.values());
+  };
   let nativeMessageQueue = Promise.resolve();
   const nativeMessageTimeoutMs = request => {
     const action = request && typeof request.action === "string" ? request.action : "";
@@ -25508,6 +25674,60 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     nativeMessageQueue = response.catch(() => {});
     return response;
   };
+  const sendPriorityNativeMessage = request => {
+    const action = request && typeof request.action === "string" ? request.action : "";
+    return withNativeMessageTimeout(
+      browser.runtime.sendNativeMessage("application.id", request),
+      nativeMessageTimeoutMs(request),
+      action
+    );
+  };
+  let documentStartCatalogRefresh = null;
+  const refreshDocumentStartScriptCatalog = () => {
+    if (documentStartCatalogRefresh) return documentStartCatalogRefresh;
+    documentStartCatalogRefresh = sendPriorityNativeMessage({
+      action: "getDocumentStartUserScriptCatalog",
+      requestId: `userscript-catalog-${Date.now()}`
+    }).then(response => {
+      if (response && response.documentStartCacheAllowed === false) {
+        return clearDocumentStartScriptCache();
+      }
+      if (!response || response.documentStartCacheAllowed !== true || !Array.isArray(response.userScripts)) {
+        return;
+      }
+      documentStartScriptCatalog = response.userScripts.map(cacheableDocumentStartScript).filter(Boolean);
+      documentStartScriptCatalogDisabledHosts = Array.isArray(response.disabledHosts)
+        ? response.disabledHosts
+        : [];
+      return persistDocumentStartScriptCache();
+    }).catch(error => {
+      console.warn("[wBlock] Failed to refresh document-start userscript catalog:", error);
+    }).finally(() => {
+      documentStartCatalogRefresh = null;
+    });
+    return documentStartCatalogRefresh;
+  };
+  if (browser.runtime && typeof browser.runtime.connectNative === "function") {
+    try {
+      const nativeStatePort = browser.runtime.connectNative("application.id");
+      if (nativeStatePort && nativeStatePort.onMessage) {
+        nativeStatePort.onMessage.addListener(message => {
+          const action = message && (
+            message.action ||
+            message.name ||
+            message.messageName ||
+            (message.userInfo && message.userInfo.action)
+          );
+          if (action === "wblock:userscriptsChanged") {
+            clearDocumentStartScriptCache().then(refreshDocumentStartScriptCatalog);
+          }
+        });
+      }
+    } catch (error) {
+      console.warn("[wBlock] Failed to open native state port:", error);
+    }
+  }
+  documentStartScriptCacheHydration.then(refreshDocumentStartScriptCatalog);
   /**
    * Returns a cache key for the given URL and top-level URL.
    *
@@ -25738,12 +25958,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (message && message.action === "wblock:clearCache") {
       cache.clear();
       engineTimestamp = 0;
-      await clearPersistedConfigCache();
+      await Promise.all([
+        clearPersistedConfigCache(),
+        clearDocumentStartScriptCache()
+      ]);
       await scheduleInstallRemoveParamDNRRules(true);
       await refreshActionStateForAllTabs();
       return {
         ok: true
       };
+    }
+    if (message && message.action === "getCachedDocumentStartUserScripts") {
+      await documentStartScriptCacheHydration;
+      const url = typeof message.url === "string" ? message.url : "";
+      return { userScripts: cachedDocumentStartScriptsForURL(url) };
     }
     if (message && message.action === "wblock:installRemoveParamDNRRules") {
       await scheduleInstallRemoveParamDNRRules(true);
@@ -25833,10 +26061,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
 
       try {
-        const response = await sendQueuedNativeMessage(userScriptRequest);
+        const response = await sendPriorityNativeMessage(userScriptRequest);
         const scripts = response && response.userScripts ? response.userScripts : [];
         if (response && response.error) {
           return { userScripts: scripts, error: response.error };
+        }
+        if (response && response.documentStartCacheAllowed === true) {
+          cacheDocumentStartScripts(message.url, scripts);
         }
         return { userScripts: scripts };
       } catch (error) {

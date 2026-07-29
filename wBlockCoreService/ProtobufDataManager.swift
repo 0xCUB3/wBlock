@@ -989,6 +989,7 @@ public class ProtobufDataManager: ObservableObject {
                 data.userScriptDisabledHosts[id] = list
             }
         }
+        UserScriptManager.invalidateDocumentStartExecutionCache()
     }
 
     /// Replaces the whole exceptions map (backup restore / cloud sync / migration).
@@ -1002,6 +1003,7 @@ public class ProtobufDataManager: ObservableObject {
                 data.userScriptDisabledHosts[id] = list
             }
         }
+        UserScriptManager.invalidateDocumentStartExecutionCache()
     }
 
     // MARK: - Singleton

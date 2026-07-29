@@ -15,6 +15,7 @@ const bundlePath = path.join(repoRoot, "wBlock Scripts (iOS)", "Resources", "bac
 const bundleSource = readFileSync(bundlePath, "utf8");
 
 const CACHE_KEY = "wblockConfigCacheV1";
+const DOCUMENT_START_SCRIPT_CACHE_KEY = "wblockDocumentStartScriptCacheV1";
 const WARMUP_URL = "https://warmup.wblock.invalid/";
 
 let failures = 0;
@@ -281,6 +282,110 @@ const runScriptInjectionScenario = async executeScript => {
   check(
     "unexpected executeScript result error is logged",
     !outcome.rejected && outcome.errors.some(args => args.some(value => String(value).includes("Failed to execute script in target")))
+  );
+}
+
+// Scenario F: timing-critical page-world userscripts bypass a blocked native
+// configuration queue and are persisted for the next cold document start.
+{
+  const pageUrl = "https://discord.com/app";
+  const vencord = {
+    id: "vencord",
+    name: "Vencord",
+    runAt: "document-start",
+    injectInto: "page",
+    grant: ["GM_xmlhttpRequest", "unsafeWindow"],
+    matches: ["*://*.discord.com/*"],
+    excludeMatches: [],
+    includes: [],
+    excludes: [],
+    resourceNames: [],
+    content: "window.__vencordTest = true;",
+    storageSnapshot: { shouldNotPersist: true }
+  };
+  const storageScript = {
+    id: "storage-script",
+    name: "Storage script",
+    runAt: "document-start",
+    injectInto: "page",
+    grant: ["GM_getValue"],
+    resourceNames: [],
+    content: "window.__storageTest = GM_getValue('value');"
+  };
+  const state = loadBackground({
+    storage: {},
+    nativeHandler: message => {
+      if (message && message.action === "getUserScripts") {
+        return {
+          userScripts: [vencord, storageScript],
+          documentStartCacheAllowed: true
+        };
+      }
+      if (message && message.payload && message.payload.url === WARMUP_URL) {
+        return new Promise(() => {});
+      }
+      return { payload: makeConfig([], 1) };
+    }
+  });
+
+  let response;
+  let resolved = false;
+  const request = Promise.resolve(state.onMessage({
+    action: "getUserScripts",
+    url: pageUrl,
+    includeContent: true,
+    maxInlineContentBytes: 128 * 1024
+  }, topFrameSender(pageUrl))).then(value => {
+    response = value;
+    resolved = true;
+  });
+  await Promise.race([request, sleep(500)]);
+  check("userscript lookup bypasses a blocked native configuration queue", resolved);
+  check("priority userscript lookup returns the native scripts", response && response.userScripts.length === 2);
+  await sleep(20);
+
+  const persisted = state.storage[DOCUMENT_START_SCRIPT_CACHE_KEY];
+  const persistedScripts = persisted && persisted.entries && persisted.entries[0] && persisted.entries[0][1];
+  check("safe page-world document-start script is persisted", persistedScripts && persistedScripts.some(script => script.id === "vencord"));
+  check("script with synchronous GM storage is not persisted", persistedScripts && !persistedScripts.some(script => script.id === "storage-script"));
+  check(
+    "storage snapshots are excluded from the early cache",
+    persistedScripts && !Object.hasOwn(persistedScripts.find(script => script.id === "vencord"), "storageSnapshot")
+  );
+
+  persisted.catalog = [persistedScripts.find(script => script.id === "vencord")];
+  persisted.disabledHosts = [];
+
+  const coldState = loadBackground({
+    storage: { [DOCUMENT_START_SCRIPT_CACHE_KEY]: persisted },
+    nativeHandler: () => new Promise(() => {})
+  });
+  const cachedResponse = await coldState.onMessage({
+    action: "getCachedDocumentStartUserScripts",
+    url: pageUrl
+  }, topFrameSender(pageUrl));
+  check(
+    "persisted document-start script is available after a cold background restart",
+    cachedResponse && cachedResponse.userScripts.some(script => script.id === "vencord")
+  );
+  const catalogResponse = await coldState.onMessage({
+    action: "getCachedDocumentStartUserScripts",
+    url: "https://canary.discord.com/channels/@me"
+  }, topFrameSender("https://canary.discord.com/channels/@me"));
+  check(
+    "catalog match metadata serves a script on another matching URL",
+    catalogResponse && catalogResponse.userScripts.some(script => script.id === "vencord")
+  );
+  const unrelatedResponse = await coldState.onMessage({
+    action: "getCachedDocumentStartUserScripts",
+    url: "https://example.com/"
+  }, topFrameSender("https://example.com/"));
+  check("catalog scripts do not run on unrelated URLs", unrelatedResponse.userScripts.length === 0);
+
+  await coldState.onMessage({ action: "wblock:clearCache" }, topFrameSender(pageUrl));
+  check(
+    "clearCache removes the persisted document-start userscript cache",
+    !Object.hasOwn(coldState.storage, DOCUMENT_START_SCRIPT_CACHE_KEY)
   );
 }
 

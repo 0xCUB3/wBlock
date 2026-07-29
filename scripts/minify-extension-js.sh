@@ -68,6 +68,7 @@ minify_one() {
     cat "${tmp}"
   } > "${out}"
   rm -f "${tmp}"
+  perl -pi -e 's/[ \t]+$//' "${out}"
 
   # --- Artifact checks ---
   if node --check "${out}" 2>/dev/null; then

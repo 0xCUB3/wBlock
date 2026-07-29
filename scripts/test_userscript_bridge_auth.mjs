@@ -78,7 +78,12 @@ function buildContentScriptSandbox() {
   head.appendChild = (c) => {
     head.children.push(c);
     c.parentNode = head;
-    if (c.textContent) appendedScripts.push(c.textContent);
+    const inlineProbe = c.textContent.match(/^document\.documentElement\.setAttribute\('([^']+)', '1'\)$/);
+    if (inlineProbe) {
+      docEl.setAttribute(inlineProbe[1], "1");
+    } else if (c.textContent) {
+      appendedScripts.push(c.textContent);
+    }
     return c;
   };
   const docEl = makeElement("html");
