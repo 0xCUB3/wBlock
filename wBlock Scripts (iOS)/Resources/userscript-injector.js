@@ -958,7 +958,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
             const url = `https://returnyoutubedislikeapi.com/votes?videoId=${encodeURIComponent(videoId)}`;
             this.rydPrefetches.set(videoId, Date.now());
-            fetch(url, { cache: 'default', credentials: 'omit' })
+            fetch(url)
                 .then((response) => {
                     if (!response.ok) throw new Error(`RYD prefetch failed: ${response.status}`);
                     return response.text();
