@@ -3,6 +3,8 @@
  * Injects and manages userscripts from the native app
  */
 
+(() => {
+
 // Debug logging flag - set to false to disable verbose console output
 var WBLOCK_DEBUG_LOGGING = false;
 
@@ -2533,3 +2535,4 @@ if (window.wBlockUserscriptInjectorHasRun) {
 // Ensure that if this script is injected multiple times (e.g. in iframes),
 // each frame gets its own engine, but a single frame doesn't run it multiple times.
 // The window.wBlockUserscriptInjectorHasRun flag handles the single-frame case.
+})();

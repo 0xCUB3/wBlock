@@ -153,6 +153,13 @@ function buildContentScriptSandbox(initialSessionValue = null) {
 const contentSandbox = buildContentScriptSandbox();
 vm.createContext(contentSandbox);
 vm.runInContext(source, contentSandbox, { filename: "userscript-injector.js" });
+let repeatedEvaluationSucceeded = true;
+try {
+  vm.runInContext(source, contentSandbox, { filename: "userscript-injector-repeat.js" });
+} catch {
+  repeatedEvaluationSucceeded = false;
+}
+check("injector can be evaluated repeatedly in one isolated world", repeatedEvaluationSucceeded);
 
 // Dispatch a message event from *inside* the content-script realm so that
 // event.source is the same `window` object the listeners compare against
