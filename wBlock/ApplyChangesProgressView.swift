@@ -42,23 +42,47 @@ struct ApplyChangesProgressView: View {
     }
 
     var body: some View {
-        SheetContainer {
-            VStack(spacing: 0) {
-                SheetHeader(
-                    title: headerTitle,
-                    isLoading: mode == .progress || isStartingSelectedUpdates
-                ) {
-                    isPresented = false
+        NavigationStack {
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .navigationTitle(headerTitle)
+                #if os(iOS)
+                    .navigationBarTitleDisplayMode(.inline)
+                #endif
+                .toolbar {
+                    if mode == .review {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button(String(localized: "Cancel")) {
+                                isPresented = false
+                            }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button {
+                                Task { await startSelectedUpdates() }
+                            } label: {
+                                if isStartingSelectedUpdates {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                } else {
+                                    Label(
+                                        String(localized: "Update & Apply"),
+                                        systemImage: "arrow.triangle.2.circlepath"
+                                    )
+                                }
+                            }
+                            .disabled(selectedUpdateCount == 0 || isStartingSelectedUpdates)
+                        }
+                    } else {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button(String(localized: "Done")) {
+                                isPresented = false
+                            }
+                            .disabled(mode == .progress || isStartingSelectedUpdates)
+                        }
+                    }
                 }
-
-                content
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-
-                if mode == .review {
-                    reviewToolbar
-                }
-            }
         }
+        .interactiveDismissDisabled(mode == .progress || isStartingSelectedUpdates)
         .onAppear {
             syncSelectionFromAvailableUpdates()
         }
@@ -95,7 +119,7 @@ struct ApplyChangesProgressView: View {
                     progressOverviewCard
                     phaseCard
                 }
-                .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                .padding(.horizontal, 20)
                 .padding(.top, 12)
                 .padding(.bottom, 24)
             }
@@ -106,7 +130,7 @@ struct ApplyChangesProgressView: View {
                         summaryCard(summary)
                     }
                 }
-                .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                .padding(.horizontal, 20)
                 .padding(.top, 12)
                 .padding(.bottom, 24)
             }
@@ -116,7 +140,7 @@ struct ApplyChangesProgressView: View {
                     failureCard
                     phaseCard
                 }
-                .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                .padding(.horizontal, 20)
                 .padding(.top, 12)
                 .padding(.bottom, 24)
             }
@@ -139,7 +163,7 @@ struct ApplyChangesProgressView: View {
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+            .padding(.horizontal, 20)
             .padding(.top, 8)
             .padding(.bottom, 12)
 
@@ -233,34 +257,6 @@ struct ApplyChangesProgressView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-
-    private var reviewToolbar: some View {
-        SheetBottomToolbar {
-            Button(String(localized: "Cancel")) {
-                isPresented = false
-            }
-            .keyboardShortcut(.cancelAction)
-
-            Spacer()
-
-            Button {
-                Task { await startSelectedUpdates() }
-            } label: {
-                if isStartingSelectedUpdates {
-                    ProgressView()
-                        .controlSize(.small)
-                } else {
-                    Label(
-                        String(localized: "Update & Apply"),
-                        systemImage: "arrow.triangle.2.circlepath"
-                    )
-                }
-            }
-            .primaryActionButtonStyle()
-            .disabled(selectedUpdateCount == 0 || isStartingSelectedUpdates)
-            .keyboardShortcut(.defaultAction)
-        }
     }
 
     // MARK: - Progress
