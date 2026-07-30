@@ -2060,7 +2060,7 @@ struct RuleCapacityPopoverView: View {
         #if os(macOS)
         .frame(width: 340)
         #else
-        .frame(maxWidth: 380)
+        .frame(maxWidth: 380, maxHeight: .infinity, alignment: .top)
         #endif
     }
 }
