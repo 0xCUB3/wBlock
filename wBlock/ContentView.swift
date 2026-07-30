@@ -27,6 +27,7 @@ struct ContentView: View {
     @State private var showFilterSearch = false
     @State private var editingCustomFilter: FilterList?
     @State private var isForeignFiltersExpanded = ProtobufDataManager.shared.isForeignFiltersExpanded
+    @State private var showingCapacityPopover = false
     @State private var selectedTab: Int = 0
     @Environment(\.scenePhase) var scenePhase
 
@@ -395,101 +396,57 @@ struct ContentView: View {
     }
 
     private var statsCardsView: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 12) {
-                Button {
-                    filterManager.showRuleLimitWarning()
-                } label: {
-                    StatCard(
-                        title: {
-                            #if os(iOS)
-                            return "Rules"
-                            #else
-                            return (enabledListsCount == 0 || !hasAppliedFilters) ? "Source Rules" : "Safari Rules"
-                            #endif
-                        }(),
-                        value: enabledListsCount == 0
-                            ? "0"
-                            : (hasAppliedFilters
-                                ? appliedSafariRulesCount.formatted()
-                                : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0")),
-                        icon: "shield.lefthalf.filled",
-                        pillColor: .clear,
-                        valueColor: enabledListsCount == 0 ? .secondary : (hasAppliedFilters ? .primary : .secondary)
-                    )
-                    .overlay(alignment: .topTrailing) {
-                        if shouldShowRuleLimitIndicator {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.caption2)
-                                .foregroundStyle(.orange)
-                                .padding(.trailing, 6)
-                                .padding(.top, 4)
-                        }
-                    }
-                    #if os(iOS)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    #endif
-                }
-                .buttonStyle(.plain)
-
+        HStack(spacing: 12) {
+            Button {
+                showingCapacityPopover = true
+            } label: {
                 StatCard(
-                    title: "Enabled Lists",
-                    value: "\(enabledListsCount)",
-                    icon: "list.bullet.rectangle",
+                    title: {
+                        #if os(iOS)
+                        return "Rules"
+                        #else
+                        return (enabledListsCount == 0 || !hasAppliedFilters) ? "Source Rules" : "Safari Rules"
+                        #endif
+                    }(),
+                    value: enabledListsCount == 0
+                        ? "0"
+                        : (hasAppliedFilters
+                            ? appliedSafariRulesCount.formatted()
+                            : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0")),
+                    icon: "shield.lefthalf.filled",
                     pillColor: .clear,
-                    valueColor: .primary
+                    valueColor: enabledListsCount == 0 ? .secondary : (hasAppliedFilters ? .primary : .secondary)
                 )
+                .overlay(alignment: .topTrailing) {
+                    if shouldShowRuleLimitIndicator {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                            .padding(.trailing, 6)
+                            .padding(.top, 4)
+                    }
+                }
                 #if os(iOS)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 #endif
             }
-            .padding(.horizontal)
-
-            if hasAppliedFilters {
-                slotCapacityBarView
-            }
-        }
-    }
-
-    private var slotCapacityBarView: some View {
-        let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: filterManager.currentPlatform)
-        let totalUsed = appliedSafariRulesCount
-        let maxCapacity = totalSafariRuleCapacity
-
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("Capacity across 5 extensions")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("\(totalUsed.formatted()) / \(maxCapacity.formatted()) rules")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+            .buttonStyle(.plain)
+            .popover(isPresented: $showingCapacityPopover, arrowEdge: .top) {
+                RuleCapacityPopoverView(filterManager: filterManager)
             }
 
-            GeometryReader { geo in
-                HStack(spacing: 2) {
-                    ForEach(targets, id: \.slot) { target in
-                        let count = filterManager.ruleCountsByExtension[target.bundleIdentifier] ?? 0
-                        let slotFraction = Double(count) / 150_000.0
-                        let width = (geo.size.width - CGFloat(targets.count - 1) * 2) * (1.0 / CGFloat(targets.count))
-
-                        ZStack(alignment: .leading) {
-                            Rectangle()
-                                .fill(Color.secondary.opacity(0.15))
-                            Rectangle()
-                                .fill(slotFraction > 0.8 ? Color.orange : Color.accentColor)
-                                .frame(width: max(0, width * min(slotFraction, 1.0)))
-                        }
-                        .cornerRadius(3)
-                    }
-                }
-            }
-            .frame(height: 6)
+            StatCard(
+                title: "Enabled Lists",
+                value: "\(enabledListsCount)",
+                icon: "list.bullet.rectangle",
+                pillColor: .clear,
+                valueColor: .primary
+            )
+            #if os(iOS)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            #endif
         }
         .padding(.horizontal)
-        .padding(.top, 2)
     }
 
     private func foreignFilterGroupHeader(_ title: String) -> some View {
@@ -1983,5 +1940,134 @@ struct EditUserListView: View {
         } else {
             dismiss()
         }
+    }
+}
+
+struct RuleCapacityPopoverView: View {
+    @ObservedObject var filterManager: AppFilterManager
+    @Environment(\.dismiss) private var dismiss
+
+    private var targets: [ContentBlockerTargetInfo] {
+        ContentBlockerTargetManager.shared.allTargets(forPlatform: filterManager.currentPlatform)
+    }
+
+    private var totalUsed: Int {
+        filterManager.lastRuleCount
+    }
+
+    private var totalCapacity: Int {
+        targets.count * 150_000
+    }
+
+    private var overallFraction: Double {
+        totalCapacity > 0 ? min(Double(totalUsed) / Double(totalCapacity), 1.0) : 0.0
+    }
+
+    private func categorySubtitle(for slot: Int) -> String {
+        switch slot {
+        case 1: return String(localized: "Ads & Trackers")
+        case 2: return String(localized: "Privacy & Anti-Tracking")
+        case 3: return String(localized: "Security & Annoyances")
+        case 4: return String(localized: "Regional & Language")
+        case 5: return String(localized: "Custom & User Rules")
+        default: return ""
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Label("Safari Rule Capacity", systemImage: "shield.lefthalf.filled")
+                    .font(.headline)
+                    .foregroundStyle(.blue)
+                Spacer()
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                        .font(.body)
+                }
+                .buttonStyle(.plain)
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("Total Capacity")
+                        .font(.subheadline.weight(.medium))
+                    Spacer()
+                    Text("\(totalUsed.formatted()) / \(totalCapacity.formatted()) rules (\(Int(overallFraction * 100))%)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color.secondary.opacity(0.15))
+                        Capsule()
+                            .fill(overallFraction > 0.8 ? Color.orange : Color.blue)
+                            .frame(width: max(0, geo.size.width * CGFloat(overallFraction)))
+                    }
+                }
+                .frame(height: 8)
+            }
+            .padding(12)
+            .liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Extension Slots (150,000 max each)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+
+                VStack(spacing: 8) {
+                    ForEach(targets, id: \.slot) { target in
+                        let count = filterManager.ruleCountsByExtension[target.bundleIdentifier] ?? 0
+                        let slotFraction = min(Double(count) / 150_000.0, 1.0)
+                        let subtitle = categorySubtitle(for: target.slot)
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(target.displayName)
+                                        .font(.subheadline.weight(.medium))
+                                    if !subtitle.isEmpty {
+                                        Text(subtitle)
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                Spacer()
+                                Text("\(count.formatted()) / 150,000")
+                                    .font(.caption.monospacedDigit())
+                                    .foregroundStyle(slotFraction > 0.9 ? Color.red : (slotFraction > 0.8 ? Color.orange : Color.secondary))
+                            }
+
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    Capsule()
+                                        .fill(Color.secondary.opacity(0.12))
+                                    Capsule()
+                                        .fill(slotFraction > 0.9 ? Color.red : (slotFraction > 0.8 ? Color.orange : Color.accentColor))
+                                        .frame(width: max(0, geo.size.width * CGFloat(slotFraction)))
+                                }
+                            }
+                            .frame(height: 5)
+                        }
+                    }
+                }
+            }
+
+            Text("Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+        .padding(16)
+        #if os(macOS)
+        .frame(width: 340)
+        #else
+        .frame(maxWidth: 380)
+        #endif
     }
 }
