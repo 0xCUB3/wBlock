@@ -227,42 +227,34 @@ struct ContentView: View {
                 prompt: "Search filters"
             )
             .modifier(SearchMinimizeBehavior())
-        #endif
-        #if os(macOS)
+        #else
+            .searchable(text: $filterSearchText, prompt: "Search filters")
             .frame(
                 minWidth: 480, idealWidth: 540, maxWidth: .infinity,
                 minHeight: 550, idealHeight: 720, maxHeight: .infinity
             )
             .toolbar {
                 ToolbarItemGroup(placement: .automatic) {
-                    ToolbarSearchField(
-                        text: $filterSearchText,
-                        isExpanded: $showFilterSearch,
-                        prompt: "Search filters"
-                    )
+                    applyChangesToolbarButton
+                        .help(
+                            hasPendingChanges
+                                ? String(localized: "Apply your pending changes")
+                                : String(localized: "Apply changes")
+                        )
 
-                    if !showFilterSearch {
-                        applyChangesToolbarButton
-                            .help(
-                                hasPendingChanges
-                                    ? String(localized: "Apply your pending changes")
-                                    : String(localized: "Apply changes")
-                            )
-
-                        Button {
-                            showingAddFilterSheet = true
-                        } label: {
-                            Label("Add Filter", systemImage: "plus")
-                        }
-                        Button {
-                            showOnlyEnabledLists.toggle()
-                        } label: {
-                            Label(
-                                "Show Enabled Only",
-                                systemImage: showOnlyEnabledLists
-                                    ? "line.3.horizontal.decrease.circle.fill"
-                                    : "line.3.horizontal.decrease.circle")
-                        }
+                    Button {
+                        showingAddFilterSheet = true
+                    } label: {
+                        Label("Add Filter", systemImage: "plus")
+                    }
+                    Button {
+                        showOnlyEnabledLists.toggle()
+                    } label: {
+                        Label(
+                            "Show Enabled Only",
+                            systemImage: showOnlyEnabledLists
+                                ? "line.3.horizontal.decrease.circle.fill"
+                                : "line.3.horizontal.decrease.circle")
                     }
                 }
             }
@@ -270,7 +262,6 @@ struct ContentView: View {
     }
 
     private var nativeFiltersListView: some View {
-        #if os(iOS)
         List {
             Section {
                 statsCardsView
@@ -305,27 +296,6 @@ struct ContentView: View {
             guard !filterManager.isLoading else { return }
             await filterManager.checkForUpdates()
         }
-        #else
-        ScrollView {
-            VStack(spacing: 20) {
-                statsCardsView
-
-                VStack(spacing: 16) {
-                    ForEach(categorizedFilters, id: \.category) { item in
-                        if item.category == .foreign {
-                            macOSForeignFiltersView(filters: item.filters)
-                        } else {
-                            macOSFilterSectionView(category: item.category, filters: item.filters)
-                        }
-                    }
-                }
-                .padding(.horizontal)
-
-                Spacer(minLength: 20)
-            }
-            .padding(.vertical)
-        }
-        #endif
     }
 
     private var userscriptsView: some View {
@@ -464,66 +434,36 @@ struct ContentView: View {
             onToggle: { _ in filterManager.toggleFilterListSelection(id: filter.id) },
             onShowRuleLimitWarning: { filterManager.showRuleLimitWarning(for: filter) }
         )
-    }
-
-    #if os(macOS)
-    private func macOSFilterSectionView(category: FilterListCategory, filters: [FilterList]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text(category.localizedName)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                Spacer()
-            }
-            .padding(.horizontal, 4)
-
-            VStack(spacing: 0) {
-                ForEach(filters) { filter in
-                    filterRowView(for: filter)
-                    if filter.id != filters.last?.id {
-                        Divider()
-                            .padding(.leading, 16)
-                    }
+        #if os(iOS)
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            if supportsCustomActions(filter) {
+                Button(role: .destructive) {
+                    filterManager.removeFilterList(filter)
+                } label: {
+                    Label("Delete", systemImage: "trash")
                 }
+                Button {
+                    editingCustomFilter = filter
+                } label: {
+                    Label("Edit", systemImage: "pencil")
+                }
+                .tint(.orange)
             }
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         }
-    }
-
-    private func macOSForeignFiltersView(filters: [FilterList]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
-                VStack(spacing: 0) {
-                    ForEach(ForeignFilterOrganizer.groups(for: filters)) { group in
-                        HStack {
-                            Text(group.title)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                                .textCase(.uppercase)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-
-                        ForEach(group.filters) { filter in
-                            filterRowView(for: filter)
-                            if filter.id != group.filters.last?.id {
-                                Divider()
-                                    .padding(.leading, 16)
-                            }
-                        }
-                    }
-                }
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .swipeActions(edge: .leading) {
+            Button {
+                filterManager.toggleFilterListSelection(id: filter.id)
             } label: {
-                Text(FilterListCategory.foreign.localizedName)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
+                Label(
+                    filter.isSelected ? "Disable" : "Enable",
+                    systemImage: filter.isSelected ? "circle.slash" : "checkmark.circle"
+                )
             }
-            .padding(.horizontal, 4)
+            .tint(filter.isSelected ? .gray : .green)
         }
+        #endif
     }
-    #endif
+
 }
 
 struct FilterRowView: View {
@@ -681,9 +621,6 @@ struct FilterRowView: View {
         .contextMenu {
             contextMenuItems
         }
-        #if os(macOS)
-        .padding(16)
-        #endif
     }
 }
 
