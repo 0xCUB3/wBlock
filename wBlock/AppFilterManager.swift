@@ -107,16 +107,36 @@ class AppFilterManager: ObservableObject {
         refreshHasUnappliedChanges()
     }
 
+    private var autoApplyTask: Task<Void, Never>?
+
     func markCurrentStateApplied() {
         appliedSelectedFilterIDs = selectedFilterIDs
         appliedCustomFilterKeys = customFilterKeys
         hasPendingSelectionChanges = false
         hasPendingNonSelectionChanges = false
         hasUnappliedChanges = false
+        autoApplyTask?.cancel()
+        autoApplyTask = nil
     }
 
     private func refreshHasUnappliedChanges() {
         hasUnappliedChanges = hasPendingSelectionChanges || hasPendingNonSelectionChanges
+        if hasUnappliedChanges {
+            scheduleAutoApplyDebounce()
+        } else {
+            autoApplyTask?.cancel()
+            autoApplyTask = nil
+        }
+    }
+
+    private func scheduleAutoApplyDebounce() {
+        autoApplyTask?.cancel()
+        autoApplyTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            guard !Task.isCancelled else { return }
+            guard let self, self.hasUnappliedChanges, !self.isLoading, !self.isApplyInFlight, !self.isBlockingPaused else { return }
+            self.checkAndEnableFilters(forceReload: true)
+        }
     }
 
     // Save filter lists
