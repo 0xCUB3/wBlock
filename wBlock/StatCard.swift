@@ -7,13 +7,18 @@
 
 import SwiftUI
 
-
 struct StatCard: View {
     let title: String
     let value: String
     let icon: String
-    let pillColor: Color
     let valueColor: Color
+
+    init(title: String, value: String, icon: String, valueColor: Color = .primary) {
+        self.title = title
+        self.value = value
+        self.icon = icon
+        self.valueColor = valueColor
+    }
 
     var body: some View {
         HStack(spacing: 10) {

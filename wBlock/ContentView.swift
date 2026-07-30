@@ -414,7 +414,6 @@ struct ContentView: View {
                             ? appliedSafariRulesCount.formatted()
                             : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0")),
                     icon: "shield.lefthalf.filled",
-                    pillColor: .clear,
                     valueColor: enabledListsCount == 0 ? .secondary : (hasAppliedFilters ? .primary : .secondary)
                 )
                 .overlay(alignment: .topTrailing) {
@@ -438,9 +437,7 @@ struct ContentView: View {
             StatCard(
                 title: "Enabled Lists",
                 value: "\(enabledListsCount)",
-                icon: "list.bullet.rectangle",
-                pillColor: .clear,
-                valueColor: .primary
+                icon: "list.bullet.rectangle"
             )
             #if os(iOS)
             .frame(maxWidth: .infinity, alignment: .leading)

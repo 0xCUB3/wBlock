@@ -271,14 +271,12 @@ struct ApplyChangesProgressView: View {
                 title: String(localized: "Extensions"),
                 value: processedText,
                 icon: "puzzlepiece.extension",
-                pillColor: .blue,
                 valueColor: .primary
             )
             StatCard(
                 title: String(localized: "Updates"),
                 value: viewModel.state.updatesFound.formatted(),
                 icon: "arrow.down.circle",
-                pillColor: .green,
                 valueColor: .primary
             )
         }
@@ -310,28 +308,24 @@ struct ApplyChangesProgressView: View {
                     title: String(localized: "Safari Rules"),
                     value: summary.safariRules.formatted(),
                     icon: "shield.lefthalf.filled",
-                    pillColor: .blue,
                     valueColor: .primary
                 )
                 StatCard(
                     title: String(localized: "Source Rules"),
                     value: summary.sourceRules.formatted(),
                     icon: "doc.text",
-                    pillColor: .orange,
                     valueColor: .primary
                 )
                 StatCard(
                     title: String(localized: "Conversion"),
                     value: summary.conversionTime,
                     icon: "clock",
-                    pillColor: .green,
                     valueColor: .primary
                 )
                 StatCard(
                     title: String(localized: "Reload"),
                     value: summary.reloadTime,
                     icon: "arrow.clockwise",
-                    pillColor: .purple,
                     valueColor: .primary
                 )
             }

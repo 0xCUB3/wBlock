@@ -50,10 +50,7 @@ struct OnboardingView: View {
     @State private var selectedLanguages: Set<String>
     @State private var selectedRegionalFilters: Set<UUID> = []
     @State private var recommendedRegionalFilters: [FilterList] = []
-    @State private var optionalRegionalFilters: [FilterList] = []
-    @State private var regionInfoMessage: String?
     @State private var hasManuallyEditedRegionalSelection = false
-    @State private var isCommunityExpanded = false
     @State private var wantsCloudSync: Bool = false
     @State private var hasProbedRemoteConfig: Bool = false
     @State private var remoteConfigUpdatedAtText: String?
@@ -104,8 +101,6 @@ struct OnboardingView: View {
 
         _selectedRegionalFilters = State(initialValue: [])
         _recommendedRegionalFilters = State(initialValue: [])
-        _optionalRegionalFilters = State(initialValue: [])
-        _regionInfoMessage = State(initialValue: nil)
         _wantsCloudSync = State(initialValue: defaults.bool(forKey: Self.cloudSyncEnabledDefaultsKey))
     }
     private let sharedDefaults: UserDefaults
@@ -169,37 +164,6 @@ struct OnboardingView: View {
 
     private var generalDefaultUserScripts: [OnboardingUserScriptItem] {
         defaultUserScripts.filter { !$0.isRegional }
-    }
-
-    private struct RegionalUserscriptGroup: Identifiable {
-        let language: LanguageOption
-        let scripts: [OnboardingUserScriptItem]
-        var id: String { language.code }
-    }
-
-    private var regionalUserscriptGroups: [RegionalUserscriptGroup] {
-        var scriptsByLanguage: [String: [OnboardingUserScriptItem]] = [:]
-        for script in defaultUserScripts where script.isRegional {
-            for code in script.languages where selectedLanguages.contains(code) {
-                scriptsByLanguage[code, default: []].append(script)
-            }
-        }
-        return scriptsByLanguage
-            .map { code, scripts in
-                RegionalUserscriptGroup(language: languageOption(forCode: code), scripts: scripts)
-            }
-            .sorted {
-                $0.language.name.localizedCaseInsensitiveCompare($1.language.name) == .orderedAscending
-            }
-    }
-
-    private var languagesWithoutRegionalUserscripts: [LanguageOption] {
-        let matchedCodes = Set(
-            defaultUserScripts.filter(\.isRegional).flatMap(\.languages)
-        )
-        return languagePickerOptions.filter {
-            selectedLanguages.contains($0.code) && !matchedCodes.contains($0.code)
-        }
     }
 
     private func languageOption(forCode code: String) -> LanguageOption {
@@ -584,7 +548,7 @@ struct OnboardingView: View {
 
     private var languagesWithoutRegionalFilters: [LanguageOption] {
         let matchedCodes = Set(
-            (recommendedRegionalFilters + optionalRegionalFilters)
+            recommendedRegionalFilters
                 .flatMap { filter in filter.languages.map { $0.lowercased() } }
         )
         return languagePickerOptions.filter {
@@ -696,50 +660,6 @@ struct OnboardingView: View {
         }
     }
 
-    private var regionalFiltersStep: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            if let message = regionInfoMessage {
-                Text(message)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 4)
-            }
-
-            if !recommendedRegionalFilters.isEmpty || !languagesWithoutRegionalFilters.isEmpty {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Recommended")
-                        .font(.headline)
-                    ForEach(ForeignFilterOrganizer.groups(for: recommendedRegionalFilters, preferredLanguages: selectedLanguages)) { group in
-                        regionalFilterGroup(group, expandsCommunity: false)
-                    }
-                    ForEach(languagesWithoutRegionalFilters) { lang in
-                        emptyRegionalFilterGroup(for: lang)
-                    }
-                }
-            }
-
-            if !optionalRegionalFilters.isEmpty {
-                DisclosureGroup(isExpanded: $isCommunityExpanded) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(ForeignFilterOrganizer.groups(for: optionalRegionalFilters, preferredLanguages: selectedLanguages)) { group in
-                            regionalFilterGroup(group, expandsCommunity: false)
-                        }
-                    }
-                    .padding(.top, 8)
-                } label: {
-                    Text("Community options")
-                        .font(.headline)
-                }
-                .padding(14)
-                .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
-            }
-        }
-    }
-
     private func emptyRegionalFilterGroup(for lang: LanguageOption) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(lang.name)
@@ -770,12 +690,12 @@ struct OnboardingView: View {
                 .padding(.horizontal, 4)
 
             ForEach(group.filters) { filter in
-                regionalToggle(for: filter, expandsCommunity: expandsCommunity)
+                regionalToggle(for: filter)
             }
         }
     }
 
-    private func regionalToggle(for filter: FilterList, expandsCommunity: Bool = true) -> some View {
+    private func regionalToggle(for filter: FilterList) -> some View {
         let isSelected = selectedRegionalFilters.contains(filter.id)
 
         return Button {
@@ -785,9 +705,6 @@ struct OnboardingView: View {
                 selectedRegionalFilters.insert(filter.id)
             }
             hasManuallyEditedRegionalSelection = true
-            if expandsCommunity {
-                isCommunityExpanded = true
-            }
         } label: {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
@@ -817,108 +734,6 @@ struct OnboardingView: View {
             cornerRadius: 16,
             material: isSelected ? .thickMaterial : .regularMaterial
         )
-    }
-
-    private var userscriptStep: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Baseline userscripts are enabled by default. You can adjust them here.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            if defaultUserScripts.isEmpty {
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .scaleEffect(0.85)
-                    Text("Loading userscripts…")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(14)
-                .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
-            } else {
-                ForEach(generalDefaultUserScripts) { script in
-                    userscriptCard(for: script)
-                }
-
-                if !regionalUserscriptGroups.isEmpty || !languagesWithoutRegionalUserscripts.isEmpty {
-                    Text("Regional")
-                        .font(.headline)
-                        .padding(.top, 4)
-
-                    ForEach(regionalUserscriptGroups) { group in
-                        regionalUserscriptGroup(for: group)
-                    }
-                    ForEach(languagesWithoutRegionalUserscripts) { lang in
-                        emptyRegionalUserscriptGroup(for: lang)
-                    }
-                }
-            }
-
-            if let bypassScript = bypassPaywallsScript,
-                selectedUserscripts.contains(bypassScript.id),
-                let filterName = bypassPaywallsFilterName
-            {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.yellow)
-                        .font(.title3)
-                        .symbolRenderingMode(.multicolor)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(
-                            LocalizedStrings.format(
-                                "The %@ userscript requires the %@",
-                                comment: "Bypass paywalls userscript requirement warning",
-                                bypassScript.name,
-                                filterName
-                            )
-                        )
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    }
-                }
-                .padding(12)
-                .liquidGlassCompat(cornerRadius: 14, material: .regularMaterial)
-            }
-        }
-    }
-
-    private func regionalUserscriptGroup(for group: RegionalUserscriptGroup) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            regionalUserscriptGroupHeader(for: group.language)
-            ForEach(group.scripts) { script in
-                userscriptCard(for: script)
-            }
-        }
-    }
-
-    private func emptyRegionalUserscriptGroup(for lang: LanguageOption) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            regionalUserscriptGroupHeader(for: lang)
-
-            Group {
-                if lang.code == Self.englishLanguageCode {
-                    Text("No regional userscripts needed. The default userscripts already cover English and international sites.")
-                } else {
-                    Text("No regional userscripts available. However, the default userscripts already cover English and international sites.")
-                }
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 4)
-        }
-    }
-
-    private func regionalUserscriptGroupHeader(for lang: LanguageOption) -> some View {
-        HStack(spacing: 4) {
-            if !lang.flag.isEmpty {
-                Text(lang.flag)
-            }
-            Text(lang.name)
-                .textCase(.uppercase)
-        }
-        .font(.caption.weight(.semibold))
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, 4)
     }
 
     private var syncStep: some View {
@@ -1368,11 +1183,9 @@ struct OnboardingView: View {
         guard !filterManager.filterLists.isEmpty else { return }
         guard !languages.isEmpty else {
             recommendedRegionalFilters = []
-            optionalRegionalFilters = []
             if !hasManuallyEditedRegionalSelection {
                 selectedRegionalFilters.removeAll()
             }
-            regionInfoMessage = String(localized: "You can always add regional filters later from Settings.")
             return
         }
 
@@ -1389,11 +1202,9 @@ struct OnboardingView: View {
 
         guard !matchingFilters.isEmpty else {
             recommendedRegionalFilters = []
-            optionalRegionalFilters = []
             if !hasManuallyEditedRegionalSelection {
                 selectedRegionalFilters.removeAll()
             }
-            regionInfoMessage = nil
             return
         }
 
@@ -1406,10 +1217,8 @@ struct OnboardingView: View {
         }
         let buckets = ForeignFilterOrganizer.recommendationBuckets(from: hydratedMatches)
         let primary = buckets.recommended
-        let secondary = buckets.optional
 
         recommendedRegionalFilters = primary
-        optionalRegionalFilters = secondary
 
         let matchingIDs = Set(matchingFilters.map { $0.id })
         if hasManuallyEditedRegionalSelection {
@@ -1418,18 +1227,6 @@ struct OnboardingView: View {
             selectedRegionalFilters = Set(primary.map { $0.id })
         } else {
             selectedRegionalFilters.removeAll()
-        }
-
-        if optionalRegionalFilters.isEmpty {
-            isCommunityExpanded = false
-        } else if recommendedRegionalFilters.isEmpty || optionalRegionalFilters.contains(where: { selectedRegionalFilters.contains($0.id) }) {
-            isCommunityExpanded = true
-        }
-
-        if !primary.isEmpty {
-            regionInfoMessage = nil
-        } else {
-            regionInfoMessage = String(localized: "Only community-maintained lists available. Enable them if you're comfortable.")
         }
     }
 

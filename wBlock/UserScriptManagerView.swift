@@ -417,7 +417,6 @@ struct UserScriptManagerView: View {
                 title: "Scripts",
                 value: "\(totalScriptsCount)",
                 icon: "doc.text",
-                pillColor: .clear,
                 valueColor: .primary
             )
             #if os(iOS)
@@ -429,7 +428,6 @@ struct UserScriptManagerView: View {
                     title: "Styles",
                     value: "\(totalStylesCount)",
                     icon: "paintbrush",
-                    pillColor: .clear,
                     valueColor: .primary
                 )
                 #if os(iOS)
@@ -441,7 +439,6 @@ struct UserScriptManagerView: View {
                 title: "Enabled",
                 value: "\(enabledScriptsCount)",
                 icon: "checkmark.circle",
-                pillColor: .clear,
                 valueColor: .primary
             )
             #if os(iOS)
