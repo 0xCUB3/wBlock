@@ -236,7 +236,7 @@ struct UserScriptManagerView: View {
         .unifiedTabListStyle()
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                if #unavailable(iOS 26.0) {
+                if #unavailable(iOS 18.0) {
                     Button {
                         showSearch = true
                     } label: {

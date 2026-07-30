@@ -18,7 +18,7 @@ enum SafariExtensionSetupSupport {
             withIdentifier: scriptsExtensionIdentifier
         ) { _ in }
         #elseif os(iOS)
-        if #available(iOS 26.2, *) {
+        if #available(iOS 18.2, *) {
             SFSafariSettings.openExtensionsSettings(
                 forIdentifiers: [scriptsExtensionIdentifier]
             ) { _ in }
@@ -47,7 +47,7 @@ enum SafariExtensionSetupSupport {
             }
         }
         #elseif os(iOS)
-        guard #available(iOS 26.2, *) else { return nil }
+        guard #available(iOS 18.2, *) else { return nil }
         return await withCheckedContinuation { continuation in
             SFSafariExtensionManager.getStateOfExtension(
                 withIdentifier: scriptsExtensionIdentifier

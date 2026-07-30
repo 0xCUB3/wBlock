@@ -195,7 +195,7 @@ struct ContentView: View {
                         applyChangesToolbarButton
                     }
                     ToolbarItemGroup(placement: .primaryAction) {
-                        if #unavailable(iOS 26.0) {
+                        if #unavailable(iOS 18.0) {
                             Button {
                                 showFilterSearch = true
                             } label: {
