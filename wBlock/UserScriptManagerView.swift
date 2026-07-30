@@ -194,7 +194,6 @@ struct UserScriptManagerView: View {
     @ViewBuilder
     private var userScriptContent: some View {
         let sections = displayedScriptSections
-        #if os(iOS)
         List {
             Section {
                 statsCardsView
@@ -234,56 +233,7 @@ struct UserScriptManagerView: View {
             }
         }
         .unifiedTabListStyle()
-        .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
-                if #unavailable(iOS 26.0) {
-                    Button {
-                        showSearch = true
-                    } label: {
-                        Image(systemName: "magnifyingglass")
-                    }
-                }
-                Button {
-                    showingAddScriptSheet = true
-                } label: {
-                    Image(systemName: "plus")
-                }
-                Button {
-                    showOnlyEnabled.toggle()
-                    ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
-                } label: {
-                    Image(
-                        systemName: showOnlyEnabled
-                            ? "line.3.horizontal.decrease.circle.fill"
-                            : "line.3.horizontal.decrease.circle")
-                }
-            }
-        }
-        .searchable(
-            text: $searchText,
-            isPresented: $showSearch,
-            prompt: "Search scripts"
-        )
-        .modifier(SearchMinimizeBehavior())
-        #else
-        ScrollView {
-            VStack(spacing: 20) {
-                statsCardsView
-
-                if scripts.isEmpty {
-                    emptyStateView
-                        .padding(.top, 40)
-                } else if sections.isEmpty {
-                    noSearchResultsView
-                        .padding(.top, 40)
-                } else {
-                    scriptsListView(sections: sections)
-                }
-
-                Spacer(minLength: 20)
-            }
-            .padding(.vertical)
-        }
+        #if os(macOS)
         .onDrop(of: [.fileURL], isTargeted: $isDropTarget, perform: handleDrop(providers:))
         .overlay(alignment: .topTrailing) {
             ZStack(alignment: .topTrailing) {
@@ -312,41 +262,69 @@ struct UserScriptManagerView: View {
                 }
             }
         }
+        #endif
         .toolbar {
-            ToolbarItemGroup(placement: .automatic) {
-                ToolbarSearchField(
-                    text: $searchText,
-                    isExpanded: $showSearch,
-                    prompt: "Search scripts"
-                )
-
-                if !showSearch {
-                    applyChangesToolbarButton
-                        .help(
-                            hasPendingChanges
-                                ? String(localized: "Apply your pending changes")
-                                : String(localized: "Apply changes")
-                        )
-
+            #if os(iOS)
+            ToolbarItemGroup(placement: .primaryAction) {
+                if #unavailable(iOS 26.0) {
                     Button {
-                        showingAddScriptSheet = true
+                        showSearch = true
                     } label: {
-                        Label("Add Userscript or Userstyle", systemImage: "plus")
-                    }
-
-                    Button {
-                        showOnlyEnabled.toggle()
-                        ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
-                    } label: {
-                        Label(
-                            "Show Enabled Only",
-                            systemImage: showOnlyEnabled
-                                ? "line.3.horizontal.decrease.circle.fill"
-                                : "line.3.horizontal.decrease.circle")
+                        Image(systemName: "magnifyingglass")
                     }
                 }
+                Button {
+                    showingAddScriptSheet = true
+                } label: {
+                    Image(systemName: "plus")
+                }
+                Button {
+                    showOnlyEnabled.toggle()
+                    ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
+                } label: {
+                    Image(
+                        systemName: showOnlyEnabled
+                            ? "line.3.horizontal.decrease.circle.fill"
+                            : "line.3.horizontal.decrease.circle")
+                }
             }
+            #else
+            ToolbarItemGroup(placement: .automatic) {
+                applyChangesToolbarButton
+                    .help(
+                        hasPendingChanges
+                            ? String(localized: "Apply your pending changes")
+                            : String(localized: "Apply changes")
+                    )
+
+                Button {
+                    showingAddScriptSheet = true
+                } label: {
+                    Label("Add Userscript or Userstyle", systemImage: "plus")
+                }
+
+                Button {
+                    showOnlyEnabled.toggle()
+                    ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
+                } label: {
+                    Label(
+                        "Show Enabled Only",
+                        systemImage: showOnlyEnabled
+                            ? "line.3.horizontal.decrease.circle.fill"
+                            : "line.3.horizontal.decrease.circle")
+                }
+            }
+            #endif
         }
+        #if os(iOS)
+        .searchable(
+            text: $searchText,
+            isPresented: $showSearch,
+            prompt: "Search scripts"
+        )
+        .modifier(SearchMinimizeBehavior())
+        #else
+        .searchable(text: $searchText, prompt: "Search scripts")
         #endif
     }
 
@@ -448,72 +426,7 @@ struct UserScriptManagerView: View {
         .padding(.horizontal)
     }
 
-    #if os(macOS)
-    private func scriptsListView(sections: [UserScriptDisplaySection]) -> some View {
-        LazyVStack(spacing: 16) {
-            ForEach(sections) { scriptSection in
-                if scriptSection.id == .foreign {
-                    macOSForeignScriptsView(scripts: scriptSection.scripts)
-                } else {
-                    macOSUserScriptSectionView(title: scriptSection.title, scripts: scriptSection.scripts)
-                }
-            }
-        }
-        .padding(.horizontal)
-    }
-
-    private func macOSUserScriptSectionView(
-        title: LocalizedStringKey,
-        scripts: [UserScriptListItem]
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text(title)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                Spacer()
-            }
-            .padding(.horizontal, 4)
-
-            VStack(spacing: 0) {
-                ForEach(scripts.indices, id: \.self) { index in
-                    scriptRowView(script: scripts[index])
-
-                    if index < scripts.count - 1 {
-                        Divider()
-                            .padding(.leading, 16)
-                    }
-                }
-            }
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-        }
-    }
-
-    private func macOSForeignScriptsView(scripts: [UserScriptListItem]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            DisclosureGroup(isExpanded: $isForeignUserScriptsExpanded) {
-                VStack(spacing: 0) {
-                    ForEach(scripts.indices, id: \.self) { index in
-                        scriptRowView(script: scripts[index])
-
-                        if index < scripts.count - 1 {
-                            Divider()
-                                .padding(.leading, 16)
-                        }
-                    }
-                }
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-            } label: {
-                Text("International")
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-            }
-            .padding(.horizontal, 4)
-        }
-    }
-    #endif
-
-    private func scriptRowView(script: UserScriptListItem) -> some View {
+        private func scriptRowView(script: UserScriptListItem) -> some View {
         HStack(alignment: .top, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
@@ -672,9 +585,6 @@ struct UserScriptManagerView: View {
                 }
             }
         }
-        #if os(macOS)
-        .padding(16)
-        #endif
     }
 
     private var emptyStateView: some View {
