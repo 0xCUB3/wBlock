@@ -1313,22 +1313,63 @@
         }
     }
 
+    // MediaWiki's modern inline file videos are already bare <video controls>
+    // elements (class mw-file-element / data-mw-tmh on the video itself). Their
+    // wrapper is an inline <span> inside a table-layout <figure> — emptying that
+    // span and forcing width:100% collapses the box to a tiny top-left remnant
+    // (and clips native controls). Old .mw-tmh-player shells still need cleanup.
+    function isNativeFileVideo(video) {
+        try {
+            if (!(video.controls || video.hasAttribute('controls'))) { return false; }
+            if (video.closest && video.closest('.mw-tmh-player')) { return false; }
+            if (video.classList && video.classList.contains('mw-file-element')) { return true; }
+            if (video.hasAttribute('data-mw-tmh')) { return true; }
+        } catch (e) { /* ignore */ }
+        return false;
+    }
+
     function applyCleanSizing(container, video) {
+        // Promote inline wrappers so width:100% resolves against a real block
+        // instead of an anonymous inline box with no intrinsic width.
+        try {
+            var display = getComputedStyle(container).display;
+            if (display === 'inline' || display === 'contents') {
+                container.style.display = 'block';
+                container.style.width = '100%';
+                container.style.maxWidth = '100%';
+                container.style.lineHeight = '0';
+            }
+        } catch (e) { /* ignore */ }
+
+        var attrW = parseFloat(video.getAttribute('width') || '0');
+        var attrH = parseFloat(video.getAttribute('height') || '0');
+        var vw = video.videoWidth || attrW;
+        var vh = video.videoHeight || attrH;
+
+        // Presentational width/height attributes pin the box and fight CSS
+        // sizing; drop them once we've captured the numbers for aspect-ratio.
+        if (attrW > 0) { try { video.removeAttribute('width'); } catch (e) { /* ignore */ } }
+        if (attrH > 0) { try { video.removeAttribute('height'); } catch (e) { /* ignore */ } }
+
         video.style.width = '100%';
         video.style.maxWidth = '100%';
         video.style.display = 'block';
         video.style.background = '#000';
 
-        var vw = video.videoWidth || parseFloat(video.getAttribute('width') || '0');
-        var vh = video.videoHeight || parseFloat(video.getAttribute('height') || '0');
-
         if (vw > 0 && vh > 0) {
-            var ratioStr = vw + ' / ' + vh;
-            try { video.style.aspectRatio = ratioStr; } catch (e) { /* ignore */ }
+            try { video.style.aspectRatio = vw + ' / ' + vh; } catch (e) { /* ignore */ }
         }
 
         try {
             var cs = getComputedStyle(container);
+            var containerW = parseFloat(cs.width) || 0;
+            // 100%-of-nothing collapses the player. Fall back to the intrinsic
+            // box when the container still has no usable width after promotion.
+            if (containerW < 2 && vw > 0) {
+                video.style.width = vw + 'px';
+                video.style.height = 'auto';
+                return;
+            }
             var hasExplicitHeight = cs.height && cs.height !== 'auto' && parseFloat(cs.height) > 0;
             if (hasExplicitHeight) {
                 video.style.height = '100%';
@@ -1339,7 +1380,7 @@
                 }
             }
         } catch (e) {
-            video.style.height = '100%';
+            video.style.height = 'auto';
         }
     }
 
@@ -1473,6 +1514,10 @@
         // cleaner emptied JW Player's wrapper before it attached its blob.
         var src = sourceFromVideoElement(video);
         log('player detected', container.className, 'source:', src ? 'element-owned' : 'opaque');
+        // Native MediaWiki file videos already expose controls; structural
+        // cleanup of their inline wrapper collapses the layout. Leave them
+        // enhanced in place (PiP / prefs / keyboard already applied above).
+        if (isNativeFileVideo(video)) { return; }
         if (src) { cleanPlayer(container, video, src); }
     }
 
