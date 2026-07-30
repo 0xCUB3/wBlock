@@ -853,3 +853,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Wählen Sie die Sprachen aus, in denen Sie surfen. wBlock empfiehlt automatisch passende regionale Filter und Funktionen.";
 "Recommended Regional Filters" = "Empfohlene regionale Filter";
 "Baseline Userscripts" = "Basis-Benutzerskripte";
+"Enable" = "Aktivieren";
+"Disable" = "Deaktivieren";
+"Delete" = "Löschen";

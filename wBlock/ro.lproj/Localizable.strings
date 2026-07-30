@@ -853,3 +853,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Selectați limbile în care navigați. wBlock va recomanda automat filtrele regionale și funcțiile potrivite.";
 "Recommended Regional Filters" = "Filtre regionale recomandate";
 "Baseline Userscripts" = "Userscript-uri de bază";
+"Enable" = "Activează";
+"Disable" = "Dezactivează";
+"Delete" = "Șterge";

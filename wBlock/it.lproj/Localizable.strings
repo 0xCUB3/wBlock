@@ -853,3 +853,6 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Seleziona le lingue in cui navighi. wBlock consiglierà automaticamente i filtri regionali e le funzionalità corrispondenti.";
 "Recommended Regional Filters" = "Filtri regionali consigliati";
 "Baseline Userscripts" = "Userscript di base";
+"Enable" = "Abilita";
+"Disable" = "Disabilita";
+"Delete" = "Elimina";

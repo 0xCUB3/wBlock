@@ -855,3 +855,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "閲覧する言語を選択してください。wBlockが一致する地域フィルタや機能を自動的に推し進めます。";
 "Recommended Regional Filters" = "推奨地域フィルタ";
 "Baseline Userscripts" = "基本ユーザースクリプト";
+"Enable" = "有効にする";
+"Disable" = "無効にする";
+"Delete" = "削除";

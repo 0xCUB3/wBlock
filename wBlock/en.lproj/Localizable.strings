@@ -862,3 +862,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features.";
 "Recommended Regional Filters" = "Recommended Regional Filters";
 "Baseline Userscripts" = "Baseline Userscripts";
+"Enable" = "Enable";
+"Disable" = "Disable";
+"Delete" = "Delete";

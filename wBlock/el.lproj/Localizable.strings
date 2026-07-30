@@ -853,3 +853,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Επιλέξτε τις γλώσσες στις οποίες περιηγείστε. Το wBlock θα προτείνει αυτόματα τα αντίστοιχα περιφερειακά φίλτρα και λειτουργίες.";
 "Recommended Regional Filters" = "Προτεινόμενα περιφερειακά φίλτρα";
 "Baseline Userscripts" = "Βασικά σενάρια χρήστη";
+"Enable" = "Ενεργοποίηση";
+"Disable" = "Απενεργοποίηση";
+"Delete" = "Διαγραφή";
