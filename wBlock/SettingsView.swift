@@ -238,7 +238,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var backupButtons: some View {
         #if os(macOS)
-        LabeledContent {
+        CompatibleLabeledContent {
             HStack(spacing: 8) {
                 Button {
                     exportBackup()
@@ -432,7 +432,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var aboutSection: some View {
         Section("About") {
-            LabeledContent("wBlock Version") {
+            CompatibleLabeledContent("wBlock Version") {
                 Text(
                     Bundle.main.infoDictionary?["CFBundleShortVersionString"]
                         as? String ?? "Unknown"
@@ -461,7 +461,7 @@ struct SettingsView: View {
         } footer: {
             Text("Controls the time zone used when displaying and exporting log timestamps.")
         }
-        .onChange(of: logTimeZoneIdentifier) { _ in
+        .onChangeCompat(of: logTimeZoneIdentifier) { _ in
             LogDateFormatters.configureIfNeeded()
         }
     }
@@ -511,7 +511,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var settingsContent: some View {
         #if os(iOS)
-        NavigationStack {
+        CompatibleNavigationStack {
             List {
                 pauseBlockingSection
 
@@ -534,7 +534,7 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         #else
-        NavigationStack {
+        CompatibleNavigationStack {
             Form {
                 pauseBlockingSection
 
@@ -553,7 +553,7 @@ struct SettingsView: View {
                 aboutSection
                 dangerZoneSection
             }
-            .formStyle(.grouped)
+            .groupedFormStyleCompat()
         }
         #endif
     }

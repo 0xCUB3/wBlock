@@ -317,7 +317,7 @@ struct UserScriptManagerView: View {
             #endif
         }
         #if os(iOS)
-        .searchable(
+        .searchableCompat(
             text: $searchText,
             isPresented: $showSearch,
             prompt: "Search scripts"
@@ -1178,7 +1178,7 @@ private struct UserScriptSourceSheet: View {
 
     var body: some View {
         #if os(iOS)
-        NavigationStack {
+        CompatibleNavigationStack {
             sourceSheetBody
                 .background(Color(.systemGray6))
                 .navigationTitle("Script Content")
@@ -1329,7 +1329,7 @@ struct AddUserScriptView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        CompatibleNavigationStack {
             VStack(spacing: 0) {
                 Picker("Add Mode", selection: $addMode) {
                     ForEach(AddMode.allCases) { mode in
@@ -1367,18 +1367,17 @@ struct AddUserScriptView: View {
         }
         .interactiveDismissDisabled(isAdding)
         #if os(iOS)
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
+        .largeSheetPresentationCompat()
         #else
         .frame(minWidth: 560, minHeight: 500)
         .onAppear {
             urlFieldFocused = addMode == .url
         }
-        .onChange(of: addMode) { _, newValue in
+        .onChangeCompat(of: addMode) { _, newValue in
             urlFieldFocused = newValue == .url
         }
         #endif
-        .onChange(of: urlInput) { _, newValue in
+        .onChangeCompat(of: urlInput) { _, newValue in
             validateInput(newValue)
         }
         .fileImporter(isPresented: $showingFileImporter, allowedContentTypes: allowedImportTypes) { result in

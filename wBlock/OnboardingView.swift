@@ -242,23 +242,23 @@ struct OnboardingView: View {
             await refreshScriptsExtensionState(retryingWhenDisabled: true)
             await refreshContentBlockerStates()
         }
-        .onChange(of: scenePhase) { _, newValue in
+        .onChangeCompat(of: scenePhase) { _, newValue in
             guard newValue == .active else { return }
             Task {
                 await refreshScriptsExtensionState(retryingWhenDisabled: true)
                 await refreshContentBlockerStates()
             }
         }
-        .onChange(of: selectedLanguages) { _, newValue in
+        .onChangeCompat(of: selectedLanguages) { _, newValue in
             sharedDefaults.set(Array(newValue), forKey: Self.selectedLanguagesDefaultsKey)
             hasManuallyEditedRegionalSelection = false
             updateRegionalRecommendations(for: newValue)
             syncBaselineUserscriptSelection()
         }
-        .onChange(of: filterManager.filterLists) { _, _ in
+        .onChangeCompat(of: filterManager.filterLists) { _, _ in
             updateRegionalRecommendations(for: selectedLanguages)
         }
-        .onChange(of: userScriptManager.userScripts) { _, _ in
+        .onChangeCompat(of: userScriptManager.userScripts) { _, _ in
             seedSelectedUserscriptsIfNeeded()
             syncBaselineUserscriptSelection()
         }

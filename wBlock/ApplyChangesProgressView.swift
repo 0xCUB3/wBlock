@@ -42,7 +42,7 @@ struct ApplyChangesProgressView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        CompatibleNavigationStack {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .navigationTitle(headerTitle)
@@ -86,12 +86,12 @@ struct ApplyChangesProgressView: View {
         .onAppear {
             syncSelectionFromAvailableUpdates()
         }
-        .onChange(of: filterManager.availableUpdates.map(\.id)) { _, _ in
+        .onChangeCompat(of: filterManager.availableUpdates.map(\.id)) { _, _ in
             if mode == .review {
                 syncSelectionFromAvailableUpdates()
             }
         }
-        .onChange(of: filterManager.availableScriptUpdates.map(\.id)) { _, _ in
+        .onChangeCompat(of: filterManager.availableScriptUpdates.map(\.id)) { _, _ in
             if mode == .review {
                 syncSelectionFromAvailableUpdates()
             }
