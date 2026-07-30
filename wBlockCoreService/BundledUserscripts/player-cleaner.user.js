@@ -314,8 +314,7 @@
     function loadPlaybackPreferences() {
         // Null media values mean "preserve the site's current state" until the
         // user changes that control in a cleaned player for the first time.
-        var defaults = { playbackRate: null, volume: null, muted: null,
-            subtitleLanguage: '', backgroundPlayback: true };
+        var defaults = { playbackRate: null, volume: null, subtitleLanguage: '', backgroundPlayback: true };
         try {
             var saved = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || '{}');
             for (var key in saved) if (Object.prototype.hasOwnProperty.call(defaults, key)) defaults[key] = saved[key];
@@ -364,7 +363,6 @@
         if (typeof preferences.volume === 'number') try {
             video.volume = Math.max(0, Math.min(1, preferences.volume));
         } catch (e) { /* ignore */ }
-        if (typeof preferences.muted === 'boolean') try { video.muted = preferences.muted; } catch (e) { /* ignore */ }
         setTimeout(function () { applying = false; }, 0);
 
         function applySubtitlePreference() {
@@ -410,7 +408,6 @@
         function onVolumeChange() {
             if (applying) return;
             savePlaybackPreference('volume', video.volume);
-            savePlaybackPreference('muted', video.muted);
         }
         function onTextTrackChange() {
             for (var i = 0; i < video.textTracks.length; i++) {
@@ -611,11 +608,6 @@
             if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
             if (isEditingElement(document.activeElement)) return;
 
-            if (video.paused && document.activeElement !== video && !container.contains(document.activeElement)) {
-                var playing = document.querySelector('video:not([paused])');
-                if (playing && playing !== video) return;
-            }
-
             var key = e.key;
             if (key === '[' || key === '{') {
                 e.preventDefault();
@@ -660,7 +652,6 @@
             } else if (key === 'm' || key === 'M') {
                 e.preventDefault();
                 video.muted = !video.muted;
-                savePlaybackPreference('muted', video.muted);
                 showToast(video, video.muted ? 'Muted' : 'Unmuted');
             } else if (key === 'k' || key === 'K') {
                 e.preventDefault();
@@ -677,9 +668,9 @@
             }
         }
 
-        window.addEventListener('keydown', onKeyDown, true);
+        container.addEventListener('keydown', onKeyDown, true);
         registerVideoCleanup(video, function () {
-            window.removeEventListener('keydown', onKeyDown, true);
+            container.removeEventListener('keydown', onKeyDown, true);
         });
     }
 
