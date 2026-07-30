@@ -62,12 +62,12 @@ struct ApplyChangesProgressView: View {
         .onAppear {
             syncSelectionFromAvailableUpdates()
         }
-        .onChangeCompat(of: filterManager.availableUpdates.map(\.id)) { _, _ in
+        .onChange(of: filterManager.availableUpdates.map(\.id)) { _, _ in
             if mode == .review {
                 syncSelectionFromAvailableUpdates()
             }
         }
-        .onChangeCompat(of: filterManager.availableScriptUpdates.map(\.id)) { _, _ in
+        .onChange(of: filterManager.availableScriptUpdates.map(\.id)) { _, _ in
             if mode == .review {
                 syncSelectionFromAvailableUpdates()
             }

@@ -68,7 +68,7 @@ struct SiteSettingsView: View {
         #endif
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
-        .searchableCompat(text: $searchText, isPresented: $showSearch, prompt: "Search")
+        .searchable(text: $searchText, isPresented: $showSearch, prompt: "Search")
         #endif
         .alert(
             "Reset Site Settings",

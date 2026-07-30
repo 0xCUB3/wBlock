@@ -62,7 +62,7 @@ struct LogsView: View {
     }
 
     var body: some View {
-        CompatibleNavigationStack {
+        NavigationStack {
             VStack(spacing: 0) {
                 // Filter toolbar
                 filterToolbar
@@ -136,16 +136,16 @@ struct LogsView: View {
             await loadLogs()
             updateFilteredEntries()
         }
-        .onChangeCompat(of: entries) { _ in
+        .onChange(of: entries) { _, _ in
             updateFilteredEntries()
         }
-        .onChangeCompat(of: selectedLevel) { _ in
+        .onChange(of: selectedLevel) { _, _ in
             updateFilteredEntries()
         }
-        .onChangeCompat(of: selectedCategory) { _ in
+        .onChange(of: selectedCategory) { _, _ in
             updateFilteredEntries()
         }
-        .onChangeCompat(of: searchText) { _ in
+        .onChange(of: searchText) { _, _ in
             updateFilteredEntries()
         }
         #if os(iOS)
@@ -359,7 +359,7 @@ struct LogEntryRow: View {
 
             if let metadata = entry.metadata, !metadata.isEmpty {
                 ForEach(metadata.keys.sorted(), id: \.self) { key in
-                    CompatibleLabeledContent(key, value: metadata[key] ?? "")
+                    LabeledContent(key, value: metadata[key] ?? "")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }

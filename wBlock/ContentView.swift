@@ -141,11 +141,11 @@ struct ContentView: View {
                 EditCustomFilterView(filterManager: filterManager, filter: filter)
             }
         }
-        .onChangeCompat(of: dataManager.isForeignFiltersExpanded) { _, newValue in
+        .onChange(of: dataManager.isForeignFiltersExpanded) { _, newValue in
             guard isForeignFiltersExpanded != newValue else { return }
             isForeignFiltersExpanded = newValue
         }
-        .onChangeCompat(of: isForeignFiltersExpanded) { _, newValue in
+        .onChange(of: isForeignFiltersExpanded) { _, newValue in
             guard dataManager.isForeignFiltersExpanded != newValue else { return }
             Task {
                 await dataManager.setIsForeignFiltersExpanded(newValue)
@@ -182,7 +182,7 @@ struct ContentView: View {
     }
 
     private var filtersView: some View {
-        CompatibleNavigationStack(requiresNavigationView: false) {
+        NavigationStack {
             nativeFiltersListView
                 .safeAreaInset(edge: .top) {
                     if filterManager.isBlockingPaused {
@@ -221,7 +221,7 @@ struct ContentView: View {
             #endif
         }
         #if os(iOS)
-            .searchableCompat(
+            .searchable(
                 text: $filterSearchText,
                 isPresented: $showFilterSearch,
                 prompt: "Search filters"
@@ -329,7 +329,7 @@ struct ContentView: View {
     }
 
     private var userscriptsView: some View {
-        CompatibleNavigationStack(requiresNavigationView: false) {
+        NavigationStack {
             UserScriptManagerView(
                 userScriptManager: userScriptManager,
                 hasPendingChanges: hasPendingChanges,
@@ -797,7 +797,7 @@ struct ContentModifiers: ViewModifier {
                 }
             }
             // React to hasCompletedOnboarding changes
-            .onChangeCompat(of: dataManager.hasCompletedOnboarding) { oldValue, newValue in
+            .onChange(of: dataManager.hasCompletedOnboarding) { oldValue, newValue in
                 if newValue && !oldValue {
                     showOnboardingSheet = false
                 } else if !newValue && oldValue {
@@ -813,7 +813,7 @@ struct ContentModifiers: ViewModifier {
                 }
             #endif
             #if os(iOS)
-                .onChangeCompat(of: scenePhase) { _, newPhase in
+                .onChange(of: scenePhase) { _, newPhase in
                     if newPhase == .background && filterManager.hasUnappliedChanges {
                         scheduleNotification(delay: 1)
                     }
@@ -936,7 +936,7 @@ struct AddFilterListView: View {
 		var body: some View {
 		    Group {
 		        #if os(iOS)
-		            CompatibleNavigationStack {
+		            NavigationStack {
 		                addTabs
 		                    .navigationTitle("Add Filter List")
 		                    .navigationBarTitleDisplayMode(.inline)
@@ -958,7 +958,8 @@ struct AddFilterListView: View {
 		                    }
 		            }
 		            .interactiveDismissDisabled(isSaving)
-		            .largeSheetPresentationCompat()
+		            .presentationDetents([.large])
+		            .presentationDragIndicator(.visible)
 	        #elseif os(macOS)
 	            macosBody
 	        #endif
@@ -967,7 +968,7 @@ struct AddFilterListView: View {
 	    .onAppear {
 	        urlFieldIsFocused = addMode == .url
 	    }
-        .onChangeCompat(of: addMode) { _, newValue in
+        .onChange(of: addMode) { _, newValue in
             urlFieldIsFocused = newValue == .url
         }
         #endif
@@ -1524,7 +1525,7 @@ struct EditCustomFilterView: View {
     var body: some View {
         Group {
             #if os(iOS)
-                CompatibleNavigationStack {
+                NavigationStack {
                     Form {
                         Section {
                             TextField("Name", text: $name)
@@ -1704,7 +1705,7 @@ struct EditUserListView: View {
     var body: some View {
         Group {
             #if os(iOS)
-                CompatibleNavigationStack {
+                NavigationStack {
                     Form {
                         Section {
                             TextField("Title", text: $title)
@@ -1763,7 +1764,8 @@ struct EditUserListView: View {
                 } message: {
                     Text(errorMessage ?? "")
                 }
-                .largeSheetPresentationCompat()
+                .presentationDetents([.large])
+		            .presentationDragIndicator(.visible)
             #else
                 SheetContainer {
                     SheetHeader(title: "Edit User List", isLoading: isLoadingContent) {

@@ -238,7 +238,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var backupButtons: some View {
         #if os(macOS)
-        CompatibleLabeledContent {
+        LabeledContent {
             HStack(spacing: 8) {
                 Button {
                     exportBackup()
@@ -432,7 +432,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var aboutSection: some View {
         Section("About") {
-            CompatibleLabeledContent("wBlock Version") {
+            LabeledContent("wBlock Version") {
                 Text(
                     Bundle.main.infoDictionary?["CFBundleShortVersionString"]
                         as? String ?? "Unknown"
@@ -511,7 +511,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var settingsContent: some View {
         #if os(iOS)
-        CompatibleNavigationStack {
+        NavigationStack {
             List {
                 pauseBlockingSection
 
@@ -534,7 +534,7 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         #else
-        CompatibleNavigationStack {
+        NavigationStack {
             Form {
                 pauseBlockingSection
 
@@ -553,7 +553,7 @@ struct SettingsView: View {
                 aboutSection
                 dangerZoneSection
             }
-            .groupedFormStyleCompat()
+            .formStyle(.grouped)
         }
         #endif
     }

@@ -57,7 +57,7 @@ struct ToolbarSearchField: View {
                 }
                 .padding(.horizontal, 8)
                 .frame(width: 220)
-                .transition(.blurReplaceCompat)
+                .transition(.blurReplace)
                 .task {
                     try? await TaskSleep.sleep(for: .milliseconds(350))
                     isFocused = true
@@ -68,11 +68,11 @@ struct ToolbarSearchField: View {
                 } label: {
                     Label("Search", systemImage: "magnifyingglass")
                 }
-                .transition(.blurReplaceCompat)
+                .transition(.blurReplace)
             }
         }
         .animation(.smooth(duration: 0.3), value: isExpanded)
-        .onChangeCompat(of: isFocused) { _, focused in
+        .onChange(of: isFocused) { _, focused in
             if !focused && isExpanded {
                 collapse()
             }
