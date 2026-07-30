@@ -1313,11 +1313,11 @@
         }
     }
 
-    // MediaWiki's modern inline file videos are already bare <video controls>
-    // elements (class mw-file-element / data-mw-tmh on the video itself). Their
-    // wrapper is an inline <span> inside a table-layout <figure> — emptying that
-    // span and forcing width:100% collapses the box to a tiny top-left remnant
-    // (and clips native controls). Old .mw-tmh-player shells still need cleanup.
+    // MediaWiki's modern file videos are bare <video controls> (mw-file-element /
+    // data-mw-tmh on the video). Wrapper is an inline <span> inside a table-layout
+    // <figure> or .fullImageLink. Emptying that span + width:100% collapses the
+    // box (tiny top-left on iOS, clipped controls on macOS). Old .mw-tmh-player
+    // shells still need structural cleanup; these native ones only need sizing.
     function isNativeFileVideo(video) {
         try {
             if (!(video.controls || video.hasAttribute('controls'))) { return false; }
@@ -1326,6 +1326,80 @@
             if (video.hasAttribute('data-mw-tmh')) { return true; }
         } catch (e) { /* ignore */ }
         return false;
+    }
+
+    // Expand a native MediaWiki file video to the content column without emptying
+    // its wrapper. The mid-play state (inline controls, not fullscreen) otherwise
+    // stays pinned to the presentational width/height attributes (often 240×180).
+    function sizeNativeFileVideo(video) {
+        if (!video) { return; }
+        var shell = null;
+        try {
+            shell = video.closest && (
+                video.closest('.fullImageLink') ||
+                video.closest('figure.mw-default-size') ||
+                video.closest('figure') ||
+                video.closest('.mw-file-description')
+            );
+        } catch (e) { /* ignore */ }
+        if (!shell) { shell = video.parentElement; }
+
+        // Promote every inline ancestor up to the shell so percentage width has a
+        // real containing block (the bare <span> around the video is display:inline).
+        try {
+            var el = video.parentElement;
+            while (el && el !== shell.parentElement) {
+                var display = getComputedStyle(el).display;
+                if (display === 'inline' || display === 'contents' || display === 'inline-block' ||
+                    display === 'table' || display === 'table-cell') {
+                    el.style.display = 'block';
+                    el.style.width = '100%';
+                    el.style.maxWidth = '100%';
+                    el.style.float = 'none';
+                    el.style.lineHeight = '0';
+                }
+                if (el === shell) { break; }
+                el = el.parentElement;
+            }
+        } catch (e) { /* ignore */ }
+
+        if (shell && shell !== video) {
+            try {
+                shell.style.display = 'block';
+                shell.style.width = '100%';
+                shell.style.maxWidth = '100%';
+                shell.style.float = 'none';
+                shell.style.marginLeft = '0';
+                shell.style.marginRight = '0';
+                shell.style.boxSizing = 'border-box';
+            } catch (e) { /* ignore */ }
+        }
+
+        var attrW = parseFloat(video.getAttribute('width') || '0');
+        var attrH = parseFloat(video.getAttribute('height') || '0');
+        var vw = video.videoWidth || attrW;
+        var vh = video.videoHeight || attrH;
+        if (attrW > 0) { try { video.removeAttribute('width'); } catch (e) { /* ignore */ } }
+        if (attrH > 0) { try { video.removeAttribute('height'); } catch (e) { /* ignore */ } }
+
+        video.style.width = '100%';
+        video.style.maxWidth = '100%';
+        video.style.height = 'auto';
+        video.style.display = 'block';
+        video.style.background = '#000';
+        if (vw > 0 && vh > 0) {
+            try { video.style.aspectRatio = vw + ' / ' + vh; } catch (e) { /* ignore */ }
+        }
+
+        // Re-apply once metadata resolves intrinsic size (preload=none defers it).
+        if (!video._wblockMwSized && (!video.videoWidth || !video.videoHeight)) {
+            video._wblockMwSized = true;
+            function onMeta() { sizeNativeFileVideo(video); }
+            video.addEventListener('loadedmetadata', onMeta, { once: true });
+            registerVideoCleanup(video, function () {
+                try { video.removeEventListener('loadedmetadata', onMeta); } catch (e) { /* ignore */ }
+            });
+        }
     }
 
     function applyCleanSizing(container, video) {
@@ -1515,9 +1589,13 @@
         var src = sourceFromVideoElement(video);
         log('player detected', container.className, 'source:', src ? 'element-owned' : 'opaque');
         // Native MediaWiki file videos already expose controls; structural
-        // cleanup of their inline wrapper collapses the layout. Leave them
-        // enhanced in place (PiP / prefs / keyboard already applied above).
-        if (isNativeFileVideo(video)) { return; }
+        // cleanup of their inline wrapper collapses the layout. Size them to
+        // the content column in place so the mid-play (non-fullscreen) state
+        // fills the page instead of staying a 240×180 thumb.
+        if (isNativeFileVideo(video)) {
+            sizeNativeFileVideo(video);
+            return;
+        }
         if (src) { cleanPlayer(container, video, src); }
     }
 
