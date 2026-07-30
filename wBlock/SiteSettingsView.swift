@@ -11,7 +11,6 @@ struct SiteSettingsView: View {
     @State private var newDomain: String = ""
     @State private var isAddingDomain: Bool = false
     @State private var searchText: String = ""
-    @State private var showSearch: Bool = false
     @State private var expandedDomains: Set<String> = []
     @State private var domainPendingReset: String? = nil
     @State private var pendingUndo: (rule: String, domain: String, index: Int)? = nil
@@ -59,16 +58,9 @@ struct SiteSettingsView: View {
         .task {
             await ruleManager.refreshNow()
         }
-        #if os(macOS)
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                ToolbarSearchField(text: $searchText, isExpanded: $showSearch)
-            }
-        }
-        #endif
+        .searchable(text: $searchText, prompt: "Search")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $searchText, isPresented: $showSearch, prompt: "Search")
         #endif
         .alert(
             "Reset Site Settings",

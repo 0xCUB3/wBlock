@@ -23,69 +23,6 @@ extension View {
     }
 }
 
-#if os(macOS)
-struct ToolbarSearchField: View {
-    @Binding var text: String
-    @Binding var isExpanded: Bool
-    var prompt: LocalizedStringKey = "Search"
-
-    @FocusState private var isFocused: Bool
-
-    var body: some View {
-        Group {
-            if isExpanded {
-                HStack(spacing: 6) {
-                    TextField(prompt, text: $text)
-                        .textFieldStyle(.plain)
-                        .focused($isFocused)
-                        .onExitCommand { collapse() }
-
-                    if !text.isEmpty {
-                        Button { text = "" } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.tertiary)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
-                    Button { collapse() } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .help(String(localized: "Close search"))
-                }
-                .padding(.horizontal, 8)
-                .frame(width: 220)
-                .transition(.blurReplace)
-                .task {
-                    try? await TaskSleep.sleep(for: .milliseconds(350))
-                    isFocused = true
-                }
-            } else {
-                Button {
-                    isExpanded = true
-                } label: {
-                    Label("Search", systemImage: "magnifyingglass")
-                }
-                .transition(.blurReplace)
-            }
-        }
-        .animation(.smooth(duration: 0.3), value: isExpanded)
-        .onChange(of: isFocused) { _, focused in
-            if !focused && isExpanded {
-                collapse()
-            }
-        }
-    }
-
-    private func collapse() {
-        text = ""
-        isExpanded = false
-    }
-}
-#endif
-
 struct SearchMinimizeBehavior: ViewModifier {
     func body(content: Content) -> some View {
         #if os(iOS)
