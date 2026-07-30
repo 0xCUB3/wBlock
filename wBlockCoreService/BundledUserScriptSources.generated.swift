@@ -3937,6 +3937,8 @@ enum BundledUserScriptSources {
         if (_ei !== -1) { enhancedVideos.splice(_ei, 1); }
         video._wblockPreferencesHooked = false;
         video._wblockMediaSessionHooked = false;
+        video._wblockShortcutsHooked = false;
+        video._wblockTrackHarvestHooked = false;
         try { video.removeAttribute(ATTR_DONE); } catch (e) { /* ignore */ }
     }
 
@@ -4209,36 +4211,222 @@ enum BundledUserScriptSources {
 
     function recoverSidecarTracks(container, video) {
         if (!container || !video) return;
-        try {
-            var domTracks = container.querySelectorAll('track[src]');
-            for (var i = 0; i < domTracks.length; i++) {
-                if (domTracks[i].parentNode !== video) appendNativeTrack(video, {
-                    src: domTracks[i].src, kind: domTracks[i].kind, label: domTracks[i].label,
-                    srclang: domTracks[i].srclang, default: domTracks[i].default
-                });
-            }
-        } catch (e) { /* ignore */ }
-        try {
-            if (window.jwplayer) {
-                var jw = window.jwplayer(container.id || container);
-                var item = jw && jw.getPlaylistItem ? jw.getPlaylistItem() : null;
-                var tracks = item && item.tracks || [];
-                for (var j = 0; j < tracks.length; j++) appendNativeTrack(video, tracks[j]);
-            }
-        } catch (e) { /* ignore */ }
-        try {
-            if (window.videojs && window.videojs.getPlayers) {
-                var players = window.videojs.getPlayers();
-                for (var id in players) {
-                    var player = players[id];
-                    var element = player && player.el ? player.el() : null;
-                    if (!element || !(container.contains(element) || element.contains(container))) continue;
-                    var source = player.currentSource ? player.currentSource() : null;
-                    var tracks = source && source.tracks || player.options_ && player.options_.tracks || [];
-                    for (var k = 0; k < tracks.length; k++) appendNativeTrack(video, tracks[k]);
+        function harvestTracks() {
+            try {
+                var domTracks = container.querySelectorAll ? container.querySelectorAll('track[src]') : [];
+                for (var i = 0; i < domTracks.length; i++) {
+                    if (domTracks[i].parentNode !== video) appendNativeTrack(video, {
+                        src: domTracks[i].src, kind: domTracks[i].kind, label: domTracks[i].label,
+                        srclang: domTracks[i].srclang, default: domTracks[i].default
+                    });
                 }
+            } catch (e) { /* ignore */ }
+            try {
+                var elements = [container, video];
+                for (var d = 0; d < elements.length; d++) {
+                    var el = elements[d];
+                    if (!el || !el.getAttribute) continue;
+                    var attr = el.getAttribute('data-subtitles') || el.getAttribute('data-captions') || el.getAttribute('data-tracks');
+                    if (attr) {
+                        if (attr.indexOf('[') === 0 || attr.indexOf('{') === 0) {
+                            var parsed = JSON.parse(attr);
+                            var arr = Array.isArray(parsed) ? parsed : [parsed];
+                            for (var p = 0; p < arr.length; p++) appendNativeTrack(video, arr[p]);
+                        } else {
+                            appendNativeTrack(video, { src: attr, kind: 'subtitles' });
+                        }
+                    }
+                }
+            } catch (e) { /* ignore */ }
+            try {
+                if (window.jwplayer) {
+                    var jw = window.jwplayer(container.id || container);
+                    if (jw && typeof jw.getCaptions === 'function') {
+                        var captions = jw.getCaptions();
+                        if (Array.isArray(captions)) {
+                            for (var jc = 0; jc < captions.length; jc++) appendNativeTrack(video, captions[jc]);
+                        }
+                    }
+                    var item = jw && jw.getPlaylistItem ? jw.getPlaylistItem() : null;
+                    var tracks = item && item.tracks || [];
+                    for (var j = 0; j < tracks.length; j++) appendNativeTrack(video, tracks[j]);
+                }
+            } catch (e) { /* ignore */ }
+            try {
+                if (window.videojs && window.videojs.getPlayers) {
+                    var players = window.videojs.getPlayers();
+                    for (var id in players) {
+                        var player = players[id];
+                        var element = player && player.el ? player.el() : null;
+                        if (!element || !(container.contains(element) || element.contains(container))) continue;
+                        var source = player.currentSource ? player.currentSource() : null;
+                        var tracks = source && source.tracks || player.options_ && player.options_.tracks || [];
+                        for (var k = 0; k < tracks.length; k++) appendNativeTrack(video, tracks[k]);
+                        if (typeof player.remoteTextTracks === 'function') {
+                            var remote = player.remoteTextTracks();
+                            if (remote && remote.length) {
+                                for (var r = 0; r < remote.length; r++) appendNativeTrack(video, remote[r]);
+                            }
+                        }
+                    }
+                }
+            } catch (e) { /* ignore */ }
+            try {
+                var plyr = video.plyr || container.plyr || window.plyr;
+                if (plyr && plyr.captions && Array.isArray(plyr.captions.tracks)) {
+                    for (var pl = 0; pl < plyr.captions.tracks.length; pl++) appendNativeTrack(video, plyr.captions.tracks[pl]);
+                }
+            } catch (e) { /* ignore */ }
+            try {
+                var hls = video._hls || container._hls || window._hls;
+                if (hls && Array.isArray(hls.subtitleTracks)) {
+                    for (var hl = 0; hl < hls.subtitleTracks.length; hl++) {
+                        var st = hls.subtitleTracks[hl];
+                        if (st && (st.url || st.vtt)) appendNativeTrack(video, {
+                            src: st.url || st.vtt, kind: 'subtitles', label: st.name || st.lang, srclang: st.lang
+                        });
+                    }
+                }
+            } catch (e) { /* ignore */ }
+            try {
+                var dash = video._dash || container._dash || window._dash;
+                if (dash && typeof dash.getTracksFor === 'function') {
+                    var dashTracks = dash.getTracksFor('subtitle');
+                    if (Array.isArray(dashTracks)) {
+                        for (var dt = 0; dt < dashTracks.length; dt++) {
+                            var dTrack = dashTracks[dt];
+                            if (dTrack && dTrack.url) appendNativeTrack(video, {
+                                src: dTrack.url, kind: 'subtitles', label: dTrack.lang || dTrack.id, srclang: dTrack.lang
+                            });
+                        }
+                    }
+                }
+            } catch (e) { /* ignore */ }
+        }
+        harvestTracks();
+        if (video.textTracks && !video._wblockTrackHarvestHooked) {
+            video._wblockTrackHarvestHooked = true;
+            function onAddTrack() { harvestTracks(); }
+            try {
+                video.textTracks.addEventListener('addtrack', onAddTrack);
+                registerVideoCleanup(video, function () {
+                    try { video.textTracks.removeEventListener('addtrack', onAddTrack); } catch (e) {}
+                });
+            } catch (e) { /* ignore */ }
+        }
+    }
+
+    function showToast(video, text) {
+        if (!video || !text) return;
+        try {
+            var targetHost = video.parentNode || document.body;
+            var toast = targetHost.querySelector('.wblock-pc-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.className = 'wblock-pc-toast';
+                toast.style.cssText = 'position:absolute;top:16px;left:50%;transform:translateX(-50%);' +
+                    'background:rgba(0,0,0,0.85);color:#fff;padding:6px 14px;border-radius:16px;' +
+                    'font:600 13px -apple-system,system-ui,sans-serif;pointer-events:none;z-index:2147483647;' +
+                    'box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:opacity 0.2s linear;opacity:1';
+                targetHost.appendChild(toast);
             }
+            toast.textContent = text;
+            toast.style.opacity = '1';
+            if (toast._timer) clearTimeout(toast._timer);
+            toast._timer = setTimeout(function () {
+                toast.style.opacity = '0';
+                setTimeout(function () { try { toast.remove(); } catch (e) {} }, 250);
+            }, 1200);
         } catch (e) { /* ignore */ }
+    }
+
+    function setupKeyboardShortcuts(container, video) {
+        if (!video || video._wblockShortcutsHooked) return;
+        video._wblockShortcutsHooked = true;
+
+        function isEditingElement(el) {
+            if (!el) return false;
+            var tag = el.tagName ? el.tagName.toUpperCase() : '';
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+            if (el.isContentEditable) return true;
+            if (el.shadowRoot && el.shadowRoot.activeElement) return isEditingElement(el.shadowRoot.activeElement);
+            return false;
+        }
+
+        function onKeyDown(e) {
+            if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+            if (isEditingElement(document.activeElement)) return;
+
+            if (video.paused && document.activeElement !== video && !container.contains(document.activeElement)) {
+                var playing = document.querySelector('video:not([paused])');
+                if (playing && playing !== video) return;
+            }
+
+            var key = e.key;
+            if (key === '[' || key === '{') {
+                e.preventDefault();
+                var lowerRate = Math.max(0.25, Math.round((video.playbackRate - 0.25) * 100) / 100);
+                video.playbackRate = lowerRate;
+                savePlaybackPreference('playbackRate', lowerRate);
+                showToast(video, lowerRate.toFixed(2) + 'x');
+            } else if (key === ']' || key === '}') {
+                e.preventDefault();
+                var higherRate = Math.min(4.0, Math.round((video.playbackRate + 0.25) * 100) / 100);
+                video.playbackRate = higherRate;
+                savePlaybackPreference('playbackRate', higherRate);
+                showToast(video, higherRate.toFixed(2) + 'x');
+            } else if (key === '=' || key === '+') {
+                e.preventDefault();
+                video.playbackRate = 1.0;
+                savePlaybackPreference('playbackRate', 1.0);
+                showToast(video, '1.00x');
+            } else if (key === 'f' || key === 'F') {
+                e.preventDefault();
+                try {
+                    if (document.fullscreenElement === video || document.webkitFullscreenElement === video) {
+                        if (document.exitFullscreen) document.exitFullscreen();
+                        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                    } else {
+                        if (video.requestFullscreen) video.requestFullscreen();
+                        else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen();
+                        else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+                    }
+                } catch (err) { /* ignore */ }
+            } else if (key === 'p' || key === 'P') {
+                e.preventDefault();
+                try {
+                    if (document.pictureInPictureElement === video || video.webkitPresentationMode === 'picture-in-picture') {
+                        if (document.exitPictureInPicture) document.exitPictureInPicture();
+                        else if (video.webkitSetPresentationMode) video.webkitSetPresentationMode('inline');
+                    } else {
+                        if (video.requestPictureInPicture) video.requestPictureInPicture();
+                        else if (video.webkitSetPresentationMode) video.webkitSetPresentationMode('picture-in-picture');
+                    }
+                } catch (err) { /* ignore */ }
+            } else if (key === 'm' || key === 'M') {
+                e.preventDefault();
+                video.muted = !video.muted;
+                savePlaybackPreference('muted', video.muted);
+                showToast(video, video.muted ? 'Muted' : 'Unmuted');
+            } else if (key === 'k' || key === 'K') {
+                e.preventDefault();
+                if (video.paused) video.play();
+                else video.pause();
+            } else if (key === 'j' || key === 'J' || key === 'ArrowLeft') {
+                e.preventDefault();
+                video.currentTime = Math.max(0, video.currentTime - 5);
+                showToast(video, '-5s');
+            } else if (key === 'l' || key === 'L' || key === 'ArrowRight') {
+                e.preventDefault();
+                video.currentTime = Math.min(video.duration || Infinity, video.currentTime + 5);
+                showToast(video, '+5s');
+            }
+        }
+
+        window.addEventListener('keydown', onKeyDown, true);
+        registerVideoCleanup(video, function () {
+            window.removeEventListener('keydown', onKeyDown, true);
+        });
     }
 
     var mediaSessionOwner = null;
@@ -4827,6 +5015,7 @@ enum BundledUserScriptSources {
         setupAutoPiP(video);
         setupPlaybackPreferences(video);
         setupMediaSession(container, video);
+        setupKeyboardShortcuts(container, video);
 
         suppressChrome(container, video);
         armChromeWatch(video);
@@ -4918,6 +5107,7 @@ enum BundledUserScriptSources {
         setupAutoPiP(video);
         setupPlaybackPreferences(video);
         setupMediaSession(container, video);
+        setupKeyboardShortcuts(container, video);
         guardNativeControls(video);
         restorePlaybackState(video, state, sourceChanged);
         hideOverlappingChrome(video);
