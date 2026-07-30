@@ -68,6 +68,8 @@ struct OnboardingView: View {
     @State private var hasEnabledAdvanced = false
     @State private var detectedScriptsExtensionEnabled: Bool?
     @State private var isRefreshingScriptsExtensionState = false
+    @State private var detectedContentBlockerStates: [SafariExtensionSetupSupport.ContentBlockerSlotState] = []
+    @State private var isRefreshingContentBlockers = false
     @State private var showingBackupImporter = false
     @State private var showingRestoreBackupConfirmation = false
     @State private var pendingBackup: WBlockBackup?
@@ -276,11 +278,13 @@ struct OnboardingView: View {
             syncBaselineUserscriptSelection()
             userScriptManager.prefetchDefaultUserScriptMetadataIfNeeded()
             await refreshScriptsExtensionState(retryingWhenDisabled: true)
+            await refreshContentBlockerStates()
         }
         .onChangeCompat(of: scenePhase) { _, newValue in
             guard newValue == .active else { return }
             Task {
                 await refreshScriptsExtensionState(retryingWhenDisabled: true)
+                await refreshContentBlockerStates()
             }
         }
         .onChangeCompat(of: selectedLanguages) { _, newValue in
@@ -981,6 +985,28 @@ struct OnboardingView: View {
                             .labelsHidden()
                     }
 
+                    if !detectedContentBlockerStates.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 6) {
+                                ForEach(detectedContentBlockerStates) { slotState in
+                                    HStack(spacing: 3) {
+                                        Image(systemName: slotState.isEnabled ? "checkmark.circle.fill" : "xmark.circle")
+                                            .foregroundStyle(slotState.isEnabled ? .green : .orange)
+                                            .font(.caption2)
+                                        Text(slotState.name)
+                                            .font(.caption2)
+                                            .foregroundStyle(slotState.isEnabled ? .primary : .secondary)
+                                    }
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(Color.secondary.opacity(0.1))
+                                    .cornerRadius(6)
+                                }
+                            }
+                        }
+                        .padding(.leading, 30)
+                    }
+
                     Divider()
                         .padding(.leading, 30)
 
@@ -1057,6 +1083,17 @@ struct OnboardingView: View {
         await refreshScriptsExtensionState(retryingWhenDisabled: true)
         if detectedScriptsExtensionEnabled != false {
             hasEnabledAdvanced = true
+        }
+    }
+
+    @MainActor
+    private func refreshContentBlockerStates() async {
+        isRefreshingContentBlockers = true
+        defer { isRefreshingContentBlockers = false }
+        let states = await SafariExtensionSetupSupport.contentBlockerSlotStates()
+        detectedContentBlockerStates = states
+        if !states.isEmpty && states.allSatisfy(\.isEnabled) {
+            hasEnabledContentBlockers = true
         }
     }
 
