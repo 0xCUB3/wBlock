@@ -51,8 +51,11 @@
 
     var LOG_PREFIX = '[Player Cleaner]';
     var ATTR_DONE = 'data-wblock-player-cleaner';
+    var HIDDEN_ATTR = 'data-wblock-pc-hidden';
+    var HIDE_STYLE_ID = 'wblock-pc-hide';
     var PREFERENCES_KEY = 'wblock.playerCleaner.preferences';
     var RESUME_KEY = 'wblock.playerCleaner.resume';
+    var enhancedVideos = [];
 
     // A blob: src on the media element means the page attached a MediaSource /
     // ManagedMediaSource (Player Cleaner never assigns blob urls itself).
@@ -180,9 +183,12 @@
         video._wblockAutoPiPHooked = false;
         video._wblockControlsGuarded = false;
         video._wblockControlsPatched = false;
+        video._wblockClickGuard = false;
         video._wblockEnhanced = false;
         video._wblockUpgradeable = false;
         video._wblockCleaned = false;
+        var _ei = enhancedVideos.indexOf(video);
+        if (_ei !== -1) { enhancedVideos.splice(_ei, 1); }
         video._wblockPreferencesHooked = false;
         video._wblockMediaSessionHooked = false;
         try { video.removeAttribute(ATTR_DONE); } catch (e) { /* ignore */ }
@@ -632,6 +638,19 @@
         video.setAttribute('controls', '');
     }
 
+    // The UA services native-control clicks below the JS event layer, but stopping
+    // clicks in capture phase breaks native control buttons in WebKit shadow DOM.
+    // Stopping propagation in bubble phase allows native controls (play, pause,
+    // skip) to handle the click first, while preventing outer custom player shells
+    // (video.js, Vimeo) from receiving the click and double-toggling playback.
+    function blockCompetingClicks(video) {
+        if (!video || video._wblockClickGuard) return;
+        video._wblockClickGuard = true;
+        try {
+            video.addEventListener('click', function (e) { e.stopPropagation(); });
+        } catch (e) { /* ignore */ }
+    }
+
     // WebKit renders native controls from the `controls` content attribute.
     // Do not shadow the media element's controls property with a non-configurable
     // instance descriptor: doing that before WebKit initializes its native media
@@ -662,6 +681,30 @@
         });
     }
 
+    // Durable hide: an attribute-backed !important rule beats design-system CSS
+    // that reasserts display, and survives most same-node style writes. Inline
+    // setProperty(..., 'important') covers the same fight when the attribute is
+    // stripped. Never hide <html>/<body>/<video>.
+    function ensureHideStyle() {
+        if (document.getElementById(HIDE_STYLE_ID)) return;
+        try {
+            var style = document.createElement('style');
+            style.id = HIDE_STYLE_ID;
+            style.textContent = '[' + HIDDEN_ATTR + ']{display:none!important;visibility:hidden!important;pointer-events:none!important}';
+            (document.head || document.documentElement).appendChild(style);
+        } catch (e) { /* ignore */ }
+    }
+
+    function hideElement(el) {
+        if (!el || el === document.documentElement || el === document.body) return;
+        if (el.tagName === 'VIDEO' || el.tagName === 'SOURCE' || el.tagName === 'TRACK') return;
+        try {
+            ensureHideStyle();
+            el.setAttribute(HIDDEN_ATTR, '1');
+            el.style.setProperty('display', 'none', 'important');
+        } catch (e) { /* ignore */ }
+    }
+
     // Generic chrome hiding. Instead of maintaining a per-library selector list
     // (which inevitably misses bespoke players), walk every element inside the
     // container and hide anything that is not the video, an ancestor of the
@@ -682,12 +725,12 @@
             if (video.contains(el)) continue;   // <source>, <track>
             if (el.contains(video)) continue;   // ancestor wrappers
             if (aggressive) {
-                try { el.style.display = 'none'; } catch (e) { /* ignore */ }
+                hideElement(el);
             } else {
                 try {
                     var pos = getComputedStyle(el).position;
                     if (pos === 'absolute' || pos === 'fixed' || pos === 'sticky') {
-                        el.style.display = 'none';
+                        hideElement(el);
                     }
                 } catch (e) { /* ignore */ }
             }
@@ -703,6 +746,299 @@
         } catch (e) { return false; }
     }
 
+    // The player shell for a video: the nearest recognized library wrapper, or —
+    // for bespoke players — the nearest positioned ancestor. Custom players hang
+    // their overlay chrome (controls, poster, outro) off a positioning context,
+    // frequently as siblings of an intermediate video wrapper rather than of the
+    // video itself (Vimeo, LinkedIn). Deriving the container from the direct
+    // parent then misses those siblings and leaves the original chrome painted
+    // over the native controls. Climbing to the positioning context catches them.
+    // Falls back to the parent when nothing nearer than the page root is
+    // positioned, so a positioned <body> can never trigger a whole-page hide.
+    function containerForVideo(video) {
+        var known = video.closest && video.closest(PLAYER_SELECTOR);
+        if (known) { return normalizeContainer(known); }
+        var el = video.parentElement;
+        while (el && el.parentElement && el.tagName !== 'BODY') {
+            try {
+                if (getComputedStyle(el).position !== 'static') { return el; }
+            } catch (e) { break; }
+            el = el.parentElement;
+        }
+        return video.parentElement || video;
+    }
+
+    // The outermost ancestor that still bounds the player: the highest one whose
+    // box is close to the video's size. A control bar pinned to the video's edges
+    // (LinkedIn) lives inside this shell but OUTSIDE the video's own wrapper, so a
+    // container-descendant sweep never reaches it. The size bound stops the climb
+    // before page content (post text, reactions) that sits in a taller ancestor.
+    function playerShell(video) {
+        var shell = video.parentElement, el = video.parentElement;
+        var vr;
+        try { vr = video.getBoundingClientRect(); } catch (e) { return shell || video; }
+        if (vr.width < 2 || vr.height < 2) { return shell || video; }
+        var maxH = vr.height * 1.7 + 160, maxW = vr.width * 1.35 + 48;
+        while (el && el.tagName !== 'BODY' && el.tagName !== 'HTML') {
+            var r;
+            try { r = el.getBoundingClientRect(); } catch (e) { break; }
+            if (r.height > maxH || r.width > maxW) { break; }
+            shell = el;
+            el = el.parentElement;
+        }
+        return shell || video.parentElement || video;
+    }
+
+    // Does a rect overlap the video, allowing control bars that sit on the bottom
+    // edge (or just below it) and side/top overlays flush with the edges?
+    function overlapsVideo(r, vr) {
+        var ix = Math.min(r.right, vr.right + 8) - Math.max(r.left, vr.left - 8);
+        var iy = Math.min(r.bottom, vr.bottom + 72) - Math.max(r.top, vr.top - 8);
+        return ix >= 4 && iy >= 4;
+    }
+
+    // True for overlay chrome that sits on the video without being page chrome.
+    // Rejects full-page / full-card boxes so feed text and reaction rows stay.
+    function isPlayerOverlay(el, vr) {
+        var r;
+        try { r = el.getBoundingClientRect(); } catch (e) { return false; }
+        if (r.width < 2 || r.height < 2) { return false; }
+        if (r.height > vr.height * 1.55 + 48 && r.width > vr.width * 0.85) { return false; }
+        var vw = window.innerWidth || 0, vh = window.innerHeight || 0;
+        if (vw > 0 && vh > 0 && r.width > vw * 0.9 && r.height > vh * 0.45) { return false; }
+        return overlapsVideo(r, vr);
+    }
+
+    // Full-bleed cover painted over the video with position:static/relative
+    // (LinkedIn end-card: a grid sibling flex box the same size as the media,
+    // pe:auto, that steals every hit from native controls). Positioned overlays
+    // are handled separately; this is the static same-footprint case.
+    function isVideoCover(el, vr) {
+        var r;
+        try { r = el.getBoundingClientRect(); } catch (e) { return false; }
+        if (r.width < 8 || r.height < 8) { return false; }
+        if (r.width >= vr.width * 0.85 && r.height >= vr.height * 0.85 &&
+            r.width <= vr.width * 1.2 + 8 && r.height <= vr.height * 1.2 + 8) {
+            var cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
+            var vcx = (vr.left + vr.right) / 2, vcy = (vr.top + vr.bottom) / 2;
+            if (Math.abs(cx - vcx) <= vr.width * 0.15 && Math.abs(cy - vcy) <= vr.height * 0.15) {
+                return true;
+            }
+        }
+        var ix = Math.min(r.right, vr.right) - Math.max(r.left, vr.left);
+        var iy = Math.min(r.bottom, vr.bottom) - Math.max(r.top, vr.top);
+        if (ix < 8 || iy < 8) { return false; }
+        return (ix * iy) >= (vr.width * vr.height * 0.55);
+    }
+
+    // Static player control bar (LinkedIn): a short strip spanning most of the
+    // video width, stacked over the bottom or top control region. Too short for
+    // isVideoCover and not positioned, so it slips past every other check and
+    // steals hits from native controls.
+    function isControlBar(el, vr) {
+        var r;
+        try { r = el.getBoundingClientRect(); } catch (e) { return false; }
+        if (r.width < 8 || r.height < 8) { return false; }
+        if (r.height > vr.height * 0.4 + 24) { return false; }
+        var ovX = Math.min(r.right, vr.right) - Math.max(r.left, vr.left);
+        if (ovX < vr.width * 0.5) { return false; }
+        // Bar must straddle the video horizontally; tolerate padding/box-sizing
+        // making it a touch wider than the media.
+        var cx = (r.left + r.right) / 2;
+        if (cx < vr.left - r.width * 0.1 || cx > vr.right + r.width * 0.1) { return false; }
+        var ovY = Math.min(r.bottom, vr.bottom) - Math.max(r.top, vr.top);
+        if (ovY < 4) { return false; }
+        var cy = (r.top + r.bottom) / 2;
+        return cy >= vr.bottom - vr.height * 0.4 || cy <= vr.top + vr.height * 0.4;
+    }
+
+    // Hide overlay chrome within an off-path subtree drawn over the video.
+    // Positioned roots that overlap are hidden wholesale. Static roots that are
+    // full-bleed video covers (LinkedIn) are also hidden wholesale. Other static
+    // roots whose box is off the video are pruned; remaining static roots are
+    // walked only for positioned descendants so post text/reactions stay.
+    function hideOverlappingSubtree(root, video, vr) {
+        if (root === video || root.contains(video) || video.contains(root)) { return; }
+        var rr;
+        try { rr = root.getBoundingClientRect(); } catch (e) { return; }
+        var pos;
+        try { pos = getComputedStyle(root).position; } catch (e) { return; }
+        if (pos === 'absolute' || pos === 'sticky' || pos === 'fixed') {
+            if (isPlayerOverlay(root, vr)) { hideElement(root); }
+            return;
+        }
+        if (isVideoCover(root, vr)) {
+            hideElement(root);
+            return;
+        }
+        if (isControlBar(root, vr)) {
+            hideElement(root);
+            return;
+        }
+        if (!overlapsVideo(rr, vr)) { return; }
+        var els = root.querySelectorAll('*');
+        for (var i = 0; i < els.length; i++) {
+            var el = els[i];
+            if (el === video || el.contains(video) || video.contains(el)) { continue; }
+            try {
+                var p = getComputedStyle(el).position;
+                if (p === 'absolute' || p === 'sticky' || p === 'fixed') {
+                    if (isPlayerOverlay(el, vr)) { hideElement(el); }
+                } else if (isVideoCover(el, vr)) {
+                    hideElement(el);
+                }
+            } catch (e) { /* ignore */ }
+        }
+    }
+
+    // Climb the video's ancestors while they bound the player and hide overlay
+    // chrome (siblings of the video's wrapper) that overlaps the media. Catches
+    // players whose controls hang off an outer shell rather than the video's own
+    // wrapper — the case a container-descendant sweep misses.
+    function hideOverlappingChrome(video) {
+        var vr;
+        try { vr = video.getBoundingClientRect(); } catch (e) { return; }
+        if (vr.width < 2 || vr.height < 2) { return; }
+        var maxH = vr.height * 1.7 + 160, maxW = vr.width * 1.35 + 48;
+        var child = video;
+        for (var anc = video.parentElement; anc && anc.tagName !== 'BODY' && anc.tagName !== 'HTML'; child = anc, anc = anc.parentElement) {
+            var ar;
+            try { ar = anc.getBoundingClientRect(); } catch (e) { break; }
+            if (ar.height > maxH || ar.width > maxW) { break; }
+            for (var c = 0; c < anc.children.length; c++) {
+                if (anc.children[c] !== child) { hideOverlappingSubtree(anc.children[c], video, vr); }
+            }
+        }
+    }
+
+    // Hide a candidate that sits over the video but is not an ancestor/descendant
+    // of it. Used by both hit-testing and the detached (portal) scan. Accepts
+    // positioned chrome and static/relative full-bleed covers (LinkedIn).
+    function hideIfDetachedOverlay(el, video, vr) {
+        if (!el || el === video || el === document.documentElement || el === document.body) { return; }
+        if (video.contains(el) || (el.contains && el.contains(video))) { return; }
+        // A hit often lands on a control (slider/button) nested in a static bar;
+        // hide the bar rather than the inner control, which the caller sees.
+        var bar = el;
+        for (var i = 0; i < 6 && bar && bar !== document.body; i++) {
+            if (bar !== video && !video.contains(bar) && isControlBar(bar, vr)) {
+                hideElement(bar);
+                return;
+            }
+            bar = bar.parentElement;
+        }
+        if (!isPlayerOverlay(el, vr)) { return; }
+        try {
+            var pos = getComputedStyle(el).position;
+            if (pos !== 'absolute' && pos !== 'fixed' && pos !== 'sticky' && !isVideoCover(el, vr)) {
+                return;
+            }
+        } catch (e) { return; }
+        hideElement(el);
+    }
+
+    // Hit-test the pixels over the video and hide anything painted above it.
+    // Catches React portals, position:fixed controls, and overlays whose DOM
+    // parent is outside the player shell — the case an ancestor climb misses
+    // (LinkedIn feed player). Also scans top-level body children geometrically
+    // so off-viewport / zero-hit-test cases (and portal remounts) still get hid.
+    function hideStackedChrome(video) {
+        var vr;
+        try { vr = video.getBoundingClientRect(); } catch (e) { return; }
+        if (vr.width < 2 || vr.height < 2) { return; }
+        var vw = window.innerWidth || 0, vh = window.innerHeight || 0;
+        if (typeof document.elementsFromPoint === 'function') {
+            var pts = [
+                [vr.left + vr.width * 0.5, vr.top + vr.height * 0.5],
+                [vr.left + 28, vr.top + 28],
+                [vr.right - 28, vr.top + 28],
+                [vr.left + vr.width * 0.5, vr.top + 20],
+                [vr.left + vr.width * 0.5, vr.bottom - 18],
+                [vr.left + 28, vr.bottom - 18],
+                [vr.right - 28, vr.bottom - 18]
+            ];
+            for (var i = 0; i < pts.length; i++) {
+                var x = pts[i][0], y = pts[i][1];
+                if (vw > 0 && (x < 0 || y < 0 || x > vw || y > vh)) { continue; }
+                var stack;
+                try { stack = document.elementsFromPoint(x, y); } catch (e) { continue; }
+                if (!stack) { continue; }
+                for (var s = 0; s < stack.length; s++) {
+                    var hit = stack[s];
+                    if (hit === video || video.contains(hit)) { break; }
+                    hideIfDetachedOverlay(hit, video, vr);
+                }
+            }
+        }
+        // Geometric pass over body-level nodes (and one level of children). Portals
+        // and fixed chrome almost always land here; keeps cost bounded on big pages.
+        var body = document.body;
+        if (!body) { return; }
+        for (var b = 0; b < body.children.length; b++) {
+            var top = body.children[b];
+            hideIfDetachedOverlay(top, video, vr);
+            var kids = top.children;
+            if (!kids || kids.length > 40) { continue; }
+            for (var k = 0; k < kids.length; k++) {
+                hideIfDetachedOverlay(kids[k], video, vr);
+            }
+        }
+    }
+
+    function suppressChrome(container, video) {
+        hideContainerChrome(container, video, isPlayerShell(container));
+        hideOverlappingChrome(video);
+        hideStackedChrome(video);
+    }
+
+    // Custom players (LinkedIn) paint or remount chrome on play/seek/end after
+    // our one-shot hide. Re-run hide on those media events, on the next two
+    // animation frames, and on short deferred timeouts — LinkedIn's static
+    // "Watch again" cover often lands a few hundred ms after `ended`.
+    function armChromeWatch(video) {
+        if (!video || video._wblockChromeWatch) { return; }
+        video._wblockChromeWatch = true;
+        var timers = [];
+        function kick() {
+            if (!video.isConnected) { return; }
+            hideOverlappingChrome(video);
+            hideStackedChrome(video);
+        }
+        function kickAfterPaint() {
+            kick();
+            if (typeof requestAnimationFrame === 'function') {
+                requestAnimationFrame(function () { requestAnimationFrame(kick); });
+            }
+        }
+        function kickDeferred() {
+            kickAfterPaint();
+            if (typeof setTimeout !== 'function') { return; }
+            [50, 200, 500].forEach(function (ms) {
+                timers.push(setTimeout(kick, ms));
+            });
+        }
+        try {
+            video.addEventListener('play', kickDeferred);
+            video.addEventListener('pause', kickDeferred);
+            video.addEventListener('ended', kickDeferred);
+            video.addEventListener('seeking', kick);
+            video.addEventListener('loadeddata', kick);
+        } catch (e) { /* ignore */ }
+        registerVideoCleanup(video, function () {
+            try {
+                video.removeEventListener('play', kickDeferred);
+                video.removeEventListener('pause', kickDeferred);
+                video.removeEventListener('ended', kickDeferred);
+                video.removeEventListener('seeking', kick);
+                video.removeEventListener('loadeddata', kick);
+            } catch (e) { /* ignore */ }
+            for (var t = 0; t < timers.length; t++) {
+                try { clearTimeout(timers[t]); } catch (e) { /* ignore */ }
+            }
+            timers = [];
+        });
+    }
+
     function enhanceInPlace(container, video, upgradeable) {
         if (video._wblockEnhanced) {
             // A video can first appear as a bare custom player and later be
@@ -710,10 +1046,11 @@
             // can still clean the known wrapper. Re-hide chrome a framework may
             // have rendered after initial cleanup.
             if (upgradeable) { video._wblockUpgradeable = true; }
-            hideContainerChrome(container, video, isPlayerShell(container));
+            suppressChrome(container, video);
             return;
         }
         video._wblockEnhanced = true;
+        if (enhancedVideos.indexOf(video) === -1) { enhancedVideos.push(video); }
         // Upgradeable videos get one more replacement chance once their metadata
         // (and therefore currentSrc) has loaded; see onMediaSourceReady. Bare
         // videos enhanced under unknown chrome are not upgradeable, so their
@@ -735,7 +1072,9 @@
         setupPlaybackPreferences(video);
         setupMediaSession(container, video);
 
-        hideContainerChrome(container, video, isPlayerShell(container));
+        suppressChrome(container, video);
+        armChromeWatch(video);
+        blockCompetingClicks(video);
 
         // Keep controls forced on
         guardNativeControls(video);
@@ -808,6 +1147,7 @@
         }
 
         video._wblockCleaned = true;
+        if (enhancedVideos.indexOf(video) === -1) { enhancedVideos.push(video); }
         video._wblockUpgradeable = false;
         video.setAttribute(ATTR_DONE, '1');
         container.setAttribute(ATTR_DONE, '1');
@@ -824,6 +1164,9 @@
         setupMediaSession(container, video);
         guardNativeControls(video);
         restorePlaybackState(video, state, sourceChanged);
+        hideOverlappingChrome(video);
+        hideStackedChrome(video);
+        armChromeWatch(video);
     }
 
     function selectContainerVideo(container) {
@@ -855,7 +1198,7 @@
         var video = selectContainerVideo(container);
         if (!video) { return; }
         if (video._wblockCleaned) {
-            hideContainerChrome(container, video, isPlayerShell(container));
+            suppressChrome(container, video);
             return;
         }
 
@@ -913,9 +1256,7 @@
         var video = event.target;
         if (!(video instanceof HTMLVideoElement)) { return; }
         if (!video._wblockEnhanced || !video._wblockUpgradeable || video._wblockCleaned) { return; }
-        var container = (video.closest && video.closest(PLAYER_SELECTOR)) ||
-            video.parentElement || video;
-        container = normalizeContainer(container);
+        var container = containerForVideo(video);
         try { replacePlayer(container, true); } catch (e) { log('upgrade failed', e); }
     }
 
@@ -992,7 +1333,7 @@
         for (var v = 0; v < bareVideos.length; v++) {
             var video = bareVideos[v];
             if (!needsBareEnhancement(video)) { continue; }
-            var bareContainer = video.parentElement || video;
+            var bareContainer = containerForVideo(video);
             log('bare player detected', bareContainer.className || '(no class)', 'enhancing in place');
             try {
                 video.setAttribute(ATTR_DONE, '1');
@@ -1094,6 +1435,35 @@
         // UI churn is nativeization-only.
         var mayClean = sourceRelevant && document.readyState !== 'loading';
         for (var r = 0; r < roots.length; r++) { scan(roots[r], mayClean); }
+        // Re-hide overlay chrome for already-enhanced videos whose player region a
+        // mutation just touched. Custom players (LinkedIn) (re)mount or refresh
+        // their control overlay after the one-shot hide — typically on play — so
+        // the hide must be re-applied reactively, not only at scan time. Portals
+        // remounted outside the shell still need a hit-test pass, so any player
+        // with a non-empty mutation batch re-runs hideStackedChrome.
+        var anyAdded = false;
+        for (var ai = 0; ai < records.length && !anyAdded; ai++) {
+            if (records[ai].addedNodes && records[ai].addedNodes.length) { anyAdded = true; }
+        }
+        for (var e = enhancedVideos.length - 1; e >= 0; e--) {
+            var ev = enhancedVideos[e];
+            if (!ev.isConnected) { enhancedVideos.splice(e, 1); continue; }
+            var shell = playerShell(ev);
+            var touched = false;
+            for (var mi = 0; mi < records.length && !touched; mi++) {
+                if (shell.contains(records[mi].target)) { touched = true; break; }
+                var added = records[mi].addedNodes;
+                for (var ni = 0; ni < added.length; ni++) {
+                    if (added[ni].nodeType === 1 && shell.contains(added[ni])) { touched = true; break; }
+                }
+            }
+            if (touched) {
+                hideOverlappingChrome(ev);
+                hideStackedChrome(ev);
+            } else if (anyAdded) {
+                hideStackedChrome(ev);
+            }
+        }
         // DOM moves report a removal and addition in the same batch. Release
         // resources only for videos that remain detached after processing.
         for (var d = 0; d < detachedVideos.length; d++) {
@@ -1165,10 +1535,10 @@
         for (var i = 0; i < videos.length; i++) {
             var v = videos[i];
             if (!v._wblockEnhanced && !v._wblockCleaned) continue;
-            var c = (v.closest && v.closest(PLAYER_SELECTOR)) || v.parentElement;
+            var c = containerForVideo(v);
             if (!c) continue;
-            c = normalizeContainer(c);
-            hideContainerChrome(c, v, isPlayerShell(c));
+            suppressChrome(c, v);
+            blockCompetingClicks(v);
         }
     }
 

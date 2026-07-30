@@ -1775,6 +1775,17 @@ async function qualityUISelectionCheck(page, scenario) {
     return { pass: !!(el && el.style.display === 'none'), detail: el ? `display=${el.style.display}` : 'no element' };
   });
 
+  await check(page, S, 'video click does not bubble to the player shell (no double-toggle)', () => {
+    const v = document.querySelector('.xq7-player-shell video');
+    if (!v) return { pass: false, detail: 'no video' };
+    const before = window.__shellToggleCount || 0;
+    const r = v.getBoundingClientRect();
+    v.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true,
+      clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
+    const after = window.__shellToggleCount || 0;
+    return { pass: after === before, detail: `shell toggles before=${before} after=${after}` };
+  });
+
   await page.waitForTimeout(4200);
   await check(page, S, 'native controls SURVIVE player turning them off', () => {
     const v = document.querySelector('.xq7-player-shell video');
@@ -1782,6 +1793,74 @@ async function qualityUISelectionCheck(page, scenario) {
     const hasAttr = v.hasAttribute('controls');
     return { pass: hasAttr, detail: `hasAttribute('controls')=${hasAttr} (getter=${v.controls})` };
   }, { timeout: 1500, interval: 500 });
+
+  await check(page, S, 'hides outer-shell bar nested outside the inner positioned wrapper', () => {
+    const bars = document.querySelectorAll('#xq7-nested > .xq7-late-bar');
+    if (!bars.length) return { pass: false, detail: 'no bar' };
+    const hidden = Array.from(bars).every(b => b.style.display === 'none');
+    return { pass: hidden, detail: `bars=${bars.length} displays=${Array.from(bars).map(b => b.style.display || 'visible').join(',')}` };
+  });
+
+  await check(page, S, 're-hides a control bar remounted after the one-shot hide', () => {
+    const bars = document.querySelectorAll('#xq7-nested > .xq7-late-bar');
+    const hidden = bars.length === 1 && bars[0].style.display === 'none';
+    return { pass: hidden, detail: `bars=${bars.length} display=${bars[0] && (bars[0].style.display || 'visible')}` };
+  });
+
+  await check(page, S, 'nested video keeps native controls', () => {
+    const v = document.querySelector('#xq7-nested video');
+    return { pass: !!(v && v.controls === true), detail: v ? `controls=${v.controls}` : 'no video' };
+  });
+
+  await check(page, S, 'hides !important design-system control bar', () => {
+    const el = document.getElementById('xq7-important');
+    if (!el) return { pass: false, detail: 'no element' };
+    const cs = getComputedStyle(el);
+    const pass = cs.display === 'none' || el.getAttribute('data-wblock-pc-hidden') === '1';
+    return { pass, detail: `display=${cs.display} attr=${el.getAttribute('data-wblock-pc-hidden')}` };
+  });
+
+  await check(page, S, 'hides portal/fixed chrome remounted outside the shell', () => {
+    const el = document.getElementById('xq7-portal-bar');
+    if (!el) return { pass: false, detail: 'no portal bar' };
+    const cs = getComputedStyle(el);
+    const pass = cs.display === 'none' || el.getAttribute('data-wblock-pc-hidden') === '1';
+    return { pass, detail: `display=${cs.display} attr=${el.getAttribute('data-wblock-pc-hidden')}` };
+  });
+
+  await check(page, S, 'hides static full-bleed cover sibling (LinkedIn end-card)', () => {
+    const el = document.getElementById('xq7-static-cover');
+    if (!el) return { pass: false, detail: 'no cover' };
+    const cs = getComputedStyle(el);
+    const pass = cs.display === 'none' || el.getAttribute('data-wblock-pc-hidden') === '1';
+    return { pass, detail: `display=${cs.display} attr=${el.getAttribute('data-wblock-pc-hidden')}` };
+  });
+
+  await check(page, S, 'static-cover video keeps native controls reachable', () => {
+    const v = document.getElementById('xq7-cover-video');
+    const cover = document.getElementById('xq7-static-cover');
+    if (!v) return { pass: false, detail: 'no video' };
+    const coverHidden = !cover || getComputedStyle(cover).display === 'none' ||
+      cover.getAttribute('data-wblock-pc-hidden') === '1';
+    return { pass: !!(v.controls && coverHidden), detail: `controls=${v.controls} coverHidden=${coverHidden}` };
+  });
+
+  await check(page, S, 'hides static control bar sibling (LinkedIn controls)', () => {
+    const el = document.getElementById('xq7-static-bar');
+    if (!el) return { pass: false, detail: 'no bar' };
+    const cs = getComputedStyle(el);
+    const pass = cs.display === 'none' || el.getAttribute('data-wblock-pc-hidden') === '1';
+    return { pass, detail: `display=${cs.display} attr=${el.getAttribute('data-wblock-pc-hidden')}` };
+  });
+
+  await check(page, S, 'control-bar video keeps native controls reachable', () => {
+    const v = document.getElementById('xq7-bar-video');
+    const bar = document.getElementById('xq7-static-bar');
+    if (!v) return { pass: false, detail: 'no video' };
+    const barHidden = !bar || getComputedStyle(bar).display === 'none' ||
+      bar.getAttribute('data-wblock-pc-hidden') === '1';
+    return { pass: !!(v.controls && barHidden), detail: `controls=${v.controls} barHidden=${barHidden}` };
+  });
 
   record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
