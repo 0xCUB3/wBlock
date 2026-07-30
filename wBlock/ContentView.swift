@@ -1245,110 +1245,54 @@ struct EditCustomFilterView: View {
 
     var body: some View {
         Group {
-            #if os(iOS)
-                NavigationStack {
-                    Form {
-                        Section {
-                            TextField("Name", text: $name)
-                                .focused($nameFieldIsFocused)
+            NavigationStack {
+                Form {
+                    Section {
+                        TextField("Name", text: $name)
+                            .focused($nameFieldIsFocused)
+                            #if os(iOS)
                                 .textInputAutocapitalization(.words)
                                 .submitLabel(.done)
-                                .onSubmit {
-                                    if canSave {
-                                        save()
-                                    } else {
-                                        nameFieldIsFocused = false
-                                    }
+                            #endif
+                            .onSubmit {
+                                if canSave {
+                                    save()
+                                } else {
+                                    nameFieldIsFocused = false
                                 }
-
-                            userListCategoryPicker(selection: $selectedCategory)
-
-                            Text(filter.url.absoluteString)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                                .textSelection(.enabled)
-                        } footer: {
-                            if isDuplicate {
-                                Text("That name is already used by another filter list.")
-                                    .foregroundStyle(.orange)
                             }
+
+                        userListCategoryPicker(selection: $selectedCategory)
+
+                        Text(filter.url.absoluteString)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .textSelection(.enabled)
+                    } footer: {
+                        if isDuplicate {
+                            Text("That name is already used by another filter list.")
+                                .foregroundStyle(.orange)
                         }
                     }
-                    .navigationTitle("Edit Filter List")
+                }
+                .navigationTitle("Edit Filter List")
+                #if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Cancel") { dismiss() }
-                        }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Save") { save() }
-                                .disabled(!canSave)
-                        }
+                #endif
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") { save() }
+                            .disabled(!canSave)
                     }
                 }
-                .onAppear {
-                    nameFieldIsFocused = true
-                }
-            #else
-                SheetContainer {
-                    SheetHeader(title: "Edit Filter List") {
-                        dismiss()
-                    }
-
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 16) {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Name")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-
-                                TextField("Filter name", text: $name)
-                                    .textFieldStyle(.roundedBorder)
-                                    .focused($nameFieldIsFocused)
-                                    .onSubmit {
-                                        if canSave {
-                                            save()
-                                        } else {
-                                            nameFieldIsFocused = false
-                                        }
-                                    }
-
-                                Text("Category")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-
-                                userListCategoryPicker(selection: $selectedCategory)
-                                    .labelsHidden()
-
-                                Text(filter.url.absoluteString)
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                                    .lineLimit(2)
-                                    .textSelection(.enabled)
-
-                                if isDuplicate {
-                                    Text("That name is already used by another filter list.")
-                                        .font(.caption)
-                                        .foregroundStyle(.orange)
-                                }
-                            }
-                            .padding(20)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-                        }
-                        .padding(.horizontal, SheetDesign.contentHorizontalPadding)
-                        .padding(.top, 12)
-                        .padding(.bottom, 40)
-                    }
-
-                    SheetBottomToolbar {
-                        Spacer()
-                        saveButton
-                    }
-                }
-                .onAppear {
-                    nameFieldIsFocused = true
-                }
-            #endif
+            }
+            .onAppear {
+                nameFieldIsFocused = true
+            }
         }
         .alert(
             "Error",
@@ -1377,15 +1321,6 @@ struct EditCustomFilterView: View {
 
     private var canSave: Bool {
         !trimmedName.isEmpty && !isDuplicate
-    }
-
-    private var saveButton: some View {
-        Button("Save") {
-            save()
-        }
-        .primaryActionButtonStyle()
-        .disabled(!canSave)
-        .keyboardShortcut(.defaultAction)
     }
 
     private func save() {
@@ -1424,168 +1359,83 @@ struct EditUserListView: View {
     }
 
     var body: some View {
-        Group {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Title", text: $title)
+                        .focused($titleFieldIsFocused)
+                        #if os(iOS)
+                            .textInputAutocapitalization(.words)
+                        #endif
+                        .autocorrectionDisabled()
+
+                    TextField("Description", text: $description)
+                        #if os(iOS)
+                            .textInputAutocapitalization(.sentences)
+                        #endif
+                        .autocorrectionDisabled()
+
+                    userListCategoryPicker(selection: $selectedCategory)
+
+                    Text(filter.url.absoluteString)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .textSelection(.enabled)
+                } footer: {
+                    if isDuplicateTitle {
+                        Text("That title is already used by another filter list.")
+                            .foregroundStyle(.orange)
+                    }
+                }
+
+                Section("Rules") {
+                    SyntaxHighlightingTextView(text: $rules)
+                        .frame(minHeight: 260)
+                }
+            }
+            .navigationTitle("Edit User List")
             #if os(iOS)
-                NavigationStack {
-                    Form {
-                        Section {
-                            TextField("Title", text: $title)
-                                .focused($titleFieldIsFocused)
-                                .textInputAutocapitalization(.words)
-                                .autocorrectionDisabled()
-
-                            TextField("Description", text: $description)
-                                .textInputAutocapitalization(.sentences)
-                                .autocorrectionDisabled()
-
-                            userListCategoryPicker(selection: $selectedCategory)
-                        } footer: {
-                            if isDuplicateTitle {
-                                Text("That title is already used by another filter list.")
-                                    .foregroundStyle(.orange)
-                            }
-                        }
-
-                        Section("Rules") {
-                            SyntaxHighlightingTextView(text: $rules)
-                                .frame(minHeight: 260)
-                        }
-                    }
-                    .navigationTitle("Edit User List")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Cancel") { dismiss() }
-                                .disabled(isLoadingContent)
-                        }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Save") { save() }
-                                .disabled(!canSave)
-                        }
-                        ToolbarItem(placement: .principal) {
-                            if isLoadingContent {
-                                ProgressView()
-                            }
-                        }
-                    }
-                }
-                .interactiveDismissDisabled(isLoadingContent)
-                .onAppear {
-                    titleFieldIsFocused = true
-                    loadContent()
-                }
-                .alert(
-                    "Couldn’t Save",
-                    isPresented: Binding(
-                        get: { errorMessage != nil },
-                        set: { _ in errorMessage = nil }
-                    )
-                ) {
-                    Button("OK", role: .cancel) { errorMessage = nil }
-                } message: {
-                    Text(errorMessage ?? "")
-                }
-                .presentationDetents([.large])
-		            .presentationDragIndicator(.visible)
-            #else
-                SheetContainer {
-                    SheetHeader(title: "Edit User List", isLoading: isLoadingContent) {
-                        dismiss()
-                    }
-
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 16) {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Title")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-
-                                TextField("User List", text: $title)
-                                    .textFieldStyle(.roundedBorder)
-                                    .focused($titleFieldIsFocused)
-                                    .autocorrectionDisabled()
-                                    .onSubmit {
-                                        titleFieldIsFocused = false
-                                    }
-
-                                Text("Description")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-
-                                TextField("Description", text: $description)
-                                    .textFieldStyle(.roundedBorder)
-                                    .autocorrectionDisabled()
-
-                                Text("Category")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-
-                                userListCategoryPicker(selection: $selectedCategory)
-                                    .labelsHidden()
-
-                                Text(filter.url.absoluteString)
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                                    .lineLimit(2)
-                                    .textSelection(.enabled)
-
-                                if isDuplicateTitle {
-                                    Text("That title is already used by another filter list.")
-                                        .font(.caption)
-                                        .foregroundStyle(.orange)
-                                }
-                            }
-                            .padding(20)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Rules")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-
-                                SyntaxHighlightingTextView(text: $rules)
-                                    .frame(minHeight: 260)
-                                    .padding(10)
-                                    .background(
-                                        .background,
-                                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .stroke(.quaternary, lineWidth: 1)
-                                    )
-                            }
-                            .padding(20)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-                        }
-                        .padding(.horizontal, SheetDesign.contentHorizontalPadding)
-                        .padding(.top, 12)
-                        .padding(.bottom, 40)
-                    }
-
-                    SheetBottomToolbar {
-                        Spacer()
-                        saveButton
-                    }
-                }
-                .interactiveDismissDisabled(isLoadingContent)
-                .onAppear {
-                    titleFieldIsFocused = true
-                    loadContent()
-                }
-                .alert(
-                    "Couldn’t Save",
-                    isPresented: Binding(
-                        get: { errorMessage != nil },
-                        set: { _ in errorMessage = nil }
-                    )
-                ) {
-                    Button("OK", role: .cancel) { errorMessage = nil }
-                } message: {
-                    Text(errorMessage ?? "")
-                }
+                .navigationBarTitleDisplayMode(.inline)
             #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                        .disabled(isLoadingContent)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { save() }
+                        .disabled(!canSave)
+                }
+                #if os(iOS)
+                ToolbarItem(placement: .principal) {
+                    if isLoadingContent {
+                        ProgressView()
+                    }
+                }
+                #endif
+            }
         }
+        .interactiveDismissDisabled(isLoadingContent)
+        .onAppear {
+            titleFieldIsFocused = true
+            loadContent()
+        }
+        .alert(
+            "Couldn’t Save",
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { _ in errorMessage = nil }
+            )
+        ) {
+            Button("OK", role: .cancel) { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
+        #if os(iOS)
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+        #endif
     }
 
 
@@ -1608,15 +1458,6 @@ struct EditUserListView: View {
 
     private var canSave: Bool {
         !trimmedTitle.isEmpty && !trimmedRules.isEmpty && !isDuplicateTitle && !isLoadingContent
-    }
-
-    private var saveButton: some View {
-        Button("Save") {
-            save()
-        }
-        .primaryActionButtonStyle()
-        .disabled(!canSave)
-        .keyboardShortcut(.defaultAction)
     }
 
     private func loadContent() {
