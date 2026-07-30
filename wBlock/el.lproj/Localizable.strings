@@ -840,3 +840,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Skipped pause request while apply is in progress" = "Skipped pause request while apply is in progress";
 "Apply already in progress." = "Apply already in progress.";
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
+
+"Safari Rule Capacity" = "Χωρητικότητα κανόνων Safari";
+"Total Capacity" = "Συνολική χωρητικότητα";
+"Ads & Trackers" = "Διαφημίσεις & Ιχνηλάτες";
+"Privacy & Anti-Tracking" = "Ιδιωτικότητα & Αντι-ιχνηλάτηση";
+"Security & Annoyances" = "Ασφάλεια & Ενοχλήσεις";
+"Regional & Language" = "Περιφερειακά & Γλώσσα";
+"Custom & User Rules" = "Προσαρμοσμένοι κανόνες";
+"Extension Slots" = "Θέσεις επέκτασης";
+"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Το Safari περιορίζει κάθε επέκταση αποκλεισμού περιεχομένου σε 150.000 κανόνες. Το wBlock εξισορροπεί και μεταγλωττίζει αυτόματα τους κανόνες και στις 5 θέσεις.";
+"Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Επιλέξτε τις γλώσσες στις οποίες περιηγείστε. Το wBlock θα προτείνει αυτόματα τα αντίστοιχα περιφερειακά φίλτρα και λειτουργίες.";
+"Recommended Regional Filters" = "Προτεινόμενα περιφερειακά φίλτρα";
+"Baseline Userscripts" = "Βασικά σενάρια χρήστη";

@@ -841,3 +841,16 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Skipped pause request while apply is in progress" = "Skipped pause request while apply is in progress";
 "Apply already in progress." = "Apply already in progress.";
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
+
+"Safari Rule Capacity" = "Safari szabálykapacitás";
+"Total Capacity" = "Teljes kapacitás";
+"Ads & Trackers" = "Hirdetések és nyomkövetők";
+"Privacy & Anti-Tracking" = "Adatvédelem és nyomkövetés-gátlás";
+"Security & Annoyances" = "Biztonság és zavaró elemek";
+"Regional & Language" = "Regionális és nyelvi";
+"Custom & User Rules" = "Egyéni szabályok";
+"Extension Slots" = "Bővítményhelyek";
+"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "A Safari minden tartalomblokkoló bővítményt 150 000 szabályra korlátoz. A wBlock automatikusan kiegyensúlyozza és lefordítja a szabályokat mind az 5 helyen.";
+"Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Válassza ki a böngészési nyelveket. A wBlock automatikusan ajánlja a megfelelő regionális szűrőket és funkciókat.";
+"Recommended Regional Filters" = "Ajánlott regionális szűrők";
+"Baseline Userscripts" = "Alapvető felhasználói szkriptek";

@@ -840,3 +840,16 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Skipped pause request while apply is in progress" = "Skipped pause request while apply is in progress";
 "Apply already in progress." = "Apply already in progress.";
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
+
+"Safari Rule Capacity" = "Capacitate reguli Safari";
+"Total Capacity" = "Capacitate totală";
+"Ads & Trackers" = "Reclame și urmăritori";
+"Privacy & Anti-Tracking" = "Confidențialitate și anti-urmărire";
+"Security & Annoyances" = "Securitate și elemente deranjante";
+"Regional & Language" = "Regionale și limbă";
+"Custom & User Rules" = "Reguli personalizate";
+"Extension Slots" = "Sloturi de extensie";
+"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari limitează fiecare extensie de blocare a conținutului la 150.000 de reguli. wBlock echilibrează și compilează automat regulile pe toate cele 5 sloturi.";
+"Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Selectați limbile în care navigați. wBlock va recomanda automat filtrele regionale și funcțiile potrivite.";
+"Recommended Regional Filters" = "Filtre regionale recomandate";
+"Baseline Userscripts" = "Userscript-uri de bază";

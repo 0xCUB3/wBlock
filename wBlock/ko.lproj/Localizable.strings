@@ -840,3 +840,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Skipped pause request while apply is in progress" = "Skipped pause request while apply is in progress";
 "Apply already in progress." = "Apply already in progress.";
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
+
+"Safari Rule Capacity" = "Safari 규칙 용량";
+"Total Capacity" = "총 용량";
+"Ads & Trackers" = "광고 및 추적기";
+"Privacy & Anti-Tracking" = "개인정보 보호 및 추적 방지";
+"Security & Annoyances" = "보안 및 성가신 요소";
+"Regional & Language" = "지역 및 언어";
+"Custom & User Rules" = "사용자 지정 규칙";
+"Extension Slots" = "확장 슬롯";
+"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari는 각 콘텐츠 차단기 확장을 150,000개 규칙으로 제한합니다. wBlock은 5개 슬롯 전체에서 규칙을 자동으로 균형 있게 조절하고 컴파일합니다.";
+"Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "탐색하는 언어를 선택하세요. wBlock이 알맞은 지역 필터 및 기능을 자동으로 추천합니다.";
+"Recommended Regional Filters" = "추천 지역 필터";
+"Baseline Userscripts" = "기본 유저스크립트";

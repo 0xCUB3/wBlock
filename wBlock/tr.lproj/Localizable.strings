@@ -847,3 +847,16 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Skipped pause request while apply is in progress" = "Skipped pause request while apply is in progress";
 "Apply already in progress." = "Apply already in progress.";
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
+
+"Safari Rule Capacity" = "Safari Kural Kapasitesi";
+"Total Capacity" = "Toplam Kapasite";
+"Ads & Trackers" = "Reklamlar ve İzleyiciler";
+"Privacy & Anti-Tracking" = "Gizlilik ve İzleme Koruması";
+"Security & Annoyances" = "Güvenlik ve Rahatsız Edici Ögeler";
+"Regional & Language" = "Bölgesel ve Dil";
+"Custom & User Rules" = "Özel ve Kullanıcı Kuralları";
+"Extension Slots" = "Uzantı Yuvaları";
+"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari, her İçerik Engelleyici uzantısını 150.000 kural ile sınırlar. wBlock, kuralları 5 yuva arasında otomatik olarak dengeler ve derler.";
+"Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Gezindiğiniz dilleri seçin. wBlock, eşleşen bölgesel filtreleri ve özellikleri otomatik olarak önerecektir.";
+"Recommended Regional Filters" = "Önerilen Bölgesel Filtreler";
+"Baseline Userscripts" = "Temel Kullanıcı Komut Dosyaları";

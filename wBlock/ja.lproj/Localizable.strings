@@ -842,3 +842,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Skipped pause request while apply is in progress" = "Skipped pause request while apply is in progress";
 "Apply already in progress." = "Apply already in progress.";
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
+
+"Safari Rule Capacity" = "Safariルール容量";
+"Total Capacity" = "合計容量";
+"Ads & Trackers" = "広告とトラッカー";
+"Privacy & Anti-Tracking" = "プライバシーとトラッキング防止";
+"Security & Annoyances" = "セキュリティと迷惑要素";
+"Regional & Language" = "地域と言語";
+"Custom & User Rules" = "カスタムおよびユーザールール";
+"Extension Slots" = "拡張機能スロット";
+"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safariはコンテンツブロッカー拡張機能ごとに150,000ルールの制限があります。wBlockは全5つのスロット全体でルールを自動的にバランス調整してコンパイルします。";
+"Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "閲覧する言語を選択してください。wBlockが一致する地域フィルタや機能を自動的に推し進めます。";
+"Recommended Regional Filters" = "推奨地域フィルタ";
+"Baseline Userscripts" = "基本ユーザースクリプト";

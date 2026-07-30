@@ -840,3 +840,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Skipped pause request while apply is in progress" = "Skipped pause request while apply is in progress";
 "Apply already in progress." = "Apply already in progress.";
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
+
+"Safari Rule Capacity" = "Safari 规则容量";
+"Total Capacity" = "总容量";
+"Ads & Trackers" = "广告与追踪器";
+"Privacy & Anti-Tracking" = "隐私与反追踪";
+"Security & Annoyances" = "安全与烦人元素";
+"Regional & Language" = "地区与语言";
+"Custom & User Rules" = "自定义与用户规则";
+"Extension Slots" = "扩展槽位";
+"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari 将每个内容拦截器扩展限制为 150,000 条规则。wBlock 会自动在所有 5 个槽位中平衡并编译规则。";
+"Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "选择您浏览网页所用的语言。wBlock 将自动推荐匹配的地区过滤器和功能。";
+"Recommended Regional Filters" = "推荐地区过滤器";
+"Baseline Userscripts" = "基础用户脚本";

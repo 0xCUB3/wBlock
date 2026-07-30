@@ -840,3 +840,16 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Skipped pause request while apply is in progress" = "Skipped pause request while apply is in progress";
 "Apply already in progress." = "Apply already in progress.";
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
+
+"Safari Rule Capacity" = "Capacidad de reglas de Safari";
+"Total Capacity" = "Capacidad total";
+"Ads & Trackers" = "Anuncios y rastreadores";
+"Privacy & Anti-Tracking" = "Privacidad y antirrastreo";
+"Security & Annoyances" = "Seguridad y molestias";
+"Regional & Language" = "Regional e idiomas";
+"Custom & User Rules" = "Reglas personalizadas";
+"Extension Slots" = "Ranuras de extensión";
+"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari limita cada extensión de bloqueador de contenido a 150 000 reglas. wBlock equilibra y compila automáticamente las reglas en las 5 ranuras.";
+"Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Selecciona los idiomas en los que navegas. wBlock recomendará automáticamente los filtros regionales y funciones correspondientes.";
+"Recommended Regional Filters" = "Filtros regionales recomendados";
+"Baseline Userscripts" = "Scripts de usuario base";
