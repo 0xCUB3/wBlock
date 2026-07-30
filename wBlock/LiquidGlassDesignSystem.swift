@@ -176,7 +176,7 @@ struct ToolbarSearchField: View {
 struct SearchMinimizeBehavior: ViewModifier {
     func body(content: Content) -> some View {
         #if os(iOS)
-        if #available(iOS 18.0, *) {
+        if #available(iOS 26.0, *) {
             applyMinimize(content)
         } else {
             content
@@ -187,7 +187,7 @@ struct SearchMinimizeBehavior: ViewModifier {
     }
 
     #if os(iOS)
-    @available(iOS 18.0, *)
+    @available(iOS 26.0, *)
     private func applyMinimize(_ content: Content) -> some View {
         content.searchToolbarBehavior(.minimize)
     }
