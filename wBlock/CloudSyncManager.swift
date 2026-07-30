@@ -1600,21 +1600,9 @@ final class CloudSyncManager: ObservableObject {
     private func fetchRecord() async throws -> CKRecord? {
         guard let database else { throw CloudSyncError.cloudKitUnavailable }
         do {
-            return try await withCheckedThrowingContinuation { continuation in
-                database.fetch(withRecordID: recordID) { record, error in
-                    if let error {
-                        if let ckError = error as? CKError, ckError.code == .unknownItem {
-                            continuation.resume(returning: nil)
-                            return
-                        }
-                        continuation.resume(throwing: error)
-                        return
-                    }
-                    continuation.resume(returning: record)
-                }
-            }
-        } catch {
-            throw error
+            return try await database.record(for: recordID)
+        } catch let ckError as CKError where ckError.code == .unknownItem {
+            return nil
         }
     }
 
@@ -1624,15 +1612,7 @@ final class CloudSyncManager: ObservableObject {
     private func saveRecord(_ record: CKRecord, retryCount: Int = 0) async throws -> CKRecord {
         guard let database else { throw CloudSyncError.cloudKitUnavailable }
         do {
-            return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CKRecord, Error>) in
-                database.save(record) { saved, error in
-                    if let error {
-                        continuation.resume(throwing: error)
-                        return
-                    }
-                    continuation.resume(returning: saved ?? record)
-                }
-            }
+            return try await database.save(record)
         } catch let ckError as CKError {
             guard ckError.code != .serverRecordChanged,
                   retryCount < 2,
@@ -1878,17 +1858,23 @@ final class CloudSyncManager: ObservableObject {
 
     // MARK: - Deleted Marker Helpers (shared across custom lists, local scripts, remote scripts)
 
-    private func loadDeletedMarkers(forKey key: String) -> [String: TimeInterval] {
+    private static func parseDeletedTimestamp(_ value: Any?) -> TimeInterval? {
+        if let t = value as? TimeInterval { return t }
+        if let d = value as? Double { return d }
+        if let n = value as? NSNumber { return n.doubleValue }
+        return nil
+    }
+
+    private func loadDeletedMarkers(
+        forKey key: String,
+        normalize: (String) -> String = { $0 }
+    ) -> [String: TimeInterval] {
         let raw = defaults.dictionary(forKey: key) ?? [:]
         var result: [String: TimeInterval] = [:]
-        for (key, value) in raw {
-            if let t = value as? TimeInterval {
-                result[key] = t
-            } else if let d = value as? Double {
-                result[key] = d
-            } else if let n = value as? NSNumber {
-                result[key] = n.doubleValue
-            }
+        for (rawKey, value) in raw {
+            let normalizedKey = normalize(rawKey)
+            guard !normalizedKey.isEmpty, let t = Self.parseDeletedTimestamp(value) else { continue }
+            result[normalizedKey] = t
         }
         let pruned = pruneDeletedMarkers(result)
         if pruned.count != result.count {
@@ -1962,25 +1948,7 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func loadDeletedLocalUserScriptMarkers() -> [String: TimeInterval] {
-        let raw = defaults.dictionary(forKey: Keys.deletedLocalUserScriptNames) ?? [:]
-        var result: [String: TimeInterval] = [:]
-        for (key, value) in raw {
-            let normalized = CloudSyncLocalUserScriptReconciler.normalizedName(key)
-            guard !normalized.isEmpty else { continue }
-            if let t = value as? TimeInterval {
-                result[normalized] = t
-            } else if let d = value as? Double {
-                result[normalized] = d
-            } else if let n = value as? NSNumber {
-                result[normalized] = n.doubleValue
-            }
-        }
-
-        let pruned = pruneDeletedMarkers(result)
-        if pruned.count != result.count {
-            saveDeletedMarkers(pruned, forKey: Keys.deletedLocalUserScriptNames)
-        }
-        return pruned
+        loadDeletedMarkers(forKey: Keys.deletedLocalUserScriptNames, normalize: CloudSyncLocalUserScriptReconciler.normalizedName)
     }
 
     private func mergeDeletedLocalUserScriptNames(_ names: Set<String>) {
@@ -1995,25 +1963,7 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func loadDeletedRemoteUserScriptURLMarkers() -> [String: TimeInterval] {
-        let raw = defaults.dictionary(forKey: Keys.deletedRemoteUserScriptURLs) ?? [:]
-        var result: [String: TimeInterval] = [:]
-        for (key, value) in raw {
-            let normalized = CloudSyncRemoteUserScriptReconciler.normalizedURL(key)
-            guard !normalized.isEmpty else { continue }
-            if let t = value as? TimeInterval {
-                result[normalized] = t
-            } else if let d = value as? Double {
-                result[normalized] = d
-            } else if let n = value as? NSNumber {
-                result[normalized] = n.doubleValue
-            }
-        }
-
-        let pruned = pruneDeletedMarkers(result)
-        if pruned.count != result.count {
-            saveDeletedMarkers(pruned, forKey: Keys.deletedRemoteUserScriptURLs)
-        }
-        return pruned
+        loadDeletedMarkers(forKey: Keys.deletedRemoteUserScriptURLs, normalize: CloudSyncRemoteUserScriptReconciler.normalizedURL)
     }
 
     private func clearDeletedRemoteUserScriptURLs(_ urls: Set<String>) {
