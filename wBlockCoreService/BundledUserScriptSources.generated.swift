@@ -5059,6 +5059,36 @@ enum BundledUserScriptSources {
         }
     }
 
+    function applyCleanSizing(container, video) {
+        video.style.width = '100%';
+        video.style.maxWidth = '100%';
+        video.style.display = 'block';
+        video.style.background = '#000';
+
+        var vw = video.videoWidth || parseFloat(video.getAttribute('width') || '0');
+        var vh = video.videoHeight || parseFloat(video.getAttribute('height') || '0');
+
+        if (vw > 0 && vh > 0) {
+            var ratioStr = vw + ' / ' + vh;
+            try { video.style.aspectRatio = ratioStr; } catch (e) { /* ignore */ }
+        }
+
+        try {
+            var cs = getComputedStyle(container);
+            var hasExplicitHeight = cs.height && cs.height !== 'auto' && parseFloat(cs.height) > 0;
+            if (hasExplicitHeight) {
+                video.style.height = '100%';
+            } else {
+                video.style.height = 'auto';
+                if (vw > 0 && vh > 0) {
+                    try { container.style.aspectRatio = vw + ' / ' + vh; } catch (e) { /* ignore */ }
+                }
+            }
+        } catch (e) {
+            video.style.height = '100%';
+        }
+    }
+
     function cleanPlayer(container, video, src) {
         if (video._wblockCleaned) { return; }
         // A blob: src means the page attached a MediaSource / MSE pipeline it
@@ -5099,9 +5129,7 @@ enum BundledUserScriptSources {
         try {
             container.classList.remove('video-js', 'vjs-paused', 'vjs-playing');
         } catch (e) { /* ignore */ }
-        video.style.width = '100%';
-        video.style.height = '100%';
-        video.style.background = '#000';
+        applyCleanSizing(container, video);
         forceNativeControls(video);
         recoverSidecarTracks(container, video);
         setupAutoPiP(video);
