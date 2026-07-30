@@ -2,12 +2,12 @@ import SwiftUI
 
 struct UnifiedTabListStyleModifier: ViewModifier {
     func body(content: Content) -> some View {
-        content
-            #if os(iOS)
-                .listStyle(.insetGrouped)
-            #else
-                .listStyle(.inset)
-            #endif
+        #if os(iOS)
+            content.listStyle(.insetGrouped)
+        #else
+            // .inset renders rounded card sections like System Settings on macOS
+            content.listStyle(.inset)
+        #endif
     }
 }
 

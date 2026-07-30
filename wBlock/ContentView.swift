@@ -228,7 +228,7 @@ struct ContentView: View {
             )
             .modifier(SearchMinimizeBehavior())
         #else
-            .searchable(text: $filterSearchText, prompt: "Search filters")
+            .searchable(text: $filterSearchText, placement: .toolbar, prompt: "Search filters")
             .frame(
                 minWidth: 480, idealWidth: 540, maxWidth: .infinity,
                 minHeight: 550, idealHeight: 720, maxHeight: .infinity
@@ -413,6 +413,9 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             #endif
         }
+        #if os(macOS)
+        .frame(maxWidth: .infinity)
+        #endif
         .padding(.horizontal)
     }
 

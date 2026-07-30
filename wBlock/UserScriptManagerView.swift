@@ -324,7 +324,7 @@ struct UserScriptManagerView: View {
         )
         .modifier(SearchMinimizeBehavior())
         #else
-        .searchable(text: $searchText, prompt: "Search scripts")
+        .searchable(text: $searchText, placement: .toolbar, prompt: "Search scripts")
         #endif
     }
 
@@ -423,6 +423,9 @@ struct UserScriptManagerView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             #endif
         }
+        #if os(macOS)
+        .frame(maxWidth: .infinity)
+        #endif
         .padding(.horizontal)
     }
 
