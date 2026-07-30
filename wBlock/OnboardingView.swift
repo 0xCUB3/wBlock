@@ -16,9 +16,7 @@ struct OnboardingView: View {
 
     enum OnboardingStep: Int, CaseIterable, Identifiable {
         case protection
-        case region
-        case regionalFilters
-        case userscripts
+        case regional
         case sync
         case setup
 
@@ -363,7 +361,7 @@ struct OnboardingView: View {
     }
 
     private var activeOnboardingSteps: [OnboardingStep] {
-        [.protection, .region, .regionalFilters, .userscripts, .sync, .setup]
+        [.protection, .regional, .sync, .setup]
     }
 
     private var currentStepIndex: Int {
@@ -413,12 +411,8 @@ struct OnboardingView: View {
         switch step {
         case .protection:
             blockingLevelStep
-        case .region:
-            regionStep
-        case .regionalFilters:
-            regionalFiltersStep
-        case .userscripts:
-            userscriptStep
+        case .regional:
+            regionalStep
         case .sync:
             syncStep
         case .setup:
@@ -456,7 +450,7 @@ struct OnboardingView: View {
         switch step {
         case .protection:
             return selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        case .region:
+        case .regional:
             return !hasLanguagePickerSelection
         case .setup:
             return !hasEnabledContentBlockers || !hasEnabledAdvanced
@@ -669,28 +663,35 @@ struct OnboardingView: View {
         )
     }
 
-    private var regionStep: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters.")
+    private var regionalStep: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("Select the languages you browse in. wBlock will automatically recommend matching regional filters and features.")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Text("This doesn't change the app's display language, which always follows your device settings.")
-                .font(.caption)
                 .foregroundStyle(.secondary)
 
             languagePickerGrid
 
-            if !selectedFilterLanguageOptions.isEmpty {
-                Text("Next: review matching filters.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 4)
-            } else if hasLanguagePickerSelection {
-                Text("No regional filters needed. The default filter lists already cover English and international sites.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 4)
+            if !recommendedRegionalFilters.isEmpty || !languagesWithoutRegionalFilters.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Recommended Regional Filters")
+                        .font(.headline)
+                    ForEach(ForeignFilterOrganizer.groups(for: recommendedRegionalFilters, preferredLanguages: selectedLanguages)) { group in
+                        regionalFilterGroup(group, expandsCommunity: false)
+                    }
+                    ForEach(languagesWithoutRegionalFilters) { lang in
+                        emptyRegionalFilterGroup(for: lang)
+                    }
+                }
+            }
+
+            if !defaultUserScripts.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Baseline Userscripts")
+                        .font(.headline)
+                    ForEach(generalDefaultUserScripts) { script in
+                        userscriptCard(for: script)
+                    }
+                }
             }
         }
     }
