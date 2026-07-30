@@ -269,7 +269,9 @@
         'media-theme-youtube',       // Media Chrome YouTube theme
         '.media-player',             // Media Chrome / modern wrappers
         '.media-default-skin',       // videojs.org's modern demo wrapper
-        '.WebPlayerContainer'        // ESPN / Disney BAM player
+        '.WebPlayerContainer',       // ESPN / Disney BAM player
+        '.mw-tmh-player',            // MediaWiki TimedMediaHandler
+        '[data-mw-tmh]'              // MediaWiki TimedMediaHandler
     ];
     var PLAYER_SELECTOR = PLAYER_SELECTORS.join(',');
 
@@ -619,14 +621,18 @@
         // Some selectors match inner elements; climb to the outermost player
         // wrapper so we replace the whole custom chrome, not just part of it.
         var container = raw;
+        if (container && container.tagName === 'VIDEO') {
+            container = container.parentElement || container;
+        }
         var wrapperSelectors = ['.video-js', '.jwplayer', '.jw-wrapper', '.plyr',
             '.flowplayer', '.mejs-container', '.mejs__container', '.clappr',
             '[data-clappr-player]', '.fluid_video_wrapper', 'mux-player',
             'media-controller', 'media-theme', 'media-theme-youtube',
-            '.media-player', '.media-default-skin', '.WebPlayerContainer'];
+            '.media-player', '.media-default-skin', '.WebPlayerContainer',
+            '.mw-tmh-player', '[data-mw-tmh]'];
         for (var i = 0; i < wrapperSelectors.length; i++) {
             var ancestor = container.closest ? container.closest(wrapperSelectors[i]) : null;
-            if (ancestor) { container = ancestor; }
+            if (ancestor && ancestor.tagName !== 'VIDEO') { container = ancestor; }
         }
         return container;
     }
@@ -636,6 +642,10 @@
         video._wblockControlsPatched = true;
         video.controls = true;
         video.setAttribute('controls', '');
+        try {
+            if (video.hasAttribute('disabled')) { video.removeAttribute('disabled'); }
+            if (video.disabled) { video.disabled = false; }
+        } catch (e) { /* ignore */ }
     }
 
     // The UA services native-control clicks below the JS event layer, but stopping
@@ -757,7 +767,7 @@
     // positioned, so a positioned <body> can never trigger a whole-page hide.
     function containerForVideo(video) {
         var known = video.closest && video.closest(PLAYER_SELECTOR);
-        if (known) { return normalizeContainer(known); }
+        if (known && known.tagName !== 'VIDEO') { return normalizeContainer(known); }
         var el = video.parentElement;
         while (el && el.parentElement && el.tagName !== 'BODY') {
             try {
