@@ -8,8 +8,6 @@ extension AppFilterManager {
     private enum ApplyPipelineError: LocalizedError {
         case emptyRulesSaveFailed(targetName: String)
         case emptyRulesReloadFailed(targetName: String)
-        case sharedContainerUnavailable
-        case conversionFailed(targetName: String, underlying: Error)
 
         var errorDescription: String? {
             switch self {
@@ -17,10 +15,6 @@ extension AppFilterManager {
                 return "Failed to save cleared rules for \(targetName)."
             case let .emptyRulesReloadFailed(targetName):
                 return "Failed to reload \(targetName) after clearing rules."
-            case .sharedContainerUnavailable:
-                return "Shared app group container unavailable."
-            case let .conversionFailed(targetName, underlying):
-                return "Failed to convert rules for \(targetName): \(underlying.localizedDescription)"
             }
         }
     }
@@ -422,7 +416,7 @@ extension AppFilterManager {
             operation: { work in
                 let conversionStart = Date()
                 do {
-                    let outcome = try Self.convertOrReuseTargetRules(
+                    let outcome = try ContentBlockerService.compileTargetRules(
                         filters: work.filters,
                         orderedSelectedFilters: orderedSelectedFilters,
                         affinityFilterIDs: affinityFilterIDs,
@@ -980,99 +974,6 @@ extension AppFilterManager {
     // MARK: - Static helpers
 
     /// Memory-efficient conversion that combines filter files using streaming I/O
-    nonisolated private static func convertFiltersMemoryEfficient(
-        filters: [FilterList],
-        orderedSelectedFilters: [FilterList],
-        affinityFilterIDs: Set<UUID>,
-        targetInfo: ContentBlockerTargetInfo,
-        allTargets: [ContentBlockerTargetInfo],
-        disabledSites: [String],
-        extraRulesText: String?,
-        groupIdentifier: String
-    ) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
-        guard let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: groupIdentifier
-        ) else {
-            throw ApplyPipelineError.sharedContainerUnavailable
-        }
-
-        let tempURL = containerURL.appendingPathComponent("temp_\(targetInfo.bundleIdentifier).txt")
-        defer {
-            try? FileManager.default.removeItem(at: tempURL)
-        }
-
-        do {
-            FileManager.default.createFile(atPath: tempURL.path, contents: nil, attributes: nil)
-            let fileHandle = try FileHandle(forWritingTo: tempURL)
-            defer { try? fileHandle.close() }
-
-            var hasher = SHA256()
-            let newlineData = Data("\n".utf8)
-            let assignedFilterIDs = Set(filters.map(\.id))
-
-            for filter in orderedSelectedFilters {
-                let includeBaseRules = assignedFilterIDs.contains(filter.id)
-                let hasAffinity = affinityFilterIDs.contains(filter.id)
-                guard includeBaseRules || hasAffinity else { continue }
-
-                if hasAffinity {
-                    try SafariContentBlockerAffinityProcessor.appendAffinityFilteredContribution(
-                        for: filter,
-                        includeBaseRules: includeBaseRules,
-                        target: targetInfo,
-                        allTargets: allTargets,
-                        containerURL: containerURL,
-                        destinationHandle: fileHandle,
-                        hasher: &hasher,
-                        newlineData: newlineData
-                    )
-                } else if let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(
-                    for: filter,
-                    containerURL: containerURL
-                ) {
-                    try ContentBlockerInputWriter.appendFile(
-                        from: sourceURL,
-                        to: fileHandle,
-                        hasher: &hasher,
-                        newlineData: newlineData,
-                        policy: .strict
-                    )
-                }
-            }
-
-            if let extraRulesText, !extraRulesText.isEmpty {
-                try ContentBlockerInputWriter.appendInline(
-                    extraRulesText,
-                    to: fileHandle,
-                    hasher: &hasher,
-                    newlineData: newlineData
-                )
-            }
-
-            let digest = hasher.finalize()
-            let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
-
-            return try ContentBlockerService.convertFilterFromFile(
-                rulesFileURL: tempURL,
-                rulesSHA256Hex: rulesSHA256Hex,
-                groupIdentifier: groupIdentifier,
-                targetRulesFilename: targetInfo.rulesFilename,
-                disabledSites: disabledSites
-            )
-        } catch {
-            throw ApplyPipelineError.conversionFailed(
-                targetName: targetInfo.displayName,
-                underlying: error
-            )
-        }
-    }
-
-    private struct TargetConversionOutcome: Sendable {
-        let safariRulesCount: Int
-        let advancedRulesText: String?
-        let reusedCachedBase: Bool
-    }
-
     private struct TargetConversionWork: Sendable {
         let targetInfo: ContentBlockerTargetInfo
         let filters: [FilterList]
@@ -1081,7 +982,7 @@ extension AppFilterManager {
 
     private struct TargetConversionCompletion: Sendable {
         let work: TargetConversionWork
-        let outcome: TargetConversionOutcome?
+        let outcome: ContentBlockerService.ContentBlockerTargetOutcome?
         let failureDescription: String?
         let durationMs: Int
     }
@@ -1108,87 +1009,7 @@ extension AppFilterManager {
         let metrics: [TargetReloadMetrics]
     }
 
-    nonisolated private static func convertOrReuseTargetRules(
-        filters: [FilterList],
-        orderedSelectedFilters: [FilterList],
-        affinityFilterIDs: Set<UUID>,
-        targetInfo: ContentBlockerTargetInfo,
-        allTargets: [ContentBlockerTargetInfo],
-        disabledSites: [String],
-        extraRulesText: String?,
-        groupIdentifier: String
-    ) throws -> TargetConversionOutcome {
-        let rulesFilename = targetInfo.rulesFilename
-        let hasAffinityFilters = filters.contains { affinityFilterIDs.contains($0.id) }
-        let currentSignature = hasAffinityFilters
-            ? nil
-            : ContentBlockerIncrementalCache.computeInputSignature(
-                filters: filters,
-                groupIdentifier: groupIdentifier,
-                extraRulesText: extraRulesText
-            )
-        let storedSignature = ContentBlockerIncrementalCache.loadInputSignature(
-            targetRulesFilename: rulesFilename,
-            groupIdentifier: groupIdentifier
-        )
 
-        if let currentSignature,
-           currentSignature == storedSignature,
-           ContentBlockerIncrementalCache.hasBaseRulesCache(
-                targetRulesFilename: rulesFilename,
-                groupIdentifier: groupIdentifier
-           ) {
-            let fastUpdate = try ContentBlockerService.fastUpdateDisabledSites(
-                groupIdentifier: groupIdentifier,
-                targetRulesFilename: rulesFilename,
-                disabledSites: disabledSites
-            )
-            let cachedAdvancedRules = ContentBlockerIncrementalCache.loadCachedAdvancedRules(
-                targetRulesFilename: rulesFilename,
-                groupIdentifier: groupIdentifier
-            )
-            let trimmedAdvanced = cachedAdvancedRules?.trimmingCharacters(
-                in: .whitespacesAndNewlines
-            )
-            return TargetConversionOutcome(
-                safariRulesCount: fastUpdate.safariRulesCount,
-                advancedRulesText: (trimmedAdvanced?.isEmpty == false) ? trimmedAdvanced : nil,
-                reusedCachedBase: true
-            )
-        }
-
-        if hasAffinityFilters {
-            ContentBlockerIncrementalCache.invalidateInputSignature(
-                targetRulesFilename: rulesFilename,
-                groupIdentifier: groupIdentifier
-            )
-        }
-
-        let conversion = try convertFiltersMemoryEfficient(
-            filters: filters,
-            orderedSelectedFilters: orderedSelectedFilters,
-            affinityFilterIDs: affinityFilterIDs,
-            targetInfo: targetInfo,
-            allTargets: allTargets,
-            disabledSites: disabledSites,
-            extraRulesText: extraRulesText,
-            groupIdentifier: groupIdentifier
-        )
-
-        if let currentSignature {
-            ContentBlockerIncrementalCache.saveInputSignature(
-                currentSignature,
-                targetRulesFilename: rulesFilename,
-                groupIdentifier: groupIdentifier
-            )
-        }
-
-        return TargetConversionOutcome(
-            safariRulesCount: conversion.safariRulesCount,
-            advancedRulesText: conversion.advancedRulesText,
-            reusedCachedBase: false
-        )
-    }
 
 
     func reloadContentBlockers(_ targets: [ContentBlockerTargetInfo]) async -> ReloadPhaseSummary {

@@ -1697,12 +1697,8 @@ public actor SharedAutoUpdateManager {
 
     private nonisolated static func convertTarget(_ work: ConversionTargetWork) -> ConversionTargetResult {
         let target = work.target
-        let filters = work.filters
-        let assigned = Set(filters.map(\.id))
-        let hasAffinity = !assigned.isDisjoint(with: work.affinityFilterIDs)
-        let rulesFilename = target.rulesFilename
         let start = Date()
-        var writeMs = 0
+
         if work.isBackground, let deadline = work.deadline,
            deadline.timeIntervalSinceNow < work.minimumTimeForConversionTarget {
             return ConversionTargetResult(
@@ -1717,96 +1713,26 @@ public actor SharedAutoUpdateManager {
                 )
             )
         }
-        var bytes: Int64 = 0
+
         do {
-            let currentSignature = hasAffinity ? nil : ContentBlockerIncrementalCache.computeInputSignature(
-                filters: filters, groupIdentifier: GroupIdentifier.shared.value, extraRulesText: work.extraRulesText
+            let outcome = try ContentBlockerService.compileTargetRules(
+                filters: work.filters,
+                orderedSelectedFilters: work.orderedFilters,
+                affinityFilterIDs: work.affinityFilterIDs,
+                targetInfo: target,
+                allTargets: work.allTargets,
+                disabledSites: work.disabledSites,
+                extraRulesText: work.extraRulesText,
+                groupIdentifier: GroupIdentifier.shared.value
             )
-            let storedSignature = ContentBlockerIncrementalCache.loadInputSignature(
-                targetRulesFilename: rulesFilename, groupIdentifier: GroupIdentifier.shared.value
-            )
-            let canReuse = currentSignature != nil && currentSignature == storedSignature &&
-                ContentBlockerIncrementalCache.hasBaseRulesCache(
-                    targetRulesFilename: rulesFilename, groupIdentifier: GroupIdentifier.shared.value
-                )
-            let conversion: (safariRulesCount: Int, advancedRulesText: String?)
-            let usedCache: Bool
-            if canReuse {
-                usedCache = true
-                conversion = try ContentBlockerService.fastUpdateDisabledSites(
-                    groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: rulesFilename,
-                    disabledSites: work.disabledSites
-                )
-            } else {
-                if hasAffinity {
-                    ContentBlockerIncrementalCache.invalidateInputSignature(
-                        targetRulesFilename: rulesFilename, groupIdentifier: GroupIdentifier.shared.value
-                    )
-                }
-                usedCache = false
-                let tempURL = work.containerURL.appendingPathComponent("temp_autoupdate_\(target.bundleIdentifier).txt")
-                defer { try? FileManager.default.removeItem(at: tempURL) }
-                FileManager.default.createFile(atPath: tempURL.path, contents: nil, attributes: nil)
-                let newline = Data("\n".utf8)
-                var hasher = SHA256()
-                let handle = try FileHandle(forWritingTo: tempURL)
-                defer { try? handle.close() }
-                let writeStart = Date()
-                for filter in work.orderedFilters {
-                    try Task.checkCancellation()
-                    let includeBaseRules = assigned.contains(filter.id)
-                    let hasAffinity = work.affinityFilterIDs.contains(filter.id)
-                    guard includeBaseRules || hasAffinity else { continue }
-                    if hasAffinity {
-                        do {
-                            _ = try SafariContentBlockerAffinityProcessor.appendAffinityFilteredContribution(
-                                for: filter, includeBaseRules: includeBaseRules, target: target,
-                                allTargets: work.allTargets, containerURL: work.containerURL,
-                                destinationHandle: handle, hasher: &hasher, newlineData: newline
-                            )
-                        } catch {
-                            let workerLog = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "wBlock", category: "AutoUpdate")
-                            os_log("Failed to stream affinity-filtered data from %{public}@ – %{public}@",
-                                   log: workerLog, type: .error, filter.name, error.localizedDescription)
-                        }
-                    } else if let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(
-                        for: filter, containerURL: work.containerURL
-                    ) {
-                        _ = try ContentBlockerInputWriter.appendFile(
-                            from: sourceURL, to: handle, hasher: &hasher, newlineData: newline,
-                            policy: .permissive { error in
-                                let workerLog = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "wBlock", category: "AutoUpdate")
-                                os_log("Failed to stream filter data from %{public}@ – %{public}@",
-                                       log: workerLog, type: .error, sourceURL.lastPathComponent, error.localizedDescription)
-                            }
-                        )
-                    }
-                }
-                if let extra = work.extraRulesText, !extra.isEmpty {
-                    try ContentBlockerInputWriter.appendInline(
-                        extra, to: handle, hasher: &hasher, newlineData: newline
-                    )
-                }
-                writeMs = Int(Date().timeIntervalSince(writeStart) * 1000)
-                bytes = Self.fileSizeBytes(at: tempURL)
-                let digest = hasher.finalize()
-                let hex = digest.map { String(format: "%02x", $0) }.joined()
-                conversion = try ContentBlockerService.convertFilterFromFile(
-                    rulesFileURL: tempURL, rulesSHA256Hex: hex, groupIdentifier: GroupIdentifier.shared.value,
-                    targetRulesFilename: rulesFilename, disabledSites: work.disabledSites
-                )
-                if let currentSignature {
-                    ContentBlockerIncrementalCache.saveInputSignature(
-                        currentSignature, targetRulesFilename: rulesFilename, groupIdentifier: GroupIdentifier.shared.value
-                    )
-                }
-            }
+
+            let conversion = (safariRulesCount: outcome.safariRulesCount, advancedRulesText: outcome.advancedRulesText)
             return ConversionTargetResult(
                 target: target,
                 conversion: conversion,
-                usedCache: usedCache,
-                inputWriteMs: writeMs,
-                inputBytes: bytes,
+                usedCache: outcome.reusedCachedBase,
+                inputWriteMs: 0,
+                inputBytes: 0,
                 conversionMs: Int(Date().timeIntervalSince(start) * 1000),
                 failure: nil
             )
@@ -1815,8 +1741,8 @@ public actor SharedAutoUpdateManager {
                 target: target,
                 conversion: nil,
                 usedCache: false,
-                inputWriteMs: writeMs,
-                inputBytes: bytes,
+                inputWriteMs: 0,
+                inputBytes: 0,
                 conversionMs: Int(Date().timeIntervalSince(start) * 1000),
                 failure: .cancelled
             )
@@ -1825,8 +1751,8 @@ public actor SharedAutoUpdateManager {
                 target: target,
                 conversion: nil,
                 usedCache: false,
-                inputWriteMs: writeMs,
-                inputBytes: bytes,
+                inputWriteMs: 0,
+                inputBytes: 0,
                 conversionMs: Int(Date().timeIntervalSince(start) * 1000),
                 failure: .failed(description: error.localizedDescription)
             )
