@@ -2016,7 +2016,7 @@ struct RuleCapacityPopoverView: View {
             .liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)
 
             VStack(alignment: .leading, spacing: 10) {
-                Text("Extension Slots (150,000 max each)")
+                Text("Extension Slots")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .textCase(.uppercase)
