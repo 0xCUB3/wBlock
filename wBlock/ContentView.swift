@@ -1998,14 +1998,12 @@ struct RuleCapacityPopoverView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(Color.secondary.opacity(0.15))
-                        Capsule()
-                            .fill(overallFraction > 0.8 ? Color.orange : Color.blue)
-                            .frame(width: max(0, geo.size.width * CGFloat(overallFraction)))
-                    }
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.secondary.opacity(0.15))
+                    Capsule()
+                        .fill(overallFraction > 0.8 ? Color.orange : Color.blue)
+                        .scaleEffect(x: max(0, overallFraction), y: 1, anchor: .leading)
                 }
                 .frame(height: 8)
             }
@@ -2041,14 +2039,12 @@ struct RuleCapacityPopoverView: View {
                                     .foregroundStyle(slotFraction > 0.9 ? Color.red : (slotFraction > 0.8 ? Color.orange : Color.secondary))
                             }
 
-                            GeometryReader { geo in
-                                ZStack(alignment: .leading) {
-                                    Capsule()
-                                        .fill(Color.secondary.opacity(0.12))
-                                    Capsule()
-                                        .fill(slotFraction > 0.9 ? Color.red : (slotFraction > 0.8 ? Color.orange : Color.accentColor))
-                                        .frame(width: max(0, geo.size.width * CGFloat(slotFraction)))
-                                }
+                            ZStack(alignment: .leading) {
+                                Capsule()
+                                    .fill(Color.secondary.opacity(0.12))
+                                Capsule()
+                                    .fill(slotFraction > 0.9 ? Color.red : (slotFraction > 0.8 ? Color.orange : Color.accentColor))
+                                    .scaleEffect(x: max(0, slotFraction), y: 1, anchor: .leading)
                             }
                             .frame(height: 5)
                         }
