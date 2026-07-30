@@ -1313,98 +1313,77 @@
         }
     }
 
-    // MediaWiki's modern file videos are bare <video controls> (mw-file-element /
-    // data-mw-tmh on the video). Wrapper is an inline <span> inside a table-layout
-    // <figure> or .fullImageLink. Emptying that span + width:100% collapses the
-    // box (tiny top-left on iOS, clipped controls on macOS). Old .mw-tmh-player
-    // shells still need structural cleanup; these native ones only need sizing.
+    // Bare MediaWiki file videos (mw-file-element / data-mw-tmh) already have
+    // native controls. Their wrapper is an inline <span> in a floated table
+    // <figure> — structural cleanup collapses the box. Size in place instead.
+    // Old .mw-tmh-player shells still go through cleanPlayer.
     function isNativeFileVideo(video) {
         try {
             if (!(video.controls || video.hasAttribute('controls'))) { return false; }
             if (video.closest && video.closest('.mw-tmh-player')) { return false; }
-            if (video.classList && video.classList.contains('mw-file-element')) { return true; }
-            if (video.hasAttribute('data-mw-tmh')) { return true; }
-        } catch (e) { /* ignore */ }
-        return false;
+            return !!(video.classList && video.classList.contains('mw-file-element')) ||
+                video.hasAttribute('data-mw-tmh');
+        } catch (e) { return false; }
+    }
+
+    // Drop presentational width/height attrs after capturing them for aspect-ratio.
+    function presentationalSize(video) {
+        var attrW = parseFloat(video.getAttribute('width') || '0');
+        var attrH = parseFloat(video.getAttribute('height') || '0');
+        var size = { vw: video.videoWidth || attrW, vh: video.videoHeight || attrH };
+        if (attrW > 0) { try { video.removeAttribute('width'); } catch (e) { /* ignore */ } }
+        if (attrH > 0) { try { video.removeAttribute('height'); } catch (e) { /* ignore */ } }
+        return size;
     }
 
     // Expand a native MediaWiki file video to the content column without emptying
-    // its wrapper. The mid-play state (inline controls, not fullscreen) otherwise
-    // stays pinned to the presentational width/height attributes (often 240×180).
+    // its wrapper, so mid-play (inline controls, not fullscreen) fills the page.
     function sizeNativeFileVideo(video) {
         if (!video) { return; }
         var shell = null;
         try {
-            shell = video.closest && (
-                video.closest('.fullImageLink') ||
-                video.closest('figure.mw-default-size') ||
-                video.closest('figure') ||
-                video.closest('.mw-file-description')
-            );
-        } catch (e) { /* ignore */ }
-        if (!shell) { shell = video.parentElement; }
+            shell = video.closest('.fullImageLink, figure') || video.parentElement;
+        } catch (e) {
+            shell = video.parentElement;
+        }
 
-        // Promote every inline ancestor up to the shell so percentage width has a
-        // real containing block (the bare <span> around the video is display:inline).
+        // Promote inline/table ancestors so width:100% has a real containing block,
+        // and unfloat the thumb figure so it can span the content column.
         try {
             var el = video.parentElement;
-            while (el && el !== shell.parentElement) {
+            while (el) {
                 var display = getComputedStyle(el).display;
                 if (display === 'inline' || display === 'contents' || display === 'inline-block' ||
                     display === 'table' || display === 'table-cell') {
                     el.style.display = 'block';
-                    el.style.width = '100%';
-                    el.style.maxWidth = '100%';
-                    el.style.float = 'none';
                     el.style.lineHeight = '0';
                 }
-                if (el === shell) { break; }
+                el.style.width = '100%';
+                el.style.maxWidth = '100%';
+                el.style.float = 'none';
+                if (el === shell) {
+                    el.style.marginLeft = '0';
+                    el.style.marginRight = '0';
+                    el.style.boxSizing = 'border-box';
+                    break;
+                }
                 el = el.parentElement;
             }
         } catch (e) { /* ignore */ }
 
-        if (shell && shell !== video) {
-            try {
-                shell.style.display = 'block';
-                shell.style.width = '100%';
-                shell.style.maxWidth = '100%';
-                shell.style.float = 'none';
-                shell.style.marginLeft = '0';
-                shell.style.marginRight = '0';
-                shell.style.boxSizing = 'border-box';
-            } catch (e) { /* ignore */ }
-        }
-
-        var attrW = parseFloat(video.getAttribute('width') || '0');
-        var attrH = parseFloat(video.getAttribute('height') || '0');
-        var vw = video.videoWidth || attrW;
-        var vh = video.videoHeight || attrH;
-        if (attrW > 0) { try { video.removeAttribute('width'); } catch (e) { /* ignore */ } }
-        if (attrH > 0) { try { video.removeAttribute('height'); } catch (e) { /* ignore */ } }
-
-        video.style.width = '100%';
-        video.style.maxWidth = '100%';
+        applyCleanSizing(shell || video.parentElement || video, video);
         video.style.height = 'auto';
-        video.style.display = 'block';
-        video.style.background = '#000';
-        if (vw > 0 && vh > 0) {
-            try { video.style.aspectRatio = vw + ' / ' + vh; } catch (e) { /* ignore */ }
-        }
 
-        // Re-apply once metadata resolves intrinsic size (preload=none defers it).
-        if (!video._wblockMwSized && (!video.videoWidth || !video.videoHeight)) {
+        // preload=none defers intrinsic size; re-run once metadata arrives.
+        if (!video._wblockMwSized && !video.videoWidth) {
             video._wblockMwSized = true;
-            function onMeta() { sizeNativeFileVideo(video); }
-            video.addEventListener('loadedmetadata', onMeta, { once: true });
-            registerVideoCleanup(video, function () {
-                try { video.removeEventListener('loadedmetadata', onMeta); } catch (e) { /* ignore */ }
-            });
+            video.addEventListener('loadedmetadata', function () {
+                sizeNativeFileVideo(video);
+            }, { once: true });
         }
     }
 
     function applyCleanSizing(container, video) {
-        // Promote inline wrappers so width:100% resolves against a real block
-        // instead of an anonymous inline box with no intrinsic width.
         try {
             var display = getComputedStyle(container).display;
             if (display === 'inline' || display === 'contents') {
@@ -1415,21 +1394,13 @@
             }
         } catch (e) { /* ignore */ }
 
-        var attrW = parseFloat(video.getAttribute('width') || '0');
-        var attrH = parseFloat(video.getAttribute('height') || '0');
-        var vw = video.videoWidth || attrW;
-        var vh = video.videoHeight || attrH;
-
-        // Presentational width/height attributes pin the box and fight CSS
-        // sizing; drop them once we've captured the numbers for aspect-ratio.
-        if (attrW > 0) { try { video.removeAttribute('width'); } catch (e) { /* ignore */ } }
-        if (attrH > 0) { try { video.removeAttribute('height'); } catch (e) { /* ignore */ } }
+        var size = presentationalSize(video);
+        var vw = size.vw, vh = size.vh;
 
         video.style.width = '100%';
         video.style.maxWidth = '100%';
         video.style.display = 'block';
         video.style.background = '#000';
-
         if (vw > 0 && vh > 0) {
             try { video.style.aspectRatio = vw + ' / ' + vh; } catch (e) { /* ignore */ }
         }
@@ -1437,8 +1408,7 @@
         try {
             var cs = getComputedStyle(container);
             var containerW = parseFloat(cs.width) || 0;
-            // 100%-of-nothing collapses the player. Fall back to the intrinsic
-            // box when the container still has no usable width after promotion.
+            // 100%-of-nothing collapses the player.
             if (containerW < 2 && vw > 0) {
                 video.style.width = vw + 'px';
                 video.style.height = 'auto';
@@ -1588,10 +1558,7 @@
         // cleaner emptied JW Player's wrapper before it attached its blob.
         var src = sourceFromVideoElement(video);
         log('player detected', container.className, 'source:', src ? 'element-owned' : 'opaque');
-        // Native MediaWiki file videos already expose controls; structural
-        // cleanup of their inline wrapper collapses the layout. Size them to
-        // the content column in place so the mid-play (non-fullscreen) state
-        // fills the page instead of staying a 240×180 thumb.
+        // Native MediaWiki file videos: size in place, don't empty the wrapper.
         if (isNativeFileVideo(video)) {
             sizeNativeFileVideo(video);
             return;
