@@ -395,54 +395,101 @@ struct ContentView: View {
     }
 
     private var statsCardsView: some View {
-        HStack(spacing: 12) {
-            Button {
-                filterManager.showRuleLimitWarning()
-            } label: {
-                StatCard(
-                    title: {
-                        #if os(iOS)
-                        return "Rules"
-                        #else
-                        return (enabledListsCount == 0 || !hasAppliedFilters) ? "Source Rules" : "Safari Rules"
-                        #endif
-                    }(),
-                    value: enabledListsCount == 0
-                        ? "0"
-                        : (hasAppliedFilters
-                            ? appliedSafariRulesCount.formatted()
-                            : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0")),
-                    icon: "shield.lefthalf.filled",
-                    pillColor: .clear,
-                    valueColor: enabledListsCount == 0 ? .secondary : (hasAppliedFilters ? .primary : .secondary)
-                )
-                .overlay(alignment: .topTrailing) {
-                    if shouldShowRuleLimitIndicator {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.orange)
-                            .padding(.trailing, 6)
-                            .padding(.top, 4)
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                Button {
+                    filterManager.showRuleLimitWarning()
+                } label: {
+                    StatCard(
+                        title: {
+                            #if os(iOS)
+                            return "Rules"
+                            #else
+                            return (enabledListsCount == 0 || !hasAppliedFilters) ? "Source Rules" : "Safari Rules"
+                            #endif
+                        }(),
+                        value: enabledListsCount == 0
+                            ? "0"
+                            : (hasAppliedFilters
+                                ? appliedSafariRulesCount.formatted()
+                                : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0")),
+                        icon: "shield.lefthalf.filled",
+                        pillColor: .clear,
+                        valueColor: enabledListsCount == 0 ? .secondary : (hasAppliedFilters ? .primary : .secondary)
+                    )
+                    .overlay(alignment: .topTrailing) {
+                        if shouldShowRuleLimitIndicator {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.orange)
+                                .padding(.trailing, 6)
+                                .padding(.top, 4)
+                        }
                     }
+                    #if os(iOS)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    #endif
                 }
+                .buttonStyle(.plain)
+
+                StatCard(
+                    title: "Enabled Lists",
+                    value: "\(enabledListsCount)",
+                    icon: "list.bullet.rectangle",
+                    pillColor: .clear,
+                    valueColor: .primary
+                )
                 #if os(iOS)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 #endif
             }
-            .buttonStyle(.plain)
+            .padding(.horizontal)
 
-            StatCard(
-                title: "Enabled Lists",
-                value: "\(enabledListsCount)",
-                icon: "list.bullet.rectangle",
-                pillColor: .clear,
-                valueColor: .primary
-            )
-            #if os(iOS)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            #endif
+            if hasAppliedFilters {
+                slotCapacityBarView
+            }
+        }
+    }
+
+    private var slotCapacityBarView: some View {
+        let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: filterManager.currentPlatform)
+        let totalUsed = appliedSafariRulesCount
+        let maxCapacity = totalSafariRuleCapacity
+
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("Capacity across 5 extensions")
+                    .font(.caption)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("\(totalUsed.formatted()) / \(maxCapacity.formatted()) rules")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            GeometryReader { geo in
+                HStack(spacing: 2) {
+                    ForEach(targets, id: \.slot) { target in
+                        let count = filterManager.ruleCountsByExtension[target.bundleIdentifier] ?? 0
+                        let slotFraction = Double(count) / 150_000.0
+                        let width = (geo.size.width - CGFloat(targets.count - 1) * 2) * (1.0 / CGFloat(targets.count))
+
+                        ZStack(alignment: .leading) {
+                            Rectangle()
+                                .fill(Color.secondary.opacity(0.15))
+                            Rectangle()
+                                .fill(slotFraction > 0.8 ? Color.orange : Color.accentColor)
+                                .frame(width: max(0, width * min(slotFraction, 1.0)))
+                        }
+                        .cornerRadius(3)
+                    }
+                }
+            }
+            .frame(height: 6)
         }
         .padding(.horizontal)
+        .padding(.top, 2)
     }
 
     private func foreignFilterGroupHeader(_ title: String) -> some View {
