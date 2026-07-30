@@ -871,44 +871,42 @@ struct AddFilterListView: View {
     }
 
 		var body: some View {
-		    Group {
-		        #if os(iOS)
-		            NavigationStack {
-		                addTabs
-		                    .navigationTitle("Add Filter List")
-		                    .navigationBarTitleDisplayMode(.inline)
-		                    .toolbar {
-		                        ToolbarItem(placement: .cancellationAction) {
-		                            Button("Cancel") { dismiss() }
-		                                .disabled(isSaving)
-		                        }
-		                        ToolbarItem(placement: .confirmationAction) {
-		                            Button(action: submit) {
-		                                if isSaving {
-		                                    ProgressView()
-		                                } else {
-		                                    Text(LocalizedStringKey(addButtonTitle))
-		                                }
-		                            }
-		                            .disabled(!canSubmit || isSaving)
+		    NavigationStack {
+		        addForm
+		            .navigationTitle("Add Filter List")
+		            #if os(iOS)
+		            .navigationBarTitleDisplayMode(.inline)
+		            #endif
+		            .toolbar {
+		                ToolbarItem(placement: .cancellationAction) {
+		                    Button("Cancel") { dismiss() }
+		                        .disabled(isSaving)
+		                }
+		                ToolbarItem(placement: .confirmationAction) {
+		                    Button(action: submit) {
+		                        if isSaving {
+		                            ProgressView()
+		                        } else {
+		                            Text(LocalizedStringKey(addButtonTitle))
 		                        }
 		                    }
+		                    .disabled(!canSubmit || isSaving)
+		                }
 		            }
-		            .interactiveDismissDisabled(isSaving)
-		            .presentationDetents([.large])
-		            .presentationDragIndicator(.visible)
-	        #elseif os(macOS)
-	            macosBody
-	        #endif
-	    }
-        #if os(macOS)
-	    .onAppear {
-	        urlFieldIsFocused = addMode == .url
-	    }
-        .onChange(of: addMode) { _, newValue in
-            urlFieldIsFocused = newValue == .url
-        }
-        #endif
+		    }
+		    .interactiveDismissDisabled(isSaving)
+		    #if os(iOS)
+		    .presentationDetents([.large])
+		    .presentationDragIndicator(.visible)
+		    #else
+		    .frame(minWidth: 560, minHeight: addMode == .paste ? 620 : 520)
+		    .onAppear {
+		        urlFieldIsFocused = addMode == .url
+		    }
+		    .onChange(of: addMode) { _, newValue in
+		        urlFieldIsFocused = newValue == .url
+		    }
+		    #endif
         .fileImporter(
             isPresented: $showingFileImporter,
             allowedContentTypes: [UTType.plainText, UTType.text],
@@ -951,260 +949,85 @@ struct AddFilterListView: View {
 	        }
 	    }
 
-	    #if os(macOS)
-	        private var macosBody: some View {
-	            SheetContainer {
-	                SheetHeader(title: "Add Filter List", isLoading: isSaving) {
-	                    dismiss()
-	                }
-
-	                ScrollView {
-	                    VStack(alignment: .leading, spacing: 16) {
-	                        modePickerCard
-	                        macosModeContent
-	                    }
-	                    .padding(.horizontal, SheetDesign.contentHorizontalPadding)
-	                    .padding(.top, 12)
-	                    .padding(.bottom, 40)
-	                }
-
-	                SheetBottomToolbar {
-	                    Spacer()
-	                    macosAddButton
-	                }
-	            }
-	            .interactiveDismissDisabled(isSaving)
-	            .frame(minWidth: 560, minHeight: addMode == .paste ? 620 : 520)
-	        }
-
-	        private var macosAddButton: some View {
-	            Button(action: submit) {
-	                HStack(spacing: 8) {
-	                    if isSaving {
-	                        ProgressView()
-	                            .scaleEffect(0.9)
-	                    }
-	                    Text(LocalizedStringKey(isSaving ? "Adding…" : addButtonTitle))
-	                        .fontWeight(.semibold)
-	                }
-	            }
-	            .primaryActionButtonStyle()
-	            .disabled(!canSubmit || isSaving)
-	            .keyboardShortcut(.defaultAction)
-	        }
-
-	        private var modePickerCard: some View {
-	            HStack(spacing: 10) {
-	                Text("Add Mode")
-	                    .font(.caption)
-	                    .foregroundStyle(.secondary)
-
-	                Picker("", selection: $addMode) {
-	                    ForEach(AddMode.allCases) { mode in
-	                        Text(LocalizedStringKey(mode.rawValue)).tag(mode)
-	                    }
-	                }
-	                .pickerStyle(.segmented)
-	                .labelsHidden()
-	                .controlSize(.small)
-	                .animation(.easeInOut(duration: 0.15), value: addMode)
-
-	                Spacer(minLength: 0)
-	            }
-	            .padding(16)
-	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
-	        }
-
-	        @ViewBuilder
-	        private var macosModeContent: some View {
-	            switch addMode {
-	            case .url:
-	                macosURLCard
-	            case .paste:
-	                macosPasteCard
-	            case .file:
-	                macosFileCard
-	            }
-	        }
-
-	        private var macosURLCard: some View {
-	            VStack(alignment: .leading, spacing: 12) {
-	                VStack(alignment: .leading, spacing: 6) {
-	                    Text("URLs")
-	                        .font(.caption)
-	                        .foregroundStyle(.secondary)
-
-	                    urlInputEditor
-	                }
-
-                    if newURLs.count <= 1 {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Title (optional)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-
-                            TextField("Title", text: $customName)
-                                .textFieldStyle(.roundedBorder)
-                                .autocorrectionDisabled()
-                        }
-                    } else {
-                        Text("Titles will be created from each URL.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+    private var addForm: some View {
+        Form {
+            Section {
+                Picker("Add Mode", selection: $addMode) {
+                    ForEach(AddMode.allCases) { mode in
+                        Text(LocalizedStringKey(mode.rawValue)).tag(mode)
                     }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .animation(.easeInOut(duration: 0.15), value: addMode)
+            }
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Category")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+            modeContent
+        }
+    }
 
-                        userListCategoryPicker(selection: $selectedCategory)
-                            .labelsHidden()
-                    }
+    @ViewBuilder
+    private var modeContent: some View {
+        switch addMode {
+        case .url:
+            Section {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("URLs")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    urlInputEditor
+                }
 
-	                urlFooterMessage
-	            }
-	            .padding(16)
-	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
-	        }
+                if newURLs.count <= 1 {
+                    TextField("Title (optional)", text: $customName)
+                        .autocorrectionDisabled()
+                        #if os(iOS)
+                            .textInputAutocapitalization(.words)
+                        #endif
+                } else {
+                    Text("Titles will be created from each URL.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
 
-	        private var macosPasteCard: some View {
-	            VStack(alignment: .leading, spacing: 12) {
-	                userListMetaFields
-
-	                VStack(alignment: .leading, spacing: 6) {
-	                    Text("Rules")
-	                        .font(.caption)
-	                        .foregroundStyle(.secondary)
-
-                    SyntaxHighlightingTextView(text: $pastedRules)
-                        .frame(minHeight: 260)
-                        .background(.background, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(.quaternary, lineWidth: 1)
-                        )
-	                }
-	            }
-	            .padding(16)
-	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
-	        }
-
-	        private var macosFileCard: some View {
-	            VStack(alignment: .leading, spacing: 12) {
-	                userListMetaFields
-
-	                Button {
-	                    showingFileImporter = true
-	                } label: {
-	                    HStack(spacing: 10) {
-	                        Image(systemName: "doc")
-	                        Text("Choose File…")
-	                        Spacer()
-	                        Image(systemName: "chevron.right")
-	                            .font(.caption2)
-	                            .foregroundStyle(.secondary)
-	                    }
-	                    .padding(.vertical, 10)
-	                    .padding(.horizontal, 12)
-	                    .frame(maxWidth: .infinity, alignment: .leading)
-	                    .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-	                    .overlay(
-	                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-	                            .stroke(.quaternary, lineWidth: 1)
-	                    )
-	                }
-	                .buttonStyle(.plain)
-	                .disabled(isSaving || !canSubmit)
-	            }
-	            .padding(16)
-	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
-	        }
-	    #endif
-
-	    private var addTabs: some View {
-	        TabView(selection: $addMode) {
-	            urlTab
-	                .tag(AddMode.url)
-	                .tabItem { Label("URL", systemImage: "link") }
-
-	            pasteTab
-	                .tag(AddMode.paste)
-	                .tabItem { Label("Paste", systemImage: "text.badge.plus") }
-
-	            fileTab
-	                .tag(AddMode.file)
-	                .tabItem { Label("File", systemImage: "doc") }
-	        }
-	    }
-
-		    private var urlTab: some View {
-		        Form {
-		            Section {
-		                VStack(alignment: .leading, spacing: 6) {
-                        Text("URLs")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        urlInputEditor
-                    }
-
-                    if newURLs.count <= 1 {
-                        TextField("Title (optional)", text: $customName)
-                            #if os(iOS)
-                                .textInputAutocapitalization(.words)
-                            #endif
-                    } else {
-                        Text("Titles will be created from each URL.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    userListCategoryPicker(selection: $selectedCategory)
-		            } footer: {
-		                urlFooterMessage
-		            }
-		        }
-		    }
-
-		    private var pasteTab: some View {
-		        Form {
-		            Section {
-		            TextField("Title", text: $userListTitle)
-		                    #if os(iOS)
-		                .textInputAutocapitalization(.words)
-		            #endif
-		                    .autocorrectionDisabled()
-	                TextField("Description", text: $userListDescription)
-	                    #if os(iOS)
-	                        .textInputAutocapitalization(.sentences)
-	                    #endif
-	                    .autocorrectionDisabled()
                 userListCategoryPicker(selection: $selectedCategory)
-	            }
+            } footer: {
+                urlFooterMessage
+            }
+        case .paste:
+            Section {
+                TextField("Title", text: $userListTitle)
+                    .autocorrectionDisabled()
+                    #if os(iOS)
+                        .textInputAutocapitalization(.words)
+                    #endif
+                TextField("Description", text: $userListDescription)
+                    .autocorrectionDisabled()
+                    #if os(iOS)
+                        .textInputAutocapitalization(.sentences)
+                    #endif
+                userListCategoryPicker(selection: $selectedCategory)
+            }
 
             Section("Rules") {
                 SyntaxHighlightingTextView(text: $pastedRules)
                     .frame(minHeight: 220)
             }
-        }
-    }
-
-		    private var fileTab: some View {
-		        Form {
-		            Section {
-		            TextField("Title", text: $userListTitle)
-		                    #if os(iOS)
-		                .textInputAutocapitalization(.words)
-		            #endif
-		                    .autocorrectionDisabled()
-	                TextField("Description", text: $userListDescription)
-	                    #if os(iOS)
-	                        .textInputAutocapitalization(.sentences)
-	                    #endif
-	                    .autocorrectionDisabled()
+        case .file:
+            Section {
+                TextField("Title", text: $userListTitle)
+                    .autocorrectionDisabled()
+                    #if os(iOS)
+                        .textInputAutocapitalization(.words)
+                    #endif
+                TextField("Description", text: $userListDescription)
+                    .autocorrectionDisabled()
+                    #if os(iOS)
+                        .textInputAutocapitalization(.sentences)
+                    #endif
                 userListCategoryPicker(selection: $selectedCategory)
-		        }
-		    }
+            }
+        }
     }
 
 	    private var urlInputEditor: some View {
@@ -1349,45 +1172,6 @@ struct AddFilterListView: View {
         case .paste: return "Add Rules"
         case .file: return "Choose File"
         }
-    }
-
-    private var userListMetaFields: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Title")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                TextField("User List", text: $userListTitle)
-                    .textFieldStyle(.roundedBorder)
-                    .autocorrectionDisabled()
-                    #if os(iOS)
-                        .textInputAutocapitalization(.words)
-                    #endif
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Description (optional)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                TextField("Description", text: $userListDescription)
-                    .textFieldStyle(.roundedBorder)
-                    .autocorrectionDisabled()
-                    #if os(iOS)
-                        .textInputAutocapitalization(.sentences)
-                    #endif
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Category")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                userListCategoryPicker(selection: $selectedCategory)
-                    .labelsHidden()
-            }
-    }
     }
 
     // MARK: - Helpers
