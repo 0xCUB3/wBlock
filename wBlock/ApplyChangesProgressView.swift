@@ -50,13 +50,14 @@ struct ApplyChangesProgressView: View {
                     .navigationBarTitleDisplayMode(.inline)
                 #endif
                 .toolbar {
-                    if mode == .review {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button(String(localized: "Cancel")) {
-                                isPresented = false
-                            }
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(mode == .review ? String(localized: "Cancel") : String(localized: "Done")) {
+                            isPresented = false
                         }
-                        ToolbarItem(placement: .confirmationAction) {
+                        .disabled(mode == .progress)
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        if mode == .review {
                             Button {
                                 Task { await startSelectedUpdates() }
                             } label: {
@@ -71,13 +72,6 @@ struct ApplyChangesProgressView: View {
                                 }
                             }
                             .disabled(selectedUpdateCount == 0 || isStartingSelectedUpdates)
-                        }
-                    } else {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button(String(localized: "Done")) {
-                                isPresented = false
-                            }
-                            .disabled(mode == .progress || isStartingSelectedUpdates)
                         }
                     }
                 }
