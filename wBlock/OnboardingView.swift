@@ -255,10 +255,10 @@ struct OnboardingView: View {
             updateRegionalRecommendations(for: newValue)
             syncBaselineUserscriptSelection()
         }
-        .onChangeCompat(of: filterManager.filterLists) { _ in
+        .onChangeCompat(of: filterManager.filterLists) { _, _ in
             updateRegionalRecommendations(for: selectedLanguages)
         }
-        .onChangeCompat(of: userScriptManager.userScripts) { _ in
+        .onChangeCompat(of: userScriptManager.userScripts) { _, _ in
             seedSelectedUserscriptsIfNeeded()
             syncBaselineUserscriptSelection()
         }

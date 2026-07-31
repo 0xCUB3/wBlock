@@ -860,3 +860,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Gezindiğiniz dilleri seçin. wBlock, eşleşen bölgesel filtreleri ve özellikleri otomatik olarak önerecektir.";
 "Recommended Regional Filters" = "Önerilen Bölgesel Filtreler";
 "Baseline Userscripts" = "Temel Kullanıcı Komut Dosyaları";
+"Enable" = "Etkinleştir";
+"Disable" = "Devre Dışı Bırak";
+"Delete" = "Sil";

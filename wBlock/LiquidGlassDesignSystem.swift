@@ -56,7 +56,7 @@ struct ToolbarSearchField: View {
                     .help(String(localized: "Close search"))
                 }
                 .padding(.horizontal, 8)
-                .frame(width: 220)
+                .frame(width: 180)
                 .transition(.blurReplaceCompat)
                 .task {
                     try? await TaskSleep.sleep(for: .milliseconds(350))

@@ -461,7 +461,7 @@ struct SettingsView: View {
         } footer: {
             Text("Controls the time zone used when displaying and exporting log timestamps.")
         }
-        .onChange(of: logTimeZoneIdentifier) { _ in
+        .onChangeCompat(of: logTimeZoneIdentifier) { _ in
             LogDateFormatters.configureIfNeeded()
         }
     }

@@ -853,3 +853,6 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Wybierz języki, w których przeglądasz strony. wBlock automatycznie poleci odpowiednie filtry regionalne i funkcje.";
 "Recommended Regional Filters" = "Zalecane filtry regionalne";
 "Baseline Userscripts" = "Podstawowe skrypty użytkownika";
+"Enable" = "Włącz";
+"Disable" = "Wyłącz";
+"Delete" = "Usuń";

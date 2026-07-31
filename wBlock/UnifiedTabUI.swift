@@ -1,41 +1,13 @@
 import SwiftUI
 
-struct UnifiedTabCardSection<Content: View>: View {
-    let title: LocalizedStringKey
-    let content: Content
-
-    init(title: LocalizedStringKey, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.headline)
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 1)
-
-            VStack(spacing: 0) {
-                content
-            }
-            .background(.thickMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(Color.primary.opacity(0.10), lineWidth: 1)
-            }
-        }
-    }
-}
-
 struct UnifiedTabListStyleModifier: ViewModifier {
     func body(content: Content) -> some View {
-        content
-            #if os(iOS)
-                .listStyle(.insetGrouped)
-            #else
-                .listStyle(.inset)
-            #endif
+        #if os(iOS)
+            content.listStyle(.insetGrouped)
+        #else
+            // .inset renders rounded card sections like System Settings on macOS
+            content.listStyle(.inset)
+        #endif
     }
 }
 

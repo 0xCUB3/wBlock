@@ -136,16 +136,16 @@ struct LogsView: View {
             await loadLogs()
             updateFilteredEntries()
         }
-        .onChangeCompat(of: entries) { _ in
+        .onChangeCompat(of: entries) { _, _ in
             updateFilteredEntries()
         }
-        .onChangeCompat(of: selectedLevel) { _ in
+        .onChangeCompat(of: selectedLevel) { _, _ in
             updateFilteredEntries()
         }
-        .onChangeCompat(of: selectedCategory) { _ in
+        .onChangeCompat(of: selectedCategory) { _, _ in
             updateFilteredEntries()
         }
-        .onChangeCompat(of: searchText) { _ in
+        .onChangeCompat(of: searchText) { _, _ in
             updateFilteredEntries()
         }
         #if os(iOS)

@@ -853,3 +853,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "حدد اللغات التي تتصفح بها. سيوصي wBlock تلقائيًا بعوامل تصفية وميزات إقليمية مطابقة.";
 "Recommended Regional Filters" = "عوامل التصفية الإقليمية الموصى بها";
 "Baseline Userscripts" = "سكربتات المستخدم الأساسية";
+"Enable" = "تفعيل";
+"Disable" = "تعطيل";
+"Delete" = "حذف";

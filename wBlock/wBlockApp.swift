@@ -63,7 +63,7 @@ struct wBlockApp: App {
 
                     startLaunchSetupIfNeeded()
                 }
-                .onChangeCompat(of: scenePhase) { newPhase in
+                .onChangeCompat(of: scenePhase) { _, newPhase in
                     guard newPhase == .active, hasCompletedLaunchSetup else { return }
                     Task { await CloudSyncManager.shared.syncNow(trigger: "AppActive") }
                 }
