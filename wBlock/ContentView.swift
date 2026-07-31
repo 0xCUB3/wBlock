@@ -269,6 +269,7 @@ struct ContentView: View {
     }
 
     private var nativeFiltersListView: some View {
+        #if os(iOS)
         List {
             Section {
                 statsCardsView
@@ -303,6 +304,27 @@ struct ContentView: View {
             guard !filterManager.isLoading else { return }
             await filterManager.checkForUpdates()
         }
+        #else
+        ScrollView {
+            VStack(spacing: 20) {
+                statsCardsView
+
+                VStack(spacing: 16) {
+                    ForEach(categorizedFilters, id: \.category) { item in
+                        if item.category == .foreign {
+                            macOSForeignFiltersView(filters: item.filters)
+                        } else {
+                            macOSFilterSectionView(category: item.category, filters: item.filters)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+
+                Spacer(minLength: 20)
+            }
+            .padding(.vertical)
+        }
+        #endif
     }
 
     private var userscriptsView: some View {
@@ -473,6 +495,65 @@ struct ContentView: View {
         }
         #endif
     }
+
+    #if os(macOS)
+    private func macOSFilterSectionView(category: FilterListCategory, filters: [FilterList]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(category.localizedName)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                Spacer()
+            }
+            .padding(.horizontal, 4)
+
+            VStack(spacing: 0) {
+                ForEach(filters) { filter in
+                    filterRowView(for: filter)
+                    if filter.id != filters.last?.id {
+                        Divider()
+                            .padding(.leading, 16)
+                    }
+                }
+            }
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        }
+    }
+
+    private func macOSForeignFiltersView(filters: [FilterList]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
+                VStack(spacing: 0) {
+                    ForEach(ForeignFilterOrganizer.groups(for: filters)) { group in
+                        HStack {
+                            Text(group.title)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .textCase(.uppercase)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+
+                        ForEach(group.filters) { filter in
+                            filterRowView(for: filter)
+                            if filter.id != group.filters.last?.id {
+                                Divider()
+                                    .padding(.leading, 16)
+                            }
+                        }
+                    }
+                }
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            } label: {
+                Text(FilterListCategory.foreign.localizedName)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+            }
+            .padding(.horizontal, 4)
+        }
+    }
+    #endif
 
 }
 
