@@ -228,33 +228,40 @@ struct ContentView: View {
             )
             .modifier(SearchMinimizeBehavior())
         #else
-            .searchable(text: $filterSearchText, placement: .toolbar, prompt: "Search filters")
             .frame(
                 minWidth: 480, idealWidth: 540, maxWidth: .infinity,
                 minHeight: 550, idealHeight: 720, maxHeight: .infinity
             )
             .toolbar {
                 ToolbarItemGroup(placement: .automatic) {
-                    applyChangesToolbarButton
-                        .help(
-                            hasPendingChanges
-                                ? String(localized: "Apply your pending changes")
-                                : String(localized: "Apply changes")
-                        )
+                    ToolbarSearchField(
+                        text: $filterSearchText,
+                        isExpanded: $showFilterSearch,
+                        prompt: "Search filters"
+                    )
 
-                    Button {
-                        showingAddFilterSheet = true
-                    } label: {
-                        Label("Add Filter", systemImage: "plus")
-                    }
-                    Button {
-                        showOnlyEnabledLists.toggle()
-                    } label: {
-                        Label(
-                            "Show Enabled Only",
-                            systemImage: showOnlyEnabledLists
-                                ? "line.3.horizontal.decrease.circle.fill"
-                                : "line.3.horizontal.decrease.circle")
+                    if !showFilterSearch {
+                        applyChangesToolbarButton
+                            .help(
+                                hasPendingChanges
+                                    ? String(localized: "Apply your pending changes")
+                                    : String(localized: "Apply changes")
+                            )
+
+                        Button {
+                            showingAddFilterSheet = true
+                        } label: {
+                            Label("Add Filter", systemImage: "plus")
+                        }
+                        Button {
+                            showOnlyEnabledLists.toggle()
+                        } label: {
+                            Label(
+                                "Show Enabled Only",
+                                systemImage: showOnlyEnabledLists
+                                    ? "line.3.horizontal.decrease.circle.fill"
+                                    : "line.3.horizontal.decrease.circle")
+                        }
                     }
                 }
             }

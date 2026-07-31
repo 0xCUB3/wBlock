@@ -290,28 +290,36 @@ struct UserScriptManagerView: View {
             }
             #else
             ToolbarItemGroup(placement: .automatic) {
-                applyChangesToolbarButton
-                    .help(
-                        hasPendingChanges
-                            ? String(localized: "Apply your pending changes")
-                            : String(localized: "Apply changes")
-                    )
+                ToolbarSearchField(
+                    text: $searchText,
+                    isExpanded: $showSearch,
+                    prompt: "Search scripts"
+                )
 
-                Button {
-                    showingAddScriptSheet = true
-                } label: {
-                    Label("Add Userscript or Userstyle", systemImage: "plus")
-                }
+                if !showSearch {
+                    applyChangesToolbarButton
+                        .help(
+                            hasPendingChanges
+                                ? String(localized: "Apply your pending changes")
+                                : String(localized: "Apply changes")
+                        )
 
-                Button {
-                    showOnlyEnabled.toggle()
-                    ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
-                } label: {
-                    Label(
-                        "Show Enabled Only",
-                        systemImage: showOnlyEnabled
-                            ? "line.3.horizontal.decrease.circle.fill"
-                            : "line.3.horizontal.decrease.circle")
+                    Button {
+                        showingAddScriptSheet = true
+                    } label: {
+                        Label("Add Userscript or Userstyle", systemImage: "plus")
+                    }
+
+                    Button {
+                        showOnlyEnabled.toggle()
+                        ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
+                    } label: {
+                        Label(
+                            "Show Enabled Only",
+                            systemImage: showOnlyEnabled
+                                ? "line.3.horizontal.decrease.circle.fill"
+                                : "line.3.horizontal.decrease.circle")
+                    }
                 }
             }
             #endif
@@ -323,8 +331,6 @@ struct UserScriptManagerView: View {
             prompt: "Search scripts"
         )
         .modifier(SearchMinimizeBehavior())
-        #else
-        .searchable(text: $searchText, placement: .toolbar, prompt: "Search scripts")
         #endif
     }
 
