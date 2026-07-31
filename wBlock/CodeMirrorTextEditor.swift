@@ -12,6 +12,7 @@ struct CodeMirrorDocumentAnalysis: Equatable {
 @MainActor
 final class CodeMirrorEditorController: ObservableObject {
     fileprivate let initialText: String
+    fileprivate let isUserStyle: Bool
     fileprivate var documentText: String
     fileprivate var isDocumentClean = true
     fileprivate weak var bridge: (any CodeMirrorEditorBridge)?
@@ -19,8 +20,9 @@ final class CodeMirrorEditorController: ObservableObject {
     @Published private(set) var isDirty = false
     @Published private(set) var analysis: CodeMirrorDocumentAnalysis?
 
-    init(text: String) {
+    init(text: String, isUserStyle: Bool = false) {
         self.initialText = text
+        self.isUserStyle = isUserStyle
         self.documentText = text
     }
 
@@ -114,6 +116,7 @@ private struct CodeMirrorBootstrapConfig: Encodable {
     let text: String
     let editable: Bool
     let lineWrapping: Bool
+    let isUserStyle: Bool
     let phrases: [String: String]
 }
 
@@ -335,6 +338,7 @@ extension CodeMirrorTextEditor {
                 text: controller.documentText,
                 editable: pendingEditable,
                 lineWrapping: pendingLineWrapping,
+                isUserStyle: controller.isUserStyle,
                 phrases: CodeMirrorResources.localizedPhrases
             )
             guard let encodedConfig = Self.encodedJSON(config) else { return nil }

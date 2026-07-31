@@ -1262,7 +1262,7 @@ private struct UserScriptSourceSheet: View {
         self.script = script
         self.initialContent = initialContent
         self.onSave = onSave
-        _editorController = StateObject(wrappedValue: CodeMirrorEditorController(text: initialContent))
+        _editorController = StateObject(wrappedValue: CodeMirrorEditorController(text: initialContent, isUserStyle: script.isUserStyle))
         _isEditing = State(initialValue: false)
     }
 
@@ -1352,6 +1352,23 @@ private struct UserScriptSourceSheet: View {
             .padding(.vertical, 12)
 
             Divider()
+
+            if let analysis = editorController.analysis, analysis.isLargeDocument {
+                HStack(spacing: 4) {
+                    Image(systemName: "bolt.slash")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                    Text(LocalizedStrings.text(
+                        "Highlighting disabled for performance",
+                        comment: "CodeMirror source sheet: large document note"
+                    ))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 6)
+                Divider()
+            }
 
             CodeMirrorTextEditor(
                 controller: editorController,

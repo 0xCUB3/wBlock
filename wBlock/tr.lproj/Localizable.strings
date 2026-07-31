@@ -655,6 +655,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "replaced $ matches" = "$ eşleşme değiştirildi";
 "replaced match on line $" = "$ satırındaki eşleşme değiştirildi";
 "on line" = "satırda";
+"Highlighting disabled for performance" = "Performans için vurgulama devre dışı";
 
 "Automatic Updates" = "Otomatik Güncelleme";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "wBlock betikleri toplu olarak veya zamanlanmış şekilde güncellediğinde mevcut sürümü korumak için bunu kapatın.";

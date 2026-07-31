@@ -655,6 +655,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "replaced $ matches" = "$ 件置換";
 "replaced match on line $" = "$ 行目の一致を置換";
 "on line" = "行";
+"Highlighting disabled for performance" = "パフォーマンスのためハイライトを無効化";
 
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";

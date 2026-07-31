@@ -655,6 +655,7 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "replaced $ matches" = "se reemplazaron $ coincidencias";
 "replaced match on line $" = "se reemplazó una coincidencia en la línea $";
 "on line" = "en la línea";
+"Highlighting disabled for performance" = "Resaltado desactivado por rendimiento";
 
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";

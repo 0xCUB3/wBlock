@@ -655,6 +655,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "replaced $ matches" = "заменено совпадений: $";
 "replaced match on line $" = "совпадение заменено в строке $";
 "on line" = "в строке";
+"Highlighting disabled for performance" = "Подсветка отключена для производительности";
 
 "Automatic Updates" = "Automatic Updates";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
