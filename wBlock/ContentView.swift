@@ -227,7 +227,8 @@ struct ContentView: View {
                 prompt: "Search filters"
             )
             .modifier(SearchMinimizeBehavior())
-        #else
+        #endif
+        #if os(macOS)
             .frame(
                 minWidth: 480, idealWidth: 540, maxWidth: .infinity,
                 minHeight: 550, idealHeight: 720, maxHeight: .infinity
@@ -442,9 +443,6 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             #endif
         }
-        #if os(macOS)
-        .frame(maxWidth: .infinity)
-        #endif
         .padding(.horizontal)
     }
 
@@ -466,34 +464,6 @@ struct ContentView: View {
             onToggle: { _ in filterManager.toggleFilterListSelection(id: filter.id) },
             onShowRuleLimitWarning: { filterManager.showRuleLimitWarning(for: filter) }
         )
-        #if os(iOS)
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            if supportsCustomActions(filter) {
-                Button(role: .destructive) {
-                    filterManager.removeFilterList(filter)
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-                Button {
-                    editingCustomFilter = filter
-                } label: {
-                    Label("Edit", systemImage: "pencil")
-                }
-                .tint(.orange)
-            }
-        }
-        .swipeActions(edge: .leading) {
-            Button {
-                filterManager.toggleFilterListSelection(id: filter.id)
-            } label: {
-                Label(
-                    filter.isSelected ? "Disable" : "Enable",
-                    systemImage: filter.isSelected ? "circle.slash" : "checkmark.circle"
-                )
-            }
-            .tint(filter.isSelected ? .gray : .green)
-        }
-        #endif
     }
 
     #if os(macOS)
@@ -554,7 +524,6 @@ struct ContentView: View {
         }
     }
     #endif
-
 }
 
 struct FilterRowView: View {
@@ -712,6 +681,9 @@ struct FilterRowView: View {
         .contextMenu {
             contextMenuItems
         }
+        #if os(macOS)
+        .padding(16)
+        #endif
     }
 }
 
@@ -962,41 +934,43 @@ struct AddFilterListView: View {
     }
 
 		var body: some View {
-		    CompatibleNavigationStack {
-		        addForm
-		            .navigationTitle("Add Filter List")
-		            #if os(iOS)
-		            .navigationBarTitleDisplayMode(.inline)
-		            #endif
-		            .toolbar {
-		                ToolbarItem(placement: .cancellationAction) {
-		                    Button("Cancel") { dismiss() }
-		                        .disabled(isSaving)
-		                }
-		                ToolbarItem(placement: .confirmationAction) {
-		                    Button(action: submit) {
-		                        if isSaving {
-		                            ProgressView()
-		                        } else {
-		                            Text(LocalizedStringKey(addButtonTitle))
+		    Group {
+		        #if os(iOS)
+		            CompatibleNavigationStack {
+		                addTabs
+		                    .navigationTitle("Add Filter List")
+		                    .navigationBarTitleDisplayMode(.inline)
+		                    .toolbar {
+		                        ToolbarItem(placement: .cancellationAction) {
+		                            Button("Cancel") { dismiss() }
+		                                .disabled(isSaving)
+		                        }
+		                        ToolbarItem(placement: .confirmationAction) {
+		                            Button(action: submit) {
+		                                if isSaving {
+		                                    ProgressView()
+		                                } else {
+		                                    Text(LocalizedStringKey(addButtonTitle))
+		                                }
+		                            }
+		                            .disabled(!canSubmit || isSaving)
 		                        }
 		                    }
-		                    .disabled(!canSubmit || isSaving)
-		                }
 		            }
-		    }
-		    .interactiveDismissDisabled(isSaving)
-		    #if os(iOS)
-		    .largeSheetPresentationCompat()
-		    #else
-		    .frame(minWidth: 560, minHeight: addMode == .paste ? 620 : 520)
-		    .onAppear {
-		        urlFieldIsFocused = addMode == .url
-		    }
-		    .onChangeCompat(of: addMode) { _, newValue in
-		        urlFieldIsFocused = newValue == .url
-		    }
-		    #endif
+		            .interactiveDismissDisabled(isSaving)
+		            .largeSheetPresentationCompat()
+	        #elseif os(macOS)
+	            macosBody
+	        #endif
+	    }
+        #if os(macOS)
+	    .onAppear {
+	        urlFieldIsFocused = addMode == .url
+	    }
+        .onChangeCompat(of: addMode) { _, newValue in
+            urlFieldIsFocused = newValue == .url
+        }
+        #endif
         .fileImporter(
             isPresented: $showingFileImporter,
             allowedContentTypes: [UTType.plainText, UTType.text],
@@ -1039,85 +1013,260 @@ struct AddFilterListView: View {
 	        }
 	    }
 
-    private var addForm: some View {
-        Form {
-            Section {
-                Picker("Add Mode", selection: $addMode) {
-                    ForEach(AddMode.allCases) { mode in
-                        Text(LocalizedStringKey(mode.rawValue)).tag(mode)
+	    #if os(macOS)
+	        private var macosBody: some View {
+	            SheetContainer {
+	                SheetHeader(title: "Add Filter List", isLoading: isSaving) {
+	                    dismiss()
+	                }
+
+	                ScrollView {
+	                    VStack(alignment: .leading, spacing: 16) {
+	                        modePickerCard
+	                        macosModeContent
+	                    }
+	                    .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+	                    .padding(.top, 12)
+	                    .padding(.bottom, 40)
+	                }
+
+	                SheetBottomToolbar {
+	                    Spacer()
+	                    macosAddButton
+	                }
+	            }
+	            .interactiveDismissDisabled(isSaving)
+	            .frame(minWidth: 560, minHeight: addMode == .paste ? 620 : 520)
+	        }
+
+	        private var macosAddButton: some View {
+	            Button(action: submit) {
+	                HStack(spacing: 8) {
+	                    if isSaving {
+	                        ProgressView()
+	                            .scaleEffect(0.9)
+	                    }
+	                    Text(LocalizedStringKey(isSaving ? "Adding…" : addButtonTitle))
+	                        .fontWeight(.semibold)
+	                }
+	            }
+	            .primaryActionButtonStyle()
+	            .disabled(!canSubmit || isSaving)
+	            .keyboardShortcut(.defaultAction)
+	        }
+
+	        private var modePickerCard: some View {
+	            HStack(spacing: 10) {
+	                Text("Add Mode")
+	                    .font(.caption)
+	                    .foregroundStyle(.secondary)
+
+	                Picker("", selection: $addMode) {
+	                    ForEach(AddMode.allCases) { mode in
+	                        Text(LocalizedStringKey(mode.rawValue)).tag(mode)
+	                    }
+	                }
+	                .pickerStyle(.segmented)
+	                .labelsHidden()
+	                .controlSize(.small)
+	                .animation(.easeInOut(duration: 0.15), value: addMode)
+
+	                Spacer(minLength: 0)
+	            }
+	            .padding(16)
+	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+	        }
+
+	        @ViewBuilder
+	        private var macosModeContent: some View {
+	            switch addMode {
+	            case .url:
+	                macosURLCard
+	            case .paste:
+	                macosPasteCard
+	            case .file:
+	                macosFileCard
+	            }
+	        }
+
+	        private var macosURLCard: some View {
+	            VStack(alignment: .leading, spacing: 12) {
+	                VStack(alignment: .leading, spacing: 6) {
+	                    Text("URLs")
+	                        .font(.caption)
+	                        .foregroundStyle(.secondary)
+
+	                    urlInputEditor
+	                }
+
+                    if newURLs.count <= 1 {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Title (optional)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+
+                            TextField("Title", text: $customName)
+                                .textFieldStyle(.roundedBorder)
+                                .autocorrectionDisabled()
+                        }
+                    } else {
+                        Text("Titles will be created from each URL.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .animation(.easeInOut(duration: 0.15), value: addMode)
-            }
 
-            modeContent
-        }
-    }
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Category")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
 
-    @ViewBuilder
-    private var modeContent: some View {
-        switch addMode {
-        case .url:
-            Section {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("URLs")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    urlInputEditor
-                }
+                        userListCategoryPicker(selection: $selectedCategory)
+                            .labelsHidden()
+                    }
 
-                if newURLs.count <= 1 {
-                    TextField("Title (optional)", text: $customName)
-                        .autocorrectionDisabled()
-                        #if os(iOS)
-                            .textInputAutocapitalization(.words)
-                        #endif
-                } else {
-                    Text("Titles will be created from each URL.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+	                urlFooterMessage
+	            }
+	            .padding(16)
+	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+	        }
 
+	        private var macosPasteCard: some View {
+	            VStack(alignment: .leading, spacing: 12) {
+	                userListMetaFields
+
+	                VStack(alignment: .leading, spacing: 6) {
+	                    Text("Rules")
+	                        .font(.caption)
+	                        .foregroundStyle(.secondary)
+
+                    SyntaxHighlightingTextView(text: $pastedRules)
+                        .frame(minHeight: 260)
+                        .background(.background, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(.quaternary, lineWidth: 1)
+                        )
+	                }
+	            }
+	            .padding(16)
+	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+	        }
+
+	        private var macosFileCard: some View {
+	            VStack(alignment: .leading, spacing: 12) {
+	                userListMetaFields
+
+	                Button {
+	                    showingFileImporter = true
+	                } label: {
+	                    HStack(spacing: 10) {
+	                        Image(systemName: "doc")
+	                        Text("Choose File…")
+	                        Spacer()
+	                        Image(systemName: "chevron.right")
+	                            .font(.caption2)
+	                            .foregroundStyle(.secondary)
+	                    }
+	                    .padding(.vertical, 10)
+	                    .padding(.horizontal, 12)
+	                    .frame(maxWidth: .infinity, alignment: .leading)
+	                    .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+	                    .overlay(
+	                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+	                            .stroke(.quaternary, lineWidth: 1)
+	                    )
+	                }
+	                .buttonStyle(.plain)
+	                .disabled(isSaving || !canSubmit)
+	            }
+	            .padding(16)
+	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+	        }
+	    #endif
+
+	    private var addTabs: some View {
+	        TabView(selection: $addMode) {
+	            urlTab
+	                .tag(AddMode.url)
+	                .tabItem { Label("URL", systemImage: "link") }
+
+	            pasteTab
+	                .tag(AddMode.paste)
+	                .tabItem { Label("Paste", systemImage: "text.badge.plus") }
+
+	            fileTab
+	                .tag(AddMode.file)
+	                .tabItem { Label("File", systemImage: "doc") }
+	        }
+	    }
+
+		    private var urlTab: some View {
+		        Form {
+		            Section {
+		                VStack(alignment: .leading, spacing: 6) {
+                        Text("URLs")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        urlInputEditor
+                    }
+
+                    if newURLs.count <= 1 {
+                        TextField("Title (optional)", text: $customName)
+                            #if os(iOS)
+                                .textInputAutocapitalization(.words)
+                            #endif
+                    } else {
+                        Text("Titles will be created from each URL.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    userListCategoryPicker(selection: $selectedCategory)
+		            } footer: {
+		                urlFooterMessage
+		            }
+		        }
+		    }
+
+		    private var pasteTab: some View {
+		        Form {
+		            Section {
+		            TextField("Title", text: $userListTitle)
+		                    #if os(iOS)
+		                .textInputAutocapitalization(.words)
+		            #endif
+		                    .autocorrectionDisabled()
+	                TextField("Description", text: $userListDescription)
+	                    #if os(iOS)
+	                        .textInputAutocapitalization(.sentences)
+	                    #endif
+	                    .autocorrectionDisabled()
                 userListCategoryPicker(selection: $selectedCategory)
-            } footer: {
-                urlFooterMessage
-            }
-        case .paste:
-            Section {
-                TextField("Title", text: $userListTitle)
-                    .autocorrectionDisabled()
-                    #if os(iOS)
-                        .textInputAutocapitalization(.words)
-                    #endif
-                TextField("Description", text: $userListDescription)
-                    .autocorrectionDisabled()
-                    #if os(iOS)
-                        .textInputAutocapitalization(.sentences)
-                    #endif
-                userListCategoryPicker(selection: $selectedCategory)
-            }
+	            }
 
             Section("Rules") {
                 SyntaxHighlightingTextView(text: $pastedRules)
                     .frame(minHeight: 220)
             }
-        case .file:
-            Section {
-                TextField("Title", text: $userListTitle)
-                    .autocorrectionDisabled()
-                    #if os(iOS)
-                        .textInputAutocapitalization(.words)
-                    #endif
-                TextField("Description", text: $userListDescription)
-                    .autocorrectionDisabled()
-                    #if os(iOS)
-                        .textInputAutocapitalization(.sentences)
-                    #endif
-                userListCategoryPicker(selection: $selectedCategory)
-            }
         }
+    }
+
+		    private var fileTab: some View {
+		        Form {
+		            Section {
+		            TextField("Title", text: $userListTitle)
+		                    #if os(iOS)
+		                .textInputAutocapitalization(.words)
+		            #endif
+		                    .autocorrectionDisabled()
+	                TextField("Description", text: $userListDescription)
+	                    #if os(iOS)
+	                        .textInputAutocapitalization(.sentences)
+	                    #endif
+	                    .autocorrectionDisabled()
+                userListCategoryPicker(selection: $selectedCategory)
+		        }
+		    }
     }
 
 	    private var urlInputEditor: some View {
@@ -1264,6 +1413,45 @@ struct AddFilterListView: View {
         }
     }
 
+    private var userListMetaFields: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Title")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                TextField("User List", text: $userListTitle)
+                    .textFieldStyle(.roundedBorder)
+                    .autocorrectionDisabled()
+                    #if os(iOS)
+                        .textInputAutocapitalization(.words)
+                    #endif
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Description (optional)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                TextField("Description", text: $userListDescription)
+                    .textFieldStyle(.roundedBorder)
+                    .autocorrectionDisabled()
+                    #if os(iOS)
+                        .textInputAutocapitalization(.sentences)
+                    #endif
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Category")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                userListCategoryPicker(selection: $selectedCategory)
+                    .labelsHidden()
+            }
+    }
+    }
+
     // MARK: - Helpers
 
     private func validationState(for rawValue: String) -> ValidationState {
@@ -1335,54 +1523,110 @@ struct EditCustomFilterView: View {
 
     var body: some View {
         Group {
-            CompatibleNavigationStack {
-                Form {
-                    Section {
-                        TextField("Name", text: $name)
-                            .focused($nameFieldIsFocused)
-                            #if os(iOS)
+            #if os(iOS)
+                CompatibleNavigationStack {
+                    Form {
+                        Section {
+                            TextField("Name", text: $name)
+                                .focused($nameFieldIsFocused)
                                 .textInputAutocapitalization(.words)
                                 .submitLabel(.done)
-                            #endif
-                            .onSubmit {
-                                if canSave {
-                                    save()
-                                } else {
-                                    nameFieldIsFocused = false
+                                .onSubmit {
+                                    if canSave {
+                                        save()
+                                    } else {
+                                        nameFieldIsFocused = false
+                                    }
                                 }
+
+                            userListCategoryPicker(selection: $selectedCategory)
+
+                            Text(filter.url.absoluteString)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                        } footer: {
+                            if isDuplicate {
+                                Text("That name is already used by another filter list.")
+                                    .foregroundStyle(.orange)
                             }
-
-                        userListCategoryPicker(selection: $selectedCategory)
-
-                        Text(filter.url.absoluteString)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                            .textSelection(.enabled)
-                    } footer: {
-                        if isDuplicate {
-                            Text("That name is already used by another filter list.")
-                                .foregroundStyle(.orange)
+                        }
+                    }
+                    .navigationTitle("Edit Filter List")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { dismiss() }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Save") { save() }
+                                .disabled(!canSave)
                         }
                     }
                 }
-                .navigationTitle("Edit Filter List")
-                #if os(iOS)
-                    .navigationBarTitleDisplayMode(.inline)
-                #endif
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") { dismiss() }
+                .onAppear {
+                    nameFieldIsFocused = true
+                }
+            #else
+                SheetContainer {
+                    SheetHeader(title: "Edit Filter List") {
+                        dismiss()
                     }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Save") { save() }
-                            .disabled(!canSave)
+
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("Name")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                TextField("Filter name", text: $name)
+                                    .textFieldStyle(.roundedBorder)
+                                    .focused($nameFieldIsFocused)
+                                    .onSubmit {
+                                        if canSave {
+                                            save()
+                                        } else {
+                                            nameFieldIsFocused = false
+                                        }
+                                    }
+
+                                Text("Category")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                userListCategoryPicker(selection: $selectedCategory)
+                                    .labelsHidden()
+
+                                Text(filter.url.absoluteString)
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                                    .lineLimit(2)
+                                    .textSelection(.enabled)
+
+                                if isDuplicate {
+                                    Text("That name is already used by another filter list.")
+                                        .font(.caption)
+                                        .foregroundStyle(.orange)
+                                }
+                            }
+                            .padding(20)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                        }
+                        .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                        .padding(.top, 12)
+                        .padding(.bottom, 40)
+                    }
+
+                    SheetBottomToolbar {
+                        Spacer()
+                        saveButton
                     }
                 }
-            }
-            .onAppear {
-                nameFieldIsFocused = true
-            }
+                .onAppear {
+                    nameFieldIsFocused = true
+                }
+            #endif
         }
         .alert(
             "Error",
@@ -1411,6 +1655,15 @@ struct EditCustomFilterView: View {
 
     private var canSave: Bool {
         !trimmedName.isEmpty && !isDuplicate
+    }
+
+    private var saveButton: some View {
+        Button("Save") {
+            save()
+        }
+        .primaryActionButtonStyle()
+        .disabled(!canSave)
+        .keyboardShortcut(.defaultAction)
     }
 
     private func save() {
@@ -1449,82 +1702,167 @@ struct EditUserListView: View {
     }
 
     var body: some View {
-        CompatibleNavigationStack {
-            Form {
-                Section {
-                    TextField("Title", text: $title)
-                        .focused($titleFieldIsFocused)
-                        #if os(iOS)
-                            .textInputAutocapitalization(.words)
-                        #endif
-                        .autocorrectionDisabled()
-
-                    TextField("Description", text: $description)
-                        #if os(iOS)
-                            .textInputAutocapitalization(.sentences)
-                        #endif
-                        .autocorrectionDisabled()
-
-                    userListCategoryPicker(selection: $selectedCategory)
-
-                    Text(filter.url.absoluteString)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .textSelection(.enabled)
-                } footer: {
-                    if isDuplicateTitle {
-                        Text("That title is already used by another filter list.")
-                            .foregroundStyle(.orange)
-                    }
-                }
-
-                Section("Rules") {
-                    SyntaxHighlightingTextView(text: $rules)
-                        .frame(minHeight: 260)
-                }
-            }
-            .navigationTitle("Edit User List")
+        Group {
             #if os(iOS)
-                .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .disabled(isLoadingContent)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(!canSave)
-                }
-                #if os(iOS)
-                ToolbarItem(placement: .principal) {
-                    if isLoadingContent {
-                        ProgressView()
+                CompatibleNavigationStack {
+                    Form {
+                        Section {
+                            TextField("Title", text: $title)
+                                .focused($titleFieldIsFocused)
+                                .textInputAutocapitalization(.words)
+                                .autocorrectionDisabled()
+
+                            TextField("Description", text: $description)
+                                .textInputAutocapitalization(.sentences)
+                                .autocorrectionDisabled()
+
+                            userListCategoryPicker(selection: $selectedCategory)
+                        } footer: {
+                            if isDuplicateTitle {
+                                Text("That title is already used by another filter list.")
+                                    .foregroundStyle(.orange)
+                            }
+                        }
+
+                        Section("Rules") {
+                            SyntaxHighlightingTextView(text: $rules)
+                                .frame(minHeight: 260)
+                        }
+                    }
+                    .navigationTitle("Edit User List")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { dismiss() }
+                                .disabled(isLoadingContent)
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Save") { save() }
+                                .disabled(!canSave)
+                        }
+                        ToolbarItem(placement: .principal) {
+                            if isLoadingContent {
+                                ProgressView()
+                            }
+                        }
                     }
                 }
-                #endif
-            }
+                .interactiveDismissDisabled(isLoadingContent)
+                .onAppear {
+                    titleFieldIsFocused = true
+                    loadContent()
+                }
+                .alert(
+                    "Couldn’t Save",
+                    isPresented: Binding(
+                        get: { errorMessage != nil },
+                        set: { _ in errorMessage = nil }
+                    )
+                ) {
+                    Button("OK", role: .cancel) { errorMessage = nil }
+                } message: {
+                    Text(errorMessage ?? "")
+                }
+                .largeSheetPresentationCompat()
+            #else
+                SheetContainer {
+                    SheetHeader(title: "Edit User List", isLoading: isLoadingContent) {
+                        dismiss()
+                    }
+
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("Title")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                TextField("User List", text: $title)
+                                    .textFieldStyle(.roundedBorder)
+                                    .focused($titleFieldIsFocused)
+                                    .autocorrectionDisabled()
+                                    .onSubmit {
+                                        titleFieldIsFocused = false
+                                    }
+
+                                Text("Description")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                TextField("Description", text: $description)
+                                    .textFieldStyle(.roundedBorder)
+                                    .autocorrectionDisabled()
+
+                                Text("Category")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                userListCategoryPicker(selection: $selectedCategory)
+                                    .labelsHidden()
+
+                                Text(filter.url.absoluteString)
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                                    .lineLimit(2)
+                                    .textSelection(.enabled)
+
+                                if isDuplicateTitle {
+                                    Text("That title is already used by another filter list.")
+                                        .font(.caption)
+                                        .foregroundStyle(.orange)
+                                }
+                            }
+                            .padding(20)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Rules")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                SyntaxHighlightingTextView(text: $rules)
+                                    .frame(minHeight: 260)
+                                    .padding(10)
+                                    .background(
+                                        .background,
+                                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                            .stroke(.quaternary, lineWidth: 1)
+                                    )
+                            }
+                            .padding(20)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                        }
+                        .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                        .padding(.top, 12)
+                        .padding(.bottom, 40)
+                    }
+
+                    SheetBottomToolbar {
+                        Spacer()
+                        saveButton
+                    }
+                }
+                .interactiveDismissDisabled(isLoadingContent)
+                .onAppear {
+                    titleFieldIsFocused = true
+                    loadContent()
+                }
+                .alert(
+                    "Couldn’t Save",
+                    isPresented: Binding(
+                        get: { errorMessage != nil },
+                        set: { _ in errorMessage = nil }
+                    )
+                ) {
+                    Button("OK", role: .cancel) { errorMessage = nil }
+                } message: {
+                    Text(errorMessage ?? "")
+                }
+            #endif
         }
-        .interactiveDismissDisabled(isLoadingContent)
-        .onAppear {
-            titleFieldIsFocused = true
-            loadContent()
-        }
-        .alert(
-            "Couldn’t Save",
-            isPresented: Binding(
-                get: { errorMessage != nil },
-                set: { _ in errorMessage = nil }
-            )
-        ) {
-            Button("OK", role: .cancel) { errorMessage = nil }
-        } message: {
-            Text(errorMessage ?? "")
-        }
-        #if os(iOS)
-        .largeSheetPresentationCompat()
-        #endif
     }
 
 
@@ -1547,6 +1885,15 @@ struct EditUserListView: View {
 
     private var canSave: Bool {
         !trimmedTitle.isEmpty && !trimmedRules.isEmpty && !isDuplicateTitle && !isLoadingContent
+    }
+
+    private var saveButton: some View {
+        Button("Save") {
+            save()
+        }
+        .primaryActionButtonStyle()
+        .disabled(!canSave)
+        .keyboardShortcut(.defaultAction)
     }
 
     private func loadContent() {

@@ -445,9 +445,6 @@ struct UserScriptManagerView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             #endif
         }
-        #if os(macOS)
-        .frame(maxWidth: .infinity)
-        #endif
         .padding(.horizontal)
     }
 
@@ -675,6 +672,9 @@ struct UserScriptManagerView: View {
                 }
             }
         }
+        #if os(macOS)
+        .padding(16)
+        #endif
     }
 
     private var emptyStateView: some View {
@@ -1419,47 +1419,15 @@ struct AddUserScriptView: View {
     }
 
     var body: some View {
-        CompatibleNavigationStack {
-            VStack(spacing: 0) {
-                Picker("Add Mode", selection: $addMode) {
-                    ForEach(AddMode.allCases) { mode in
-                        Text(LocalizedStringKey(mode.rawValue)).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, 4)
-
-                modeContent
-            }
-            .navigationTitle("Add Userscript or Userstyle")
+        Group {
             #if os(iOS)
-                .navigationBarTitleDisplayMode(.inline)
+            iosBody
+            #elseif os(macOS)
+            macosBody
             #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                        .disabled(isAdding)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(action: submit) {
-                        if isAdding {
-                            ProgressView()
-                        } else {
-                            Text(LocalizedStringKey(addButtonTitle))
-                        }
-                    }
-                    .disabled(!canSubmit || isAdding)
-                }
-            }
         }
         .interactiveDismissDisabled(isAdding)
-        #if os(iOS)
-        .largeSheetPresentationCompat()
-        #else
-        .frame(minWidth: 560, minHeight: 500)
+        #if os(macOS)
         .onAppear {
             urlFieldFocused = addMode == .url
         }
@@ -1482,69 +1450,85 @@ struct AddUserScriptView: View {
         }
     }
 
-    @ViewBuilder
-    private var modeContent: some View {
-        switch addMode {
-        case .url:
-            Form {
-                Section {
-                    HStack(spacing: 10) {
-                        TextField(
-                            text: $urlInput,
-                            prompt: Text(verbatim: "https://example.com/script.user.js")
-                                .foregroundColor(.secondary)
-                        ) {
-                            Text("Script or Style URL")
-                        }
-                        #if os(iOS)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.URL)
-                        #endif
-                        .autocorrectionDisabled()
-                        .submitLabel(.done)
-                        .focused($urlFieldFocused)
-                        .onSubmit {
-                            if canSubmit {
-                                submit()
+    #if os(iOS)
+    private var iosBody: some View {
+        CompatibleNavigationStack {
+            addTabs
+                .navigationTitle("Add Userscript or Userstyle")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
+                            .disabled(isAdding)
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(action: submit) {
+                            if isAdding {
+                                ProgressView()
                             } else {
-                                urlFieldFocused = false
+                                Text(LocalizedStringKey(addButtonTitle))
                             }
                         }
-
-                        compactPasteButton
+                        .disabled(!canSubmit || isAdding)
                     }
-                } footer: {
-                    validationMessage
                 }
+        }
+        .largeSheetPresentationCompat()
+    }
 
-                Section {
-                    requirementsDisclosure
+    private var addTabs: some View {
+        TabView(selection: $addMode) {
+            urlTab
+                .tag(AddMode.url)
+                .tabItem { Label("URL", systemImage: "link") }
+
+            editorTab
+                .tag(AddMode.editor)
+                .tabItem { Label("Editor", systemImage: "curlybraces") }
+
+            fileTab
+                .tag(AddMode.file)
+                .tabItem { Label("File", systemImage: "doc") }
+        }
+    }
+
+    private var urlTab: some View {
+        Form {
+            Section {
+                HStack(spacing: 10) {
+                    TextField(
+                        text: $urlInput,
+                        prompt: Text(verbatim: "https://example.com/script.user.js")
+                            .foregroundColor(.secondary)
+                    ) {
+                        Text("Script or Style URL")
+                    }
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .keyboardType(.URL)
+                    .submitLabel(.done)
+                    .focused($urlFieldFocused)
+                    .onSubmit {
+                        if canSubmit {
+                            submit()
+                        } else {
+                            urlFieldFocused = false
+                        }
+                    }
+
+                    compactPasteButton
                 }
+            } footer: {
+                validationMessage
             }
-        case .editor:
-            editorContent
-        case .file:
-            Form {
-                Section {
-                    Button {
-                        showingFileImporter = true
-                        fileImportError = nil
-                    } label: {
-                        Label("Choose File…", systemImage: "tray.and.arrow.down")
-                    }
-                    .disabled(isAdding)
-                } footer: {
-                    fileImportMessage
-                }
 
-                Section {
-                    requirementsDisclosure
-                }
+            Section {
+                requirementsDisclosure
             }
         }
     }
 
-    private var editorContent: some View {
+    private var editorTab: some View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Script Content")
@@ -1581,6 +1565,208 @@ struct AddUserScriptView: View {
         .padding(.bottom, 16)
     }
 
+    private var fileTab: some View {
+        Form {
+            Section {
+                Button {
+                    showingFileImporter = true
+                    fileImportError = nil
+                } label: {
+                    Label("Choose File…", systemImage: "tray.and.arrow.down")
+                }
+                .disabled(isAdding)
+            } footer: {
+                fileImportMessage
+            }
+
+            Section {
+                requirementsDisclosure
+            }
+        }
+    }
+    #endif
+
+    #if os(macOS)
+    private var macosBody: some View {
+        SheetContainer {
+            SheetHeader(title: "Add Userscript or Userstyle", isLoading: isAdding) {
+                dismiss()
+            }
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    modePickerCard
+                    macosModeContent
+                    if addMode == .url {
+                        requirementsCard
+                    }
+                }
+                .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                .padding(.top, 12)
+                .padding(.bottom, 40)
+            }
+
+            SheetBottomToolbar {
+                Spacer()
+                addButton
+            }
+        }
+        .frame(minWidth: 560, minHeight: 500)
+    }
+
+    private var modePickerCard: some View {
+        HStack(spacing: 10) {
+            Text("Add Mode")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Picker("", selection: $addMode) {
+                ForEach(AddMode.allCases) { mode in
+                    Text(LocalizedStringKey(mode.rawValue)).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .controlSize(.small)
+            .animation(.easeInOut(duration: 0.15), value: addMode)
+
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+    }
+
+    @ViewBuilder
+    private var macosModeContent: some View {
+        switch addMode {
+        case .url:
+            macosURLCard
+        case .editor:
+            macosEditorCard
+        case .file:
+            macosFileCard
+        }
+    }
+
+    private var macosURLCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Script or Style URL")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            VStack(spacing: 8) {
+                HStack(spacing: 10) {
+                    TextField("https://example.com/script.user.js", text: $urlInput)
+                        .textFieldStyle(.roundedBorder)
+                        .autocorrectionDisabled()
+                        .submitLabel(.done)
+                        .focused($urlFieldFocused)
+                        .onSubmit {
+                            if canSubmit {
+                                submit()
+                            } else {
+                                urlFieldFocused = false
+                            }
+                        }
+
+                    compactPasteButton
+                }
+
+                HStack {
+                    Spacer()
+                    validationBadge
+                }
+            }
+
+            validationMessage
+        }
+        .padding(16)
+        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+    }
+
+    private var macosEditorCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Script Content")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("Paste or write a userscript or userstyle with a standard metadata block.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            editorToolbar
+
+            CodeMirrorTextEditor(
+                controller: editorController,
+                isEditable: true,
+                isLineWrappingEnabled: isEditorLineWrappingEnabled
+            )
+            .frame(minHeight: 320)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(.quaternary, lineWidth: 1)
+            )
+
+            editorImportMessage
+        }
+        .padding(16)
+        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+    }
+
+    private var macosFileCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Import File")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Text("Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Button {
+                showingFileImporter = true
+                fileImportError = nil
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "tray.and.arrow.down")
+                    Text("Choose File…")
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 10)
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(.quaternary, lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(isAdding)
+
+            if let fileImportError {
+                Text(fileImportError)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+        }
+        .padding(16)
+        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+    }
+    #endif
+
     private var addButtonTitle: String {
         switch addMode {
         case .url, .editor:
@@ -1588,6 +1774,31 @@ struct AddUserScriptView: View {
         case .file:
             return "Import"
         }
+    }
+
+    private var requirementsCard: some View {
+        DisclosureGroup(isExpanded: $showHints.animation(.easeInOut(duration: 0.2))) {
+            VStack(alignment: .leading, spacing: 8) {
+                requirementRow(icon: "link", text: "Starts with http:// or https://")
+                requirementRow(icon: "doc.text", text: "Ends with .js, .user.js, or .user.css")
+                requirementRow(icon: "checkmark.shield", text: "Hosted on a trusted source")
+            }
+            .padding(.top, 8)
+        } label: {
+            HStack {
+                Image(systemName: "info.circle")
+                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("URL requirements")
+                        .font(.headline)
+                    Text("Tap to review userscript guidelines.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(20)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
     }
 
     private var editorImportMessage: some View {
@@ -1725,6 +1936,22 @@ struct AddUserScriptView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
+    }
+
+    private var addButton: some View {
+        Button(action: submit) {
+            HStack(spacing: 8) {
+                if isAdding {
+                    ProgressView()
+                        .scaleEffect(0.9)
+                }
+                Text(LocalizedStringKey(isAdding ? "Adding…" : addButtonTitle))
+                    .fontWeight(.semibold)
+            }
+        }
+        .primaryActionButtonStyle()
+        .disabled(!canSubmit || isAdding)
+        .keyboardShortcut(.defaultAction)
     }
 
     private var canSubmit: Bool {
