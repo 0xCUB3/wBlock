@@ -63,7 +63,7 @@
 			<key>one</key>
 			<string>Κάθε 1 ημέρα</string>
 			<key>other</key>
-			<string>Όλες οι %d ημέρες</string>
+			<string>Κάθε %d ημέρες</string>
 		</dict>
 	</dict>
 	<key>Every %d hours</key>
