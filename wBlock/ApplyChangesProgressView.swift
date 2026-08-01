@@ -45,10 +45,6 @@ struct ApplyChangesProgressView: View {
         CompatibleNavigationStack {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .navigationTitle(headerTitle)
-                #if os(iOS)
-                    .navigationBarTitleDisplayMode(.inline)
-                #endif
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button(mode == .review ? String(localized: "Cancel") : String(localized: "Done")) {
@@ -109,42 +105,57 @@ struct ApplyChangesProgressView: View {
             reviewContent
         case .progress:
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 20) {
+                    sheetHeader
                     progressOverviewCard
                     phaseCard
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 12)
+                .padding(.top, 20)
                 .padding(.bottom, 24)
             }
         case .result:
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    sheetHeader
                     if let summary = viewModel.state.summary {
                         summaryCard(summary)
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 12)
+                .padding(.top, 20)
                 .padding(.bottom, 24)
             }
         case .failed:
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    sheetHeader
                     failureCard
                     phaseCard
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 12)
+                .padding(.top, 20)
                 .padding(.bottom, 24)
             }
         }
+    }
+
+    @ViewBuilder
+    private var sheetHeader: some View {
+        Text(headerTitle)
+            .font(.title2.weight(.semibold))
     }
 
     // MARK: - Review
 
     private var reviewContent: some View {
         VStack(alignment: .leading, spacing: 0) {
+            Text(headerTitle)
+                .font(.title2.weight(.semibold))
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 4)
+
             Text(
                 String.localizedStringWithFormat(
                     NSLocalizedString(
@@ -158,7 +169,6 @@ struct ApplyChangesProgressView: View {
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 20)
-            .padding(.top, 8)
             .padding(.bottom, 12)
 
             List {
@@ -273,7 +283,7 @@ struct ApplyChangesProgressView: View {
     }
 
     private var phaseCard: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 4) {
             ForEach(viewModel.state.phases.indices, id: \.self) { index in
                 let step = viewModel.state.phases[index]
                 PhaseRow(
@@ -281,10 +291,6 @@ struct ApplyChangesProgressView: View {
                     detail: detail(for: step),
                     subProgress: subProgress(for: step.phase, status: step.status)
                 )
-                if index < viewModel.state.phases.count - 1 {
-                    Divider()
-                        .padding(.leading, 44)
-                }
             }
         }
     }
