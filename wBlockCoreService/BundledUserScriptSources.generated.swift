@@ -4573,6 +4573,14 @@ enum BundledUserScriptSources {
         } catch (e) { /* ignore */ }
     }
 
+    // Custom players set disableRemotePlayback to hide the route picker they
+    // cannot style (cineby). With that flag WebKit omits AirPlay from the
+    // native controls, so nativeizing must restore remote playback too.
+    function enableRemotePlayback(video) {
+        try { video.removeAttribute('disableremoteplayback'); } catch (e) { /* ignore */ }
+        try { video.disableRemotePlayback = false; } catch (e) { /* ignore */ }
+    }
+
     // The UA services native-control clicks below the JS event layer, but stopping
     // clicks in capture phase breaks native control buttons in WebKit shadow DOM.
     // Stopping propagation in bubble phase allows native controls (play, pause,
@@ -4586,26 +4594,33 @@ enum BundledUserScriptSources {
         } catch (e) { /* ignore */ }
     }
 
-    // WebKit renders native controls from the `controls` content attribute.
-    // Do not shadow the media element's controls property with a non-configurable
-    // instance descriptor: doing that before WebKit initializes its native media
-    // controls can break the controls implementation itself. Observe the content
-    // attribute instead; MutationObserver restores it at the pre-paint microtask
-    // checkpoint whenever a custom player removes it.
+    // WebKit renders native controls from the `controls` content attribute and
+    // omits the AirPlay route picker when `disableremoteplayback` is set. Custom
+    // players toggle both to drive their own chrome. Do not shadow the media
+    // element's controls property with a non-configurable instance descriptor:
+    // doing that before WebKit initializes its native media controls can break
+    // the controls implementation itself. Observe the content attributes
+    // instead; MutationObserver restores them at the pre-paint microtask
+    // checkpoint whenever a custom player removes or re-asserts them.
     function guardNativeControls(video) {
         if (!video || video._wblockControlsGuarded) return;
         video._wblockControlsGuarded = true;
 
         function restore() {
-            if (video && !video.hasAttribute('controls')) {
+            if (!video) { return; }
+            if (!video.hasAttribute('controls')) {
                 video.setAttribute('controls', '');
             }
+            if (video.hasAttribute('disableremoteplayback')) {
+                video.removeAttribute('disableremoteplayback');
+            }
+            try { video.disableRemotePlayback = false; } catch (e) { /* ignore */ }
         }
 
         var observer = null;
         try {
             observer = new MutationObserver(restore);
-            observer.observe(video, { attributes: true, attributeFilter: ['controls'] });
+            observer.observe(video, { attributes: true, attributeFilter: ['controls', 'disableremoteplayback'] });
         } catch (e) { /* ignore */ }
 
         restore();
@@ -4996,6 +5011,7 @@ enum BundledUserScriptSources {
         // obvious custom control overlays.
         try {
             forceNativeControls(video);
+            enableRemotePlayback(video);
             video.playsInline = true;
             video.setAttribute('playsinline', '');
             video.removeAttribute('disablepictureinpicture');
@@ -5207,6 +5223,7 @@ enum BundledUserScriptSources {
         } catch (e) { /* ignore */ }
         applyCleanSizing(container, video);
         forceNativeControls(video);
+        enableRemotePlayback(video);
         recoverSidecarTracks(container, video);
         setupAutoPiP(video);
         setupPlaybackPreferences(video);
