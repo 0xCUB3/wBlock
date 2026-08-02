@@ -1,0 +1,14 @@
+{"type":"session_rebound","value":{"reason":"new"},"at":"2026-08-01T20:16:39.986Z"}
+{"type":"session_shutdown","value":{"reason":"new"},"at":"2026-08-01T20:27:29.591Z"}
+{"type":"session_rebound","value":{"reason":"new"},"at":"2026-08-01T20:27:32.144Z"}
+{"type":"rebind_resume","value":{"pid":74096},"at":"2026-08-01T20:27:32.147Z"}
+{"type":"session_shutdown","value":{"reason":"new"},"at":"2026-08-02T10:15:20.279Z"}
+{"type":"session_rebound","value":{"reason":"new"},"at":"2026-08-02T10:15:27.390Z"}
+{"type":"rebind_resume","value":{"pid":74096},"at":"2026-08-02T10:15:27.396Z"}
+{"type":"session_shutdown","value":{"reason":"quit"},"at":"2026-08-02T13:50:13.425Z"}
+{"type":"session_rebound","value":{"reason":"startup"},"at":"2026-08-02T14:00:31.109Z"}
+{"type":"session_shutdown","value":{"reason":"quit"},"at":"2026-08-02T15:17:34.865Z"}
+{"type":"session_rebound","value":{"reason":"startup"},"at":"2026-08-02T15:51:19.943Z"}
+{"type":"session_shutdown","value":{"reason":"new"},"at":"2026-08-02T21:04:49.900Z"}
+{"type":"session_rebound","value":{"reason":"new"},"at":"2026-08-02T21:04:52.419Z"}
+{"type":"rebind_resume","value":{"pid":79188},"at":"2026-08-02T21:04:52.425Z"}
