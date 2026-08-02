@@ -30,8 +30,6 @@ public struct CloudSyncUploadCoordinator {
 
 /// Runs an async operation on each item with bounded concurrency, calling `onResult`
 /// for each completed result in completion order. Platform-aware default concurrency.
-/// 
-/// Concurrency: macOS (8), iOS/iPadOS (4) - higher than before for faster filter processing
 public func boundedConcurrentForEach<Item: Sendable, Result: Sendable>(
     _ items: [Item],
     maxConcurrent: Int? = nil,
@@ -40,35 +38,46 @@ public func boundedConcurrentForEach<Item: Sendable, Result: Sendable>(
 ) async {
     guard !items.isEmpty else { return }
 
-    let limit: Int = maxConcurrent ?? (
+    let limit: Int
+    if let maxConcurrent {
+        limit = max(1, maxConcurrent)
+    } else {
         #if os(macOS)
-        8
+        limit = 3
         #else
-        4
+        limit = 2
         #endif
-    )
+    }
 
-    await withTaskGroup(of: (Int, Result).self) { group in
-        var pendingItems = items
-        while !pendingItems.isEmpty {
-            for item in Array(pendingItems.prefix(limit)) {
-                pendingItems.removeFirst()
-                group.addTask(priority: .utility) {
-                    let result = await operation(item)
-                    return (item, result)
-                }
-            }
-            if let (_, result) = await group.next() {
-                await onResult(result)
-            }
+    var iterator = items.makeIterator()
+
+    await withTaskGroup(of: Result.self) { group in
+        func enqueueNext() {
+            guard let item = iterator.next() else { return }
+            group.addTask { await operation(item) }
         }
-        await group.waitForAll()
+
+        for _ in 0..<min(limit, items.count) {
+            enqueueNext()
+        }
+
+        while let result = await group.next() {
+            guard !Task.isCancelled else {
+                group.cancelAll()
+                break
+            }
+            await onResult(result)
+            guard !Task.isCancelled else {
+                group.cancelAll()
+                break
+            }
+            enqueueNext()
+        }
     }
 }
 
 /// Runs an async transform with bounded concurrency and keeps only non-nil outputs.
 /// Results are returned in completion order.
-@available(*, deprecated, message: "Use boundedConcurrentCompactMap instead")
 public func boundedConcurrentCompactMap<Item: Sendable, Output: Sendable>(
     _ items: [Item],
     maxConcurrent: Int? = nil,
@@ -82,5 +91,6 @@ public func boundedConcurrentCompactMap<Item: Sendable, Output: Sendable>(
     ) { output in
         if let output { outputs.append(output) }
     }
+
     return outputs
 }
