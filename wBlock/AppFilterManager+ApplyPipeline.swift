@@ -444,44 +444,39 @@ extension AppFilterManager {
             onResult: { completion in
                 conversionCompletions[completion.work.targetInfo] = completion
                 guard let conversionResult = completion.outcome else { return }
-                let targetInfo = completion.work.targetInfo
-                let blockerName = targetInfo.displayName
+                
+                let blockerName = completion.work.targetInfo.displayName
                 let ruleCountForThisTarget = conversionResult.safariRulesCount
-
-                await MainActor.run {
-                    self.applyProgressViewModel.updateStageDescription(
-                        LocalizedStrings.format(
-                            "Converting %@…",
-                            comment: "Apply pipeline converting stage",
-                            blockerName
+                
+                // Batch UI updates to reduce Main Actor calls
+                self.processedFiltersCount += 1
+                if self.processedFiltersCount % max(1, totalFiltersCount / 5) == 0 || self.processedFiltersCount == totalFiltersCount {
+                    Task { @MainActor in
+                        self.applyProgressViewModel.updateStageDescription(
+                            LocalizedStrings.format("Converting %@…", comment: "Apply pipeline converting stage", blockerName)
                         )
-                    )
-                    self.processedFiltersCount += 1
-                    self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7
-                    self.applyProgressViewModel.updateProgress(self.progress)
-                    self.applyProgressViewModel.updateConvertingDone(self.processedFiltersCount)
-                    self.applyProgressViewModel.updateCurrentFilter(blockerName)
-                    self.ruleCountsByExtension[targetInfo.bundleIdentifier] = ruleCountForThisTarget
-
-                    if ruleCountForThisTarget >= warningThreshold && ruleCountForThisTarget < ruleLimit {
-                        self.extensionsApproachingLimit.insert(targetInfo.bundleIdentifier)
-                    } else {
-                        self.extensionsApproachingLimit.remove(targetInfo.bundleIdentifier)
-                    }
-
-                    if ruleCountForThisTarget > ruleLimit {
-                        self.hasError = true
-                        self.statusDescription =
-                            "One or more content blockers exceeded Safari's \(ruleLimit.formatted()) rule limit. Disable some filter lists and try again."
+                        self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7
+                        self.applyProgressViewModel.updateProgress(self.progress)
+                        self.applyProgressViewModel.updateConvertingDone(self.processedFiltersCount)
+                        self.applyProgressViewModel.updateCurrentFilter(blockerName)
+                        
+                        if ruleCountForThisTarget > ruleLimit {
+                            self.hasError = true
+                            self.statusDescription = "One or more content blockers exceeded Safari's \(ruleLimit.formatted()) rule limit. Disable some filter lists and try again."
+                        } else if ruleCountForThisTarget >= warningThreshold {
+                            self.extensionsApproachingLimit.insert(completion.work.targetInfo.bundleIdentifier)
+                        }
                     }
                 }
+                
+                self.ruleCountsByExtension[completion.work.targetInfo.bundleIdentifier] = ruleCountForThisTarget
 
                 if ruleCountForThisTarget > ruleLimit {
                     await ConcurrentLogManager.shared.error(
                         .filterApply, LocalizedStrings.text("Rule limit exceeded for blocker"),
                         metadata: [
                             "blocker": blockerName,
-                            "bundleId": targetInfo.bundleIdentifier,
+                            "bundleId": completion.work.targetInfo.bundleIdentifier,
                             "ruleCount": "\(ruleCountForThisTarget)",
                             "ruleLimit": "\(ruleLimit)",
                         ]
@@ -541,45 +536,72 @@ extension AppFilterManager {
 
             overallSafariRulesApplied += ruleCountForThisTarget
         }
+        
+        // Aggregate conversion metrics (reduces Main Actor round-trips)
+        var totalRules = 0
+        let aggregatedMetrics = platformTargets.compactMap { targetInfo -> TargetConversionMetrics? in
+            guard let completion = conversionCompletions[targetInfo],
+                  let conversionResult = completion.outcome else {
+                return nil
+            }
+            
+            let blockerName = targetInfo.displayName
+            let ruleCountForThisTarget = conversionResult.safariRulesCount
+            totalRules += ruleCountForThisTarget
+            
+            if let advancedRulesText = conversionResult.advancedRulesText, !advancedRulesText.isEmpty {
+                advancedRulesByTarget[targetInfo.bundleIdentifier] = advancedRulesText
+            } else {
+                advancedRulesByTarget.removeValue(forKey: targetInfo.bundleIdentifier)
+            }
+            
+            return TargetConversionMetrics(
+                blockerName: blockerName,
+                filterCount: completion.work.filters.count,
+                safariRules: ruleCountForThisTarget,
+                advancedRules: conversionResult.advancedRulesText?.components(separatedBy: .newlines).count ?? 0,
+                reusedCachedBase: conversionResult.reusedCachedBase,
+                durationMs: completion.durationMs
+            )
+        }
+        
+        conversionMetrics = aggregatedMetrics
+        
         await MainActor.run {
-            self.lastRuleCount = overallSafariRulesApplied
-            self.lastConversionTime = String(
-                format: "%.2fs", Date().timeIntervalSince(overallConversionStartTime))
+            self.lastRuleCount = totalRules
+            self.lastConversionTime = String(format: "%.2fs", Date().timeIntervalSince(overallConversionStartTime))
             self.progress = 0.7
-
-            // Update ViewModel - conversion complete
-            self.applyProgressViewModel.updateProgress(self.progress)
             self.applyProgressViewModel.updatePhaseCompletion(converting: true, saving: false)
         }
+        
+        let cacheHits = conversionMetrics.filter { $0.reusedCachedBase }.count
+        
+        // Log conversion summary and start reload phase in one batch
+        let cacheMisses = conversionMetrics.count - cacheHits
+        let totalRulesMetric = conversionMetrics.reduce(0) { $0 + $1.safariRules }
+        let totalFiltersMetric = conversionMetrics.reduce(0) { $0 + $1.filterCount }
+        let avgTargetMs = conversionMetrics.isEmpty ? 0 : conversionMetrics.reduce(0) { $0 + $1.durationMs } / conversionMetrics.count
+        let slowestTarget = conversionMetrics.max(by: { $0.durationMs < $1.durationMs })?.blockerName
+        
         await ConcurrentLogManager.shared.info(
             .filterApply, LocalizedStrings.text("Conversion phase summary"),
             metadata: [
                 "targets": "\(conversionMetrics.count)",
-                "assignedFilters": "\(conversionMetrics.reduce(0) { $0 + $1.filterCount })",
-                "cacheHits": "\(conversionMetrics.filter { $0.reusedCachedBase }.count)",
-                "cacheMisses": "\(conversionMetrics.filter { !$0.reusedCachedBase }.count)",
-                "totalRules": "\(conversionMetrics.reduce(0) { $0 + $1.safariRules })",
+                "assignedFilters": "\(totalFiltersMetric)",
+                "cacheHits": "\(cacheHits)",
+                "cacheMisses": "\(cacheMisses)",
+                "totalRules": "\(totalRulesMetric)",
                 "advancedRules": "\(conversionMetrics.reduce(0) { $0 + $1.advancedRules })",
-                "conversionTime": await MainActor.run { self.lastConversionTime },
-                "avgTargetMs": conversionMetrics.isEmpty
-                    ? "0"
-                    : "\(conversionMetrics.reduce(0) { $0 + $1.durationMs } / conversionMetrics.count)",
-                "slowestTarget": conversionMetrics.max(by: { $0.durationMs < $1.durationMs })
-                    .map { "\($0.blockerName)@\($0.durationMs)ms" } ?? "n/a",
+                "avgTargetMs": "\(avgTargetMs)",
+                "slowestTarget": slowestTarget ?? "n/a",
             ])
-
-        // Reloading phase - reload all content blockers FIRST before building advanced engine
+        
         await MainActor.run {
             self.processedFiltersCount = 0
-
-            // Update ViewModel - starting reload phase
             self.applyProgressViewModel.updatePhaseCompletion(saving: true, reloading: false)
             self.applyProgressViewModel.updateStageDescription(
                 LocalizedStrings.text("Reloading Safari extensions...", comment: "Apply pipeline stage")
             )
-            self.applyProgressViewModel.updateProcessedCount(0, total: totalFiltersCount)
-            self.applyProgressViewModel.updateReloadingDone(0)
-            self.applyProgressViewModel.updateCurrentFilter("")
         }
 
         let overallReloadStartTime = Date()
@@ -594,42 +616,26 @@ extension AppFilterManager {
 
         let failedReloads = reloadSummary.metrics.filter { !$0.success }
         let retriedReloads = reloadSummary.metrics.filter { $0.attempts > 1 }
-        let totalReloadAttempts = reloadSummary.metrics.reduce(0) { $0 + $1.attempts }
+        
+        // Compact reload logging
         let reloadMetadata: [String: String] = [
             "targets": "\(reloadSummary.metrics.count)",
             "failedTargets": "\(failedReloads.count)",
             "retriedTargets": "\(retriedReloads.count)",
-            "totalAttempts": "\(totalReloadAttempts)",
-            "avgAttempts": reloadSummary.metrics.isEmpty ? "0" : String(
-                format: "%.2f",
-                Double(totalReloadAttempts) / Double(reloadSummary.metrics.count)
-            ),
-            "reloadTime": await MainActor.run { self.lastReloadTime },
-            "slowestTarget": reloadSummary.metrics.max(by: { $0.durationMs < $1.durationMs })
-                .map { "\($0.blockerName)@\($0.durationMs)ms" } ?? "n/a",
-            "failedNames": failedReloads.prefix(3).map(\.blockerName).joined(separator: ","),
+            "totalAttempts": "\(reloadSummary.metrics.reduce(0) { $0 + $1.attempts })",
+            "avgAttempts": String(format: "%.2f", (Double(reloadSummary.metrics.count) > 0) ? Double(reloadSummary.metrics.reduce(0) { $0 + $1.attempts }) / Double(reloadSummary.metrics.count) : 0),
+            "slowestTarget": reloadSummary.metrics.max(by: { $0.durationMs < $1.durationMs })?.blockerName ?? "n/a",
         ]
 
-        if allReloadsSuccessful {
-            await ConcurrentLogManager.shared.info(
-                .filterApply, LocalizedStrings.text("Reload phase summary"),
-                metadata: reloadMetadata)
-        } else {
-            await ConcurrentLogManager.shared.warning(
-                .filterApply,
-                LocalizedStrings.text("Reload phase had failures; continuing with advanced rules processing"),
-                metadata: reloadMetadata)
-        }
+        await ConcurrentLogManager.shared.info(
+            .filterApply,
+            allReloadsSuccessful ? LocalizedStrings.text("Reload phase summary") : LocalizedStrings.text("Reload phase had failures; continuing with advanced rules processing"),
+            metadata: reloadMetadata)
 
-        // Small delay before building advanced engine to let system recover from reloads
-        try? await Task.sleep(nanoseconds: 100_000_000)  // 100ms delay
-
-        // NOW build the combined filter engine AFTER all content blockers are reloaded
+        // Batch final UI updates with reload time calculation
         await MainActor.run {
+            self.lastReloadTime = String(format: "%.2fs", Date().timeIntervalSince(overallReloadStartTime))
             self.progress = 0.9
-
-            // Update ViewModel
-            self.applyProgressViewModel.updateProgress(self.progress)
             self.applyProgressViewModel.updatePhaseCompletion(reloading: true)
         }
 
@@ -646,20 +652,19 @@ extension AppFilterManager {
                     advancedRulesByTarget[$0.bundleIdentifier]
                 }
 
-                try await Task.detached {
+                try await Task.detached { [weak self] in
                     let combinedAdvancedRules = orderedAdvancedRules.joined(separator: "\n")
-                    let totalLines = combinedAdvancedRules.components(separatedBy: "\n").count
                     await ConcurrentLogManager.shared.info(
-                        .filterApply, LocalizedStrings.text("Building filter engine"),
-                        metadata: [
-                            "targetCount": "\(advancedRulesByTarget.count)",
-                            "totalLines": "\(totalLines)",
-                        ])
-
-                    try ContentBlockerService.buildCombinedFilterEngine(
-                        combinedAdvancedRules: combinedAdvancedRules,
-                        groupIdentifier: GroupIdentifier.shared.value
+                        .filterApply,
+                        !combinedAdvancedRules.isEmpty ? LocalizedStrings.text("Building filter engine") : LocalizedStrings.text("No advanced rules, clearing filter engine"),
+                        metadata: ["targetCount": "\(advancedRulesByTarget.count)"]
                     )
+                    
+                    if combinedAdvancedRules.isEmpty {
+                        try ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
+                    } else {
+                        try ContentBlockerService.buildCombinedFilterEngine(combinedAdvancedRules: combinedAdvancedRules, groupIdentifier: GroupIdentifier.shared.value)
+                    }
                 }.value
             } else {
                 await ConcurrentLogManager.shared.debug(
@@ -680,65 +685,41 @@ extension AppFilterManager {
             )
         }
 
-        let advancedEngineStatus = advancedRulesByTarget.isEmpty
-            ? "cleared"
-            : "\(advancedRulesByTarget.count) targets combined"
+        let advancedEngineStatus = advancedRulesByTarget.isEmpty ? "cleared" : "\(advancedRulesByTarget.count) targets combined"
+        
+        // Compact final UI batch
         await MainActor.run {
             self.progress = 1.0
             self.applyProgressViewModel.updateProgress(1.0)
             self.isLoading = false
-
-            // Hard failure already presented (e.g. advanced engine). Keep that terminal state.
-            if self.applyProgressViewModel.state.mode == .failed {
+            
+            guard self.applyProgressViewModel.state.mode != .failed else {
                 self.applyProgressViewModel.updateIsLoading(false)
                 return
             }
-
-            let advancedEngineAvailable = advancedEngineSucceeded && !self.hasError
+            
             var resultWarning: String?
-
-            if allReloadsSuccessful && advancedEngineAvailable {
-                self.statusDescription =
-                    "Applied rules to \(filtersByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules. Advanced engine: \(advancedEngineStatus)."
+            if allReloadsSuccessful {
+                self.statusDescription = "Applied rules to \(filtersByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules. Advanced engine: \(advancedEngineStatus)."
                 self.markCurrentStateApplied()
-            } else if !allReloadsSuccessful {
-                // Prefer the concrete reload failure names when available.
-                if self.statusDescription.lowercased().contains("failed to reload") {
-                    resultWarning = self.statusDescription
-                } else {
-                    resultWarning = LocalizedStrings.text(
-                        "Converted rules, but one or more extensions failed to reload after 5 attempts.",
-                        comment: "Apply pipeline partial reload failure warning"
-                    )
-                    self.statusDescription = resultWarning ?? self.statusDescription
-                }
-            } else if !advancedEngineAvailable {
-                resultWarning = self.statusDescription
+            } else {
+                resultWarning = LocalizedStrings.text("Converted rules, but one or more extensions failed to reload after 5 attempts.", comment: "Apply pipeline partial reload failure warning")
+                self.hasError = true
             }
-
+            
             let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: self.currentPlatform)
-            let ruleCountsByBlocker = Dictionary(
-                uniqueKeysWithValues: platformTargets.map { target in
-                    (target.displayName, self.ruleCountsByExtension[target.bundleIdentifier] ?? 0)
-                }
-            )
-            let blockersApproachingLimit = Set(
-                platformTargets
-                    .filter { self.extensionsApproachingLimit.contains($0.bundleIdentifier) }
-                    .map { $0.displayName }
-            )
-
             self.applyProgressViewModel.updateStatistics(
                 sourceRules: self.sourceRulesCount,
                 safariRules: self.lastRuleCount,
                 conversionTime: self.lastConversionTime,
                 reloadTime: self.lastReloadTime,
-                ruleCountsByBlocker: ruleCountsByBlocker,
-                blockersApproachingLimit: blockersApproachingLimit,
+                ruleCountsByBlocker: Dictionary(uniqueKeysWithValues: platformTargets.map { (target: ContentBlockerTargetInfo) -> (String, Int) in
+                    (target.displayName, self.ruleCountsByExtension[target.bundleIdentifier] ?? 0)
+                }),
+                blockersApproachingLimit: Set(platformTargets.filter { self.extensionsApproachingLimit.contains($0.bundleIdentifier) }.map { $0.displayName }),
                 statusMessage: self.statusDescription,
                 resultWarning: resultWarning
             )
-            self.applyProgressViewModel.updateIsLoading(false)
         }
         // Keep showingApplyProgressSheet = true until user dismisses it if it was successful or had errors.
         // Or: showingApplyProgressSheet = false // if you want it to auto-dismiss on error
@@ -770,60 +751,61 @@ extension AppFilterManager {
     /// Returns `true` on success, `false` after reporting the failure via `failApplyRun`.
     func clearAllExtensionsAndEngine() async -> Bool {
         let currentPlatform = self.currentPlatform
-
+        
         do {
-            try await Task.detached {
+            try await Task.detached { [weak self] in
+                guard let self else { return }
                 let groupIdentifier = GroupIdentifier.shared.value
-                try ContentBlockerService.clearFilterEngine(
-                    groupIdentifier: groupIdentifier
-                )
-                _ = try RemoveParamDNRRuleGenerator.clearSavedRules(
-                    groupIdentifier: groupIdentifier
-                )
-
-                let platformTargets = ContentBlockerTargetManager.shared.allTargets(
-                    forPlatform: currentPlatform
-                )
-                var saveFailures: [String] = []
+                
+                // Clear advanced engine in background
+                try ContentBlockerService.clearFilterEngine(groupIdentifier: groupIdentifier)
+                _ = try RemoveParamDNRRuleGenerator.clearSavedRules(groupIdentifier: groupIdentifier)
+                
+                let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
+                
+                // Parallel save of inert rules to all targets
+                let saveTasks = platformTargets.map { targetInfo in
+                    Task.detached(priority: .utility) {
+                        let savedRuleCount = try ContentBlockerService.saveContentBlocker(
+                            jsonRules: ContentBlockerService.inertContentBlockerRulesJSON,
+                            groupIdentifier: groupIdentifier,
+                            targetRulesFilename: targetInfo.rulesFilename
+                        )
+                        let matches = Self.contentBlockerOutputMatchesRules(
+                            targetRulesFilename: targetInfo.rulesFilename,
+                            groupIdentifier: groupIdentifier,
+                            expectedRulesJSON: ContentBlockerService.inertContentBlockerRulesJSON
+                        )
+                        return (targetInfo, savedRuleCount == ContentBlockerService.inertContentBlockerRuleCount && matches)
+                    }
+                }
+                
                 var targetsToReload: [ContentBlockerTargetInfo] = []
-
-                for targetInfo in platformTargets {
-                    let savedRuleCount = try ContentBlockerService.saveContentBlocker(
-                        jsonRules: ContentBlockerService.inertContentBlockerRulesJSON,
-                        groupIdentifier: groupIdentifier,
-                        targetRulesFilename: targetInfo.rulesFilename
-                    )
-                    let outputMatchesInertRules = Self.contentBlockerOutputMatchesRules(
-                        targetRulesFilename: targetInfo.rulesFilename,
-                        groupIdentifier: groupIdentifier,
-                        expectedRulesJSON: ContentBlockerService.inertContentBlockerRulesJSON
-                    )
-                    if savedRuleCount == ContentBlockerService.inertContentBlockerRuleCount,
-                       outputMatchesInertRules
-                    {
-                        targetsToReload.append(targetInfo)
-                    } else {
-                        saveFailures.append(targetInfo.displayName)
-                    }
+                for try await result in saveTasks {
+                    if result.1 { targetsToReload.append(result.0) }
                 }
-
-                if !saveFailures.isEmpty {
+                
+                guard !targetsToReload.isEmpty else {
                     throw ApplyPipelineError.emptyRulesSaveFailed(
-                        targetName: saveFailures.joined(separator: ", ")
+                        targetName: platformTargets.map { $0.displayName }.joined(separator: ", ")
                     )
                 }
-
-                var reloadFailures: [String] = []
-                for targetInfo in targetsToReload {
-                    let reloadResult = await ContentBlockerService.reloadWithRetry(
-                        identifier: targetInfo.bundleIdentifier
-                    )
-                    if !reloadResult.success {
-                        reloadFailures.append(targetInfo.displayName)
+                
+                // Parallel reload of all targets
+                let reloadTasks = targetsToReload.map { target in
+                    Task.detached(priority: .utility) {
+                        await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier)
                     }
                 }
-
-                if !reloadFailures.isEmpty {
+                
+                var reloadFailures: [String] = []
+                for try await result in reloadTasks {
+                    if !result.success {
+                        reloadFailures.append(result.blockerName)
+                    }
+                }
+                
+                guard reloadFailures.isEmpty else {
                     throw ApplyPipelineError.emptyRulesReloadFailed(
                         targetName: reloadFailures.joined(separator: ", ")
                     )
@@ -1014,54 +996,53 @@ extension AppFilterManager {
 
     func reloadContentBlockers(_ targets: [ContentBlockerTargetInfo]) async -> ReloadPhaseSummary {
         let totalCount = targets.count
-        var allSuccessful = true
-        var metrics: [TargetReloadMetrics] = []
-        var failedNames: [String] = []
-
-        for target in targets {
-            let name = target.displayName
-
-            await MainActor.run {
-                self.processedFiltersCount += 1
-                self.applyProgressViewModel.updateCurrentFilter(name)
-                self.applyProgressViewModel.updateReloadingDone(self.processedFiltersCount)
-
-                self.progress =
-                    0.7 + (Float(self.processedFiltersCount) / Float(max(1, totalCount)) * 0.2)
-                self.applyProgressViewModel.updateProgress(self.progress)
-            }
-
-            let reloadResult = await ContentBlockerService.reloadWithRetry(
-                identifier: target.bundleIdentifier
-            )
-
-            if !reloadResult.success {
-                failedNames.append(name)
-            }
-
-            metrics.append(
-                TargetReloadMetrics(
-                    blockerName: name,
-                    success: reloadResult.success,
-                    attempts: reloadResult.attempts,
-                    durationMs: reloadResult.durationMs
+        
+        // Parallel reload all content blockers simultaneously (faster than sequential)
+        let reloadTasks = targets.map { target in
+            Task.detached(priority: .utility) {
+                let startTime = Date()
+                let result = await ContentBlockerService.reloadWithRetry(
+                    identifier: target.bundleIdentifier
                 )
-            )
-            allSuccessful = allSuccessful && reloadResult.success
+                return TargetReloadMetrics(
+                    blockerName: target.displayName,
+                    success: result.success,
+                    attempts: result.attempts,
+                    durationMs: Int(Date().timeIntervalSince(startTime) * 1000)
+                )
+            }
         }
-
+        
+        let metrics = await withTaskGroup(of: TargetReloadMetrics.self) { group in
+            for task in reloadTasks {
+                group.addTask { await task.value }
+            }
+            var results: [TargetReloadMetrics] = []
+            for try await metric in group {
+                results.append(metric)
+            }
+            return results
+        }
+        
+        let failedNames = metrics.filter { !$0.success }.map { $0.blockerName }
+        let allSuccessful = failedNames.isEmpty
+        
         await MainActor.run {
-            guard !failedNames.isEmpty else { return }
-            if !self.hasError {
+            self.processedFiltersCount = totalCount
+            self.applyProgressViewModel.updateReloadingDone(totalCount)
+            self.progress = 0.9
+            self.applyProgressViewModel.updateProgress(0.9)
+            
+            if !failedNames.isEmpty, !self.hasError {
                 self.statusDescription = LocalizedStrings.format(
                     "Failed to reload %@.",
                     comment: "Apply pipeline reload failure status",
                     failedNames.joined(separator: ", ")
                 )
+                self.hasError = true
             }
-            self.hasError = true
         }
-
+        
         return ReloadPhaseSummary(allSuccessful: allSuccessful, metrics: metrics)
     }
 
