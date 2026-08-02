@@ -262,7 +262,6 @@
 "Downloaded updates before applying" = "適用前に更新をダウンロードしました";
 "Downloading %d update(s)..." = "%d アップデートをダウンロード中...";
 "Downloading and applying filter lists…" = "フィルターリストをダウンロードして適用中…";
-"Downloading filter lists..." = "フィルタリストをダウンロードしています...";
 "Downloading filter updates..." = "フィルターの更新をダウンロードしています...";
 "Downloading selected scripts..." = "Downloading selected scripts...";
 "Downloading selected updates..." = "Downloading selected updates...";
@@ -619,7 +618,6 @@
 "Resume" = "再開";
 "Resume Blocking" = "ブロックを再開";
 "Return of the YouTube Dislike." = "YouTube の「嫌い」の復活。";
-"Reverted to essential filters to stay under Safari's 150k rule limit." = "Safari の 150k ルール制限を下回るように必須フィルターに戻しました。";
 "Reverts YouTube to its classic design and behavior." = "YouTube を従来のデザインと動作に戻します。";
 "Review your choices and apply settings." = "選択内容を確認して設定を適用してください。";
 "road-block light" = "road-block light";

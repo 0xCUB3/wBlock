@@ -21,31 +21,6 @@ extension AppFilterManager {
         saveFilterListsCoalesced()
     }
 
-    /// Updates version and count for a single filter instead of all filters
-    func updateSingleFilterVersionAndCount(_ filter: FilterList) async {
-        let updater = self.filterUpdater
-        let updatedFilters = await Task.detached(priority: .utility) {
-            await updater.updateMissingVersionsAndCounts(filterLists: [filter])
-        }.value
-
-        guard let updatedFilter = updatedFilters.first,
-            let index = self.filterListIndexByID[filter.id]
-        else {
-            return
-        }
-
-        var newFilterLists = self.filterLists
-        let currentSelectionState = newFilterLists[index].isSelected
-        newFilterLists[index] = updatedFilter
-        newFilterLists[index].isSelected = currentSelectionState
-        self.filterLists = newFilterLists
-        saveFilterListsCoalesced()
-    }
-
-    func doesFilterFileExist(_ filter: FilterList) -> Bool {
-        return loader.filterFileExists(filter)
-    }
-
     func checkForUpdates() async {
         isLoading = true
         statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Update check status")
@@ -171,49 +146,6 @@ extension AppFilterManager {
                 "Apply already in progress.",
                 comment: "Apply pipeline concurrency guard status"
             )
-        }
-    }
-
-    func downloadAndApplySelectedFilters(_ selectedFilters: [FilterList], showProgressSheet: Bool = false) async {
-        if showProgressSheet {
-            await downloadAndApplySelectedUpdates(filters: selectedFilters, scripts: [])
-            return
-        }
-
-        let started = await performExclusiveApply {
-            self.isLoading = true
-            self.progress = 0
-
-            let successfullyUpdatedFilters = await self.filterUpdater.updateSelectedFilters(
-                selectedFilters,
-                progressCallback: { newProgress in
-                    Task { @MainActor in
-                        self.progress = newProgress
-                    }
-                }
-            )
-
-            self.saveFilterListsCoalesced()
-
-            for filter in successfullyUpdatedFilters {
-                self.availableUpdates.removeAll { $0.id == filter.id }
-            }
-
-            self.progress = 0
-
-            // Already inside the exclusive session; avoid re-acquiring the lock.
-            self.prepareApplyRunState()
-            await self.applyChanges(prepareState: false, skipPreApplyUpdates: false)
-        }
-
-        if !started {
-            statusDescription = LocalizedStrings.text(
-                "Apply already in progress.",
-                comment: "Apply pipeline concurrency guard status"
-            )
-        } else {
-            isLoading = false
-            progress = 0
         }
     }
 

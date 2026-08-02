@@ -262,7 +262,6 @@
 "Downloaded updates before applying" = "Downloaded updates before applying";
 "Downloading %d update(s)..." = "Downloading %d update(s)...";
 "Downloading and applying filter lists…" = "Downloading and applying filter lists…";
-"Downloading filter lists..." = "Downloading filter lists...";
 "Downloading filter updates..." = "Downloading filter updates...";
 "Downloading selected scripts..." = "Downloading selected scripts...";
 "Downloading selected updates..." = "Downloading selected updates...";
@@ -619,7 +618,6 @@
 "Resume" = "Resume";
 "Resume Blocking" = "Resume Blocking";
 "Return of the YouTube Dislike." = "Return of the YouTube Dislike.";
-"Reverted to essential filters to stay under Safari's 150k rule limit." = "Reverted to essential filters to stay under Safari's 150k rule limit.";
 "Reverts YouTube to its classic design and behavior." = "Reverts YouTube to its classic design and behavior.";
 "Review your choices and apply settings." = "Review your choices and apply settings.";
 "road-block light" = "road-block light";

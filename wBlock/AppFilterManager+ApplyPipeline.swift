@@ -621,10 +621,7 @@ extension AppFilterManager {
                 metadata: reloadMetadata)
         }
 
-        // Small delay before building advanced engine to let system recover from reloads
-        try? await Task.sleep(nanoseconds: 100_000_000)  // 100ms delay
-
-        // NOW build the combined filter engine AFTER all content blockers are reloaded
+        // Build the combined filter engine after all content blockers are reloaded.
         await MainActor.run {
             self.progress = 0.9
 
@@ -814,13 +811,24 @@ extension AppFilterManager {
                 }
 
                 var reloadFailures: [String] = []
-                for targetInfo in targetsToReload {
-                    let reloadResult = await ContentBlockerService.reloadWithRetry(
-                        identifier: targetInfo.bundleIdentifier
-                    )
-                    if !reloadResult.success {
-                        reloadFailures.append(targetInfo.displayName)
+                let reloadResults = await withTaskGroup(of: (ContentBlockerTargetInfo, Bool).self) { group in
+                    for targetInfo in targetsToReload {
+                        group.addTask {
+                            let reloadResult = await ContentBlockerService.reloadWithRetry(
+                                identifier: targetInfo.bundleIdentifier
+                            )
+                            return (targetInfo, reloadResult.success)
+                        }
                     }
+                    var collected: [(ContentBlockerTargetInfo, Bool)] = []
+                    collected.reserveCapacity(targetsToReload.count)
+                    for await item in group {
+                        collected.append(item)
+                    }
+                    return collected
+                }
+                for (targetInfo, success) in reloadResults where !success {
+                    reloadFailures.append(targetInfo.displayName)
                 }
 
                 if !reloadFailures.isEmpty {
@@ -924,53 +932,6 @@ extension AppFilterManager {
         processedFiltersCount = 0
     }
 
-    @MainActor
-    public func downloadAndApplyFilters(filters: [FilterList], progress: @escaping (Float) -> Void)
-        async
-    {
-        let started = await performExclusiveApply {
-            self.isLoading = true
-            self.hasError = false
-            self.statusDescription = LocalizedStrings.text(
-                "Downloading filter lists...",
-                comment: "Apply pipeline status"
-            )
-            progress(0)
-
-            // Download selected filters using existing updater logic
-            let _ = await self.filterUpdater.updateSelectedFilters(
-                filters,
-                progressCallback: { prog in
-                    Task { @MainActor in
-                        self.progress = Float(prog)
-                        progress(Float(prog))
-                    }
-                })
-
-            // Save after download
-            self.saveFilterListsCoalesced()
-
-            // Apply changes (conversion, reload, etc)
-            self.statusDescription = LocalizedStrings.text(
-                "Applying filters...\n(This may take a while)",
-                comment: "Apply pipeline filter application status"
-            )
-            await self.applyChangesUnlocked(
-                allowUserInteraction: false,
-                prepareState: true,
-                skipPreApplyUpdates: false
-            )
-
-            self.isLoading = false
-            progress(1)
-            self.statusDescription = LocalizedStrings.text("Ready.", comment: "Filter manager idle status")
-        }
-
-        if !started {
-            progress(1)
-        }
-    }
-
     // MARK: - Static helpers
 
     /// Memory-efficient conversion that combines filter files using streaming I/O
@@ -1014,15 +975,51 @@ extension AppFilterManager {
 
     func reloadContentBlockers(_ targets: [ContentBlockerTargetInfo]) async -> ReloadPhaseSummary {
         let totalCount = targets.count
+
+        // SFContentBlockerManager.reloadContentBlocker is safe to call concurrently across
+        // identifiers, so reload all targets in parallel rather than one-by-one.
+        let results: [(target: ContentBlockerTargetInfo, reload: ContentBlockerService.ReloadAttemptResult)] =
+            await withTaskGroup(of: (ContentBlockerTargetInfo, ContentBlockerService.ReloadAttemptResult).self) { group in
+                for target in targets {
+                    group.addTask {
+                        let reload = await ContentBlockerService.reloadWithRetry(
+                            identifier: target.bundleIdentifier
+                        )
+                        return (target, reload)
+                    }
+                }
+                var collected: [(ContentBlockerTargetInfo, ContentBlockerService.ReloadAttemptResult)] = []
+                collected.reserveCapacity(targets.count)
+                for await item in group {
+                    collected.append(item)
+                }
+                return collected
+            }
+
+        // Preserve slot order for stable logging/UI.
+        let orderedResults = results.sorted { $0.target.slot < $1.target.slot }
+
         var allSuccessful = true
         var metrics: [TargetReloadMetrics] = []
         var failedNames: [String] = []
 
-        for target in targets {
-            let name = target.displayName
+        for (index, result) in orderedResults.enumerated() {
+            let name = result.target.displayName
+            if !result.reload.success {
+                failedNames.append(name)
+            }
+            metrics.append(
+                TargetReloadMetrics(
+                    blockerName: name,
+                    success: result.reload.success,
+                    attempts: result.reload.attempts,
+                    durationMs: result.reload.durationMs
+                )
+            )
+            allSuccessful = allSuccessful && result.reload.success
 
             await MainActor.run {
-                self.processedFiltersCount += 1
+                self.processedFiltersCount = index + 1
                 self.applyProgressViewModel.updateCurrentFilter(name)
                 self.applyProgressViewModel.updateReloadingDone(self.processedFiltersCount)
 
@@ -1030,24 +1027,6 @@ extension AppFilterManager {
                     0.7 + (Float(self.processedFiltersCount) / Float(max(1, totalCount)) * 0.2)
                 self.applyProgressViewModel.updateProgress(self.progress)
             }
-
-            let reloadResult = await ContentBlockerService.reloadWithRetry(
-                identifier: target.bundleIdentifier
-            )
-
-            if !reloadResult.success {
-                failedNames.append(name)
-            }
-
-            metrics.append(
-                TargetReloadMetrics(
-                    blockerName: name,
-                    success: reloadResult.success,
-                    attempts: reloadResult.attempts,
-                    durationMs: reloadResult.durationMs
-                )
-            )
-            allSuccessful = allSuccessful && reloadResult.success
         }
 
         await MainActor.run {

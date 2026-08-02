@@ -519,26 +519,6 @@ class AppFilterManager: ObservableObject {
         }
     }
 
-    func filterLists(for category: FilterListCategory) -> [FilterList] {
-        category == .all ? filterLists : filterLists.filter { $0.category == category }
-    }
-
-    func resetToDefaultLists() {
-        // Reset all filters to unselected first
-        for index in filterLists.indices {
-            filterLists[index].isSelected = false
-        }
-
-        for index in filterLists.indices {
-            if FilterListLoader.recommendedFilterNames.contains(filterLists[index].name) {
-                filterLists[index].isSelected = true
-            }
-        }
-
-        saveFilterListsCoalesced()
-        refreshPendingChanges()
-    }
-
     // MARK: - Rule limit UX
 
     func showRuleLimitWarning(for filter: FilterList? = nil) {

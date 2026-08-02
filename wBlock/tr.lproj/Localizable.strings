@@ -262,7 +262,6 @@
 "Downloaded updates before applying" = "Uygulanmadan önce güncellemeler indirildi";
 "Downloading %d update(s)..." = "%d güncellemesi indiriliyor...";
 "Downloading and applying filter lists…" = "Filtre listeleri indiriliyor ve uygulanıyor…";
-"Downloading filter lists..." = "Filtre listeleri indiriliyor...";
 "Downloading filter updates..." = "Filtre güncellemeleri indiriliyor...";
 "Downloading selected scripts..." = "Seçilen betikler indiriliyor...";
 "Downloading selected updates..." = "Seçilen güncellemeler indiriliyor...";
@@ -619,7 +618,6 @@
 "Resume" = "Sürdür";
 "Resume Blocking" = "Engellemeyi sürdür";
 "Return of the YouTube Dislike." = "Return of the YouTube Dislike.";
-"Reverted to essential filters to stay under Safari's 150k rule limit." = "Safari'nin 150 bin kural sınırını aşmamak için temel filtrelere geri dönüldü.";
 "Reverts YouTube to its classic design and behavior." = "YouTube'u klasik tasarımına ve işleyişine döndürür.";
 "Review your choices and apply settings." = "Seçimlerinizi gözden geçirin ve ayarları uygulayın.";
 "road-block light" = "road-block light";

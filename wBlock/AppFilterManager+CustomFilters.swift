@@ -400,38 +400,6 @@ extension AppFilterManager {
         hasError = false
     }
 
-    func revertToRecommendedFilters() async {
-        for index in filterLists.indices {
-            filterLists[index].isSelected = false
-        }
-
-        #if os(iOS)
-            let essentialFilters = [
-                "AdGuard Base Filter",
-                "EasyPrivacy",
-            ]
-        #else
-            let essentialFilters = [
-                "AdGuard Base Filter",
-                "AdGuard Tracking Protection Filter",
-                "EasyPrivacy",
-                "Online Security Filter",
-            ]
-        #endif
-
-        for index in filterLists.indices {
-            filterLists[index].isSelected = essentialFilters.contains(filterLists[index].name)
-        }
-
-        saveFilterListsCoalesced()
-        statusDescription = LocalizedStrings.text(
-            "Reverted to essential filters to stay under Safari's 150k rule limit.",
-            comment: "Essential filter reset status"
-        )
-
-        await applyChanges()
-    }
-
     // Set the UserScriptManager for the filter updater
     public func setUserScriptManager(_ userScriptManager: UserScriptManager) {
         filterUpdater.userScriptManager = userScriptManager

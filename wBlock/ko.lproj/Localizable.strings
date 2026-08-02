@@ -262,7 +262,6 @@
 "Downloaded updates before applying" = "적용 전에 업데이트를 다운로드했습니다";
 "Downloading %d update(s)..." = "%d 업데이트 다운로드 중...";
 "Downloading and applying filter lists…" = "필터 목록 다운로드 및 적용 중…";
-"Downloading filter lists..." = "필터 목록 다운로드 중...";
 "Downloading filter updates..." = "필터 업데이트 다운로드 중...";
 "Downloading selected scripts..." = "Downloading selected scripts...";
 "Downloading selected updates..." = "Downloading selected updates...";
@@ -619,7 +618,6 @@
 "Resume" = "다시 시작";
 "Resume Blocking" = "차단 다시 시작";
 "Return of the YouTube Dislike." = "YouTube 싫어요의 반환.";
-"Reverted to essential filters to stay under Safari's 150k rule limit." = "Safari의 150,000 규칙 제한을 유지하기 위해 필수 필터로 되돌아갔습니다.";
 "Reverts YouTube to its classic design and behavior." = "YouTube를 기본 디자인과 동작으로 되돌립니다.";
 "Review your choices and apply settings." = "선택 사항을 검토하고 설정을 적용하세요.";
 "road-block light" = "road-block light";

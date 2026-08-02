@@ -262,7 +262,6 @@
 "Downloaded updates before applying" = "Frissítések letöltve az alkalmazás előtt";
 "Downloading %d update(s)..." = "%d frissítés(ek) letöltése...";
 "Downloading and applying filter lists…" = "Szűrőlisták letöltése és alkalmazása…";
-"Downloading filter lists..." = "Szűrőlisták letöltése...";
 "Downloading filter updates..." = "Szűrőfrissítések letöltése...";
 "Downloading selected scripts..." = "Downloading selected scripts...";
 "Downloading selected updates..." = "Downloading selected updates...";
@@ -619,7 +618,6 @@
 "Resume" = "Folytatás";
 "Resume Blocking" = "Blokkolás folytatása";
 "Return of the YouTube Dislike." = "A YouTube nemtetszés visszatérése.";
-"Reverted to essential filters to stay under Safari's 150k rule limit." = "Visszatért az alapvető szűrőkre, hogy a Safari 150 000 szabályhatára alatt maradjon.";
 "Reverts YouTube to its classic design and behavior." = "Visszaállítja a YouTube-ot a klasszikus dizájnhoz és viselkedéshez.";
 "Review your choices and apply settings." = "Ellenőrizd a választásaidat, és alkalmazd a beállításokat.";
 "road-block light" = "road-block light";

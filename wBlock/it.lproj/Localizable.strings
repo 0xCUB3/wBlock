@@ -262,7 +262,6 @@
 "Downloaded updates before applying" = "Aggiornamenti scaricati prima dell'applicazione";
 "Downloading %d update(s)..." = "Download degli aggiornamenti %d in corso...";
 "Downloading and applying filter lists…" = "Download e applicazione delle liste filtri…";
-"Downloading filter lists..." = "Download degli elenchi di filtri in corso...";
 "Downloading filter updates..." = "Download degli aggiornamenti dei filtri in corso...";
 "Downloading selected scripts..." = "Downloading selected scripts...";
 "Downloading selected updates..." = "Downloading selected updates...";
@@ -619,7 +618,6 @@
 "Resume" = "Riprendi";
 "Resume Blocking" = "Riprendi blocco";
 "Return of the YouTube Dislike." = "Il ritorno del Dislike su YouTube.";
-"Reverted to essential filters to stay under Safari's 150k rule limit." = "Ripristinati i filtri essenziali per rimanere entro il limite di 150.000 regole di Safari.";
 "Reverts YouTube to its classic design and behavior." = "Ripristina YouTube al design e al comportamento classici.";
 "Review your choices and apply settings." = "Rivedi le tue scelte e applica le impostazioni.";
 "road-block light" = "road-block light";

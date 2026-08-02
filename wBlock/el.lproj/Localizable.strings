@@ -262,7 +262,6 @@
 "Downloaded updates before applying" = "Λήψη ενημερώσεων πριν την εφαρμογή";
 "Downloading %d update(s)..." = "Λήψη ενημερώσεων %d...";
 "Downloading and applying filter lists…" = "Λήψη και εφαρμογή λιστών φίλτρων…";
-"Downloading filter lists..." = "Λήψη λιστών φίλτρων...";
 "Downloading filter updates..." = "Λήψη ενημερώσεων φίλτρων...";
 "Downloading selected scripts..." = "Downloading selected scripts...";
 "Downloading selected updates..." = "Downloading selected updates...";
@@ -619,7 +618,6 @@
 "Resume" = "Συνέχιση";
 "Resume Blocking" = "Συνέχιση αποκλεισμού";
 "Return of the YouTube Dislike." = "Επιστροφή του YouTube Dislike.";
-"Reverted to essential filters to stay under Safari's 150k rule limit." = "Έγινε επαναφορά σε βασικά φίλτρα για να παραμείνει κάτω από το όριο κανόνων 150 χιλιάδων του Safari.";
 "Reverts YouTube to its classic design and behavior." = "Επαναφέρει το YouTube στον κλασικό σχεδιασμό και τη συμπεριφορά του.";
 "Review your choices and apply settings." = "Ελέγξτε τις επιλογές σας και εφαρμόστε τις ρυθμίσεις.";
 "road-block light" = "road-block light";

@@ -262,7 +262,6 @@
 "Downloaded updates before applying" = "套用前已下載更新";
 "Downloading %d update(s)..." = "正在下載 %d 更新...";
 "Downloading and applying filter lists…" = "正在下載並套用過濾清單…";
-"Downloading filter lists..." = "正在下載過濾器列表...";
 "Downloading filter updates..." = "正在下載過濾器更新...";
 "Downloading selected scripts..." = "Downloading selected scripts...";
 "Downloading selected updates..." = "Downloading selected updates...";
@@ -619,7 +618,6 @@
 "Resume" = "恢復";
 "Resume Blocking" = "恢復封鎖";
 "Return of the YouTube Dislike." = "YouTube 不喜歡的回歸。";
-"Reverted to essential filters to stay under Safari's 150k rule limit." = "恢復為基本過濾器以保持在 Safari 的 150k 規則限制之下。";
 "Reverts YouTube to its classic design and behavior." = "將 YouTube 恢復到其經典設計和行為。";
 "Review your choices and apply settings." = "檢查你的選擇並套用設定。";
 "road-block light" = "road-block light";
