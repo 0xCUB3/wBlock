@@ -1997,6 +1997,12 @@ enum BundledUserScriptSources {
         try {
             while (track.cues && track.cues.length) { track.removeCue(track.cues[0]); }
         } catch (e) { /* ignore */ }
+        // An empty chapters track still has mode "hidden", which makes Safari
+        // reserve a blank "Chapters" row in its native media menu. Tracks added
+        // via addTextTrack cannot be removed from the TextTrackList, so disable
+        // the track instead; applyChapters flips it back to "hidden" once cues
+        // are populated for the next chaptered video.
+        try { track.mode = 'disabled'; } catch (e) { /* ignore */ }
     }
 
     // Mirror YouTube's chapters onto the native element as a chapters track.
