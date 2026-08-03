@@ -102,6 +102,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.injectingScripts = new Set();
             this.pendingScripts = []; // Scripts waiting for document to be ready
             this.messageListenerAttached = false; // Ensure listener is attached only once
+            this.extensionContextAvailable = false;
+            this.extensionContextUnavailableLogged = false;
             this.pendingNativeRequests = new Map(); // requestId -> { resolve, reject, timeoutId }
             this.storageBridgeScriptIDs = new Map(); // bridgeId -> scriptId
             this.xhrBridgeTokens = new Set(); // valid GM_xmlhttpRequest bridge tokens
@@ -127,6 +129,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             // On Safari App Extensions, responses can arrive very quickly and be missed
             // if the listener isn't attached yet.
             this.setupMessageListener();
+            if (!this.extensionContextAvailable) return;
 
             // Bridge GM menu command registration/invocation between userscripts
             // and the extension popup.
@@ -1006,6 +1009,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
                 });
                 this.messageListenerAttached = true;
+                this.extensionContextAvailable = true;
                 wBlockLog('[wBlock] browser.runtime.onMessage listener attached.');
             } else if (typeof safari !== 'undefined' && safari.extension && typeof safari.self !== 'undefined' && safari.self.addEventListener) {
                 wBlockLog('[wBlock] Using safari.self.addEventListener for listening.');
@@ -1038,9 +1042,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     }
                 }, false);
                 this.messageListenerAttached = true;
+                this.extensionContextAvailable = true;
                 wBlockLog('[wBlock] safari.self.addEventListener listener attached.');
             } else {
-                 wBlockError('[wBlock] No suitable event listener API found.');
+                if (!this.extensionContextUnavailableLogged) {
+                    this.extensionContextUnavailableLogged = true;
+                    wBlockWarn('[wBlock] Extension context is unavailable in this frame.');
+                }
             }
         }
 

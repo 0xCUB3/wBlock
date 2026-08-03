@@ -31004,6 +31004,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   // Change logging level to Debug if you need to see more details.
   const wBlockLogger = new ConsoleLogger('[wBlock Scripts]', LoggingLevel.Error);
   setLogger(wBlockLogger);
+  if (!browser || !browser.runtime || !browser.runtime.sendMessage) return;
   // Initialize the delayed event dispatcher. This may intercept DOMContentLoaded
   // and load events. The delay of 3000ms is used as a buffer to capture critical
   // initial events while waiting for the rules response.
@@ -31248,4 +31249,4 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
   })();
-})(browser);
+})(typeof browser === "undefined" ? undefined : browser);

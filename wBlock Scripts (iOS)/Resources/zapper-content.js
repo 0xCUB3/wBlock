@@ -7,6 +7,10 @@
 (function () {
   'use strict';
 
+  if (typeof browser === 'undefined' || !browser.runtime || !browser.runtime.sendMessage || !browser.runtime.onMessage) {
+    return;
+  }
+
   const STORAGE_PREFIX = 'wblock.zapperRules.v1:';
   const META_PREFIX = 'wblock.zapperMeta.v1:';
   const STYLE_ID = 'wblock-zapper-style';
