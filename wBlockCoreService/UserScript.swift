@@ -84,6 +84,36 @@ public struct UserScriptResource: Codable, Hashable, Sendable {
     }
 }
 
+final class UserScriptPayloadDataCache: @unchecked Sendable {
+    private final class Entry: NSObject {
+        let source: String
+        let data: Data
+
+        init(source: String, data: Data) {
+            self.source = source
+            self.data = data
+        }
+    }
+
+    private let cache = NSCache<NSString, Entry>()
+
+    init(countLimit: Int = 8, totalCostLimit: Int = 32 * 1024 * 1024) {
+        cache.countLimit = countLimit
+        cache.totalCostLimit = totalCostLimit
+    }
+
+    func data(for key: String, source: String, prepare: (String) -> String? = { $0 }) -> Data? {
+        let cacheKey = key as NSString
+        if let entry = cache.object(forKey: cacheKey), entry.source == source {
+            return entry.data
+        }
+        guard let text = prepare(source), !text.isEmpty else { return nil }
+        let data = Data(text.utf8)
+        cache.setObject(Entry(source: source, data: data), forKey: cacheKey, cost: data.count)
+        return data
+    }
+}
+
 public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public var name: String

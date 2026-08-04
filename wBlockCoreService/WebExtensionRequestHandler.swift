@@ -21,6 +21,7 @@ import os.log
 /// back to the extension.
 public enum WebExtensionRequestHandler {
     private static let sharedWebExtensionLogFilename = "web_extension.log"
+    private static let userScriptPayloadDataCache = UserScriptPayloadDataCache()
 
     // Reused for shared-log timestamps. Requests can be handled on concurrent
     // threads, so formatting is serialized behind a lock.
@@ -1232,28 +1233,36 @@ public enum WebExtensionRequestHandler {
                 return
             }
 
-            let text: String?
+            let data: Data?
             switch kind {
             case .content:
-                if script.isUserStyle, let pageURL = message["url"] as? String, !pageURL.isEmpty {
-                    // Style chunks carry the same effective CSS the inline path would
-                    // have produced for this page; recomputation is deterministic.
-                    text = UserStyleSupport.effectiveCSS(forContent: script.content, url: pageURL)
-                } else {
-                    text = script.executableContent
+                let pageURL = message["url"] as? String
+                let cacheKey = "content:\(scriptId.uuidString):\(pageURL ?? "")"
+                data = userScriptPayloadDataCache.data(for: cacheKey, source: script.content) { source in
+                    if script.isUserStyle, let pageURL, !pageURL.isEmpty {
+                        return UserStyleSupport.effectiveCSS(forContent: source, url: pageURL)
+                    }
+                    return UserScript.executableContent(from: source)
                 }
             case .resource:
                 // Lazily populate missing resources for scripts installed before caching existed.
-                text = await manager.ensureResourceContent(forScriptId: scriptId, resourceName: resourceName!)
+                let text = await manager.ensureResourceContent(
+                    forScriptId: scriptId,
+                    resourceName: resourceName!
+                )
+                data = text.flatMap {
+                    userScriptPayloadDataCache.data(
+                        for: "resource:\(scriptId.uuidString):\(resourceName!)",
+                        source: $0
+                    )
+                }
             }
 
-            guard let text, !text.isEmpty else {
+            guard let data, !data.isEmpty else {
                 let response = createResponse(with: ["error": "Requested content not available"])
                 context.completeRequest(returningItems: [response])
                 return
             }
-
-            let data = Data(text.utf8)
             let totalChunks = Int(ceil(Double(data.count) / Double(chunkSize)))
             guard totalChunks > 0, chunkIndex < totalChunks else {
                 let response = createResponse(with: ["error": "chunkIndex out of range", "totalChunks": totalChunks])

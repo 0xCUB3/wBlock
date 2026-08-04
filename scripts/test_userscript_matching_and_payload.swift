@@ -58,6 +58,25 @@ struct UserScriptMatchingAndPayloadTests {
             expect(!storageScript.usesGMStorage, "\(grants) should skip the storage snapshot")
         }
 
+        let payloadCache = UserScriptPayloadDataCache()
+        var payloadBuilds = 0
+        let firstPayload = payloadCache.data(for: "script", source: "first") { source in
+            payloadBuilds += 1
+            return "prepared-\(source)"
+        }
+        let cachedPayload = payloadCache.data(for: "script", source: "first") { _ in
+            payloadBuilds += 1
+            return nil
+        }
+        let revisedPayload = payloadCache.data(for: "script", source: "other") { source in
+            payloadBuilds += 1
+            return "prepared-\(source)"
+        }
+        expectEqual(firstPayload, Data("prepared-first".utf8), "payload cache should prepare content")
+        expectEqual(cachedPayload, firstPayload, "payload cache should reuse prepared bytes")
+        expectEqual(revisedPayload, Data("prepared-other".utf8), "changed source should replace cached bytes")
+        expectEqual(payloadBuilds, 2, "payload cache should prepare each source revision once")
+
         print("PASS: userscript matching and payload")
     }
 
