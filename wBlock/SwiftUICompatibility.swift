@@ -1,10 +1,8 @@
 import SwiftUI
 
 struct CompatibleNavigationStack<Content: View>: View {
-    /// When false, the pre-macOS-13 / pre-iOS-16 fallback renders content directly
-    /// instead of wrapping it in a NavigationView. Useful for tabs whose content
-    /// (ScrollView / VStack) doesn't use NavigationLink, so they don't inherit
-    /// NavigationView's mandatory double-column layout on macOS 12 and earlier.
+    /// Pre-Tahoe non-navigation tabs must not own stacks because SwiftUI can
+    /// duplicate their window toolbar contributions after closing panels.
     let requiresNavigationView: Bool
     @ViewBuilder var content: () -> Content
 
@@ -14,20 +12,22 @@ struct CompatibleNavigationStack<Content: View>: View {
     }
 
     var body: some View {
-        if #available(iOS 16.0, macOS 13.0, *) {
+        #if os(macOS)
+        if #unavailable(macOS 26.0), !requiresNavigationView {
+            content()
+        } else if #available(macOS 13.0, *) {
             NavigationStack(root: content)
         } else {
-            #if os(iOS)
+            NavigationView(content: content)
+        }
+        #else
+        if #available(iOS 16.0, *) {
+            NavigationStack(root: content)
+        } else {
             NavigationView(content: content)
                 .navigationViewStyle(StackNavigationViewStyle())
-            #else
-            if requiresNavigationView {
-                NavigationView(content: content)
-            } else {
-                content()
-            }
-            #endif
         }
+        #endif
     }
 }
 

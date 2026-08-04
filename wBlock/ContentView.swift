@@ -109,22 +109,16 @@ struct ContentView: View {
     }
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            filtersView
-                .tag(0)
-                .tabItem {
-                    Label("Filters", systemImage: "list.bullet.rectangle")
-                }
-            userscriptsView
-                .tag(1)
-                .tabItem {
-                    Label("Userscripts", systemImage: "doc.text.fill")
-                }
-            settingsView
-                .tag(2)
-                .tabItem {
-                    Label("Settings", systemImage: "gear")
-                }
+        Group {
+            #if os(macOS)
+            if #available(macOS 26.0, *) {
+                nativeTabView
+            } else {
+                legacyMacTabView
+            }
+            #else
+            nativeTabView
+            #endif
         }
         .modifier(
             ContentModifiers(
@@ -152,6 +146,47 @@ struct ContentView: View {
             }
         }
     }
+
+    private var nativeTabView: some View {
+        TabView(selection: $selectedTab) {
+            filtersView
+                .tag(0)
+                .tabItem { Label("Filters", systemImage: "list.bullet.rectangle") }
+            userscriptsView
+                .tag(1)
+                .tabItem { Label("Userscripts", systemImage: "doc.text.fill") }
+            settingsView
+                .tag(2)
+                .tabItem { Label("Settings", systemImage: "gear") }
+        }
+    }
+
+    #if os(macOS)
+    private var legacyMacTabView: some View {
+        Group {
+            switch selectedTab {
+            case 1:
+                userscriptsView
+            case 2:
+                settingsView
+            default:
+                filtersView
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Picker("wBlock", selection: $selectedTab) {
+                    Text("Filters").tag(0)
+                    Text("Userscripts").tag(1)
+                    Text("Settings").tag(2)
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .frame(width: 300)
+            }
+        }
+    }
+    #endif
 
     private func isInlineUserList(_ filter: FilterList) -> Bool {
         filter.isInlineUserList
