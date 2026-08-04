@@ -77,7 +77,12 @@ function makeElement(tag) {
   };
 }
 
-function buildContentScriptSandbox(initialSessionValue = null, userScripts = [fakeScript], href = "https://example.com/page") {
+function buildContentScriptSandbox(
+  initialSessionValue = null,
+  userScripts = [fakeScript],
+  href = "https://example.com/page",
+  cachedUserScripts = [],
+) {
   const head = makeElement("head");
   head.appendChild = (c) => {
     head.children.push(c);
@@ -121,12 +126,17 @@ function buildContentScriptSandbox(initialSessionValue = null, userScripts = [fa
   if (initialSessionValue !== null) {
     sessionValues.set("__wblock_document_start_scripts_v1", initialSessionValue);
   }
+  const sessionStorageWrites = [];
   sandbox.sessionStorage = {
     getItem: (key) => sessionValues.get(key) ?? null,
-    setItem: (key, value) => sessionValues.set(key, String(value)),
+    setItem: (key, value) => {
+      sessionStorageWrites.push([key, String(value)]);
+      sessionValues.set(key, String(value));
+    },
     removeItem: (key) => sessionValues.delete(key),
   };
   sandbox.__sessionValues = sessionValues;
+  sandbox.__sessionStorageWrites = sessionStorageWrites;
   sandbox.document = {
     readyState: "complete",
     documentElement: docEl,
@@ -144,6 +154,7 @@ function buildContentScriptSandbox(initialSessionValue = null, userScripts = [fa
       sendMessage: async (msg) => {
         sentMessages.push(msg);
         if (msg.action === "getUserScripts") return { userScripts };
+        if (msg.action === "getCachedDocumentStartUserScripts") return { userScripts: cachedUserScripts };
         if (msg.action === "gmXmlhttpRequest") {
           return { status: 200, responseText: "OK", responseHeaders: "", finalUrl: msg.url };
         }
@@ -207,6 +218,44 @@ check("wrapper embeds a non-empty portBridgeId", portBridgeId.length > 0);
 
 const persistedSessionCache = contentSandbox.__sessionValues.get("__wblock_document_start_scripts_v1") || "";
 check("session cache does not persist privileged bridge IDs", !/BridgeId|gm(?:xhr|storage|menu|port)-/.test(persistedSessionCache));
+
+const cachedDescriptor = { ...fakeScript, xhrBridgeId: "cached-token" };
+const nativeDescriptor = { ...fakeScript, xhrBridgeId: "native-token" };
+const unchangedCacheSandbox = buildContentScriptSandbox(
+  null,
+  [nativeDescriptor],
+  "https://example.com/page",
+  [cachedDescriptor],
+);
+vm.createContext(unchangedCacheSandbox);
+vm.runInContext(source, unchangedCacheSandbox, { filename: "userscript-injector-cache-dedup.js" });
+await tick();
+await tick();
+check(
+  "identical cached and native descriptors write session storage once",
+  unchangedCacheSandbox.__sessionStorageWrites.length === 1,
+);
+check(
+  "deduplicated session cache strips runtime bridge IDs",
+  !/cached-token|native-token/.test(unchangedCacheSandbox.__sessionValues.get("__wblock_document_start_scripts_v1") || ""),
+);
+
+const staleDescriptor = { ...fakeScript, content: "window.__staleCache = true;" };
+const refreshedCacheSandbox = buildContentScriptSandbox(
+  null,
+  [fakeScript],
+  "https://example.com/page",
+  [staleDescriptor],
+);
+vm.createContext(refreshedCacheSandbox);
+vm.runInContext(source, refreshedCacheSandbox, { filename: "userscript-injector-cache-refresh.js" });
+await tick();
+await tick();
+const refreshedCache = JSON.parse(
+  refreshedCacheSandbox.__sessionValues.get("__wblock_document_start_scripts_v1") || "{}",
+);
+check("changed native descriptors refresh session storage", refreshedCacheSandbox.__sessionStorageWrites.length === 2);
+check("session cache keeps the current native payload", refreshedCache.scripts?.[0]?.content === USER_SCRIPT_CONTENT);
 
 // ---------------------------------------------------------------------------
 // Phase 2: the engine-level XHR bridge must gate on the issued token.

@@ -114,6 +114,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.registeredMenuCommands = new Map(); // bridgeId -> Map(commandId, descriptor)
             this.pendingMenuInvocations = new Map(); // requestId -> { resolve, timeoutId }
             this.scriptPayloadPromises = new Map(); // scriptId -> Promise<hydrated script>
+            this.documentStartSessionCacheFingerprint = null;
             this.documentRootPromise = null; // earliest safe page-world injection point
             this.rydPrefetchEnabled = false;
             this.menuCommandSequence = 0;
@@ -158,6 +159,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         clearDocumentStartSessionCache() {
+            this.documentStartSessionCacheFingerprint = null;
             try {
                 getWBlockSessionStorage()?.removeItem(WBLOCK_SESSION_SCRIPT_CACHE_KEY);
             } catch {}
@@ -207,13 +209,15 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     } = script;
                     return cached;
                 });
-            const payload = JSON.stringify({
-                savedAt: Date.now(),
-                usesCspNonce: !!getCspNonce(),
-                scripts: cacheableScripts
-            });
+            const usesCspNonce = !!getCspNonce();
+            const fingerprint = JSON.stringify([usesCspNonce, cacheableScripts]);
+            if (fingerprint === this.documentStartSessionCacheFingerprint) return;
+            const payload = JSON.stringify({ savedAt: Date.now(), usesCspNonce, scripts: cacheableScripts });
             try {
-                getWBlockSessionStorage()?.setItem(WBLOCK_SESSION_SCRIPT_CACHE_KEY, payload);
+                const storage = getWBlockSessionStorage();
+                if (!storage) return;
+                storage.setItem(WBLOCK_SESSION_SCRIPT_CACHE_KEY, payload);
+                this.documentStartSessionCacheFingerprint = fingerprint;
             } catch {}
         }
 
