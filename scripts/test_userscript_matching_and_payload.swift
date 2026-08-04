@@ -41,6 +41,23 @@ struct UserScriptMatchingAndPayloadTests {
             "scripts without metadata should be unchanged"
         )
 
+        let storageGrants = [
+            "GM_getValue", "GM_setValue", "GM_deleteValue", "GM_listValues",
+            "GM_addValueChangeListener", "GM_removeValueChangeListener",
+            "GM.getValue", "GM.setValue", "GM.deleteValue", "GM.listValues",
+            "GM.addValueChangeListener", "GM.removeValueChangeListener"
+        ]
+        for grant in storageGrants {
+            var storageScript = UserScript(name: grant)
+            storageScript.grant = [grant]
+            expect(storageScript.usesGMStorage, "\(grant) should request the storage snapshot")
+        }
+        for grants in [[], ["none"], ["GM_xmlhttpRequest"], ["unsafeWindow"]] {
+            var storageScript = UserScript(name: grants.joined(separator: ","))
+            storageScript.grant = grants
+            expect(!storageScript.usesGMStorage, "\(grants) should skip the storage snapshot")
+        }
+
         print("PASS: userscript matching and payload")
     }
 

@@ -122,6 +122,17 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         Self.executableContent(from: content)
     }
 
+    public var usesGMStorage: Bool {
+        grant.contains { Self.storageGrants.contains($0.lowercased()) }
+    }
+
+    private static let storageGrants: Set<String> = [
+        "gm_getvalue", "gm_setvalue", "gm_deletevalue", "gm_listvalues",
+        "gm_addvaluechangelistener", "gm_removevaluechangelistener",
+        "gm.getvalue", "gm.setvalue", "gm.deletevalue", "gm.listvalues",
+        "gm.addvaluechangelistener", "gm.removevaluechangelistener"
+    ]
+
     public static func executableContent(from content: String) -> String {
         guard let metadataStart = content.range(of: "// ==UserScript==")?.lowerBound,
               let metadataEndRange = content.range(

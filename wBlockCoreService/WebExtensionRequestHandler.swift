@@ -707,9 +707,12 @@ public enum WebExtensionRequestHandler {
                     continue
                 }
 
-                let storageSnapshot = await UserScriptStorageManager.shared.snapshot(for: script.id.uuidString)
                 var descriptor = userScriptDescriptor(script)
-                descriptor["storageSnapshot"] = storageSnapshot
+                if script.usesGMStorage {
+                    descriptor["storageSnapshot"] = await UserScriptStorageManager.shared.snapshot(
+                        for: script.id.uuidString
+                    )
+                }
                 if includeContent, !script.content.isEmpty {
                     let executableContent = script.executableContent
                     let inlinePayloadBytes = executableContent.utf8.count
