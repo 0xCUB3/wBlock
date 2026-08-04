@@ -15,7 +15,6 @@ struct ApplyChangesProgressView: View {
 
     @State private var selectedFilters: Set<UUID> = []
     @State private var selectedScripts: Set<UUID> = []
-    @State private var selectedCategories: Set<FilterListCategory> = []
     @State private var isStartingSelectedUpdates = false
 
     private var mode: ApplyChangesSheetMode {
@@ -72,27 +71,18 @@ struct ApplyChangesProgressView: View {
                     }
                 }
         }
+        .applySheetPresentationCompat(prefersLarge: mode == .review || mode == .progress)
         .interactiveDismissDisabled(mode == .progress || isStartingSelectedUpdates)
         .onAppear {
             syncSelectionFromAvailableUpdates()
-        }
-        .onChangeCompat(of: filterManager.availableUpdates.map(\.id)) { _, _ in
-            if mode == .review {
-                syncSelectionFromAvailableUpdates()
-            }
-        }
-        .onChangeCompat(of: filterManager.availableScriptUpdates.map(\.id)) { _, _ in
-            if mode == .review {
-                syncSelectionFromAvailableUpdates()
-            }
         }
         #if os(macOS)
         .frame(
             minWidth: 460,
             idealWidth: 500,
             maxWidth: 560,
-            minHeight: mode == .review ? 420 : 380,
-            idealHeight: mode == .review ? 500 : 440,
+            minHeight: mode == .progress ? 400 : (mode == .review ? 420 : 260),
+            idealHeight: mode == .progress ? 440 : (mode == .review ? 500 : 320),
             maxHeight: 640
         )
         #endif
@@ -104,16 +94,12 @@ struct ApplyChangesProgressView: View {
         case .review:
             reviewContent
         case .progress:
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    sheetHeader
-                    progressOverviewCard
-                    phaseCard
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 24)
+            VStack(alignment: .leading, spacing: 12) {
+                sheetHeader
+                progressOverviewCard
+                phaseCard
             }
+            .padding(20)
         case .result:
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
@@ -122,9 +108,7 @@ struct ApplyChangesProgressView: View {
                         summaryCard(summary)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 24)
+                .padding(20)
             }
         case .failed:
             ScrollView {
@@ -133,9 +117,7 @@ struct ApplyChangesProgressView: View {
                     failureCard
                     phaseCard
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 24)
+                .padding(20)
             }
         }
     }
@@ -181,7 +163,7 @@ struct ApplyChangesProgressView: View {
                                     subtitle: filter.localizedDisplayDescription,
                                     isSelected: selectedFilters.contains(filter.id)
                                 ) {
-                                    toggleFilter(filter, in: category)
+                                    toggleFilter(filter)
                                 }
                             }
                         }
@@ -216,12 +198,10 @@ struct ApplyChangesProgressView: View {
                 .font(.headline)
             Spacer()
             Toggle(
-                "",
+                category.localizedName,
                 isOn: Binding(
-                    get: { selectedCategories.contains(category) },
-                    set: { isSelected in
-                        setCategory(category, selected: isSelected)
-                    }
+                    get: { isCategorySelected(category) },
+                    set: { setCategory(category, selected: $0) }
                 )
             )
             .toggleStyle(.switch)
@@ -261,6 +241,8 @@ struct ApplyChangesProgressView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     // MARK: - Progress
@@ -269,23 +251,20 @@ struct ApplyChangesProgressView: View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
             StatCard(
                 title: String(localized: "Extensions"),
-                value: processedText,
-                icon: "puzzlepiece.extension",
-                valueColor: .primary
+                value: viewModel.state.totalCount > 0 ? viewModel.state.totalCount.formatted() : "—",
+                icon: "puzzlepiece.extension"
             )
             StatCard(
                 title: String(localized: "Updates"),
                 value: viewModel.state.updatesFound.formatted(),
-                icon: "arrow.down.circle",
-                valueColor: .primary
+                icon: "arrow.down.circle"
             )
         }
     }
 
     private var phaseCard: some View {
-        VStack(spacing: 4) {
-            ForEach(viewModel.state.phases.indices, id: \.self) { index in
-                let step = viewModel.state.phases[index]
+        VStack(spacing: 2) {
+            ForEach(viewModel.state.phases) { step in
                 PhaseRow(
                     step: step,
                     detail: detail(for: step),
@@ -303,26 +282,22 @@ struct ApplyChangesProgressView: View {
                 StatCard(
                     title: String(localized: "Safari Rules"),
                     value: summary.safariRules.formatted(),
-                    icon: "shield.lefthalf.filled",
-                    valueColor: .primary
+                    icon: "shield.lefthalf.filled"
                 )
                 StatCard(
                     title: String(localized: "Source Rules"),
                     value: summary.sourceRules.formatted(),
-                    icon: "doc.text",
-                    valueColor: .primary
+                    icon: "doc.text"
                 )
                 StatCard(
                     title: String(localized: "Conversion"),
                     value: summary.conversionTime,
-                    icon: "clock",
-                    valueColor: .primary
+                    icon: "clock"
                 )
                 StatCard(
                     title: String(localized: "Reload"),
                     value: summary.reloadTime,
-                    icon: "arrow.clockwise",
-                    valueColor: .primary
+                    icon: "arrow.clockwise"
                 )
             }
 
@@ -388,56 +363,40 @@ struct ApplyChangesProgressView: View {
     private func syncSelectionFromAvailableUpdates() {
         selectedFilters = Set(filterManager.availableUpdates.map(\.id))
         selectedScripts = Set(filterManager.availableScriptUpdates.map(\.id))
-        var categories = Set(filterManager.availableUpdates.map(\.category))
-        if !filterManager.availableScriptUpdates.isEmpty {
-            categories.insert(.scripts)
-        }
-        selectedCategories = categories
     }
 
-    private func toggleFilter(_ filter: FilterList, in category: FilterListCategory) {
-        if selectedFilters.contains(filter.id) {
-            selectedFilters.remove(filter.id)
-            let remaining = (filtersByCategory[category] ?? []).filter { selectedFilters.contains($0.id) }
-            if remaining.isEmpty {
-                selectedCategories.remove(category)
-            }
-        } else {
+    private func toggleFilter(_ filter: FilterList) {
+        if selectedFilters.remove(filter.id) == nil {
             selectedFilters.insert(filter.id)
-            selectedCategories.insert(category)
         }
     }
 
     private func toggleScript(_ script: UserScript) {
-        if selectedScripts.contains(script.id) {
-            selectedScripts.remove(script.id)
-            if selectedScripts.isEmpty {
-                selectedCategories.remove(.scripts)
-            }
-        } else {
+        if selectedScripts.remove(script.id) == nil {
             selectedScripts.insert(script.id)
-            selectedCategories.insert(.scripts)
         }
     }
 
+    private func isCategorySelected(_ category: FilterListCategory) -> Bool {
+        if category == .scripts {
+            return !filterManager.availableScriptUpdates.isEmpty
+                && filterManager.availableScriptUpdates.allSatisfy { selectedScripts.contains($0.id) }
+        }
+        guard let filters = filtersByCategory[category], !filters.isEmpty else { return false }
+        return filters.allSatisfy { selectedFilters.contains($0.id) }
+    }
+
     private func setCategory(_ category: FilterListCategory, selected: Bool) {
-        if selected {
-            selectedCategories.insert(category)
-            if category == .scripts {
-                selectedScripts = Set(filterManager.availableScriptUpdates.map(\.id))
-            } else if let filters = filtersByCategory[category] {
-                for filter in filters {
-                    selectedFilters.insert(filter.id)
-                }
-            }
-        } else {
-            selectedCategories.remove(category)
-            if category == .scripts {
-                selectedScripts.removeAll()
-            } else if let filters = filtersByCategory[category] {
-                for filter in filters {
-                    selectedFilters.remove(filter.id)
-                }
+        if category == .scripts {
+            selectedScripts = selected ? Set(filterManager.availableScriptUpdates.map(\.id)) : []
+            return
+        }
+        guard let filters = filtersByCategory[category] else { return }
+        for filter in filters {
+            if selected {
+                selectedFilters.insert(filter.id)
+            } else {
+                selectedFilters.remove(filter.id)
             }
         }
     }
@@ -472,14 +431,6 @@ struct ApplyChangesProgressView: View {
             return String(localized: "Something went wrong while applying changes.")
         }
         return viewModel.state.failureMessage
-    }
-
-    private var processedText: String {
-        let total = viewModel.state.totalCount
-        if total > 0 {
-            return "\(total)"
-        }
-        return "—"
     }
 
     private func detail(for step: ApplyChangesPhaseProgress) -> String? {
@@ -599,7 +550,7 @@ private struct PhaseRow: View {
     }
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 5) {
             HStack(spacing: 12) {
                 statusLeading
                     .frame(width: 18, height: 18)
@@ -635,7 +586,7 @@ private struct PhaseRow: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.vertical, 6)
     }
 
     @ViewBuilder

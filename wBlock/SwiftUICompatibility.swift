@@ -106,6 +106,16 @@ extension View {
     }
 
     @ViewBuilder
+    func applySheetPresentationCompat(prefersLarge: Bool) -> some View {
+        if #available(iOS 16.0, macOS 13.0, *) {
+            presentationDetents([prefersLarge ? .large : .medium])
+                .presentationDragIndicator(.visible)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
     func groupedFormStyleCompat() -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {
             formStyle(.grouped)

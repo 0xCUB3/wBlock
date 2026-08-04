@@ -97,11 +97,7 @@ extension AppFilterManager {
 
             var successfullyUpdatedScripts: [UserScript] = []
             if !selectedScripts.isEmpty {
-                // Keep the first progress row active until filter downloads finish, then move on
-                // so script downloads don't still look like "Checking for Updates".
-                if !selectedFilters.isEmpty {
-                    self.applyProgressViewModel.updatePhaseCompletion(updating: true, scripts: false)
-                }
+                self.applyProgressViewModel.updatePhaseCompletion(updating: true, scripts: false)
 
                 let scriptsStatus = LocalizedStrings.text(
                     "Downloading selected scripts...",
