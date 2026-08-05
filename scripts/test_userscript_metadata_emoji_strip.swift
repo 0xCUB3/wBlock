@@ -21,6 +21,7 @@ struct UserScriptMetadataEmojiStripTests {
         testEmojiGlyphsStillRemoved()
         testUserStyleDigitsPreserved()
         testASCIISymbolsPreserved()
+        testReplacingContentRefreshesMetadata()
         print("PASS: userscript metadata emoji strip")
     }
 
@@ -135,6 +136,20 @@ struct UserScriptMetadataEmojiStripTests {
             "Uses # and * freely",
             "ASCII # and * must remain in @description"
         )
+    }
+
+    private static func testReplacingContentRefreshesMetadata() {
+        var script = UserScript(name: "tinyShield", content: "")
+        script.version = "4.0.2"
+
+        script.replaceContentAndParseMetadata("""
+            // ==UserScript==
+            // @name         tinyShield
+            // @version      4.0.6
+            // ==/UserScript==
+            """)
+
+        expectEqual(script.version, "4.0.6", "disk content must replace stale persisted metadata")
     }
 
     private static func expect(_ condition: Bool, _ message: String) {

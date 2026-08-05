@@ -199,6 +199,11 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         self.content = content
     }
 
+    mutating func replaceContentAndParseMetadata(_ content: String) {
+        self.content = content
+        parseMetadata()
+    }
+
     /// Compares two dot-separated version strings numerically.
     /// Returns true only if `remote` is strictly greater than `local`.
     /// Non-numeric segment prefixes (e.g. "0b") use leading digits only; no digits = 0.

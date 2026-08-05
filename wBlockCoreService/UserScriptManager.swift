@@ -334,7 +334,9 @@ public class UserScriptManager: ObservableObject {
 
         return await Task.detached { [script] in
             var hydratedScript = script
-            hydratedScript.content = Self.readUserScriptContentOffMain(script) ?? ""
+            if let content = Self.readUserScriptContentOffMain(script) {
+                hydratedScript.replaceContentAndParseMetadata(content)
+            }
             return hydratedScript
         }.value
     }
@@ -756,7 +758,7 @@ public class UserScriptManager: ObservableObject {
         var scripts = userScripts
         for i in scripts.indices {
             if let content = readUserScriptContentOffMain(scripts[i]) {
-                scripts[i].content = content
+                scripts[i].replaceContentAndParseMetadata(content)
             }
 
             guard includeResources else { continue }
@@ -1238,8 +1240,7 @@ public class UserScriptManager: ObservableObject {
     /// marks the script as not auto-updating from a URL (it updates with the app),
     /// and writes the content to disk so the injector can run it.
     private func applyBundledContent(to userScript: inout UserScript, content: String) {
-        userScript.content = content
-        userScript.parseMetadata()
+        userScript.replaceContentAndParseMetadata(content)
         userScript.lastUpdated = Date()
         userScript.updatesAutomatically = false
         _ = writeUserScriptFiles(userScript)
@@ -1315,7 +1316,7 @@ public class UserScriptManager: ObservableObject {
 
             // Prefer local disk content if available (avoid unnecessary network requests on launch).
             if script.content.isEmpty, let diskContent = readUserScriptContent(script), !diskContent.isEmpty {
-                userScripts[index].content = diskContent
+                userScripts[index].replaceContentAndParseMetadata(diskContent)
                 if let resources = readUserScriptResources(script) {
                     userScripts[index].resourceContents = resources
                 }
@@ -1653,8 +1654,7 @@ public class UserScriptManager: ObservableObject {
                   userScripts.indices.contains(currentIndex)
             else { return }
 
-            userScripts[currentIndex].content = content
-            userScripts[currentIndex].parseMetadata()
+            userScripts[currentIndex].replaceContentAndParseMetadata(content)
             userScripts[currentIndex].lastUpdated = Date()
 
             // Update description and version from metadata, but keep disabled
@@ -2191,7 +2191,7 @@ public class UserScriptManager: ObservableObject {
         guard script.content.isEmpty else { return true }
 
         if let diskContent = readUserScriptContent(script), !diskContent.isEmpty {
-            userScripts[index].content = diskContent
+            userScripts[index].replaceContentAndParseMetadata(diskContent)
             if let resources = readUserScriptResources(script) {
                 userScripts[index].resourceContents = resources
             }
@@ -2238,7 +2238,7 @@ public class UserScriptManager: ObservableObject {
                let diskContent = readUserScriptContent(userScripts[index]),
                !diskContent.isEmpty
             {
-                userScripts[index].content = diskContent
+                userScripts[index].replaceContentAndParseMetadata(diskContent)
                 if let resources = readUserScriptResources(userScripts[index]) {
                     userScripts[index].resourceContents = resources
                 }
@@ -2414,8 +2414,7 @@ public class UserScriptManager: ObservableObject {
 
     public func saveEditedContent(for scriptId: UUID, newContent: String) async {
         guard let index = indexOfUserScript(withId: scriptId) else { return }
-        userScripts[index].content = newContent
-        userScripts[index].parseMetadata()
+        userScripts[index].replaceContentAndParseMetadata(newContent)
         userScripts[index].lastUpdated = Date()
         _ = writeUserScriptFiles(userScripts[index])
         await persistUserScriptsNow()
@@ -2588,8 +2587,7 @@ public class UserScriptManager: ObservableObject {
             let content = try await downloadUserScriptContent(from: url)
 
             if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
-                userScripts[index].content = content
-                userScripts[index].parseMetadata()
+                userScripts[index].replaceContentAndParseMetadata(content)
             }
 
             // Process @require directives and @resource directives after metadata is parsed
