@@ -721,7 +721,7 @@
 "Syncing iCloud configuration…" = "iCloud yapılandırması eşitleniyor…";
 "System" = "Sistem";
 "Tap to review userscript guidelines." = "Kullanıcı betiği yönergelerini incelemek için dokunun.";
-"Telemetry: %@" = "Telemetri: %@";
+"Auto-update: %@" = "Otomatik güncelleme: %@";
 "Tell us where you browse so we can enable the right regional filters." = "Doğru bölgesel filtreleri etkinleştirebilmemiz için lütfen hangi sitelerde gezindiğinizi belirtin.";
 "Temporarily disable all content blockers without turning them off in Safari Settings." = "Safari ayarlarından genişletmeleri kapatmadan; içerik engelleyiciler, kullanıcı betikleri ve stiller dâhil tüm engellemeleri geçici olarak devre dışı bırakır.";
 "That doesn't look like a filter list." = "Bu bir filtre listesine benzemiyor.";

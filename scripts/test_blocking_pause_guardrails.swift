@@ -72,8 +72,8 @@ assertContains(
 )
 assertContains(
     autoUpdateManager,
-    "clearPersistedBlockingOutputsForPause()",
-    "Auto-update should repair non-empty persisted outputs if it wakes during pause"
+    "clearPersistedBlockingOutputsForPause(reloadContentBlockers: !helperStagedOutputs)",
+    "Auto-update should repair paused outputs while reserving Safari reloads for the app"
 )
 assertContains(
     applyPipeline,
@@ -92,7 +92,7 @@ assertContains(
 )
 assertContains(
     applyPipeline,
-    "        } else {\n            await applyChanges()\n            await MainActor.run {",
+    "await MainActor.run { self.isBlockingPaused = false }\n            await applyChanges()\n            await MainActor.run {",
     "Resuming blocking must use the standard visible apply pipeline"
 )
 assertNotContains(

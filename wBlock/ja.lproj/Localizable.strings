@@ -721,7 +721,7 @@
 "Syncing iCloud configuration…" = "iCloud設定を同期中…";
 "System" = "システム";
 "Tap to review userscript guidelines." = "タップしてユーザースクリプトのガイドラインを確認。";
-"Telemetry: %@" = "テレメトリー: %@";
+"Auto-update: %@" = "自動更新: %@";
 "Tell us where you browse so we can enable the right regional filters." = "閲覧している地域を教えてください。適切な地域フィルターを有効にします。";
 "Temporarily disable all content blockers without turning them off in Safari Settings." = "Safariの設定で拡張機能をオフにすることなく、すべてのブロック（コンテンツブロッカー、ユーザースクリプト、スタイル）を一時的に無効にします。";
 "That doesn't look like a filter list." = "これはフィルタリストのようには見えません。";

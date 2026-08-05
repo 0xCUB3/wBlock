@@ -721,7 +721,7 @@
 "Syncing iCloud configuration…" = "Synchronizowanie konfiguracji iCloud…";
 "System" = "System";
 "Tap to review userscript guidelines." = "Stuknij, aby zapoznać się z wytycznymi dotyczącymi skryptów użytkownika.";
-"Telemetry: %@" = "Telemetria: %@";
+"Auto-update: %@" = "Automatyczna aktualizacja: %@";
 "Tell us where you browse so we can enable the right regional filters." = "Powiedz nam, gdzie przeglądasz internet, abyśmy mogli włączyć odpowiednie filtry regionalne.";
 "Temporarily disable all content blockers without turning them off in Safari Settings." = "Tymczasowo wyłącz całe blokowanie (blokery treści, skrypty użytkownika i style) bez wyłączania rozszerzeń w Ustawieniach Safari.";
 "That doesn't look like a filter list." = "To nie wygląda na listę filtrów.";

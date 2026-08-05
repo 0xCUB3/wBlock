@@ -25,6 +25,7 @@ let runner = try read("wBlockCoreService/FilterAutoUpdateRunner.swift")
 let agentEntitlements = try read("FilterUpdateAgent/FilterUpdateAgent.entitlements")
 let groupIdentifier = try read("wBlockCoreService/GroupIdentifier.swift")
 let sharedAutoUpdate = try read("wBlockCoreService/SharedAutoUpdateManager.swift")
+let logManager = try read("wBlock/ConcurrentLogManager.swift")
 let settingsView = try read("wBlock/SettingsView.swift")
 let buildDMG = try read("scripts/build-dmg.sh")
 
@@ -139,6 +140,108 @@ assertContains(
     settingsView,
     "case .deferred:\n            return String(localized: \"Deferred\")",
     "Deferred background work must not be presented as a failure"
+)
+
+assertContains(
+    sharedAutoUpdate,
+    "if isExternalHelperTrigger(trigger)",
+    "External helpers must hand blocker reloads back to the app"
+)
+assertContains(
+    sharedAutoUpdate,
+    "reloadStatus = \"pending app launch\"",
+    "A helper reload handoff must be recorded as pending rather than failed"
+)
+assertContains(
+    sharedAutoUpdate,
+    "reloadContentBlockers: !helperStagedUpdates",
+    "External helpers must compile outputs without calling SafariServices reloads"
+)
+assertContains(
+    sharedAutoUpdate,
+    "if reloadContentBlockers {",
+    "Safari content blocker reloads must be guarded by app-process ownership"
+)
+assertContains(
+    sharedAutoUpdate,
+    "helperStagedUpdates ? \"staged_updates\" : \"applied_updates\"",
+    "Successfully staged helper updates must not emit a failed outcome"
+)
+assertContains(
+    sharedAutoUpdate,
+    "result: helperStagedUpdates ? .stagedUpdates : .appliedUpdates",
+    "The XPC service must report successful staging without triggering fallback"
+)
+assertContains(
+    sharedAutoUpdate,
+    "if reloadStatus == \"ok\" || scriptsResult.updated > 0",
+    "The app-owned reload must refresh the last-success timestamp"
+)
+
+assertContains(
+    logManager,
+    "LocalizedStrings.format(\"Auto-update: %@\", outcome)",
+    "Auto-update outcomes must not expose the internal telemetry label"
+)
+assertNotContains(
+    logManager,
+    "LocalizedStrings.format(\"Telemetry: %@\", outcome)",
+    "The log UI must not call update outcomes telemetry"
+)
+assertContains(
+    logManager,
+    "fields[\"phase\"] == \"content blocker reload\"",
+    "Obsolete helper reload failures must be excluded during ingestion"
+)
+
+let localizationRoot = URL(fileURLWithPath: "wBlock")
+for locale in try FileManager.default.contentsOfDirectory(at: localizationRoot, includingPropertiesForKeys: nil)
+    .filter({ $0.pathExtension == "lproj" }) {
+    let strings = try read(locale.appendingPathComponent("Localizable.strings").path)
+    assertContains(strings, "\"Auto-update: %@\" =", "Missing localized auto-update log label in \(locale.lastPathComponent)")
+}
+
+assertContains(
+    sharedAutoUpdate,
+    "clearPersistedBlockingOutputsForPause(reloadContentBlockers: !helperStagedOutputs)",
+    "Paused helper runs must stage inert outputs without reloading Safari blockers"
+)
+assertContains(
+    sharedAutoUpdate,
+    "if helperStagedOutputs && repairedOutputs",
+    "Paused helper staging must force the next app-owned reload"
+)
+assertContains(
+    logManager,
+    "if shouldIgnoreLegacyHelperReloadFailure(parsed.body) { continue }",
+    "Raw legacy helper reload failures must be hidden as well as telemetry failures"
+)
+
+func ignoresLegacyHelperReloadFailure(_ body: String) -> Bool {
+    let normalized = body.replacingOccurrences(of: "_", with: " ")
+    let helperTriggers = ["XPCService", "LaunchAgent", "LegacyLoginItem"]
+    return normalized.contains("Auto-update failed:")
+        && normalized.contains("phase=content blocker reload")
+        && helperTriggers.contains { normalized.contains("trigger=\($0)") }
+}
+
+guard ignoresLegacyHelperReloadFailure(
+    "Auto-update failed: trigger=XPCService, phase=content_blocker_reload, reason=reload denied"
+) else {
+    fputs("FAIL: raw XPC reload failure should be suppressed\n", stderr)
+    exit(1)
+}
+guard !ignoresLegacyHelperReloadFailure(
+    "Auto-update failed: trigger=AppLaunch, phase=content_blocker_reload, reason=reload denied"
+) else {
+    fputs("FAIL: genuine app reload failure must remain visible\n", stderr)
+    exit(1)
+}
+
+assertContains(
+    logManager,
+    "if !represented {\n                log(level, .autoUpdate, parsed.body",
+    "Mixed logs must retain raw app failures that have no structured result"
 )
 
 print("PASS: auto-update helper safety checks")

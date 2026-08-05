@@ -721,7 +721,7 @@
 "Syncing iCloud configuration…" = "iCloud-konfiguráció szinkronizálása…";
 "System" = "Rendszer";
 "Tap to review userscript guidelines." = "Koppints a felhasználói szkript irányelveinek megtekintéséhez.";
-"Telemetry: %@" = "Telemetria: %@";
+"Auto-update: %@" = "Automatikus frissítés: %@";
 "Tell us where you browse so we can enable the right regional filters." = "Mondd meg, hol böngészel, hogy a megfelelő regionális szűrőket tudjuk engedélyezni.";
 "Temporarily disable all content blockers without turning them off in Safari Settings." = "Az összes blokkolás (tartalomblokkolók, userscriptek, stílusok) ideiglenes kikapcsolása a Safari Beállításokban való kikapcsolásuk nélkül.";
 "That doesn't look like a filter list." = "Ez nem úgy néz ki, mint egy szűrőlista.";

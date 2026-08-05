@@ -87,7 +87,7 @@ public struct LogEntry: Identifiable, Codable, Equatable {
     /// Compact single-line format
     var compactFormat: String {
         let time = LogDateFormatters.timeFormatter.string(from: timestamp)
-        let metaStr = metadata?.map { "\($0.key)=\($0.value)" }.joined(separator: ", ") ?? ""
+        let metaStr = metadata?.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }.joined(separator: ", ") ?? ""
         let meta = metaStr.isEmpty ? "" : " (\(metaStr))"
         let countStr = count > 1 ? " ×\(count)" : ""
         return "\(time) [\(level.rawValue.uppercased())] \(category.rawValue): \(message)\(meta)\(countStr)"
@@ -98,7 +98,7 @@ public struct LogEntry: Identifiable, Codable, Equatable {
         let time = LogDateFormatters.exportTimeFormatter.string(from: timestamp)
         var lines = ["\(time) [\(level.rawValue.uppercased())] \(category.rawValue): \(message)"]
         if let metadata = metadata, !metadata.isEmpty {
-            lines.append("  Metadata: \(metadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", "))")
+            lines.append("  Metadata: \(metadata.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }.joined(separator: ", "))")
         }
         if count > 1 {
             lines.append("  Repeated: \(count) times")
@@ -127,12 +127,13 @@ public actor ConcurrentLogManager {
         _ category: LogCategory,
         _ message: String,
         metadata: [String: String]? = nil,
+        timestamp: Date = Date(),
         file: String = #file,
         function: String = #function,
         line: Int = #line
     ) {
         let entry = LogEntry(
-            timestamp: Date(),
+            timestamp: timestamp,
             level: level,
             category: category,
             message: message,
@@ -142,7 +143,8 @@ public actor ConcurrentLogManager {
         // Try to deduplicate with recent entries
         if let lastEntry = logEntries.last,
            lastEntry.canDeduplicate(with: entry),
-           Date().timeIntervalSince(lastEntry.timestamp) < deduplicationWindow {
+           entry.timestamp.timeIntervalSince(lastEntry.timestamp) >= 0,
+           entry.timestamp.timeIntervalSince(lastEntry.timestamp) < deduplicationWindow {
             // Increment count on last entry
             logEntries[logEntries.count - 1].count += 1
         } else {
@@ -184,21 +186,22 @@ public actor ConcurrentLogManager {
 
     /// Get all log entries (for the UI)
     public func getEntries() -> [LogEntry] {
-        return logEntries
+        return logEntries.sorted { $0.timestamp < $1.timestamp }
     }
 
     /// Get entries filtered by level
     public func getEntries(minLevel: LogLevel) -> [LogEntry] {
-        return logEntries.filter { $0.level >= minLevel }
+        return logEntries.filter { $0.level >= minLevel }.sorted { $0.timestamp < $1.timestamp }
     }
 
     /// Get entries filtered by category
     public func getEntries(category: LogCategory) -> [LogEntry] {
-        return logEntries.filter { $0.category == category }
+        return logEntries.filter { $0.category == category }.sorted { $0.timestamp < $1.timestamp }
     }
 
     /// Export logs as formatted text
-    public func exportAsText() -> String {
+    public func exportAsText(entries requestedEntries: [LogEntry]? = nil) -> String {
+        let entries = (requestedEntries ?? logEntries).sorted { $0.timestamp < $1.timestamp }
         let generated = LogDateFormatters.exportTimeFormatter.string(from: Date())
         let timeZoneLabel = LogTimeZonePreference.usesCustomTimeZone
             ? LogTimeZonePreference.storedIdentifier
@@ -207,19 +210,19 @@ public actor ConcurrentLogManager {
         wBlock Logs Export
         Generated: \(generated)
         Time Zone: \(timeZoneLabel)
-        Total Entries: \(logEntries.count)
+        Total Entries: \(entries.count)
         ════════════════════════════════════════
 
         """
 
-        let logs = logEntries.map { $0.exportFormat }.joined(separator: "\n\n")
-        return header + logs
+        return header + entries.map { $0.exportFormat }.joined(separator: "\n\n")
     }
 
     /// Clear all log entries
     public func clearLogs() {
         logEntries.removeAll()
-        log(.info, .system, LocalizedStrings.text("Logs cleared"))
+        _ = drainSharedLog(at: sharedAutoUpdateLogURL())
+        _ = drainSharedLog(at: sharedWebExtensionLogURL())
     }
 
     // MARK: - Shared Auto-Update Log Ingestion
@@ -235,26 +238,75 @@ public actor ConcurrentLogManager {
     }
 
     public func ingestSharedAutoUpdateLog() {
-        guard let url = sharedAutoUpdateLogURL(),
-              FileManager.default.fileExists(atPath: url.path),
-              let content = try? String(contentsOf: url, encoding: .utf8),
-              !content.isEmpty else {
+        guard let content = drainSharedLog(at: sharedAutoUpdateLogURL()) else { return }
+
+        let lines = content.split(separator: "\n").map(String.init)
+        let parsedResults = lines.compactMap { parseSharedFieldsLine($0, prefix: "telemetry ") }
+            .filter { $0.fields["event"] == "run result" }
+        let results = parsedResults.filter {
+            let fields = $0.fields
+            let helperTriggers = ["XPCService", "LaunchAgent", "LegacyLoginItem"]
+            return !(fields["result"] == "failed"
+                && fields["phase"] == "content blocker reload"
+                && helperTriggers.contains(fields["trigger"] ?? ""))
+        }
+
+        if parsedResults.isEmpty {
+            for line in lines {
+                if parseSharedFieldsLine(line, prefix: "telemetry ") != nil { continue }
+                let parsed = parseSharedLine(line)
+                if shouldIgnoreLegacyHelperReloadFailure(parsed.body) { continue }
+                let level: LogLevel = parsed.body.localizedCaseInsensitiveContains("failed") ? .error
+                    : parsed.body.localizedCaseInsensitiveContains("deferred") ? .warning : .debug
+                log(level, .autoUpdate, parsed.body, timestamp: parsed.timestamp ?? Date())
+            }
             return
         }
 
-        // Parse and add auto-update logs
-        let lines = content.split(separator: "\n").map(String.init)
-        for line in lines {
-            if let telemetry = parseTelemetryLine(line) {
-                let event = telemetry["event"] ?? "unknown"
-                log(.info, .autoUpdate, LocalizedStrings.format("Telemetry: %@", event), metadata: telemetry)
-            } else {
-                log(.debug, .autoUpdate, line)
-            }
+        for result in results {
+            var metadata = result.fields
+            metadata.removeValue(forKey: "event")
+            let outcome = metadata.removeValue(forKey: "result") ?? "unknown"
+            let level: LogLevel = outcome == "failed" ? .error : outcome == "deferred" ? .warning : .info
+            log(
+                level,
+                .autoUpdate,
+                LocalizedStrings.format("Auto-update: %@", outcome),
+                metadata: metadata,
+                timestamp: result.timestamp ?? Date()
+            )
         }
 
-        // Clear file after ingestion
-        try? FileManager.default.removeItem(at: url)
+        for line in lines where parseSharedFieldsLine(line, prefix: "telemetry ") == nil {
+            let parsed = parseSharedLine(line)
+            if shouldIgnoreLegacyHelperReloadFailure(parsed.body) { continue }
+            let level: LogLevel?
+            if parsed.body.localizedCaseInsensitiveContains("failed") {
+                level = .error
+            } else if parsed.body.localizedCaseInsensitiveContains("deferred") {
+                level = .warning
+            } else {
+                level = nil
+            }
+            guard let level else { continue }
+            let represented = parsedResults.contains { result in
+                guard let rawTimestamp = parsed.timestamp,
+                      let resultTimestamp = result.timestamp else { return false }
+                return abs(rawTimestamp.timeIntervalSince(resultTimestamp)) < 5
+                    && (result.fields["result"] == "failed" || result.fields["result"] == "deferred")
+            }
+            if !represented {
+                log(level, .autoUpdate, parsed.body, timestamp: parsed.timestamp ?? Date())
+            }
+        }
+    }
+
+    private func shouldIgnoreLegacyHelperReloadFailure(_ body: String) -> Bool {
+        let normalized = body.replacingOccurrences(of: "_", with: " ")
+        let helperTriggers = ["XPCService", "LaunchAgent", "LegacyLoginItem"]
+        return normalized.contains("Auto-update failed:")
+            && normalized.contains("phase=content blocker reload")
+            && helperTriggers.contains { normalized.contains("trigger=\($0)") }
     }
 
     private func shouldIgnoreSharedWebExtensionDiagnostic(_ fields: [String: String]) -> Bool {
@@ -262,50 +314,76 @@ public actor ConcurrentLogManager {
             fields[key]?.replacingOccurrences(of: " ", with: "_") ?? ""
         }
 
-        return normalizedValue(for: "event") == "support_decision"
-            && normalizedValue(for: "source") == "background"
-            && normalizedValue(for: "outcome") == "unsupported"
-            && normalizedValue(for: "reason") == "missing_url"
+        guard normalizedValue(for: "event") == "support_decision",
+              normalizedValue(for: "source") == "background",
+              normalizedValue(for: "outcome") == "unsupported" else { return false }
+        let reason = normalizedValue(for: "reason")
+        return reason == "missing_url"
+            || (reason == "unsupported_scheme" && normalizedValue(for: "protocol") == "favorites:")
     }
-
 
     public func ingestSharedWebExtensionLog() {
-        guard let url = sharedWebExtensionLogURL(),
-              FileManager.default.fileExists(atPath: url.path),
-              let content = try? String(contentsOf: url, encoding: .utf8),
-              !content.isEmpty else {
-            return
-        }
+        guard let content = drainSharedLog(at: sharedWebExtensionLogURL()) else { return }
 
-        let lines = content.split(separator: "\n").map(String.init)
-        for line in lines {
-            if let fields = parseSharedFieldsLine(line, prefix: "diagnostic ") {
-                guard !shouldIgnoreSharedWebExtensionDiagnostic(fields) else { continue }
-                let event = fields["event"]?.replacingOccurrences(of: "_", with: " ") ?? "diagnostic"
-                log(.debug, .system, LocalizedStrings.format("Web extension %@", event), metadata: fields)
+        for line in content.split(separator: "\n").map(String.init) {
+            if let parsed = parseSharedFieldsLine(line, prefix: "diagnostic ") {
+                guard !shouldIgnoreSharedWebExtensionDiagnostic(parsed.fields) else { continue }
+                var metadata = parsed.fields
+                metadata.removeValue(forKey: "event")
+                let event = parsed.fields["event"] ?? "diagnostic"
+                log(
+                    .debug,
+                    .system,
+                    LocalizedStrings.format("Web extension %@", event),
+                    metadata: metadata,
+                    timestamp: parsed.timestamp ?? Date()
+                )
             } else {
-                log(.debug, .system, line, metadata: ["source": "web-extension"])
+                let parsed = parseSharedLine(line)
+                log(.debug, .system, parsed.body, metadata: ["source": "web-extension"], timestamp: parsed.timestamp ?? Date())
             }
         }
-
-        try? FileManager.default.removeItem(at: url)
     }
 
-    private func parseTelemetryLine(_ line: String) -> [String: String]? {
-        parseSharedFieldsLine(line, prefix: "telemetry ")
-    }
-
-    private func parseSharedFieldsLine(_ line: String, prefix: String) -> [String: String]? {
-        let body: String
-        if let bracketEnd = line.firstIndex(of: "]") {
-            let afterTimestamp = line.index(after: bracketEnd)
-            body = String(line[afterTimestamp...]).trimmingCharacters(in: .whitespaces)
-        } else {
-            body = line
+    private func drainSharedLog(at sourceURL: URL?) -> String? {
+        guard let sourceURL, FileManager.default.fileExists(atPath: sourceURL.path) else { return nil }
+        let drainedURL = sourceURL.deletingLastPathComponent()
+            .appendingPathComponent("\(sourceURL.lastPathComponent).\(UUID().uuidString)")
+        do {
+            try FileManager.default.moveItem(at: sourceURL, to: drainedURL)
+            let content = try String(contentsOf: drainedURL, encoding: .utf8)
+            try FileManager.default.removeItem(at: drainedURL)
+            return content.isEmpty ? nil : content
+        } catch {
+            if FileManager.default.fileExists(atPath: drainedURL.path),
+               !FileManager.default.fileExists(atPath: sourceURL.path) {
+                try? FileManager.default.moveItem(at: drainedURL, to: sourceURL)
+            }
+            return nil
         }
+    }
 
-        guard body.hasPrefix(prefix) else { return nil }
-        let payload = body.dropFirst(prefix.count)
+    private func parseSharedLine(_ line: String) -> (timestamp: Date?, body: String) {
+        guard line.first == "[", let bracketEnd = line.firstIndex(of: "]") else { return (nil, line) }
+        let timestampText = String(line[line.index(after: line.startIndex)..<bracketEnd])
+        let bodyStart = line.index(after: bracketEnd)
+        let fractionalFormatter = ISO8601DateFormatter()
+        fractionalFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let timestamp = ISO8601DateFormatter().date(from: timestampText)
+            ?? fractionalFormatter.date(from: timestampText)
+        return (
+            timestamp,
+            String(line[bodyStart...]).trimmingCharacters(in: .whitespaces)
+        )
+    }
+
+    private func parseSharedFieldsLine(
+        _ line: String,
+        prefix: String
+    ) -> (timestamp: Date?, fields: [String: String])? {
+        let parsed = parseSharedLine(line)
+        guard parsed.body.hasPrefix(prefix) else { return nil }
+        let payload = parsed.body.dropFirst(prefix.count)
         var metadata: [String: String] = [:]
 
         for token in payload.split(separator: " ") {
@@ -315,6 +393,6 @@ public actor ConcurrentLogManager {
             metadata[key] = value.replacingOccurrences(of: "_", with: " ")
         }
 
-        return metadata.isEmpty ? nil : metadata
+        return metadata.isEmpty ? nil : (parsed.timestamp, metadata)
     }
 }

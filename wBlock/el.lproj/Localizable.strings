@@ -721,7 +721,7 @@
 "Syncing iCloud configuration…" = "Συγχρονισμός διαμόρφωσης iCloud…";
 "System" = "Σύστημα";
 "Tap to review userscript guidelines." = "Πατήστε για να ελέγξετε τις οδηγίες για τον κώδικα χρήστη.";
-"Telemetry: %@" = "Τηλεμετρία: %@";
+"Auto-update: %@" = "Αυτόματη ενημέρωση: %@";
 "Tell us where you browse so we can enable the right regional filters." = "Πείτε μας πού περιηγείστε, ώστε να μπορέσουμε να ενεργοποιήσουμε τα σωστά τοπικά φίλτρα.";
 "Temporarily disable all content blockers without turning them off in Safari Settings." = "Προσωρινή απενεργοποίηση όλων των αποκλεισμών (αποκλειστές περιεχομένου, userscripts, στυλ) χωρίς να κλείσετε τις επεκτάσεις στις Ρυθμίσεις Safari.";
 "That doesn't look like a filter list." = "Δεν μοιάζει με λίστα φίλτρων.";

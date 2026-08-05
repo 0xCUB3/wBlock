@@ -115,6 +115,7 @@ public actor SharedAutoUpdateManager {
 
     public enum AutoUpdateCompletionResult: Sendable, Equatable {
         case appliedUpdates
+        case stagedUpdates
         case noFilterUpdates
         case noSelectedFilters
     }
@@ -671,9 +672,13 @@ public actor SharedAutoUpdateManager {
 
         if BlockingPauseStore.isPaused() {
             let persistedOutputsContainRules = contentBlockerOutputsContainRules()
+            let helperStagedOutputs = persistedOutputsContainRules && isExternalHelperTrigger(trigger)
             let repairedOutputs = persistedOutputsContainRules
-                ? await clearPersistedBlockingOutputsForPause()
+                ? await clearPersistedBlockingOutputsForPause(reloadContentBlockers: !helperStagedOutputs)
                 : false
+            if helperStagedOutputs && repairedOutputs {
+                await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
+            }
             appendSharedLog(
                 repairedOutputs
                     ? "Auto-update skipped: blocking is paused; cleared persisted blocker outputs"
@@ -872,14 +877,19 @@ public actor SharedAutoUpdateManager {
             guard !updatedFilterSet.isEmpty else {
                 var reloadStatus = "skipped"
                 if shouldForce || contentBlockerOutputsNeedRepair() {
-                    try checkBudget(
-                        policy,
-                        phase: AutoUpdateBudgetPhase.existingOutputReload,
-                        requiredTime: max(policy.minimumTimeForReloadRetry, policy.minimumTimeForAdvancedEngine)
-                    )
-                    try throwIfCancelled()
-                    try await reloadExistingContentBlockers(policy: policy)
-                    reloadStatus = "ok"
+                    if isExternalHelperTrigger(trigger) {
+                        await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
+                        reloadStatus = "pending app launch"
+                    } else {
+                        try checkBudget(
+                            policy,
+                            phase: AutoUpdateBudgetPhase.existingOutputReload,
+                            requiredTime: max(policy.minimumTimeForReloadRetry, policy.minimumTimeForAdvancedEngine)
+                        )
+                        try throwIfCancelled()
+                        try await reloadExistingContentBlockers(policy: policy)
+                        reloadStatus = "ok"
+                    }
                 }
 
                 let completionTime = Date().timeIntervalSince1970
@@ -901,7 +911,7 @@ public actor SharedAutoUpdateManager {
 
                 try requireUserScriptsBudget()
                 let scriptsResult = await autoUpdateUserScriptsIfNeeded()
-                if scriptsResult.updated > 0 {
+                if reloadStatus == "ok" || scriptsResult.updated > 0 {
                     await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(Date().timeIntervalSince1970))
                 }
                 appendSharedLog(
@@ -958,9 +968,11 @@ public actor SharedAutoUpdateManager {
             await saveFilterListsToProtobuf(merged)
             try await saveAutoUpdateStateImmediately(context: AutoUpdateBudgetPhase.finalStateSave)
             try throwIfCancelled()
+            let helperStagedUpdates = isExternalHelperTrigger(trigger)
             let rebuildSummary = try await rebuildAndReload(
                 selectedFilters: merged.filter { $0.isSelected },
-                policy: policy
+                policy: policy,
+                reloadContentBlockers: !helperStagedUpdates
             )
             try throwIfCancelled()
 
@@ -969,17 +981,22 @@ public actor SharedAutoUpdateManager {
 
             let successTime = Date().timeIntervalSince1970
             try requireFinalSaveBudget()
-            await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(successTime))
-            var nextEligibleTime = successTime + interval * 3600
             let nextCheckInSeconds: Int
-            if hadErrors {
-                let retryDelaySeconds = min(3600.0, max(900.0, interval * 3600 * 0.25))
-                nextEligibleTime = min(nextEligibleTime, successTime + retryDelaySeconds)
-                nextCheckInSeconds = Int(retryDelaySeconds)
+            if helperStagedUpdates {
+                await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
+                nextCheckInSeconds = 0
             } else {
-                nextCheckInSeconds = Int(interval * 3600)
+                await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(successTime))
+                var nextEligibleTime = successTime + interval * 3600
+                if hadErrors {
+                    let retryDelaySeconds = min(3600.0, max(900.0, interval * 3600 * 0.25))
+                    nextEligibleTime = min(nextEligibleTime, successTime + retryDelaySeconds)
+                    nextCheckInSeconds = Int(retryDelaySeconds)
+                } else {
+                    nextCheckInSeconds = Int(interval * 3600)
+                }
+                await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
             }
-            await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
             invalidateStatusCache()
 
             appendSharedLog(
@@ -996,7 +1013,7 @@ public actor SharedAutoUpdateManager {
                 "run_result",
                 fields: [
                     "trigger": trigger,
-                    "result": "applied_updates",
+                    "result": helperStagedUpdates ? "staged_updates" : "applied_updates",
                     "forced": shouldForce ? "true" : "false",
                     "checked_filters": "\(updateResult.checkedCount)",
                     "updated_filters": "\(updatedFilterSet.count)",
@@ -1010,7 +1027,7 @@ public actor SharedAutoUpdateManager {
 
             return await finishStartedRun(.completed(
                 AutoUpdateCompletion(
-                    result: .appliedUpdates,
+                    result: helperStagedUpdates ? .stagedUpdates : .appliedUpdates,
                     checkedFilters: updateResult.checkedCount,
                     updatedFilters: updatedFilterSet.count,
                     updatedScripts: scriptsResult.updated,
@@ -1562,7 +1579,7 @@ public actor SharedAutoUpdateManager {
         return false
     }
 
-    private func clearPersistedBlockingOutputsForPause() async -> Bool {
+    private func clearPersistedBlockingOutputsForPause(reloadContentBlockers: Bool) async -> Bool {
         #if os(iOS)
         let platform: Platform = .iOS
         #else
@@ -1595,11 +1612,13 @@ public actor SharedAutoUpdateManager {
                 continue
             }
 
-            let reloadResult = await ContentBlockerService.reloadWithRetry(
-                identifier: target.bundleIdentifier
-            )
-            if !reloadResult.success {
-                failedTargets.append(target.displayName)
+            if reloadContentBlockers {
+                let reloadResult = await ContentBlockerService.reloadWithRetry(
+                    identifier: target.bundleIdentifier
+                )
+                if !reloadResult.success {
+                    failedTargets.append(target.displayName)
+                }
             }
         }
 
@@ -1761,7 +1780,8 @@ public actor SharedAutoUpdateManager {
 
     private func rebuildAndReload(
         selectedFilters: [FilterList],
-        policy: AutoUpdateExecutionPolicy
+        policy: AutoUpdateExecutionPolicy,
+        reloadContentBlockers: Bool
     ) async throws -> RebuildAndReloadSummary {
         try Task.checkCancellation()
         #if os(iOS)
@@ -1853,10 +1873,20 @@ public actor SharedAutoUpdateManager {
                 advanced.append(snippet)
             }
 
-            let reload = await ContentBlockerService.reloadWithRetry(
-                identifier: target.bundleIdentifier,
-                maxRetries: 6
-            )
+            var reloadMs = 0
+            var reloadAttempts = 0
+            if reloadContentBlockers {
+                let reload = await ContentBlockerService.reloadWithRetry(
+                    identifier: target.bundleIdentifier,
+                    maxRetries: 6
+                )
+                reloadMs = reload.durationMs
+                reloadAttempts = reload.attempts
+                if !reload.success {
+                    failedIDs.append(target.bundleIdentifier)
+                    failedNames.append(target.displayName)
+                }
+            }
             metrics.append(
                 RebuildTargetMetrics(
                     targetName: target.displayName,
@@ -1864,15 +1894,11 @@ public actor SharedAutoUpdateManager {
                     inputWriteMs: result.inputWriteMs,
                     inputBytes: result.inputBytes,
                     conversionMs: result.conversionMs,
-                    reloadMs: reload.durationMs,
-                    reloadAttempts: reload.attempts,
+                    reloadMs: reloadMs,
+                    reloadAttempts: reloadAttempts,
                     safariRules: conversion.safariRulesCount
                 )
             )
-            if !reload.success {
-                failedIDs.append(target.bundleIdentifier)
-                failedNames.append(target.displayName)
-            }
         }
         if !failedIDs.isEmpty {
             appendSharedLog("Rebuild reload failures: \(failedNames.joined(separator: ", "))")

@@ -486,10 +486,11 @@ public enum WebExtensionRequestHandler {
     }
 
     private static func shouldIgnoreExtensionDiagnostic(_ fields: [String: String]) -> Bool {
-        fields["event"] == "support_decision"
-            && fields["source"] == "background"
-            && fields["outcome"] == "unsupported"
-            && fields["reason"] == "missing_url"
+        guard fields["event"] == "support_decision",
+              fields["source"] == "background",
+              fields["outcome"] == "unsupported" else { return false }
+        return fields["reason"] == "missing_url"
+            || (fields["reason"] == "unsupported_scheme" && fields["protocol"] == "favorites:")
     }
 
 

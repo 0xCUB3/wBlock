@@ -721,7 +721,7 @@
 "Syncing iCloud configuration…" = "正在同步 iCloud 配置…";
 "System" = "系统";
 "Tap to review userscript guidelines." = "点按以查看用户脚本指南。";
-"Telemetry: %@" = "遥测: %@";
+"Auto-update: %@" = "自动更新：%@";
 "Tell us where you browse so we can enable the right regional filters." = "告诉我们你主要浏览哪些地区，以便启用合适的地区过滤器。";
 "Temporarily disable all content blockers without turning them off in Safari Settings." = "暂时关闭所有拦截（内容拦截器、用户脚本和样式），而无需在 Safari 设置中关闭扩展。";
 "That doesn't look like a filter list." = "这看起来不像一个过滤器列表。";

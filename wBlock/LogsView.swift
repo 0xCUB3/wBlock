@@ -27,6 +27,7 @@ struct LogsView: View {
     @State private var selectedCategory: LogCategory? = nil
     @State private var searchText = ""
     @State private var showingShareSheet = false
+    @State private var exportText = ""
     @Environment(\.dismiss) private var dismiss
 
     // Cached filtered entries to avoid repeated filtering on scroll
@@ -90,7 +91,12 @@ struct LogsView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack {
                         Button {
-                            showingShareSheet = true
+                            Task {
+                                exportText = await ConcurrentLogManager.shared.exportAsText(
+                                    entries: Array(filteredEntries.reversed())
+                                )
+                                showingShareSheet = true
+                            }
                         } label: {
                             Image(systemName: "square.and.arrow.up")
                         }
@@ -150,7 +156,7 @@ struct LogsView: View {
         }
         #if os(iOS)
         .sheet(isPresented: $showingShareSheet) {
-            ShareSheet(items: [exportLogsAsText()])
+            ShareSheet(items: [exportText])
         }
         #endif
     }
@@ -249,10 +255,6 @@ struct LogsView: View {
         entries = await ConcurrentLogManager.shared.getEntries()
     }
 
-    private func exportLogsAsText() -> String {
-        return entries.map { $0.exportFormat }.joined(separator: "\n\n")
-    }
-
     #if os(macOS)
     private func exportLogsToFile() {
         let savePanel = NSSavePanel()
@@ -264,7 +266,9 @@ struct LogsView: View {
             guard response == .OK, let url = savePanel.url else { return }
 
             Task {
-                let logsText = await ConcurrentLogManager.shared.exportAsText()
+                let logsText = await ConcurrentLogManager.shared.exportAsText(
+                    entries: Array(filteredEntries.reversed())
+                )
                 do {
                     try url.withSecurityScopedAccess { accessibleURL in
                         try logsText.write(to: accessibleURL, atomically: true, encoding: .utf8)
