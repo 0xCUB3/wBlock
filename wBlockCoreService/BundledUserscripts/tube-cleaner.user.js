@@ -50,6 +50,7 @@
     var LOG_PREFIX = '[Tube Cleaner]';
     var STORAGE_AUDIO = 'wblock.tubeCleaner.audioOnly';
     var STORAGE_QUALITY = 'wblock.tubeCleaner.quality';
+    var STORAGE_POSITION = 'wblock.tubeCleaner.position.';
     var ATTR_CLEANED = 'data-wblock-tc-cleaned';
 
     var debug = !!window.__wblockTubeCleanerDebug;
@@ -246,6 +247,7 @@
 
     function setPreferredQuality(q) {
         try { localStorage.setItem(STORAGE_QUALITY, q); } catch (e) { /* ignore */ }
+        if (preferredQualityAttempt && preferredQualityAttempt.stop) preferredQualityAttempt.stop();
     }
 
     // ------------------------------------------------------------------
@@ -576,6 +578,136 @@
     var activeVideo = null;
     var playerObserver = null;
     var activeCleanups = [];
+    var playbackCarry = null;
+
+    function youtubeVideoIdentity(player) {
+        var id = null;
+        var hasUrlIdentity = false;
+        try {
+            var pathMatch = location.pathname.match(/^\/(?:shorts|embed)\/([A-Za-z0-9_-]{11})(?:\/|$)/);
+            var queryId = new URLSearchParams(location.search).get('v');
+            if (/^\/watch(?:\/|$)/.test(location.pathname)) {
+                hasUrlIdentity = !!queryId;
+                if (queryId && /^[A-Za-z0-9_-]{11}$/.test(queryId)) id = queryId;
+            } else if (pathMatch) {
+                hasUrlIdentity = true;
+                id = pathMatch[1];
+            } else if (queryId && /^[A-Za-z0-9_-]{11}$/.test(queryId)) {
+                hasUrlIdentity = true;
+                id = queryId;
+            }
+        } catch (e) { /* use player data below */ }
+        if (!id && !hasUrlIdentity) {
+            try {
+                var data = player && typeof player.getVideoData === 'function' ? player.getVideoData() : null;
+                if (data && data.video_id) id = String(data.video_id);
+            } catch (e) { /* ignore */ }
+        }
+        return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+    }
+
+    function readPlaybackPosition(videoId) {
+        try {
+            var value = JSON.parse(localStorage.getItem(STORAGE_POSITION + videoId) || 'null');
+            return value && isFinite(value.time) && value.time > 0 ? Number(value.time) : null;
+        } catch (e) { return null; }
+    }
+
+    function writePlaybackPosition(videoId, time, duration, ended) {
+        try {
+            if (ended || (duration > 0 && time >= duration - 0.5)) {
+                localStorage.removeItem(STORAGE_POSITION + videoId);
+            } else if (isFinite(time)) {
+                if (time > 0.25) {
+                    localStorage.setItem(STORAGE_POSITION + videoId, JSON.stringify({ time: time, updatedAt: Date.now() }));
+                } else {
+                    localStorage.removeItem(STORAGE_POSITION + videoId);
+                }
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    function setupPlaybackPosition(player, video) {
+        var videoId = youtubeVideoIdentity(player);
+        if (!videoId) { playbackCarry = null; return; }
+        var carried = playbackCarry && playbackCarry.identity === videoId ? playbackCarry : null;
+        playbackCarry = null;
+        var cancelled = false;
+        var restored = false;
+        var stateApplied = !carried;
+        var writeTimer = null;
+        var saved = readPlaybackPosition(videoId);
+
+        function restore() {
+            if (cancelled || restored || activeVideo !== video || youtubeVideoIdentity(player) !== videoId) return;
+            if (video.readyState < 1 || !isFinite(video.duration) || video.duration <= 0) return;
+            restored = true;
+            var positionApplied = true;
+            if (saved !== null) {
+                if (saved >= video.duration - 0.5) {
+                    writePlaybackPosition(videoId, 0, video.duration, true);
+                } else {
+                    try { video.currentTime = Math.min(saved, Math.max(0, video.duration - 0.1)); }
+                    catch (e) { positionApplied = false; }
+                }
+            }
+            if (!positionApplied) { restored = false; return; }
+            applyState();
+        }
+
+        function applyState() {
+            if (cancelled || stateApplied || !carried || activeVideo !== video) return;
+            stateApplied = true;
+            try {
+                if (carried.paused) video.pause();
+                else if (video.paused) {
+                    var request = video.play();
+                    if (request && request.catch) request.catch(function () { /* autoplay policy */ });
+                }
+            } catch (e) { /* preserve state when the browser permits it */ }
+        }
+
+        function persist(force) {
+            if (writeTimer !== null) { clearTimeout(writeTimer); writeTimer = null; }
+            if (cancelled && !force) return;
+            writePlaybackPosition(videoId, Number(video.currentTime), Number(video.duration), video.ended);
+        }
+
+        function schedulePersist() {
+            if (cancelled || writeTimer !== null) return;
+            writeTimer = setTimeout(function () { writeTimer = null; persist(false); }, 1000);
+        }
+
+        function onEnded() { persist(true); }
+        function onTimeUpdate() { schedulePersist(); }
+        function onPause() { schedulePersist(); }
+        function onMetadata() { restore(); }
+        function onPageHide() { persist(true); }
+
+        video._wblockPlaybackState = { identity: videoId, paused: video.paused };
+        video.addEventListener('loadedmetadata', onMetadata);
+        video.addEventListener('durationchange', onMetadata);
+        video.addEventListener('canplay', onMetadata);
+        video.addEventListener('timeupdate', onTimeUpdate);
+        video.addEventListener('pause', onPause);
+        video.addEventListener('ended', onEnded);
+        window.addEventListener('pagehide', onPageHide);
+        restore();
+
+        registerCleanup(function () {
+            if (writeTimer !== null) clearTimeout(writeTimer);
+            cancelled = true;
+            persist(true);
+            video.removeEventListener('loadedmetadata', onMetadata);
+            video.removeEventListener('durationchange', onMetadata);
+            video.removeEventListener('canplay', onMetadata);
+            video.removeEventListener('timeupdate', onTimeUpdate);
+            video.removeEventListener('pause', onPause);
+            video.removeEventListener('ended', onEnded);
+            window.removeEventListener('pagehide', onPageHide);
+            delete video._wblockPlaybackState;
+        });
+    }
 
     function registerCleanup(fn) {
         activeCleanups.push(fn);
@@ -583,6 +715,11 @@
 
     function releaseActiveVideo() {
         var previousVideo = activeVideo;
+        if (previousVideo && previousVideo._wblockPlaybackState) {
+            previousVideo._wblockPlaybackState.paused = previousVideo.paused;
+            playbackCarry = previousVideo._wblockPlaybackState;
+        }
+        if (qualityRequest) cancelQualityRequest();
         var cleanups = activeCleanups;
         activeCleanups = [];
         for (var i = 0; i < cleanups.length; i++) {
@@ -612,9 +749,9 @@
         if (!isHarness && (!isWatchPage || location.hostname === 'music.youtube.com')) return;
         if (/^\/shorts(?:\/|$)/.test(location.pathname)) return;
 
-        var baseAspect = 0;
         var hosts = [];
         var updateFrame = null;
+        var resizeObserver = null;
         var contentAnchor = null;
 
         function clearLayout() {
@@ -627,6 +764,7 @@
                 hosts[i].classList.remove('wblock-tc-aspect-host');
                 hosts[i].style.removeProperty('--wblock-tc-player-height');
             }
+            hosts = [];
         }
 
         // Find the first watch-page block after the player. Known desktop and
@@ -668,7 +806,7 @@
         // same box as #movie_player. This moves watch metadata down with the
         // taller player without touching unrelated page columns or the body.
         function findHosts(rect) {
-            if (hosts.length || !rect.width || !rect.height) return;
+            if (!rect.width || !rect.height) return;
             var node = player;
             for (var depth = 0; node && depth < 8; depth++) {
                 if (node === document.body || node === document.documentElement) break;
@@ -682,8 +820,8 @@
 
         // Mobile YouTube keeps the player in a body-level fixed container and
         // reserves flow space with a separate .player-placeholder div inside
-        // ytm-watch. This element may not exist when findHosts first runs, so
-        // check for it on every layout update and add it to the host list.
+        // ytm-watch. Rebuild this list after each geometry change so recycled
+        // containers do not retain the old video's sizing.
         function ensurePlaceholderHost() {
             var placeholder = document.querySelector('.player-placeholder');
             if (placeholder && !player.contains(placeholder) && !placeholder.contains(player)) {
@@ -695,15 +833,22 @@
             }
         }
 
+        function observeGeometryHosts() {
+            if (!resizeObserver) return;
+            for (var i = 0; i < hosts.length; i++) {
+                try { resizeObserver.observe(hosts[i]); } catch (e) { /* ignore recycled nodes */ }
+            }
+        }
+
         function updateLayout() {
             updateFrame = null;
+            clearLayout();
             var rect = player.getBoundingClientRect();
-            if (!rect.width || !rect.height) { clearLayout(); return; }
-            if (!baseAspect) {
-                baseAspect = rect.width / rect.height;
-                findHosts(rect);
-            }
+            if (!rect.width || !rect.height) return;
+            var baseAspect = rect.width / rect.height;
+            findHosts(rect);
             ensurePlaceholderHost();
+            observeGeometryHosts();
 
             var fullscreen = document.fullscreenElement || document.webkitFullscreenElement ||
                 player.classList.contains('ytp-fullscreen') ||
@@ -724,9 +869,6 @@
                 return;
             }
 
-            // Apply expansion. Setting the same CSS custom property value is a
-            // visual no-op, so there is no need to clear first (which would
-            // cause a one-frame flash back to 16:9 on every resize event).
             var heightValue = Math.round(targetHeight * 100) / 100 + 'px';
             for (var i = 0; i < hosts.length; i++) {
                 hosts[i].style.setProperty('--wblock-tc-player-height', heightValue);
@@ -775,6 +917,13 @@
         video.addEventListener('resize', scheduleUpdate);
         video.addEventListener('emptied', scheduleUpdate);
         window.addEventListener('resize', scheduleUpdate);
+        if (typeof ResizeObserver !== 'undefined') {
+            try {
+                resizeObserver = new ResizeObserver(scheduleUpdate);
+                resizeObserver.observe(player);
+                if (player.parentElement) resizeObserver.observe(player.parentElement);
+            } catch (e) { resizeObserver = null; }
+        }
         document.addEventListener('fullscreenchange', scheduleUpdate);
         document.addEventListener('webkitfullscreenchange', scheduleUpdate);
         scheduleUpdate();
@@ -786,6 +935,8 @@
             window.removeEventListener('resize', scheduleUpdate);
             document.removeEventListener('fullscreenchange', scheduleUpdate);
             document.removeEventListener('webkitfullscreenchange', scheduleUpdate);
+            if (resizeObserver) { try { resizeObserver.disconnect(); } catch (e) { /* ignore */ } }
+            resizeObserver = null;
             if (updateFrame !== null) cancelAnimationFrame(updateFrame);
             clearLayout();
         });
@@ -797,6 +948,8 @@
     function activateVideo(player, video) {
         releaseActiveVideo();
         activeVideo = video;
+        setupPlaybackPosition(player, video);
+        registerCleanup(cancelQualityRequest);
         forceNativeControls(video);
         guardNativeControls(video);
         setupVideoAspectLayout(player, video);
@@ -1008,12 +1161,7 @@
     }
 
     function sponsorBlockVideoId() {
-        try {
-            var id = new URLSearchParams(location.search).get('v');
-            if (id && /^[A-Za-z0-9_-]{11}$/.test(id)) return id;
-            var match = location.pathname.match(/^\/(?:embed|shorts)\/([A-Za-z0-9_-]{11})/);
-            return match ? match[1] : null;
-        } catch (e) { return null; }
+        return youtubeVideoIdentity(findPlayer());
     }
 
     function sponsorBlockChannelId() {
@@ -1960,6 +2108,8 @@
     }
 
     function currentChapterVideoId() {
+        var identity = youtubeVideoIdentity(findPlayer());
+        if (identity) return identity;
         // The URL changes before YouTube's persistent player finishes its SPA
         // swap, so prefer it when a watch-video id is available.
         try {
@@ -2490,13 +2640,8 @@
         var video = player.querySelector('video');
         if (!video) return;
 
-        // Check if we already processed this video
-        var videoId = '';
-        try {
-            var params = new URLSearchParams(location.search);
-            videoId = params.get('v') || '';
-        } catch (e) { /* ignore */ }
-
+        // Check if we already processed this video.
+        var videoId = youtubeVideoIdentity(player) || '';
         if (player.getAttribute(ATTR_CLEANED) === videoId && activeVideo === video) return;
         player.setAttribute(ATTR_CLEANED, videoId);
 
@@ -2531,7 +2676,7 @@
         // to the current video.
         if (IS_IOS) {
             if (getPreferredQuality() !== 'auto') { setPreferredQuality('auto'); }
-            setQuality('auto');
+            try { localStorage.removeItem('yt-player-quality'); } catch (e) { /* ignore */ }
         } else {
             var qualityDelay = setTimeout(function () {
                 qualityDelay = null;
@@ -2728,115 +2873,156 @@
         return false;
     }
 
-    function setQuality(target) {
-        var player = findPlayer();
-        if (!player) { warn('setQuality: no player'); return false; }
+    var qualityGeneration = 0;
+    var qualityRequest = null;
+    var preferredQualityAttempt = null;
 
-        if (target === 'auto') {
-            // Reset to auto by setting a wide range via API and remove the
-            // fixed-quality bias previously written by Tube Cleaner.
-            if (player.setPlaybackQualityRange) {
-                try { player.setPlaybackQualityRange('tiny', 'hd2160'); } catch (e) { /* ignore */ }
+    function cancelQualityRequest() {
+        var request = qualityRequest;
+        if (!request) return;
+        request.cancelled = true;
+        qualityGeneration++;
+        for (var i = 0; i < request.timers.length; i++) clearTimeout(request.timers[i]);
+        request.timers = [];
+        closeSettingsPanel(request.player);
+        qualityRequest = null;
+        for (var j = 0; j < request.callbacks.length; j++) request.callbacks[j](false);
+    }
+
+    function finishQualityRequest(request, worked) {
+        if (qualityRequest !== request || request.cancelled || request.generation !== qualityGeneration) return;
+        for (var i = 0; i < request.timers.length; i++) clearTimeout(request.timers[i]);
+        request.timers = [];
+        qualityRequest = null;
+        for (var j = 0; j < request.callbacks.length; j++) request.callbacks[j](worked);
+    }
+
+    function setQuality(target, callback) {
+        var player = findPlayer();
+        if (!player || !activeVideo) {
+            warn('setQuality: no player');
+            if (callback) callback(false);
+            return false;
+        }
+        if (qualityRequest) {
+            if (qualityRequest.player === player && qualityRequest.target === target) {
+                if (callback) qualityRequest.callbacks.push(callback);
+                return true;
             }
-            try { localStorage.removeItem('yt-player-quality'); } catch (e) { /* ignore */ }
-            return true;
+            cancelQualityRequest();
         }
 
-        var levels = qualityMenuLevels();
-        if (levels.indexOf(target) === -1) {
-            // Target not available, pick the closest lower quality
-            var targetIdx = QUALITY_ORDER.indexOf(target);
-            for (var i = targetIdx + 1; i < QUALITY_ORDER.length; i++) {
-                if (levels.indexOf(QUALITY_ORDER[i]) !== -1) {
-                    target = QUALITY_ORDER[i];
-                    break;
+        if (target !== 'auto') {
+            var levels = qualityMenuLevels();
+            if (levels.indexOf(target) === -1) {
+                var targetIdx = QUALITY_ORDER.indexOf(target);
+                for (var i = targetIdx + 1; i < QUALITY_ORDER.length; i++) {
+                    if (levels.indexOf(QUALITY_ORDER[i]) !== -1) {
+                        target = QUALITY_ORDER[i];
+                        break;
+                    }
                 }
             }
+            log('setQuality:', target, 'available:', levels);
         }
 
-        log('setQuality:', target, 'available:', levels);
+        var request = {
+            player: player, video: activeVideo, target: target, generation: ++qualityGeneration,
+            cancelled: false, timers: [], callbacks: callback ? [callback] : []
+        };
+        qualityRequest = request;
 
-        var worked = false;
-
-        // Approach 1: Simulate clicks on YouTube's quality UI (most reliable)
-        // This is what YouTube Auto HD does and it works on the SABR player.
-        try {
-            if (openSettingsMenu(player)) {
-                setTimeout(function () {
-                    if (clickQualityMenuItem(player)) {
-                        setTimeout(function () {
-                            if (clickQualityOption(player, target)) {
-                                worked = true;
-                                log('UI click approach succeeded for', target);
-                            }
-                            // Close the settings panel
-                            setTimeout(function () {
-                                closeSettingsPanel(player);
-                            }, 100);
-                        }, 200);
-                    } else {
-                        // If we can't find the quality menu, close settings
-                        closeSettingsPanel(player);
+        function current() {
+            return qualityRequest === request && !request.cancelled &&
+                request.generation === qualityGeneration && activeVideo === request.video;
+        }
+        function later(fn, delay) {
+            request.timers.push(setTimeout(function () {
+                if (current()) fn();
+            }, delay));
+        }
+        function fallback() {
+            if (!current()) return;
+            closeSettingsPanel(player);
+            var worked = false;
+            try {
+                if (target === 'auto') {
+                    if (player.setPlaybackQualityRange) {
+                        player.setPlaybackQualityRange('tiny', 'hd2160');
+                        worked = true;
                     }
-                }, 200);
+                    if (getCurrentQuality() !== 'auto' && player.setPlaybackQuality) {
+                        player.setPlaybackQuality('auto');
+                        worked = true;
+                    }
+                    if (worked) localStorage.removeItem('yt-player-quality');
+                } else if (player.setPlaybackQualityRange) {
+                    player.setPlaybackQualityRange(target, target);
+                    worked = true;
+                    if (getCurrentQuality() !== target && player.setPlaybackQuality) {
+                        player.setPlaybackQuality(target);
+                    }
+                } else if (player.setPlaybackQuality) {
+                    player.setPlaybackQuality(target);
+                    worked = true;
+                }
+            } catch (e) { log('quality API fallback failed', e); }
+            if (worked && target !== 'auto' && !IS_IOS) {
+                try {
+                    localStorage.setItem('yt-player-quality', JSON.stringify({
+                        quality: target, previousQuality: 'auto', expiry: Date.now() + 86400000
+                    }));
+                } catch (e) { /* ignore */ }
             }
-        } catch (e) { warn('UI click approach failed', e); }
-
-        // Approach 2: setPlaybackQualityRange (may work on non-SABR players)
-        if (player.setPlaybackQualityRange) {
-            try {
-                log('calling setPlaybackQualityRange', target, target);
-                player.setPlaybackQualityRange(target, target);
-                worked = true;
-            } catch (e) { /* ignore */ }
+            finishQualityRequest(request, worked);
         }
 
-        // Approach 3: setPlaybackQuality (older API — no-op on SABR)
-        if (player.setPlaybackQuality) {
-            try {
-                log('calling setPlaybackQuality', target);
-                player.setPlaybackQuality(target);
-            } catch (e) { /* ignore */ }
+        // The YouTube menu is authoritative for SABR. API calls are used only
+        // after a menu step is unavailable or fails, never in parallel with it.
+        try {
+            if (!openSettingsMenu(player)) { fallback(); return true; }
+            later(function () {
+                if (!clickQualityMenuItem(player)) { fallback(); return; }
+                later(function () {
+                    if (!clickQualityOption(player, target)) { fallback(); return; }
+                    later(function () {
+                        closeSettingsPanel(player);
+                        finishQualityRequest(request, true);
+                    }, 100);
+                }, 200);
+            }, 200);
+        } catch (e) {
+            warn('quality UI failed', e);
+            fallback();
         }
-
-        // Approach 4: set the yt-player-quality in localStorage as a desktop
-        // bias. Do not persist fixed iOS ranges: retrying them on the next load
-        // can stall YouTube's ManagedMediaSource/SABR pipeline.
-        if (!IS_IOS) {
-            try {
-                localStorage.setItem('yt-player-quality', JSON.stringify({
-                    quality: target,
-                    previousQuality: 'auto',
-                    expiry: Date.now() + 86400000
-                }));
-            } catch (e) { /* ignore */ }
-        }
-
-        log('setQuality complete, UI click:', worked);
-        return worked;
+        return true;
     }
 
     function applyPreferredQuality() {
         var preferred = getPreferredQuality();
-        if (preferred === 'auto') return;
-        // Retry a few times — the player may not be fully ready.
-        var attempts = 0;
-        var timer = null;
+        if (preferred === 'auto' || preferredQualityAttempt) return;
+        var attempt = { attempts: 0, timer: null, waiting: false };
+        preferredQualityAttempt = attempt;
         function stop() {
-            if (timer !== null) {
-                clearInterval(timer);
-                timer = null;
-            }
+            if (attempt.timer !== null) clearInterval(attempt.timer);
+            attempt.timer = null;
+            if (preferredQualityAttempt === attempt) preferredQualityAttempt = null;
         }
-        timer = setInterval(function () {
-            attempts++;
-            var current = getCurrentQuality();
-            if (current === preferred || attempts > 10) {
+        attempt.stop = stop;
+        function tryQuality() {
+            if (attempt.waiting || qualityRequest) return;
+            attempt.attempts++;
+            if (getCurrentQuality() === preferred || attempt.attempts > 10) {
                 stop();
                 return;
             }
-            setQuality(preferred);
-        }, 500);
+            attempt.waiting = true;
+            setQuality(preferred, function (worked) {
+                attempt.waiting = false;
+                if (worked || getCurrentQuality() === preferred || attempt.attempts > 10) stop();
+            });
+        }
+        attempt.timer = setInterval(tryQuality, 500);
         registerCleanup(stop);
     }
 

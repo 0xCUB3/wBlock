@@ -150,7 +150,8 @@
                 typeof video.webkitSetPresentationMode === 'function') {
                 video.webkitSetPresentationMode('picture-in-picture');
             } else if (video.requestPictureInPicture) {
-                video.requestPictureInPicture();
+                var request = video.requestPictureInPicture();
+                if (request && request.catch) request.catch(function () {});
             }
         } catch (e) { /* ignore */ }
     }
@@ -163,7 +164,8 @@
                 typeof video.webkitSetPresentationMode === 'function') {
                 video.webkitSetPresentationMode('inline');
             } else if (document.pictureInPictureElement) {
-                document.exitPictureInPicture();
+                var result = document.exitPictureInPicture();
+                if (result && result.catch) result.catch(function () {});
             }
         } catch (e) { /* ignore */ }
     }
@@ -184,6 +186,7 @@
         video._wblockControlsGuarded = false;
         video._wblockControlsPatched = false;
         video._wblockClickGuard = false;
+        video._wblockChromeWatch = false;
         video._wblockEnhanced = false;
         video._wblockUpgradeable = false;
         video._wblockCleaned = false;
@@ -314,7 +317,7 @@
     function loadPlaybackPreferences() {
         // Null media values mean "preserve the site's current state" until the
         // user changes that control in a cleaned player for the first time.
-        var defaults = { playbackRate: null, volume: null, subtitleLanguage: '', backgroundPlayback: true };
+        var defaults = { playbackRate: null, volume: null, muted: null, subtitleLanguage: null, backgroundPlayback: true };
         try {
             var saved = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || '{}');
             for (var key in saved) if (Object.prototype.hasOwnProperty.call(defaults, key)) defaults[key] = saved[key];
@@ -356,6 +359,7 @@
         var applying = true;
         var lastResumeSave = 0;
         var resumeApplied = false;
+        var resumeIdentityValue = null;
 
         if (typeof preferences.playbackRate === 'number' && preferences.playbackRate > 0) try {
             video.playbackRate = Math.max(0.25, Math.min(4, preferences.playbackRate));
@@ -363,39 +367,50 @@
         if (typeof preferences.volume === 'number') try {
             video.volume = Math.max(0, Math.min(1, preferences.volume));
         } catch (e) { /* ignore */ }
+        if (typeof preferences.muted === 'boolean') try {
+            video.muted = preferences.muted;
+        } catch (e) { /* ignore */ }
         setTimeout(function () { applying = false; }, 0);
 
         function applySubtitlePreference() {
             var language = loadPlaybackPreferences().subtitleLanguage;
-            if (!language || !video.textTracks) return;
+            if (language === null || !video.textTracks) return;
             for (var i = 0; i < video.textTracks.length; i++) {
                 var track = video.textTracks[i];
                 if (track.kind !== 'subtitles' && track.kind !== 'captions') continue;
-                if (track.language === language) {
-                    try { track.mode = 'showing'; } catch (e) { /* ignore */ }
-                    return;
-                }
+                try { track.mode = language && track.language === language ? 'showing' : 'hidden'; } catch (e) { /* ignore */ }
             }
         }
 
         function restoreResumePosition() {
+            var identity = resumeIdentity(video);
+            if (identity !== resumeIdentityValue) {
+                resumeIdentityValue = identity;
+                resumeApplied = false;
+                lastResumeSave = 0;
+            }
+            applySubtitlePreference();
             if (resumeApplied || !isFinite(video.duration) || video.duration < 60) return;
             resumeApplied = true;
             try {
                 var entries = JSON.parse(localStorage.getItem(RESUME_KEY) || '{}');
-                var position = Number(entries[resumeIdentity(video)] || 0);
+                var position = Number(entries[identity] || 0);
                 if (position > 10 && position < video.duration - 15) video.currentTime = position;
             } catch (e) { /* ignore */ }
-            applySubtitlePreference();
         }
 
         function saveResumePosition(force) {
             var now = Date.now();
+            var id = resumeIdentity(video);
+            if (id !== resumeIdentityValue) {
+                resumeIdentityValue = id;
+                resumeApplied = false;
+                lastResumeSave = 0;
+            }
             if (!force && now - lastResumeSave < 5000) return;
             lastResumeSave = now;
             try {
                 var entries = JSON.parse(localStorage.getItem(RESUME_KEY) || '{}');
-                var id = resumeIdentity(video);
                 if (video.ended || video.currentTime >= video.duration - 10) delete entries[id];
                 else if (video.currentTime > 10 && isFinite(video.duration) && video.duration >= 60) entries[id] = Math.floor(video.currentTime);
                 var keys = Object.keys(entries);
@@ -408,6 +423,7 @@
         function onVolumeChange() {
             if (applying) return;
             savePlaybackPreference('volume', video.volume);
+            savePlaybackPreference('muted', video.muted);
         }
         function onTextTrackChange() {
             for (var i = 0; i < video.textTracks.length; i++) {
@@ -417,6 +433,7 @@
                     return;
                 }
             }
+            savePlaybackPreference('subtitleLanguage', '');
         }
 
         video.addEventListener('loadedmetadata', restoreResumePosition);
@@ -424,7 +441,8 @@
         video.addEventListener('ratechange', onRateChange);
         video.addEventListener('volumechange', onVolumeChange);
         function onPauseOrEnded() { saveResumePosition(true); }
-        video.addEventListener('timeupdate', saveResumePosition);
+        function onTimeUpdate() { saveResumePosition(false); }
+        video.addEventListener('timeupdate', onTimeUpdate);
         video.addEventListener('pause', onPauseOrEnded);
         video.addEventListener('ended', onPauseOrEnded);
         if (video.textTracks) video.textTracks.addEventListener('change', onTextTrackChange);
@@ -435,7 +453,7 @@
             video.removeEventListener('durationchange', restoreResumePosition);
             video.removeEventListener('ratechange', onRateChange);
             video.removeEventListener('volumechange', onVolumeChange);
-            video.removeEventListener('timeupdate', saveResumePosition);
+            video.removeEventListener('timeupdate', onTimeUpdate);
             video.removeEventListener('pause', onPauseOrEnded);
             video.removeEventListener('ended', onPauseOrEnded);
             if (video.textTracks) video.textTracks.removeEventListener('change', onTextTrackChange);
@@ -642,11 +660,15 @@
                 e.preventDefault();
                 try {
                     if (document.pictureInPictureElement === video || video.webkitPresentationMode === 'picture-in-picture') {
-                        if (document.exitPictureInPicture) document.exitPictureInPicture();
-                        else if (video.webkitSetPresentationMode) video.webkitSetPresentationMode('inline');
+                        if (document.exitPictureInPicture) {
+                            var result = document.exitPictureInPicture();
+                            if (result && result.catch) result.catch(function () {});
+                        } else if (video.webkitSetPresentationMode) video.webkitSetPresentationMode('inline');
                     } else {
-                        if (video.requestPictureInPicture) video.requestPictureInPicture();
-                        else if (video.webkitSetPresentationMode) video.webkitSetPresentationMode('picture-in-picture');
+                        if (video.requestPictureInPicture) {
+                            var request = video.requestPictureInPicture();
+                            if (request && request.catch) request.catch(function () {});
+                        } else if (video.webkitSetPresentationMode) video.webkitSetPresentationMode('picture-in-picture');
                     }
                 } catch (err) { /* ignore */ }
             } else if (key === 'm' || key === 'M') {
@@ -684,7 +706,17 @@
             return element && element.content || '';
         }
         function activate() {
-            if (navigator.mediaSession.metadata && mediaSessionOwner !== video) return;
+            if (mediaSessionOwner && mediaSessionOwner !== video) {
+                var previous = mediaSessionOwner;
+                (previous._wblockMediaActions || []).forEach(function (action) {
+                    try { navigator.mediaSession.setActionHandler(action, null); } catch (e) { /* ignore */ }
+                });
+                if (navigator.mediaSession.metadata === previous._wblockMediaMetadata) {
+                    try { navigator.mediaSession.metadata = null; } catch (e) { /* ignore */ }
+                }
+                previous._wblockMediaActions = null;
+                previous._wblockMediaMetadata = null;
+            }
             mediaSessionOwner = video;
             var title = meta('og:title') || document.title || location.hostname;
             var artist = meta('og:site_name') || location.hostname;
@@ -827,6 +859,49 @@
         } catch (e) { /* ignore */ }
     }
 
+    function isFacebookPage() {
+        try { return /(^|\.)facebook\.com$/i.test(location.hostname); }
+        catch (e) { return false; }
+    }
+
+    // Prefer the control's accessible state; the label is only a fallback for
+    // Facebook variants that do not expose an ARIA pressed state.
+    function facebookAudioControl(video, container) {
+        if (!isFacebookPage()) return null;
+        var root = container || (typeof containerForVideo === 'function' ?
+            containerForVideo(video) : (video && video.parentElement));
+        if (!root || !root.querySelectorAll) return null;
+        var fallback = null;
+        var controls;
+        try { controls = root.querySelectorAll('button,[role="button"]'); }
+        catch (e) { return null; }
+        for (var i = 0; i < controls.length; i++) {
+            var control = controls[i];
+            if (control === video || control.getAttribute('aria-hidden') === 'true') continue;
+            var label = (control.getAttribute('aria-label') || control.getAttribute('title') ||
+                control.getAttribute('data-testid') || '').toLowerCase();
+            var audioLabel = /mute|sound|volume|audio/.test(label);
+            var hasState = control.hasAttribute('aria-pressed') || control.hasAttribute('aria-checked');
+            if (audioLabel && (hasState || control.hasAttribute('aria-label'))) return control;
+            if (!fallback && hasState) fallback = control;
+        }
+        return fallback;
+    }
+
+    function isFacebookReel(video, container) {
+        if (!isFacebookPage() || !video || !video.autoplay || !video.muted) return false;
+        try {
+            if (/^\/reels?(?:\/|$)/i.test(location.pathname)) return true;
+        } catch (e) { /* use the player control signal */ }
+        return !!facebookAudioControl(video, container);
+    }
+
+    function isFacebookProtected(el, video) {
+        if (!el || !isFacebookReel(video)) return false;
+        var control = facebookAudioControl(video, containerForVideo(video));
+        return !!(control && (el === control || (el.contains && el.contains(control))));
+    }
+
     // Custom players set disableRemotePlayback to hide the route picker they
     // cannot style (cineby). With that flag WebKit omits AirPlay from the
     // native controls, so nativeizing must restore remote playback too.
@@ -842,9 +917,14 @@
     // (video.js, Vimeo) from receiving the click and double-toggling playback.
     function blockCompetingClicks(video) {
         if (!video || video._wblockClickGuard) return;
-        video._wblockClickGuard = true;
+        function onClick(e) { e.stopPropagation(); }
         try {
-            video.addEventListener('click', function (e) { e.stopPropagation(); });
+            video.addEventListener('click', onClick);
+            video._wblockClickGuard = true;
+            registerVideoCleanup(video, function () {
+                video.removeEventListener('click', onClick);
+                video._wblockClickGuard = false;
+            });
         } catch (e) { /* ignore */ }
     }
 
@@ -928,6 +1008,7 @@
             if (el === video) continue;
             if (video.contains(el)) continue;   // <source>, <track>
             if (el.contains(video)) continue;   // ancestor wrappers
+            if (isFacebookProtected(el, video)) continue;
             if (aggressive) {
                 hideElement(el);
             } else {
@@ -1062,7 +1143,8 @@
     // roots whose box is off the video are pruned; remaining static roots are
     // walked only for positioned descendants so post text/reactions stay.
     function hideOverlappingSubtree(root, video, vr) {
-        if (root === video || root.contains(video) || video.contains(root)) { return; }
+        if (root === video || root.contains(video) || video.contains(root) ||
+            isFacebookProtected(root, video)) { return; }
         var rr;
         try { rr = root.getBoundingClientRect(); } catch (e) { return; }
         var pos;
@@ -1083,7 +1165,8 @@
         var els = root.querySelectorAll('*');
         for (var i = 0; i < els.length; i++) {
             var el = els[i];
-            if (el === video || el.contains(video) || video.contains(el)) { continue; }
+            if (el === video || el.contains(video) || video.contains(el) ||
+                isFacebookProtected(el, video)) { continue; }
             try {
                 var p = getComputedStyle(el).position;
                 if (p === 'absolute' || p === 'sticky' || p === 'fixed') {
@@ -1120,7 +1203,8 @@
     // positioned chrome and static/relative full-bleed covers (LinkedIn).
     function hideIfDetachedOverlay(el, video, vr) {
         if (!el || el === video || el === document.documentElement || el === document.body) { return; }
-        if (video.contains(el) || (el.contains && el.contains(video))) { return; }
+        if (video.contains(el) || (el.contains && el.contains(video)) ||
+            isFacebookProtected(el, video)) { return; }
         // A hit often lands on a control (slider/button) nested in a static bar;
         // hide the bar rather than the inner control, which the caller sees.
         var bar = el;
@@ -1202,9 +1286,16 @@
     function armChromeWatch(video) {
         if (!video || video._wblockChromeWatch) { return; }
         video._wblockChromeWatch = true;
+        var active = true;
         var timers = [];
+        function clearTimers() {
+            for (var i = 0; i < timers.length; i++) {
+                try { clearTimeout(timers[i]); } catch (e) { /* ignore */ }
+            }
+            timers = [];
+        }
         function kick() {
-            if (!video.isConnected) { return; }
+            if (!active || !video.isConnected) { return; }
             hideOverlappingChrome(video);
             hideStackedChrome(video);
         }
@@ -1217,8 +1308,14 @@
         function kickDeferred() {
             kickAfterPaint();
             if (typeof setTimeout !== 'function') { return; }
+            clearTimers();
             [50, 200, 500].forEach(function (ms) {
-                timers.push(setTimeout(kick, ms));
+                var timer = setTimeout(function () {
+                    var index = timers.indexOf(timer);
+                    if (index !== -1) { timers.splice(index, 1); }
+                    kick();
+                }, ms);
+                timers.push(timer);
             });
         }
         try {
@@ -1227,19 +1324,20 @@
             video.addEventListener('ended', kickDeferred);
             video.addEventListener('seeking', kick);
             video.addEventListener('loadeddata', kick);
+            window.addEventListener('resize', kickDeferred);
         } catch (e) { /* ignore */ }
         registerVideoCleanup(video, function () {
+            active = false;
             try {
                 video.removeEventListener('play', kickDeferred);
                 video.removeEventListener('pause', kickDeferred);
                 video.removeEventListener('ended', kickDeferred);
                 video.removeEventListener('seeking', kick);
                 video.removeEventListener('loadeddata', kick);
+                window.removeEventListener('resize', kickDeferred);
             } catch (e) { /* ignore */ }
-            for (var t = 0; t < timers.length; t++) {
-                try { clearTimeout(timers[t]); } catch (e) { /* ignore */ }
-            }
-            timers = [];
+            clearTimers();
+            video._wblockChromeWatch = false;
         });
     }
 
@@ -1250,6 +1348,7 @@
             // can still clean the known wrapper. Re-hide chrome a framework may
             // have rendered after initial cleanup.
             if (upgradeable) { video._wblockUpgradeable = true; }
+            recoverSidecarTracks(container, video);
             suppressChrome(container, video);
             return;
         }
@@ -1458,6 +1557,7 @@
         // Detach and reinsert the SAME media element. Creating a replacement
         // element causes another network load and a visible blank/buffering gap.
         // Keeping the original also preserves captions and any MSE pipeline.
+        recoverSidecarTracks(container, video);
         try { video.remove(); } catch (e) {
             try { if (video.parentNode) { video.parentNode.removeChild(video); } } catch (e2) { /* ignore */ }
         }
@@ -1519,6 +1619,7 @@
         var video = selectContainerVideo(container);
         if (!video) { return; }
         if (video._wblockCleaned) {
+            recoverSidecarTracks(container, video);
             suppressChrome(container, video);
             return;
         }
@@ -1535,10 +1636,12 @@
 
         // Native controls are the critical path once the media element owns a
         // source. Apply them in this mutation microtask before the next paint.
+        var facebookReel = isFacebookReel(video, container);
         enableBackgroundPlayback();
         video.setAttribute(ATTR_DONE, '1');
         container.setAttribute(ATTR_DONE, '1');
         enhanceInPlace(container, video, true);
+        if (facebookReel) { return; }
 
         // A custom element owns its shadow tree and may tear itself down if its
         // internal structure is removed (Archive.org's <play-av> does exactly
@@ -1569,6 +1672,10 @@
         // Native MediaWiki file videos: size in place, don't empty the wrapper.
         if (isNativeFileVideo(video)) {
             sizeNativeFileVideo(video);
+            return;
+        }
+        if (container.querySelectorAll('video').length > 1) {
+            log('multiple videos; preserving player structure');
             return;
         }
         if (src) { cleanPlayer(container, video, src); }
@@ -1603,8 +1710,9 @@
             (video.getAttribute && video.getAttribute('src'));
         if (!src && !(video.querySelector && video.querySelector('source'))) { return false; }
         // Skip ambient/background/hero video: autoplay + muted is the dominant
-        // decorative pattern that should keep no native controls.
-        if (video.autoplay && video.muted) { return false; }
+        // decorative pattern that should keep no native controls. Facebook Reels
+        // are the exception: their accessible audio control is the player UI.
+        if (video.autoplay && video.muted && !isFacebookReel(video)) { return false; }
         // Skip tiny rendered videos (hover previews / thumbnails) when the size
         // is known; offsetWidth/Height are 0 before layout, so only filter on a
         // reliably-small box.

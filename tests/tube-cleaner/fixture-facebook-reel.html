@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { margin: 0; background: #111; }
+  .media-player { position: relative; width: 640px; height: 360px; margin: 24px auto; background: #000; }
+  .media-player video { display: block; width: 100%; height: 100%; }
+  .audio-control-layer { position: absolute; right: 12px; bottom: 12px; }
+  .audio-control-path { padding: 4px; background: rgba(0,0,0,.7); }
+</style>
+</head>
+<body>
+  <div class="media-player" id="facebook-reel" data-pagelet="Reel">
+    <div class="audio-state" data-audio-state="muted"></div>
+    <video autoplay muted playsinline></video>
+    <div class="audio-control-layer">
+      <div class="audio-control-path">
+        <button type="button" role="button" aria-label="Unmute" aria-pressed="true">sound</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var player = document.getElementById('facebook-reel');
+      var video = player.querySelector('video');
+      var layer = player.querySelector('.audio-control-layer');
+      var appMuted = true;
+      var renderCount = 0;
+
+      try { video.src = 'https://example.com/media/facebook-reel.mp4'; } catch (e) {}
+
+      function render() {
+        var path = document.createElement('div');
+        path.className = 'audio-control-path';
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.setAttribute('role', 'button');
+        button.setAttribute('aria-label', appMuted ? 'Unmute' : 'Mute');
+        button.setAttribute('aria-pressed', String(appMuted));
+        button.textContent = appMuted ? 'sound' : 'silent';
+        path.appendChild(button);
+        layer.replaceChildren(path);
+        renderCount++;
+      }
+
+      layer.addEventListener('click', function (event) {
+        var button = event.target.closest('button');
+        if (!button) return;
+        appMuted = false;
+        video.muted = false;
+        player.querySelector('.audio-state').setAttribute('data-audio-state', 'unmuted');
+      });
+
+      // Facebook's render pass writes the native property back from app state.
+      setTimeout(function () {
+        video.muted = false;
+        setTimeout(function () {
+          if (appMuted) video.muted = true;
+          render();
+          window.__facebookReelRendered = renderCount;
+        }, 80);
+      }, 120);
+    })();
+  </script>
+</body>
+</html>

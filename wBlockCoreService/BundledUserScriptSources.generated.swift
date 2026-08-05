@@ -61,6 +61,7 @@ enum BundledUserScriptSources {
     var LOG_PREFIX = '[Tube Cleaner]';
     var STORAGE_AUDIO = 'wblock.tubeCleaner.audioOnly';
     var STORAGE_QUALITY = 'wblock.tubeCleaner.quality';
+    var STORAGE_POSITION = 'wblock.tubeCleaner.position.';
     var ATTR_CLEANED = 'data-wblock-tc-cleaned';
 
     var debug = !!window.__wblockTubeCleanerDebug;
@@ -257,6 +258,7 @@ enum BundledUserScriptSources {
 
     function setPreferredQuality(q) {
         try { localStorage.setItem(STORAGE_QUALITY, q); } catch (e) { /* ignore */ }
+        if (preferredQualityAttempt && preferredQualityAttempt.stop) preferredQualityAttempt.stop();
     }
 
     // ------------------------------------------------------------------
@@ -587,6 +589,136 @@ enum BundledUserScriptSources {
     var activeVideo = null;
     var playerObserver = null;
     var activeCleanups = [];
+    var playbackCarry = null;
+
+    function youtubeVideoIdentity(player) {
+        var id = null;
+        var hasUrlIdentity = false;
+        try {
+            var pathMatch = location.pathname.match(/^\/(?:shorts|embed)\/([A-Za-z0-9_-]{11})(?:\/|$)/);
+            var queryId = new URLSearchParams(location.search).get('v');
+            if (/^\/watch(?:\/|$)/.test(location.pathname)) {
+                hasUrlIdentity = !!queryId;
+                if (queryId && /^[A-Za-z0-9_-]{11}$/.test(queryId)) id = queryId;
+            } else if (pathMatch) {
+                hasUrlIdentity = true;
+                id = pathMatch[1];
+            } else if (queryId && /^[A-Za-z0-9_-]{11}$/.test(queryId)) {
+                hasUrlIdentity = true;
+                id = queryId;
+            }
+        } catch (e) { /* use player data below */ }
+        if (!id && !hasUrlIdentity) {
+            try {
+                var data = player && typeof player.getVideoData === 'function' ? player.getVideoData() : null;
+                if (data && data.video_id) id = String(data.video_id);
+            } catch (e) { /* ignore */ }
+        }
+        return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+    }
+
+    function readPlaybackPosition(videoId) {
+        try {
+            var value = JSON.parse(localStorage.getItem(STORAGE_POSITION + videoId) || 'null');
+            return value && isFinite(value.time) && value.time > 0 ? Number(value.time) : null;
+        } catch (e) { return null; }
+    }
+
+    function writePlaybackPosition(videoId, time, duration, ended) {
+        try {
+            if (ended || (duration > 0 && time >= duration - 0.5)) {
+                localStorage.removeItem(STORAGE_POSITION + videoId);
+            } else if (isFinite(time)) {
+                if (time > 0.25) {
+                    localStorage.setItem(STORAGE_POSITION + videoId, JSON.stringify({ time: time, updatedAt: Date.now() }));
+                } else {
+                    localStorage.removeItem(STORAGE_POSITION + videoId);
+                }
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    function setupPlaybackPosition(player, video) {
+        var videoId = youtubeVideoIdentity(player);
+        if (!videoId) { playbackCarry = null; return; }
+        var carried = playbackCarry && playbackCarry.identity === videoId ? playbackCarry : null;
+        playbackCarry = null;
+        var cancelled = false;
+        var restored = false;
+        var stateApplied = !carried;
+        var writeTimer = null;
+        var saved = readPlaybackPosition(videoId);
+
+        function restore() {
+            if (cancelled || restored || activeVideo !== video || youtubeVideoIdentity(player) !== videoId) return;
+            if (video.readyState < 1 || !isFinite(video.duration) || video.duration <= 0) return;
+            restored = true;
+            var positionApplied = true;
+            if (saved !== null) {
+                if (saved >= video.duration - 0.5) {
+                    writePlaybackPosition(videoId, 0, video.duration, true);
+                } else {
+                    try { video.currentTime = Math.min(saved, Math.max(0, video.duration - 0.1)); }
+                    catch (e) { positionApplied = false; }
+                }
+            }
+            if (!positionApplied) { restored = false; return; }
+            applyState();
+        }
+
+        function applyState() {
+            if (cancelled || stateApplied || !carried || activeVideo !== video) return;
+            stateApplied = true;
+            try {
+                if (carried.paused) video.pause();
+                else if (video.paused) {
+                    var request = video.play();
+                    if (request && request.catch) request.catch(function () { /* autoplay policy */ });
+                }
+            } catch (e) { /* preserve state when the browser permits it */ }
+        }
+
+        function persist(force) {
+            if (writeTimer !== null) { clearTimeout(writeTimer); writeTimer = null; }
+            if (cancelled && !force) return;
+            writePlaybackPosition(videoId, Number(video.currentTime), Number(video.duration), video.ended);
+        }
+
+        function schedulePersist() {
+            if (cancelled || writeTimer !== null) return;
+            writeTimer = setTimeout(function () { writeTimer = null; persist(false); }, 1000);
+        }
+
+        function onEnded() { persist(true); }
+        function onTimeUpdate() { schedulePersist(); }
+        function onPause() { schedulePersist(); }
+        function onMetadata() { restore(); }
+        function onPageHide() { persist(true); }
+
+        video._wblockPlaybackState = { identity: videoId, paused: video.paused };
+        video.addEventListener('loadedmetadata', onMetadata);
+        video.addEventListener('durationchange', onMetadata);
+        video.addEventListener('canplay', onMetadata);
+        video.addEventListener('timeupdate', onTimeUpdate);
+        video.addEventListener('pause', onPause);
+        video.addEventListener('ended', onEnded);
+        window.addEventListener('pagehide', onPageHide);
+        restore();
+
+        registerCleanup(function () {
+            if (writeTimer !== null) clearTimeout(writeTimer);
+            cancelled = true;
+            persist(true);
+            video.removeEventListener('loadedmetadata', onMetadata);
+            video.removeEventListener('durationchange', onMetadata);
+            video.removeEventListener('canplay', onMetadata);
+            video.removeEventListener('timeupdate', onTimeUpdate);
+            video.removeEventListener('pause', onPause);
+            video.removeEventListener('ended', onEnded);
+            window.removeEventListener('pagehide', onPageHide);
+            delete video._wblockPlaybackState;
+        });
+    }
 
     function registerCleanup(fn) {
         activeCleanups.push(fn);
@@ -594,6 +726,11 @@ enum BundledUserScriptSources {
 
     function releaseActiveVideo() {
         var previousVideo = activeVideo;
+        if (previousVideo && previousVideo._wblockPlaybackState) {
+            previousVideo._wblockPlaybackState.paused = previousVideo.paused;
+            playbackCarry = previousVideo._wblockPlaybackState;
+        }
+        if (qualityRequest) cancelQualityRequest();
         var cleanups = activeCleanups;
         activeCleanups = [];
         for (var i = 0; i < cleanups.length; i++) {
@@ -623,9 +760,9 @@ enum BundledUserScriptSources {
         if (!isHarness && (!isWatchPage || location.hostname === 'music.youtube.com')) return;
         if (/^\/shorts(?:\/|$)/.test(location.pathname)) return;
 
-        var baseAspect = 0;
         var hosts = [];
         var updateFrame = null;
+        var resizeObserver = null;
         var contentAnchor = null;
 
         function clearLayout() {
@@ -638,6 +775,7 @@ enum BundledUserScriptSources {
                 hosts[i].classList.remove('wblock-tc-aspect-host');
                 hosts[i].style.removeProperty('--wblock-tc-player-height');
             }
+            hosts = [];
         }
 
         // Find the first watch-page block after the player. Known desktop and
@@ -679,7 +817,7 @@ enum BundledUserScriptSources {
         // same box as #movie_player. This moves watch metadata down with the
         // taller player without touching unrelated page columns or the body.
         function findHosts(rect) {
-            if (hosts.length || !rect.width || !rect.height) return;
+            if (!rect.width || !rect.height) return;
             var node = player;
             for (var depth = 0; node && depth < 8; depth++) {
                 if (node === document.body || node === document.documentElement) break;
@@ -693,8 +831,8 @@ enum BundledUserScriptSources {
 
         // Mobile YouTube keeps the player in a body-level fixed container and
         // reserves flow space with a separate .player-placeholder div inside
-        // ytm-watch. This element may not exist when findHosts first runs, so
-        // check for it on every layout update and add it to the host list.
+        // ytm-watch. Rebuild this list after each geometry change so recycled
+        // containers do not retain the old video's sizing.
         function ensurePlaceholderHost() {
             var placeholder = document.querySelector('.player-placeholder');
             if (placeholder && !player.contains(placeholder) && !placeholder.contains(player)) {
@@ -706,15 +844,22 @@ enum BundledUserScriptSources {
             }
         }
 
+        function observeGeometryHosts() {
+            if (!resizeObserver) return;
+            for (var i = 0; i < hosts.length; i++) {
+                try { resizeObserver.observe(hosts[i]); } catch (e) { /* ignore recycled nodes */ }
+            }
+        }
+
         function updateLayout() {
             updateFrame = null;
+            clearLayout();
             var rect = player.getBoundingClientRect();
-            if (!rect.width || !rect.height) { clearLayout(); return; }
-            if (!baseAspect) {
-                baseAspect = rect.width / rect.height;
-                findHosts(rect);
-            }
+            if (!rect.width || !rect.height) return;
+            var baseAspect = rect.width / rect.height;
+            findHosts(rect);
             ensurePlaceholderHost();
+            observeGeometryHosts();
 
             var fullscreen = document.fullscreenElement || document.webkitFullscreenElement ||
                 player.classList.contains('ytp-fullscreen') ||
@@ -735,9 +880,6 @@ enum BundledUserScriptSources {
                 return;
             }
 
-            // Apply expansion. Setting the same CSS custom property value is a
-            // visual no-op, so there is no need to clear first (which would
-            // cause a one-frame flash back to 16:9 on every resize event).
             var heightValue = Math.round(targetHeight * 100) / 100 + 'px';
             for (var i = 0; i < hosts.length; i++) {
                 hosts[i].style.setProperty('--wblock-tc-player-height', heightValue);
@@ -786,6 +928,13 @@ enum BundledUserScriptSources {
         video.addEventListener('resize', scheduleUpdate);
         video.addEventListener('emptied', scheduleUpdate);
         window.addEventListener('resize', scheduleUpdate);
+        if (typeof ResizeObserver !== 'undefined') {
+            try {
+                resizeObserver = new ResizeObserver(scheduleUpdate);
+                resizeObserver.observe(player);
+                if (player.parentElement) resizeObserver.observe(player.parentElement);
+            } catch (e) { resizeObserver = null; }
+        }
         document.addEventListener('fullscreenchange', scheduleUpdate);
         document.addEventListener('webkitfullscreenchange', scheduleUpdate);
         scheduleUpdate();
@@ -797,6 +946,8 @@ enum BundledUserScriptSources {
             window.removeEventListener('resize', scheduleUpdate);
             document.removeEventListener('fullscreenchange', scheduleUpdate);
             document.removeEventListener('webkitfullscreenchange', scheduleUpdate);
+            if (resizeObserver) { try { resizeObserver.disconnect(); } catch (e) { /* ignore */ } }
+            resizeObserver = null;
             if (updateFrame !== null) cancelAnimationFrame(updateFrame);
             clearLayout();
         });
@@ -808,6 +959,8 @@ enum BundledUserScriptSources {
     function activateVideo(player, video) {
         releaseActiveVideo();
         activeVideo = video;
+        setupPlaybackPosition(player, video);
+        registerCleanup(cancelQualityRequest);
         forceNativeControls(video);
         guardNativeControls(video);
         setupVideoAspectLayout(player, video);
@@ -1019,12 +1172,7 @@ enum BundledUserScriptSources {
     }
 
     function sponsorBlockVideoId() {
-        try {
-            var id = new URLSearchParams(location.search).get('v');
-            if (id && /^[A-Za-z0-9_-]{11}$/.test(id)) return id;
-            var match = location.pathname.match(/^\/(?:embed|shorts)\/([A-Za-z0-9_-]{11})/);
-            return match ? match[1] : null;
-        } catch (e) { return null; }
+        return youtubeVideoIdentity(findPlayer());
     }
 
     function sponsorBlockChannelId() {
@@ -1971,6 +2119,8 @@ enum BundledUserScriptSources {
     }
 
     function currentChapterVideoId() {
+        var identity = youtubeVideoIdentity(findPlayer());
+        if (identity) return identity;
         // The URL changes before YouTube's persistent player finishes its SPA
         // swap, so prefer it when a watch-video id is available.
         try {
@@ -2501,13 +2651,8 @@ enum BundledUserScriptSources {
         var video = player.querySelector('video');
         if (!video) return;
 
-        // Check if we already processed this video
-        var videoId = '';
-        try {
-            var params = new URLSearchParams(location.search);
-            videoId = params.get('v') || '';
-        } catch (e) { /* ignore */ }
-
+        // Check if we already processed this video.
+        var videoId = youtubeVideoIdentity(player) || '';
         if (player.getAttribute(ATTR_CLEANED) === videoId && activeVideo === video) return;
         player.setAttribute(ATTR_CLEANED, videoId);
 
@@ -2542,7 +2687,7 @@ enum BundledUserScriptSources {
         // to the current video.
         if (IS_IOS) {
             if (getPreferredQuality() !== 'auto') { setPreferredQuality('auto'); }
-            setQuality('auto');
+            try { localStorage.removeItem('yt-player-quality'); } catch (e) { /* ignore */ }
         } else {
             var qualityDelay = setTimeout(function () {
                 qualityDelay = null;
@@ -2739,115 +2884,156 @@ enum BundledUserScriptSources {
         return false;
     }
 
-    function setQuality(target) {
-        var player = findPlayer();
-        if (!player) { warn('setQuality: no player'); return false; }
+    var qualityGeneration = 0;
+    var qualityRequest = null;
+    var preferredQualityAttempt = null;
 
-        if (target === 'auto') {
-            // Reset to auto by setting a wide range via API and remove the
-            // fixed-quality bias previously written by Tube Cleaner.
-            if (player.setPlaybackQualityRange) {
-                try { player.setPlaybackQualityRange('tiny', 'hd2160'); } catch (e) { /* ignore */ }
+    function cancelQualityRequest() {
+        var request = qualityRequest;
+        if (!request) return;
+        request.cancelled = true;
+        qualityGeneration++;
+        for (var i = 0; i < request.timers.length; i++) clearTimeout(request.timers[i]);
+        request.timers = [];
+        closeSettingsPanel(request.player);
+        qualityRequest = null;
+        for (var j = 0; j < request.callbacks.length; j++) request.callbacks[j](false);
+    }
+
+    function finishQualityRequest(request, worked) {
+        if (qualityRequest !== request || request.cancelled || request.generation !== qualityGeneration) return;
+        for (var i = 0; i < request.timers.length; i++) clearTimeout(request.timers[i]);
+        request.timers = [];
+        qualityRequest = null;
+        for (var j = 0; j < request.callbacks.length; j++) request.callbacks[j](worked);
+    }
+
+    function setQuality(target, callback) {
+        var player = findPlayer();
+        if (!player || !activeVideo) {
+            warn('setQuality: no player');
+            if (callback) callback(false);
+            return false;
+        }
+        if (qualityRequest) {
+            if (qualityRequest.player === player && qualityRequest.target === target) {
+                if (callback) qualityRequest.callbacks.push(callback);
+                return true;
             }
-            try { localStorage.removeItem('yt-player-quality'); } catch (e) { /* ignore */ }
-            return true;
+            cancelQualityRequest();
         }
 
-        var levels = qualityMenuLevels();
-        if (levels.indexOf(target) === -1) {
-            // Target not available, pick the closest lower quality
-            var targetIdx = QUALITY_ORDER.indexOf(target);
-            for (var i = targetIdx + 1; i < QUALITY_ORDER.length; i++) {
-                if (levels.indexOf(QUALITY_ORDER[i]) !== -1) {
-                    target = QUALITY_ORDER[i];
-                    break;
+        if (target !== 'auto') {
+            var levels = qualityMenuLevels();
+            if (levels.indexOf(target) === -1) {
+                var targetIdx = QUALITY_ORDER.indexOf(target);
+                for (var i = targetIdx + 1; i < QUALITY_ORDER.length; i++) {
+                    if (levels.indexOf(QUALITY_ORDER[i]) !== -1) {
+                        target = QUALITY_ORDER[i];
+                        break;
+                    }
                 }
             }
+            log('setQuality:', target, 'available:', levels);
         }
 
-        log('setQuality:', target, 'available:', levels);
+        var request = {
+            player: player, video: activeVideo, target: target, generation: ++qualityGeneration,
+            cancelled: false, timers: [], callbacks: callback ? [callback] : []
+        };
+        qualityRequest = request;
 
-        var worked = false;
-
-        // Approach 1: Simulate clicks on YouTube's quality UI (most reliable)
-        // This is what YouTube Auto HD does and it works on the SABR player.
-        try {
-            if (openSettingsMenu(player)) {
-                setTimeout(function () {
-                    if (clickQualityMenuItem(player)) {
-                        setTimeout(function () {
-                            if (clickQualityOption(player, target)) {
-                                worked = true;
-                                log('UI click approach succeeded for', target);
-                            }
-                            // Close the settings panel
-                            setTimeout(function () {
-                                closeSettingsPanel(player);
-                            }, 100);
-                        }, 200);
-                    } else {
-                        // If we can't find the quality menu, close settings
-                        closeSettingsPanel(player);
+        function current() {
+            return qualityRequest === request && !request.cancelled &&
+                request.generation === qualityGeneration && activeVideo === request.video;
+        }
+        function later(fn, delay) {
+            request.timers.push(setTimeout(function () {
+                if (current()) fn();
+            }, delay));
+        }
+        function fallback() {
+            if (!current()) return;
+            closeSettingsPanel(player);
+            var worked = false;
+            try {
+                if (target === 'auto') {
+                    if (player.setPlaybackQualityRange) {
+                        player.setPlaybackQualityRange('tiny', 'hd2160');
+                        worked = true;
                     }
-                }, 200);
+                    if (getCurrentQuality() !== 'auto' && player.setPlaybackQuality) {
+                        player.setPlaybackQuality('auto');
+                        worked = true;
+                    }
+                    if (worked) localStorage.removeItem('yt-player-quality');
+                } else if (player.setPlaybackQualityRange) {
+                    player.setPlaybackQualityRange(target, target);
+                    worked = true;
+                    if (getCurrentQuality() !== target && player.setPlaybackQuality) {
+                        player.setPlaybackQuality(target);
+                    }
+                } else if (player.setPlaybackQuality) {
+                    player.setPlaybackQuality(target);
+                    worked = true;
+                }
+            } catch (e) { log('quality API fallback failed', e); }
+            if (worked && target !== 'auto' && !IS_IOS) {
+                try {
+                    localStorage.setItem('yt-player-quality', JSON.stringify({
+                        quality: target, previousQuality: 'auto', expiry: Date.now() + 86400000
+                    }));
+                } catch (e) { /* ignore */ }
             }
-        } catch (e) { warn('UI click approach failed', e); }
-
-        // Approach 2: setPlaybackQualityRange (may work on non-SABR players)
-        if (player.setPlaybackQualityRange) {
-            try {
-                log('calling setPlaybackQualityRange', target, target);
-                player.setPlaybackQualityRange(target, target);
-                worked = true;
-            } catch (e) { /* ignore */ }
+            finishQualityRequest(request, worked);
         }
 
-        // Approach 3: setPlaybackQuality (older API — no-op on SABR)
-        if (player.setPlaybackQuality) {
-            try {
-                log('calling setPlaybackQuality', target);
-                player.setPlaybackQuality(target);
-            } catch (e) { /* ignore */ }
+        // The YouTube menu is authoritative for SABR. API calls are used only
+        // after a menu step is unavailable or fails, never in parallel with it.
+        try {
+            if (!openSettingsMenu(player)) { fallback(); return true; }
+            later(function () {
+                if (!clickQualityMenuItem(player)) { fallback(); return; }
+                later(function () {
+                    if (!clickQualityOption(player, target)) { fallback(); return; }
+                    later(function () {
+                        closeSettingsPanel(player);
+                        finishQualityRequest(request, true);
+                    }, 100);
+                }, 200);
+            }, 200);
+        } catch (e) {
+            warn('quality UI failed', e);
+            fallback();
         }
-
-        // Approach 4: set the yt-player-quality in localStorage as a desktop
-        // bias. Do not persist fixed iOS ranges: retrying them on the next load
-        // can stall YouTube's ManagedMediaSource/SABR pipeline.
-        if (!IS_IOS) {
-            try {
-                localStorage.setItem('yt-player-quality', JSON.stringify({
-                    quality: target,
-                    previousQuality: 'auto',
-                    expiry: Date.now() + 86400000
-                }));
-            } catch (e) { /* ignore */ }
-        }
-
-        log('setQuality complete, UI click:', worked);
-        return worked;
+        return true;
     }
 
     function applyPreferredQuality() {
         var preferred = getPreferredQuality();
-        if (preferred === 'auto') return;
-        // Retry a few times — the player may not be fully ready.
-        var attempts = 0;
-        var timer = null;
+        if (preferred === 'auto' || preferredQualityAttempt) return;
+        var attempt = { attempts: 0, timer: null, waiting: false };
+        preferredQualityAttempt = attempt;
         function stop() {
-            if (timer !== null) {
-                clearInterval(timer);
-                timer = null;
-            }
+            if (attempt.timer !== null) clearInterval(attempt.timer);
+            attempt.timer = null;
+            if (preferredQualityAttempt === attempt) preferredQualityAttempt = null;
         }
-        timer = setInterval(function () {
-            attempts++;
-            var current = getCurrentQuality();
-            if (current === preferred || attempts > 10) {
+        attempt.stop = stop;
+        function tryQuality() {
+            if (attempt.waiting || qualityRequest) return;
+            attempt.attempts++;
+            if (getCurrentQuality() === preferred || attempt.attempts > 10) {
                 stop();
                 return;
             }
-            setQuality(preferred);
-        }, 500);
+            attempt.waiting = true;
+            setQuality(preferred, function (worked) {
+                attempt.waiting = false;
+                if (worked || getCurrentQuality() === preferred || attempt.attempts > 10) stop();
+            });
+        }
+        attempt.timer = setInterval(tryQuality, 500);
         registerCleanup(stop);
     }
 
@@ -3902,7 +4088,8 @@ enum BundledUserScriptSources {
                 typeof video.webkitSetPresentationMode === 'function') {
                 video.webkitSetPresentationMode('picture-in-picture');
             } else if (video.requestPictureInPicture) {
-                video.requestPictureInPicture();
+                var request = video.requestPictureInPicture();
+                if (request && request.catch) request.catch(function () {});
             }
         } catch (e) { /* ignore */ }
     }
@@ -3915,7 +4102,8 @@ enum BundledUserScriptSources {
                 typeof video.webkitSetPresentationMode === 'function') {
                 video.webkitSetPresentationMode('inline');
             } else if (document.pictureInPictureElement) {
-                document.exitPictureInPicture();
+                var result = document.exitPictureInPicture();
+                if (result && result.catch) result.catch(function () {});
             }
         } catch (e) { /* ignore */ }
     }
@@ -3936,6 +4124,7 @@ enum BundledUserScriptSources {
         video._wblockControlsGuarded = false;
         video._wblockControlsPatched = false;
         video._wblockClickGuard = false;
+        video._wblockChromeWatch = false;
         video._wblockEnhanced = false;
         video._wblockUpgradeable = false;
         video._wblockCleaned = false;
@@ -4066,7 +4255,7 @@ enum BundledUserScriptSources {
     function loadPlaybackPreferences() {
         // Null media values mean "preserve the site's current state" until the
         // user changes that control in a cleaned player for the first time.
-        var defaults = { playbackRate: null, volume: null, subtitleLanguage: '', backgroundPlayback: true };
+        var defaults = { playbackRate: null, volume: null, muted: null, subtitleLanguage: null, backgroundPlayback: true };
         try {
             var saved = JSON.parse(localStorage.getItem(PREFERENCES_KEY) || '{}');
             for (var key in saved) if (Object.prototype.hasOwnProperty.call(defaults, key)) defaults[key] = saved[key];
@@ -4108,6 +4297,7 @@ enum BundledUserScriptSources {
         var applying = true;
         var lastResumeSave = 0;
         var resumeApplied = false;
+        var resumeIdentityValue = null;
 
         if (typeof preferences.playbackRate === 'number' && preferences.playbackRate > 0) try {
             video.playbackRate = Math.max(0.25, Math.min(4, preferences.playbackRate));
@@ -4115,39 +4305,50 @@ enum BundledUserScriptSources {
         if (typeof preferences.volume === 'number') try {
             video.volume = Math.max(0, Math.min(1, preferences.volume));
         } catch (e) { /* ignore */ }
+        if (typeof preferences.muted === 'boolean') try {
+            video.muted = preferences.muted;
+        } catch (e) { /* ignore */ }
         setTimeout(function () { applying = false; }, 0);
 
         function applySubtitlePreference() {
             var language = loadPlaybackPreferences().subtitleLanguage;
-            if (!language || !video.textTracks) return;
+            if (language === null || !video.textTracks) return;
             for (var i = 0; i < video.textTracks.length; i++) {
                 var track = video.textTracks[i];
                 if (track.kind !== 'subtitles' && track.kind !== 'captions') continue;
-                if (track.language === language) {
-                    try { track.mode = 'showing'; } catch (e) { /* ignore */ }
-                    return;
-                }
+                try { track.mode = language && track.language === language ? 'showing' : 'hidden'; } catch (e) { /* ignore */ }
             }
         }
 
         function restoreResumePosition() {
+            var identity = resumeIdentity(video);
+            if (identity !== resumeIdentityValue) {
+                resumeIdentityValue = identity;
+                resumeApplied = false;
+                lastResumeSave = 0;
+            }
+            applySubtitlePreference();
             if (resumeApplied || !isFinite(video.duration) || video.duration < 60) return;
             resumeApplied = true;
             try {
                 var entries = JSON.parse(localStorage.getItem(RESUME_KEY) || '{}');
-                var position = Number(entries[resumeIdentity(video)] || 0);
+                var position = Number(entries[identity] || 0);
                 if (position > 10 && position < video.duration - 15) video.currentTime = position;
             } catch (e) { /* ignore */ }
-            applySubtitlePreference();
         }
 
         function saveResumePosition(force) {
             var now = Date.now();
+            var id = resumeIdentity(video);
+            if (id !== resumeIdentityValue) {
+                resumeIdentityValue = id;
+                resumeApplied = false;
+                lastResumeSave = 0;
+            }
             if (!force && now - lastResumeSave < 5000) return;
             lastResumeSave = now;
             try {
                 var entries = JSON.parse(localStorage.getItem(RESUME_KEY) || '{}');
-                var id = resumeIdentity(video);
                 if (video.ended || video.currentTime >= video.duration - 10) delete entries[id];
                 else if (video.currentTime > 10 && isFinite(video.duration) && video.duration >= 60) entries[id] = Math.floor(video.currentTime);
                 var keys = Object.keys(entries);
@@ -4160,6 +4361,7 @@ enum BundledUserScriptSources {
         function onVolumeChange() {
             if (applying) return;
             savePlaybackPreference('volume', video.volume);
+            savePlaybackPreference('muted', video.muted);
         }
         function onTextTrackChange() {
             for (var i = 0; i < video.textTracks.length; i++) {
@@ -4169,6 +4371,7 @@ enum BundledUserScriptSources {
                     return;
                 }
             }
+            savePlaybackPreference('subtitleLanguage', '');
         }
 
         video.addEventListener('loadedmetadata', restoreResumePosition);
@@ -4176,7 +4379,8 @@ enum BundledUserScriptSources {
         video.addEventListener('ratechange', onRateChange);
         video.addEventListener('volumechange', onVolumeChange);
         function onPauseOrEnded() { saveResumePosition(true); }
-        video.addEventListener('timeupdate', saveResumePosition);
+        function onTimeUpdate() { saveResumePosition(false); }
+        video.addEventListener('timeupdate', onTimeUpdate);
         video.addEventListener('pause', onPauseOrEnded);
         video.addEventListener('ended', onPauseOrEnded);
         if (video.textTracks) video.textTracks.addEventListener('change', onTextTrackChange);
@@ -4187,7 +4391,7 @@ enum BundledUserScriptSources {
             video.removeEventListener('durationchange', restoreResumePosition);
             video.removeEventListener('ratechange', onRateChange);
             video.removeEventListener('volumechange', onVolumeChange);
-            video.removeEventListener('timeupdate', saveResumePosition);
+            video.removeEventListener('timeupdate', onTimeUpdate);
             video.removeEventListener('pause', onPauseOrEnded);
             video.removeEventListener('ended', onPauseOrEnded);
             if (video.textTracks) video.textTracks.removeEventListener('change', onTextTrackChange);
@@ -4394,11 +4598,15 @@ enum BundledUserScriptSources {
                 e.preventDefault();
                 try {
                     if (document.pictureInPictureElement === video || video.webkitPresentationMode === 'picture-in-picture') {
-                        if (document.exitPictureInPicture) document.exitPictureInPicture();
-                        else if (video.webkitSetPresentationMode) video.webkitSetPresentationMode('inline');
+                        if (document.exitPictureInPicture) {
+                            var result = document.exitPictureInPicture();
+                            if (result && result.catch) result.catch(function () {});
+                        } else if (video.webkitSetPresentationMode) video.webkitSetPresentationMode('inline');
                     } else {
-                        if (video.requestPictureInPicture) video.requestPictureInPicture();
-                        else if (video.webkitSetPresentationMode) video.webkitSetPresentationMode('picture-in-picture');
+                        if (video.requestPictureInPicture) {
+                            var request = video.requestPictureInPicture();
+                            if (request && request.catch) request.catch(function () {});
+                        } else if (video.webkitSetPresentationMode) video.webkitSetPresentationMode('picture-in-picture');
                     }
                 } catch (err) { /* ignore */ }
             } else if (key === 'm' || key === 'M') {
@@ -4436,7 +4644,17 @@ enum BundledUserScriptSources {
             return element && element.content || '';
         }
         function activate() {
-            if (navigator.mediaSession.metadata && mediaSessionOwner !== video) return;
+            if (mediaSessionOwner && mediaSessionOwner !== video) {
+                var previous = mediaSessionOwner;
+                (previous._wblockMediaActions || []).forEach(function (action) {
+                    try { navigator.mediaSession.setActionHandler(action, null); } catch (e) { /* ignore */ }
+                });
+                if (navigator.mediaSession.metadata === previous._wblockMediaMetadata) {
+                    try { navigator.mediaSession.metadata = null; } catch (e) { /* ignore */ }
+                }
+                previous._wblockMediaActions = null;
+                previous._wblockMediaMetadata = null;
+            }
             mediaSessionOwner = video;
             var title = meta('og:title') || document.title || location.hostname;
             var artist = meta('og:site_name') || location.hostname;
@@ -4579,6 +4797,49 @@ enum BundledUserScriptSources {
         } catch (e) { /* ignore */ }
     }
 
+    function isFacebookPage() {
+        try { return /(^|\.)facebook\.com$/i.test(location.hostname); }
+        catch (e) { return false; }
+    }
+
+    // Prefer the control's accessible state; the label is only a fallback for
+    // Facebook variants that do not expose an ARIA pressed state.
+    function facebookAudioControl(video, container) {
+        if (!isFacebookPage()) return null;
+        var root = container || (typeof containerForVideo === 'function' ?
+            containerForVideo(video) : (video && video.parentElement));
+        if (!root || !root.querySelectorAll) return null;
+        var fallback = null;
+        var controls;
+        try { controls = root.querySelectorAll('button,[role="button"]'); }
+        catch (e) { return null; }
+        for (var i = 0; i < controls.length; i++) {
+            var control = controls[i];
+            if (control === video || control.getAttribute('aria-hidden') === 'true') continue;
+            var label = (control.getAttribute('aria-label') || control.getAttribute('title') ||
+                control.getAttribute('data-testid') || '').toLowerCase();
+            var audioLabel = /mute|sound|volume|audio/.test(label);
+            var hasState = control.hasAttribute('aria-pressed') || control.hasAttribute('aria-checked');
+            if (audioLabel && (hasState || control.hasAttribute('aria-label'))) return control;
+            if (!fallback && hasState) fallback = control;
+        }
+        return fallback;
+    }
+
+    function isFacebookReel(video, container) {
+        if (!isFacebookPage() || !video || !video.autoplay || !video.muted) return false;
+        try {
+            if (/^\/reels?(?:\/|$)/i.test(location.pathname)) return true;
+        } catch (e) { /* use the player control signal */ }
+        return !!facebookAudioControl(video, container);
+    }
+
+    function isFacebookProtected(el, video) {
+        if (!el || !isFacebookReel(video)) return false;
+        var control = facebookAudioControl(video, containerForVideo(video));
+        return !!(control && (el === control || (el.contains && el.contains(control))));
+    }
+
     // Custom players set disableRemotePlayback to hide the route picker they
     // cannot style (cineby). With that flag WebKit omits AirPlay from the
     // native controls, so nativeizing must restore remote playback too.
@@ -4594,9 +4855,14 @@ enum BundledUserScriptSources {
     // (video.js, Vimeo) from receiving the click and double-toggling playback.
     function blockCompetingClicks(video) {
         if (!video || video._wblockClickGuard) return;
-        video._wblockClickGuard = true;
+        function onClick(e) { e.stopPropagation(); }
         try {
-            video.addEventListener('click', function (e) { e.stopPropagation(); });
+            video.addEventListener('click', onClick);
+            video._wblockClickGuard = true;
+            registerVideoCleanup(video, function () {
+                video.removeEventListener('click', onClick);
+                video._wblockClickGuard = false;
+            });
         } catch (e) { /* ignore */ }
     }
 
@@ -4680,6 +4946,7 @@ enum BundledUserScriptSources {
             if (el === video) continue;
             if (video.contains(el)) continue;   // <source>, <track>
             if (el.contains(video)) continue;   // ancestor wrappers
+            if (isFacebookProtected(el, video)) continue;
             if (aggressive) {
                 hideElement(el);
             } else {
@@ -4814,7 +5081,8 @@ enum BundledUserScriptSources {
     // roots whose box is off the video are pruned; remaining static roots are
     // walked only for positioned descendants so post text/reactions stay.
     function hideOverlappingSubtree(root, video, vr) {
-        if (root === video || root.contains(video) || video.contains(root)) { return; }
+        if (root === video || root.contains(video) || video.contains(root) ||
+            isFacebookProtected(root, video)) { return; }
         var rr;
         try { rr = root.getBoundingClientRect(); } catch (e) { return; }
         var pos;
@@ -4835,7 +5103,8 @@ enum BundledUserScriptSources {
         var els = root.querySelectorAll('*');
         for (var i = 0; i < els.length; i++) {
             var el = els[i];
-            if (el === video || el.contains(video) || video.contains(el)) { continue; }
+            if (el === video || el.contains(video) || video.contains(el) ||
+                isFacebookProtected(el, video)) { continue; }
             try {
                 var p = getComputedStyle(el).position;
                 if (p === 'absolute' || p === 'sticky' || p === 'fixed') {
@@ -4872,7 +5141,8 @@ enum BundledUserScriptSources {
     // positioned chrome and static/relative full-bleed covers (LinkedIn).
     function hideIfDetachedOverlay(el, video, vr) {
         if (!el || el === video || el === document.documentElement || el === document.body) { return; }
-        if (video.contains(el) || (el.contains && el.contains(video))) { return; }
+        if (video.contains(el) || (el.contains && el.contains(video)) ||
+            isFacebookProtected(el, video)) { return; }
         // A hit often lands on a control (slider/button) nested in a static bar;
         // hide the bar rather than the inner control, which the caller sees.
         var bar = el;
@@ -4954,9 +5224,16 @@ enum BundledUserScriptSources {
     function armChromeWatch(video) {
         if (!video || video._wblockChromeWatch) { return; }
         video._wblockChromeWatch = true;
+        var active = true;
         var timers = [];
+        function clearTimers() {
+            for (var i = 0; i < timers.length; i++) {
+                try { clearTimeout(timers[i]); } catch (e) { /* ignore */ }
+            }
+            timers = [];
+        }
         function kick() {
-            if (!video.isConnected) { return; }
+            if (!active || !video.isConnected) { return; }
             hideOverlappingChrome(video);
             hideStackedChrome(video);
         }
@@ -4969,8 +5246,14 @@ enum BundledUserScriptSources {
         function kickDeferred() {
             kickAfterPaint();
             if (typeof setTimeout !== 'function') { return; }
+            clearTimers();
             [50, 200, 500].forEach(function (ms) {
-                timers.push(setTimeout(kick, ms));
+                var timer = setTimeout(function () {
+                    var index = timers.indexOf(timer);
+                    if (index !== -1) { timers.splice(index, 1); }
+                    kick();
+                }, ms);
+                timers.push(timer);
             });
         }
         try {
@@ -4979,19 +5262,20 @@ enum BundledUserScriptSources {
             video.addEventListener('ended', kickDeferred);
             video.addEventListener('seeking', kick);
             video.addEventListener('loadeddata', kick);
+            window.addEventListener('resize', kickDeferred);
         } catch (e) { /* ignore */ }
         registerVideoCleanup(video, function () {
+            active = false;
             try {
                 video.removeEventListener('play', kickDeferred);
                 video.removeEventListener('pause', kickDeferred);
                 video.removeEventListener('ended', kickDeferred);
                 video.removeEventListener('seeking', kick);
                 video.removeEventListener('loadeddata', kick);
+                window.removeEventListener('resize', kickDeferred);
             } catch (e) { /* ignore */ }
-            for (var t = 0; t < timers.length; t++) {
-                try { clearTimeout(timers[t]); } catch (e) { /* ignore */ }
-            }
-            timers = [];
+            clearTimers();
+            video._wblockChromeWatch = false;
         });
     }
 
@@ -5002,6 +5286,7 @@ enum BundledUserScriptSources {
             // can still clean the known wrapper. Re-hide chrome a framework may
             // have rendered after initial cleanup.
             if (upgradeable) { video._wblockUpgradeable = true; }
+            recoverSidecarTracks(container, video);
             suppressChrome(container, video);
             return;
         }
@@ -5210,6 +5495,7 @@ enum BundledUserScriptSources {
         // Detach and reinsert the SAME media element. Creating a replacement
         // element causes another network load and a visible blank/buffering gap.
         // Keeping the original also preserves captions and any MSE pipeline.
+        recoverSidecarTracks(container, video);
         try { video.remove(); } catch (e) {
             try { if (video.parentNode) { video.parentNode.removeChild(video); } } catch (e2) { /* ignore */ }
         }
@@ -5271,6 +5557,7 @@ enum BundledUserScriptSources {
         var video = selectContainerVideo(container);
         if (!video) { return; }
         if (video._wblockCleaned) {
+            recoverSidecarTracks(container, video);
             suppressChrome(container, video);
             return;
         }
@@ -5287,10 +5574,12 @@ enum BundledUserScriptSources {
 
         // Native controls are the critical path once the media element owns a
         // source. Apply them in this mutation microtask before the next paint.
+        var facebookReel = isFacebookReel(video, container);
         enableBackgroundPlayback();
         video.setAttribute(ATTR_DONE, '1');
         container.setAttribute(ATTR_DONE, '1');
         enhanceInPlace(container, video, true);
+        if (facebookReel) { return; }
 
         // A custom element owns its shadow tree and may tear itself down if its
         // internal structure is removed (Archive.org's <play-av> does exactly
@@ -5321,6 +5610,10 @@ enum BundledUserScriptSources {
         // Native MediaWiki file videos: size in place, don't empty the wrapper.
         if (isNativeFileVideo(video)) {
             sizeNativeFileVideo(video);
+            return;
+        }
+        if (container.querySelectorAll('video').length > 1) {
+            log('multiple videos; preserving player structure');
             return;
         }
         if (src) { cleanPlayer(container, video, src); }
@@ -5355,8 +5648,9 @@ enum BundledUserScriptSources {
             (video.getAttribute && video.getAttribute('src'));
         if (!src && !(video.querySelector && video.querySelector('source'))) { return false; }
         // Skip ambient/background/hero video: autoplay + muted is the dominant
-        // decorative pattern that should keep no native controls.
-        if (video.autoplay && video.muted) { return false; }
+        // decorative pattern that should keep no native controls. Facebook Reels
+        // are the exception: their accessible audio control is the player UI.
+        if (video.autoplay && video.muted && !isFacebookReel(video)) { return false; }
         // Skip tiny rendered videos (hover previews / thumbnails) when the size
         // is known; offsetWidth/Height are 0 before layout, so only filter on a
         // reliably-small box.
