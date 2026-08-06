@@ -23,12 +23,24 @@ public struct ContentBlockerTargetOutcome: Sendable {
     public let safariRulesCount: Int
     public let advancedRulesText: String?
     public let reusedCachedBase: Bool
+    public let outputChanged: Bool
 
-    public init(safariRulesCount: Int, advancedRulesText: String?, reusedCachedBase: Bool) {
+    public init(
+        safariRulesCount: Int,
+        advancedRulesText: String?,
+        reusedCachedBase: Bool,
+        outputChanged: Bool = true
+    ) {
         self.safariRulesCount = safariRulesCount
         self.advancedRulesText = advancedRulesText
         self.reusedCachedBase = reusedCachedBase
+        self.outputChanged = outputChanged
     }
+}
+
+public struct ContentBlockerSaveResult: Sendable {
+    public let ruleCount: Int
+    public let outputChanged: Bool
 }
     /// A valid Safari content blocker list that performs no blocking.
     ///
@@ -58,6 +70,7 @@ public struct ContentBlockerTargetOutcome: Sendable {
     private static let combinedEngineLatestRequestFileName = "combined-engine-latest.request"
     private static let combinedEngineRequestLockTimeout: TimeInterval = 2
     private static let engineFileLockTimeout: TimeInterval = 2
+    private static let contentBlockerOutputLockTimeout: TimeInterval = 10
     private static let engineStorageFileNames = [
         Schema.FILTER_RULE_STORAGE_FILE_NAME,
         Schema.FILTER_ENGINE_INDEX_FILE_NAME,
@@ -442,6 +455,20 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         )
     }
 
+    private static func withContentBlockerOutputLock<T>(
+        at appGroupURL: URL,
+        targetRulesFilename: String,
+        _ body: () throws -> T
+    ) throws -> T {
+        let lockURL = appGroupURL.appendingPathComponent(".\(targetRulesFilename).lock")
+        guard let fileLock = FileLock(filePath: lockURL.path),
+              fileLock.lock(before: Date().addingTimeInterval(contentBlockerOutputLockTimeout)) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        defer { _ = fileLock.unlock() }
+        return try body()
+    }
+
     /// Saves the provided JSON content to the content blocker file in the shared container
     /// without attempting to convert the rules.
     ///
@@ -449,17 +476,47 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
     ///   - jsonRules: Safari content blocker JSON contents in proper format.
     ///   - groupIdentifier: Group ID to use for the shared container where
     ///                      the file will be saved.
-    /// - Returns: The number of entries in the JSON array.
-    public static func saveContentBlocker(jsonRules: String, groupIdentifier: String, targetRulesFilename: String) throws -> Int {
+    /// - Returns: The rule count and whether the shared output bytes changed.
+    public static func saveContentBlockerIfChanged(
+        jsonRules: String,
+        groupIdentifier: String,
+        targetRulesFilename: String
+    ) throws -> ContentBlockerSaveResult {
         os_log(.info, "Saving pre-formatted JSON content blocker rules to %@", targetRulesFilename)
-        let jsonData = Data(jsonRules.utf8)
-        guard let rules = try JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]] else {
+        let data = Data(jsonRules.utf8)
+        guard let rules = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
             throw CocoaError(.fileReadCorruptFile)
         }
-        try measure(label: "Saving pre-formatted file \(targetRulesFilename)") {
-            try saveBlockerListFile(contents: jsonRules, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
+
+        guard let appGroupURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else {
+            throw CocoaError(.fileNoSuchFile)
         }
-        return rules.count
+
+        let sharedFileURL = appGroupURL.appendingPathComponent(targetRulesFilename)
+        let outputChanged = try withContentBlockerOutputLock(
+            at: appGroupURL,
+            targetRulesFilename: targetRulesFilename
+        ) {
+            let outputChanged = (try? Data(contentsOf: sharedFileURL)) != data
+            if outputChanged {
+                try data.write(to: sharedFileURL, options: .atomic)
+                os_log(.info, "Successfully saved rules to %@", sharedFileURL.path)
+            } else {
+                os_log(.info, "Skipped unchanged rules at %@", sharedFileURL.path)
+            }
+            return outputChanged
+        }
+        return ContentBlockerSaveResult(ruleCount: rules.count, outputChanged: outputChanged)
+    }
+
+    public static func saveContentBlocker(jsonRules: String, groupIdentifier: String, targetRulesFilename: String) throws -> Int {
+        try saveContentBlockerIfChanged(
+            jsonRules: jsonRules,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: targetRulesFilename
+        ).ruleCount
     }
 
     /// Converts rules from a file, with a persistent on-disk cache keyed by the caller-provided SHA256.
@@ -470,7 +527,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         groupIdentifier: String,
         targetRulesFilename: String,
         disabledSites: [String]
-    ) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
+    ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
         let sitesToUse = disabledSites
         let effectiveRulesHash = effectiveRulesHashHex(baseRulesHashHex: rulesSHA256Hex)
 
@@ -494,20 +551,29 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             .trimmingCharacters(in: .whitespacesAndNewlines),
             cachedHash == effectiveRulesHash,
             FileManager.default.fileExists(atPath: baseURL.path),
-            let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8)
+            let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8),
+            isValidContentBlockerJSON(baseJSON)
         {
             let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
                 .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? countRulesInJSON(baseJSON)
 
             let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
-            try saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
+            let output = try saveContentBlockerIfChanged(
+                jsonRules: finalJSON,
+                groupIdentifier: groupIdentifier,
+                targetRulesFilename: targetRulesFilename
+            )
 
             let advancedText =
                 (try? String(contentsOf: advancedURL, encoding: .utf8))
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .flatMap { $0.isEmpty ? nil : $0 }
 
-            return (safariRulesCount: baseCount + sitesToUse.count, advancedRulesText: advancedText)
+            return (
+                safariRulesCount: baseCount + sitesToUse.count,
+                advancedRulesText: advancedText,
+                outputChanged: output.outputChanged
+            )
         }
 
         // Cache miss: read rules file and run conversion.
@@ -515,15 +581,27 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         let effectiveRules = combinedRulesWithEmbeddedCompatibility(combinedRules)
         let result = try convertRules(rules: effectiveRules)
 
-        try saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
+        _ = try saveContentBlockerIfChanged(
+            jsonRules: result.safariRulesJSON,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: baseFilename
+        )
         try saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
         try saveBlockerListFile(contents: result.advancedRulesText ?? "", groupIdentifier: groupIdentifier, filename: advancedFilename)
 
         let finalJSON = injectIgnoreRulesForDisabledSites(json: result.safariRulesJSON, disabledSites: sitesToUse)
-        try saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
+        let output = try saveContentBlockerIfChanged(
+            jsonRules: finalJSON,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: targetRulesFilename
+        )
         try saveBlockerListFile(contents: effectiveRulesHash, groupIdentifier: groupIdentifier, filename: baseHashFilename)
 
-        return (safariRulesCount: result.safariRulesCount + sitesToUse.count, advancedRulesText: result.advancedRulesText)
+        return (
+            safariRulesCount: result.safariRulesCount + sitesToUse.count,
+            advancedRulesText: result.advancedRulesText,
+            outputChanged: output.outputChanged
+        )
     }
 
     /// Compiles rules for a specific content blocker target or reuses cached compilation results if available.
@@ -572,7 +650,8 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             return ContentBlockerTargetOutcome(
                 safariRulesCount: fastUpdate.safariRulesCount,
                 advancedRulesText: (trimmedAdvanced?.isEmpty == false) ? trimmedAdvanced : nil,
-                reusedCachedBase: true
+                reusedCachedBase: true,
+                outputChanged: fastUpdate.outputChanged
             )
         }
 
@@ -605,7 +684,8 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         return ContentBlockerTargetOutcome(
             safariRulesCount: conversion.safariRulesCount,
             advancedRulesText: conversion.advancedRulesText,
-            reusedCachedBase: false
+            reusedCachedBase: false,
+            outputChanged: conversion.outputChanged
         )
     }
 
@@ -618,7 +698,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         disabledSites: [String],
         extraRulesText: String?,
         groupIdentifier: String
-    ) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
+    ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else {
@@ -697,7 +777,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
     ///   - targetRulesFilename: Target filename for the rules file
     ///   - disabledSites: Sites where wBlock is disabled (ignore rules are injected for these).
     /// - Returns: A tuple containing the number of Safari content blocker rules and advanced rules text
-    public static func fastUpdateDisabledSites(groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
+    public static func fastUpdateDisabledSites(groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
         let sitesToUse = disabledSites
 
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
@@ -711,33 +791,54 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         let baseURL = containerURL.appendingPathComponent(baseFilename)
         let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
         if FileManager.default.fileExists(atPath: baseURL.path),
-           let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8) {
+           let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8),
+           isValidContentBlockerJSON(baseJSON) {
             let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
-            try saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
+            let output = try saveContentBlockerIfChanged(
+                jsonRules: finalJSON,
+                groupIdentifier: groupIdentifier,
+                targetRulesFilename: targetRulesFilename
+            )
 
             let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
                 .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? 0
             let finalRuleCount = baseCount + sitesToUse.count
 
             os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
-            return (safariRulesCount: finalRuleCount, advancedRulesText: nil)
+            return (
+                safariRulesCount: finalRuleCount,
+                advancedRulesText: nil,
+                outputChanged: output.outputChanged
+            )
         }
 
         // Fallback/migration: derive a base JSON by stripping legacy disabled-site ignore rules (only),
         // then persist it for future fast updates.
         let targetURL = containerURL.appendingPathComponent(targetRulesFilename)
-        let existingJSON = (try? String(contentsOf: targetURL, encoding: .utf8)) ?? "[]"
-        let derived = deriveBaseRulesFromLegacyFinalJSON(existingJSON)
+        let existingJSON = try String(contentsOf: targetURL, encoding: .utf8)
+        let derived = try deriveBaseRulesFromLegacyFinalJSON(existingJSON)
 
-        try saveBlockerListFile(contents: derived.baseJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
+        _ = try saveContentBlockerIfChanged(
+            jsonRules: derived.baseJSON,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: baseFilename
+        )
         try saveBlockerListFile(contents: String(derived.baseRuleCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
 
         let finalJSON = injectIgnoreRulesForDisabledSites(json: derived.baseJSON, disabledSites: sitesToUse)
-        try saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
+        let output = try saveContentBlockerIfChanged(
+            jsonRules: finalJSON,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: targetRulesFilename
+        )
 
         let finalRuleCount = derived.baseRuleCount + sitesToUse.count
         os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
-        return (safariRulesCount: finalRuleCount, advancedRulesText: nil)
+        return (
+            safariRulesCount: finalRuleCount,
+            advancedRulesText: nil,
+            outputChanged: output.outputChanged
+        )
     }
 
     private struct DerivedBaseRules {
@@ -745,19 +846,18 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         let baseRuleCount: Int
     }
 
-    private static func deriveBaseRulesFromLegacyFinalJSON(_ json: String) -> DerivedBaseRules {
+    private static func deriveBaseRulesFromLegacyFinalJSON(_ json: String) throws -> DerivedBaseRules {
         guard let jsonData = json.data(using: .utf8),
               let existingRules = try? JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]] else {
-            return DerivedBaseRules(baseJSON: json, baseRuleCount: countRulesInJSON(json))
+            throw CocoaError(.fileReadCorruptFile)
         }
 
         let filteredRules = existingRules.filter { !isLegacyDisabledSiteIgnoreRule($0) }
-        if let updatedData = try? JSONSerialization.data(withJSONObject: filteredRules, options: []),
-           let baseJSON = String(data: updatedData, encoding: .utf8) {
-            return DerivedBaseRules(baseJSON: baseJSON, baseRuleCount: filteredRules.count)
+        guard let updatedData = try? JSONSerialization.data(withJSONObject: filteredRules, options: []),
+              let baseJSON = String(data: updatedData, encoding: .utf8) else {
+            throw CocoaError(.fileReadCorruptFile)
         }
-
-        return DerivedBaseRules(baseJSON: json, baseRuleCount: existingRules.count)
+        return DerivedBaseRules(baseJSON: baseJSON, baseRuleCount: filteredRules.count)
     }
 
     private static func isLegacyDisabledSiteIgnoreRule(_ rule: [String: Any]) -> Bool {
@@ -829,6 +929,11 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         return String(trimmed[..<closeBracket]) + "," + ignoreRules + "]"
     }
     
+    private static func isValidContentBlockerJSON(_ json: String) -> Bool {
+        guard let jsonData = json.data(using: .utf8) else { return false }
+        return (try? JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]]) != nil
+    }
+
     /// Counts the number of rules in a Safari content blocker JSON string.
     ///
     /// - Parameter json: Safari content blocker JSON string.

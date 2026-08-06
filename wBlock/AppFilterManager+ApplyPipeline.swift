@@ -534,6 +534,7 @@ extension AppFilterManager {
                     safariRules: ruleCountForThisTarget,
                     advancedRules: advancedCount,
                     reusedCachedBase: conversionResult.reusedCachedBase,
+                    outputChanged: conversionResult.outputChanged,
                     durationMs: completion.durationMs
                 )
             )
@@ -558,6 +559,8 @@ extension AppFilterManager {
                 "assignedFilters": "\(conversionMetrics.reduce(0) { $0 + $1.filterCount })",
                 "cacheHits": "\(conversionMetrics.filter { $0.reusedCachedBase }.count)",
                 "cacheMisses": "\(conversionMetrics.filter { !$0.reusedCachedBase }.count)",
+                "changedOutputs": "\(conversionMetrics.filter(\.outputChanged).count)",
+                "unchangedOutputs": "\(conversionMetrics.filter { !$0.outputChanged }.count)",
                 "totalRules": "\(conversionMetrics.reduce(0) { $0 + $1.safariRules })",
                 "advancedRules": "\(conversionMetrics.reduce(0) { $0 + $1.advancedRules })",
                 "conversionTime": await MainActor.run { self.lastConversionTime },
@@ -787,7 +790,7 @@ extension AppFilterManager {
                 var targetsToReload: [ContentBlockerTargetInfo] = []
 
                 for targetInfo in platformTargets {
-                    let savedRuleCount = try ContentBlockerService.saveContentBlocker(
+                    let saveResult = try ContentBlockerService.saveContentBlockerIfChanged(
                         jsonRules: ContentBlockerService.inertContentBlockerRulesJSON,
                         groupIdentifier: groupIdentifier,
                         targetRulesFilename: targetInfo.rulesFilename
@@ -797,7 +800,7 @@ extension AppFilterManager {
                         groupIdentifier: groupIdentifier,
                         expectedRulesJSON: ContentBlockerService.inertContentBlockerRulesJSON
                     )
-                    if savedRuleCount == ContentBlockerService.inertContentBlockerRuleCount,
+                    if saveResult.ruleCount == ContentBlockerService.inertContentBlockerRuleCount,
                        outputMatchesInertRules
                     {
                         targetsToReload.append(targetInfo)
@@ -956,6 +959,7 @@ extension AppFilterManager {
         let safariRules: Int
         let advancedRules: Int
         let reusedCachedBase: Bool
+        let outputChanged: Bool
         let durationMs: Int
     }
 

@@ -1601,12 +1601,12 @@ public actor SharedAutoUpdateManager {
         }
 
         for target in ContentBlockerTargetManager.shared.allTargets(forPlatform: platform) {
-            let savedRuleCount = try? ContentBlockerService.saveContentBlocker(
+            let saveResult = try? ContentBlockerService.saveContentBlockerIfChanged(
                 jsonRules: ContentBlockerService.inertContentBlockerRulesJSON,
                 groupIdentifier: groupIdentifier,
                 targetRulesFilename: target.rulesFilename
             )
-            if savedRuleCount != ContentBlockerService.inertContentBlockerRuleCount {
+            if saveResult?.ruleCount != ContentBlockerService.inertContentBlockerRuleCount {
                 failedTargets.append(target.displayName)
                 continue
             }
