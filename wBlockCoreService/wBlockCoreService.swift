@@ -87,6 +87,10 @@ public struct ContentBlockerSaveResult: Sendable {
         Schema.ENGINE_META_FILE_NAME,
     ]
 
+    private enum CombinedEnginePublishError: Error {
+        case supersededRequest
+    }
+
     /// Built-in compatibility rules that improve blocking of common dynamic ad script
     /// patterns and dynamic ad containers across filter sets.
     ///
@@ -1514,7 +1518,10 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         try measure(label: combinedAdvancedRules.isEmpty ? "Clearing filter engine" : "Building combined filter engine") {
             try withCombinedEngineBuildLock(at: baseURL) {
                 let skipped = try withEngineCriticalSection(at: baseURL) {
-                    canSkipCombinedEnginePublish(fingerprint: fingerprint, baseURL: baseURL)
+                    try withCombinedEngineRequestLock(at: baseURL) {
+                        try ensureCombinedEngineRequestIsCurrent(at: baseURL, requestToken: requestToken)
+                        return canSkipCombinedEnginePublish(fingerprint: fingerprint, baseURL: baseURL)
+                    }
                 }
                 if skipped {
                     os_log(.info, "Skipping unchanged combined filter engine publish")
@@ -1530,10 +1537,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
 
                 let published = try withEngineCriticalSection(at: baseURL) {
                     try withCombinedEngineRequestLock(at: baseURL) {
-                        guard latestCombinedEngineRequestToken(at: baseURL) == requestToken else {
-                            os_log(.info, "Abandoning superseded combined filter engine publish")
-                            return false
-                        }
+                        try ensureCombinedEngineRequestIsCurrent(at: baseURL, requestToken: requestToken)
                         if canSkipCombinedEnginePublish(fingerprint: fingerprint, baseURL: baseURL) {
                             return false
                         }
@@ -1754,6 +1758,16 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         }
         let trimmedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmedToken.isEmpty ? nil : trimmedToken
+    }
+
+    private static func ensureCombinedEngineRequestIsCurrent(
+        at baseURL: URL,
+        requestToken: String
+    ) throws {
+        guard latestCombinedEngineRequestToken(at: baseURL) == requestToken else {
+            os_log(.info, "Abandoning superseded combined filter engine publish")
+            throw CombinedEnginePublishError.supersededRequest
+        }
     }
 
     private static func withEngineCriticalSection<T>(at baseURL: URL, _ body: () throws -> T) throws -> T {

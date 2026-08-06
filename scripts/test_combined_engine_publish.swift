@@ -22,8 +22,7 @@ let buildLock = position(of: "try withCombinedEngineBuildLock(at: baseURL)")
 let initialCheck = position(of: "let skipped = try withEngineCriticalSection")
 let temporaryBuild = position(of: "let temporaryBuild = try buildTemporaryEngine")
 let commitSection = position(of: "let published = try withEngineCriticalSection")
-let requestCommitLock = position(of: "try withCombinedEngineRequestLock(at: baseURL) {")
-let tokenCheck = position(of: "guard latestCombinedEngineRequestToken(at: baseURL) == requestToken else")
+let publishEnd = position(of: "public static func buildCombinedFilterEngine")
 let markerCreation = position(of: "try Data().write(to: migrationMarkerURL, options: .atomic)")
 let metaInvalidation = position(of: "try invalidateExistingEngineMeta(at: baseURL)")
 let replacement = position(of: "for fileName in engineStorageFileNames where fileName != Schema.ENGINE_META_FILE_NAME")
@@ -56,8 +55,26 @@ require(requestRecord < buildLock,
         "the unique request must be recorded before waiting for the build lock")
 require(buildLock < initialCheck && initialCheck < temporaryBuild && temporaryBuild < commitSection,
         "the build lock must cover check, compilation, and commit")
-require(requestCommitLock < tokenCheck && tokenCheck < position(of: "try publishEngineFiles("),
+let initialBody = source[initialCheck..<temporaryBuild]
+let commitBody = source[commitSection..<publishEnd]
+let initialEngineLock = initialBody.range(of: "try withEngineCriticalSection(at: baseURL)")
+let initialRequestLock = initialBody.range(of: "try withCombinedEngineRequestLock(at: baseURL)")
+let commitEngineLock = commitBody.range(of: "try withEngineCriticalSection(at: baseURL)")
+let commitRequestLock = commitBody.range(of: "try withCombinedEngineRequestLock(at: baseURL)")
+require(initialEngineLock != nil && initialRequestLock != nil
+            && initialEngineLock!.lowerBound < initialRequestLock!.lowerBound
+            && initialBody.contains("try ensureCombinedEngineRequestIsCurrent(at: baseURL, requestToken: requestToken)"),
+        "the unchanged skip path must check the request while holding engine then request locks")
+require(commitEngineLock != nil && commitRequestLock != nil
+            && commitEngineLock!.lowerBound < commitRequestLock!.lowerBound
+            && commitBody.contains("try ensureCombinedEngineRequestIsCurrent(at: baseURL, requestToken: requestToken)"),
         "commit must hold the request lock while checking the latest token")
+require(source.components(separatedBy: "try withCombinedEngineRequestLock(at: baseURL) {").count == 4,
+        "the skip and commit paths must retain engine-then-request lock ordering")
+require(source.contains("throw CombinedEnginePublishError.supersededRequest"),
+        "superseded requests must throw a dedicated internal error")
+require(source.components(separatedBy: "ensureCombinedEngineRequestIsCurrent(at: baseURL, requestToken: requestToken)").count == 3,
+        "both the skip and commit paths must reject stale request tokens")
 require(markerCreation < metaInvalidation && metaInvalidation < replacement && replacement < metaReplacement,
         "existing meta must be invalidated before other artifacts and replaced last")
 require(metaReplacement < publishedValidation && publishedValidation < markerWrite,
@@ -93,7 +110,6 @@ require(!source.contains("NSFileCoordinator"),
         "the shared FileLock must remain the cross-process coordination primitive")
 
 let publishStart = position(of: "public static func publishCombinedFilterEngine")
-let publishEnd = position(of: "public static func buildCombinedFilterEngine")
 let publishBody = source[publishStart..<publishEnd]
 require(!publishBody.contains("WebExtensionGate.shared.withLock"),
         "WebExtensionGate must not cover compilation")
@@ -106,15 +122,33 @@ struct RequestLedger {
     func canCommit(_ token: String) -> Bool { latest == token }
 }
 
+enum PublishError: Error { case superseded }
+
+func publish(
+    token: String,
+    unchanged: Bool,
+    ledger: RequestLedger,
+    publishedEngine: inout String
+) throws {
+    guard ledger.canCommit(token) else { throw PublishError.superseded }
+    if !unchanged { publishedEngine = "\(token)-engine" }
+}
+
 var ledger = RequestLedger()
 var publishedEngine = "prior-engine"
 ledger.record("older")
 ledger.record("newer")
-if ledger.canCommit("older") {
-    publishedEngine = "older-engine"
-}
-require(!ledger.canCommit("older"), "an older request must be rejected after a later request is recorded")
-require(publishedEngine == "prior-engine", "superseded output must not replace the prior engine")
-require(ledger.canCommit("newer"), "the latest request must remain publishable")
+do {
+    try publish(token: "older", unchanged: true, ledger: ledger, publishedEngine: &publishedEngine)
+    require(false, "an older unchanged request must fail instead of returning skip success")
+} catch PublishError.superseded {}
+require(publishedEngine == "prior-engine", "a stale unchanged request must preserve the prior engine")
+do {
+    try publish(token: "older", unchanged: false, ledger: ledger, publishedEngine: &publishedEngine)
+    require(false, "an older compiling request must fail instead of publishing")
+} catch PublishError.superseded {}
+require(publishedEngine == "prior-engine", "a stale request must not replace the prior engine")
+try publish(token: "newer", unchanged: false, ledger: ledger, publishedEngine: &publishedEngine)
+require(publishedEngine == "newer-engine", "the latest request must remain publishable")
 
 print("PASS: combined engine publish static and behavior guardrails")

@@ -1592,12 +1592,14 @@ public actor SharedAutoUpdateManager {
             )
         } catch {
             appendSharedLog("Failed to clear paused advanced engine during auto-update: \(error.localizedDescription)")
+            return false
         }
 
         do {
             _ = try RemoveParamDNRRuleGenerator.clearSavedRules(groupIdentifier: groupIdentifier)
         } catch {
             appendSharedLog("Failed to clear paused removeparam rules during auto-update: \(error.localizedDescription)")
+            return false
         }
 
         for target in ContentBlockerTargetManager.shared.allTargets(forPlatform: platform) {

@@ -14,8 +14,21 @@ func require(_ condition: @autoclosure () -> Bool, _ message: String) {
 }
 
 let onboarding = try read("wBlock/OnboardingView.swift")
+let filterManager = try read("wBlock/AppFilterManager.swift")
 let dataManager = try read("wBlockCoreService/ProtobufDataManager.swift")
 
+require(
+    filterManager.contains("@MainActor\n    func resetForOnboarding() async"),
+    "onboarding reset UI mutations must remain on MainActor"
+)
+require(
+    filterManager.contains("let groupIdentifier = GroupIdentifier.shared.value\n        do {\n            try await Task.detached {\n                try ContentBlockerService.publishCombinedFilterEngine("),
+    "onboarding reset must publish the synchronous engine off the main actor"
+)
+require(
+    !filterManager.contains("groupIdentifier: GroupIdentifier.shared.value"),
+    "the detached onboarding publish must capture the Sendable group identifier first"
+)
 require(
     !onboarding.contains("private func setHasCompletedOnboarding"),
     "onboarding completion must not use a fire-and-forget wrapper"

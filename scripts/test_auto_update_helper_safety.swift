@@ -208,6 +208,16 @@ assertContains(
 )
 assertContains(
     sharedAutoUpdate,
+    "Failed to clear paused advanced engine during auto-update: \\(error.localizedDescription)\")\n            return false",
+    "A failed or superseded advanced-engine clear must stop paused output repair"
+)
+assertContains(
+    sharedAutoUpdate,
+    "Failed to clear paused removeparam rules during auto-update: \\(error.localizedDescription)\")\n            return false",
+    "Failed removeparam cleanup must stop paused output repair"
+)
+assertContains(
+    sharedAutoUpdate,
     "if helperStagedOutputs && repairedOutputs",
     "Paused helper staging must force the next app-owned reload"
 )
