@@ -7,7 +7,7 @@
 // Run: node scripts/test_content_scriptlet_injection.mjs [path/to/content.js]
 // Defaults to "wBlock Scripts (iOS)/Resources/content.js".
 
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -15,6 +15,9 @@ const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const bundlePath = process.argv[2]
   ?? path.join(repoRoot, "wBlock Scripts (iOS)", "Resources", "content.js");
 const source = readFileSync(bundlePath, "utf8");
+const contentSource = readFileSync(path.join(repoRoot, "extension-src", "content.js"), "utf8");
+const backgroundSource = readFileSync(path.join(repoRoot, "extension-src", "background.js"), "utf8");
+const backgroundBundle = readFileSync(path.join(repoRoot, "wBlock Scripts (iOS)", "Resources", "background.js"), "utf8");
 
 let failures = 0;
 const check = (name, cond) => {
@@ -22,6 +25,15 @@ const check = (name, cond) => {
   if (!cond) failures += 1;
 };
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+check("content source keeps Extended CSS", contentSource.includes("class ExtendedCss"));
+check("content source keeps ContentScript", contentSource.includes("class ContentScript"));
+check("content source omits generated scriptlet registry", !contentSource.includes("scriptletsMap") && !contentSource.includes("getScriptletFunction") && !contentSource.includes("scriptlets.invoke"));
+check("shipped content omits generated scriptlet registry", !source.includes("scriptletsMap") && !source.includes("getScriptletFunction"));
+check("background source retains generated scriptlet registry", backgroundSource.includes("var scriptletsMap = {") && backgroundSource.includes("getScriptletFunction") && backgroundSource.includes("var scriptlets = {"));
+check("background source compiles fallback scriptlets", backgroundSource.includes("compileScriptletsForContent") && backgroundSource.includes("code: scriptlets.invoke(source)"));
+check("shipped background retains scriptlet compiler", backgroundBundle.includes("getScriptletFunction") && backgroundBundle.includes("invoke"));
+check("shipped content size stays below regression ceiling", statSync(bundlePath).size < 100 * 1024);
 
 // --- DOM stubs ---
 const appended = [];
@@ -100,18 +112,29 @@ try {
 
   const cs = windowStub.adguard.contentScript;
   appended.length = 0;
-  cs.runScriptlets([{ name: "set-constant", args: ["wblockSmokeTest", "1"] }], false);
+  cs.runScriptlets([{
+    name: "set-constant",
+    args: ["wblockSmokeTest", "1"],
+    code: '(function(source,args){ window.__wblockSmokeTest = source.name; })( {"name":"set-constant"}, []);'
+  }], false);
 
   const scriptEls = appended.filter(el => el.tagName === "script");
   check("scriptlet injection appended a script element", scriptEls.length === 1);
 
   const code = scriptEls[0] ? scriptEls[0].textContent : "";
-  check("assembled code carries scriptlet source JSON", code.includes('"name":"set-constant"'));
+  check("assembled code carries precompiled source", code.includes("__wblockSmokeTest"));
   check("assembled code is an IIFE invocation", code.trim().startsWith("("));
 
   let parses = true;
   try { new Function(code); } catch { parses = false; }
   check("assembled scriptlet code parses", parses);
+
+  appended.length = 0;
+  cs.runScriptlets([
+    { name: "bad", code: "throw new Error('first scriptlet failed');" },
+    { name: "good", code: "window.__wblockSecondScriptlet = true;" }
+  ]);
+  check("fallback keeps per-scriptlet injection isolation", appended.filter(el => el.tagName === "script").length === 2);
 
   // Raw #%# JS rule path used by the blank-frame fallback.
   appended.length = 0;
@@ -224,7 +247,11 @@ try {
             payload: {
               css: [],
               extendedCss: [],
-              scriptlets: [{ name: "set-constant", args: ["__wblockRaceProbe", "1"] }],
+              scriptlets: [{
+                name: "set-constant",
+                args: ["__wblockRaceProbe", "1"],
+                code: '(function(source,args){ window.__wblockRaceProbe = source.name; })( {"name":"set-constant"}, []);'
+              }],
               js: [],
             },
           });

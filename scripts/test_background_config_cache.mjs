@@ -30,11 +30,11 @@ const check = (name, condition) => {
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-const makeConfig = (css, engineTimestamp, js = []) => ({
+const makeConfig = (css, engineTimestamp, js = [], scriptlets = []) => ({
   css,
   extendedCss: [],
   js,
-  scriptlets: [],
+  scriptlets,
   engineTimestamp
 });
 
@@ -112,6 +112,7 @@ const loadBackground = ({ storage = {}, nativeHandler, executeScript = async () 
 };
 
 const topFrameSender = url => ({ url, frameId: 0, tab: { id: 7, url } });
+const frameSender = (url, topUrl, frameId = 1) => ({ url, frameId, tab: { id: 7, url: topUrl } });
 
 // Scenario A: persisted cache serves a top-frame config instantly while the
 // native host hangs (cold start after Safari relaunch).
@@ -449,7 +450,54 @@ const runScriptInjectionScenario = async executeScript => {
   );
 }
 
-// Scenario I: timing-critical page-world userscripts bypass a blocked native
+// Scenario I: blank-frame fallback receives background-compiled scriptlet source,
+// while normal HTTP frames retain MAIN-world function injection.
+{
+  const pageUrl = "https://example.com/";
+  const scriptlet = { name: "set-constant", args: ["__wblockBlankProbe", "1"] };
+  const fallbackScriptlets = [
+    { name: "missing-scriptlet", args: [] },
+    scriptlet,
+    { name: "another-missing-scriptlet", args: [] }
+  ];
+  const state = loadBackground({
+    nativeHandler: message => {
+      if (message && message.payload && message.payload.url === pageUrl) {
+        return { payload: makeConfig([], 17, [], fallbackScriptlets) };
+      }
+      return { payload: makeConfig([], 17) };
+    }
+  });
+  for (const frameUrl of [
+    "about:blank",
+    "about:srcdoc",
+    "data:text/html,<p>data frame</p>",
+    "blob:https://example.com/00000000-0000-0000-0000-000000000000"
+  ]) {
+    const response = await state.onMessage(
+      { type: "InitContentScript" },
+      frameSender(frameUrl, pageUrl)
+    );
+    const scriptlets = response && response.payload && response.payload.scriptlets;
+    const compiled = scriptlets && scriptlets[1];
+    check(`${frameUrl} routes through the content fallback`, !!(response && response.payload) && state.executed.length === 0);
+    check(`${frameUrl} carries precompiled scriptlet source`, compiled && compiled.code.includes("__wblockBlankProbe"));
+    check(`${frameUrl} preserves thrown/unknown ordering`, scriptlets && scriptlets[0].code === "" && scriptlets[2].code === "");
+    check(`${frameUrl} preserves blank-frame verbose=false metadata`, compiled
+      && compiled.code.includes('"engine":"safari-extension"')
+      && compiled.code.includes('"name":"set-constant"')
+      && compiled.code.includes('"verbose":false'));
+  }
+
+  const httpState = loadBackground({
+    nativeHandler: () => ({ payload: makeConfig([], 18, [], [scriptlet]) })
+  });
+  await httpState.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  check("HTTP frame still uses MAIN-world scriptlet injection", httpState.executed.some(injection => injection.world === "MAIN" && typeof injection.func === "function"));
+  check("HTTP frame does not receive fallback payload", httpState.executed.every(injection => injection.world !== "ISOLATED" || injection.args === undefined || !injection.args.some(arg => arg && arg.code)));
+}
+
+// Scenario J: timing-critical page-world userscripts bypass a blocked native
 // configuration queue and are persisted for the next cold document start.
 {
   const pageUrl = "https://discord.com/app";

@@ -25409,6 +25409,30 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * and available in the ISOLATED world via `adguard.contentScript` object.
    */
   const backgroundScript = new BackgroundScript();
+  const compileScriptletsForContent = configuration => ({
+    ...configuration,
+    scriptlets: (configuration.scriptlets || []).map(scriptlet => {
+      try {
+        const source = {
+          engine: SCRIPTLET_ENGINE_NAME,
+          name: scriptlet.name,
+          args: scriptlet.args,
+          version,
+          verbose: false
+        };
+        return {
+          ...scriptlet,
+          code: scriptlets.invoke(source)
+        };
+      } catch (error) {
+        wBlockLogger.error('Failed to compile scriptlet for content fallback', scriptlet && scriptlet.name, error);
+        return {
+          ...scriptlet,
+          code: ''
+        };
+      }
+    })
+  });
   /**
    * Cache to store the rules for a given URL. The key is a URL (string) and
    * the value is a Configuration. Caching content script configurations allows us
@@ -26292,8 +26316,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (!blankFrame) {
       await backgroundScript.applyConfiguration(tabId, frameId, configuration);
     } else {
-      // Pass the configuration to the content script.
-      response.payload = configuration;
+      // Pass precompiled scriptlet source to the content script. The content
+      // runtime intentionally does not carry the generated scriptlet registry.
+      response.payload = compileScriptletsForContent(configuration);
     }
     return response;
   };
