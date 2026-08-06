@@ -388,15 +388,15 @@ extension AppFilterManager {
                 metadata: [:]
             )
         }
-        let affinityFilterIDs: Set<UUID> = await Task.detached(priority: .utility) {
+        let affinitySnapshot = await Task.detached(priority: .utility) {
             guard let containerURL = FileManager.default.containerURL(
                 forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
             ) else {
-                return []
+                return SafariContentBlockerAffinitySnapshot(contentsByFilterID: [:])
             }
 
-            return SafariContentBlockerAffinityProcessor.detectFiltersWithAffinity(
-                orderedSelectedFilters,
+            return SafariContentBlockerAffinityProcessor.snapshot(
+                for: orderedSelectedFilters,
                 containerURL: containerURL
             )
         }.value
@@ -419,7 +419,7 @@ extension AppFilterManager {
                     let outcome = try ContentBlockerService.compileTargetRules(
                         filters: work.filters,
                         orderedSelectedFilters: orderedSelectedFilters,
-                        affinityFilterIDs: affinityFilterIDs,
+                        affinitySnapshot: affinitySnapshot,
                         targetInfo: work.targetInfo,
                         allTargets: platformTargets,
                         disabledSites: disabledSites,

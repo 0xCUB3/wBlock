@@ -1690,7 +1690,7 @@ public actor SharedAutoUpdateManager {
         let allTargets: [ContentBlockerTargetInfo]
         let containerURL: URL
         let disabledSites: [String]
-        let affinityFilterIDs: Set<UUID>
+        let affinitySnapshot: SafariContentBlockerAffinitySnapshot
         let orderedFilters: [FilterList]
         let extraRulesText: String?
         let isBackground: Bool
@@ -1737,7 +1737,7 @@ public actor SharedAutoUpdateManager {
             let outcome = try ContentBlockerService.compileTargetRules(
                 filters: work.filters,
                 orderedSelectedFilters: work.orderedFilters,
-                affinityFilterIDs: work.affinityFilterIDs,
+                affinitySnapshot: work.affinitySnapshot,
                 targetInfo: target,
                 allTargets: work.allTargets,
                 disabledSites: work.disabledSites,
@@ -1800,7 +1800,7 @@ public actor SharedAutoUpdateManager {
         } catch { appendSharedLog("Failed to prepare removeparam DNR rules: \(error.localizedDescription)") }
         let ordered = ContentBlockerMappingService.orderedForDistribution(selectedFilters)
         let byTarget = ContentBlockerMappingService.distribute(selectedFilters: selectedFilters, across: targets)
-        let affinity = SafariContentBlockerAffinityProcessor.detectFiltersWithAffinity(ordered, containerURL: containerURL)
+        let affinitySnapshot = SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: containerURL)
         let zapper = await MainActor.run { ZapperContentBlockerRuleGenerator.generatedRulesText(from: ProtobufDataManager.shared.getActiveZapperRulesByHost()) }
         var results: [String: ConversionTargetResult] = [:]
         let works = targets.map { target in
@@ -1810,7 +1810,7 @@ public actor SharedAutoUpdateManager {
                 allTargets: targets,
                 containerURL: containerURL,
                 disabledSites: disabledSites,
-                affinityFilterIDs: affinity,
+                affinitySnapshot: affinitySnapshot,
                 orderedFilters: ordered,
                 extraRulesText: target.slot == 5 ? zapper : nil,
                 isBackground: policy.isBackground,

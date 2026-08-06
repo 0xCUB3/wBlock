@@ -516,7 +516,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
     public static func compileTargetRules(
         filters: [FilterList],
         orderedSelectedFilters: [FilterList],
-        affinityFilterIDs: Set<UUID>,
+        affinitySnapshot: SafariContentBlockerAffinitySnapshot,
         targetInfo: ContentBlockerTargetInfo,
         allTargets: [ContentBlockerTargetInfo],
         disabledSites: [String],
@@ -524,7 +524,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         groupIdentifier: String
     ) throws -> ContentBlockerTargetOutcome {
         let rulesFilename = targetInfo.rulesFilename
-        let hasAffinityFilters = filters.contains { affinityFilterIDs.contains($0.id) }
+        let hasAffinityFilters = !affinitySnapshot.isEmpty
         let currentSignature = hasAffinityFilters
             ? nil
             : ContentBlockerIncrementalCache.computeInputSignature(
@@ -572,7 +572,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         let conversion = try convertFiltersMemoryEfficient(
             filters: filters,
             orderedSelectedFilters: orderedSelectedFilters,
-            affinityFilterIDs: affinityFilterIDs,
+            affinitySnapshot: affinitySnapshot,
             targetInfo: targetInfo,
             allTargets: allTargets,
             disabledSites: disabledSites,
@@ -598,7 +598,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
     private static func convertFiltersMemoryEfficient(
         filters: [FilterList],
         orderedSelectedFilters: [FilterList],
-        affinityFilterIDs: Set<UUID>,
+        affinitySnapshot: SafariContentBlockerAffinitySnapshot,
         targetInfo: ContentBlockerTargetInfo,
         allTargets: [ContentBlockerTargetInfo],
         disabledSites: [String],
@@ -626,7 +626,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
 
         for filter in orderedSelectedFilters {
             let includeBaseRules = assignedFilterIDs.contains(filter.id)
-            let hasAffinity = affinityFilterIDs.contains(filter.id)
+            let hasAffinity = affinitySnapshot.content(for: filter.id) != nil
             guard includeBaseRules || hasAffinity else { continue }
 
             if hasAffinity {
@@ -635,7 +635,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                     includeBaseRules: includeBaseRules,
                     target: targetInfo,
                     allTargets: allTargets,
-                    containerURL: containerURL,
+                    affinitySnapshot: affinitySnapshot,
                     destinationHandle: fileHandle,
                     hasher: &hasher,
                     newlineData: newlineData
