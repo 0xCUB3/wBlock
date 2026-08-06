@@ -372,8 +372,10 @@ public class ProtobufDataManager: ObservableObject {
     }
 
     @MainActor
-    public func setHasCompletedOnboarding(_ value: Bool) async {
-        await updateData { $0.settings.hasCompletedOnboarding_p = value }
+    @discardableResult
+    public func setHasCompletedOnboarding(_ value: Bool) async -> Bool {
+        guard await saveDataImmediately() else { return false }
+        return await updateDataImmediately { $0.settings.hasCompletedOnboarding_p = value }
     }
 
     @MainActor
@@ -1155,7 +1157,8 @@ public class ProtobufDataManager: ObservableObject {
 
     /// Writes immediately for cross-process paths that need deterministic visibility.
     @MainActor
-    func updateDataImmediately(with block: @escaping @Sendable (inout Wblock_Data_AppData) -> Void) async {
+    @discardableResult
+    func updateDataImmediately(with block: @escaping @Sendable (inout Wblock_Data_AppData) -> Void) async -> Bool {
         pendingSaveTask?.cancel()
 
         do {
@@ -1174,9 +1177,11 @@ public class ProtobufDataManager: ObservableObject {
                 logger.info("✅ Saved protobuf data (\(mutation.rawData.count) bytes)")
                 didSaveDataSubject.send()
             }
+            return true
         } catch {
             logger.error("❌ Failed to save data immediately: \(error.localizedDescription)")
             lastError = error
+            return false
         }
     }
     
