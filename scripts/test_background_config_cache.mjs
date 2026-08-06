@@ -232,7 +232,171 @@ const topFrameSender = url => ({ url, frameId: 0, tab: { id: 7, url } });
   );
 }
 
-// Scenario E: executeScript treats unavailable targets and permission denials as
+// Scenario E: concurrent configuration misses share one native request, while a
+// detached cache refresh cannot create an unhandled rejection.
+{
+  const pageUrl = "https://coalesce.example/";
+  let configurationRequests = 0;
+  const state = loadBackground({
+    storage: {},
+    nativeHandler: async message => {
+      const url = message && message.payload ? message.payload.url : "";
+      if (url === pageUrl) {
+        configurationRequests += 1;
+        await sleep(25);
+        return { payload: makeConfig(["#coalesced"], 7) };
+      }
+      if (url === WARMUP_URL) {
+        return { payload: makeConfig([], 7) };
+      }
+      return { payload: makeConfig([], 7) };
+    }
+  });
+  await sleep(20);
+  await Promise.all([
+    state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl)),
+    state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl))
+  ]);
+  check("concurrent configuration misses share one native request", configurationRequests === 1);
+
+  const unhandled = [];
+  const onUnhandledRejection = reason => unhandled.push(reason);
+  process.on("unhandledRejection", onUnhandledRejection);
+  const refreshState = loadBackground({
+    storage: {
+      [CACHE_KEY]: {
+        engineTimestamp: 8,
+        entries: [[`${pageUrl}#`, makeConfig(["#cached"], 8)]]
+      }
+    },
+    nativeHandler: async message => {
+      const url = message && message.payload ? message.payload.url : "";
+      if (url === WARMUP_URL) return { payload: makeConfig([], 8) };
+      if (url === pageUrl) throw new Error("refresh failed");
+      return { payload: makeConfig([], 8) };
+    }
+  });
+  await sleep(20);
+  await refreshState.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  await sleep(20);
+  process.removeListener("unhandledRejection", onUnhandledRejection);
+  check("failed background configuration refresh is safely consumed", unhandled.length === 0);
+
+  let disabledRequests = 0;
+  const disabledState = loadBackground({
+    storage: {},
+    nativeHandler: async message => {
+      if (message && message.action === "getSiteDisabledState") {
+        disabledRequests += 1;
+        await sleep(25);
+        return { disabled: true };
+      }
+      if (message && message.payload && message.payload.url === WARMUP_URL) {
+        return { payload: makeConfig([], 9) };
+      }
+      return { payload: makeConfig([], 9) };
+    }
+  });
+  const disabledResponses = await Promise.all([
+    disabledState.onMessage({ action: "wblock:getSiteDisabledState", host: " Example.COM " }, topFrameSender(pageUrl)),
+    disabledState.onMessage({ action: "wblock:getSiteDisabledState", host: "example.com" }, topFrameSender(pageUrl))
+  ]);
+  check("concurrent site-disabled requests share one normalized-host lookup", disabledRequests === 1);
+  const disabledNativeRequest = disabledState.nativeMessages.find(message => message && message.action === "getSiteDisabledState");
+  check("site-disabled lookup sends the normalized host", disabledNativeRequest && disabledNativeRequest.host === "example.com");
+  check("coalesced site-disabled responses preserve the result", disabledResponses.every(response => response && response.disabled === true));
+}
+
+// Scenario F: a request started before clearCache cannot repopulate the cache;
+// the next lookup must wait for a new native request.
+{
+  const pageUrl = "https://clear-race.example/";
+  let configurationRequests = 0;
+  let resolveStale;
+  let resolveFresh;
+  const staleResponse = new Promise(resolve => { resolveStale = resolve; });
+  const freshResponse = new Promise(resolve => { resolveFresh = resolve; });
+  const state = loadBackground({
+    storage: {},
+    nativeHandler: message => {
+      const url = message && message.payload ? message.payload.url : "";
+      if (url === WARMUP_URL) return { payload: makeConfig([], 1) };
+      if (url === pageUrl) {
+        configurationRequests += 1;
+        return configurationRequests === 1
+          ? staleResponse
+          : freshResponse;
+      }
+      return { payload: makeConfig([], 1) };
+    }
+  });
+  await sleep(20);
+  const staleLookup = state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  await sleep(20);
+  const clearLookup = state.onMessage({ action: "wblock:clearCache" }, topFrameSender(pageUrl));
+  await sleep(20);
+  check("pre-clear configuration request is in flight", configurationRequests === 1);
+  resolveStale({ payload: makeConfig(["#stale"], 11) });
+  await Promise.all([staleLookup, clearLookup]);
+
+  let postClearResolved = false;
+  const postClearLookup = state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl))
+    .then(() => { postClearResolved = true; });
+  await sleep(20);
+  check("post-clear lookup does not use stale cached completion", !postClearResolved);
+  check("post-clear lookup starts a fresh native request", configurationRequests === 2);
+  resolveFresh({ payload: makeConfig(["#fresh"], 22) });
+  await postClearLookup;
+  check(
+    "post-clear lookup applies fresh configuration",
+    state.cssInserted.some(injection => String(injection.css).includes("#fresh"))
+  );
+}
+
+// Scenario G: clearing configuration after a site toggle also drops the
+// pending site-disabled request, so the next lookup gets current state.
+{
+  const pageUrl = "https://site-race.example/";
+  let siteRequests = 0;
+  let resolveStale;
+  const staleResponse = new Promise(resolve => { resolveStale = resolve; });
+  const state = loadBackground({
+    storage: {},
+    nativeHandler: message => {
+      if (message && message.payload && message.payload.url === WARMUP_URL) {
+        return { payload: makeConfig([], 1) };
+      }
+      if (message && message.action === "getSiteDisabledState") {
+        siteRequests += 1;
+        return siteRequests === 1 ? staleResponse : { disabled: false };
+      }
+      return { payload: makeConfig([], 1) };
+    }
+  });
+  await sleep(20);
+  const staleLookup = state.onMessage(
+    { action: "wblock:getSiteDisabledState", host: "example.com" },
+    topFrameSender(pageUrl)
+  );
+  await sleep(20);
+  const clearLookup = state.onMessage({ action: "wblock:clearCache" }, topFrameSender(pageUrl));
+  await sleep(20);
+  const postToggleLookup = state.onMessage(
+    { action: "wblock:getSiteDisabledState", host: "example.com" },
+    topFrameSender(pageUrl)
+  );
+  let postToggleResolved = false;
+  postToggleLookup.then(() => { postToggleResolved = true; });
+  await sleep(20);
+  check("post-toggle site lookup does not use pending pre-toggle work", !postToggleResolved);
+  resolveStale({ disabled: true });
+  const [staleResult, postToggleResult] = await Promise.all([staleLookup, postToggleLookup]);
+  await clearLookup;
+  check("post-toggle site lookup starts a fresh native request", siteRequests === 2);
+  check("post-toggle site lookup returns current state", staleResult.disabled === true && postToggleResult.disabled === false);
+}
+
+// Scenario H: executeScript treats unavailable targets and permission denials as
 // expected skips, while unexpected failures remain visible as errors.
 const runScriptInjectionScenario = async executeScript => {
   const pageUrl = "https://injection.example/";
@@ -285,7 +449,7 @@ const runScriptInjectionScenario = async executeScript => {
   );
 }
 
-// Scenario F: timing-critical page-world userscripts bypass a blocked native
+// Scenario I: timing-critical page-world userscripts bypass a blocked native
 // configuration queue and are persisted for the next cold document start.
 {
   const pageUrl = "https://discord.com/app";

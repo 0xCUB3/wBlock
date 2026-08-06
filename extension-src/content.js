@@ -30891,27 +30891,36 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
   function setupDelayedEventDispatcher() {
     let timeoutMs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 3000;
-    // The dispatcher is armed at module init so it can intercept DOMContentLoaded
-    // / load events before the per-site disable check resolves. If the page is
-    // whitelisted, `disarm()` is called as soon as we know, which removes the
-    // listeners and stops further interception. See issue #445.
-    let armed = true;
-    const interceptors = [];
+    const noOpDispatcher = {
+      cancelDispatch: () => {},
+      disarm: () => {}
+    };
     const events = [{
       name: 'DOMContentLoaded',
       options: {
         bubbles: true,
         cancelable: false
       },
-      target: document
+      target: document,
+      shouldListen: document.readyState === 'loading'
     }, {
       name: 'load',
       options: {
         bubbles: false,
         cancelable: false
       },
-      target: window
-    }];
+      target: window,
+      shouldListen: document.readyState !== 'complete'
+    }].filter(event => event.shouldListen);
+    if (events.length === 0) {
+      return noOpDispatcher;
+    }
+    // The dispatcher is armed at module init so it can intercept DOMContentLoaded
+    // / load events before the per-site disable check resolves. If the page is
+    // whitelisted, `disarm()` is called as soon as we know, which removes the
+    // listeners and stops further interception. See issue #445.
+    let armed = true;
+    const interceptors = [];
     events.forEach(ev => {
       const interceptor = {
         name: ev.name,

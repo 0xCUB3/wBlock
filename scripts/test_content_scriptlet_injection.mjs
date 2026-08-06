@@ -21,6 +21,7 @@ const check = (name, cond) => {
   console.log(`${cond ? "PASS" : "FAIL"}: ${name}`);
   if (!cond) failures += 1;
 };
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 // --- DOM stubs ---
 const appended = [];
@@ -277,6 +278,108 @@ try {
 } catch (err) {
   check("timing-race block ran without throwing", false);
   console.error(err);
+}
+
+// --- Lifecycle interception timing ---
+// Frame-level document-start scriptlets depend on lifecycle interception, while
+// events that already fired must not get stale listeners.
+const runLifecycleScenario = async ({ href, readyState, topLevel = true, title = "" }) => {
+  const documentListeners = [];
+  const windowListeners = [];
+  const sentMessages = [];
+  const url = new URL(href);
+  const documentScenario = {
+    readyState,
+    title,
+    documentElement: {
+      appendChild() {},
+      removeChild() {}
+    },
+    addEventListener: name => documentListeners.push(name),
+    removeEventListener() {},
+    createElement: () => ({
+      setAttribute() {},
+      appendChild() {},
+      remove() {},
+      parentNode: null,
+      style: {}
+    }),
+    createTextNode: text => ({ text }),
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    getElementsByTagName: () => [],
+    head: null
+  };
+  const windowScenario = {
+    location: { href, hostname: url.hostname, pathname: url.pathname },
+    addEventListener: name => windowListeners.push(name),
+    removeEventListener() {},
+    dispatchEvent: () => true
+  };
+  windowScenario.top = topLevel ? windowScenario : {};
+  const saved = {};
+  const globals = {
+    document: documentScenario,
+    window: windowScenario,
+    location: windowScenario.location,
+    Node: class Node {},
+    Element: class Element {},
+    HTMLElement: class HTMLElement {},
+    MutationObserver: class { observe() {} disconnect() {} },
+    getComputedStyle: () => ({}),
+    navigator: { userAgent: "test" },
+    Event: class Event { constructor(name) { this.name = name; } },
+    CustomEvent: class CustomEvent { constructor(name) { this.name = name; } },
+    CSS: { supports: () => false },
+    requestAnimationFrame: cb => setTimeout(cb, 0)
+  };
+  for (const [key, value] of Object.entries(globals)) {
+    saved[key] = Object.getOwnPropertyDescriptor(globalThis, key);
+    Object.defineProperty(globalThis, key, { value, configurable: true, writable: true });
+  }
+  try {
+    const browserScenario = {
+      runtime: {
+        sendMessage(message) {
+          sentMessages.push(message);
+          return Promise.resolve({});
+        },
+        onMessage: { addListener() {} }
+      }
+    };
+    const run = new Function("browser", "window", "self", source);
+    run(browserScenario, windowScenario, windowScenario);
+    await sleep(10);
+    return { documentListeners, windowListeners, sentMessages };
+  } finally {
+    for (const [key, descriptor] of Object.entries(saved)) {
+      if (descriptor === undefined) delete globalThis[key];
+      else Object.defineProperty(globalThis, key, descriptor);
+    }
+  }
+};
+
+try {
+  const loading = await runLifecycleScenario({ href: "https://example.com/", readyState: "loading" });
+  check("top-level HTTP(S) document intercepts both lifecycle events", loading.documentListeners.includes("DOMContentLoaded") && loading.windowListeners.includes("load"));
+
+  const subframe = await runLifecycleScenario({ href: "https://example.com/frame", readyState: "loading", topLevel: false });
+  check("loading subframes intercept both lifecycle events", subframe.documentListeners.includes("DOMContentLoaded") && subframe.windowListeners.includes("load"));
+
+  const blankFrame = await runLifecycleScenario({ href: "about:blank", readyState: "loading", topLevel: false });
+  check("loading blank frames intercept both lifecycle events", blankFrame.documentListeners.includes("DOMContentLoaded") && blankFrame.windowListeners.includes("load"));
+
+  const interactive = await runLifecycleScenario({ href: "https://example.com/interactive", readyState: "interactive" });
+  check("interactive documents do not add a stale DOMContentLoaded listener", !interactive.documentListeners.includes("DOMContentLoaded") && interactive.windowListeners.includes("load"));
+
+  const complete = await runLifecycleScenario({ href: "https://example.com/complete", readyState: "complete" });
+  check("complete documents do not add lifecycle listeners", complete.documentListeners.length === 0 && complete.windowListeners.length === 0);
+
+  const cloudflareFrame = await runLifecycleScenario({ href: "https://challenges.cloudflare.com/turnstile", readyState: "loading", topLevel: false });
+  check("Cloudflare frames still skip initialization", !cloudflareFrame.sentMessages.some(message => message && message.type === "InitContentScript"));
+} catch (error) {
+  check("lifecycle interception scope checks ran without throwing", false);
+  console.error(error);
 }
 
 if (failures > 0) {
