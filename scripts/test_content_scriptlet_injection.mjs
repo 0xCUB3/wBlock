@@ -159,14 +159,10 @@ check(
   dispatcherUsesThreeSeconds,
 );
 
-// --- Scriptlet timing race (issue #445 regression) ---
-// Contract: when the per-site disabled-state lookup never resolves (native
-// host latency / dropped message), the content script must NOT block the
-// InitContentScript request on it. The Init request must be sent eagerly and
-// its response must apply scriptlet machinery, even while siteDisabledPromise
-// stays pending. Under the old sequential `await siteDisabledPromise` gate the
-// InitContentScript message would never be sent, so this check fails there and
-// passes only after the concurrent race fix.
+// --- InitContentScript state handoff ---
+// Contract: authoritative native state in the Init response removes the
+// redundant per-frame disabled-state lookup, while old responses still use the
+// compatibility lookup.
 try {
   const raceAppended = [];
   const raceMakeEl = tag => ({
@@ -230,20 +226,22 @@ try {
 
   // Recorded sendMessage calls so we can assert the Init request happened.
   const sentMessages = [];
-  // A never-settling promise simulating a hung native-host disabled-state lookup.
-  const pendingForever = new Promise(() => {});
+  let fallbackRequested = false;
   const raceBrowser = {
     runtime: {
       onMessage: { addListener() {} },
       sendMessage(msg) {
         sentMessages.push(msg);
-        if (msg.action === "wblock:getSiteDisabledState") {
-          return pendingForever;
+        if (msg.action === "wblock:getBlockingState") {
+          fallbackRequested = true;
+          return Promise.resolve({ disabled: true, paused: false });
         }
         // InitContentScript: return a real configuration payload so scriptlet
         // machinery is observable downstream.
         if (msg.type === "InitContentScript") {
           return Promise.resolve({
+            disabled: false,
+            paused: false,
             payload: {
               css: [],
               extendedCss: [],
@@ -265,36 +263,82 @@ try {
     const run = new Function("browser", "window", "self", source);
     run(raceBrowser, raceWindow, raceWindow);
 
-    // Flush microtasks so main()'s async race + applyConfiguration settle.
-    // Disabled-state never resolves; only the config branch can complete.
+    // Flush microtasks so the Init response and applyConfiguration settle.
     await new Promise(resolve => setTimeout(resolve, 50));
 
     const initSent = sentMessages.some(m => m && m.type === "InitContentScript");
     check(
-      "InitContentScript sent despite unresolved disabled-state lookup",
+      "InitContentScript sent with authoritative state response",
       initSent,
     );
 
-    // Ordering: the Init request must be dispatched without waiting on the
-    // disabled-state promise. Under a sequential await-disabled-first gate the
-    // Init message is never sent at all, so a present Init suffices to fail the
-    // old behavior; we additionally assert the disabled-state request was made
-    // (so the hang is real and the race is genuine, not a skipped branch).
     const disabledRequested = sentMessages.some(m => m && m.action === "wblock:getSiteDisabledState");
     check(
-      "disabled-state lookup was actually initiated (race is genuine)",
-      disabledRequested,
+      "authoritative Init response avoids disabled-state lookup",
+      !disabledRequested && !fallbackRequested,
     );
 
     check(
-      "contentScript exposed while disabled-state hangs",
+      "contentScript exposed after authoritative state handoff",
       !!(raceWindow.adguard && raceWindow.adguard.contentScript),
     );
 
     const raceScriptEls = raceAppended.filter(el => el.tagName === "script");
     check(
-      "scriptlet from Init response applied before disabled-state resolves",
+      "scriptlet from authoritative Init response is applied",
       raceScriptEls.length >= 1 && raceScriptEls.some(el => (el.textContent || "").includes("__wblockRaceProbe")),
+    );
+
+    const compatibilityMessages = [];
+    const compatibilityBrowser = {
+      runtime: {
+        onMessage: { addListener() {} },
+        sendMessage(message) {
+          compatibilityMessages.push(message);
+          if (message.action === "wblock:getBlockingState") {
+            return Promise.resolve({ disabled: true, paused: false });
+          }
+          if (message.type === "InitContentScript") {
+            return Promise.resolve({ payload: { css: [], extendedCss: [], scriptlets: [], js: [] } });
+          }
+          return Promise.resolve({});
+        },
+      },
+    };
+    const compatibilityRun = new Function("browser", "window", "self", source);
+    compatibilityRun(compatibilityBrowser, raceWindow, raceWindow);
+    await new Promise(resolve => setTimeout(resolve, 20));
+    const compatibilityStateMessages = compatibilityMessages.filter(message => message && message.action === "wblock:getBlockingState");
+    check(
+      "legacy Init response uses one combined compatibility lookup",
+      compatibilityStateMessages.length === 1 && compatibilityStateMessages[0].host === "youtube.com",
+    );
+    check(
+      "legacy Init response does not route an unrouted pause action",
+      !compatibilityMessages.some(message => message && (
+        message.action === "wblock:getSiteDisabledState" || message.action === "getBlockingPausedState"
+      )),
+    );
+
+    const errorMessages = [];
+    const errorBrowser = {
+      runtime: {
+        onMessage: { addListener() {} },
+        sendMessage(message) {
+          errorMessages.push(message);
+          if (message.type === "InitContentScript") {
+            return Promise.resolve({ type: "InitContentScript", state: "error", error: "native failed" });
+          }
+          return Promise.resolve({ ok: true, cleanUrl: "https://youtube.com/?utm_source=test" });
+        },
+      },
+    };
+    const errorRun = new Function("browser", "window", "self", source);
+    errorRun(errorBrowser, raceWindow, raceWindow);
+    await new Promise(resolve => setTimeout(resolve, 20));
+    check(
+      "native Init error suppresses removeparam cleanup",
+      !errorMessages.some(message => message && message.action === "wblock:getCleanURL"),
     );
   } finally {
     for (const [k, desc] of Object.entries(raceSaved)) {

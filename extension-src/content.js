@@ -6281,36 +6281,41 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   } else {
     startCloudflareChallengeWatch();
   }
-  // Shared per-site disable check. Resolved lazily so the rules lookup can be
-  // sent first; the native InitContentScript path already returns an empty
-  // payload for paused/disabled sites. The removeparam fallback still waits for
-  // this check so disabled sites behave as if the extension was not there
-  // (issue #445). Resolves to `false` when the host is not disabled OR the
-  // lookup fails (we err on the side of applying normal filtering on errors).
-  let siteDisabledPromise;
-  const getSiteDisabledPromise = () => {
-    if (!siteDisabledPromise) {
-      siteDisabledPromise = (async () => {
+  // Compatibility fallback for responses produced before InitContentScript
+  // carried native state. Keep this as one combined lookup so legacy pages do
+  // not accidentally route a pause query through configuration handling.
+  let legacyBlockingStatePromise;
+  const getLegacyBlockingStatePromise = () => {
+    if (!legacyBlockingStatePromise) {
+      legacyBlockingStatePromise = (async () => {
         try {
           if (typeof browser === "undefined" || !browser.runtime || !browser.runtime.sendMessage) {
-            return false;
+            return "error";
           }
-          const hostname = window.location && typeof window.location.hostname === "string" ? window.location.hostname : "";
-          if (!hostname) {
+          const host = window.location && typeof window.location.hostname === "string"
+            ? window.location.hostname
+            : "";
+          if (!host) {
             return false;
           }
           const response = await browser.runtime.sendMessage({
-            action: "wblock:getSiteDisabledState",
-            host: hostname
+            action: "wblock:getBlockingState",
+            host
           });
-          return !!(response && response.disabled);
+          if (response && response.state === "error") {
+            return "error";
+          }
+          if (!response || typeof response.disabled !== "boolean" || typeof response.paused !== "boolean") {
+            return "error";
+          }
+          return response.disabled || response.paused;
         } catch (error) {
-          console.warn('[wBlock] Failed to resolve site disabled state:', error);
-          return false;
+          console.warn('[wBlock] Failed to resolve combined blocking state:', error);
+          return "error";
         }
       })();
     }
-    return siteDisabledPromise;
+    return legacyBlockingStatePromise;
   };
   /**
    * Main entry point function for the content script.
@@ -6322,6 +6327,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * 3. When the background page responds, cancels any delayed events and flushes
    *    captured events.
    */
+  let initializationStatePromise;
+  const stateFromInitResponse = response => {
+    if (response && response.state === "error") {
+      return Promise.resolve(true);
+    }
+    const state = response && typeof response.disabled === "boolean"
+      && typeof response.paused === "boolean"
+      ? response
+      : response && response.payload;
+    if (state && typeof state.disabled === "boolean"
+      && typeof state.paused === "boolean") {
+      return Promise.resolve(state.disabled || state.paused);
+    }
+    return getLegacyBlockingStatePromise();
+  };
   const main = async () => {
     // First of all, make sure that the content script is exposed to the
     // scripts that will be called by background script.
@@ -6337,30 +6357,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const message = {
       type: MessageType.InitContentScript
     };
-    // Start the rules lookup immediately. The native configuration path already
-    // respects global pause and per-site disable, so enabled sites should not pay
-    // for a separate disabled-site round trip before scriptlets can initialize.
-    const configPromise = browser.runtime.sendMessage(message);
-    const disabledResultPromise = getSiteDisabledPromise().then(disabled => ({
-      kind: "disabled",
-      disabled
+    const configPromise = browser.runtime.sendMessage(message).catch(error => ({
+      type: MessageType.InitContentScript,
+      state: "error",
+      error: String(error && error.message ? error.message : error)
     }));
-    const configResultPromise = configPromise.then(response => ({
-      kind: "config",
-      response
-    }));
-    const firstResult = await Promise.race([disabledResultPromise, configResultPromise]);
-    // If the site-disabled check wins, release held page events without waiting
-    // for filtering configuration. If configuration wins first, apply it right
-    // away; the native handler returns an empty payload for disabled/paused sites.
-    if (firstResult.kind === "disabled" && firstResult.disabled) {
-      configPromise.catch(error => {
-        console.warn('[wBlock] Ignored configuration request failed after site-disabled bailout:', error);
-      });
+    initializationStatePromise = configPromise.then(stateFromInitResponse);
+    const response = await configPromise;
+    if (await initializationStatePromise) {
       dispatcherRef.disarm();
       return;
     }
-    const response = firstResult.kind === "config" ? firstResult.response : await configPromise;
     // A Cloudflare challenge can be detected while waiting for the native
     // response (its markup arrives during parsing). Bail out before applying
     // any configuration or re-emitting held events (issue #476).
@@ -6397,7 +6404,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       // or redirecting mid-verification makes the interstitial reload in a loop
       // (issue #476).
       if (cloudflareChallengeContext) return;
-      if (await getSiteDisabledPromise()) return;
+      if (await (initializationStatePromise || Promise.resolve(false))) return;
       if (window.top !== window) return;
       if (!/^https?:/i.test(window.location.href)) return;
       if (typeof browser === "undefined" || !browser.runtime || !browser.runtime.sendMessage) return;

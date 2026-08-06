@@ -30,12 +30,13 @@ const check = (name, condition) => {
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-const makeConfig = (css, engineTimestamp, js = [], scriptlets = []) => ({
+const makeConfig = (css, engineTimestamp, js = [], scriptlets = [], state = {}) => ({
   css,
   extendedCss: [],
   js,
   scriptlets,
-  engineTimestamp
+  engineTimestamp,
+  ...state
 });
 
 // Loads the bundle with a fresh browser stub.
@@ -126,6 +127,9 @@ const frameSender = (url, topUrl, frameId = 1) => ({ url, frameId, tab: { id: 7,
       }
     },
     nativeHandler: message => {
+      if (message && message.action === "getBlockingState") {
+        return { disabled: false, paused: false };
+      }
       const url = message && message.payload ? message.payload.url : "";
       if (url === WARMUP_URL) {
         return { payload: makeConfig([], 111) };
@@ -164,6 +168,9 @@ const frameSender = (url, topUrl, frameId = 1) => ({ url, frameId, tab: { id: 7,
       }
     },
     nativeHandler: message => {
+      if (message && message.action === "getBlockingState") {
+        return { disabled: false, paused: false };
+      }
       const url = message && message.payload ? message.payload.url : "";
       if (url === WARMUP_URL) {
         return { payload: makeConfig([], 222) };
@@ -231,6 +238,11 @@ const frameSender = (url, topUrl, frameId = 1) => ({ url, frameId, tab: { id: 7,
     "first run without persisted cache still applies native config",
     state.cssInserted.some(injection => String(injection.css).includes("#first-run"))
   );
+  check(
+    "cache miss keeps the single native configuration request",
+    state.nativeMessages.filter(message => message && message.payload && message.payload.url === pageUrl).length === 1
+      && !state.nativeMessages.some(message => message && message.action === "getBlockingState")
+  );
 }
 
 // Scenario E: concurrent configuration misses share one native request, while a
@@ -271,6 +283,9 @@ const frameSender = (url, topUrl, frameId = 1) => ({ url, frameId, tab: { id: 7,
       }
     },
     nativeHandler: async message => {
+      if (message && message.action === "getBlockingState") {
+        return { disabled: false, paused: false };
+      }
       const url = message && message.payload ? message.payload.url : "";
       if (url === WARMUP_URL) return { payload: makeConfig([], 8) };
       if (url === pageUrl) throw new Error("refresh failed");
@@ -364,6 +379,9 @@ const frameSender = (url, topUrl, frameId = 1) => ({ url, frameId, tab: { id: 7,
   const state = loadBackground({
     storage: {},
     nativeHandler: message => {
+      if (message && message.action === "getBlockingState") {
+        return { disabled: false, paused: false };
+      }
       if (message && message.payload && message.payload.url === WARMUP_URL) {
         return { payload: makeConfig([], 1) };
       }
@@ -462,6 +480,9 @@ const runScriptInjectionScenario = async executeScript => {
   ];
   const state = loadBackground({
     nativeHandler: message => {
+      if (message && message.action === "getBlockingState") {
+        return { disabled: false, paused: false };
+      }
       if (message && message.payload && message.payload.url === pageUrl) {
         return { payload: makeConfig([], 17, [], fallbackScriptlets) };
       }
@@ -497,7 +518,139 @@ const runScriptInjectionScenario = async executeScript => {
   check("HTTP frame does not receive fallback payload", httpState.executed.every(injection => injection.world !== "ISOLATED" || injection.args === undefined || !injection.args.some(arg => arg && arg.code)));
 }
 
-// Scenario J: timing-critical page-world userscripts bypass a blocked native
+// Scenario J: disabled/paused cache misses remain uncached, and the first
+// navigation after re-enable/resume obtains a fresh active configuration.
+for (const [label, inertState, activeCSS] of [
+  ["disabled", { disabled: true, paused: false }, "#re-enabled"],
+  ["paused", { disabled: false, paused: true }, "#resumed"]
+]) {
+  const pageUrl = `https://${label}-miss.example/`;
+  let stateValue = inertState;
+  const state = loadBackground({
+    nativeHandler: message => {
+      if (message && message.payload && message.payload.url === pageUrl) {
+        const css = stateValue.disabled || stateValue.paused ? ["#must-not-run"] : [activeCSS];
+        return { payload: makeConfig(css, 23, [], [], stateValue) };
+      }
+      return { payload: makeConfig([], 23) };
+    }
+  });
+  const inertResponse = await state.onMessage(
+    { type: "InitContentScript" },
+    topFrameSender(pageUrl)
+  );
+  check(`${label} miss returns authoritative inert state`,
+    inertResponse && inertResponse.disabled === inertState.disabled
+      && inertResponse.paused === inertState.paused);
+  check(`${label} miss does not apply native inert rules`, state.cssInserted.length === 0);
+  await sleep(1100);
+  check(`${label} miss does not persist inert configuration`,
+    !state.storage[CACHE_KEY] || !state.storage[CACHE_KEY].entries.some(([key]) => key === `${pageUrl}#`));
+
+  stateValue = { disabled: false, paused: false };
+  await state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  check(`${label} re-enable/resume fetches active configuration`,
+    state.cssInserted.some(injection => String(injection.css).includes(activeCSS)));
+  await sleep(1100);
+  check(`${label} re-enable/resume persists active configuration`,
+    state.storage[CACHE_KEY] && state.storage[CACHE_KEY].entries.some(([, configuration]) =>
+      configuration.css.some(css => String(css).includes(activeCSS))
+    ));
+}
+
+// Scenario K: the background compatibility route is one combined lookup with
+// the normalized host, not a generic configuration request.
+{
+  const state = loadBackground({
+    nativeHandler: message => message && message.action === "getBlockingState"
+      ? { disabled: true, paused: false }
+      : { payload: makeConfig([], 24) }
+  });
+  const response = await state.onMessage(
+    { action: "wblock:getBlockingState", host: " Example.COM " },
+    topFrameSender("https://example.com/")
+  );
+  const nativeRequest = state.nativeMessages.find(message => message && message.action === "getBlockingState");
+  check("combined compatibility route returns both state fields",
+    response && response.disabled === true && response.paused === false);
+  check("combined compatibility route sends normalized host",
+    nativeRequest && nativeRequest.host === "example.com");
+  check("combined compatibility route does not request configuration",
+    !state.nativeMessages.some(message => message && message.payload
+      && message.payload.url === "https://example.com/"));
+}
+
+// Scenario L: native configuration failures return an explicit error state and
+// never create a cache entry.
+{
+  const pageUrl = "https://native-error.example/";
+  const state = loadBackground({ nativeHandler: message => {
+    if (message && message.payload && message.payload.url === pageUrl) {
+      return { payload: message.payload, state: "error", error: "native configuration failed" };
+    }
+    return { payload: makeConfig([], 25) };
+  }});
+  const response = await state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  check("native configuration failure returns an error state",
+    response && response.state === "error" && String(response.error).includes("native configuration failed"));
+  await sleep(1100);
+  check("native configuration failure does not persist a cache entry",
+    !state.storage[CACHE_KEY] || !state.storage[CACHE_KEY].entries.some(([key]) => key === `${pageUrl}#`));
+}
+
+// Scenario M: cache hits resolve current state before applying rules across
+// pause and site-disable transitions.
+{
+  const pageUrl = "https://cache-state.example/";
+  let stateValue = { disabled: false, paused: false };
+  let blockingStateRequests = 0;
+  const state = loadBackground({
+    nativeHandler: message => {
+      if (message && message.action === "getBlockingState") {
+        blockingStateRequests += 1;
+        return new Promise(resolve => setTimeout(() => resolve({ ...stateValue }), 10));
+      }
+      const url = message && message.payload ? message.payload.url : "";
+      if (url === WARMUP_URL) return { payload: makeConfig([], 31) };
+      return { payload: makeConfig(["#cached-state"], 31, [], [], { disabled: false, paused: false }) };
+    }
+  });
+
+  await sleep(20);
+  await state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  const beforeCoalescedState = blockingStateRequests;
+  await Promise.all([
+    state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl)),
+    state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl))
+  ]);
+  check(
+    "concurrent cached lookups coalesce the priority state request",
+    blockingStateRequests === beforeCoalescedState + 1
+  );
+  const initialApplications = state.cssInserted.length;
+  stateValue = { disabled: false, paused: true };
+  await state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  check(
+    "enabled-to-paused cache transition does not apply cached rules",
+    state.cssInserted.length === initialApplications
+  );
+
+  stateValue = { disabled: false, paused: false };
+  await state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  check(
+    "paused-to-enabled cache transition reapplies current rules",
+    state.cssInserted.length === initialApplications + 1
+  );
+
+  stateValue = { disabled: true, paused: false };
+  await state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  check(
+    "enabled-to-site-disabled cache transition does not apply cached rules",
+    state.cssInserted.length === initialApplications + 1
+  );
+}
+
+// Scenario L: timing-critical page-world userscripts bypass a blocked native
 // configuration queue and are persisted for the next cold document start.
 {
   const pageUrl = "https://discord.com/app";

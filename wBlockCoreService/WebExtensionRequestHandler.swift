@@ -56,14 +56,16 @@ public enum WebExtensionRequestHandler {
         return URLSession(configuration: configuration)
     }()
 
-    private static func emptyRulesPayload() -> [String: Any] {
+    private static func emptyRulesPayload(disabled: Bool, paused: Bool) -> [String: Any] {
         [
             "css": [],
             "extendedCss": [],
             "js": [],
             "scriptlets": [],
             "userScripts": [],
-            "engineTimestamp": 0
+            "engineTimestamp": 0,
+            "disabled": disabled,
+            "paused": paused
         ]
     }
 
@@ -138,6 +140,9 @@ public enum WebExtensionRequestHandler {
             case "getBlockingPausedState":
                 handleGetBlockingPausedState(context: context)
                 return
+            case "getBlockingState":
+                handleGetBlockingState(message: message!, context: context)
+                return
             case "getSiteDisabledState":
                 handleGetSiteDisabledState(message: message!, context: context)
                 return
@@ -172,13 +177,14 @@ public enum WebExtensionRequestHandler {
             if let url = URL(string: urlString) {
                 // Respect global pause and per-site disable immediately for advanced rules.
                 Task { @MainActor in
-                    if BlockingPauseStore.isPaused() {
-                        message?["payload"] = emptyRulesPayload()
+                    let paused = BlockingPauseStore.isPaused()
+                    if paused {
+                        message?["payload"] = emptyRulesPayload(disabled: false, paused: true)
                     } else {
                         let disabledSites = await currentDisabledSites()
                         let disabled = HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites)
                         if disabled {
-                            message?["payload"] = emptyRulesPayload()
+                            message?["payload"] = emptyRulesPayload(disabled: true, paused: false)
                         } else {
                             do {
                                 var topUrl: URL?
@@ -194,7 +200,17 @@ public enum WebExtensionRequestHandler {
                                 }
 
                                 if let configuration {
-                                    message?["payload"] = convertToPayload(configuration)
+                                    message?["payload"] = convertToPayload(
+                                        configuration,
+                                        disabled: false,
+                                        paused: false
+                                    )
+                                } else {
+                                    let errorMessage = "No WebExtension configuration available"
+                                    os_log(.error, "%@", errorMessage)
+                                    message?["payload"] = nil
+                                    message?["state"] = "error"
+                                    message?["error"] = errorMessage
                                 }
                             } catch {
                                 os_log(
@@ -202,6 +218,9 @@ public enum WebExtensionRequestHandler {
                                     "Failed to get WebExtension instance: %@",
                                     error.localizedDescription
                                 )
+                                message?["payload"] = nil
+                                message?["state"] = "error"
+                                message?["error"] = error.localizedDescription
                             }
                         }
                     }
@@ -258,7 +277,9 @@ public enum WebExtensionRequestHandler {
     /// - Returns: A dictionary containing CSS, extended CSS, JS, and scriptlets
     ///           that should be applied to the web page.
     private static func convertToPayload(
-        _ configuration: WebExtension.Configuration
+        _ configuration: WebExtension.Configuration,
+        disabled: Bool,
+        paused: Bool
     ) -> [String: Any] {
         var payload: [String: Any] = [:]
         payload["css"] = configuration.css
@@ -275,6 +296,8 @@ public enum WebExtensionRequestHandler {
 
         payload["scriptlets"] = scriptlets
         payload["engineTimestamp"] = configuration.engineTimestamp
+        payload["disabled"] = disabled
+        payload["paused"] = paused
 
         return payload
     }
@@ -447,6 +470,17 @@ public enum WebExtensionRequestHandler {
     private static func handleGetBlockingPausedState(context: NSExtensionContext) {
         let response = createResponse(with: ["paused": BlockingPauseStore.isPaused()])
         context.completeRequest(returningItems: [response])
+    }
+
+    private static func handleGetBlockingState(message: [String: Any?], context: NSExtensionContext) {
+        let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        Task { @MainActor in
+            let paused = BlockingPauseStore.isPaused()
+            let disabledSites = await currentDisabledSites()
+            let disabled = !host.isEmpty && HostMatcher.isHostDisabled(host: host, disabledSites: disabledSites)
+            let response = createResponse(with: ["disabled": disabled, "paused": paused])
+            context.completeRequest(returningItems: [response])
+        }
     }
 
     private static func handleGetRemoveParamDNRRules(message: [String: Any?], context: NSExtensionContext) {
