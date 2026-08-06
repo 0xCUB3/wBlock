@@ -123,8 +123,13 @@ assertContains(
 )
 assertContains(
     applyPipeline,
-    "var targetsToReload: [ContentBlockerTargetInfo] = []",
-    "Pause clearing should write every blocker target before reload failures can abort the pass"
+    "let platformTargets = ContentBlockerTargetManager.shared.allTargets(",
+    "Pause clearing must enumerate every blocker target before writing inert rules"
+)
+assertContains(
+    applyPipeline,
+    "for targetInfo in platformTargets {",
+    "Pause clearing must write every blocker target before reload failures can abort the pass"
 )
 assertContains(
     applyPipeline,
@@ -135,6 +140,21 @@ assertContains(
     applyPipeline,
     "jsonRules: ContentBlockerService.inertContentBlockerRulesJSON",
     "Pause clearing must write the inert content blocker payload instead of []"
+)
+assertContains(
+    applyPipeline,
+    "BlockingPauseStore.setPaused(true)",
+    "Pause clearing must persist the paused state before replacing blocker outputs"
+)
+assertContains(
+    applyPipeline,
+    "reloadIfNeeded(",
+    "Pause clearing must verify each target through the reload-skip coordinator"
+)
+assertNotContains(
+    applyPipeline,
+    "jsonRules: \"[]\"",
+    "Pause clearing must not regress to a literal empty blocker list"
 )
 assertContains(
     applyPipeline,
@@ -242,4 +262,36 @@ assertNotContains(
     "Content compatibility must not send an unrouted pause action"
 )
 
-print("PASS: blocking pause guardrails")
+let reloadCoordinator = contentBlockerService
+assertContains(
+    reloadCoordinator,
+    "private actor ReloadCoordinator",
+    "Reload coordination must serialize calls per target without a process-wide lock"
+)
+assertContains(
+    reloadCoordinator,
+    "private static let reloadCoordinator = ReloadCoordinator()",
+    "Reload coordination must be process-scoped"
+)
+assertContains(
+    reloadCoordinator,
+    "await reloadCoordinator.withGate(key: identifier)",
+    "Reload calls must acquire a gate keyed by target identifier"
+)
+assertContains(
+    reloadCoordinator,
+    "defer { release(key) }",
+    "Every keyed reload gate must release on success, failure, and cancellation"
+)
+assertContains(
+    reloadCoordinator,
+    "private var activeKeys: Set<String> = []",
+    "Reload gates must allow different target identifiers to run in parallel"
+)
+assertNotContains(
+    reloadCoordinator,
+    "Task.detached",
+    "Keyed gate release must not race through a detached task"
+)
+
+print("PASS: blocking pause and reload coordination guardrails")

@@ -630,15 +630,20 @@ public enum WebExtensionRequestHandler {
         reloadedTargets: Int,
         failedTargets: Int
     ) {
+        let groupID = GroupIdentifier.shared.value
         // Safari reloads distinct content blocker identifiers independently, so reload
         // them concurrently instead of serially. Behind the popup's 5s toggle timeout
         // a sequential loop (`for target in targets { await ... }`) was the dominant
         // cost and the reason Disable-on-this-site intermittently reported failure on
         // profiles with several selected filter lists.
-        await withTaskGroup(of: Bool.self) { group in
+        return await withTaskGroup(of: Bool.self) { group in
             for target in targets {
                 group.addTask {
-                    await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier).success
+                    await ContentBlockerService.reloadWithRetry(
+                        identifier: target.bundleIdentifier,
+                        groupIdentifier: groupID,
+                        targetRulesFilename: target.rulesFilename
+                    ).success
                 }
             }
             var reloadedTargets = 0

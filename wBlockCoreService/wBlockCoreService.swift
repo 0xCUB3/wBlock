@@ -359,8 +359,404 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
 
     public struct ReloadAttemptResult: Sendable {
         public let success: Bool
+        public let skipped: Bool
         public let attempts: Int
         public let durationMs: Int
+
+        public init(success: Bool, skipped: Bool = false, attempts: Int, durationMs: Int) {
+            self.success = success
+            self.skipped = skipped
+            self.attempts = attempts
+            self.durationMs = durationMs
+        }
+    }
+
+    private actor ReloadCoordinator {
+        private struct Waiter {
+            let id: UUID
+            let continuation: CheckedContinuation<Bool, Never>
+        }
+
+        private var activeKeys: Set<String> = []
+        private var waiters: [String: [Waiter]] = [:]
+
+        func withGate<T: Sendable>(
+            key: String,
+            operation: @Sendable () async -> T
+        ) async -> T? {
+            guard await acquire(key) else { return nil }
+            guard !Task.isCancelled else {
+                release(key)
+                return nil
+            }
+            defer { release(key) }
+            return await operation()
+        }
+
+        private func acquire(_ key: String) async -> Bool {
+            guard !Task.isCancelled else { return false }
+            guard activeKeys.contains(key) else {
+                activeKeys.insert(key)
+                return true
+            }
+
+            let id = UUID()
+            return await withTaskCancellationHandler(operation: {
+                await withCheckedContinuation { continuation in
+                    if Task.isCancelled {
+                        continuation.resume(returning: false)
+                    } else {
+                        waiters[key, default: []].append(
+                            Waiter(id: id, continuation: continuation)
+                        )
+                    }
+                }
+            }, onCancel: {
+                Task { await self.cancelWaiter(key: key, id: id) }
+            })
+        }
+
+        private func cancelWaiter(key: String, id: UUID) {
+            guard var keyWaiters = waiters[key],
+                  let index = keyWaiters.firstIndex(where: { $0.id == id }) else {
+                return
+            }
+            let waiter = keyWaiters.remove(at: index)
+            if keyWaiters.isEmpty {
+                waiters.removeValue(forKey: key)
+            } else {
+                waiters[key] = keyWaiters
+            }
+            waiter.continuation.resume(returning: false)
+        }
+
+        private func release(_ key: String) {
+            guard var keyWaiters = waiters[key], !keyWaiters.isEmpty else {
+                activeKeys.remove(key)
+                return
+            }
+            let next = keyWaiters.removeFirst()
+            if keyWaiters.isEmpty {
+                waiters.removeValue(forKey: key)
+            } else {
+                waiters[key] = keyWaiters
+            }
+            next.continuation.resume(returning: true)
+        }
+    }
+
+    private struct ReloadMarker: Codable, Equatable {
+        let schema: Int
+        let outputDigest: String
+        let context: ReloadContext
+    }
+
+    private struct ReloadContext: Codable, Equatable {
+        let schema: Int
+        let platform: String
+        let osVersion: String
+        let appVersion: String
+        let appBuild: String
+    }
+
+    private struct ReloadSnapshot {
+        let marker: ReloadMarker?
+        let outputDigest: String?
+        let context: ReloadContext
+    }
+
+    private enum ReloadMarkerWriteResult {
+        case written
+        case paused
+        case changed(ReloadSnapshot)
+        case invalid
+        case failed
+    }
+
+    private static let reloadMarkerSchema = 1
+    private static let reloadMarkerFileSuffix = ".reload-marker.json"
+    private static let maxReloadVerificationPasses = 3
+    private static let reloadCoordinator = ReloadCoordinator()
+
+    private static var currentReloadContext: ReloadContext {
+        #if os(iOS)
+        let platform = "iOS"
+        #else
+        let platform = "macOS"
+        #endif
+        let os = ProcessInfo.processInfo.operatingSystemVersion
+        let osVersion = "\(os.majorVersion).\(os.minorVersion).\(os.patchVersion)"
+        let info = Bundle.main.infoDictionary ?? [:]
+        return ReloadContext(
+            schema: reloadMarkerSchema,
+            platform: platform,
+            osVersion: osVersion,
+            appVersion: info["CFBundleShortVersionString"] as? String ?? "",
+            appBuild: info["CFBundleVersion"] as? String ?? ""
+        )
+    }
+
+    private static func reloadMarkerURL(
+        targetRulesFilename: String,
+        containerURL: URL
+    ) -> URL {
+        containerURL.appendingPathComponent(
+            "\(targetRulesFilename)\(reloadMarkerFileSuffix)"
+        )
+    }
+
+    private static func validOutputDigest(_ data: Data?) -> String? {
+        guard let data,
+              !data.isEmpty,
+              (try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]) != nil
+        else { return nil }
+        let digest = SHA256.hash(data: data)
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func readReloadSnapshot(
+        markerURL: URL,
+        outputURL: URL,
+        appGroupURL: URL
+    ) throws -> ReloadSnapshot {
+        try withContentBlockerOutputLock(at: appGroupURL, targetRulesFilename: outputURL.lastPathComponent) {
+            let marker = (try? Data(contentsOf: markerURL)).flatMap {
+                try? JSONDecoder().decode(ReloadMarker.self, from: $0)
+            }
+            return ReloadSnapshot(
+                marker: marker,
+                outputDigest: validOutputDigest(try? Data(contentsOf: outputURL)),
+                context: currentReloadContext
+            )
+        }
+    }
+
+    private static func writeReloadMarkerIfUnchanged(
+        markerURL: URL,
+        outputURL: URL,
+        appGroupURL: URL,
+        expectedDigest: String?,
+        expectedContext: ReloadContext,
+        groupIdentifier: String
+    ) throws -> ReloadMarkerWriteResult {
+        try withContentBlockerOutputLock(at: appGroupURL, targetRulesFilename: outputURL.lastPathComponent) {
+            if BlockingPauseStore.isPaused(groupIdentifier: groupIdentifier) {
+                try? FileManager.default.removeItem(at: markerURL)
+                return .paused
+            }
+
+            let snapshot = ReloadSnapshot(
+                marker: nil,
+                outputDigest: validOutputDigest(try? Data(contentsOf: outputURL)),
+                context: currentReloadContext
+            )
+            guard let outputDigest = snapshot.outputDigest else {
+                try? FileManager.default.removeItem(at: markerURL)
+                return .invalid
+            }
+            guard outputDigest == expectedDigest, snapshot.context == expectedContext else {
+                try? FileManager.default.removeItem(at: markerURL)
+                return .changed(snapshot)
+            }
+
+            let newMarker = ReloadMarker(
+                schema: reloadMarkerSchema,
+                outputDigest: outputDigest,
+                context: expectedContext
+            )
+            do {
+                try JSONEncoder().encode(newMarker).write(to: markerURL, options: .atomic)
+                return .written
+            } catch {
+                return .failed
+            }
+        }
+    }
+
+    @MainActor
+    private static func contentBlockerIsEnabled(identifier: String) async -> Bool {
+        await withCheckedContinuation { continuation in
+            SFContentBlockerManager.getStateOfContentBlocker(withIdentifier: identifier) { state, error in
+                continuation.resume(returning: error == nil && state?.isEnabled == true)
+            }
+        }
+    }
+
+    private static func reloadMarkerMatches(_ snapshot: ReloadSnapshot) -> Bool {
+        snapshot.marker?.schema == reloadMarkerSchema
+            && snapshot.marker?.outputDigest == snapshot.outputDigest
+            && snapshot.marker?.context == snapshot.context
+    }
+
+    /// Verifies output around Safari's async API without holding the output lock across an await.
+    public static func reloadIfNeeded(
+        identifier: String,
+        targetRulesFilename: String,
+        groupIdentifier: String,
+        maxRetries: Int = 5
+    ) async -> ReloadAttemptResult {
+        let gatedResult = await reloadCoordinator.withGate(key: identifier) {
+            await reloadIfNeededSerially(
+                identifier: identifier,
+                targetRulesFilename: targetRulesFilename,
+                groupIdentifier: groupIdentifier,
+                maxRetries: maxRetries
+            )
+        }
+        guard let result = gatedResult else {
+            return ReloadAttemptResult(success: false, attempts: 0, durationMs: 0)
+        }
+        return result
+    }
+
+    private static func reloadIfNeededSerially(
+        identifier: String,
+        targetRulesFilename: String,
+        groupIdentifier: String,
+        maxRetries: Int
+    ) async -> ReloadAttemptResult {
+        let startTime = Date()
+        let elapsedMs = { Int(Date().timeIntervalSince(startTime) * 1000) }
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else {
+            return ReloadAttemptResult(success: false, attempts: 0, durationMs: elapsedMs())
+        }
+
+        let markerURL = reloadMarkerURL(
+            targetRulesFilename: targetRulesFilename,
+            containerURL: containerURL
+        )
+        let outputURL = containerURL.appendingPathComponent(targetRulesFilename)
+        let invalidateMarker = {
+            invalidateReloadMarker(
+                groupIdentifier: groupIdentifier,
+                targetRulesFilename: targetRulesFilename
+            )
+        }
+        guard var snapshot = try? readReloadSnapshot(
+            markerURL: markerURL,
+            outputURL: outputURL,
+            appGroupURL: containerURL
+        ), snapshot.outputDigest != nil else {
+            invalidateMarker()
+            return ReloadAttemptResult(success: false, attempts: 0, durationMs: elapsedMs())
+        }
+
+        var totalAttempts = 0
+        var mustReloadNewestOutput = false
+        for _ in 0..<maxReloadVerificationPasses {
+            if !mustReloadNewestOutput,
+               reloadMarkerMatches(snapshot),
+               !BlockingPauseStore.isPaused(groupIdentifier: groupIdentifier)
+            {
+                let enabled = await contentBlockerIsEnabled(identifier: identifier)
+                guard let verified = try? readReloadSnapshot(
+                    markerURL: markerURL,
+                    outputURL: outputURL,
+                    appGroupURL: containerURL
+                ), let verifiedDigest = verified.outputDigest else {
+                    invalidateMarker()
+                    return ReloadAttemptResult(
+                        success: false,
+                        attempts: totalAttempts,
+                        durationMs: elapsedMs()
+                    )
+                }
+                guard verifiedDigest == snapshot.outputDigest,
+                      verified.context == snapshot.context else {
+                    snapshot = verified
+                    mustReloadNewestOutput = true
+                    continue
+                }
+                if enabled,
+                   !BlockingPauseStore.isPaused(groupIdentifier: groupIdentifier),
+                   reloadMarkerMatches(verified)
+                {
+                    return ReloadAttemptResult(success: true, skipped: true, attempts: 0, durationMs: 0)
+                }
+                snapshot = verified
+            }
+
+            guard let expectedDigest = snapshot.outputDigest else {
+                return ReloadAttemptResult(
+                    success: false,
+                    attempts: totalAttempts,
+                    durationMs: elapsedMs()
+                )
+            }
+
+            // Do not let another caller observe a stale certification while this reload is in flight.
+            invalidateMarker()
+
+            let reload = await reloadWithRetryRaw(identifier: identifier, maxRetries: maxRetries)
+            totalAttempts += reload.attempts
+            guard reload.success else {
+                return ReloadAttemptResult(
+                    success: false,
+                    attempts: totalAttempts,
+                    durationMs: elapsedMs()
+                )
+            }
+
+            guard let verified = try? readReloadSnapshot(
+                markerURL: markerURL,
+                outputURL: outputURL,
+                appGroupURL: containerURL
+            ), let verifiedDigest = verified.outputDigest else {
+                invalidateMarker()
+                return ReloadAttemptResult(
+                    success: false,
+                    attempts: totalAttempts,
+                    durationMs: elapsedMs()
+                )
+            }
+            guard verifiedDigest == expectedDigest,
+                  verified.context == snapshot.context else {
+                snapshot = verified
+                mustReloadNewestOutput = true
+                continue
+            }
+
+            switch try? writeReloadMarkerIfUnchanged(
+                markerURL: markerURL,
+                outputURL: outputURL,
+                appGroupURL: containerURL,
+                expectedDigest: expectedDigest,
+                expectedContext: snapshot.context,
+                groupIdentifier: groupIdentifier
+            ) {
+            case .some(.written), .some(.paused):
+                return ReloadAttemptResult(
+                    success: true,
+                    attempts: totalAttempts,
+                    durationMs: elapsedMs()
+                )
+            case .some(.changed(let changed)):
+                guard changed.outputDigest != nil else {
+                    return ReloadAttemptResult(
+                        success: false,
+                        attempts: totalAttempts,
+                        durationMs: elapsedMs()
+                    )
+                }
+                snapshot = changed
+                mustReloadNewestOutput = true
+            case .some(.invalid), .some(.failed), .none:
+                invalidateMarker()
+                return ReloadAttemptResult(
+                    success: false,
+                    attempts: totalAttempts,
+                    durationMs: elapsedMs()
+                )
+            }
+        }
+
+        return ReloadAttemptResult(
+            success: false,
+            attempts: totalAttempts,
+            durationMs: elapsedMs()
+        )
     }
 
 
@@ -409,10 +805,38 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
 
     public static func reloadWithRetry(
         identifier: String,
-        maxRetries: Int = 5
+        maxRetries: Int = 5,
+        groupIdentifier: String? = nil,
+        targetRulesFilename: String? = nil
+    ) async -> ReloadAttemptResult {
+        guard (groupIdentifier == nil) == (targetRulesFilename == nil) else {
+            return ReloadAttemptResult(success: false, attempts: 0, durationMs: 0)
+        }
+        let gatedResult = await reloadCoordinator.withGate(key: identifier) {
+            if let groupIdentifier, let targetRulesFilename {
+                invalidateReloadMarker(
+                    groupIdentifier: groupIdentifier,
+                    targetRulesFilename: targetRulesFilename
+                )
+            }
+            return await reloadWithRetryRaw(identifier: identifier, maxRetries: maxRetries)
+        }
+        guard let result = gatedResult else {
+            return ReloadAttemptResult(success: false, attempts: 0, durationMs: 0)
+        }
+        return result
+    }
+
+    private static func reloadWithRetryRaw(
+        identifier: String,
+        maxRetries: Int
     ) async -> ReloadAttemptResult {
         let startTime = Date()
         let elapsedMs = { Int(Date().timeIntervalSince(startTime) * 1000) }
+
+        guard maxRetries > 0 else {
+            return ReloadAttemptResult(success: false, attempts: 0, durationMs: elapsedMs())
+        }
 
         for attempt in 1...maxRetries {
             if Task.isCancelled {
@@ -455,12 +879,35 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         )
     }
 
+    public static func invalidateReloadMarker(
+        groupIdentifier: String,
+        targetRulesFilename: String
+    ) {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else { return }
+
+        let markerURL = reloadMarkerURL(
+            targetRulesFilename: targetRulesFilename,
+            containerURL: containerURL
+        )
+        let reloadLockURL = containerURL.appendingPathComponent(".\(targetRulesFilename).lock")
+        try? withContentBlockerOutputLock(
+            at: containerURL,
+            targetRulesFilename: targetRulesFilename,
+            lockURL: reloadLockURL
+        ) {
+            try? FileManager.default.removeItem(at: markerURL)
+        }
+    }
+
     private static func withContentBlockerOutputLock<T>(
         at appGroupURL: URL,
         targetRulesFilename: String,
+        lockURL: URL? = nil,
         _ body: () throws -> T
     ) throws -> T {
-        let lockURL = appGroupURL.appendingPathComponent(".\(targetRulesFilename).lock")
+        let lockURL = lockURL ?? appGroupURL.appendingPathComponent(".\(targetRulesFilename).lock")
         guard let fileLock = FileLock(filePath: lockURL.path),
               fileLock.lock(before: Date().addingTimeInterval(contentBlockerOutputLockTimeout)) else {
             throw CocoaError(.fileWriteUnknown)

@@ -1613,7 +1613,9 @@ public actor SharedAutoUpdateManager {
 
             if reloadContentBlockers {
                 let reloadResult = await ContentBlockerService.reloadWithRetry(
-                    identifier: target.bundleIdentifier
+                    identifier: target.bundleIdentifier,
+                    groupIdentifier: groupIdentifier,
+                    targetRulesFilename: target.rulesFilename
                 )
                 if !reloadResult.success {
                     failedTargets.append(target.displayName)
@@ -1654,7 +1656,12 @@ public actor SharedAutoUpdateManager {
                 requiredTime: policy.minimumTimeForReloadRetry
             )
 
-            let reloadResult = await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 6)
+            let reloadResult = await ContentBlockerService.reloadWithRetry(
+                identifier: target.bundleIdentifier,
+                maxRetries: 6,
+                groupIdentifier: GroupIdentifier.shared.value,
+                targetRulesFilename: target.rulesFilename
+            )
             if !reloadResult.success {
                 failedTargets.append(target.displayName)
             }
@@ -1877,7 +1884,9 @@ public actor SharedAutoUpdateManager {
             if reloadContentBlockers {
                 let reload = await ContentBlockerService.reloadWithRetry(
                     identifier: target.bundleIdentifier,
-                    maxRetries: 6
+                    maxRetries: 6,
+                    groupIdentifier: GroupIdentifier.shared.value,
+                    targetRulesFilename: target.rulesFilename
                 )
                 reloadMs = reload.durationMs
                 reloadAttempts = reload.attempts

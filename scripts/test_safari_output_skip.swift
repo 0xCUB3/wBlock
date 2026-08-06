@@ -62,9 +62,43 @@ require(legacyDerivation.contains(") throws -> DerivedBaseRules"), "legacy deriv
 require(legacyDerivation.contains("CocoaError(.fileReadCorruptFile)"), "legacy corruption must be reported")
 
 let applyPipeline = try String(contentsOfFile: "wBlock/AppFilterManager+ApplyPipeline.swift", encoding: .utf8)
+let disabledSites = try String(contentsOfFile: "wBlock/AppFilterManager+DisabledSites.swift", encoding: .utf8)
 let autoUpdate = try String(contentsOfFile: "wBlockCoreService/SharedAutoUpdateManager.swift", encoding: .utf8)
+let webExtension = try String(contentsOfFile: "wBlockCoreService/WebExtensionRequestHandler.swift", encoding: .utf8)
 require(applyPipeline.contains("saveContentBlockerIfChanged"), "pause/clear writes must use save-if-changed")
 require(autoUpdate.contains("saveContentBlockerIfChanged"), "auto-update pause repair must use save-if-changed")
+require(source.contains("public static func reloadIfNeeded("), "reloads must go through the marker coordinator")
+require(autoUpdate.contains("groupIdentifier: GroupIdentifier.shared.value,\n                targetRulesFilename: target.rulesFilename"), "auto-update reloads must invalidate the mapped target marker")
+require(autoUpdate.contains("groupIdentifier: groupIdentifier,\n                    targetRulesFilename: target.rulesFilename"), "pause repair reloads must invalidate the mapped target marker")
+require(webExtension.contains("groupIdentifier: groupID,\n                        targetRulesFilename: target.rulesFilename"), "WebExtension reloads must invalidate the mapped target marker")
+require(source.contains("public static func invalidateReloadMarker("), "raw reloads need an explicit marker invalidation API")
+require(source.contains("if let groupIdentifier, let targetRulesFilename"), "raw reload policy must require both target mapping fields")
+require(source.contains("outputDigest"), "marker must carry the exact output digest")
+require(source.contains("ReloadContext"), "marker must carry reload context")
+require(source.contains("FileLock(") && source.contains("containerURL.appendingPathComponent(\".\\(targetRulesFilename).lock\")"), "marker checks must use the target output lock")
+require(source.contains("JSONEncoder().encode(newMarker).write(to: markerURL, options: .atomic)"), "marker writes must be atomic")
+require(source.contains("try? FileManager.default.removeItem(at: markerURL)"), "failed reloads must invalidate the marker")
+let reloadCoordinator = section(
+    from: "public static func reloadIfNeeded(",
+    to: "/// Reloads the Safari content blocker extension"
+)
+require(source.contains("private static let maxReloadVerificationPasses = 3"), "reload verification must be bounded")
+require(source.contains("private static func reloadWithRetryRaw("), "Safari retries must have a private raw implementation")
+require(source.contains("withTaskCancellationHandler"), "queued reload waiters must observe cancellation")
+require(source.contains("cancelWaiter"), "canceled reload waiters must be removed")
+require(reloadCoordinator.contains("await reloadWithRetryRaw("), "foreground reloads must not recursively reacquire the reload gate")
+require(!reloadCoordinator.contains("await reloadWithRetry("), "foreground reloads must not call the gated public retry API")
+require(reloadCoordinator.contains("for _ in 0..<maxReloadVerificationPasses"), "reload verification must use the bounded loop")
+require(reloadCoordinator.contains("verifiedDigest == snapshot.outputDigest"), "state-query verification must recheck the output digest")
+require(reloadCoordinator.contains("verifiedDigest == expectedDigest"), "reload verification must recheck the output digest")
+require(reloadCoordinator.contains("mustReloadNewestOutput = true"), "changed output must force a reload of the newest snapshot")
+require(!reloadCoordinator.contains("totalDurationMs"), "reload duration must not sum nested elapsed values")
+require(!reloadCoordinator.contains("return ReloadAttemptResult(success: true, attempts: totalAttempts"), "unverified reload changes must not report success")
+require(applyPipeline.contains("let reloadDurationMs = reloadSummary.durationMs"), "parallel reload duration must use wall clock")
+require(!applyPipeline.contains("let reloadDurationMs = activeReloads.reduce"), "parallel reloads must not sum elapsed durations")
+require(!disabledSites.contains("reloadDurationMs += result.durationMs"), "parallel reload metrics must not sum elapsed durations")
+require(disabledSites.contains("Date().timeIntervalSince(reloadStartTime)"), "disabled-site reload duration must use wall clock")
+require(!applyPipeline.contains("reloadDurationMs += result.durationMs"), "parallel reload metrics must not sum elapsed durations")
 require(!applyPipeline.contains("saveContentBlocker("), "pause/clear writes must not bypass save-if-changed")
 require(!autoUpdate.contains("saveContentBlocker("), "auto-update writes must not bypass save-if-changed")
 require(source.contains("public let outputChanged: Bool"), "target outcomes must carry outputChanged")
@@ -99,4 +133,46 @@ try! Data("not-json".utf8).write(to: tempURL)
 require(writeForTest(desired), "malformed output must be atomically repaired")
 require(try! Data(contentsOf: tempURL) == desired, "repair must preserve authoritative bytes")
 
-print("PASS: Safari output save-if-changed guardrails")
+struct Marker: Equatable {
+    let output: String
+    let context: String
+}
+
+struct ReloadSimulation {
+    var reloads = 0
+    var marker: Marker?
+
+    mutating func reload(output: Data?, context: String, reloadSucceeds: Bool) -> (skipped: Bool, success: Bool) {
+        let validOutput = output.flatMap { data in
+            (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]] != nil ? String(data: data, encoding: .utf8) : nil
+        }
+        if let validOutput, marker == Marker(output: validOutput, context: context) {
+            return (true, true)
+        }
+        marker = nil
+        reloads += 1
+        guard reloadSucceeds else { return (false, false) }
+        guard let validOutput else { return (false, false) }
+        marker = Marker(output: validOutput, context: context)
+        return (false, true)
+    }
+}
+
+let outputA = Data("[{\"trigger\":{\"url-filter\":\"a\"}}]".utf8)
+let outputB = Data("[{\"trigger\":{\"url-filter\":\"b\"}}]".utf8)
+var simulation = ReloadSimulation()
+require(simulation.reload(output: outputA, context: "v1", reloadSucceeds: true).success, "first load must reload")
+require(simulation.reloads == 1, "first load must perform one reload")
+require(simulation.reload(output: outputA, context: "v1", reloadSucceeds: true).skipped, "unchanged successful output must skip")
+require(simulation.reloads == 1, "unchanged output must not reload")
+require(simulation.reload(output: outputB, context: "v1", reloadSucceeds: true).success, "changed output must reload")
+require(simulation.reloads == 2, "changed output must perform a reload")
+require(!simulation.reload(output: outputA, context: "v1", reloadSucceeds: false).success, "failed reload must report failure")
+require(simulation.marker == nil, "failed reload must not leave a marker")
+require(simulation.reload(output: outputA, context: "v1", reloadSucceeds: true).success, "failed reload must retry")
+simulation.marker = nil
+require(simulation.reload(output: outputA, context: "v1", reloadSucceeds: true).success, "missing marker must reload")
+require(simulation.reload(output: Data("not-json".utf8), context: "v1", reloadSucceeds: true).success == false, "corrupt output must not be marked successful")
+require(simulation.reload(output: outputA, context: "v2", reloadSucceeds: true).success, "context change must reload")
+
+print("PASS: Safari output save-if-changed and reload-skip guardrails")
