@@ -227,7 +227,10 @@ class AppFilterManager: ObservableObject {
         )
 
         do {
-            try ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
+            try ContentBlockerService.publishCombinedFilterEngine(
+                combinedAdvancedRules: "",
+                groupIdentifier: GroupIdentifier.shared.value
+            )
             statusDescription = LocalizedStrings.text("Ready.", comment: "Filter manager idle status")
         } catch {
             await ConcurrentLogManager.shared.error(

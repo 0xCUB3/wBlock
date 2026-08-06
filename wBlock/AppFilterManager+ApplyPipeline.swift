@@ -653,7 +653,7 @@ extension AppFilterManager {
                             "totalLines": "\(totalLines)",
                         ])
 
-                    try ContentBlockerService.buildCombinedFilterEngine(
+                    try ContentBlockerService.publishCombinedFilterEngine(
                         combinedAdvancedRules: combinedAdvancedRules,
                         groupIdentifier: GroupIdentifier.shared.value
                     )
@@ -662,7 +662,8 @@ extension AppFilterManager {
                 await ConcurrentLogManager.shared.debug(
                     .filterApply, LocalizedStrings.text("No advanced rules found, clearing filter engine"), metadata: [:])
                 try await Task.detached {
-                    try ContentBlockerService.clearFilterEngine(
+                    try ContentBlockerService.publishCombinedFilterEngine(
+                        combinedAdvancedRules: "",
                         groupIdentifier: GroupIdentifier.shared.value
                     )
                 }.value
@@ -771,7 +772,8 @@ extension AppFilterManager {
         do {
             try await Task.detached {
                 let groupIdentifier = GroupIdentifier.shared.value
-                try ContentBlockerService.clearFilterEngine(
+                try ContentBlockerService.publishCombinedFilterEngine(
+                    combinedAdvancedRules: "",
                     groupIdentifier: groupIdentifier
                 )
                 _ = try RemoveParamDNRRuleGenerator.clearSavedRules(

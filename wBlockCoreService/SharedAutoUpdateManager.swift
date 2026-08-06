@@ -320,14 +320,10 @@ public actor SharedAutoUpdateManager {
         )
 
         do {
-            if advancedRulesSnippets.isEmpty {
-                try ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
-            } else {
-                try ContentBlockerService.buildCombinedFilterEngine(
-                    combinedAdvancedRules: advancedRulesSnippets.joined(separator: "\n"),
-                    groupIdentifier: GroupIdentifier.shared.value
-                )
-            }
+            try ContentBlockerService.publishCombinedFilterEngine(
+                combinedAdvancedRules: advancedRulesSnippets.joined(separator: "\n"),
+                groupIdentifier: GroupIdentifier.shared.value
+            )
         } catch {
             appendSharedLog("\(failureLogPrefix): \(error.localizedDescription)")
             throw AutoUpdateError.advancedEngineOperationFailed(
@@ -1590,7 +1586,10 @@ public actor SharedAutoUpdateManager {
         let groupIdentifier = GroupIdentifier.shared.value
 
         do {
-            try ContentBlockerService.clearFilterEngine(groupIdentifier: groupIdentifier)
+            try ContentBlockerService.publishCombinedFilterEngine(
+                combinedAdvancedRules: "",
+                groupIdentifier: groupIdentifier
+            )
         } catch {
             appendSharedLog("Failed to clear paused advanced engine during auto-update: \(error.localizedDescription)")
         }

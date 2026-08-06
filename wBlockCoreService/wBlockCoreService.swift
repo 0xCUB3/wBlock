@@ -50,6 +50,20 @@ public struct ContentBlockerTargetOutcome: Sendable {
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
     private static let embeddedCompatibilityRulesVersion = "5"
+    private static let combinedEngineMarkerFileName = "combined-rules.sha256"
+    private static let combinedEngineMarkerFormatVersion = 2
+    private static let combinedEngineBuildLockFileName = "combined-engine-build.lock"
+    private static let combinedEngineBuildLockTimeout: TimeInterval = 120
+    private static let combinedEngineRequestLockFileName = "combined-engine-request.lock"
+    private static let combinedEngineLatestRequestFileName = "combined-engine-latest.request"
+    private static let combinedEngineRequestLockTimeout: TimeInterval = 2
+    private static let engineFileLockTimeout: TimeInterval = 2
+    private static let engineStorageFileNames = [
+        Schema.FILTER_RULE_STORAGE_FILE_NAME,
+        Schema.FILTER_ENGINE_INDEX_FILE_NAME,
+        Schema.RULES_FILE_NAME,
+        Schema.ENGINE_META_FILE_NAME,
+    ]
 
     /// Built-in compatibility rules that improve blocking of common dynamic ad script
     /// patterns and dynamic ad containers across filter sets.
@@ -831,58 +845,13 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         }
     }
     
-    /// Builds the filter engine with combined advanced rules from all filter groups.
+    /// Publishes the filter engine built from combined advanced rules from all filter groups.
     ///
     /// - Parameters:
     ///   - combinedAdvancedRules: Combined advanced rules text from all filter groups.
     ///   - groupIdentifier: Group ID to use for the shared container.
-    public static func buildCombinedFilterEngine(combinedAdvancedRules: String, groupIdentifier: String) throws {
-        guard !combinedAdvancedRules.isEmpty else {
-            os_log(.info, "No advanced rules to build filter engine with")
-            return
-        }
-
-        try measure(label: "Building combined filter engine") {
-            #if os(iOS)
-            try buildFilterEngineWithoutAdvisoryLock(
-                rules: combinedAdvancedRules,
-                groupIdentifier: groupIdentifier
-            )
-            #else
-            try WebExtensionGate.shared.withLock {
-                let webExtension = try WebExtension.shared(groupID: groupIdentifier)
-                _ = try webExtension.buildFilterEngine(rules: combinedAdvancedRules)
-            }
-            #endif
-            os_log(
-                .info,
-                "Successfully built combined filter engine with %d characters of advanced rules",
-                combinedAdvancedRules.count
-            )
-        }
-    }
-
-    /// Clears the filter engine by building it with empty rules.
-    ///
-    /// - Parameters:
-    ///   - groupIdentifier: Group ID to use for the shared container.
-    public static func clearFilterEngine(groupIdentifier: String) throws {
-        try measure(label: "Clearing filter engine") {
-            #if os(iOS)
-            try buildFilterEngineWithoutAdvisoryLock(rules: "", groupIdentifier: groupIdentifier)
-            #else
-            try WebExtensionGate.shared.withLock {
-                let webExtension = try WebExtension.shared(groupID: groupIdentifier)
-                _ = try webExtension.buildFilterEngine(rules: "")
-            }
-            #endif
-            os_log(.info, "Successfully cleared filter engine")
-        }
-    }
-
-    #if os(iOS)
-    private static func buildFilterEngineWithoutAdvisoryLock(
-        rules: String,
+    public static func publishCombinedFilterEngine(
+        combinedAdvancedRules: String,
         groupIdentifier: String
     ) throws {
         guard let containerURL = FileManager.default.containerURL(
@@ -892,102 +861,368 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         }
 
         let baseURL = containerURL.appendingPathComponent(Schema.BASE_DIR, isDirectory: true)
-        let coordinator = NSFileCoordinator(filePresenter: nil)
-        var coordinationError: NSError?
-        var buildResult: Result<Void, Error>?
+        try FileManager.default.createDirectory(at: baseURL, withIntermediateDirectories: true)
+        let requestToken = try recordCombinedEngineRequest(at: baseURL)
+        let safariVersion = SafariVersion.autodetect()
+        let rulesData = Data(combinedAdvancedRules.utf8)
+        let fingerprint = combinedEngineFingerprint(rulesData: rulesData, safariVersion: safariVersion)
 
-        coordinator.coordinate(writingItemAt: baseURL, options: [], error: &coordinationError) { _ in
-            buildResult = Result {
-                try buildFilterEngineFiles(rules: rules, baseURL: baseURL)
+        try measure(label: combinedAdvancedRules.isEmpty ? "Clearing filter engine" : "Building combined filter engine") {
+            try withCombinedEngineBuildLock(at: baseURL) {
+                let skipped = try withEngineCriticalSection(at: baseURL) {
+                    canSkipCombinedEnginePublish(fingerprint: fingerprint, baseURL: baseURL)
+                }
+                if skipped {
+                    os_log(.info, "Skipping unchanged combined filter engine publish")
+                    return
+                }
+
+                let temporaryBuild = try buildTemporaryEngine(
+                    rulesData: rulesData,
+                    safariVersion: safariVersion,
+                    baseURL: baseURL
+                )
+                defer { try? FileManager.default.removeItem(at: temporaryBuild.directory) }
+
+                let published = try withEngineCriticalSection(at: baseURL) {
+                    try withCombinedEngineRequestLock(at: baseURL) {
+                        guard latestCombinedEngineRequestToken(at: baseURL) == requestToken else {
+                            os_log(.info, "Abandoning superseded combined filter engine publish")
+                            return false
+                        }
+                        if canSkipCombinedEnginePublish(fingerprint: fingerprint, baseURL: baseURL) {
+                            return false
+                        }
+
+                        try publishEngineFiles(
+                            from: temporaryBuild,
+                            fingerprint: fingerprint,
+                            baseURL: baseURL
+                        )
+                        return true
+                    }
+                }
+
+                if published {
+                    os_log(
+                        .info,
+                        "Successfully published combined filter engine with %d characters of advanced rules",
+                        combinedAdvancedRules.count
+                    )
+                }
             }
         }
+    }
 
-        if let buildResult {
-            try buildResult.get()
-            return
-        }
-
-        if let coordinationError {
-            throw coordinationError
-        }
-
-        throw WebExtension.WebExtensionError.buildEngineFailed(
-            underlyingError: CocoaError(.fileWriteUnknown)
+    public static func buildCombinedFilterEngine(combinedAdvancedRules: String, groupIdentifier: String) throws {
+        try publishCombinedFilterEngine(
+            combinedAdvancedRules: combinedAdvancedRules,
+            groupIdentifier: groupIdentifier
         )
     }
 
-    private static func buildFilterEngineFiles(rules: String, baseURL: URL) throws {
-        let fileManager = FileManager.default
-        try fileManager.createDirectory(at: baseURL, withIntermediateDirectories: true)
-
-        let temporaryDirectory = baseURL.appendingPathComponent(
-            "engine-rebuild-\(UUID().uuidString)",
-            isDirectory: true
-        )
-        try fileManager.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
-        defer { try? fileManager.removeItem(at: temporaryDirectory) }
-
-        let temporaryRulesBinURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_RULE_STORAGE_FILE_NAME)
-        let temporaryEngineURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_ENGINE_INDEX_FILE_NAME)
-        let temporaryRulesTextURL = temporaryDirectory.appendingPathComponent(Schema.RULES_FILE_NAME)
-        let temporaryMetaURL = temporaryDirectory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
-
-        let storage = try FilterRuleStorage(
-            from: rules.components(separatedBy: "\n"),
-            for: SafariVersion.autodetect(),
-            fileURL: temporaryRulesBinURL
-        )
-        let engine = try FilterEngine(storage: storage)
-        try engine.write(to: temporaryEngineURL)
-        try rules.write(to: temporaryRulesTextURL, atomically: true, encoding: .utf8)
-
-        let meta = EngineMeta(timestamp: Date().timeIntervalSince1970, schemaVersion: Int32(Schema.VERSION))
-        try meta.toData().write(to: temporaryMetaURL, options: .atomic)
-
-        try publishEngineFiles(
-            temporaryRulesBinURL: temporaryRulesBinURL,
-            temporaryEngineURL: temporaryEngineURL,
-            temporaryRulesTextURL: temporaryRulesTextURL,
-            temporaryMetaURL: temporaryMetaURL,
-            baseURL: baseURL
-        )
-
-        let migrationMarkerURL = baseURL.appendingPathComponent(Schema.MIGRATION_MARKER_FILE_NAME)
-        if fileManager.fileExists(atPath: migrationMarkerURL.path) {
-            try? fileManager.removeItem(at: migrationMarkerURL)
-        }
+    /// Clears the filter engine by building it with empty rules.
+    ///
+    /// - Parameters:
+    ///   - groupIdentifier: Group ID to use for the shared container.
+    public static func clearFilterEngine(groupIdentifier: String) throws {
+        try publishCombinedFilterEngine(combinedAdvancedRules: "", groupIdentifier: groupIdentifier)
     }
 
-    private static func publishEngineFiles(
-        temporaryRulesBinURL: URL,
-        temporaryEngineURL: URL,
-        temporaryRulesTextURL: URL,
-        temporaryMetaURL: URL,
+    private struct CombinedEngineFingerprint: Equatable {
+        let rulesHash: String
+        let schemaVersion: Int
+        let safariBuildContext: String
+        let markerFormatVersion: Int
+        let value: String
+    }
+
+    private struct TemporaryEngineBuild {
+        let directory: URL
+        let artifactDigests: [String: String]
+    }
+
+    private struct CombinedEngineMarker: Codable, Equatable {
+        let markerFormatVersion: Int
+        let schemaVersion: Int
+        let safariBuildContext: String
+        let rulesHash: String
+        let fingerprint: String
+        let artifactDigests: [String: String]
+    }
+
+    private static func combinedEngineFingerprint(
+        rulesData: Data,
+        safariVersion: SafariVersion
+    ) -> CombinedEngineFingerprint {
+        let rulesHash = combinedRulesHash(rulesData)
+        let safariBuildContext = "\(currentPlatform)-safari-\(safariVersion.doubleValue)"
+        let markerFormatVersion = combinedEngineMarkerFormatVersion
+        let schemaVersion = Schema.VERSION
+        let value = combinedRulesHash(
+            Data("\(markerFormatVersion)|\(schemaVersion)|\(safariBuildContext)|\(rulesHash)".utf8)
+        )
+        return CombinedEngineFingerprint(
+            rulesHash: rulesHash,
+            schemaVersion: schemaVersion,
+            safariBuildContext: safariBuildContext,
+            markerFormatVersion: markerFormatVersion,
+            value: value
+        )
+    }
+
+    private static var currentPlatform: String {
+        #if os(macOS)
+        return "macOS"
+        #elseif os(iOS)
+        return "iOS"
+        #else
+        return "unknown"
+        #endif
+    }
+
+    private static func combinedRulesHash(_ data: Data) -> String {
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func expectedMarker(
+        for fingerprint: CombinedEngineFingerprint,
+        artifactDigests: [String: String]
+    ) -> CombinedEngineMarker {
+        CombinedEngineMarker(
+            markerFormatVersion: fingerprint.markerFormatVersion,
+            schemaVersion: fingerprint.schemaVersion,
+            safariBuildContext: fingerprint.safariBuildContext,
+            rulesHash: fingerprint.rulesHash,
+            fingerprint: fingerprint.value,
+            artifactDigests: artifactDigests
+        )
+    }
+
+    private static func canSkipCombinedEnginePublish(
+        fingerprint: CombinedEngineFingerprint,
         baseURL: URL
-    ) throws {
-        let lockURL = baseURL.appendingPathComponent(Schema.LOCK_FILE_NAME)
-        guard let fileLock = FileLock(filePath: lockURL.path) else {
-            throw WebExtension.WebExtensionError.buildEngineFailed(
-                underlyingError: CocoaError(.fileWriteUnknown)
-            )
-        }
+    ) -> Bool {
+        let migrationMarkerURL = baseURL.appendingPathComponent(Schema.MIGRATION_MARKER_FILE_NAME)
+        guard !FileManager.default.fileExists(atPath: migrationMarkerURL.path) else { return false }
 
-        guard fileLock.lock(before: Date().addingTimeInterval(2)) else {
+        let markerURL = baseURL.appendingPathComponent(combinedEngineMarkerFileName)
+        guard let markerData = try? Data(contentsOf: markerURL),
+              let marker = try? JSONDecoder().decode(CombinedEngineMarker.self, from: markerData),
+              marker.markerFormatVersion == fingerprint.markerFormatVersion,
+              marker.schemaVersion == fingerprint.schemaVersion,
+              marker.safariBuildContext == fingerprint.safariBuildContext,
+              marker.rulesHash == fingerprint.rulesHash,
+              marker.fingerprint == fingerprint.value,
+              Set(marker.artifactDigests.keys) == Set(engineStorageFileNames)
+        else { return false }
+
+        return validatePublishedEngineFiles(at: baseURL, artifactDigests: marker.artifactDigests)
+    }
+
+    private static func validatePublishedEngineFiles(
+        at baseURL: URL,
+        artifactDigests: [String: String]
+    ) -> Bool {
+        guard Set(artifactDigests.keys) == Set(engineStorageFileNames) else { return false }
+        return (try? engineArtifactDigests(at: baseURL)) == artifactDigests
+    }
+
+    private static func engineArtifactDigests(at baseURL: URL) throws -> [String: String] {
+        Dictionary(uniqueKeysWithValues: try engineStorageFileNames.map { fileName in
+            let data = try Data(contentsOf: baseURL.appendingPathComponent(fileName))
+            return (fileName, combinedRulesHash(data))
+        })
+    }
+
+    private static func validateTemporaryEngine(
+        at directory: URL,
+        fingerprint: CombinedEngineFingerprint
+    ) -> Bool {
+        guard let artifactDigests = try? engineArtifactDigests(at: directory),
+              artifactDigests[Schema.RULES_FILE_NAME] == fingerprint.rulesHash,
+              let metaData = try? Data(contentsOf: directory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)),
+              let meta = EngineMeta.fromData(metaData),
+              meta.schemaVersion == Int32(fingerprint.schemaVersion)
+        else { return false }
+
+        do {
+            let storage = try FilterRuleStorage(
+                fileURL: directory.appendingPathComponent(Schema.FILTER_RULE_STORAGE_FILE_NAME)
+            )
+            _ = try FilterEngine(
+                storage: storage,
+                indexFileURL: directory.appendingPathComponent(Schema.FILTER_ENGINE_INDEX_FILE_NAME)
+            )
+
+            var iterator = try storage.makeIterator()
+            var decodedRuleCount = 0
+            while iterator.next() != nil {
+                decodedRuleCount += 1
+            }
+            return decodedRuleCount == storage.count
+        } catch {
+            return false
+        }
+    }
+
+    private static func withCombinedEngineBuildLock<T>(at baseURL: URL, _ body: () throws -> T) throws -> T {
+        guard let fileLock = FileLock(
+            filePath: baseURL.appendingPathComponent(combinedEngineBuildLockFileName).path
+        ), fileLock.lock(before: Date().addingTimeInterval(combinedEngineBuildLockTimeout)) else {
             throw WebExtension.WebExtensionError.buildEngineFailed(
                 underlyingError: CocoaError(.fileWriteUnknown)
             )
         }
         defer { _ = fileLock.unlock() }
+        return try body()
+    }
 
-        let existingMetaURL = baseURL.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
-        if FileManager.default.fileExists(atPath: existingMetaURL.path) {
-            try FileManager.default.removeItem(at: existingMetaURL)
+    private static func withCombinedEngineRequestLock<T>(at baseURL: URL, _ body: () throws -> T) throws -> T {
+        guard let fileLock = FileLock(
+            filePath: baseURL.appendingPathComponent(combinedEngineRequestLockFileName).path
+        ), fileLock.lock(before: Date().addingTimeInterval(combinedEngineRequestLockTimeout)) else {
+            throw WebExtension.WebExtensionError.buildEngineFailed(
+                underlyingError: CocoaError(.fileWriteUnknown)
+            )
+        }
+        defer { _ = fileLock.unlock() }
+        return try body()
+    }
+
+    private static func recordCombinedEngineRequest(at baseURL: URL) throws -> String {
+        let token = UUID().uuidString
+        try withCombinedEngineRequestLock(at: baseURL) {
+            try Data(token.utf8).write(
+                to: baseURL.appendingPathComponent(combinedEngineLatestRequestFileName),
+                options: .atomic
+            )
+        }
+        return token
+    }
+
+    private static func latestCombinedEngineRequestToken(at baseURL: URL) -> String? {
+        guard let token = try? String(
+            contentsOf: baseURL.appendingPathComponent(combinedEngineLatestRequestFileName),
+            encoding: .utf8
+        ) else {
+            return nil
+        }
+        let trimmedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedToken.isEmpty ? nil : trimmedToken
+    }
+
+    private static func withEngineCriticalSection<T>(at baseURL: URL, _ body: () throws -> T) throws -> T {
+        try WebExtensionGate.shared.withLock {
+            try withEngineFileLock(at: baseURL, body)
+        }
+    }
+
+    private static func withEngineFileLock<T>(at baseURL: URL, _ body: () throws -> T) throws -> T {
+        guard let fileLock = FileLock(
+            filePath: baseURL.appendingPathComponent(Schema.LOCK_FILE_NAME).path
+        ), fileLock.lock(before: Date().addingTimeInterval(engineFileLockTimeout)) else {
+            throw WebExtension.WebExtensionError.buildEngineFailed(
+                underlyingError: CocoaError(.fileWriteUnknown)
+            )
+        }
+        defer { _ = fileLock.unlock() }
+        return try body()
+    }
+
+    private static func buildTemporaryEngine(
+        rulesData: Data,
+        safariVersion: SafariVersion,
+        baseURL: URL
+    ) throws -> TemporaryEngineBuild {
+        let fileManager = FileManager.default
+        let temporaryDirectory = baseURL.appendingPathComponent(
+            "engine-rebuild-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        try fileManager.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+
+        do {
+            let rulesURL = temporaryDirectory.appendingPathComponent(Schema.RULES_FILE_NAME)
+            let storageURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_RULE_STORAGE_FILE_NAME)
+            let indexURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_ENGINE_INDEX_FILE_NAME)
+            let metaURL = temporaryDirectory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
+
+            let rules = String(decoding: rulesData, as: UTF8.self)
+            let storage = try FilterRuleStorage(
+                from: rules.components(separatedBy: "\n"),
+                for: safariVersion,
+                fileURL: storageURL
+            )
+            let engine = try FilterEngine(storage: storage)
+            try engine.write(to: indexURL)
+            try rulesData.write(to: rulesURL, options: .atomic)
+
+            let meta = EngineMeta(
+                timestamp: Date().timeIntervalSince1970,
+                schemaVersion: Int32(Schema.VERSION)
+            )
+            try meta.toData().write(to: metaURL, options: .atomic)
+
+            let fingerprint = combinedEngineFingerprint(rulesData: rulesData, safariVersion: safariVersion)
+            guard validateTemporaryEngine(at: temporaryDirectory, fingerprint: fingerprint),
+                  let artifactDigests = try? engineArtifactDigests(at: temporaryDirectory)
+            else {
+                throw WebExtension.WebExtensionError.buildEngineFailed(
+                    underlyingError: CocoaError(.fileReadCorruptFile)
+                )
+            }
+            return TemporaryEngineBuild(directory: temporaryDirectory, artifactDigests: artifactDigests)
+        } catch {
+            try? fileManager.removeItem(at: temporaryDirectory)
+            throw error
+        }
+    }
+
+    private static func publishEngineFiles(
+        from temporaryBuild: TemporaryEngineBuild,
+        fingerprint: CombinedEngineFingerprint,
+        baseURL: URL
+    ) throws {
+        let migrationMarkerURL = baseURL.appendingPathComponent(Schema.MIGRATION_MARKER_FILE_NAME)
+        try Data().write(to: migrationMarkerURL, options: .atomic)
+        try invalidateExistingEngineMeta(at: baseURL)
+
+        for fileName in engineStorageFileNames where fileName != Schema.ENGINE_META_FILE_NAME {
+            try replaceEngineFile(
+                temporaryBuild.directory.appendingPathComponent(fileName),
+                in: baseURL,
+                named: fileName
+            )
+        }
+        try replaceEngineFile(
+            temporaryBuild.directory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME),
+            in: baseURL,
+            named: Schema.ENGINE_META_FILE_NAME
+        )
+
+        guard validatePublishedEngineFiles(at: baseURL, artifactDigests: temporaryBuild.artifactDigests) else {
+            throw WebExtension.WebExtensionError.buildEngineFailed(
+                underlyingError: CocoaError(.fileReadCorruptFile)
+            )
         }
 
-        try replaceEngineFile(temporaryRulesBinURL, in: baseURL, named: Schema.FILTER_RULE_STORAGE_FILE_NAME)
-        try replaceEngineFile(temporaryEngineURL, in: baseURL, named: Schema.FILTER_ENGINE_INDEX_FILE_NAME)
-        try replaceEngineFile(temporaryRulesTextURL, in: baseURL, named: Schema.RULES_FILE_NAME)
-        try replaceEngineFile(temporaryMetaURL, in: baseURL, named: Schema.ENGINE_META_FILE_NAME)
+        let marker = expectedMarker(
+            for: fingerprint,
+            artifactDigests: temporaryBuild.artifactDigests
+        )
+        let markerData = try JSONEncoder().encode(marker)
+        try markerData.write(
+            to: baseURL.appendingPathComponent(combinedEngineMarkerFileName),
+            options: .atomic
+        )
+        try FileManager.default.removeItem(at: migrationMarkerURL)
+    }
+
+    private static func invalidateExistingEngineMeta(at baseURL: URL) throws {
+        let metaURL = baseURL.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
+        guard FileManager.default.fileExists(atPath: metaURL.path) else { return }
+        try FileManager.default.removeItem(at: metaURL)
     }
 
     private static func replaceEngineFile(_ sourceURL: URL, in baseURL: URL, named fileName: String) throws {
@@ -1000,7 +1235,6 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             try fileManager.moveItem(at: sourceURL, to: destinationURL)
         }
     }
-    #endif
 }
 
 // MARK: - Safari Content Blocker functions
