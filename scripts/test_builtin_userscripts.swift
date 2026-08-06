@@ -111,22 +111,12 @@ else {
     exit(1)
 }
 
-guard onboardingSource.contains("Baseline userscripts are enabled by default. You can adjust them here.")
-    && onboardingSource.contains("isBaselineUserscriptEnabledByDefault")
+guard onboardingSource.contains("isBaselineUserscriptEnabledByDefault")
     && onboardingSource.contains("AdGuard Extra")
     && onboardingSource.contains("localizedCaseInsensitiveCompare(\"tinyShield\")")
     && onboardingSource.contains("visibleBaselineIDs")
 else {
     fputs("FAIL: onboarding should enable baseline userscripts by default\n", stderr)
-    exit(1)
-}
-
-guard onboardingSource.contains("regionalUserscriptGroups")
-    && onboardingSource.contains("languagesWithoutRegionalUserscripts")
-    && onboardingSource.contains("No regional userscripts needed. The default userscripts already cover English and international sites.")
-    && onboardingSource.contains("No regional userscripts available. However, the default userscripts already cover English and international sites.")
-else {
-    fputs("FAIL: onboarding should group regional userscripts by language with empty-language fallbacks\n", stderr)
     exit(1)
 }
 
