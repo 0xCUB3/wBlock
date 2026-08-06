@@ -23,12 +23,33 @@ public struct ContentBlockerTargetOutcome: Sendable {
     public let safariRulesCount: Int
     public let advancedRulesText: String?
     public let reusedCachedBase: Bool
+    public let outputChanged: Bool
 
     public init(safariRulesCount: Int, advancedRulesText: String?, reusedCachedBase: Bool) {
+        self.init(
+            safariRulesCount: safariRulesCount,
+            advancedRulesText: advancedRulesText,
+            reusedCachedBase: reusedCachedBase,
+            outputChanged: true
+        )
+    }
+
+    public init(
+        safariRulesCount: Int,
+        advancedRulesText: String?,
+        reusedCachedBase: Bool,
+        outputChanged: Bool
+    ) {
         self.safariRulesCount = safariRulesCount
         self.advancedRulesText = advancedRulesText
         self.reusedCachedBase = reusedCachedBase
+        self.outputChanged = outputChanged
     }
+}
+
+public struct ContentBlockerSaveResult: Sendable {
+    public let ruleCount: Int
+    public let outputChanged: Bool
 }
     /// A valid Safari content blocker list that performs no blocking.
     ///
@@ -50,6 +71,25 @@ public struct ContentBlockerTargetOutcome: Sendable {
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
     private static let embeddedCompatibilityRulesVersion = "5"
+    private static let combinedEngineMarkerFileName = "combined-rules.sha256"
+    private static let combinedEngineMarkerFormatVersion = 2
+    private static let combinedEngineBuildLockFileName = "combined-engine-build.lock"
+    private static let combinedEngineBuildLockTimeout: TimeInterval = 120
+    private static let combinedEngineRequestLockFileName = "combined-engine-request.lock"
+    private static let combinedEngineLatestRequestFileName = "combined-engine-latest.request"
+    private static let combinedEngineRequestLockTimeout: TimeInterval = 2
+    private static let engineFileLockTimeout: TimeInterval = 2
+    private static let contentBlockerOutputLockTimeout: TimeInterval = 10
+    private static let engineStorageFileNames = [
+        Schema.FILTER_RULE_STORAGE_FILE_NAME,
+        Schema.FILTER_ENGINE_INDEX_FILE_NAME,
+        Schema.RULES_FILE_NAME,
+        Schema.ENGINE_META_FILE_NAME,
+    ]
+
+    private enum CombinedEnginePublishError: Error {
+        case supersededRequest
+    }
 
     /// Built-in compatibility rules that improve blocking of common dynamic ad script
     /// patterns and dynamic ad containers across filter sets.
@@ -332,8 +372,404 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
 
     public struct ReloadAttemptResult: Sendable {
         public let success: Bool
+        public let skipped: Bool
         public let attempts: Int
         public let durationMs: Int
+
+        public init(success: Bool, skipped: Bool = false, attempts: Int, durationMs: Int) {
+            self.success = success
+            self.skipped = skipped
+            self.attempts = attempts
+            self.durationMs = durationMs
+        }
+    }
+
+    private actor ReloadCoordinator {
+        private struct Waiter {
+            let id: UUID
+            let continuation: CheckedContinuation<Bool, Never>
+        }
+
+        private var activeKeys: Set<String> = []
+        private var waiters: [String: [Waiter]] = [:]
+
+        func withGate<T: Sendable>(
+            key: String,
+            operation: @Sendable () async -> T
+        ) async -> T? {
+            guard await acquire(key) else { return nil }
+            guard !Task.isCancelled else {
+                release(key)
+                return nil
+            }
+            defer { release(key) }
+            return await operation()
+        }
+
+        private func acquire(_ key: String) async -> Bool {
+            guard !Task.isCancelled else { return false }
+            guard activeKeys.contains(key) else {
+                activeKeys.insert(key)
+                return true
+            }
+
+            let id = UUID()
+            return await withTaskCancellationHandler(operation: {
+                await withCheckedContinuation { continuation in
+                    if Task.isCancelled {
+                        continuation.resume(returning: false)
+                    } else {
+                        waiters[key, default: []].append(
+                            Waiter(id: id, continuation: continuation)
+                        )
+                    }
+                }
+            }, onCancel: {
+                Task { await self.cancelWaiter(key: key, id: id) }
+            })
+        }
+
+        private func cancelWaiter(key: String, id: UUID) {
+            guard var keyWaiters = waiters[key],
+                  let index = keyWaiters.firstIndex(where: { $0.id == id }) else {
+                return
+            }
+            let waiter = keyWaiters.remove(at: index)
+            if keyWaiters.isEmpty {
+                waiters.removeValue(forKey: key)
+            } else {
+                waiters[key] = keyWaiters
+            }
+            waiter.continuation.resume(returning: false)
+        }
+
+        private func release(_ key: String) {
+            guard var keyWaiters = waiters[key], !keyWaiters.isEmpty else {
+                activeKeys.remove(key)
+                return
+            }
+            let next = keyWaiters.removeFirst()
+            if keyWaiters.isEmpty {
+                waiters.removeValue(forKey: key)
+            } else {
+                waiters[key] = keyWaiters
+            }
+            next.continuation.resume(returning: true)
+        }
+    }
+
+    private struct ReloadMarker: Codable, Equatable {
+        let schema: Int
+        let outputDigest: String
+        let context: ReloadContext
+    }
+
+    private struct ReloadContext: Codable, Equatable {
+        let schema: Int
+        let platform: String
+        let osVersion: String
+        let appVersion: String
+        let appBuild: String
+    }
+
+    private struct ReloadSnapshot {
+        let marker: ReloadMarker?
+        let outputDigest: String?
+        let context: ReloadContext
+    }
+
+    private enum ReloadMarkerWriteResult {
+        case written
+        case paused
+        case changed(ReloadSnapshot)
+        case invalid
+        case failed
+    }
+
+    private static let reloadMarkerSchema = 1
+    private static let reloadMarkerFileSuffix = ".reload-marker.json"
+    private static let maxReloadVerificationPasses = 3
+    private static let reloadCoordinator = ReloadCoordinator()
+
+    private static var currentReloadContext: ReloadContext {
+        #if os(iOS)
+        let platform = "iOS"
+        #else
+        let platform = "macOS"
+        #endif
+        let os = ProcessInfo.processInfo.operatingSystemVersion
+        let osVersion = "\(os.majorVersion).\(os.minorVersion).\(os.patchVersion)"
+        let info = Bundle.main.infoDictionary ?? [:]
+        return ReloadContext(
+            schema: reloadMarkerSchema,
+            platform: platform,
+            osVersion: osVersion,
+            appVersion: info["CFBundleShortVersionString"] as? String ?? "",
+            appBuild: info["CFBundleVersion"] as? String ?? ""
+        )
+    }
+
+    private static func reloadMarkerURL(
+        targetRulesFilename: String,
+        containerURL: URL
+    ) -> URL {
+        containerURL.appendingPathComponent(
+            "\(targetRulesFilename)\(reloadMarkerFileSuffix)"
+        )
+    }
+
+    private static func validOutputDigest(_ data: Data?) -> String? {
+        guard let data,
+              !data.isEmpty,
+              (try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]) != nil
+        else { return nil }
+        let digest = SHA256.hash(data: data)
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func readReloadSnapshot(
+        markerURL: URL,
+        outputURL: URL,
+        appGroupURL: URL
+    ) throws -> ReloadSnapshot {
+        try withContentBlockerOutputLock(at: appGroupURL, targetRulesFilename: outputURL.lastPathComponent) {
+            let marker = (try? Data(contentsOf: markerURL)).flatMap {
+                try? JSONDecoder().decode(ReloadMarker.self, from: $0)
+            }
+            return ReloadSnapshot(
+                marker: marker,
+                outputDigest: validOutputDigest(try? Data(contentsOf: outputURL)),
+                context: currentReloadContext
+            )
+        }
+    }
+
+    private static func writeReloadMarkerIfUnchanged(
+        markerURL: URL,
+        outputURL: URL,
+        appGroupURL: URL,
+        expectedDigest: String?,
+        expectedContext: ReloadContext,
+        groupIdentifier: String
+    ) throws -> ReloadMarkerWriteResult {
+        try withContentBlockerOutputLock(at: appGroupURL, targetRulesFilename: outputURL.lastPathComponent) {
+            if BlockingPauseStore.isPaused(groupIdentifier: groupIdentifier) {
+                try? FileManager.default.removeItem(at: markerURL)
+                return .paused
+            }
+
+            let snapshot = ReloadSnapshot(
+                marker: nil,
+                outputDigest: validOutputDigest(try? Data(contentsOf: outputURL)),
+                context: currentReloadContext
+            )
+            guard let outputDigest = snapshot.outputDigest else {
+                try? FileManager.default.removeItem(at: markerURL)
+                return .invalid
+            }
+            guard outputDigest == expectedDigest, snapshot.context == expectedContext else {
+                try? FileManager.default.removeItem(at: markerURL)
+                return .changed(snapshot)
+            }
+
+            let newMarker = ReloadMarker(
+                schema: reloadMarkerSchema,
+                outputDigest: outputDigest,
+                context: expectedContext
+            )
+            do {
+                try JSONEncoder().encode(newMarker).write(to: markerURL, options: .atomic)
+                return .written
+            } catch {
+                return .failed
+            }
+        }
+    }
+
+    @MainActor
+    private static func contentBlockerIsEnabled(identifier: String) async -> Bool {
+        await withCheckedContinuation { continuation in
+            SFContentBlockerManager.getStateOfContentBlocker(withIdentifier: identifier) { state, error in
+                continuation.resume(returning: error == nil && state?.isEnabled == true)
+            }
+        }
+    }
+
+    private static func reloadMarkerMatches(_ snapshot: ReloadSnapshot) -> Bool {
+        snapshot.marker?.schema == reloadMarkerSchema
+            && snapshot.marker?.outputDigest == snapshot.outputDigest
+            && snapshot.marker?.context == snapshot.context
+    }
+
+    /// Verifies output around Safari's async API without holding the output lock across an await.
+    public static func reloadIfNeeded(
+        identifier: String,
+        targetRulesFilename: String,
+        groupIdentifier: String,
+        maxRetries: Int = 5
+    ) async -> ReloadAttemptResult {
+        let gatedResult = await reloadCoordinator.withGate(key: identifier) {
+            await reloadIfNeededSerially(
+                identifier: identifier,
+                targetRulesFilename: targetRulesFilename,
+                groupIdentifier: groupIdentifier,
+                maxRetries: maxRetries
+            )
+        }
+        guard let result = gatedResult else {
+            return ReloadAttemptResult(success: false, attempts: 0, durationMs: 0)
+        }
+        return result
+    }
+
+    private static func reloadIfNeededSerially(
+        identifier: String,
+        targetRulesFilename: String,
+        groupIdentifier: String,
+        maxRetries: Int
+    ) async -> ReloadAttemptResult {
+        let startTime = Date()
+        let elapsedMs = { Int(Date().timeIntervalSince(startTime) * 1000) }
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else {
+            return ReloadAttemptResult(success: false, attempts: 0, durationMs: elapsedMs())
+        }
+
+        let markerURL = reloadMarkerURL(
+            targetRulesFilename: targetRulesFilename,
+            containerURL: containerURL
+        )
+        let outputURL = containerURL.appendingPathComponent(targetRulesFilename)
+        let invalidateMarker = {
+            invalidateReloadMarker(
+                groupIdentifier: groupIdentifier,
+                targetRulesFilename: targetRulesFilename
+            )
+        }
+        guard var snapshot = try? readReloadSnapshot(
+            markerURL: markerURL,
+            outputURL: outputURL,
+            appGroupURL: containerURL
+        ), snapshot.outputDigest != nil else {
+            invalidateMarker()
+            return ReloadAttemptResult(success: false, attempts: 0, durationMs: elapsedMs())
+        }
+
+        var totalAttempts = 0
+        var mustReloadNewestOutput = false
+        for _ in 0..<maxReloadVerificationPasses {
+            if !mustReloadNewestOutput,
+               reloadMarkerMatches(snapshot),
+               !BlockingPauseStore.isPaused(groupIdentifier: groupIdentifier)
+            {
+                let enabled = await contentBlockerIsEnabled(identifier: identifier)
+                guard let verified = try? readReloadSnapshot(
+                    markerURL: markerURL,
+                    outputURL: outputURL,
+                    appGroupURL: containerURL
+                ), let verifiedDigest = verified.outputDigest else {
+                    invalidateMarker()
+                    return ReloadAttemptResult(
+                        success: false,
+                        attempts: totalAttempts,
+                        durationMs: elapsedMs()
+                    )
+                }
+                guard verifiedDigest == snapshot.outputDigest,
+                      verified.context == snapshot.context else {
+                    snapshot = verified
+                    mustReloadNewestOutput = true
+                    continue
+                }
+                if enabled,
+                   !BlockingPauseStore.isPaused(groupIdentifier: groupIdentifier),
+                   reloadMarkerMatches(verified)
+                {
+                    return ReloadAttemptResult(success: true, skipped: true, attempts: 0, durationMs: 0)
+                }
+                snapshot = verified
+            }
+
+            guard let expectedDigest = snapshot.outputDigest else {
+                return ReloadAttemptResult(
+                    success: false,
+                    attempts: totalAttempts,
+                    durationMs: elapsedMs()
+                )
+            }
+
+            // Do not let another caller observe a stale certification while this reload is in flight.
+            invalidateMarker()
+
+            let reload = await reloadWithRetryRaw(identifier: identifier, maxRetries: maxRetries)
+            totalAttempts += reload.attempts
+            guard reload.success else {
+                return ReloadAttemptResult(
+                    success: false,
+                    attempts: totalAttempts,
+                    durationMs: elapsedMs()
+                )
+            }
+
+            guard let verified = try? readReloadSnapshot(
+                markerURL: markerURL,
+                outputURL: outputURL,
+                appGroupURL: containerURL
+            ), let verifiedDigest = verified.outputDigest else {
+                invalidateMarker()
+                return ReloadAttemptResult(
+                    success: false,
+                    attempts: totalAttempts,
+                    durationMs: elapsedMs()
+                )
+            }
+            guard verifiedDigest == expectedDigest,
+                  verified.context == snapshot.context else {
+                snapshot = verified
+                mustReloadNewestOutput = true
+                continue
+            }
+
+            switch try? writeReloadMarkerIfUnchanged(
+                markerURL: markerURL,
+                outputURL: outputURL,
+                appGroupURL: containerURL,
+                expectedDigest: expectedDigest,
+                expectedContext: snapshot.context,
+                groupIdentifier: groupIdentifier
+            ) {
+            case .some(.written), .some(.paused):
+                return ReloadAttemptResult(
+                    success: true,
+                    attempts: totalAttempts,
+                    durationMs: elapsedMs()
+                )
+            case .some(.changed(let changed)):
+                guard changed.outputDigest != nil else {
+                    return ReloadAttemptResult(
+                        success: false,
+                        attempts: totalAttempts,
+                        durationMs: elapsedMs()
+                    )
+                }
+                snapshot = changed
+                mustReloadNewestOutput = true
+            case .some(.invalid), .some(.failed), .none:
+                invalidateMarker()
+                return ReloadAttemptResult(
+                    success: false,
+                    attempts: totalAttempts,
+                    durationMs: elapsedMs()
+                )
+            }
+        }
+
+        return ReloadAttemptResult(
+            success: false,
+            attempts: totalAttempts,
+            durationMs: elapsedMs()
+        )
     }
 
 
@@ -382,10 +818,38 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
 
     public static func reloadWithRetry(
         identifier: String,
-        maxRetries: Int = 5
+        maxRetries: Int = 5,
+        groupIdentifier: String? = nil,
+        targetRulesFilename: String? = nil
+    ) async -> ReloadAttemptResult {
+        guard (groupIdentifier == nil) == (targetRulesFilename == nil) else {
+            return ReloadAttemptResult(success: false, attempts: 0, durationMs: 0)
+        }
+        let gatedResult = await reloadCoordinator.withGate(key: identifier) {
+            if let groupIdentifier, let targetRulesFilename {
+                invalidateReloadMarker(
+                    groupIdentifier: groupIdentifier,
+                    targetRulesFilename: targetRulesFilename
+                )
+            }
+            return await reloadWithRetryRaw(identifier: identifier, maxRetries: maxRetries)
+        }
+        guard let result = gatedResult else {
+            return ReloadAttemptResult(success: false, attempts: 0, durationMs: 0)
+        }
+        return result
+    }
+
+    private static func reloadWithRetryRaw(
+        identifier: String,
+        maxRetries: Int
     ) async -> ReloadAttemptResult {
         let startTime = Date()
         let elapsedMs = { Int(Date().timeIntervalSince(startTime) * 1000) }
+
+        guard maxRetries > 0 else {
+            return ReloadAttemptResult(success: false, attempts: 0, durationMs: elapsedMs())
+        }
 
         for attempt in 1...maxRetries {
             if Task.isCancelled {
@@ -428,6 +892,43 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         )
     }
 
+    public static func invalidateReloadMarker(
+        groupIdentifier: String,
+        targetRulesFilename: String
+    ) {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else { return }
+
+        let markerURL = reloadMarkerURL(
+            targetRulesFilename: targetRulesFilename,
+            containerURL: containerURL
+        )
+        let reloadLockURL = containerURL.appendingPathComponent(".\(targetRulesFilename).lock")
+        try? withContentBlockerOutputLock(
+            at: containerURL,
+            targetRulesFilename: targetRulesFilename,
+            lockURL: reloadLockURL
+        ) {
+            try? FileManager.default.removeItem(at: markerURL)
+        }
+    }
+
+    private static func withContentBlockerOutputLock<T>(
+        at appGroupURL: URL,
+        targetRulesFilename: String,
+        lockURL: URL? = nil,
+        _ body: () throws -> T
+    ) throws -> T {
+        let lockURL = lockURL ?? appGroupURL.appendingPathComponent(".\(targetRulesFilename).lock")
+        guard let fileLock = FileLock(filePath: lockURL.path),
+              fileLock.lock(before: Date().addingTimeInterval(contentBlockerOutputLockTimeout)) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        defer { _ = fileLock.unlock() }
+        return try body()
+    }
+
     /// Saves the provided JSON content to the content blocker file in the shared container
     /// without attempting to convert the rules.
     ///
@@ -435,17 +936,47 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
     ///   - jsonRules: Safari content blocker JSON contents in proper format.
     ///   - groupIdentifier: Group ID to use for the shared container where
     ///                      the file will be saved.
-    /// - Returns: The number of entries in the JSON array.
-    public static func saveContentBlocker(jsonRules: String, groupIdentifier: String, targetRulesFilename: String) throws -> Int {
+    /// - Returns: The rule count and whether the shared output bytes changed.
+    public static func saveContentBlockerIfChanged(
+        jsonRules: String,
+        groupIdentifier: String,
+        targetRulesFilename: String
+    ) throws -> ContentBlockerSaveResult {
         os_log(.info, "Saving pre-formatted JSON content blocker rules to %@", targetRulesFilename)
-        let jsonData = Data(jsonRules.utf8)
-        guard let rules = try JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]] else {
+        let data = Data(jsonRules.utf8)
+        guard let rules = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
             throw CocoaError(.fileReadCorruptFile)
         }
-        try measure(label: "Saving pre-formatted file \(targetRulesFilename)") {
-            try saveBlockerListFile(contents: jsonRules, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
+
+        guard let appGroupURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else {
+            throw CocoaError(.fileNoSuchFile)
         }
-        return rules.count
+
+        let sharedFileURL = appGroupURL.appendingPathComponent(targetRulesFilename)
+        let outputChanged = try withContentBlockerOutputLock(
+            at: appGroupURL,
+            targetRulesFilename: targetRulesFilename
+        ) {
+            let outputChanged = (try? Data(contentsOf: sharedFileURL)) != data
+            if outputChanged {
+                try data.write(to: sharedFileURL, options: .atomic)
+                os_log(.info, "Successfully saved rules to %@", sharedFileURL.path)
+            } else {
+                os_log(.info, "Skipped unchanged rules at %@", sharedFileURL.path)
+            }
+            return outputChanged
+        }
+        return ContentBlockerSaveResult(ruleCount: rules.count, outputChanged: outputChanged)
+    }
+
+    public static func saveContentBlocker(jsonRules: String, groupIdentifier: String, targetRulesFilename: String) throws -> Int {
+        try saveContentBlockerIfChanged(
+            jsonRules: jsonRules,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: targetRulesFilename
+        ).ruleCount
     }
 
     /// Converts rules from a file, with a persistent on-disk cache keyed by the caller-provided SHA256.
@@ -457,6 +988,26 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         targetRulesFilename: String,
         disabledSites: [String]
     ) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
+        let result = try convertFilterFromFileWithOutputChange(
+            rulesFileURL: rulesFileURL,
+            rulesSHA256Hex: rulesSHA256Hex,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: targetRulesFilename,
+            disabledSites: disabledSites
+        )
+        return (
+            safariRulesCount: result.safariRulesCount,
+            advancedRulesText: result.advancedRulesText
+        )
+    }
+
+    static func convertFilterFromFileWithOutputChange(
+        rulesFileURL: URL,
+        rulesSHA256Hex: String,
+        groupIdentifier: String,
+        targetRulesFilename: String,
+        disabledSites: [String]
+    ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
         let sitesToUse = disabledSites
         let effectiveRulesHash = effectiveRulesHashHex(baseRulesHashHex: rulesSHA256Hex)
 
@@ -480,20 +1031,29 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             .trimmingCharacters(in: .whitespacesAndNewlines),
             cachedHash == effectiveRulesHash,
             FileManager.default.fileExists(atPath: baseURL.path),
-            let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8)
+            let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8),
+            isValidContentBlockerJSON(baseJSON)
         {
             let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
                 .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? countRulesInJSON(baseJSON)
 
             let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
-            try saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
+            let output = try saveContentBlockerIfChanged(
+                jsonRules: finalJSON,
+                groupIdentifier: groupIdentifier,
+                targetRulesFilename: targetRulesFilename
+            )
 
             let advancedText =
                 (try? String(contentsOf: advancedURL, encoding: .utf8))
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .flatMap { $0.isEmpty ? nil : $0 }
 
-            return (safariRulesCount: baseCount + sitesToUse.count, advancedRulesText: advancedText)
+            return (
+                safariRulesCount: baseCount + sitesToUse.count,
+                advancedRulesText: advancedText,
+                outputChanged: output.outputChanged
+            )
         }
 
         // Cache miss: read rules file and run conversion.
@@ -501,22 +1061,34 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         let effectiveRules = combinedRulesWithEmbeddedCompatibility(combinedRules)
         let result = try convertRules(rules: effectiveRules)
 
-        try saveBlockerListFile(contents: result.safariRulesJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
+        _ = try saveContentBlockerIfChanged(
+            jsonRules: result.safariRulesJSON,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: baseFilename
+        )
         try saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
         try saveBlockerListFile(contents: result.advancedRulesText ?? "", groupIdentifier: groupIdentifier, filename: advancedFilename)
 
         let finalJSON = injectIgnoreRulesForDisabledSites(json: result.safariRulesJSON, disabledSites: sitesToUse)
-        try saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
+        let output = try saveContentBlockerIfChanged(
+            jsonRules: finalJSON,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: targetRulesFilename
+        )
         try saveBlockerListFile(contents: effectiveRulesHash, groupIdentifier: groupIdentifier, filename: baseHashFilename)
 
-        return (safariRulesCount: result.safariRulesCount + sitesToUse.count, advancedRulesText: result.advancedRulesText)
+        return (
+            safariRulesCount: result.safariRulesCount + sitesToUse.count,
+            advancedRulesText: result.advancedRulesText,
+            outputChanged: output.outputChanged
+        )
     }
 
     /// Compiles rules for a specific content blocker target or reuses cached compilation results if available.
     public static func compileTargetRules(
         filters: [FilterList],
         orderedSelectedFilters: [FilterList],
-        affinityFilterIDs: Set<UUID>,
+        affinitySnapshot: SafariContentBlockerAffinitySnapshot,
         targetInfo: ContentBlockerTargetInfo,
         allTargets: [ContentBlockerTargetInfo],
         disabledSites: [String],
@@ -524,7 +1096,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         groupIdentifier: String
     ) throws -> ContentBlockerTargetOutcome {
         let rulesFilename = targetInfo.rulesFilename
-        let hasAffinityFilters = filters.contains { affinityFilterIDs.contains($0.id) }
+        let hasAffinityFilters = !affinitySnapshot.isEmpty
         let currentSignature = hasAffinityFilters
             ? nil
             : ContentBlockerIncrementalCache.computeInputSignature(
@@ -543,7 +1115,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                 targetRulesFilename: rulesFilename,
                 groupIdentifier: groupIdentifier
            ) {
-            let fastUpdate = try ContentBlockerService.fastUpdateDisabledSites(
+            let fastUpdate = try ContentBlockerService.fastUpdateDisabledSitesWithOutputChange(
                 groupIdentifier: groupIdentifier,
                 targetRulesFilename: rulesFilename,
                 disabledSites: disabledSites
@@ -558,7 +1130,8 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             return ContentBlockerTargetOutcome(
                 safariRulesCount: fastUpdate.safariRulesCount,
                 advancedRulesText: (trimmedAdvanced?.isEmpty == false) ? trimmedAdvanced : nil,
-                reusedCachedBase: true
+                reusedCachedBase: true,
+                outputChanged: fastUpdate.outputChanged
             )
         }
 
@@ -572,7 +1145,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         let conversion = try convertFiltersMemoryEfficient(
             filters: filters,
             orderedSelectedFilters: orderedSelectedFilters,
-            affinityFilterIDs: affinityFilterIDs,
+            affinitySnapshot: affinitySnapshot,
             targetInfo: targetInfo,
             allTargets: allTargets,
             disabledSites: disabledSites,
@@ -591,11 +1164,13 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         return ContentBlockerTargetOutcome(
             safariRulesCount: conversion.safariRulesCount,
             advancedRulesText: conversion.advancedRulesText,
-            reusedCachedBase: false
+            reusedCachedBase: false,
+            outputChanged: conversion.outputChanged
         )
     }
 
-    private static func convertFiltersMemoryEfficient(
+    /// Compatibility overload for callers that identify affinity filters by ID.
+    public static func compileTargetRules(
         filters: [FilterList],
         orderedSelectedFilters: [FilterList],
         affinityFilterIDs: Set<UUID>,
@@ -604,7 +1179,49 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         disabledSites: [String],
         extraRulesText: String?,
         groupIdentifier: String
-    ) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
+    ) throws -> ContentBlockerTargetOutcome {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else {
+            throw CocoaError(.fileNoSuchFile)
+        }
+
+        var contentsByFilterID: [UUID: String] = [:]
+        for filter in orderedSelectedFilters where affinityFilterIDs.contains(filter.id) {
+            guard let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(
+                for: filter,
+                containerURL: containerURL
+            ) else {
+                contentsByFilterID[filter.id] = ""
+                continue
+            }
+            contentsByFilterID[filter.id] = try String(contentsOf: sourceURL, encoding: .utf8)
+        }
+
+        return try compileTargetRules(
+            filters: filters,
+            orderedSelectedFilters: orderedSelectedFilters,
+            affinitySnapshot: SafariContentBlockerAffinitySnapshot(
+                contentsByFilterID: contentsByFilterID
+            ),
+            targetInfo: targetInfo,
+            allTargets: allTargets,
+            disabledSites: disabledSites,
+            extraRulesText: extraRulesText,
+            groupIdentifier: groupIdentifier
+        )
+    }
+
+    private static func convertFiltersMemoryEfficient(
+        filters: [FilterList],
+        orderedSelectedFilters: [FilterList],
+        affinitySnapshot: SafariContentBlockerAffinitySnapshot,
+        targetInfo: ContentBlockerTargetInfo,
+        allTargets: [ContentBlockerTargetInfo],
+        disabledSites: [String],
+        extraRulesText: String?,
+        groupIdentifier: String
+    ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else {
@@ -626,7 +1243,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
 
         for filter in orderedSelectedFilters {
             let includeBaseRules = assignedFilterIDs.contains(filter.id)
-            let hasAffinity = affinityFilterIDs.contains(filter.id)
+            let hasAffinity = affinitySnapshot.content(for: filter.id) != nil
             guard includeBaseRules || hasAffinity else { continue }
 
             if hasAffinity {
@@ -635,7 +1252,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                     includeBaseRules: includeBaseRules,
                     target: targetInfo,
                     allTargets: allTargets,
-                    containerURL: containerURL,
+                    affinitySnapshot: affinitySnapshot,
                     destinationHandle: fileHandle,
                     hasher: &hasher,
                     newlineData: newlineData
@@ -666,7 +1283,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         let digest = hasher.finalize()
         let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
 
-        return try ContentBlockerService.convertFilterFromFile(
+        return try ContentBlockerService.convertFilterFromFileWithOutputChange(
             rulesFileURL: tempURL,
             rulesSHA256Hex: rulesSHA256Hex,
             groupIdentifier: groupIdentifier,
@@ -674,7 +1291,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             disabledSites: disabledSites
         )
     }
-    
+
     /// Fast update for disabled sites changes only - skips SafariConverterLib conversion
     /// Reads existing JSON files and re-injects ignore rules without full conversion
     ///
@@ -683,7 +1300,27 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
     ///   - targetRulesFilename: Target filename for the rules file
     ///   - disabledSites: Sites where wBlock is disabled (ignore rules are injected for these).
     /// - Returns: A tuple containing the number of Safari content blocker rules and advanced rules text
-    public static func fastUpdateDisabledSites(groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
+    public static func fastUpdateDisabledSites(
+        groupIdentifier: String,
+        targetRulesFilename: String,
+        disabledSites: [String]
+    ) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
+        let result = try fastUpdateDisabledSitesWithOutputChange(
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: targetRulesFilename,
+            disabledSites: disabledSites
+        )
+        return (
+            safariRulesCount: result.safariRulesCount,
+            advancedRulesText: result.advancedRulesText
+        )
+    }
+
+    static func fastUpdateDisabledSitesWithOutputChange(
+        groupIdentifier: String,
+        targetRulesFilename: String,
+        disabledSites: [String]
+    ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
         let sitesToUse = disabledSites
 
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
@@ -697,33 +1334,54 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         let baseURL = containerURL.appendingPathComponent(baseFilename)
         let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
         if FileManager.default.fileExists(atPath: baseURL.path),
-           let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8) {
+           let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8),
+           isValidContentBlockerJSON(baseJSON) {
             let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
-            try saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
+            let output = try saveContentBlockerIfChanged(
+                jsonRules: finalJSON,
+                groupIdentifier: groupIdentifier,
+                targetRulesFilename: targetRulesFilename
+            )
 
             let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
                 .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? 0
             let finalRuleCount = baseCount + sitesToUse.count
 
             os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
-            return (safariRulesCount: finalRuleCount, advancedRulesText: nil)
+            return (
+                safariRulesCount: finalRuleCount,
+                advancedRulesText: nil,
+                outputChanged: output.outputChanged
+            )
         }
 
         // Fallback/migration: derive a base JSON by stripping legacy disabled-site ignore rules (only),
         // then persist it for future fast updates.
         let targetURL = containerURL.appendingPathComponent(targetRulesFilename)
-        let existingJSON = (try? String(contentsOf: targetURL, encoding: .utf8)) ?? "[]"
-        let derived = deriveBaseRulesFromLegacyFinalJSON(existingJSON)
+        let existingJSON = try String(contentsOf: targetURL, encoding: .utf8)
+        let derived = try deriveBaseRulesFromLegacyFinalJSON(existingJSON)
 
-        try saveBlockerListFile(contents: derived.baseJSON, groupIdentifier: groupIdentifier, filename: baseFilename)
+        _ = try saveContentBlockerIfChanged(
+            jsonRules: derived.baseJSON,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: baseFilename
+        )
         try saveBlockerListFile(contents: String(derived.baseRuleCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
 
         let finalJSON = injectIgnoreRulesForDisabledSites(json: derived.baseJSON, disabledSites: sitesToUse)
-        try saveBlockerListFile(contents: finalJSON, groupIdentifier: groupIdentifier, filename: targetRulesFilename)
+        let output = try saveContentBlockerIfChanged(
+            jsonRules: finalJSON,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: targetRulesFilename
+        )
 
         let finalRuleCount = derived.baseRuleCount + sitesToUse.count
         os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
-        return (safariRulesCount: finalRuleCount, advancedRulesText: nil)
+        return (
+            safariRulesCount: finalRuleCount,
+            advancedRulesText: nil,
+            outputChanged: output.outputChanged
+        )
     }
 
     private struct DerivedBaseRules {
@@ -731,19 +1389,18 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         let baseRuleCount: Int
     }
 
-    private static func deriveBaseRulesFromLegacyFinalJSON(_ json: String) -> DerivedBaseRules {
+    private static func deriveBaseRulesFromLegacyFinalJSON(_ json: String) throws -> DerivedBaseRules {
         guard let jsonData = json.data(using: .utf8),
               let existingRules = try? JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]] else {
-            return DerivedBaseRules(baseJSON: json, baseRuleCount: countRulesInJSON(json))
+            throw CocoaError(.fileReadCorruptFile)
         }
 
         let filteredRules = existingRules.filter { !isLegacyDisabledSiteIgnoreRule($0) }
-        if let updatedData = try? JSONSerialization.data(withJSONObject: filteredRules, options: []),
-           let baseJSON = String(data: updatedData, encoding: .utf8) {
-            return DerivedBaseRules(baseJSON: baseJSON, baseRuleCount: filteredRules.count)
+        guard let updatedData = try? JSONSerialization.data(withJSONObject: filteredRules, options: []),
+              let baseJSON = String(data: updatedData, encoding: .utf8) else {
+            throw CocoaError(.fileReadCorruptFile)
         }
-
-        return DerivedBaseRules(baseJSON: json, baseRuleCount: existingRules.count)
+        return DerivedBaseRules(baseJSON: baseJSON, baseRuleCount: filteredRules.count)
     }
 
     private static func isLegacyDisabledSiteIgnoreRule(_ rule: [String: Any]) -> Bool {
@@ -815,6 +1472,11 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         return String(trimmed[..<closeBracket]) + "," + ignoreRules + "]"
     }
     
+    private static func isValidContentBlockerJSON(_ json: String) -> Bool {
+        guard let jsonData = json.data(using: .utf8) else { return false }
+        return (try? JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]]) != nil
+    }
+
     /// Counts the number of rules in a Safari content blocker JSON string.
     ///
     /// - Parameter json: Safari content blocker JSON string.
@@ -831,58 +1493,13 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         }
     }
     
-    /// Builds the filter engine with combined advanced rules from all filter groups.
+    /// Publishes the filter engine built from combined advanced rules from all filter groups.
     ///
     /// - Parameters:
     ///   - combinedAdvancedRules: Combined advanced rules text from all filter groups.
     ///   - groupIdentifier: Group ID to use for the shared container.
-    public static func buildCombinedFilterEngine(combinedAdvancedRules: String, groupIdentifier: String) throws {
-        guard !combinedAdvancedRules.isEmpty else {
-            os_log(.info, "No advanced rules to build filter engine with")
-            return
-        }
-
-        try measure(label: "Building combined filter engine") {
-            #if os(iOS)
-            try buildFilterEngineWithoutAdvisoryLock(
-                rules: combinedAdvancedRules,
-                groupIdentifier: groupIdentifier
-            )
-            #else
-            try WebExtensionGate.shared.withLock {
-                let webExtension = try WebExtension.shared(groupID: groupIdentifier)
-                _ = try webExtension.buildFilterEngine(rules: combinedAdvancedRules)
-            }
-            #endif
-            os_log(
-                .info,
-                "Successfully built combined filter engine with %d characters of advanced rules",
-                combinedAdvancedRules.count
-            )
-        }
-    }
-
-    /// Clears the filter engine by building it with empty rules.
-    ///
-    /// - Parameters:
-    ///   - groupIdentifier: Group ID to use for the shared container.
-    public static func clearFilterEngine(groupIdentifier: String) throws {
-        try measure(label: "Clearing filter engine") {
-            #if os(iOS)
-            try buildFilterEngineWithoutAdvisoryLock(rules: "", groupIdentifier: groupIdentifier)
-            #else
-            try WebExtensionGate.shared.withLock {
-                let webExtension = try WebExtension.shared(groupID: groupIdentifier)
-                _ = try webExtension.buildFilterEngine(rules: "")
-            }
-            #endif
-            os_log(.info, "Successfully cleared filter engine")
-        }
-    }
-
-    #if os(iOS)
-    private static func buildFilterEngineWithoutAdvisoryLock(
-        rules: String,
+    public static func publishCombinedFilterEngine(
+        combinedAdvancedRules: String,
         groupIdentifier: String
     ) throws {
         guard let containerURL = FileManager.default.containerURL(
@@ -892,102 +1509,378 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         }
 
         let baseURL = containerURL.appendingPathComponent(Schema.BASE_DIR, isDirectory: true)
-        let coordinator = NSFileCoordinator(filePresenter: nil)
-        var coordinationError: NSError?
-        var buildResult: Result<Void, Error>?
+        try FileManager.default.createDirectory(at: baseURL, withIntermediateDirectories: true)
+        let requestToken = try recordCombinedEngineRequest(at: baseURL)
+        let safariVersion = SafariVersion.autodetect()
+        let rulesData = Data(combinedAdvancedRules.utf8)
+        let fingerprint = combinedEngineFingerprint(rulesData: rulesData, safariVersion: safariVersion)
 
-        coordinator.coordinate(writingItemAt: baseURL, options: [], error: &coordinationError) { _ in
-            buildResult = Result {
-                try buildFilterEngineFiles(rules: rules, baseURL: baseURL)
+        try measure(label: combinedAdvancedRules.isEmpty ? "Clearing filter engine" : "Building combined filter engine") {
+            try withCombinedEngineBuildLock(at: baseURL) {
+                let skipped = try withEngineCriticalSection(at: baseURL) {
+                    try withCombinedEngineRequestLock(at: baseURL) {
+                        try ensureCombinedEngineRequestIsCurrent(at: baseURL, requestToken: requestToken)
+                        return canSkipCombinedEnginePublish(fingerprint: fingerprint, baseURL: baseURL)
+                    }
+                }
+                if skipped {
+                    os_log(.info, "Skipping unchanged combined filter engine publish")
+                    return
+                }
+
+                let temporaryBuild = try buildTemporaryEngine(
+                    rulesData: rulesData,
+                    safariVersion: safariVersion,
+                    baseURL: baseURL
+                )
+                defer { try? FileManager.default.removeItem(at: temporaryBuild.directory) }
+
+                let published = try withEngineCriticalSection(at: baseURL) {
+                    try withCombinedEngineRequestLock(at: baseURL) {
+                        try ensureCombinedEngineRequestIsCurrent(at: baseURL, requestToken: requestToken)
+                        if canSkipCombinedEnginePublish(fingerprint: fingerprint, baseURL: baseURL) {
+                            return false
+                        }
+
+                        try publishEngineFiles(
+                            from: temporaryBuild,
+                            fingerprint: fingerprint,
+                            baseURL: baseURL
+                        )
+                        return true
+                    }
+                }
+
+                if published {
+                    os_log(
+                        .info,
+                        "Successfully published combined filter engine with %d characters of advanced rules",
+                        combinedAdvancedRules.count
+                    )
+                }
             }
         }
+    }
 
-        if let buildResult {
-            try buildResult.get()
-            return
-        }
-
-        if let coordinationError {
-            throw coordinationError
-        }
-
-        throw WebExtension.WebExtensionError.buildEngineFailed(
-            underlyingError: CocoaError(.fileWriteUnknown)
+    public static func buildCombinedFilterEngine(combinedAdvancedRules: String, groupIdentifier: String) throws {
+        try publishCombinedFilterEngine(
+            combinedAdvancedRules: combinedAdvancedRules,
+            groupIdentifier: groupIdentifier
         )
     }
 
-    private static func buildFilterEngineFiles(rules: String, baseURL: URL) throws {
-        let fileManager = FileManager.default
-        try fileManager.createDirectory(at: baseURL, withIntermediateDirectories: true)
-
-        let temporaryDirectory = baseURL.appendingPathComponent(
-            "engine-rebuild-\(UUID().uuidString)",
-            isDirectory: true
-        )
-        try fileManager.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
-        defer { try? fileManager.removeItem(at: temporaryDirectory) }
-
-        let temporaryRulesBinURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_RULE_STORAGE_FILE_NAME)
-        let temporaryEngineURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_ENGINE_INDEX_FILE_NAME)
-        let temporaryRulesTextURL = temporaryDirectory.appendingPathComponent(Schema.RULES_FILE_NAME)
-        let temporaryMetaURL = temporaryDirectory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
-
-        let storage = try FilterRuleStorage(
-            from: rules.components(separatedBy: "\n"),
-            for: SafariVersion.autodetect(),
-            fileURL: temporaryRulesBinURL
-        )
-        let engine = try FilterEngine(storage: storage)
-        try engine.write(to: temporaryEngineURL)
-        try rules.write(to: temporaryRulesTextURL, atomically: true, encoding: .utf8)
-
-        let meta = EngineMeta(timestamp: Date().timeIntervalSince1970, schemaVersion: Int32(Schema.VERSION))
-        try meta.toData().write(to: temporaryMetaURL, options: .atomic)
-
-        try publishEngineFiles(
-            temporaryRulesBinURL: temporaryRulesBinURL,
-            temporaryEngineURL: temporaryEngineURL,
-            temporaryRulesTextURL: temporaryRulesTextURL,
-            temporaryMetaURL: temporaryMetaURL,
-            baseURL: baseURL
-        )
-
-        let migrationMarkerURL = baseURL.appendingPathComponent(Schema.MIGRATION_MARKER_FILE_NAME)
-        if fileManager.fileExists(atPath: migrationMarkerURL.path) {
-            try? fileManager.removeItem(at: migrationMarkerURL)
-        }
+    /// Clears the filter engine by building it with empty rules.
+    ///
+    /// - Parameters:
+    ///   - groupIdentifier: Group ID to use for the shared container.
+    public static func clearFilterEngine(groupIdentifier: String) throws {
+        try publishCombinedFilterEngine(combinedAdvancedRules: "", groupIdentifier: groupIdentifier)
     }
 
-    private static func publishEngineFiles(
-        temporaryRulesBinURL: URL,
-        temporaryEngineURL: URL,
-        temporaryRulesTextURL: URL,
-        temporaryMetaURL: URL,
+    private struct CombinedEngineFingerprint: Equatable {
+        let rulesHash: String
+        let schemaVersion: Int
+        let safariBuildContext: String
+        let markerFormatVersion: Int
+        let value: String
+    }
+
+    private struct TemporaryEngineBuild {
+        let directory: URL
+        let artifactDigests: [String: String]
+    }
+
+    private struct CombinedEngineMarker: Codable, Equatable {
+        let markerFormatVersion: Int
+        let schemaVersion: Int
+        let safariBuildContext: String
+        let rulesHash: String
+        let fingerprint: String
+        let artifactDigests: [String: String]
+    }
+
+    private static func combinedEngineFingerprint(
+        rulesData: Data,
+        safariVersion: SafariVersion
+    ) -> CombinedEngineFingerprint {
+        let rulesHash = combinedRulesHash(rulesData)
+        let safariBuildContext = "\(currentPlatform)-safari-\(safariVersion.doubleValue)"
+        let markerFormatVersion = combinedEngineMarkerFormatVersion
+        let schemaVersion = Schema.VERSION
+        let value = combinedRulesHash(
+            Data("\(markerFormatVersion)|\(schemaVersion)|\(safariBuildContext)|\(rulesHash)".utf8)
+        )
+        return CombinedEngineFingerprint(
+            rulesHash: rulesHash,
+            schemaVersion: schemaVersion,
+            safariBuildContext: safariBuildContext,
+            markerFormatVersion: markerFormatVersion,
+            value: value
+        )
+    }
+
+    private static var currentPlatform: String {
+        #if os(macOS)
+        return "macOS"
+        #elseif os(iOS)
+        return "iOS"
+        #else
+        return "unknown"
+        #endif
+    }
+
+    private static func combinedRulesHash(_ data: Data) -> String {
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func expectedMarker(
+        for fingerprint: CombinedEngineFingerprint,
+        artifactDigests: [String: String]
+    ) -> CombinedEngineMarker {
+        CombinedEngineMarker(
+            markerFormatVersion: fingerprint.markerFormatVersion,
+            schemaVersion: fingerprint.schemaVersion,
+            safariBuildContext: fingerprint.safariBuildContext,
+            rulesHash: fingerprint.rulesHash,
+            fingerprint: fingerprint.value,
+            artifactDigests: artifactDigests
+        )
+    }
+
+    private static func canSkipCombinedEnginePublish(
+        fingerprint: CombinedEngineFingerprint,
         baseURL: URL
-    ) throws {
-        let lockURL = baseURL.appendingPathComponent(Schema.LOCK_FILE_NAME)
-        guard let fileLock = FileLock(filePath: lockURL.path) else {
-            throw WebExtension.WebExtensionError.buildEngineFailed(
-                underlyingError: CocoaError(.fileWriteUnknown)
-            )
-        }
+    ) -> Bool {
+        let migrationMarkerURL = baseURL.appendingPathComponent(Schema.MIGRATION_MARKER_FILE_NAME)
+        guard !FileManager.default.fileExists(atPath: migrationMarkerURL.path) else { return false }
 
-        guard fileLock.lock(before: Date().addingTimeInterval(2)) else {
+        let markerURL = baseURL.appendingPathComponent(combinedEngineMarkerFileName)
+        guard let markerData = try? Data(contentsOf: markerURL),
+              let marker = try? JSONDecoder().decode(CombinedEngineMarker.self, from: markerData),
+              marker.markerFormatVersion == fingerprint.markerFormatVersion,
+              marker.schemaVersion == fingerprint.schemaVersion,
+              marker.safariBuildContext == fingerprint.safariBuildContext,
+              marker.rulesHash == fingerprint.rulesHash,
+              marker.fingerprint == fingerprint.value,
+              Set(marker.artifactDigests.keys) == Set(engineStorageFileNames)
+        else { return false }
+
+        return validatePublishedEngineFiles(at: baseURL, artifactDigests: marker.artifactDigests)
+    }
+
+    private static func validatePublishedEngineFiles(
+        at baseURL: URL,
+        artifactDigests: [String: String]
+    ) -> Bool {
+        guard Set(artifactDigests.keys) == Set(engineStorageFileNames) else { return false }
+        return (try? engineArtifactDigests(at: baseURL)) == artifactDigests
+    }
+
+    private static func engineArtifactDigests(at baseURL: URL) throws -> [String: String] {
+        Dictionary(uniqueKeysWithValues: try engineStorageFileNames.map { fileName in
+            let data = try Data(contentsOf: baseURL.appendingPathComponent(fileName))
+            return (fileName, combinedRulesHash(data))
+        })
+    }
+
+    private static func validateTemporaryEngine(
+        at directory: URL,
+        fingerprint: CombinedEngineFingerprint
+    ) -> Bool {
+        guard let artifactDigests = try? engineArtifactDigests(at: directory),
+              artifactDigests[Schema.RULES_FILE_NAME] == fingerprint.rulesHash,
+              let metaData = try? Data(contentsOf: directory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)),
+              let meta = EngineMeta.fromData(metaData),
+              meta.schemaVersion == Int32(fingerprint.schemaVersion)
+        else { return false }
+
+        do {
+            let storage = try FilterRuleStorage(
+                fileURL: directory.appendingPathComponent(Schema.FILTER_RULE_STORAGE_FILE_NAME)
+            )
+            _ = try FilterEngine(
+                storage: storage,
+                indexFileURL: directory.appendingPathComponent(Schema.FILTER_ENGINE_INDEX_FILE_NAME)
+            )
+
+            var iterator = try storage.makeIterator()
+            var decodedRuleCount = 0
+            while iterator.next() != nil {
+                decodedRuleCount += 1
+            }
+            return decodedRuleCount == storage.count
+        } catch {
+            return false
+        }
+    }
+
+    private static func withCombinedEngineBuildLock<T>(at baseURL: URL, _ body: () throws -> T) throws -> T {
+        guard let fileLock = FileLock(
+            filePath: baseURL.appendingPathComponent(combinedEngineBuildLockFileName).path
+        ), fileLock.lock(before: Date().addingTimeInterval(combinedEngineBuildLockTimeout)) else {
             throw WebExtension.WebExtensionError.buildEngineFailed(
                 underlyingError: CocoaError(.fileWriteUnknown)
             )
         }
         defer { _ = fileLock.unlock() }
+        return try body()
+    }
 
-        let existingMetaURL = baseURL.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
-        if FileManager.default.fileExists(atPath: existingMetaURL.path) {
-            try FileManager.default.removeItem(at: existingMetaURL)
+    private static func withCombinedEngineRequestLock<T>(at baseURL: URL, _ body: () throws -> T) throws -> T {
+        guard let fileLock = FileLock(
+            filePath: baseURL.appendingPathComponent(combinedEngineRequestLockFileName).path
+        ), fileLock.lock(before: Date().addingTimeInterval(combinedEngineRequestLockTimeout)) else {
+            throw WebExtension.WebExtensionError.buildEngineFailed(
+                underlyingError: CocoaError(.fileWriteUnknown)
+            )
+        }
+        defer { _ = fileLock.unlock() }
+        return try body()
+    }
+
+    private static func recordCombinedEngineRequest(at baseURL: URL) throws -> String {
+        let token = UUID().uuidString
+        try withCombinedEngineRequestLock(at: baseURL) {
+            try Data(token.utf8).write(
+                to: baseURL.appendingPathComponent(combinedEngineLatestRequestFileName),
+                options: .atomic
+            )
+        }
+        return token
+    }
+
+    private static func latestCombinedEngineRequestToken(at baseURL: URL) -> String? {
+        guard let token = try? String(
+            contentsOf: baseURL.appendingPathComponent(combinedEngineLatestRequestFileName),
+            encoding: .utf8
+        ) else {
+            return nil
+        }
+        let trimmedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedToken.isEmpty ? nil : trimmedToken
+    }
+
+    private static func ensureCombinedEngineRequestIsCurrent(
+        at baseURL: URL,
+        requestToken: String
+    ) throws {
+        guard latestCombinedEngineRequestToken(at: baseURL) == requestToken else {
+            os_log(.info, "Abandoning superseded combined filter engine publish")
+            throw CombinedEnginePublishError.supersededRequest
+        }
+    }
+
+    private static func withEngineCriticalSection<T>(at baseURL: URL, _ body: () throws -> T) throws -> T {
+        try WebExtensionGate.shared.withLock {
+            try withEngineFileLock(at: baseURL, body)
+        }
+    }
+
+    private static func withEngineFileLock<T>(at baseURL: URL, _ body: () throws -> T) throws -> T {
+        guard let fileLock = FileLock(
+            filePath: baseURL.appendingPathComponent(Schema.LOCK_FILE_NAME).path
+        ), fileLock.lock(before: Date().addingTimeInterval(engineFileLockTimeout)) else {
+            throw WebExtension.WebExtensionError.buildEngineFailed(
+                underlyingError: CocoaError(.fileWriteUnknown)
+            )
+        }
+        defer { _ = fileLock.unlock() }
+        return try body()
+    }
+
+    private static func buildTemporaryEngine(
+        rulesData: Data,
+        safariVersion: SafariVersion,
+        baseURL: URL
+    ) throws -> TemporaryEngineBuild {
+        let fileManager = FileManager.default
+        let temporaryDirectory = baseURL.appendingPathComponent(
+            "engine-rebuild-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        try fileManager.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+
+        do {
+            let rulesURL = temporaryDirectory.appendingPathComponent(Schema.RULES_FILE_NAME)
+            let storageURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_RULE_STORAGE_FILE_NAME)
+            let indexURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_ENGINE_INDEX_FILE_NAME)
+            let metaURL = temporaryDirectory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
+
+            let rules = String(decoding: rulesData, as: UTF8.self)
+            let storage = try FilterRuleStorage(
+                from: rules.components(separatedBy: "\n"),
+                for: safariVersion,
+                fileURL: storageURL
+            )
+            let engine = try FilterEngine(storage: storage)
+            try engine.write(to: indexURL)
+            try rulesData.write(to: rulesURL, options: .atomic)
+
+            let meta = EngineMeta(
+                timestamp: Date().timeIntervalSince1970,
+                schemaVersion: Int32(Schema.VERSION)
+            )
+            try meta.toData().write(to: metaURL, options: .atomic)
+
+            let fingerprint = combinedEngineFingerprint(rulesData: rulesData, safariVersion: safariVersion)
+            guard validateTemporaryEngine(at: temporaryDirectory, fingerprint: fingerprint),
+                  let artifactDigests = try? engineArtifactDigests(at: temporaryDirectory)
+            else {
+                throw WebExtension.WebExtensionError.buildEngineFailed(
+                    underlyingError: CocoaError(.fileReadCorruptFile)
+                )
+            }
+            return TemporaryEngineBuild(directory: temporaryDirectory, artifactDigests: artifactDigests)
+        } catch {
+            try? fileManager.removeItem(at: temporaryDirectory)
+            throw error
+        }
+    }
+
+    private static func publishEngineFiles(
+        from temporaryBuild: TemporaryEngineBuild,
+        fingerprint: CombinedEngineFingerprint,
+        baseURL: URL
+    ) throws {
+        let migrationMarkerURL = baseURL.appendingPathComponent(Schema.MIGRATION_MARKER_FILE_NAME)
+        try Data().write(to: migrationMarkerURL, options: .atomic)
+        try invalidateExistingEngineMeta(at: baseURL)
+
+        for fileName in engineStorageFileNames where fileName != Schema.ENGINE_META_FILE_NAME {
+            try replaceEngineFile(
+                temporaryBuild.directory.appendingPathComponent(fileName),
+                in: baseURL,
+                named: fileName
+            )
+        }
+        try replaceEngineFile(
+            temporaryBuild.directory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME),
+            in: baseURL,
+            named: Schema.ENGINE_META_FILE_NAME
+        )
+
+        guard validatePublishedEngineFiles(at: baseURL, artifactDigests: temporaryBuild.artifactDigests) else {
+            throw WebExtension.WebExtensionError.buildEngineFailed(
+                underlyingError: CocoaError(.fileReadCorruptFile)
+            )
         }
 
-        try replaceEngineFile(temporaryRulesBinURL, in: baseURL, named: Schema.FILTER_RULE_STORAGE_FILE_NAME)
-        try replaceEngineFile(temporaryEngineURL, in: baseURL, named: Schema.FILTER_ENGINE_INDEX_FILE_NAME)
-        try replaceEngineFile(temporaryRulesTextURL, in: baseURL, named: Schema.RULES_FILE_NAME)
-        try replaceEngineFile(temporaryMetaURL, in: baseURL, named: Schema.ENGINE_META_FILE_NAME)
+        let marker = expectedMarker(
+            for: fingerprint,
+            artifactDigests: temporaryBuild.artifactDigests
+        )
+        let markerData = try JSONEncoder().encode(marker)
+        try markerData.write(
+            to: baseURL.appendingPathComponent(combinedEngineMarkerFileName),
+            options: .atomic
+        )
+        try FileManager.default.removeItem(at: migrationMarkerURL)
+    }
+
+    private static func invalidateExistingEngineMeta(at baseURL: URL) throws {
+        let metaURL = baseURL.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
+        guard FileManager.default.fileExists(atPath: metaURL.path) else { return }
+        try FileManager.default.removeItem(at: metaURL)
     }
 
     private static func replaceEngineFile(_ sourceURL: URL, in baseURL: URL, named fileName: String) throws {
@@ -1000,7 +1893,6 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             try fileManager.moveItem(at: sourceURL, to: destinationURL)
         }
     }
-    #endif
 }
 
 // MARK: - Safari Content Blocker functions

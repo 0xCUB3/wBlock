@@ -96,14 +96,12 @@ extension AppFilterManager {
             var failureCount = 0
             for targetInfo in platformTargets {
                 do {
-                    let result = try ContentBlockerService.fastUpdateDisabledSites(
+                    _ = try ContentBlockerService.fastUpdateDisabledSites(
                         groupIdentifier: GroupIdentifier.shared.value,
                         targetRulesFilename: targetInfo.rulesFilename,
                         disabledSites: disabledSites
                     )
-                    if result.safariRulesCount > 0 {
-                        nonEmptyTargets.append(targetInfo)
-                    }
+                    nonEmptyTargets.append(targetInfo)
                 } catch {
                     failureCount += 1
                 }
@@ -113,11 +111,9 @@ extension AppFilterManager {
         let targetsToReload = updateResult.0
         let updateFailureCount = updateResult.1
 
-        let overallReloadStartTime = Date()
-        let successCount = await Self.reloadDisabledSitesTargetsInParallel(targetsToReload)
-        let skippedCount = max(platformTargets.count - targetsToReload.count, 0)
-
-        let reloadTime = String(format: "%.2fs", Date().timeIntervalSince(overallReloadStartTime))
+        let reloadSummary = await Self.reloadDisabledSitesTargetsInParallel(targetsToReload)
+        let skippedCount = reloadSummary.skippedTargets
+        let reloadTime = String(format: "%.2fs", Double(reloadSummary.reloadDurationMs) / 1000)
 
         await MainActor.run {
             self.lastReloadTime = reloadTime
@@ -125,7 +121,7 @@ extension AppFilterManager {
             self.fastUpdateCount += 1
             self.isLoading = false
 
-            if updateFailureCount == 0, successCount == targetsToReload.count {
+            if updateFailureCount == 0, reloadSummary.failedTargets == 0 {
                 self.statusDescription = LocalizedStrings.format(
                     "Disabled sites updated successfully in %@ (fast update #%d)",
                     comment: "Disabled sites update success status",
@@ -136,7 +132,7 @@ extension AppFilterManager {
                 self.statusDescription = LocalizedStrings.format(
                     "Updated %d/%d extensions in %@",
                     comment: "Disabled sites partial update status",
-                    successCount,
+                    reloadSummary.reloadedTargets + reloadSummary.skippedTargets,
                     targetsToReload.count + updateFailureCount,
                     reloadTime
                 )
@@ -146,16 +142,29 @@ extension AppFilterManager {
         await ConcurrentLogManager.shared.info(
             .whitelist, LocalizedStrings.text("Fast disabled sites update completed"),
             metadata: [
-                "successCount": "\(successCount)",
+                "successCount": "\(reloadSummary.reloadedTargets)",
                 "totalCount": "\(targetsToReload.count)",
                 "updateFailureCount": "\(updateFailureCount)",
                 "skippedCount": "\(skippedCount)",
+                "skippedNames": reloadSummary.skippedNames.joined(separator: ","),
+                "failedCount": "\(reloadSummary.failedTargets)",
                 "reloadTime": reloadTime,
             ])
     }
 
-    nonisolated private static func reloadDisabledSitesTargetsInParallel(_ targets: [ContentBlockerTargetInfo]) async -> Int {
-        var successCount = 0
+    nonisolated private static func reloadDisabledSitesTargetsInParallel(_ targets: [ContentBlockerTargetInfo]) async -> (
+        reloadedTargets: Int,
+        skippedTargets: Int,
+        failedTargets: Int,
+        reloadDurationMs: Int,
+        skippedNames: [String]
+    ) {
+        var reloadedTargets = 0
+        var skippedTargets = 0
+        var failedTargets = 0
+        var skippedNames: [String] = []
+        let groupIdentifier = GroupIdentifier.shared.value
+        let reloadStartTime = Date()
 
         await boundedConcurrentForEach(targets, maxConcurrent: {
             #if os(macOS)
@@ -164,11 +173,27 @@ extension AppFilterManager {
             return 1
             #endif
         }(), operation: { target in
-            await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier).success
-        }, onResult: { success in
-            if success { successCount += 1 }
+            let result = await ContentBlockerService.reloadIfNeeded(
+                identifier: target.bundleIdentifier,
+                targetRulesFilename: target.rulesFilename,
+                groupIdentifier: groupIdentifier
+            )
+            return (target, result)
+        }, onResult: { item in
+            let (target, result) = item
+            if result.skipped {
+                skippedTargets += 1
+                skippedNames.append(target.displayName)
+            } else if result.success {
+                reloadedTargets += 1
+            } else {
+                failedTargets += 1
+            }
         })
 
-        return successCount
+        let reloadDurationMs = reloadedTargets + failedTargets > 0
+            ? Int(Date().timeIntervalSince(reloadStartTime) * 1000)
+            : 0
+        return (reloadedTargets, skippedTargets, failedTargets, reloadDurationMs, skippedNames)
     }
 }

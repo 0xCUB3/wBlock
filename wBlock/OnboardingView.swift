@@ -30,12 +30,6 @@ struct OnboardingView: View {
         dataManager.hasCompletedOnboarding
     }
 
-    private func setHasCompletedOnboarding(_ value: Bool) {
-        Task { @MainActor in
-            await dataManager.setHasCompletedOnboarding(value)
-        }
-    }
-    
     private var selectedBlockingLevel: String {
         dataManager.selectedBlockingLevel
     }
@@ -1125,7 +1119,7 @@ struct OnboardingView: View {
 
         // 4. Set sync and mark onboarding complete
         CloudSyncManager.shared.setEnabled(wantsCloudSync)
-        setHasCompletedOnboarding(true)
+        guard await dataManager.setHasCompletedOnboarding(true) else { return }
 
         // 5. Dismiss onboarding and let the main view handle download + apply
         dismiss()
@@ -1175,7 +1169,7 @@ struct OnboardingView: View {
         )
 
         guard applied else { return }
-        setHasCompletedOnboarding(true)
+        guard await dataManager.setHasCompletedOnboarding(true) else { return }
         dismiss()
     }
 

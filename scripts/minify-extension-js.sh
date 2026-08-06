@@ -101,12 +101,28 @@ check_grep() {
   fi
 }
 
+check_absent() {
+  local label="$1"
+  local pattern="$2"
+  local file="$3"
+  if grep -qE "${pattern}" "${file}"; then
+    error "${label}: unexpectedly found in $(basename "${file}")"
+    FAIL=1
+  else
+    success "${label}: absent from $(basename "${file}")"
+  fi
+}
+
 minify_one "background"
 minify_one "content"
 
 # Symbols the runtime depends on must survive minification.
 check_grep "engineTimestamp" "engineTimestamp" "${RES_DIR}/background.js"
 check_grep "window.adguard"  "window.adguard"  "${RES_DIR}/content.js"
+check_grep "scriptlet registry source" "getScriptletFunction" "${SRC_DIR}/background.js"
+check_grep "scriptlet registry artifact" "getScriptletFunction" "${RES_DIR}/background.js"
+check_absent "content source registry" "scriptletsMap|getScriptletFunction" "${SRC_DIR}/content.js"
+check_absent "content artifact registry" "scriptletsMap|getScriptletFunction" "${RES_DIR}/content.js"
 check_grep "version banner"  "SafariExtension v" "${RES_DIR}/background.js"
 check_grep "version banner"  "SafariExtension v" "${RES_DIR}/content.js"
 

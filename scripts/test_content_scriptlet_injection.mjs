@@ -7,7 +7,7 @@
 // Run: node scripts/test_content_scriptlet_injection.mjs [path/to/content.js]
 // Defaults to "wBlock Scripts (iOS)/Resources/content.js".
 
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -15,12 +15,25 @@ const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const bundlePath = process.argv[2]
   ?? path.join(repoRoot, "wBlock Scripts (iOS)", "Resources", "content.js");
 const source = readFileSync(bundlePath, "utf8");
+const contentSource = readFileSync(path.join(repoRoot, "extension-src", "content.js"), "utf8");
+const backgroundSource = readFileSync(path.join(repoRoot, "extension-src", "background.js"), "utf8");
+const backgroundBundle = readFileSync(path.join(repoRoot, "wBlock Scripts (iOS)", "Resources", "background.js"), "utf8");
 
 let failures = 0;
 const check = (name, cond) => {
   console.log(`${cond ? "PASS" : "FAIL"}: ${name}`);
   if (!cond) failures += 1;
 };
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+check("content source keeps Extended CSS", contentSource.includes("class ExtendedCss"));
+check("content source keeps ContentScript", contentSource.includes("class ContentScript"));
+check("content source omits generated scriptlet registry", !contentSource.includes("scriptletsMap") && !contentSource.includes("getScriptletFunction") && !contentSource.includes("scriptlets.invoke"));
+check("shipped content omits generated scriptlet registry", !source.includes("scriptletsMap") && !source.includes("getScriptletFunction"));
+check("background source retains generated scriptlet registry", backgroundSource.includes("var scriptletsMap = {") && backgroundSource.includes("getScriptletFunction") && backgroundSource.includes("var scriptlets = {"));
+check("background source compiles fallback scriptlets", backgroundSource.includes("compileScriptletsForContent") && backgroundSource.includes("code: scriptlets.invoke(source)"));
+check("shipped background retains scriptlet compiler", backgroundBundle.includes("getScriptletFunction") && backgroundBundle.includes("invoke"));
+check("shipped content size stays below regression ceiling", statSync(bundlePath).size < 100 * 1024);
 
 // --- DOM stubs ---
 const appended = [];
@@ -99,18 +112,29 @@ try {
 
   const cs = windowStub.adguard.contentScript;
   appended.length = 0;
-  cs.runScriptlets([{ name: "set-constant", args: ["wblockSmokeTest", "1"] }], false);
+  cs.runScriptlets([{
+    name: "set-constant",
+    args: ["wblockSmokeTest", "1"],
+    code: '(function(source,args){ window.__wblockSmokeTest = source.name; })( {"name":"set-constant"}, []);'
+  }], false);
 
   const scriptEls = appended.filter(el => el.tagName === "script");
   check("scriptlet injection appended a script element", scriptEls.length === 1);
 
   const code = scriptEls[0] ? scriptEls[0].textContent : "";
-  check("assembled code carries scriptlet source JSON", code.includes('"name":"set-constant"'));
+  check("assembled code carries precompiled source", code.includes("__wblockSmokeTest"));
   check("assembled code is an IIFE invocation", code.trim().startsWith("("));
 
   let parses = true;
   try { new Function(code); } catch { parses = false; }
   check("assembled scriptlet code parses", parses);
+
+  appended.length = 0;
+  cs.runScriptlets([
+    { name: "bad", code: "throw new Error('first scriptlet failed');" },
+    { name: "good", code: "window.__wblockSecondScriptlet = true;" }
+  ]);
+  check("fallback keeps per-scriptlet injection isolation", appended.filter(el => el.tagName === "script").length === 2);
 
   // Raw #%# JS rule path used by the blank-frame fallback.
   appended.length = 0;
@@ -135,14 +159,10 @@ check(
   dispatcherUsesThreeSeconds,
 );
 
-// --- Scriptlet timing race (issue #445 regression) ---
-// Contract: when the per-site disabled-state lookup never resolves (native
-// host latency / dropped message), the content script must NOT block the
-// InitContentScript request on it. The Init request must be sent eagerly and
-// its response must apply scriptlet machinery, even while siteDisabledPromise
-// stays pending. Under the old sequential `await siteDisabledPromise` gate the
-// InitContentScript message would never be sent, so this check fails there and
-// passes only after the concurrent race fix.
+// --- InitContentScript state handoff ---
+// Contract: authoritative native state in the Init response removes the
+// redundant per-frame disabled-state lookup, while old responses still use the
+// compatibility lookup.
 try {
   const raceAppended = [];
   const raceMakeEl = tag => ({
@@ -206,24 +226,30 @@ try {
 
   // Recorded sendMessage calls so we can assert the Init request happened.
   const sentMessages = [];
-  // A never-settling promise simulating a hung native-host disabled-state lookup.
-  const pendingForever = new Promise(() => {});
+  let fallbackRequested = false;
   const raceBrowser = {
     runtime: {
       onMessage: { addListener() {} },
       sendMessage(msg) {
         sentMessages.push(msg);
-        if (msg.action === "wblock:getSiteDisabledState") {
-          return pendingForever;
+        if (msg.action === "wblock:getBlockingState") {
+          fallbackRequested = true;
+          return Promise.resolve({ disabled: true, paused: false });
         }
         // InitContentScript: return a real configuration payload so scriptlet
         // machinery is observable downstream.
         if (msg.type === "InitContentScript") {
           return Promise.resolve({
+            disabled: false,
+            paused: false,
             payload: {
               css: [],
               extendedCss: [],
-              scriptlets: [{ name: "set-constant", args: ["__wblockRaceProbe", "1"] }],
+              scriptlets: [{
+                name: "set-constant",
+                args: ["__wblockRaceProbe", "1"],
+                code: '(function(source,args){ window.__wblockRaceProbe = source.name; })( {"name":"set-constant"}, []);'
+              }],
               js: [],
             },
           });
@@ -237,36 +263,82 @@ try {
     const run = new Function("browser", "window", "self", source);
     run(raceBrowser, raceWindow, raceWindow);
 
-    // Flush microtasks so main()'s async race + applyConfiguration settle.
-    // Disabled-state never resolves; only the config branch can complete.
+    // Flush microtasks so the Init response and applyConfiguration settle.
     await new Promise(resolve => setTimeout(resolve, 50));
 
     const initSent = sentMessages.some(m => m && m.type === "InitContentScript");
     check(
-      "InitContentScript sent despite unresolved disabled-state lookup",
+      "InitContentScript sent with authoritative state response",
       initSent,
     );
 
-    // Ordering: the Init request must be dispatched without waiting on the
-    // disabled-state promise. Under a sequential await-disabled-first gate the
-    // Init message is never sent at all, so a present Init suffices to fail the
-    // old behavior; we additionally assert the disabled-state request was made
-    // (so the hang is real and the race is genuine, not a skipped branch).
     const disabledRequested = sentMessages.some(m => m && m.action === "wblock:getSiteDisabledState");
     check(
-      "disabled-state lookup was actually initiated (race is genuine)",
-      disabledRequested,
+      "authoritative Init response avoids disabled-state lookup",
+      !disabledRequested && !fallbackRequested,
     );
 
     check(
-      "contentScript exposed while disabled-state hangs",
+      "contentScript exposed after authoritative state handoff",
       !!(raceWindow.adguard && raceWindow.adguard.contentScript),
     );
 
     const raceScriptEls = raceAppended.filter(el => el.tagName === "script");
     check(
-      "scriptlet from Init response applied before disabled-state resolves",
+      "scriptlet from authoritative Init response is applied",
       raceScriptEls.length >= 1 && raceScriptEls.some(el => (el.textContent || "").includes("__wblockRaceProbe")),
+    );
+
+    const compatibilityMessages = [];
+    const compatibilityBrowser = {
+      runtime: {
+        onMessage: { addListener() {} },
+        sendMessage(message) {
+          compatibilityMessages.push(message);
+          if (message.action === "wblock:getBlockingState") {
+            return Promise.resolve({ disabled: true, paused: false });
+          }
+          if (message.type === "InitContentScript") {
+            return Promise.resolve({ payload: { css: [], extendedCss: [], scriptlets: [], js: [] } });
+          }
+          return Promise.resolve({});
+        },
+      },
+    };
+    const compatibilityRun = new Function("browser", "window", "self", source);
+    compatibilityRun(compatibilityBrowser, raceWindow, raceWindow);
+    await new Promise(resolve => setTimeout(resolve, 20));
+    const compatibilityStateMessages = compatibilityMessages.filter(message => message && message.action === "wblock:getBlockingState");
+    check(
+      "legacy Init response uses one combined compatibility lookup",
+      compatibilityStateMessages.length === 1 && compatibilityStateMessages[0].host === "youtube.com",
+    );
+    check(
+      "legacy Init response does not route an unrouted pause action",
+      !compatibilityMessages.some(message => message && (
+        message.action === "wblock:getSiteDisabledState" || message.action === "getBlockingPausedState"
+      )),
+    );
+
+    const errorMessages = [];
+    const errorBrowser = {
+      runtime: {
+        onMessage: { addListener() {} },
+        sendMessage(message) {
+          errorMessages.push(message);
+          if (message.type === "InitContentScript") {
+            return Promise.resolve({ type: "InitContentScript", state: "error", error: "native failed" });
+          }
+          return Promise.resolve({ ok: true, cleanUrl: "https://youtube.com/?utm_source=test" });
+        },
+      },
+    };
+    const errorRun = new Function("browser", "window", "self", source);
+    errorRun(errorBrowser, raceWindow, raceWindow);
+    await new Promise(resolve => setTimeout(resolve, 20));
+    check(
+      "native Init error suppresses removeparam cleanup",
+      !errorMessages.some(message => message && message.action === "wblock:getCleanURL"),
     );
   } finally {
     for (const [k, desc] of Object.entries(raceSaved)) {
@@ -277,6 +349,108 @@ try {
 } catch (err) {
   check("timing-race block ran without throwing", false);
   console.error(err);
+}
+
+// --- Lifecycle interception timing ---
+// Frame-level document-start scriptlets depend on lifecycle interception, while
+// events that already fired must not get stale listeners.
+const runLifecycleScenario = async ({ href, readyState, topLevel = true, title = "" }) => {
+  const documentListeners = [];
+  const windowListeners = [];
+  const sentMessages = [];
+  const url = new URL(href);
+  const documentScenario = {
+    readyState,
+    title,
+    documentElement: {
+      appendChild() {},
+      removeChild() {}
+    },
+    addEventListener: name => documentListeners.push(name),
+    removeEventListener() {},
+    createElement: () => ({
+      setAttribute() {},
+      appendChild() {},
+      remove() {},
+      parentNode: null,
+      style: {}
+    }),
+    createTextNode: text => ({ text }),
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    getElementsByTagName: () => [],
+    head: null
+  };
+  const windowScenario = {
+    location: { href, hostname: url.hostname, pathname: url.pathname },
+    addEventListener: name => windowListeners.push(name),
+    removeEventListener() {},
+    dispatchEvent: () => true
+  };
+  windowScenario.top = topLevel ? windowScenario : {};
+  const saved = {};
+  const globals = {
+    document: documentScenario,
+    window: windowScenario,
+    location: windowScenario.location,
+    Node: class Node {},
+    Element: class Element {},
+    HTMLElement: class HTMLElement {},
+    MutationObserver: class { observe() {} disconnect() {} },
+    getComputedStyle: () => ({}),
+    navigator: { userAgent: "test" },
+    Event: class Event { constructor(name) { this.name = name; } },
+    CustomEvent: class CustomEvent { constructor(name) { this.name = name; } },
+    CSS: { supports: () => false },
+    requestAnimationFrame: cb => setTimeout(cb, 0)
+  };
+  for (const [key, value] of Object.entries(globals)) {
+    saved[key] = Object.getOwnPropertyDescriptor(globalThis, key);
+    Object.defineProperty(globalThis, key, { value, configurable: true, writable: true });
+  }
+  try {
+    const browserScenario = {
+      runtime: {
+        sendMessage(message) {
+          sentMessages.push(message);
+          return Promise.resolve({});
+        },
+        onMessage: { addListener() {} }
+      }
+    };
+    const run = new Function("browser", "window", "self", source);
+    run(browserScenario, windowScenario, windowScenario);
+    await sleep(10);
+    return { documentListeners, windowListeners, sentMessages };
+  } finally {
+    for (const [key, descriptor] of Object.entries(saved)) {
+      if (descriptor === undefined) delete globalThis[key];
+      else Object.defineProperty(globalThis, key, descriptor);
+    }
+  }
+};
+
+try {
+  const loading = await runLifecycleScenario({ href: "https://example.com/", readyState: "loading" });
+  check("top-level HTTP(S) document intercepts both lifecycle events", loading.documentListeners.includes("DOMContentLoaded") && loading.windowListeners.includes("load"));
+
+  const subframe = await runLifecycleScenario({ href: "https://example.com/frame", readyState: "loading", topLevel: false });
+  check("loading subframes intercept both lifecycle events", subframe.documentListeners.includes("DOMContentLoaded") && subframe.windowListeners.includes("load"));
+
+  const blankFrame = await runLifecycleScenario({ href: "about:blank", readyState: "loading", topLevel: false });
+  check("loading blank frames intercept both lifecycle events", blankFrame.documentListeners.includes("DOMContentLoaded") && blankFrame.windowListeners.includes("load"));
+
+  const interactive = await runLifecycleScenario({ href: "https://example.com/interactive", readyState: "interactive" });
+  check("interactive documents do not add a stale DOMContentLoaded listener", !interactive.documentListeners.includes("DOMContentLoaded") && interactive.windowListeners.includes("load"));
+
+  const complete = await runLifecycleScenario({ href: "https://example.com/complete", readyState: "complete" });
+  check("complete documents do not add lifecycle listeners", complete.documentListeners.length === 0 && complete.windowListeners.length === 0);
+
+  const cloudflareFrame = await runLifecycleScenario({ href: "https://challenges.cloudflare.com/turnstile", readyState: "loading", topLevel: false });
+  check("Cloudflare frames still skip initialization", !cloudflareFrame.sentMessages.some(message => message && message.type === "InitContentScript"));
+} catch (error) {
+  check("lifecycle interception scope checks ran without throwing", false);
+  console.error(error);
 }
 
 if (failures > 0) {

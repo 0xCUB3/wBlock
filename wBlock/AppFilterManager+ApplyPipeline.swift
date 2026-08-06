@@ -19,26 +19,6 @@ extension AppFilterManager {
         }
     }
 
-    nonisolated private static func contentBlockerOutputMatchesRules(
-        targetRulesFilename: String,
-        groupIdentifier: String,
-        expectedRulesJSON: String
-    ) -> Bool {
-        guard let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: groupIdentifier
-        ) else {
-            return false
-        }
-
-        let rulesURL = containerURL.appendingPathComponent(targetRulesFilename)
-        guard let fileContents = try? String(contentsOf: rulesURL, encoding: .utf8) else {
-            return false
-        }
-
-        return fileContents.trimmingCharacters(in: .whitespacesAndNewlines)
-            == expectedRulesJSON.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
     private func failApplyRun(
         logMessage: String,
         metadata: [String: String] = [:],
@@ -388,15 +368,15 @@ extension AppFilterManager {
                 metadata: [:]
             )
         }
-        let affinityFilterIDs: Set<UUID> = await Task.detached(priority: .utility) {
+        let affinitySnapshot = await Task.detached(priority: .utility) {
             guard let containerURL = FileManager.default.containerURL(
                 forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
             ) else {
-                return []
+                return SafariContentBlockerAffinitySnapshot(contentsByFilterID: [:])
             }
 
-            return SafariContentBlockerAffinityProcessor.detectFiltersWithAffinity(
-                orderedSelectedFilters,
+            return SafariContentBlockerAffinityProcessor.snapshot(
+                for: orderedSelectedFilters,
                 containerURL: containerURL
             )
         }.value
@@ -419,7 +399,7 @@ extension AppFilterManager {
                     let outcome = try ContentBlockerService.compileTargetRules(
                         filters: work.filters,
                         orderedSelectedFilters: orderedSelectedFilters,
-                        affinityFilterIDs: affinityFilterIDs,
+                        affinitySnapshot: affinitySnapshot,
                         targetInfo: work.targetInfo,
                         allTargets: platformTargets,
                         disabledSites: disabledSites,
@@ -534,6 +514,7 @@ extension AppFilterManager {
                     safariRules: ruleCountForThisTarget,
                     advancedRules: advancedCount,
                     reusedCachedBase: conversionResult.reusedCachedBase,
+                    outputChanged: conversionResult.outputChanged,
                     durationMs: completion.durationMs
                 )
             )
@@ -558,6 +539,8 @@ extension AppFilterManager {
                 "assignedFilters": "\(conversionMetrics.reduce(0) { $0 + $1.filterCount })",
                 "cacheHits": "\(conversionMetrics.filter { $0.reusedCachedBase }.count)",
                 "cacheMisses": "\(conversionMetrics.filter { !$0.reusedCachedBase }.count)",
+                "changedOutputs": "\(conversionMetrics.filter(\.outputChanged).count)",
+                "unchangedOutputs": "\(conversionMetrics.filter { !$0.outputChanged }.count)",
                 "totalRules": "\(conversionMetrics.reduce(0) { $0 + $1.safariRules })",
                 "advancedRules": "\(conversionMetrics.reduce(0) { $0 + $1.advancedRules })",
                 "conversionTime": await MainActor.run { self.lastConversionTime },
@@ -582,32 +565,36 @@ extension AppFilterManager {
             self.applyProgressViewModel.updateCurrentFilter("")
         }
 
-        let overallReloadStartTime = Date()
         let reloadSummary = await reloadContentBlockers(platformTargets)
         let allReloadsSuccessful = reloadSummary.allSuccessful
+        let activeReloads = reloadSummary.metrics.filter { !$0.skipped }
+        let reloadDurationMs = reloadSummary.durationMs
 
-        // Log reload summary
         await MainActor.run {
-            self.lastReloadTime = String(
-                format: "%.2fs", Date().timeIntervalSince(overallReloadStartTime))
+            self.lastReloadTime = String(format: "%.2fs", Double(reloadDurationMs) / 1000)
         }
 
-        let failedReloads = reloadSummary.metrics.filter { !$0.success }
-        let retriedReloads = reloadSummary.metrics.filter { $0.attempts > 1 }
-        let totalReloadAttempts = reloadSummary.metrics.reduce(0) { $0 + $1.attempts }
+        let failedReloads = activeReloads.filter { !$0.success }
+        let skippedReloads = reloadSummary.metrics.filter(\.skipped)
+        let retriedReloads = activeReloads.filter { $0.attempts > 1 }
+        let totalReloadAttempts = activeReloads.reduce(0) { $0 + $1.attempts }
         let reloadMetadata: [String: String] = [
             "targets": "\(reloadSummary.metrics.count)",
+            "activeTargets": "\(activeReloads.count)",
             "failedTargets": "\(failedReloads.count)",
             "retriedTargets": "\(retriedReloads.count)",
             "totalAttempts": "\(totalReloadAttempts)",
-            "avgAttempts": reloadSummary.metrics.isEmpty ? "0" : String(
+            "avgAttempts": activeReloads.isEmpty ? "0" : String(
                 format: "%.2f",
-                Double(totalReloadAttempts) / Double(reloadSummary.metrics.count)
+                Double(totalReloadAttempts) / Double(activeReloads.count)
             ),
             "reloadTime": await MainActor.run { self.lastReloadTime },
-            "slowestTarget": reloadSummary.metrics.max(by: { $0.durationMs < $1.durationMs })
+            "slowestTarget": activeReloads.max(by: { $0.durationMs < $1.durationMs })
                 .map { "\($0.blockerName)@\($0.durationMs)ms" } ?? "n/a",
+            "reloadDurationMs": "\(reloadDurationMs)",
             "failedNames": failedReloads.prefix(3).map(\.blockerName).joined(separator: ","),
+            "skippedTargets": "\(skippedReloads.count)",
+            "skippedNames": skippedReloads.map(\.blockerName).joined(separator: ","),
         ]
 
         if allReloadsSuccessful {
@@ -653,7 +640,7 @@ extension AppFilterManager {
                             "totalLines": "\(totalLines)",
                         ])
 
-                    try ContentBlockerService.buildCombinedFilterEngine(
+                    try ContentBlockerService.publishCombinedFilterEngine(
                         combinedAdvancedRules: combinedAdvancedRules,
                         groupIdentifier: GroupIdentifier.shared.value
                     )
@@ -662,7 +649,8 @@ extension AppFilterManager {
                 await ConcurrentLogManager.shared.debug(
                     .filterApply, LocalizedStrings.text("No advanced rules found, clearing filter engine"), metadata: [:])
                 try await Task.detached {
-                    try ContentBlockerService.clearFilterEngine(
+                    try ContentBlockerService.publishCombinedFilterEngine(
+                        combinedAdvancedRules: "",
                         groupIdentifier: GroupIdentifier.shared.value
                     )
                 }.value
@@ -762,16 +750,17 @@ extension AppFilterManager {
     }
 
     /// Clears the advanced (WebExtension) filter engine, remove-param DNR rules, and writes
-    /// an empty `[]` rule list to every content blocker target, then reloads each target.
+    /// an inert no-op rule list to every content blocker target, then reloads each target.
     /// Used both by the "no filters selected" apply path and by the global pause toggle.
     /// Returns `true` on success, `false` after reporting the failure via `failApplyRun`.
     func clearAllExtensionsAndEngine() async -> Bool {
         let currentPlatform = self.currentPlatform
 
         do {
-            try await Task.detached {
+            let skippedNames = try await Task.detached { () throws -> [String] in
                 let groupIdentifier = GroupIdentifier.shared.value
-                try ContentBlockerService.clearFilterEngine(
+                try ContentBlockerService.publishCombinedFilterEngine(
+                    combinedAdvancedRules: "",
                     groupIdentifier: groupIdentifier
                 )
                 _ = try RemoveParamDNRRuleGenerator.clearSavedRules(
@@ -782,24 +771,14 @@ extension AppFilterManager {
                     forPlatform: currentPlatform
                 )
                 var saveFailures: [String] = []
-                var targetsToReload: [ContentBlockerTargetInfo] = []
 
                 for targetInfo in platformTargets {
-                    let savedRuleCount = try ContentBlockerService.saveContentBlocker(
+                    let saveResult = try ContentBlockerService.saveContentBlockerIfChanged(
                         jsonRules: ContentBlockerService.inertContentBlockerRulesJSON,
                         groupIdentifier: groupIdentifier,
                         targetRulesFilename: targetInfo.rulesFilename
                     )
-                    let outputMatchesInertRules = Self.contentBlockerOutputMatchesRules(
-                        targetRulesFilename: targetInfo.rulesFilename,
-                        groupIdentifier: groupIdentifier,
-                        expectedRulesJSON: ContentBlockerService.inertContentBlockerRulesJSON
-                    )
-                    if savedRuleCount == ContentBlockerService.inertContentBlockerRuleCount,
-                       outputMatchesInertRules
-                    {
-                        targetsToReload.append(targetInfo)
-                    } else {
+                    if saveResult.ruleCount != ContentBlockerService.inertContentBlockerRuleCount {
                         saveFailures.append(targetInfo.displayName)
                     }
                 }
@@ -811,24 +790,31 @@ extension AppFilterManager {
                 }
 
                 var reloadFailures: [String] = []
-                let reloadResults = await withTaskGroup(of: (ContentBlockerTargetInfo, Bool).self) { group in
-                    for targetInfo in targetsToReload {
+                var skippedNames: [String] = []
+                let reloadResults = await withTaskGroup(of: (ContentBlockerTargetInfo, ContentBlockerService.ReloadAttemptResult).self) { group in
+                    for targetInfo in platformTargets {
                         group.addTask {
-                            let reloadResult = await ContentBlockerService.reloadWithRetry(
-                                identifier: targetInfo.bundleIdentifier
+                            let reloadResult = await ContentBlockerService.reloadIfNeeded(
+                                identifier: targetInfo.bundleIdentifier,
+                                targetRulesFilename: targetInfo.rulesFilename,
+                                groupIdentifier: groupIdentifier
                             )
-                            return (targetInfo, reloadResult.success)
+                            return (targetInfo, reloadResult)
                         }
                     }
-                    var collected: [(ContentBlockerTargetInfo, Bool)] = []
-                    collected.reserveCapacity(targetsToReload.count)
+                    var collected: [(ContentBlockerTargetInfo, ContentBlockerService.ReloadAttemptResult)] = []
+                    collected.reserveCapacity(platformTargets.count)
                     for await item in group {
                         collected.append(item)
                     }
                     return collected
                 }
-                for (targetInfo, success) in reloadResults where !success {
-                    reloadFailures.append(targetInfo.displayName)
+                for (targetInfo, result) in reloadResults {
+                    if result.skipped {
+                        skippedNames.append(targetInfo.displayName)
+                    } else if !result.success {
+                        reloadFailures.append(targetInfo.displayName)
+                    }
                 }
 
                 if !reloadFailures.isEmpty {
@@ -836,7 +822,15 @@ extension AppFilterManager {
                         targetName: reloadFailures.joined(separator: ", ")
                     )
                 }
+                return skippedNames
             }.value
+            if !skippedNames.isEmpty {
+                await ConcurrentLogManager.shared.info(
+                    .filterApply,
+                    LocalizedStrings.text("Process completed successfully"),
+                    metadata: ["skippedTargets": skippedNames.joined(separator: ",")]
+                )
+            }
             return true
         } catch {
             await failApplyRun(
@@ -849,7 +843,7 @@ extension AppFilterManager {
 
     /// Toggles the global "blocking paused" state.
     ///
-    /// When pausing: persists the flag, empties every content blocker (writes `[]`),
+    /// When pausing: persists the flag, writes inert no-op rules to every content blocker,
     /// clears the advanced WebExtension engine, and reloads Safari. Blocking stays off
     /// across launches and tab switches until the user resumes — see GitHub issue #439.
     ///
@@ -954,6 +948,7 @@ extension AppFilterManager {
         let safariRules: Int
         let advancedRules: Int
         let reusedCachedBase: Bool
+        let outputChanged: Bool
         let durationMs: Int
     }
 
@@ -961,6 +956,7 @@ extension AppFilterManager {
     struct TargetReloadMetrics {
         let blockerName: String
         let success: Bool
+        let skipped: Bool
         let attempts: Int
         let durationMs: Int
     }
@@ -968,6 +964,7 @@ extension AppFilterManager {
     struct ReloadPhaseSummary {
         let allSuccessful: Bool
         let metrics: [TargetReloadMetrics]
+        let durationMs: Int
     }
 
 
@@ -975,15 +972,19 @@ extension AppFilterManager {
 
     func reloadContentBlockers(_ targets: [ContentBlockerTargetInfo]) async -> ReloadPhaseSummary {
         let totalCount = targets.count
+        let reloadStartTime = Date()
 
         // SFContentBlockerManager.reloadContentBlocker is safe to call concurrently across
         // identifiers, so reload all targets in parallel rather than one-by-one.
+        let groupIdentifier = GroupIdentifier.shared.value
         let results: [(target: ContentBlockerTargetInfo, reload: ContentBlockerService.ReloadAttemptResult)] =
             await withTaskGroup(of: (ContentBlockerTargetInfo, ContentBlockerService.ReloadAttemptResult).self) { group in
                 for target in targets {
                     group.addTask {
-                        let reload = await ContentBlockerService.reloadWithRetry(
-                            identifier: target.bundleIdentifier
+                        let reload = await ContentBlockerService.reloadIfNeeded(
+                            identifier: target.bundleIdentifier,
+                            targetRulesFilename: target.rulesFilename,
+                            groupIdentifier: groupIdentifier
                         )
                         return (target, reload)
                     }
@@ -998,6 +999,9 @@ extension AppFilterManager {
 
         // Preserve slot order for stable logging/UI.
         let orderedResults = results.sorted { $0.target.slot < $1.target.slot }
+        let reloadDurationMs = results.contains { !$0.reload.skipped }
+            ? Int(Date().timeIntervalSince(reloadStartTime) * 1000)
+            : 0
 
         var allSuccessful = true
         var metrics: [TargetReloadMetrics] = []
@@ -1012,6 +1016,7 @@ extension AppFilterManager {
                 TargetReloadMetrics(
                     blockerName: name,
                     success: result.reload.success,
+                    skipped: result.reload.skipped,
                     attempts: result.reload.attempts,
                     durationMs: result.reload.durationMs
                 )
@@ -1041,7 +1046,11 @@ extension AppFilterManager {
             self.hasError = true
         }
 
-        return ReloadPhaseSummary(allSuccessful: allSuccessful, metrics: metrics)
+        return ReloadPhaseSummary(
+            allSuccessful: allSuccessful,
+            metrics: metrics,
+            durationMs: reloadDurationMs
+        )
     }
 
 }

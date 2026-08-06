@@ -2,8 +2,43 @@ internal import ContentBlockerConverter
 import CryptoKit
 import Foundation
 
+public struct SafariContentBlockerAffinitySnapshot: Sendable {
+    public let contentsByFilterID: [UUID: String]
+
+    public var isEmpty: Bool { contentsByFilterID.isEmpty }
+    public var filterIDs: Set<UUID> { Set(contentsByFilterID.keys) }
+
+    public init(contentsByFilterID: [UUID: String] = [:]) {
+        self.contentsByFilterID = contentsByFilterID
+    }
+
+    fileprivate init(
+        filters: [FilterList],
+        containerURL: URL
+    ) {
+        var contentsByFilterID: [UUID: String] = [:]
+        for filter in filters {
+            guard let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(
+                for: filter,
+                containerURL: containerURL
+            ),
+                let content = try? String(contentsOfFile: sourceURL.path, encoding: .utf8),
+                content.contains(SafariContentBlockerAffinityProcessor.directivePrefix)
+            else {
+                continue
+            }
+            contentsByFilterID[filter.id] = content
+        }
+        self.contentsByFilterID = contentsByFilterID
+    }
+
+    public func content(for filterID: UUID) -> String? {
+        contentsByFilterID[filterID]
+    }
+}
+
 public enum SafariContentBlockerAffinityProcessor {
-    private static let directivePrefix = "!#safari_cb_affinity"
+    fileprivate static let directivePrefix = "!#safari_cb_affinity"
 
     public static func sourceURL(for filter: FilterList, containerURL: URL) -> URL? {
         let primaryURL = containerURL.appendingPathComponent(
@@ -19,24 +54,18 @@ public enum SafariContentBlockerAffinityProcessor {
         return legacyURL
     }
 
+    public static func snapshot(
+        for filters: [FilterList],
+        containerURL: URL
+    ) -> SafariContentBlockerAffinitySnapshot {
+        SafariContentBlockerAffinitySnapshot(filters: filters, containerURL: containerURL)
+    }
+
     public static func detectFiltersWithAffinity(
         _ filters: [FilterList],
         containerURL: URL
     ) -> Set<UUID> {
-        var affinityFilterIDs: Set<UUID> = []
-
-        for filter in filters {
-            guard let sourceURL = sourceURL(for: filter, containerURL: containerURL),
-                  let content = try? String(contentsOf: sourceURL, encoding: .utf8),
-                  content.contains(directivePrefix)
-            else {
-                continue
-            }
-
-            affinityFilterIDs.insert(filter.id)
-        }
-
-        return affinityFilterIDs
+        snapshot(for: filters, containerURL: containerURL).filterIDs
     }
 
     @discardableResult
@@ -45,16 +74,14 @@ public enum SafariContentBlockerAffinityProcessor {
         includeBaseRules: Bool,
         target: ContentBlockerTargetInfo,
         allTargets: [ContentBlockerTargetInfo],
-        containerURL: URL,
+        affinitySnapshot: SafariContentBlockerAffinitySnapshot,
         destinationHandle: FileHandle,
         hasher: inout SHA256,
         newlineData: Data
     ) throws -> Bool {
-        guard let sourceURL = sourceURL(for: filter, containerURL: containerURL) else {
+        guard let content = affinitySnapshot.content(for: filter.id) else {
             return false
         }
-
-        let content = try String(contentsOf: sourceURL, encoding: .utf8)
         let filtered = filteredContent(
             from: content,
             includeBaseRules: includeBaseRules,
@@ -69,6 +96,36 @@ public enum SafariContentBlockerAffinityProcessor {
         hasher.update(data: newlineData)
         try destinationHandle.write(contentsOf: newlineData)
         return true
+    }
+
+    /// Compatibility overload for callers that load affinity sources on demand.
+    @discardableResult
+    public static func appendAffinityFilteredContribution(
+        for filter: FilterList,
+        includeBaseRules: Bool,
+        target: ContentBlockerTargetInfo,
+        allTargets: [ContentBlockerTargetInfo],
+        containerURL: URL,
+        destinationHandle: FileHandle,
+        hasher: inout SHA256,
+        newlineData: Data
+    ) throws -> Bool {
+        guard let sourceURL = sourceURL(for: filter, containerURL: containerURL) else {
+            return false
+        }
+        let content = try String(contentsOf: sourceURL, encoding: .utf8)
+        return try appendAffinityFilteredContribution(
+            for: filter,
+            includeBaseRules: includeBaseRules,
+            target: target,
+            allTargets: allTargets,
+            affinitySnapshot: SafariContentBlockerAffinitySnapshot(
+                contentsByFilterID: [filter.id: content]
+            ),
+            destinationHandle: destinationHandle,
+            hasher: &hasher,
+            newlineData: newlineData
+        )
     }
 
     public static func filteredContent(

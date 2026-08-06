@@ -208,6 +208,12 @@ splice_file \
   "${CONTENT_SRC}" \
   "@file Content script for the WebExtension"
 
+# The upstream content build includes the generated scriptlet registry. Keep
+# that registry in background.js only, including after every future splice.
+echo ""
+info "--- Removing generated content scriptlet registry ---"
+node "${ROOT_DIR}/scripts/remove-content-scriptlet-registry.mjs" "${CONTENT_SRC}"
+
 # ---------------------------------------------------------------------------
 # Step 6: Verification checks
 # ---------------------------------------------------------------------------
@@ -228,6 +234,18 @@ check_grep() {
   fi
 }
 
+check_no_grep() {
+  local label="$1"
+  local pattern="$2"
+  local file="$3"
+  if grep -q "${pattern}" "${file}"; then
+    error "${label}: unexpectedly found in $(basename "${file}")"
+    FAIL=1
+  else
+    success "${label}: absent from $(basename "${file}")"
+  fi
+}
+
 check_syntax() {
   local file="$1"
   if node --check "${file}" 2>/dev/null; then
@@ -245,6 +263,12 @@ check_grep "SafariExtension v${VERSION}" "SafariExtension v${VERSION}" "${CONTEN
 # wBlock custom code symbols
 check_grep "engineTimestamp"       "engineTimestamp"        "${BACKGROUND_SRC}"
 check_grep "window.adguard"        "window.adguard"         "${CONTENT_SRC}"
+
+# Runtime split: only background.js carries the generated scriptlet registry.
+check_no_grep "content scriptlet map"       "scriptletsMap"          "${CONTENT_SRC}"
+check_no_grep "content scriptlet getter"    "getScriptletFunction"   "${CONTENT_SRC}"
+check_grep    "background scriptlet map"    "scriptletsMap"          "${BACKGROUND_SRC}"
+check_grep    "background scriptlet getter" "getScriptletFunction"   "${BACKGROUND_SRC}"
 
 # JS syntax
 check_syntax "${BACKGROUND_SRC}"

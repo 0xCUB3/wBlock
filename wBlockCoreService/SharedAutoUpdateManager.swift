@@ -320,14 +320,10 @@ public actor SharedAutoUpdateManager {
         )
 
         do {
-            if advancedRulesSnippets.isEmpty {
-                try ContentBlockerService.clearFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
-            } else {
-                try ContentBlockerService.buildCombinedFilterEngine(
-                    combinedAdvancedRules: advancedRulesSnippets.joined(separator: "\n"),
-                    groupIdentifier: GroupIdentifier.shared.value
-                )
-            }
+            try ContentBlockerService.publishCombinedFilterEngine(
+                combinedAdvancedRules: advancedRulesSnippets.joined(separator: "\n"),
+                groupIdentifier: GroupIdentifier.shared.value
+            )
         } catch {
             appendSharedLog("\(failureLogPrefix): \(error.localizedDescription)")
             throw AutoUpdateError.advancedEngineOperationFailed(
@@ -1590,31 +1586,38 @@ public actor SharedAutoUpdateManager {
         let groupIdentifier = GroupIdentifier.shared.value
 
         do {
-            try ContentBlockerService.clearFilterEngine(groupIdentifier: groupIdentifier)
+            try ContentBlockerService.publishCombinedFilterEngine(
+                combinedAdvancedRules: "",
+                groupIdentifier: groupIdentifier
+            )
         } catch {
             appendSharedLog("Failed to clear paused advanced engine during auto-update: \(error.localizedDescription)")
+            return false
         }
 
         do {
             _ = try RemoveParamDNRRuleGenerator.clearSavedRules(groupIdentifier: groupIdentifier)
         } catch {
             appendSharedLog("Failed to clear paused removeparam rules during auto-update: \(error.localizedDescription)")
+            return false
         }
 
         for target in ContentBlockerTargetManager.shared.allTargets(forPlatform: platform) {
-            let savedRuleCount = try? ContentBlockerService.saveContentBlocker(
+            let saveResult = try? ContentBlockerService.saveContentBlockerIfChanged(
                 jsonRules: ContentBlockerService.inertContentBlockerRulesJSON,
                 groupIdentifier: groupIdentifier,
                 targetRulesFilename: target.rulesFilename
             )
-            if savedRuleCount != ContentBlockerService.inertContentBlockerRuleCount {
+            if saveResult?.ruleCount != ContentBlockerService.inertContentBlockerRuleCount {
                 failedTargets.append(target.displayName)
                 continue
             }
 
             if reloadContentBlockers {
                 let reloadResult = await ContentBlockerService.reloadWithRetry(
-                    identifier: target.bundleIdentifier
+                    identifier: target.bundleIdentifier,
+                    groupIdentifier: groupIdentifier,
+                    targetRulesFilename: target.rulesFilename
                 )
                 if !reloadResult.success {
                     failedTargets.append(target.displayName)
@@ -1655,7 +1658,12 @@ public actor SharedAutoUpdateManager {
                 requiredTime: policy.minimumTimeForReloadRetry
             )
 
-            let reloadResult = await ContentBlockerService.reloadWithRetry(identifier: target.bundleIdentifier, maxRetries: 6)
+            let reloadResult = await ContentBlockerService.reloadWithRetry(
+                identifier: target.bundleIdentifier,
+                maxRetries: 6,
+                groupIdentifier: GroupIdentifier.shared.value,
+                targetRulesFilename: target.rulesFilename
+            )
             if !reloadResult.success {
                 failedTargets.append(target.displayName)
             }
@@ -1690,7 +1698,7 @@ public actor SharedAutoUpdateManager {
         let allTargets: [ContentBlockerTargetInfo]
         let containerURL: URL
         let disabledSites: [String]
-        let affinityFilterIDs: Set<UUID>
+        let affinitySnapshot: SafariContentBlockerAffinitySnapshot
         let orderedFilters: [FilterList]
         let extraRulesText: String?
         let isBackground: Bool
@@ -1737,7 +1745,7 @@ public actor SharedAutoUpdateManager {
             let outcome = try ContentBlockerService.compileTargetRules(
                 filters: work.filters,
                 orderedSelectedFilters: work.orderedFilters,
-                affinityFilterIDs: work.affinityFilterIDs,
+                affinitySnapshot: work.affinitySnapshot,
                 targetInfo: target,
                 allTargets: work.allTargets,
                 disabledSites: work.disabledSites,
@@ -1800,7 +1808,7 @@ public actor SharedAutoUpdateManager {
         } catch { appendSharedLog("Failed to prepare removeparam DNR rules: \(error.localizedDescription)") }
         let ordered = ContentBlockerMappingService.orderedForDistribution(selectedFilters)
         let byTarget = ContentBlockerMappingService.distribute(selectedFilters: selectedFilters, across: targets)
-        let affinity = SafariContentBlockerAffinityProcessor.detectFiltersWithAffinity(ordered, containerURL: containerURL)
+        let affinitySnapshot = SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: containerURL)
         let zapper = await MainActor.run { ZapperContentBlockerRuleGenerator.generatedRulesText(from: ProtobufDataManager.shared.getActiveZapperRulesByHost()) }
         var results: [String: ConversionTargetResult] = [:]
         let works = targets.map { target in
@@ -1810,7 +1818,7 @@ public actor SharedAutoUpdateManager {
                 allTargets: targets,
                 containerURL: containerURL,
                 disabledSites: disabledSites,
-                affinityFilterIDs: affinity,
+                affinitySnapshot: affinitySnapshot,
                 orderedFilters: ordered,
                 extraRulesText: target.slot == 5 ? zapper : nil,
                 isBackground: policy.isBackground,
@@ -1878,7 +1886,9 @@ public actor SharedAutoUpdateManager {
             if reloadContentBlockers {
                 let reload = await ContentBlockerService.reloadWithRetry(
                     identifier: target.bundleIdentifier,
-                    maxRetries: 6
+                    maxRetries: 6,
+                    groupIdentifier: GroupIdentifier.shared.value,
+                    targetRulesFilename: target.rulesFilename
                 )
                 reloadMs = reload.durationMs
                 reloadAttempts = reload.attempts

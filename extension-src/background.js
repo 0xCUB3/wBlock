@@ -25402,12 +25402,37 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * is updated.
    */
   let engineTimestamp = 0;
+  let configurationGeneration = 0;
   /**
    * BackgroundScript is used to apply filtering configuration to web pages.
    * Note, that it relies on the content script to be injected into the page
    * and available in the ISOLATED world via `adguard.contentScript` object.
    */
   const backgroundScript = new BackgroundScript();
+  const compileScriptletsForContent = configuration => ({
+    ...configuration,
+    scriptlets: (configuration.scriptlets || []).map(scriptlet => {
+      try {
+        const source = {
+          engine: SCRIPTLET_ENGINE_NAME,
+          name: scriptlet.name,
+          args: scriptlet.args,
+          version,
+          verbose: false
+        };
+        return {
+          ...scriptlet,
+          code: scriptlets.invoke(source)
+        };
+      } catch (error) {
+        wBlockLogger.error('Failed to compile scriptlet for content fallback', scriptlet && scriptlet.name, error);
+        return {
+          ...scriptlet,
+          code: ''
+        };
+      }
+    })
+  });
   /**
    * Cache to store the rules for a given URL. The key is a URL (string) and
    * the value is a Configuration. Caching content script configurations allows us
@@ -25438,8 +25463,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (persistConfigCacheTimer !== null) {
       return;
     }
+    const generation = configurationGeneration;
     persistConfigCacheTimer = setTimeout(async () => {
       persistConfigCacheTimer = null;
+      if (generation !== configurationGeneration) return;
       try {
         const entries = [];
         for (const [key, configuration] of cache) {
@@ -25469,8 +25496,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     });
   };
   const configCacheHydration = (async () => {
+    const generation = configurationGeneration;
     try {
       const stored = await browser.storage.local.get(PERSISTED_CONFIG_CACHE_KEY);
+      if (generation !== configurationGeneration) return;
       const persisted = stored && stored[PERSISTED_CONFIG_CACHE_KEY];
       if (!persisted || typeof persisted.engineTimestamp !== "number" || !Array.isArray(persisted.entries)) {
         return;
@@ -25609,6 +25638,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const nativeMessageTimeoutMs = request => {
     const action = request && typeof request.action === "string" ? request.action : "";
     if (action === "syncZapperRules" || action === "getZapperRules") return 3500;
+    if (action === "getBlockingState") return 1000;
     return 30000;
   };
   const withNativeMessageTimeout = (promise, timeoutMs, action) => {
@@ -25712,6 +25742,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @returns The response message from the native host.
    */
   const requestConfiguration = async (request, url, topUrl) => {
+    const generation = configurationGeneration;
     // Prepare the request payload.
     request.payload = {
       url,
@@ -25720,12 +25751,19 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     // Send the request to the native messaging host and wait for the response.
     const response = await sendQueuedNativeMessage(request);
     const message = response;
-    if (!message || !message.payload) {
-      // No configuration received for some reason.
-      return null;
+    if (message && message.state === "error") {
+      throw new Error(message.error || "Native configuration unavailable");
     }
-    // Extract the configuration from the response payload.
+    if (!message || !message.payload) {
+      const error = message && message.error ? message.error : "Native configuration unavailable";
+      throw new Error(error);
+    }
+    // Inert responses must not replace a usable configuration in the cache.
     const configuration = message.payload;
+    if (configuration.disabled === true || configuration.paused === true) {
+      return configuration;
+    }
+    if (generation !== configurationGeneration) return configuration;
     // If the engine timestamp has been updated, clear the cache and update
     // the timestamp.
     if (configuration.engineTimestamp !== engineTimestamp) {
@@ -25741,6 +25779,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     persistConfigCache();
     return configuration;
   };
+  const pendingConfigurationRequests = new Map();
+  const requestConfigurationCoalesced = (request, url, topUrl) => {
+    const key = cacheKey(url, topUrl);
+    const pending = pendingConfigurationRequests.get(key);
+    if (pending) {
+      return pending;
+    }
+    const requestPromise = requestConfiguration(request, url, topUrl).finally(() => {
+      if (pendingConfigurationRequests.get(key) === requestPromise) {
+        pendingConfigurationRequests.delete(key);
+      }
+    });
+    pendingConfigurationRequests.set(key, requestPromise);
+    return requestPromise;
+  };
   /**
    * Tries to get rules from the cache. If not found, requests them from the
    * native host.
@@ -25753,22 +25806,27 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const getConfiguration = async (message, url, topUrl) => {
     await configCacheHydration;
     const key = cacheKey(url, topUrl);
-    // If there is already a cached response for this URL:
     if (cache.has(key)) {
-      // Fire off a new request to update the cache in the background.
-      requestConfiguration(message, url, topUrl);
-      // Retrieve the cached response.
-      const cachedConfiguration = cache.get(key);
-      // Return the cached message immediately.
-      if (cachedConfiguration) {
-        return cachedConfiguration;
-      }
+      // Revalidate without making the cached path wait for the full rules lookup.
+      void requestConfigurationCoalesced(message, url, topUrl).catch(error => {
+        console.warn("[wBlock] Background configuration refresh failed:", error);
+      });
+      const configuration = cache.get(key);
+      if (configuration) return { configuration, fromCache: true };
     }
-    // Await the native request to get a fresh response.
-    const configuration = await requestConfiguration(message, url, topUrl);
-    // Return the new response.
-    return configuration;
+    const configuration = await requestConfigurationCoalesced(message, url, topUrl);
+    return { configuration, fromCache: false };
   };
+  const emptyConfigurationForState = (disabled, paused) => ({
+    css: [],
+    extendedCss: [],
+    js: [],
+    scriptlets: [],
+    userScripts: [],
+    engineTimestamp: 0,
+    disabled,
+    paused
+  });
   /**
    * Message listener that intercepts messages sent to the background script.
    *
@@ -25917,13 +25975,54 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (!sentDone) await sendGMPortMessage(sender, portName, "[DONE]");
     return { responseLength, sentDone: true };
   };
+  const normalizeSiteDisabledHost = host => typeof host === "string"
+    ? host.trim().toLowerCase()
+    : "";
+  const pendingSiteDisabledRequests = new Map();
+  const pendingBlockingStateRequests = new Map();
+  const requestSiteDisabledState = host => {
+    const normalizedHost = normalizeSiteDisabledHost(host);
+    const pending = pendingSiteDisabledRequests.get(normalizedHost);
+    if (pending) {
+      return pending;
+    }
+    const requestPromise = sendQueuedNativeMessage({
+      action: "getSiteDisabledState",
+      host: normalizedHost
+    }).finally(() => {
+      if (pendingSiteDisabledRequests.get(normalizedHost) === requestPromise) {
+        pendingSiteDisabledRequests.delete(normalizedHost);
+      }
+    });
+    pendingSiteDisabledRequests.set(normalizedHost, requestPromise);
+    return requestPromise;
+  };
+  const requestBlockingState = host => {
+    const normalizedHost = normalizeSiteDisabledHost(host);
+    const pending = pendingBlockingStateRequests.get(normalizedHost);
+    if (pending) return pending;
+    const requestPromise = sendPriorityNativeMessage({
+      action: "getBlockingState",
+      host: normalizedHost
+    }).finally(() => {
+      if (pendingBlockingStateRequests.get(normalizedHost) === requestPromise) {
+        pendingBlockingStateRequests.delete(normalizedHost);
+      }
+    });
+    pendingBlockingStateRequests.set(normalizedHost, requestPromise);
+    return requestPromise;
+  };
   const handleMessages = async (request, sender) => {
     var _sender$tab, _sender$tab2;
     // Cast the incoming request to `Message`.
     const message = request;
     if (message && message.action === "wblock:clearCache") {
+      configurationGeneration += 1;
       cache.clear();
       engineTimestamp = 0;
+      pendingConfigurationRequests.clear();
+      pendingSiteDisabledRequests.clear();
+      pendingBlockingStateRequests.clear();
       await Promise.all([
         clearPersistedConfigCache(),
         clearDocumentStartScriptCache()
@@ -25959,15 +26058,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     // (briefly) holds DOMContentLoaded/load, which trips anti-adblock walls —
     // e.g. Ticketmaster's seat-selection screen (issue #445).
     if (message && message.action === "wblock:getSiteDisabledState") {
-      const host = typeof message.host === "string" ? message.host.trim() : "";
+      const host = normalizeSiteDisabledHost(message.host);
       if (!host) {
         return { ok: false, disabled: false, error: "Missing host" };
       }
       try {
-        const response = await sendQueuedNativeMessage({
-          action: "getSiteDisabledState",
-          host
-        });
+        const response = await requestSiteDisabledState(host);
         return {
           ok: true,
           disabled: !!(response && response.disabled)
@@ -25977,6 +26073,30 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return {
           ok: false,
           disabled: false,
+          error: String(error && error.message ? error.message : error)
+        };
+      }
+    }
+    if (message && message.action === "wblock:getBlockingState") {
+      const host = normalizeSiteDisabledHost(message.host);
+      if (!host) {
+        return { ok: false, state: "error", error: "Missing host" };
+      }
+      try {
+        const response = await requestBlockingState(host);
+        if (!response || typeof response.disabled !== "boolean" || typeof response.paused !== "boolean") {
+          throw new Error("Invalid blocking state from native host");
+        }
+        return {
+          ok: true,
+          disabled: response.disabled,
+          paused: response.paused
+        };
+      } catch (error) {
+        console.warn("[wBlock] Failed to resolve blocking state for", host, error);
+        return {
+          ok: false,
+          state: "error",
           error: String(error && error.message ? error.message : error)
         };
       }
@@ -26229,14 +26349,63 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       url = topUrl;
       blankFrame = true;
     }
-    const configuration = await getConfiguration(message, url, topUrl);
-    if (!configuration) {
-      wBlockLogger.error('No configuration received for ', url);
-      return {};
+    let configurationResult;
+    try {
+      configurationResult = await getConfiguration(message, url, topUrl);
+    } catch (error) {
+      const errorMessage = String(error && error.message ? error.message : error);
+      wBlockLogger.error('Native configuration lookup failed for ', url, errorMessage);
+      return { type: MessageType.InitContentScript, state: "error", error: errorMessage };
     }
-    // Prepare the response.
+    if (!configurationResult || !configurationResult.configuration) {
+      const errorMessage = "Native configuration unavailable";
+      wBlockLogger.error(errorMessage, url);
+      return { type: MessageType.InitContentScript, state: "error", error: errorMessage };
+    }
+    const { configuration: cachedConfiguration, fromCache } = configurationResult;
+    let configuration = cachedConfiguration;
+    let cachedBlockingState = null;
+    if (fromCache) {
+      let host = "";
+      try {
+        host = new URL(url).hostname;
+      } catch {}
+      try {
+        const state = await requestBlockingState(host);
+        if (!state || typeof state.disabled !== "boolean" || typeof state.paused !== "boolean") {
+          throw new Error("Invalid blocking state from native host");
+        }
+        cachedBlockingState = state;
+      } catch (error) {
+        const errorMessage = String(error && error.message ? error.message : error);
+        wBlockLogger.error('Cached configuration state lookup failed for ', url, errorMessage);
+        return { type: MessageType.InitContentScript, state: "error", error: errorMessage };
+      }
+      if (cachedBlockingState.disabled || cachedBlockingState.paused) {
+        configuration = emptyConfigurationForState(
+          cachedBlockingState.disabled,
+          cachedBlockingState.paused
+        );
+      } else {
+        configuration = {
+          ...cachedConfiguration,
+          disabled: false,
+          paused: false
+        };
+      }
+    } else if (configuration.disabled === true || configuration.paused === true) {
+      configuration = emptyConfigurationForState(configuration.disabled === true, configuration.paused === true);
+    }
+    // Preserve native state on both response paths. Cached state is never used;
+    // it is replaced with the result of the priority state lookup above.
     const response = {
-      type: MessageType.InitContentScript
+      type: MessageType.InitContentScript,
+      ...(fromCache
+        ? cachedBlockingState
+        : typeof configuration.disabled === "boolean"
+          && typeof configuration.paused === "boolean"
+          ? { disabled: configuration.disabled, paused: configuration.paused }
+          : {})
     };
     // In the current Safari version we cannot apply rules to blank frames from
     // the background: https://bugs.webkit.org/show_bug.cgi?id=296702
@@ -26245,10 +26414,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     // The downside here is that the content script cannot override website's
     // CSPs.
     if (!blankFrame) {
-      await backgroundScript.applyConfiguration(tabId, frameId, configuration);
+      if (!fromCache || !(cachedBlockingState.disabled || cachedBlockingState.paused)) {
+        await backgroundScript.applyConfiguration(tabId, frameId, configuration);
+      }
     } else {
-      // Pass the configuration to the content script.
-      response.payload = configuration;
+      // Pass precompiled scriptlet source to the content script. The content
+      // runtime intentionally does not carry the generated scriptlet registry.
+      response.payload = compileScriptletsForContent(configuration);
     }
     return response;
   };
@@ -26483,14 +26655,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
   };
   const getSiteDisabledForAction = async host => {
-    if (typeof host !== "string" || host.length === 0) {
+    const normalizedHost = normalizeSiteDisabledHost(host);
+    if (!normalizedHost) {
       return false;
     }
     try {
-      const response = await sendQueuedNativeMessage({
-        action: "getSiteDisabledState",
-        host
-      });
+      const response = await requestSiteDisabledState(normalizedHost);
       return Boolean(response && response.disabled);
     } catch (error) {
       console.warn("[wBlock] Failed to resolve action disabled state:", error);
@@ -26857,7 +27027,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const NATIVE_WARMUP_URL = "https://warmup.wblock.invalid/";
   const warmUpNativeHost = async () => {
     try {
-      await requestConfiguration({}, NATIVE_WARMUP_URL, undefined);
+      await requestConfigurationCoalesced({}, NATIVE_WARMUP_URL, undefined);
     } catch (error) {
       console.warn("[wBlock] Native host warm-up failed:", error);
     } finally {
