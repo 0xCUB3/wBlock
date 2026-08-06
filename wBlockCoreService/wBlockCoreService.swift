@@ -25,11 +25,20 @@ public struct ContentBlockerTargetOutcome: Sendable {
     public let reusedCachedBase: Bool
     public let outputChanged: Bool
 
+    public init(safariRulesCount: Int, advancedRulesText: String?, reusedCachedBase: Bool) {
+        self.init(
+            safariRulesCount: safariRulesCount,
+            advancedRulesText: advancedRulesText,
+            reusedCachedBase: reusedCachedBase,
+            outputChanged: true
+        )
+    }
+
     public init(
         safariRulesCount: Int,
         advancedRulesText: String?,
         reusedCachedBase: Bool,
-        outputChanged: Bool = true
+        outputChanged: Bool
     ) {
         self.safariRulesCount = safariRulesCount
         self.advancedRulesText = advancedRulesText
@@ -974,6 +983,26 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         groupIdentifier: String,
         targetRulesFilename: String,
         disabledSites: [String]
+    ) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
+        let result = try convertFilterFromFileWithOutputChange(
+            rulesFileURL: rulesFileURL,
+            rulesSHA256Hex: rulesSHA256Hex,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: targetRulesFilename,
+            disabledSites: disabledSites
+        )
+        return (
+            safariRulesCount: result.safariRulesCount,
+            advancedRulesText: result.advancedRulesText
+        )
+    }
+
+    static func convertFilterFromFileWithOutputChange(
+        rulesFileURL: URL,
+        rulesSHA256Hex: String,
+        groupIdentifier: String,
+        targetRulesFilename: String,
+        disabledSites: [String]
     ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
         let sitesToUse = disabledSites
         let effectiveRulesHash = effectiveRulesHashHex(baseRulesHashHex: rulesSHA256Hex)
@@ -1082,7 +1111,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                 targetRulesFilename: rulesFilename,
                 groupIdentifier: groupIdentifier
            ) {
-            let fastUpdate = try ContentBlockerService.fastUpdateDisabledSites(
+            let fastUpdate = try ContentBlockerService.fastUpdateDisabledSitesWithOutputChange(
                 groupIdentifier: groupIdentifier,
                 targetRulesFilename: rulesFilename,
                 disabledSites: disabledSites
@@ -1133,6 +1162,49 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             advancedRulesText: conversion.advancedRulesText,
             reusedCachedBase: false,
             outputChanged: conversion.outputChanged
+        )
+    }
+
+    /// Compatibility overload for callers that identify affinity filters by ID.
+    public static func compileTargetRules(
+        filters: [FilterList],
+        orderedSelectedFilters: [FilterList],
+        affinityFilterIDs: Set<UUID>,
+        targetInfo: ContentBlockerTargetInfo,
+        allTargets: [ContentBlockerTargetInfo],
+        disabledSites: [String],
+        extraRulesText: String?,
+        groupIdentifier: String
+    ) throws -> ContentBlockerTargetOutcome {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else {
+            throw CocoaError(.fileNoSuchFile)
+        }
+
+        var contentsByFilterID: [UUID: String] = [:]
+        for filter in orderedSelectedFilters where affinityFilterIDs.contains(filter.id) {
+            guard let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(
+                for: filter,
+                containerURL: containerURL
+            ) else {
+                contentsByFilterID[filter.id] = ""
+                continue
+            }
+            contentsByFilterID[filter.id] = try String(contentsOf: sourceURL, encoding: .utf8)
+        }
+
+        return try compileTargetRules(
+            filters: filters,
+            orderedSelectedFilters: orderedSelectedFilters,
+            affinitySnapshot: SafariContentBlockerAffinitySnapshot(
+                contentsByFilterID: contentsByFilterID
+            ),
+            targetInfo: targetInfo,
+            allTargets: allTargets,
+            disabledSites: disabledSites,
+            extraRulesText: extraRulesText,
+            groupIdentifier: groupIdentifier
         )
     }
 
@@ -1207,7 +1279,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         let digest = hasher.finalize()
         let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
 
-        return try ContentBlockerService.convertFilterFromFile(
+        return try ContentBlockerService.convertFilterFromFileWithOutputChange(
             rulesFileURL: tempURL,
             rulesSHA256Hex: rulesSHA256Hex,
             groupIdentifier: groupIdentifier,
@@ -1215,7 +1287,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             disabledSites: disabledSites
         )
     }
-    
+
     /// Fast update for disabled sites changes only - skips SafariConverterLib conversion
     /// Reads existing JSON files and re-injects ignore rules without full conversion
     ///
@@ -1224,7 +1296,27 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
     ///   - targetRulesFilename: Target filename for the rules file
     ///   - disabledSites: Sites where wBlock is disabled (ignore rules are injected for these).
     /// - Returns: A tuple containing the number of Safari content blocker rules and advanced rules text
-    public static func fastUpdateDisabledSites(groupIdentifier: String, targetRulesFilename: String, disabledSites: [String]) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
+    public static func fastUpdateDisabledSites(
+        groupIdentifier: String,
+        targetRulesFilename: String,
+        disabledSites: [String]
+    ) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
+        let result = try fastUpdateDisabledSitesWithOutputChange(
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: targetRulesFilename,
+            disabledSites: disabledSites
+        )
+        return (
+            safariRulesCount: result.safariRulesCount,
+            advancedRulesText: result.advancedRulesText
+        )
+    }
+
+    static func fastUpdateDisabledSitesWithOutputChange(
+        groupIdentifier: String,
+        targetRulesFilename: String,
+        disabledSites: [String]
+    ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
         let sitesToUse = disabledSites
 
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {

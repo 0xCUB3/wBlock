@@ -22,7 +22,7 @@ public struct SafariContentBlockerAffinitySnapshot: Sendable {
                 for: filter,
                 containerURL: containerURL
             ),
-                let content = try? String(contentsOf: sourceURL, encoding: .utf8),
+                let content = try? String(contentsOfFile: sourceURL.path, encoding: .utf8),
                 content.contains(SafariContentBlockerAffinityProcessor.directivePrefix)
             else {
                 continue
@@ -96,6 +96,36 @@ public enum SafariContentBlockerAffinityProcessor {
         hasher.update(data: newlineData)
         try destinationHandle.write(contentsOf: newlineData)
         return true
+    }
+
+    /// Compatibility overload for callers that load affinity sources on demand.
+    @discardableResult
+    public static func appendAffinityFilteredContribution(
+        for filter: FilterList,
+        includeBaseRules: Bool,
+        target: ContentBlockerTargetInfo,
+        allTargets: [ContentBlockerTargetInfo],
+        containerURL: URL,
+        destinationHandle: FileHandle,
+        hasher: inout SHA256,
+        newlineData: Data
+    ) throws -> Bool {
+        guard let sourceURL = sourceURL(for: filter, containerURL: containerURL) else {
+            return false
+        }
+        let content = try String(contentsOf: sourceURL, encoding: .utf8)
+        return try appendAffinityFilteredContribution(
+            for: filter,
+            includeBaseRules: includeBaseRules,
+            target: target,
+            allTargets: allTargets,
+            affinitySnapshot: SafariContentBlockerAffinitySnapshot(
+                contentsByFilterID: [filter.id: content]
+            ),
+            destinationHandle: destinationHandle,
+            hasher: &hasher,
+            newlineData: newlineData
+        )
     }
 
     public static func filteredContent(

@@ -48,8 +48,14 @@ let fastUpdate = section(
     from: "public static func fastUpdateDisabledSites(",
     to: "private struct DerivedBaseRules"
 )
+require(conversion.contains("public static func convertFilterFromFile("), "legacy conversion API must remain public")
+require(conversion.contains("throws -> (safariRulesCount: Int, advancedRulesText: String?)"), "legacy conversion API must keep its two-field result")
+require(conversion.contains("static func convertFilterFromFileWithOutputChange("), "changed conversion result must use a named internal API")
 require(conversion.contains("saveContentBlockerIfChanged"), "normal conversion must use save-if-changed")
 require(!conversion.contains("withContentBlockerOutputLock"), "conversion must not hold the output lock")
+require(fastUpdate.contains("public static func fastUpdateDisabledSites("), "legacy fast-update API must remain public")
+require(fastUpdate.contains("throws -> (safariRulesCount: Int, advancedRulesText: String?)"), "legacy fast-update API must keep its two-field result")
+require(fastUpdate.contains("static func fastUpdateDisabledSitesWithOutputChange("), "changed fast-update result must use a named internal API")
 require(fastUpdate.contains("saveContentBlockerIfChanged"), "disabled-site fast updates must use save-if-changed")
 require(fastUpdate.contains("let existingJSON = try String(contentsOf: targetURL, encoding: .utf8)"), "legacy fallback must not synthesize missing JSON")
 require(fastUpdate.contains("let derived = try deriveBaseRulesFromLegacyFinalJSON(existingJSON)"), "legacy fallback must propagate corruption")
@@ -60,6 +66,12 @@ let legacyDerivation = section(
 )
 require(legacyDerivation.contains(") throws -> DerivedBaseRules"), "legacy derivation must throw on corruption")
 require(legacyDerivation.contains("CocoaError(.fileReadCorruptFile)"), "legacy corruption must be reported")
+
+let affinityProcessor = try String(contentsOfFile: "wBlockCoreService/SafariContentBlockerAffinityProcessor.swift", encoding: .utf8)
+require(source.contains("affinityFilterIDs: Set<UUID>"), "compileTargetRules must retain the affinity ID overload")
+require(source.contains("affinitySnapshot: SafariContentBlockerAffinitySnapshot"), "compileTargetRules must expose the snapshot API")
+require(affinityProcessor.contains("containerURL: URL"), "affinity appending must retain the container URL overload")
+require(affinityProcessor.contains("affinitySnapshot: SafariContentBlockerAffinitySnapshot"), "affinity appending must expose the snapshot API")
 
 let applyPipeline = try String(contentsOfFile: "wBlock/AppFilterManager+ApplyPipeline.swift", encoding: .utf8)
 let disabledSites = try String(contentsOfFile: "wBlock/AppFilterManager+DisabledSites.swift", encoding: .utf8)
