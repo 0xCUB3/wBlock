@@ -116,11 +116,6 @@ struct OnboardingView: View {
             LocalizedStrings.text("Return of the YouTube Dislike.", comment: "Default userscript description"),
         "bypass paywalls clean":
             LocalizedStrings.text("Bypass paywalls of news sites.", comment: "Default userscript description"),
-        "youtube classic":
-            LocalizedStrings.text(
-                "Reverts YouTube to its classic design and behavior.",
-                comment: "Default userscript description"
-            ),
         "adguard extra":
             LocalizedStrings.text(
                 "Handles advanced anti-adblock cases that filter rules miss.",

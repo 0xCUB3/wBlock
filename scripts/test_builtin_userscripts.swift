@@ -29,6 +29,11 @@ let expectedForeignGroups: [(domain: String, languages: String)] = [
     ("slobodnadalmacija.hr", "[\"hr\"]"),
 ]
 
+guard !source.contains("adamlui/youtube-classic") else {
+    fputs("FAIL: retired YouTube Classic userscript should not be offered as a built-in\n", stderr)
+    exit(1)
+}
+
 guard source.contains("name: \"tinyShield\"") else {
     fputs("FAIL: tinyShield built-in userscript definition is missing\n", stderr)
     exit(1)

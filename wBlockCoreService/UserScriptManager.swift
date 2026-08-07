@@ -163,11 +163,6 @@ enum BuiltInUserScripts {
             isEnabledByDefault: false
         ),
         BuiltInUserScriptDefinition(
-            name: "YouTube Classic",
-            url: "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/greasemonkey/youtube-classic.user.js",
-            isEnabledByDefault: false
-        ),
-        BuiltInUserScriptDefinition(
             name: "AdGuard Extra",
             url: "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js",
             isEnabledByDefault: false
