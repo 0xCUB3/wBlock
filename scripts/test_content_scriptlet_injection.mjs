@@ -149,14 +149,10 @@ try {
   }
 }
 
-// --- Bundle source: shipped dispatcher uses the 3000ms timeout ---
-// Guards against the timeout value silently regressing (it caps how long
-// YouTube scriptlets wait before DOMContentLoaded is force-flushed).
-const dispatcherUsesThreeSeconds =
-  /setupDelayedEventDispatcher\(3000\)/.test(source) || /\b\w+\(3e3\);let\b/.test(source);
 check(
-  "shipped bundle uses a 3000ms dispatcher timeout",
-  dispatcherUsesThreeSeconds,
+  "content runtime does not intercept or synthesize lifecycle events",
+  !contentSource.includes("setupDelayedEventDispatcher")
+    && !source.includes("Event has been intercepted"),
 );
 
 // --- InitContentScript state handoff ---
@@ -351,10 +347,9 @@ try {
   console.error(err);
 }
 
-// --- Lifecycle interception timing ---
-// Frame-level document-start scriptlets depend on lifecycle interception, while
-// events that already fired must not get stale listeners.
-const runLifecycleScenario = async ({ href, readyState, topLevel = true, title = "" }) => {
+// --- Lifecycle event fidelity ---
+// Configuration latency must not install listeners that replace native events.
+const runLifecycleScenario = async ({ href, readyState, topLevel = true, title = "", pendingInit = false }) => {
   const documentListeners = [];
   const windowListeners = [];
   const sentMessages = [];
@@ -383,6 +378,7 @@ const runLifecycleScenario = async ({ href, readyState, topLevel = true, title =
   };
   const windowScenario = {
     location: { href, hostname: url.hostname, pathname: url.pathname },
+    frameElement: topLevel ? null : {},
     addEventListener: name => windowListeners.push(name),
     removeEventListener() {},
     dispatchEvent: () => true
@@ -413,6 +409,9 @@ const runLifecycleScenario = async ({ href, readyState, topLevel = true, title =
       runtime: {
         sendMessage(message) {
           sentMessages.push(message);
+          if (pendingInit && message && message.type === "InitContentScript") {
+            return new Promise(() => {});
+          }
           return Promise.resolve({});
         },
         onMessage: { addListener() {} }
@@ -431,17 +430,23 @@ const runLifecycleScenario = async ({ href, readyState, topLevel = true, title =
 };
 
 try {
-  const loading = await runLifecycleScenario({ href: "https://example.com/", readyState: "loading" });
-  check("top-level HTTP(S) document intercepts both lifecycle events", loading.documentListeners.includes("DOMContentLoaded") && loading.windowListeners.includes("load"));
+  const loading = await runLifecycleScenario({ href: "https://example.com/", readyState: "loading", pendingInit: true });
+  check("top-level HTTP(S) documents preserve native lifecycle events", loading.documentListeners.length === 0 && loading.windowListeners.length === 0);
 
-  const subframe = await runLifecycleScenario({ href: "https://example.com/frame", readyState: "loading", topLevel: false });
-  check("loading subframes intercept both lifecycle events", subframe.documentListeners.includes("DOMContentLoaded") && subframe.windowListeners.includes("load"));
+  const subframe = await runLifecycleScenario({ href: "https://example.com/frame", readyState: "loading", topLevel: false, pendingInit: true });
+  check("HTTP(S) subframes preserve native lifecycle events", subframe.documentListeners.length === 0 && subframe.windowListeners.length === 0);
 
-  const blankFrame = await runLifecycleScenario({ href: "about:blank", readyState: "loading", topLevel: false });
-  check("loading blank frames intercept both lifecycle events", blankFrame.documentListeners.includes("DOMContentLoaded") && blankFrame.windowListeners.includes("load"));
+  const blankTop = await runLifecycleScenario({ href: "about:blank", readyState: "loading" });
+  check("top-level blank documents preserve native lifecycle events", blankTop.documentListeners.length === 0 && blankTop.windowListeners.length === 0);
+
+  const blankFrame = await runLifecycleScenario({ href: "about:blank", readyState: "loading", topLevel: false, pendingInit: true });
+  check("blank frames preserve native lifecycle events", blankFrame.documentListeners.length === 0 && blankFrame.windowListeners.length === 0);
+
+  const dataFrame = await runLifecycleScenario({ href: "data:text/html,frame", readyState: "loading", topLevel: false });
+  check("data frames preserve native lifecycle events", dataFrame.documentListeners.length === 0 && dataFrame.windowListeners.length === 0);
 
   const interactive = await runLifecycleScenario({ href: "https://example.com/interactive", readyState: "interactive" });
-  check("interactive documents do not add a stale DOMContentLoaded listener", !interactive.documentListeners.includes("DOMContentLoaded") && interactive.windowListeners.includes("load"));
+  check("interactive HTTP(S) documents do not add lifecycle listeners", interactive.documentListeners.length === 0 && interactive.windowListeners.length === 0);
 
   const complete = await runLifecycleScenario({ href: "https://example.com/complete", readyState: "complete" });
   check("complete documents do not add lifecycle listeners", complete.documentListeners.length === 0 && complete.windowListeners.length === 0);

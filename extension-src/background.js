@@ -26052,11 +26052,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         cleanUrl
       };
     }
-    // Per-site disable check used by the content script to bail out before
-    // setting up the delayed-event dispatcher / removeparam rewrite. Without
-    // this, wBlock Scripts' content script still runs on whitelisted sites and
-    // (briefly) holds DOMContentLoaded/load, which trips anti-adblock walls —
-    // e.g. Ticketmaster's seat-selection screen (issue #445).
+    // Per-site disable check used by the content script to skip advanced
+    // rules and removeparam rewrites on whitelisted sites (issue #445).
     if (message && message.action === "wblock:getSiteDisabledState") {
       const host = normalizeSiteDisabledHost(message.host);
       if (!host) {

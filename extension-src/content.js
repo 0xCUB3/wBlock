@@ -6059,123 +6059,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   }
 
   /**
-   * @file Handles delaying and dispatching of DOMContentLoaded and load events.
-   */
-  /**
-   * The interceptors delay the events until either a response is received or the
-   * timeout expires. If the events have already fired, no interceptors are added.
-   *
-   * In Safari extensions running scripts and scriptlets has a slight delay and
-   * the page scripts may already do their work. By delaying DOMContentLoaded and
-   * load we try to delay the execution of page scripts so that the extension's
-   * scriptlets work as expected.
-   *
-   * @param timeoutMs - Timeout in milliseconds after which the events are forced
-   *                  (if not already handled). Default is 3000ms.
-   * @returns A function which, when invoked, cancels the timeout and dispatches
-   *         (or removes) the interceptors.
-   */
-  function setupDelayedEventDispatcher() {
-    let timeoutMs = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 3000;
-    const noOpDispatcher = {
-      cancelDispatch: () => {},
-      disarm: () => {}
-    };
-    const events = [{
-      name: 'DOMContentLoaded',
-      options: {
-        bubbles: true,
-        cancelable: false
-      },
-      target: document,
-      shouldListen: document.readyState === 'loading'
-    }, {
-      name: 'load',
-      options: {
-        bubbles: false,
-        cancelable: false
-      },
-      target: window,
-      shouldListen: document.readyState !== 'complete'
-    }].filter(event => event.shouldListen);
-    if (events.length === 0) {
-      return noOpDispatcher;
-    }
-    // The dispatcher is armed at module init so it can intercept DOMContentLoaded
-    // / load events before the per-site disable check resolves. If the page is
-    // whitelisted, `disarm()` is called as soon as we know, which removes the
-    // listeners and stops further interception. See issue #445.
-    let armed = true;
-    const interceptors = [];
-    events.forEach(ev => {
-      const interceptor = {
-        name: ev.name,
-        options: ev.options,
-        intercepted: false,
-        target: ev.target,
-        listener: event => {
-          // Skip interception entirely once disarmed (e.g. whitelisted site).
-          if (!armed) {
-            return;
-          }
-          // Prevent immediate propagation.
-          event.stopImmediatePropagation();
-          interceptor.intercepted = true;
-          log$1.debug('Event has been intercepted:', ev.name);
-        }
-      };
-      interceptors.push(interceptor);
-      interceptor.target.addEventListener(ev.name, interceptor.listener, {
-        capture: true
-      });
-    });
-    let dispatched = false;
-    const dispatchEvents = trigger => {
-      if (dispatched) {
-        // The events were already dispatched, do nothing.
-        return;
-      }
-      dispatched = true;
-      interceptors.forEach(interceptor => {
-        // Remove the interceptor listener.
-        interceptor.target.removeEventListener(interceptor.name, interceptor.listener, {
-          capture: true
-        });
-        if (interceptor.intercepted) {
-          // If intercepted, dispatch the event manually so downstream listeners eventually receive it.
-          const newEvent = new Event(interceptor.name, interceptor.options);
-          interceptor.target.dispatchEvent(newEvent);
-          const targetName = interceptor.target === document ? 'document' : 'window';
-          log$1.debug(`${interceptor.name} event re-dispatched due to ${trigger} on ${targetName}.`);
-        } else {
-          log$1.debug(`Interceptor for ${interceptor.name} removed due to ${trigger}.`);
-        }
-      });
-    };
-    // Set a timer to automatically dispatch the events after the timeout.
-    const timer = setTimeout(() => {
-      dispatchEvents('timeout');
-    }, timeoutMs);
-    // Releases held events (only used after the configuration response arrives
-    // for an enabled site). Mirrors the previous single-function return value.
-    const cancelDispatch = () => {
-      clearTimeout(timer);
-      dispatchEvents('response received');
-    };
-    // Disarms the dispatcher for whitelisted sites: stops intercepting future
-    // events, removes the listeners, clears the timeout, and re-dispatches any
-    // event that was already held so the page's natural handlers still run.
-    const disarm = () => {
-      armed = false;
-      cancelDispatch();
-    };
-    return {
-      cancelDispatch,
-      disarm
-    };
-  }
-
-  /**
    * @file Defines message interface.
    */
   /**
@@ -6193,24 +6076,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * - Notifying the background script that the frame is available.
    * - Exposing content script to other scripts in the ISOLATED world, so that
    *   they were used by scripts injected by `browser.scripting.executeScript`.
-   * - Delaying page load events to give time to injected scripts to initialize.
    */
   // Initialize the logger to be used by the `@adguard/safari-extension`.
   // Change logging level to Debug if you need to see more details.
   const wBlockLogger = new ConsoleLogger('[wBlock Scripts]', LoggingLevel.Error);
   setLogger(wBlockLogger);
   if (!browser || !browser.runtime || !browser.runtime.sendMessage) return;
-  // Initialize the delayed event dispatcher. This may intercept DOMContentLoaded
-  // and load events. The delay of 3000ms is used as a buffer to capture critical
-  // initial events while waiting for the rules response.
-  const dispatcherRef = setupDelayedEventDispatcher(3000);
   // Cloudflare's "Verify you are human" managed-challenge interstitial and its
-  // Turnstile widget frame are sensitive to synthetic DOMContentLoaded/load
-  // events and to same-page URL rewrites. The Scripts extension runs at
-  // document_start in every frame, including the Turnstile iframe served from
-  // challenges.cloudflare.com. When the delayed dispatcher holds or re-emits
-  // those events there (or the removeparam fallback rewrites the URL),
-  // Cloudflare treats the verification as tampered and reloads the challenge
+  // Turnstile widget frame are sensitive to same-page URL rewrites. The Scripts
+  // extension runs at document_start in every frame, including the Turnstile
+  // iframe served from challenges.cloudflare.com. Rewriting its URL makes
+  // Cloudflare treat the verification as tampered and reload the challenge
   // page in a loop (issue #476). Detect these contexts early and bail out so
   // the extension is effectively absent on challenge pages.
   let cloudflareChallengeContext = false;
@@ -6219,9 +6095,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const markCloudflareChallenge = () => {
     if (cloudflareChallengeContext) return;
     cloudflareChallengeContext = true;
-    if (dispatcherRef) {
-      dispatcherRef.disarm();
-    }
     console.info("[wBlock] Cloudflare challenge context detected — skipping content script.");
   };
   const isCloudflareChallengeFrameNow = () => {
@@ -6236,8 +6109,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   };
   // The main interstitial is served from the visited host, so its URL does not
   // identify it. Its orchestration <script src="/cdn-cgi/challenge-platform/...">
-  // and challenge markers appear during parsing, before DOMContentLoaded —
-  // watch for them so the dispatcher is disarmed before it can interfere.
+  // and challenge markers appear during parsing, so watch for them before
+  // applying configuration or rewriting the URL.
   const startCloudflareChallengeWatch = () => {
     if (cloudflareChallengeContext) return;
     if (cloudflareChallengeTitle(document.title)) {
@@ -6348,12 +6221,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     window.adguard = {
       contentScript: new ContentScript()
     };
-    // On Cloudflare challenge pages the dispatcher is already disarmed; do not
-    // apply cosmetics/scriptlets or hold page events there (issue #476).
-    if (cloudflareChallengeContext) {
-      dispatcherRef.disarm();
-      return;
-    }
+    if (cloudflareChallengeContext) return;
     const message = {
       type: MessageType.InitContentScript
     };
@@ -6364,17 +6232,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }));
     initializationStatePromise = configPromise.then(stateFromInitResponse);
     const response = await configPromise;
-    if (await initializationStatePromise) {
-      dispatcherRef.disarm();
-      return;
-    }
-    // A Cloudflare challenge can be detected while waiting for the native
-    // response (its markup arrives during parsing). Bail out before applying
-    // any configuration or re-emitting held events (issue #476).
-    if (cloudflareChallengeContext) {
-      dispatcherRef.disarm();
-      return;
-    }
+    if (await initializationStatePromise) return;
+    // Its markup can arrive while the native response is pending.
+    if (cloudflareChallengeContext) return;
     // If the background page returned payload with configuration, it means
     // that it cannot apply it on its own and commands the content script
     // to do that.
@@ -6382,9 +6242,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       const configuration = response.payload;
       window.adguard.contentScript.applyConfiguration(configuration);
     }
-    // After processing, cancel any pending delayed event dispatch and process
-    // any queued events immediately.
-    dispatcherRef.cancelDispatch();
   };
   // Execute the main function and catch any runtime errors.
   main().catch(error => {
