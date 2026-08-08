@@ -2136,11 +2136,12 @@
         try {
             while (track.cues && track.cues.length) { track.removeCue(track.cues[0]); }
         } catch (e) { /* ignore */ }
-        // An empty chapters track still has mode "hidden", which makes Safari
-        // reserve a blank "Chapters" row in its native media menu. Tracks added
-        // via addTextTrack cannot be removed from the TextTrackList, so disable
-        // the track instead; applyChapters flips it back to "hidden" once cues
-        // are populated for the next chaptered video.
+    }
+
+    function disableChapterTrack(track) {
+        clearChapterCues(track);
+        // An empty chapters track otherwise reserves a blank row in Safari's
+        // native media menu. Re-enable it only after a new cue list is ready.
         try { track.mode = 'disabled'; } catch (e) { /* ignore */ }
     }
 
@@ -2178,7 +2179,7 @@
             // This is a different video and its chapter data has not arrived (or
             // it has no chapters). Remove the previous video's cues while the
             // retry loop waits for current data.
-            clearChapterCues(track);
+            disableChapterTrack(track);
             video._wblockChapterData = null;
             video._wblockChapterVideoId = videoId;
             video._wblockChapterDataSource = null;

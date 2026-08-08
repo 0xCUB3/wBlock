@@ -757,6 +757,19 @@ async function qualityUISelectionCheck(page, scenario) {
     };
   });
   await page.evaluate(() => {
+    // A Safari chapter track must not be disabled during a cue refresh: native
+    // chapter menus can stop exposing a track after that transition.
+    const descriptor = Object.getOwnPropertyDescriptor(TextTrack.prototype, 'mode');
+    window.__chapterModeChanges = [];
+    Object.defineProperty(TextTrack.prototype, 'mode', {
+      configurable: true,
+      enumerable: descriptor.enumerable,
+      get: descriptor.get,
+      set(value) {
+        if (value === 'disabled') window.__chapterModeChanges.push(value);
+        return descriptor.set.call(this, value);
+      },
+    });
     // YouTube can replace ytInitialData after startup. The loadedmetadata pass
     // must retain the already-extracted chapter list instead of emptying it.
     window.ytInitialData = {};
@@ -766,7 +779,10 @@ async function qualityUISelectionCheck(page, scenario) {
     const video = document.querySelector('#movie_player video');
     const track = video ? Array.from(video.textTracks).find(t => t.kind === 'chapters') : null;
     const labels = track?.cues ? Array.from(track.cues).map(c => c.text) : [];
-    return { pass: labels.length === 3, detail: `labels=${labels.join(' | ')}` };
+    return {
+      pass: labels.length === 3 && track?.mode === 'hidden' && window.__chapterModeChanges.length === 0,
+      detail: `labels=${labels.join(' | ')} mode=${track?.mode} disabled=${window.__chapterModeChanges.length}`,
+    };
   });
   await page.waitForFunction(() => document.querySelectorAll('track[data-wblock-native-subtitle]').length === 2);
   await check(page, 'desktop', 'adds token-safe Safari caption controls with WebVTT fallback', () => {
@@ -1017,7 +1033,29 @@ async function qualityUISelectionCheck(page, scenario) {
     const video = document.querySelector('#movie_player video');
     const track = video ? Array.from(video.textTracks).find(t => t.kind === 'chapters') : null;
     const labels = track?.cues ? Array.from(track.cues).map(c => c.text) : [];
-    return { pass: labels.length === 0, detail: `labels=${labels.join(' | ')}` };
+    return { pass: labels.length === 0, detail: `labels=${labels.join(' | ')} mode=${track?.mode}` };
+  });
+  await page.evaluate(() => {
+    function render(time, title) {
+      return { macroMarkersListItemRenderer: {
+        timeDescription: { simpleText: time }, title: { simpleText: title }
+      }};
+    }
+    window.ytInitialData = {
+      engagementPanels: [render('0:00', 'New chapter'), render('0:45', 'Another chapter')]
+    };
+    window.ytInitialPlayerResponse = { videoDetails: { videoId: 'NEWCHAP01XX' } };
+    history.replaceState(null, '', location.pathname + '?v=NEWCHAP01XX');
+    document.dispatchEvent(new Event('yt-navigate-finish'));
+  });
+  await check(page, 'desktop', 'restores valid chapters after stale-track clearing', () => {
+    const video = document.querySelector('#movie_player video');
+    const track = video ? Array.from(video.textTracks).find(t => t.kind === 'chapters') : null;
+    const labels = track?.cues ? Array.from(track.cues).map(c => c.text) : [];
+    return {
+      pass: JSON.stringify(labels) === JSON.stringify(['0:00  New chapter', '0:45  Another chapter']) && track?.mode === 'hidden',
+      detail: `labels=${labels.join(' | ')} mode=${track?.mode}`,
+    };
   });
   record('desktop', 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
