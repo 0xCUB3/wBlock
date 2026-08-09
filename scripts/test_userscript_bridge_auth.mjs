@@ -131,7 +131,7 @@ function buildContentScriptSandbox(
   };
   const sessionValues = new Map();
   if (initialSessionValue !== null) {
-    sessionValues.set("__wblock_document_start_scripts_v2", initialSessionValue);
+    sessionValues.set("__wblock_warm_start_v1", initialSessionValue);
   }
   const sessionStorageWrites = [];
   sandbox.sessionStorage = {
@@ -163,12 +163,12 @@ function buildContentScriptSandbox(
         sandbox.__sentMessages.push(msg);
         if (nativeHandler) return nativeHandler(msg, sandbox);
         if (msg.action === "getUserScripts") return {
-          userScripts,
+          userScripts: JSON.parse(JSON.stringify(userScripts)),
           documentStartCacheAllowed,
           cacheRevision
         };
         if (msg.action === "getCachedDocumentStartUserScripts") return {
-          userScripts: cachedUserScripts,
+          userScripts: JSON.parse(JSON.stringify(cachedUserScripts)),
           cacheRevision,
           documentStartCacheAllowed
         };
@@ -237,7 +237,10 @@ check("wrapper embeds a non-empty portBridgeId", portBridgeId.length > 0);
 const initialRequests = contentSandbox.__sentMessages.filter((m) => m && m.action === "getUserScripts");
 check("initialization makes one authoritative getUserScripts request", initialRequests.length === 1);
 check("initialization makes zero cached requests", !contentSandbox.__sentMessages.some((m) => m && m.action === "getCachedDocumentStartUserScripts"));
-check("initialization writes no session storage cache", contentSandbox.__sessionStorageWrites.length === 0);
+check(
+  "cold initialization writes only the bounded warm-start cache",
+  contentSandbox.__sessionStorageWrites.every(([key]) => key === "__wblock_warm_start_v1")
+);
 
 // ---------------------------------------------------------------------------
 // Phase 2: the engine-level XHR bridge must gate on the issued token.
@@ -272,10 +275,150 @@ await tick();
 await tick();
 const freshIOSWrapper = appendedScripts[freshIOSWrapperIndex] || "";
 check(
-  "cache-disabled native response still runs fresh inline userscripts",
+  "cache-disabled native response still runs and seeds only quarantined state",
   freshIOSWrapper.includes("const xhrBridgeId = '")
-    && freshIOSSandbox.__sessionStorageWrites.length === 0
+    && freshIOSSandbox.__sessionStorageWrites.some(([key]) => key === "__wblock_warm_start_v1")
 );
+
+// A Vencord-sized page-world payload must be seeded even when iOS reports that
+// trusted document-start caching is unavailable. On the next navigation it may
+// execute with page authority, while extension privileges remain quarantined.
+const largeWarmScript = {
+  ...fakeScript,
+  id: "vencord-like",
+  name: "Vencord",
+  namespace: "https://github.com/Vendicated/Vencord",
+  content: USER_SCRIPT_CONTENT + "\n/*" + "x".repeat(700 * 1024) + "*/",
+  sourceURL: "https://raw.githubusercontent.com/Vencord/builds/main/Vencord.user.js",
+  matches: ["*://*.discord.com/*"],
+  grant: ["GM_xmlhttpRequest", "unsafeWindow"],
+};
+const seedSandbox = buildContentScriptSandbox(
+  null, [largeWarmScript], "https://discord.com/app", [], false,
+);
+vm.createContext(seedSandbox);
+vm.runInContext(source, seedSandbox, { filename: "userscript-injector-warm-seed.js" });
+await tick();
+await tick();
+const seededCache = seedSandbox.__sessionValues.get("__wblock_warm_start_v1") || "";
+const seededPayload = seededCache ? JSON.parse(seededCache) : null;
+check(
+  "iOS authoritative response seeds the quarantined Vencord warm start",
+  seededPayload?.scripts?.length === 1 && seededPayload.scripts[0].id === largeWarmScript.id,
+);
+check(
+  "warm-start cache is bounded by its complete serialized size",
+  new TextEncoder().encode(seededCache).length <= 2 * 1024 * 1024,
+);
+check(
+  "warm-start cache persists no storage snapshot or bridge credentials",
+  seededPayload?.scripts?.every(script =>
+    !("storageSnapshot" in script)
+      && !("storageBridgeId" in script)
+      && !("menuBridgeId" in script)
+      && !("xhrBridgeId" in script)
+      && !("portBridgeId" in script)
+  ),
+);
+
+let resolveWarmReply;
+const warmReply = new Promise((resolve) => { resolveWarmReply = resolve; });
+const warmWrapperIndex = appendedScripts.length;
+const warmSandbox = buildContentScriptSandbox(
+  seededCache, [], "https://discord.com/app", [], false,
+  (msg) => msg.action === "getUserScripts" ? warmReply : { ok: true },
+);
+vm.createContext(warmSandbox);
+vm.runInContext(source, warmSandbox, { filename: "userscript-injector-warm-start.js" });
+await tick();
+await tick();
+const warmWrapper = appendedScripts[warmWrapperIndex] || "";
+check("official Discord wildcard warm-starts on the root discord.com host", warmWrapper.length > 700 * 1024);
+check("large warm-start payload executes once before native resolves", appendedScripts.slice(warmWrapperIndex).length === 1);
+const warmToken = (warmWrapper.match(/const xhrBridgeId = '([^']*)';/) || [])[1] || "";
+const warmPortMatch = warmWrapper.match(/const portBridgeId = '([^']*)';/);
+check("quarantined warm start receives no runtime-port token", !!warmPortMatch && warmPortMatch[1] === "");
+warmSandbox.__listeners = windowMessageListeners;
+vm.runInContext(`globalThis.__fire = (data) => { for (const fn of globalThis.__listeners) fn({ source: window, data }); };`, warmSandbox);
+vm.runInContext(`__fire({ type: 'wblock-gm-xhr-request', id: 'warm', bridgeId: ${JSON.stringify(warmToken)}, url: 'https://queued.example/' });`, warmSandbox);
+await tick();
+check(
+  "provisional warm-start XHR waits for native verification",
+  !warmSandbox.__sentMessages.some(message => message.action === "gmXmlhttpRequest"),
+);
+resolveWarmReply({ userScripts: [largeWarmScript], documentStartCacheAllowed: false });
+await tick();
+await tick();
+await tick();
+check("exact authority preserves the single warm-start execution", appendedScripts.slice(warmWrapperIndex).length === 1);
+check(
+  "exact authority flushes the quarantined XHR once",
+  warmSandbox.__sentMessages.filter(message => message.action === "gmXmlhttpRequest" && message.url === "https://queued.example/").length === 1,
+);
+
+let resolveSubdomainReply;
+const subdomainReply = new Promise((resolve) => { resolveSubdomainReply = resolve; });
+const subdomainWrapperIndex = appendedScripts.length;
+const subdomainSandbox = buildContentScriptSandbox(
+  seededCache, [], "https://canary.discord.com/channels/1/2", [], false,
+  (msg) => msg.action === "getUserScripts" ? subdomainReply : { ok: true },
+);
+vm.createContext(subdomainSandbox);
+vm.runInContext(source, subdomainSandbox, { filename: "userscript-injector-warm-subdomain.js" });
+await tick();
+await tick();
+check(
+  "official Discord wildcard warm-starts on Discord subdomains",
+  (appendedScripts[subdomainWrapperIndex] || "").length > 700 * 1024,
+);
+resolveSubdomainReply({ userScripts: [], documentStartCacheAllowed: false });
+await tick();
+
+const tamperedScript = {
+  ...largeWarmScript,
+  resourceContents: { unexpected: "page-controlled descriptor field" },
+};
+let resolveTamperedReply;
+const tamperedReply = new Promise((resolve) => { resolveTamperedReply = resolve; });
+const tamperedWrapperIndex = appendedScripts.length;
+const tamperedSandbox = buildContentScriptSandbox(
+  JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [tamperedScript] }),
+  [], "https://discord.com/app", [], false,
+  (msg) => msg.action === "getUserScripts" ? tamperedReply : { ok: true },
+);
+vm.createContext(tamperedSandbox);
+vm.runInContext(source, tamperedSandbox, { filename: "userscript-injector-warm-tampered.js" });
+await tick();
+await tick();
+const tamperedWrapper = appendedScripts[tamperedWrapperIndex] || "";
+const tamperedToken = (tamperedWrapper.match(/const xhrBridgeId = '([^']*)';/) || [])[1] || "";
+tamperedSandbox.__listeners = windowMessageListeners;
+vm.runInContext(`globalThis.__fire = (data) => { for (const fn of globalThis.__listeners) fn({ source: window, data }); };`, tamperedSandbox);
+vm.runInContext(`__fire({ type: 'wblock-gm-xhr-request', id: 'tampered', bridgeId: ${JSON.stringify(tamperedToken)}, url: 'https://tampered.example/' });`, tamperedSandbox);
+resolveTamperedReply({ userScripts: [largeWarmScript], documentStartCacheAllowed: false });
+await tick();
+await tick();
+check(
+  "tampered warm-start descriptor never receives XHR authority",
+  !tamperedSandbox.__sentMessages.some(message => message.action === "gmXmlhttpRequest" && message.url === "https://tampered.example/"),
+);
+
+for (const [label, cache] of [
+  ["expired", { version: 1, savedAt: Date.now() - 31 * 60 * 1000, scripts: [largeWarmScript] }],
+  ["oversized", { version: 1, savedAt: Date.now(), scripts: [{ ...largeWarmScript, content: "x".repeat(2 * 1024 * 1024 + 1) }] }],
+  ["disabled host", { version: 1, savedAt: Date.now(), scripts: [{ ...largeWarmScript, disabledHosts: ["discord.com"] }] }],
+  ["resource privileged", { version: 1, savedAt: Date.now(), scripts: [{ ...largeWarmScript, resourceNames: ["payload"] }] }],
+  ["storage snapshot", { version: 1, savedAt: Date.now(), scripts: [{ ...largeWarmScript, storageSnapshot: { secret: "page-controlled" } }] }],
+  ["forged bridge", { version: 1, savedAt: Date.now(), scripts: [{ ...largeWarmScript, portBridgeId: "page-controlled" }] }],
+]) {
+  const wrapperIndex = appendedScripts.length;
+  const sandbox = buildContentScriptSandbox(JSON.stringify(cache), [], "https://discord.com/app", [], false);
+  vm.createContext(sandbox);
+  vm.runInContext(source, sandbox, { filename: `userscript-injector-warm-${label.replaceAll(" ", "-")}.js` });
+  await tick();
+  await tick();
+  check(`${label} warm-start cache is rejected`, appendedScripts.length === wrapperIndex);
+}
 
 // (a) An arbitrary page script posting without a valid token is ignored.
 const beforeBad = gmXhrCalls().length;

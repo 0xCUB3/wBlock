@@ -7,6 +7,11 @@
 
 // Debug logging flag - set to false to disable verbose console output
 var WBLOCK_DEBUG_LOGGING = false;
+var WBLOCK_WARM_START_CACHE_KEY = '__wblock_warm_start_v1';
+var WBLOCK_WARM_START_LEASE_MS = 30 * 60 * 1000;
+var WBLOCK_WARM_START_MAX_SCRIPTS = 4;
+var WBLOCK_WARM_START_MAX_BYTES = 2 * 1024 * 1024;
+var WBLOCK_WARM_START_MAX_QUEUED_XHR = 32;
 
 var wBlockLog = (...args) => {
     if (WBLOCK_DEBUG_LOGGING) {
@@ -82,7 +87,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.extensionContextUnavailableLogged = false;
             this.pendingNativeRequests = new Map(); // requestId -> { resolve, reject, timeoutId }
             this.storageBridgeScriptIDs = new Map(); // bridgeId -> scriptId
-            this.xhrBridgeTokens = new Set(); // valid GM_xmlhttpRequest bridge tokens
+            this.xhrBridgeTokens = new Set(); // verified GM_xmlhttpRequest bridge tokens
+            this.provisionalXhrTokens = new Map(); // warm-start token -> queued requests
+            this.provisionalScripts = new Map(); // execution key -> provisional state
             this.pageMenuBridgeElements = new Map(); // bridgeId -> script element
             this.contentMenuCommandCallbacks = new Map(); // bridgeId -> Map(commandId, callback)
             this.registeredMenuCommands = new Map(); // bridgeId -> Map(commandId, descriptor)
@@ -117,8 +124,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
             // and we forward them through the background/native layer (CORS-free).
             this.setupXhrBridge();
 
-            // Request userscripts from native app. The authoritative response is
-            // the only source of scripts for this frame.
+            // Warm start is page-only and quarantined. Fresh native verification is
+            // still required before any extension privilege is made available.
+            this.loadWarmStartScripts();
             this.requestUserScripts();
         }
 
@@ -129,6 +137,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
             const generation = ++this.documentStartRequestGeneration;
             this.pendingScripts = [];
             this.xhrBridgeTokens.clear();
+            this.provisionalXhrTokens.clear();
+            this.provisionalScripts.clear();
             this.storageBridgeScriptIDs.clear();
             this.scriptPayloadPromises.clear();
             this.injectingScripts.clear();
@@ -208,6 +218,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 const data = event.data;
                 if (!data || data.type !== 'wblock-gm-xhr-request') return;
                 if (typeof data.bridgeId !== 'string') return;
+                if (this.provisionalXhrTokens.has(data.bridgeId)) {
+                    const queue = this.provisionalXhrTokens.get(data.bridgeId);
+                    if (queue.length < WBLOCK_WARM_START_MAX_QUEUED_XHR) queue.push(data);
+                    return;
+                }
                 if (!this.xhrBridgeTokens.has(data.bridgeId)) {
                     wBlockWarn('[wBlock] Ignoring GM_xmlhttpRequest without a valid bridge token');
                     return;
@@ -728,6 +743,141 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 this.injectSingleScript(script);
             }
         }
+        scriptMatchesCurrentURL(script) {
+            try {
+                const pageURL = new URL(window.location.href);
+                const host = pageURL.hostname.toLowerCase();
+                const disabled = Array.isArray(script.disabledHosts) ? script.disabledHosts : [];
+                if (disabled.some(value => {
+                    const blocked = String(value).trim().toLowerCase();
+                    return blocked && (host === blocked || host.endsWith('.' + blocked));
+                })) return false;
+
+                return (Array.isArray(script.matches) ? script.matches : []).some(pattern => {
+                    const match = String(pattern).match(/^([^:]+):\/\/([^/]+)(\/.*)$/);
+                    if (!match) return false;
+                    const scheme = match[1].toLowerCase();
+                    const schemeMatches = scheme === '*'
+                        ? pageURL.protocol === 'http:' || pageURL.protocol === 'https:'
+                        : pageURL.protocol === scheme + ':';
+                    if (!schemeMatches) return false;
+
+                    const hostPattern = match[2].toLowerCase();
+                    const hostMatches = hostPattern === '*'
+                        || hostPattern === host
+                        || (hostPattern.startsWith('*.')
+                            && (host === hostPattern.slice(2) || host.endsWith('.' + hostPattern.slice(2))));
+                    if (!hostMatches) return false;
+
+                    const pathPattern = match[3].replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+                    return new RegExp('^' + pathPattern + '$').test(pageURL.pathname + pageURL.search + pageURL.hash);
+                });
+            } catch (_) { return false; }
+        }
+
+        warmStartFingerprint(script) {
+            const canonicalize = value => {
+                if (Array.isArray(value)) return value.map(canonicalize);
+                if (value && typeof value === 'object') {
+                    return Object.keys(value).sort().reduce((result, key) => {
+                        result[key] = canonicalize(value[key]);
+                        return result;
+                    }, {});
+                }
+                return value;
+            };
+            const {
+                storageBridgeId, menuBridgeId, xhrBridgeId, portBridgeId,
+                __wblockWarmStart, ...descriptor
+            } = script || {};
+            return JSON.stringify(canonicalize(descriptor));
+        }
+
+        isWarmStartEligible(script) {
+            if (!script || script.isEnabled !== true || script.isLocal !== false || script.kind === 'style') return false;
+            if (script.injectInto !== 'page' || script.runAt !== 'document-start'
+                || script.noframes === true && window !== window.top) return false;
+            if (typeof script.content !== 'string' || !script.content || !/^https:\/\//i.test(script.sourceURL || '')) return false;
+            if (!this.scriptMatchesCurrentURL(script)) return false;
+            if ((script.includes || []).length || (script.excludes || []).length || (script.excludeMatches || []).length) return false;
+            if ((script.resourceNames || []).length || (script.resourceURLs || []).length
+                || script.resources && Object.keys(script.resources).length
+                || Object.prototype.hasOwnProperty.call(script, 'storageSnapshot')) return false;
+            if (script.storageBridgeId || script.menuBridgeId || script.xhrBridgeId || script.portBridgeId) return false;
+            const safeGrants = new Set(['none', 'unsafewindow', 'gm_info', 'gm.info', 'gm_xmlhttprequest', 'gm.xmlhttprequest']);
+            const grants = Array.isArray(script.grant) ? script.grant : [];
+            return grants.every(grant => safeGrants.has(String(grant).toLowerCase()));
+        }
+
+        loadWarmStartScripts() {
+            try {
+                const raw = sessionStorage.getItem(WBLOCK_WARM_START_CACHE_KEY);
+                if (!raw) return;
+                if (new TextEncoder().encode(raw).length > WBLOCK_WARM_START_MAX_BYTES) {
+                    sessionStorage.removeItem(WBLOCK_WARM_START_CACHE_KEY);
+                    return;
+                }
+                const cache = JSON.parse(raw);
+                const age = cache && Number.isFinite(cache.savedAt) ? Date.now() - cache.savedAt : -1;
+                if (!cache || cache.version !== 1 || age < 0 || age > WBLOCK_WARM_START_LEASE_MS || !Array.isArray(cache.scripts)) {
+                    sessionStorage.removeItem(WBLOCK_WARM_START_CACHE_KEY);
+                    return;
+                }
+                const scripts = cache.scripts
+                    .filter(script => this.isWarmStartEligible(script))
+                    .slice(0, WBLOCK_WARM_START_MAX_SCRIPTS)
+                    .map(script => {
+                        const {
+                            storageBridgeId, menuBridgeId, xhrBridgeId, portBridgeId,
+                            storageSnapshot, __wblockWarmStart, ...cached
+                        } = script;
+                        return { ...cached, __wblockWarmStart: true };
+                    });
+                if (scripts.length) this.injectUserScripts(scripts);
+            } catch (error) {
+                wBlockWarn('[wBlock] Warm-start cache rejected:', error);
+                try { sessionStorage.removeItem(WBLOCK_WARM_START_CACHE_KEY); } catch (_) {}
+            }
+        }
+
+        persistWarmStartScripts(scripts) {
+            try {
+                const savedAt = Date.now();
+                const bounded = [];
+                for (const script of scripts) {
+                    if (bounded.length >= WBLOCK_WARM_START_MAX_SCRIPTS) break;
+                    if (!this.isWarmStartEligible(script)) continue;
+                    const {
+                        storageBridgeId, menuBridgeId, xhrBridgeId, portBridgeId,
+                        storageSnapshot, __wblockWarmStart, ...cached
+                    } = script;
+                    const candidate = JSON.stringify({ version: 1, savedAt, scripts: [...bounded, cached] });
+                    if (new TextEncoder().encode(candidate).length <= WBLOCK_WARM_START_MAX_BYTES) {
+                        bounded.push(cached);
+                    }
+                }
+                sessionStorage.setItem(
+                    WBLOCK_WARM_START_CACHE_KEY,
+                    JSON.stringify({ version: 1, savedAt, scripts: bounded })
+                );
+            } catch (_) { /* page session storage is optional */ }
+        }
+
+        reconcileWarmStart(scripts) {
+            const authority = new Map((Array.isArray(scripts) ? scripts : []).map(script => [this.scriptExecutionKey(script), script]));
+            for (const [key, provisional] of this.provisionalScripts) {
+                const fresh = authority.get(key);
+                if (fresh && this.isWarmStartEligible(fresh) && this.warmStartFingerprint(fresh) === provisional.fingerprint) {
+                    this.provisionalScripts.delete(key);
+                    this.provisionalXhrTokens.delete(provisional.token);
+                    this.xhrBridgeTokens.add(provisional.token);
+                    for (const request of provisional.queue) this.handleXhrBridgeRequest(request);
+                } else {
+                    this.provisionalScripts.delete(key);
+                    this.provisionalXhrTokens.delete(provisional.token);
+                }
+            }
+        }
 
         requestUserScripts(attempt = 0, generation = this.documentStartRequestGeneration) {
             if (generation !== this.documentStartRequestGeneration) return;
@@ -749,6 +899,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     }
 
                     const scripts = response && response.userScripts ? response.userScripts : [];
+                    this.reconcileWarmStart(scripts);
+                    // iOS cannot invalidate a trusted speculative cache, but this
+                    // snapshot has page authority only. Fresh native authority is
+                    // still required before any extension privilege is released.
+                    this.persistWarmStartScripts(scripts);
                     this.enableReturnYouTubeDislikePrefetch(scripts);
                     if (scripts.length === 0) wBlockLog('[wBlock] No userscripts found in getUserScripts response.');
                     this.injectUserScripts(scripts, generation);
@@ -1002,28 +1157,48 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
             const executionKey = this.scriptExecutionKey(script);
             this.injectingScripts.set(executionKey, generation);
+            const warmStart = script.__wblockWarmStart === true;
+            if (warmStart) {
+                // Session storage belongs to the page. Strip every bridge field
+                // before the first await so a fast native reply can only authorize
+                // the fresh token created by this isolated-world engine.
+                delete script.storageBridgeId;
+                delete script.menuBridgeId;
+                delete script.xhrBridgeId;
+                delete script.portBridgeId;
+                delete script.storageSnapshot;
+                script.xhrBridgeId = this.generateSecret('warm-xhr');
+                const queue = [];
+                this.provisionalXhrTokens.set(script.xhrBridgeId, queue);
+                this.provisionalScripts.set(executionKey, {
+                    token: script.xhrBridgeId,
+                    queue,
+                    fingerprint: this.warmStartFingerprint(script)
+                });
+            }
             try {
                 const fullScript = await this.ensureScriptPayload(script);
                 if (generation !== this.documentStartRequestGeneration) return;
-                if (fullScript.id && !fullScript.storageBridgeId) {
+                if (warmStart) fullScript.storageSnapshot = {};
+                if (!warmStart && fullScript.id && !fullScript.storageBridgeId) {
                     fullScript.storageBridgeId = this.generateSecret('gmstorage');
                     this.storageBridgeScriptIDs.set(fullScript.storageBridgeId, fullScript.id);
                 }
-                if (fullScript.id && !fullScript.menuBridgeId) {
+                if (!warmStart && fullScript.id && !fullScript.menuBridgeId) {
                     fullScript.menuBridgeId = this.generateSecret('gmmenu');
                 }
                 // Every script gets an unguessable token that authorizes its
                 // GM_xmlhttpRequest calls. The page-context bridge below only
                 // honors requests carrying a known token, so arbitrary page
                 // scripts cannot borrow the extension's CORS-free network access.
-                if (!fullScript.xhrBridgeId) {
+                if (!warmStart && !fullScript.xhrBridgeId) {
                     fullScript.xhrBridgeId = this.generateSecret('gmxhr');
                     this.xhrBridgeTokens.add(fullScript.xhrBridgeId);
                 }
                 // Token used to namespace this script's GM runtime ports so other
                 // page scripts cannot guess the channel name and spoof port
                 // messages (see channelNameForPort in the wrapper).
-                if (!fullScript.portBridgeId) {
+                if (!warmStart && !fullScript.portBridgeId) {
                     fullScript.portBridgeId = this.generateSecret('gmport');
                 }
 
@@ -1291,6 +1466,14 @@ if (window.wBlockUserscriptInjectorHasRun) {
     };
 
     const createRuntimePort = (connectInfo) => {
+        // Quarantined warm starts have no runtime/native port token at all.
+        if (!portBridgeId) {
+            return {
+                name: typeof connectInfo === 'string' ? connectInfo : (connectInfo && connectInfo.name) || '',
+                onMessage: makeRuntimeEvent(), onDisconnect: makeRuntimeEvent(),
+                postMessage: function() {}, disconnect: function() {}
+            };
+        }
         const userPortName = typeof connectInfo === 'string'
             ? connectInfo
             : (connectInfo && typeof connectInfo.name === 'string' ? connectInfo.name : '');
