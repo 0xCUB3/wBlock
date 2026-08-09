@@ -25454,9 +25454,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * newer engine.
    */
   const PERSISTED_CONFIG_CACHE_KEY = "wblockConfigCacheV1";
-  const PERSISTED_DOCUMENT_START_SCRIPT_CACHE_KEY = "wblockDocumentStartScriptCacheV1";
   const PERSISTED_CONFIG_CACHE_LIMIT = 40;
-  const PERSISTED_DOCUMENT_START_SCRIPT_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
   const PERSIST_CONFIG_CACHE_DELAY_MS = 1000;
   let persistConfigCacheTimer = null;
   const persistConfigCache = () => {
@@ -25530,48 +25528,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   let documentStartCacheCapabilityKnown = false;
   let documentStartCatalogGeneration = 0;
   let documentStartCatalogRefresh = null;
-  let documentStartCachePersistence = Promise.resolve();
-  const documentStartScriptCacheHydration = (async () => {
-    const generation = documentStartCatalogGeneration;
-    try {
-      const stored = await browser.storage.local.get(PERSISTED_DOCUMENT_START_SCRIPT_CACHE_KEY);
-      const persisted = stored && stored[PERSISTED_DOCUMENT_START_SCRIPT_CACHE_KEY];
-      if (!persisted
-        || persisted.cacheRevision !== WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION
-        || persisted.cacheAllowed !== true
-        || typeof persisted.savedAt !== "number"
-        || Date.now() - persisted.savedAt > PERSISTED_DOCUMENT_START_SCRIPT_CACHE_MAX_AGE_MS) {
-        await browser.storage.local.remove(PERSISTED_DOCUMENT_START_SCRIPT_CACHE_KEY);
-        return;
-      }
-      // Do not activate persisted data until the current native host confirms
-      // the synchronous invalidation capability. This prevents a stale iOS
-      // payload written by an older revision from executing speculatively.
-      if (generation !== documentStartCatalogGeneration) return;
-      documentStartScriptCatalog = Array.isArray(persisted.catalog) ? persisted.catalog : [];
-      documentStartScriptCatalogDisabledHosts = Array.isArray(persisted.disabledHosts)
-        ? persisted.disabledHosts
-        : [];
-    } catch (error) {
-      console.warn("[wBlock] Failed to hydrate document-start userscript cache:", error);
-    }
-  })();
-  const persistDocumentStartScriptCache = (generation = documentStartCatalogGeneration) => {
-    if (generation !== documentStartCatalogGeneration) return Promise.resolve();
-    const write = documentStartCachePersistence.then(() => browser.storage.local.set({
-      [PERSISTED_DOCUMENT_START_SCRIPT_CACHE_KEY]: {
-        savedAt: Date.now(),
-        cacheRevision: WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION,
-        cacheAllowed: documentStartCacheCapabilityKnown && documentStartScriptCacheEnabled,
-        catalog: documentStartScriptCatalog,
-        disabledHosts: documentStartScriptCatalogDisabledHosts
-      }
-    })).catch(error => {
-      console.warn("[wBlock] Failed to persist document-start userscript cache:", error);
-    });
-    documentStartCachePersistence = write.catch(() => {});
-    return write;
-  };
   const clearDocumentStartSessionCaches = async () => {
     if (!browser.tabs || typeof browser.tabs.query !== "function") return;
     try {
@@ -25594,12 +25550,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     documentStartScriptCatalog = [];
     documentStartScriptCatalogDisabledHosts = [];
     await clearDocumentStartSessionCaches();
-    await documentStartCachePersistence;
-    try {
-      await browser.storage.local.remove(PERSISTED_DOCUMENT_START_SCRIPT_CACHE_KEY);
-    } catch (error) {
-      console.warn("[wBlock] Failed to clear document-start userscript cache:", error);
-    }
   };
   const CACHE_SAFE_DOCUMENT_START_GRANTS = new Set([
     "none",
@@ -25708,10 +25658,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         && response.cacheRevision === WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION
         && Array.isArray(response.userScripts);
       if (!allowed) {
-        await clearDocumentStartScriptCache();
-        if (documentStartCatalogGeneration === generation + 1) {
-          documentStartCacheCapabilityKnown = true;
-        }
+        if (generation !== documentStartCatalogGeneration) return;
+        documentStartCacheCapabilityKnown = true;
+        documentStartScriptCacheEnabled = false;
+        documentStartScriptCatalog = [];
+        documentStartScriptCatalogDisabledHosts = [];
         return;
       }
       if (generation !== documentStartCatalogGeneration) return;
@@ -25721,7 +25672,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       documentStartScriptCatalogDisabledHosts = Array.isArray(response.disabledHosts)
         ? response.disabledHosts
         : [];
-      return persistDocumentStartScriptCache(generation);
+      return undefined;
     }).catch(error => {
       console.warn("[wBlock] Failed to refresh document-start userscript catalog:", error);
     });
@@ -25750,7 +25701,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             (message.userInfo && message.userInfo.action)
           );
           if (action === "wblock:userscriptsChanged") {
-            clearDocumentStartScriptCache().then(refreshDocumentStartScriptCatalog);
+            clearDocumentStartScriptCache();
           }
         });
       }
@@ -25769,7 +25720,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
   };
   connectNativeStatePort();
-  documentStartScriptCacheHydration.then(refreshDocumentStartScriptCatalog);
   /**
    * Returns a cache key for the given URL and top-level URL.
    *
@@ -26080,7 +26030,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
     }
     if (message && message.action === "getCachedDocumentStartUserScripts") {
-      await documentStartScriptCacheHydration;
       if (!documentStartCacheCapabilityKnown) await refreshDocumentStartScriptCatalog();
       const url = typeof message.url === "string" ? message.url : "";
       return {
@@ -26202,7 +26151,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         const documentStartCacheAllowed = !!response
           && response.documentStartCacheAllowed === true
           && response.cacheRevision === WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION;
-        if (!documentStartCacheAllowed) await clearDocumentStartScriptCache();
         if (response && response.error) {
           return {
             userScripts: scripts,

@@ -74,13 +74,12 @@ def main():
     with open(OUT, "w", encoding="utf-8") as handle:
         handle.write("\n".join(lines))
 
-    # Keep the shipped JS manifests tied to the same source hash. This makes
-    # bundled content/app upgrades invalidate old extension/session caches
+    # Keep the shipped background manifest tied to the same source hash. This
+    # makes bundled content/app upgrades invalidate old extension caches
     # without a manually bumped version constant.
     marker = "__WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION__"
     for relative_path in [
         os.path.join("extension-src", "background.js"),
-        os.path.join("wBlock Scripts (iOS)", "Resources", "userscript-injector.js"),
     ]:
         path = os.path.join(ROOT, relative_path)
         with open(path, "r", encoding="utf-8") as handle:

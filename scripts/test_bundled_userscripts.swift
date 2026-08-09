@@ -237,13 +237,11 @@ if cacheRevision.isEmpty {
     fail("bundled cache revision is empty")
 }
 if !extensionBackgroundSource.contains(cacheRevision)
-    || !shippedBackgroundSource.contains(cacheRevision)
-    || !injectorSource.contains(cacheRevision) {
+    || !shippedBackgroundSource.contains(cacheRevision) {
     fail("bundled cache revision drifted between Swift and JavaScript manifests")
 }
 for needle in [
     "cacheCategory",
-    "cacheAllowed",
     "getCachedDocumentStartUserScripts",
     "wblock:clearDocumentStartSessionCache",
 ] {
@@ -297,10 +295,6 @@ for needle in [
     "allowed: false",
     "documentStartCacheAllowed === true",
     "documentStartCacheCapabilityKnown",
-    "sessionScriptFingerprint(script)",
-    "'noframes'",
-    "'disabledHosts'",
-    "'resourceURLs'",
     "await persistUserScriptsNow()",
     "await persistUserScriptsNow(invalidateExecutionCache: false)",
     "if changed {\n            UserScriptManager.invalidateDocumentStartExecutionCache()",

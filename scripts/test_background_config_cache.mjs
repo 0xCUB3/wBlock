@@ -50,7 +50,8 @@ const loadBackground = ({ storage = {}, nativeHandler, executeScript = async () 
     cssInserted: [],
     executed: [],
     onMessage: null,
-    nativePortMessage: null
+    nativePortMessage: null,
+    tabQueries: 0
   };
 
   const defaultNative = async message => {
@@ -88,7 +89,7 @@ const loadBackground = ({ storage = {}, nativeHandler, executeScript = async () 
       }
     },
     tabs: {
-      query: async () => [],
+      query: async () => { state.tabQueries += 1; return []; },
       get: async () => ({}),
       sendMessage: async () => ({}),
       onUpdated: listenerStub,
@@ -657,7 +658,7 @@ for (const [label, inertState, activeCSS] of [
 }
 
 // Scenario L: timing-critical page-world userscripts bypass a blocked native
-// configuration queue and are persisted for the next cold document start.
+// configuration queue; the safe catalog is confirmed lazily and kept in memory.
 {
   const pageUrl = "https://discord.com/app";
   const vencord = {
@@ -749,84 +750,14 @@ for (const [label, inertState, activeCSS] of [
   await Promise.race([request, sleep(500)]);
   check("userscript lookup bypasses a blocked native configuration queue", resolved);
   check("priority userscript lookup returns the native scripts", response && response.userScripts.length === 2);
-  await sleep(100);
-
-  const persisted = state.storage[DOCUMENT_START_SCRIPT_CACHE_KEY];
-  const persistedScripts = persisted && persisted.catalog;
-  check("safe page-world document-start script is persisted", persistedScripts && persistedScripts.some(script => script.id === "vencord"));
-  check("script with synchronous GM storage is not persisted", persistedScripts && !persistedScripts.some(script => script.id === "storage-script"));
-  check(
-    "storage snapshots are excluded from the early cache",
-    persistedScripts && !Object.hasOwn(persistedScripts.find(script => script.id === "vencord"), "storageSnapshot")
-  );
-
-  const coldState = loadBackground({
-    storage: { [DOCUMENT_START_SCRIPT_CACHE_KEY]: persisted },
-    nativeHandler: message => {
-      if (message && message.action === "getDocumentStartUserScriptCatalog") {
-        return {
-          userScripts: persisted.catalog,
-          disabledHosts: persisted.disabledHosts,
-          cacheRevision,
-          documentStartCacheAllowed: true
-        };
-      }
-      return { payload: makeConfig([], 1) };
-    }
-  });
-  const cachedResponse = await coldState.onMessage({
+  const cachedResponse = await state.onMessage({
     action: "getCachedDocumentStartUserScripts",
     url: pageUrl
   }, topFrameSender(pageUrl));
-  check(
-    "persisted document-start script is available after a cold background restart",
-    cachedResponse && cachedResponse.userScripts.some(script => script.id === "vencord")
-  );
-  check(
-    "cached document-start response carries the top-level cache revision",
-    cachedResponse && cachedResponse.cacheRevision === cacheRevision
-  );
-  check(
-    "cached document-start response explicitly allows the warm cache",
-    cachedResponse && cachedResponse.documentStartCacheAllowed === true
-  );
-  const catalogResponse = await coldState.onMessage({
-    action: "getCachedDocumentStartUserScripts",
-    url: "https://canary.discord.com/channels/@me"
-  }, topFrameSender("https://canary.discord.com/channels/@me"));
-  check(
-    "catalog match metadata serves a script on another matching URL",
-    catalogResponse && catalogResponse.userScripts.some(script => script.id === "vencord")
-  );
-  const unrelatedResponse = await coldState.onMessage({
-    action: "getCachedDocumentStartUserScripts",
-    url: "https://example.com/"
-  }, topFrameSender("https://example.com/"));
-  check("catalog scripts do not run on unrelated URLs", unrelatedResponse.userScripts.length === 0);
-
-  const tinyShieldResponse = await coldState.onMessage({
-    action: "getCachedDocumentStartUserScripts",
-    url: "https://tinyshield.example/"
-  }, topFrameSender("https://tinyshield.example/"));
-  check(
-    "mutable downloaded scripts are excluded from speculative cache",
-    tinyShieldResponse.userScripts.length === 0
-  );
-
-  const editedBundledResponse = await coldState.onMessage({
-    action: "getCachedDocumentStartUserScripts",
-    url: "https://www.youtube.com/"
-  }, topFrameSender("https://www.youtube.com/"));
-  check(
-    "edited bundled-URL content is excluded from speculative cache",
-    editedBundledResponse.userScripts.every(script => script.id !== "edited-bundled")
-  );
-
-  await coldState.onMessage({ action: "wblock:clearCache" }, topFrameSender(pageUrl));
-  check(
-    "clearCache removes the persisted document-start userscript cache",
-    !Object.hasOwn(coldState.storage, DOCUMENT_START_SCRIPT_CACHE_KEY)
-  );
+  check("document-start catalog is refreshed lazily", cachedResponse.userScripts.some(script => script.id === "vencord"));
+  check("document-start catalog is not persisted", !Object.hasOwn(state.storage, DOCUMENT_START_SCRIPT_CACHE_KEY));
+  check("cached response carries the top-level cache revision", cachedResponse.cacheRevision === cacheRevision);
+  check("native capability confirms the in-memory catalog", cachedResponse.documentStartCacheAllowed === true);
 }
 
 // Scenario M: a warmed cache is synchronously disabled and cleared when the
@@ -886,6 +817,20 @@ for (const [label, inertState, activeCSS] of [
   check("background cache warms before a userscript mutation", warmResponse.documentStartCacheAllowed === true);
   check("warmed background cache returns its script", warmResponse.userScripts.length === 1);
 
+  const tabQueriesBeforeOrdinaryLookup = state.tabQueries;
+  const ordinaryRequestsBefore = state.nativeMessages.filter(message => message && message.action === "getUserScripts").length;
+  cacheAllowed = false;
+  const ordinaryDisabledResponse = await state.onMessage({
+    action: "getUserScripts",
+    url: pageUrl,
+    includeContent: true,
+    maxInlineContentBytes: 128 * 1024
+  }, topFrameSender(pageUrl));
+  const ordinaryRequestsAfter = state.nativeMessages.filter(message => message && message.action === "getUserScripts").length;
+  check("cache-disabled ordinary lookup reports cache capability without global invalidation", ordinaryDisabledResponse.documentStartCacheAllowed === false);
+  check("cache-disabled ordinary lookup does not broadcast to tabs", state.tabQueries === tabQueriesBeforeOrdinaryLookup);
+  check("cache-disabled ordinary lookup makes exactly one native request", ordinaryRequestsAfter === ordinaryRequestsBefore + 1);
+
   cacheAllowed = false;
   state.nativePortMessage({ action: "wblock:userscriptsChanged" });
   await sleep(30);
@@ -895,95 +840,38 @@ for (const [label, inertState, activeCSS] of [
   }, topFrameSender(pageUrl));
   check("userscriptsChanged clears the warmed background cache", clearedResponse.userScripts.length === 0);
   check("userscriptsChanged disables speculative execution", clearedResponse.documentStartCacheAllowed === false);
-  check("userscriptsChanged removes the persisted cache", !Object.hasOwn(state.storage, DOCUMENT_START_SCRIPT_CACHE_KEY));
+  check("userscriptsChanged leaves no stale in-memory catalog", clearedResponse.userScripts.length === 0);
 }
 
-// Scenario N: an in-flight catalog reply from before invalidation must never
-// reactivate stale data or clear the newer refresh promise.
+// Scenario N: lazy catalog refreshes retain generation guards across invalidation.
 {
   const pageUrl = "https://example.com/";
-  const deferred = () => {
-    let resolve;
-    const promise = new Promise(r => { resolve = r; });
-    return { promise, resolve };
-  };
+  const deferred = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
   const oldReply = deferred();
-  const authoritativeReply = deferred();
-  let catalogRequestCount = 0;
-  const staleScript = {
-    id: "stale-catalog-script",
-    name: "Stale catalog script",
-    sourceURL: "https://warm.example/stale.user.js",
-    isEnabled: true,
-    runAt: "document-start",
-    injectInto: "page",
-    grant: ["none"],
-    matches: ["https://example.com/*"],
-    excludeMatches: [],
-    includes: [],
-    excludes: [],
-    resourceNames: [],
-    content: "window.__staleCatalog = true;",
-    cacheCategory: "bundled",
-    cacheRevision
-  };
-  const authoritativeScript = {
-    ...staleScript,
-    id: "authoritative-catalog-script",
-    name: "Authoritative catalog script",
-    content: "window.__authoritativeCatalog = true;"
-  };
-  const state = loadBackground({
-    storage: {},
-    nativeHandler: message => {
-      if (message && message.action === "getDocumentStartUserScriptCatalog") {
-        catalogRequestCount += 1;
-        return catalogRequestCount === 1 ? oldReply.promise : authoritativeReply.promise;
-      }
-      return { payload: makeConfig([], 1) };
+  const freshReply = deferred();
+  let requestCount = 0;
+  const staleScript = { id: "stale", name: "Stale", sourceURL: "https://warm.example/stale.user.js", isEnabled: true, runAt: "document-start", injectInto: "page", grant: ["none"], matches: ["https://example.com/*"], content: "window.__stale = true;", cacheCategory: "bundled", cacheRevision };
+  const freshScript = { ...staleScript, id: "fresh", content: "window.__fresh = true;" };
+  const state = loadBackground({ storage: {}, nativeHandler: message => {
+    if (message && message.action === "getDocumentStartUserScriptCatalog") {
+      requestCount += 1;
+      return requestCount === 1 ? oldReply.promise : freshReply.promise;
     }
-  });
-  for (let attempt = 0; attempt < 20 && catalogRequestCount < 1; attempt += 1) await sleep(0);
-  check("catalog refresh starts before the mutation", catalogRequestCount === 1);
+    return { payload: makeConfig([], 1) };
+  }});
+  const oldLookup = state.onMessage({ action: "getCachedDocumentStartUserScripts", url: pageUrl }, topFrameSender(pageUrl));
+  await sleep(0);
+  check("catalog refresh is lazy", requestCount === 1);
   state.nativePortMessage({ action: "wblock:userscriptsChanged" });
-  for (let attempt = 0; attempt < 20 && catalogRequestCount < 2; attempt += 1) await sleep(0);
-  check("mutation starts a distinct post-clear catalog refresh", catalogRequestCount === 2);
-  oldReply.resolve({
-    userScripts: [staleScript],
-    disabledHosts: [],
-    cacheRevision,
-    documentStartCacheAllowed: true
-  });
+  oldReply.resolve({ userScripts: [staleScript], disabledHosts: [], cacheRevision, documentStartCacheAllowed: true });
   await sleep(0);
-  check(
-    "stale catalog reply cannot repopulate persisted cache while new refresh is in flight",
-    !Object.hasOwn(state.storage, DOCUMENT_START_SCRIPT_CACHE_KEY)
-  );
-  const pendingCatalogLookup = state.onMessage({
-    action: "getCachedDocumentStartUserScripts",
-    url: pageUrl
-  }, topFrameSender(pageUrl));
+  const freshLookup = state.onMessage({ action: "getCachedDocumentStartUserScripts", url: pageUrl }, topFrameSender(pageUrl));
   await sleep(0);
-  check(
-    "stale refresh finally cannot detach the newer in-flight refresh",
-    catalogRequestCount === 2
-  );
-  authoritativeReply.resolve({
-    userScripts: [authoritativeScript],
-    disabledHosts: [],
-    cacheRevision,
-    documentStartCacheAllowed: true
-  });
-  await sleep(10);
-  const finalCatalog = await pendingCatalogLookup;
-  check(
-    "authoritative post-clear catalog is the only catalog served",
-    finalCatalog.userScripts.length === 1 && finalCatalog.userScripts[0].id === authoritativeScript.id
-  );
-  check(
-    "stale catalog content never reactivates",
-    finalCatalog.userScripts.every(script => script.content !== staleScript.content)
-  );
+  check("mutation invalidates before the next lazy refresh", requestCount === 2);
+  freshReply.resolve({ userScripts: [freshScript], disabledHosts: [], cacheRevision, documentStartCacheAllowed: true });
+  const result = await freshLookup;
+  await oldLookup;
+  check("stale catalog content never reactivates", result.userScripts.length === 1 && result.userScripts[0].id === "fresh");
 }
 
 
