@@ -97,6 +97,13 @@
 
     try { autoPiPEnabled = getAutoPiP(); } catch (e) { /* ignore */ }
 
+    function supportsWebkitPiP(video) {
+        try {
+            return !!(video && typeof video.webkitSupportsPresentationMode === 'function' &&
+                video.webkitSupportsPresentationMode('picture-in-picture'));
+        } catch (e) { return false; }
+    }
+
     function isPiPActive(video) {
         return document.pictureInPictureElement === video ||
             (video && video.webkitPresentationMode === 'picture-in-picture');
@@ -107,14 +114,13 @@
         if (isPiPActive(video)) return;
         if (video.paused || video.ended) return;
         try {
-            if (video.webkitSupportsPresentationMode &&
-                typeof video.webkitSetPresentationMode === 'function') {
+            if (supportsWebkitPiP(video) && typeof video.webkitSetPresentationMode === 'function') {
                 // Track only PiP entered by Tube Cleaner. PiP entered manually
                 // from Safari's controls must remain under the user's control.
                 pipActive = true;
                 video.webkitSetPresentationMode('picture-in-picture');
                 log('PiP entered');
-            } else if (video.requestPictureInPicture) {
+            } else if (typeof video.requestPictureInPicture === 'function') {
                 pipActive = true;
                 var request = video.requestPictureInPicture();
                 if (request && request.catch) {
@@ -138,12 +144,11 @@
             return;
         }
         try {
-            if (video.webkitSupportsPresentationMode &&
-                typeof video.webkitSetPresentationMode === 'function') {
+            if (supportsWebkitPiP(video) && typeof video.webkitSetPresentationMode === 'function') {
                 video.webkitSetPresentationMode('inline');
                 pipActive = false;
                 log('PiP exited');
-            } else if (document.pictureInPictureElement) {
+            } else if (document.pictureInPictureElement && typeof document.exitPictureInPicture === 'function') {
                 var request = document.exitPictureInPicture();
                 if (request && request.catch) {
                     request.catch(function (e) { log('PiP exit rejected', e); });
@@ -363,6 +368,12 @@
         '.wblock-tc-native video',
         '{ display: block !important; pointer-events: auto !important; }',
 
+        // Shorts mounts playback chrome outside the nativeized player. These
+        // classes are applied only to the active reel's intercepted layers.
+        '.wblock-tc-short-overlay,',
+        '.wblock-tc-short-chrome',
+        '{ display: none !important; pointer-events: none !important; }',
+
         // YouTube leaves several transparent gesture/feedback layers above the
         // media element. They must not steal taps from Safari's native controls.
         '.wblock-tc-native .ytp-cued-thumbnail-overlay,',
@@ -579,31 +590,32 @@
     var playerObserver = null;
     var activeCleanups = [];
     var playbackCarry = null;
+    var activeShortsHosts = [];
+    var activeShortsOverlays = [];
+    var activeShortsPlayer = null;
 
-    function youtubeVideoIdentity(player) {
-        var id = null;
-        var hasUrlIdentity = false;
+    function youtubePlayerVideoId(player) {
+        try {
+            var data = player && typeof player.getVideoData === 'function' ? player.getVideoData() : null;
+            var id = data && (data.video_id || data.videoId);
+            return id && /^[A-Za-z0-9_-]{11}$/.test(String(id)) ? String(id) : null;
+        } catch (e) { return null; }
+    }
+
+    function youtubeUrlVideoId() {
         try {
             var pathMatch = location.pathname.match(/^\/(?:shorts|embed)\/([A-Za-z0-9_-]{11})(?:\/|$)/);
             var queryId = new URLSearchParams(location.search).get('v');
-            if (/^\/watch(?:\/|$)/.test(location.pathname)) {
-                hasUrlIdentity = !!queryId;
-                if (queryId && /^[A-Za-z0-9_-]{11}$/.test(queryId)) id = queryId;
-            } else if (pathMatch) {
-                hasUrlIdentity = true;
-                id = pathMatch[1];
-            } else if (queryId && /^[A-Za-z0-9_-]{11}$/.test(queryId)) {
-                hasUrlIdentity = true;
-                id = queryId;
-            }
-        } catch (e) { /* use player data below */ }
-        if (!id && !hasUrlIdentity) {
-            try {
-                var data = player && typeof player.getVideoData === 'function' ? player.getVideoData() : null;
-                if (data && data.video_id) id = String(data.video_id);
-            } catch (e) { /* ignore */ }
-        }
-        return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+            if (pathMatch) return pathMatch[1];
+            if (queryId && /^[A-Za-z0-9_-]{11}$/.test(queryId)) return queryId;
+        } catch (e) { /* ignore malformed URLs */ }
+        return null;
+    }
+
+    function youtubeVideoIdentity(player) {
+        // The URL leads the persistent player during SPA navigation. YouTube's
+        // player data is the confirmation that the media element changed.
+        return youtubePlayerVideoId(player) || youtubeUrlVideoId();
     }
 
     function readPlaybackPosition(videoId) {
@@ -630,16 +642,19 @@
     function setupPlaybackPosition(player, video) {
         var videoId = youtubeVideoIdentity(player);
         if (!videoId) { playbackCarry = null; return; }
+        var previousIdentity = playbackCarry && playbackCarry.identity;
         var carried = playbackCarry && playbackCarry.identity === videoId ? playbackCarry : null;
         playbackCarry = null;
         var cancelled = false;
         var restored = false;
         var stateApplied = !carried;
+        var waitingForMediaTransition = !!(previousIdentity && previousIdentity !== videoId);
         var writeTimer = null;
         var saved = readPlaybackPosition(videoId);
 
         function restore() {
-            if (cancelled || restored || activeVideo !== video || youtubeVideoIdentity(player) !== videoId) return;
+            if (cancelled || restored || waitingForMediaTransition || activeVideo !== video ||
+                youtubeVideoIdentity(player) !== videoId) return;
             if (video.readyState < 1 || !isFinite(video.duration) || video.duration <= 0) return;
             restored = true;
             var positionApplied = true;
@@ -681,10 +696,17 @@
         function onEnded() { persist(true); }
         function onTimeUpdate() { schedulePersist(); }
         function onPause() { schedulePersist(); }
-        function onMetadata() { restore(); }
+        function onMetadata() {
+            if (waitingForMediaTransition) {
+                waitingForMediaTransition = false;
+                video._wblockConfirmedVideoId = videoId;
+            }
+            restore();
+        }
         function onPageHide() { persist(true); }
 
         video._wblockPlaybackState = { identity: videoId, paused: video.paused };
+        video._wblockConfirmedVideoId = videoId;
         video.addEventListener('loadedmetadata', onMetadata);
         video.addEventListener('durationchange', onMetadata);
         video.addEventListener('canplay', onMetadata);
@@ -732,6 +754,7 @@
             previousVideo._wblockAutoPiPHooked = false;
             previousVideo._wblockControlsGuarded = false;
             previousVideo._wblockControlsPatched = false;
+            previousVideo._wblockMediaSessionHooked = false;
         }
         activeVideo = null;
         pipActive = false;
@@ -851,7 +874,7 @@
             observeGeometryHosts();
 
             var fullscreen = document.fullscreenElement || document.webkitFullscreenElement ||
-                player.classList.contains('ytp-fullscreen') ||
+                player.classList.contains('ytp-fullscreen') || video.webkitDisplayingFullscreen === true ||
                 video.webkitPresentationMode === 'fullscreen';
             var sourceWidth = Number(video.videoWidth) || 0;
             var sourceHeight = Number(video.videoHeight) || 0;
@@ -926,6 +949,11 @@
         }
         document.addEventListener('fullscreenchange', scheduleUpdate);
         document.addEventListener('webkitfullscreenchange', scheduleUpdate);
+        video.addEventListener('webkitbeginfullscreen', scheduleUpdate);
+        video.addEventListener('webkitendfullscreen', scheduleUpdate);
+        video.addEventListener('webkitpresentationmodechanged', scheduleUpdate);
+        video.addEventListener('enterpictureinpicture', scheduleUpdate);
+        video.addEventListener('leavepictureinpicture', scheduleUpdate);
         scheduleUpdate();
 
         registerCleanup(function () {
@@ -935,6 +963,11 @@
             window.removeEventListener('resize', scheduleUpdate);
             document.removeEventListener('fullscreenchange', scheduleUpdate);
             document.removeEventListener('webkitfullscreenchange', scheduleUpdate);
+            video.removeEventListener('webkitbeginfullscreen', scheduleUpdate);
+            video.removeEventListener('webkitendfullscreen', scheduleUpdate);
+            video.removeEventListener('webkitpresentationmodechanged', scheduleUpdate);
+            video.removeEventListener('enterpictureinpicture', scheduleUpdate);
+            video.removeEventListener('leavepictureinpicture', scheduleUpdate);
             if (resizeObserver) { try { resizeObserver.disconnect(); } catch (e) { /* ignore */ } }
             resizeObserver = null;
             if (updateFrame !== null) cancelAnimationFrame(updateFrame);
@@ -959,9 +992,191 @@
         // Safari's native controls; playback remains owned by the video element.
         buildToolbar(player, video);
         setupAutoPiP(video);
+        setupMediaSession(player, video);
         setupChapters(player, video);
         setupNativeSubtitles(player, video);
         setupSponsorBlock(player, video);
+    }
+
+    var mediaSessionOwner = null;
+
+    function setupMediaSession(container, video) {
+        if (!video || video._wblockMediaSessionHooked || !navigator.mediaSession ||
+            typeof MediaMetadata === 'undefined') return;
+        video._wblockMediaSessionHooked = true;
+        var session = navigator.mediaSession;
+        var positionTimer = null;
+        var metadataTimer = null;
+
+        function meta(name) {
+            var element = document.querySelector('meta[property="' + name + '"],meta[name="' + name + '"]');
+            return element && element.content || '';
+        }
+
+        function playerData() {
+            var player = findPlayer();
+            try { return player && typeof player.getVideoData === 'function' ? player.getVideoData() || {} : {}; }
+            catch (e) { return {}; }
+        }
+
+        function metadataData() {
+            var data = playerData();
+            var details = window.ytInitialPlayerResponse && window.ytInitialPlayerResponse.videoDetails || {};
+            var title = data.title || details.title || meta('og:title') || document.title || location.hostname;
+            var artist = data.author || data.ownerChannelName || details.author || details.channelTitle ||
+                meta('og:site_name') || location.hostname;
+            var thumbnails = (data.thumbnail && data.thumbnail.thumbnails) || (details.thumbnail && details.thumbnail.thumbnails);
+            var artwork = video.poster || (thumbnails && thumbnails.length && thumbnails[thumbnails.length - 1].url) || meta('og:image');
+            var result = { title: String(title), artist: String(artist) };
+            if (artwork) result.artwork = [{ src: String(artwork) }];
+            var chapters = extractChapters(chapterDataSource());
+            if (chapters && chapters.length) {
+                result.chapterInfo = chapters.map(function (chapter) {
+                    return { startTime: chapter.start, title: chapter.title };
+                });
+            }
+            return result;
+        }
+
+        function clearOwner(previous) {
+            if (!previous || mediaSessionOwner !== previous) return;
+            (previous._wblockMediaActions || []).forEach(function (action) {
+                try { if (typeof session.setActionHandler === 'function') session.setActionHandler(action, null); } catch (e) { /* ignore */ }
+            });
+            if (session.metadata === previous._wblockMediaMetadata) {
+                try { session.metadata = null; } catch (e) { /* ignore */ }
+            }
+            previous._wblockMediaActions = null;
+            previous._wblockMediaMetadata = null;
+        }
+
+        function refreshMetadata() {
+            if (mediaSessionOwner !== video) return;
+            var data = metadataData();
+            var metadata;
+            try { metadata = new MediaMetadata(data); }
+            catch (e) {
+                delete data.chapterInfo;
+                try { metadata = new MediaMetadata(data); }
+                catch (ignored) {
+                    delete data.artwork;
+                    try { metadata = new MediaMetadata(data); } catch (ignoredAgain) { return; }
+                }
+            }
+            if (mediaSessionOwner !== video) return;
+            video._wblockMediaMetadata = metadata;
+            try { session.metadata = metadata; } catch (e) { /* ignore */ }
+        }
+
+        function scheduleMetadata() {
+            if (metadataTimer !== null) return;
+            metadataTimer = setTimeout(function () {
+                metadataTimer = null;
+                refreshMetadata();
+            }, 50);
+        }
+
+        function updateState() {
+            if (mediaSessionOwner !== video) return;
+            try { session.playbackState = video.ended ? 'none' : (video.paused ? 'paused' : 'playing'); }
+            catch (e) { /* ignore */ }
+        }
+
+        function updatePosition() {
+            if (mediaSessionOwner !== video || typeof session.setPositionState !== 'function' || positionTimer !== null) return;
+            positionTimer = setTimeout(function () {
+                positionTimer = null;
+                if (mediaSessionOwner !== video) return;
+                var duration = Number(video.duration), position = Number(video.currentTime), rate = Number(video.playbackRate) || 1;
+                if (!isFinite(duration) || duration <= 0 || !isFinite(position) || position < 0 || !isFinite(rate) || rate <= 0) return;
+                try { session.setPositionState({ duration: duration, playbackRate: rate, position: Math.min(position, duration) }); }
+                catch (e) { /* ignore transient media state */ }
+            }, 200);
+        }
+
+        function seekBy(offset) {
+            var amount = Number(offset);
+            if (!isFinite(amount) || amount === 0) amount = 10;
+            try { video.currentTime = Math.max(0, Math.min(video.duration || Infinity, video.currentTime + amount)); }
+            catch (e) { /* ignore */ }
+        }
+
+        function claim() {
+            if (mediaSessionOwner !== video) {
+                clearOwner(mediaSessionOwner);
+                mediaSessionOwner = video;
+            }
+            refreshMetadata();
+            updateState();
+            updatePosition();
+            if (typeof session.setActionHandler !== 'function') return;
+            var actions = {
+                play: function () { var request = video.play(); if (request && request.catch) request.catch(function () {}); },
+                pause: function () { try { video.pause(); } catch (e) {} },
+                seekbackward: function (details) { seekBy(-(details && details.seekOffset || 10)); },
+                seekforward: function (details) { seekBy(details && details.seekOffset || 10); },
+                seekto: function (details) {
+                    if (!details || !isFinite(details.seekTime)) return;
+                    try {
+                        if (details.fastSeek && typeof video.fastSeek === 'function') video.fastSeek(details.seekTime);
+                        else video.currentTime = details.seekTime;
+                    } catch (e) { /* ignore */ }
+                },
+                stop: function () { try { video.pause(); video.currentTime = 0; } catch (e) {} }
+            };
+            video._wblockMediaActions = Object.keys(actions);
+            for (var action in actions) {
+                try { session.setActionHandler(action, actions[action]); } catch (e) { /* unsupported action */ }
+            }
+        }
+
+        function onPlay() { claim(); }
+        function onPause() { updateState(); updatePosition(); }
+        function onEnded() { updateState(); updatePosition(); }
+        function onMetadataChange() { scheduleMetadata(); updatePosition(); }
+        function onRateChange() { scheduleMetadata(); updatePosition(); }
+        function onTimeUpdate() { updatePosition(); }
+        function onNavigate() { scheduleMetadata(); }
+
+        video.addEventListener('play', onPlay);
+        video.addEventListener('pause', onPause);
+        video.addEventListener('ended', onEnded);
+        video.addEventListener('loadedmetadata', onMetadataChange);
+        video.addEventListener('durationchange', onMetadataChange);
+        video.addEventListener('loadeddata', onMetadataChange);
+        video.addEventListener('ratechange', onRateChange);
+        video.addEventListener('timeupdate', onTimeUpdate);
+        document.addEventListener('yt-navigate-finish', onNavigate, true);
+        document.addEventListener('yt-page-data-updated', onNavigate, true);
+        if (!video.paused) claim();
+
+        registerCleanup(function () {
+            video.removeEventListener('play', onPlay);
+            video.removeEventListener('pause', onPause);
+            video.removeEventListener('ended', onEnded);
+            video.removeEventListener('loadedmetadata', onMetadataChange);
+            video.removeEventListener('durationchange', onMetadataChange);
+            video.removeEventListener('loadeddata', onMetadataChange);
+            video.removeEventListener('ratechange', onRateChange);
+            video.removeEventListener('timeupdate', onTimeUpdate);
+            document.removeEventListener('yt-navigate-finish', onNavigate, true);
+            document.removeEventListener('yt-page-data-updated', onNavigate, true);
+            if (positionTimer !== null) clearTimeout(positionTimer);
+            if (metadataTimer !== null) clearTimeout(metadataTimer);
+            positionTimer = null;
+            metadataTimer = null;
+            if (mediaSessionOwner !== video) return;
+            mediaSessionOwner = null;
+            if (session.metadata === video._wblockMediaMetadata) {
+                try { session.metadata = null; } catch (e) { /* ignore */ }
+            }
+            (video._wblockMediaActions || []).forEach(function (action) {
+                try { if (typeof session.setActionHandler === 'function') session.setActionHandler(action, null); } catch (e) { /* ignore */ }
+            });
+            try { session.playbackState = 'none'; } catch (e) { /* ignore */ }
+            video._wblockMediaMetadata = null;
+            video._wblockMediaActions = null;
+        });
     }
 
     function restoreNativeMediaCapabilities(video) {
@@ -977,26 +1192,22 @@
             if (video.hasAttribute('disablepictureinpicture')) { video.removeAttribute('disablepictureinpicture'); }
             if (video.disablePictureInPicture) { video.disablePictureInPicture = false; }
 
+            var opaque = hasOpaqueMediaSource(video);
             if (IS_IOS) {
-                // YouTube's iOS SABR pipeline uses ManagedMediaSource through a
-                // blob URL. WebKit requires remote playback to stay disabled
-                // unless the element also provides a network source for AirPlay.
-                // Forcing AirPlay on can leave the physical-device media pipeline
-                // loading forever even though desktop WebKit keeps playing.
+                // WebKit requires remote playback to stay disabled for ManagedMediaSource/blob playback.
                 if (!video.disableRemotePlayback) { video.disableRemotePlayback = true; }
                 if (!video.hasAttribute('disableremoteplayback')) {
                     video.setAttribute('disableremoteplayback', '');
                 }
-                if (video.getAttribute('x-webkit-airplay') === 'allow') {
-                    video.removeAttribute('x-webkit-airplay');
-                }
-            } else {
-                // Desktop Safari can safely expose AirPlay too.
+                if (video.getAttribute('x-webkit-airplay') === 'allow') video.removeAttribute('x-webkit-airplay');
+            } else if (!opaque) {
                 if (video.hasAttribute('disableremoteplayback')) { video.removeAttribute('disableremoteplayback'); }
                 if (video.disableRemotePlayback) { video.disableRemotePlayback = false; }
                 if (video.getAttribute('x-webkit-airplay') !== 'allow') {
                     video.setAttribute('x-webkit-airplay', 'allow');
                 }
+            } else if (video.getAttribute('x-webkit-airplay') === 'allow') {
+                video.removeAttribute('x-webkit-airplay');
             }
         } catch (e) { /* ignore */ }
     }
@@ -2104,31 +2315,23 @@
         }
         if (!chapters.length) return null;
         chapters.sort(function (a, b) { return a.start - b.start; });
-        return chapters;
+        var normalized = [];
+        for (var j = 0; j < chapters.length; j++) {
+            if (!normalized.length || chapters[j].start > normalized[normalized.length - 1].start) {
+                normalized.push(chapters[j]);
+            }
+        }
+        return normalized;
+    }
+
+    function chapterPayloadFingerprint(data) {
+        var chapters = extractChapters(data);
+        return chapters ? JSON.stringify(chapters) : '[]';
     }
 
     function currentChapterVideoId() {
-        var identity = youtubeVideoIdentity(findPlayer());
-        if (identity) return identity;
-        // The URL changes before YouTube's persistent player finishes its SPA
-        // swap, so prefer it when a watch-video id is available.
-        try {
-            var queryId = new URLSearchParams(location.search).get('v');
-            if (queryId) return queryId;
-            // Shorts, embeds, and local test fixtures encode identity in their
-            // path. Keep that stable even if getVideoData() appears later.
-            if (location.pathname && location.pathname !== '/' &&
-                location.pathname !== '/watch') {
-                return location.pathname + location.search;
-            }
-        } catch (e) { /* ignore */ }
-        try {
-            var player = findPlayer();
-            var data = player && typeof player.getVideoData === 'function' ?
-                player.getVideoData() : null;
-            if (data && data.video_id) return String(data.video_id);
-        } catch (e) { /* ignore */ }
-        return location.pathname + location.search;
+        return youtubeUrlVideoId() || youtubePlayerVideoId(findPlayer()) ||
+            location.pathname + location.search;
     }
 
     function clearChapterCues(track) {
@@ -2138,11 +2341,9 @@
         } catch (e) { /* ignore */ }
     }
 
-    function disableChapterTrack(track) {
+    function clearChapterTrack(track) {
         clearChapterCues(track);
-        // An empty chapters track otherwise reserves a blank row in Safari's
-        // native media menu. Re-enable it only after a new cue list is ready.
-        try { track.mode = 'disabled'; } catch (e) { /* ignore */ }
+        try { track.mode = 'hidden'; } catch (e) { /* ignore */ }
     }
 
     // Mirror YouTube's chapters onto the native element as a chapters track.
@@ -2156,36 +2357,25 @@
         var videoId = currentChapterVideoId();
         var source = chapterDataSource();
         var chapters = extractChapters(source);
-
-        // During SPA navigation YouTube can expose the previous video's
-        // ytInitialData after the URL has changed. Do not recache those old
-        // renderers under the new id; leave the native menu empty until a new
-        // payload arrives. This is especially important when the new video has
-        // no chapters at all.
+        var fingerprint = chapterPayloadFingerprint(source);
         var sourceIsFromPreviousVideo = chapters &&
-            ((video._wblockChapterVideoId !== videoId &&
-                video._wblockChapterDataSource === source) ||
-             video._wblockChapterRejectedSource === source);
+            video._wblockChapterVideoId !== videoId &&
+            video._wblockChapterFingerprint === fingerprint;
 
         if (chapters && chapters.length && !sourceIsFromPreviousVideo) {
             video._wblockChapterData = chapters;
             video._wblockChapterVideoId = videoId;
             video._wblockChapterDataSource = source;
-            video._wblockChapterRejectedSource = null;
+            video._wblockChapterFingerprint = fingerprint;
         } else if (video._wblockChapterVideoId === videoId &&
             video._wblockChapterData && video._wblockChapterData.length) {
             chapters = video._wblockChapterData;
         } else {
-            // This is a different video and its chapter data has not arrived (or
-            // it has no chapters). Remove the previous video's cues while the
-            // retry loop waits for current data.
-            disableChapterTrack(track);
+            clearChapterTrack(track);
             video._wblockChapterData = null;
             video._wblockChapterVideoId = videoId;
-            video._wblockChapterDataSource = null;
-            if (sourceIsFromPreviousVideo) {
-                video._wblockChapterRejectedSource = source;
-            }
+            video._wblockChapterDataSource = source;
+            video._wblockChapterFingerprint = fingerprint;
             return false;
         }
 
@@ -2210,11 +2400,12 @@
                 end = chapters[i + 1].start;
             } else {
                 // Last chapter runs to the end of the media. Before metadata is
-                // loaded the duration is unknown; use a placeholder that the
-                // loadedmetadata re-apply below corrects from the cached list.
-                end = duration !== null ? duration : start + 3600;
+                // loaded, defer finalization to the next media event.
+                end = duration !== null ? duration : start + 1;
             }
-            if (!(end > start)) { end = start + 0.5; }
+            if (duration !== null && start >= duration) continue;
+            if (duration !== null) end = Math.min(end, duration);
+            if (!(end > start)) continue;
             // The native chapter menu renders the cue text verbatim, so
             // prefix the title with its timestamp for an at-a-glance list.
             var label = formatTimestamp(start) + '  ' + chapters[i].title;
@@ -2465,7 +2656,11 @@
                 setYouTubeCaptionsEnabled(false);
                 return;
             }
-            if (selected.getAttribute('data-wblock-subtitle-renderer') === 'safari') return;
+            // Reset an old fallback before routing the newly selected language;
+            // otherwise Safari can keep rendering the old blob after a switch.
+            for (var j = 0; j < elements.length; j++) {
+                if (elements[j] !== selected) resetSafariCaptionControl(elements[j]);
+            }
             if (!selectYouTubeCaptionTrack(selected)) enableSafariCaptionFallback(selected);
         }
 
@@ -2634,16 +2829,130 @@
         return best;
     }
 
+    var SHORTS_HOST_SELECTOR = [
+        'ytd-shorts', 'ytd-shorts-player', 'ytd-reel-video-renderer',
+        'ytd-shorts-video-renderer', 'ytm-shorts', 'ytm-shorts-player',
+        'ytm-reel-video-renderer', 'ytm-shorts-video-renderer',
+        '[data-shorts-player]', '[data-reel-video-renderer]',
+        '.shorts-player', '.reel-video-renderer'
+    ].join(',');
+
+    function isShortsPath() {
+        return /^\/shorts(?:\/|$)/.test(location.pathname);
+    }
+
+    function isShortsHost(node) {
+        if (!node || node.nodeType !== 1) return false;
+        try {
+            if (node.matches(SHORTS_HOST_SELECTOR)) return true;
+            var identity = String(node.tagName || '') + ' ' + String(node.id || '') + ' ' + String(node.className || '');
+            return /(?:shorts|reel-video|short-player)/i.test(identity);
+        } catch (e) { return false; }
+    }
+
+    function findShortsHosts(player) {
+        var hosts = [];
+        for (var node = player && player.parentElement, depth = 0;
+             node && node !== document.body && node !== document.documentElement && depth < 16;
+             node = node.parentElement, depth++) {
+            if (isShortsHost(node)) hosts.push(node);
+        }
+        return hosts;
+    }
+
+    function isShortsOverlayCandidate(node, player) {
+        if (!node || node === player || node.contains(player)) return false;
+        var identity = String(node.tagName || '') + ' ' + String(node.id || '') + ' ' + String(node.className || '');
+        var interaction = /scrim|gesture|tap.?to.?unmute|unmute|player.?controls?|playback.?controls?|custom.?control/i.test(identity);
+        if (!interaction && !/(?:shorts|reel).*(?:overlay|chrome)|(?:overlay|scrim)/i.test(identity)) return false;
+        try {
+            if (node.closest('[data-shorts-action-rail], .shorts-action-rail, .reel-action-rail, [aria-label*="action rail" i]')) return false;
+            if (!interaction && node.querySelector('a,button,[role="button"]')) return false;
+        } catch (e) { return false; }
+        return true;
+    }
+
+    function clearShortsReel() {
+        for (var i = 0; i < activeShortsHosts.length; i++) {
+            activeShortsHosts[i].classList.remove('wblock-tc-short-reel');
+        }
+        for (var j = 0; j < activeShortsOverlays.length; j++) {
+            activeShortsOverlays[j].classList.remove('wblock-tc-short-overlay', 'wblock-tc-short-chrome');
+        }
+        if (activeShortsPlayer) activeShortsPlayer.classList.remove('wblock-tc-short-player');
+        activeShortsHosts = [];
+        activeShortsOverlays = [];
+        activeShortsPlayer = null;
+    }
+
+    function sameShortsHosts(hosts) {
+        if (hosts.length !== activeShortsHosts.length) return false;
+        for (var i = 0; i < hosts.length; i++) {
+            if (hosts[i] !== activeShortsHosts[i]) return false;
+        }
+        return true;
+    }
+
+    function syncShortsReel(player) {
+        if (!isShortsPath() || !player) {
+            if (activeShortsHosts.length || activeShortsPlayer) clearShortsReel();
+            return;
+        }
+        var hosts = findShortsHosts(player);
+        if (!hosts.length) {
+            if (activeShortsHosts.length || activeShortsPlayer) clearShortsReel();
+            return;
+        }
+        if (activeShortsPlayer && (activeShortsPlayer !== player || !sameShortsHosts(hosts))) clearShortsReel();
+        activeShortsPlayer = player;
+        activeShortsHosts = hosts;
+        player.classList.add('wblock-tc-short-player');
+        for (var i = 0; i < hosts.length; i++) hosts[i].classList.add('wblock-tc-short-reel');
+        var retainedOverlays = [];
+        for (var old = 0; old < activeShortsOverlays.length; old++) {
+            var previous = activeShortsOverlays[old];
+            var stillHosted = false;
+            for (var parent = 0; parent < hosts.length; parent++) {
+                if (hosts[parent].contains(previous)) { stillHosted = true; break; }
+            }
+            if (stillHosted && isShortsOverlayCandidate(previous, player)) retainedOverlays.push(previous);
+            else previous.classList.remove('wblock-tc-short-overlay', 'wblock-tc-short-chrome');
+        }
+        activeShortsOverlays = retainedOverlays;
+
+        for (var h = 0; h < hosts.length; h++) {
+            var nodes;
+            try { nodes = hosts[h].querySelectorAll('[id],[class],[role]'); } catch (e) { continue; }
+            for (var n = 0; n < nodes.length; n++) {
+                var candidate = nodes[n];
+                if (!isShortsOverlayCandidate(candidate, player) || activeShortsOverlays.indexOf(candidate) !== -1) continue;
+                candidate.classList.add('wblock-tc-short-overlay');
+                var identity = String(candidate.tagName || '') + ' ' + String(candidate.id || '') + ' ' + String(candidate.className || '');
+                if (/chrome|overlay|scrim|gesture|player.?controls?|playback.?controls?|unmute/i.test(identity)) {
+                    candidate.classList.add('wblock-tc-short-chrome');
+                }
+                activeShortsOverlays.push(candidate);
+            }
+        }
+    }
+
     function transformPlayer() {
         var player = findPlayer();
-        if (!player) return;
+        if (!player) {
+            syncShortsReel(null);
+            return;
+        }
 
         var video = player.querySelector('video');
         if (!video) return;
 
         // Check if we already processed this video.
         var videoId = youtubeVideoIdentity(player) || '';
-        if (player.getAttribute(ATTR_CLEANED) === videoId && activeVideo === video) return;
+        if (player.getAttribute(ATTR_CLEANED) === videoId && activeVideo === video) {
+            syncShortsReel(player);
+            return;
+        }
+        syncShortsReel(player);
         player.setAttribute(ATTR_CLEANED, videoId);
 
         log('transforming player for', videoId || '(unknown)');
@@ -3775,10 +4084,13 @@
     var lastUrl = '';
 
     function onNavigate() {
-        if (location.href === lastUrl) return;
+        var player = findPlayer();
+        var video = player && player.querySelector('video');
+        var identity = youtubeVideoIdentity(player) || '';
+        if (location.href === lastUrl && (!player ||
+            (player.getAttribute(ATTR_CLEANED) === identity && activeVideo === video))) return;
         lastUrl = location.href;
 
-        var player = findPlayer();
         if (player) {
             player.removeAttribute(ATTR_CLEANED);
             // Never remove wblock-tc-native here. Keeping the native class on
@@ -3824,6 +4136,16 @@
         } catch (e) { return false; }
     }
 
+    function shortsClassMutationOnlyChangesOurClasses(record) {
+        if (!record || record.type !== 'attributes' || record.attributeName !== 'class') return false;
+        function withoutTubeClasses(value) {
+            return String(value || '').split(/\s+/).filter(function (name) {
+                return name && name.indexOf('wblock-tc-') !== 0;
+            }).join(' ');
+        }
+        return withoutTubeClasses(record.oldValue) === withoutTubeClasses(record.target.className);
+    }
+
     function observeDocumentForPlayer() {
         if (documentPlayerObserver || typeof MutationObserver === 'undefined') { return; }
         documentPlayerObserver = new MutationObserver(function (records) {
@@ -3833,6 +4155,7 @@
             var relevant = false;
             for (var i = 0; i < records.length && !relevant; i++) {
                 var record = records[i];
+                if (shortsClassMutationOnlyChangesOurClasses(record)) continue;
                 if (nodeMayContainPlayer(record.target)) { relevant = true; break; }
                 for (var j = 0; j < record.addedNodes.length; j++) {
                     if (nodeMayContainPlayer(record.addedNodes[j])) {
@@ -3861,7 +4184,8 @@
                 childList: true,
                 subtree: true,
                 attributes: true,
-                attributeFilter: ['id', 'class']
+                attributeFilter: ['id', 'class'],
+                attributeOldValue: true
             });
         } catch (e) { /* ignore */ }
     }

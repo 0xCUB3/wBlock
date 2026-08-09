@@ -28,6 +28,7 @@ const FIXTURE_URL = pathToFileURL(join(__dirname, 'fixture.html')).href;
 const FIXTURE_NOPI_URL = pathToFileURL(join(__dirname, 'fixture-noplaysinline.html')).href;
 const FIXTURE_TUBE_EARLY_URL = pathToFileURL(join(__dirname, 'fixture-tube-cleaner-early.html')).href;
 const FIXTURE_TUBE_MULTIPLE_URL = pathToFileURL(join(__dirname, 'fixture-tube-cleaner-multiple.html')).href;
+const FIXTURE_TUBE_MULTIPLE_SOURCE = readFileSync(join(__dirname, 'fixture-tube-cleaner-multiple.html'), 'utf8');
 const FIXTURE_PLAYER_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner.html')).href;
 const FIXTURE_PLAYER_REPLACE_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-replace.html')).href;
 const FIXTURE_PLAYER_DISCOVERY_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-discovery.html')).href;
@@ -197,6 +198,26 @@ const captionDataPrelude = `
 })();
 `;
 
+const mediaSessionPrelude = `
+(function () {
+  const state = { handlers: {}, metadata: null, positions: [] };
+  window.__wblockMediaSessionState = state;
+  window.MediaMetadata = class {
+    constructor(init) { Object.assign(this, init); }
+  };
+  const session = {
+    get metadata() { return state.metadata; },
+    set metadata(value) { state.metadata = value; },
+    setActionHandler(name, handler) { state.handlers[name] = handler; },
+    setPositionState(value) { state.positions.push(value); },
+    playbackState: 'none'
+  };
+  Object.defineProperty(Navigator.prototype, 'mediaSession', {
+    configurable: true, get: function () { return session; }
+  });
+})();
+`;
+
 const playerPreferencesPrelude = `
 localStorage.setItem('wblock.playerCleaner.preferences', JSON.stringify({
   playbackRate: 1.5, volume: 0.35, muted: true, subtitleLanguage: 'en',
@@ -283,7 +304,7 @@ async function waitForTransform(page) {
   await page.waitForSelector('.wblock-tc-native', { timeout: 10000 }).catch(() => {});
 }
 
-async function runScenario(name, { device, fixture, ua, hasTouch, viewport, scriptSource, readySignal }) {
+async function runScenario(name, { device, fixture, ua, hasTouch, viewport, scriptSource, readySignal, gotoURL, responseBody }) {
   console.log(`\n=== Scenario: ${name} ===`);
   const browser = await webkit.launch();
   const ctxOpts = {};
@@ -297,6 +318,13 @@ async function runScenario(name, { device, fixture, ua, hasTouch, viewport, scri
     contentType: 'image/svg+xml',
     body: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="9"><rect width="16" height="9" fill="#345"/></svg>',
   }));
+  if (gotoURL) {
+    await context.route(/https:\/\/www\.youtube\.com\/shorts\//, route => route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: responseBody || '',
+    }));
+  }
   const page = await context.newPage();
 
   // Inject the real userscript at document-start in the page world.
@@ -305,7 +333,7 @@ async function runScenario(name, { device, fixture, ua, hasTouch, viewport, scri
   const pageErrors = [];
   page.on('pageerror', e => pageErrors.push(e.message));
 
-  await page.goto(fixture, { waitUntil: 'domcontentloaded' });
+  await page.goto(gotoURL || fixture, { waitUntil: gotoURL ? 'commit' : 'domcontentloaded' });
   if (readySignal) await page.waitForSelector(readySignal, { timeout: 10000 }).catch(() => {});
   else await waitForTransform(page);
 
@@ -738,7 +766,7 @@ async function qualityUISelectionCheck(page, scenario) {
   const { browser, page, pageErrors } = await runScenario('desktop (macOS Safari-like)', {
     fixture: FIXTURE_URL,
     viewport: { width: 1280, height: 800 },
-    scriptSource: sponsorBlockPrelude + '\n' + chapterDataPrelude + '\n' + captionDataPrelude + '\n' + deArrowPrelude + '\n' + userscript,
+    scriptSource: sponsorBlockPrelude + '\n' + chapterDataPrelude + '\n' + captionDataPrelude + '\n' + mediaSessionPrelude + '\n' + deArrowPrelude + '\n' + userscript,
   });
   await commonChecks(page, 'desktop');
   await check(page, 'desktop', 'deduplicates and timestamps native chapter cues', () => {
@@ -757,6 +785,44 @@ async function qualityUISelectionCheck(page, scenario) {
     };
   });
   await page.evaluate(() => {
+    const player = document.getElementById('movie_player');
+    const video = player.querySelector('video');
+    let current = 10;
+    Object.defineProperty(video, 'duration', { configurable: true, get: () => 120 });
+    Object.defineProperty(video, 'currentTime', { configurable: true, get: () => current, set: value => { current = value; } });
+    Object.defineProperty(video, 'paused', { configurable: true, get: () => false });
+    player.getVideoData = () => ({ video_id: 'TESTVID123', title: 'Tau in Safari', author: 'Tau Channel', thumbnail: { thumbnails: [{ url: 'https://img.test/tau.jpg' }] } });
+    video.dispatchEvent(new Event('play'));
+    video.dispatchEvent(new Event('timeupdate'));
+  });
+  await page.waitForTimeout(250);
+  await check(page, 'desktop', 'publishes guarded YouTube Now Playing metadata and actions', () => {
+    const state = window.__wblockMediaSessionState;
+    const metadata = state?.metadata;
+    const actions = Object.keys(state?.handlers || {}).sort();
+    return {
+      pass: metadata?.title === 'Tau in Safari' && metadata?.artist === 'Tau Channel' &&
+        metadata?.artwork?.[0]?.src === 'https://img.test/tau.jpg' && metadata?.chapterInfo?.length === 3 &&
+        actions.join(',') === 'pause,play,seekbackward,seekforward,seekto,stop' &&
+        state.positions.length > 0 && navigator.mediaSession.playbackState === 'playing',
+      detail: `title=${metadata?.title} artist=${metadata?.artist} artwork=${metadata?.artwork?.[0]?.src} chapters=${metadata?.chapterInfo?.length} actions=${actions.join(',')} positions=${state?.positions.length}`,
+    };
+  });
+  await page.evaluate(() => {
+    const player = document.getElementById('movie_player');
+    player.getVideoData = () => ({ video_id: 'TESTVID123', title: 'Tau updated', author: 'Updated Channel' });
+    document.dispatchEvent(new Event('yt-page-data-updated'));
+  });
+  await check(page, 'desktop', 'refreshes Now Playing metadata after SPA metadata changes', () => ({
+    pass: window.__wblockMediaSessionState.metadata?.title === 'Tau updated' &&
+      window.__wblockMediaSessionState.metadata?.artist === 'Updated Channel',
+    detail: `title=${window.__wblockMediaSessionState.metadata?.title} artist=${window.__wblockMediaSessionState.metadata?.artist}`,
+  }));
+  await page.evaluate(() => {
+    const player = document.getElementById('movie_player');
+    player.getVideoData = () => ({ video_id: 'TESTVID123', title: 'Tau in Safari', author: 'Tau Channel' });
+    history.replaceState(null, '', location.pathname + '?v=dQw4w9WgXcQ');
+    document.dispatchEvent(new Event('yt-navigate-finish'));
     // A Safari chapter track must not be disabled during a cue refresh: native
     // chapter menus can stop exposing a track after that transition.
     const descriptor = Object.getOwnPropertyDescriptor(TextTrack.prototype, 'mode');
@@ -772,6 +838,7 @@ async function qualityUISelectionCheck(page, scenario) {
     });
     // YouTube can replace ytInitialData after startup. The loadedmetadata pass
     // must retain the already-extracted chapter list instead of emptying it.
+    Object.defineProperty(document.querySelector('#movie_player video'), 'duration', { configurable: true, get: () => NaN });
     window.ytInitialData = {};
     document.querySelector('#movie_player video')?.dispatchEvent(new Event('loadedmetadata'));
   });
@@ -811,6 +878,42 @@ async function qualityUISelectionCheck(page, scenario) {
     return { pass: mode === 'showing' && window.__youtubeSubtitlesOn && window.__subtitleClicks === 1 &&
         window.__youtubeCaptionTrack === 'en' && element?.getAttribute('data-wblock-subtitle-renderer') === 'youtube',
       detail: `nativeMode=${mode} youtubeOn=${window.__youtubeSubtitlesOn} language=${window.__youtubeCaptionTrack} clicks=${window.__subtitleClicks}` };
+  });
+  await page.evaluate(() => {
+    const player = document.getElementById('movie_player');
+    const original = player.setOption;
+    player.__originalSetOption = original;
+    player.setOption = function (module, option, value) {
+      if (module === 'captions' && option === 'track' && value?.languageCode === 'en') throw new Error('fallback regression');
+      return original.call(this, module, option, value);
+    };
+    const tracks = Array.from(document.querySelectorAll('track[data-wblock-native-subtitle]'));
+    tracks[0].track.mode = 'showing';
+    tracks[1].track.mode = 'hidden';
+    document.querySelector('#movie_player video').dispatchEvent(new Event('timeupdate'));
+  });
+  await check(page, 'desktop', 'uses Safari WebVTT fallback when YouTube rejects one caption language', () => {
+    const track = document.querySelectorAll('track[data-wblock-native-subtitle]')[0];
+    return { pass: track?.getAttribute('data-wblock-subtitle-renderer') === 'safari', detail: `renderer=${track?.getAttribute('data-wblock-subtitle-renderer')}` };
+  });
+  await page.evaluate(() => {
+    const tracks = Array.from(document.querySelectorAll('track[data-wblock-native-subtitle]'));
+    tracks[0].track.mode = 'hidden';
+    tracks[1].track.mode = 'showing';
+    document.querySelector('#movie_player video').dispatchEvent(new Event('timeupdate'));
+  });
+  await check(page, 'desktop', 'routes a second caption language to YouTube after fallback switching', () => {
+    const tracks = Array.from(document.querySelectorAll('track[data-wblock-native-subtitle]'));
+    return {
+      pass: tracks[0]?.getAttribute('data-wblock-subtitle-renderer') === 'youtube' &&
+        tracks[1]?.getAttribute('data-wblock-subtitle-renderer') === 'youtube' &&
+        window.__youtubeCaptionTrack === 'es' && tracks[0].src === tracks[0]._wblockNativeSubtitleControlURL,
+      detail: `renderers=${tracks.map(t => t.getAttribute('data-wblock-subtitle-renderer')).join(',')} language=${window.__youtubeCaptionTrack}`,
+    };
+  });
+  await page.evaluate(() => {
+    const player = document.getElementById('movie_player');
+    if (player.__originalSetOption) player.setOption = player.__originalSetOption;
   });
   await page.waitForFunction(() => document.querySelector('#watch-metadata h1 yt-formatted-string')?.textContent === 'Accurate Watch Title' &&
     document.querySelector('ytd-compact-video-renderer #video-title')?.textContent === 'Accurate Related Title');
@@ -1057,7 +1160,72 @@ async function qualityUISelectionCheck(page, scenario) {
       detail: `labels=${labels.join(' | ')} mode=${track?.mode}`,
     };
   });
+  await page.evaluate(() => {
+    const payload = window.ytInitialData;
+    payload.engagementPanels[0].macroMarkersListItemRenderer.title.simpleText = 'Mutated in place';
+    history.replaceState(null, '', location.pathname + '?v=MUTATED01XX');
+    window.__wblockTubeDebug.applyChapters();
+  });
+  await check(page, 'desktop', 'recovers chapters when ytInitialData mutates in place', () => {
+    const video = document.querySelector('#movie_player video');
+    const track = Array.from(video?.textTracks || []).find(t => t.kind === 'chapters');
+    const labels = track?.cues ? Array.from(track.cues).map(c => c.text) : [];
+    return { pass: labels[0] === '0:00  Mutated in place' && track?.mode === 'hidden', detail: `labels=${labels.join(' | ')} mode=${track?.mode}` };
+  });
   record('desktop', 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
+}
+
+// ---- Scenario: persistent YouTube video resume identity ------------------
+{
+  const { browser, page, pageErrors } = await runScenario('Tube Cleaner (persistent SPA resume)', {
+    fixture: FIXTURE_URL,
+    scriptSource: userscript,
+    viewport: { width: 1280, height: 800 },
+  });
+  const S = 'tube-cleaner-persistent-resume';
+  await page.evaluate(() => {
+    const player = document.getElementById('movie_player');
+    player.getVideoData = () => ({ video_id: 'DUMMYVID001' });
+    history.replaceState(null, '', location.pathname + '?v=DUMMYVID001');
+    document.dispatchEvent(new Event('yt-navigate-finish'));
+  });
+  await page.waitForTimeout(100);
+  await page.evaluate(() => {
+    const video = document.querySelector('#movie_player video');
+    window.__wblockResumeCurrent = 37;
+    Object.defineProperty(video, 'currentTime', { configurable: true, get: () => window.__wblockResumeCurrent, set: value => { window.__wblockResumeCurrent = value; } });
+    Object.defineProperty(video, 'duration', { configurable: true, get: () => 120 });
+    Object.defineProperty(video, 'readyState', { configurable: true, get: () => 1 });
+    localStorage.setItem('wblock.tubeCleaner.position.NEXTVIDEO01', JSON.stringify({ time: 88 }));
+    history.replaceState(null, '', location.pathname + '?v=NEXTVIDEO01');
+    document.dispatchEvent(new Event('yt-navigate-finish'));
+  });
+  await page.waitForTimeout(150);
+  await check(page, S, 'does not apply the next URL resume time before YouTube confirms transition', () => ({
+    pass: window.__wblockResumeCurrent === 37 && JSON.parse(localStorage.getItem('wblock.tubeCleaner.position.NEXTVIDEO01')).time === 88,
+    detail: `current=${window.__wblockResumeCurrent} nextSaved=${localStorage.getItem('wblock.tubeCleaner.position.NEXTVIDEO01')}`,
+  }));
+  await page.evaluate(() => {
+    const player = document.getElementById('movie_player');
+    player.getVideoData = () => ({ video_id: 'NEXTVIDEO01' });
+    document.dispatchEvent(new Event('yt-navigate-finish'));
+  });
+  await page.waitForTimeout(100);
+  await check(page, S, 'waits for a confirmed media event before restoring the next video', () => ({
+    pass: window.__wblockResumeCurrent === 37,
+    detail: `beforeMetadata=${window.__wblockResumeCurrent}`,
+  }));
+  await page.evaluate(() => document.querySelector('#movie_player video').dispatchEvent(new Event('loadedmetadata')));
+  await check(page, S, 'restores the confirmed next video position', () => {
+    const video = document.querySelector('#movie_player video');
+    const player = document.getElementById('movie_player');
+    return {
+      pass: window.__wblockResumeCurrent === 88,
+      detail: `afterMetadata=${window.__wblockResumeCurrent} saved=${localStorage.getItem('wblock.tubeCleaner.position.NEXTVIDEO01')} id=${player.getVideoData().video_id} ready=${video.readyState} duration=${video.duration} cleaned=${player.getAttribute('data-wblock-tc-cleaned')}`,
+    };
+  });
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
 }
 
@@ -1121,6 +1289,21 @@ async function qualityUISelectionCheck(page, scenario) {
       pass: square && videoFillsPlayer && placeholderGrew && contentMoved && getComputedStyle(wrap).position === 'absolute',
       detail: `player=${player?.width.toFixed(0)}x${player?.height.toFixed(0)} placeholder=${placeholderRect?.height.toFixed(0)} metadataTop=${metadataRect?.top.toFixed(0)} position=${getComputedStyle(wrap).position}`,
     };
+  });
+  await page.evaluate(() => {
+    const video = document.querySelector('#movie_player video');
+    Object.defineProperty(video, 'webkitDisplayingFullscreen', { configurable: true, get: () => true });
+    video.dispatchEvent(new Event('webkitbeginfullscreen'));
+  });
+  await check(page, S, 'suspends aspect reflow during iOS fullscreen events', () => ({
+    pass: !document.querySelector('#movie_player')?.classList.contains('wblock-tc-aspect-host') &&
+      !document.querySelector('.player-placeholder')?.classList.contains('wblock-tc-aspect-host'),
+    detail: `playerHost=${document.querySelector('#movie_player')?.classList.contains('wblock-tc-aspect-host')} placeholderHost=${document.querySelector('.player-placeholder')?.classList.contains('wblock-tc-aspect-host')}`,
+  }));
+  await page.evaluate(() => {
+    const video = document.querySelector('#movie_player video');
+    Object.defineProperty(video, 'webkitDisplayingFullscreen', { configurable: true, get: () => false });
+    video.dispatchEvent(new Event('webkitendfullscreen'));
   });
 
   await page.evaluate(() => scrollTo(0, 300));
@@ -1233,6 +1416,8 @@ async function qualityUISelectionCheck(page, scenario) {
 {
   const { browser, page, pageErrors } = await runScenario('iPadOS multiple YouTube players', {
     fixture: FIXTURE_TUBE_MULTIPLE_URL,
+    gotoURL: 'https://www.youtube.com/shorts/Shorts12345',
+    responseBody: FIXTURE_TUBE_MULTIPLE_SOURCE,
     ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
     hasTouch: true,
     viewport: { width: 1024, height: 768 },
@@ -1240,6 +1425,14 @@ async function qualityUISelectionCheck(page, scenario) {
     readySignal: '#current-short.wblock-tc-native',
   });
   const S = 'iPad-multiple-players';
+  await check(page, S, 'marks only the active desktop/mobile Shorts reel hosts', () => {
+    const active = document.querySelector('#current-reel');
+    const old = document.querySelector('#previous-reel');
+    return { pass: active?.classList.contains('wblock-tc-short-reel') &&
+      document.querySelector('#shorts-container')?.classList.contains('wblock-tc-short-reel') &&
+      !old?.classList.contains('wblock-tc-short-reel'),
+      detail: `active=${active?.className} old=${old?.className}` };
+  });
   await check(page, S, 'nativeizes the visible playing player, not the first DOM match', () => {
     const selected = window.__wblockTubeDebug.getPlayer();
     const video = document.querySelector('#current-short video');
@@ -1247,14 +1440,94 @@ async function qualityUISelectionCheck(page, scenario) {
       !!document.querySelector('#current-short .wblock-tc-quality-button') &&
       !document.querySelector('#previous-short .wblock-tc-toolbar') };
   });
-  await page.evaluate(() => window.__switchActiveShort());
+  const overlaySetup = await page.evaluate(() => {
+    const player = document.querySelector('#current-short');
+    const host = document.querySelector('#shorts-container');
+    const rect = player?.getBoundingClientRect();
+    if (!player || !host || !rect) return { before: false, detail: 'missing Shorts player/host' };
+    const scrim = document.createElement('div');
+    scrim.className = 'shorts-scrim shorts-overlay';
+    scrim.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;z-index:9999;background:rgba(255,0,0,.05);pointer-events:auto`;
+    host.appendChild(scrim);
+    const before = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2) === scrim;
+    const rail = document.createElement('div');
+    rail.className = 'shorts-action-rail';
+    rail.style.cssText = `position:fixed;left:${rect.right - 56}px;top:${rect.top + 120}px;width:48px;height:48px;z-index:10001`;
+    rail.innerHTML = '<button id="shorts-like" type="button" style="width:48px;height:48px">Like</button>';
+    rail.querySelector('button').addEventListener('click', () => { window.__shortsLikeClicks = (window.__shortsLikeClicks || 0) + 1; });
+    document.body.appendChild(rail);
+    window.__shortsHitPoint = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    window.__shortsRailPoint = { x: rect.right - 32, y: rect.top + 144 };
+    return { before, detail: `hit=${document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)?.className}` };
+  });
+  record(S, 'outer Shorts scrim intercepts the native video before patching', overlaySetup.before, overlaySetup.detail);
+  await check(page, S, 'removes the outer Shorts scrim from native video hit-testing', () => {
+    const point = window.__shortsHitPoint;
+    const hit = point && document.elementFromPoint(point.x, point.y);
+    const scrim = document.querySelector('.shorts-scrim');
+    return { pass: !!point && hit?.tagName === 'VIDEO' &&
+      scrim && getComputedStyle(scrim).display === 'none' && getComputedStyle(scrim).pointerEvents === 'none',
+      detail: `hit=${hit?.tagName}.${hit?.className} scrim=${scrim && getComputedStyle(scrim).display}/${scrim && getComputedStyle(scrim).pointerEvents}` };
+  });
+  const railPoint = await page.evaluate(() => window.__shortsRailPoint);
+  await page.mouse.click(railPoint.x, railPoint.y);
+  await check(page, S, 'keeps the Shorts action rail clickable outside the native video controls', () => ({
+    pass: window.__shortsLikeClicks === 1 && document.elementFromPoint(window.__shortsRailPoint.x, window.__shortsRailPoint.y)?.id === 'shorts-like',
+    detail: `clicks=${window.__shortsLikeClicks} hit=${document.elementFromPoint(window.__shortsRailPoint.x, window.__shortsRailPoint.y)?.id}`,
+  }));
+  await page.evaluate(() => {
+    const host = document.querySelector('#shorts-container');
+    const player = document.querySelector('#current-short');
+    const rect = player.getBoundingClientRect();
+    const unmute = document.createElement('button');
+    unmute.className = 'ytm-custom-control shorts-unmute';
+    unmute.addEventListener('click', () => {
+      const late = document.createElement('div');
+      late.className = 'ytm-watch-player-controls shorts-overlay';
+      late.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;z-index:10000;pointer-events:auto`;
+      host.appendChild(late);
+    });
+    host.appendChild(unmute);
+    unmute.click();
+  });
+  await check(page, S, 'blocks a Shorts control layer inserted after tap to unmute', () => {
+    const point = window.__shortsHitPoint;
+    const hit = point && document.elementFromPoint(point.x, point.y);
+    const late = document.querySelector('.ytm-watch-player-controls');
+    return { pass: !!late && getComputedStyle(late).display === 'none' && hit?.tagName === 'VIDEO',
+      detail: `late=${late && getComputedStyle(late).display} hit=${hit?.tagName}` };
+  });
+  await page.evaluate(() => {
+    window.__switchActiveShort();
+    history.replaceState(null, '', '/shorts/OtherShort1');
+    document.dispatchEvent(new Event('yt-navigate-finish'));
+  });
   await check(page, S, 'moves native enhancements when the active Short changes', () => {
     const selected = window.__wblockTubeDebug.getPlayer();
     const video = document.querySelector('#previous-short video');
     return { pass: selected?.id === 'previous-short' && video.controls &&
       !!document.querySelector('#previous-short .wblock-tc-quality-button') &&
-      !document.querySelector('#current-short .wblock-tc-toolbar'),
-      detail: `selected=${selected?.id}` };
+      !document.querySelector('#current-short .wblock-tc-toolbar') &&
+      document.querySelector('#previous-reel')?.classList.contains('wblock-tc-short-reel') &&
+      !document.querySelector('#current-reel')?.classList.contains('wblock-tc-short-reel') &&
+      !document.querySelector('#current-reel .wblock-tc-short-overlay'),
+      detail: `selected=${selected?.id} oldHost=${document.querySelector('#current-reel')?.className}` };
+  });
+  await page.evaluate(() => {
+    const host = document.querySelector('#previous-reel');
+    const player = document.querySelector('#previous-short');
+    const rect = player.getBoundingClientRect();
+    const late = document.createElement('div');
+    late.className = 'ytd-shorts-player-controls';
+    late.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;z-index:10000;pointer-events:auto`;
+    host.appendChild(late);
+  });
+  await check(page, S, 'patches a late overlay on the newly active reel', () => {
+    const late = document.querySelector('#previous-reel .ytd-shorts-player-controls');
+    const point = document.querySelector('#previous-short video')?.getBoundingClientRect();
+    const hit = point && document.elementFromPoint(point.left + point.width / 2, point.top + point.height / 2);
+    return { pass: !!late && getComputedStyle(late).display === 'none' && hit?.tagName === 'VIDEO',
+      detail: `late=${late && getComputedStyle(late).display} hit=${hit?.tagName}` };
   });
   await check(page, S, 'hides chrome on a non-movie_player instance', () => {
     const chrome = document.querySelector('#previous-short .ytp-chrome-bottom');
@@ -2109,7 +2382,9 @@ for (const config of [
     const video = document.querySelector(selector);
     Object.defineProperty(video, 'paused', { configurable: true, get: () => false });
     Object.defineProperty(video, 'ended', { configurable: true, get: () => false });
-    video.webkitSupportsPresentationMode = true;
+    video.webkitSupportsPresentationMode = function (mode) {
+      return mode === 'picture-in-picture';
+    };
     video.webkitPresentationMode = 'inline';
     video.webkitSetPresentationMode = function (mode) {
       this.webkitPresentationMode = mode;

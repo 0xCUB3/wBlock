@@ -4,6 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Multiple YouTube players (Shorts-style)</title>
+<script>
+  // The document-start cleaner can observe a player before YouTube finishes its
+  // API bootstrapping. Keep the synthetic API surface present from insertion.
+  Object.defineProperties(HTMLElement.prototype, {
+    getOption: { configurable: true, value: function () { return null; } },
+    isSubtitlesOn: { configurable: true, value: function () { return false; } },
+    loadModule: { configurable: true, value: function () {} },
+    setOption: { configurable: true, value: function () {} }
+  });
+</script>
 <style>
   body { margin: 0; background: #111; }
   .short-player { position: relative; width: 390px; height: 680px; background: #000; }
@@ -13,14 +23,20 @@
 </style>
 </head>
 <body>
-  <div id="previous-short" class="html5-video-player short-player is-inactive" aria-hidden="true">
-    <div class="html5-video-container"><video></video></div>
-    <div class="ytp-chrome-bottom">Previous controls</div>
-  </div>
-  <div id="current-short" class="html5-video-player short-player playing-mode" aria-hidden="false">
-    <div class="html5-video-container"><video></video></div>
-    <div class="ytp-chrome-bottom">Current controls</div>
-  </div>
+  <ytd-shorts id="shorts-container">
+    <ytd-reel-video-renderer id="previous-reel">
+      <div id="previous-short" class="html5-video-player short-player is-inactive" aria-hidden="true">
+        <div class="html5-video-container"><video></video></div>
+        <div class="ytp-chrome-bottom">Previous controls</div>
+      </div>
+    </ytd-reel-video-renderer>
+    <ytd-reel-video-renderer id="current-reel" class="ytm-reel-video-renderer">
+      <div id="current-short" class="html5-video-player short-player playing-mode" aria-hidden="false">
+        <div class="html5-video-container"><video></video></div>
+        <div class="ytp-chrome-bottom">Current controls</div>
+      </div>
+    </ytd-reel-video-renderer>
+  </ytd-shorts>
 <script>
 (function () {
   var previous = document.querySelector('#previous-short video');
@@ -38,6 +54,7 @@
     player.getPlaybackQuality = function () { return 'hd720'; };
     player.setPlaybackQualityRange = function () {};
     player.setPlaybackQuality = function () {};
+    player.getOption = function () { return null; };
   }
 
   window.__switchActiveShort = function () {
