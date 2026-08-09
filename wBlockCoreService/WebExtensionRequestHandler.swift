@@ -665,13 +665,13 @@ public enum WebExtensionRequestHandler {
         // While blocking is globally paused, serve no userscripts so the paused state also
         // suppresses userscript/userstyle injection — not just the declarative blockers.
         if BlockingPauseStore.isPaused() {
-            let response = createResponse(with: ["userScripts": []])
+            let response = createResponse(with: userScriptsResponse(userScripts: [], cacheAllowed: false))
             context.completeRequest(returningItems: [response])
             return
         }
 
         guard let urlString = message["url"] as? String else {
-            let response = createResponse(with: ["userScripts": []])
+            let response = createResponse(with: userScriptsResponse(userScripts: [], cacheAllowed: false))
             context.completeRequest(returningItems: [response])
             return
         }
@@ -682,7 +682,7 @@ public enum WebExtensionRequestHandler {
             let disabledSites = await currentDisabledSites()
             if let url = URL(string: urlString) {
                 if HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites) {
-                    let response = createResponse(with: ["userScripts": []])
+                    let response = createResponse(with: userScriptsResponse(userScripts: [], cacheAllowed: false))
                     context.completeRequest(returningItems: [response])
                     return
                 }
@@ -749,6 +749,9 @@ public enum WebExtensionRequestHandler {
                 }
 
                 var descriptor = userScriptDescriptor(script)
+                descriptor["disabledHosts"] = ProtobufDataManager.shared.getUserScriptDisabledHosts(
+                    forScriptID: script.id.uuidString
+                )
                 if script.usesGMStorage {
                     descriptor["storageSnapshot"] = await UserScriptStorageManager.shared.snapshot(
                         for: script.id.uuidString
@@ -779,17 +782,32 @@ public enum WebExtensionRequestHandler {
                 }
             }
 
-            let response = createResponse(with: ["userScripts": userScriptDescriptors])
+            let response = createResponse(with: userScriptsResponse(
+                userScripts: userScriptDescriptors,
+                cacheAllowed: documentStartCacheAllowed
+            ))
             context.completeRequest(returningItems: [response])
         }
     }
 
+    private static func userScriptsResponse(
+        userScripts: [[String: Any]],
+        cacheAllowed: Bool
+    ) -> [String: Any?] {
+        [
+            "userScripts": userScripts,
+            "documentStartCacheAllowed": cacheAllowed,
+            "cacheRevision": BundledUserScriptSources.documentStartCacheRevision
+        ]
+    }
+
     private static func handleGetDocumentStartUserScriptCatalogRequest(context: NSExtensionContext) {
         guard documentStartCacheAllowed, !BlockingPauseStore.isPaused() else {
-            let response = createResponse(with: [
-                "userScripts": [],
-                "documentStartCacheAllowed": documentStartCacheAllowed
-            ])
+            let response = createResponse(with: documentStartCacheResponse(
+                userScripts: [],
+                disabledHosts: [],
+                allowed: false
+            ))
             context.completeRequest(returningItems: [response])
             return
         }
@@ -814,19 +832,34 @@ public enum WebExtensionRequestHandler {
                 descriptor["disabledHosts"] = ProtobufDataManager.shared.getUserScriptDisabledHosts(
                     forScriptID: script.id.uuidString
                 )
+                descriptor["cacheCategory"] = "bundled"
+                descriptor["cacheRevision"] = BundledUserScriptSources.documentStartCacheRevision
                 descriptor["resources"] = script.resourceContents
                 descriptor["content"] = executableContent
                 descriptors.append(descriptor)
                 remainingInlineBudget -= payloadBytes
             }
 
-            let response = createResponse(with: [
-                "userScripts": descriptors,
-                "disabledHosts": globallyDisabledHosts,
-                "documentStartCacheAllowed": true
-            ])
+            let response = createResponse(with: documentStartCacheResponse(
+                userScripts: descriptors,
+                disabledHosts: globallyDisabledHosts,
+                allowed: true
+            ))
             context.completeRequest(returningItems: [response])
         }
+    }
+
+    private static func documentStartCacheResponse(
+        userScripts: [[String: Any]],
+        disabledHosts: [String],
+        allowed: Bool
+    ) -> [String: Any?] {
+        [
+            "userScripts": userScripts,
+            "disabledHosts": disabledHosts,
+            "documentStartCacheAllowed": allowed,
+            "cacheRevision": BundledUserScriptSources.documentStartCacheRevision
+        ]
     }
 
     private static func userScriptDescriptor(_ script: UserScript) -> [String: Any] {
@@ -839,7 +872,8 @@ public enum WebExtensionRequestHandler {
         let injectInto = script.injectInto == "auto" && hasUnsafeWindowGrant
             ? "page" : script.injectInto
 
-        return [
+        let isCanonicalBundled = BuiltInUserScripts.isCanonicalBundled(script)
+        var descriptor: [String: Any] = [
             "id": script.id.uuidString,
             "name": script.name,
             "namespace": UserScriptMetadataParser.extractValue(
@@ -849,18 +883,24 @@ public enum WebExtensionRequestHandler {
             "description": script.description,
             "sourceURL": script.url?.absoluteString ?? "",
             "isLocal": script.isLocal,
+            "isEnabled": script.isEnabled,
             "runAt": script.runAt,
             "noframes": script.noframes,
             "injectInto": injectInto,
             "grant": script.grant,
+            "require": script.require,
+            "resourceURLs": script.resource.map { "\($0.name)=\($0.url)" },
             "matches": script.matches,
             "excludeMatches": script.excludeMatches,
             "includes": script.includes,
             "excludes": script.excludes,
             "updateURL": script.updateURL ?? "",
             "downloadURL": script.downloadURL ?? "",
-            "resourceNames": resourceNames
+            "resourceNames": resourceNames,
+            "cacheCategory": isCanonicalBundled ? "bundled" : "mutable",
+            "cacheRevision": isCanonicalBundled ? BundledUserScriptSources.documentStartCacheRevision : ""
         ]
+        return descriptor
     }
 
     /// Per-script inline allowance for `document-start` userscripts. Timing-critical
@@ -873,9 +913,10 @@ public enum WebExtensionRequestHandler {
     /// native-messaging response.
     private static let totalInlineResponseBudget = 16 * 1024 * 1024
 
+    // SFSafariApplication can dispatch the invalidation message only on macOS.
+    // iOS therefore uses the fresh inline getUserScripts response and never
+    // enables either speculative cache.
     private static var documentStartCacheAllowed: Bool {
-        // The containing app can proactively invalidate Safari WebExtension state
-        // only on macOS. Keep iOS on the existing fresh native-response path.
         #if os(macOS)
         true
         #else

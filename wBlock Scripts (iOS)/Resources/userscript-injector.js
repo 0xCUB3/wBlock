@@ -64,7 +64,11 @@ function isSandboxedWithoutScripts() {
     return false;
 }
 
-const WBLOCK_SESSION_SCRIPT_CACHE_KEY = '__wblock_document_start_scripts_v1';
+const WBLOCK_SESSION_SCRIPT_CACHE_KEY = '__wblock_document_start_scripts_v2';
+const WBLOCK_LEGACY_SESSION_SCRIPT_CACHE_KEY = '__wblock_document_start_scripts_v1';
+// Generated from the canonical bundled userscript sources. The generator updates
+// this marker together with the native and background manifests.
+const WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION = 'd24a42a98dd03422bc2fa58c54b50206b8f82930f2455c296f7408e70a2f119d';
 const WBLOCK_SESSION_SCRIPT_CACHE_MAX_AGE_MS = 60 * 60 * 1000;
 let wBlockSessionStorage = (() => {
     try {
@@ -99,7 +103,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
     class UserScriptEngine {
         constructor() {
             this.injectedScripts = new Set();
-            this.injectingScripts = new Set();
+            this.injectingScripts = new Map();
             this.pendingScripts = []; // Scripts waiting for document to be ready
             this.messageListenerAttached = false; // Ensure listener is attached only once
             this.extensionContextAvailable = false;
@@ -109,12 +113,18 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.xhrBridgeTokens = new Set(); // valid GM_xmlhttpRequest bridge tokens
             this.provisionalSessionScripts = new Map(); // script key -> untrusted early descriptor and bridge token
             this.provisionalXhrRequests = new Map(); // bridge token -> queued requests pending native verification
+            this.trustedDocumentStartScriptsByID = new Map();
+            this.hasReceivedTrustedDocumentStartScripts = false;
             this.pageMenuBridgeElements = new Map(); // bridgeId -> script element
             this.contentMenuCommandCallbacks = new Map(); // bridgeId -> Map(commandId, callback)
             this.registeredMenuCommands = new Map(); // bridgeId -> Map(commandId, descriptor)
             this.pendingMenuInvocations = new Map(); // requestId -> { resolve, timeoutId }
             this.scriptPayloadPromises = new Map(); // scriptId -> Promise<hydrated script>
             this.documentStartSessionCacheFingerprint = null;
+            this.documentStartRequestGeneration = 0;
+            // Native must affirm that this platform can synchronously invalidate
+            // speculative data before any cache is restored or persisted.
+            this.documentStartCacheAllowed = false;
             this.documentRootPromise = null; // earliest safe page-world injection point
             this.rydPrefetchEnabled = false;
             this.menuCommandSequence = 0;
@@ -143,30 +153,56 @@ if (window.wBlockUserscriptInjectorHasRun) {
             // and we forward them through the background/native layer (CORS-free).
             this.setupXhrBridge();
 
-            const injectSessionScripts = () => {
-                const sessionScripts = this.loadDocumentStartSessionCache();
-                if (sessionScripts.length > 0) this.injectUserScripts(sessionScripts);
-            };
-            if (document.documentElement) {
-                injectSessionScripts();
-            } else {
-                this.waitForDocumentRoot().then(injectSessionScripts);
-            }
+            // Never execute page-controlled sessionStorage directly. The extension
+            // owns the warm cache and can invalidate it when native state changes;
+            // this request avoids a native round trip while keeping stale mutable
+            // scripts out of speculative execution.
 
             // Request userscripts from native app
             this.requestCachedDocumentStartUserScripts();
             this.requestUserScripts();
         }
 
-        clearDocumentStartSessionCache() {
+        clearDocumentStartSessionCache({ revokeCapability = true } = {}) {
+            // Clearing is also a revocation: pending persistence callbacks must
+            // not repopulate the cache after native reports a mutation.
+            if (revokeCapability) this.documentStartCacheAllowed = false;
             this.documentStartSessionCacheFingerprint = null;
+            this.pendingScripts = [];
             try {
-                getWBlockSessionStorage()?.removeItem(WBLOCK_SESSION_SCRIPT_CACHE_KEY);
+                const storage = getWBlockSessionStorage();
+                storage?.removeItem(WBLOCK_SESSION_SCRIPT_CACHE_KEY);
+                storage?.removeItem(WBLOCK_LEGACY_SESSION_SCRIPT_CACHE_KEY);
             } catch {}
         }
 
+        invalidateDocumentStartSessionCache() {
+            // An explicit native invalidation revokes every result and every
+            // in-flight request from the previous generation. Cache rejection
+            // and an ordinary capability=false response must not do this: the
+            // fresh request can legitimately run in parallel with the cache
+            // request on iOS.
+            const generation = ++this.documentStartRequestGeneration;
+            this.clearDocumentStartSessionCache();
+            this.trustedDocumentStartScriptsByID.clear();
+            this.hasReceivedTrustedDocumentStartScripts = false;
+            this.provisionalSessionScripts.clear();
+            this.provisionalXhrRequests.clear();
+            this.xhrBridgeTokens.clear();
+            this.storageBridgeScriptIDs.clear();
+            this.scriptPayloadPromises.clear();
+            // Keep completed execution keys: invalidation can revoke privileges and
+            // refresh authority, but must never hot-run a second copy in this document.
+            // In-flight work is generation-guarded and therefore cannot execute.
+            this.injectingScripts.clear();
+            this.requestUserScripts(0, generation);
+        }
+
         isDocumentStartSessionCacheEligible(script) {
-            if (!script || script.isLocal !== false || script.runAt !== 'document-start') return false;
+            if (!script || script.cacheCategory !== 'bundled'
+                || script.cacheRevision !== WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION
+                || script.isEnabled !== true
+                || script.runAt !== 'document-start') return false;
             if (script.injectInto !== 'page' || typeof script.content !== 'string' || script.content.length === 0) return false;
             try {
                 if (new URL(script.sourceURL).protocol !== 'https:') return false;
@@ -199,7 +235,12 @@ if (window.wBlockUserscriptInjectorHasRun) {
             });
         }
 
-        persistDocumentStartSessionCache(scripts) {
+        persistDocumentStartSessionCache(scripts, generation = this.documentStartRequestGeneration) {
+            if (generation !== this.documentStartRequestGeneration) return;
+            if (this.documentStartCacheAllowed !== true) {
+                this.clearDocumentStartSessionCache();
+                return;
+            }
             const cacheableScripts = scripts
                 .filter(script => this.isDocumentStartSessionCacheEligible(script))
                 .map(script => {
@@ -212,7 +253,12 @@ if (window.wBlockUserscriptInjectorHasRun) {
             const usesCspNonce = !!getCspNonce();
             const fingerprint = JSON.stringify([usesCspNonce, cacheableScripts]);
             if (fingerprint === this.documentStartSessionCacheFingerprint) return;
-            const payload = JSON.stringify({ savedAt: Date.now(), usesCspNonce, scripts: cacheableScripts });
+            const payload = JSON.stringify({
+                savedAt: Date.now(),
+                cacheRevision: WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION,
+                usesCspNonce,
+                scripts: cacheableScripts
+            });
             try {
                 const storage = getWBlockSessionStorage();
                 if (!storage) return;
@@ -222,11 +268,17 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         loadDocumentStartSessionCache() {
+            if (this.documentStartCacheAllowed !== true) {
+                this.clearDocumentStartSessionCache();
+                return [];
+            }
             try {
                 const encoded = getWBlockSessionStorage()?.getItem(WBLOCK_SESSION_SCRIPT_CACHE_KEY);
                 if (!encoded) return [];
                 const payload = JSON.parse(encoded);
-                if (!payload || typeof payload.savedAt !== 'number' || Date.now() - payload.savedAt > WBLOCK_SESSION_SCRIPT_CACHE_MAX_AGE_MS) {
+                if (!payload || payload.cacheRevision !== WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION
+                    || typeof payload.savedAt !== 'number'
+                    || Date.now() - payload.savedAt > WBLOCK_SESSION_SCRIPT_CACHE_MAX_AGE_MS) {
                     this.clearDocumentStartSessionCache();
                     return [];
                 }
@@ -251,13 +303,30 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         sessionScriptFingerprint(script) {
-            const resources = Object.entries((script && script.resources) || {}).sort(([left], [right]) => left.localeCompare(right));
-            return JSON.stringify([
-                script && script.id, script && script.sourceURL, script && script.runAt,
-                script && script.injectInto, script && script.grant, script && script.matches,
-                script && script.excludeMatches, script && script.includes, script && script.excludes,
-                resources, script && script.content
-            ]);
+            // Keep this list exhaustive for every field that can affect identity,
+            // matching, execution, privileges, resources, or disabled-host state.
+            // Bridge IDs and provisional markers are intentionally transient.
+            const fields = [
+                'id', 'kind', 'name', 'namespace', 'version', 'description',
+                'sourceURL', 'isLocal', 'isEnabled', 'runAt', 'noframes', 'injectInto',
+                'grant', 'require', 'matches', 'excludeMatches', 'includes', 'excludes',
+                'updateURL', 'downloadURL', 'resourceNames', 'resourceURLs', 'resources',
+                'storageSnapshot', 'disabledHosts', 'content', 'cacheCategory', 'cacheRevision'
+            ];
+            const canonicalize = value => {
+                if (Array.isArray(value)) return value.map(canonicalize);
+                if (value && typeof value === 'object') {
+                    return Object.keys(value).sort().reduce((result, key) => {
+                        result[key] = canonicalize(value[key]);
+                        return result;
+                    }, {});
+                }
+                return value;
+            };
+            return JSON.stringify(fields.reduce((descriptor, field) => {
+                descriptor[field] = canonicalize(script && script[field]);
+                return descriptor;
+            }, {}));
         }
 
         verifyDocumentStartSessionScripts(trustedScripts) {
@@ -875,7 +944,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
             }
         }
 
-        requestUserScripts(attempt = 0) {
+        requestUserScripts(attempt = 0, generation = this.documentStartRequestGeneration) {
+            if (generation !== this.documentStartRequestGeneration) return;
             const url = window.location.href;
             wBlockLog(`[wBlock] Requesting userscripts for URL: ${url}`);
 
@@ -888,23 +958,36 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 maxInlineContentBytes: 128 * 1024
             })
                 .then((response) => {
+                    if (generation !== this.documentStartRequestGeneration) return;
                     if (response && response.error) {
                         throw new Error(response.error);
                     }
 
+                    this.documentStartCacheAllowed = response
+                        && response.documentStartCacheAllowed === true
+                        && response.cacheRevision === WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION;
+                    if (!this.documentStartCacheAllowed) this.clearDocumentStartSessionCache();
                     const scripts = response && response.userScripts ? response.userScripts : [];
+                    this.trustedDocumentStartScriptsByID = new Map(
+                        scripts.filter(script => script && script.id).map(script => [script.id, script])
+                    );
+                    this.hasReceivedTrustedDocumentStartScripts = true;
                     this.verifyDocumentStartSessionScripts(scripts);
                     this.enableReturnYouTubeDislikePrefetch(scripts);
                     if (scripts.length === 0) {
-                        this.persistDocumentStartSessionCache([]);
+                        this.persistDocumentStartSessionCache([], generation);
                         wBlockLog('[wBlock] No userscripts found in getUserScripts response.');
                         return;
                     }
-                    this.injectUserScripts(scripts);
-                    setTimeout(() => this.persistDocumentStartSessionCache(scripts), 0);
+                    this.injectUserScripts(scripts, generation);
+                    setTimeout(() => {
+                        if (generation === this.documentStartRequestGeneration) {
+                            this.persistDocumentStartSessionCache(scripts, generation);
+                        }
+                    }, 0);
                 })
                 .catch((error) => {
-                    this.retryUserScriptRequest(attempt, error);
+                    this.retryUserScriptRequest(attempt, error, generation);
                 });
         }
 
@@ -934,28 +1017,63 @@ if (window.wBlockUserscriptInjectorHasRun) {
             fetch(url).then(response => response.text()).catch(() => {});
         }
 
-        requestCachedDocumentStartUserScripts() {
+        requestCachedDocumentStartUserScripts(generation = this.documentStartRequestGeneration) {
+            if (generation !== this.documentStartRequestGeneration) return;
             this.sendNativeRequest('getCachedDocumentStartUserScripts', { url: window.location.href })
                 .then((response) => {
-                    const scripts = response && Array.isArray(response.userScripts)
+                    if (generation !== this.documentStartRequestGeneration) return;
+                    const cacheAllowed = !!response
+                        && response.documentStartCacheAllowed === true
+                        && response.cacheRevision === WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION;
+                    if (cacheAllowed) this.documentStartCacheAllowed = true;
+                    const scripts = cacheAllowed
+                        && Array.isArray(response.userScripts)
                         ? response.userScripts
+                            .filter(script => this.isDocumentStartSessionCacheEligible(script))
+                            .filter(script => {
+                                if (!this.hasReceivedTrustedDocumentStartScripts) return true;
+                                const trusted = this.trustedDocumentStartScriptsByID.get(script.id);
+                                return !!trusted && this.sessionScriptFingerprint(script) === this.sessionScriptFingerprint(trusted);
+                            })
+                            .map(script => {
+                                const trusted = this.trustedDocumentStartScriptsByID.get(script.id);
+                                if (trusted) return { ...script };
+                                return {
+                                    ...script,
+                                    wblockUntrustedSessionCache: true,
+                                    wblockWaitForCspNonce: script.wblockWaitForCspNonce === true
+                                };
+                            })
                         : [];
                     if (scripts.length > 0) {
-                        this.injectUserScripts(scripts);
-                        setTimeout(() => this.persistDocumentStartSessionCache(scripts), 0);
+                        this.injectUserScripts(scripts, generation);
+                        setTimeout(() => {
+                            if (generation === this.documentStartRequestGeneration) {
+                                this.persistDocumentStartSessionCache(scripts, generation);
+                            }
+                        }, 0);
+                    } else if (!cacheAllowed && this.documentStartCacheAllowed !== true) {
+                        // A cache miss/rejection is not a native invalidation.
+                        // Do not revoke or erase a cache already confirmed by
+                        // the parallel authoritative getUserScripts request.
+                        this.clearDocumentStartSessionCache({ revokeCapability: false });
                     }
                 })
                 .catch(() => {});
         }
 
-        retryUserScriptRequest(attempt, error) {
+        retryUserScriptRequest(attempt, error, generation = this.documentStartRequestGeneration) {
             const delay = this.userScriptRequestRetryDelays[attempt];
             if (typeof delay !== 'number') {
                 wBlockError('[wBlock] Failed to request userscripts:', error);
                 return;
             }
 
-            setTimeout(() => this.requestUserScripts(attempt + 1), delay);
+            setTimeout(() => {
+                if (generation === this.documentStartRequestGeneration) {
+                    this.requestUserScripts(attempt + 1, generation);
+                }
+            }, delay);
         }
 
         setupMessageListener() {
@@ -979,7 +1097,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     }
 
                     if (message && message.type === 'wblock:clearDocumentStartSessionCache') {
-                        this.clearDocumentStartSessionCache();
+                        this.invalidateDocumentStartSessionCache();
                         return Promise.resolve({ ok: true });
                     }
 
@@ -1028,7 +1146,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                         return;
                     }
                     if (event.name === 'wblock:clearDocumentStartSessionCache') {
-                        this.clearDocumentStartSessionCache();
+                        this.invalidateDocumentStartSessionCache();
                         return;
                     }
                     let scriptsToInject = null;
@@ -1056,7 +1174,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
             }
         }
 
-        injectUserScripts(userScripts) {
+        injectUserScripts(userScripts, generation = this.documentStartRequestGeneration) {
+            if (generation !== this.documentStartRequestGeneration) return;
             wBlockLog('[wBlock] injectUserScripts called with:', userScripts);
             if (!Array.isArray(userScripts)) {
                 wBlockWarn('[wBlock] injectUserScripts called with non-array:', userScripts);
@@ -1081,35 +1200,42 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     });
                 });
 
-            orderedScripts.forEach(script => this.injectUserScript(script));
+            orderedScripts.forEach(script => this.injectUserScript(script, generation));
         }
 
-        injectUserScript(script) {
+        scriptExecutionKey(script) {
+            return script && script.id ? String(script.id) : String(script && script.name || '');
+        }
+
+        injectUserScript(script, generation = this.documentStartRequestGeneration) {
+            if (generation !== this.documentStartRequestGeneration) return;
             if (!script || !script.name) {
                 wBlockWarn('[wBlock] Attempted to inject invalid script object:', script);
                 return;
             }
             wBlockLog(`[wBlock] Processing userscript: ${script.name}`);
 
-            if (this.injectedScripts.has(script.name)) {
+            const executionKey = this.scriptExecutionKey(script);
+            if (this.injectedScripts.has(executionKey)) {
                 wBlockLog(`[wBlock] Userscript ${script.name} already injected. Skipping.`);
                 return;
             }
-            if (this.injectingScripts.has(script.name)) {
+            if (this.injectingScripts.get(executionKey) === generation) {
                 wBlockLog(`[wBlock] Userscript ${script.name} is already being injected. Skipping.`);
                 return;
             }
 
-            this.injectSingleScript(script);
+            this.injectSingleScript(script, generation);
         }
 
-        injectSingleScript(script) {
-            this.injectSingleScriptAsync(script).catch((error) => {
+        injectSingleScript(script, generation = this.documentStartRequestGeneration) {
+            this.injectSingleScriptAsync(script, generation).catch((error) => {
                 wBlockError(`[wBlock] Failed to inject userscript ${script && script.name ? script.name : 'unknown'}:`, error);
             });
         }
 
-        async injectSingleScriptAsync(script) {
+        async injectSingleScriptAsync(script, generation = this.documentStartRequestGeneration) {
+            if (generation !== this.documentStartRequestGeneration) return;
             // Check @noframes directive - skip if in iframe
             if (script.noframes && window !== window.top) {
                 wBlockLog(`[wBlock] Skipping ${script.name} in iframe due to @noframes directive`);
@@ -1118,20 +1244,27 @@ if (window.wBlockUserscriptInjectorHasRun) {
             // Userstyles bypass the userscript machinery entirely: the payload is
             // ready-to-apply CSS, so inject a <style> element and stop.
             if (script.kind === 'style') {
-                if (this.injectedScripts.has(script.name) || this.injectingScripts.has(script.name)) {
+                const executionKey = this.scriptExecutionKey(script);
+                if (this.injectedScripts.has(executionKey) || this.injectingScripts.get(executionKey) === generation) {
                     return;
                 }
-                this.injectingScripts.add(script.name);
+                this.injectingScripts.set(executionKey, generation);
                 try {
                     const fullStyle = await this.ensureScriptPayload(script);
+                    if (generation !== this.documentStartRequestGeneration) return;
                     const css = typeof fullStyle.content === 'string' ? fullStyle.content : '';
                     if (css.length > 0) {
                         await this.waitForDocumentRoot();
+                        if (generation !== this.documentStartRequestGeneration) return;
                         this.injectStyleElement(fullStyle, css);
-                        this.injectedScripts.add(script.name);
+                        if (generation === this.documentStartRequestGeneration) {
+                            this.injectedScripts.add(executionKey);
+                        }
                     }
                 } finally {
-                    this.injectingScripts.delete(script.name);
+                    if (this.injectingScripts.get(executionKey) === generation) {
+                        this.injectingScripts.delete(executionKey);
+                    }
                 }
                 return;
             }
@@ -1145,9 +1278,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 return;
             }
 
-            this.injectingScripts.add(script.name);
+            const executionKey = this.scriptExecutionKey(script);
+            this.injectingScripts.set(executionKey, generation);
             try {
                 const fullScript = await this.ensureScriptPayload(script);
+                if (generation !== this.documentStartRequestGeneration) return;
                 const isUntrustedSessionScript = fullScript.wblockUntrustedSessionCache === true;
                 if (!isUntrustedSessionScript && fullScript.id && !fullScript.storageBridgeId) {
                     fullScript.storageBridgeId = this.generateSecret('gmstorage');
@@ -1186,6 +1321,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 // exists—not until DOMContentLoaded—before appending the wrapper.
                 if (injectInto !== 'content') {
                     await this.waitForDocumentRoot();
+                    if (generation !== this.documentStartRequestGeneration) return;
                     if (fullScript.runAt === 'document-start' && !getCspNonce()) {
                         if (fullScript.wblockWaitForCspNonce || !this.inlinePageScriptsCanRun()) {
                             await this.waitForCspNonce();
@@ -1193,6 +1329,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     }
                 }
 
+                if (generation !== this.documentStartRequestGeneration) return;
                 if (injectInto === 'content') {
                     // Execute directly in content script context (CSP-safe)
                     this.injectInContentContext(fullScript);
@@ -1207,10 +1344,14 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     this.injectInPageContext(fullScript);
                 }
 
-                this.injectedScripts.add(fullScript.name);
-                wBlockLog(`[wBlock] Successfully injected and registered userscript: ${fullScript.name} at ${fullScript.runAt || 'document-end'}`);
+                if (generation === this.documentStartRequestGeneration) {
+                    this.injectedScripts.add(executionKey);
+                    wBlockLog(`[wBlock] Successfully injected and registered userscript: ${fullScript.name} at ${fullScript.runAt || 'document-end'}`);
+                }
             } finally {
-                this.injectingScripts.delete(script.name);
+                if (this.injectingScripts.get(executionKey) === generation) {
+                    this.injectingScripts.delete(executionKey);
+                }
             }
         }
 

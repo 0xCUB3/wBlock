@@ -686,7 +686,6 @@ extension ProtobufDataManager {
         
         appData = updatedData
         await saveData()
-        UserScriptManager.invalidateDocumentStartExecutionCache()
     }
 
     /// Drops legacy embedded userscript source bodies from protobuf once they have

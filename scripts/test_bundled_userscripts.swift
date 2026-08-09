@@ -52,6 +52,12 @@ let tubeSource = read("wBlockCoreService/BundledUserscripts/tube-cleaner.user.js
 let playerSource = read("wBlockCoreService/BundledUserscripts/player-cleaner.user.js")
 let generated = read("wBlockCoreService/BundledUserScriptSources.generated.swift")
 let managerSource = read("wBlockCoreService/UserScriptManager.swift")
+let extensionBackgroundSource = read("extension-src/background.js")
+let shippedBackgroundSource = read("wBlock Scripts (iOS)/Resources/background.js")
+let injectorSource = read("wBlock Scripts (iOS)/Resources/userscript-injector.js")
+let requestHandlerSource = read("wBlockCoreService/WebExtensionRequestHandler.swift")
+let protobufManagerSource = read("wBlockCoreService/ProtobufDataManager.swift")
+let generatorSource = read("scripts/generate_bundled_userscripts.py")
 
 // --- 1. JavaScript syntax -------------------------------------------------
 
@@ -220,6 +226,94 @@ func normalized(_ value: String) -> String {
 
 let tubeConstant = extractConstant(generated, "tubeCleaner")
 let playerConstant = extractConstant(generated, "playerCleaner")
+let revisionPrefix = "static let documentStartCacheRevision = \""
+guard let revisionStart = generated.range(of: revisionPrefix) else {
+    fail("generated Swift is missing the bundled cache revision")
+}
+let revisionBodyStart = revisionStart.upperBound
+let revisionEnd = generated[revisionBodyStart...].firstIndex(of: "\"") ?? revisionBodyStart
+let cacheRevision = String(generated[revisionBodyStart..<revisionEnd])
+if cacheRevision.isEmpty {
+    fail("bundled cache revision is empty")
+}
+if !extensionBackgroundSource.contains(cacheRevision)
+    || !shippedBackgroundSource.contains(cacheRevision)
+    || !injectorSource.contains(cacheRevision) {
+    fail("bundled cache revision drifted between Swift and JavaScript manifests")
+}
+for needle in [
+    "cacheCategory",
+    "cacheAllowed",
+    "getCachedDocumentStartUserScripts",
+    "wblock:clearDocumentStartSessionCache",
+] {
+    guard shippedBackgroundSource.contains(needle) else {
+        fail("shipped background lost generated cache behavior: \(needle)")
+    }
+}
+guard generatorSource.contains("subprocess.run") &&
+      generatorSource.contains("minify-extension-js.sh") &&
+      generatorSource.contains("__WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION__") else {
+    fail("bundled generator does not rebuild all cache artifacts")
+}
+
+// Run the exact repository generation command and require byte-for-byte
+// idempotence. This also proves the shipped background is freshly generated,
+// rather than merely containing a matching revision string.
+let generatedArtifactPaths = [
+    "wBlockCoreService/BundledUserScriptSources.generated.swift",
+    "extension-src/background.js",
+    "wBlock Scripts (iOS)/Resources/userscript-injector.js",
+    "wBlock Scripts (iOS)/Resources/background.js",
+]
+let beforeGeneration = generatedArtifactPaths.map { read($0).data(using: .utf8)! }
+let generationResult = run("/usr/bin/python3", ["scripts/generate_bundled_userscripts.py"])
+guard generationResult.status == 0 else {
+    fail("exact bundled generator command failed:\n\(generationResult.output)")
+}
+let afterGeneration = generatedArtifactPaths.map { read($0).data(using: .utf8)! }
+guard beforeGeneration == afterGeneration else {
+    fail("bundled generator is not idempotent; shipped artifacts changed")
+}
+
+// The native catalog response is the authority for speculative execution. Keep
+// its top-level contract explicit on both the disabled and populated branches;
+// this guards the real Swift response source rather than fabricating a JS reply.
+guard requestHandlerSource.contains("private static func documentStartCacheResponse(") &&
+      requestHandlerSource.contains("\"cacheRevision\": BundledUserScriptSources.documentStartCacheRevision") &&
+      requestHandlerSource.contains("allowed: false") &&
+      requestHandlerSource.contains("allowed: true") &&
+      requestHandlerSource.components(separatedBy: "documentStartCacheResponse(").count >= 3 else {
+    fail("native document-start catalog responses must all carry cacheRevision")
+}
+for needle in [
+    "BuiltInUserScripts.isCanonicalBundled(script)",
+    "return hydrated.filter(BuiltInUserScripts.isCanonicalBundled)",
+    "script.cacheCategory !== \"bundled\"",
+    "script.isEnabled !== true",
+    "getCachedDocumentStartUserScripts",
+    "#if os(macOS)",
+    "private static var documentStartCacheAllowed: Bool",
+    "allowed: false",
+    "documentStartCacheAllowed === true",
+    "documentStartCacheCapabilityKnown",
+    "sessionScriptFingerprint(script)",
+    "'noframes'",
+    "'disabledHosts'",
+    "'resourceURLs'",
+    "await persistUserScriptsNow()",
+    "await persistUserScriptsNow(invalidateExecutionCache: false)",
+    "if changed {\n            UserScriptManager.invalidateDocumentStartExecutionCache()",
+] {
+    guard managerSource.contains(needle)
+        || extensionBackgroundSource.contains(needle)
+        || requestHandlerSource.contains(needle)
+        || protobufManagerSource.contains(needle)
+        || injectorSource.contains(needle)
+        || shippedBackgroundSource.contains(needle) else {
+        fail("cache safety contract is missing: \(needle)")
+    }
+}
 
 if normalized(tubeConstant) != normalized(tubeSource) {
     fail("generated tubeCleaner constant drifted from tube-cleaner.user.js; run scripts/generate_bundled_userscripts.py")
@@ -242,6 +336,15 @@ if let swiftc = which("swiftc") {
 // --- 5. Swift wiring ------------------------------------------------------
 
 for needle in [
+    "script.name == canonical.name",
+    "storedNamespace == canonicalNamespace",
+    "script.version == canonical.version",
+    "script.noframes == canonical.noframes",
+    "script.resource == canonical.resource",
+    "script.isLocal == canonical.isLocal",
+    "script.updateURL == canonical.updateURL",
+    "script.downloadURL == canonical.downloadURL",
+    "script.content == canonical.content",
     "let bundledContent: String?",
     "static let tubeCleanerURL",
     "static let playerCleanerURL",

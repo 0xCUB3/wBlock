@@ -982,7 +982,8 @@ public class ProtobufDataManager: ObservableObject {
     /// Replaces the disabled-host list for one script; empty list removes the entry.
     @MainActor
     public func setUserScriptDisabledHosts(_ hosts: [String], forScriptID id: String) async {
-        await updateDataImmediately { data in
+        guard getUserScriptDisabledHosts(forScriptID: id) != hosts else { return }
+        let changed = await updateDataImmediately { data in
             if hosts.isEmpty {
                 data.userScriptDisabledHosts.removeValue(forKey: id)
             } else {
@@ -991,21 +992,27 @@ public class ProtobufDataManager: ObservableObject {
                 data.userScriptDisabledHosts[id] = list
             }
         }
-        UserScriptManager.invalidateDocumentStartExecutionCache()
+        if changed {
+            UserScriptManager.invalidateDocumentStartExecutionCache()
+        }
     }
 
     /// Replaces the whole exceptions map (backup restore / cloud sync / migration).
     @MainActor
     public func setAllUserScriptDisabledHosts(_ map: [String: [String]]) async {
-        await updateDataImmediately { data in
+        let desired = map.filter { !$0.value.isEmpty }
+        guard getUserScriptDisabledHosts() != desired else { return }
+        let changed = await updateDataImmediately { data in
             data.userScriptDisabledHosts.removeAll()
-            for (id, hosts) in map where !hosts.isEmpty {
+            for (id, hosts) in desired {
                 var list = Wblock_Data_HostList()
                 list.hosts = hosts
                 data.userScriptDisabledHosts[id] = list
             }
         }
-        UserScriptManager.invalidateDocumentStartExecutionCache()
+        if changed {
+            UserScriptManager.invalidateDocumentStartExecutionCache()
+        }
     }
 
     // MARK: - Singleton

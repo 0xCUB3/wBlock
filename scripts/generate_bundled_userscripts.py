@@ -6,10 +6,14 @@ The generated file embeds each userscript as a Swift extended raw-string
 constant (###\"\"\" ... \"\"\"###) so the wBlockCoreService framework can ship
 the scripts without any bundle-resource wiring. Run this whenever a bundled
 userscript changes; scripts/test_bundled_userscripts.swift fails if the
-generated constants drift from the .user.js sources.
+generated constants drift from the .user.js sources. It also refreshes the
+cross-process document-start cache revision in the extension and injector.
 """
 
+import hashlib
 import os
+import re
+import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -33,10 +37,18 @@ def main():
     lines.append("")
     lines.append("import Foundation")
     lines.append("")
+    revision_material = "\n".join(
+        open(os.path.join(SRC_DIR, file_name), "r", encoding="utf-8").read().rstrip("\n")
+        for _, file_name in SOURCES
+    )
+    cache_revision = hashlib.sha256(revision_material.encode("utf-8")).hexdigest()
+
     lines.append("/// Userscripts that ship inside the wBlockCoreService framework rather than")
     lines.append("/// being downloaded from a remote URL. Content is embedded verbatim so the")
     lines.append("/// scripts work offline and update alongside the app.")
     lines.append("enum BundledUserScriptSources {")
+    lines.append('    static let documentStartCacheRevision = "{}"'.format(cache_revision))
+    lines.append("")
 
     for const_name, file_name in SOURCES:
         path = os.path.join(SRC_DIR, file_name)
@@ -62,7 +74,39 @@ def main():
     with open(OUT, "w", encoding="utf-8") as handle:
         handle.write("\n".join(lines))
 
-    sys.stdout.write("Wrote %s\n" % os.path.relpath(OUT, ROOT))
+    # Keep the shipped JS manifests tied to the same source hash. This makes
+    # bundled content/app upgrades invalidate old extension/session caches
+    # without a manually bumped version constant.
+    marker = "__WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION__"
+    for relative_path in [
+        os.path.join("extension-src", "background.js"),
+        os.path.join("wBlock Scripts (iOS)", "Resources", "userscript-injector.js"),
+    ]:
+        path = os.path.join(ROOT, relative_path)
+        with open(path, "r", encoding="utf-8") as handle:
+            source = handle.read()
+        updated, count = re.subn(re.escape(marker), cache_revision, source)
+        if count == 0:
+            updated, count = re.subn(
+                r"(?<=WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION = ['\"]).*?(?=['\"])",
+                cache_revision,
+                source,
+            )
+        if count == 0:
+            raise RuntimeError("missing cache revision marker in {}".format(relative_path))
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write(updated)
+
+    # The shipped background is a minified build artifact. Rebuild it from the
+    # just-updated extension source so this generator is a complete, repeatable
+    # source-to-artifact operation rather than a hash-only update.
+    subprocess.run(
+        [os.path.join(ROOT, "scripts", "minify-extension-js.sh")],
+        cwd=ROOT,
+        check=True,
+    )
+
+    sys.stdout.write("Wrote %s (cache revision %s)\n" % (os.path.relpath(OUT, ROOT), cache_revision))
     return 0
 
 

@@ -19,6 +19,7 @@ const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const injectorPath = process.argv[2]
   ?? path.join(repoRoot, "wBlock Scripts (iOS)", "Resources", "userscript-injector.js");
 const source = readFileSync(injectorPath, "utf8");
+const cacheRevision = (source.match(/WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION = ['\"]([^'\"]+)/) || [])[1] || "";
 
 let failures = 0;
 const check = (name, cond) => {
@@ -48,6 +49,9 @@ const fakeScript = {
   grant: ["GM_xmlhttpRequest"],
   injectInto: "page",
   runAt: "document-start",
+  isEnabled: true,
+  cacheCategory: "bundled",
+  cacheRevision,
 };
 
 // ---------------------------------------------------------------------------
@@ -82,6 +86,8 @@ function buildContentScriptSandbox(
   userScripts = [fakeScript],
   href = "https://example.com/page",
   cachedUserScripts = [],
+  documentStartCacheAllowed = true,
+  nativeHandler = null,
 ) {
   const head = makeElement("head");
   head.appendChild = (c) => {
@@ -124,7 +130,7 @@ function buildContentScriptSandbox(
   };
   const sessionValues = new Map();
   if (initialSessionValue !== null) {
-    sessionValues.set("__wblock_document_start_scripts_v1", initialSessionValue);
+    sessionValues.set("__wblock_document_start_scripts_v2", initialSessionValue);
   }
   const sessionStorageWrites = [];
   sandbox.sessionStorage = {
@@ -153,14 +159,23 @@ function buildContentScriptSandbox(
     runtime: {
       sendMessage: async (msg) => {
         sentMessages.push(msg);
-        if (msg.action === "getUserScripts") return { userScripts };
-        if (msg.action === "getCachedDocumentStartUserScripts") return { userScripts: cachedUserScripts };
+        if (nativeHandler) return nativeHandler(msg, sandbox);
+        if (msg.action === "getUserScripts") return {
+          userScripts,
+          documentStartCacheAllowed,
+          cacheRevision
+        };
+        if (msg.action === "getCachedDocumentStartUserScripts") return {
+          userScripts: cachedUserScripts,
+          cacheRevision,
+          documentStartCacheAllowed
+        };
         if (msg.action === "gmXmlhttpRequest") {
           return { status: 200, responseText: "OK", responseHeaders: "", finalUrl: msg.url };
         }
         return { ok: true };
       },
-      onMessage: { addListener() {} },
+      onMessage: { addListener: (fn) => { sandbox.__onMessage = fn; } },
       connect: () => ({ onMessage: { addListener() {} }, onDisconnect: { addListener() {} }, postMessage() {}, disconnect() {} }),
     },
   };
@@ -216,7 +231,7 @@ const portBridgeId = (wrapperSource.match(/const portBridgeId = '([^']*)';/) || 
 check("wrapper embeds a non-empty xhrBridgeId", xhrBridgeId.length > 0);
 check("wrapper embeds a non-empty portBridgeId", portBridgeId.length > 0);
 
-const persistedSessionCache = contentSandbox.__sessionValues.get("__wblock_document_start_scripts_v1") || "";
+const persistedSessionCache = contentSandbox.__sessionValues.get("__wblock_document_start_scripts_v2") || "";
 check("session cache does not persist privileged bridge IDs", !/BridgeId|gm(?:xhr|storage|menu|port)-/.test(persistedSessionCache));
 
 const cachedDescriptor = { ...fakeScript, xhrBridgeId: "cached-token" };
@@ -237,7 +252,7 @@ check(
 );
 check(
   "deduplicated session cache strips runtime bridge IDs",
-  !/cached-token|native-token/.test(unchangedCacheSandbox.__sessionValues.get("__wblock_document_start_scripts_v1") || ""),
+  !/cached-token|native-token/.test(unchangedCacheSandbox.__sessionValues.get("__wblock_document_start_scripts_v2") || ""),
 );
 
 const staleDescriptor = { ...fakeScript, content: "window.__staleCache = true;" };
@@ -252,7 +267,7 @@ vm.runInContext(source, refreshedCacheSandbox, { filename: "userscript-injector-
 await tick();
 await tick();
 const refreshedCache = JSON.parse(
-  refreshedCacheSandbox.__sessionValues.get("__wblock_document_start_scripts_v1") || "{}",
+  refreshedCacheSandbox.__sessionValues.get("__wblock_document_start_scripts_v2") || "{}",
 );
 check("changed native descriptors refresh session storage", refreshedCacheSandbox.__sessionStorageWrites.length === 2);
 check("session cache keeps the current native payload", refreshedCache.scripts?.[0]?.content === USER_SCRIPT_CONTENT);
@@ -262,6 +277,90 @@ check("session cache keeps the current native payload", refreshedCache.scripts?.
 // ---------------------------------------------------------------------------
 
 const gmXhrCalls = () => sentMessages.filter((m) => m && m.action === "gmXmlhttpRequest");
+
+async function assertCacheSkipped(label, descriptor) {
+  const wrapperIndex = appendedScripts.length;
+  const sandbox = buildContentScriptSandbox(null, [], "https://example.com/page", [descriptor]);
+  vm.createContext(sandbox);
+  vm.runInContext(source, sandbox, { filename: `userscript-injector-${label}.js` });
+  await tick();
+  await tick();
+  check(`${label} cache is skipped before execution`, appendedScripts.length === wrapperIndex);
+}
+
+await assertCacheSkipped("stale-revision", { ...fakeScript, cacheRevision: "old-revision" });
+await assertCacheSkipped("disabled", { ...fakeScript, isEnabled: false });
+await assertCacheSkipped("mutable", { ...fakeScript, cacheCategory: "mutable" });
+
+const staleSessionWrapperIndex = appendedScripts.length;
+const staleSessionSandbox = buildContentScriptSandbox(
+  JSON.stringify({ savedAt: Date.now(), cacheRevision: "old-revision", scripts: [fakeScript] }),
+  [],
+  "https://example.com/page",
+  [],
+);
+vm.createContext(staleSessionSandbox);
+vm.runInContext(source, staleSessionSandbox, { filename: "userscript-injector-stale-session.js" });
+await tick();
+await tick();
+check("injector does not restore stale page sessionStorage directly", appendedScripts.length === staleSessionWrapperIndex);
+
+const freshIOSWrapperIndex = appendedScripts.length;
+const freshIOSSandbox = buildContentScriptSandbox(
+  null,
+  [fakeScript],
+  "https://example.com/page",
+  [fakeScript],
+  false,
+);
+vm.createContext(freshIOSSandbox);
+vm.runInContext(source, freshIOSSandbox, { filename: "userscript-injector-ios-fresh.js" });
+await tick();
+await tick();
+const freshIOSWrapper = appendedScripts[freshIOSWrapperIndex] || "";
+check(
+  "unsupported cache capability skips speculative payload but runs fresh inline userscripts",
+  freshIOSWrapper.includes("const xhrBridgeId = '")
+    && freshIOSSandbox.__sessionStorageWrites.length === 0
+);
+
+for (const [label, mutation] of [
+  ["noframes", { noframes: true }],
+  ["matches", { matches: ["https://example.com/*", "https://other.example/*"] }],
+  ["disabled-hosts", { disabledHosts: ["example.com"] }],
+]) {
+  const wrapperIndex = appendedScripts.length;
+  const sandbox = buildContentScriptSandbox(
+    null,
+    [],
+    "https://example.com/page",
+    [{ ...fakeScript, ...mutation }],
+    true,
+  );
+  vm.createContext(sandbox);
+  vm.runInContext(source, sandbox, { filename: `userscript-injector-fingerprint-${label}.js` });
+  await tick();
+  await tick();
+  const wrapper = appendedScripts[wrapperIndex] || "";
+  const token = (wrapper.match(/const xhrBridgeId = '([^']*)';/) || [])[1] || "";
+  sandbox.__listeners = windowMessageListeners;
+  vm.runInContext(
+    `globalThis.__fire = (data) => { for (const fn of globalThis.__listeners) fn({ source: window, data }); };`,
+    sandbox,
+  );
+  const beforeMutation = gmXhrCalls().length;
+  if (token) {
+    vm.runInContext(
+      `__fire({ type: 'wblock-gm-xhr-request', id: 'mutation-${label}', bridgeId: ${JSON.stringify(token)}, url: 'https://${label}.invalid/', method: 'GET' });`,
+      sandbox,
+    );
+    await tick();
+  }
+  check(
+    `${label} cache mutation cannot authorize privileged bridge access`,
+    gmXhrCalls().length === beforeMutation
+  );
+}
 
 // (a) An arbitrary page script posting without a valid token is ignored.
 const beforeBad = gmXhrCalls().length;
@@ -289,35 +388,43 @@ vm.runInContext(
 await tick();
 check("XHR bridge accepts a request with the issued token", gmXhrCalls().some((m) => m.url === "https://ok.example/"));
 
-// (d) sessionStorage is controlled by the page. A forged early descriptor may
-// run as page code, but its bridge token must remain powerless after the native
-// descriptor fails byte-for-byte verification.
-const forgedScript = { ...fakeScript, content: "window.__forgedSessionScriptRan = true;" };
-const forgedCache = JSON.stringify({ savedAt: Date.now(), usesCspNonce: false, scripts: [forgedScript] });
-const forgedWrapperIndex = appendedScripts.length;
-const forgedSandbox = buildContentScriptSandbox(forgedCache);
-vm.createContext(forgedSandbox);
-vm.runInContext(source, forgedSandbox, { filename: "userscript-injector-forged-cache.js" });
-forgedSandbox.__listeners = windowMessageListeners;
+// (d) The cached descriptor comes from the background, not page sessionStorage.
+// A descriptor mismatch may be injected provisionally for document-start timing,
+// but it must never receive a privileged bridge token after native verification.
+const mismatchCachedScript = { ...fakeScript, content: "window.__forgedBackgroundCache = true;" };
+const mismatchWrapperIndex = appendedScripts.length;
+const mismatchSandbox = buildContentScriptSandbox(
+  null,
+  [fakeScript],
+  "https://example.com/page",
+  [mismatchCachedScript],
+);
+vm.createContext(mismatchSandbox);
+vm.runInContext(source, mismatchSandbox, { filename: "userscript-injector-background-cache-mismatch.js" });
+mismatchSandbox.__listeners = windowMessageListeners;
 vm.runInContext(
   `globalThis.__fire = (data) => { for (const fn of globalThis.__listeners) fn({ source: window, data }); };`,
-  forgedSandbox,
+  mismatchSandbox,
 );
 await tick();
 await tick();
-const forgedWrapper = appendedScripts[forgedWrapperIndex] || "";
-const forgedXhrBridgeId = (forgedWrapper.match(/const xhrBridgeId = '([^']*)';/) || [])[1] || "";
-const beforeForged = gmXhrCalls().length;
+const mismatchWrapper = appendedScripts[mismatchWrapperIndex] || "";
+const mismatchXhrBridgeId = (mismatchWrapper.match(/const xhrBridgeId = '([^']*)';/) || [])[1] || "";
+const beforeMismatch = gmXhrCalls().length;
 vm.runInContext(
-  `__fire({ type: 'wblock-gm-xhr-request', id: 'forged-cache', bridgeId: ${JSON.stringify(forgedXhrBridgeId)}, url: 'https://forged.example/', method: 'GET' });`,
-  forgedSandbox,
+  `__fire({ type: 'wblock-gm-xhr-request', id: 'mismatch-cache', bridgeId: ${JSON.stringify(mismatchXhrBridgeId)}, url: 'https://forged.example/', method: 'GET' });`,
+  mismatchSandbox,
 );
 await tick();
-check("forged session cache cannot obtain GM_xmlhttpRequest authority", forgedXhrBridgeId.length > 0 && gmXhrCalls().length === beforeForged);
+check(
+  "mismatched background cache remains provisional after native verification",
+  mismatchWrapper.includes("window.__forgedBackgroundCache = true;")
+    && mismatchXhrBridgeId.length > 0
+    && gmXhrCalls().length === beforeMismatch,
+);
 
-const trustedCache = JSON.stringify({ savedAt: Date.now(), usesCspNonce: false, scripts: [fakeScript] });
 const trustedWrapperIndex = appendedScripts.length;
-const trustedSandbox = buildContentScriptSandbox(trustedCache);
+const trustedSandbox = buildContentScriptSandbox(null, [fakeScript], "https://example.com/page", [fakeScript]);
 vm.createContext(trustedSandbox);
 vm.runInContext(source, trustedSandbox, { filename: "userscript-injector-trusted-cache.js" });
 trustedSandbox.__listeners = windowMessageListeners;
@@ -327,14 +434,120 @@ vm.runInContext(
 );
 await tick();
 await tick();
+await tick();
+await tick();
 const trustedWrapper = appendedScripts[trustedWrapperIndex] || "";
 const trustedXhrBridgeId = (trustedWrapper.match(/const xhrBridgeId = '([^']*)';/) || [])[1] || "";
-vm.runInContext(
-  `__fire({ type: 'wblock-gm-xhr-request', id: 'verified-cache', bridgeId: ${JSON.stringify(trustedXhrBridgeId)}, url: 'https://verified.example/', method: 'GET' });`,
-  trustedSandbox,
+check(
+  "matching cached descriptor injects a single userscript wrapper",
+  trustedWrapper.length > 0 && trustedXhrBridgeId.length > 0 && appendedScripts.length === trustedWrapperIndex + 1
 );
+
+const trustedWrapperCountBeforeInvalidation = appendedScripts.length;
+await trustedSandbox.__onMessage({ type: "wblock:clearDocumentStartSessionCache" });
 await tick();
-check("native-verified session cache receives GM_xmlhttpRequest authority", gmXhrCalls().some((m) => m.url === "https://verified.example/"));
+await tick();
+check(
+  "invalidation does not hot-run a second copy of an already executed script",
+  appendedScripts.length === trustedWrapperCountBeforeInvalidation,
+);
+
+// (e) A native invalidation creates a new request generation. Resolve both
+// pre-clear replies after the clear, in an adversarial order, and ensure only
+// the authoritative post-clear body is scheduled for execution.
+const deferred = () => {
+  let resolve;
+  const promise = new Promise((r) => { resolve = r; });
+  return { promise, resolve };
+};
+const oldCachedReply = deferred();
+const oldFreshReply = deferred();
+const authoritativeReply = deferred();
+let freshRequestCount = 0;
+const raceWrapperIndex = appendedScripts.length;
+const raceSandbox = buildContentScriptSandbox(
+  null,
+  [],
+  "https://example.com/page",
+  [],
+  true,
+  (msg) => {
+    if (msg.action === "getCachedDocumentStartUserScripts") return oldCachedReply.promise;
+    if (msg.action === "getUserScripts") {
+      freshRequestCount += 1;
+      return freshRequestCount === 1 ? oldFreshReply.promise : authoritativeReply.promise;
+    }
+    return { ok: true };
+  },
+);
+vm.createContext(raceSandbox);
+vm.runInContext(source, raceSandbox, { filename: "userscript-injector-generation-race.js" });
+await tick();
+check("invalidation race has both an old fresh request and a cached request", freshRequestCount === 1);
+await raceSandbox.__onMessage({ type: "wblock:clearDocumentStartSessionCache" });
+check("explicit cache invalidation requests a fresh authoritative result", freshRequestCount === 2);
+oldCachedReply.resolve({
+  userScripts: [{ ...fakeScript, content: "window.__staleAfterClear = true;" }],
+  cacheRevision,
+  documentStartCacheAllowed: true,
+});
+oldFreshReply.resolve({
+  userScripts: [{ ...fakeScript, content: "window.__staleAfterClear = true;" }],
+  cacheRevision,
+  documentStartCacheAllowed: true,
+});
+await tick();
+await tick();
+authoritativeReply.resolve({
+  userScripts: [{ ...fakeScript, content: "window.__authoritativeAfterClear = (window.__authoritativeAfterClear || 0) + 1;" }],
+  cacheRevision,
+  documentStartCacheAllowed: true,
+});
+await tick();
+await tick();
+const raceWrappers = appendedScripts.slice(raceWrapperIndex);
+check(
+  "stale cached and fresh replies never execute after invalidation",
+  !raceWrappers.some(wrapper => wrapper.includes("window.__staleAfterClear")),
+);
+check(
+  "authoritative post-clear userscript executes exactly once",
+  raceWrappers.filter(wrapper => wrapper.includes("window.__authoritativeAfterClear")).length === 1,
+);
+
+const parallelCachedReply = deferred();
+const parallelWrapperIndex = appendedScripts.length;
+const parallelSandbox = buildContentScriptSandbox(
+  null,
+  [fakeScript],
+  "https://example.com/page",
+  [],
+  true,
+  (msg) => {
+    if (msg.action === "getCachedDocumentStartUserScripts") return parallelCachedReply.promise;
+    if (msg.action === "getUserScripts") return {
+      userScripts: [fakeScript],
+      cacheRevision,
+      documentStartCacheAllowed: true,
+    };
+    return { ok: true };
+  },
+);
+vm.createContext(parallelSandbox);
+vm.runInContext(source, parallelSandbox, { filename: "userscript-injector-parallel-ios.js" });
+await tick();
+await tick();
+parallelCachedReply.resolve({
+  userScripts: [],
+  cacheRevision,
+  documentStartCacheAllowed: false,
+});
+await tick();
+check(
+  "parallel cache rejection does not revoke fresh iOS capability",
+  appendedScripts.slice(parallelWrapperIndex).length === 1
+    && parallelSandbox.__sessionStorageWrites.length === 1,
+);
 
 // ---------------------------------------------------------------------------
 // Phase 3: evaluate the wrapper as the page would, and check GM_xmlhttpRequest

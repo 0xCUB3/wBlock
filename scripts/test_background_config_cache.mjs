@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const bundlePath = path.join(repoRoot, "wBlock Scripts (iOS)", "Resources", "background.js");
 const bundleSource = readFileSync(bundlePath, "utf8");
+const cacheRevision = (bundleSource.match(/[a-f0-9]{64}/) || [])[0] || "";
 
 const CACHE_KEY = "wblockConfigCacheV1";
 const DOCUMENT_START_SCRIPT_CACHE_KEY = "wblockDocumentStartScriptCacheV1";
@@ -48,7 +49,8 @@ const loadBackground = ({ storage = {}, nativeHandler, executeScript = async () 
     nativeMessages: [],
     cssInserted: [],
     executed: [],
-    onMessage: null
+    onMessage: null,
+    nativePortMessage: null
   };
 
   const defaultNative = async message => {
@@ -66,6 +68,10 @@ const loadBackground = ({ storage = {}, nativeHandler, executeScript = async () 
         return defaultNative(message);
       },
       onMessage: { addListener: fn => { state.onMessage = fn; } },
+      connectNative: () => ({
+        onMessage: { addListener: fn => { state.nativePortMessage = fn; } },
+        onDisconnect: { addListener: () => {} }
+      }),
       onInstalled: listenerStub,
       onStartup: listenerStub
     },
@@ -667,6 +673,9 @@ for (const [label, inertState, activeCSS] of [
     excludes: [],
     resourceNames: [],
     content: "window.__vencordTest = true;",
+    isEnabled: true,
+    cacheCategory: "bundled",
+    cacheRevision,
     storageSnapshot: { shouldNotPersist: true }
   };
   const storageScript = {
@@ -678,30 +687,44 @@ for (const [label, inertState, activeCSS] of [
     resourceNames: [],
     content: "window.__storageTest = GM_getValue('value');"
   };
+  const editedBundled = {
+    ...vencord,
+    id: "edited-bundled",
+    sourceURL: "https://bundled.wblock.invalid/tube-cleaner.user.js",
+    content: "window.__editedBundled = true;",
+    cacheCategory: "mutable"
+  };
   const fullTinyShield = {
     ...vencord,
     id: "tinyshield-full",
     name: "tinyShield",
     sourceURL: "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js",
-    matches: ["*://tinyshield.example/*"]
+    matches: ["*://tinyshield.example/*"],
+    cacheCategory: "mutable"
   };
   const groupedTinyShield = {
     ...vencord,
     id: "tinyshield-grouped",
     name: "tinyShield (example)",
     sourceURL: "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/e/tinyShield-example.user.js",
-    matches: ["*://tinyshield.example/*"]
+    matches: ["*://tinyshield.example/*"],
+    cacheCategory: "mutable"
   };
   const state = loadBackground({
     storage: {},
     nativeHandler: message => {
       if (message && message.action === "getUserScripts") {
-        return { userScripts: [vencord, storageScript] };
+        return {
+          userScripts: [vencord, storageScript],
+          documentStartCacheAllowed: true,
+          cacheRevision
+        };
       }
       if (message && message.action === "getDocumentStartUserScriptCatalog") {
         return {
-          userScripts: [vencord, storageScript, fullTinyShield, groupedTinyShield],
+          userScripts: [vencord, storageScript, editedBundled, fullTinyShield, groupedTinyShield],
           disabledHosts: [],
+          cacheRevision,
           documentStartCacheAllowed: true
         };
       }
@@ -726,7 +749,7 @@ for (const [label, inertState, activeCSS] of [
   await Promise.race([request, sleep(500)]);
   check("userscript lookup bypasses a blocked native configuration queue", resolved);
   check("priority userscript lookup returns the native scripts", response && response.userScripts.length === 2);
-  await sleep(20);
+  await sleep(100);
 
   const persisted = state.storage[DOCUMENT_START_SCRIPT_CACHE_KEY];
   const persistedScripts = persisted && persisted.catalog;
@@ -741,7 +764,12 @@ for (const [label, inertState, activeCSS] of [
     storage: { [DOCUMENT_START_SCRIPT_CACHE_KEY]: persisted },
     nativeHandler: message => {
       if (message && message.action === "getDocumentStartUserScriptCatalog") {
-        return new Promise(() => {});
+        return {
+          userScripts: persisted.catalog,
+          disabledHosts: persisted.disabledHosts,
+          cacheRevision,
+          documentStartCacheAllowed: true
+        };
       }
       return { payload: makeConfig([], 1) };
     }
@@ -753,6 +781,14 @@ for (const [label, inertState, activeCSS] of [
   check(
     "persisted document-start script is available after a cold background restart",
     cachedResponse && cachedResponse.userScripts.some(script => script.id === "vencord")
+  );
+  check(
+    "cached document-start response carries the top-level cache revision",
+    cachedResponse && cachedResponse.cacheRevision === cacheRevision
+  );
+  check(
+    "cached document-start response explicitly allows the warm cache",
+    cachedResponse && cachedResponse.documentStartCacheAllowed === true
   );
   const catalogResponse = await coldState.onMessage({
     action: "getCachedDocumentStartUserScripts",
@@ -773,8 +809,17 @@ for (const [label, inertState, activeCSS] of [
     url: "https://tinyshield.example/"
   }, topFrameSender("https://tinyshield.example/"));
   check(
-    "catalog suppresses a grouped tinyShield variant when the full script runs",
-    tinyShieldResponse.userScripts.length === 1 && tinyShieldResponse.userScripts[0].id === "tinyshield-full"
+    "mutable downloaded scripts are excluded from speculative cache",
+    tinyShieldResponse.userScripts.length === 0
+  );
+
+  const editedBundledResponse = await coldState.onMessage({
+    action: "getCachedDocumentStartUserScripts",
+    url: "https://www.youtube.com/"
+  }, topFrameSender("https://www.youtube.com/"));
+  check(
+    "edited bundled-URL content is excluded from speculative cache",
+    editedBundledResponse.userScripts.every(script => script.id !== "edited-bundled")
   );
 
   await coldState.onMessage({ action: "wblock:clearCache" }, topFrameSender(pageUrl));
@@ -783,6 +828,164 @@ for (const [label, inertState, activeCSS] of [
     !Object.hasOwn(coldState.storage, DOCUMENT_START_SCRIPT_CACHE_KEY)
   );
 }
+
+// Scenario M: a warmed cache is synchronously disabled and cleared when the
+// native host reports a userscript mutation. This models the macOS invalidation
+// channel and also checks the paused/unsupported response contract.
+{
+  const pageUrl = "https://example.com/";
+  let cacheAllowed = true;
+  const warmCatalog = {
+    userScripts: [{
+      id: "warm-script",
+      name: "Warm script",
+      sourceURL: "https://warm.example/script.user.js",
+      isEnabled: true,
+      runAt: "document-start",
+      injectInto: "page",
+      grant: ["none"],
+      matches: ["https://example.com/*"],
+      excludeMatches: [],
+      includes: [],
+      excludes: [],
+      resourceNames: [],
+      content: "window.__warm = true;",
+      cacheCategory: "bundled",
+      cacheRevision
+    }],
+    disabledHosts: [],
+    cacheRevision,
+    documentStartCacheAllowed: true
+  };
+  const state = loadBackground({
+    storage: {},
+    nativeHandler: message => {
+      if (message && message.action === "getDocumentStartUserScriptCatalog") {
+        return cacheAllowed ? warmCatalog : {
+          userScripts: [],
+          disabledHosts: [],
+          cacheRevision,
+          documentStartCacheAllowed: false
+        };
+      }
+      if (message && message.action === "getUserScripts") {
+        return {
+          userScripts: [],
+          documentStartCacheAllowed: cacheAllowed,
+          cacheRevision
+        };
+      }
+      return { payload: makeConfig([], 1) };
+    }
+  });
+  await sleep(100);
+  const warmResponse = await state.onMessage({
+    action: "getCachedDocumentStartUserScripts",
+    url: pageUrl
+  }, topFrameSender(pageUrl));
+  check("background cache warms before a userscript mutation", warmResponse.documentStartCacheAllowed === true);
+  check("warmed background cache returns its script", warmResponse.userScripts.length === 1);
+
+  cacheAllowed = false;
+  state.nativePortMessage({ action: "wblock:userscriptsChanged" });
+  await sleep(30);
+  const clearedResponse = await state.onMessage({
+    action: "getCachedDocumentStartUserScripts",
+    url: pageUrl
+  }, topFrameSender(pageUrl));
+  check("userscriptsChanged clears the warmed background cache", clearedResponse.userScripts.length === 0);
+  check("userscriptsChanged disables speculative execution", clearedResponse.documentStartCacheAllowed === false);
+  check("userscriptsChanged removes the persisted cache", !Object.hasOwn(state.storage, DOCUMENT_START_SCRIPT_CACHE_KEY));
+}
+
+// Scenario N: an in-flight catalog reply from before invalidation must never
+// reactivate stale data or clear the newer refresh promise.
+{
+  const pageUrl = "https://example.com/";
+  const deferred = () => {
+    let resolve;
+    const promise = new Promise(r => { resolve = r; });
+    return { promise, resolve };
+  };
+  const oldReply = deferred();
+  const authoritativeReply = deferred();
+  let catalogRequestCount = 0;
+  const staleScript = {
+    id: "stale-catalog-script",
+    name: "Stale catalog script",
+    sourceURL: "https://warm.example/stale.user.js",
+    isEnabled: true,
+    runAt: "document-start",
+    injectInto: "page",
+    grant: ["none"],
+    matches: ["https://example.com/*"],
+    excludeMatches: [],
+    includes: [],
+    excludes: [],
+    resourceNames: [],
+    content: "window.__staleCatalog = true;",
+    cacheCategory: "bundled",
+    cacheRevision
+  };
+  const authoritativeScript = {
+    ...staleScript,
+    id: "authoritative-catalog-script",
+    name: "Authoritative catalog script",
+    content: "window.__authoritativeCatalog = true;"
+  };
+  const state = loadBackground({
+    storage: {},
+    nativeHandler: message => {
+      if (message && message.action === "getDocumentStartUserScriptCatalog") {
+        catalogRequestCount += 1;
+        return catalogRequestCount === 1 ? oldReply.promise : authoritativeReply.promise;
+      }
+      return { payload: makeConfig([], 1) };
+    }
+  });
+  for (let attempt = 0; attempt < 20 && catalogRequestCount < 1; attempt += 1) await sleep(0);
+  check("catalog refresh starts before the mutation", catalogRequestCount === 1);
+  state.nativePortMessage({ action: "wblock:userscriptsChanged" });
+  for (let attempt = 0; attempt < 20 && catalogRequestCount < 2; attempt += 1) await sleep(0);
+  check("mutation starts a distinct post-clear catalog refresh", catalogRequestCount === 2);
+  oldReply.resolve({
+    userScripts: [staleScript],
+    disabledHosts: [],
+    cacheRevision,
+    documentStartCacheAllowed: true
+  });
+  await sleep(0);
+  check(
+    "stale catalog reply cannot repopulate persisted cache while new refresh is in flight",
+    !Object.hasOwn(state.storage, DOCUMENT_START_SCRIPT_CACHE_KEY)
+  );
+  const pendingCatalogLookup = state.onMessage({
+    action: "getCachedDocumentStartUserScripts",
+    url: pageUrl
+  }, topFrameSender(pageUrl));
+  await sleep(0);
+  check(
+    "stale refresh finally cannot detach the newer in-flight refresh",
+    catalogRequestCount === 2
+  );
+  authoritativeReply.resolve({
+    userScripts: [authoritativeScript],
+    disabledHosts: [],
+    cacheRevision,
+    documentStartCacheAllowed: true
+  });
+  await sleep(10);
+  const finalCatalog = await pendingCatalogLookup;
+  check(
+    "authoritative post-clear catalog is the only catalog served",
+    finalCatalog.userScripts.length === 1 && finalCatalog.userScripts[0].id === authoritativeScript.id
+  );
+  check(
+    "stale catalog content never reactivates",
+    finalCatalog.userScripts.every(script => script.content !== staleScript.content)
+  );
+}
+
 
 if (failures > 0) {
   console.error(`\n${failures} check(s) failed`);

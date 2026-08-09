@@ -219,11 +219,61 @@ enum BuiltInUserScripts {
     static func bundledContent(forURL url: String) -> String? {
         bundledContentByURL[url]
     }
+
+    /// A stable URL is only an identity. A script is cacheable as bundled when
+    /// every persisted/execution-relevant descriptor field still matches the
+    /// embedded source. Runtime-loaded resource contents are deliberately ignored;
+    /// the resource declarations themselves remain part of the comparison.
+    static func isCanonicalBundled(_ script: UserScript) -> Bool {
+        guard let urlString = script.url?.absoluteString,
+              let canonicalContent = bundledContent(forURL: urlString),
+              !script.isUserStyle,
+              !script.content.isEmpty
+        else { return false }
+
+        var canonical = UserScript(id: script.id, name: script.name, url: script.url, content: canonicalContent)
+        canonical.isLocal = false
+        canonical.parseMetadata()
+        let storedNamespace = UserScriptMetadataParser.extractValue(
+            for: "namespace", from: script.content
+        ) ?? ""
+        let canonicalNamespace = UserScriptMetadataParser.extractValue(
+            for: "namespace", from: canonicalContent
+        ) ?? ""
+
+        // isEnabled is the user's selection, while lastUpdated and
+        // updatesAutomatically are runtime/preferences state rather than the
+        // bundled descriptor. All other UserScript fields are compared here.
+        return script.name == canonical.name
+            && storedNamespace == canonicalNamespace
+            && script.url == canonical.url
+            && script.description == canonical.description
+            && script.version == canonical.version
+            && script.matches == canonical.matches
+            && script.excludeMatches == canonical.excludeMatches
+            && script.includes == canonical.includes
+            && script.excludes == canonical.excludes
+            && script.runAt == canonical.runAt
+            && script.injectInto == canonical.injectInto
+            && script.grant == canonical.grant
+            && script.require == canonical.require
+            && script.resource == canonical.resource
+            && script.noframes == canonical.noframes
+            && script.isUserStyle == canonical.isUserStyle
+            && script.isLocal == canonical.isLocal
+            && script.updateURL == canonical.updateURL
+            && script.downloadURL == canonical.downloadURL
+            && script.content == canonical.content
+            && script.executableContent == canonical.executableContent
+    }
 }
 
 @MainActor
 public class UserScriptManager: ObservableObject {
     public static func invalidateDocumentStartExecutionCache() {
+        // Safari exposes the unsolicited app -> extension message channel only on
+        // macOS. Keep this single mutation hook in the manager so every supported
+        // native path shares the same invalidation contract when connected.
         #if os(macOS)
         SFSafariApplication.dispatchMessage(
             withName: "wblock:userscriptsChanged",
@@ -918,7 +968,7 @@ public class UserScriptManager: ObservableObject {
 
         logger.info("🗑️ Removed \(originalCount - self.userScripts.count) duplicate, \(self.userScripts.count) remaining")
 
-        await dataManager.updateUserScripts(userScripts)
+        await persistUserScriptsNow()
     }
 
     /// Checks for duplicates and presents confirmation dialog to user
@@ -1701,9 +1751,12 @@ public class UserScriptManager: ObservableObject {
     /// Persists the current in-memory userscripts and waits for completion. Use this in async flows
     /// where the caller needs stronger ordering guarantees.
     @MainActor
-    private func persistUserScriptsNow() async {
+    private func persistUserScriptsNow(invalidateExecutionCache: Bool = true) async {
         logger.info("💾 Saving \(self.userScripts.count) userscripts to ProtobufDataManager")
         await dataManager.updateUserScripts(userScripts)
+        if invalidateExecutionCache {
+            Self.invalidateDocumentStartExecutionCache()
+        }
         logger.info(
             "💾 Successfully saved \(self.userScripts.count) userscripts to ProtobufDataManager")
     }
@@ -2132,7 +2185,7 @@ public class UserScriptManager: ObservableObject {
         logger.info(
             "💾 Persisting userscript toggle for \(userScript.name): \(self.userScripts[index].isEnabled)"
         )
-        await dataManager.updateUserScripts(self.userScripts)
+        await persistUserScriptsNow()
         logger.info("💾 Userscripts saved after toggle")
     }
 
@@ -2159,7 +2212,7 @@ public class UserScriptManager: ObservableObject {
         statusDescription =
             isEnabled ? "Enabled \(userScript.name)" : "Disabled \(userScript.name)"
         logger.info("💾 Persisting userscript setEnabled for \(userScript.name): \(isEnabled)")
-        await dataManager.updateUserScripts(self.userScripts)
+        await persistUserScriptsNow()
         logger.info("💾 Userscripts saved after setEnabled")
     }
 
@@ -2173,7 +2226,7 @@ public class UserScriptManager: ObservableObject {
             ? "Automatic updates enabled for \(userScript.name)"
             : "Automatic updates paused for \(userScript.name)"
         logger.info("💾 Persisting userscript update preference for \(userScript.name): \(updatesAutomatically)")
-        await dataManager.updateUserScripts(self.userScripts)
+        await persistUserScriptsNow(invalidateExecutionCache: false)
         logger.info("💾 Userscripts saved after update preference change")
     }
 
@@ -2269,7 +2322,7 @@ public class UserScriptManager: ObservableObject {
 
         if changed {
             logger.info("💾 Persisting batch userscript enable states for \(enabledIDs.count) scripts")
-            await dataManager.updateUserScripts(self.userScripts)
+            await persistUserScriptsNow()
             logger.info("💾 Userscripts saved after batch setEnabled")
         } else {
             logger.info("ℹ️ No userscript enable state changes to persist (batch)")
@@ -2634,7 +2687,8 @@ public class UserScriptManager: ObservableObject {
         let scripts = userScripts.filter {
             $0.isEnabled && !$0.isUserStyle && $0.runAt == "document-start"
         }
-        return await hydrateUserScriptsFromDisk(scripts, includeResources: true)
+        let hydrated = await hydrateUserScriptsFromDisk(scripts, includeResources: true)
+        return hydrated.filter(BuiltInUserScripts.isCanonicalBundled)
     }
 
     /// The grouped regional tinyShield scripts are strict subsets of the full tinyShield
