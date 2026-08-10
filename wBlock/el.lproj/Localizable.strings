@@ -387,6 +387,7 @@
 "FilterApply" = "Εφαρμογή φίλτρου";
 "Filtering off" = "Το φιλτράρισμα είναι απενεργοποιημένο";
 "Filters" = "Φίλτρα";
+"Filters: %d / Userscripts: %d" = "Φίλτρα: %d / Σενάρια χρήστη: %d";
 "Filters and scripts applied successfully." = "Filters and scripts applied successfully.";
 "Filters applied successfully." = "Τα φίλτρα εφαρμόστηκαν με επιτυχία.";
 "Filters Auto-Disabled" = "Φίλτρα αυτόματα απενεργοποιημένα";

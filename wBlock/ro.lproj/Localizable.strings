@@ -387,6 +387,7 @@
 "FilterApply" = "Aplicare filtre";
 "Filtering off" = "Filtrarea dezactivată";
 "Filters" = "Filtre";
+"Filters: %d / Userscripts: %d" = "Filtre: %d / Scripturi utilizator: %d";
 "Filters and scripts applied successfully." = "Filters and scripts applied successfully.";
 "Filters applied successfully." = "Filtrele au fost aplicate cu succes.";
 "Filters Auto-Disabled" = "Filtre dezactivate automat";

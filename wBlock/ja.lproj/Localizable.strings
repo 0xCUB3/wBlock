@@ -387,6 +387,7 @@
 "FilterApply" = "フィルター適用";
 "Filtering off" = "フィルタリングオフ";
 "Filters" = "フィルター";
+"Filters: %d / Userscripts: %d" = "フィルター: %d / ユーザースクリプト: %d";
 "Filters and scripts applied successfully." = "Filters and scripts applied successfully.";
 "Filters applied successfully." = "フィルターを適用しました。";
 "Filters Auto-Disabled" = "フィルターが自動で無効化されました";

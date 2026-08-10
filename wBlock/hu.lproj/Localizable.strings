@@ -387,6 +387,7 @@
 "FilterApply" = "Szűrő Alkalmaz";
 "Filtering off" = "Szűrés kikapcsolva";
 "Filters" = "Szűrők";
+"Filters: %d / Userscripts: %d" = "Szűrők: %d / Felhasználói szkriptek: %d";
 "Filters and scripts applied successfully." = "Filters and scripts applied successfully.";
 "Filters applied successfully." = "A szűrők sikeresen alkalmazva.";
 "Filters Auto-Disabled" = "Szűrők automatikusan letiltva";

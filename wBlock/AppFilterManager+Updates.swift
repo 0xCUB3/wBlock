@@ -127,9 +127,7 @@ extension AppFilterManager {
                 )
             }
 
-            self.applyProgressViewModel.updateUpdatesFound(
-                successfullyUpdatedFilters.count + successfullyUpdatedScripts.count
-            )
+            self.applyProgressViewModel.updateFilterUpdatesFound(successfullyUpdatedFilters.count)
 
             // Continue into the normal apply pipeline (convert / save / reload).
             // Keep the existing progress sheet state so review → progress feels continuous,

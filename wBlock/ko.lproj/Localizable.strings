@@ -387,6 +387,7 @@
 "FilterApply" = "필터 적용";
 "Filtering off" = "필터링 끔";
 "Filters" = "필터";
+"Filters: %d / Userscripts: %d" = "필터: %d / 사용자 스크립트: %d";
 "Filters and scripts applied successfully." = "Filters and scripts applied successfully.";
 "Filters applied successfully." = "필터가 성공적으로 적용되었습니다.";
 "Filters Auto-Disabled" = "필터 자동 비활성화됨";

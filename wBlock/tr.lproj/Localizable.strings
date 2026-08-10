@@ -387,6 +387,7 @@
 "FilterApply" = "Filtreyi Uygula";
 "Filtering off" = "Filtreleme kapalı";
 "Filters" = "Filtreler";
+"Filters: %d / Userscripts: %d" = "Filtreler: %d / Kullanıcı betikleri: %d";
 "Filters and scripts applied successfully." = "Filtreler ve betikler başarıyla uygulandı.";
 "Filters applied successfully." = "Filtreler başarıyla uygulandı.";
 "Filters Auto-Disabled" = "Filtreler otomatik devre dışı bırakıldı";

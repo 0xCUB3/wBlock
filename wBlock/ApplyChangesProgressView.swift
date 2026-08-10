@@ -256,8 +256,16 @@ struct ApplyChangesProgressView: View {
             )
             StatCard(
                 title: String(localized: "Updates"),
-                value: viewModel.state.updatesFound.formatted(),
-                icon: "arrow.down.circle"
+                value: viewModel.state.totalUpdatesFound.formatted(),
+                icon: "arrow.down.circle",
+                detail: String.localizedStringWithFormat(
+                    NSLocalizedString(
+                        "Filters: %d / Userscripts: %d",
+                        comment: "Update count breakdown"
+                    ),
+                    viewModel.state.filterUpdatesFound,
+                    viewModel.state.scriptsUpdatedCount
+                )
             )
         }
     }
@@ -444,7 +452,7 @@ struct ApplyChangesProgressView: View {
                 return nil
             }
             if step.status == .complete {
-                let count = viewModel.state.updatesFound
+                let count = viewModel.state.filterUpdatesFound
                 if count > 0 {
                     return localizedCountDetail("Downloaded %d updates", count: count)
                 }

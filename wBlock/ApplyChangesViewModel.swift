@@ -92,7 +92,7 @@ struct ApplyChangesState: Equatable {
     /// Per-phase progress for target-based phases.
     var convertingDone: Int = 0
     var reloadingDone: Int = 0
-    var updatesFound: Int = 0
+    var filterUpdatesFound: Int = 0
     var phases: [ApplyChangesPhaseProgress] = ApplyChangesPhase.allCases.map {
         ApplyChangesPhaseProgress(phase: $0, status: .pending)
     }
@@ -100,6 +100,10 @@ struct ApplyChangesState: Equatable {
 
     var progressPercentage: Int {
         Int((0...1).clamp(progress) * 100)
+    }
+
+    var totalUpdatesFound: Int {
+        filterUpdatesFound + scriptsUpdatedCount
     }
 
     var isComplete: Bool {
@@ -228,9 +232,10 @@ class ApplyChangesViewModel: ObservableObject {
         state.statusMessage = description
     }
 
-    func updateUpdatesFound(_ count: Int) {
-        guard count != state.updatesFound else { return }
-        state.updatesFound = count
+    func updateFilterUpdatesFound(_ count: Int) {
+        let clamped = max(0, count)
+        guard clamped != state.filterUpdatesFound else { return }
+        state.filterUpdatesFound = clamped
     }
 
     func updateScriptsUpdateResult(updated: Int, failed: Int) {

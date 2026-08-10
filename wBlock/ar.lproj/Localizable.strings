@@ -387,6 +387,7 @@
 "FilterApply" = "تطبيق الفلتر";
 "Filtering off" = "التصفية متوقفة";
 "Filters" = "الفلاتر";
+"Filters: %d / Userscripts: %d" = "عوامل التصفية: %d / نصوص المستخدم: %d";
 "Filters and scripts applied successfully." = "Filters and scripts applied successfully.";
 "Filters applied successfully." = "تم تطبيق الفلاتر بنجاح.";
 "Filters Auto-Disabled" = "تم تعطيل الفلاتر تلقائيًا";

@@ -387,6 +387,7 @@
 "FilterApply" = "应用过滤器";
 "Filtering off" = "过滤已关闭";
 "Filters" = "过滤器";
+"Filters: %d / Userscripts: %d" = "过滤器：%d / 用户脚本：%d";
 "Filters and scripts applied successfully." = "Filters and scripts applied successfully.";
 "Filters applied successfully." = "过滤器已成功应用。";
 "Filters Auto-Disabled" = "过滤器已自动禁用";

@@ -387,6 +387,7 @@
 "FilterApply" = "Aplicação de filtros";
 "Filtering off" = "Filtragem desativada";
 "Filters" = "Filtros";
+"Filters: %d / Userscripts: %d" = "Filtros: %d / Scripts de usuário: %d";
 "Filters and scripts applied successfully." = "Filters and scripts applied successfully.";
 "Filters applied successfully." = "Filtros aplicados com sucesso.";
 "Filters Auto-Disabled" = "Filtros desativados automaticamente";

@@ -12,12 +12,20 @@ struct StatCard: View {
     let value: String
     let icon: String
     let valueColor: Color
+    let detail: String?
 
-    init(title: String, value: String, icon: String, valueColor: Color = .primary) {
+    init(
+        title: String,
+        value: String,
+        icon: String,
+        valueColor: Color = .primary,
+        detail: String? = nil
+    ) {
         self.title = title
         self.value = value
         self.icon = icon
         self.valueColor = valueColor
+        self.detail = detail
     }
 
     var body: some View {
@@ -52,6 +60,15 @@ struct StatCard: View {
                     .minimumScaleFactor(0.6)
                     .allowsTightening(true)
                     .frame(minWidth: 60, alignment: .leading)
+
+                if let detail, !detail.isEmpty {
+                    Text(detail)
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                        .allowsTightening(true)
+                }
             }
         }
         .padding(.vertical, 12)

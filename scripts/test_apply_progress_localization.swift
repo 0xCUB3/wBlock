@@ -7,6 +7,7 @@ struct ApplyProgressLocalizationTests {
         let localizationRootURL = rootURL.appendingPathComponent("wBlock", isDirectory: true)
         let expectedKey = "Applying filters...\n(This may take a while)"
         let escapedKey = #"Applying filters...\n(This may take a while)"#
+        let updateBreakdownKey = "Filters: %d / Userscripts: %d"
 
         do {
             let localeDirectories = try FileManager.default.contentsOfDirectory(
@@ -36,6 +37,13 @@ struct ApplyProgressLocalizationTests {
 
                 guard !value.contains(#"\n"#) else {
                     fail("apply progress value contains a literal \\n in \(localeDirectory.lastPathComponent)")
+                }
+
+                guard let updateBreakdown = table[updateBreakdownKey] else {
+                    fail("missing localized update breakdown key in \(localeDirectory.lastPathComponent)")
+                }
+                guard updateBreakdown.components(separatedBy: "%d").count == 3 else {
+                    fail("update breakdown must preserve two integer placeholders in \(localeDirectory.lastPathComponent)")
                 }
             }
         } catch {

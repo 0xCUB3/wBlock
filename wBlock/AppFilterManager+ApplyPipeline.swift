@@ -197,7 +197,7 @@ extension AppFilterManager {
                 let updatedFilters = refreshResult.updated
 
                 await MainActor.run {
-                    self.applyProgressViewModel.updateUpdatesFound(updatedFilters.count)
+                    self.applyProgressViewModel.updateFilterUpdatesFound(updatedFilters.count)
                 }
 
                 if refreshResult.failedCount > 0 {

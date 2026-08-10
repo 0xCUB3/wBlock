@@ -387,6 +387,7 @@
 "FilterApply" = "套用過濾器";
 "Filtering off" = "過濾已關閉";
 "Filters" = "過濾器";
+"Filters: %d / Userscripts: %d" = "過濾器：%d / 使用者腳本：%d";
 "Filters and scripts applied successfully." = "Filters and scripts applied successfully.";
 "Filters applied successfully." = "過濾器已成功套用。";
 "Filters Auto-Disabled" = "過濾器已自動停用";
