@@ -9,13 +9,73 @@ struct ApplyProgressLocalizationTests {
         let escapedKey = #"Applying filters...\n(This may take a while)"#
         let updateBreakdownKey = "Filters: %d / Userscripts: %d"
         let expectedStatusValuesByLocale = [
+            "ar.lproj": [
+                "Checking for Updates": "جارٍ التحقق من تحديثات عوامل التصفية",
+                "Updating Scripts": "جارٍ التحقق من تحديثات نصوص المستخدم",
+            ],
+            "de.lproj": [
+                "Checking for Updates": "Suche nach Filter-Updates",
+                "Updating Scripts": "Suche nach Userscript-Updates",
+            ],
+            "el.lproj": [
+                "Checking for Updates": "Έλεγχος για ενημερώσεις φίλτρων",
+                "Updating Scripts": "Έλεγχος για ενημερώσεις σεναρίων χρήστη",
+            ],
             "en.lproj": [
                 "Checking for Updates": "Checking for Filter Updates",
                 "Updating Scripts": "Checking for Userscript Updates",
             ],
+            "es.lproj": [
+                "Checking for Updates": "Buscando actualizaciones de filtros",
+                "Updating Scripts": "Buscando actualizaciones de scripts de usuario",
+            ],
+            "fr.lproj": [
+                "Checking for Updates": "Recherche de mises à jour des filtres",
+                "Updating Scripts": "Recherche de mises à jour des scripts utilisateur",
+            ],
+            "hu.lproj": [
+                "Checking for Updates": "Szűrőfrissítések keresése",
+                "Updating Scripts": "Felhasználói szkriptfrissítések keresése",
+            ],
+            "it.lproj": [
+                "Checking for Updates": "Controllo aggiornamenti dei filtri",
+                "Updating Scripts": "Controllo aggiornamenti degli script utente",
+            ],
             "ja.lproj": [
                 "Checking for Updates": "フィルターを更新中",
                 "Updating Scripts": "ユーザースクリプトを更新中",
+            ],
+            "ko.lproj": [
+                "Checking for Updates": "필터 업데이트 확인 중",
+                "Updating Scripts": "사용자 스크립트 업데이트 확인 중",
+            ],
+            "pl.lproj": [
+                "Checking for Updates": "Sprawdzanie aktualizacji filtrów",
+                "Updating Scripts": "Sprawdzanie aktualizacji skryptów użytkownika",
+            ],
+            "pt-BR.lproj": [
+                "Checking for Updates": "Verificando atualizações de filtros",
+                "Updating Scripts": "Verificando atualizações de scripts de usuário",
+            ],
+            "ro.lproj": [
+                "Checking for Updates": "Se verifică actualizările filtrelor",
+                "Updating Scripts": "Se verifică actualizările scripturilor de utilizator",
+            ],
+            "ru.lproj": [
+                "Checking for Updates": "Проверка обновлений фильтров",
+                "Updating Scripts": "Проверка обновлений пользовательских скриптов",
+            ],
+            "tr.lproj": [
+                "Checking for Updates": "Filtre güncellemeleri denetleniyor",
+                "Updating Scripts": "Kullanıcı betiği güncellemeleri denetleniyor",
+            ],
+            "zh-Hans.lproj": [
+                "Checking for Updates": "正在检查过滤器更新",
+                "Updating Scripts": "正在检查用户脚本更新",
+            ],
+            "zh-Hant.lproj": [
+                "Checking for Updates": "正在檢查過濾器更新",
+                "Updating Scripts": "正在檢查使用者腳本更新",
             ],
         ]
 
@@ -56,14 +116,15 @@ struct ApplyProgressLocalizationTests {
                     fail("update breakdown must preserve two integer placeholders in \(localeDirectory.lastPathComponent)")
                 }
 
-                if let expectedStatusValues = expectedStatusValuesByLocale[localeDirectory.lastPathComponent] {
-                    for (key, expectedValue) in expectedStatusValues {
-                        guard table[key] == expectedValue else {
-                            fail(
-                                "unexpected \(key) value in \(localeDirectory.lastPathComponent): "
-                                    + "\(table[key] ?? "<missing>")"
-                            )
-                        }
+                guard let expectedStatusValues = expectedStatusValuesByLocale[localeDirectory.lastPathComponent] else {
+                    fail("missing status expectations for \(localeDirectory.lastPathComponent)")
+                }
+                for (key, expectedValue) in expectedStatusValues {
+                    guard table[key] == expectedValue else {
+                        fail(
+                            "unexpected \(key) value in \(localeDirectory.lastPathComponent): "
+                                + "\(table[key] ?? "<missing>")"
+                        )
                     }
                 }
             }

@@ -195,7 +195,7 @@
 "Checked %@ ago" = "Ellenőrizve %@ ezelőtt";
 "Checked just now" = "Ellenőrizve épp most";
 "Checking background agent…" = "Háttérügynök ellenőrzése…";
-"Checking for Updates" = "Frissítések keresése";
+"Checking for Updates" = "Szűrőfrissítések keresése";
 "Checking for updates..." = "Frissítések keresése...";
 "Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
 "Choose File…" = "Fájl kiválasztása…";
@@ -784,7 +784,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Updates" = "Frissítések";
 "Updates Paused" = "Frissítések szüneteltetve";
 "Updating disabled sites..." = "Letiltott webhelyek frissítése...";
-"Updating Scripts" = "Szkriptek frissítése";
+"Updating Scripts" = "Felhasználói szkriptfrissítések keresése";
 "Updating…" = "Frissítés…";
 "URL" = "URL";
 "URL Patterns (%@)" = "URL minták (%@)";

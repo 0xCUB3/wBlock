@@ -195,7 +195,7 @@
 "Checked %@ ago" = "Ελέγχθηκε %@ πριν";
 "Checked just now" = "Ελέγχθηκε μόλις τώρα";
 "Checking background agent…" = "Έλεγχος πράκτορα παρασκηνίου…";
-"Checking for Updates" = "Έλεγχος για ενημερώσεις";
+"Checking for Updates" = "Έλεγχος για ενημερώσεις φίλτρων";
 "Checking for updates..." = "Έλεγχος για ενημερώσεις...";
 "Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
 "Choose File…" = "Επιλογή Αρχείου…";
@@ -784,7 +784,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Updates" = "Ενημερώσεις";
 "Updates Paused" = "Ενημερώσεις σε παύση";
 "Updating disabled sites..." = "Ενημέρωση απενεργοποιημένων ιστότοπων...";
-"Updating Scripts" = "Ενημέρωση κώδικα";
+"Updating Scripts" = "Έλεγχος για ενημερώσεις σεναρίων χρήστη";
 "Updating…" = "Γίνεται ενημέρωση…";
 "URL" = "URL";
 "URL Patterns (%@)" = "Μοτίβα URL(%@)";

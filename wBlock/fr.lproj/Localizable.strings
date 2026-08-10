@@ -195,7 +195,7 @@
 "Checked %@ ago" = "Vérifié il y a %@";
 "Checked just now" = "Vérifié à l'instant";
 "Checking background agent…" = "Vérification de l’agent en arrière-plan…";
-"Checking for Updates" = "Recherche de mises à jour";
+"Checking for Updates" = "Recherche de mises à jour des filtres";
 "Checking for updates..." = "Vérification des mises à jour...";
 "Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
 "Choose File…" = "Choisir un fichier…";
@@ -784,7 +784,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Updates" = "Mises à jour";
 "Updates Paused" = "Mises à jour en pause";
 "Updating disabled sites..." = "Mise à jour des sites désactivés...";
-"Updating Scripts" = "Mise à jour des scripts";
+"Updating Scripts" = "Recherche de mises à jour des scripts utilisateur";
 "Updating…" = "Mise à jour…";
 "URL" = "URL";
 "URL Patterns (%@)" = "Modèles d'URL (%@)";

@@ -195,7 +195,7 @@
 "Checked %@ ago" = "Verificat acum %@";
 "Checked just now" = "Verificat chiar acum";
 "Checking background agent…" = "Se verifică agentul de fundal…";
-"Checking for Updates" = "Se verifică actualizările";
+"Checking for Updates" = "Se verifică actualizările filtrelor";
 "Checking for updates..." = "Se verifică actualizări...";
 "Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
 "Choose File…" = "Alege fișier…";
@@ -784,7 +784,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Updates" = "Actualizări";
 "Updates Paused" = "Actualizări în pauză";
 "Updating disabled sites..." = "Se actualizează site-urile dezactivate...";
-"Updating Scripts" = "Se actualizează scripturile";
+"Updating Scripts" = "Se verifică actualizările scripturilor de utilizator";
 "Updating…" = "Se actualizează…";
 "URL" = "URL";
 "URL Patterns (%@)" = "Modele URL (%@)";

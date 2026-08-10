@@ -195,7 +195,7 @@
 "Checked %@ ago" = "%@ 前檢查";
 "Checked just now" = "剛剛檢查過";
 "Checking background agent…" = "正在檢查背景代理程式…";
-"Checking for Updates" = "正在檢查更新";
+"Checking for Updates" = "正在檢查過濾器更新";
 "Checking for updates..." = "正在檢查更新...";
 "Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
 "Choose File…" = "選擇檔案…";
@@ -784,7 +784,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Updates" = "更新";
 "Updates Paused" = "更新已暫停";
 "Updating disabled sites..." = "正在更新已停用的網站...";
-"Updating Scripts" = "正在更新腳本";
+"Updating Scripts" = "正在檢查使用者腳本更新";
 "Updating…" = "更新中…";
 "URL" = "URL";
 "URL Patterns (%@)" = "URL 模式 (%@)";

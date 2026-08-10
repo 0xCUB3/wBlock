@@ -195,7 +195,7 @@
 "Checked %@ ago" = "%@ 전 확인됨";
 "Checked just now" = "방금 확인됨";
 "Checking background agent…" = "백그라운드 에이전트 확인 중…";
-"Checking for Updates" = "업데이트 확인 중";
+"Checking for Updates" = "필터 업데이트 확인 중";
 "Checking for updates..." = "업데이트 확인 중...";
 "Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
 "Choose File…" = "파일 선택…";
@@ -784,7 +784,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Updates" = "업데이트";
 "Updates Paused" = "업데이트 일시정지됨";
 "Updating disabled sites..." = "비활성화된 사이트 업데이트 중...";
-"Updating Scripts" = "스크립트 업데이트 중";
+"Updating Scripts" = "사용자 스크립트 업데이트 확인 중";
 "Updating…" = "업데이트 중…";
 "URL" = "URL";
 "URL Patterns (%@)" = "URL 패턴 (%@)";

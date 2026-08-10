@@ -195,7 +195,7 @@
 "Checked %@ ago" = "%@ önce denetlendi";
 "Checked just now" = "Az önce denetlendi";
 "Checking background agent…" = "Arka plan görevi kontrol ediliyor…";
-"Checking for Updates" = "Güncellemeler denetleniyor";
+"Checking for Updates" = "Filtre güncellemeleri denetleniyor";
 "Checking for updates..." = "Güncellemeler denetleniyor...";
 "Checks for wBlock filter updates and applies them when available." = "wBlock filtre güncellemelerini kontrol eder ve mevcutsa uygular.";
 "Choose File…" = "Dosya seç…";
@@ -784,7 +784,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Updates" = "Güncellemeler";
 "Updates Paused" = "Güncellemeler Duraklatıldı";
 "Updating disabled sites..." = "Devre dışı bırakılan siteler güncelleniyor...";
-"Updating Scripts" = "Betikler güncelleniyor";
+"Updating Scripts" = "Kullanıcı betiği güncellemeleri denetleniyor";
 "Updating…" = "Güncelleniyor…";
 "URL" = "URL";
 "URL Patterns (%@)" = "URL kalıpları (%@)";

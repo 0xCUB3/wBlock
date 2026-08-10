@@ -195,7 +195,7 @@
 "Checked %@ ago" = "Revisado hace %@";
 "Checked just now" = "Revisado justo ahora";
 "Checking background agent…" = "Comprobando el agente en segundo plano…";
-"Checking for Updates" = "Buscando actualizaciones";
+"Checking for Updates" = "Buscando actualizaciones de filtros";
 "Checking for updates..." = "Buscando actualizaciones...";
 "Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
 "Choose File…" = "Elegir archivo…";
@@ -784,7 +784,7 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Updates" = "Actualizaciones";
 "Updates Paused" = "Actualizaciones pausadas";
 "Updating disabled sites..." = "Actualizando sitios deshabilitados...";
-"Updating Scripts" = "Actualizando scripts";
+"Updating Scripts" = "Buscando actualizaciones de scripts de usuario";
 "Updating…" = "Actualizando…";
 "URL" = "URL";
 "URL Patterns (%@)" = "Patrones de URL (%@)";

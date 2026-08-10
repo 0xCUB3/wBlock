@@ -195,7 +195,7 @@
 "Checked %@ ago" = "Проверено %@ назад";
 "Checked just now" = "Проверено только что";
 "Checking background agent…" = "Проверка фонового агента…";
-"Checking for Updates" = "Проверка обновлений";
+"Checking for Updates" = "Проверка обновлений фильтров";
 "Checking for updates..." = "Проверяем наличие обновлений...";
 "Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
 "Choose File…" = "Выбрать файл…";
@@ -784,7 +784,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Updates" = "Обновления";
 "Updates Paused" = "Обновления приостановлены";
 "Updating disabled sites..." = "Обновление отключенных сайтов...";
-"Updating Scripts" = "Обновление скриптов";
+"Updating Scripts" = "Проверка обновлений пользовательских скриптов";
 "Updating…" = "Обновление…";
 "URL" = "URL";
 "URL Patterns (%@)" = "Шаблоны URL (%@)";

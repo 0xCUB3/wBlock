@@ -195,7 +195,7 @@
 "Checked %@ ago" = "تم التحقق قبل %@";
 "Checked just now" = "تم التحقق للتو";
 "Checking background agent…" = "جارٍ التحقق من عامل الخلفية…";
-"Checking for Updates" = "جارٍ التحقق من التحديثات";
+"Checking for Updates" = "جارٍ التحقق من تحديثات عوامل التصفية";
 "Checking for updates..." = "جارٍ التحقق من وجود تحديثات...";
 "Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
 "Choose File…" = "اختر ملفًا…";
@@ -784,7 +784,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Updates" = "التحديثات";
 "Updates Paused" = "التحديثات متوقفة مؤقتًا";
 "Updating disabled sites..." = "جارٍ تحديث المواقع المعطلة...";
-"Updating Scripts" = "جارٍ تحديث السكريبتات";
+"Updating Scripts" = "جارٍ التحقق من تحديثات نصوص المستخدم";
 "Updating…" = "جارٍ التحديث…";
 "URL" = "الرابط";
 "URL Patterns (%@)" = "أنماط الرابط (%@)";
