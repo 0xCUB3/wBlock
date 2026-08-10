@@ -195,7 +195,7 @@
 "Checked %@ ago" = "Checked %@ ago";
 "Checked just now" = "Checked just now";
 "Checking background agent…" = "Checking background agent…";
-"Checking for Updates" = "Checking for Updates";
+"Checking for Updates" = "Checking for Filter Updates";
 "Checking for updates..." = "Checking for updates...";
 "Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
 "Choose File…" = "Choose File…";
@@ -784,7 +784,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Updates" = "Updates";
 "Updates Paused" = "Updates Paused";
 "Updating disabled sites..." = "Updating disabled sites...";
-"Updating Scripts" = "Updating Scripts";
+"Updating Scripts" = "Checking for Userscript Updates";
 "Updating…" = "Updating…";
 "URL" = "URL";
 "URL Patterns (%@)" = "URL Patterns (%@)";

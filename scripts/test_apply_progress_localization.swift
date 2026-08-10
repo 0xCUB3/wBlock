@@ -8,6 +8,16 @@ struct ApplyProgressLocalizationTests {
         let expectedKey = "Applying filters...\n(This may take a while)"
         let escapedKey = #"Applying filters...\n(This may take a while)"#
         let updateBreakdownKey = "Filters: %d / Userscripts: %d"
+        let expectedStatusValuesByLocale = [
+            "en.lproj": [
+                "Checking for Updates": "Checking for Filter Updates",
+                "Updating Scripts": "Checking for Userscript Updates",
+            ],
+            "ja.lproj": [
+                "Checking for Updates": "フィルターを更新中",
+                "Updating Scripts": "ユーザースクリプトを更新中",
+            ],
+        ]
 
         do {
             let localeDirectories = try FileManager.default.contentsOfDirectory(
@@ -44,6 +54,17 @@ struct ApplyProgressLocalizationTests {
                 }
                 guard updateBreakdown.components(separatedBy: "%d").count == 3 else {
                     fail("update breakdown must preserve two integer placeholders in \(localeDirectory.lastPathComponent)")
+                }
+
+                if let expectedStatusValues = expectedStatusValuesByLocale[localeDirectory.lastPathComponent] {
+                    for (key, expectedValue) in expectedStatusValues {
+                        guard table[key] == expectedValue else {
+                            fail(
+                                "unexpected \(key) value in \(localeDirectory.lastPathComponent): "
+                                    + "\(table[key] ?? "<missing>")"
+                            )
+                        }
+                    }
                 }
             }
         } catch {
