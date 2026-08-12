@@ -298,6 +298,9 @@ class AppFilterManager: ObservableObject {
 
         var migratedFilterLists = loader.migrateFilterURLs(in: storedFilterLists)
         let defaultLists = loader.getDefaultFilterLists()
+        for defaultFilter in defaultLists {
+            loader.migrateBuiltInFilterFilesIfNeeded(defaultFilter)
+        }
         var addedDefaultFilters = false
         let originalURLsByID = Dictionary(
             storedFilterLists.map { ($0.id, $0.url) },

@@ -735,8 +735,12 @@ final class CloudSyncManager: ObservableObject {
         }
         let deletedCustomURLs = deletedCustomURLSet()
 
-        let desiredSelected = Set(filters.selectedURLs)
-        let knownURLs = Set(filters.knownURLs ?? filters.selectedURLs)
+        let desiredSelected = Set(
+            filters.selectedURLs.map(FilterListLoader.canonicalFilterURLString)
+        )
+        let knownURLs = Set(
+            (filters.knownURLs ?? filters.selectedURLs).map(FilterListLoader.canonicalFilterURLString)
+        )
 
         if let filterManager {
             var changed = false
@@ -760,7 +764,9 @@ final class CloudSyncManager: ObservableObject {
             // Update selection for all non-custom filters by URL
             for index in filterManager.filterLists.indices {
                 guard !filterManager.filterLists[index].isCustom else { continue }
-                let urlString = filterManager.filterLists[index].url.absoluteString
+                let urlString = FilterListLoader.canonicalFilterURLString(
+                    filterManager.filterLists[index].url.absoluteString
+                )
                 guard knownURLs.contains(urlString) else { continue }
                 let shouldSelect = desiredSelected.contains(urlString)
                 if filterManager.filterLists[index].isSelected != shouldSelect {
@@ -873,7 +879,9 @@ final class CloudSyncManager: ObservableObject {
         }
 
         for index in storedLists.indices where !storedLists[index].isCustom {
-            let urlString = storedLists[index].url.absoluteString
+            let urlString = FilterListLoader.canonicalFilterURLString(
+                storedLists[index].url.absoluteString
+            )
             guard knownURLs.contains(urlString) else { continue }
             storedLists[index].isSelected = desiredSelected.contains(urlString)
         }
@@ -1442,12 +1450,12 @@ final class CloudSyncManager: ObservableObject {
         let filterLists = currentFilterLists()
         let knownURLs = filterLists
             .filter { !$0.isCustom }
-            .map { $0.url.absoluteString }
+            .map { FilterListLoader.canonicalFilterURLString($0.url.absoluteString) }
             .sorted()
 
         let selectedURLs = filterLists
             .filter { $0.isSelected }
-            .map { $0.url.absoluteString }
+            .map { FilterListLoader.canonicalFilterURLString($0.url.absoluteString) }
             .sorted()
 
         let customListURLs = filterLists

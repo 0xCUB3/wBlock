@@ -34,7 +34,7 @@ class FilterListLoader {
         ]
     #endif
 
-    private let filterURLMigrations: [String: URL] = [
+    private static let filterURLMigrations: [String: URL] = [
         "https://raw.githubusercontent.com/List-KR/List-KR/refs/heads/master/filter-AdGuard-forward.txt":
             URL(string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
         "https://raw.githubusercontent.com/List-KR/List-KR/master/filter-AdGuard-forward.txt": URL(
@@ -43,6 +43,14 @@ class FilterListLoader {
             string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260.txt")!,
         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt":
             URL(string: "https://filters.adtidy.org/ios/filters/11.txt")!,
+    ]
+
+    /// New built-in names and the names used by the previous catalog release.
+    private static let filterNameMigrations: [String: [String]] = [
+        "Online Malicious URL Blocklist": ["Online Security Filter"],
+        "Adblock Warning Removal List": ["Anti-Adblock List"],
+        "Stevo's AI Blocklist": ["Fanboy's Anti-AI Suggestions"],
+        "HaGeZi Pro Mini": ["Hagezi Pro Mini"],
     ]
 
     func localFileURL(for filter: FilterList) -> URL? {
@@ -84,10 +92,43 @@ class FilterListLoader {
         }
     }
 
+    /// Renames cached built-in content and delta baselines before catalog metadata is hydrated.
+    func migrateBuiltInFilterFilesIfNeeded(_ filter: FilterList) {
+        guard !filter.isCustom,
+              let oldNames = Self.filterNameMigrations[filter.name],
+              let containerURL = getSharedContainerURL()
+        else { return }
+
+        let localFilename = ContentBlockerIncrementalCache.localFilename(for: filter)
+        let newLocalURL = containerURL.appendingPathComponent(localFilename)
+        let newBaselineURL = containerURL.appendingPathComponent("diff-baseline-\(localFilename)")
+        for oldName in oldNames {
+            Self.migrateFileIfNeeded(
+                from: containerURL.appendingPathComponent("\(oldName).txt"),
+                to: newLocalURL
+            )
+            Self.migrateFileIfNeeded(
+                from: containerURL.appendingPathComponent("diff-baseline-\(oldName).txt"),
+                to: newBaselineURL
+            )
+        }
+    }
+
+    static func migrateFileIfNeeded(from oldURL: URL, to newURL: URL) {
+        guard !FileManager.default.fileExists(atPath: newURL.path),
+              FileManager.default.fileExists(atPath: oldURL.path)
+        else { return }
+        try? FileManager.default.moveItem(at: oldURL, to: newURL)
+    }
+
+    static func canonicalFilterURLString(_ urlString: String) -> String {
+        filterURLMigrations[urlString]?.absoluteString ?? urlString
+    }
+
     /// Updates any known legacy filter URLs to their current endpoints.
     func migrateFilterURLs(in filters: [FilterList]) -> [FilterList] {
         filters.map { filter in
-            guard let newURL = filterURLMigrations[filter.url.absoluteString] else {
+            guard let newURL = Self.filterURLMigrations[filter.url.absoluteString] else {
                 return filter
             }
 
