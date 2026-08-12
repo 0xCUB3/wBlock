@@ -30,7 +30,7 @@ check(manager.contains("setFilterValidators(filter.id.uuidString, etag: nil, las
 check(manager.contains("await saveFilterLists()"), "Cleanup must persist the retained definition with selected=false")
 check(pipeline.contains("let allSelectedFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }"), "Blocker generation must use the current selected filters")
 check(!pipeline.contains("await clearDownloadedStateForDeselectedRemoteFilters()\n\n        // While blocking"), "Apply must not destructively clean up before the apply result")
-check(pipeline.contains("let cleanupSucceeded = cleared && await clearDownloadedStateForDeselectedRemoteFilters"), "Globally paused apply must run cleanup after clearing outputs")
+check(pipeline.contains("let cleanupSucceeded: Bool") && pipeline.contains("if cleared"), "Globally paused apply must run cleanup after clearing outputs")
 let successPoint = pipeline.range(of: "let applySucceeded = await MainActor.run")
 let cleanupPoint: Range<String.Index>?
 if let successPoint {

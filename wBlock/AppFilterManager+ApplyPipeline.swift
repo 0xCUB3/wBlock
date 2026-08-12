@@ -139,9 +139,14 @@ extension AppFilterManager {
                 )
             }
             let cleared = await clearAllExtensionsAndEngine()
-            let cleanupSucceeded = cleared && await clearDownloadedStateForDeselectedRemoteFilters(
-                previouslyAppliedFilterIDs: previouslyAppliedFilterIDs
-            )
+            let cleanupSucceeded: Bool
+            if cleared {
+                cleanupSucceeded = await clearDownloadedStateForDeselectedRemoteFilters(
+                    previouslyAppliedFilterIDs: previouslyAppliedFilterIDs
+                )
+            } else {
+                cleanupSucceeded = false
+            }
             await MainActor.run {
                 self.lastRuleCount = 0
                 self.ruleCountsByExtension.removeAll()
@@ -284,9 +289,14 @@ extension AppFilterManager {
                 .filterApply, LocalizedStrings.text("No filters selected - clearing all extensions"), metadata: [:])
 
             let cleared = await clearAllExtensionsAndEngine()
-            let cleanupSucceeded = cleared && await clearDownloadedStateForDeselectedRemoteFilters(
-                previouslyAppliedFilterIDs: previouslyAppliedFilterIDs
-            )
+            let cleanupSucceeded: Bool
+            if cleared {
+                cleanupSucceeded = await clearDownloadedStateForDeselectedRemoteFilters(
+                    previouslyAppliedFilterIDs: previouslyAppliedFilterIDs
+                )
+            } else {
+                cleanupSucceeded = false
+            }
             if cleared && cleanupSucceeded {
                 await MainActor.run {
                     self.isLoading = false

@@ -215,7 +215,7 @@ class AppFilterManager: ObservableObject {
         CFNotificationCenterAddObserver(
             CFNotificationCenterGetDarwinNotifyCenter(),
             nil,
-            Self.resumeRequestCallback,
+            AppFilterManager.resumeRequestCallback,
             notificationName,
             nil,
             .deliverImmediately
