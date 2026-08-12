@@ -599,12 +599,13 @@ struct FilterRowView: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    if let flags = filter.flagEmojis {
-                        Text(flags)
-                    }
+                    Text(String(filter.localizedDisplayName.prefix(1)))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 20, alignment: .leading)
                     Text(filter.localizedDisplayName)
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
