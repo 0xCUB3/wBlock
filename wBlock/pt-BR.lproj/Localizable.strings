@@ -850,3 +850,7 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Atualização automática: devida agora (executará no próximo disparo)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 Atualização automática: próxima em %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Atualização automática: sem execução anterior (intervalo=%dh)";
+
+/* Language picker */
+"Selected" = "Selecionados";
+"Search languages" = "Buscar idiomas";

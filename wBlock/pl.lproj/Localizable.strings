@@ -850,3 +850,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Automatyczna aktualizacja: oczekująca (uruchomi się przy następnym wyzwalaczu)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🔄 Automatyczna aktualizacja: następna za %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🔄 Automatyczna aktualizacja: brak wcześniejszego uruchomienia (interwał=%dh)";
+
+/* Language picker */
+"Selected" = "Wybrane";
+"Search languages" = "Szukaj języków";

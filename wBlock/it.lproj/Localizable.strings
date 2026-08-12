@@ -850,3 +850,7 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Aggiornamento automatico: dovuto ora (sarà eseguito al prossimo avvio)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 Aggiornamento automatico: prossimo tra %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Aggiornamento automatico: nessuna esecuzione precedente (intervallo=%dh)";
+
+/* Language picker */
+"Selected" = "Selezionate";
+"Search languages" = "Cerca lingue";

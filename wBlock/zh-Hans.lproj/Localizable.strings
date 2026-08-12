@@ -850,3 +850,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 自动更新：现已到期（将在下次触发时运行）";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 自动更新：下次在 %dh %dm %ds 后";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 自动更新：尚未运行过（间隔=%dh）";
+
+/* Language picker */
+"Selected" = "已选择";
+"Search languages" = "搜索语言";

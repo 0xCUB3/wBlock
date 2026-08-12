@@ -850,3 +850,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Actualizare automată: scadentă acum (va rula la următoarea declanșare)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 Actualizare automată: următoarea în %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Actualizare automată: nicio rulare anterioară (interval=%dh)";
+
+/* Language picker */
+"Selected" = "Selectate";
+"Search languages" = "Caută limbi";

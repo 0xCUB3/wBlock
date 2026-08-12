@@ -850,3 +850,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Автообновление: пора (запустится при следующем триггере)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 Автообновление: следующее через %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Автообновление: ещё не запускалось (интервал=%dh)";
+
+/* Language picker */
+"Selected" = "Выбранные";
+"Search languages" = "Поиск языков";

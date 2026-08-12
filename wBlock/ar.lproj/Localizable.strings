@@ -850,3 +850,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 التحديث التلقائي: مستحق الآن (سيعمل عند التشغيل التالي)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 التحديث التلقائي: التالي بعد %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 التحديث التلقائي: لا تشغيل سابق بعد (الفاصل=%dh)";
+
+/* Language picker */
+"Selected" = "المحددة";
+"Search languages" = "البحث عن اللغات";

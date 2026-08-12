@@ -850,3 +850,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Automatische Aktualisierung: fällig (läuft beim nächsten Trigger)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 Automatische Aktualisierung: nächste in %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Automatische Aktualisierung: noch kein vorheriger Lauf (Intervall=%dh)";
+
+/* Language picker */
+"Selected" = "Ausgewählt";
+"Search languages" = "Sprachen suchen";

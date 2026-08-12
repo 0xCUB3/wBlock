@@ -850,3 +850,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Mise à jour auto: due maintenant (s'exécutera au prochain déclenchement)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 Mise à jour auto: prochaine dans %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Mise à jour auto: aucune exécution antérieure (intervalle=%dh)";
+
+/* Language picker */
+"Selected" = "Sélectionnées";
+"Search languages" = "Rechercher des langues";

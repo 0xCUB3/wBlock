@@ -850,3 +850,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Αυτόματη ενημέρωση: οφείλεται τώρα (θα εκτελεστεί στο επόμενο έναυσμα)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 Αυτόματη ενημέρωση: επόμενη σε %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Αυτόματη ενημέρωση: δεν έχει εκτελεστεί ξανά (διάστημα=%dh)";
+
+/* Language picker */
+"Selected" = "Επιλεγμένες";
+"Search languages" = "Αναζήτηση γλωσσών";

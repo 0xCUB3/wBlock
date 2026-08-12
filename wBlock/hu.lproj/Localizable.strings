@@ -850,3 +850,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Automatikus frissítés: esedékes (a következő indításkor lefut)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 Automatikus frissítés: következő %dh %dm %ds múlva";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Automatikus frissítés: még nem futott (időköz=%dh)";
+
+/* Language picker */
+"Selected" = "Kiválasztva";
+"Search languages" = "Nyelvek keresése";

@@ -850,3 +850,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 자동 업데이트: 지금 실행 대기 (다음 트리거 시 실행)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 자동 업데이트: 다음까지 %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 자동 업데이트: 아직 실행된 적 없음 (간격=%dh)";
+
+/* Language picker */
+"Selected" = "선택됨";
+"Search languages" = "언어 검색";

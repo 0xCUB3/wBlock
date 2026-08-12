@@ -850,3 +850,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 自動更新: 実行対象です（次回トリガーで実行されます）";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 自動更新: 次回まで %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 自動更新: まだ実行されていません（間隔=%dh）";
+
+/* Language picker */
+"Selected" = "選択済み";
+"Search languages" = "言語を検索";

@@ -42,6 +42,7 @@ struct OnboardingView: View {
     @State private var selectedUserscripts: Set<String> = []
     @State private var step: OnboardingStep = .protection
     @State private var selectedLanguages: Set<String>
+    @State private var languageSearchText = ""
     @State private var selectedRegionalFilters: Set<UUID> = []
     @State private var recommendedRegionalFilters: [FilterList] = []
     @State private var hasManuallyEditedRegionalSelection = false
@@ -486,6 +487,9 @@ struct OnboardingView: View {
         let code: String
         let name: String
         let flag: String
+        var nativeName: String {
+            Locale(identifier: code).localizedString(forLanguageCode: code) ?? name
+        }
         var id: String { code }
     }
 
@@ -551,8 +555,23 @@ struct OnboardingView: View {
         var id: String { letter }
     }
 
+    private var selectedLanguagePickerOptions: [LanguageOption] {
+        languagePickerOptions.filter { selectedLanguages.contains($0.code) }
+    }
+
+    private var unselectedLanguagePickerOptions: [LanguageOption] {
+        let query = languageSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return languagePickerOptions.filter { option in
+            guard !selectedLanguages.contains(option.code) else { return false }
+            guard !query.isEmpty else { return true }
+            return option.name.localizedCaseInsensitiveContains(query)
+                || option.nativeName.localizedCaseInsensitiveContains(query)
+                || option.code.localizedCaseInsensitiveContains(query)
+        }
+    }
+
     private var languagePickerSections: [LanguagePickerSection] {
-        let grouped = Dictionary(grouping: availableFilterLanguages) { option in
+        let grouped = Dictionary(grouping: unselectedLanguagePickerOptions) { option in
             String(option.name.prefix(1)).uppercased(with: Locale.current)
         }
         return grouped
@@ -561,22 +580,35 @@ struct OnboardingView: View {
     }
 
     private var languagePickerGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            ForEach(pinnedLanguagePickerOptions) { lang in
-                languageToggle(for: lang)
-            }
-            ForEach(languagePickerSections) { section in
-                Section {
-                    ForEach(section.options) { lang in
+        VStack(alignment: .leading, spacing: 10) {
+            if !selectedLanguagePickerOptions.isEmpty {
+                Text("Selected")
+                    .font(.headline)
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                    ForEach(selectedLanguagePickerOptions) { lang in
                         languageToggle(for: lang)
                     }
-                } header: {
-                    Text(section.letter)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 4)
-                        .padding(.top, 6)
+                }
+            }
+
+            TextField("Search languages", text: $languageSearchText)
+                .textFieldStyle(.roundedBorder)
+                .autocorrectionDisabled()
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                ForEach(languagePickerSections) { section in
+                    Section {
+                        ForEach(section.options) { lang in
+                            languageToggle(for: lang)
+                        }
+                    } header: {
+                        Text(section.letter)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 4)
+                            .padding(.top, 6)
+                    }
                 }
             }
         }
@@ -592,11 +624,20 @@ struct OnboardingView: View {
             }
         } label: {
             HStack(spacing: 6) {
-                if !lang.flag.isEmpty {
-                    Text(lang.flag)
+                Text(String(lang.nativeName.prefix(1)))
+                    .fontWeight(.semibold)
+                    .frame(width: 20, alignment: .leading)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(lang.nativeName)
+                        .lineLimit(1)
+                    if lang.nativeName != lang.name {
+                        Text(lang.name)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
-                Text(lang.name)
-                    .lineLimit(1)
                 Spacer(minLength: 0)
                 if isOn {
                     Image(systemName: "checkmark")

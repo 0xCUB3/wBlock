@@ -850,3 +850,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Otomatik güncelleme: Zamanı geldi (bir sonraki işlemde çalışacak)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 Otomatik güncelleme: Kalan süre %d sa %d dk %d sn";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Otomatik güncelleme: Daha önce çalıştırılmadı (aralık=%d sa)";
+
+/* Language picker */
+"Selected" = "Seçilenler";
+"Search languages" = "Dilleri ara";
