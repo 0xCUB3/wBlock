@@ -162,7 +162,7 @@ struct OnboardingView: View {
         }
         return LanguageOption(
             code: code,
-            name: Locale.current.localizedString(forLanguageCode: code) ?? code,
+            name: displayLocale.localizedString(forLanguageCode: code) ?? code,
             flag: FilterList.languageToFlag[code] ?? ""
         )
     }
@@ -493,6 +493,29 @@ struct OnboardingView: View {
         var id: String { code }
     }
 
+    private var displayLocale: Locale {
+        Locale(identifier: Bundle.main.preferredLocalizations.first ?? Locale.current.identifier)
+    }
+
+    private func languageSearchForms(_ value: String) -> [String] {
+        let folded = value.folding(
+            options: [.diacriticInsensitive, .caseInsensitive],
+            locale: displayLocale
+        )
+        let transliterated = folded.applyingTransform(.toLatin, reverse: false)
+            ?? folded
+        return Array(Set([folded, transliterated].map { $0.lowercased() }))
+    }
+
+    private func matchesLanguageSearch(_ option: LanguageOption, query: String) -> Bool {
+        let queryForms = languageSearchForms(query)
+        let candidateForms = [option.name, option.nativeName, option.code]
+            .flatMap(languageSearchForms)
+        return queryForms.contains { queryForm in
+            candidateForms.contains { $0.contains(queryForm) }
+        }
+    }
+
     private var availableFilterLanguages: [LanguageOption] {
         var seen = Set<String>()
         var result: [LanguageOption] = []
@@ -500,7 +523,7 @@ struct OnboardingView: View {
             for lang in filter.languages {
                 let lc = lang.lowercased()
                 guard seen.insert(lc).inserted else { continue }
-                let name = Locale.current.localizedString(forLanguageCode: lc) ?? lc
+                let name = displayLocale.localizedString(forLanguageCode: lc) ?? lc
                 let flag = FilterList.languageToFlag[lc] ?? ""
                 result.append(LanguageOption(code: lc, name: name, flag: flag))
             }
@@ -516,7 +539,7 @@ struct OnboardingView: View {
         var options: [LanguageOption] = []
         if !availableFilterLanguages.contains(where: { $0.code == Self.englishLanguageCode }) {
             let englishName =
-                Locale.current.localizedString(forLanguageCode: Self.englishLanguageCode) ?? "English"
+                displayLocale.localizedString(forLanguageCode: Self.englishLanguageCode) ?? "English"
             options.append(
                 LanguageOption(code: Self.englishLanguageCode, name: englishName, flag: "")
             )
@@ -564,15 +587,13 @@ struct OnboardingView: View {
         return languagePickerOptions.filter { option in
             guard !selectedLanguages.contains(option.code) else { return false }
             guard !query.isEmpty else { return true }
-            return option.name.localizedCaseInsensitiveContains(query)
-                || option.nativeName.localizedCaseInsensitiveContains(query)
-                || option.code.localizedCaseInsensitiveContains(query)
+            return matchesLanguageSearch(option, query: query)
         }
     }
 
     private var languagePickerSections: [LanguagePickerSection] {
         let grouped = Dictionary(grouping: unselectedLanguagePickerOptions) { option in
-            String(option.name.prefix(1)).uppercased(with: Locale.current)
+            String(option.name.prefix(1)).uppercased(with: displayLocale)
         }
         return grouped
             .map { LanguagePickerSection(letter: $0.key, options: $0.value) }
