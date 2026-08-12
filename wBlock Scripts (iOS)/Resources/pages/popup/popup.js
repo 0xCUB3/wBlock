@@ -8,6 +8,7 @@ const TOP_FRAME_ID = 0;
 const NATIVE_MESSAGE_TIMEOUT_MS = 3500;
 const FILTER_UPDATE_POLL_INTERVAL_MS = 500;
 const FILTER_UPDATE_POLL_ATTEMPTS = 120;
+let resumeInFlight = false;
 
 function t(key, substitutions, fallback = '') {
     const message = browser.i18n.getMessage(key, substitutions);
@@ -1157,6 +1158,8 @@ function setupListeners() {
 
     if (resumeButton) {
         resumeButton.addEventListener('click', async () => {
+            if (resumeInFlight) return;
+            resumeInFlight = true;
             try {
                 setError('');
                 resumeButton.disabled = true;
@@ -1181,6 +1184,8 @@ function setupListeners() {
                 resumeButton.disabled = false;
                 resumeButton.removeAttribute('aria-busy');
                 setStatus(t('popup_status_paused', undefined, 'Paused'), 'disabled');
+            } finally {
+                resumeInFlight = false;
             }
         });
     }
@@ -1247,6 +1252,7 @@ async function refreshUi() {
     const pausedPrompt = document.getElementById('paused-prompt');
     const pausedPromptTitle = document.getElementById('paused-prompt-title');
     const pausedPromptMessage = document.getElementById('paused-prompt-message');
+    const resumeAction = document.querySelector('.resume-action');
     const resumeButton = document.getElementById('resume-blocking');
 
     if (openAppButton) {
@@ -1263,6 +1269,7 @@ async function refreshUi() {
         if (disableToggle) disableToggle.disabled = true;
         if (zapperEnabledToggle) zapperEnabledToggle.disabled = true;
         if (pausedPrompt) pausedPrompt.hidden = true;
+        if (resumeAction) resumeAction.hidden = true;
         if (zapperActivate) zapperActivate.disabled = true;
         if (rulesToggle) rulesToggle.disabled = true;
         currentPageUserScripts = [];
@@ -1313,6 +1320,7 @@ async function refreshUi() {
         if (zapperActivate) zapperActivate.disabled = true;
         if (resumeButton) resumeButton.disabled = true;
         if (pausedPrompt) pausedPrompt.hidden = true;
+        if (resumeAction) resumeAction.hidden = true;
         return;
     }
 
@@ -1330,6 +1338,7 @@ async function refreshUi() {
         disableToggle.disabled = filtersPaused;
     }
     if (pausedPrompt) pausedPrompt.hidden = !blockingPaused;
+    if (resumeAction) resumeAction.hidden = !blockingPaused;
     if (pausedPromptTitle) {
         pausedPromptTitle.textContent = partiallyPaused
             ? t('popup_paused_partial_prompt_title', undefined, 'Some blocking components are paused')

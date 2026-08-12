@@ -32,6 +32,7 @@ public enum BlockingPauseStore {
     public static let resumeStatusKey = "blockingResumeStatus"
     public static let resumeErrorKey = "blockingResumeError"
     public static let resumeRequestNotificationName = "skula.wBlock.blocking-resume-requested"
+    private static let resumeRequestLock = NSLock()
 
     public enum ResumeStatus: String {
         case idle
@@ -98,8 +99,20 @@ public enum BlockingPauseStore {
     }
 
     /// Requests that the containing app run its canonical resume/apply lifecycle.
-    public static func requestResume(groupIdentifier: String = GroupIdentifier.shared.value) {
-        guard let defaults = UserDefaults(suiteName: groupIdentifier) else { return }
+    /// Pending and applying requests are coalesced so repeated popup taps cannot start
+    /// another apply or reset the status of the request already in progress.
+    @discardableResult
+    public static func requestResume(groupIdentifier: String = GroupIdentifier.shared.value) -> ResumeStatus {
+        guard let defaults = UserDefaults(suiteName: groupIdentifier) else { return .idle }
+        resumeRequestLock.lock()
+        defer { resumeRequestLock.unlock() }
+        let currentStatus = ResumeStatus(
+            rawValue: defaults.string(forKey: resumeStatusKey) ?? ResumeStatus.idle.rawValue
+        ) ?? .idle
+        if currentStatus == .pending || currentStatus == .applying {
+            return currentStatus
+        }
+
         defaults.set(true, forKey: resumeRequestKey)
         defaults.set(ResumeStatus.pending.rawValue, forKey: resumeStatusKey)
         defaults.removeObject(forKey: resumeErrorKey)
@@ -110,6 +123,7 @@ public enum BlockingPauseStore {
             nil,
             true
         )
+        return .pending
     }
 
     /// Consumes one queued resume request. This is intentionally separate from `setPaused`:

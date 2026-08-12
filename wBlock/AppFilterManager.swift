@@ -102,6 +102,7 @@ class AppFilterManager: ObservableObject {
     let dataManager = ProtobufDataManager.shared
     private var setupTask: Task<Void, Never>?
     private var resumeRequestObserver: NSObjectProtocol?
+    private var resumeApplyInFlight = false
 
     deinit {
         setupTask?.cancel()
@@ -311,6 +312,18 @@ class AppFilterManager: ObservableObject {
     }
 
     private func handleResumeRequest() async {
+        guard !resumeApplyInFlight else { return }
+        resumeApplyInFlight = true
+        defer { resumeApplyInFlight = false }
+
+        // The manager is created before launch migration and filter-list loading finish.
+        // Waiting here prevents a Safari request from applying an empty startup snapshot.
+        await waitUntilReady()
+        guard BlockingPauseStore.isPaused() else {
+            BlockingPauseStore.setResumeSucceeded()
+            return
+        }
+
         BlockingPauseStore.setResumeApplying()
         let succeeded = await setBlockingPaused(false)
         if succeeded {

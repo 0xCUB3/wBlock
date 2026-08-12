@@ -33,7 +33,6 @@
             <div id="paused-prompt" class="paused-prompt" hidden>
                 <div id="paused-prompt-title" class="paused-prompt-title" data-i18n="popup_paused_prompt_title">Blocking is paused</div>
                 <div id="paused-prompt-message" class="hint" data-i18n="popup_paused_prompt_message">Resume restores all components.</div>
-                <button id="resume-blocking" class="btn btn-primary" type="button" data-i18n="popup_button_resume_blocking">Resume Blocking</button>
             </div>
             <div id="userscripts-section" hidden>
                 <button id="userscripts-toggle" class="disclosure" type="button" aria-expanded="false">
@@ -80,6 +79,10 @@
                 <button id="update-filters" class="btn filter-update-button" type="button" data-i18n="popup_button_update_filters">Update Filters</button>
             </div>
             <div id="filter-update-status" class="filter-update-status" role="status" aria-live="polite" hidden></div>
+        </div>
+
+        <div class="resume-action" aria-live="polite" hidden>
+            <button id="resume-blocking" class="btn btn-primary" type="button" data-i18n="popup_button_resume_blocking">Resume Blocking</button>
         </div>
 
         <footer class="footer">

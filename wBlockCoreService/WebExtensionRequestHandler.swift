@@ -494,14 +494,12 @@ public enum WebExtensionRequestHandler {
         let paused = BlockingPauseStore.isPaused()
         let wake: (supported: Bool, attempted: Bool, succeeded: Bool, error: String?)
         if paused {
-            // Queue the request before waking the app. On macOS the Safari extension
-            // host can ask Launch Services to start/activate wBlock; the shared status
-            // token is still the only success acknowledgement. iOS Safari extensions
-            // have no supported API to launch their containing app, so the popup must
-            // tell the user to open wBlock instead of pretending that polling succeeded.
+            // Darwin notification reaches a resident containing app without changing its
+            // activation state. A terminated app cannot be resumed from Safari's native
+            // messaging host; the popup must keep the paused state and offer an explicit
+            // Open wBlock action instead of foregrounding the app as a side effect.
             BlockingPauseStore.requestResume()
-            let wakeResult = requestContainingAppWake()
-            wake = (wakeResult.supported, wakeResult.attempted, wakeResult.opened, wakeResult.error)
+            wake = (false, false, false, nil)
         } else {
             wake = (true, false, true, nil)
         }
@@ -511,7 +509,7 @@ public enum WebExtensionRequestHandler {
             "requested": paused,
             "paused": BlockingPauseStore.isPaused(),
             "status": paused ? resumeStatus.status.rawValue : BlockingPauseStore.ResumeStatus.succeeded.rawValue,
-            "error": wake.error ?? resumeStatus.error,
+            "error": resumeStatus.error,
             "wakeSupported": wake.supported,
             "wakeAttempted": wake.attempted,
             "wakeSucceeded": wake.succeeded

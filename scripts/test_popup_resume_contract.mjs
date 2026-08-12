@@ -4,6 +4,7 @@ import fs from 'node:fs';
 const read = (path) => fs.readFileSync(path, 'utf8');
 const popup = read('wBlock Scripts (iOS)/Resources/pages/popup/popup.js');
 const html = read('wBlock Scripts (iOS)/Resources/pages/popup/popup.html');
+const css = read('wBlock Scripts (iOS)/Resources/pages/popup/popup.css');
 const native = read('wBlockCoreService/WebExtensionRequestHandler.swift');
 const store = read('wBlockCoreService/BlockingPauseStore.swift');
 const manager = read('wBlock/AppFilterManager.swift');
@@ -19,6 +20,19 @@ function check(condition, message) {
 
 check(html.includes('id="paused-prompt"') && html.includes('id="resume-blocking"'),
   'Paused popup must expose an explicit prompt and Resume Blocking button');
+check(html.indexOf('id="resume-blocking"') > html.indexOf('class="filter-update-section"'),
+  'Resume Blocking must be a standalone action at the bottom of the popup');
+check(!html.slice(html.indexOf('id="paused-prompt"'), html.indexOf('class="resume-action"')).includes('id="resume-blocking"'),
+  'Resume Blocking must not remain inside the paused prompt card');
+check(html.includes('class="resume-action"') && html.includes('class="resume-action" aria-live="polite" hidden'),
+  'Resume action must be hidden unless the authoritative state is paused');
+check(popup.includes('resumeAction.hidden = !blockingPaused') &&
+  css.includes('.resume-action {') && css.includes('justify-content: center;') &&
+  css.includes('.resume-action .btn {') && css.includes('flex: 0 0 auto;') &&
+  css.includes('[aria-busy="true"]'),
+  'Standalone resume action must be centered, modest, and have a compact busy state');
+check(!css.includes('.paused-prompt .btn'),
+  'Paused prompt card must not style Resume Blocking as a full-width card button');
 check(popup.includes("action: 'resumeBlocking'"),
   'Resume button must route through a native resume action');
 check(native.includes('"filtersPaused": components.contains(.filters)') &&
@@ -26,6 +40,7 @@ check(native.includes('"filtersPaused": components.contains(.filters)') &&
   native.includes('"elementZapperPaused": components.contains(.elementZapper)'),
   'Native pause state must expose each component while preserving paused');
 check(popup.includes('const filtersPaused = pauseState.filtersPaused') &&
+  popup.includes("action: 'getBlockingPausedState'") &&
   popup.includes('const zapperPaused = pauseState.elementZapperPaused') &&
   popup.includes("t('popup_status_partially_paused'") &&
   popup.includes("t('popup_paused_partial_prompt_title'"),
@@ -51,12 +66,23 @@ check(popup.includes("? t('popup_status_paused'"),
 check(native.includes('case "getResumeRequestStatus":') && native.includes('"status": resumeStatus.status.rawValue') &&
   native.includes('requestContainingAppWake') && native.includes('"wakeSupported": wake.supported'),
   'Native bridge must expose terminal status and the platform wake acknowledgement');
+const resumeHandlerStart = native.indexOf('private static func handleResumeBlocking');
+const resumeHandlerEnd = native.indexOf('private static func handleGetResumeRequestStatus', resumeHandlerStart);
+check(resumeHandlerStart >= 0 && resumeHandlerEnd > resumeHandlerStart &&
+  !native.slice(resumeHandlerStart, resumeHandlerEnd).includes('requestContainingAppWake()'),
+  'Resume requests must not foreground the containing app');
 check(store.includes('setResumeApplying') && store.includes('setResumeSucceeded') && store.includes('setResumeFailed'),
   'App Group store must persist applying/success/failure resume states');
+check(store.includes('resumeRequestLock') &&
+  store.includes('currentStatus == .pending || currentStatus == .applying') &&
+  store.includes('repeated popup taps cannot start'),
+  'Native resume requests must coalesce while pending or applying');
 check(manager.includes('await self.handleResumeRequest()') && manager.includes('deinit {') &&
   manager.includes('NotificationCenter.default.removeObserver') &&
   manager.includes('CFNotificationCenterGetDarwinNotifyCenter(),\n            nil,\n            AppFilterManager.resumeRequestCallback'),
   'Darwin notifications must use a process-lifetime relay and removable manager tokens');
+check(manager.includes('await waitUntilReady()') && manager.includes('resumeApplyInFlight'),
+  'Resume handling must wait for the authoritative app snapshot and serialize requests');
 check(!manager.includes('Unmanaged.passUnretained(self)'),
   'Resume notification lifecycle must not retain a raw manager pointer');
 check(pipeline.includes('allowPausedResume: true') && pipeline.includes('BlockingPauseStore.setPaused(true)') &&
@@ -119,6 +145,9 @@ check(await resolveResume([
 ]) === 'unavailable', 'A terminated app must become unavailable, not Active');
 check(popup.includes('20; attempt += 1') && popup.includes('return { status: \'unavailable\' }'),
   'Resume polling must have a bounded timeout that preserves paused UX');
+check(popup.includes('let resumeInFlight = false') && popup.includes('if (resumeInFlight) return') &&
+  popup.includes('resumeInFlight = true') && popup.includes('resumeInFlight = false'),
+  'Popup resume clicks must not issue duplicate native requests');
 check(await (async () => {
   const response = { ok: true, status: 'pending', paused: true, wakeSupported: false };
   return response.wakeSupported === false ? 'unavailable' : 'poll';

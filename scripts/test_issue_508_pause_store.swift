@@ -32,7 +32,17 @@ struct Issue508PauseStoreTest {
         require(BlockingPauseStore.pausedComponents(groupIdentifier: suiteName).isEmpty, "resume must clear the component mask")
         require(!defaults.bool(forKey: BlockingPauseStore.key), "resume must clear the legacy pause bool")
 
-        print("PASS: issue 508 executable pause-store persistence and migration")
+        let firstRequest = BlockingPauseStore.requestResume(groupIdentifier: suiteName)
+        let duplicateRequest = BlockingPauseStore.requestResume(groupIdentifier: suiteName)
+        require(firstRequest == .pending, "first resume request must become pending")
+        require(duplicateRequest == .pending, "duplicate pending resume request must be coalesced")
+        BlockingPauseStore.setResumeApplying(groupIdentifier: suiteName)
+        require(
+            BlockingPauseStore.requestResume(groupIdentifier: suiteName) == .applying,
+            "resume request during apply must not start another apply"
+        )
+
+        print("PASS: issue 508 executable pause-store persistence, migration, and coalescing")
     }
 
     private static func require(_ condition: @autoclosure () -> Bool, _ message: String) {
