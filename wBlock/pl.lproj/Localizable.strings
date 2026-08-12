@@ -190,7 +190,7 @@
 "Calculated source rule count for filter" = "Policzono reguły źródłowe dla filtru";
 "Cancel" = "Anuluj";
 "Category" = "Kategoria";
-"Changes take full effect after the next apply." = "Zmiany w pełni zaczną obowiązywać po następnym zastosowaniu.";
+"Element Zapper changes take full effect after the next apply." = "Zmiany w narzędziu do usuwania elementów zaczną w pełni obowiązywać po następnym zastosowaniu.";
 "Check for Updates" = "Sprawdź aktualizacje";
 "Checked %@" = "Sprawdzono %@";
 "Checked %@ ago" = "Sprawdzono %@ temu";

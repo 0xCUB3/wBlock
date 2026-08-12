@@ -190,7 +190,7 @@
 "Calculated source rule count for filter" = "已計算過濾器的來源規則數量";
 "Cancel" = "取消";
 "Category" = "分類";
-"Changes take full effect after the next apply." = "變更會在下次套用後完全生效。";
+"Element Zapper changes take full effect after the next apply." = "元素隱藏工具的更改會在下次套用後完全生效。";
 "Check for Updates" = "檢查更新";
 "Checked %@" = "已檢查 %@";
 "Checked %@ ago" = "%@ 前檢查";

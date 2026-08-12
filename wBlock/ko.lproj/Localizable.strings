@@ -190,7 +190,7 @@
 "Calculated source rule count for filter" = "필터의 소스 규칙 수를 계산했습니다";
 "Cancel" = "취소";
 "Category" = "카테고리";
-"Changes take full effect after the next apply." = "변경 사항은 다음 적용 후 완전히 반영됩니다.";
+"Element Zapper changes take full effect after the next apply." = "요소 제거기의 변경 사항은 다음 적용 후 완전히 적용됩니다.";
 "Check for Updates" = "업데이트 확인";
 "Checked %@" = "%@ 확인됨";
 "Checked %@ ago" = "%@ 전 확인됨";

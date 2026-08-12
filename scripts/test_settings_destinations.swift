@@ -36,7 +36,7 @@ assertNotContains(site, "Clear Element Zapper Rules", "Site Settings must not ow
 assertContains(zapper, ".navigationTitle(\"Element Zapper\")", "Element Zapper must have its own title")
 assertContains(zapper, "Clear Element Zapper Rules", "Element Zapper must own global clearing")
 assertContains(zapper, "setZapperRulesDisabled(!enabled, forHost: domain)", "Element Zapper must expose per-domain rule toggles")
-assertContains(zapper, "Changes take full effect after the next apply.", "Zapper apply guidance must be its own line")
+assertContains(zapper, "Element Zapper changes take full effect after the next apply.", "Zapper apply guidance must be its own line")
 assertContains(zapper, "ruleManager.rules(for: domain)", "Element Zapper must render per-domain rules")
 
 print("PASS: split settings destination structure")

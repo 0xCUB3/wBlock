@@ -190,7 +190,7 @@
 "Calculated source rule count for filter" = "Quell-Regelanzahl für Filter berechnet";
 "Cancel" = "Abbrechen";
 "Category" = "Kategorie";
-"Changes take full effect after the next apply." = "Änderungen werden nach dem nächsten Anwenden vollständig wirksam.";
+"Element Zapper changes take full effect after the next apply." = "Änderungen am Element-Zapper werden nach der nächsten Anwendung vollständig wirksam.";
 "Check for Updates" = "Auf Updates prüfen";
 "Checked %@" = "Geprüft %@";
 "Checked %@ ago" = "Vor %@ geprüft";

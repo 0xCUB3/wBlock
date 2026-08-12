@@ -169,7 +169,7 @@ struct ElementZapperSettingsView: View {
                 .padding(.trailing, 16)
             }
         }
-        Text("Changes take full effect after the next apply.")
+        Text("Element Zapper changes take full effect after the next apply.")
             .font(.caption)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)

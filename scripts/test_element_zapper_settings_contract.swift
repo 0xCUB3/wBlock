@@ -33,7 +33,7 @@ require(zapper, "await ruleManager.performMutation")
 require(zapper, "filterManager.markNonSelectionChangesPending()")
 require(zapper, "setZapperRulesDisabled(!enabled, forHost: domain)")
 require(zapper, "pendingConfirmation = .clearAll")
-require(zapper, "Changes take full effect after the next apply.")
+require(zapper, "Element Zapper changes take full effect after the next apply.")
 require(zapper, "Text(\"No Element Zapper Rules\")")
 
 require(dataManager, "public func restoreZapperRule(_ selector: String, forHost host: String, at index: Int) async")

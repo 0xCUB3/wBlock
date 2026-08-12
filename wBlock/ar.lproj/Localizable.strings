@@ -190,7 +190,7 @@
 "Calculated source rule count for filter" = "تم حساب عدد قواعد المصدر للفلتر";
 "Cancel" = "إلغاء";
 "Category" = "الفئة";
-"Changes take full effect after the next apply." = "تسري التغييرات بالكامل بعد التطبيق التالي.";
+"Element Zapper changes take full effect after the next apply." = "تسري تغييرات أداة إزالة العناصر بالكامل بعد التطبيق التالي.";
 "Check for Updates" = "التحقق من التحديثات";
 "Checked %@" = "تم التحقق %@";
 "Checked %@ ago" = "تم التحقق قبل %@";

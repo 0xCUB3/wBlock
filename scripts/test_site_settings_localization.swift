@@ -36,7 +36,7 @@ struct SiteSettingsLocalizationTests {
             "Whitelist",  // log category; shared with the hub's terminology
             "Run on this site",
             "Apply rules on this site",
-            "Changes take full effect after the next apply.",
+            "Element Zapper changes take full effect after the next apply.",
             // Reused keys the Site Settings views depend on.
             "Disable on this site",
             "Content filtering",

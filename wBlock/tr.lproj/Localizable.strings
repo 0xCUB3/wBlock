@@ -190,7 +190,7 @@
 "Calculated source rule count for filter" = "Filtrenin kaynak kural sayısı hesaplandı";
 "Cancel" = "İptal";
 "Category" = "Kategori";
-"Changes take full effect after the next apply." = "Değişiklikler bir sonraki uygulama işleminden sonra tamamen geçerli olacaktır.";
+"Element Zapper changes take full effect after the next apply." = "Öğe Engelleyici değişiklikleri bir sonraki uygulama işleminden sonra tamamen geçerli olacaktır.";
 "Check for Updates" = "Güncellemeleri denetle";
 "Checked %@" = "%@ kontrol edildi";
 "Checked %@ ago" = "%@ önce denetlendi";

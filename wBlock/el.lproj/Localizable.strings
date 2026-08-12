@@ -190,7 +190,7 @@
 "Calculated source rule count for filter" = "Υπολογισμός αριθμού κανόνων πηγής για το φίλτρο";
 "Cancel" = "Ακύρωση";
 "Category" = "Κατηγορία";
-"Changes take full effect after the next apply." = "Οι αλλαγές εφαρμόζονται πλήρως μετά την επόμενη εφαρμογή.";
+"Element Zapper changes take full effect after the next apply." = "Οι αλλαγές στο Element Zapper εφαρμόζονται πλήρως μετά την επόμενη εφαρμογή.";
 "Check for Updates" = "Έλεγχος για ενημερώσεις";
 "Checked %@" = "Ελέγχθηκε %@";
 "Checked %@ ago" = "Ελέγχθηκε %@ πριν";

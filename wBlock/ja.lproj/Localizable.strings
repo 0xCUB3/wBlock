@@ -190,7 +190,7 @@
 "Calculated source rule count for filter" = "フィルターのソースルール数を算出しました";
 "Cancel" = "キャンセル";
 "Category" = "カテゴリ";
-"Changes take full effect after the next apply." = "変更は次回の適用後に完全に反映されます。";
+"Element Zapper changes take full effect after the next apply." = "要素削除ツールの変更は、次回の適用後に完全に反映されます。";
 "Check for Updates" = "アップデートを確認";
 "Checked %@" = "確認 %@";
 "Checked %@ ago" = "%@前に確認";
