@@ -879,3 +879,28 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose File" = "Choose File";
 "Local imports won't auto-update; re-import to replace." = "Local imports won't auto-update; re-import to replace.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases.";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "Disable Essential Filter?";
+"Replace Existing Content?" = "Replace Existing Content?";
+"Clear Element Zapper Rules?" = "Clear Element Zapper Rules?";
+"Clear All" = "Clear All";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage.";
+"Pasting will replace the existing editor content." = "Pasting will replace the existing editor content.";
+"This removes all saved element zapper rules from every site." = "This removes all saved element zapper rules from every site.";
+"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"Advanced" = "Advanced";
+"Help" = "Help";
+"FAQ" = "FAQ";
+"Report Issues" = "Report Issues";
+"Contact Us" = "Contact Us";
+"Version" = "Version";
+"Developer" = "Developer";
+"GPL-3.0 License" = "GPL-3.0 License";
+"Privacy Policy" = "Privacy Policy";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "Use a valid http:// or https:// URL";
+"Include a host name" = "Include a host name";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Do not use a userscript URL ending in .js, .mjs, or .cjs";
+"wBlock will fetch and enable the filter list automatically" = "wBlock will fetch and enable the filter list automatically";

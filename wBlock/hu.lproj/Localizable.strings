@@ -879,3 +879,28 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Choose File" = "Fájl kiválasztása";
 "Local imports won't auto-update; re-import to replace." = "A helyi importok nem frissülnek automatikusan; az új importálással cserélhetők.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "Az AdGuard Extra blokkolja a Twitch-hirdetéseket, és kezeli a bonyolult reklámblokkolás-ellenes eseteket.";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "Letiltja az alapvető szűrőt?";
+"Replace Existing Content?" = "Lecseréli a meglévő tartalmat?";
+"Clear Element Zapper Rules?" = "Törli az Element Zapper szabályait?";
+"Clear All" = "Összes törlése";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage.";
+"Pasting will replace the existing editor content." = "Pasting will replace the existing editor content.";
+"This removes all saved element zapper rules from every site." = "This removes all saved element zapper rules from every site.";
+"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"Advanced" = "Speciális";
+"Help" = "Súgó";
+"FAQ" = "FAQ";
+"Report Issues" = "Report Issues";
+"Contact Us" = "Kapcsolat";
+"Version" = "Verzió";
+"Developer" = "Fejlesztő";
+"GPL-3.0 License" = "GPL-3.0 License";
+"Privacy Policy" = "Adatvédelmi irányelvek";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "Érvényes http:// vagy https:// URL-t használj";
+"Include a host name" = "Adj meg állomásnevet";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Ne használj .js, .mjs vagy .cjs végződésű Userscript URL-t";
+"wBlock will fetch and enable the filter list automatically" = "A wBlock automatikusan letölti és engedélyezi a szűrőlistát";

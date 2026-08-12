@@ -879,3 +879,28 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Choose File" = "Dosya Seç";
 "Local imports won't auto-update; re-import to replace." = "Yerel içe aktarmalar otomatik güncellenmez; değiştirmek için yeniden içe aktarın.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra Twitch reklamlarını engeller ve karmaşık anti-adblock durumlarını ele alır.";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "Temel filtre devre dışı bırakılsın mı?";
+"Replace Existing Content?" = "Mevcut içerik değiştirilsin mi?";
+"Clear Element Zapper Rules?" = "Element Zapper kuralları temizlensin mi?";
+"Clear All" = "Tümünü temizle";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Bu önerilen filtre wBlock’un temel korumasının parçasıdır. Devre dışı bırakmak engelleme kapsamını azaltabilir.";
+"Pasting will replace the existing editor content." = "Yapıştırma, mevcut düzenleyici içeriğinin yerine geçer.";
+"This removes all saved element zapper rules from every site." = "Bu işlem tüm sitelerdeki kaydedilmiş Element Zapper kurallarını kaldırır.";
+"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"Advanced" = "Gelişmiş";
+"Help" = "Yardım";
+"FAQ" = "FAQ";
+"Report Issues" = "Report Issues";
+"Contact Us" = "Bize ulaşın";
+"Version" = "Sürüm";
+"Developer" = "Geliştirici";
+"GPL-3.0 License" = "GPL-3.0 License";
+"Privacy Policy" = "Gizlilik Politikası";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "Geçerli bir http:// veya https:// URL kullanın";
+"Include a host name" = "Bir ana bilgisayar adı ekleyin";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = ".js, .mjs veya .cjs ile biten Userscript URL’si kullanmayın";
+"wBlock will fetch and enable the filter list automatically" = "wBlock filtre listesini otomatik olarak indirip etkinleştirir";

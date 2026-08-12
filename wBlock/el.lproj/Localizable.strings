@@ -879,3 +879,28 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose File" = "Επιλογή αρχείου";
 "Local imports won't auto-update; re-import to replace." = "Οι τοπικές εισαγωγές δεν ενημερώνονται αυτόματα· εισαγάγετε ξανά για αντικατάσταση.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "Το AdGuard Extra αποκλείει διαφημίσεις στο Twitch και αντιμετωπίζει σύνθετες περιπτώσεις anti-adblock.";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "Απενεργοποίηση βασικού φίλτρου;";
+"Replace Existing Content?" = "Αντικατάσταση υπάρχοντος περιεχομένου;";
+"Clear Element Zapper Rules?" = "Εκκαθάριση κανόνων Element Zapper;";
+"Clear All" = "Εκκαθάριση όλων";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Αυτό το προτεινόμενο φίλτρο αποτελεί μέρος της βασικής προστασίας του wBlock. Η απενεργοποίησή του μπορεί να μειώσει την κάλυψη αποκλεισμού.";
+"Pasting will replace the existing editor content." = "Η επικόλληση θα αντικαταστήσει το υπάρχον περιεχόμενο του επεξεργαστή.";
+"This removes all saved element zapper rules from every site." = "Αυτό αφαιρεί όλους τους αποθηκευμένους κανόνες Element Zapper από κάθε ιστότοπο.";
+"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"Advanced" = "Για προχωρημένους";
+"Help" = "Βοήθεια";
+"FAQ" = "FAQ";
+"Report Issues" = "Report Issues";
+"Contact Us" = "Επικοινωνία";
+"Version" = "Έκδοση";
+"Developer" = "Προγραμματιστής";
+"GPL-3.0 License" = "GPL-3.0 License";
+"Privacy Policy" = "Πολιτική απορρήτου";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "Χρησιμοποίησε έγκυρο URL http:// ή https://";
+"Include a host name" = "Συμπλήρωσε όνομα κεντρικού υπολογιστή";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Μην χρησιμοποιείς URL userscript που τελειώνει σε .js, .mjs ή .cjs";
+"wBlock will fetch and enable the filter list automatically" = "Το wBlock θα ανακτήσει και θα ενεργοποιήσει αυτόματα τη λίστα φίλτρων";

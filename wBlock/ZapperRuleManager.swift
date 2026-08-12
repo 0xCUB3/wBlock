@@ -84,6 +84,18 @@ final class ZapperRuleManager: ObservableObject {
         }
     }
 
+    /// Removes every stored rule for every hostname and refreshes local state.
+    func deleteAllRules() {
+        Task { @MainActor in
+            for domain in ProtobufDataManager.shared.getZapperDomains() {
+                await ProtobufDataManager.shared.deleteAllZapperRules(forHost: domain)
+            }
+            await refreshFromDisk()
+            selectedDomain = nil
+            rulesForSelectedDomain = []
+        }
+    }
+
     /// Returns the number of rules stored for the given hostname.
     func ruleCount(forDomain hostname: String) -> Int {
         return rules(for: hostname).count

@@ -879,3 +879,28 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Choose File" = "Alege fișier";
 "Local imports won't auto-update; re-import to replace." = "Importurile locale nu se actualizează automat; importă din nou pentru înlocuire.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra blochează reclamele Twitch și gestionează cazuri complicate de anti-adblock.";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "Dezactivezi filtrul esențial?";
+"Replace Existing Content?" = "Înlocuiești conținutul existent?";
+"Clear Element Zapper Rules?" = "Ștergi regulile Element Zapper?";
+"Clear All" = "Șterge tot";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage.";
+"Pasting will replace the existing editor content." = "Pasting will replace the existing editor content.";
+"This removes all saved element zapper rules from every site." = "This removes all saved element zapper rules from every site.";
+"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"Advanced" = "Avansat";
+"Help" = "Ajutor";
+"FAQ" = "FAQ";
+"Report Issues" = "Report Issues";
+"Contact Us" = "Contact";
+"Version" = "Versiune";
+"Developer" = "Dezvoltator";
+"GPL-3.0 License" = "GPL-3.0 License";
+"Privacy Policy" = "Politica de confidențialitate";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "Folosește un URL http:// sau https:// valid";
+"Include a host name" = "Include un nume de gazdă";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Nu folosi un URL de userscript care se termină în .js, .mjs sau .cjs";
+"wBlock will fetch and enable the filter list automatically" = "wBlock va descărca și activa automat lista de filtre";

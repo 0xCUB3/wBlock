@@ -879,3 +879,28 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose File" = "选择文件";
 "Local imports won't auto-update; re-import to replace." = "本地导入不会自动更新；请重新导入以替换。";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra 可拦截 Twitch 广告，并处理复杂的反广告拦截情况。";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "要停用必要过滤器吗？";
+"Replace Existing Content?" = "要替换现有内容吗？";
+"Clear Element Zapper Rules?" = "要清除元素 Zapper 规则吗？";
+"Clear All" = "全部清除";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "此推荐过滤器是 wBlock 基本保护的一部分。停用后，拦截范围可能会缩小。";
+"Pasting will replace the existing editor content." = "粘贴会替换编辑器中的现有内容。";
+"This removes all saved element zapper rules from every site." = "这会删除所有网站中保存的元素 Zapper 规则。";
+"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"Advanced" = "高级";
+"Help" = "帮助";
+"FAQ" = "FAQ";
+"Report Issues" = "Report Issues";
+"Contact Us" = "联系我们";
+"Version" = "版本";
+"Developer" = "开发者";
+"GPL-3.0 License" = "GPL-3.0 License";
+"Privacy Policy" = "隐私政策";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "使用有效的 http:// 或 https:// URL";
+"Include a host name" = "包含主机名";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "不要使用以 .js、.mjs 或 .cjs 结尾的 Userscript URL";
+"wBlock will fetch and enable the filter list automatically" = "wBlock 将自动获取并启用过滤列表";

@@ -9,6 +9,11 @@ struct SettingsView: View {
     @ObservedObject private var syncManager = CloudSyncManager.shared
     private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
     private static let reportIssueURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new/choose")!
+    private static let developerURL = URL(string: "https://github.com/0xCUB3")!
+    private static let licenseURL = URL(string: "https://www.gnu.org/licenses/gpl-3.0.html")!
+    private static let privacyPolicyURL = URL(string: "https://github.com/0xCUB3/wBlock/blob/main/PRIVACY_POLICY.md")!
+    private static let faqURL = URL(string: "https://github.com/0xCUB3/wBlock#faq")!
+    private static let contactURL = URL(string: "https://discord.gg/5kmuEbwsut")!
     @AppStorage(LogTimeZonePreference.storageKey) private var logTimeZoneIdentifier: String = LogTimeZonePreference.deviceIdentifier
     @State private var nextScheduleLine = String(localized: "Next: Loading…")
     @State private var isOverdue = false
@@ -209,17 +214,41 @@ struct SettingsView: View {
     }
 
     @ViewBuilder
-    private var actionsSection: some View {
-        NavigationLink {
-            LogsView()
-        } label: {
-            Label("View Logs", systemImage: "doc.text.magnifyingglass")
-        }
+    private var advancedSection: some View {
+        Section("Advanced") {
+            NavigationLink {
+                LogsView()
+            } label: {
+                Label("View Logs", systemImage: "doc.text.magnifyingglass")
+            }
 
-        NavigationLink {
-            SiteSettingsView(filterManager: filterManager)
-        } label: {
-            Label("Site Settings", systemImage: "globe")
+            NavigationLink {
+                SiteSettingsView(filterManager: filterManager)
+            } label: {
+                Label("Site Settings", systemImage: "globe")
+            }
+
+            backupButtons
+        }
+    }
+
+    @ViewBuilder
+    private var helpSection: some View {
+        Section("Help") {
+            Link(destination: Self.faqURL) {
+                Label("FAQ", systemImage: "questionmark.circle")
+            }
+            Link(destination: Self.reportIssueURL) {
+                Label("Report Issues", systemImage: "exclamationmark.triangle")
+            }
+            Link(destination: Self.contactURL) {
+                Label("Contact Us", systemImage: "bubble.left.and.bubble.right")
+            }
+            Button {
+                SafariExtensionSetupSupport.openScriptsExtensionSettings()
+            } label: {
+                Label("Open Safari Settings", systemImage: "gear")
+            }
         }
     }
 
@@ -443,15 +472,20 @@ struct SettingsView: View {
     @ViewBuilder
     private var aboutSection: some View {
         Section("About") {
-            CompatibleLabeledContent("wBlock Version") {
+            CompatibleLabeledContent("Version") {
                 Text(
                     Bundle.main.infoDictionary?["CFBundleShortVersionString"]
                         as? String ?? "Unknown"
                 )
             }
-
-            Link(destination: Self.reportIssueURL) {
-                Label("Report an Issue", systemImage: "ladybug")
+            Link(destination: Self.developerURL) {
+                Label("Developer", systemImage: "person")
+            }
+            Link(destination: Self.licenseURL) {
+                Label("GPL-3.0 License", systemImage: "doc.text")
+            }
+            Link(destination: Self.privacyPolicyURL) {
+                Label("Privacy Policy", systemImage: "hand.raised")
             }
         }
     }
@@ -523,18 +557,10 @@ struct SettingsView: View {
             List {
                 pauseBlockingSection
 
-                Section {
-                    actionsSection
-                    backupButtons
-                } header: {
-                    Text("Actions")
-                } footer: {
-                    actionsFooterButton
-                }
-
                 autoUpdateSection
                 syncSection
-                logsSection
+                advancedSection
+                helpSection
                 aboutSection
                 dangerZoneSection
             }
@@ -546,18 +572,10 @@ struct SettingsView: View {
             Form {
                 pauseBlockingSection
 
-                Section {
-                    actionsSection
-                    backupButtons
-                } header: {
-                    Text("Actions")
-                } footer: {
-                    actionsFooterButton
-                }
-
                 autoUpdateSection
                 syncSection
-                logsSection
+                advancedSection
+                helpSection
                 aboutSection
                 dangerZoneSection
             }

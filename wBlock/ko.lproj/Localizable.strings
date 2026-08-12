@@ -879,3 +879,28 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose File" = "파일 선택";
 "Local imports won't auto-update; re-import to replace." = "로컬 가져오기는 자동으로 업데이트되지 않습니다. 교체하려면 다시 가져오세요.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra는 Twitch 광고를 차단하고 복잡한 안티 광고 차단 사례를 처리합니다.";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "필수 필터를 비활성화할까요?";
+"Replace Existing Content?" = "기존 콘텐츠를 바꿀까요?";
+"Clear Element Zapper Rules?" = "요소 제거기 규칙을 지울까요?";
+"Clear All" = "모두 지우기";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "이 추천 필터는 wBlock의 필수 보호 기능입니다. 비활성화하면 차단 범위가 줄어들 수 있습니다.";
+"Pasting will replace the existing editor content." = "붙여넣으면 편집기의 기존 내용이 바뀝니다.";
+"This removes all saved element zapper rules from every site." = "모든 사이트에서 저장된 요소 제거기 규칙을 삭제합니다.";
+"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"Advanced" = "고급";
+"Help" = "도움말";
+"FAQ" = "FAQ";
+"Report Issues" = "Report Issues";
+"Contact Us" = "문의하기";
+"Version" = "버전";
+"Developer" = "개발자";
+"GPL-3.0 License" = "GPL-3.0 License";
+"Privacy Policy" = "개인정보 처리방침";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "유효한 http:// 또는 https:// URL을 사용하세요";
+"Include a host name" = "호스트 이름을 포함하세요";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = ".js, .mjs 또는 .cjs로 끝나는 Userscript URL은 사용하지 마세요";
+"wBlock will fetch and enable the filter list automatically" = "wBlock이 필터 목록을 자동으로 가져와 활성화합니다";

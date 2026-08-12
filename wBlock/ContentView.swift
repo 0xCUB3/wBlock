@@ -29,6 +29,7 @@ struct ContentView: View {
     @State private var isForeignFiltersExpanded = ProtobufDataManager.shared.isForeignFiltersExpanded
     @State private var showingCapacityPopover = false
     @State private var selectedTab: Int = 0
+    @State private var pendingEssentialFilter: FilterList?
     @Environment(\.scenePhase) var scenePhase
 
     private var hasCompletedOnboarding: Bool {
@@ -128,6 +129,24 @@ struct ContentView: View {
             } else {
                 EditCustomFilterView(filterManager: filterManager, filter: filter)
             }
+        }
+        .onChangeCompat(of: selectedTab) { _, _ in
+            filterSearchText = ""
+            showFilterSearch = false
+        }
+        .alert("Disable Essential Filter?", isPresented: Binding(
+            get: { pendingEssentialFilter != nil },
+            set: { if !$0 { pendingEssentialFilter = nil } }
+        )) {
+            Button("Cancel", role: .cancel) { pendingEssentialFilter = nil }
+            Button("Disable", role: .destructive) {
+                if let filter = pendingEssentialFilter {
+                    filterManager.toggleFilterListSelection(id: filter.id)
+                }
+                pendingEssentialFilter = nil
+            }
+        } message: {
+            Text("This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage.")
         }
         .onChangeCompat(of: dataManager.isForeignFiltersExpanded) { _, newValue in
             guard isForeignFiltersExpanded != newValue else { return }
@@ -363,7 +382,8 @@ struct ContentView: View {
                 userScriptManager: userScriptManager,
                 hasPendingChanges: hasPendingChanges,
                 isApplyingChanges: filterManager.isLoading,
-                onApplyChanges: applyPendingChanges
+                onApplyChanges: applyPendingChanges,
+                tabSelection: selectedTab
             )
                 .safeAreaInset(edge: .top) {
                     if filterManager.isBlockingPaused {
@@ -495,7 +515,13 @@ struct ContentView: View {
             supportsCustomActions: supportsCustomActions(filter),
             onEdit: { editingCustomFilter = filter },
             onDelete: { filterManager.removeFilterList(filter) },
-            onToggle: { _ in filterManager.toggleFilterListSelection(id: filter.id) }
+            onToggle: { newValue in
+                if !newValue && FilterListLoader.recommendedFilterNames.contains(filter.name) {
+                    pendingEssentialFilter = filter
+                } else {
+                    filterManager.toggleFilterListSelection(id: filter.id)
+                }
+            }
         )
     }
 
@@ -717,6 +743,26 @@ struct FilterRowView: View {
     }
 }
 
+#if os(iOS)
+private struct OnboardingPresentationModifier: ViewModifier {
+    @Binding var isPresented: Bool
+    let filterManager: AppFilterManager
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            content.sheet(isPresented: $isPresented) {
+                OnboardingView(filterManager: filterManager)
+            }
+        } else {
+            content.fullScreenCover(isPresented: $isPresented) {
+                OnboardingView(filterManager: filterManager)
+            }
+        }
+    }
+}
+#endif
+
 struct ContentModifiers: ViewModifier {
     @ObservedObject var filterManager: AppFilterManager
     @ObservedObject var userScriptManager: UserScriptManager
@@ -843,9 +889,10 @@ struct ContentModifiers: ViewModifier {
                 ) { _ in
                     applyFilterChangesFromExternalTrigger()
                 }
-                .fullScreenCover(isPresented: $showOnboardingSheet) {
-                    OnboardingView(filterManager: filterManager)
-                }
+                .modifier(OnboardingPresentationModifier(
+                    isPresented: $showOnboardingSheet,
+                    filterManager: filterManager
+                ))
             #elseif os(macOS)
                 .sheet(isPresented: $showOnboardingSheet) {
                     OnboardingView(filterManager: filterManager)
@@ -1088,7 +1135,10 @@ struct AddFilterListView: View {
 	        private var macosModeContent: some View {
 	            switch addMode {
 	            case .url:
-	                macosURLCard
+	                VStack(alignment: .leading, spacing: 16) {
+	                    macosURLCard
+	                    filterRequirementsPanel
+	                }
 	            case .paste:
 	                macosPasteCard
 	            case .file:
@@ -1274,6 +1324,31 @@ struct AddFilterListView: View {
                 userListCategoryPicker(selection: $selectedCategory)
 		        }
 		    }
+    }
+
+	    private var filterRequirementsPanel: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Requirements")
+                .font(.headline)
+            requirementRow(icon: "link", text: "Use a valid http:// or https:// URL")
+            requirementRow(icon: "globe", text: "Include a host name")
+            requirementRow(icon: "checkmark.circle", text: "Do not use a userscript URL ending in .js, .mjs, or .cjs")
+            Text("wBlock will fetch and enable the filter list automatically")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(16)
+        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+    }
+
+    private func requirementRow(icon: String, text: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .foregroundStyle(.secondary)
+            Text(LocalizedStringKey(text))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
     }
 
 	    private var urlInputEditor: some View {

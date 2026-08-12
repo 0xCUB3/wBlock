@@ -879,3 +879,28 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose File" = "اختيار ملف";
 "Local imports won't auto-update; re-import to replace." = "لا يتم تحديث الاستيرادات المحلية تلقائيًا؛ أعد الاستيراد للاستبدال.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "يحظر AdGuard Extra إعلانات Twitch ويتعامل مع حالات مكافحة حظر الإعلانات المعقدة.";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "تعطيل عامل التصفية الأساسي؟";
+"Replace Existing Content?" = "استبدال المحتوى الحالي؟";
+"Clear Element Zapper Rules?" = "مسح قواعد Element Zapper؟";
+"Clear All" = "مسح الكل";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "هذا المرشح الموصى به جزء من حماية wBlock الأساسية. قد يؤدي تعطيله إلى تقليل نطاق الحظر.";
+"Pasting will replace the existing editor content." = "سيؤدي اللصق إلى استبدال محتوى المحرر الحالي.";
+"This removes all saved element zapper rules from every site." = "يؤدي هذا إلى إزالة جميع قواعد Element Zapper المحفوظة من كل المواقع.";
+"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"Advanced" = "متقدم";
+"Help" = "مساعدة";
+"FAQ" = "FAQ";
+"Report Issues" = "Report Issues";
+"Contact Us" = "اتصل بنا";
+"Version" = "الإصدار";
+"Developer" = "المطور";
+"GPL-3.0 License" = "GPL-3.0 License";
+"Privacy Policy" = "سياسة الخصوصية";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "استخدم عنوان URL صالحًا يبدأ بـ http:// أو https://";
+"Include a host name" = "أضف اسم المضيف";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "لا تستخدم عنوان Userscript ينتهي بـ ‎.js أو ‎.mjs أو ‎.cjs";
+"wBlock will fetch and enable the filter list automatically" = "سيجلب wBlock قائمة التصفية ويفعّلها تلقائيًا";

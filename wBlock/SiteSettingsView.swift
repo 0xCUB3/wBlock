@@ -16,6 +16,7 @@ struct SiteSettingsView: View {
     #endif
     @State private var expandedDomains: Set<String> = []
     @State private var domainPendingReset: String? = nil
+    @State private var showingClearAllZapperConfirmation = false
     @State private var pendingUndo: (rule: String, domain: String, index: Int)? = nil
     @FocusState private var isTextFieldFocused: Bool
 
@@ -35,6 +36,16 @@ struct SiteSettingsView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     addSiteSection
+
+                    if !ruleManager.domains.isEmpty {
+                        Button(role: .destructive) {
+                            showingClearAllZapperConfirmation = true
+                        } label: {
+                            Label("Clear Element Zapper Rules", systemImage: "trash")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.bordered)
+                    }
 
                     let sites = filteredSites
                     if !sites.isEmpty {
@@ -71,6 +82,15 @@ struct SiteSettingsView: View {
             }
         }
         #endif
+        .alert("Clear Element Zapper Rules?", isPresented: $showingClearAllZapperConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Clear All", role: .destructive) {
+                ruleManager.deleteAllRules()
+                filterManager.markNonSelectionChangesPending()
+            }
+        } message: {
+            Text("This removes all saved element zapper rules from every site.")
+        }
         .alert(
             "Reset Site Settings",
             isPresented: Binding(

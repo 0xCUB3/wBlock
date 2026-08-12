@@ -225,6 +225,8 @@ extension FilterListCategory {
         switch self {
         case .foreign:
             NSLocalizedString("Regional", comment: "Filter list category")
+        case .custom:
+            NSLocalizedString("Other", comment: "Filter list category display name")
         default:
             NSLocalizedString(rawValue, comment: "Filter list category")
         }

@@ -879,3 +879,28 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose File" = "ファイルを選択";
 "Local imports won't auto-update; re-import to replace." = "ローカルインポートは自動更新されません。置き換えるには再インポートしてください。";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra は Twitch 広告をブロックし、複雑なアンтиブロック対策に対応します。";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "必須フィルタを無効にしますか？";
+"Replace Existing Content?" = "既存の内容を置き換えますか？";
+"Clear Element Zapper Rules?" = "Element Zapper のルールを消去しますか？";
+"Clear All" = "すべて消去";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "この推奨フィルタは wBlock の基本保護の一部です。無効にするとブロック範囲が狭くなる場合があります。";
+"Pasting will replace the existing editor content." = "貼り付けると、エディタの既存の内容が置き換えられます。";
+"This removes all saved element zapper rules from every site." = "すべてのサイトから保存済みの Element Zapper ルールを削除します。";
+"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"Advanced" = "詳細";
+"Help" = "ヘルプ";
+"FAQ" = "FAQ";
+"Report Issues" = "Report Issues";
+"Contact Us" = "お問い合わせ";
+"Version" = "バージョン";
+"Developer" = "開発者";
+"GPL-3.0 License" = "GPL-3.0 License";
+"Privacy Policy" = "プライバシーポリシー";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "有効な http:// または https:// URL を使用してください";
+"Include a host name" = "ホスト名を含めてください";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = ".js、.mjs、.cjs で終わる Userscript URL は使用しないでください";
+"wBlock will fetch and enable the filter list automatically" = "wBlock がフィルタリストを自動取得して有効にします";

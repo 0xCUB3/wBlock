@@ -879,3 +879,28 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Choose File" = "Wybierz plik";
 "Local imports won't auto-update; re-import to replace." = "Importy lokalne nie aktualizują się automatycznie; zaimportuj ponownie, aby zastąpić.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra blokuje reklamy na Twitchu i obsługuje skomplikowane przypadki anti-adblock.";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "Wyłączyć niezbędny filtr?";
+"Replace Existing Content?" = "Zastąpić istniejącą treść?";
+"Clear Element Zapper Rules?" = "Wyczyścić reguły Element Zappera?";
+"Clear All" = "Wyczyść wszystko";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Ten zalecany filtr jest częścią podstawowej ochrony wBlock. Jego wyłączenie może zmniejszyć zakres blokowania.";
+"Pasting will replace the existing editor content." = "Wklejenie zastąpi bieżącą zawartość edytora.";
+"This removes all saved element zapper rules from every site." = "Spowoduje to usunięcie wszystkich zapisanych reguł Element Zappera ze wszystkich witryn.";
+"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"Advanced" = "Zaawansowane";
+"Help" = "Pomoc";
+"FAQ" = "FAQ";
+"Report Issues" = "Report Issues";
+"Contact Us" = "Kontakt";
+"Version" = "Wersja";
+"Developer" = "Deweloper";
+"GPL-3.0 License" = "GPL-3.0 License";
+"Privacy Policy" = "Polityka prywatności";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "Użyj prawidłowego adresu URL http:// lub https://";
+"Include a host name" = "Podaj nazwę hosta";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Nie używaj adresu Userscript kończącego się na .js, .mjs lub .cjs";
+"wBlock will fetch and enable the filter list automatically" = "wBlock automatycznie pobierze i włączy listę filtrów";

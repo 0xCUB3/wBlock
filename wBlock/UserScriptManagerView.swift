@@ -75,6 +75,7 @@ struct UserScriptManagerView: View {
     let hasPendingChanges: Bool
     let isApplyingChanges: Bool
     let onApplyChanges: () -> Void
+    let tabSelection: Int
 
     @State private var scripts: [UserScriptListItem] = []
     @State private var showingAddScriptSheet = false
@@ -184,6 +185,10 @@ struct UserScriptManagerView: View {
         .onAppear {
             refreshScripts()
             showOnlyEnabled = ProtobufDataManager.shared.getUserScriptShowEnabledOnly()
+        }
+        .onChangeCompat(of: tabSelection) { _, _ in
+            searchText = ""
+            showSearch = false
         }
         .alert("Import Failed", isPresented: Binding(
             get: { dropErrorMessage != nil },
@@ -1441,6 +1446,8 @@ struct AddUserScriptView: View {
     @State private var isAdding: Bool = false
     @State private var fileImportError: String?
     @State private var editorImportError: String?
+    @State private var showingPasteReplacementConfirmation = false
+    @State private var pendingPasteText: String?
     @State private var showingFileImporter = false
     @State private var addMode: AddMode = .url
     @State private var showHints: Bool = false
@@ -1481,6 +1488,17 @@ struct AddUserScriptView: View {
         #endif
         .onChangeCompat(of: urlInput) { _, newValue in
             validateInput(newValue)
+        }
+        .alert("Replace Existing Content?", isPresented: $showingPasteReplacementConfirmation) {
+            Button("Cancel", role: .cancel) { pendingPasteText = nil }
+            Button("Replace", role: .destructive) {
+                if let pendingPasteText {
+                    replaceEditorText(with: pendingPasteText)
+                }
+                pendingPasteText = nil
+            }
+        } message: {
+            Text("Pasting will replace the existing editor content.")
         }
         .fileImporter(isPresented: $showingFileImporter, allowedContentTypes: allowedImportTypes) { result in
             switch result {
@@ -1639,7 +1657,7 @@ struct AddUserScriptView: View {
                     modePickerCard
                     macosModeContent
                     if addMode == .url {
-                        requirementsCard
+                        requirementsPanel
                     }
                 }
                 .padding(.horizontal, SheetDesign.contentHorizontalPadding)
@@ -1677,7 +1695,11 @@ struct AddUserScriptView: View {
     private var macosModeContent: some View {
         switch addMode {
         case .url:
-            macosURLCard
+            VStack(alignment: .leading, spacing: 12) {
+                macosURLCard
+                validationMessage
+                requirementsPanel
+            }
         case .editor:
             macosEditorCard
         case .file:
@@ -1719,8 +1741,6 @@ struct AddUserScriptView: View {
                     validationBadge
                 }
             }
-
-            validationMessage
 
             Button {
                 addMode = .editor
@@ -1811,26 +1831,14 @@ struct AddUserScriptView: View {
         }
     }
 
-    private var requirementsCard: some View {
-        DisclosureGroup(isExpanded: $showHints.animation(.easeInOut(duration: 0.2))) {
-            VStack(alignment: .leading, spacing: 8) {
-                requirementRow(icon: "link", text: "Starts with http:// or https://")
-                requirementRow(icon: "doc.text", text: "Ends with .js, .user.js, or .user.css")
-                requirementRow(icon: "checkmark.shield", text: "Hosted on a trusted source")
-            }
-            .padding(.top, 8)
-        } label: {
-            HStack {
-                Image(systemName: "info.circle")
-                    .foregroundStyle(.secondary)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("URL requirements")
-                        .font(.headline)
-                    Text("Tap to review userscript guidelines.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
+    private var requirementsPanel: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Requirements", systemImage: "info.circle")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            requirementRow(icon: "link", text: "Starts with http:// or https://")
+            requirementRow(icon: "doc.text", text: "Ends with .js, .user.js, or .user.css")
+            requirementRow(icon: "checkmark.shield", text: "Hosted on a trusted source")
         }
         .padding(20)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
@@ -1861,17 +1869,7 @@ struct AddUserScriptView: View {
     }
 
     private var requirementsDisclosure: some View {
-        DisclosureGroup(isExpanded: $showHints.animation(.easeInOut(duration: 0.2))) {
-            VStack(alignment: .leading, spacing: 8) {
-                requirementRow(icon: "link", text: "Starts with http:// or https://")
-                requirementRow(icon: "doc.text", text: "Ends with .js, .user.js, or .user.css")
-                requirementRow(icon: "checkmark.shield", text: "Hosted on a trusted source")
-            }
-            .padding(.top, 8)
-        } label: {
-            Label("Requirements", systemImage: "info.circle")
-                .foregroundStyle(.secondary)
-        }
+        requirementsPanel
     }
 
     private var editorToolbar: some View {
@@ -2157,6 +2155,18 @@ struct AddUserScriptView: View {
         guard let string = NSPasteboard.general.string(forType: .string) else { return }
         #endif
 
+        Task { @MainActor in
+            let currentText = await editorController.currentText()
+            if currentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                replaceEditorText(with: string)
+            } else {
+                pendingPasteText = string
+                showingPasteReplacementConfirmation = true
+            }
+        }
+    }
+
+    private func replaceEditorText(with string: String) {
         editorImportError = nil
         editorController.replaceText(string)
         DispatchQueue.main.async {
