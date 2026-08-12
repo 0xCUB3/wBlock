@@ -7,25 +7,31 @@
 
 import SwiftUI
 
+struct StatCardMetric {
+    let value: String
+    let icon: String
+    let accessibilityLabel: String
+}
+
 struct StatCard: View {
     let title: String
     let value: String
     let icon: String
     let valueColor: Color
-    let detail: String?
+    let metrics: [StatCardMetric]
 
     init(
         title: String,
         value: String,
         icon: String,
         valueColor: Color = .primary,
-        detail: String? = nil
+        metrics: [StatCardMetric] = []
     ) {
         self.title = title
         self.value = value
         self.icon = icon
         self.valueColor = valueColor
-        self.detail = detail
+        self.metrics = metrics
     }
 
     var body: some View {
@@ -51,23 +57,37 @@ struct StatCard: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
-                Text(value)
-                    .font(.title2.monospacedDigit())
-                    .fontWeight(.semibold)
-                    .foregroundStyle(valueColor)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .minimumScaleFactor(0.6)
-                    .allowsTightening(true)
-                    .frame(minWidth: 60, alignment: .leading)
-
-                if let detail, !detail.isEmpty {
-                    Text(detail)
-                        .font(.caption2.monospacedDigit())
-                        .foregroundStyle(.secondary)
+                if metrics.isEmpty {
+                    Text(value)
+                        .font(.title2.monospacedDigit())
+                        .fontWeight(.semibold)
+                        .foregroundStyle(valueColor)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+                        .truncationMode(.tail)
+                        .minimumScaleFactor(0.6)
                         .allowsTightening(true)
+                        .frame(minWidth: 60, alignment: .leading)
+                } else {
+                    HStack(spacing: 10) {
+                        ForEach(metrics.indices, id: \.self) { index in
+                            let metric = metrics[index]
+                            HStack(spacing: 3) {
+                                Image(systemName: metric.icon)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 12)
+
+                                Text(metric.value)
+                                    .font(.title2.monospacedDigit())
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(valueColor)
+                                    .lineLimit(1)
+                            }
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(metric.accessibilityLabel)
+                            .accessibilityValue(metric.value)
+                        }
+                    }
                 }
             }
         }

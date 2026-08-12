@@ -258,14 +258,18 @@ struct ApplyChangesProgressView: View {
                 title: String(localized: "Updates"),
                 value: viewModel.state.totalUpdatesFound.formatted(),
                 icon: "arrow.down.circle",
-                detail: String.localizedStringWithFormat(
-                    NSLocalizedString(
-                        "Filters: %d / Userscripts: %d",
-                        comment: "Update count breakdown"
+                metrics: [
+                    StatCardMetric(
+                        value: viewModel.state.filterUpdatesFound.formatted(),
+                        icon: "line.3.horizontal.decrease",
+                        accessibilityLabel: String(localized: "Filters")
                     ),
-                    viewModel.state.filterUpdatesFound,
-                    viewModel.state.scriptsUpdatedCount
-                )
+                    StatCardMetric(
+                        value: viewModel.state.scriptsUpdatedCount.formatted(),
+                        icon: "curlybraces",
+                        accessibilityLabel: String(localized: "Scripts")
+                    )
+                ]
             )
         }
     }
