@@ -108,9 +108,7 @@ struct OnboardingView: View {
         let name: String
         let description: String
         let isBaselineEnabledByDefault: Bool
-        let isRegional: Bool
         let isBeta: Bool
-        let languages: [String]
     }
 
     private let userscriptDescriptionFallbacksByName: [String: String] = [
@@ -132,29 +130,16 @@ struct OnboardingView: View {
 
     private var defaultUserScripts: [OnboardingUserScriptItem] {
         userScriptManager.userScripts
-            .filter { script in
-                guard userScriptManager.isDefaultUserScript(script) else { return false }
-                guard userScriptManager.builtInSection(for: script) == .foreign else { return true }
-
-                let scriptLanguages = Set(userScriptManager.builtInLanguages(for: script).map { $0.lowercased() })
-                guard !scriptLanguages.isEmpty else { return false }
-                return !scriptLanguages.isDisjoint(with: selectedLanguages.map { $0.lowercased() })
-            }
+            .filter(userScriptManager.isDefaultUserScript)
             .map { script in
                 OnboardingUserScriptItem(
                     id: script.id.uuidString,
                     name: script.localizedDisplayName,
                     description: resolvedUserscriptDescription(for: script),
                     isBaselineEnabledByDefault: isBaselineUserscriptEnabledByDefault(script),
-                    isRegional: userScriptManager.builtInSection(for: script) == .foreign,
-                    isBeta: userScriptManager.isBeta(for: script),
-                    languages: userScriptManager.builtInLanguages(for: script).map { $0.lowercased() }
+                    isBeta: userScriptManager.isBeta(for: script)
                 )
             }
-    }
-
-    private var generalDefaultUserScripts: [OnboardingUserScriptItem] {
-        defaultUserScripts.filter { !$0.isRegional }
     }
 
     private func languageOption(forCode code: String) -> LanguageOption {
@@ -738,7 +723,7 @@ struct OnboardingView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Baseline Userscripts")
                         .font(.headline)
-                    ForEach(generalDefaultUserScripts) { script in
+                    ForEach(defaultUserScripts) { script in
                         userscriptCard(for: script)
                     }
                 }
@@ -1131,9 +1116,6 @@ struct OnboardingView: View {
 
         let visibleDefaultIDs = Set(defaultUserScripts.map(\.id))
         let allDefaultIDs = Set(defaultScripts.map { $0.id.uuidString })
-        let allForeignDefaultIDs = Set(defaultScripts.compactMap { script -> String? in
-            userScriptManager.builtInSection(for: script) == .foreign ? script.id.uuidString : nil
-        })
         let visibleBaselineIDs = Set(defaultScripts.compactMap { script -> String? in
             guard isBaselineUserscriptEnabledByDefault(script) else { return nil }
             guard visibleDefaultIDs.contains(script.id.uuidString) else { return nil }
@@ -1141,17 +1123,11 @@ struct OnboardingView: View {
         })
 
         selectedUserscripts = selectedUserscripts.intersection(allDefaultIDs)
-        selectedUserscripts.subtract(allForeignDefaultIDs.subtracting(visibleDefaultIDs))
         selectedUserscripts.formUnion(visibleBaselineIDs.subtracting(manuallyDeselectedBaselineUserscripts))
         selectedUserscripts.formUnion(manuallySelectedUserscripts.intersection(visibleDefaultIDs))
     }
 
     private func isBaselineUserscriptEnabledByDefault(_ script: UserScript) -> Bool {
-        if userScriptManager.builtInSection(for: script) == .foreign {
-            let languages = Set(userScriptManager.builtInLanguages(for: script).map { $0.lowercased() })
-            return !languages.isEmpty && !languages.isDisjoint(with: selectedLanguages.map { $0.lowercased() })
-        }
-
         return script.name.localizedCaseInsensitiveCompare("AdGuard Extra") == .orderedSame
             || script.name.localizedCaseInsensitiveCompare("tinyShield") == .orderedSame
     }

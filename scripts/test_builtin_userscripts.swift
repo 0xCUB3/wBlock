@@ -42,10 +42,6 @@ guard !source.contains("tinyShieldGroupedDefinition")
     exit(1)
 }
 
-guard source.contains("languagesByURL") && source.contains("builtInLanguages(for userScript: UserScript)") else {
-    fputs("FAIL: built-in userscripts should expose language associations\n", stderr)
-    exit(1)
-}
 
 guard source.contains("description: tinyShieldDescription") else {
     fputs("FAIL: tinyShield definitions should not fall back to the generic Default userscript description\n", stderr)
@@ -57,10 +53,6 @@ guard source.contains("refreshDefaultUserScriptDescriptionsIfNeeded()") else {
     exit(1)
 }
 
-guard viewSource.contains("DisclosureGroup(isExpanded: $isForeignUserScriptsExpanded)") else {
-    fputs("FAIL: userscript UI should render foreign userscripts in a collapsible section\n", stderr)
-    exit(1)
-}
 
 guard viewSource.contains("downloadingScriptIDs")
     && viewSource.contains("setUserScript(managedScript, isEnabled: newValue)")
@@ -71,18 +63,7 @@ else {
     exit(1)
 }
 
-guard viewSource.contains("scriptSection.id == .foreign") && viewSource.contains("Text(\"Regional\")") else {
-    fputs("FAIL: userscript UI should render foreign userscripts in a Regional section\n", stderr)
-    exit(1)
-}
 
-guard onboardingSource.contains("builtInSection(for: script) == .foreign")
-    && onboardingSource.contains("builtInLanguages(for: script)")
-    && onboardingSource.contains("selectedLanguages")
-else {
-    fputs("FAIL: onboarding should show foreign userscripts only for selected languages\n", stderr)
-    exit(1)
-}
 
 guard onboardingSource.contains("isBaselineUserscriptEnabledByDefault")
     && onboardingSource.contains("AdGuard Extra")

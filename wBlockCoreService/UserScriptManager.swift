@@ -56,18 +56,11 @@ public enum UserScriptManagerNotificationKey {
     public static let localImportIdentity = "localImportIdentity"
 }
 
-public enum BuiltInUserScriptSection: String, Hashable, Sendable {
-    case general
-    case foreign
-}
-
 struct BuiltInUserScriptDefinition {
     let name: String
     let url: String
     let isEnabledByDefault: Bool
-    let section: BuiltInUserScriptSection
     let description: String
-    let languages: [String]
     let displayRole: BuiltInUserScriptDisplayRole?
     /// Non-nil for userscripts that ship embedded in the framework instead of
     /// being downloaded from `url`. The `url` then acts only as a stable
@@ -81,9 +74,7 @@ struct BuiltInUserScriptDefinition {
         name: String,
         url: String,
         isEnabledByDefault: Bool,
-        section: BuiltInUserScriptSection = .general,
         description: String = "Default userscript",
-        languages: [String] = [],
         displayRole: BuiltInUserScriptDisplayRole? = nil,
         bundledContent: String? = nil,
         isBeta: Bool = false
@@ -91,9 +82,7 @@ struct BuiltInUserScriptDefinition {
         self.name = name
         self.url = url
         self.isEnabledByDefault = isEnabledByDefault
-        self.section = section
         self.description = description
-        self.languages = languages
         self.displayRole = displayRole
         self.bundledContent = bundledContent
         self.isBeta = isBeta
@@ -189,8 +178,6 @@ enum BuiltInUserScripts {
     static let protectedURLs = Set(definitions.map(\.url))
     static let legacyProtectedURLs = Set([legacyPopupBlockerBetaURL])
     static let allProtectedURLs = protectedURLs.union(legacyProtectedURLs)
-    static let sectionByURL = Dictionary(uniqueKeysWithValues: definitions.map { ($0.url, $0.section) })
-    static let languagesByURL = Dictionary(uniqueKeysWithValues: definitions.map { ($0.url, $0.languages) })
     static let displayRoleByURL = Dictionary(uniqueKeysWithValues: definitions.compactMap { definition in
         definition.displayRole.map { (definition.url, $0) }
     })
@@ -674,19 +661,9 @@ public class UserScriptManager: ObservableObject {
         return BuiltInUserScripts.allProtectedURLs.contains(urlString)
     }
 
-    public func builtInSection(for userScript: UserScript) -> BuiltInUserScriptSection? {
-        guard let urlString = userScript.url?.absoluteString else { return nil }
-        return BuiltInUserScripts.sectionByURL[urlString]
-    }
-
     public func builtInDisplayRole(for userScript: UserScript) -> BuiltInUserScriptDisplayRole? {
         guard let urlString = userScript.url?.absoluteString else { return nil }
         return BuiltInUserScripts.displayRoleByURL[urlString]
-    }
-
-    public func builtInLanguages(for userScript: UserScript) -> [String] {
-        guard let urlString = userScript.url?.absoluteString else { return [] }
-        return BuiltInUserScripts.languagesByURL[urlString] ?? []
     }
 
     public func isBeta(for userScript: UserScript) -> Bool {

@@ -9,7 +9,7 @@ guard source.contains("isBuiltIn: userScriptManager.isDefaultUserScript(script)"
     fputs("FAIL: userscript details do not classify remote built-ins by built-in identity\n", stderr)
     exit(1)
 }
-guard source.contains("isIntegrated = builtInSection != nil")
+guard source.contains("isIntegrated = isBuiltIn")
     && source.contains(#"Text(script.isIntegrated ? "Integrated" : (script.isUserStyle ? "Userstyle" : "Userscript"))"#) else {
     fputs("FAIL: app-shipped multi-feature cleaners need a compact Integrated type label\n", stderr)
     exit(1)
