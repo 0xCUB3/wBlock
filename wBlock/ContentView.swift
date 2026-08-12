@@ -365,6 +365,11 @@ struct ContentView: View {
                 isApplyingChanges: filterManager.isLoading,
                 onApplyChanges: applyPendingChanges
             )
+                .safeAreaInset(edge: .top) {
+                    if filterManager.isBlockingPaused {
+                        pauseBlockingBanner
+                    }
+                }
                 #if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
