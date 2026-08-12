@@ -495,8 +495,7 @@ struct ContentView: View {
             supportsCustomActions: supportsCustomActions(filter),
             onEdit: { editingCustomFilter = filter },
             onDelete: { filterManager.removeFilterList(filter) },
-            onToggle: { _ in filterManager.toggleFilterListSelection(id: filter.id) },
-            onShowRuleLimitWarning: { filterManager.showRuleLimitWarning(for: filter) }
+            onToggle: { _ in filterManager.toggleFilterListSelection(id: filter.id) }
         )
     }
 
@@ -567,7 +566,6 @@ struct FilterRowView: View {
     var onEdit: () -> Void
     var onDelete: () -> Void
     var onToggle: (Bool) -> Void
-    var onShowRuleLimitWarning: () -> Void
 
     @ViewBuilder
     private var contextMenuItems: some View {
@@ -665,21 +663,6 @@ struct FilterRowView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                if let limitReason = filter.limitExceededReason {
-                    HStack(spacing: 4) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.caption2)
-                        Text(limitReason)
-                            .font(.caption2)
-                            .lineLimit(nil)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .foregroundStyle(.orange)
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 8)
-                    .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
-                }
-
                 HStack(spacing: 4) {
                     if !filter.version.isEmpty {
                         Text(
@@ -716,9 +699,6 @@ struct FilterRowView: View {
                     set: { newValue in
                         // Defer state change to next run loop to avoid layout invalidation during scroll
                         DispatchQueue.main.async {
-                            if newValue && filter.limitExceededReason != nil {
-                                onShowRuleLimitWarning()
-                            }
                             onToggle(newValue)
                         }
                     }

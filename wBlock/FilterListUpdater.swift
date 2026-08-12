@@ -171,7 +171,7 @@ final class FilterListUpdater: @unchecked Sendable {
         // Pre-fetch all validators on MainActor BEFORE entering the task group
         // to avoid deadlock (MainActor suspends waiting for group, child tasks
         // need MainActor to read validators).
-        let eligibleFilters = filterLists.filter { $0.limitExceededReason == nil }
+        let eligibleFilters = filterLists
         var validatorsMap: [UUID: (etag: String?, lastModified: String?)] = [:]
         for filter in eligibleFilters {
             validatorsMap[filter.id] = await storedValidators(for: filter)

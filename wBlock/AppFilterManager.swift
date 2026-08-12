@@ -545,31 +545,28 @@ class AppFilterManager: ObservableObject {
 
     // MARK: - Rule limit UX
 
-    func showRuleLimitWarning(for filter: FilterList? = nil) {
+    func showRuleLimitWarning() {
         let ruleLimitPerBlocker = 150_000
         let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
         let totalCapacity = platformTargets.count * ruleLimitPerBlocker
 
         let totalRules = lastRuleCount
+        guard totalRules >= totalCapacity else { return }
 
         var message = ""
-        if let filter, let reason = filter.limitExceededReason, !reason.isEmpty {
-            message = reason
-        } else {
-            let currentRulesLine = LocalizedStrings.format(
-                "Current Safari rules: %@",
-                comment: "Rule limit warning current rules line",
-                totalRules.formatted()
-            )
+        let currentRulesLine = LocalizedStrings.format(
+            "Current Safari rules: %@",
+            comment: "Rule limit warning current rules line",
+            totalRules.formatted()
+        )
 
-            message = LocalizedStrings.format(
-                "Safari limits each content blocker extension to %@ rules.\nTotal capacity (all wBlock blockers): %@ rules.\n\n%@\n\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists.",
-                comment: "Rule limit warning body",
-                ruleLimitPerBlocker.formatted(),
-                totalCapacity.formatted(),
-                currentRulesLine
-            )
-        }
+        message = LocalizedStrings.format(
+            "Safari limits each content blocker extension to %@ rules.\nTotal capacity (all wBlock blockers): %@ rules.\n\n%@\n\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists.",
+            comment: "Rule limit warning body",
+            ruleLimitPerBlocker.formatted(),
+            totalCapacity.formatted(),
+            currentRulesLine
+        )
 
         message += "\n\n"
         message += LocalizedStrings.text(
