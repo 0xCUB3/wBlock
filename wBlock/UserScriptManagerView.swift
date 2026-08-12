@@ -1773,7 +1773,7 @@ struct AddUserScriptView: View {
                 fileImportError = nil
             } label: {
                 HStack(spacing: 10) {
-                    Image(systemName: "tray.and.arrow.down")
+                    Image(systemName: "doc")
                     Text("Choose File")
                     Spacer()
                     Image(systemName: "chevron.right")
