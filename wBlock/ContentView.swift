@@ -2192,7 +2192,10 @@ struct EditUserListView: View {
                     return loaded
                 }
 
-                let legacyURL = containerURL.appendingPathComponent("\(filterName).txt")
+                guard let legacyURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                    name: filterName,
+                    containerURL: containerURL
+                ) else { return nil }
                 return try? String(contentsOf: legacyURL, encoding: .utf8)
             }.value
 

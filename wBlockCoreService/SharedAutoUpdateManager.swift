@@ -1512,8 +1512,12 @@ public actor SharedAutoUpdateManager {
             return localData
         }
 
-        guard filter.isCustom else { return nil }
-        let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        guard filter.isCustom,
+              let legacyURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                  name: filter.name,
+                  containerURL: containerURL
+              )
+        else { return nil }
         return try? Data(contentsOf: legacyURL)
     }
 

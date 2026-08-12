@@ -305,12 +305,15 @@ final class FilterListUpdater: @unchecked Sendable {
             return localData
         }
 
-        if filter.isCustom, let containerURL = loader.getSharedContainerURL() {
-            // Backward compatibility: legacy custom filters were stored as "<name>.txt".
-            let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
-            if let legacyData = try? Data(contentsOf: legacyURL) {
-                return legacyData
-            }
+        if filter.isCustom,
+           let containerURL = loader.getSharedContainerURL(),
+           let legacyURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+               name: filter.name,
+               containerURL: containerURL
+           ),
+           let legacyData = try? Data(contentsOf: legacyURL)
+        {
+            return legacyData
         }
 
         return nil
