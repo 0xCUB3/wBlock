@@ -464,7 +464,12 @@ class AppFilterManager: ObservableObject {
     }
 
     // MARK: - Core functionality
-    func checkAndEnableFilters(forceReload: Bool = false) {
+    /// Runs the complete filter update/apply pipeline and waits for it to finish.
+    ///
+    /// The same method is used by the UI-triggered path and by the headless App Intent.
+    /// A headless run suppresses progress-sheet state but still uses the normal download,
+    /// conversion, persistence, and content-blocker reload pipeline.
+    private func refreshMissingItems() {
         missingFilters.removeAll()
         missingUserScripts.removeAll()
 
@@ -478,35 +483,45 @@ class AppFilterManager: ObservableObject {
                 missingUserScripts.append(script)
             }
         }
+    }
 
-        if !missingFilters.isEmpty || !missingUserScripts.isEmpty || forceReload
-            || hasUnappliedChanges
-        {
+    @discardableResult
+    func performFilterUpdate(showProgress: Bool = true) async -> Bool {
+        refreshMissingItems()
+
+        let started = await performExclusiveApply {
+            self.prepareApplyRunState()
+            self.showingApplyProgressSheet = showProgress
+
+            if !self.missingFilters.isEmpty || !self.missingUserScripts.isEmpty {
+                await self.downloadMissingItemsSilently()
+            }
+
+            await self.applyChanges(
+                prepareState: false,
+                skipPreApplyUpdates: false
+            )
+        }
+
+        if !started {
+            await ConcurrentLogManager.shared.warning(
+                .filterApply,
+                LocalizedStrings.text(
+                    "Skipped overlapping apply request",
+                    comment: "Apply pipeline concurrency guard"
+                ),
+                metadata: ["entry": "performFilterUpdate"]
+            )
+        }
+        return started
+    }
+
+    func checkAndEnableFilters(forceReload: Bool = false) {
+        refreshMissingItems()
+        let hasMissingItems = !missingFilters.isEmpty || !missingUserScripts.isEmpty
+        if hasMissingItems || forceReload || hasUnappliedChanges {
             Task {
-                let started = await self.performExclusiveApply {
-                    self.prepareApplyRunState()
-                    self.showingApplyProgressSheet = true
-
-                    if !self.missingFilters.isEmpty || !self.missingUserScripts.isEmpty {
-                        await self.downloadMissingItemsSilently()
-                    }
-
-                    await self.applyChanges(
-                        prepareState: false,
-                        skipPreApplyUpdates: false
-                    )
-                }
-
-                if !started {
-                    await ConcurrentLogManager.shared.warning(
-                        .filterApply,
-                        LocalizedStrings.text(
-                            "Skipped overlapping apply request",
-                            comment: "Apply pipeline concurrency guard"
-                        ),
-                        metadata: ["entry": "checkAndEnableFilters"]
-                    )
-                }
+                await self.performFilterUpdate()
             }
         }
     }

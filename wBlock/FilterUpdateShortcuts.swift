@@ -1,42 +1,39 @@
 #if canImport(AppIntents) && !os(visionOS)
 import AppIntents
 import Foundation
-
-extension Notification.Name {
-    static let shortcutFilterUpdateRequested = Notification.Name("shortcutFilterUpdateRequested")
-}
-
-@MainActor
-final class ShortcutFilterUpdateRequest {
-    static let shared = ShortcutFilterUpdateRequest()
-
-    private var isPending = false
-
-    private init() {}
-
-    func requestUpdate() {
-        isPending = true
-        NotificationCenter.default.post(name: .shortcutFilterUpdateRequested, object: nil)
-    }
-
-    func consumePendingRequest() -> Bool {
-        guard isPending else { return false }
-        isPending = false
-        return true
-    }
-}
+import wBlockCoreService
+#if os(macOS)
+import AppKit
+#elseif os(iOS)
+import UIKit
+#endif
 
 @available(iOS 16.0, macOS 13.0, *)
 struct UpdateWBlockFiltersIntent: AppIntent {
     static var title: LocalizedStringResource = "Update wBlock Filters"
     static var description = IntentDescription("Checks for wBlock filter updates and applies them when available.")
-    static var openAppWhenRun: Bool { true }
+    static var openAppWhenRun: Bool { false }
 
     init() {}
 
     @MainActor
     func perform() async throws -> some ProvidesDialog {
-        ShortcutFilterUpdateRequest.shared.requestUpdate()
+        let filterManager: AppFilterManager?
+        #if os(macOS)
+        filterManager = (NSApplication.shared.delegate as? AppDelegate)?.filterManager
+        #elseif os(iOS)
+        filterManager = (UIApplication.shared.delegate as? AppDelegate)?.filterManager
+        #else
+        filterManager = nil
+        #endif
+
+        await WBlockLaunchSetup.run()
+        let manager = filterManager ?? AppFilterManager()
+        await manager.waitUntilReady()
+        await UserScriptManager.shared.waitUntilReady()
+        manager.setUserScriptManager(UserScriptManager.shared)
+        await manager.performFilterUpdate(showProgress: false)
+
         return .result(dialog: IntentDialog("wBlock filter update started."))
     }
 }

@@ -818,9 +818,6 @@ struct ContentModifiers: ViewModifier {
                         .startup, LocalizedStrings.text("wBlock application appeared"), metadata: [:])
                 }
                 filterManager.setUserScriptManager(userScriptManager)
-                #if canImport(AppIntents) && !os(visionOS)
-                applyShortcutFilterUpdateIfNeeded()
-                #endif
             }
             // Show onboarding/setup sheets only on initial load
             .task {
@@ -840,13 +837,6 @@ struct ContentModifiers: ViewModifier {
                     showOnboardingSheet = true
                 }
             }
-            #if canImport(AppIntents) && !os(visionOS)
-                .onReceive(
-                    NotificationCenter.default.publisher(for: .shortcutFilterUpdateRequested)
-                ) { _ in
-                    applyShortcutFilterUpdateIfNeeded()
-                }
-            #endif
             #if os(iOS)
                 .onChangeCompat(of: scenePhase) { _, newPhase in
                     if newPhase == .background && filterManager.hasUnappliedChanges {
@@ -881,15 +871,6 @@ struct ContentModifiers: ViewModifier {
         filterManager.checkAndEnableFilters(forceReload: true)
     }
 
-    #if canImport(AppIntents) && !os(visionOS)
-    private func applyShortcutFilterUpdateIfNeeded() {
-        Task { @MainActor in
-            await filterManager.waitUntilReady()
-            guard ShortcutFilterUpdateRequest.shared.consumePendingRequest() else { return }
-            applyFilterChangesFromExternalTrigger()
-        }
-    }
-    #endif
     #if os(iOS)
         private func scheduleNotification(delay: TimeInterval = 1.0) {
             let content = UNMutableNotificationContent()

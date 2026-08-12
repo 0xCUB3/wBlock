@@ -42,8 +42,8 @@ assertContains(
 )
 assertContains(
     intent,
-    "static var openAppWhenRun: Bool { true }",
-    "Shortcut update must run with the app opened to show the normal apply flow"
+    "static var openAppWhenRun: Bool { false }",
+    "Shortcut update must run without opening or foregrounding the app"
 )
 assertNotContains(
     intent,
@@ -58,7 +58,7 @@ assertNotContains(
 assertContains(
     intent,
     "@MainActor\n    func perform()",
-    "Shortcut intent must run its request handoff on the main actor"
+    "Shortcut intent must coordinate app-layer state on the main actor"
 )
 assertContains(
     intent,
@@ -67,43 +67,43 @@ assertContains(
 )
 assertContains(
     intent,
-    "ShortcutFilterUpdateRequest.shared.requestUpdate()",
-    "Shortcut must request the app to run the normal apply flow"
+    "await WBlockLaunchSetup.run()",
+    "Shortcut must perform the same cold-launch migrations as the app"
+)
+assertContains(
+    intent,
+    "await manager.waitUntilReady()",
+    "Shortcut must wait for persisted filter state after a cold launch"
+)
+assertContains(
+    intent,
+    "await manager.performFilterUpdate(showProgress: false)",
+    "Shortcut must await the headless normal apply pipeline"
 )
 assertNotContains(
     intent,
-    "maybeRunAutoUpdate(",
-    "Shortcut must not use a separate shared auto-update UI path"
+    "ShortcutFilterUpdateRequest",
+    "Shortcut must not depend on an in-process notification handoff"
 )
 assertContains(
     intent,
     "struct WBlockShortcutsProvider: AppShortcutsProvider",
     "Shortcut must be discoverable in Shortcuts"
 )
-assertContains(
-    contentView,
-    "shortcutFilterUpdateRequested",
-    "Main view must listen for shortcut update requests"
-)
-assertContains(
-    contentView,
-    "checkAndEnableFilters(forceReload: true)",
-    "Shortcut must use the same forced apply entry point as Apply Changes"
-)
-assertContains(
-    contentView,
-    "applyFilterChangesFromExternalTrigger()",
-    "Notification and shortcut triggers must share one apply path"
-)
-assertContains(
-    contentView,
-    "await filterManager.waitUntilReady()",
-    "Shortcut apply requests must wait until filter lists are loaded"
-)
 assertNotContains(
     contentView,
-    "await filterManager.checkAndEnableFilters(forceReload: true)",
-    "External triggers should call the synchronous apply entry point directly"
+    "shortcutFilterUpdateRequested",
+    "Headless shortcuts must not depend on the main view or an in-process notification"
+)
+assertContains(
+    appFilterManager,
+    "func performFilterUpdate(showProgress: Bool = true) async",
+    "The intent must reuse the shared filter update/apply pipeline"
+)
+assertContains(
+    appFilterManager,
+    "await self.applyChanges(",
+    "The headless path must execute the normal apply pipeline"
 )
 assertContains(
     appFilterManager,

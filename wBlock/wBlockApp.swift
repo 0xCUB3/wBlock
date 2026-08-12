@@ -8,6 +8,20 @@
 import SwiftUI
 import wBlockCoreService
 
+@MainActor
+enum WBlockLaunchSetup {
+    static func run() async {
+        let dataManager = ProtobufDataManager.shared
+        await dataManager.waitUntilLoaded()
+        await dataManager.migrateLegacyFilterURLs()
+        await dataManager.migrateMultipurposeToAnnoyances()
+        await dataManager.migrateAnnoyancesFilterToSplitFilters()
+        await dataManager.migrateMobileFilterToAdsCategory()
+        await dataManager.migrateAllowlistsToDedicatedCategory()
+        await UserScriptManager.shared.waitUntilReady()
+    }
+}
+
 @main
 struct wBlockApp: App {
     #if os(macOS)
@@ -36,13 +50,7 @@ struct wBlockApp: App {
         hasStartedLaunchSetup = true
 
         Task {
-            await dataManager.waitUntilLoaded()
-            await dataManager.migrateLegacyFilterURLs()
-            await dataManager.migrateMultipurposeToAnnoyances()
-            await dataManager.migrateAnnoyancesFilterToSplitFilters()
-            await dataManager.migrateMobileFilterToAdsCategory()
-            await dataManager.migrateAllowlistsToDedicatedCategory()
-            await UserScriptManager.shared.waitUntilReady()
+            await WBlockLaunchSetup.run()
             await MainActor.run {
                 hasCompletedLaunchSetup = true
                 CloudSyncManager.shared.activateAfterLaunchSetup()
