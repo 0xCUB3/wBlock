@@ -530,17 +530,26 @@ class AppFilterManager: ObservableObject {
     }
 
     func toggleFilterListSelection(id: UUID) {
-        if let index = filterListIndexByID[id] {
-            filterLists[index].isSelected.toggle()
+        guard let index = filterListIndexByID[id] else { return }
+        setFilterListSelection(id: id, selected: !filterLists[index].isSelected)
+    }
 
-            if filterLists[index].isSelected {
-                filterLists[index].limitExceededReason = nil
-                autoDisabledFilters.removeAll { $0.id == id }
-            }
-
-            saveFilterListsCoalesced()
-            refreshPendingChanges()
+    /// Sets a filter's selection state without depending on the caller's stale toggle state.
+    @discardableResult
+    func setFilterListSelection(id: UUID, selected: Bool) -> Bool {
+        guard let index = filterListIndexByID[id], filterLists[index].isSelected != selected else {
+            return false
         }
+
+        filterLists[index].isSelected = selected
+        if selected {
+            filterLists[index].limitExceededReason = nil
+            autoDisabledFilters.removeAll { $0.id == id }
+        }
+
+        saveFilterListsCoalesced()
+        refreshPendingChanges()
+        return true
     }
 
     // MARK: - Rule limit UX

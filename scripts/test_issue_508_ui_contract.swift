@@ -6,11 +6,16 @@ func source(_ path: String) throws -> String { try String(contentsOf: root.appen
 func require(_ text: String, _ needle: String) {
     guard text.contains(needle) else { fputs("FAIL: missing \(needle)\n", stderr); exit(1) }
 }
+func requireCondition(_ condition: Bool, _ message: String) {
+    guard condition else { fputs("FAIL: \(message)\n", stderr); exit(1) }
+}
 let content = try source("wBlock/ContentView.swift")
 require(content, "OnboardingPresentationModifier")
 require(content, "UIDevice.current.userInterfaceIdiom == .pad")
 require(content, ".fullScreenCover(isPresented: $isPresented)")
 require(content, ".sheet(isPresented: $isPresented)")
+let onboarding = try source("wBlock/OnboardingView.swift")
+require(onboarding, ".interactiveDismissDisabled(!hasCompletedOnboarding)")
 require(content, ".onChangeCompat(of: selectedTab)")
 require(content, "pendingEssentialFilter")
 require(content, "filterRequirementsPanel")
@@ -19,13 +24,31 @@ require(scripts, "showingPasteReplacementConfirmation")
 require(scripts, "Replace Existing Content?")
 require(scripts, "if currentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty")
 require(scripts, "requirementsPanel")
+let macOSBodyStart = scripts.range(of: "private var macosBody")!.lowerBound
+let macOSBody = String(scripts[macOSBodyStart...])
+require(macOSBody, "macosModeContent")
+let macOSModeStart = scripts.range(of: "private var macosModeContent")!.lowerBound
+let macOSURLStart = scripts.range(of: "private var macosURLCard")!.lowerBound
+let macOSModeContent = String(scripts[macOSModeStart..<macOSURLStart])
+requireCondition(macOSModeContent.components(separatedBy: "requirementsPanel").count - 1 == 1, "macOS URL mode must render one requirements panel")
+requireCondition(!macOSBody.contains("if addMode == .url {\n                        requirementsPanel"), "macOS must not add a second requirements panel")
 let localization = try source("wBlock/LocalizationHelpers.swift")
 require(localization, "NSLocalizedString(\"Other\"")
 let settings = try source("wBlock/SettingsView.swift")
 require(settings, "private var advancedSection")
 require(settings, "private var helpSection")
 require(settings, "Report Issues")
+require(settings, "private var logTimestampControls")
+require(settings, "Toggle(\"Sync with device timezone\"")
+require(settings, "Picker(\"Time zone\"")
+let manager = try source("wBlock/AppFilterManager.swift")
+require(manager, "func setFilterListSelection(id: UUID, selected: Bool)")
+require(content, "setFilterListSelection(id: filter.id, selected: false)")
 let zapper = try source("wBlock/SiteSettingsView.swift")
+require(zapper, ".alert(item: $pendingConfirmation)")
+require(zapper, "pendingConfirmation = .clearAll")
+require(zapper, "pendingConfirmation = .reset(domain: site.domain)")
 require(zapper, "Clear Element Zapper Rules?")
 require(zapper, "ruleManager.deleteAllRules()")
+requireCondition(!zapper.contains("domainPendingReset"), "site reset should use the item-based confirmation")
 print("PASS")

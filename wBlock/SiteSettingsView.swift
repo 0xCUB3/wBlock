@@ -15,8 +15,19 @@ struct SiteSettingsView: View {
     @State private var showSearch: Bool = false
     #endif
     @State private var expandedDomains: Set<String> = []
-    @State private var domainPendingReset: String? = nil
-    @State private var showingClearAllZapperConfirmation = false
+    private enum PendingConfirmation: Identifiable {
+        case reset(domain: String)
+        case clearAll
+
+        var id: String {
+            switch self {
+            case .reset(let domain): return "reset:\(domain)"
+            case .clearAll: return "clear-all"
+            }
+        }
+    }
+
+    @State private var pendingConfirmation: PendingConfirmation?
     @State private var pendingUndo: (rule: String, domain: String, index: Int)? = nil
     @FocusState private var isTextFieldFocused: Bool
 
@@ -39,7 +50,7 @@ struct SiteSettingsView: View {
 
                     if !ruleManager.domains.isEmpty {
                         Button(role: .destructive) {
-                            showingClearAllZapperConfirmation = true
+                            pendingConfirmation = .clearAll
                         } label: {
                             Label("Clear Element Zapper Rules", systemImage: "trash")
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -82,39 +93,36 @@ struct SiteSettingsView: View {
             }
         }
         #endif
-        .alert("Clear Element Zapper Rules?", isPresented: $showingClearAllZapperConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Clear All", role: .destructive) {
-                ruleManager.deleteAllRules()
-                filterManager.markNonSelectionChangesPending()
-            }
-        } message: {
-            Text("This removes all saved element zapper rules from every site.")
-        }
-        .alert(
-            "Reset Site Settings",
-            isPresented: Binding(
-                get: { domainPendingReset != nil },
-                set: { if !$0 { domainPendingReset = nil } }
-            )
-        ) {
-            Button("Cancel", role: .cancel) { domainPendingReset = nil }
-            Button("Remove", role: .destructive) {
-                if let domain = domainPendingReset {
-                    resetSite(domain)
-                }
-                domainPendingReset = nil
-            }
-        } message: {
-            Text(
-                String(
-                    format: NSLocalizedString(
-                        "This removes all settings for %@.",
-                        comment: "Reset site settings confirmation message"
-                    ),
-                    domainPendingReset ?? ""
+        .alert(item: $pendingConfirmation) { confirmation in
+            switch confirmation {
+            case .clearAll:
+                return Alert(
+                    title: Text("Clear Element Zapper Rules?"),
+                    message: Text("This removes all saved element zapper rules from every site."),
+                    primaryButton: .destructive(Text("Clear All")) {
+                        ruleManager.deleteAllRules()
+                        filterManager.markNonSelectionChangesPending()
+                    },
+                    secondaryButton: .cancel(Text("Cancel"))
                 )
-            )
+            case .reset(let domain):
+                return Alert(
+                    title: Text("Reset Site Settings"),
+                    message: Text(
+                        String.localizedStringWithFormat(
+                            NSLocalizedString(
+                                "This removes all settings for %@.",
+                                comment: "Reset site settings confirmation message"
+                            ),
+                            domain
+                        )
+                    ),
+                    primaryButton: .destructive(Text("Remove")) {
+                        resetSite(domain)
+                    },
+                    secondaryButton: .cancel(Text("Cancel"))
+                )
+            }
         }
     }
 
@@ -267,7 +275,7 @@ struct SiteSettingsView: View {
         .buttonStyle(.plain)
         .contextMenu {
             Button(role: .destructive) {
-                domainPendingReset = site.domain
+                pendingConfirmation = .reset(domain: site.domain)
             } label: {
                 Label("Reset Site Settings", systemImage: "trash")
             }
@@ -388,7 +396,7 @@ struct SiteSettingsView: View {
                 .padding(.leading, 16)
 
             Button {
-                domainPendingReset = site.domain
+                pendingConfirmation = .reset(domain: site.domain)
             } label: {
                 HStack {
                     Text("Reset Site Settings")

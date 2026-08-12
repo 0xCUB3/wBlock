@@ -141,7 +141,7 @@ struct ContentView: View {
             Button("Cancel", role: .cancel) { pendingEssentialFilter = nil }
             Button("Disable", role: .destructive) {
                 if let filter = pendingEssentialFilter {
-                    filterManager.toggleFilterListSelection(id: filter.id)
+                    filterManager.setFilterListSelection(id: filter.id, selected: false)
                 }
                 pendingEssentialFilter = nil
             }
