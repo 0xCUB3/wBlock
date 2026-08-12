@@ -6,6 +6,8 @@ const SUPPORT_PROBE_ATTEMPTS = 5;
 const SUPPORT_PROBE_RETRY_DELAY_MS = 200;
 const TOP_FRAME_ID = 0;
 const NATIVE_MESSAGE_TIMEOUT_MS = 3500;
+const FILTER_UPDATE_POLL_INTERVAL_MS = 500;
+const FILTER_UPDATE_POLL_ATTEMPTS = 120;
 
 function t(key, substitutions, fallback = '') {
     const message = browser.i18n.getMessage(key, substitutions);
@@ -292,6 +294,116 @@ function setStatus(text, kind = 'neutral') {
     if (kind === 'active') statusEl.classList.add('is-active');
     else if (kind === 'disabled') statusEl.classList.add('is-disabled');
     else statusEl.classList.add('is-neutral');
+}
+
+let filterUpdatePollPromise = null;
+let filterUpdatePollToken = 0;
+
+function renderFilterUpdateStatus(snapshot) {
+    const button = document.getElementById('update-filters');
+    const statusEl = document.getElementById('filter-update-status');
+    if (!button || !statusEl) return;
+
+    const state = snapshot && typeof snapshot.state === 'string' ? snapshot.state : 'idle';
+    statusEl.classList.remove('is-running', 'is-success', 'is-error');
+    statusEl.hidden = state === 'idle';
+    button.disabled = state === 'running';
+    if (state === 'running') {
+        button.setAttribute('aria-busy', 'true');
+        statusEl.classList.add('is-running');
+        statusEl.textContent = t('popup_status_updating_filters', undefined, 'Updating filters…');
+        return;
+    }
+    button.removeAttribute('aria-busy');
+    if (state === 'succeeded') {
+        statusEl.classList.add('is-success');
+        const count = Number(snapshot.updatedFilters);
+        statusEl.textContent = count > 0
+            ? t('popup_status_filters_updated', [String(count)], `Filters updated (${count}).`)
+            : t('popup_status_filters_updated', undefined, 'Filters updated.');
+    } else if (state === 'no_change') {
+        statusEl.classList.add('is-success');
+        statusEl.textContent = t('popup_status_filters_no_change', undefined, 'Filters are up to date.');
+    } else if (state === 'failed') {
+        statusEl.classList.add('is-error');
+        statusEl.textContent = snapshot.error || t('popup_error_filter_update', undefined, 'Filter update failed.');
+    }
+}
+
+async function getFilterUpdateStatus() {
+    const response = await withTimeout(
+        browser.runtime.sendMessage({ action: 'wblock:filterUpdate:getStatus' }),
+        NATIVE_MESSAGE_TIMEOUT_MS,
+        'Filter update status timed out.'
+    );
+    if (!response || response.ok !== true || typeof response.state !== 'string') {
+        throw new Error((response && response.error) || 'Invalid filter update status.');
+    }
+    return response;
+}
+
+async function pollFilterUpdateStatus() {
+    if (filterUpdatePollPromise) return filterUpdatePollPromise;
+    const token = ++filterUpdatePollToken;
+    filterUpdatePollPromise = (async () => {
+        let waitingForStart = 5;
+        for (let attempt = 0; attempt < FILTER_UPDATE_POLL_ATTEMPTS; attempt += 1) {
+            if (token !== filterUpdatePollToken) return null;
+            const snapshot = await getFilterUpdateStatus();
+            if (snapshot.state === 'running') {
+                waitingForStart = 0;
+                renderFilterUpdateStatus(snapshot);
+            } else if (snapshot.state === 'idle' && waitingForStart > 0) {
+                // The XPC acknowledgement can arrive just before the shared status write.
+                waitingForStart -= 1;
+                renderFilterUpdateStatus({ state: 'running' });
+            } else {
+                renderFilterUpdateStatus(snapshot);
+                return snapshot;
+            }
+            await sleep(FILTER_UPDATE_POLL_INTERVAL_MS);
+        }
+        throw new Error(t('popup_error_filter_update', undefined, 'Filter update status is unavailable.'));
+    })().finally(() => {
+        filterUpdatePollPromise = null;
+    });
+    return filterUpdatePollPromise;
+}
+
+async function refreshFilterUpdateStatus() {
+    try {
+        const snapshot = await getFilterUpdateStatus();
+        renderFilterUpdateStatus(snapshot);
+        if (snapshot.state === 'running') {
+            await pollFilterUpdateStatus();
+        }
+    } catch (error) {
+        console.warn('[wBlock] Filter update status unavailable:', error);
+    }
+}
+
+async function startFilterUpdate() {
+    const button = document.getElementById('update-filters');
+    if (!button || button.disabled) return;
+    setError('');
+    renderFilterUpdateStatus({ state: 'running' });
+    try {
+        const response = await withTimeout(
+            browser.runtime.sendMessage({ action: 'wblock:filterUpdate:start' }),
+            NATIVE_MESSAGE_TIMEOUT_MS,
+            'Filter update start timed out.'
+        );
+        if (!response || response.ok !== true || response.state !== 'running') {
+            throw new Error((response && response.error) || t('popup_error_filter_update_start', undefined, 'Could not start filter update.'));
+        }
+        await pollFilterUpdateStatus();
+    } catch (error) {
+        console.error('[wBlock] Filter update failed:', error);
+        renderFilterUpdateStatus({
+            state: 'failed',
+            error: (error && error.message) || t('popup_error_filter_update', undefined, 'Filter update failed.'),
+        });
+    }
 }
 
 async function getActiveTab() {
@@ -861,6 +973,15 @@ function setupListeners() {
     const userscriptsToggle = document.getElementById('userscripts-toggle');
     const openAppButton = document.getElementById('open-app');
     const resumeButton = document.getElementById('resume-blocking');
+    const updateFiltersButton = document.getElementById('update-filters');
+
+    if (updateFiltersButton) {
+        updateFiltersButton.addEventListener('click', () => {
+            startFilterUpdate().catch((error) => {
+                console.error('[wBlock] Filter update action failed:', error);
+            });
+        });
+    }
 
     if (userscriptsToggle) {
         userscriptsToggle.addEventListener('click', () => {
@@ -1109,6 +1230,9 @@ function setupListeners() {
 
 async function refreshUi() {
     setError('');
+    refreshFilterUpdateStatus().catch((error) => {
+        console.warn('[wBlock] Failed to restore filter update status:', error);
+    });
     browser.runtime.sendMessage({ action: 'wblock:installRemoveParamDNRRules' }).catch((error) => {
         console.warn('[wBlock] Failed to refresh removeparam DNR rules:', error);
     });

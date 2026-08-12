@@ -254,5 +254,33 @@
   "popup_error_resume_unavailable": {
     "message": "Apri wBlock per riprendere il blocco. L’app deve essere in esecuzione.",
     "description": "Shown when the containing app is unavailable while resuming blocking."
+  },
+  "popup_filter_update_label": {
+    "message": "Filtri",
+    "description": "Section label for the popup filter update action."
+  },
+  "popup_button_update_filters": {
+    "message": "Aggiorna filtri",
+    "description": "Button label for starting a background filter update from the popup."
+  },
+  "popup_status_updating_filters": {
+    "message": "Aggiornamento filtri…",
+    "description": "Compact status shown while filters are updating in the background."
+  },
+  "popup_status_filters_updated": {
+    "message": "Filtri aggiornati ($1).",
+    "description": "Success status after filters changed. Placeholder 1 is the number of updated filters."
+  },
+  "popup_status_filters_no_change": {
+    "message": "I filtri sono aggiornati.",
+    "description": "Status shown when the update found no filter changes."
+  },
+  "popup_error_filter_update": {
+    "message": "Aggiornamento filtri non riuscito.",
+    "description": "Error status shown when a background filter update fails."
+  },
+  "popup_error_filter_update_start": {
+    "message": "Impossibile avviare l’aggiornamento dei filtri.",
+    "description": "Error shown when the background filter update cannot be started."
   }
 }

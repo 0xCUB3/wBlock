@@ -254,5 +254,33 @@
   "popup_error_resume_unavailable": {
     "message": "차단을 다시 시작하려면 wBlock을 여세요. 앱이 실행 중이어야 합니다.",
     "description": "Shown when the containing app is unavailable while resuming blocking."
+  },
+  "popup_filter_update_label": {
+    "message": "필터",
+    "description": "Section label for the popup filter update action."
+  },
+  "popup_button_update_filters": {
+    "message": "필터 업데이트",
+    "description": "Button label for starting a background filter update from the popup."
+  },
+  "popup_status_updating_filters": {
+    "message": "필터 업데이트 중…",
+    "description": "Compact status shown while filters are updating in the background."
+  },
+  "popup_status_filters_updated": {
+    "message": "필터가 업데이트되었습니다($1).",
+    "description": "Success status after filters changed. Placeholder 1 is the number of updated filters."
+  },
+  "popup_status_filters_no_change": {
+    "message": "필터가 최신 상태입니다.",
+    "description": "Status shown when the update found no filter changes."
+  },
+  "popup_error_filter_update": {
+    "message": "필터 업데이트에 실패했습니다.",
+    "description": "Error status shown when a background filter update fails."
+  },
+  "popup_error_filter_update_start": {
+    "message": "필터 업데이트를 시작할 수 없습니다.",
+    "description": "Error shown when the background filter update cannot be started."
   }
 }

@@ -25621,6 +25621,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const nativeMessageTimeoutMs = request => {
     const action = request && typeof request.action === "string" ? request.action : "";
     if (action === "syncZapperRules" || action === "getZapperRules") return 3500;
+    if (action === "startFilterUpdate" || action === "getFilterUpdateStatus") return 10000;
     if (action === "getBlockingState") return 1000;
     return 30000;
   };
@@ -26012,6 +26013,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     var _sender$tab, _sender$tab2;
     // Cast the incoming request to `Message`.
     const message = request;
+    if (message && message.action === "wblock:filterUpdate:start") {
+      try {
+        return await sendPriorityNativeMessage({ action: "startFilterUpdate" });
+      } catch (error) {
+        return {
+          ok: false,
+          state: "failed",
+          error: String(error && error.message ? error.message : error)
+        };
+      }
+    }
+    if (message && message.action === "wblock:filterUpdate:getStatus") {
+      try {
+        return await sendPriorityNativeMessage({ action: "getFilterUpdateStatus" });
+      } catch (error) {
+        return {
+          ok: false,
+          state: "failed",
+          error: String(error && error.message ? error.message : error)
+        };
+      }
+    }
     if (message && message.action === "wblock:clearCache") {
       configurationGeneration += 1;
       cache.clear();

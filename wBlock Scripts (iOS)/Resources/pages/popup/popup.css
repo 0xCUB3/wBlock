@@ -407,6 +407,58 @@ body {
   margin-top: 10px;
 }
 
+.filter-update-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.filter-update-button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 8px 12px;
+}
+
+.filter-update-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  min-height: 18px;
+  font-size: 12px;
+  color: var(--subtext);
+}
+
+.filter-update-status.is-success {
+  color: rgba(36, 138, 61, 0.95);
+}
+
+.filter-update-status.is-error {
+  color: #d70015;
+}
+
+.filter-update-status.is-running::before {
+  content: "";
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: filter-update-spin 0.8s linear infinite;
+}
+
+@keyframes filter-update-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filter-update-status.is-running::before {
+    animation: none;
+  }
+}
+
 .btn {
   flex: 1;
   appearance: none;

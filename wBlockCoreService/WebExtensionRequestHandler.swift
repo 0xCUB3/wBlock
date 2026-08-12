@@ -167,6 +167,12 @@ public enum WebExtensionRequestHandler {
             case "setSiteZapperDisabled":
                 handleSetSiteZapperDisabled(message: message!, context: context)
                 return
+            case "startFilterUpdate":
+                handleStartFilterUpdate(context: context)
+                return
+            case "getFilterUpdateStatus":
+                handleGetFilterUpdateStatus(context: context)
+                return
             case "openContainingApp":
                 handleOpenContainingApp(context: context)
                 return
@@ -571,6 +577,63 @@ public enum WebExtensionRequestHandler {
             error: "Open wBlock to resume blocking."
         )
         #endif
+    }
+
+    private static func handleStartFilterUpdate(context: NSExtensionContext) {
+        #if os(macOS)
+        Task {
+            switch await FilterUpdateClient.shared.startFilterUpdate() {
+            case .started:
+                let response = createResponse(with: [
+                    "ok": true,
+                    "accepted": true,
+                    "state": FilterUpdatePopupStatus.State.running.rawValue
+                ])
+                context.completeRequest(returningItems: [response])
+            case .alreadyRunning:
+                let response = createResponse(with: [
+                    "ok": true,
+                    "accepted": false,
+                    "state": FilterUpdatePopupStatus.State.running.rawValue
+                ])
+                context.completeRequest(returningItems: [response])
+            case .timedOut, .unavailable:
+                let response = createResponse(with: [
+                    "ok": false,
+                    "accepted": false,
+                    "state": FilterUpdatePopupStatus.State.failed.rawValue,
+                    "error": "The background update service is unavailable."
+                ])
+                context.completeRequest(returningItems: [response])
+            }
+        }
+        #else
+        let response = createResponse(with: [
+            "ok": false,
+            "accepted": false,
+            "state": FilterUpdatePopupStatus.State.failed.rawValue,
+            "error": "Background filter updates are unavailable on this platform."
+        ])
+        context.completeRequest(returningItems: [response])
+        #endif
+    }
+
+    private static func handleGetFilterUpdateStatus(context: NSExtensionContext) {
+        let status = FilterUpdatePopupStatus.snapshot()
+        var payload: [String: Any?] = [
+            "ok": true,
+            "state": status.state.rawValue,
+            "startedAt": status.startedAt,
+            "finishedAt": status.finishedAt,
+            "checkedFilters": status.checkedFilters,
+            "updatedFilters": status.updatedFilters,
+            "error": status.error
+        ]
+        if status.state == .failed, status.error == nil {
+            payload["error"] = "The background update did not complete."
+        }
+        let response = createResponse(with: payload)
+        context.completeRequest(returningItems: [response])
     }
 
     private static func handleOpenContainingApp(context: NSExtensionContext) {

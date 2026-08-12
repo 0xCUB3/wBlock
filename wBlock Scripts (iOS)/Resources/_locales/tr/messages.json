@@ -254,5 +254,33 @@
   "popup_error_resume_unavailable": {
     "message": "Engellemeyi sürdürmek için wBlock’u açın. Uygulama çalışıyor olmalı.",
     "description": "Shown when the containing app is unavailable while resuming blocking."
+  },
+  "popup_filter_update_label": {
+    "message": "Filtreler",
+    "description": "Section label for the popup filter update action."
+  },
+  "popup_button_update_filters": {
+    "message": "Filtreleri Güncelle",
+    "description": "Button label for starting a background filter update from the popup."
+  },
+  "popup_status_updating_filters": {
+    "message": "Filtreler güncelleniyor…",
+    "description": "Compact status shown while filters are updating in the background."
+  },
+  "popup_status_filters_updated": {
+    "message": "Filtreler güncellendi ($1).",
+    "description": "Success status after filters changed. Placeholder 1 is the number of updated filters."
+  },
+  "popup_status_filters_no_change": {
+    "message": "Filtreler güncel.",
+    "description": "Status shown when the update found no filter changes."
+  },
+  "popup_error_filter_update": {
+    "message": "Filtre güncellemesi başarısız oldu.",
+    "description": "Error status shown when a background filter update fails."
+  },
+  "popup_error_filter_update_start": {
+    "message": "Filtre güncellemesi başlatılamadı.",
+    "description": "Error shown when the background filter update cannot be started."
   }
 }
