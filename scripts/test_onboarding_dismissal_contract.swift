@@ -6,6 +6,9 @@ func source(_ path: String) throws -> String { try String(contentsOf: root.appen
 func check(_ condition: Bool, _ message: String) { guard condition else { fputs("FAIL: \(message)\n", stderr); exit(1) } }
 
 let onboarding = try source("wBlock/OnboardingView.swift")
+check(onboarding.contains("@State private var step: OnboardingStep = .welcome"), "onboarding must start on the welcome step")
+check(onboarding.contains("if step != .welcome"), "back must remain available after the welcome step")
+check(onboarding.contains("step = steps[steps.index(before: currentIndex)]"), "back must retreat to the previous step")
 check(onboarding.contains(".interactiveDismissDisabled(!hasCompletedOnboarding)"), "incomplete onboarding must not be dismissible")
 let completion = onboarding.range(of: "setHasCompletedOnboarding(true)")!.lowerBound
 let dismissal = onboarding.range(of: "dismiss()", range: completion..<onboarding.endIndex)!.lowerBound

@@ -41,7 +41,7 @@ struct OnboardingView: View {
         }
     }
     @State private var selectedUserscripts: Set<String> = []
-    @State private var step: OnboardingStep = .protection
+    @State private var step: OnboardingStep = .welcome
     @State private var selectedLanguages: Set<String>
     @State private var languageSearchText = ""
     @State private var selectedRegionalFilters: Set<UUID> = []
