@@ -272,6 +272,41 @@ struct CloudSyncLocalUserScriptTests {
             "re-adding a local userscript locally should clear the local delete marker"
         )
 
+        // Two stable imports may share a display name. A legacy name tombstone
+        // must not delete the surviving stable entry or suppress its restore.
+        let firstDuplicate = CloudSyncLocalUserScript(
+            name: "Duplicate", content: "// first", isEnabled: true,
+            localImportIdentity: "file:/tmp/first.user.js"
+        )
+        let secondDuplicate = CloudSyncLocalUserScript(
+            name: "Duplicate", content: "// second", isEnabled: true,
+            localImportIdentity: "file:/tmp/second.user.js"
+        )
+        let duplicateDeletes = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
+            localScripts: [firstDuplicate, secondDuplicate],
+            remoteScripts: [secondDuplicate],
+            deletedNames: ["duplicate"],
+            lastSyncedNames: ["duplicate"]
+        )
+        expect(duplicateDeletes.isEmpty, "name-only tombstones must not delete a distinct stable duplicate")
+
+        let identityTombstone = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
+            localScripts: [firstDuplicate],
+            remoteScripts: [firstDuplicate],
+            deletedNames: [],
+            lastSyncedNames: [],
+            deletedIdentities: ["file:/tmp/first.user.js"]
+        )
+        expect(identityTombstone == ["file:/tmp/first.user.js"], "identity tombstones must win over stale live payloads")
+
+        let legacyWithEmptyIdentity = CloudSyncLocalUserScript(
+            name: "Legacy Name", content: "// legacy", isEnabled: true, localImportIdentity: "   "
+        )
+        expect(
+            CloudSyncLocalUserScriptReconciler.matches(existing: legacyWithEmptyIdentity, remote: legacy),
+            "blank identities must retain legacy name matching"
+        )
+
         print("PASS")
     }
 }

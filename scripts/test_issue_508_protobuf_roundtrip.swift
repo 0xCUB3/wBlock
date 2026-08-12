@@ -24,6 +24,18 @@ struct Issue508ProtobufRoundTripTests {
             fatalError("protobuf round trip did not preserve local import identity and category")
         }
 
+        var legacy = Wblock_Data_UserScriptData()
+        legacy.id = UUID().uuidString
+        legacy.name = "Legacy"
+        legacy.isLocal = true
+        legacy.category = .unspecified
+        let legacyDecoded = try Wblock_Data_UserScriptData(serializedBytes: legacy.serializedData())
+        guard !legacyDecoded.hasLocalImportIdentity,
+              legacyDecoded.category == .unspecified
+        else {
+            fatalError("legacy protobuf payload unexpectedly gained additive identity/category state")
+        }
+
         print("PASS: issue 508 protobuf round trip")
     }
 }

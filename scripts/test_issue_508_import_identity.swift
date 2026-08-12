@@ -57,6 +57,26 @@ struct Issue508ImportIdentityTests {
             "remote scripts with identical content must not be conflated"
         )
 
+        var duplicate = UserScript(name: "Display Override", content: "other")
+        duplicate.isLocal = true
+        duplicate.localImportIdentity = "file:/tmp/other.user.js"
+        expect(
+            !UserScript.matchesLocalImport(
+                existing: duplicate,
+                stableIdentity: identity,
+                canonicalName: duplicate.name
+            ),
+            "distinct stable local imports may share a display name"
+        )
+        expect(
+            UserScript.matchesLocalImport(
+                existing: duplicate,
+                stableIdentity: "   ",
+                canonicalName: duplicate.name
+            ),
+            "blank identities must use the legacy name fallback"
+        )
+
         print("PASS: issue 508 local import identity")
     }
 

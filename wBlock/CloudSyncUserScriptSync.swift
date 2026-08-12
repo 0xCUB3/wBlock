@@ -101,13 +101,17 @@ enum CloudSyncLocalUserScriptReconciler {
 
         return Set(localScripts.compactMap { local in
             let normalizedLocalName = normalizedName(local.name)
-            guard !normalizedLocalName.isEmpty,
-                  !remoteScripts.contains(where: { matches(existing: local, remote: $0) })
-            else { return nil }
+            guard !normalizedLocalName.isEmpty else { return nil }
 
             if let identity = normalizedIdentity(local.localImportIdentity) {
-                if deletedNormalizedIdentities.contains(identity)
-                    || syncedNormalizedIdentities.contains(identity) {
+                // A stable tombstone is authoritative even if a stale payload also
+                // contains a live record with the same identity.
+                if deletedNormalizedIdentities.contains(identity) {
+                    return identity
+                }
+                guard !remoteScripts.contains(where: { matches(existing: local, remote: $0) })
+                else { return nil }
+                if syncedNormalizedIdentities.contains(identity) {
                     return identity
                 }
 
@@ -128,7 +132,8 @@ enum CloudSyncLocalUserScriptReconciler {
                 return nil
             }
 
-            guard deletedNormalizedNames.contains(normalizedLocalName)
+            guard !remoteScripts.contains(where: { matches(existing: local, remote: $0) }),
+                  deletedNormalizedNames.contains(normalizedLocalName)
                     || syncedNormalizedNames.contains(normalizedLocalName)
             else { return nil }
             return normalizedLocalName
@@ -179,6 +184,22 @@ enum CloudSyncLocalUserScriptReconciler {
             .intersection(normalizedNames(localNames))
     }
 
+    static func deletedIdentitiesToClearDuringUploadReconciliation(
+        existingDeletedIdentities: Set<String>,
+        localScripts: [CloudSyncLocalUserScript]
+    ) -> Set<String> {
+        normalizedIdentities(existingDeletedIdentities)
+            .intersection(identitySet(in: localScripts))
+    }
+
+    static func deletedIdentitiesToMergeDuringUploadReconciliation(
+        remoteDeletedIdentities: Set<String>,
+        localScripts: [CloudSyncLocalUserScript]
+    ) -> Set<String> {
+        normalizedIdentities(remoteDeletedIdentities)
+            .subtracting(identitySet(in: localScripts))
+    }
+
     static func deletedNamesToMergeDuringUploadReconciliation(
         remoteDeletedNames: Set<String>,
         localNames: [String]
@@ -201,6 +222,16 @@ enum CloudSyncLocalUserScriptReconciler {
         )
     }
 
+    static func deletedIdentitiesToMergeDuringRemoteApply(
+        remoteDeletedIdentities: Set<String>,
+        remoteLocalScripts: [CloudSyncLocalUserScript],
+        localScripts: [CloudSyncLocalUserScript]
+    ) -> Set<String> {
+        normalizedIdentities(remoteDeletedIdentities)
+            .subtracting(identitySet(in: remoteLocalScripts))
+            .subtracting(identitySet(in: localScripts))
+    }
+
     static func deletedNamesToClearDuringReconciliation(
         existingDeletedNames: Set<String>,
         remoteLocalScripts: [CloudSyncLocalUserScript],
@@ -208,6 +239,18 @@ enum CloudSyncLocalUserScriptReconciler {
     ) -> Set<String> {
         normalizedNames(existingDeletedNames)
             .intersection(normalizedNames(remoteLocalScripts.map(\.name)).union(normalizedNames(localNames)))
+    }
+
+    static func deletedIdentitiesToClearDuringReconciliation(
+        existingDeletedIdentities: Set<String>,
+        remoteLocalScripts: [CloudSyncLocalUserScript],
+        localScripts: [CloudSyncLocalUserScript],
+        remoteDeletedIdentities: Set<String> = []
+    ) -> Set<String> {
+        let liveIdentities = identitySet(in: remoteLocalScripts).union(identitySet(in: localScripts))
+        return normalizedIdentities(existingDeletedIdentities)
+            .intersection(liveIdentities)
+            .subtracting(normalizedIdentities(remoteDeletedIdentities))
     }
 
     static func missingRemoteScriptsToRestore(
@@ -250,5 +293,9 @@ enum CloudSyncLocalUserScriptReconciler {
 
     private static func normalizedIdentities(_ identities: Set<String>) -> Set<String> {
         Set(identities.compactMap(normalizedIdentity))
+    }
+
+    private static func identitySet(in scripts: [CloudSyncLocalUserScript]) -> Set<String> {
+        Set(scripts.compactMap { normalizedIdentity($0.localImportIdentity) })
     }
 }

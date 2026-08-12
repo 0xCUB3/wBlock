@@ -2216,7 +2216,14 @@ public class UserScriptManager: ObservableObject {
         newUserScript.isEnabled = existingIndex.map { userScripts[$0].isEnabled } ?? true
         newUserScript.updatesAutomatically = existingIndex.map { userScripts[$0].updatesAutomatically } ?? true
         newUserScript.isLocal = true
-        newUserScript.localImportIdentity = UserScriptImportIdentity.normalized(stableIdentity)
+        // A legacy CloudSync update matched by display name must not replace the
+        // stable file identity. Otherwise its next delete/backup can target the
+        // wrong duplicate and lose the existing per-site state keyed by script ID.
+        newUserScript.localImportIdentity = UserScript.localImportIdentityForUpdate(
+            existing: existingIndex.map { userScripts[$0] },
+            requestedIdentity: stableIdentity,
+            preserveExistingIdentity: legacyLocalImportMatching
+        ) ?? UserScriptImportIdentity.normalized(stableIdentity)
         newUserScript.lastUpdated = Date()
 
         newUserScript.description = descriptionOverride ?? tempScript.description
