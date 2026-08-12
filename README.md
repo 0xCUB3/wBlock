@@ -370,7 +370,7 @@ Yes. Open the wBlock extension popup in Safari and tap <i>Activate Element Zappe
 
 ### Credits
 
-**[@arjpar](https://github.com/arjpar)** · **[@ameshkov](https://github.com/ameshkov/safari-blocker)** · **[@shindgewongxj](https://github.com/shindgewongxj)**
+**[@arjpar](https://github.com/arjpar)** · **[@ameshkov](https://github.com/ameshkov/safari-blocker)** · **[@shindgew](https://github.com/shindgew)**
 
 <br>
 
