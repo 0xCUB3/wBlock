@@ -215,15 +215,6 @@ struct UserScriptManagerView: View {
         return sections
     }
 
-    private func copyScriptURL(_ url: URL) {
-        #if os(iOS)
-        UIPasteboard.general.string = url.absoluteString
-        #elseif os(macOS)
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(url.absoluteString, forType: .string)
-        #endif
-    }
-
     var body: some View {
         userScriptContent
         .sheet(isPresented: $showingAddScriptSheet, onDismiss: {
@@ -723,34 +714,44 @@ struct UserScriptManagerView: View {
             }
         }
         .contextMenu {
-            #if os(macOS)
-            if script.isDownloaded {
+            let actions = ContextMenuActionAvailability.userScriptActions(
+                isBuiltIn: script.isBuiltIn,
+                isLocal: script.isLocal
+            )
+            if actions.contains(.info) {
                 Button {
-                    selectedScript = SelectedUserScript(id: script.id)
+                    selectedScript = SelectedUserScript(id: script.id, action: .info)
+                } label: {
+                    Label("Info", systemImage: "info.circle")
+                }
+            }
+            if actions.contains(.viewContent) {
+                Button {
+                    selectedScript = SelectedUserScript(id: script.id, action: .viewContent)
                 } label: {
                     Label("View Content", systemImage: "doc.text")
                 }
             }
-            #endif
-            if let url = script.url {
+            if actions.contains(.editContent) {
                 Button {
-                    copyScriptURL(url)
+                    selectedScript = SelectedUserScript(id: script.id, action: .editContent)
                 } label: {
-                    Label("Copy URL", systemImage: "doc.on.doc")
+                    Label("Edit Content", systemImage: "pencil")
                 }
             }
-            if let managedScript = userScriptManager.userScript(withId: script.id),
-                !userScriptManager.isDefaultUserScript(managedScript)
-            {
+            if actions.contains(.deleteScript),
+               let managedScript = userScriptManager.userScript(withId: script.id) {
                 Button(role: .destructive) {
                     Task {
-                        guard let managedScript = userScriptManager.userScript(withId: script.id) else { return }
                         await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Removing userscript"), metadata: ["script": script.name])
                         userScriptManager.removeUserScript(managedScript)
                         refreshScripts()
                     }
                 } label: {
-                    Label("Remove", systemImage: "trash")
+                    Label(
+                        script.isUserStyle ? "Delete Style" : "Delete Script",
+                        systemImage: "trash"
+                    )
                 }
             }
         }
@@ -1123,6 +1124,7 @@ struct ScriptContentMainView: View {
 struct UserScriptContentView: View {
     let scriptId: UUID
     var userScriptManager: UserScriptManager
+    var startsEditing: Bool = false
     @Environment(\.dismiss) private var dismiss
     @State private var script: UserScript?
     @State private var loadedContent = ""
@@ -1287,8 +1289,14 @@ struct UserScriptContentView: View {
                 UserScriptSourceSheet(
                     script: script,
                     initialContent: loadedContent,
-                    onSave: { newContent in
+                    canEdit: script.isLocal && !userScriptManager.isDefaultUserScript(script),
+                    onSave: { newContent, name, description in
                         await userScriptManager.saveEditedContent(for: script.id, newContent: newContent)
+                        await userScriptManager.setUserScriptMetadataOverrides(
+                            for: script.id,
+                            name: name,
+                            description: description
+                        )
                         await MainActor.run {
                             loadedContent = newContent
                             updatePreview()
@@ -1316,6 +1324,9 @@ struct UserScriptContentView: View {
         script = metadata
         updatePreview()
         isLoadingContent = false
+        if startsEditing && script.isLocal && !userScriptManager.isDefaultUserScript(script) {
+            isShowingSourceSheet = true
+        }
     }
 
     private func setUpdatesAutomatically(_ updatesAutomatically: Bool) {
@@ -1341,24 +1352,31 @@ struct UserScriptContentView: View {
 private struct UserScriptSourceSheet: View {
     let script: UserScript
     let initialContent: String
-    let onSave: (String) async -> Void
+    let canEdit: Bool
+    let onSave: (String, String, String) async -> Void
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var editorController: CodeMirrorEditorController
     @State private var isEditing: Bool
     @State private var isLineWrappingEnabled = false
     @State private var isSaving = false
+    @State private var editedName: String
+    @State private var editedDescription: String
 
     init(
         script: UserScript,
         initialContent: String,
-        onSave: @escaping (String) async -> Void
+        canEdit: Bool,
+        onSave: @escaping (String, String, String) async -> Void
     ) {
         self.script = script
         self.initialContent = initialContent
+        self.canEdit = canEdit
         self.onSave = onSave
         _editorController = StateObject(wrappedValue: CodeMirrorEditorController(text: initialContent, isUserStyle: script.isUserStyle))
         _isEditing = State(initialValue: false)
+        _editedName = State(initialValue: script.name)
+        _editedDescription = State(initialValue: script.description)
     }
 
     var body: some View {
@@ -1429,12 +1447,14 @@ private struct UserScriptSourceSheet: View {
                         }
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(isSaving || !editorController.isDirty)
+                    .disabled(isSaving || (!editorController.isDirty && !hasMetadataChanges))
                 } else {
-                    Button("Edit") {
-                        isEditing = true
-                        DispatchQueue.main.async {
-                            editorController.focus()
+                    if canEdit {
+                        Button("Edit") {
+                            isEditing = true
+                            DispatchQueue.main.async {
+                                editorController.focus()
+                            }
                         }
                     }
 
@@ -1465,19 +1485,35 @@ private struct UserScriptSourceSheet: View {
                 Divider()
             }
 
+            if isEditing && canEdit {
+                VStack(spacing: 8) {
+                    TextField("Name", text: $editedName)
+                        .textFieldStyle(.roundedBorder)
+                    TextField("Description", text: $editedDescription)
+                        .textFieldStyle(.roundedBorder)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 8)
+            }
+
             CodeMirrorTextEditor(
                 controller: editorController,
-                isEditable: isEditing,
+                isEditable: isEditing && canEdit,
                 isLineWrappingEnabled: isLineWrappingEnabled
             )
         }
+    }
+
+    private var hasMetadataChanges: Bool {
+        editedName.trimmingCharacters(in: .whitespacesAndNewlines) != script.name
+            || editedDescription.trimmingCharacters(in: .whitespacesAndNewlines) != script.description
     }
 
     @MainActor
     private func saveChanges() async {
         isSaving = true
         let newContent = await editorController.currentText()
-        await onSave(newContent)
+        await onSave(newContent, editedName, editedDescription)
         isSaving = false
         dismiss()
     }

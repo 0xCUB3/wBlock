@@ -2600,6 +2600,20 @@ public class UserScriptManager: ObservableObject {
         logger.info("Saved edited content for \(self.userScripts[index].name)")
     }
 
+    /// Persists display metadata overrides for an editable local import.
+    public func setUserScriptMetadataOverrides(
+        for scriptId: UUID,
+        name: String,
+        description: String
+    ) async {
+        guard let index = indexOfUserScript(withId: scriptId), userScripts[index].isLocal else { return }
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return }
+        userScripts[index].name = trimmedName
+        userScripts[index].description = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        await persistUserScriptsNow(invalidateExecutionCache: false)
+    }
+
     public struct AutoUpdateResult: Sendable {
         public let updated: Int
         public let failed: Int

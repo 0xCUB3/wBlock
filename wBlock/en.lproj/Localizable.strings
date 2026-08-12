@@ -817,6 +817,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Version \\(filter.version)" = "Version \\(filter.version)";
 "Version \\(script.version)" = "Version \\(script.version)";
 "Vietnamese adblock filter list." = "Vietnamese adblock filter list.";
+"Delete Script" = "Delete Script";
+"Delete Style" = "Delete Style";
+"Edit Content" = "Edit Content";
+"Edit Rules" = "Edit Rules";
+"View Rules" = "View Rules";
 "View Content" = "View Content";
 "View Logs" = "View Logs";
 "Waiting" = "Waiting";

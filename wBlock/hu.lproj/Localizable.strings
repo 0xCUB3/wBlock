@@ -817,6 +817,11 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Version \\(filter.version)" = "Verzió \\(filter.version)";
 "Version \\(script.version)" = "Verzió \\(script.version)";
 "Vietnamese adblock filter list." = "Vietnami hirdetésblokkoló szűrőlista.";
+"Delete Script" = "Szkript törlése";
+"Delete Style" = "Stílus törlése";
+"Edit Content" = "Tartalom szerkesztése";
+"Edit Rules" = "Szabályok szerkesztése";
+"View Rules" = "Szabályok megtekintése";
 "View Content" = "Tartalom megtekintése";
 "View Logs" = "Naplók megtekintése";
 "Waiting" = "Várakozás";

@@ -817,6 +817,11 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Version \\(filter.version)" = "Versiunea \\(filter.version)";
 "Version \\(script.version)" = "Versiunea \\(script.version)";
 "Vietnamese adblock filter list." = "Lista de filtre vietnameze de blocare a reclamelor.";
+"Delete Script" = "Șterge scriptul";
+"Delete Style" = "Șterge stilul";
+"Edit Content" = "Editează conținutul";
+"Edit Rules" = "Editează regulile";
+"View Rules" = "Vezi regulile";
 "View Content" = "Vezi conținutul";
 "View Logs" = "Vezi jurnalele";
 "Waiting" = "În așteptare";

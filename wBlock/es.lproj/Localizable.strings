@@ -817,6 +817,11 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Version \\(filter.version)" = "Versión \\(filter.version)";
 "Version \\(script.version)" = "Versión \\(script.version)";
 "Vietnamese adblock filter list." = "Lista de filtros de bloques de anuncios vietnamitas.";
+"Delete Script" = "Eliminar script";
+"Delete Style" = "Eliminar estilo";
+"Edit Content" = "Editar contenido";
+"Edit Rules" = "Editar reglas";
+"View Rules" = "Ver reglas";
 "View Content" = "Ver contenido";
 "View Logs" = "Ver registros";
 "Waiting" = "Esperando";

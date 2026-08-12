@@ -26,6 +26,8 @@ struct ContentView: View {
     @State private var filterSearchText = ""
     @State private var showFilterSearch = false
     @State private var editingCustomFilter: FilterList?
+    @State private var selectedFilterInfo: FilterList?
+    @State private var selectedFilterRules: FilterList?
     @State private var selectedCategoryInfo: FilterListCategory?
     @State private var isForeignFiltersExpanded = ProtobufDataManager.shared.isForeignFiltersExpanded
     @AppStorage("adGuardAnnoyancesExpanded") private var isAdGuardAnnoyancesExpanded = true
@@ -131,6 +133,12 @@ struct ContentView: View {
             } else {
                 EditCustomFilterView(filterManager: filterManager, filter: filter)
             }
+        }
+        .sheet(item: $selectedFilterInfo) { filter in
+            FilterInfoView(filter: filter)
+        }
+        .sheet(item: $selectedFilterRules) { filter in
+            FilterRulesView(filter: filter)
         }
         .sheet(item: $selectedCategoryInfo) { category in
             FilterCategoryInfoView(
@@ -357,7 +365,7 @@ struct ContentView: View {
                                         filterRowView(for: filter)
                                     }
                                 } label: {
-                                    Text(group.title ?? "")
+                                    Text(LocalizedStringKey(group.title ?? ""))
                                 }
                             } else {
                                 ForEach(group.filters) { filter in
@@ -580,6 +588,8 @@ struct ContentView: View {
             filter: filter,
             isInlineUserList: isInlineUserList(filter),
             supportsCustomActions: supportsCustomActions(filter),
+            onInfo: { selectedFilterInfo = filter },
+            onViewRules: { selectedFilterRules = filter },
             onEdit: { editingCustomFilter = filter },
             onDelete: { filterManager.removeFilterList(filter) },
             onToggle: { newValue in
@@ -617,7 +627,7 @@ struct ContentView: View {
                                 }
                             }
                         } label: {
-                            Text(group.title ?? "")
+                            Text(LocalizedStringKey(group.title ?? ""))
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(.primary)
                                 .padding(.horizontal, 16)
@@ -676,35 +686,42 @@ struct FilterRowView: View {
     let filter: FilterList
     let isInlineUserList: Bool
     let supportsCustomActions: Bool
+    var onInfo: () -> Void
+    var onViewRules: () -> Void
     var onEdit: () -> Void
     var onDelete: () -> Void
     var onToggle: (Bool) -> Void
 
     @ViewBuilder
     private var contextMenuItems: some View {
-        if supportsCustomActions {
+        let actions = ContextMenuActionAvailability.filterActions(for: filter)
+        if actions.contains(.info) {
+            Button {
+                onInfo()
+            } label: {
+                Label("Info", systemImage: "info.circle")
+            }
+        }
+        if actions.contains(.viewRules) {
+            Button {
+                onViewRules()
+            } label: {
+                Label("View Rules", systemImage: "doc.text")
+            }
+        }
+        if actions.contains(.editRules) {
             Button {
                 onEdit()
             } label: {
-                Label(isInlineUserList ? "Edit Rules" : "Edit Filter List", systemImage: "pencil")
+                Label("Edit Rules", systemImage: "pencil")
             }
-
+        }
+        if actions.contains(.deleteList) {
             Button(role: .destructive) {
                 onDelete()
             } label: {
                 Label("Delete Added List", systemImage: "trash")
             }
-        }
-
-        Button {
-            #if os(macOS)
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(filter.url.absoluteString, forType: .string)
-            #else
-                UIPasteboard.general.string = filter.url.absoluteString
-            #endif
-        } label: {
-            Label("Copy URL", systemImage: "doc.on.doc")
         }
     }
 

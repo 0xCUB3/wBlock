@@ -817,6 +817,11 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Version \\(filter.version)" = "Version \\(filter.version)";
 "Version \\(script.version)" = "Version \\(script.version)";
 "Vietnamese adblock filter list." = "Vietnamesische Adblock-Filterliste.";
+"Delete Script" = "Script löschen";
+"Delete Style" = "Style löschen";
+"Edit Content" = "Inhalt bearbeiten";
+"Edit Rules" = "Regeln bearbeiten";
+"View Rules" = "Regeln anzeigen";
 "View Content" = "Inhalt anzeigen";
 "View Logs" = "Protokolle anzeigen";
 "Waiting" = "Warten";

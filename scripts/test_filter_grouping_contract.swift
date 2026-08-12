@@ -16,5 +16,5 @@ require(content.contains("FilterListGrouping.groups(for: item.filters)"), "iOS m
 require(content.contains("FilterListGrouping.groups(for: filters)"), "macOS must render through grouping helper")
 require(content.contains("@AppStorage(\"adGuardAnnoyancesExpanded\") private var isAdGuardAnnoyancesExpanded = true"), "group must default expanded")
 require(content.contains("|| !filterSearchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty"), "search matches must force group expansion")
-require(content.contains("Text(group.title ?? \"\")"), "group title must be rendered")
+require(content.contains("Text(LocalizedStringKey(group.title ?? \"\"))"), "group title must be rendered")
 print("PASS")

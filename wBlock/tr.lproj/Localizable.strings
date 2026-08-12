@@ -817,6 +817,11 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Version \\(filter.version)" = "Sürüm \\(filter.version)";
 "Version \\(script.version)" = "Sürüm \\(script.version)";
 "Vietnamese adblock filter list." = "Vietnamca reklam engelleme filtre listesi.";
+"Delete Script" = "Betiği Sil";
+"Delete Style" = "Stili Sil";
+"Edit Content" = "İçeriği Düzenle";
+"Edit Rules" = "Kuralları Düzenle";
+"View Rules" = "Kuralları Görüntüle";
 "View Content" = "İçeriği görüntüle";
 "View Logs" = "Günlükleri görüntüle";
 "Waiting" = "Bekleniyor";

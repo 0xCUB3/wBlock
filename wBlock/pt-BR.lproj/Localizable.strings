@@ -817,6 +817,11 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Version \\(filter.version)" = "Versão \\(filter.version)";
 "Version \\(script.version)" = "Versão \\(script.version)";
 "Vietnamese adblock filter list." = "Lista de filtros de adblock vietnamitas.";
+"Delete Script" = "Excluir script";
+"Delete Style" = "Excluir estilo";
+"Edit Content" = "Editar conteúdo";
+"Edit Rules" = "Editar regras";
+"View Rules" = "Ver regras";
 "View Content" = "Ver conteúdo";
 "View Logs" = "Ver logs";
 "Waiting" = "Aguardando";

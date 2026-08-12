@@ -817,6 +817,11 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Version \\(filter.version)" = "Wersja \\(filter.version)";
 "Version \\(script.version)" = "Wersja \\(script.version)";
 "Vietnamese adblock filter list." = "Wietnamska lista filtrów blokujących reklamy.";
+"Delete Script" = "Usuń skrypt";
+"Delete Style" = "Usuń styl";
+"Edit Content" = "Edytuj zawartość";
+"Edit Rules" = "Edytuj reguły";
+"View Rules" = "Pokaż reguły";
 "View Content" = "Pokaż zawartość";
 "View Logs" = "Pokaż logi";
 "Waiting" = "Oczekiwanie";

@@ -817,6 +817,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Version \\(filter.version)" = "版本 \\(filter.version)";
 "Version \\(script.version)" = "版本 \\(script.version)";
 "Vietnamese adblock filter list." = "越南广告拦截过滤器列表。";
+"Delete Script" = "删除脚本";
+"Delete Style" = "删除样式";
+"Edit Content" = "编辑内容";
+"Edit Rules" = "编辑规则";
+"View Rules" = "查看规则";
 "View Content" = "查看内容";
 "View Logs" = "查看日志";
 "Waiting" = "等待中";

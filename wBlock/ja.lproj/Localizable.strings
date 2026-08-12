@@ -817,6 +817,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Version \\(filter.version)" = "バージョン \\(filter.version)";
 "Version \\(script.version)" = "バージョン \\(script.version)";
 "Vietnamese adblock filter list." = "ベトナムの広告ブロックフィルターリスト。";
+"Delete Script" = "スクリプトを削除";
+"Delete Style" = "スタイルを削除";
+"Edit Content" = "内容を編集";
+"Edit Rules" = "ルールを編集";
+"View Rules" = "ルールを表示";
 "View Content" = "内容を表示";
 "View Logs" = "ログを表示";
 "Waiting" = "待機中";
