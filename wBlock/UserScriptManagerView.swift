@@ -151,7 +151,7 @@ struct UserScriptManagerView: View {
 
     private var displayedScriptSections: [UserScriptDisplaySection] {
         let displayed = displayedScripts
-        let builtInStyles = displayed.filter { $0.isUserStyle && $0.builtInSection != nil }
+        let styles = displayed.filter { $0.isUserStyle && !$0.isLocal }
         let standardScripts = displayed.filter {
             !$0.isUserStyle && $0.builtInSection != .foreign && !$0.isLocal
         }
@@ -162,8 +162,8 @@ struct UserScriptManagerView: View {
         if !standardScripts.isEmpty {
             sections.append(UserScriptDisplaySection(id: .general, title: "Userscripts", scripts: standardScripts))
         }
-        if !builtInStyles.isEmpty {
-            sections.append(UserScriptDisplaySection(id: .styles, title: "Userstyles", scripts: builtInStyles))
+        if !styles.isEmpty {
+            sections.append(UserScriptDisplaySection(id: .styles, title: "Userstyles", scripts: styles))
         }
         for category in FilterListCategory.userScriptCategories where localScripts.contains(where: { $0.category == category }) {
             sections.append(UserScriptDisplaySection(
