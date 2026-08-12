@@ -212,6 +212,7 @@ public enum FilterDiffUpdater {
 
             guard let resolvedName = name,
                   let resolvedChecksum = checksum,
+                  isValidChecksum(resolvedChecksum),
                   declaredLines > 0
             else {
                 return nil
@@ -295,6 +296,9 @@ public enum FilterDiffUpdater {
         case checksumMismatch(expected: String, computed: String)
     }
     public static func applyBlock(_ block: FilterDiffPatchBlock, to baseline: String) -> ApplyOutcome {
+        guard isValidChecksum(block.checksum) else {
+            return .badPatch
+        }
         guard let patched = applyRCSDiff(block.diffText, to: baseline) else {
             return .badPatch
         }
@@ -333,6 +337,18 @@ public enum FilterDiffUpdater {
         let pattern = #"^([ad])(\d+) (\d+)$"#
         return try! NSRegularExpression(pattern: pattern, options: [])
     }()
+
+    private static func isValidChecksum(_ checksum: String) -> Bool {
+        let bytes = Array(checksum.utf8)
+        guard (1...40).contains(bytes.count) else {
+            return false
+        }
+        return bytes.allSatisfy { byte in
+            (byte >= 48 && byte <= 57)
+                || (byte >= 97 && byte <= 102)
+                || (byte >= 65 && byte <= 70)
+        }
+    }
 
     private static func parseRCSCommand(_ line: String) -> RCSCommand? {
         let range = NSRange(location: 0, length: line.utf16.count)

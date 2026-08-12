@@ -27,6 +27,7 @@ struct FilterDiffUpdaterTests {
         testPatchAvailabilityTime()
         testRealRcsDiffAppliesAndValidates()
         testChecksumMismatch()
+        testChecksumValidation()
         testMalformedPatchFails()
 
         print("PASS")
@@ -209,6 +210,55 @@ struct FilterDiffUpdaterTests {
             break // expected
         default:
             fail("expected checksum mismatch for a wrong checksum")
+        }
+    }
+
+    static func testChecksumValidation() {
+        let baseline = "a\nb\nc\n"
+        let expectedPatched = "a\nB\nc\nd\ne\n"
+        let fullChecksum = "d875d7babac21cccbeabd7409e5a596aecd6533a"
+        let diffText = """
+        d2 1
+        a2 1
+        B
+        a3 2
+        d
+        e
+        """
+        let cases: [(checksum: String, valid: Bool, label: String)] = [
+            ("", false, "empty checksum"),
+            ("not-hex", false, "non-hex checksum"),
+            (String(repeating: "a", count: 41), false, "overlong checksum"),
+            ("D875d7BaBa", true, "mixed-case checksum"),
+            (String(fullChecksum.prefix(1)), true, "one-character checksum"),
+            (fullChecksum, true, "full-length checksum")
+        ]
+
+        for testCase in cases {
+            let patch = """
+            diff name:easylist lines:6 checksum:\(testCase.checksum)
+            \(diffText)
+            """
+            let parsed = FilterDiffUpdater.parsePatchFile(patch)
+            expect(
+                (parsed != nil) == testCase.valid,
+                "parser checksum validation: \(testCase.label)"
+            )
+
+            let block = FilterDiffPatchBlock(
+                name: "easylist",
+                checksum: testCase.checksum,
+                diffText: diffText
+            )
+            switch FilterDiffUpdater.applyBlock(block, to: baseline) {
+            case .success(let patched):
+                expect(testCase.valid, "direct application accepted \(testCase.label)")
+                expectEqual(patched, expectedPatched, "direct application output: \(testCase.label)")
+            case .badPatch:
+                expect(!testCase.valid, "direct application rejected valid \(testCase.label)")
+            case .checksumMismatch(let expected, let computed):
+                fail("unexpected checksum mismatch for \(testCase.label): expected \(expected), computed \(computed)")
+            }
         }
     }
 
