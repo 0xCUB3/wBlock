@@ -34,6 +34,7 @@ extension AppFilterManager {
         let resolvedStatusMessage = statusMessage
             ?? LocalizedStrings.text("Failed", comment: "Generic failure status")
         await MainActor.run {
+            self.lastApplySucceeded = false
             self.hasError = true
             self.statusDescription = resolvedStatusMessage
             self.isLoading = false
@@ -142,6 +143,7 @@ extension AppFilterManager {
                 self.isLoading = false
                 self.showingApplyProgressSheet = false
                 if cleared {
+                    self.lastApplySucceeded = true
                     self.markCurrentStateApplied()
                 }
             }
@@ -282,6 +284,7 @@ extension AppFilterManager {
                 await MainActor.run {
                     self.isLoading = false
                     self.showingApplyProgressSheet = false
+                    self.lastApplySucceeded = true
                     self.markCurrentStateApplied()
                     self.lastRuleCount = 0
                     self.ruleCountsByExtension.removeAll()
@@ -738,7 +741,10 @@ extension AppFilterManager {
             await clearDownloadedStateForDeselectedRemoteFilters(
                 previouslyAppliedFilterIDs: previouslyAppliedFilterIDs
             )
-            await MainActor.run { self.markCurrentStateApplied() }
+            await MainActor.run {
+                self.lastApplySucceeded = true
+                self.markCurrentStateApplied()
+            }
         }
 
         // Keep showingApplyProgressSheet = true until user dismisses it if it was successful or had errors.
@@ -865,7 +871,8 @@ extension AppFilterManager {
     ///
     /// When resuming: clears the flag and runs the standard apply pipeline to rebuild
     /// and reload the real rule sets.
-    func setBlockingPaused(_ paused: Bool) async {
+    @discardableResult
+    func setBlockingPaused(_ paused: Bool) async -> Bool {
         if paused {
             let started = await performExclusiveApply {
                 BlockingPauseStore.setPaused(true)
@@ -897,6 +904,7 @@ extension AppFilterManager {
                     self.isLoading = false
                     self.showingApplyProgressSheet = false
                     if cleared {
+                        self.lastApplySucceeded = true
                         self.markCurrentStateApplied()
                         self.statusDescription = LocalizedStrings.text(
                             "Blocking paused",
@@ -915,21 +923,43 @@ extension AppFilterManager {
                     metadata: [:]
                 )
             }
+            return started && lastApplySucceeded
         } else {
+            // Keep the shared pause flag true while the app is unavailable or before the
+            // canonical apply starts. If apply fails, restore it so extensions never expose
+            // a partially rebuilt configuration as active.
+            lastApplySucceeded = false
+            BlockingPauseStore.setResumeApplying()
             BlockingPauseStore.setPaused(false)
             UserScriptManager.invalidateDocumentStartExecutionCache()
             await MainActor.run { self.isBlockingPaused = false }
             await applyChanges()
-            await MainActor.run {
-                self.statusDescription = LocalizedStrings.text(
-                    "Blocking resumed",
-                    comment: "Apply pipeline resume status"
-                )
+            let succeeded = lastApplySucceeded && !hasError
+            if succeeded {
+                await MainActor.run {
+                    self.statusDescription = LocalizedStrings.text(
+                        "Blocking resumed",
+                        comment: "Apply pipeline resume status"
+                    )
+                }
+            } else {
+                BlockingPauseStore.setPaused(true)
+                await MainActor.run {
+                    self.isBlockingPaused = true
+                    if self.statusDescription.isEmpty {
+                        self.statusDescription = LocalizedStrings.text(
+                            "Failed to resume blocking.",
+                            comment: "Apply pipeline resume failure status"
+                        )
+                    }
+                }
             }
+            return succeeded
         }
     }
 
     func prepareApplyRunState() {
+        lastApplySucceeded = false
         isLoading = true
         hasError = false
         progress = 0

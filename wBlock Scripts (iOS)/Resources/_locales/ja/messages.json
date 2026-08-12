@@ -242,5 +242,9 @@
   "popup_error_resume_blocking": {
     "message": "ブロックを再開できませんでした。",
     "description": "Error shown when global blocking cannot be resumed."
+  },
+  "popup_error_resume_unavailable": {
+    "message": "ブロックを再開するにはwBlockを開いてください。アプリが起動している必要があります。",
+    "description": "Shown when the containing app is unavailable while resuming blocking."
   }
 }

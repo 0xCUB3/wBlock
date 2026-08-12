@@ -532,22 +532,55 @@ async function getBlockingPausedState() {
     }
 }
 
+async function getResumeRequestStatus() {
+    try {
+        const response = await sendNativeMessageWithTimeout({
+            action: 'getResumeRequestStatus',
+        });
+        if (!response || response.ok !== true || typeof response.status !== 'string') {
+            return null;
+        }
+        return response;
+    } catch (error) {
+        console.warn('[wBlock] Resume status unavailable:', error);
+        return null;
+    }
+}
+
 async function resumeBlocking() {
-    const response = await sendNativeMessageWithTimeout({
-        action: 'resumeBlocking',
-    }, 10000);
+    let response;
+    try {
+        response = await sendNativeMessageWithTimeout({
+            action: 'resumeBlocking',
+        }, 10000);
+    } catch (error) {
+        console.warn('[wBlock] Containing app did not answer resume request:', error);
+        return { status: 'unavailable' };
+    }
     if (!response || response.ok !== true) {
         throw new Error((response && response.error) || 'Resume request failed');
     }
-    if (response.paused !== true) return;
+    if (response.status === 'succeeded' && response.paused === false) {
+        return { status: 'succeeded' };
+    }
+    if (typeof response.status !== 'string') {
+        return { status: 'unavailable' };
+    }
 
     for (let attempt = 0; attempt < 20; attempt += 1) {
         await sleep(300);
-        const paused = await getBlockingPausedState();
-        if (paused === false) return;
-        if (paused === null) throw new Error('Failed to verify resumed state');
+        const status = await getResumeRequestStatus();
+        if (!status) continue;
+        if (status.status === 'succeeded' && status.paused === false) {
+            return { status: 'succeeded' };
+        }
+        if (status.status === 'failed') {
+            throw new Error(status.error || 'Resume request failed');
+        }
     }
-    throw new Error('Resume request timed out');
+    // A pending request means the extension bridge is alive, but the containing app
+    // may be terminated. Do not claim Active; leave the paused UI authoritative.
+    return { status: 'unavailable' };
 }
 
 async function getSiteDisabledState(host) {
@@ -1003,11 +1036,22 @@ function setupListeners() {
                 resumeButton.disabled = true;
                 resumeButton.setAttribute('aria-busy', 'true');
                 setStatus(t('popup_status_resuming', undefined, 'Resuming…'), 'neutral');
-                await resumeBlocking();
+                const result = await resumeBlocking();
+                if (result.status === 'unavailable') {
+                    setError(t(
+                        'popup_error_resume_unavailable',
+                        undefined,
+                        'Open wBlock to resume blocking.'
+                    ));
+                    resumeButton.disabled = false;
+                    resumeButton.removeAttribute('aria-busy');
+                    setStatus(t('popup_status_paused', undefined, 'Paused'), 'disabled');
+                    return;
+                }
                 await refreshUi();
             } catch (error) {
                 console.error('[wBlock] Failed to resume blocking:', error);
-                setError(t('popup_error_resume_blocking', undefined, 'Failed to resume blocking.'));
+                setError((error && error.message) || t('popup_error_resume_blocking', undefined, 'Failed to resume blocking.'));
                 resumeButton.disabled = false;
                 resumeButton.removeAttribute('aria-busy');
                 setStatus(t('popup_status_paused', undefined, 'Paused'), 'disabled');

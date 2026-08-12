@@ -242,5 +242,9 @@
   "popup_error_resume_blocking": {
     "message": "无法恢复阻止功能。",
     "description": "Error shown when global blocking cannot be resumed."
+  },
+  "popup_error_resume_unavailable": {
+    "message": "请打开 wBlock 以恢复阻止功能。应用必须正在运行。",
+    "description": "Shown when the containing app is unavailable while resuming blocking."
   }
 }

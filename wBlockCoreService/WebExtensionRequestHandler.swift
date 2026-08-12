@@ -143,6 +143,9 @@ public enum WebExtensionRequestHandler {
             case "resumeBlocking":
                 handleResumeBlocking(context: context)
                 return
+            case "getResumeRequestStatus":
+                handleGetResumeRequestStatus(context: context)
+                return
             case "getBlockingState":
                 handleGetBlockingState(message: message!, context: context)
                 return
@@ -478,14 +481,28 @@ public enum WebExtensionRequestHandler {
     private static func handleResumeBlocking(context: NSExtensionContext) {
         let paused = BlockingPauseStore.isPaused()
         if paused {
-            // The containing app consumes this request and calls the same
-            // AppFilterManager.setBlockingPaused(false) path as Settings.
+            // The containing app consumes this request and reports the terminal result
+            // only after its canonical resume/apply lifecycle completes.
             BlockingPauseStore.requestResume()
         }
+        let resumeStatus = BlockingPauseStore.resumeStatus()
         let response = createResponse(with: [
             "ok": true,
             "requested": paused,
-            "paused": paused
+            "paused": paused,
+            "status": resumeStatus.status.rawValue,
+            "error": resumeStatus.error
+        ])
+        context.completeRequest(returningItems: [response])
+    }
+
+    private static func handleGetResumeRequestStatus(context: NSExtensionContext) {
+        let resumeStatus = BlockingPauseStore.resumeStatus()
+        let response = createResponse(with: [
+            "ok": true,
+            "status": resumeStatus.status.rawValue,
+            "error": resumeStatus.error,
+            "paused": BlockingPauseStore.isPaused()
         ])
         context.completeRequest(returningItems: [response])
     }

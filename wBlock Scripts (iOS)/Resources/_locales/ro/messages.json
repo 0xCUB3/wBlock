@@ -242,5 +242,9 @@
   "popup_error_resume_blocking": {
     "message": "Blocarea nu a putut fi reluată.",
     "description": "Error shown when global blocking cannot be resumed."
+  },
+  "popup_error_resume_unavailable": {
+    "message": "Deschide wBlock pentru a relua blocarea. Aplicația trebuie să ruleze.",
+    "description": "Shown when the containing app is unavailable while resuming blocking."
   }
 }

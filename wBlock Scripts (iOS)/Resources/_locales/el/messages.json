@@ -242,5 +242,9 @@
   "popup_error_resume_blocking": {
     "message": "Αδυναμία συνέχισης της φραγής.",
     "description": "Error shown when global blocking cannot be resumed."
+  },
+  "popup_error_resume_unavailable": {
+    "message": "Άνοιξε το wBlock για να συνεχίσεις τη φραγή. Η εφαρμογή πρέπει να εκτελείται.",
+    "description": "Shown when the containing app is unavailable while resuming blocking."
   }
 }

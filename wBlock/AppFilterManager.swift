@@ -54,6 +54,8 @@ class AppFilterManager: ObservableObject {
 
     /// Ensures only one apply/update pipeline runs at a time across entry points.
     var isApplyInFlight = false
+    /// Set only after the current apply has reached a successful terminal state.
+    var lastApplySucceeded = false
 
     // Internal counters used for apply-run summary/progress math.
     var sourceRulesCount: Int = 0
@@ -66,6 +68,17 @@ class AppFilterManager: ObservableObject {
     let logManager: ConcurrentLogManager
     let dataManager = ProtobufDataManager.shared
     private var setupTask: Task<Void, Never>?
+
+    deinit {
+        setupTask?.cancel()
+        let center = CFNotificationCenterGetDarwinNotifyCenter()
+        CFNotificationCenterRemoveObserver(
+            center,
+            Unmanaged.passUnretained(self).toOpaque(),
+            CFNotificationName(rawValue: BlockingPauseStore.resumeRequestNotificationName as CFString),
+            nil
+        )
+    }
 
     // Per-site disable tracking
     var lastKnownDisabledSites: [String] = []
@@ -207,18 +220,31 @@ class AppFilterManager: ObservableObject {
         if BlockingPauseStore.consumeResumeRequest() {
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                await self.setBlockingPaused(false)
+                await self.handleResumeRequest()
             }
+        }
+    }
+
+    private func handleResumeRequest() async {
+        BlockingPauseStore.setResumeApplying()
+        let succeeded = await setBlockingPaused(false)
+        if succeeded {
+            BlockingPauseStore.setResumeSucceeded()
+        } else {
+            BlockingPauseStore.setResumeFailed(
+                statusDescription.isEmpty ? "Failed to resume blocking." : statusDescription
+            )
         }
     }
 
     private static let resumeRequestCallback: CFNotificationCallback = { _, observer, _, _, _ in
         guard let observer else { return }
-        let pointer = observer
-        Task { @MainActor in
-            guard BlockingPauseStore.consumeResumeRequest() else { return }
-            let manager = Unmanaged<AppFilterManager>.fromOpaque(pointer).takeUnretainedValue()
-            await manager.setBlockingPaused(false)
+        // Resolve the pointer while the notification observer is still registered. The
+        // observer is removed in deinit, and the task captures only a weak manager.
+        let manager = Unmanaged<AppFilterManager>.fromOpaque(observer).takeUnretainedValue()
+        Task { @MainActor [weak manager] in
+            guard BlockingPauseStore.consumeResumeRequest(), let manager else { return }
+            await manager.handleResumeRequest()
         }
     }
 

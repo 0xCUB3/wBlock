@@ -158,7 +158,7 @@ assertNotContains(
 )
 assertContains(
     applyPipeline,
-    "await MainActor.run { self.isBlockingPaused = false }\n            await applyChanges()\n            await MainActor.run {",
+    "await MainActor.run { self.isBlockingPaused = false }\n            await applyChanges()",
     "Resuming blocking must use the standard visible apply pipeline"
 )
 assertNotContains(

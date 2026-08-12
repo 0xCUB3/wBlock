@@ -242,5 +242,9 @@
   "popup_error_resume_blocking": {
     "message": "Failed to resume blocking.",
     "description": "Error shown when global blocking cannot be resumed."
+  },
+  "popup_error_resume_unavailable": {
+    "message": "Open wBlock to resume blocking. The app must be running.",
+    "description": "Shown when the containing app is unavailable while resuming blocking."
   }
 }

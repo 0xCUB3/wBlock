@@ -242,5 +242,9 @@
   "popup_error_resume_blocking": {
     "message": "تعذر استئناف الحظر.",
     "description": "Error shown when global blocking cannot be resumed."
+  },
+  "popup_error_resume_unavailable": {
+    "message": "افتح wBlock لاستئناف الحظر. يجب أن يكون التطبيق قيد التشغيل.",
+    "description": "Shown when the containing app is unavailable while resuming blocking."
   }
 }

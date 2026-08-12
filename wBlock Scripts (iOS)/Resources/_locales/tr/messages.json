@@ -242,5 +242,9 @@
   "popup_error_resume_blocking": {
     "message": "Engelleme sürdürülemedi.",
     "description": "Error shown when global blocking cannot be resumed."
+  },
+  "popup_error_resume_unavailable": {
+    "message": "Engellemeyi sürdürmek için wBlock’u açın. Uygulama çalışıyor olmalı.",
+    "description": "Shown when the containing app is unavailable while resuming blocking."
   }
 }

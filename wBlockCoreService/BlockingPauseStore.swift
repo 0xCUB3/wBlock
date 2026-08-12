@@ -14,7 +14,17 @@ public enum BlockingPauseStore {
     public static let key = "isBlockingPaused"
     /// Shared request key used by the extension to ask the containing app to resume.
     public static let resumeRequestKey = "blockingResumeRequested"
+    public static let resumeStatusKey = "blockingResumeStatus"
+    public static let resumeErrorKey = "blockingResumeError"
     public static let resumeRequestNotificationName = "skula.wBlock.blocking-resume-requested"
+
+    public enum ResumeStatus: String {
+        case idle
+        case pending
+        case applying
+        case succeeded
+        case failed
+    }
 
     /// Reads the paused flag from the shared app-group container.
     public static func isPaused(groupIdentifier: String = GroupIdentifier.shared.value) -> Bool {
@@ -31,7 +41,10 @@ public enum BlockingPauseStore {
 
     /// Requests that the containing app run its canonical resume/apply lifecycle.
     public static func requestResume(groupIdentifier: String = GroupIdentifier.shared.value) {
-        UserDefaults(suiteName: groupIdentifier)?.set(true, forKey: resumeRequestKey)
+        guard let defaults = UserDefaults(suiteName: groupIdentifier) else { return }
+        defaults.set(true, forKey: resumeRequestKey)
+        defaults.set(ResumeStatus.pending.rawValue, forKey: resumeStatusKey)
+        defaults.removeObject(forKey: resumeErrorKey)
         CFNotificationCenterPostNotification(
             CFNotificationCenterGetDarwinNotifyCenter(),
             CFNotificationName(rawValue: resumeRequestNotificationName as CFString),
@@ -49,5 +62,35 @@ public enum BlockingPauseStore {
         else { return false }
         defaults.set(false, forKey: resumeRequestKey)
         return true
+    }
+
+    public static func setResumeApplying(groupIdentifier: String = GroupIdentifier.shared.value) {
+        UserDefaults(suiteName: groupIdentifier)?.set(ResumeStatus.applying.rawValue, forKey: resumeStatusKey)
+    }
+
+    public static func setResumeSucceeded(groupIdentifier: String = GroupIdentifier.shared.value) {
+        guard let defaults = UserDefaults(suiteName: groupIdentifier) else { return }
+        defaults.set(ResumeStatus.succeeded.rawValue, forKey: resumeStatusKey)
+        defaults.removeObject(forKey: resumeErrorKey)
+    }
+
+    public static func setResumeFailed(
+        _ error: String,
+        groupIdentifier: String = GroupIdentifier.shared.value
+    ) {
+        guard let defaults = UserDefaults(suiteName: groupIdentifier) else { return }
+        defaults.set(ResumeStatus.failed.rawValue, forKey: resumeStatusKey)
+        defaults.set(error, forKey: resumeErrorKey)
+    }
+
+    public static func resumeStatus(
+        groupIdentifier: String = GroupIdentifier.shared.value
+    ) -> (status: ResumeStatus, error: String?) {
+        let defaults = UserDefaults(suiteName: groupIdentifier)
+        let rawStatus = defaults?.string(forKey: resumeStatusKey) ?? ResumeStatus.idle.rawValue
+        return (
+            status: ResumeStatus(rawValue: rawStatus) ?? .idle,
+            error: defaults?.string(forKey: resumeErrorKey)
+        )
     }
 }
