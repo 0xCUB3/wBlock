@@ -176,6 +176,40 @@ enum CloudSyncLocalUserScriptReconciler {
         }
     }
 
+    /// Returns stable local imports that are absent from the winning payload.
+    /// Identity-bearing imports are compared by identity, not display name, so
+    /// two files named "Duplicate" can be uploaded independently.
+    static func localScriptsNeverSyncedToUpload(
+        localScripts: [CloudSyncLocalUserScript],
+        remoteScripts: [CloudSyncLocalUserScript],
+        deletedNames: Set<String>,
+        deletedIdentities: Set<String>,
+        lastSyncedNames: Set<String>,
+        lastSyncedIdentities: Set<String>
+    ) -> [CloudSyncLocalUserScript] {
+        let deletedNormalizedNames = normalizedNames(deletedNames)
+        let deletedNormalizedIdentities = normalizedIdentities(deletedIdentities)
+        let syncedNormalizedNames = normalizedNames(lastSyncedNames)
+        let syncedNormalizedIdentities = normalizedIdentities(lastSyncedIdentities)
+
+        return localScripts.filter { local in
+            let name = normalizedName(local.name)
+            guard !name.isEmpty else { return false }
+            if let identity = normalizedIdentity(local.localImportIdentity) {
+                guard !deletedNormalizedIdentities.contains(identity),
+                      !syncedNormalizedIdentities.contains(identity),
+                      !remoteScripts.contains(where: { matches(existing: local, remote: $0) })
+                else { return false }
+                return true
+            }
+            guard !deletedNormalizedNames.contains(name),
+                  !syncedNormalizedNames.contains(name),
+                  !remoteScripts.contains(where: { matches(existing: local, remote: $0) })
+            else { return false }
+            return true
+        }
+    }
+
     static func deletedNamesToClearDuringUploadReconciliation(
         existingDeletedNames: Set<String>,
         localNames: [String]
@@ -271,6 +305,21 @@ enum CloudSyncLocalUserScriptReconciler {
                 return !deletedNormalizedIdentities.contains(identity)
             }
             return !deletedNormalizedNames.contains(normalizedRemoteName)
+        }
+    }
+
+    static func remoteScriptsAllowedAfterTombstones(
+        _ remoteScripts: [CloudSyncLocalUserScript],
+        deletedNames: Set<String>,
+        deletedIdentities: Set<String>
+    ) -> [CloudSyncLocalUserScript] {
+        let deletedNormalizedNames = normalizedNames(deletedNames)
+        let deletedNormalizedIdentities = normalizedIdentities(deletedIdentities)
+        return remoteScripts.filter { remote in
+            if let identity = normalizedIdentity(remote.localImportIdentity) {
+                return !deletedNormalizedIdentities.contains(identity)
+            }
+            return !deletedNormalizedNames.contains(normalizedName(remote.name))
         }
     }
 

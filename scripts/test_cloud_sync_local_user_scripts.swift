@@ -307,6 +307,30 @@ struct CloudSyncLocalUserScriptTests {
             "blank identities must retain legacy name matching"
         )
 
+        let tombstonedStableRestore = CloudSyncLocalUserScriptReconciler.remoteScriptsAllowedAfterTombstones(
+            [firstDuplicate, secondDuplicate],
+            deletedNames: [],
+            deletedIdentities: ["file:/tmp/first.user.js"]
+        )
+        expect(tombstonedStableRestore == [secondDuplicate], "identity-tombstoned stale payload entries must stay out of restore loops")
+
+        let duplicateUpload = CloudSyncLocalUserScriptReconciler.localScriptsNeverSyncedToUpload(
+            localScripts: [firstDuplicate, secondDuplicate],
+            remoteScripts: [secondDuplicate],
+            deletedNames: [],
+            deletedIdentities: [],
+            lastSyncedNames: [],
+            lastSyncedIdentities: []
+        )
+        expect(duplicateUpload == [firstDuplicate], "stable duplicate names must sync independently by identity")
+
+        let nameTombstoneRestore = CloudSyncLocalUserScriptReconciler.remoteScriptsAllowedAfterTombstones(
+            [legacy],
+            deletedNames: ["legacy name"],
+            deletedIdentities: []
+        )
+        expect(nameTombstoneRestore.isEmpty, "name-tombstoned legacy payload entries must stay out of restore loops")
+
         print("PASS")
     }
 }

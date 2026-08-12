@@ -1114,7 +1114,6 @@ final class CloudSyncManager: ObservableObject {
         let deletedLocalIdentities = deletedLocalUserScriptIdentitySet()
         let lastSyncedNames = lastSyncedLocalUserScriptNameSet()
         let lastSyncedIdentities = lastSyncedLocalUserScriptIdentitySet()
-        let currentLocalNames = currentLocalScripts.map(\.name)
         let localScriptsToDelete = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
             localScripts: currentLocalScripts.map {
                 CloudSyncLocalUserScript(
@@ -1130,11 +1129,13 @@ final class CloudSyncManager: ObservableObject {
             deletedIdentities: deletedLocalIdentities,
             lastSyncedIdentities: lastSyncedIdentities
         )
-        let keptUnsyncedLocalNames = CloudSyncLocalUserScriptReconciler.localNamesNeverSyncedToUpload(
-            localNames: currentLocalNames,
+        let keptUnsyncedLocalScripts = CloudSyncLocalUserScriptReconciler.localScriptsNeverSyncedToUpload(
+            localScripts: currentLocalModels,
             remoteScripts: remoteLocalScripts,
             deletedNames: deletedLocalNames,
-            lastSyncedNames: lastSyncedNames
+            deletedIdentities: deletedLocalIdentities,
+            lastSyncedNames: lastSyncedNames,
+            lastSyncedIdentities: lastSyncedIdentities
         )
 
         if !localScriptsToDelete.isEmpty {
@@ -1148,7 +1149,14 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
-        for local in remoteLocalScripts {
+        // A stale payload can contain a record that is also tombstoned locally.
+        // Keep it out of every restore/update pass, not just the missing-item pass.
+        let restorableRemoteLocalScripts = CloudSyncLocalUserScriptReconciler.remoteScriptsAllowedAfterTombstones(
+            remoteLocalScripts,
+            deletedNames: deletedLocalNames,
+            deletedIdentities: deletedLocalIdentities
+        )
+        for local in restorableRemoteLocalScripts {
             if let existing = userScriptManager.userScripts.first(where: {
                 CloudSyncLocalUserScriptReconciler.matches(existing: $0, remote: local)
             }), existing.content == local.content {
@@ -1208,7 +1216,7 @@ final class CloudSyncManager: ObservableObject {
 
         // Report whether any never-synced local scripts were kept so the caller can schedule an
         // upload to propagate them to the cloud (#437).
-        return !keptUnsyncedLocalNames.isEmpty
+        return !keptUnsyncedLocalScripts.isEmpty
     }
 
     private func applyRemoteZapperRules(_ zapperRules: [String: [String]], disabledDomains: [String]?) async {
