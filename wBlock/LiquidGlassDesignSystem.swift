@@ -40,14 +40,6 @@ struct ToolbarSearchField: View {
                         .focused($isFocused)
                         .onExitCommand { collapse() }
 
-                    if !text.isEmpty {
-                        Button { text = "" } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.tertiary)
-                        }
-                        .buttonStyle(.plain)
-                    }
-
                     Button { collapse() } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.secondary)
