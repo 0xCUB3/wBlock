@@ -1,5 +1,10 @@
 .claude/settings.local.json
 build/
+
+# Node compile caches created by NODE_COMPILE_CACHE=1
+/1/
+scripts/codemirror-build/1/
+
 .DS_Store
 **/.DS_Store
 
