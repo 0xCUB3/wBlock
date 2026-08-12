@@ -68,7 +68,10 @@ class FilterListLoader {
         let newURL = containerURL.appendingPathComponent(
             ContentBlockerIncrementalCache.localFilename(for: filter)
         )
-        let oldURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        guard let oldURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+            name: filter.name,
+            containerURL: containerURL
+        ) else { return }
 
         guard !FileManager.default.fileExists(atPath: newURL.path),
             FileManager.default.fileExists(atPath: oldURL.path)
@@ -103,14 +106,19 @@ class FilterListLoader {
         let newLocalURL = containerURL.appendingPathComponent(localFilename)
         let newBaselineURL = containerURL.appendingPathComponent("diff-baseline-\(localFilename)")
         for oldName in oldNames {
-            Self.migrateFileIfNeeded(
-                from: containerURL.appendingPathComponent("\(oldName).txt"),
-                to: newLocalURL
-            )
-            Self.migrateFileIfNeeded(
-                from: containerURL.appendingPathComponent("diff-baseline-\(oldName).txt"),
-                to: newBaselineURL
-            )
+            if let oldURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                name: oldName,
+                containerURL: containerURL
+            ) {
+                Self.migrateFileIfNeeded(from: oldURL, to: newLocalURL)
+            }
+            if let oldBaselineURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                name: oldName,
+                containerURL: containerURL,
+                prefix: "diff-baseline-"
+            ) {
+                Self.migrateFileIfNeeded(from: oldBaselineURL, to: newBaselineURL)
+            }
         }
     }
 

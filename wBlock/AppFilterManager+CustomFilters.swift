@@ -3,7 +3,13 @@ import wBlockCoreService
 
 extension AppFilterManager {
     // MARK: - List Management
-    func addFilterList(name: String, urlString: String, category: FilterListCategory = .custom, hasUserProvidedName: Bool = false) {
+    func addFilterList(
+        name: String,
+        urlString: String,
+        category: FilterListCategory = .custom,
+        hasUserProvidedName: Bool = false,
+        isSelected: Bool = true
+    ) {
         guard let url = FilterListURLSupport.validatedRemoteURL(from: urlString)
         else {
             statusDescription = LocalizedStrings.format(
@@ -44,7 +50,7 @@ extension AppFilterManager {
             url: url,
             category: category,
             isCustom: true,
-            isSelected: true,
+            isSelected: isSelected,
             description: LocalizedStrings.text("User-added filter list.", comment: "Default custom filter description"),
             sourceRuleCount: nil,
             hasUserProvidedName: hasUserProvidedName)
@@ -255,10 +261,19 @@ extension AppFilterManager {
                 try? FileManager.default.removeItem(
                     at: containerURL.appendingPathComponent("diff-baseline-\(filename)")
                 )
-                // Clean up the legacy name-based cache as well.
-                try? FileManager.default.removeItem(
-                    at: containerURL.appendingPathComponent("\(filter.name).txt")
-                )
+                if let legacyURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                    name: filter.name,
+                    containerURL: containerURL
+                ) {
+                    try? FileManager.default.removeItem(at: legacyURL)
+                }
+                if let legacyBaselineURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                    name: filter.name,
+                    containerURL: containerURL,
+                    prefix: "diff-baseline-"
+                ) {
+                    try? FileManager.default.removeItem(at: legacyBaselineURL)
+                }
             }
         }
 
@@ -291,9 +306,19 @@ extension AppFilterManager {
                 ContentBlockerIncrementalCache.localFilename(for: filter)
             )
             try? FileManager.default.removeItem(at: idFileURL)
-            // Clean up any legacy name-based file.
-            let legacyFileURL = containerURL.appendingPathComponent("\(filter.name).txt")
-            try? FileManager.default.removeItem(at: legacyFileURL)
+            if let legacyFileURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                name: filter.name,
+                containerURL: containerURL
+            ) {
+                try? FileManager.default.removeItem(at: legacyFileURL)
+            }
+            if let legacyBaselineURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                name: filter.name,
+                containerURL: containerURL,
+                prefix: "diff-baseline-"
+            ) {
+                try? FileManager.default.removeItem(at: legacyBaselineURL)
+            }
         }
         Task {
             await ConcurrentLogManager.shared.info(

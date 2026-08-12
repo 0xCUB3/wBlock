@@ -261,8 +261,9 @@ public enum ContentBlockerIncrementalCache {
             return "p|\(fingerprint)"
         }
 
-        guard filter.isCustom else { return "missing" }
-        let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        guard filter.isCustom,
+              let legacyURL = safeLegacyFileURL(name: filter.name, containerURL: containerURL)
+        else { return "missing" }
         if let fingerprint = fileFingerprint(at: legacyURL) {
             return "l|\(fingerprint)"
         }
@@ -299,6 +300,34 @@ public enum ContentBlockerIncrementalCache {
             return "custom-\(filter.id.uuidString).txt"
         }
         return "\(filter.name).txt"
+    }
+
+    /// Returns a legacy name-based cache/baseline path only when the name is a
+    /// single safe filename component inside the expected app-group directory.
+    /// Current ID-based paths must continue to use `localFilename(for:)`.
+    public static func safeLegacyFileURL(
+        name: String,
+        containerURL: URL,
+        prefix: String = ""
+    ) -> URL? {
+        guard !name.isEmpty,
+              !name.contains("/"),
+              !name.contains("\\"),
+              !name.contains("\0"),
+              name != ".",
+              name != ".."
+        else { return nil }
+
+        let expectedDirectory = containerURL.standardizedFileURL.resolvingSymlinksInPath()
+        let candidate = containerURL
+            .appendingPathComponent("\(prefix)\(name).txt", isDirectory: false)
+            .standardizedFileURL
+            .resolvingSymlinksInPath()
+        let expectedPath = expectedDirectory.path.hasSuffix("/")
+            ? expectedDirectory.path
+            : expectedDirectory.path + "/"
+        guard candidate.path.hasPrefix(expectedPath) else { return nil }
+        return candidate
     }
 
     public static func baseRulesFilename(for targetRulesFilename: String) -> String {

@@ -336,10 +336,21 @@ enum BackupManager {
         filterManager.filterLists = lists
         await filterManager.saveFilterLists()
 
-        // 2. Restore custom filter lists (skip if URL already exists)
+        // 2. Restore custom filter lists. The backup selection is authoritative for
+        // both an existing URL and a newly added remote definition.
+        var existingCustomSelectionChanged = false
         for entry in backup.customFilterLists {
-            let alreadyExists = filterManager.filterLists.contains(where: { $0.url.absoluteString == entry.url })
-            guard !alreadyExists else { continue }
+            let matchingIndices = filterManager.filterLists.indices.filter { index in
+                filterManager.filterLists[index].isCustom
+                    && filterManager.filterLists[index].url.absoluteString == entry.url
+            }
+            if !matchingIndices.isEmpty {
+                for index in matchingIndices where filterManager.filterLists[index].isSelected != entry.isSelected {
+                    filterManager.filterLists[index].isSelected = entry.isSelected
+                    existingCustomSelectionChanged = true
+                }
+                continue
+            }
 
             let category = FilterListCategory(rawValue: entry.category) ?? .custom
             let isInlineUserList = entry.url.hasPrefix("wblock://userlist/")
@@ -355,9 +366,13 @@ enum BackupManager {
                 filterManager.addFilterList(
                     name: entry.name,
                     urlString: entry.url,
-                    category: category
+                    category: category,
+                    isSelected: entry.isSelected
                 )
             }
+        }
+        if existingCustomSelectionChanged {
+            await filterManager.saveFilterLists()
         }
 
         // 3. Restore whitelist
