@@ -216,6 +216,8 @@ struct SettingsView: View {
     @ViewBuilder
     private var advancedSection: some View {
         Section("Advanced") {
+            logTimestampControls
+
             NavigationLink {
                 LogsView()
             } label: {
@@ -229,6 +231,29 @@ struct SettingsView: View {
             }
 
             backupButtons
+        }
+    }
+
+    private var logTimestampControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Log Timestamps")
+                .font(.headline)
+
+            Toggle("Sync with device timezone", isOn: usesDeviceTimeZoneBinding)
+            if !logTimeZoneIdentifier.isEmpty {
+                Picker("Time zone", selection: $logTimeZoneIdentifier) {
+                    ForEach(sortedTimeZoneIdentifiers, id: \.self) { identifier in
+                        Text(timeZoneDisplayName(for: identifier)).tag(identifier)
+                    }
+                }
+            }
+
+            Text("Controls the time zone used when displaying and exporting log timestamps.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .onChangeCompat(of: logTimeZoneIdentifier) { _ in
+            LogDateFormatters.configureIfNeeded()
         }
     }
 
@@ -487,27 +512,6 @@ struct SettingsView: View {
             Link(destination: Self.privacyPolicyURL) {
                 Label("Privacy Policy", systemImage: "hand.raised")
             }
-        }
-    }
-
-    @ViewBuilder
-    private var logsSection: some View {
-        Section {
-            Toggle("Sync with device timezone", isOn: usesDeviceTimeZoneBinding)
-            if !logTimeZoneIdentifier.isEmpty {
-                Picker("Time zone", selection: $logTimeZoneIdentifier) {
-                    ForEach(sortedTimeZoneIdentifiers, id: \.self) { identifier in
-                        Text(timeZoneDisplayName(for: identifier)).tag(identifier)
-                    }
-                }
-            }
-        } header: {
-            Text("Log Timestamps")
-        } footer: {
-            Text("Controls the time zone used when displaying and exporting log timestamps.")
-        }
-        .onChangeCompat(of: logTimeZoneIdentifier) { _ in
-            LogDateFormatters.configureIfNeeded()
         }
     }
 
