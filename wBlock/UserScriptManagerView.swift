@@ -1656,9 +1656,6 @@ struct AddUserScriptView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     modePickerCard
                     macosModeContent
-                    if addMode == .url {
-                        requirementsPanel
-                    }
                 }
                 .padding(.horizontal, SheetDesign.contentHorizontalPadding)
                 .padding(.top, 12)
