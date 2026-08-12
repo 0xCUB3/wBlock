@@ -235,9 +235,12 @@ extension AppFilterManager {
 
     /// Drops downloaded state only after a remote custom filter is deselected and applied.
     /// The definition metadata remains so re-enabling can fetch the same source again.
-    func clearDownloadedStateForDeselectedRemoteFilters() async {
+    func clearDownloadedStateForDeselectedRemoteFilters(
+        previouslyAppliedFilterIDs: Set<UUID>? = nil
+    ) async {
+        let appliedIDs = previouslyAppliedFilterIDs ?? appliedSelectedFilterIDs
         let filtersToClear = filterLists.filter { filter in
-            guard appliedSelectedFilterIDs.contains(filter.id), !filter.isSelected,
+            guard appliedIDs.contains(filter.id), !filter.isSelected,
                   filter.isCustom, !filter.isInlineUserList
             else { return false }
             let scheme = filter.url.scheme?.lowercased()

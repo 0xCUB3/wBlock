@@ -107,14 +107,11 @@ extension AppFilterManager {
     ) async {
         suppressBlockingOverlay = allowUserInteraction
         defer { suppressBlockingOverlay = false }
+        let previouslyAppliedFilterIDs = appliedSelectedFilterIDs
 
         if prepareState {
             await MainActor.run { self.prepareApplyRunState() }
         }
-
-        // A deselected remote custom list is no longer retained as a downloaded baseline.
-        // Local and inline imports deliberately keep their content and metadata.
-        await clearDownloadedStateForDeselectedRemoteFilters()
 
         // While blocking is globally paused, never write real rules back to disk — leave the
         // content blockers empty until the user explicitly resumes. This keeps manual Apply
@@ -279,6 +276,9 @@ extension AppFilterManager {
 
             let cleared = await clearAllExtensionsAndEngine()
             if cleared {
+                await clearDownloadedStateForDeselectedRemoteFilters(
+                    previouslyAppliedFilterIDs: previouslyAppliedFilterIDs
+                )
                 await MainActor.run {
                     self.isLoading = false
                     self.showingApplyProgressSheet = false
@@ -689,7 +689,6 @@ extension AppFilterManager {
             if allReloadsSuccessful && advancedEngineAvailable {
                 self.statusDescription =
                     "Applied rules to \(filtersByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules. Advanced engine: \(advancedEngineStatus)."
-                self.markCurrentStateApplied()
             } else if !allReloadsSuccessful {
                 // Prefer the concrete reload failure names when available.
                 if self.statusDescription.lowercased().contains("failed to reload") {
@@ -729,6 +728,19 @@ extension AppFilterManager {
             )
             self.applyProgressViewModel.updateIsLoading(false)
         }
+
+        let applySucceeded = await MainActor.run {
+            allReloadsSuccessful && advancedEngineSucceeded && !self.hasError
+        }
+        if applySucceeded {
+            // Cleanup is deliberately post-success: a failed conversion/reload/engine publish
+            // must leave the previous downloadable baseline and validators intact.
+            await clearDownloadedStateForDeselectedRemoteFilters(
+                previouslyAppliedFilterIDs: previouslyAppliedFilterIDs
+            )
+            await MainActor.run { self.markCurrentStateApplied() }
+        }
+
         // Keep showingApplyProgressSheet = true until user dismisses it if it was successful or had errors.
         // Or: showingApplyProgressSheet = false // if you want it to auto-dismiss on error
 
