@@ -1570,17 +1570,6 @@ struct AddUserScriptView: View {
 
     private var editorTab: some View {
         VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Script Content")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text("Paste or write a userscript or userstyle with a standard metadata block.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-
             editorToolbar
                 .padding(.horizontal, 20)
 
@@ -1727,15 +1716,6 @@ struct AddUserScriptView: View {
 
     private var macosEditorCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Script Content")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text("Paste or write a userscript or userstyle with a standard metadata block.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
             editorToolbar
 
             CodeMirrorTextEditor(
