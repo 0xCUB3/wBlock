@@ -83,7 +83,6 @@ function theme() {
     ".cm-search button": { backgroundColor: "var(--cm-button-background)", color: "var(--cm-foreground)", border: "1px solid var(--cm-border)", borderRadius: "8px", padding: "6px 10px" },
     ".cm-search button:hover": { backgroundColor: "var(--cm-button-hover)" },
     ".cm-panels": { backgroundColor: "var(--cm-panel-background)", color: "var(--cm-foreground)" },
-    ".cm-panel.cm-search [name='close']": { display: "none" },
     ".cm-matchingBracket": { backgroundColor: "var(--cm-bracket-match)", outline: "1px solid var(--cm-border)" },
   });
 }
