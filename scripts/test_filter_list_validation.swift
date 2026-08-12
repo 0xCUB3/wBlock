@@ -44,6 +44,14 @@ struct FilterListValidationTests {
         )
         expectValidContent(
             """
+            import.example.com
+            class.example.com
+            return.example.com
+            """,
+            "expected keyword-looking host-only ABP rules to be accepted"
+        )
+        expectValidContent(
+            """
             [Adblock Plus]
             ! Title: Referral Allowlist
             @@||example.com^

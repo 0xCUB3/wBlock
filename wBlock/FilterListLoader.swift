@@ -791,8 +791,11 @@ class FilterListLoader {
 
     /// Checks if a filter file exists locally
     func filterFileExists(_ filter: FilterList) -> Bool {
-        guard let fileURL = localFileURL(for: filter) else { return false }
-        return FileManager.default.fileExists(atPath: fileURL.path)
+        guard let containerURL = getSharedContainerURL() else { return false }
+        return ContentBlockerIncrementalCache.existingLocalFileURL(
+            for: filter,
+            containerURL: containerURL
+        ) != nil
     }
 
     /// Gets the URL for the shared container
@@ -803,7 +806,12 @@ class FilterListLoader {
 
     /// Reads the content of a filter list from the local file system
     func readLocalFilterContent(_ filter: FilterList) -> String? {
-        guard let fileURL = localFileURL(for: filter) else { return nil }
+        guard let containerURL = getSharedContainerURL() else { return nil }
+        migrateCustomFilterFileIfNeeded(filter)
+        guard let fileURL = ContentBlockerIncrementalCache.existingLocalFileURL(
+            for: filter,
+            containerURL: containerURL
+        ) else { return nil }
 
         do {
             return try String(contentsOf: fileURL, encoding: .utf8)

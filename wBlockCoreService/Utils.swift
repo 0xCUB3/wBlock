@@ -302,6 +302,24 @@ public enum ContentBlockerIncrementalCache {
         return "\(filter.name).txt"
     }
 
+    /// Resolves the current ID-based cache first, then a safe legacy name-based
+    /// cache. Callers can use the legacy result during startup while migration
+    /// finishes asynchronously.
+    public static func existingLocalFileURL(
+        for filter: FilterList,
+        containerURL: URL
+    ) -> URL? {
+        let currentURL = containerURL.appendingPathComponent(localFilename(for: filter))
+        if FileManager.default.fileExists(atPath: currentURL.path) {
+            return currentURL
+        }
+        guard filter.isCustom,
+              let legacyURL = safeLegacyFileURL(name: filter.name, containerURL: containerURL),
+              FileManager.default.fileExists(atPath: legacyURL.path)
+        else { return nil }
+        return legacyURL
+    }
+
     /// Returns a legacy name-based cache/baseline path only when the name is a
     /// single safe filename component inside the expected app-group directory.
     /// Current ID-based paths must continue to use `localFilename(for:)`.

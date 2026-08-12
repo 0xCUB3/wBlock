@@ -300,23 +300,12 @@ final class FilterListUpdater: @unchecked Sendable {
     }
 
     private func localDataForComparison(filter: FilterList) -> Data? {
-        if let localURL = loader.localFileURL(for: filter),
-           let localData = try? Data(contentsOf: localURL) {
-            return localData
-        }
-
-        if filter.isCustom,
-           let containerURL = loader.getSharedContainerURL(),
-           let legacyURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
-               name: filter.name,
-               containerURL: containerURL
-           ),
-           let legacyData = try? Data(contentsOf: legacyURL)
-        {
-            return legacyData
-        }
-
-        return nil
+        guard let containerURL = loader.getSharedContainerURL(),
+              let localURL = ContentBlockerIncrementalCache.existingLocalFileURL(
+                  for: filter,
+                  containerURL: containerURL
+              ) else { return nil }
+        return try? Data(contentsOf: localURL)
     }
 
     /// Downloads remote content and compares it against the locally cached version
@@ -537,7 +526,18 @@ final class FilterListUpdater: @unchecked Sendable {
                 if let index = filterListManager?.filterLists.firstIndex(where: {
                     $0.id == finalFilter.id
                 }) {
-                    filterListManager?.filterLists[index] = finalFilter
+                    // Apply converts the captured snapshot. Preserve live user
+                    // configuration changed while the download was in flight.
+                    var merged = finalFilter
+                    let current = filterListManager!.filterLists[index]
+                    merged.name = current.name
+                    merged.url = current.url
+                    merged.category = current.category
+                    merged.isCustom = current.isCustom
+                    merged.isSelected = current.isSelected
+                    merged.hasUserProvidedName = current.hasUserProvidedName
+                    merged.description = current.description
+                    filterListManager?.filterLists[index] = merged
                     filterListManager?.objectWillChange.send()
                 }
             }

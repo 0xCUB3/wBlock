@@ -2281,26 +2281,16 @@ struct EditUserListView: View {
 
     private func loadContent() {
         isLoadingContent = true
-        let filterID = filter.id
-        let filterName = filter.name
         Task {
             let loadedRules = await Task.detached { () -> String? in
                 guard let containerURL = FileManager.default.containerURL(
                     forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
-                ) else {
-                    return nil
-                }
-
-                let idBasedURL = containerURL.appendingPathComponent("custom-\(filterID.uuidString).txt")
-                if let loaded = try? String(contentsOf: idBasedURL, encoding: .utf8) {
-                    return loaded
-                }
-
-                guard let legacyURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
-                    name: filterName,
+                ),
+                let fileURL = ContentBlockerIncrementalCache.existingLocalFileURL(
+                    for: filter,
                     containerURL: containerURL
                 ) else { return nil }
-                return try? String(contentsOf: legacyURL, encoding: .utf8)
+                return try? String(contentsOf: fileURL, encoding: .utf8)
             }.value
 
             await MainActor.run {

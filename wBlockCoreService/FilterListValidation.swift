@@ -104,8 +104,13 @@ public enum FilterListContentValidator {
 
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { continue }
+            // A valid ABP host/network rule wins before keyword checks. Hostnames such
+            // as `return.example.com` and `class.example.com` are not JavaScript.
+            if isFilterSyntaxLine(trimmed) {
+                sawFilterSyntax = true
+                continue
+            }
             if isExplicitJavaScriptLine(trimmed) { return false }
-            if isFilterSyntaxLine(trimmed) { sawFilterSyntax = true }
         }
 
         return sawFilterSyntax
