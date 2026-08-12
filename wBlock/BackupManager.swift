@@ -55,6 +55,10 @@ struct WBlockBackup: Codable, Sendable {
         var content: String
         var lastUpdated: Date?
         var updatesAutomatically: Bool
+        /// Optional for compatibility with backups created before categories were exported.
+        var category: String?
+        /// Optional for backups created before stable local-import identities.
+        var localImportIdentity: String?
 
         var disabledHosts: [String]?
         init(userScript: UserScript, disabledHosts: [String] = []) {
@@ -76,12 +80,51 @@ struct WBlockBackup: Codable, Sendable {
             resourceContents = userScript.resourceContents
             noframes = userScript.noframes
             isLocal = userScript.isLocal
-            updateURL = userScript.updateURL
-            downloadURL = userScript.downloadURL
+            updateURL = userScript.isLocal ? nil : userScript.updateURL
+            downloadURL = userScript.isLocal ? nil : userScript.downloadURL
             content = userScript.content
             lastUpdated = userScript.lastUpdated
             updatesAutomatically = userScript.updatesAutomatically
+            category = userScript.category.rawValue
+            localImportIdentity = userScript.localImportIdentity
             self.disabledHosts = disabledHosts.isEmpty ? nil : disabledHosts
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case id, name, url, isEnabled, description, version, matches, excludeMatches
+            case includes, excludes, runAt, injectInto, grant, require, resource, resourceContents
+            case noframes, isLocal, updateURL, downloadURL, content, lastUpdated, updatesAutomatically
+            case category, localImportIdentity, disabledHosts
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            id = try container.decode(UUID.self, forKey: .id)
+            name = try container.decode(String.self, forKey: .name)
+            url = try container.decodeIfPresent(String.self, forKey: .url)
+            isEnabled = try container.decode(Bool.self, forKey: .isEnabled)
+            description = try container.decode(String.self, forKey: .description)
+            version = try container.decode(String.self, forKey: .version)
+            matches = try container.decode([String].self, forKey: .matches)
+            excludeMatches = try container.decode([String].self, forKey: .excludeMatches)
+            includes = try container.decode([String].self, forKey: .includes)
+            excludes = try container.decode([String].self, forKey: .excludes)
+            runAt = try container.decode(String.self, forKey: .runAt)
+            injectInto = try container.decode(String.self, forKey: .injectInto)
+            grant = try container.decode([String].self, forKey: .grant)
+            require = try container.decode([String].self, forKey: .require)
+            resource = try container.decode([UserScriptResource].self, forKey: .resource)
+            resourceContents = try container.decode([String: String].self, forKey: .resourceContents)
+            noframes = try container.decode(Bool.self, forKey: .noframes)
+            isLocal = try container.decode(Bool.self, forKey: .isLocal)
+            updateURL = try container.decodeIfPresent(String.self, forKey: .updateURL)
+            downloadURL = try container.decodeIfPresent(String.self, forKey: .downloadURL)
+            content = try container.decode(String.self, forKey: .content)
+            lastUpdated = try container.decodeIfPresent(Date.self, forKey: .lastUpdated)
+            updatesAutomatically = try container.decode(Bool.self, forKey: .updatesAutomatically)
+            category = try container.decodeIfPresent(String.self, forKey: .category)
+            localImportIdentity = try container.decodeIfPresent(String.self, forKey: .localImportIdentity)
+            disabledHosts = try container.decodeIfPresent([String].self, forKey: .disabledHosts)
         }
 
         var userScript: UserScript {
@@ -101,10 +144,12 @@ struct WBlockBackup: Codable, Sendable {
             script.resourceContents = resourceContents
             script.noframes = noframes
             script.isLocal = isLocal || script.url == nil || script.url?.isFileURL == true
-            script.updateURL = updateURL
-            script.downloadURL = downloadURL
+            script.updateURL = script.isLocal ? nil : updateURL
+            script.downloadURL = script.isLocal ? nil : downloadURL
             script.lastUpdated = lastUpdated
             script.updatesAutomatically = updatesAutomatically
+            script.category = category.flatMap(FilterListCategory.init(rawValue:)) ?? .scripts
+            script.localImportIdentity = localImportIdentity
             // Old backups predate the flag; the content always travels with the
             // entry, so re-derive instead of persisting a new schema field.
             script.isUserStyle = UserScript.detectsUserStyle(in: content)

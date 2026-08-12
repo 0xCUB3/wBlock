@@ -8,6 +8,13 @@
 import SwiftUI
 import wBlockCoreService
 import UniformTypeIdentifiers
+
+private extension FilterListCategory {
+    static var userScriptCategories: [FilterListCategory] {
+        [.scripts, .custom]
+    }
+}
+
 #if os(iOS)
 import UIKit
 #elseif os(macOS)
@@ -28,6 +35,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let isDownloaded: Bool
     let updatesAutomatically: Bool
     let isUserStyle: Bool
+    let category: FilterListCategory
     let isBuiltIn: Bool
     let isCustom: Bool
     let builtInSection: BuiltInUserScriptSection?
@@ -47,6 +55,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
         isDownloaded = script.isDownloaded
         updatesAutomatically = script.updatesAutomatically
         isUserStyle = script.isUserStyle
+        category = script.category
         isBuiltIn = builtInSection != nil
         isCustom = builtInSection == nil
         self.builtInSection = builtInSection
@@ -58,6 +67,7 @@ private enum UserScriptSectionKind: Hashable {
     case general
     case styles
     case foreign
+    case localCategory(FilterListCategory)
 }
 
 private struct UserScriptDisplaySection: Identifiable {
@@ -141,16 +151,26 @@ struct UserScriptManagerView: View {
 
     private var displayedScriptSections: [UserScriptDisplaySection] {
         let displayed = displayedScripts
-        let styles = displayed.filter(\.isUserStyle)
-        let standardScripts = displayed.filter { !$0.isUserStyle && $0.builtInSection != .foreign }
+        let builtInStyles = displayed.filter { $0.isUserStyle && $0.builtInSection != nil }
+        let standardScripts = displayed.filter {
+            !$0.isUserStyle && $0.builtInSection != .foreign && !$0.isLocal
+        }
         let foreignScripts = displayed.filter { !$0.isUserStyle && $0.builtInSection == .foreign }
+        let localScripts = displayed.filter { $0.isLocal && $0.builtInSection == nil }
         var sections: [UserScriptDisplaySection] = []
 
         if !standardScripts.isEmpty {
             sections.append(UserScriptDisplaySection(id: .general, title: "Userscripts", scripts: standardScripts))
         }
-        if !styles.isEmpty {
-            sections.append(UserScriptDisplaySection(id: .styles, title: "Userstyles", scripts: styles))
+        if !builtInStyles.isEmpty {
+            sections.append(UserScriptDisplaySection(id: .styles, title: "Userstyles", scripts: builtInStyles))
+        }
+        for category in FilterListCategory.userScriptCategories where localScripts.contains(where: { $0.category == category }) {
+            sections.append(UserScriptDisplaySection(
+                id: .localCategory(category),
+                title: LocalizedStringKey(category.rawValue),
+                scripts: localScripts.filter { $0.category == category }
+            ))
         }
         if !foreignScripts.isEmpty {
             sections.append(UserScriptDisplaySection(id: .foreign, title: "Regional", scripts: foreignScripts))
@@ -185,6 +205,9 @@ struct UserScriptManagerView: View {
         .onAppear {
             refreshScripts()
             showOnlyEnabled = ProtobufDataManager.shared.getUserScriptShowEnabledOnly()
+        }
+        .onReceive(userScriptManager.$userScripts) { _ in
+            refreshScripts()
         }
         .onChangeCompat(of: tabSelection) { _, _ in
             searchText = ""
@@ -1450,6 +1473,8 @@ struct AddUserScriptView: View {
     @State private var pendingPasteText: String?
     @State private var showingFileImporter = false
     @State private var stagedFile: StagedScriptFile?
+    @State private var isStagingFile = false
+    @State private var stagingGeneration = 0
     @State private var stagedName = ""
     @State private var stagedDescription = ""
     @State private var selectedCategory: FilterListCategory = .scripts
@@ -1494,6 +1519,9 @@ struct AddUserScriptView: View {
         }
         .onChangeCompat(of: addMode) { _, newValue in
             urlFieldFocused = newValue == .url
+            if newValue == .editor {
+                refreshEditorMetadata()
+            }
         }
         #endif
         .onChangeCompat(of: urlInput) { _, newValue in
@@ -1629,9 +1657,15 @@ struct AddUserScriptView: View {
             editorImportMessage
                 .padding(.horizontal, 20)
 
+            userScriptMetaFields
+                .padding(.horizontal, 20)
+
             Spacer(minLength: 0)
         }
         .padding(.bottom, 16)
+        .task {
+            refreshEditorMetadata()
+        }
     }
 
     private var fileTab: some View {
@@ -1665,6 +1699,7 @@ struct AddUserScriptView: View {
             HStack {
                 Image(systemName: "doc")
                 Text(stagedFile?.filename ?? "Choose File")
+                if isStagingFile { ProgressView().controlSize(.small) }
                 Spacer()
                 if stagedFile != nil {
                     Text("Change File").foregroundStyle(.secondary)
@@ -1797,6 +1832,7 @@ struct AddUserScriptView: View {
             )
 
             editorImportMessage
+            userScriptMetaFields
         }
         .padding(16)
         .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
@@ -1836,6 +1872,7 @@ struct AddUserScriptView: View {
             HStack(spacing: 10) {
                 Image(systemName: "doc")
                 Text(stagedFile?.filename ?? "Choose File")
+                if isStagingFile { ProgressView().controlSize(.small) }
                 Spacer()
                 if stagedFile != nil {
                     Text("Change File").foregroundStyle(.secondary)
@@ -1886,7 +1923,7 @@ struct AddUserScriptView: View {
 
     private var userScriptCategoryPicker: some View {
         Picker("Category", selection: $selectedCategory) {
-            ForEach(FilterListCategory.allCases.filter { $0 != .all }) { category in
+            ForEach(FilterListCategory.userScriptCategories) { category in
                 Text(category.localizedName).tag(category)
             }
         }
@@ -1927,9 +1964,6 @@ struct AddUserScriptView: View {
                 .font(.headline)
                 .foregroundStyle(.secondary)
             Text("The file must include userscript or userstyle metadata.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text("Local imports won't auto-update; re-import to replace.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -2063,7 +2097,9 @@ struct AddUserScriptView: View {
         case .editor:
             return editorController.isDirty
         case .file:
-            return stagedFile != nil && !stagedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            return !isStagingFile
+                && stagedFile != nil
+                && !stagedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
     }
 
@@ -2162,7 +2198,13 @@ struct AddUserScriptView: View {
 
         Task(priority: .userInitiated) {
             let content = await editorController.currentText()
-            let error = await userScriptManager.addUserScript(fromSourceContent: content)
+            let metadata = editorMetadataOverrides(for: content)
+            let error = await userScriptManager.addUserScript(
+                fromSourceContent: content,
+                nameOverride: metadata.name,
+                descriptionOverride: metadata.description,
+                category: selectedCategory
+            )
 
             if let error {
                 await MainActor.run {
@@ -2182,24 +2224,69 @@ struct AddUserScriptView: View {
     }
 
     private func stageFile(at url: URL) {
-        do {
-            let parsed = try userScriptManager.stageUserScriptImport(fromLocalFile: url)
-            let content = parsed.content
-            stagedFile = StagedScriptFile(
-                filename: url.lastPathComponent,
-                content: content,
-                parsed: parsed
-            )
-            let metadataName = parsed.name.trimmingCharacters(in: .whitespacesAndNewlines)
-            stagedName = metadataName.isEmpty
-                ? UserScriptURLSupport.displayName(forFilename: url.lastPathComponent)
-                : metadataName
-            stagedDescription = parsed.description.trimmingCharacters(in: .whitespacesAndNewlines)
-            selectedCategory = .scripts
-            fileImportError = nil
-        } catch {
-            fileImportError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        stagingGeneration += 1
+        let generation = stagingGeneration
+        isStagingFile = true
+        fileImportError = nil
+        let didAccess = url.startAccessingSecurityScopedResource()
+
+        Task { @MainActor in
+            defer {
+                if didAccess {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+
+            do {
+                let parsed = try await Task.detached(priority: .userInitiated) {
+                    try UserScriptManager.stageUserScriptImport(fromLocalFile: url)
+                }.value
+
+                guard generation == stagingGeneration else { return }
+                stagedFile = StagedScriptFile(
+                    filename: url.lastPathComponent,
+                    content: parsed.content,
+                    parsed: parsed
+                )
+                let metadataName = parsed.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                stagedName = metadataName.isEmpty
+                    ? UserScriptURLSupport.displayName(forFilename: url.lastPathComponent)
+                    : metadataName
+                stagedDescription = parsed.description.trimmingCharacters(in: .whitespacesAndNewlines)
+                selectedCategory = .scripts
+                isStagingFile = false
+            } catch {
+                guard generation == stagingGeneration else { return }
+                isStagingFile = false
+                fileImportError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            }
         }
+    }
+
+    private func refreshEditorMetadata() {
+        Task { @MainActor in
+            let content = await editorController.currentText()
+            guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+            _ = editorMetadataOverrides(for: content)
+        }
+    }
+
+    private func editorMetadataOverrides(for content: String) -> (name: String, description: String) {
+        var parsed = UserScript(
+            name: UserScriptURLSupport.displayName(forFilename: "Pasted Userscript"),
+            content: content
+        )
+        parsed.parseMetadata()
+
+        let metadataName = parsed.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let metadataDescription = parsed.description.trimmingCharacters(in: .whitespacesAndNewlines)
+        if stagedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            stagedName = metadataName.isEmpty ? "Pasted Userscript" : metadataName
+        }
+        if stagedDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            stagedDescription = metadataDescription
+        }
+        return (stagedName, stagedDescription)
     }
 
     private func validateInput(_ newValue: String) {

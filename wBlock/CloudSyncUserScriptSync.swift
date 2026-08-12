@@ -1,21 +1,29 @@
 import Foundation
+import wBlockCoreService
 
 struct CloudSyncLocalUserScript: Equatable {
     let name: String
     let content: String
     let isEnabled: Bool
     let updatesAutomatically: Bool?
+    let category: String?
 
     var resolvedUpdatesAutomatically: Bool {
         updatesAutomatically ?? true
     }
 
-    init(name: String, content: String, isEnabled: Bool, updatesAutomatically: Bool? = nil) {
+    var resolvedCategory: FilterListCategory {
+        FilterListCategory(rawValue: category ?? "") ?? .scripts
+    }
+
+    init(name: String, content: String, isEnabled: Bool, updatesAutomatically: Bool? = nil, category: String? = nil) {
         self.name = name
         self.content = content
         self.isEnabled = isEnabled
         self.updatesAutomatically = updatesAutomatically
+        self.category = category
     }
+
 }
 
 enum CloudSyncLocalUserScriptReconciler {

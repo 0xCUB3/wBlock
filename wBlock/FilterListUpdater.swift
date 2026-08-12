@@ -610,7 +610,9 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Checks for updates to userscripts and returns those with available updates
     func checkForScriptUpdates(scripts: [UserScript]) async -> [UserScript] {
-        let eligibleScripts = scripts.filter { $0.isDownloaded && $0.updateURL != nil && $0.updatesAutomatically }
+        let eligibleScripts = scripts.filter {
+            !$0.isLocal && $0.isDownloaded && $0.updateURL != nil && $0.updatesAutomatically
+        }
         return await boundedConcurrentCompactMap(eligibleScripts) { script in
             let hasUpdate = await self.hasScriptUpdate(for: script)
             return hasUpdate ? script : nil
@@ -619,7 +621,8 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Checks if a specific userscript has an update available
     private func hasScriptUpdate(for script: UserScript) async -> Bool {
-        guard let updateURLString = script.updateURL,
+        guard !script.isLocal,
+              let updateURLString = script.updateURL,
             let updateURL = URL(string: updateURLString)
         else {
             return false
@@ -659,7 +662,8 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Fetches and processes a userscript
     func fetchAndProcessScript(_ script: UserScript) async -> (UserScript?, Bool) {
-        guard let downloadURLString = script.downloadURL ?? script.updateURL,
+        guard !script.isLocal,
+              let downloadURLString = script.downloadURL ?? script.updateURL,
             let downloadURL = URL(string: downloadURLString)
         else {
             await ConcurrentLogManager.shared.error(
@@ -701,7 +705,7 @@ final class FilterListUpdater: @unchecked Sendable {
             return []
         }
 
-        let scriptsToUpdate = selectedScripts.filter(\.updatesAutomatically)
+        let scriptsToUpdate = selectedScripts.filter { !$0.isLocal && $0.updatesAutomatically }
         guard !scriptsToUpdate.isEmpty else {
             progressCallback(1.0)
             return []

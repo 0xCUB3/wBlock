@@ -979,7 +979,8 @@ final class CloudSyncManager: ObservableObject {
                 name: $0.name,
                 content: $0.content,
                 isEnabled: $0.isEnabled,
-                updatesAutomatically: $0.updatesAutomatically
+                updatesAutomatically: $0.updatesAutomatically,
+                category: $0.category
             )
         }
 
@@ -1020,6 +1021,7 @@ final class CloudSyncManager: ObservableObject {
             if let existing = userScriptManager.userScripts.first(where: { $0.url == url }) {
                 await userScriptManager.setUserScript(existing, isEnabled: remote.isEnabled)
                 await userScriptManager.setUserScript(existing, updatesAutomatically: remote.resolvedUpdatesAutomatically)
+                await userScriptManager.setUserScript(existing, category: remote.resolvedCategory)
             }
         }
 
@@ -1040,6 +1042,7 @@ final class CloudSyncManager: ObservableObject {
                 if let added = userScriptManager.userScripts.first(where: { $0.url == url }) {
                     await userScriptManager.setUserScript(added, isEnabled: remote.isEnabled)
                     await userScriptManager.setUserScript(added, updatesAutomatically: remote.resolvedUpdatesAutomatically)
+                    await userScriptManager.setUserScript(added, category: remote.resolvedCategory)
                 }
             }
         }
@@ -1083,6 +1086,7 @@ final class CloudSyncManager: ObservableObject {
                 if existing.content == local.content {
                     await userScriptManager.setUserScript(existing, isEnabled: local.isEnabled)
                     await userScriptManager.setUserScript(existing, updatesAutomatically: local.resolvedUpdatesAutomatically)
+                    await userScriptManager.setUserScript(existing, category: local.resolvedCategory)
                     continue
                 }
             }
@@ -1096,7 +1100,10 @@ final class CloudSyncManager: ObservableObject {
             }
             defer { try? FileManager.default.removeItem(at: tempURL) }
 
-            _ = await userScriptManager.addUserScript(fromLocalFile: tempURL)
+            _ = await userScriptManager.addUserScript(
+                fromLocalFile: tempURL,
+                category: local.resolvedCategory
+            )
 
             if let imported = userScriptManager.userScripts.first(where: {
                 $0.isLocal
@@ -1105,6 +1112,7 @@ final class CloudSyncManager: ObservableObject {
             }) {
                 await userScriptManager.setUserScript(imported, isEnabled: local.isEnabled)
                 await userScriptManager.setUserScript(imported, updatesAutomatically: local.resolvedUpdatesAutomatically)
+                await userScriptManager.setUserScript(imported, category: local.resolvedCategory)
             }
         }
 
@@ -1294,7 +1302,8 @@ final class CloudSyncManager: ObservableObject {
                     name: $0.name,
                     content: $0.content,
                     isEnabled: $0.isEnabled,
-                    updatesAutomatically: $0.updatesAutomatically
+                    updatesAutomatically: $0.updatesAutomatically,
+                    category: $0.category
                 )
             },
             localNames: userScriptManager.userScripts.filter(\.isLocal).map(\.name),
@@ -1375,11 +1384,16 @@ final class CloudSyncManager: ObservableObject {
                 if let added = userScriptManager.userScripts.first(where: { $0.url == url }) {
                     await userScriptManager.setUserScript(added, isEnabled: remote.isEnabled)
                     await userScriptManager.setUserScript(added, updatesAutomatically: remote.resolvedUpdatesAutomatically)
+                    await userScriptManager.setUserScript(added, category: remote.resolvedCategory)
                 }
             }
         }
 
         for local in missingLocalScripts {
+            let resolvedCategory = remotePayload.userScripts.local.first {
+                CloudSyncLocalUserScriptReconciler.normalizedName($0.name)
+                    == CloudSyncLocalUserScriptReconciler.normalizedName(local.name)
+            }?.resolvedCategory ?? .scripts
             let filename = Self.sanitizedFilename(from: local.name)
             let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(filename).user.js")
             do {
@@ -1389,7 +1403,10 @@ final class CloudSyncManager: ObservableObject {
             }
             defer { try? FileManager.default.removeItem(at: tempURL) }
 
-            _ = await userScriptManager.addUserScript(fromLocalFile: tempURL)
+            _ = await userScriptManager.addUserScript(
+                fromLocalFile: tempURL,
+                category: resolvedCategory
+            )
             if let imported = userScriptManager.userScripts.first(where: {
                 $0.isLocal
                     && CloudSyncLocalUserScriptReconciler.normalizedName($0.name)
@@ -1397,6 +1414,7 @@ final class CloudSyncManager: ObservableObject {
             }) {
                 await userScriptManager.setUserScript(imported, isEnabled: local.isEnabled)
                 await userScriptManager.setUserScript(imported, updatesAutomatically: local.resolvedUpdatesAutomatically)
+                await userScriptManager.setUserScript(imported, category: resolvedCategory)
             }
         }
 
@@ -1502,6 +1520,7 @@ final class CloudSyncManager: ObservableObject {
                     url: url.absoluteString,
                     isEnabled: script.isEnabled,
                     updatesAutomatically: script.updatesAutomatically,
+                    category: script.category.rawValue,
                     disabledHosts: disabledHosts
                 )
             }
@@ -1517,6 +1536,7 @@ final class CloudSyncManager: ObservableObject {
                     content: script.content,
                     isEnabled: script.isEnabled,
                     updatesAutomatically: script.updatesAutomatically,
+                    category: script.category.rawValue,
                     disabledHosts: disabledHosts
                 )
             }
@@ -2023,10 +2043,16 @@ private struct SyncPayload: Codable {
         let url: String
         let isEnabled: Bool
         let updatesAutomatically: Bool?
+        /// Optional for compatibility with older CloudKit payloads.
+        let category: String?
         let disabledHosts: [String]?
 
         var resolvedUpdatesAutomatically: Bool {
             updatesAutomatically ?? true
+        }
+
+        var resolvedCategory: FilterListCategory {
+            FilterListCategory(rawValue: category ?? "") ?? .scripts
         }
     }
 
@@ -2035,10 +2061,16 @@ private struct SyncPayload: Codable {
         let content: String
         let isEnabled: Bool
         let updatesAutomatically: Bool?
+        /// Optional for compatibility with older CloudKit payloads.
+        let category: String?
         let disabledHosts: [String]?
 
         var resolvedUpdatesAutomatically: Bool {
             updatesAutomatically ?? true
+        }
+
+        var resolvedCategory: FilterListCategory {
+            FilterListCategory(rawValue: category ?? "") ?? .scripts
         }
     }
 
