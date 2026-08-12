@@ -199,6 +199,7 @@ struct OnboardingView: View {
             onboardingFooter
         }
         .padding()
+        .interactiveDismissDisabled(!hasCompletedOnboarding)
     #if os(macOS)
         .frame(minWidth: 440, maxWidth: 540, minHeight: 620, maxHeight: 820)
     #endif
