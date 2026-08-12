@@ -24,4 +24,12 @@ require(scripts.contains("canEdit: script.isLocal && !userScriptManager.isDefaul
 require(scripts.contains("if selection.action == .info"), "Info must use a metadata-only popup")
 require(scripts.contains("UserScriptInfoView("), "userscript Info must open the metadata view")
 require(scripts.contains("startsEditing: selection.action == .editContent"), "Edit Content must open the editor directly")
+if let infoStart = scripts.range(of: "struct UserScriptInfoView"),
+   let contentStart = scripts.range(of: "struct UserScriptContentView") {
+    let infoView = String(scripts[infoStart.lowerBound..<contentStart.lowerBound])
+    require(infoView.contains("UserScriptInfoSidebar"), "Info must retain metadata rows")
+    require(!infoView.contains("Script Content"), "Info must not duplicate Script Content")
+} else {
+    require(false, "metadata and content views must remain separate")
+}
 print("PASS")
