@@ -481,11 +481,19 @@ public enum WebExtensionRequestHandler {
 
     private static func handleGetBlockingPausedState(context: NSExtensionContext) {
         let components = BlockingPauseStore.pausedComponents()
+        #if os(macOS)
+        let resumeAvailable = NSRunningApplication.runningApplications(
+            withBundleIdentifier: "skula.wBlock"
+        ).contains { !$0.isTerminated }
+        #else
+        let resumeAvailable = false
+        #endif
         let response = createResponse(with: [
             "paused": !components.isEmpty,
             "filtersPaused": components.contains(.filters),
             "userScriptsPaused": components.contains(.userScripts),
-            "elementZapperPaused": components.contains(.elementZapper)
+            "elementZapperPaused": components.contains(.elementZapper),
+            "resumeAvailable": resumeAvailable
         ])
         context.completeRequest(returningItems: [response])
     }

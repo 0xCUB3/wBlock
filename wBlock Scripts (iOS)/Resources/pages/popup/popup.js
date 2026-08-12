@@ -638,7 +638,8 @@ async function getBlockingPausedState() {
         if (!response || typeof response.paused !== 'boolean' ||
             typeof response.filtersPaused !== 'boolean' ||
             typeof response.userScriptsPaused !== 'boolean' ||
-            typeof response.elementZapperPaused !== 'boolean') {
+            typeof response.elementZapperPaused !== 'boolean' ||
+            typeof response.resumeAvailable !== 'boolean') {
             throw new Error('Invalid pause state response');
         }
         return response;
@@ -1325,6 +1326,7 @@ async function refreshUi() {
     }
 
     const blockingPaused = pauseState.paused;
+    const resumeAvailable = pauseState.resumeAvailable;
     const filtersPaused = pauseState.filtersPaused;
     const userScriptsPaused = pauseState.userScriptsPaused;
     const zapperPaused = pauseState.elementZapperPaused;
@@ -1338,7 +1340,7 @@ async function refreshUi() {
         disableToggle.disabled = filtersPaused;
     }
     if (pausedPrompt) pausedPrompt.hidden = !blockingPaused;
-    if (resumeAction) resumeAction.hidden = !blockingPaused;
+    if (resumeAction) resumeAction.hidden = !(blockingPaused && resumeAvailable);
     if (pausedPromptTitle) {
         pausedPromptTitle.textContent = partiallyPaused
             ? t('popup_paused_partial_prompt_title', undefined, 'Some blocking components are paused')
@@ -1352,7 +1354,7 @@ async function refreshUi() {
         );
     }
     if (resumeButton) {
-        resumeButton.disabled = !blockingPaused;
+        resumeButton.disabled = !(blockingPaused && resumeAvailable);
         resumeButton.removeAttribute('aria-busy');
     }
     if (zapperEnabledToggle) {

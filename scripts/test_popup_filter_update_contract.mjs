@@ -22,6 +22,12 @@ const popupStatus = read('wBlockCoreService/FilterUpdatePopupStatus.swift');
 
 check(html.includes('id="update-filters"') && html.includes('id="filter-update-status"'),
   'popup must expose an accessible update action and live status');
+check(html.includes('class="filter-update-action"') &&
+  !html.includes('class="section filter-update-section"') &&
+  !html.includes('class="filter-update-row"') &&
+  !html.includes('data-i18n="popup_filter_update_label"') &&
+  css.includes('.filter-update-action {') && css.includes('align-items: center;'),
+  'Update Filters must be a centered standalone action without a title or card');
 check(popup.includes("action: 'wblock:filterUpdate:start'") &&
   popup.includes("action: 'wblock:filterUpdate:getStatus'"),
   'popup must use the registered background bridge for start and status requests');

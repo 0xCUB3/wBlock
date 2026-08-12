@@ -20,13 +20,13 @@ function check(condition, message) {
 
 check(html.includes('id="paused-prompt"') && html.includes('id="resume-blocking"'),
   'Paused popup must expose an explicit prompt and Resume Blocking button');
-check(html.indexOf('id="resume-blocking"') > html.indexOf('class="filter-update-section"'),
+check(html.indexOf('id="resume-blocking"') > html.indexOf('class="filter-update-action"'),
   'Resume Blocking must be a standalone action at the bottom of the popup');
 check(!html.slice(html.indexOf('id="paused-prompt"'), html.indexOf('class="resume-action"')).includes('id="resume-blocking"'),
   'Resume Blocking must not remain inside the paused prompt card');
 check(html.includes('class="resume-action"') && html.includes('class="resume-action" aria-live="polite" hidden'),
   'Resume action must be hidden unless the authoritative state is paused');
-check(popup.includes('resumeAction.hidden = !blockingPaused') &&
+check(popup.includes('resumeAction.hidden = !(blockingPaused && resumeAvailable)') &&
   css.includes('.resume-action {') && css.includes('justify-content: center;') &&
   css.includes('.resume-action .btn {') && css.includes('flex: 0 0 auto;') &&
   css.includes('[aria-busy="true"]'),
@@ -37,8 +37,14 @@ check(popup.includes("action: 'resumeBlocking'"),
   'Resume button must route through a native resume action');
 check(native.includes('"filtersPaused": components.contains(.filters)') &&
   native.includes('"userScriptsPaused": components.contains(.userScripts)') &&
-  native.includes('"elementZapperPaused": components.contains(.elementZapper)'),
-  'Native pause state must expose each component while preserving paused');
+  native.includes('"elementZapperPaused": components.contains(.elementZapper)') &&
+  native.includes('NSRunningApplication.runningApplications') &&
+  native.includes('"resumeAvailable": resumeAvailable'),
+  'Native pause state must expose each component and whether the containing app can resume');
+check(popup.includes('typeof response.resumeAvailable') &&
+  popup.includes('const resumeAvailable = pauseState.resumeAvailable') &&
+  popup.includes('resumeButton.disabled = !(blockingPaused && resumeAvailable)'),
+  'Resume must stay hidden and disabled unless the containing app is available');
 check(popup.includes('const filtersPaused = pauseState.filtersPaused') &&
   popup.includes("action: 'getBlockingPausedState'") &&
   popup.includes('const zapperPaused = pauseState.elementZapperPaused') &&
