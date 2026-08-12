@@ -437,7 +437,7 @@ struct ContentView: View {
                 StatCard(
                     title: {
                         #if os(iOS)
-                        return "Rules"
+                        return "Safari Rules"
                         #else
                         return (enabledListsCount == 0 || !hasAppliedFilters) ? "Source Rules" : "Safari Rules"
                         #endif
