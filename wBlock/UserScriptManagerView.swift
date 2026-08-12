@@ -542,6 +542,8 @@ struct UserScriptManagerView: View {
                     )
                     if script.isBuiltIn {
                         Badge(text: "Built-in", color: .orange)
+                    } else if script.isLocal {
+                        Badge(text: "Local Import", color: .blue)
                     } else if script.isCustom {
                         Badge(text: "Custom", color: .blue)
                     }
@@ -591,17 +593,6 @@ struct UserScriptManagerView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-
-                if script.isLocal {
-                    Text("Local Import")
-                        .font(.caption2)
-                        .fontWeight(.medium)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.blue.opacity(0.12))
-                        .foregroundStyle(.blue)
-                        .cornerRadius(4)
-                }
 
                 if script.isEnabled && !script.isDownloaded {
                     Text("Not Downloaded")
