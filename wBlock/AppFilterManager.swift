@@ -548,26 +548,16 @@ class AppFilterManager: ObservableObject {
         let totalCapacity = platformTargets.count * ruleLimitPerBlocker
 
         let totalRules = lastRuleCount
-        let totalWarningThreshold = Int(Double(totalCapacity) * 0.8)
 
         var message = ""
         if let filter, let reason = filter.limitExceededReason, !reason.isEmpty {
             message = reason
         } else {
-            let currentRulesLine: String
-            if totalRules >= totalWarningThreshold {
-                currentRulesLine = LocalizedStrings.format(
-                    "Current Safari rules: %@ (near limit)",
-                    comment: "Rule limit warning current rules line when near limit",
-                    totalRules.formatted()
-                )
-            } else {
-                currentRulesLine = LocalizedStrings.format(
-                    "Current Safari rules: %@",
-                    comment: "Rule limit warning current rules line",
-                    totalRules.formatted()
-                )
-            }
+            let currentRulesLine = LocalizedStrings.format(
+                "Current Safari rules: %@",
+                comment: "Rule limit warning current rules line",
+                totalRules.formatted()
+            )
 
             message = LocalizedStrings.format(
                 "Safari limits each content blocker extension to %@ rules.\nTotal capacity (all wBlock blockers): %@ rules.\n\n%@\n\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists.",
@@ -578,41 +568,14 @@ class AppFilterManager: ObservableObject {
             )
         }
 
-        let perBlockerWarningThreshold = Int(Double(ruleLimitPerBlocker) * 0.8)
-        let nearLimitBlockers = platformTargets
-            .map { target -> (name: String, count: Int) in
-                (target.displayName, ruleCountsByExtension[target.bundleIdentifier] ?? 0)
-            }
-            .filter { $0.count >= perBlockerWarningThreshold }
-            .sorted { $0.count > $1.count }
-
-        if !nearLimitBlockers.isEmpty {
-            message += "\n\n"
-            message += LocalizedStrings.text(
-                "Blockers near the per-extension limit:",
-                comment: "Rule limit warning section header"
-            )
-            message += "\n"
-            message += nearLimitBlockers
-                .map {
-                    LocalizedStrings.format(
-                        "%@: %@",
-                        comment: "Rule limit warning blocker row",
-                        $0.name,
-                        $0.count.formatted()
-                    )
-                }
-                .joined(separator: "\n")
-        }
-
         message += "\n\n"
         message += LocalizedStrings.text(
             "More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions.",
             comment: "Rule limit warning footer note about extra lists"
         )
 
-        let isNearLimit = totalRules >= totalWarningThreshold || !nearLimitBlockers.isEmpty
-        ruleLimitWarningTitle = isNearLimit
+        let isAtTotalLimit = totalRules >= totalCapacity
+        ruleLimitWarningTitle = isAtTotalLimit
             ? LocalizedStrings.text("Rule Limit Warning", comment: "Rule limit warning title")
             : LocalizedStrings.text("Rule Capacity", comment: "Rule capacity title")
         ruleLimitWarningMessage = message

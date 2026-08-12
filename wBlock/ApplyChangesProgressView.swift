@@ -335,19 +335,6 @@ struct ApplyChangesProgressView: View {
                 .foregroundStyle(.orange)
             }
 
-            if !summary.blockersApproachingLimit.isEmpty {
-                Text(
-                    String.localizedStringWithFormat(
-                        NSLocalizedString(
-                            "Near Safari limit: %@",
-                            comment: "Apply changes near-limit warning"
-                        ),
-                        summary.blockersApproachingLimit.sorted().joined(separator: ", ")
-                    )
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
         }
     }
 

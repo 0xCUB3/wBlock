@@ -65,14 +65,8 @@ struct ContentView: View {
         return blockers.count * 150_000
     }
 
-    private var isApproachingTotalSafariRuleCapacity: Bool {
-        guard hasAppliedFilters else { return false }
-        let warningThreshold = Int(Double(totalSafariRuleCapacity) * 0.8)
-        return appliedSafariRulesCount >= warningThreshold
-    }
-
     private var shouldShowRuleLimitIndicator: Bool {
-        isApproachingTotalSafariRuleCapacity || !filterManager.extensionsApproachingLimit.isEmpty
+        hasAppliedFilters && appliedSafariRulesCount >= totalSafariRuleCapacity
     }
 
     private var displayableCategories: [FilterListCategory] {
