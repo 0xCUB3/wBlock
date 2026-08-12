@@ -916,3 +916,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hosted on a trusted source" = "مستضاف على مصدر موثوق";
 
 "The file must include userscript or userstyle metadata." = "يجب أن يتضمن الملف بيانات وصفية لسكريبت المستخدم أو نمط المستخدم.";
+
+"Failed to clear downloaded custom filter state; apply again to retry." = "Failed to clear downloaded custom filter state; apply again to retry.";

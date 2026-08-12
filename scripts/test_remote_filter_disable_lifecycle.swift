@@ -22,6 +22,7 @@ check(manager.contains("appliedIDs = previouslyAppliedFilterIDs ?? appliedSelect
 check(manager.contains("filter.isCustom, !filter.isInlineUserList"), "Cleanup must target custom remote lists, not inline imports")
 check(manager.contains("scheme == \"http\" || scheme == \"https\""), "Cleanup must target URL-imported filters only")
 check(manager.contains("diff-baseline-\\(filename)"), "Cleanup must remove the downloaded diff baseline")
+check(manager.contains("prefix: \"diff-baseline-\""), "Cleanup must remove the safe legacy diff baseline")
 check(manager.contains("filterLists[index].version = \"\""), "Cleanup must clear the persisted version")
 check(manager.contains("filterLists[index].sourceRuleCount = nil"), "Cleanup must clear the persisted rule count")
 check(manager.contains("filterLists[index].lastUpdated = nil"), "Cleanup must clear the persisted last-download time")
@@ -29,6 +30,7 @@ check(manager.contains("setFilterValidators(filter.id.uuidString, etag: nil, las
 check(manager.contains("await saveFilterLists()"), "Cleanup must persist the retained definition with selected=false")
 check(pipeline.contains("let allSelectedFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }"), "Blocker generation must use the current selected filters")
 check(!pipeline.contains("await clearDownloadedStateForDeselectedRemoteFilters()\n\n        // While blocking"), "Apply must not destructively clean up before the apply result")
+check(pipeline.contains("let cleanupSucceeded = cleared && await clearDownloadedStateForDeselectedRemoteFilters"), "Globally paused apply must run cleanup after clearing outputs")
 let successPoint = pipeline.range(of: "let applySucceeded = await MainActor.run")
 let cleanupPoint: Range<String.Index>?
 if let successPoint {
@@ -67,5 +69,6 @@ let disabled = FilterState(selected: false, downloaded: true, validator: "etag-1
 check(runApply(disabled, previouslyApplied: true, succeeds: false) == disabled, "Failed apply must preserve cache and validator metadata")
 check(runApply(disabled, previouslyApplied: true, succeeds: true) == FilterState(selected: false, downloaded: false, validator: nil), "Successful apply must clear deselected remote state")
 check(runApply(disabled, previouslyApplied: true, succeeds: true, cleanupSucceeds: false) == disabled, "Failed cleanup must preserve cache and validator metadata")
+check(runApply(disabled, previouslyApplied: true, succeeds: true, cleanupSucceeds: true) == FilterState(selected: false, downloaded: false, validator: nil), "Paused successful apply must clear deselected remote state")
 
 print("PASS: remote custom filter disable success/failure lifecycle")

@@ -916,3 +916,5 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Hosted on a trusted source" = "Găzduit pe o sursă de încredere";
 
 "The file must include userscript or userstyle metadata." = "Fișierul trebuie să includă metadate pentru userscript sau userstyle.";
+
+"Failed to clear downloaded custom filter state; apply again to retry." = "Failed to clear downloaded custom filter state; apply again to retry.";

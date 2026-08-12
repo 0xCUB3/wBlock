@@ -916,3 +916,5 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Hosted on a trusted source" = "Alojado en una fuente de confianza";
 
 "The file must include userscript or userstyle metadata." = "El archivo debe incluir metadatos de userscript o userstyle.";
+
+"Failed to clear downloaded custom filter state; apply again to retry." = "Failed to clear downloaded custom filter state; apply again to retry.";

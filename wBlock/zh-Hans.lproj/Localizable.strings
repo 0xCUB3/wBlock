@@ -916,3 +916,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hosted on a trusted source" = "托管在可信来源";
 
 "The file must include userscript or userstyle metadata." = "文件必须包含用户脚本或用户样式元数据。";
+
+"Failed to clear downloaded custom filter state; apply again to retry." = "Failed to clear downloaded custom filter state; apply again to retry.";

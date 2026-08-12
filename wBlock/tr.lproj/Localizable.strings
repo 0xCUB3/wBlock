@@ -916,3 +916,5 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Hosted on a trusted source" = "Güvenilir bir kaynakta barındırılır";
 
 "The file must include userscript or userstyle metadata." = "Dosya userscript veya userstyle meta verilerini içermelidir.";
+
+"Failed to clear downloaded custom filter state; apply again to retry." = "Failed to clear downloaded custom filter state; apply again to retry.";

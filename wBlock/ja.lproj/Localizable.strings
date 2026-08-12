@@ -916,3 +916,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hosted on a trusted source" = "信頼できるソースでホストされている";
 
 "The file must include userscript or userstyle metadata." = "ファイルにはユーザースクリプトまたはユーザースタイルのメタデータを含める必要があります。";
+
+"Failed to clear downloaded custom filter state; apply again to retry." = "Failed to clear downloaded custom filter state; apply again to retry.";
