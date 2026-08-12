@@ -330,6 +330,8 @@ extension AppFilterManager {
         )
         hasError = true
         statusDescription = message
+        applyProgressViewModel.markFailed(message: message)
+        applyProgressViewModel.updateIsLoading(false)
         markNonSelectionChangesPending()
         await ConcurrentLogManager.shared.error(
             .filterApply,

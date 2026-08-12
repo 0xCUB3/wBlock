@@ -18,6 +18,8 @@ let managerCore = try String(contentsOfFile: "wBlock/AppFilterManager.swift", en
 check(manager.contains("previouslyAppliedFilterIDs: Set<UUID>? = nil"), "cleanup must accept the last completed selection snapshot")
 check(manager.contains(") async -> Bool"), "cleanup must report file cleanup failures to the apply pipeline")
 check(manager.contains("recordDownloadedStateCleanupFailure"), "cleanup failures must preserve metadata and request an apply retry")
+check(manager.contains("applyProgressViewModel.markFailed(message: message)"), "cleanup failures must terminate the progress state as failed")
+check(manager.contains("markNonSelectionChangesPending()"), "cleanup failures must leave the retry marker pending")
 check(manager.contains("appliedIDs = previouslyAppliedFilterIDs ?? appliedSelectedFilterIDs"), "cleanup must use the captured applied selection")
 check(manager.contains("filter.isCustom, !filter.isInlineUserList"), "cleanup must target custom remote lists, not inline imports")
 check(manager.contains("scheme == \"http\" || scheme == \"https\""), "cleanup must target URL-imported filters only")
@@ -45,6 +47,7 @@ let cleanupPoint = successPoint.flatMap {
 }
 check(successPoint != nil && cleanupPoint != nil && successPoint!.lowerBound < cleanupPoint!.lowerBound, "cleanup must run only after the full apply reports success")
 check(pipeline.contains("let cleanupSucceeded = await clearDownloadedStateForDeselectedRemoteFilters") && pipeline.contains("if cleanupSucceeded"), "apply must not commit selection state when post-success cleanup fails")
+check(pipeline.contains("self.showingApplyProgressSheet = !(cleared && cleanupSucceeded)"), "cleanup failure must leave the actionable failed result visible")
 check(row.contains("Text(\"Not Downloaded\")"), "filter UI must expose the existing Not Downloaded state")
 check(row.contains("!filter.isInlineUserList"), "Not Downloaded must not affect inline local imports")
 check(filter.contains("public var sourceRuleCount: Int?"), "lifecycle must use existing filter metadata, without schema changes")
@@ -56,6 +59,8 @@ struct ApplyResult: Equatable {
     var downloaded: Bool
     var committedSelection: Bool
     var hasPendingLiveChange: Bool
+    var terminated: Bool
+    var actionableFailure: Bool
 }
 
 func runApply(
@@ -70,35 +75,39 @@ func runApply(
         return ApplyResult(
             downloaded: downloaded,
             committedSelection: false,
-            hasPendingLiveChange: false
+            hasPendingLiveChange: cleanupSucceeds ? false : true,
+            terminated: true,
+            actionableFailure: !cleanupSucceeds
         )
     }
     downloaded = false
     return ApplyResult(
         downloaded: downloaded,
         committedSelection: runSnapshotSelected,
-        hasPendingLiveChange: liveSelected != runSnapshotSelected
+        hasPendingLiveChange: liveSelected != runSnapshotSelected,
+        terminated: true,
+        actionableFailure: false
     )
 }
 
 check(
     runApply(liveSelected: false, runSnapshotSelected: false, previouslyAppliedSelected: true, succeeds: false)
-        == ApplyResult(downloaded: true, committedSelection: false, hasPendingLiveChange: false),
+        == ApplyResult(downloaded: true, committedSelection: false, hasPendingLiveChange: false, terminated: true, actionableFailure: false),
     "failed apply must preserve cache state"
 )
 check(
     runApply(liveSelected: false, runSnapshotSelected: true, previouslyAppliedSelected: true, succeeds: true)
-        == ApplyResult(downloaded: false, committedSelection: true, hasPendingLiveChange: true),
+        == ApplyResult(downloaded: false, committedSelection: true, hasPendingLiveChange: true, terminated: true, actionableFailure: false),
     "successful cleanup must use prior selection while committing the captured run snapshot"
 )
 check(
     runApply(liveSelected: false, runSnapshotSelected: false, previouslyAppliedSelected: true, succeeds: true, cleanupSucceeds: false)
-        == ApplyResult(downloaded: true, committedSelection: false, hasPendingLiveChange: false),
-    "failed cleanup must preserve cache state and retryable apply state"
+        == ApplyResult(downloaded: true, committedSelection: false, hasPendingLiveChange: true, terminated: true, actionableFailure: true),
+    "failed cleanup must terminate, preserve cache state, and leave retryable apply state"
 )
 check(
     runApply(liveSelected: true, runSnapshotSelected: true, previouslyAppliedSelected: true, succeeds: true)
-        == ApplyResult(downloaded: true, committedSelection: false, hasPendingLiveChange: false),
+        == ApplyResult(downloaded: true, committedSelection: false, hasPendingLiveChange: false, terminated: true, actionableFailure: false),
     "selected remote filters must not be cleaned up"
 )
 

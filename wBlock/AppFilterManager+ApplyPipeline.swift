@@ -167,7 +167,7 @@ extension AppFilterManager {
                 self.extensionsApproachingLimit.removeAll()
                 self.saveRuleCounts()
                 self.isLoading = false
-                self.showingApplyProgressSheet = false
+                self.showingApplyProgressSheet = !(cleared && cleanupSucceeded)
                 if cleared && cleanupSucceeded {
                     self.lastApplySucceeded = true
                     self.commitApplySnapshot(runSnapshot)
@@ -311,10 +311,10 @@ extension AppFilterManager {
             } else {
                 cleanupSucceeded = false
             }
-            if cleared && cleanupSucceeded {
-                await MainActor.run {
-                    self.isLoading = false
-                    self.showingApplyProgressSheet = false
+            await MainActor.run {
+                self.isLoading = false
+                self.showingApplyProgressSheet = !(cleared && cleanupSucceeded)
+                if cleared && cleanupSucceeded {
                     self.lastApplySucceeded = true
                     self.commitApplySnapshot(runSnapshot)
                     self.lastRuleCount = 0
