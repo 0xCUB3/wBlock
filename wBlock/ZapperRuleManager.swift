@@ -2,6 +2,9 @@ import Foundation
 import os.log
 import Darwin
 import wBlockCoreService
+#if os(macOS)
+import SafariServices
+#endif
 
 /// ZapperRuleManager is the unified data layer for element zapper rules stored in protobuf.
 ///
@@ -37,6 +40,7 @@ final class ZapperRuleManager: ObservableObject {
         }
         mutationTail = task
         await task.value
+        Self.notifySafariRulesChanged()
         if mutationGeneration == generation {
             mutationTail = nil
         }
@@ -54,6 +58,19 @@ final class ZapperRuleManager: ObservableObject {
     }
 
     private let logger = Logger(subsystem: "skula.wBlock", category: "ZapperRuleManager")
+    static func notifySafariRulesChanged() {
+        #if os(macOS)
+        SFSafariApplication.dispatchMessage(
+            withName: "wblock:zapperRulesChanged",
+            toExtensionWithIdentifier: "skula.wBlock.wBlock-Scripts",
+            userInfo: ["action": "wblock:zapperRulesChanged"]
+        ) { error in
+            if let error {
+                os_log("Failed to refresh Safari zapper rules: %{public}@", type: .error, error.localizedDescription)
+            }
+        }
+        #endif
+    }
     private let dataDirectoryMonitor = ProtobufDataDirectoryMonitor(
         queue: DispatchQueue(label: "skula.wBlock.zapper-rules-monitor", qos: .utility)
     )

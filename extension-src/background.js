@@ -25699,6 +25699,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           );
           if (action === "wblock:userscriptsChanged") {
             clearDocumentStartScriptCache();
+          } else if (action === "wblock:zapperRulesChanged") {
+            if (browser.tabs && typeof browser.tabs.query === "function") {
+              browser.tabs.query({}).then(tabs => Promise.all(tabs.map(tab => {
+                if (!tab || typeof tab.id !== "number") return Promise.resolve();
+                return browser.tabs.sendMessage(tab.id, { type: "wblock:zapper:reloadRules" }).catch(() => {});
+              }))).catch(() => {});
+            }
           }
         });
       }

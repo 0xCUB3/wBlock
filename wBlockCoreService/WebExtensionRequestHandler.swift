@@ -1390,7 +1390,8 @@ public enum WebExtensionRequestHandler {
             await ProtobufDataManager.shared.waitUntilLoaded()
             _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
             let rules = ProtobufDataManager.shared.getZapperRules(forHost: hostname)
-            let disabled = ProtobufDataManager.shared.isZapperDisabled(forHost: hostname)
+            let disabled = BlockingPauseStore.isPaused(.elementZapper)
+                || ProtobufDataManager.shared.isZapperDisabled(forHost: hostname)
             let response = createResponse(with: ["ok": true, "rules": rules, "disabled": disabled])
             context.completeRequest(returningItems: [response])
         }

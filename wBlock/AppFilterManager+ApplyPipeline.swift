@@ -924,6 +924,9 @@ extension AppFilterManager {
                 BlockingPauseStore.setPausedComponents(normalized)
             }
             UserScriptManager.invalidateDocumentStartExecutionCache()
+            if normalized.contains(.elementZapper) {
+                ZapperRuleManager.notifySafariRulesChanged()
+            }
             await MainActor.run {
                 self.hasError = false
                 self.pausedComponents = normalized
@@ -1026,6 +1029,7 @@ extension AppFilterManager {
             if succeeded {
                 BlockingPauseStore.setPaused(false)
                 UserScriptManager.invalidateDocumentStartExecutionCache()
+                ZapperRuleManager.notifySafariRulesChanged()
                 await MainActor.run {
                     self.pausedComponents = []
                     self.isBlockingPaused = false
