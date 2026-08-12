@@ -864,8 +864,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Wrap Lines" = "Satırı kaydır";
 "On" = "Açık";
 "Off" = "Kapalı";
-"On" = "Açık";
-"Off" = "Kapalı";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "Bölgesel filtreleri daha sonra Ayarlar bölümünden ekleyebilirsiniz.";
@@ -917,7 +915,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Clear All" = "Tümünü temizle";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Bu önerilen filtre wBlock’un temel korumasının parçasıdır. Devre dışı bırakmak engelleme kapsamını azaltabilir.";
 "Pasting will replace the existing editor content." = "Yapıştırma, mevcut düzenleyici içeriğinin yerine geçer.";
-"Pasting will replace the existing content." = "Yapıştırma, mevcut içeriğin yerine geçer.";
 "Pasting will replace the existing content." = "Yapıştırma, mevcut içeriğin yerine geçer.";
 "This removes all saved element zapper rules from every site." = "Bu işlem tüm sitelerdeki kaydedilmiş Element Zapper kurallarını kaldırır.";
 "Clear Element Zapper Rules" = "Element Zapper kurallarını temizle";

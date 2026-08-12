@@ -864,8 +864,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Wrap Lines" = "自動換行";
 "On" = "開啟";
 "Off" = "關閉";
-"On" = "開啟";
-"Off" = "關閉";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "你之後可隨時在「設定」新增區域過濾器。";
@@ -917,7 +915,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear All" = "全部清除";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "此推薦過濾器是 wBlock 基本保護的一部分。停用後可能會降低封鎖涵蓋範圍。";
 "Pasting will replace the existing editor content." = "貼上會取代編輯器中的現有內容。";
-"Pasting will replace the existing content." = "貼上會取代現有內容。";
 "Pasting will replace the existing content." = "貼上會取代現有內容。";
 "This removes all saved element zapper rules from every site." = "這會刪除所有網站中儲存的 Element Zapper 規則。";
 "Clear Element Zapper Rules" = "清除 Element Zapper 規則";

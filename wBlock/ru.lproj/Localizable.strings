@@ -864,8 +864,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Wrap Lines" = "Перенос строк";
 "On" = "Вкл.";
 "Off" = "Выкл.";
-"On" = "Вкл.";
-"Off" = "Выкл.";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "Вы всегда можете добавить региональные фильтры позже в настройках.";
@@ -917,7 +915,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear All" = "Удалить всё";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Этот рекомендуемый фильтр входит в основную защиту wBlock. Его отключение может снизить эффективность блокировки.";
 "Pasting will replace the existing editor content." = "Вставка заменит текущее содержимое редактора.";
-"Pasting will replace the existing content." = "Вставка заменит текущее содержимое.";
 "Pasting will replace the existing content." = "Вставка заменит текущее содержимое.";
 "This removes all saved element zapper rules from every site." = "Это удалит все сохранённые правила Element Zapper со всех сайтов.";
 "Clear Element Zapper Rules" = "Удалить правила Element Zapper";
