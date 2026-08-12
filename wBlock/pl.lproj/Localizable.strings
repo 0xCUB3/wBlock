@@ -877,6 +877,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 /* Add mode controls */
 "Text" = "Tekst";
 "Choose File" = "Wybierz plik";
+"Change File" = "Zmień plik";
 "Local imports won't auto-update; re-import to replace." = "Importy lokalne nie aktualizują się automatycznie; zaimportuj ponownie, aby zastąpić.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra blokuje reklamy na Twitchu i obsługuje skomplikowane przypadki anti-adblock.";
 

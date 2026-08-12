@@ -962,6 +962,12 @@ struct AddFilterListView: View {
     @State private var userListTitle: String = ""
     @State private var userListDescription: String = ""
     @State private var selectedCategory: FilterListCategory = .custom
+    @State private var stagedFile: StagedFilterFile?
+
+    private struct StagedFilterFile {
+        let filename: String
+        let content: String
+    }
 
     private enum AddMode: String, CaseIterable, Identifiable {
         case url = "URL"
@@ -1037,28 +1043,11 @@ struct AddFilterListView: View {
             switch result {
             case .success(let urls):
                 guard let url = urls.first else { return }
-                Task { @MainActor in
-                    isSaving = true
-                    defer { isSaving = false }
-
-                    let title = userListTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let description = userListDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-                    url.withSecurityScopedAccess { accessibleURL in
-						filterManager.addUserListFromFile(
-							accessibleURL,
-							nameOverride: title,
-							description: description.isEmpty ? nil : description,
-							category: selectedCategory
-						)
-                    }
-                    if !filterManager.hasError {
-                        dismiss()
-                    } else {
-                        importErrorMessage = filterManager.statusDescription
-                    }
-                }
+                stageFile(at: url)
             case .failure(let error):
-                importErrorMessage = error.localizedDescription
+                if (error as? CocoaError)?.code != .userCancelled {
+                    importErrorMessage = error.localizedDescription
+                }
             }
         }
         .alert(
@@ -1211,35 +1200,61 @@ struct AddFilterListView: View {
 
 	        private var macosFileCard: some View {
 	            VStack(alignment: .leading, spacing: 12) {
-	                userListMetaFields
-
-	                Button {
-	                    showingFileImporter = true
-	                } label: {
-	                    HStack(spacing: 10) {
-	                        Image(systemName: "doc")
-	                        Text("Choose File…")
-	                        Spacer()
-	                        Image(systemName: "chevron.right")
-	                            .font(.caption2)
-	                            .foregroundStyle(.secondary)
-	                    }
-	                    .padding(.vertical, 10)
-	                    .padding(.horizontal, 12)
-	                    .frame(maxWidth: .infinity, alignment: .leading)
-	                    .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-	                    .overlay(
-	                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-	                            .stroke(.quaternary, lineWidth: 1)
-	                    )
-	                }
-	                .buttonStyle(.plain)
-	                .disabled(isSaving || !canSubmit)
+                    fileSelectionButton
+                    if stagedFile != nil {
+                        userListMetaFields
+                    }
 	            }
 	            .padding(16)
 	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
 	        }
+
+        private var fileSelectionButton: some View {
+            Button {
+                showingFileImporter = true
+                importErrorMessage = nil
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "doc")
+                    Text(stagedFile?.filename ?? "Choose File")
+                    Spacer()
+                    if stagedFile != nil {
+                        Text("Change File")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 10)
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(.quaternary, lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(isSaving)
+        }
 	    #endif
+
+        #if os(iOS)
+        private var fileSelectionButton: some View {
+            Button {
+                showingFileImporter = true
+                importErrorMessage = nil
+            } label: {
+                HStack {
+                    Image(systemName: "doc")
+                    Text(stagedFile?.filename ?? "Choose File")
+                    Spacer()
+                    if stagedFile != nil {
+                        Text("Change File").foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .disabled(isSaving)
+        }
+        #endif
 
 	    private var addTabs: some View {
 	        TabView(selection: $addMode) {
@@ -1309,22 +1324,29 @@ struct AddFilterListView: View {
     }
 
 		    private var fileTab: some View {
-		        Form {
-		            Section {
-		            TextField("Title", text: $userListTitle)
-		                    #if os(iOS)
-		                .textInputAutocapitalization(.words)
-		            #endif
-		                    .autocorrectionDisabled()
-	                TextField("Description", text: $userListDescription)
-	                    #if os(iOS)
-	                        .textInputAutocapitalization(.sentences)
-	                    #endif
-	                    .autocorrectionDisabled()
-                userListCategoryPicker(selection: $selectedCategory)
-		        }
-		    }
-    }
+                Form {
+                    Section {
+                        fileSelectionButton
+                        if stagedFile != nil {
+                            TextField("Name", text: $userListTitle)
+                                #if os(iOS)
+                                .textInputAutocapitalization(.words)
+                                #endif
+                                .autocorrectionDisabled()
+                            TextField("Description", text: $userListDescription)
+                                #if os(iOS)
+                                .textInputAutocapitalization(.sentences)
+                                #endif
+                                .autocorrectionDisabled()
+                            userListCategoryPicker(selection: $selectedCategory)
+                        }
+                    } footer: {
+                        if let importErrorMessage {
+                            Text(importErrorMessage).foregroundStyle(.orange)
+                        }
+                    }
+                }
+            }
 
 	    private var filterRequirementsPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1431,7 +1453,8 @@ struct AddFilterListView: View {
             return !userListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 && !pastedRules.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .file:
-            return !userListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            return stagedFile != nil
+                && !userListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
     }
 
@@ -1476,7 +1499,25 @@ struct AddFilterListView: View {
                 }
             }
         case .file:
-            showingFileImporter = true
+            guard let stagedFile else { return }
+            isSaving = true
+            Task { @MainActor in
+                let finalName = userListTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                let finalDescription = userListDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+                filterManager.addUserList(
+                    name: finalName,
+                    description: finalDescription.isEmpty ? nil : finalDescription,
+                    content: stagedFile.content,
+                    category: selectedCategory,
+                    isSelected: true
+                )
+                isSaving = false
+                if !filterManager.hasError {
+                    dismiss()
+                } else {
+                    importErrorMessage = filterManager.statusDescription
+                }
+            }
         }
     }
 
@@ -1490,19 +1531,18 @@ struct AddFilterListView: View {
                 )
             }
             return "Add"
-        case .paste: return "Add"
-        case .file: return "Choose File"
+        case .paste, .file: return "Add"
         }
     }
 
     private var userListMetaFields: some View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Title")
+                Text("Name")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                TextField("User List", text: $userListTitle)
+                TextField("Name", text: $userListTitle)
                     .textFieldStyle(.roundedBorder)
                     .autocorrectionDisabled()
                     #if os(iOS)
@@ -1535,6 +1575,45 @@ struct AddFilterListView: View {
     }
 
     // MARK: - Helpers
+
+    private func stageFile(at url: URL) {
+        do {
+            let content = try url.withSecurityScopedAccess { accessibleURL in
+                try String(contentsOf: accessibleURL, encoding: .utf8)
+            }
+            let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedContent.isEmpty,
+                  FilterListContentValidator.appearsToBeFilterList(trimmedContent)
+            else {
+                throw NSError(domain: "wBlock.filterImport", code: 1, userInfo: [
+                    NSLocalizedDescriptionKey: LocalizedStrings.text(
+                        "That doesn't look like a filter list.",
+                        comment: "User list validation error"
+                    )
+                ])
+            }
+
+            let metadata = FilterListMetadataParser.parse(from: content, maxLines: 80)
+            stagedFile = StagedFilterFile(
+                filename: url.lastPathComponent,
+                content: content
+            )
+            let metadataTitle = metadata.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            userListTitle = metadataTitle.isEmpty ? fallbackFileName(for: url) : metadataTitle
+            userListDescription = metadata.description?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            importErrorMessage = nil
+        } catch {
+            importErrorMessage = error.localizedDescription
+        }
+    }
+
+    private func fallbackFileName(for url: URL) -> String {
+        let name = url.deletingPathExtension().lastPathComponent
+            .replacingOccurrences(of: "-", with: " ")
+            .replacingOccurrences(of: "_", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return name.isEmpty ? "User List" : name
+    }
 
     private func validationState(for rawValue: String) -> ValidationState {
         guard !rawValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {

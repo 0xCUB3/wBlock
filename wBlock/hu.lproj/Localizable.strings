@@ -877,6 +877,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 /* Add mode controls */
 "Text" = "Szöveg";
 "Choose File" = "Fájl kiválasztása";
+"Change File" = "Fájl módosítása";
 "Local imports won't auto-update; re-import to replace." = "A helyi importok nem frissülnek automatikusan; az új importálással cserélhetők.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "Az AdGuard Extra blokkolja a Twitch-hirdetéseket, és kezeli a bonyolult reklámblokkolás-ellenes eseteket.";
 

@@ -877,6 +877,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Add mode controls */
 "Text" = "نص";
 "Choose File" = "اختيار ملف";
+"Change File" = "تغيير الملف";
 "Local imports won't auto-update; re-import to replace." = "لا يتم تحديث الاستيرادات المحلية تلقائيًا؛ أعد الاستيراد للاستبدال.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "يحظر AdGuard Extra إعلانات Twitch ويتعامل مع حالات مكافحة حظر الإعلانات المعقدة.";
 

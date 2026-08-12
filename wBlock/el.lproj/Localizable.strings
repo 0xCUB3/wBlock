@@ -877,6 +877,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Add mode controls */
 "Text" = "Κείμενο";
 "Choose File" = "Επιλογή αρχείου";
+"Change File" = "Αλλαγή αρχείου";
 "Local imports won't auto-update; re-import to replace." = "Οι τοπικές εισαγωγές δεν ενημερώνονται αυτόματα· εισαγάγετε ξανά για αντικατάσταση.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "Το AdGuard Extra αποκλείει διαφημίσεις στο Twitch και αντιμετωπίζει σύνθετες περιπτώσεις anti-adblock.";
 

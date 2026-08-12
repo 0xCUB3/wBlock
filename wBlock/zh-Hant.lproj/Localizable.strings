@@ -877,6 +877,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Add mode controls */
 "Text" = "文字";
 "Choose File" = "選擇檔案";
+"Change File" = "更改檔案";
 "Local imports won't auto-update; re-import to replace." = "本機匯入不會自動更新；請重新匯入以取代。";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra 可封鎖 Twitch 廣告，並處理複雜的反廣告封鎖情況。";
 

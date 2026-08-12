@@ -877,6 +877,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Add mode controls */
 "Text" = "テキスト";
 "Choose File" = "ファイルを選択";
+"Change File" = "ファイルを変更";
 "Local imports won't auto-update; re-import to replace." = "ローカルインポートは自動更新されません。置き換えるには再インポートしてください。";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra は Twitch 広告をブロックし、複雑なアンтиブロック対策に対応します。";
 
