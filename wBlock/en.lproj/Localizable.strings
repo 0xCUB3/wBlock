@@ -940,10 +940,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Failed to clear downloaded custom filter state; apply again to retry." = "Failed to clear downloaded custom filter state; apply again to retry.";
 "Failed to resume blocking." = "Failed to resume blocking.";
 /* Userscript display categories */
-"Blocking" = "Blocking";
 "Functionality" = "Functionality";
 "Appearance" = "Appearance";
-"Other" = "Other";
 "Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior.";
 "Userscripts and scripts that add or restore useful website functionality." = "Userscripts and scripts that add or restore useful website functionality.";
 "Userstyles and scripts that change the appearance of websites." = "Userstyles and scripts that change the appearance of websites.";

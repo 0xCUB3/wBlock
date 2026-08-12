@@ -941,10 +941,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Failed to clear downloaded custom filter state; apply again to retry." = "Не удалось очистить состояние загруженного пользовательского фильтра; примените изменения ещё раз, чтобы повторить попытку.";
 "Failed to resume blocking." = "Не удалось возобновить блокировку.";
 /* Userscript display categories */
-"Blocking" = "Блокировка";
 "Functionality" = "Функциональность";
 "Appearance" = "Внешний вид";
-"Other" = "Другое";
 "Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Скрипты, блокирующие рекламу, меры против блокировщиков и нежелательное поведение страниц.";
 "Userscripts and scripts that add or restore useful website functionality." = "Скрипты, добавляющие или восстанавливающие полезные функции сайтов.";
 "Userstyles and scripts that change the appearance of websites." = "Юзерстили и скрипты, изменяющие внешний вид сайтов.";

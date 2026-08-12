@@ -941,10 +941,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Failed to clear downloaded custom filter state; apply again to retry." = "تعذّر مسح حالة الفلتر المخصص المُنزّل؛ طبّق التغييرات مجددًا لإعادة المحاولة.";
 "Failed to resume blocking." = "فشل استئناف الحظر.";
 /* Userscript display categories */
-"Blocking" = "الحظر";
 "Functionality" = "الوظائف";
 "Appearance" = "المظهر";
-"Other" = "أخرى";
 "Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "سكريبتات تمنع الإعلانات وإجراءات مكافحة حظر الإعلانات والسلوكيات غير المرغوب فيها في الصفحات.";
 "Userscripts and scripts that add or restore useful website functionality." = "سكريبتات تضيف وظائف مفيدة إلى مواقع الويب أو تستعيدها.";
 "Userstyles and scripts that change the appearance of websites." = "أنماط وسكريبتات تغيّر مظهر مواقع الويب.";

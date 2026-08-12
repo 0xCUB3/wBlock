@@ -941,10 +941,8 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Failed to clear downloaded custom filter state; apply again to retry." = "Starea filtrului personalizat descărcat nu a putut fi eliminată; aplică din nou pentru a reîncerca.";
 "Failed to resume blocking." = "Reluarea blocării a eșuat.";
 /* Userscript display categories */
-"Blocking" = "Blocare";
 "Functionality" = "Funcționalitate";
 "Appearance" = "Aspect";
-"Other" = "Altele";
 "Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Scripturi care blochează reclamele, măsurile anti-blocare sau comportamentul nedorit al paginilor.";
 "Userscripts and scripts that add or restore useful website functionality." = "Scripturi care adaugă sau restaurează funcții utile ale site-urilor.";
 "Userstyles and scripts that change the appearance of websites." = "Userstyle-uri și scripturi care schimbă aspectul site-urilor.";

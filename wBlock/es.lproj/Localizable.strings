@@ -941,10 +941,8 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Failed to clear downloaded custom filter state; apply again to retry." = "No se pudo borrar el estado del filtro personalizado descargado; aplica los cambios de nuevo para reintentarlo.";
 "Failed to resume blocking." = "No se pudo reanudar el bloqueo.";
 /* Userscript display categories */
-"Blocking" = "Bloqueo";
 "Functionality" = "Funcionalidad";
 "Appearance" = "Apariencia";
-"Other" = "Otros";
 "Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Scripts que bloquean anuncios, medidas anti-bloqueo o comportamientos no deseados de las páginas.";
 "Userscripts and scripts that add or restore useful website functionality." = "Scripts que añaden o restauran funciones útiles de los sitios web.";
 "Userstyles and scripts that change the appearance of websites." = "Userstyles y scripts que cambian la apariencia de los sitios web.";

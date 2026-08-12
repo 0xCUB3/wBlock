@@ -941,10 +941,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Failed to clear downloaded custom filter state; apply again to retry." = "다운로드한 사용자 지정 필터 상태를 지우지 못했습니다. 다시 적용하여 재시도하세요.";
 "Failed to resume blocking." = "차단을 재개하지 못했습니다.";
 /* Userscript display categories */
-"Blocking" = "차단";
 "Functionality" = "기능";
 "Appearance" = "모양";
-"Other" = "기타";
 "Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "광고, 광고 차단 방지 조치 또는 원치 않는 페이지 동작을 차단하는 사용자 스크립트입니다.";
 "Userscripts and scripts that add or restore useful website functionality." = "웹사이트의 유용한 기능을 추가하거나 복원하는 사용자 스크립트입니다.";
 "Userstyles and scripts that change the appearance of websites." = "웹사이트의 모양을 변경하는 사용자 스타일과 스크립트입니다.";
