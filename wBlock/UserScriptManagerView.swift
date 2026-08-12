@@ -840,31 +840,13 @@ private struct ScriptStatusBadgesView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                Badge(
-                    text: script.isUserStyle ? "Userstyle" : "Userscript",
-                    color: script.isUserStyle ? .purple : .red
-                )
-                if isBuiltIn {
-                    Badge(text: "Built-in", color: .orange)
-                } else if script.isLocal {
-                    Badge(text: "Local Import", color: .blue)
-                } else {
-                    Badge(text: "Custom", color: .blue)
+                ForEach(Array(InfoBadgeSupport.userScriptBadges(
+                    script,
+                    isDownloaded: isDownloaded,
+                    isBuiltIn: isBuiltIn
+                ).enumerated()), id: \.offset) { _, badge in
+                    InfoBadgeView(kind: badge)
                 }
-                if !script.version.isEmpty {
-                    Badge(
-                        text: LocalizedStrings.format(
-                            "v%@",
-                            comment: "Userscript version badge",
-                            script.version
-                        ),
-                        color: .blue
-                    )
-                }
-                Badge(text: script.isEnabled ? "Enabled" : "Disabled", color: script.isEnabled ? .green : .secondary)
-            }
-            if !isDownloaded && !script.isLocal {
-                Badge(text: "Not Downloaded", color: .red)
             }
         }
     }

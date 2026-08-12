@@ -11,10 +11,6 @@ struct FilterInfoView: View {
 
     @Environment(\.dismiss) private var dismiss
 
-    private var isRemote: Bool {
-        filter.url.scheme?.lowercased() == "http" || filter.url.scheme?.lowercased() == "https"
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -27,16 +23,8 @@ struct FilterInfoView: View {
             }
 
             HStack(spacing: 8) {
-                Badge(text: "Filters", color: .red)
-                if filter.isInlineUserList {
-                    Badge(text: "Local Import", color: .blue)
-                } else if filter.isCustom {
-                    Badge(text: "Custom", color: .blue)
-                } else {
-                    Badge(text: "Built-in", color: .orange)
-                }
-                if filter.sourceRuleCount == nil {
-                    Badge(text: "Not Downloaded", color: .red)
+                ForEach(Array(InfoBadgeSupport.filterBadges(filter).enumerated()), id: \.offset) { _, badge in
+                    InfoBadgeView(kind: badge)
                 }
             }
 
@@ -50,7 +38,7 @@ struct FilterInfoView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            if isRemote {
+            if filter.url.scheme?.lowercased() == "http" || filter.url.scheme?.lowercased() == "https" {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Source URL")
                         .font(.caption.weight(.medium))
