@@ -1667,6 +1667,91 @@ struct Badge: View {
     }
 }
 
+private struct AddUserScriptEditorSheet: View {
+    @ObservedObject var editorController: CodeMirrorEditorController
+    let onTextChanged: (String) -> Void
+    let onPaste: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var isLineWrappingEnabled = false
+
+    var body: some View {
+        Group {
+            #if os(iOS)
+            CompatibleNavigationStack {
+                editorBody
+                    .background(Color(.systemGray6))
+                    .navigationTitle("Editor")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done", action: finish)
+                        }
+                    }
+            }
+            #else
+            editorBody
+                .frame(width: 1000, height: 700)
+            #endif
+        }
+        .onDisappear {
+            Task { @MainActor in
+                onTextChanged(await editorController.currentText())
+            }
+        }
+    }
+
+    private var editorBody: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Button {
+                    editorController.openSearch()
+                } label: {
+                    Label("Search", systemImage: "magnifyingglass")
+                }
+                .accessibilityLabel("Search")
+
+                Button {
+                    isLineWrappingEnabled.toggle()
+                } label: {
+                    Label("Wrap Lines", systemImage: isLineWrappingEnabled ? "text.justify.left" : "text.alignleft")
+                }
+                .accessibilityValue(isLineWrappingEnabled ? Text("On") : Text("Off"))
+
+                Spacer()
+
+                Button(action: onPaste) {
+                    Label("Paste", systemImage: "doc.on.clipboard")
+                }
+
+                #if os(macOS)
+                Button("Done", action: finish)
+                    .buttonStyle(.borderedProminent)
+                #endif
+            }
+            .padding(12)
+            .liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)
+            .padding(12)
+
+            CodeMirrorTextEditor(
+                controller: editorController,
+                isEditable: true,
+                isLineWrappingEnabled: isLineWrappingEnabled
+            )
+            .frame(minWidth: 420, minHeight: 360)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
+        }
+    }
+
+    private func finish() {
+        Task { @MainActor in
+            onTextChanged(await editorController.currentText())
+            dismiss()
+        }
+    }
+}
+
 struct AddUserScriptView: View {
     var userScriptManager: UserScriptManager
     var onScriptAdded: () -> Void
@@ -1678,6 +1763,8 @@ struct AddUserScriptView: View {
     @State private var isAdding: Bool = false
     @State private var fileImportError: String?
     @State private var editorImportError: String?
+    @State private var textInput = ""
+    @State private var isShowingEditor = false
     @State private var showingPasteReplacementConfirmation = false
     @State private var pendingPasteText: String?
     @State private var showingFileImporter = false
@@ -1691,9 +1778,9 @@ struct AddUserScriptView: View {
     @State private var editorMetadataRefreshTask: Task<Void, Never>?
     @State private var addMode: AddMode = .url
     @State private var showHints: Bool = false
-    @State private var isEditorLineWrappingEnabled = false
     @StateObject private var editorController: CodeMirrorEditorController
     @FocusState private var urlFieldFocused: Bool
+    @FocusState private var textInputFocused: Bool
 
     init(userScriptManager: UserScriptManager, onScriptAdded: @escaping () -> Void) {
         self.userScriptManager = userScriptManager
@@ -1709,7 +1796,7 @@ struct AddUserScriptView: View {
 
     private enum AddMode: String, CaseIterable, Identifiable {
         case url = "URL"
-        case editor = "Editor"
+        case text = "Text"
         case file = "File"
 
         var id: String { rawValue }
@@ -1730,7 +1817,7 @@ struct AddUserScriptView: View {
         }
         .onChangeCompat(of: addMode) { _, newValue in
             urlFieldFocused = newValue == .url
-            if newValue == .editor {
+            if newValue == .text {
                 scheduleEditorMetadataRefresh()
             }
         }
@@ -1738,15 +1825,19 @@ struct AddUserScriptView: View {
         .onChangeCompat(of: urlInput) { _, newValue in
             validateInput(newValue)
         }
-        .onChangeCompat(of: editorController.documentRevision) { _, _ in
+        .onChangeCompat(of: textInput) { _, _ in
+            guard addMode == .text else { return }
             scheduleEditorMetadataRefresh()
         }
+        .onChangeCompat(of: editorController.documentRevision) { _, _ in
+            syncTextFromEditor()
+        }
         .onChangeCompat(of: stagedName) { _, newValue in
-            guard addMode == .editor else { return }
+            guard addMode == .text else { return }
             editorMetadataState.noteNameEdit(newValue)
         }
         .onChangeCompat(of: stagedDescription) { _, newValue in
-            guard addMode == .editor else { return }
+            guard addMode == .text else { return }
             editorMetadataState.noteDescriptionEdit(newValue)
         }
         .onDisappear {
@@ -1762,6 +1853,13 @@ struct AddUserScriptView: View {
             }
         } message: {
             Text("Pasting will replace the existing editor content.")
+        }
+        .sheet(isPresented: $isShowingEditor) {
+            AddUserScriptEditorSheet(
+                editorController: editorController,
+                onTextChanged: applyEditorText,
+                onPaste: pasteScriptFromClipboard
+            )
         }
         .fileImporter(isPresented: $showingFileImporter, allowedContentTypes: allowedImportTypes) { result in
             switch result {
@@ -1807,9 +1905,9 @@ struct AddUserScriptView: View {
                 .tag(AddMode.url)
                 .tabItem { Label("URL", systemImage: "link") }
 
-            editorTab
-                .tag(AddMode.editor)
-                .tabItem { Label("Editor", systemImage: "curlybraces") }
+            textTab
+                .tag(AddMode.text)
+                .tabItem { Label("Text", systemImage: "text.alignleft") }
 
             fileTab
                 .tag(AddMode.file)
@@ -1848,9 +1946,7 @@ struct AddUserScriptView: View {
             }
 
             Section {
-                Button {
-                    addMode = .editor
-                } label: {
+                Button(action: openEditorSheet) {
                     Label("Use Editor", systemImage: "curlybraces")
                 }
             }
@@ -1861,33 +1957,12 @@ struct AddUserScriptView: View {
         }
     }
 
-    private var editorTab: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            editorToolbar
+    private var textTab: some View {
+        ScrollView {
+            simpleTextContent
                 .padding(.horizontal, 20)
-
-            CodeMirrorTextEditor(
-                controller: editorController,
-                isEditable: true,
-                isLineWrappingEnabled: isEditorLineWrappingEnabled
-            )
-            .frame(minHeight: 320)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(.quaternary, lineWidth: 1)
-            )
-            .padding(.horizontal, 20)
-
-            editorRequirementsPanel
-                .padding(.horizontal, 20)
-
-            userScriptMetaFields
-                .padding(.horizontal, 20)
-
-            Spacer(minLength: 0)
+                .padding(.vertical, 16)
         }
-        .padding(.bottom, 16)
         .task {
             scheduleEditorMetadataRefresh()
         }
@@ -1934,6 +2009,41 @@ struct AddUserScriptView: View {
         .disabled(isAdding)
     }
     #endif
+
+    private var simpleTextContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            TextEditor(text: $textInput)
+                .font(.body)
+                .autocorrectionDisabled()
+                .focused($textInputFocused)
+                .frame(minHeight: 260, idealHeight: 320, maxHeight: 500)
+                .padding(8)
+                .background(.background, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(.quaternary, lineWidth: 1)
+                )
+                .accessibilityLabel(Text("Script Content"))
+
+            HStack(spacing: 10) {
+                Button(action: pasteScriptFromClipboard) {
+                    Label("Paste", systemImage: "doc.on.clipboard")
+                }
+                .disabled(isAdding)
+
+                Button(action: openEditorSheet) {
+                    Label("Use Editor", systemImage: "curlybraces")
+                }
+                .disabled(isAdding)
+
+                Spacer()
+            }
+            .buttonStyle(.bordered)
+
+            editorRequirementsPanel
+            userScriptMetaFields
+        }
+    }
 
     #if os(macOS)
     private var macosBody: some View {
@@ -1987,8 +2097,8 @@ struct AddUserScriptView: View {
                 validationMessage
                 requirementsPanel
             }
-        case .editor:
-            macosEditorCard
+        case .text:
+            macosTextCard
         case .file:
             macosFileCard
         }
@@ -2026,9 +2136,7 @@ struct AddUserScriptView: View {
                 }
             }
 
-            Button {
-                addMode = .editor
-            } label: {
+            Button(action: openEditorSheet) {
                 Label("Use Editor", systemImage: "curlybraces")
             }
             .buttonStyle(.bordered)
@@ -2037,27 +2145,10 @@ struct AddUserScriptView: View {
         .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
     }
 
-    private var macosEditorCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            editorToolbar
-
-            CodeMirrorTextEditor(
-                controller: editorController,
-                isEditable: true,
-                isLineWrappingEnabled: isEditorLineWrappingEnabled
-            )
-            .frame(minHeight: 320)
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(.quaternary, lineWidth: 1)
-            )
-
-            editorRequirementsPanel
-            userScriptMetaFields
-        }
-        .padding(16)
-        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+    private var macosTextCard: some View {
+        simpleTextContent
+            .padding(16)
+            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
     }
 
     private var macosFileCard: some View {
@@ -2204,36 +2295,6 @@ struct AddUserScriptView: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
     }
 
-    private var editorToolbar: some View {
-        HStack(spacing: 10) {
-            Button {
-                editorController.openSearch()
-            } label: {
-                Label("Search", systemImage: "magnifyingglass")
-            }
-            .disabled(isAdding)
-
-            Button {
-                isEditorLineWrappingEnabled.toggle()
-            } label: {
-                Label("Wrap Lines", systemImage: isEditorLineWrappingEnabled ? "text.justify.left" : "text.alignleft")
-            }
-            .disabled(isAdding)
-
-            Spacer()
-
-            Button {
-                pasteScriptFromClipboard()
-            } label: {
-                Label("Paste", systemImage: "doc.on.clipboard")
-            }
-            .disabled(isAdding)
-        }
-        .padding(8)
-        .liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)
-        .controlSize(.small)
-    }
-
     private var compactPasteButton: some View {
         Button {
             pasteFromClipboard()
@@ -2327,8 +2388,8 @@ struct AddUserScriptView: View {
         case .url:
             if case .valid = validationState { return true }
             return false
-        case .editor:
-            return editorController.isDirty
+        case .text:
+            return !textInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .file:
             return !isStagingFile
                 && stagedFile != nil
@@ -2366,8 +2427,8 @@ struct AddUserScriptView: View {
                     }
                 }
             }
-        case .editor:
-            addScriptFromEditor()
+        case .text:
+            addScriptFromText()
         case .file:
             guard let stagedFile else { return }
             isAdding = true
@@ -2425,12 +2486,12 @@ struct AddUserScriptView: View {
         return types
     }
 
-    private func addScriptFromEditor() {
+    private func addScriptFromText() {
         isAdding = true
         editorImportError = nil
 
         Task(priority: .userInitiated) {
-            let content = await editorController.currentText()
+            let content = textInput
             let metadata = editorMetadataOverrides(for: content)
             let error = await userScriptManager.addUserScript(
                 fromSourceContent: content,
@@ -2568,7 +2629,7 @@ struct AddUserScriptView: View {
         #endif
 
         Task { @MainActor in
-            let currentText = await editorController.currentText()
+            let currentText = isShowingEditor ? await editorController.currentText() : textInput
             if currentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 replaceEditorText(with: string)
             } else {
@@ -2580,10 +2641,37 @@ struct AddUserScriptView: View {
 
     private func replaceEditorText(with string: String) {
         editorImportError = nil
-        editorController.replaceText(string)
+        textInput = string
+        editorController.replaceText(string, markClean: true)
         scheduleEditorMetadataRefresh()
         DispatchQueue.main.async {
-            editorController.focus()
+            if isShowingEditor {
+                editorController.focus()
+            } else {
+                textInputFocused = true
+            }
+        }
+    }
+
+    private func openEditorSheet() {
+        addMode = .text
+        editorController.replaceText(textInput, markClean: true)
+        isShowingEditor = true
+    }
+
+    private func applyEditorText(_ text: String) {
+        textInput = text
+        editorController.replaceText(text, markClean: true)
+        scheduleEditorMetadataRefresh()
+    }
+
+    private func syncTextFromEditor() {
+        guard isShowingEditor else { return }
+        Task { @MainActor in
+            let text = await editorController.currentText()
+            guard text != textInput else { return }
+            textInput = text
+            scheduleEditorMetadataRefresh()
         }
     }
 

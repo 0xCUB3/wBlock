@@ -22,13 +22,17 @@ for required in [
     "CodeMirrorTextEditor(",
     ".liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)",
     "private func syncTextFromEditor()",
+    "let currentText = isShowingEditor ? await editorController.currentText() : textInput",
     "private func addScriptFromText()",
+    "let content = textInput",
+    "fromSourceContent: content",
+    "onScriptAdded()",
 ] {
     require(source.contains(required), "missing editor/text requirement evidence: \(required)")
 }
 
 let textStart = source.range(of: "private var textTab")!.lowerBound
-let textEnd = source.range(of: "private var fileTab", range: textStart..<source.endIndex)!.lowerBound
+let textEnd = source.range(of: "private var macosBody", range: textStart..<source.endIndex)!.lowerBound
 let textSurface = String(source[textStart..<textEnd])
 require(!textSurface.contains("CodeMirrorTextEditor("), "simple Text mode must not embed CodeMirror")
 require(!textSurface.contains("openSearch()"), "simple Text mode must not expose Search")
@@ -43,6 +47,16 @@ let metadata = content.range(of: "userScriptMetaFields")
 require(textEditor != nil && requirements != nil && metadata != nil, "Text mode needs its static editor requirements and metadata fields")
 require(textEditor!.lowerBound < requirements!.lowerBound, "requirements must follow the text editor")
 require(requirements!.lowerBound < metadata!.lowerBound, "requirements must precede metadata fields")
+
+var simpleText = "initial"
+var editorText = simpleText
+editorText = "edited in CodeMirror"
+simpleText = editorText
+require(simpleText == "edited in CodeMirror", "closing the editor must return its current text to Text mode")
+editorText = simpleText
+simpleText = "edited in TextEditor"
+require(editorText != simpleText, "the source state must detect a subsequent TextEditor edit")
+
 require(source.contains("private var macosTextCard: some View"), "macOS must use the shared static Text mode surface")
 require(source.contains("macosTextCard\n"), "macOS mode selection must place the Text surface")
 
