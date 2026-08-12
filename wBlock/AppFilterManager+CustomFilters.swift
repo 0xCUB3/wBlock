@@ -88,9 +88,7 @@ extension AppFilterManager {
             category: category,
             isCustom: true,
             isSelected: isSelected,
-            description: trimmedDescription?.isEmpty == false
-                ? trimmedDescription!
-                : LocalizedStrings.text("User list.", comment: "Default user list description"),
+            description: trimmedDescription?.isEmpty == false ? trimmedDescription! : "",
             sourceRuleCount: Self.countRulesInUserListContent(trimmedContent)
         )
 
