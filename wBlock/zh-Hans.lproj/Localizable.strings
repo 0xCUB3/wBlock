@@ -865,3 +865,10 @@ To re-enable these filters, disable other large filters and apply changes again.
 "AdGuard Allowlist" = "AdGuard Allowlist";
 "Blocks tracking pixels and other mail tracking techniques." = "Blocks tracking pixels and other mail tracking techniques.";
 "Allows sites and resources that should not be blocked." = "Allows sites and resources that should not be blocked.";
+
+
+/* Auto-update controls */
+"Auto-Update" = "自动更新";
+"Auto-Update Filters & Userscripts" = "自动更新过滤器和用户脚本";
+"Update Now" = "立即更新";
+"Automatically updating %@" = "正在自动更新 %@";

@@ -865,3 +865,10 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "AdGuard Allowlist" = "AdGuard Allowlist";
 "Blocks tracking pixels and other mail tracking techniques." = "Blocks tracking pixels and other mail tracking techniques.";
 "Allows sites and resources that should not be blocked." = "Allows sites and resources that should not be blocked.";
+
+
+/* Auto-update controls */
+"Auto-Update" = "Automatische Aktualisierung";
+"Auto-Update Filters & Userscripts" = "Filter und Benutzerskripte automatisch aktualisieren";
+"Update Now" = "Jetzt aktualisieren";
+"Automatically updating %@" = "Automatische Aktualisierung %@";

@@ -865,3 +865,10 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "AdGuard Allowlist" = "AdGuard Allowlist";
 "Blocks tracking pixels and other mail tracking techniques." = "Blocks tracking pixels and other mail tracking techniques.";
 "Allows sites and resources that should not be blocked." = "Allows sites and resources that should not be blocked.";
+
+
+/* Auto-update controls */
+"Auto-Update" = "Otomatik Güncelleme";
+"Auto-Update Filters & Userscripts" = "Filtreleri ve kullanıcı betiklerini otomatik güncelle";
+"Update Now" = "Şimdi Güncelle";
+"Automatically updating %@" = "Otomatik güncelleme %@";

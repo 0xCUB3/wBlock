@@ -49,10 +49,14 @@ struct SettingsView: View {
     }
 
     private var footerStatusLine: String {
+        let schedule = String.localizedStringWithFormat(
+            NSLocalizedString("Automatically updating %@", comment: "Auto-update schedule prefix"),
+            compactStatusLine
+        )
         #if os(macOS)
-        return "\(compactStatusLine) · \(launchAgentStatusLine)"
+        return "\(schedule) · \(launchAgentStatusLine)"
         #else
-        return compactStatusLine
+        return schedule
         #endif
     }
 
@@ -269,7 +273,14 @@ struct SettingsView: View {
     @ViewBuilder
     private var autoUpdateSection: some View {
         Section {
-            Toggle("Auto-Update Filters", isOn: autoUpdateToggleBinding)
+            Button {
+                filterManager.checkAndEnableFilters(forceReload: true)
+            } label: {
+                Label("Update Now", systemImage: "arrow.triangle.2.circlepath")
+            }
+            .disabled(filterManager.isLoading)
+
+            Toggle("Auto-Update Filters & Userscripts", isOn: autoUpdateToggleBinding)
                 #if os(macOS)
                 .toggleStyle(.switch)
                 #endif
@@ -294,7 +305,7 @@ struct SettingsView: View {
                 #endif
             }
         } header: {
-            Text("Filter Auto-Update")
+            Text("Auto-Update")
         } footer: {
             VStack(alignment: .leading, spacing: 2) {
                 if autoUpdateEnabled {
@@ -310,20 +321,20 @@ struct SettingsView: View {
     #if os(iOS)
     @ViewBuilder
     private var iOSAutoUpdateDiagnosticsView: some View {
-        DisclosureGroup("Background Diagnostics") {
-            VStack(alignment: .leading, spacing: 8) {
-                backgroundTaskDiagnosticsView(
-                    title: "BGAppRefresh",
-                    diagnostics: autoUpdateDiagnostics.bgAppRefresh
-                )
-                backgroundTaskDiagnosticsView(
-                    title: "BGProcessing",
-                    diagnostics: autoUpdateDiagnostics.bgProcessing
-                )
-                diagnosticDetailView(title: "Foreground Catch-up", detail: foregroundCatchUpDiagnosticsLine)
-            }
-            .padding(.top, 6)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Background Diagnostics")
+                .font(.headline)
+            backgroundTaskDiagnosticsView(
+                title: "BGAppRefresh",
+                diagnostics: autoUpdateDiagnostics.bgAppRefresh
+            )
+            backgroundTaskDiagnosticsView(
+                title: "BGProcessing",
+                diagnostics: autoUpdateDiagnostics.bgProcessing
+            )
+            diagnosticDetailView(title: "Foreground Catch-up", detail: foregroundCatchUpDiagnosticsLine)
         }
+        .padding(.top, 6)
     }
     #endif
 
