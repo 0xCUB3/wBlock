@@ -33,9 +33,9 @@ assertContains(site, "setWhitelistedDomains", "Site Settings must retain per-dom
 assertContains(site, "setUserScriptDisabledHosts", "Site Settings must retain per-domain userscript settings")
 assertNotContains(site, "ZapperRuleManager", "Site Settings must not own zapper data")
 assertNotContains(site, "Clear Element Zapper Rules", "Site Settings must not own global zapper clearing")
-assertContains(zapper, ".navigationTitle(\"Element zapper\")", "Element Zapper must have its own title")
+assertContains(zapper, ".navigationTitle(\"Element Zapper\")", "Element Zapper must have its own title")
 assertContains(zapper, "Clear Element Zapper Rules", "Element Zapper must own global clearing")
-assertContains(zapper, "setDisabled(!enabled, forDomain: domain)", "Element Zapper must expose per-domain rule toggles")
+assertContains(zapper, "setZapperRulesDisabled(!enabled, forHost: domain)", "Element Zapper must expose per-domain rule toggles")
 assertContains(zapper, "Changes take full effect after the next apply.", "Zapper apply guidance must be its own line")
 assertContains(zapper, "ruleManager.rules(for: domain)", "Element Zapper must render per-domain rules")
 

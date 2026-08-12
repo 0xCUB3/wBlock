@@ -38,6 +38,8 @@ struct SiteSettingsView: View {
     @State private var pendingConfirmation: PendingConfirmation?
     @State private var pendingUndo: SiteUndoState?
     @State private var pendingRedo: SiteUndoState?
+    @State private var isMutationInFlight = false
+    @State private var mutationGeneration = 0
     @FocusState private var isTextFieldFocused: Bool
 
     private struct SiteSummary: Identifiable {
@@ -54,10 +56,12 @@ struct SiteSettingsView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     addSiteSection
+                        .disabled(isMutationInFlight)
 
                     let sites = filteredSites
                     if !sites.isEmpty {
                         sitesCard(sites)
+                            .disabled(isMutationInFlight)
                     } else if allSites.isEmpty {
                         emptyStateView
                     }
@@ -388,8 +392,16 @@ struct SiteSettingsView: View {
                 .font(.subheadline)
                 .foregroundStyle(.primary)
             Spacer()
-            if pendingUndo != nil { Button("Undo") { undoSiteMutation() }.font(.subheadline.bold()) }
-            if pendingRedo != nil { Button("Redo") { redoSiteMutation() }.font(.subheadline.bold()) }
+            if pendingUndo != nil {
+                Button("Undo") { undoSiteMutation() }
+                    .font(.subheadline.bold())
+                    .disabled(isMutationInFlight)
+            }
+            if pendingRedo != nil {
+                Button("Redo") { redoSiteMutation() }
+                    .font(.subheadline.bold())
+                    .disabled(isMutationInFlight)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -398,18 +410,22 @@ struct SiteSettingsView: View {
     }
 
     private func undoSiteMutation() {
-        guard let state = pendingUndo else { return }
+        guard let state = pendingUndo, let generation = beginMutation() else { return }
         Task { @MainActor in
+            defer { finishMutation(generation) }
             await apply(state.before, to: state.domain)
+            guard generation == mutationGeneration else { return }
             pendingUndo = nil
             pendingRedo = state
         }
     }
 
     private func redoSiteMutation() {
-        guard let state = pendingRedo else { return }
+        guard let state = pendingRedo, let generation = beginMutation() else { return }
         Task { @MainActor in
+            defer { finishMutation(generation) }
             await apply(state.after, to: state.domain)
+            guard generation == mutationGeneration else { return }
             pendingRedo = nil
             pendingUndo = state
         }
@@ -429,14 +445,29 @@ struct SiteSettingsView: View {
     }
 
     private func mutateSite(_ domain: String, operation: @escaping @MainActor () async -> Void) {
+        guard let generation = beginMutation() else { return }
         Task { @MainActor in
+            defer { finishMutation(generation) }
             let before = siteSnapshot(domain)
             await operation()
+            guard generation == mutationGeneration else { return }
             let after = siteSnapshot(domain)
             guard before != after else { return }
             pendingUndo = SiteUndoState(domain: domain, before: before, after: after)
             pendingRedo = nil
         }
+    }
+
+    private func beginMutation() -> Int? {
+        guard !isMutationInFlight else { return nil }
+        mutationGeneration += 1
+        isMutationInFlight = true
+        return mutationGeneration
+    }
+
+    private func finishMutation(_ generation: Int) {
+        guard generation == mutationGeneration else { return }
+        isMutationInFlight = false
     }
 
     private func apply(_ snapshot: SiteSettingsSnapshot, to domain: String) async {
@@ -476,7 +507,7 @@ struct SiteSettingsView: View {
     // MARK: - Actions
 
     private func addDomain() {
-        guard let normalizedDomain = addableDomain else { return }
+        guard !isMutationInFlight, let normalizedDomain = addableDomain else { return }
         isAddingDomain = true
         mutateSite(normalizedDomain) {
             let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
