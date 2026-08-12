@@ -34,11 +34,7 @@
 <br>
 
 <div align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/media/img/hero_image_dark.png" width="900" />
-    <source media="(prefers-color-scheme: light)" srcset="docs/media/img/hero_image_light.png" width="900" />
-    <img src="docs/media/img/hero_image_light.png" alt="wBlock Interface" width="900" />
-  </picture>
+  <img src="docs/media/img/hero_image.png" alt="wBlock Filters for macOS in light and dark appearances" width="900" />
 </div>
 
 <br>
