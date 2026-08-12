@@ -26,6 +26,7 @@ struct ContentView: View {
     @State private var filterSearchText = ""
     @State private var showFilterSearch = false
     @State private var editingCustomFilter: FilterList?
+    @State private var selectedCategoryInfo: FilterListCategory?
     @State private var isForeignFiltersExpanded = ProtobufDataManager.shared.isForeignFiltersExpanded
     @AppStorage("adGuardAnnoyancesExpanded") private var isAdGuardAnnoyancesExpanded = true
     @State private var showingCapacityPopover = false
@@ -130,6 +131,13 @@ struct ContentView: View {
             } else {
                 EditCustomFilterView(filterManager: filterManager, filter: filter)
             }
+        }
+        .sheet(item: $selectedCategoryInfo) { category in
+            FilterCategoryInfoView(
+                category: category,
+                defaultFilterNames: defaultFilterNames(for: category),
+                onReset: { resetCategory(category) }
+            )
         }
         .onChangeCompat(of: selectedTab) { _, _ in
             filterSearchText = ""
@@ -337,11 +345,11 @@ struct ContentView: View {
                                 }
                             }
                         } label: {
-                            Text(item.category.localizedName)
+                            categoryHeader(item.category)
                         }
                     }
                 } else {
-                    Section(item.category.localizedName) {
+                    Section {
                         ForEach(FilterListGrouping.groups(for: item.filters)) { group in
                             if group.isAdGuardAnnoyances {
                                 DisclosureGroup(isExpanded: adGuardAnnoyancesExpansion) {
@@ -357,6 +365,8 @@ struct ContentView: View {
                                 }
                             }
                         }
+                    } header: {
+                        categoryHeader(item.category)
                     }
                 }
             }
@@ -523,6 +533,40 @@ struct ContentView: View {
         )
     }
 
+    private func categoryHeader(_ category: FilterListCategory) -> some View {
+        HStack(spacing: 6) {
+            Text(category.localizedName)
+            Button {
+                selectedCategoryInfo = category
+            } label: {
+                Image(systemName: "info.circle")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .accessibilityLabel("Info")
+        }
+    }
+
+    private func defaultFilterNames(for category: FilterListCategory) -> [String] {
+        FilterCategorySupport.defaultFilterNames(
+            for: category,
+            defaults: FilterListLoader().getDefaultFilterLists()
+        )
+    }
+
+    private func resetCategory(_ category: FilterListCategory) {
+        let defaultNames = Set(defaultFilterNames(for: category))
+        for filter in filterManager.filterLists {
+            guard let selection = FilterCategorySupport.resetSelection(
+                for: filter,
+                category: category,
+                defaultNames: defaultNames
+            ) else { continue }
+            filterManager.setFilterListSelection(id: filter.id, selected: selection)
+        }
+        filterManager.flushPendingSave()
+    }
+
     private func foreignFilterGroupHeader(_ title: String) -> some View {
         Text(title)
             .font(.caption.weight(.semibold))
@@ -552,7 +596,7 @@ struct ContentView: View {
     private func macOSFilterSectionView(category: FilterListCategory, filters: [FilterList]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(category.localizedName)
+                categoryHeader(category)
                     .font(.headline)
                     .foregroundStyle(.primary)
                 Spacer()
@@ -618,7 +662,7 @@ struct ContentView: View {
                 }
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
             } label: {
-                Text(FilterListCategory.foreign.localizedName)
+                categoryHeader(.foreign)
                     .font(.headline)
                     .foregroundStyle(.primary)
             }
