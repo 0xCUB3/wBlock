@@ -19,5 +19,6 @@ require(helper.contains("return [.info, .viewContent, .deleteScript]"), "remote 
 require(filters.contains("ContextMenuActionAvailability.filterActions(for: filter)"), "filter rows must use pure action availability")
 require(scripts.contains("ContextMenuActionAvailability.userScriptActions"), "script rows must use pure action availability")
 require(scripts.contains("setUserScriptMetadataOverrides"), "editable script metadata must use persisted overrides")
+require(scripts.contains("private struct ScriptURLView") && scripts.contains("Label(\"Copy URL\""), "remote script Info must offer Copy URL")
 require(scripts.contains("canEdit: script.isLocal && !userScriptManager.isDefaultUserScript(script)"), "remote and built-in scripts must not expose edit")
 print("PASS")

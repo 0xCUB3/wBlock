@@ -892,13 +892,24 @@ private struct ScriptURLView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-            } else {
-                Text(script.url?.absoluteString ?? "N/A")
+            } else if let url = script.url {
+                Text(url.absoluteString)
                     .font(.caption)
                     .foregroundStyle(.blue)
                     .textSelection(.enabled)
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    #if os(iOS)
+                    UIPasteboard.general.string = url.absoluteString
+                    #elseif os(macOS)
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(url.absoluteString, forType: .string)
+                    #endif
+                } label: {
+                    Label("Copy URL", systemImage: "doc.on.doc")
+                }
+                .buttonStyle(.borderless)
             }
         }
     }
