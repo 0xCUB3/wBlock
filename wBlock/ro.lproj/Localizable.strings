@@ -772,6 +772,9 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Unavailable" = "Indisponibil";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
 "Undo" = "Anulează";
+"Redo" = "Refă";
+"Element Zapper" = "Zapper de elemente";
+"No Element Zapper Rules" = "Nu există reguli pentru Zapper de elemente";
 "Update" = "Actualizează";
 "Update & Apply" = "Actualizează și aplică";
 "Update Filters" = "Update Filters";

@@ -772,6 +772,9 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Unavailable" = "Mevcut değil";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "E-postalarda, arama sonuçlarında ve yönlendirmelerdeki satış ortaklığı ve izleme referans bağlantılarının engelini kaldırır.";
 "Undo" = "Geri al";
+"Redo" = "Yinele";
+"Element Zapper" = "Öğe Zapper";
+"No Element Zapper Rules" = "Öğe Zapper kuralı yok";
 "Update" = "Güncelle";
 "Update & Apply" = "Uygula ve bitir";
 "Update Filters" = "Filtreleri Güncelle";

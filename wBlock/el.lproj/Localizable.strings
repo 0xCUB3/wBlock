@@ -772,6 +772,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "Μη διαθέσιμο";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
 "Undo" = "Αναίρεση";
+"Redo" = "Επανάληψη";
+"Element Zapper" = "Zapper στοιχείων";
+"No Element Zapper Rules" = "Δεν υπάρχουν κανόνες Zapper στοιχείων";
 "Update" = "Ενημέρωση";
 "Update & Apply" = "Ενημέρωση & εφαρμογή";
 "Update Filters" = "Update Filters";

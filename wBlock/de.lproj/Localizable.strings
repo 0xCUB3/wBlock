@@ -772,6 +772,9 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Unavailable" = "Nicht verfügbar";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
 "Undo" = "Rückgängig";
+"Redo" = "Wiederholen";
+"Element Zapper" = "Element-Zapper";
+"No Element Zapper Rules" = "Keine Element-Zapper-Regeln";
 "Update" = "Aktualisieren";
 "Update & Apply" = "Aktualisieren & Anwenden";
 "Update Filters" = "Update Filters";

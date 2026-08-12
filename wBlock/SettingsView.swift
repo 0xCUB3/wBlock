@@ -58,11 +58,7 @@ struct SettingsView: View {
             NSLocalizedString("Automatically updating %@", comment: "Auto-update schedule prefix"),
             compactStatusLine
         )
-        #if os(macOS)
-        return "\(schedule) · \(launchAgentStatusLine)"
-        #else
         return schedule
-        #endif
     }
 
     var body: some View {
@@ -346,11 +342,7 @@ struct SettingsView: View {
                 #endif
 
             #if os(macOS)
-            if launchAgentNeedsApproval {
-                Button("Open Login Items") {
-                    AutoUpdateLaunchAgentManager.shared.openLoginItemsSettings()
-                }
-            }
+            macOSAutoUpdateDiagnosticsView
             #endif
 
             if autoUpdateEnabled {
@@ -377,6 +369,25 @@ struct SettingsView: View {
             }
         }
     }
+
+    #if os(macOS)
+    @ViewBuilder
+    private var macOSAutoUpdateDiagnosticsView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Background Diagnostics")
+                .font(.headline)
+            Text(launchAgentStatusLine)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            if launchAgentNeedsApproval {
+                Button("Open Login Items") {
+                    AutoUpdateLaunchAgentManager.shared.openLoginItemsSettings()
+                }
+            }
+        }
+        .padding(.top, 6)
+    }
+    #endif
 
     #if os(iOS)
     @ViewBuilder

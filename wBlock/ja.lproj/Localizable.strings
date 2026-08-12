@@ -772,6 +772,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "利用できません";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
 "Undo" = "元に戻す";
+"Redo" = "やり直す";
+"Element Zapper" = "要素ザッパー";
+"No Element Zapper Rules" = "要素ザッパーのルールはありません";
 "Update" = "更新";
 "Update & Apply" = "更新して適用";
 "Update Filters" = "Update Filters";

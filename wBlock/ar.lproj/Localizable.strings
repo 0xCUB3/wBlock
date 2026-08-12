@@ -772,6 +772,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "غير متاح";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
 "Undo" = "تراجع";
+"Redo" = "إعادة";
+"Element Zapper" = "مزيل العناصر";
+"No Element Zapper Rules" = "لا توجد قواعد لمزيل العناصر";
 "Update" = "تحديث";
 "Update & Apply" = "تحديث وتطبيق";
 "Update Filters" = "Update Filters";

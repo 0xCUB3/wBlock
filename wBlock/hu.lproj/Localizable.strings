@@ -772,6 +772,9 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Unavailable" = "Nem érhető el";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
 "Undo" = "Visszavonás";
+"Redo" = "Újra";
+"Element Zapper" = "Elemzapper";
+"No Element Zapper Rules" = "Nincsenek elemzapper-szabályok";
 "Update" = "Frissítés";
 "Update & Apply" = "Frissítés és alkalmazás";
 "Update Filters" = "Update Filters";

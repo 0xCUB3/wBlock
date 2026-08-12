@@ -772,6 +772,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "不可用";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
 "Undo" = "撤销";
+"Redo" = "重做";
+"Element Zapper" = "元素清除器";
+"No Element Zapper Rules" = "没有元素清除规则";
 "Update" = "更新";
 "Update & Apply" = "更新并应用";
 "Update Filters" = "Update Filters";
