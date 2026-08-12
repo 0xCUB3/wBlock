@@ -12,9 +12,18 @@ extension AppFilterManager {
         var newFilterLists = self.filterLists
         for updatedListFromServer in updatedListsFromServer {
             if let index = newFilterLists.firstIndex(where: { $0.id == updatedListFromServer.id }) {
-                let currentSelectionState = newFilterLists[index].isSelected
-                newFilterLists[index] = updatedListFromServer
-                newFilterLists[index].isSelected = currentSelectionState
+                let current = newFilterLists[index]
+                var merged = updatedListFromServer
+                // Metadata refreshes must not overwrite selection or other live
+                // configuration changes made while the request was in flight.
+                merged.name = current.name
+                merged.url = current.url
+                merged.category = current.category
+                merged.isCustom = current.isCustom
+                merged.isSelected = current.isSelected
+                merged.hasUserProvidedName = current.hasUserProvidedName
+                merged.description = current.description
+                newFilterLists[index] = merged
             }
         }
         self.filterLists = newFilterLists

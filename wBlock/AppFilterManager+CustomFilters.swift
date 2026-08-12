@@ -431,6 +431,13 @@ extension AppFilterManager {
     }
 
     func updateUserList(id: UUID, name: String, description: String, category: FilterListCategory, content: String) {
+        guard !isApplyInFlight else {
+            statusDescription = LocalizedStrings.text(
+                "Apply already in progress.",
+                comment: "User list edit blocked during apply"
+            )
+            return
+        }
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)

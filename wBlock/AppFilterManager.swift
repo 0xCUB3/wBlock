@@ -19,6 +19,36 @@ private extension Notification.Name {
     let APP_CONTENT_BLOCKER_ID = "skula.wBlock.wBlock-Filters-iOS"
 #endif
 
+struct ApplyFilterConfiguration: Equatable {
+    let id: UUID
+    let name: String
+    let url: URL
+    let category: FilterListCategory
+    let isCustom: Bool
+    let isSelected: Bool
+    let hasUserProvidedName: Bool
+
+    init(_ filter: FilterList) {
+        id = filter.id
+        name = filter.name
+        url = filter.url
+        category = filter.category
+        isCustom = filter.isCustom
+        isSelected = filter.isSelected
+        hasUserProvidedName = filter.hasUserProvidedName
+    }
+}
+
+struct ApplyRunSnapshot {
+    let filters: [FilterList]
+    let configurations: [ApplyFilterConfiguration]
+    let selectedFilterIDs: Set<UUID>
+    let customFilterKeys: Set<String>
+    let disabledSites: [String]
+    let activeZapperRules: [String: [String]]
+    let disabledZapperDomains: Set<String>
+}
+
 @MainActor
 class AppFilterManager: ObservableObject {
     @Published var filterLists: [FilterList] = []
@@ -90,15 +120,21 @@ class AppFilterManager: ObservableObject {
 
     var appliedSelectedFilterIDs: Set<UUID> = []
     private var appliedCustomFilterKeys: Set<String> = []
+    private var appliedFilterConfigurations: [ApplyFilterConfiguration] = []
+    var activeApplySnapshot: ApplyRunSnapshot?
     private var hasPendingSelectionChanges = false
     private var hasPendingNonSelectionChanges = false
 
-    private var selectedFilterIDs: Set<UUID> {
+    var selectedFilterIDs: Set<UUID> {
         Set(filterLists.filter(\.isSelected).map(\.id))
     }
 
-    private var customFilterKeys: Set<String> {
+    var customFilterKeys: Set<String> {
         Set(filterLists.filter(\.isCustom).map(\.url.absoluteString))
+    }
+
+    var filterConfigurations: [ApplyFilterConfiguration] {
+        filterLists.map(ApplyFilterConfiguration.init)
     }
 
     var filterListIndexByID: [UUID: Int] {
@@ -111,8 +147,8 @@ class AppFilterManager: ObservableObject {
     }
 
     func refreshPendingChanges() {
-        hasPendingSelectionChanges =
-            selectedFilterIDs != appliedSelectedFilterIDs
+        hasPendingSelectionChanges = selectedFilterIDs != appliedSelectedFilterIDs
+        hasPendingNonSelectionChanges = filterConfigurations != appliedFilterConfigurations
             || customFilterKeys != appliedCustomFilterKeys
         refreshHasUnappliedChanges()
     }
@@ -127,11 +163,36 @@ class AppFilterManager: ObservableObject {
     func markCurrentStateApplied() {
         appliedSelectedFilterIDs = selectedFilterIDs
         appliedCustomFilterKeys = customFilterKeys
+        appliedFilterConfigurations = filterConfigurations
         hasPendingSelectionChanges = false
         hasPendingNonSelectionChanges = false
         hasUnappliedChanges = false
         autoApplyTask?.cancel()
         autoApplyTask = nil
+    }
+
+    func captureApplySnapshot() {
+        activeApplySnapshot = ApplyRunSnapshot(
+            filters: filterLists,
+            configurations: filterConfigurations,
+            selectedFilterIDs: selectedFilterIDs,
+            customFilterKeys: customFilterKeys,
+            disabledSites: effectiveFilterDisabledSites(),
+            activeZapperRules: dataManager.getActiveZapperRulesByHost(),
+            disabledZapperDomains: Set(dataManager.getDisabledZapperDomains())
+        )
+    }
+
+    func commitApplySnapshot(_ snapshot: ApplyRunSnapshot) {
+        appliedSelectedFilterIDs = snapshot.selectedFilterIDs
+        appliedCustomFilterKeys = snapshot.customFilterKeys
+        appliedFilterConfigurations = snapshot.configurations
+        hasPendingSelectionChanges = selectedFilterIDs != snapshot.selectedFilterIDs
+        hasPendingNonSelectionChanges = filterConfigurations != snapshot.configurations
+            || effectiveFilterDisabledSites() != snapshot.disabledSites
+            || dataManager.getActiveZapperRulesByHost() != snapshot.activeZapperRules
+            || Set(dataManager.getDisabledZapperDomains()) != snapshot.disabledZapperDomains
+        refreshHasUnappliedChanges()
     }
 
     private func refreshHasUnappliedChanges() {
@@ -144,7 +205,7 @@ class AppFilterManager: ObservableObject {
         }
     }
 
-    private func scheduleAutoApplyDebounce() {
+    func scheduleAutoApplyDebounce() {
         autoApplyTask?.cancel()
         autoApplyTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 3_000_000_000)

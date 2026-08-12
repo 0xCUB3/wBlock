@@ -63,7 +63,12 @@ extension AppFilterManager {
         }
 
         isApplyInFlight = true
-        defer { isApplyInFlight = false }
+        defer {
+            isApplyInFlight = false
+            if hasUnappliedChanges && !isBlockingPaused {
+                scheduleAutoApplyDebounce()
+            }
+        }
         await work()
         return true
     }
@@ -117,6 +122,15 @@ extension AppFilterManager {
         if prepareState {
             await MainActor.run { self.prepareApplyRunState() }
         }
+        let runSnapshot = activeApplySnapshot ?? ApplyRunSnapshot(
+            filters: filterLists,
+            configurations: filterConfigurations,
+            selectedFilterIDs: selectedFilterIDs,
+            customFilterKeys: customFilterKeys,
+            disabledSites: effectiveFilterDisabledSites(),
+            activeZapperRules: dataManager.getActiveZapperRulesByHost(),
+            disabledZapperDomains: Set(dataManager.getDisabledZapperDomains())
+        )
 
         // While blocking is globally paused, never write real rules back to disk — leave the
         // content blockers empty until the user explicitly resumes. This keeps manual Apply
@@ -156,7 +170,7 @@ extension AppFilterManager {
                 self.showingApplyProgressSheet = false
                 if cleared && cleanupSucceeded {
                     self.lastApplySucceeded = true
-                    self.markCurrentStateApplied()
+                    self.commitApplySnapshot(runSnapshot)
                 }
             }
             return
@@ -199,7 +213,7 @@ extension AppFilterManager {
 
             await updateVersionsAndCounts()
 
-            let enabledFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
+            let enabledFilters = runSnapshot.filters.filter { $0.isSelected }
             if !enabledFilters.isEmpty {
                 let refreshResult = await filterUpdater.refreshFiltersIfNeeded(
                     enabledFilters, progressCallback: { prog in
@@ -270,9 +284,9 @@ extension AppFilterManager {
             }
         }
 
-        let allSelectedFilters = await MainActor.run { self.filterLists.filter { $0.isSelected } }
+        let allSelectedFilters = runSnapshot.filters.filter { $0.isSelected }
         let generatedZapperRules = ZapperContentBlockerRuleGenerator.generatedRules(
-            from: self.dataManager.getActiveZapperRulesByHost()
+            from: runSnapshot.activeZapperRules
         )
         let generatedZapperRulesText = generatedZapperRules.isEmpty
             ? nil
@@ -302,7 +316,7 @@ extension AppFilterManager {
                     self.isLoading = false
                     self.showingApplyProgressSheet = false
                     self.lastApplySucceeded = true
-                    self.markCurrentStateApplied()
+                    self.commitApplySnapshot(runSnapshot)
                     self.lastRuleCount = 0
                     self.ruleCountsByExtension.removeAll()
                     self.extensionsApproachingLimit.removeAll()
@@ -365,7 +379,7 @@ extension AppFilterManager {
         let ruleLimit = 150_000
         let warningThreshold = Int(Double(ruleLimit) * 0.8)  // 80% threshold
 
-        let disabledSites = self.effectiveFilterDisabledSites()
+        let disabledSites = runSnapshot.disabledSites
         let removeParamDNRSummary = await Task.detached(priority: .utility) {
             try? RemoveParamDNRRuleGenerator.saveRules(
                 for: allSelectedFilters,
@@ -761,7 +775,7 @@ extension AppFilterManager {
             if cleanupSucceeded {
                 await MainActor.run {
                     self.lastApplySucceeded = true
-                    self.markCurrentStateApplied()
+                    self.commitApplySnapshot(runSnapshot)
                 }
             }
         }
@@ -995,6 +1009,7 @@ extension AppFilterManager {
     }
 
     func prepareApplyRunState() {
+        captureApplySnapshot()
         lastApplySucceeded = false
         isLoading = true
         hasError = false
