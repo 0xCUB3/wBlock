@@ -872,3 +872,7 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Auto-Update Filters & Userscripts" = "Aggiorna automaticamente filtri e script utente";
 "Update Now" = "Aggiorna ora";
 "Automatically updating %@" = "Aggiornamento automatico %@";
+
+/* Add mode controls */
+"Text" = "Testo";
+"Choose File" = "Scegli file";

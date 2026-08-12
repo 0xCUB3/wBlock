@@ -872,3 +872,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Auto-Update Filters & Userscripts" = "Mettre à jour automatiquement les filtres et les scripts utilisateur";
 "Update Now" = "Mettre à jour maintenant";
 "Automatically updating %@" = "Mise à jour automatique %@";
+
+/* Add mode controls */
+"Text" = "Texte";
+"Choose File" = "Choisir un fichier";

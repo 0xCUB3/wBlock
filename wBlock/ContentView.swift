@@ -926,7 +926,7 @@ struct AddFilterListView: View {
 
     private enum AddMode: String, CaseIterable, Identifiable {
         case url = "URL"
-        case paste = "Paste"
+        case paste = "Text"
         case file = "File"
 
         var id: String { rawValue }
@@ -1076,10 +1076,6 @@ struct AddFilterListView: View {
 
 	        private var modePickerCard: some View {
 	            HStack(spacing: 10) {
-	                Text("Add Mode")
-	                    .font(.caption)
-	                    .foregroundStyle(.secondary)
-
 	                Picker("", selection: $addMode) {
 	                    ForEach(AddMode.allCases) { mode in
 	                        Text(LocalizedStringKey(mode.rawValue)).tag(mode)
@@ -1211,7 +1207,7 @@ struct AddFilterListView: View {
 
 	            pasteTab
 	                .tag(AddMode.paste)
-	                .tabItem { Label("Paste", systemImage: "text.badge.plus") }
+	                .tabItem { Label("Text", systemImage: "text.alignleft") }
 
 	            fileTab
 	                .tag(AddMode.file)
@@ -1426,8 +1422,8 @@ struct AddFilterListView: View {
                     comment: "Bulk filter URL add button"
                 )
             }
-            return "Add URL"
-        case .paste: return "Add Rules"
+            return "Add"
+        case .paste: return "Add"
         case .file: return "Choose File"
         }
     }

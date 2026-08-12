@@ -872,3 +872,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Auto-Update Filters & Userscripts" = "Αυτόματη ενημέρωση φίλτρων και σεναρίων χρήστη";
 "Update Now" = "Ενημέρωση τώρα";
 "Automatically updating %@" = "Αυτόματη ενημέρωση %@";
+
+/* Add mode controls */
+"Text" = "Κείμενο";
+"Choose File" = "Επιλογή αρχείου";

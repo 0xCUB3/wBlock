@@ -872,3 +872,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Auto-Update Filters & Userscripts" = "Filtreleri ve kullanıcı betiklerini otomatik güncelle";
 "Update Now" = "Şimdi Güncelle";
 "Automatically updating %@" = "Otomatik güncelleme %@";
+
+/* Add mode controls */
+"Text" = "Metin";
+"Choose File" = "Dosya Seç";

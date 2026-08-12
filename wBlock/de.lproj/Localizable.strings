@@ -872,3 +872,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Auto-Update Filters & Userscripts" = "Filter und Benutzerskripte automatisch aktualisieren";
 "Update Now" = "Jetzt aktualisieren";
 "Automatically updating %@" = "Automatische Aktualisierung %@";
+
+/* Add mode controls */
+"Text" = "Text";
+"Choose File" = "Datei auswählen";

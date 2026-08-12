@@ -872,3 +872,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Auto-Update Filters & Userscripts" = "Szűrők és felhasználói szkriptek automatikus frissítése";
 "Update Now" = "Frissítés most";
 "Automatically updating %@" = "Automatikus frissítés %@";
+
+/* Add mode controls */
+"Text" = "Szöveg";
+"Choose File" = "Fájl kiválasztása";

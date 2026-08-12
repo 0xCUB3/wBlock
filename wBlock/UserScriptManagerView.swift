@@ -1612,7 +1612,7 @@ struct AddUserScriptView: View {
                     showingFileImporter = true
                     fileImportError = nil
                 } label: {
-                    Label("Choose File…", systemImage: "tray.and.arrow.down")
+                    Label("Choose File", systemImage: "doc")
                 }
                 .disabled(isAdding)
             } footer: {
@@ -1656,10 +1656,6 @@ struct AddUserScriptView: View {
 
     private var modePickerCard: some View {
         HStack(spacing: 10) {
-            Text("Add Mode")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
             Picker("", selection: $addMode) {
                 ForEach(AddMode.allCases) { mode in
                     Text(LocalizedStringKey(mode.rawValue)).tag(mode)
@@ -1778,7 +1774,7 @@ struct AddUserScriptView: View {
             } label: {
                 HStack(spacing: 10) {
                     Image(systemName: "tray.and.arrow.down")
-                    Text("Choose File…")
+                    Text("Choose File")
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.caption2)
