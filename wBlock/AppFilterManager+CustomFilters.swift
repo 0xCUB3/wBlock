@@ -241,9 +241,10 @@ extension AppFilterManager {
 
     /// Drops downloaded state only after a remote custom filter is deselected and applied.
     /// The definition metadata remains so re-enabling can fetch the same source again.
+    @discardableResult
     func clearDownloadedStateForDeselectedRemoteFilters(
         previouslyAppliedFilterIDs: Set<UUID>? = nil
-    ) async {
+    ) async -> Bool {
         let appliedIDs = previouslyAppliedFilterIDs ?? appliedSelectedFilterIDs
         let filtersToClear = filterLists.filter { filter in
             guard appliedIDs.contains(filter.id), !filter.isSelected,
@@ -252,29 +253,57 @@ extension AppFilterManager {
             let scheme = filter.url.scheme?.lowercased()
             return scheme == "http" || scheme == "https"
         }
-        guard !filtersToClear.isEmpty else { return }
+        guard !filtersToClear.isEmpty else { return true }
 
-        if let containerURL = loader.getSharedContainerURL() {
-            for filter in filtersToClear {
-                let filename = ContentBlockerIncrementalCache.localFilename(for: filter)
-                try? FileManager.default.removeItem(at: containerURL.appendingPathComponent(filename))
-                try? FileManager.default.removeItem(
-                    at: containerURL.appendingPathComponent("diff-baseline-\(filename)")
-                )
-                if let legacyURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
-                    name: filter.name,
-                    containerURL: containerURL
-                ) {
-                    try? FileManager.default.removeItem(at: legacyURL)
-                }
-                if let legacyBaselineURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
-                    name: filter.name,
-                    containerURL: containerURL,
-                    prefix: "diff-baseline-"
-                ) {
-                    try? FileManager.default.removeItem(at: legacyBaselineURL)
+        guard let containerURL = loader.getSharedContainerURL() else {
+            await recordDownloadedStateCleanupFailure(
+                filters: filtersToClear,
+                error: "Shared app-group directory is unavailable"
+            )
+            return false
+        }
+
+        var failures: [String] = []
+        let fileManager = FileManager.default
+        for filter in filtersToClear {
+            let filename = ContentBlockerIncrementalCache.localFilename(for: filter)
+            var urls = [
+                containerURL.appendingPathComponent(filename),
+                containerURL.appendingPathComponent("diff-baseline-\(filename)")
+            ]
+            if let legacyURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                name: filter.name,
+                containerURL: containerURL
+            ) {
+                urls.append(legacyURL)
+            }
+            if let legacyBaselineURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                name: filter.name,
+                containerURL: containerURL,
+                prefix: "diff-baseline-"
+            ) {
+                urls.append(legacyBaselineURL)
+            }
+
+            for url in urls where fileManager.fileExists(atPath: url.path) {
+                do {
+                    try fileManager.removeItem(at: url)
+                } catch {
+                    // A concurrent cleanup may have removed the file; every other
+                    // deletion failure must keep metadata and the retry marker intact.
+                    if (error as NSError).code != NSFileNoSuchFileError {
+                        failures.append("\(url.lastPathComponent): \(error.localizedDescription)")
+                    }
                 }
             }
+        }
+
+        guard failures.isEmpty else {
+            await recordDownloadedStateCleanupFailure(
+                filters: filtersToClear,
+                error: failures.joined(separator: "; ")
+            )
+            return false
         }
 
         for filter in filtersToClear {
@@ -290,6 +319,23 @@ extension AppFilterManager {
         }
 
         await saveFilterLists()
+        return true
+    }
+
+    private func recordDownloadedStateCleanupFailure(filters: [FilterList], error: String) async {
+        let names = filters.map(\.name).joined(separator: ", ")
+        let message = LocalizedStrings.text(
+            "Failed to clear downloaded custom filter state; apply again to retry.",
+            comment: "Remote custom filter cleanup failure status"
+        )
+        hasError = true
+        statusDescription = message
+        markNonSelectionChangesPending()
+        await ConcurrentLogManager.shared.error(
+            .filterApply,
+            message,
+            metadata: ["filters": names, "error": error, "action": "Apply again to retry"]
+        )
     }
 
     func removeCustomFilterList(_ filter: FilterList) {

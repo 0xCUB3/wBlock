@@ -139,6 +139,9 @@ extension AppFilterManager {
                 )
             }
             let cleared = await clearAllExtensionsAndEngine()
+            let cleanupSucceeded = cleared && await clearDownloadedStateForDeselectedRemoteFilters(
+                previouslyAppliedFilterIDs: previouslyAppliedFilterIDs
+            )
             await MainActor.run {
                 self.lastRuleCount = 0
                 self.ruleCountsByExtension.removeAll()
@@ -146,7 +149,7 @@ extension AppFilterManager {
                 self.saveRuleCounts()
                 self.isLoading = false
                 self.showingApplyProgressSheet = false
-                if cleared {
+                if cleared && cleanupSucceeded {
                     self.lastApplySucceeded = true
                     self.markCurrentStateApplied()
                 }
@@ -281,10 +284,10 @@ extension AppFilterManager {
                 .filterApply, LocalizedStrings.text("No filters selected - clearing all extensions"), metadata: [:])
 
             let cleared = await clearAllExtensionsAndEngine()
-            if cleared {
-                await clearDownloadedStateForDeselectedRemoteFilters(
-                    previouslyAppliedFilterIDs: previouslyAppliedFilterIDs
-                )
+            let cleanupSucceeded = cleared && await clearDownloadedStateForDeselectedRemoteFilters(
+                previouslyAppliedFilterIDs: previouslyAppliedFilterIDs
+            )
+            if cleared && cleanupSucceeded {
                 await MainActor.run {
                     self.isLoading = false
                     self.showingApplyProgressSheet = false
@@ -742,12 +745,14 @@ extension AppFilterManager {
         if applySucceeded {
             // Cleanup is deliberately post-success: a failed conversion/reload/engine publish
             // must leave the previous downloadable baseline and validators intact.
-            await clearDownloadedStateForDeselectedRemoteFilters(
+            let cleanupSucceeded = await clearDownloadedStateForDeselectedRemoteFilters(
                 previouslyAppliedFilterIDs: previouslyAppliedFilterIDs
             )
-            await MainActor.run {
-                self.lastApplySucceeded = true
-                self.markCurrentStateApplied()
+            if cleanupSucceeded {
+                await MainActor.run {
+                    self.lastApplySucceeded = true
+                    self.markCurrentStateApplied()
+                }
             }
         }
 
