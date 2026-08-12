@@ -229,7 +229,7 @@ struct SettingsView: View {
             NavigationLink {
                 ElementZapperSettingsView(filterManager: filterManager)
             } label: {
-                Label("Element zapper", systemImage: "wand.and.stars")
+                Label("Element Zapper", systemImage: "wand.and.stars")
             }
 
             backupButtons

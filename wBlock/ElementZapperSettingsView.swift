@@ -4,14 +4,20 @@ import wBlockCoreService
 /// Per-domain element zapper rules and their apply switches.
 struct ElementZapperSettingsView: View {
     @ObservedObject var filterManager: AppFilterManager
+    @ObservedObject private var dataManager = ProtobufDataManager.shared
     @ObservedObject private var ruleManager = ZapperRuleManager.shared
     @State private var searchText = ""
     @State private var expandedDomains: Set<String> = []
-    @State private var pendingConfirmation = false
+    @State private var pendingConfirmation: PendingConfirmation?
     @State private var pendingUndo: UndoEntry?
     #if os(macOS)
     @State private var showSearch = false
     #endif
+
+    private enum PendingConfirmation: Identifiable {
+        case clearAll
+        var id: String { "clear-all" }
+    }
 
     private struct UndoEntry {
         let rule: String
@@ -31,7 +37,7 @@ struct ElementZapperSettingsView: View {
                 VStack(spacing: 16) {
                     if !ruleManager.domains.isEmpty {
                         Button(role: .destructive) {
-                            pendingConfirmation = true
+                            pendingConfirmation = .clearAll
                         } label: {
                             Label("Clear Element Zapper Rules", systemImage: "trash")
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -59,16 +65,21 @@ struct ElementZapperSettingsView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: pendingUndo?.rule)
-        .navigationTitle("Element zapper")
+        .navigationTitle("Element Zapper")
         .task { await ruleManager.refreshNow() }
-        .alert("Clear Element Zapper Rules?", isPresented: $pendingConfirmation) {
-            Button("Clear All", role: .destructive) {
-                ruleManager.deleteAllRules()
-                filterManager.markNonSelectionChangesPending()
+        .alert(item: $pendingConfirmation) { confirmation in
+            switch confirmation {
+            case .clearAll:
+                return Alert(
+                    title: Text("Clear Element Zapper Rules?"),
+                    message: Text("This removes all saved element zapper rules from every site."),
+                    primaryButton: .destructive(Text("Clear All")) {
+                        ruleManager.deleteAllRules()
+                        filterManager.markNonSelectionChangesPending()
+                    },
+                    secondaryButton: .cancel(Text("Cancel"))
+                )
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This removes all saved element zapper rules from every site.")
         }
         #if os(iOS)
         .searchable(text: $searchText, prompt: "Search")
@@ -193,9 +204,6 @@ struct ElementZapperSettingsView: View {
                 .foregroundStyle(.secondary.opacity(0.6))
             Text("No zapper rules for this site.")
                 .font(.headline)
-                .foregroundStyle(.secondary)
-            Text("No zapper rules for this site.")
-                .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)

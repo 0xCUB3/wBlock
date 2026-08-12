@@ -14,7 +14,6 @@ struct SiteSettingsLocalizationTests {
             "Manage Element Zapper Rules",
             "Add domains to disable ad blocking on specific sites",
             "Remove from Whitelist",
-            "No Element Zapper Rules",
             "Refresh rules",
             "Zap elements on any website using the wBlock extension in Safari, then manage them here.",
             "Add Site",
@@ -47,6 +46,9 @@ struct SiteSettingsLocalizationTests {
             "Undo",
             "%d rule",
             "%d rules",
+            "Redo",
+            "Element Zapper",
+            "No Element Zapper Rules",
             "Cancel",
             "Remove"
         ]
