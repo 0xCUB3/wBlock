@@ -940,3 +940,12 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 
 "Failed to clear downloaded custom filter state; apply again to retry." = "Nie udało się wyczyścić stanu pobranego niestandardowego filtra; zastosuj ponownie, aby spróbować jeszcze raz.";
 "Failed to resume blocking." = "Nie udało się wznowić blokowania.";
+/* Userscript display categories */
+"Blocking" = "Blokowanie";
+"Functionality" = "Funkcjonalność";
+"Appearance" = "Wygląd";
+"Other" = "Inne";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Skrypty blokujące reklamy, zabezpieczenia antyblokujące i niepożądane zachowanie stron.";
+"Userscripts and scripts that add or restore useful website functionality." = "Skrypty dodające lub przywracające przydatne funkcje witryn.";
+"Userstyles and scripts that change the appearance of websites." = "Userstyle i skrypty zmieniające wygląd witryn.";
+"Custom, remote, and local scripts that do not have a more specific display category." = "Niestandardowe, zdalne i lokalne skrypty bez bardziej szczegółowej kategorii wyświetlania.";

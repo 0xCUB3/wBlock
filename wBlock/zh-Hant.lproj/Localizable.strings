@@ -940,3 +940,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Failed to clear downloaded custom filter state; apply again to retry." = "無法清除已下載自訂過濾器的狀態；請重新套用以重試。";
 "Failed to resume blocking." = "無法恢復封鎖。";
+/* Userscript display categories */
+"Blocking" = "封鎖";
+"Functionality" = "功能";
+"Appearance" = "外觀";
+"Other" = "其他";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "封鎖廣告、反廣告封鎖措施或不需要的網頁行為的使用者腳本。";
+"Userscripts and scripts that add or restore useful website functionality." = "為網站新增或恢復實用功能的使用者腳本。";
+"Userstyles and scripts that change the appearance of websites." = "變更網站外觀的使用者樣式與腳本。";
+"Custom, remote, and local scripts that do not have a more specific display category." = "沒有更具體顯示類別的自訂、遠端與本機腳本。";

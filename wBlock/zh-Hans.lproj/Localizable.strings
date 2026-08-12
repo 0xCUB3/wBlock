@@ -940,3 +940,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Failed to clear downloaded custom filter state; apply again to retry." = "无法清除已下载自定义过滤器的状态；请重新应用以重试。";
 "Failed to resume blocking." = "无法恢复拦截。";
+/* Userscript display categories */
+"Blocking" = "拦截";
+"Functionality" = "功能";
+"Appearance" = "外观";
+"Other" = "其他";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "拦截广告、反广告拦截措施或不需要的网页行为的用户脚本。";
+"Userscripts and scripts that add or restore useful website functionality." = "为网站添加或恢复实用功能的用户脚本。";
+"Userstyles and scripts that change the appearance of websites." = "更改网站外观的用户样式和脚本。";
+"Custom, remote, and local scripts that do not have a more specific display category." = "没有更具体显示类别的自定义、远程和本地脚本。";

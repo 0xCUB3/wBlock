@@ -36,12 +36,18 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let updatesAutomatically: Bool
     let isUserStyle: Bool
     let category: FilterListCategory
+    let displayCategory: UserScriptDisplayCategory
     let isBuiltIn: Bool
     let isCustom: Bool
     let builtInSection: BuiltInUserScriptSection?
     let isBeta: Bool
 
-    init(script: UserScript, builtInSection: BuiltInUserScriptSection?, isBeta: Bool = false) {
+    init(
+        script: UserScript,
+        builtInSection: BuiltInUserScriptSection?,
+        builtInDisplayRole: BuiltInUserScriptDisplayRole?,
+        isBeta: Bool = false
+    ) {
         id = script.id
         name = script.name
         localizedDisplayName = script.localizedDisplayName
@@ -56,6 +62,11 @@ private struct UserScriptListItem: Identifiable, Hashable {
         updatesAutomatically = script.updatesAutomatically
         isUserStyle = script.isUserStyle
         category = script.category
+        displayCategory = UserScriptDisplayCategorySupport.category(
+            isUserStyle: script.isUserStyle,
+            builtInRole: builtInDisplayRole,
+            persistedCategory: script.category
+        )
         isBuiltIn = builtInSection != nil
         isCustom = builtInSection == nil
         self.builtInSection = builtInSection
@@ -64,15 +75,14 @@ private struct UserScriptListItem: Identifiable, Hashable {
 }
 
 private enum UserScriptSectionKind: Hashable {
-    case general
-    case styles
+    case category(UserScriptDisplayCategory)
     case foreign
-    case localCategory(FilterListCategory)
 }
 
 private struct UserScriptDisplaySection: Identifiable {
     let id: UserScriptSectionKind
     let title: LocalizedStringKey
+    let description: LocalizedStringKey?
     let scripts: [UserScriptListItem]
 }
 
@@ -187,31 +197,28 @@ struct UserScriptManagerView: View {
 
     private var displayedScriptSections: [UserScriptDisplaySection] {
         let displayed = displayedScripts
-        let styles = displayed.filter { $0.isUserStyle && !$0.isLocal }
-        let standardScripts = displayed.filter {
-            !$0.isUserStyle && $0.builtInSection != .foreign && !$0.isLocal
+        let regionalScripts = displayed.filter { $0.builtInSection == .foreign }
+        let nonRegionalScripts = displayed.filter { $0.builtInSection != .foreign }
+        var sections = UserScriptDisplayCategorySupport.orderedGroups(
+            nonRegionalScripts,
+            category: \.displayCategory
+        ).map { group in
+            UserScriptDisplaySection(
+                id: .category(group.category),
+                title: LocalizedStringKey(group.category.rawValue),
+                description: LocalizedStringKey(group.category.descriptionKey),
+                scripts: group.items
+            )
         }
-        let foreignScripts = displayed.filter { !$0.isUserStyle && $0.builtInSection == .foreign }
-        let localScripts = displayed.filter { $0.isLocal && $0.builtInSection == nil }
-        var sections: [UserScriptDisplaySection] = []
 
-        if !standardScripts.isEmpty {
-            sections.append(UserScriptDisplaySection(id: .general, title: "Userscripts", scripts: standardScripts))
-        }
-        if !styles.isEmpty {
-            sections.append(UserScriptDisplaySection(id: .styles, title: "Userstyles", scripts: styles))
-        }
-        for category in FilterListCategory.userScriptCategories where localScripts.contains(where: { $0.category == category }) {
+        if !regionalScripts.isEmpty {
             sections.append(UserScriptDisplaySection(
-                id: .localCategory(category),
-                title: LocalizedStringKey(category.rawValue),
-                scripts: localScripts.filter { $0.category == category }
+                id: .foreign,
+                title: "Regional",
+                description: nil,
+                scripts: regionalScripts
             ))
         }
-        if !foreignScripts.isEmpty {
-            sections.append(UserScriptDisplaySection(id: .foreign, title: "Regional", scripts: foreignScripts))
-        }
-
         return sections
     }
 
@@ -294,10 +301,12 @@ struct UserScriptManagerView: View {
                             }
                         }
                     } else {
-                        Section(scriptSection.title) {
+                        Section {
                             ForEach(scriptSection.scripts) { script in
                                 scriptRowView(script: script)
                             }
+                        } header: {
+                            displaySectionHeader(scriptSection)
                         }
                     }
                 }
@@ -425,6 +434,7 @@ struct UserScriptManagerView: View {
             UserScriptListItem(
                 script: script,
                 builtInSection: userScriptManager.builtInSection(for: script),
+                builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
                 isBeta: userScriptManager.isBeta(for: script)
             )
         }
@@ -518,6 +528,17 @@ struct UserScriptManagerView: View {
         .padding(.horizontal)
     }
 
+    private func displaySectionHeader(_ section: UserScriptDisplaySection) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(section.title)
+            if let description = section.description {
+                Text(description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
     #if os(macOS)
     private func scriptsListView(sections: [UserScriptDisplaySection]) -> some View {
         LazyVStack(spacing: 16) {
@@ -525,7 +546,11 @@ struct UserScriptManagerView: View {
                 if scriptSection.id == .foreign {
                     macOSForeignScriptsView(scripts: scriptSection.scripts)
                 } else {
-                    macOSUserScriptSectionView(title: scriptSection.title, scripts: scriptSection.scripts)
+                    macOSUserScriptSectionView(
+                        title: scriptSection.title,
+                        description: scriptSection.description,
+                        scripts: scriptSection.scripts
+                    )
                 }
             }
         }
@@ -534,13 +559,21 @@ struct UserScriptManagerView: View {
 
     private func macOSUserScriptSectionView(
         title: LocalizedStringKey,
+        description: LocalizedStringKey?,
         scripts: [UserScriptListItem]
     ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(title)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    if let description {
+                        Text(description)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 Spacer()
             }
             .padding(.horizontal, 4)

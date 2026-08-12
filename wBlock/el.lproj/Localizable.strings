@@ -940,3 +940,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Failed to clear downloaded custom filter state; apply again to retry." = "Δεν ήταν δυνατή η εκκαθάριση της κατάστασης του ληφθέντος προσαρμοσμένου φίλτρου· εφαρμόστε ξανά για νέα προσπάθεια.";
 "Failed to resume blocking." = "Αποτυχία συνέχισης του αποκλεισμού.";
+/* Userscript display categories */
+"Blocking" = "Αποκλεισμός";
+"Functionality" = "Λειτουργικότητα";
+"Appearance" = "Εμφάνιση";
+"Other" = "Άλλα";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Scripts που εμποδίζουν διαφημίσεις, μέτρα κατά του αποκλεισμού ή ανεπιθύμητη συμπεριφορά σελίδων.";
+"Userscripts and scripts that add or restore useful website functionality." = "Scripts που προσθέτουν ή επαναφέρουν χρήσιμες λειτουργίες ιστοτόπων.";
+"Userstyles and scripts that change the appearance of websites." = "Userstyles και scripts που αλλάζουν την εμφάνιση ιστοτόπων.";
+"Custom, remote, and local scripts that do not have a more specific display category." = "Προσαρμοσμένα, απομακρυσμένα και τοπικά scripts χωρίς ειδικότερη κατηγορία εμφάνισης.";

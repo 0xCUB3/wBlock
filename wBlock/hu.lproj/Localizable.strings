@@ -940,3 +940,12 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 "Failed to clear downloaded custom filter state; apply again to retry." = "Nem sikerült törölni a letöltött egyéni szűrő állapotát; az újrapróbálkozáshoz alkalmazza ismét a módosításokat.";
 "Failed to resume blocking." = "Nem sikerült folytatni a blokkolást.";
+/* Userscript display categories */
+"Blocking" = "Tiltás";
+"Functionality" = "Funkciók";
+"Appearance" = "Megjelenés";
+"Other" = "Egyéb";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Hirdetéseket, reklámblokkolás-ellenes intézkedéseket vagy nem kívánt oldalviselkedést blokkoló szkriptek.";
+"Userscripts and scripts that add or restore useful website functionality." = "Hasznos webhelyfunkciókat hozzáadó vagy helyreállító szkriptek.";
+"Userstyles and scripts that change the appearance of websites." = "A webhelyek megjelenését módosító userstyle-ok és szkriptek.";
+"Custom, remote, and local scripts that do not have a more specific display category." = "Egyéni, távoli és helyi szkriptek, amelyekhez nem illik pontosabb megjelenítési kategória.";

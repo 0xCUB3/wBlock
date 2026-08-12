@@ -940,3 +940,12 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 
 "Failed to clear downloaded custom filter state; apply again to retry." = "Impossible d’effacer l’état du filtre personnalisé téléchargé ; appliquez à nouveau pour réessayer.";
 "Failed to resume blocking." = "Impossible de reprendre le blocage.";
+/* Userscript display categories */
+"Blocking" = "Blocage";
+"Functionality" = "Fonctionnalités";
+"Appearance" = "Apparence";
+"Other" = "Autres";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Scripts qui bloquent les publicités, les mesures anti-blocage ou les comportements indésirables des pages.";
+"Userscripts and scripts that add or restore useful website functionality." = "Scripts qui ajoutent ou restaurent des fonctionnalités utiles aux sites web.";
+"Userstyles and scripts that change the appearance of websites." = "Userstyles et scripts qui modifient l’apparence des sites web.";
+"Custom, remote, and local scripts that do not have a more specific display category." = "Scripts personnalisés, distants et locaux sans catégorie d’affichage plus précise.";

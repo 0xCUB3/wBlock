@@ -940,3 +940,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Failed to clear downloaded custom filter state; apply again to retry." = "ダウンロードしたカスタムフィルタの状態を消去できませんでした。もう一度適用して再試行してください。";
 "Failed to resume blocking." = "ブロックを再開できませんでした。";
+/* Userscript display categories */
+"Blocking" = "ブロック";
+"Functionality" = "機能";
+"Appearance" = "外観";
+"Other" = "その他";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "広告、広告ブロック対策、その他の望ましくないページ動作を防ぐユーザースクリプトです。";
+"Userscripts and scripts that add or restore useful website functionality." = "ウェブサイトに便利な機能を追加または復元するユーザースクリプトです。";
+"Userstyles and scripts that change the appearance of websites." = "ウェブサイトの外観を変更するユーザースタイルとスクリプトです。";
+"Custom, remote, and local scripts that do not have a more specific display category." = "より具体的な表示カテゴリに分類されないカスタム、リモート、ローカルスクリプトです。";

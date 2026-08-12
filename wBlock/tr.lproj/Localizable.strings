@@ -940,3 +940,12 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 "Failed to clear downloaded custom filter state; apply again to retry." = "İndirilen özel filtrenin durumu temizlenemedi; yeniden denemek için tekrar uygulayın.";
 "Failed to resume blocking." = "Engelleme sürdürülemedi.";
+/* Userscript display categories */
+"Blocking" = "Engelleme";
+"Functionality" = "İşlevsellik";
+"Appearance" = "Görünüm";
+"Other" = "Diğer";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Reklamları, reklam engelleme karşıtı önlemleri veya istenmeyen sayfa davranışlarını engelleyen betikler.";
+"Userscripts and scripts that add or restore useful website functionality." = "Web sitelerine yararlı işlevler ekleyen veya bunları geri getiren betikler.";
+"Userstyles and scripts that change the appearance of websites." = "Web sitelerinin görünümünü değiştiren userstyle ve betikler.";
+"Custom, remote, and local scripts that do not have a more specific display category." = "Daha özel bir görüntüleme kategorisi olmayan özel, uzak ve yerel betikler.";

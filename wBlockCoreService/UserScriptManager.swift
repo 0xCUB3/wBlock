@@ -68,6 +68,7 @@ struct BuiltInUserScriptDefinition {
     let section: BuiltInUserScriptSection
     let description: String
     let languages: [String]
+    let displayRole: BuiltInUserScriptDisplayRole?
     /// Non-nil for userscripts that ship embedded in the framework instead of
     /// being downloaded from `url`. The `url` then acts only as a stable
     /// identity (for sync, per-site toggles, and protection); it is never
@@ -83,6 +84,7 @@ struct BuiltInUserScriptDefinition {
         section: BuiltInUserScriptSection = .general,
         description: String = "Default userscript",
         languages: [String] = [],
+        displayRole: BuiltInUserScriptDisplayRole? = nil,
         bundledContent: String? = nil,
         isBeta: Bool = false
     ) {
@@ -92,6 +94,7 @@ struct BuiltInUserScriptDefinition {
         self.section = section
         self.description = description
         self.languages = languages
+        self.displayRole = displayRole
         self.bundledContent = bundledContent
         self.isBeta = isBeta
     }
@@ -135,7 +138,8 @@ enum BuiltInUserScripts {
             isEnabledByDefault: false,
             section: .foreign,
             description: tinyShieldDescription,
-            languages: languages
+            languages: languages,
+            displayRole: .blocking
         )
     }
 
@@ -146,6 +150,7 @@ enum BuiltInUserScripts {
             isEnabledByDefault: false,
             description: tubeCleanerDescription,
             bundledContent: BundledUserScriptSources.tubeCleaner,
+            displayRole: .functionality,
             isBeta: true
         ),
         BuiltInUserScriptDefinition(
@@ -154,34 +159,40 @@ enum BuiltInUserScripts {
             isEnabledByDefault: false,
             description: playerCleanerDescription,
             bundledContent: BundledUserScriptSources.playerCleaner,
+            displayRole: .functionality,
             isBeta: true
         ),
         BuiltInUserScriptDefinition(
             name: "Return YouTube Dislike",
             url: "https://raw.githubusercontent.com/Anarios/return-youtube-dislike/main/Extensions/UserScript/Return%20Youtube%20Dislike.user.js",
-            isEnabledByDefault: false
+            isEnabledByDefault: false,
+            displayRole: .functionality
         ),
         BuiltInUserScriptDefinition(
             name: "Bypass Paywalls Clean",
             url: "https://greasyfork.org/scripts/542351-bypass-paywalls-clean-en/code/Bypass%20Paywalls%20Clean%20(EN).user.js",
-            isEnabledByDefault: false
+            isEnabledByDefault: false,
+            displayRole: .functionality
         ),
         BuiltInUserScriptDefinition(
             name: "AdGuard Extra",
             url: "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js",
             isEnabledByDefault: false,
-            description: "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases."
+            description: "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases.",
+            displayRole: .blocking
         ),
         BuiltInUserScriptDefinition(
             name: "tinyShield",
             url: tinyShieldURL,
             isEnabledByDefault: true,
-            description: tinyShieldDescription
+            description: tinyShieldDescription,
+            displayRole: .blocking
         ),
         BuiltInUserScriptDefinition(
             name: popupBlockerName,
             url: popupBlockerStableURL,
-            isEnabledByDefault: false
+            isEnabledByDefault: false,
+            displayRole: .blocking
         ),
         tinyShieldGroupedDefinition("autobild.de", languages: ["de"]),
         tinyShieldGroupedDefinition("bild.de", languages: ["de"]),
@@ -209,6 +220,9 @@ enum BuiltInUserScripts {
     static let allProtectedURLs = protectedURLs.union(legacyProtectedURLs)
     static let sectionByURL = Dictionary(uniqueKeysWithValues: definitions.map { ($0.url, $0.section) })
     static let languagesByURL = Dictionary(uniqueKeysWithValues: definitions.map { ($0.url, $0.languages) })
+    static let displayRoleByURL = Dictionary(uniqueKeysWithValues: definitions.compactMap { definition in
+        definition.displayRole.map { (definition.url, $0) }
+    })
     /// Embedded source for bundled userscripts, keyed by their identity URL.
     static let bundledContentByURL: [String: String] = Dictionary(
         uniqueKeysWithValues: definitions.compactMap { definition in
@@ -692,6 +706,11 @@ public class UserScriptManager: ObservableObject {
     public func builtInSection(for userScript: UserScript) -> BuiltInUserScriptSection? {
         guard let urlString = userScript.url?.absoluteString else { return nil }
         return BuiltInUserScripts.sectionByURL[urlString]
+    }
+
+    public func builtInDisplayRole(for userScript: UserScript) -> BuiltInUserScriptDisplayRole? {
+        guard let urlString = userScript.url?.absoluteString else { return nil }
+        return BuiltInUserScripts.displayRoleByURL[urlString]
     }
 
     public func builtInLanguages(for userScript: UserScript) -> [String] {

@@ -940,3 +940,12 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 
 "Failed to clear downloaded custom filter state; apply again to retry." = "Der Status des heruntergeladenen benutzerdefinierten Filters konnte nicht gelöscht werden; wende die Änderungen erneut an, um es noch einmal zu versuchen.";
 "Failed to resume blocking." = "Blockierung konnte nicht fortgesetzt werden.";
+/* Userscript display categories */
+"Blocking" = "Blockieren";
+"Functionality" = "Funktionen";
+"Appearance" = "Darstellung";
+"Other" = "Sonstige";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Userscripts und Skripte, die Werbung, Anti-Adblock-Maßnahmen oder unerwünschtes Seitenverhalten verhindern.";
+"Userscripts and scripts that add or restore useful website functionality." = "Userscripts und Skripte, die nützliche Website-Funktionen hinzufügen oder wiederherstellen.";
+"Userstyles and scripts that change the appearance of websites." = "Userstyles und Skripte, die das Erscheinungsbild von Websites ändern.";
+"Custom, remote, and local scripts that do not have a more specific display category." = "Benutzerdefinierte, entfernte und lokale Skripte ohne eine spezifischere Anzeigekategorie.";
