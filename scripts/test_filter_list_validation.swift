@@ -58,6 +58,22 @@ struct FilterListValidationTests {
             """,
             "expected JavaScript-looking adblock comments and headers to be ignored"
         )
+        expectValidContent(
+            """
+            ||window.example^$script,domain=document.example
+            document.example##.paywall
+            window.example#@#.allowed
+            """,
+            "expected hostnames containing window/document and ABP options/cosmetic rules to be accepted"
+        )
+        expectValidContent(
+            """
+            ! comments are valid filter-list lines
+            !#include /filters/ads.txt
+            ||ads.example^
+            """,
+            "expected comments and directives alongside a network rule to be accepted"
+        )
         expectInvalidContent(
             """
             // ==UserScript==
@@ -73,6 +89,14 @@ struct FilterListValidationTests {
         expectInvalidContent(
             "! harmless comment\nwindow.alert('executable');",
             "expected executable JavaScript outside comments to remain rejected"
+        )
+        expectInvalidContent(
+            "const rule = '||example.com^';",
+            "expected JavaScript declarations to be rejected even when they contain filter text"
+        )
+        expectInvalidContent(
+            "(() => { document.example = true; })();",
+            "expected JavaScript arrow-function files to be rejected"
         )
         expectSupportedFile("rules.txt", "expected .txt filter files to be accepted")
         expectSupportedFile("rules.list", "expected .list filter files to be accepted")

@@ -87,58 +87,62 @@ public enum FilterListContentValidator {
             return false
         }
 
-        // Userscripts can look text-like enough to pass a permissive filter check.
-        // Reject Greasemonkey/Tampermonkey metadata blocks before counting lines.
-        if containsUserScriptMetadataBlock(content) || containsJavaScriptContent(content) {
+        // A metadata block is unambiguously a userscript, even when its body also
+        // contains text that resembles an ad-block rule.
+        if containsUserScriptMetadataBlock(content) {
             return false
         }
 
-        // A filter list must have at least one meaningful non-empty line in the first 100 lines.
-        // Meaningful = not empty, not a [header] bracket line.
-        // Comments (!), directives (!#include, !#if, etc.), and actual rules all count as meaningful.
+        // Validate line-by-line. Hostnames are deliberately not treated as JS
+        // merely because they contain `window.` or `document.`: both are valid
+        // filter hosts and may occur in network, option, or cosmetic rules.
         var scannedLines = 0
-        var meaningfulLineCount = 0
-
-        content.enumerateLines { line, stop in
-            if scannedLines >= 100 { stop = true; return }
+        var sawFilterSyntax = false
+        for line in content.components(separatedBy: .newlines) {
+            guard scannedLines < 100 else { break }
             scannedLines += 1
 
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmed.isEmpty && !trimmed.hasPrefix("[") {
-                meaningfulLineCount += 1
-            }
-            if meaningfulLineCount >= 1 { stop = true }
+            guard !trimmed.isEmpty else { continue }
+            if isExplicitJavaScriptLine(trimmed) { return false }
+            if isFilterSyntaxLine(trimmed) { sawFilterSyntax = true }
         }
 
-        return meaningfulLineCount >= 1
+        return sawFilterSyntax
     }
 
-    private static func containsJavaScriptContent(_ content: String) -> Bool {
-        // Adblock comments and section headers are not executable JavaScript.
-        // Inspect only non-comment lines so prose such as `! window.alert(...)`
-        // cannot make an otherwise valid filter list look like a script.
-        let executableText = content
-            .components(separatedBy: .newlines)
-            .filter { line in
-                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                return !trimmed.isEmpty
-                    && !trimmed.hasPrefix("!")
-                    && !trimmed.hasPrefix("#")
-                    && !trimmed.hasPrefix("[")
-                    && !trimmed.hasPrefix("//")
-            }
-            .joined(separator: "\n")
-            .lowercased()
+    private static func isFilterSyntaxLine(_ line: String) -> Bool {
+        if line.hasPrefix("!") { return true } // ABP comment/directive
+        if line.contains("##") || line.contains("#@#")
+            || line.contains("#?#") || line.contains("#@?#") {
+            return true
+        }
+        if line.hasPrefix("@@") || line.hasPrefix("||") || line.hasPrefix("|") {
+            return true
+        }
+        if line.range(of: #"\$[A-Za-z][A-Za-z0-9_-]*(?:=|,|$)"#, options: .regularExpression) != nil {
+            return true
+        }
 
-        return executableText.contains("<script")
-            || executableText.contains("console.log(")
-            || executableText.contains("document.")
-            || executableText.contains("window.")
-            || executableText.contains("=>")
-            || executableText.contains("function ")
-            || executableText.contains("const ")
-            || executableText.contains("let ")
-            || executableText.contains("var ")
+        // ABP also accepts host-only rules. Keep this intentionally narrow so a
+        // paragraph of prose does not become a valid filter list.
+        return line.range(
+            of: #"^(?:\*|localhost|(?:[A-Za-z0-9](?:[A-Za-z0-9_-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,})(?:[/:^*?].*)?$"#,
+            options: .regularExpression
+        ) != nil
+    }
+
+    private static func isExplicitJavaScriptLine(_ line: String) -> Bool {
+        let patterns = [
+            #"^\s*(?:const|let|var)\s+[A-Za-z_$][A-Za-z0-9_$]*\s*="#,
+            #"^\s*(?:async\s+)?function\s+[A-Za-z_$][A-Za-z0-9_$]*\s*\("#,
+            #"^\s*(?:if|for|while|switch|try|catch|return|throw|class|import|export)\b"#,
+            #"^\s*(?:console|window|document)\s*\.\s*[A-Za-z_$][A-Za-z0-9_$]*\s*(?:\(|=|;|\+\+|--)"#,
+            #"^\s*<script\b"#,
+            #"=>\s*[\{(]"#,
+            #"^\s*javascript:"#
+        ]
+        return patterns.contains { line.range(of: $0, options: .regularExpression) != nil }
     }
 
     private static func containsUserScriptMetadataBlock(_ content: String) -> Bool {
