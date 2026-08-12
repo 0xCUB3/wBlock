@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import CoreFoundation
 import wBlockCoreService
 
 #if os(macOS)
@@ -184,10 +185,40 @@ class AppFilterManager: ObservableObject {
         #endif
 
         self.isBlockingPaused = BlockingPauseStore.isPaused()
+        registerResumeRequestObserver()
 
         // Wait for ProtobufDataManager to finish loading before setting up.
         setupTask = Task { @MainActor [weak self] in
             await self?.setupAsync()
+        }
+    }
+
+    private func registerResumeRequestObserver() {
+        let notificationName = BlockingPauseStore.resumeRequestNotificationName as CFString
+        CFNotificationCenterAddObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            Unmanaged.passUnretained(self).toOpaque(),
+            Self.resumeRequestCallback,
+            notificationName,
+            nil,
+            .deliverImmediately
+        )
+
+        if BlockingPauseStore.consumeResumeRequest() {
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                await self.setBlockingPaused(false)
+            }
+        }
+    }
+
+    private static let resumeRequestCallback: CFNotificationCallback = { _, observer, _, _, _ in
+        guard let observer else { return }
+        let pointer = observer
+        Task { @MainActor in
+            guard BlockingPauseStore.consumeResumeRequest() else { return }
+            let manager = Unmanaged<AppFilterManager>.fromOpaque(pointer).takeUnretainedValue()
+            await manager.setBlockingPaused(false)
         }
     }
 

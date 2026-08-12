@@ -220,6 +220,24 @@ body {
   transform: translateX(20px);
 }
 
+.paused-prompt {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.paused-prompt-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.paused-prompt .btn {
+  width: 100%;
+  margin-top: 10px;
+}
+
 .hint {
   margin-top: 8px;
   font-size: 13px;

@@ -30,6 +30,11 @@
                     <span class="slider" aria-hidden="true"></span>
                 </span>
             </label>
+            <div id="paused-prompt" class="paused-prompt" hidden>
+                <div class="paused-prompt-title" data-i18n="popup_paused_prompt_title">Blocking is paused</div>
+                <div class="hint" data-i18n="popup_paused_prompt_message">Resume blocking to restore your global protection settings.</div>
+                <button id="resume-blocking" class="btn btn-primary" type="button" data-i18n="popup_button_resume_blocking">Resume Blocking</button>
+            </div>
             <div id="userscripts-section" hidden>
                 <button id="userscripts-toggle" class="disclosure" type="button" aria-expanded="false">
                     <span data-i18n="popup_userscripts">Userscripts</span>

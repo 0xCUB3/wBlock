@@ -522,11 +522,32 @@ async function getBlockingPausedState() {
         const response = await sendNativeMessageWithTimeout({
             action: 'getBlockingPausedState',
         });
-        return Boolean(response && response.paused);
+        if (!response || typeof response.paused !== 'boolean') {
+            throw new Error('Invalid pause state response');
+        }
+        return response.paused;
     } catch (error) {
         console.error('[wBlock] Failed to get pause state:', error);
-        return false;
+        return null;
     }
+}
+
+async function resumeBlocking() {
+    const response = await sendNativeMessageWithTimeout({
+        action: 'resumeBlocking',
+    }, 10000);
+    if (!response || response.ok !== true) {
+        throw new Error((response && response.error) || 'Resume request failed');
+    }
+    if (response.paused !== true) return;
+
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+        await sleep(300);
+        const paused = await getBlockingPausedState();
+        if (paused === false) return;
+        if (paused === null) throw new Error('Failed to verify resumed state');
+    }
+    throw new Error('Resume request timed out');
 }
 
 async function getSiteDisabledState(host) {
@@ -801,6 +822,7 @@ function setupListeners() {
     const userscriptsList = document.getElementById('userscripts-list');
     const userscriptsToggle = document.getElementById('userscripts-toggle');
     const openAppButton = document.getElementById('open-app');
+    const resumeButton = document.getElementById('resume-blocking');
 
     if (userscriptsToggle) {
         userscriptsToggle.addEventListener('click', () => {
@@ -974,6 +996,25 @@ function setupListeners() {
         });
     }
 
+    if (resumeButton) {
+        resumeButton.addEventListener('click', async () => {
+            try {
+                setError('');
+                resumeButton.disabled = true;
+                resumeButton.setAttribute('aria-busy', 'true');
+                setStatus(t('popup_status_resuming', undefined, 'Resuming…'), 'neutral');
+                await resumeBlocking();
+                await refreshUi();
+            } catch (error) {
+                console.error('[wBlock] Failed to resume blocking:', error);
+                setError(t('popup_error_resume_blocking', undefined, 'Failed to resume blocking.'));
+                resumeButton.disabled = false;
+                resumeButton.removeAttribute('aria-busy');
+                setStatus(t('popup_status_paused', undefined, 'Paused'), 'disabled');
+            }
+        });
+    }
+
     if (openAppButton) {
         openAppButton.addEventListener('click', async () => {
             try {
@@ -1030,6 +1071,8 @@ async function refreshUi() {
     const rulesToggle = document.getElementById('zapper-rules-toggle');
     const openAppButton = document.getElementById('open-app');
     const userscriptsSection = document.getElementById('userscripts-section');
+    const pausedPrompt = document.getElementById('paused-prompt');
+    const resumeButton = document.getElementById('resume-blocking');
 
     if (openAppButton) {
         openAppButton.hidden = !(await shouldShowOpenAppButton());
@@ -1044,6 +1087,7 @@ async function refreshUi() {
         setStatus(t('popup_status_unsupported', undefined, 'Unsupported'), 'neutral');
         if (disableToggle) disableToggle.disabled = true;
         if (zapperEnabledToggle) zapperEnabledToggle.disabled = true;
+        if (pausedPrompt) pausedPrompt.hidden = true;
         if (zapperActivate) zapperActivate.disabled = true;
         if (rulesToggle) rulesToggle.disabled = true;
         currentPageUserScripts = [];
@@ -1086,11 +1130,27 @@ async function refreshUi() {
         zapperStatePromise,
         contentScriptReachablePromise,
     ]);
+    if (blockingPaused === null) {
+        setStatus(t('popup_status_error', undefined, 'Error'), 'disabled');
+        setError(t('popup_error_load_popup', undefined, 'Failed to load popup.'));
+        if (disableToggle) disableToggle.disabled = true;
+        if (zapperEnabledToggle) zapperEnabledToggle.disabled = true;
+        if (zapperActivate) zapperActivate.disabled = true;
+        if (resumeButton) resumeButton.disabled = true;
+        if (pausedPrompt) pausedPrompt.hidden = true;
+        return;
+    }
+
     const effectiveDisabled = blockingPaused || disabled;
     const zapperRulesDisabled = zapperState.disabled === true;
     if (disableToggle) {
         disableToggle.checked = !disabled;
         disableToggle.disabled = blockingPaused;
+    }
+    if (pausedPrompt) pausedPrompt.hidden = !blockingPaused;
+    if (resumeButton) {
+        resumeButton.disabled = !blockingPaused;
+        resumeButton.removeAttribute('aria-busy');
     }
     if (zapperEnabledToggle) {
         zapperEnabledToggle.checked = !zapperRulesDisabled;
