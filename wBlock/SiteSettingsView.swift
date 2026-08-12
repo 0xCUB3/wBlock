@@ -22,15 +22,22 @@ struct SiteSettingsView: View {
         }
     }
 
-    private struct SiteUndoSnapshot {
+    private struct SiteSettingsSnapshot: Equatable {
+        let isWhitelisted: Bool
+        let isFilterDisabled: Bool
+        let disabledScriptIDs: Set<String>
+    }
+
+    private struct SiteUndoState {
+        let id = UUID()
         let domain: String
-        let wasWhitelisted: Bool
-        let wasFilterDisabled: Bool
-        let disabledScriptHosts: [String: [String]]
+        let before: SiteSettingsSnapshot
+        let after: SiteSettingsSnapshot
     }
 
     @State private var pendingConfirmation: PendingConfirmation?
-    @State private var pendingUndo: SiteUndoSnapshot?
+    @State private var pendingUndo: SiteUndoState?
+    @State private var pendingRedo: SiteUndoState?
     @FocusState private var isTextFieldFocused: Bool
 
     private struct SiteSummary: Identifiable {
@@ -55,20 +62,21 @@ struct SiteSettingsView: View {
                         emptyStateView
                     }
 
-                    Spacer(minLength: pendingUndo != nil ? 72 : 20)
+                    Spacer(minLength: pendingUndo != nil || pendingRedo != nil ? 72 : 20)
                 }
                 .padding(.vertical)
                 .padding(.horizontal)
             }
 
-            if pendingUndo != nil {
+            if pendingUndo != nil || pendingRedo != nil {
                 undoBanner
                     .padding(.horizontal)
                     .padding(.bottom, 16)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: pendingUndo?.domain)
+        .animation(.easeInOut(duration: 0.25), value: pendingUndo?.id)
+        .animation(.easeInOut(duration: 0.25), value: pendingRedo?.id)
         .navigationTitle("Site Settings")
         #if os(iOS)
         .searchable(text: $searchText, prompt: "Search")
@@ -283,7 +291,7 @@ struct SiteSettingsView: View {
             toggleRow(isOn: Binding(
                 get: { !userScriptManager.isUserScript(script, disabledOnHost: site.domain) },
                 set: { runs in
-                    Task { @MainActor in
+                    mutateSite(site.domain) {
                         await userScriptManager.setUserScript(
                             withId: script.id,
                             disabledOnHost: site.domain,
@@ -372,53 +380,78 @@ struct SiteSettingsView: View {
         .padding(.vertical, 40)
     }
 
-    // MARK: - Undo banner
+    // MARK: - Undo and redo
 
     private var undoBanner: some View {
         HStack {
-            Text("Reset Site Settings")
+            Text("Site Settings")
                 .font(.subheadline)
                 .foregroundStyle(.primary)
-
             Spacer()
-
-            Button("Undo") {
-                guard let undo = pendingUndo else { return }
-                Task { @MainActor in
-                    let currentWhitelisted = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
-                    let restoredWhitelisted = undo.wasWhitelisted
-                        ? DisabledSitesNormalizer.normalizedDomains(from: currentWhitelisted + [undo.domain])
-                        : currentWhitelisted.filter { $0 != undo.domain }
-                    await dataManager.setWhitelistedDomains(restoredWhitelisted)
-
-                    let currentFilterDisabled = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
-                    let restoredFilterDisabled = undo.wasFilterDisabled
-                        ? DisabledSitesNormalizer.normalizedDomains(from: currentFilterDisabled + [undo.domain])
-                        : currentFilterDisabled.filter { $0 != undo.domain }
-                    await dataManager.setFilterDisabledDomains(restoredFilterDisabled)
-
-                    for (scriptID, hosts) in undo.disabledScriptHosts {
-                        await dataManager.setUserScriptDisabledHosts(hosts, forScriptID: scriptID)
-                    }
-                    pendingUndo = nil
-                }
-            }
-            .font(.subheadline.bold())
+            if pendingUndo != nil { Button("Undo") { undoSiteMutation() }.font(.subheadline.bold()) }
+            if pendingRedo != nil { Button("Redo") { redoSiteMutation() }.font(.subheadline.bold()) }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
         .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
-        .task(id: pendingUndo?.domain) {
-            guard pendingUndo != nil else { return }
-            try? await TaskSleep.sleep(for: .seconds(5))
-            await MainActor.run {
-                pendingUndo = nil
-            }
+    }
+
+    private func undoSiteMutation() {
+        guard let state = pendingUndo else { return }
+        Task { @MainActor in
+            await apply(state.before, to: state.domain)
+            pendingUndo = nil
+            pendingRedo = state
+        }
+    }
+
+    private func redoSiteMutation() {
+        guard let state = pendingRedo else { return }
+        Task { @MainActor in
+            await apply(state.after, to: state.domain)
+            pendingRedo = nil
+            pendingUndo = state
         }
     }
 
     // MARK: - State helpers
+
+    private func siteSnapshot(_ domain: String) -> SiteSettingsSnapshot {
+        let disabledHosts = dataManager.getUserScriptDisabledHosts()
+        return SiteSettingsSnapshot(
+            isWhitelisted: isWhitelisted(domain),
+            isFilterDisabled: isFilterDisabled(domain),
+            disabledScriptIDs: Set(disabledHosts.compactMap { scriptID, hosts in
+                hosts.contains(domain) ? scriptID : nil
+            })
+        )
+    }
+
+    private func mutateSite(_ domain: String, operation: @escaping @MainActor () async -> Void) {
+        Task { @MainActor in
+            let before = siteSnapshot(domain)
+            await operation()
+            let after = siteSnapshot(domain)
+            guard before != after else { return }
+            pendingUndo = SiteUndoState(domain: domain, before: before, after: after)
+            pendingRedo = nil
+        }
+    }
+
+    private func apply(_ snapshot: SiteSettingsSnapshot, to domain: String) async {
+        let domains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
+        await dataManager.setWhitelistedDomains(snapshot.isWhitelisted ? DisabledSitesNormalizer.normalizedDomains(from: domains + [domain]) : domains.filter { $0 != domain })
+        let filterDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
+        await dataManager.setFilterDisabledDomains(snapshot.isFilterDisabled ? DisabledSitesNormalizer.normalizedDomains(from: filterDomains + [domain]) : filterDomains.filter { $0 != domain })
+        let disabledHosts = dataManager.getUserScriptDisabledHosts()
+        for scriptID in Set(disabledHosts.keys).union(snapshot.disabledScriptIDs) {
+            var hosts = disabledHosts[scriptID] ?? []
+            hosts.removeAll { $0 == domain }
+            if snapshot.disabledScriptIDs.contains(scriptID) { hosts.append(domain) }
+            await dataManager.setUserScriptDisabledHosts(Array(Set(hosts)).sorted(), forScriptID: scriptID)
+        }
+    }
 
     private func isWhitelisted(_ domain: String) -> Bool {
         DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites).contains(domain)
@@ -444,79 +477,42 @@ struct SiteSettingsView: View {
 
     private func addDomain() {
         guard let normalizedDomain = addableDomain else { return }
-
         isAddingDomain = true
-
-        Task { @MainActor in
+        mutateSite(normalizedDomain) {
             let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
-            let updatedDomains = DisabledSitesNormalizer.normalizedDomains(
-                from: currentDomains + [normalizedDomain]
-            )
-            await dataManager.setWhitelistedDomains(updatedDomains)
+            await dataManager.setWhitelistedDomains(DisabledSitesNormalizer.normalizedDomains(from: currentDomains + [normalizedDomain]))
             newDomain = ""
             isAddingDomain = false
             isTextFieldFocused = true
-            withAnimation(.easeInOut(duration: 0.2)) {
-                expandedDomains.insert(normalizedDomain)
-            }
+            withAnimation(.easeInOut(duration: 0.2)) { expandedDomains.insert(normalizedDomain) }
         }
     }
 
     private func setFilterDisabled(_ disabled: Bool, domain: String) {
-        Task { @MainActor in
+        mutateSite(domain) {
             let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
-            let updatedDomains = disabled
-                ? DisabledSitesNormalizer.normalizedDomains(from: currentDomains + [domain])
-                : currentDomains.filter { $0 != domain }
-            await dataManager.setFilterDisabledDomains(updatedDomains)
+            let updated = disabled ? DisabledSitesNormalizer.normalizedDomains(from: currentDomains + [domain]) : currentDomains.filter { $0 != domain }
+            await dataManager.setFilterDisabledDomains(updated)
         }
     }
 
     private func setWhitelisted(_ whitelisted: Bool, domain: String) {
-        Task { @MainActor in
+        mutateSite(domain) {
             let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
-            let updatedDomains: [String]
-            if whitelisted {
-                guard !currentDomains.contains(domain) else { return }
-                updatedDomains = DisabledSitesNormalizer.normalizedDomains(from: currentDomains + [domain])
-            } else {
-                updatedDomains = currentDomains.filter { $0 != domain }
-            }
-            await dataManager.setWhitelistedDomains(updatedDomains)
+            let updated = whitelisted ? DisabledSitesNormalizer.normalizedDomains(from: currentDomains + [domain]) : currentDomains.filter { $0 != domain }
+            await dataManager.setWhitelistedDomains(updated)
         }
     }
 
     private func resetSite(_ domain: String) {
-        let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
-        let currentFilterDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
-        let disabledScriptHosts = dataManager.getUserScriptDisabledHosts().reduce(into: [String: [String]]()) { result, entry in
-            if entry.value.contains(domain) {
-                result[entry.key] = entry.value
-            }
-        }
-        pendingUndo = SiteUndoSnapshot(
-            domain: domain,
-            wasWhitelisted: currentDomains.contains(domain),
-            wasFilterDisabled: currentFilterDomains.contains(domain),
-            disabledScriptHosts: disabledScriptHosts
-        )
-
-        Task { @MainActor in
-            if currentDomains.contains(domain) {
-                await dataManager.setWhitelistedDomains(currentDomains.filter { $0 != domain })
-            }
+        mutateSite(domain) {
+            let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
+            if currentDomains.contains(domain) { await dataManager.setWhitelistedDomains(currentDomains.filter { $0 != domain }) }
             let filterDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
-            if filterDomains.contains(domain) {
-                await dataManager.setFilterDisabledDomains(filterDomains.filter { $0 != domain })
-            }
-
+            if filterDomains.contains(domain) { await dataManager.setFilterDisabledDomains(filterDomains.filter { $0 != domain }) }
             for (scriptID, hosts) in dataManager.getUserScriptDisabledHosts() where hosts.contains(domain) {
-                await dataManager.setUserScriptDisabledHosts(
-                    hosts.filter { $0 != domain },
-                    forScriptID: scriptID
-                )
+                await dataManager.setUserScriptDisabledHosts(hosts.filter { $0 != domain }, forScriptID: scriptID)
             }
-
             expandedDomains.remove(domain)
         }
     }
