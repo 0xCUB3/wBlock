@@ -65,7 +65,7 @@ extension AppFilterManager {
         isApplyInFlight = true
         defer {
             isApplyInFlight = false
-            if hasUnappliedChanges && !isBlockingPaused {
+            if hasUnappliedChanges && !BlockingPauseStore.isPaused(.filters) {
                 scheduleAutoApplyDebounce()
             }
         }
@@ -122,6 +122,9 @@ extension AppFilterManager {
         if prepareState {
             await MainActor.run { self.prepareApplyRunState() }
         }
+        let pausedComponents: BlockingPauseComponents = allowPausedResume
+            ? []
+            : BlockingPauseStore.pausedComponents()
         let runSnapshot = activeApplySnapshot ?? ApplyRunSnapshot(
             filters: filterLists,
             configurations: filterConfigurations,
@@ -132,10 +135,11 @@ extension AppFilterManager {
             disabledZapperDomains: Set(dataManager.getDisabledZapperDomains())
         )
 
-        // While blocking is globally paused, never write real rules back to disk — leave the
-        // content blockers empty until the user explicitly resumes. This keeps manual Apply
-        // Changes, auto-update runs, and fast disabled-site updates consistent with pause.
-        if await MainActor.run(body: { self.isBlockingPaused }) && !allowPausedResume {
+        // When both output-producing components are paused, keep the content blockers and
+        // advanced engine inert. A userscript-only pause must still apply filter rules.
+        if pausedComponents.contains(.filters)
+            && pausedComponents.contains(.elementZapper)
+            && !allowPausedResume {
             await MainActor.run {
                 self.statusDescription = LocalizedStrings.text(
                     "Blocking is paused",
@@ -213,7 +217,9 @@ extension AppFilterManager {
 
             await updateVersionsAndCounts()
 
-            let enabledFilters = runSnapshot.filters.filter { $0.isSelected }
+            let enabledFilters = pausedComponents.contains(.filters)
+                ? []
+                : runSnapshot.filters.filter { $0.isSelected }
             if !enabledFilters.isEmpty {
                 let refreshResult = await filterUpdater.refreshFiltersIfNeeded(
                     enabledFilters, progressCallback: { prog in
@@ -267,7 +273,8 @@ extension AppFilterManager {
             }
 
             // Auto-update enabled userscripts as part of Apply Changes (helps YouTube, etc.).
-            if let userScriptManager = filterUpdater.userScriptManager {
+            if !pausedComponents.contains(.userScripts),
+               let userScriptManager = filterUpdater.userScriptManager {
                 let scriptsResult = await userScriptManager.autoUpdateEnabledUserScripts()
                 await MainActor.run {
                     self.applyProgressViewModel.updateScriptsUpdateResult(
@@ -284,10 +291,14 @@ extension AppFilterManager {
             }
         }
 
-        let allSelectedFilters = runSnapshot.filters.filter { $0.isSelected }
-        let generatedZapperRules = ZapperContentBlockerRuleGenerator.generatedRules(
-            from: runSnapshot.activeZapperRules
-        )
+        let allSelectedFilters = pausedComponents.contains(.filters)
+            ? []
+            : runSnapshot.filters.filter { $0.isSelected }
+        let generatedZapperRules = pausedComponents.contains(.elementZapper)
+            ? []
+            : ZapperContentBlockerRuleGenerator.generatedRules(
+                from: runSnapshot.activeZapperRules
+            )
         let generatedZapperRulesText = generatedZapperRules.isEmpty
             ? nil
             : generatedZapperRules.joined(separator: "\n")
@@ -896,38 +907,38 @@ extension AppFilterManager {
         }
     }
 
-    /// Toggles the global "blocking paused" state.
-    ///
-    /// When pausing: persists the flag, writes inert no-op rules to every content blocker,
-    /// clears the advanced WebExtension engine, and reloads Safari. Blocking stays off
-    /// across launches and tab switches until the user resumes — see GitHub issue #439.
-    ///
-    /// When resuming: clears the flag and runs the standard apply pipeline to rebuild
-    /// and reload the real rule sets.
+    /// Sets the independently paused components. The primary Pause Blocking control calls
+    /// this with `.all` or `[]`; clearing the selection runs the canonical resume apply.
     @discardableResult
-    func setBlockingPaused(_ paused: Bool) async -> Bool {
-        if paused {
-            let started = await performExclusiveApply {
-                BlockingPauseStore.setPaused(true)
-                UserScriptManager.invalidateDocumentStartExecutionCache()
-                await MainActor.run { self.isBlockingPaused = true }
+    func setPausedComponents(_ components: BlockingPauseComponents) async -> Bool {
+        let normalized = components.intersection(.all)
+        if normalized.isEmpty {
+            return await resumeBlocking()
+        }
 
-                await MainActor.run {
-                    self.statusDescription = LocalizedStrings.text(
-                        "Pausing blocking...",
-                        comment: "Apply pipeline pause status"
-                    )
-                    self.applyProgressViewModel.updateStageDescription(
-                        LocalizedStrings.text(
-                            "Pausing blocking...",
-                            comment: "Apply pipeline stage"
-                        )
-                    )
-                    self.applyProgressViewModel.updatePhaseCompletion(
-                        updating: true,
-                        scripts: true
-                    )
-                }
+        let started = await performExclusiveApply {
+            lastApplySucceeded = false
+            if normalized == .all {
+                BlockingPauseStore.setPaused(true)
+            } else {
+                BlockingPauseStore.setPausedComponents(normalized)
+            }
+            UserScriptManager.invalidateDocumentStartExecutionCache()
+            await MainActor.run {
+                self.hasError = false
+                self.pausedComponents = normalized
+                self.isBlockingPaused = true
+                self.statusDescription = LocalizedStrings.text(
+                    "Pausing blocking...",
+                    comment: "Apply pipeline pause status"
+                )
+                self.applyProgressViewModel.updateStageDescription(
+                    LocalizedStrings.text("Pausing blocking...", comment: "Apply pipeline stage")
+                )
+                self.applyProgressViewModel.updatePhaseCompletion(updating: true, scripts: true)
+            }
+
+            if normalized == .all {
                 let cleared = await self.clearAllExtensionsAndEngine()
                 await MainActor.run {
                     self.lastRuleCount = 0
@@ -940,72 +951,103 @@ extension AppFilterManager {
                         self.lastApplySucceeded = true
                         self.markCurrentStateApplied()
                         self.statusDescription = LocalizedStrings.text(
-                            "Blocking paused",
-                            comment: "Apply pipeline pause status"
+                            "Blocking paused", comment: "Apply pipeline pause status"
                         )
                     }
                 }
-            }
-            if !started {
-                await ConcurrentLogManager.shared.warning(
-                    .filterApply,
-                    LocalizedStrings.text(
-                        "Skipped pause request while apply is in progress",
-                        comment: "Apply pipeline concurrency guard"
-                    ),
-                    metadata: [:]
-                )
-            }
-            return started && lastApplySucceeded
-        } else {
-            // Keep both pause flags true while the canonical apply rebuilds the real
-            // configuration. Only publish unpaused after every apply/reload succeeds.
-            let started = await performExclusiveApply {
-                lastApplySucceeded = false
-                BlockingPauseStore.setResumeApplying()
-                BlockingPauseStore.setPaused(true)
-                UserScriptManager.invalidateDocumentStartExecutionCache()
-                await MainActor.run {
-                    self.isBlockingPaused = true
-                    self.statusDescription = LocalizedStrings.text(
-                        "Applying filters...\n(This may take a while)",
-                        comment: "Apply pipeline resume status"
-                    )
-                }
+            } else {
                 await applyChangesUnlocked(
                     allowUserInteraction: false,
                     prepareState: true,
                     skipPreApplyUpdates: false,
-                    allowPausedResume: true
+                    allowPausedResume: false
                 )
+            }
+        }
 
-                let succeeded = lastApplySucceeded && !hasError
-                if succeeded {
-                    // The apply has committed real rules before this single shared-state
-                    // transition. Extensions cannot observe active state prematurely.
-                    BlockingPauseStore.setPaused(false)
-                    await MainActor.run {
-                        self.isBlockingPaused = false
+        let succeeded = started && lastApplySucceeded && !hasError
+        if started && !succeeded {
+            await failClosedAfterStartedPauseTransition()
+        }
+        return succeeded
+    }
+
+    private func failClosedAfterStartedPauseTransition() async {
+        BlockingPauseStore.setPaused(true)
+        UserScriptManager.invalidateDocumentStartExecutionCache()
+        await MainActor.run {
+            self.pausedComponents = .all
+            self.isBlockingPaused = true
+            if self.statusDescription.isEmpty {
+                self.statusDescription = LocalizedStrings.text(
+                    "Failed",
+                    comment: "Apply pipeline pause failure status"
+                )
+            }
+        }
+    }
+
+    @discardableResult
+    func setBlockingPaused(_ paused: Bool) async -> Bool {
+        await setPausedComponents(paused ? .all : [])
+    }
+
+    private func resumeBlocking() async -> Bool {
+        guard !BlockingPauseStore.pausedComponents().isEmpty else {
+            await MainActor.run {
+                self.pausedComponents = []
+                self.isBlockingPaused = false
+            }
+            return true
+        }
+
+        let started = await performExclusiveApply {
+            lastApplySucceeded = false
+            BlockingPauseStore.setResumeApplying()
+            // Keep all components paused until the canonical apply has committed real output.
+            BlockingPauseStore.setPaused(true)
+            UserScriptManager.invalidateDocumentStartExecutionCache()
+            await MainActor.run {
+                self.pausedComponents = .all
+                self.isBlockingPaused = true
+                self.statusDescription = LocalizedStrings.text(
+                    "Applying filters...\n(This may take a while)",
+                    comment: "Apply pipeline resume status"
+                )
+            }
+            await applyChangesUnlocked(
+                allowUserInteraction: false,
+                prepareState: true,
+                skipPreApplyUpdates: false,
+                allowPausedResume: true
+            )
+
+            let succeeded = lastApplySucceeded && !hasError
+            if succeeded {
+                BlockingPauseStore.setPaused(false)
+                UserScriptManager.invalidateDocumentStartExecutionCache()
+                await MainActor.run {
+                    self.pausedComponents = []
+                    self.isBlockingPaused = false
+                    self.statusDescription = LocalizedStrings.text(
+                        "Blocking resumed", comment: "Apply pipeline resume status"
+                    )
+                }
+            } else {
+                BlockingPauseStore.setPaused(true)
+                await MainActor.run {
+                    self.pausedComponents = .all
+                    self.isBlockingPaused = true
+                    if self.statusDescription.isEmpty {
                         self.statusDescription = LocalizedStrings.text(
-                            "Blocking resumed",
-                            comment: "Apply pipeline resume status"
+                            "Failed to resume blocking.",
+                            comment: "Apply pipeline resume failure status"
                         )
-                    }
-                } else {
-                    BlockingPauseStore.setPaused(true)
-                    await MainActor.run {
-                        self.isBlockingPaused = true
-                        if self.statusDescription.isEmpty {
-                            self.statusDescription = LocalizedStrings.text(
-                                "Failed to resume blocking.",
-                                comment: "Apply pipeline resume failure status"
-                            )
-                        }
                     }
                 }
             }
-            return started && lastApplySucceeded && !BlockingPauseStore.isPaused()
         }
+        return started && lastApplySucceeded && !BlockingPauseStore.isPaused()
     }
 
     func prepareApplyRunState() {

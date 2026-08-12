@@ -30,6 +30,7 @@ struct SettingsView: View {
     @State private var backupStatusMessage: String? = nil
     @State private var showingBackupStatus = false
     @State private var showingSyncAdoptPrompt = false
+    @State private var isPauseDetailsExpanded = false
     @State private var syncAdoptTimestamp: String?
     #if os(iOS)
         @State private var backupDocument: BackupDocument? = nil
@@ -205,6 +206,21 @@ struct SettingsView: View {
             get: { filterManager.isBlockingPaused },
             set: { newValue in
                 Task { await filterManager.setBlockingPaused(newValue) }
+            }
+        )
+    }
+
+    private func pauseComponentBinding(_ component: BlockingPauseComponents) -> Binding<Bool> {
+        Binding(
+            get: { filterManager.pausedComponents.contains(component) },
+            set: { newValue in
+                var components = filterManager.pausedComponents
+                if newValue {
+                    components.insert(component)
+                } else {
+                    components.remove(component)
+                }
+                Task { await filterManager.setPausedComponents(components) }
             }
         )
     }
@@ -496,17 +512,24 @@ struct SettingsView: View {
     private var pauseBlockingSection: some View {
         Section {
             Toggle("Pause Blocking", isOn: pauseBlockingBinding)
-                .disabled(filterManager.isLoading)
+                .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
                 #if os(macOS)
                 .toggleStyle(.switch)
                 #endif
+
+            DisclosureGroup("Pause components", isExpanded: $isPauseDetailsExpanded) {
+                Toggle("Filters", isOn: pauseComponentBinding(.filters))
+                Toggle("Enabled Userscripts & Userstyles", isOn: pauseComponentBinding(.userScripts))
+                Toggle("Element Zapper", isOn: pauseComponentBinding(.elementZapper))
+            }
+            .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
         } header: {
             Text("Blocking")
         } footer: {
             Text(
                 filterManager.isBlockingPaused
-                    ? "Blocking is paused. Content blockers are emptied until you turn this back on."
-                    : "Temporarily disable all content blockers without turning them off in Safari Settings."
+                    ? "Pause Blocking is on while any selected component is paused. Resume restores all components."
+                    : "Temporarily pause selected components without changing their enabled settings."
             )
         }
     }

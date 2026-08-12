@@ -66,6 +66,7 @@ class AppFilterManager: ObservableObject {
     @Published var showingApplyProgressSheet = false
     @Published var suppressBlockingOverlay = false
     @Published var isBlockingPaused: Bool = false
+    @Published var pausedComponents: BlockingPauseComponents = []
     @Published var autoDisabledFilters: [FilterList] = []  // Filters auto-disabled due to rule limits
     @Published var showingAutoDisabledAlert = false
 
@@ -208,7 +209,12 @@ class AppFilterManager: ObservableObject {
         autoApplyTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 3_000_000_000)
             guard !Task.isCancelled else { return }
-            guard let self, self.hasUnappliedChanges, !self.isLoading, !self.isApplyInFlight, !self.isBlockingPaused else { return }
+            guard let self,
+                  self.hasUnappliedChanges,
+                  !self.isLoading,
+                  !self.isApplyInFlight,
+                  !self.pausedComponents.contains(.filters)
+            else { return }
             self.checkAndEnableFilters(forceReload: true)
         }
     }
@@ -257,7 +263,8 @@ class AppFilterManager: ObservableObject {
             self.currentPlatform = .iOS
         #endif
 
-        self.isBlockingPaused = BlockingPauseStore.isPaused()
+        self.pausedComponents = BlockingPauseStore.pausedComponents()
+        self.isBlockingPaused = !self.pausedComponents.isEmpty
         registerResumeRequestObserver()
 
         // Wait for ProtobufDataManager to finish loading before setting up.

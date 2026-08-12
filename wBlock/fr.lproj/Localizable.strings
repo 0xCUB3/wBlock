@@ -950,3 +950,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Userscripts and scripts that add or restore useful website functionality." = "Scripts qui ajoutent ou restaurent des fonctionnalités utiles aux sites web.";
 "Userstyles and scripts that change the appearance of websites." = "Userstyles et scripts qui modifient l’apparence des sites web.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Scripts personnalisés, distants et locaux sans catégorie d’affichage plus précise.";
+"Pause components" = "Composants en pause";
+"Enabled Userscripts & Userstyles" = "Scripts utilisateur et styles utilisateur activés";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "La pause du blocage est active tant qu’un composant sélectionné est en pause. Reprendre réactive tous les composants.";
+"Temporarily pause selected components without changing their enabled settings." = "Mettez temporairement en pause les composants sélectionnés sans modifier leur état d’activation.";

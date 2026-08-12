@@ -75,6 +75,10 @@
     "message": "已暫停",
     "description": "Status label indicating blocking is globally paused."
   },
+  "popup_status_partially_paused": {
+    "message": "部分暫停",
+    "description": "Status label indicating that some blocking components are paused."
+  },
   "popup_status_active": {
     "message": "作用中",
     "description": "Status label indicating blocking is active on the current site."
@@ -223,8 +227,12 @@
     "message": "封鎖功能已暫停",
     "description": "Title shown in the popup when global blocking is paused."
   },
+  "popup_paused_partial_prompt_title": {
+    "message": "部分封鎖元件已暫停",
+    "description": "Title shown in the popup when only some blocking components are paused."
+  },
   "popup_paused_prompt_message": {
-    "message": "恢復封鎖功能以還原全域保護設定。",
+    "message": "恢復會還原所有元件。",
     "description": "Prompt explaining how to restore global blocking."
   },
   "popup_button_resume_blocking": {

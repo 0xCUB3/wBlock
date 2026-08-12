@@ -544,6 +544,10 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "貼上直接的 .user.js 連結。wBlock 會為你下載並安裝。";
 "Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "貼上直接的 .user.js、.js 或 .user.css 連結。wBlock 會為你下載並安裝。";
 "Pause Blocking" = "暫停封鎖";
+"Pause components" = "暫停元件";
+"Enabled Userscripts & Userstyles" = "已啟用的使用者腳本與樣式";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "只要有選取的元件處於暫停狀態，暫停封鎖就會開啟。恢復後會還原所有元件。";
+"Temporarily pause selected components without changing their enabled settings." = "暫時暫停選取的元件，但不變更其啟用設定。";
 "Pausing blocking..." = "正在暫停封鎖…";
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";

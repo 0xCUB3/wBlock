@@ -553,7 +553,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         groupIdentifier: String
     ) throws -> ReloadMarkerWriteResult {
         try withContentBlockerOutputLock(at: appGroupURL, targetRulesFilename: outputURL.lastPathComponent) {
-            if BlockingPauseStore.isPaused(groupIdentifier: groupIdentifier) {
+            if BlockingPauseStore.isContentBlockingPaused(groupIdentifier: groupIdentifier) {
                 try? FileManager.default.removeItem(at: markerURL)
                 return .paused
             }
@@ -661,7 +661,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         for _ in 0..<maxReloadVerificationPasses {
             if !mustReloadNewestOutput,
                reloadMarkerMatches(snapshot),
-               !BlockingPauseStore.isPaused(groupIdentifier: groupIdentifier)
+               !BlockingPauseStore.isContentBlockingPaused(groupIdentifier: groupIdentifier)
             {
                 let enabled = await contentBlockerIsEnabled(identifier: identifier)
                 guard let verified = try? readReloadSnapshot(
@@ -683,7 +683,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                     continue
                 }
                 if enabled,
-                   !BlockingPauseStore.isPaused(groupIdentifier: groupIdentifier),
+                   !BlockingPauseStore.isContentBlockingPaused(groupIdentifier: groupIdentifier),
                    reloadMarkerMatches(verified)
                 {
                     return ReloadAttemptResult(success: true, skipped: true, attempts: 0, durationMs: 0)

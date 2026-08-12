@@ -950,3 +950,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Userscripts and scripts that add or restore useful website functionality." = "Skrypty dodające lub przywracające przydatne funkcje witryn.";
 "Userstyles and scripts that change the appearance of websites." = "Userstyle i skrypty zmieniające wygląd witryn.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Niestandardowe, zdalne i lokalne skrypty bez bardziej szczegółowej kategorii wyświetlania.";
+"Pause components" = "Wstrzymane komponenty";
+"Enabled Userscripts & Userstyles" = "Włączone skrypty i style użytkownika";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "Wstrzymanie blokowania jest aktywne, gdy dowolny wybrany komponent jest wstrzymany. Wznowienie przywraca wszystkie komponenty.";
+"Temporarily pause selected components without changing their enabled settings." = "Tymczasowo wstrzymaj wybrane komponenty bez zmieniania ich ustawień włączenia.";

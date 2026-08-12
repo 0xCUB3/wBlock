@@ -2846,6 +2846,7 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func getEnabledUserScriptsForURL(_ url: String) -> [UserScript] {
+        guard !BlockingPauseStore.isPaused(.userScripts) else { return [] }
         let enabledScripts = userScripts.filter { $0.isEnabled }
         let matchingScripts = enabledScripts.filter { $0.matches(url: url) }
         let host = URL(string: url)?.host ?? ""
@@ -2865,6 +2866,7 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func enabledDocumentStartUserScriptsForCache() async -> [UserScript] {
+        guard !BlockingPauseStore.isPaused(.userScripts) else { return [] }
         let scripts = userScripts.filter {
             $0.isEnabled && !$0.isUserStyle && $0.runAt == "document-start"
         }
@@ -2886,6 +2888,7 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func pageUserScripts(for url: String) -> [(script: UserScript, disabledForSite: Bool)] {
+        guard !BlockingPauseStore.isPaused(.userScripts) else { return [] }
         let host = URL(string: url)?.host ?? ""
         let pageScripts = userScripts
             .filter { $0.isEnabled && $0.matches(url: url) }

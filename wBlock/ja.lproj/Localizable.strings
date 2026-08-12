@@ -544,6 +544,10 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "直接の .user.js リンクを貼り付けてください。wBlockがダウンロードしてインストールします。";
 "Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "直接の .user.js、.js、または .user.css リンクを貼り付けてください。wBlock がダウンロードしてインストールします。";
 "Pause Blocking" = "ブロックを一時停止";
+"Pause components" = "一時停止するコンポーネント";
+"Enabled Userscripts & Userstyles" = "有効なユーザースクリプトとユーザースタイル";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "選択したコンポーネントのいずれかが一時停止している間、ブロックの一時停止が有効です。再開するとすべてのコンポーネントが戻ります。";
+"Temporarily pause selected components without changing their enabled settings." = "有効設定を変更せずに、選択したコンポーネントを一時停止します。";
 "Pausing blocking..." = "ブロックを一時停止しています…";
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";

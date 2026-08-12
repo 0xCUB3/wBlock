@@ -181,9 +181,9 @@ public enum WebExtensionRequestHandler {
         let payload = message?["payload"] as? [String: Any] ?? [:]
         if let urlString = payload["url"] as? String {
             if let url = URL(string: urlString) {
-                // Respect global pause and per-site disable immediately for advanced rules.
+                // Respect the filter pause and per-site disable immediately for advanced rules.
                 Task { @MainActor in
-                    let paused = BlockingPauseStore.isPaused()
+                    let paused = BlockingPauseStore.isPaused(.filters)
                     if paused {
                         message?["payload"] = emptyRulesPayload(disabled: false, paused: true)
                     } else {
@@ -474,7 +474,13 @@ public enum WebExtensionRequestHandler {
     }
 
     private static func handleGetBlockingPausedState(context: NSExtensionContext) {
-        let response = createResponse(with: ["paused": BlockingPauseStore.isPaused()])
+        let components = BlockingPauseStore.pausedComponents()
+        let response = createResponse(with: [
+            "paused": !components.isEmpty,
+            "filtersPaused": components.contains(.filters),
+            "userScriptsPaused": components.contains(.userScripts),
+            "elementZapperPaused": components.contains(.elementZapper)
+        ])
         context.completeRequest(returningItems: [response])
     }
 
@@ -521,7 +527,7 @@ public enum WebExtensionRequestHandler {
     private static func handleGetBlockingState(message: [String: Any?], context: NSExtensionContext) {
         let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         Task { @MainActor in
-            let paused = BlockingPauseStore.isPaused()
+            let paused = BlockingPauseStore.isPaused(.filters)
             let disabledSites = await currentDisabledSites()
             let disabled = !host.isEmpty && HostMatcher.isHostDisabled(host: host, disabledSites: disabledSites)
             let response = createResponse(with: ["disabled": disabled, "paused": paused])
@@ -533,7 +539,7 @@ public enum WebExtensionRequestHandler {
         let offset = message["offset"] as? Int ?? 0
         let limit = message["limit"] as? Int ?? 250
         let payload: [String: Any]
-        if BlockingPauseStore.isPaused() {
+        if BlockingPauseStore.isPaused(.filters) {
             payload = RemoveParamDNRRuleGenerator.emptyRulesPayload(offset: offset, limit: limit)
         } else {
             payload = RemoveParamDNRRuleGenerator.loadRulesPayload(
@@ -719,9 +725,8 @@ public enum WebExtensionRequestHandler {
     /// Returns enabled userscripts for a URL. By default this uses lightweight descriptors,
     /// but callers can request hydrated payloads to avoid repeated native chunk messages.
     private static func handleGetUserScriptsRequest(message: [String: Any?], context: NSExtensionContext) {
-        // While blocking is globally paused, serve no userscripts so the paused state also
-        // suppresses userscript/userstyle injection — not just the declarative blockers.
-        if BlockingPauseStore.isPaused() {
+        // While the userscript component is paused, serve no userscripts or userstyles.
+        if BlockingPauseStore.isPaused(.userScripts) {
             let response = createResponse(with: userScriptsResponse(userScripts: [], cacheAllowed: false))
             context.completeRequest(returningItems: [response])
             return
@@ -859,7 +864,7 @@ public enum WebExtensionRequestHandler {
     }
 
     private static func handleGetDocumentStartUserScriptCatalogRequest(context: NSExtensionContext) {
-        guard documentStartCacheAllowed, !BlockingPauseStore.isPaused() else {
+        guard documentStartCacheAllowed, !BlockingPauseStore.isPaused(.userScripts) else {
             let response = createResponse(with: documentStartCacheResponse(
                 userScripts: [],
                 disabledHosts: [],
@@ -983,7 +988,7 @@ public enum WebExtensionRequestHandler {
 
     private static func handleGetPageUserScriptsRequest(message: [String: Any?], context: NSExtensionContext) {
         // Mirrors the pause check above so the page‑level userscript listing also reports none.
-        if BlockingPauseStore.isPaused() {
+        if BlockingPauseStore.isPaused(.userScripts) {
             let response = createResponse(with: ["userScripts": []])
             context.completeRequest(returningItems: [response])
             return
@@ -1363,6 +1368,11 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
+            guard !BlockingPauseStore.isPaused(.userScripts) else {
+                let response = createResponse(with: ["error": "Requested content not available"])
+                context.completeRequest(returningItems: [response])
+                return
+            }
             let manager = UserScriptManager.shared
             await manager.waitUntilReady()
             guard let script = manager.userScript(withId: scriptId) else {

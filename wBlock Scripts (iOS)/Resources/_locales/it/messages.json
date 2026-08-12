@@ -75,6 +75,10 @@
     "message": "In pausa",
     "description": "Status label indicating blocking is globally paused."
   },
+  "popup_status_partially_paused": {
+    "message": "In pausa parziale",
+    "description": "Status label indicating that some blocking components are paused."
+  },
   "popup_status_active": {
     "message": "Attivo",
     "description": "Status label indicating blocking is active on the current site."
@@ -223,8 +227,12 @@
     "message": "Il blocco è in pausa",
     "description": "Title shown in the popup when global blocking is paused."
   },
+  "popup_paused_partial_prompt_title": {
+    "message": "Alcuni componenti del blocco sono in pausa",
+    "description": "Title shown in the popup when only some blocking components are paused."
+  },
   "popup_paused_prompt_message": {
-    "message": "Riprendi il blocco per ripristinare le impostazioni di protezione globali.",
+    "message": "Riprendere ripristina tutti i componenti.",
     "description": "Prompt explaining how to restore global blocking."
   },
   "popup_button_resume_blocking": {

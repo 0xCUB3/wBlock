@@ -544,6 +544,10 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "직접 .user.js 링크를 붙여넣으세요. wBlock이 다운로드 및 설치를 진행합니다.";
 "Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "직접 .user.js, .js 또는 .user.css 링크를 붙여넣으세요. wBlock이 다운로드하고 설치합니다.";
 "Pause Blocking" = "차단 일시정지";
+"Pause components" = "일시정지할 구성 요소";
+"Enabled Userscripts & Userstyles" = "활성화된 유저스크립트 및 유저스타일";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "선택한 구성 요소 중 하나라도 일시정지되면 차단 일시정지가 켜집니다. 재개하면 모든 구성 요소가 복원됩니다.";
+"Temporarily pause selected components without changing their enabled settings." = "활성화 설정을 변경하지 않고 선택한 구성 요소를 일시적으로 일시정지합니다.";
 "Pausing blocking..." = "차단을 일시정지하는 중…";
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";

@@ -446,7 +446,7 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Pause Blocking")
                     .font(.subheadline.weight(.semibold))
-                Text("Blocking is paused. Tap Resume to re-enable all blocking.")
+                Text("Pause Blocking is on while any selected component is paused. Resume restores all components.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

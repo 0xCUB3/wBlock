@@ -57,7 +57,7 @@ public enum ContentBlockerExtensionRequestHandler {
     public static func handleRequest(with context: NSExtensionContext, groupIdentifier: String, rulesFilenameInAppGroup: String) {
         os_log(.info, "ContentBlockerExtensionRequestHandler: Preparing to load rules for target file: %@", rulesFilenameInAppGroup)
 
-        if BlockingPauseStore.isPaused(groupIdentifier: groupIdentifier) {
+        if BlockingPauseStore.isContentBlockingPaused(groupIdentifier: groupIdentifier) {
             completeWithEmptyRules(context, reason: "blocking is paused")
             return
         }

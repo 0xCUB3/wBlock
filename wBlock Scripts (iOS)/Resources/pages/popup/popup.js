@@ -522,10 +522,13 @@ async function getBlockingPausedState() {
         const response = await sendNativeMessageWithTimeout({
             action: 'getBlockingPausedState',
         });
-        if (!response || typeof response.paused !== 'boolean') {
+        if (!response || typeof response.paused !== 'boolean' ||
+            typeof response.filtersPaused !== 'boolean' ||
+            typeof response.userScriptsPaused !== 'boolean' ||
+            typeof response.elementZapperPaused !== 'boolean') {
             throw new Error('Invalid pause state response');
         }
-        return response.paused;
+        return response;
     } catch (error) {
         console.error('[wBlock] Failed to get pause state:', error);
         return null;
@@ -1118,6 +1121,8 @@ async function refreshUi() {
     const openAppButton = document.getElementById('open-app');
     const userscriptsSection = document.getElementById('userscripts-section');
     const pausedPrompt = document.getElementById('paused-prompt');
+    const pausedPromptTitle = document.getElementById('paused-prompt-title');
+    const pausedPromptMessage = document.getElementById('paused-prompt-message');
     const resumeButton = document.getElementById('resume-blocking');
 
     if (openAppButton) {
@@ -1170,13 +1175,13 @@ async function refreshUi() {
 
     setStatus(t('popup_status_checking', undefined, 'Checking…'), 'neutral');
 
-    const [blockingPaused, disabled, zapperState, contentScriptReachable] = await Promise.all([
+    const [pauseState, disabled, zapperState, contentScriptReachable] = await Promise.all([
         blockingPausedPromise,
         disabledPromise,
         zapperStatePromise,
         contentScriptReachablePromise,
     ]);
-    if (blockingPaused === null) {
+    if (pauseState === null) {
         setStatus(t('popup_status_error', undefined, 'Error'), 'disabled');
         setError(t('popup_error_load_popup', undefined, 'Failed to load popup.'));
         if (disableToggle) disableToggle.disabled = true;
@@ -1187,40 +1192,65 @@ async function refreshUi() {
         return;
     }
 
-    const effectiveDisabled = blockingPaused || disabled;
+    const blockingPaused = pauseState.paused;
+    const filtersPaused = pauseState.filtersPaused;
+    const userScriptsPaused = pauseState.userScriptsPaused;
+    const zapperPaused = pauseState.elementZapperPaused;
+    const partiallyPaused = blockingPaused && !(
+        filtersPaused && userScriptsPaused && zapperPaused
+    );
+    const siteDisabled = disabled;
     const zapperRulesDisabled = zapperState.disabled === true;
     if (disableToggle) {
         disableToggle.checked = !disabled;
-        disableToggle.disabled = blockingPaused;
+        disableToggle.disabled = filtersPaused;
     }
     if (pausedPrompt) pausedPrompt.hidden = !blockingPaused;
+    if (pausedPromptTitle) {
+        pausedPromptTitle.textContent = partiallyPaused
+            ? t('popup_paused_partial_prompt_title', undefined, 'Some blocking components are paused')
+            : t('popup_paused_prompt_title', undefined, 'Blocking is paused');
+    }
+    if (pausedPromptMessage) {
+        pausedPromptMessage.textContent = t(
+            'popup_paused_prompt_message',
+            undefined,
+            'Resume restores all components.'
+        );
+    }
     if (resumeButton) {
         resumeButton.disabled = !blockingPaused;
         resumeButton.removeAttribute('aria-busy');
     }
     if (zapperEnabledToggle) {
         zapperEnabledToggle.checked = !zapperRulesDisabled;
-        zapperEnabledToggle.disabled = effectiveDisabled;
+        zapperEnabledToggle.disabled = siteDisabled || zapperPaused;
     }
-    setStatus(blockingPaused
-        ? t('popup_status_paused', undefined, 'Paused')
-        : disabled
-            ? t('popup_status_disabled', undefined, 'Disabled')
-            : t('popup_status_active', undefined, 'Active'),
-    effectiveDisabled ? 'disabled' : 'active');
+    setStatus(
+        blockingPaused && !partiallyPaused
+            ? t('popup_status_paused', undefined, 'Paused')
+            : blockingPaused
+                ? t('popup_status_partially_paused', undefined, 'Partially Paused')
+                : siteDisabled
+                    ? t('popup_status_disabled', undefined, 'Disabled')
+                    : t('popup_status_active', undefined, 'Active'),
+        blockingPaused || siteDisabled ? 'disabled' : 'active'
+    );
 
     if (zapperActivate) {
-        zapperActivate.disabled = effectiveDisabled || zapperRulesDisabled;
+        zapperActivate.disabled = siteDisabled || zapperPaused || zapperRulesDisabled;
     }
     if (rulesToggle) {
-        rulesToggle.disabled = false;
+        rulesToggle.disabled = zapperPaused;
     }
     await renderPageUserScriptsPromise;
-    if (pageUserScriptsRenderedDisabled !== effectiveDisabled) {
-        renderPageUserScripts(await pageUserScriptsPromise, effectiveDisabled);
+    if (pageUserScriptsRenderedDisabled !== disabled) {
+        renderPageUserScripts(await pageUserScriptsPromise, disabled);
     }
     currentZapperRules = zapperState.rules;
-    await zapperCountPromise;
+    const zapperCount = await zapperCountPromise;
+    const zapperClear = document.getElementById('zapper-clear');
+    if (zapperClear) zapperClear.disabled = zapperPaused || zapperCount === 0;
     renderUserscriptCommands(contentScriptReachable ? await fetchUserscriptCommands(tab.id) : []);
     if (zapperRulesExpanded) {
         renderZapperRules(currentZapperRules);

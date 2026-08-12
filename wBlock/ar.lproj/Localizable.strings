@@ -544,6 +544,10 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "الصق رابط .user.js المباشر. سيقوم wBlock بتنزيله وتثبيته لك.";
 "Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "ألصق الرابط المباشر لملف .user.js أو .js أو .user.css. سيقوم wBlock بتنزيله وتثبيته لك.";
 "Pause Blocking" = "إيقاف الحظر مؤقتًا";
+"Pause components" = "المكونات المتوقفة مؤقتًا";
+"Enabled Userscripts & Userstyles" = "النصوص والأنماط المفعّلة للمستخدم";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "إيقاف الحظر مؤقتًا مفعّل عند إيقاف أي مكوّن محدد مؤقتًا. الاستئناف يعيد جميع المكونات.";
+"Temporarily pause selected components without changing their enabled settings." = "أوقف المكونات المحددة مؤقتًا دون تغيير إعدادات تفعيلها.";
 "Pausing blocking..." = "جارٍ إيقاف الحظر مؤقتًا…";
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";

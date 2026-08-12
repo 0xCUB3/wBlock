@@ -9,9 +9,24 @@
 import Foundation
 import CoreFoundation
 
+public struct BlockingPauseComponents: OptionSet, Hashable, Sendable {
+    public let rawValue: Int
+
+    public init(rawValue: Int) {
+        self.rawValue = rawValue
+    }
+
+    public static let filters = BlockingPauseComponents(rawValue: 1 << 0)
+    public static let userScripts = BlockingPauseComponents(rawValue: 1 << 1)
+    public static let elementZapper = BlockingPauseComponents(rawValue: 1 << 2)
+    public static let all: BlockingPauseComponents = [.filters, .userScripts, .elementZapper]
+}
+
 public enum BlockingPauseStore {
-    /// User defaults key backing the paused flag.
+    /// Legacy UserDefaults key backing the single paused flag.
     public static let key = "isBlockingPaused"
+    /// App-group key storing the bitmask of independently paused components.
+    public static let componentsKey = "blockingPausedComponents"
     /// Shared request key used by the extension to ask the containing app to resume.
     public static let resumeRequestKey = "blockingResumeRequested"
     public static let resumeStatusKey = "blockingResumeStatus"
@@ -26,17 +41,60 @@ public enum BlockingPauseStore {
         case failed
     }
 
-    /// Reads the paused flag from the shared app-group container.
-    public static func isPaused(groupIdentifier: String = GroupIdentifier.shared.value) -> Bool {
-        UserDefaults(suiteName: groupIdentifier)?.bool(forKey: key) ?? false
+    /// Reads the paused components, migrating the old single Boolean to all components.
+    public static func pausedComponents(
+        groupIdentifier: String = GroupIdentifier.shared.value
+    ) -> BlockingPauseComponents {
+        guard let defaults = UserDefaults(suiteName: groupIdentifier) else { return [] }
+        if let rawValue = defaults.object(forKey: componentsKey) as? NSNumber {
+            return BlockingPauseComponents(rawValue: rawValue.intValue).intersection(.all)
+        }
+
+        // Existing installations only have `isBlockingPaused`; a true value means that
+        // every component was paused by the old global switch.
+        let migrated = defaults.bool(forKey: key) ? BlockingPauseComponents.all : []
+        defaults.set(migrated.rawValue, forKey: componentsKey)
+        return migrated
     }
 
-    /// Persists the paused flag to the shared app-group container.
+    public static func isPaused(
+        _ component: BlockingPauseComponents,
+        groupIdentifier: String = GroupIdentifier.shared.value
+    ) -> Bool {
+        !pausedComponents(groupIdentifier: groupIdentifier).intersection(component).isEmpty
+    }
+
+    /// True when both output-producing blocking components are paused. User scripts are
+    /// independent and do not make the content-blocker extensions inert.
+    public static func isContentBlockingPaused(
+        groupIdentifier: String = GroupIdentifier.shared.value
+    ) -> Bool {
+        isPaused(.filters, groupIdentifier: groupIdentifier)
+            && isPaused(.elementZapper, groupIdentifier: groupIdentifier)
+    }
+
+    /// Reads the global paused state. It remains true whenever any component is paused.
+    public static func isPaused(groupIdentifier: String = GroupIdentifier.shared.value) -> Bool {
+        !pausedComponents(groupIdentifier: groupIdentifier).isEmpty
+    }
+
+    public static func setPausedComponents(
+        _ components: BlockingPauseComponents,
+        groupIdentifier: String = GroupIdentifier.shared.value
+    ) {
+        let normalized = components.intersection(.all)
+        guard let defaults = UserDefaults(suiteName: groupIdentifier) else { return }
+        defaults.set(normalized.rawValue, forKey: componentsKey)
+        defaults.set(!normalized.isEmpty, forKey: key)
+    }
+
+    /// Persists the legacy global operation: pausing selects all components and resuming
+    /// clears every component selection.
     public static func setPaused(
         _ paused: Bool,
         groupIdentifier: String = GroupIdentifier.shared.value
     ) {
-        UserDefaults(suiteName: groupIdentifier)?.set(paused, forKey: key)
+        setPausedComponents(paused ? .all : [], groupIdentifier: groupIdentifier)
     }
 
     /// Requests that the containing app run its canonical resume/apply lifecycle.

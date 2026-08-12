@@ -21,6 +21,19 @@ check(html.includes('id="paused-prompt"') && html.includes('id="resume-blocking"
   'Paused popup must expose an explicit prompt and Resume Blocking button');
 check(popup.includes("action: 'resumeBlocking'"),
   'Resume button must route through a native resume action');
+check(native.includes('"filtersPaused": components.contains(.filters)') &&
+  native.includes('"userScriptsPaused": components.contains(.userScripts)') &&
+  native.includes('"elementZapperPaused": components.contains(.elementZapper)'),
+  'Native pause state must expose each component while preserving paused');
+check(popup.includes('const filtersPaused = pauseState.filtersPaused') &&
+  popup.includes('const zapperPaused = pauseState.elementZapperPaused') &&
+  popup.includes("t('popup_status_partially_paused'") &&
+  popup.includes("t('popup_paused_partial_prompt_title'"),
+  'Popup must distinguish partial pauses in status and prompt text');
+check(popup.includes('disableToggle.disabled = filtersPaused') &&
+  popup.includes('zapperEnabledToggle.disabled = siteDisabled || zapperPaused') &&
+  popup.includes('zapperActivate.disabled = siteDisabled || zapperPaused || zapperRulesDisabled'),
+  'Popup must disable only controls owned by paused components');
 check(popup.includes("action: 'getResumeRequestStatus'"),
   'Popup must poll the app-group resume result, not infer completion from the pause flag');
 check(popup.includes("status.status === 'succeeded' && status.paused === false"),
@@ -60,7 +73,9 @@ const locales = fs.readdirSync('wBlock Scripts (iOS)/Resources/_locales');
 const english = JSON.parse(read('wBlock Scripts (iOS)/Resources/_locales/en/messages.json'));
 const requiredKeys = [
   'popup_paused_prompt_title',
+  'popup_paused_partial_prompt_title',
   'popup_paused_prompt_message',
+  'popup_status_partially_paused',
   'popup_button_resume_blocking',
   'popup_status_resuming',
   'popup_status_error',
@@ -72,6 +87,8 @@ for (const locale of locales) {
   for (const key of requiredKeys) {
     check(messages[key]?.message, `${locale} is missing ${key}`);
   }
+  check(JSON.stringify(Object.keys(messages).sort()) === JSON.stringify(Object.keys(english).sort()),
+    `${locale} must preserve popup locale key parity`);
   if (locale !== 'en') {
     check(messages.popup_error_resume_unavailable.message !== english.popup_error_resume_unavailable.message,
       `${locale} must have a real unavailable-resume translation`);
