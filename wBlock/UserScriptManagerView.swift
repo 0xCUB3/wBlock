@@ -1763,7 +1763,7 @@ struct AddUserScriptView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                Text("Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace.")
+                Text("Local imports won't auto-update; re-import to replace.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1851,7 +1851,7 @@ struct AddUserScriptView: View {
 
     private var fileImportMessage: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace.")
+            Text("Local imports won't auto-update; re-import to replace.")
                 .foregroundStyle(.secondary)
             if let fileImportError {
                 Text(fileImportError)

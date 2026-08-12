@@ -876,3 +876,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Add mode controls */
 "Text" = "テキスト";
 "Choose File" = "ファイルを選択";
+"Local imports won't auto-update; re-import to replace." = "ローカルインポートは自動更新されません。置き換えるには再インポートしてください。";

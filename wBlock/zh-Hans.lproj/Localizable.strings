@@ -876,3 +876,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Add mode controls */
 "Text" = "文本";
 "Choose File" = "选择文件";
+"Local imports won't auto-update; re-import to replace." = "本地导入不会自动更新；请重新导入以替换。";

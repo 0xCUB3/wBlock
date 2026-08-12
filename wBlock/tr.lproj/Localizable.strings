@@ -876,3 +876,4 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 /* Add mode controls */
 "Text" = "Metin";
 "Choose File" = "Dosya Seç";
+"Local imports won't auto-update; re-import to replace." = "Yerel içe aktarmalar otomatik güncellenmez; değiştirmek için yeniden içe aktarın.";

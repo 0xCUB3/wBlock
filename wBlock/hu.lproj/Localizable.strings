@@ -876,3 +876,4 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 /* Add mode controls */
 "Text" = "Szöveg";
 "Choose File" = "Fájl kiválasztása";
+"Local imports won't auto-update; re-import to replace." = "A helyi importok nem frissülnek automatikusan; az új importálással cserélhetők.";

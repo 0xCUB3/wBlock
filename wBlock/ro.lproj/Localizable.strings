@@ -876,3 +876,4 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 /* Add mode controls */
 "Text" = "Text";
 "Choose File" = "Alege fișier";
+"Local imports won't auto-update; re-import to replace." = "Importurile locale nu se actualizează automat; importă din nou pentru înlocuire.";

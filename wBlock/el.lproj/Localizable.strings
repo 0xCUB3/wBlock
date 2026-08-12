@@ -876,3 +876,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Add mode controls */
 "Text" = "Κείμενο";
 "Choose File" = "Επιλογή αρχείου";
+"Local imports won't auto-update; re-import to replace." = "Οι τοπικές εισαγωγές δεν ενημερώνονται αυτόματα· εισαγάγετε ξανά για αντικατάσταση.";

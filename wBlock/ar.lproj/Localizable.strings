@@ -876,3 +876,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Add mode controls */
 "Text" = "نص";
 "Choose File" = "اختيار ملف";
+"Local imports won't auto-update; re-import to replace." = "لا يتم تحديث الاستيرادات المحلية تلقائيًا؛ أعد الاستيراد للاستبدال.";

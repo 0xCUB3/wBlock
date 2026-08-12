@@ -876,3 +876,4 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 /* Add mode controls */
 "Text" = "Texto";
 "Choose File" = "Elegir archivo";
+"Local imports won't auto-update; re-import to replace." = "Las importaciones locales no se actualizan automáticamente; vuelve a importar para reemplazarlas.";
