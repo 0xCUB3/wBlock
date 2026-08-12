@@ -1,4 +1,5 @@
 import SwiftUI
+import wBlockCoreService
 #if os(iOS)
 import UIKit
 #elseif os(macOS)

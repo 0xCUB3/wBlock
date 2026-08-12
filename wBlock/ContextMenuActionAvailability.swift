@@ -1,4 +1,5 @@
 import Foundation
+import wBlockCoreService
 
 enum FilterContextMenuAction: String {
     case info

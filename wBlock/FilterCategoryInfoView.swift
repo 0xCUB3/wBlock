@@ -1,4 +1,5 @@
 import SwiftUI
+import wBlockCoreService
 
 struct FilterCategoryInfoView: View {
     let category: FilterListCategory

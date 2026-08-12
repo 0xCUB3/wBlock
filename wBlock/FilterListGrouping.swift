@@ -1,4 +1,5 @@
 import Foundation
+import wBlockCoreService
 
 struct FilterListGroup: Identifiable {
     enum Kind: Hashable {

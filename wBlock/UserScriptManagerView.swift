@@ -1324,7 +1324,7 @@ struct UserScriptContentView: View {
         script = metadata
         updatePreview()
         isLoadingContent = false
-        if startsEditing && script.isLocal && !userScriptManager.isDefaultUserScript(script) {
+        if startsEditing && metadata.isLocal && !userScriptManager.isDefaultUserScript(metadata) {
             isShowingSourceSheet = true
         }
     }

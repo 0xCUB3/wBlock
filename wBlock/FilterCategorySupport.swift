@@ -1,4 +1,5 @@
 import Foundation
+import wBlockCoreService
 
 enum FilterCategorySupport {
     static func descriptionKey(for category: FilterListCategory) -> String {
