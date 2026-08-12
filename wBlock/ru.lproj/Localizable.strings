@@ -606,6 +606,7 @@
 "Report an Issue" = "Сообщить о проблеме";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "Нужно для пользовательских скриптов, расширенной блокировки и функций очистки";
 "Required for YouTube ad blocking and much more" = "Требуется для блокировки рекламы на YouTube и многого другого";
+"The selected file is too large. Maximum size is 10 MB." = "Выбранный файл слишком велик. Максимальный размер — 10 МБ.";
 "Requirements" = "Требования";
 "Reset Site Settings" = "Сбросить настройки сайта";
 "Resetting…" = "Сброс…";

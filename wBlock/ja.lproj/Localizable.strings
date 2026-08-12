@@ -606,6 +606,7 @@
 "Report an Issue" = "問題を報告";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "ユーザースクリプト、高度な広告ブロック、クリーナー機能に必要です";
 "Required for YouTube ad blocking and much more" = "YouTubeの広告ブロックなどに必要です";
+"The selected file is too large. Maximum size is 10 MB." = "選択したファイルが大きすぎます。最大サイズは10 MBです。";
 "Requirements" = "要件";
 "Reset Site Settings" = "サイト設定をリセット";
 "Resetting…" = "リセット中...";

@@ -606,6 +606,7 @@
 "Report an Issue" = "Bir sorun bildir";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "Kullanıcı betik dosyaları, gelişmiş reklam engelleme ve temizleyici özellikler için gereklidir";
 "Required for YouTube ad blocking and much more" = "YouTube reklam engelleme ve çok daha fazlası için gereklidir";
+"The selected file is too large. Maximum size is 10 MB." = "Seçilen dosya çok büyük. Maksimum boyut 10 MB'tır.";
 "Requirements" = "Gereksinimler";
 "Reset Site Settings" = "Site ayarlarını sıfırla";
 "Resetting…" = "Sıfırlanıyor…";

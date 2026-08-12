@@ -606,6 +606,7 @@
 "Report an Issue" = "回報問題";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "使用者腳本、進階廣告封鎖與清理功能所必需";
 "Required for YouTube ad blocking and much more" = "YouTube 廣告封鎖及更多功能所需";
+"The selected file is too large. Maximum size is 10 MB." = "所選檔案太大。最大大小為 10 MB。";
 "Requirements" = "需求";
 "Reset Site Settings" = "重置網站設定";
 "Resetting…" = "重置…";

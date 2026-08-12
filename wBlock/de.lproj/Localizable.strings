@@ -606,6 +606,7 @@
 "Report an Issue" = "Problem melden";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "Erforderlich für Userscripts, erweiterte Werbeblockierung und Cleaner-Funktionen";
 "Required for YouTube ad blocking and much more" = "Erforderlich für YouTube-Werbeblockierung und vieles mehr";
+"The selected file is too large. Maximum size is 10 MB." = "Die ausgewählte Datei ist zu groß. Die maximale Größe beträgt 10 MB.";
 "Requirements" = "Voraussetzungen";
 "Reset Site Settings" = "Website-Einstellungen zurücksetzen";
 "Resetting…" = "Zurücksetzen…";

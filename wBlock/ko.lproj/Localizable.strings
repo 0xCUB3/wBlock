@@ -606,6 +606,7 @@
 "Report an Issue" = "문제 신고";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "유저스크립트, 고급 광고 차단, 클리너 기능에 필요합니다";
 "Required for YouTube ad blocking and much more" = "YouTube 광고 차단 및 기타 기능에 필요함";
+"The selected file is too large. Maximum size is 10 MB." = "선택한 파일이 너무 큽니다. 최대 크기는 10MB입니다.";
 "Requirements" = "요구 사항";
 "Reset Site Settings" = "사이트 설정 재설정";
 "Resetting…" = "재설정 중...";

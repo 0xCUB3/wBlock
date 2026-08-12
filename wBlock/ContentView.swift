@@ -946,6 +946,28 @@ private func userListCategoryPicker(selection: Binding<FilterListCategory>) -> s
 }
 
 
+enum FilterListAddValidationMode {
+    case url
+    case text
+    case file
+}
+
+struct FilterListAddValidation {
+    static func isDuplicateName(
+        candidate: String,
+        mode: FilterListAddValidationMode,
+        urlCount: Int,
+        existingNames: [String]
+    ) -> Bool {
+        let trimmedCandidate = candidate.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedCandidate.isEmpty else { return false }
+        guard mode != .url || urlCount <= 1 else { return false }
+        return existingNames.contains {
+            $0.caseInsensitiveCompare(trimmedCandidate) == .orderedSame
+        }
+    }
+}
+
 struct AddFilterListView: View {
     @ObservedObject var filterManager: AppFilterManager
 
@@ -963,6 +985,8 @@ struct AddFilterListView: View {
     @State private var userListDescription: String = ""
     @State private var selectedCategory: FilterListCategory = .custom
     @State private var stagedFile: StagedFilterFile?
+    @State private var isStagingFile = false
+    @State private var stagingGeneration = 0
 
     private struct StagedFilterFile {
         let filename: String
@@ -1037,7 +1061,7 @@ struct AddFilterListView: View {
         #endif
         .fileImporter(
             isPresented: $showingFileImporter,
-            allowedContentTypes: [UTType.plainText, UTType.text],
+            allowedContentTypes: filterImportTypes,
             allowsMultipleSelection: false
         ) { result in
             switch result {
@@ -1193,6 +1217,7 @@ struct AddFilterListView: View {
                                 .stroke(.quaternary, lineWidth: 1)
                         )
 	                }
+                filterTextRequirementsPanel
 	            }
 	            .padding(16)
 	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
@@ -1204,6 +1229,7 @@ struct AddFilterListView: View {
                     if stagedFile != nil {
                         userListMetaFields
                     }
+                    filterFileRequirementsPanel
 	            }
 	            .padding(16)
 	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
@@ -1217,6 +1243,7 @@ struct AddFilterListView: View {
                 HStack(spacing: 10) {
                     Image(systemName: "doc")
                     Text(stagedFile?.filename ?? "Choose File")
+                    if isStagingFile { ProgressView().controlSize(.small) }
                     Spacer()
                     if stagedFile != nil {
                         Text("Change File")
@@ -1246,6 +1273,7 @@ struct AddFilterListView: View {
                 HStack {
                     Image(systemName: "doc")
                     Text(stagedFile?.filename ?? "Choose File")
+                    if isStagingFile { ProgressView().controlSize(.small) }
                     Spacer()
                     if stagedFile != nil {
                         Text("Change File").foregroundStyle(.secondary)
@@ -1320,6 +1348,9 @@ struct AddFilterListView: View {
                 SyntaxHighlightingTextView(text: $pastedRules)
                     .frame(minHeight: 220)
             }
+            Section {
+                filterTextRequirementsPanel
+            }
         }
     }
 
@@ -1340,6 +1371,9 @@ struct AddFilterListView: View {
                                 .autocorrectionDisabled()
                             userListCategoryPicker(selection: $selectedCategory)
                         }
+                    }
+                    Section {
+                        filterFileRequirementsPanel
                     } footer: {
                         if let importErrorMessage {
                             Text(importErrorMessage).foregroundStyle(.orange)
@@ -1347,6 +1381,29 @@ struct AddFilterListView: View {
                     }
                 }
             }
+
+    private var filterTextRequirementsPanel: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Requirements")
+                .font(.headline)
+            requirementRow(icon: "character.cursor.ibeam", text: "Title is required.")
+            requirementRow(icon: "checkmark.circle", text: "Rules")
+        }
+        .padding(16)
+        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+    }
+
+    private var filterFileRequirementsPanel: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Requirements")
+                .font(.headline)
+            requirementRow(icon: "doc", text: "Choose File")
+            requirementRow(icon: "character.cursor.ibeam", text: "Title is required.")
+            requirementRow(icon: "checkmark.circle", text: "That doesn't look like a filter list.")
+        }
+        .padding(16)
+        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+    }
 
 	    private var filterRequirementsPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1453,7 +1510,8 @@ struct AddFilterListView: View {
             return !userListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 && !pastedRules.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .file:
-            return stagedFile != nil
+            return !isStagingFile
+                && stagedFile != nil
                 && !userListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
     }
@@ -1574,36 +1632,76 @@ struct AddFilterListView: View {
     }
     }
 
+    private var filterImportTypes: [UTType] {
+        FilterListContentValidator.supportedLocalFileExtensions.compactMap {
+            UTType(filenameExtension: $0, conformingTo: .plainText)
+        } + [UTType.json]
+    }
+
     // MARK: - Helpers
 
     private func stageFile(at url: URL) {
-        do {
-            let content = try url.withSecurityScopedAccess { accessibleURL in
-                try String(contentsOf: accessibleURL, encoding: .utf8)
-            }
-            let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmedContent.isEmpty,
-                  FilterListContentValidator.appearsToBeFilterList(trimmedContent)
-            else {
-                throw NSError(domain: "wBlock.filterImport", code: 1, userInfo: [
-                    NSLocalizedDescriptionKey: LocalizedStrings.text(
-                        "That doesn't look like a filter list.",
-                        comment: "User list validation error"
-                    )
-                ])
+        stagingGeneration += 1
+        let generation = stagingGeneration
+        isStagingFile = true
+        importErrorMessage = nil
+        let didAccess = url.startAccessingSecurityScopedResource()
+
+        Task { @MainActor in
+            defer {
+                if didAccess {
+                    url.stopAccessingSecurityScopedResource()
+                }
             }
 
-            let metadata = FilterListMetadataParser.parse(from: content, maxLines: 80)
-            stagedFile = StagedFilterFile(
-                filename: url.lastPathComponent,
-                content: content
-            )
-            let metadataTitle = metadata.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            userListTitle = metadataTitle.isEmpty ? fallbackFileName(for: url) : metadataTitle
-            userListDescription = metadata.description?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            importErrorMessage = nil
-        } catch {
-            importErrorMessage = error.localizedDescription
+            do {
+                let result = try await Task.detached(priority: .userInitiated) {
+                    () throws -> (content: String, title: String?, description: String?) in
+                    guard FilterListContentValidator.isSupportedLocalFile(url) else {
+                        throw NSError(domain: "wBlock.filterImport", code: 3, userInfo: [
+                            NSLocalizedDescriptionKey: LocalizedStrings.text(
+                                "That doesn't look like a filter list.",
+                                comment: "User list validation error"
+                            )
+                        ])
+                    }
+                    let fileSize = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+                    guard fileSize <= UserScriptImportLimits.maximumSourceFileBytes else {
+                        throw NSError(domain: "wBlock.filterImport", code: 2, userInfo: [
+                            NSLocalizedDescriptionKey: LocalizedStrings.text(
+                                "The selected file is too large. Maximum size is 10 MB.",
+                                comment: "Local filter import size error"
+                            )
+                        ])
+                    }
+                    let content = try String(contentsOf: url, encoding: .utf8)
+                    let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmedContent.isEmpty,
+                          FilterListContentValidator.appearsToBeFilterList(trimmedContent)
+                    else {
+                        throw NSError(domain: "wBlock.filterImport", code: 1, userInfo: [
+                            NSLocalizedDescriptionKey: LocalizedStrings.text(
+                                "That doesn't look like a filter list.",
+                                comment: "User list validation error"
+                            )
+                        ])
+                    }
+
+                    let metadata = FilterListMetadataParser.parse(from: content, maxLines: 80)
+                    return (content, metadata.title, metadata.description)
+                }.value
+
+                guard generation == stagingGeneration else { return }
+                stagedFile = StagedFilterFile(filename: url.lastPathComponent, content: result.content)
+                let metadataTitle = result.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                userListTitle = metadataTitle.isEmpty ? fallbackFileName(for: url) : metadataTitle
+                userListDescription = result.description?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                isStagingFile = false
+            } catch {
+                guard generation == stagingGeneration else { return }
+                isStagingFile = false
+                importErrorMessage = error.localizedDescription
+            }
         }
     }
 
@@ -1648,11 +1746,27 @@ struct AddFilterListView: View {
     }
 
     private var isCustomNameDuplicate: Bool {
-        let candidate = trimmedCustomName
-        guard newURLs.count <= 1, !candidate.isEmpty else { return false }
-        return filterManager.filterLists.contains(where: {
-            $0.name.caseInsensitiveCompare(candidate) == .orderedSame
-        })
+        FilterListAddValidation.isDuplicateName(
+            candidate: duplicateNameCandidate,
+            mode: validationMode,
+            urlCount: newURLs.count,
+            existingNames: filterManager.filterLists.map(\.name)
+        )
+    }
+
+    private var duplicateNameCandidate: String {
+        switch addMode {
+        case .url: return customName
+        case .paste, .file: return userListTitle
+        }
+    }
+
+    private var validationMode: FilterListAddValidationMode {
+        switch addMode {
+        case .url: return .url
+        case .paste: return .text
+        case .file: return .file
+        }
     }
 
     private enum ValidationState: Equatable {

@@ -72,6 +72,12 @@ public enum FilterListURLSupport {
 }
 
 public enum FilterListContentValidator {
+    public static let supportedLocalFileExtensions: Set<String> = ["txt", "list", "json"]
+
+    public static func isSupportedLocalFile(_ url: URL) -> Bool {
+        supportedLocalFileExtensions.contains(url.pathExtension.lowercased())
+    }
+
     public static func appearsToBeFilterList(_ content: String) -> Bool {
         // Fast-path: reject HTML challenge/protection pages.
         let prefix = String(content.prefix(2048))
@@ -83,7 +89,7 @@ public enum FilterListContentValidator {
 
         // Userscripts can look text-like enough to pass a permissive filter check.
         // Reject Greasemonkey/Tampermonkey metadata blocks before counting lines.
-        if containsUserScriptMetadataBlock(content) {
+        if containsUserScriptMetadataBlock(content) || containsJavaScriptContent(content) {
             return false
         }
 
@@ -105,6 +111,19 @@ public enum FilterListContentValidator {
         }
 
         return meaningfulLineCount >= 1
+    }
+
+    private static func containsJavaScriptContent(_ content: String) -> Bool {
+        let lowercased = content.lowercased()
+        return lowercased.contains("<script")
+            || lowercased.contains("console.log(")
+            || lowercased.contains("document.")
+            || lowercased.contains("window.")
+            || lowercased.contains("=>")
+            || lowercased.contains("function ")
+            || lowercased.contains("const ")
+            || lowercased.contains("let ")
+            || lowercased.contains("var ")
     }
 
     private static func containsUserScriptMetadataBlock(_ content: String) -> Bool {

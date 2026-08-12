@@ -61,6 +61,12 @@ struct FilterListValidationTests {
             "expected userscript metadata blocks to be rejected as filters"
         )
         expectInvalidContent("<html><body>challenge</body></html>", "expected HTML to be rejected")
+        expectInvalidContent("console.log('masquerading as a filter');", "expected JavaScript content to be rejected")
+        expectSupportedFile("rules.txt", "expected .txt filter files to be accepted")
+        expectSupportedFile("rules.list", "expected .list filter files to be accepted")
+        expectSupportedFile("rules.json", "expected .json filter files to be accepted")
+        expectUnsupportedFile("script.js", "expected JavaScript files to be rejected as filters")
+        expectUnsupportedFile("rules.user.js", "expected userscript files to be rejected as filters")
 
         print("PASS")
     }
@@ -98,6 +104,18 @@ struct FilterListValidationTests {
 
     private static func expectInvalidContent(_ content: String, _ message: String) {
         guard !FilterListContentValidator.appearsToBeFilterList(content) else {
+            fail(message)
+        }
+    }
+
+    private static func expectSupportedFile(_ filename: String, _ message: String) {
+        guard FilterListContentValidator.isSupportedLocalFile(URL(fileURLWithPath: filename)) else {
+            fail(message)
+        }
+    }
+
+    private static func expectUnsupportedFile(_ filename: String, _ message: String) {
+        guard !FilterListContentValidator.isSupportedLocalFile(URL(fileURLWithPath: filename)) else {
             fail(message)
         }
     }

@@ -606,6 +606,7 @@
 "Report an Issue" = "Hiba bejelentése";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "Szükséges a userscriptekhez, a fejlett hirdetésblokkoláshoz és a tisztító funkciókhoz";
 "Required for YouTube ad blocking and much more" = "Szükséges a YouTube hirdetésblokkoláshoz és sok máshoz";
+"The selected file is too large. Maximum size is 10 MB." = "A kiválasztott fájl túl nagy. A maximális méret 10 MB.";
 "Requirements" = "Követelmények";
 "Reset Site Settings" = "Webhelybeállítások visszaállítása";
 "Resetting…" = "Resetingâ¦";
