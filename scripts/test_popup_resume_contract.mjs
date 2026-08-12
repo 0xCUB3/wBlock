@@ -42,7 +42,7 @@ check(store.includes('setResumeApplying') && store.includes('setResumeSucceeded'
   'App Group store must persist applying/success/failure resume states');
 check(manager.includes('await self.handleResumeRequest()') && manager.includes('deinit {') &&
   manager.includes('NotificationCenter.default.removeObserver') &&
-  manager.includes('CFNotificationCenterGetDarwinNotifyCenter(),\n            nil,\n            Self.resumeRequestCallback'),
+  manager.includes('CFNotificationCenterGetDarwinNotifyCenter(),\n            nil,\n            AppFilterManager.resumeRequestCallback'),
   'Darwin notifications must use a process-lifetime relay and removable manager tokens');
 check(!manager.includes('Unmanaged.passUnretained(self)'),
   'Resume notification lifecycle must not retain a raw manager pointer');
