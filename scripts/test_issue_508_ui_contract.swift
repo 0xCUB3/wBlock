@@ -75,7 +75,7 @@ requireCondition(!siteSettings.contains("ZapperRuleManager"), "site settings mus
 let zapper = try source("wBlock/ElementZapperSettingsView.swift")
 require(zapper, "pendingConfirmation = .clearAll")
 require(zapper, "await dataManager.deleteZapperRule(rule, forHost: domain)")
-require(zapper, "await dataManager.restoreZapperRule(undo.rule, forHost: undo.domain, at: undo.index)")
+require(zapper, "await dataManager.restoreZapperRule(undo.rule, forHost: undo.domain, at:")
 require(zapper, "setZapperRulesDisabled(!enabled, forHost: domain)")
 require(zapper, "Changes take full effect after the next apply.")
 let settingsDestination = try source("wBlock/SettingsView.swift")
