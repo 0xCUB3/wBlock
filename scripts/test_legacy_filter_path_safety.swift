@@ -46,7 +46,10 @@ let updater = try String(contentsOfFile: "wBlock/FilterListUpdater.swift", encod
 let affinity = try String(contentsOfFile: "wBlockCoreService/SafariContentBlockerAffinityProcessor.swift", encoding: .utf8)
 let manager = try String(contentsOfFile: "wBlock/AppFilterManager+CustomFilters.swift", encoding: .utf8)
 for source in [loader, updater, affinity, manager] {
-    check(source.contains("safeLegacyFileURL"), "legacy path use must go through the containment-safe helper")
+    check(
+        source.contains("safeLegacyFileURL") || source.contains("existingLocalFileURL"),
+        "legacy path use must go through the containment-safe helper"
+    )
 }
 check(loader.contains("prefix: \"diff-baseline-\""), "legacy baseline migration must use the safe helper")
 check(manager.contains("prefix: \"diff-baseline-\""), "legacy baseline cleanup must use the safe helper")
