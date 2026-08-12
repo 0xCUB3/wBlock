@@ -108,7 +108,7 @@ enum BuiltInUserScripts {
         "https://userscripts.adtidy.org/beta/popup-blocker/2.5/popupblocker.user.js"
     static let tinyShieldURL =
         "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
-    static let tinyShieldGroupedURLPrefix =
+    static let legacyTinyShieldGroupedURLPrefix =
         "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/"
     static let tinyShieldDescription =
         "tinyShield helps block ads reinserted by Ad-Shield on matching sites."
@@ -125,23 +125,6 @@ enum BuiltInUserScripts {
         "Gives YouTube Safari-native controls, chapters, SponsorBlock skipping, picture-in-picture, background playback, quality selection, and audio-only mode."
     static let playerCleanerDescription =
         "Gives custom web players native controls, auto PiP, background playback, restored subtitle and chapter tracks, Now Playing metadata, and remembered playback preferences."
-
-    private static func tinyShieldGroupedDefinition(
-        _ domainGroup: String,
-        displayDomain: String? = nil,
-        languages: [String]
-    ) -> BuiltInUserScriptDefinition {
-        let initial = domainGroup.prefix(1).lowercased()
-        return BuiltInUserScriptDefinition(
-            name: "tinyShield (\(displayDomain ?? domainGroup))",
-            url: "\(tinyShieldGroupedURLPrefix)\(initial)/tinyShield-\(domainGroup).user.js",
-            isEnabledByDefault: false,
-            section: .foreign,
-            description: tinyShieldDescription,
-            languages: languages,
-            displayRole: .blocking
-        )
-    }
 
     static let definitions: [BuiltInUserScriptDefinition] = [
         BuiltInUserScriptDefinition(
@@ -194,25 +177,6 @@ enum BuiltInUserScripts {
             isEnabledByDefault: false,
             displayRole: .blocking
         ),
-        tinyShieldGroupedDefinition("autobild.de", languages: ["de"]),
-        tinyShieldGroupedDefinition("bild.de", languages: ["de"]),
-        tinyShieldGroupedDefinition("computerbild.de", languages: ["de"]),
-        tinyShieldGroupedDefinition("gutefrage.net", languages: ["de"]),
-        tinyShieldGroupedDefinition("welt.de", languages: ["de"]),
-        tinyShieldGroupedDefinition("geo.fr", languages: ["fr"]),
-        tinyShieldGroupedDefinition("lerobert.com", languages: ["fr"]),
-        tinyShieldGroupedDefinition("programme-tv.net", languages: ["fr"]),
-        tinyShieldGroupedDefinition("kuruma-news.jp", languages: ["ja"]),
-        tinyShieldGroupedDefinition("oricon.co.jp", languages: ["ja"]),
-        tinyShieldGroupedDefinition("toyokeizai.net", languages: ["ja"]),
-        tinyShieldGroupedDefinition("dogdrip.net", languages: ["ko"]),
-        tinyShieldGroupedDefinition("sportalkorea.com", languages: ["ko"]),
-        tinyShieldGroupedDefinition("ygosu.com", languages: ["ko"]),
-        tinyShieldGroupedDefinition("dziennik.pl", languages: ["pl"]),
-        tinyShieldGroupedDefinition("doviz.com", languages: ["tr"]),
-        tinyShieldGroupedDefinition("elnacional.cat", languages: ["ca"]),
-        tinyShieldGroupedDefinition("pravda.com.ua", languages: ["uk"]),
-        tinyShieldGroupedDefinition("slobodnadalmacija.hr", languages: ["hr"])
     ]
 
     static let protectedURLs = Set(definitions.map(\.url))
@@ -1161,6 +1125,7 @@ public class UserScriptManager: ObservableObject {
         }
 
         await migrateLegacyPopupBlockerIfNeeded()
+        await migrateLegacyTinyShieldVariantsIfNeeded()
 
         // Always check for missing default scripts first
         await checkAndAddMissingDefaultScripts()
@@ -1513,6 +1478,28 @@ public class UserScriptManager: ObservableObject {
         if needsStableDownload {
             await downloadMissingDefaultScripts()
         }
+    }
+
+    private func migrateLegacyTinyShieldVariantsIfNeeded() async {
+        let legacyScripts = userScripts.filter {
+            $0.url?.absoluteString.hasPrefix(BuiltInUserScripts.legacyTinyShieldGroupedURLPrefix) == true
+        }
+        guard !legacyScripts.isEmpty else { return }
+
+        let shouldEnableFullScript = legacyScripts.contains { $0.isEnabled }
+        for script in legacyScripts {
+            removeUserScriptFile(script)
+        }
+        userScripts.removeAll {
+            $0.url?.absoluteString.hasPrefix(BuiltInUserScripts.legacyTinyShieldGroupedURLPrefix) == true
+        }
+        if shouldEnableFullScript,
+           let fullIndex = userScripts.firstIndex(where: {
+               $0.url?.absoluteString == BuiltInUserScripts.tinyShieldURL
+           }) {
+            userScripts[fullIndex].isEnabled = true
+        }
+        await persistUserScriptsNow()
     }
 
     private func shouldPrefetchMetadata(for userScript: UserScript) -> Bool {
@@ -2850,11 +2837,9 @@ public class UserScriptManager: ObservableObject {
         let enabledScripts = userScripts.filter { $0.isEnabled }
         let matchingScripts = enabledScripts.filter { $0.matches(url: url) }
         let host = URL(string: url)?.host ?? ""
-        let runnableScripts = Self.suppressingRedundantTinyShieldVariants(
-            matchingScripts.filter {
-                !isUserScript($0, disabledOnHost: host)
-            }
-        )
+        let runnableScripts = matchingScripts.filter {
+            !isUserScript($0, disabledOnHost: host)
+        }
 
         #if DEBUG
         logger.debug(
@@ -2874,19 +2859,6 @@ public class UserScriptManager: ObservableObject {
         return hydrated.filter(BuiltInUserScripts.isCanonicalBundled)
     }
 
-    /// The grouped regional tinyShield scripts are strict subsets of the full tinyShield
-    /// script. When both would run on a page, the same code would execute twice, so the
-    /// full script wins and the grouped variants are dropped.
-    private static func suppressingRedundantTinyShieldVariants(_ scripts: [UserScript]) -> [UserScript] {
-        guard scripts.contains(where: { $0.url?.absoluteString == BuiltInUserScripts.tinyShieldURL }) else {
-            return scripts
-        }
-        return scripts.filter { script in
-            guard let urlString = script.url?.absoluteString else { return true }
-            return !urlString.hasPrefix(BuiltInUserScripts.tinyShieldGroupedURLPrefix)
-        }
-    }
-
     public func pageUserScripts(for url: String) -> [(script: UserScript, disabledForSite: Bool)] {
         guard !BlockingPauseStore.isPaused(.userScripts) else { return [] }
         let host = URL(string: url)?.host ?? ""
@@ -2896,16 +2868,7 @@ public class UserScriptManager: ObservableObject {
                 (script: script, disabledForSite: isUserScript(script, disabledOnHost: host))
             }
 
-        // Mirror the injection-time dedup: hide grouped tinyShield variants whenever the
-        // full script actually runs on this page, so the popup reflects what is injected.
-        let fullTinyShieldRuns = pageScripts.contains {
-            !$0.disabledForSite && $0.script.url?.absoluteString == BuiltInUserScripts.tinyShieldURL
-        }
-        guard fullTinyShieldRuns else { return pageScripts }
-        return pageScripts.filter { item in
-            guard let urlString = item.script.url?.absoluteString else { return true }
-            return !urlString.hasPrefix(BuiltInUserScripts.tinyShieldGroupedURLPrefix)
-        }
+        return pageScripts
     }
 
     @discardableResult

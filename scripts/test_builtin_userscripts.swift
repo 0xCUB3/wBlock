@@ -7,27 +7,6 @@ let viewSource = try String(contentsOfFile: "wBlock/UserScriptManagerView.swift"
 let onboardingSource = try String(contentsOfFile: "wBlock/OnboardingView.swift", encoding: .utf8)
 let tinyShieldURL = "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
 let tinyShieldDescription = "tinyShield helps block ads reinserted by Ad-Shield on matching sites."
-let expectedForeignGroups: [(domain: String, languages: String)] = [
-    ("autobild.de", "[\"de\"]"),
-    ("bild.de", "[\"de\"]"),
-    ("computerbild.de", "[\"de\"]"),
-    ("gutefrage.net", "[\"de\"]"),
-    ("welt.de", "[\"de\"]"),
-    ("geo.fr", "[\"fr\"]"),
-    ("lerobert.com", "[\"fr\"]"),
-    ("programme-tv.net", "[\"fr\"]"),
-    ("kuruma-news.jp", "[\"ja\"]"),
-    ("oricon.co.jp", "[\"ja\"]"),
-    ("toyokeizai.net", "[\"ja\"]"),
-    ("dogdrip.net", "[\"ko\"]"),
-    ("sportalkorea.com", "[\"ko\"]"),
-    ("ygosu.com", "[\"ko\"]"),
-    ("dziennik.pl", "[\"pl\"]"),
-    ("doviz.com", "[\"tr\"]"),
-    ("elnacional.cat", "[\"ca\"]"),
-    ("pravda.com.ua", "[\"uk\"]"),
-    ("slobodnadalmacija.hr", "[\"hr\"]"),
-]
 
 guard !source.contains("adamlui/youtube-classic") else {
     fputs("FAIL: retired YouTube Classic userscript should not be offered as a built-in\n", stderr)
@@ -49,28 +28,10 @@ guard source.contains("name: \"tinyShield\",\n            url: tinyShieldURL,\n 
     exit(1)
 }
 
-guard source.contains("suppressingRedundantTinyShieldVariants") else {
-    fputs("FAIL: grouped tinyShield variants should be suppressed when the full script runs\n", stderr)
-    exit(1)
-}
-
-for expected in expectedForeignGroups {
-    let expectedDefinition = "tinyShieldGroupedDefinition(\"\(expected.domain)\", languages: \(expected.languages))"
-    guard source.contains(expectedDefinition) else {
-        fputs("FAIL: missing foreign tinyShield userscript/language mapping for \(expected.domain)\n", stderr)
-        exit(1)
-    }
-
-    let initial = expected.domain.prefix(1).lowercased()
-    let expectedURL = "dist/grouped/\(initial)/tinyShield-\(expected.domain).user.js"
-    guard source.contains(expectedURL) || source.contains("tinyShieldGroupedDefinition(\"\(expected.domain)\", languages: \(expected.languages))") else {
-        fputs("FAIL: \(expected.domain) should use its grouped tinyShield URL\n", stderr)
-        exit(1)
-    }
-}
-
-guard source.contains("section: .foreign") else {
-    fputs("FAIL: foreign tinyShield definitions should be marked as foreign\n", stderr)
+guard !source.contains("tinyShieldGroupedDefinition")
+    && source.contains("migrateLegacyTinyShieldVariantsIfNeeded()")
+    && source.contains("legacyTinyShieldGroupedURLPrefix") else {
+    fputs("FAIL: regional tinyShield defaults must be removed and migrated to the full script\n", stderr)
     exit(1)
 }
 

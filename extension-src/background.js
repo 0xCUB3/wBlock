@@ -25611,11 +25611,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       || host.endsWith(`.${String(disabledHost).toLowerCase()}`))) {
       return [];
     }
-    const scripts = documentStartScriptCatalog.filter(script => cachedUserScriptMatchesURL(script, url));
-    const fullTinyShieldURL = "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js";
-    const groupedTinyShieldURLPrefix = "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/";
-    if (!scripts.some(script => script.sourceURL === fullTinyShieldURL)) return scripts;
-    return scripts.filter(script => !String(script.sourceURL || "").startsWith(groupedTinyShieldURLPrefix));
+    return documentStartScriptCatalog.filter(script => cachedUserScriptMatchesURL(script, url));
   };
   let nativeMessageQueue = Promise.resolve();
   const nativeMessageTimeoutMs = request => {
