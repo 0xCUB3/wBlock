@@ -17,9 +17,9 @@ let iosStart = source.range(of: ".navigationBarTitleDisplayMode(.inline)\n      
 let macOSBranch = source.range(of: "#else", range: iosStart..<source.endIndex)!.lowerBound
 let iosToolbar = String(source[iosStart..<macOSBranch])
 
-check(iosToolbar.components(separatedBy: "ToolbarItem(placement: .topBarTrailing)").count - 1 == 2,
-      "iOS logs actions must use two separate trailing toolbar items")
-check(!iosToolbar.contains("HStack"), "iOS logs actions must not be nested in an HStack")
+check(iosToolbar.components(separatedBy: "ToolbarItemGroup(placement: .topBarTrailing)").count - 1 == 1 && !iosToolbar.contains("ToolbarItem(placement: .topBarTrailing)"),
+      "iOS logs actions must share one trailing toolbar group")
+check(!iosToolbar.contains("HStack"), "iOS logs actions must rely on native toolbar-group spacing")
 check(iosToolbar.contains("Label(\"Export\", systemImage: \"square.and.arrow.up\")"),
       "iOS Export must retain its accessible label")
 check(iosToolbar.contains("Label(\"Clear\", systemImage: \"trash\")"),

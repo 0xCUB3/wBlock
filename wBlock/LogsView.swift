@@ -88,7 +88,7 @@ struct LogsView: View {
                     Text("Logs")
                         .font(.headline)
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {
                         Task {
                             exportText = await ConcurrentLogManager.shared.exportAsText(
@@ -100,8 +100,7 @@ struct LogsView: View {
                         Label("Export", systemImage: "square.and.arrow.up")
                     }
                     .accessibilityLabel("Export")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
+
                     Button {
                         Task {
                             await ConcurrentLogManager.shared.clearLogs()
