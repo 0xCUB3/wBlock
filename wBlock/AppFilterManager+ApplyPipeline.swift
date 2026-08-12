@@ -71,7 +71,8 @@ extension AppFilterManager {
     func applyChanges(
         allowUserInteraction: Bool = false,
         prepareState: Bool = true,
-        skipPreApplyUpdates: Bool = false
+        skipPreApplyUpdates: Bool = false,
+        allowPausedResume: Bool = false
     ) async {
         // When prepareState is false, the caller already holds the exclusive apply session
         // (e.g. selected-update download → apply).
@@ -80,7 +81,8 @@ extension AppFilterManager {
                 await self.applyChangesUnlocked(
                     allowUserInteraction: allowUserInteraction,
                     prepareState: true,
-                    skipPreApplyUpdates: skipPreApplyUpdates
+                    skipPreApplyUpdates: skipPreApplyUpdates,
+                    allowPausedResume: allowPausedResume
                 )
             }
             if !started {
@@ -97,14 +99,16 @@ extension AppFilterManager {
         await applyChangesUnlocked(
             allowUserInteraction: allowUserInteraction,
             prepareState: false,
-            skipPreApplyUpdates: skipPreApplyUpdates
+            skipPreApplyUpdates: skipPreApplyUpdates,
+            allowPausedResume: allowPausedResume
         )
     }
 
     private func applyChangesUnlocked(
         allowUserInteraction: Bool,
         prepareState: Bool,
-        skipPreApplyUpdates: Bool
+        skipPreApplyUpdates: Bool,
+        allowPausedResume: Bool
     ) async {
         suppressBlockingOverlay = allowUserInteraction
         defer { suppressBlockingOverlay = false }
@@ -117,7 +121,7 @@ extension AppFilterManager {
         // While blocking is globally paused, never write real rules back to disk — leave the
         // content blockers empty until the user explicitly resumes. This keeps manual Apply
         // Changes, auto-update runs, and fast disabled-site updates consistent with pause.
-        if await MainActor.run(body: { self.isBlockingPaused }) {
+        if await MainActor.run(body: { self.isBlockingPaused }) && !allowPausedResume {
             await MainActor.run {
                 self.statusDescription = LocalizedStrings.text(
                     "Blocking is paused",
@@ -925,36 +929,53 @@ extension AppFilterManager {
             }
             return started && lastApplySucceeded
         } else {
-            // Keep the shared pause flag true while the app is unavailable or before the
-            // canonical apply starts. If apply fails, restore it so extensions never expose
-            // a partially rebuilt configuration as active.
-            lastApplySucceeded = false
-            BlockingPauseStore.setResumeApplying()
-            BlockingPauseStore.setPaused(false)
-            UserScriptManager.invalidateDocumentStartExecutionCache()
-            await MainActor.run { self.isBlockingPaused = false }
-            await applyChanges()
-            let succeeded = lastApplySucceeded && !hasError
-            if succeeded {
+            // Keep both pause flags true while the canonical apply rebuilds the real
+            // configuration. Only publish unpaused after every apply/reload succeeds.
+            let started = await performExclusiveApply {
+                lastApplySucceeded = false
+                BlockingPauseStore.setResumeApplying()
+                BlockingPauseStore.setPaused(true)
+                UserScriptManager.invalidateDocumentStartExecutionCache()
                 await MainActor.run {
+                    self.isBlockingPaused = true
                     self.statusDescription = LocalizedStrings.text(
-                        "Blocking resumed",
+                        "Applying filters...\n(This may take a while)",
                         comment: "Apply pipeline resume status"
                     )
                 }
-            } else {
-                BlockingPauseStore.setPaused(true)
-                await MainActor.run {
-                    self.isBlockingPaused = true
-                    if self.statusDescription.isEmpty {
+                await applyChangesUnlocked(
+                    allowUserInteraction: false,
+                    prepareState: true,
+                    skipPreApplyUpdates: false,
+                    allowPausedResume: true
+                )
+
+                let succeeded = lastApplySucceeded && !hasError
+                if succeeded {
+                    // The apply has committed real rules before this single shared-state
+                    // transition. Extensions cannot observe active state prematurely.
+                    BlockingPauseStore.setPaused(false)
+                    await MainActor.run {
+                        self.isBlockingPaused = false
                         self.statusDescription = LocalizedStrings.text(
-                            "Failed to resume blocking.",
-                            comment: "Apply pipeline resume failure status"
+                            "Blocking resumed",
+                            comment: "Apply pipeline resume status"
                         )
+                    }
+                } else {
+                    BlockingPauseStore.setPaused(true)
+                    await MainActor.run {
+                        self.isBlockingPaused = true
+                        if self.statusDescription.isEmpty {
+                            self.statusDescription = LocalizedStrings.text(
+                                "Failed to resume blocking.",
+                                comment: "Apply pipeline resume failure status"
+                            )
+                        }
                     }
                 }
             }
-            return succeeded
+            return started && lastApplySucceeded && !BlockingPauseStore.isPaused()
         }
     }
 

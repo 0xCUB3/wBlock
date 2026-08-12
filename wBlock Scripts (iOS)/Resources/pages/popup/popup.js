@@ -563,6 +563,8 @@ async function resumeBlocking() {
     if (response.status === 'succeeded' && response.paused === false) {
         return { status: 'succeeded' };
     }
+    // A wake failure only means the app was not launched by this request. Keep polling
+    // briefly because a resident containing app can still consume the Darwin request.
     if (typeof response.status !== 'string') {
         return { status: 'unavailable' };
     }
@@ -1051,7 +1053,7 @@ function setupListeners() {
                 await refreshUi();
             } catch (error) {
                 console.error('[wBlock] Failed to resume blocking:', error);
-                setError((error && error.message) || t('popup_error_resume_blocking', undefined, 'Failed to resume blocking.'));
+                setError(t('popup_error_resume_blocking', undefined, 'Failed to resume blocking.'));
                 resumeButton.disabled = false;
                 resumeButton.removeAttribute('aria-busy');
                 setStatus(t('popup_status_paused', undefined, 'Paused'), 'disabled');

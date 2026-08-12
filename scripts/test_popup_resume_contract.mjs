@@ -29,18 +29,30 @@ check(popup.includes("status.status === 'failed'"),
   'Popup must render terminal apply failures');
 check(popup.includes("status: 'unavailable'"),
   'Popup must distinguish an unavailable containing app from apply failure');
+check(popup.includes('resident containing app') && popup.includes("status: 'unavailable'"),
+  'Popup must allow resident-app polling and use unavailable only after the terminal poll timeout');
 check(popup.includes("popup_error_resume_unavailable"),
   'Unavailable resume must explain that wBlock must be opened');
 check(popup.includes("? t('popup_status_paused'"),
   'Resume failure/unavailability must leave the popup in the paused state');
-check(native.includes('case "getResumeRequestStatus":') && native.includes('"status": resumeStatus.status.rawValue'),
-  'Native bridge must expose the shared terminal resume status');
+check(native.includes('case "getResumeRequestStatus":') && native.includes('"status": resumeStatus.status.rawValue') &&
+  native.includes('requestContainingAppWake') && native.includes('"wakeSupported": wake.supported'),
+  'Native bridge must expose terminal status and the platform wake acknowledgement');
 check(store.includes('setResumeApplying') && store.includes('setResumeSucceeded') && store.includes('setResumeFailed'),
   'App Group store must persist applying/success/failure resume states');
-check(manager.includes('await self.handleResumeRequest()') && manager.includes('deinit {') && manager.includes('CFNotificationCenterRemoveObserver'),
-  'Darwin observer must be removed before the manager is destroyed');
-check(pipeline.includes('BlockingPauseStore.setPaused(true)') && pipeline.includes('return succeeded'),
-  'Resume must roll the pause flag back on apply failure and return terminal state');
+check(manager.includes('await self.handleResumeRequest()') && manager.includes('deinit {') &&
+  manager.includes('NotificationCenter.default.removeObserver') &&
+  manager.includes('CFNotificationCenterGetDarwinNotifyCenter(),\n            nil,\n            Self.resumeRequestCallback'),
+  'Darwin notifications must use a process-lifetime relay and removable manager tokens');
+check(!manager.includes('Unmanaged.passUnretained(self)'),
+  'Resume notification lifecycle must not retain a raw manager pointer');
+check(pipeline.includes('allowPausedResume: true') && pipeline.includes('BlockingPauseStore.setPaused(true)') &&
+  pipeline.includes('BlockingPauseStore.setPaused(false)') && pipeline.includes('return started && lastApplySucceeded'),
+  'Resume must apply while still paused, publish unpaused only after success, and return terminal state');
+const resumeApply = pipeline.indexOf('allowPausedResume: true');
+const publishUnpaused = pipeline.indexOf('BlockingPauseStore.setPaused(false)', resumeApply);
+check(resumeApply >= 0 && publishUnpaused > resumeApply,
+  'Resume must not clear the shared pause flag before the canonical apply begins');
 check(background.includes('path: blockingPaused || siteDisabled ? DISABLED_ACTION_ICON : DEFAULT_ACTION_ICON'),
   'Toolbar icon must remain disabled while paused');
 
@@ -88,5 +100,11 @@ check(await resolveResume([
   { status: 'pending', paused: true },
   { status: 'pending', paused: true },
 ]) === 'unavailable', 'A terminated app must become unavailable, not Active');
+check(popup.includes('20; attempt += 1') && popup.includes('return { status: \'unavailable\' }'),
+  'Resume polling must have a bounded timeout that preserves paused UX');
+check(await (async () => {
+  const response = { ok: true, status: 'pending', paused: true, wakeSupported: false };
+  return response.wakeSupported === false ? 'unavailable' : 'poll';
+})() === 'unavailable', 'Unsupported iOS wake must prompt the user instead of polling');
 
 console.log('PASS: popup resume terminal-state, lifecycle, and localization contract');

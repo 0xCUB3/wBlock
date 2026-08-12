@@ -480,18 +480,29 @@ public enum WebExtensionRequestHandler {
 
     private static func handleResumeBlocking(context: NSExtensionContext) {
         let paused = BlockingPauseStore.isPaused()
+        let wake: (supported: Bool, attempted: Bool, succeeded: Bool, error: String?)
         if paused {
-            // The containing app consumes this request and reports the terminal result
-            // only after its canonical resume/apply lifecycle completes.
+            // Queue the request before waking the app. On macOS the Safari extension
+            // host can ask Launch Services to start/activate wBlock; the shared status
+            // token is still the only success acknowledgement. iOS Safari extensions
+            // have no supported API to launch their containing app, so the popup must
+            // tell the user to open wBlock instead of pretending that polling succeeded.
             BlockingPauseStore.requestResume()
+            let wakeResult = requestContainingAppWake()
+            wake = (wakeResult.supported, wakeResult.attempted, wakeResult.opened, wakeResult.error)
+        } else {
+            wake = (true, false, true, nil)
         }
         let resumeStatus = BlockingPauseStore.resumeStatus()
         let response = createResponse(with: [
             "ok": true,
             "requested": paused,
-            "paused": paused,
-            "status": resumeStatus.status.rawValue,
-            "error": resumeStatus.error
+            "paused": BlockingPauseStore.isPaused(),
+            "status": paused ? resumeStatus.status.rawValue : BlockingPauseStore.ResumeStatus.succeeded.rawValue,
+            "error": wake.error ?? resumeStatus.error,
+            "wakeSupported": wake.supported,
+            "wakeAttempted": wake.attempted,
+            "wakeSucceeded": wake.succeeded
         ])
         context.completeRequest(returningItems: [response])
     }
@@ -535,21 +546,32 @@ public enum WebExtensionRequestHandler {
         context.completeRequest(returningItems: [response])
     }
 
-    private static func handleOpenContainingApp(context: NSExtensionContext) {
-        let opened: Bool
-        let error: String?
-
+    private static func requestContainingAppWake() -> (supported: Bool, attempted: Bool, opened: Bool, error: String?) {
         #if os(macOS)
-        opened = NSWorkspace.shared.open(URL(string: "wblockapp://open")!)
-        error = opened ? nil : "Failed to open the app"
+        let opened = NSWorkspace.shared.open(URL(string: "wblockapp://open")!)
+        return (
+            supported: true,
+            attempted: true,
+            opened: opened,
+            error: opened ? nil : "Failed to open wBlock. Open it manually to resume blocking."
+        )
         #else
-        opened = false
-        error = "Unavailable on iOS"
+        // Safari's iOS web-extension host cannot call UIApplication.open or otherwise
+        // wake the containing app. This is a platform limitation, not an apply result.
+        return (
+            supported: false,
+            attempted: false,
+            opened: false,
+            error: "Open wBlock to resume blocking."
+        )
         #endif
+    }
 
+    private static func handleOpenContainingApp(context: NSExtensionContext) {
+        let wake = requestContainingAppWake()
         let response = createResponse(with: [
-            "opened": opened,
-            "error": error
+            "opened": wake.opened,
+            "error": wake.error
         ])
         context.completeRequest(returningItems: [response])
     }

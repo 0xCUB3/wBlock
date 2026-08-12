@@ -9,6 +9,10 @@ import SwiftUI
 import CoreFoundation
 import wBlockCoreService
 
+private extension Notification.Name {
+    static let wBlockResumeRequest = Notification.Name("wBlockResumeRequest")
+}
+
 #if os(macOS)
     let APP_CONTENT_BLOCKER_ID = "skula.wBlock.wBlock-Filters"
 #else
@@ -68,16 +72,13 @@ class AppFilterManager: ObservableObject {
     let logManager: ConcurrentLogManager
     let dataManager = ProtobufDataManager.shared
     private var setupTask: Task<Void, Never>?
+    private var resumeRequestObserver: NSObjectProtocol?
 
     deinit {
         setupTask?.cancel()
-        let center = CFNotificationCenterGetDarwinNotifyCenter()
-        CFNotificationCenterRemoveObserver(
-            center,
-            Unmanaged.passUnretained(self).toOpaque(),
-            CFNotificationName(rawValue: BlockingPauseStore.resumeRequestNotificationName as CFString),
-            nil
-        )
+        if let resumeRequestObserver {
+            NotificationCenter.default.removeObserver(resumeRequestObserver)
+        }
     }
 
     // Per-site disable tracking
@@ -206,16 +207,34 @@ class AppFilterManager: ObservableObject {
         }
     }
 
-    private func registerResumeRequestObserver() {
+    private static let resumeRequestRelay: Void = {
         let notificationName = BlockingPauseStore.resumeRequestNotificationName as CFString
+        // Darwin notifications do not retain their observer pointer. Keep this relay
+        // process-global and forward locally; individual managers own removable
+        // NotificationCenter tokens instead of registering an unowned self pointer.
         CFNotificationCenterAddObserver(
             CFNotificationCenterGetDarwinNotifyCenter(),
-            Unmanaged.passUnretained(self).toOpaque(),
+            nil,
             Self.resumeRequestCallback,
             notificationName,
             nil,
             .deliverImmediately
         )
+    }()
+
+    private func registerResumeRequestObserver() {
+        _ = Self.resumeRequestRelay
+        resumeRequestObserver = NotificationCenter.default.addObserver(
+            forName: .wBlockResumeRequest,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                guard BlockingPauseStore.consumeResumeRequest() else { return }
+                await self.handleResumeRequest()
+            }
+        }
 
         if BlockingPauseStore.consumeResumeRequest() {
             Task { @MainActor [weak self] in
@@ -237,15 +256,8 @@ class AppFilterManager: ObservableObject {
         }
     }
 
-    private static let resumeRequestCallback: CFNotificationCallback = { _, observer, _, _, _ in
-        guard let observer else { return }
-        // Resolve the pointer while the notification observer is still registered. The
-        // observer is removed in deinit, and the task captures only a weak manager.
-        let manager = Unmanaged<AppFilterManager>.fromOpaque(observer).takeUnretainedValue()
-        Task { @MainActor [weak manager] in
-            guard BlockingPauseStore.consumeResumeRequest(), let manager else { return }
-            await manager.handleResumeRequest()
-        }
+    private static let resumeRequestCallback: CFNotificationCallback = { _, _, _, _, _ in
+        NotificationCenter.default.post(name: .wBlockResumeRequest, object: nil)
     }
 
     /// Resets the manager to its initial state so onboarding can run again.
