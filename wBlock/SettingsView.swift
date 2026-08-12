@@ -506,14 +506,11 @@ struct SettingsView: View {
             Button(role: .destructive) {
                 showingRestartConfirmation = true
             } label: {
-                HStack {
-                    if isRestarting {
-                        ProgressView()
-                            .progressViewStyle(.circular)
-                            .padding(.trailing, 8)
-                    }
-                    Text(isRestarting ? "Restarting…" : "Restart Onboarding")
-                }
+                Label(
+                    isRestarting ? "Restarting…" : "Restart Onboarding",
+                    systemImage: isRestarting ? "hourglass" : "arrow.counterclockwise"
+                )
+                .frame(maxWidth: .infinity)
             }
             .disabled(isRestarting)
         }
