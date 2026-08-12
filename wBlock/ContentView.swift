@@ -1101,12 +1101,20 @@ struct AddFilterListView: View {
         let content: String
     }
 
-    private enum AddMode: String, CaseIterable, Identifiable {
+    private enum AddMode: String, CaseIterable, Identifiable, AddContentMode {
         case url = "URL"
         case paste = "Text"
         case file = "File"
 
         var id: String { rawValue }
+        var localizedTitle: LocalizedStringKey { LocalizedStringKey(rawValue) }
+        var systemImage: String {
+            switch self {
+            case .url: return "link"
+            case .paste: return "text.alignleft"
+            case .file: return "doc"
+            }
+        }
     }
 
     @State private var addMode: AddMode = .url
@@ -1235,21 +1243,7 @@ struct AddFilterListView: View {
 	        }
 
 	        private var modePickerCard: some View {
-	            HStack(spacing: 10) {
-	                Picker("", selection: $addMode) {
-	                    ForEach(AddMode.allCases) { mode in
-	                        Text(LocalizedStringKey(mode.rawValue)).tag(mode)
-	                    }
-	                }
-	                .pickerStyle(.segmented)
-	                .labelsHidden()
-	                .controlSize(.small)
-	                .animation(.easeInOut(duration: 0.15), value: addMode)
-
-	                Spacer(minLength: 0)
-	            }
-	            .padding(16)
-	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+	            AddContentModePicker(selection: $addMode)
 	        }
 
 	        @ViewBuilder
@@ -1491,51 +1485,29 @@ struct AddFilterListView: View {
             }
 
     private var filterTextRequirementsPanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Requirements")
-                .font(.headline)
-            requirementRow(icon: "character.cursor.ibeam", text: "Title is required.")
-            requirementRow(icon: "checkmark.circle", text: "Rules")
-        }
-        .padding(16)
-        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+        AddContentRequirementsPanel(requirements: [
+            AddContentRequirement(systemImage: "character.cursor.ibeam", text: "Title is required."),
+            AddContentRequirement(systemImage: "checkmark.circle", text: "Rules")
+        ])
     }
 
     private var filterFileRequirementsPanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Requirements")
-                .font(.headline)
-            requirementRow(icon: "doc", text: "Choose File")
-            requirementRow(icon: "character.cursor.ibeam", text: "Title is required.")
-            requirementRow(icon: "checkmark.circle", text: "That doesn't look like a filter list.")
-        }
-        .padding(16)
-        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+        AddContentRequirementsPanel(requirements: [
+            AddContentRequirement(systemImage: "doc", text: "Choose File"),
+            AddContentRequirement(systemImage: "character.cursor.ibeam", text: "Title is required."),
+            AddContentRequirement(systemImage: "checkmark.circle", text: "That doesn't look like a filter list.")
+        ])
     }
 
 	    private var filterRequirementsPanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Requirements")
-                .font(.headline)
-            requirementRow(icon: "link", text: "Use a valid http:// or https:// URL")
-            requirementRow(icon: "globe", text: "Include a host name")
-            requirementRow(icon: "checkmark.circle", text: "Do not use a userscript URL ending in .js, .mjs, or .cjs")
-            Text("wBlock will fetch and enable the filter list automatically")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(16)
-        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
-    }
-
-    private func requirementRow(icon: String, text: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .foregroundStyle(.secondary)
-            Text(LocalizedStringKey(text))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
+        AddContentRequirementsPanel(
+            requirements: [
+                AddContentRequirement(systemImage: "link", text: "Use a valid http:// or https:// URL"),
+                AddContentRequirement(systemImage: "globe", text: "Include a host name"),
+                AddContentRequirement(systemImage: "checkmark.circle", text: "Do not use a userscript URL ending in .js, .mjs, or .cjs")
+            ],
+            footer: "wBlock will fetch and enable the filter list automatically"
+        )
     }
 
 	    private var urlInputEditor: some View {

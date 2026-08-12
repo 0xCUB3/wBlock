@@ -1799,12 +1799,20 @@ struct AddUserScriptView: View {
         let parsed: UserScript
     }
 
-    private enum AddMode: String, CaseIterable, Identifiable {
+    private enum AddMode: String, CaseIterable, Identifiable, AddContentMode {
         case url = "URL"
         case text = "Text"
         case file = "File"
 
         var id: String { rawValue }
+        var localizedTitle: LocalizedStringKey { LocalizedStringKey(rawValue) }
+        var systemImage: String {
+            switch self {
+            case .url: return "link"
+            case .text: return "text.alignleft"
+            case .file: return "doc"
+            }
+        }
     }
 
     var body: some View {
@@ -2076,21 +2084,7 @@ struct AddUserScriptView: View {
     }
 
     private var modePickerCard: some View {
-        HStack(spacing: 10) {
-            Picker("", selection: $addMode) {
-                ForEach(AddMode.allCases) { mode in
-                    Text(LocalizedStringKey(mode.rawValue)).tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .controlSize(.small)
-            .animation(.easeInOut(duration: 0.15), value: addMode)
-
-            Spacer(minLength: 0)
-        }
-        .padding(16)
-        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+        AddContentModePicker(selection: $addMode)
     }
 
     @ViewBuilder
@@ -2219,35 +2213,25 @@ struct AddUserScriptView: View {
     }
 
     private var requirementsPanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Requirements", systemImage: "info.circle")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-            requirementRow(icon: "link", text: "Starts with http:// or https://")
-            requirementRow(icon: "doc.text", text: "Ends with .js, .user.js, or .user.css")
-            requirementRow(icon: "checkmark.shield", text: "Hosted on a trusted source")
-            requirementRow(icon: "doc.badge.gearshape", text: metadataRequirementText)
-        }
-        .padding(20)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        AddContentRequirementsPanel(requirements: [
+            AddContentRequirement(systemImage: "link", text: "Starts with http:// or https://"),
+            AddContentRequirement(systemImage: "doc.text", text: "Ends with .js, .user.js, or .user.css"),
+            AddContentRequirement(systemImage: "checkmark.shield", text: "Hosted on a trusted source"),
+            AddContentRequirement(systemImage: "doc.badge.gearshape", text: metadataRequirementText)
+        ])
     }
 
     private var editorRequirementsPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Requirements", systemImage: "info.circle")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-            Text(metadataRequirementText)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+            AddContentRequirementsPanel(requirements: [
+                AddContentRequirement(systemImage: "doc.badge.gearshape", text: metadataRequirementText)
+            ])
             if let editorImportError {
                 Text(editorImportError)
                     .font(.footnote)
                     .foregroundStyle(.orange)
             }
         }
-        .padding(16)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
     }
 
     private var userScriptCategoryPicker: some View {
@@ -2288,16 +2272,9 @@ struct AddUserScriptView: View {
     }
 
     private var fileRequirementsPanel: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label("Requirements", systemImage: "info.circle")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-            Text(metadataRequirementText)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(16)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        AddContentRequirementsPanel(requirements: [
+            AddContentRequirement(systemImage: "doc.badge.gearshape", text: metadataRequirementText)
+        ])
     }
 
     private var compactPasteButton: some View {
@@ -2361,15 +2338,6 @@ struct AddUserScriptView: View {
         .animation(.easeInOut(duration: 0.15), value: validationState)
     }
 
-    private func requirementRow(icon: String, text: LocalizedStringKey) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .foregroundStyle(.secondary)
-            Text(text)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-    }
 
     private var addButton: some View {
         Button(action: submit) {
