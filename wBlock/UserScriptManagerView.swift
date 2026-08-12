@@ -961,6 +961,7 @@ struct UserScriptInfoSidebar: View {
     @Binding var isPatternsExpanded: Bool
     let formatFileSize: (Int) -> String
     let isBundled: Bool
+    let isBuiltIn: Bool
     let isBeta: Bool
     let onUpdatesAutomaticallyChanged: (Bool) -> Void
     var body: some View {
@@ -969,7 +970,7 @@ struct UserScriptInfoSidebar: View {
             ScriptStatusBadgesView(
                 script: script,
                 isDownloaded: contentLength > 0,
-                isBuiltIn: isBundled
+                isBuiltIn: isBuiltIn
             )
             // Bundled scripts update with the app, so auto-update controls are noise.
             if !isBundled && (script.url != nil || script.updateURL != nil || script.downloadURL != nil) {
@@ -1082,6 +1083,7 @@ struct UserScriptContentView: View {
                                 isPatternsExpanded: $isPatternsExpanded,
                                 formatFileSize: formatFileSize,
                                 isBundled: userScriptManager.isBundled(for: script),
+                                isBuiltIn: userScriptManager.isDefaultUserScript(script),
                                 isBeta: userScriptManager.isBeta(for: script),
                                 onUpdatesAutomaticallyChanged: setUpdatesAutomatically
                             )
@@ -1174,6 +1176,7 @@ struct UserScriptContentView: View {
                         isPatternsExpanded: $isPatternsExpanded,
                         formatFileSize: formatFileSize,
                         isBundled: userScriptManager.isBundled(for: script),
+                        isBuiltIn: userScriptManager.isDefaultUserScript(script),
                         isBeta: userScriptManager.isBeta(for: script),
                         onUpdatesAutomaticallyChanged: setUpdatesAutomatically
                     )
