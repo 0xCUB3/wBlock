@@ -1705,7 +1705,7 @@ struct AddUserScriptView: View {
             )
             .padding(.horizontal, 20)
 
-            editorImportMessage
+            editorRequirementsPanel
                 .padding(.horizontal, 20)
 
             userScriptMetaFields
@@ -1826,9 +1826,6 @@ struct AddUserScriptView: View {
                 Text("Script or Style URL")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text("Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
 
             VStack(spacing: 8) {
@@ -1882,7 +1879,7 @@ struct AddUserScriptView: View {
                     .stroke(.quaternary, lineWidth: 1)
             )
 
-            editorImportMessage
+            editorRequirementsPanel
             userScriptMetaFields
         }
         .padding(16)
@@ -1947,6 +1944,10 @@ struct AddUserScriptView: View {
         "Add"
     }
 
+    private var metadataRequirementText: LocalizedStringKey {
+        "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns."
+    }
+
     private var requirementsPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Requirements", systemImage: "info.circle")
@@ -1955,21 +1956,28 @@ struct AddUserScriptView: View {
             requirementRow(icon: "link", text: "Starts with http:// or https://")
             requirementRow(icon: "doc.text", text: "Ends with .js, .user.js, or .user.css")
             requirementRow(icon: "checkmark.shield", text: "Hosted on a trusted source")
+            requirementRow(icon: "doc.badge.gearshape", text: metadataRequirementText)
         }
         .padding(20)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
     }
 
-    private var editorImportMessage: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns.")
+    private var editorRequirementsPanel: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Requirements", systemImage: "info.circle")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            Text(metadataRequirementText)
+                .font(.footnote)
                 .foregroundStyle(.secondary)
             if let editorImportError {
                 Text(editorImportError)
+                    .font(.footnote)
                     .foregroundStyle(.orange)
             }
         }
-        .font(.footnote)
+        .padding(16)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
     }
 
     private var userScriptCategoryPicker: some View {
@@ -2014,7 +2022,7 @@ struct AddUserScriptView: View {
             Label("Requirements", systemImage: "info.circle")
                 .font(.headline)
                 .foregroundStyle(.secondary)
-            Text("The file must include userscript or userstyle metadata.")
+            Text(metadataRequirementText)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -2113,7 +2121,7 @@ struct AddUserScriptView: View {
         .animation(.easeInOut(duration: 0.15), value: validationState)
     }
 
-    private func requirementRow(icon: String, text: String) -> some View {
+    private func requirementRow(icon: String, text: LocalizedStringKey) -> some View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .foregroundStyle(.secondary)
