@@ -149,8 +149,8 @@ enum BuiltInUserScripts {
             url: tubeCleanerURL,
             isEnabledByDefault: false,
             description: tubeCleanerDescription,
-            bundledContent: BundledUserScriptSources.tubeCleaner,
             displayRole: .functionality,
+            bundledContent: BundledUserScriptSources.tubeCleaner,
             isBeta: true
         ),
         BuiltInUserScriptDefinition(
@@ -158,8 +158,8 @@ enum BuiltInUserScripts {
             url: playerCleanerURL,
             isEnabledByDefault: false,
             description: playerCleanerDescription,
-            bundledContent: BundledUserScriptSources.playerCleaner,
             displayRole: .functionality,
+            bundledContent: BundledUserScriptSources.playerCleaner,
             isBeta: true
         ),
         BuiltInUserScriptDefinition(
