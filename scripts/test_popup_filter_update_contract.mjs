@@ -18,16 +18,16 @@ const background = read('extension-src/background.js');
 const native = read('wBlockCoreService/WebExtensionRequestHandler.swift');
 const xpc = read('wBlockCoreService/FilterUpdateXPC.swift');
 const service = read('FilterUpdateService/FilterUpdateService.swift');
+const manager = read('wBlock/AppFilterManager.swift');
 const popupStatus = read('wBlockCoreService/FilterUpdatePopupStatus.swift');
 
 check(html.includes('id="update-filters"') && html.includes('id="filter-update-status"'),
   'popup must expose an accessible update action and live status');
-check(html.includes('class="filter-update-action"') &&
+check(html.includes('class="popup-actions"') && html.includes('class="popup-action-row"') &&
   !html.includes('class="section filter-update-section"') &&
-  !html.includes('class="filter-update-row"') &&
   !html.includes('data-i18n="popup_filter_update_label"') &&
-  css.includes('.filter-update-action {') && css.includes('align-items: center;'),
-  'Update Filters must be a centered standalone action without a title or card');
+  css.includes('.popup-action-row .btn {') && css.includes('flex: 1 1 0;') && css.includes('width: 0;'),
+  'Update Filters and Resume Blocking must share one equal-width action row');
 check(popup.includes("action: 'wblock:filterUpdate:start'") &&
   popup.includes("action: 'wblock:filterUpdate:getStatus'"),
   'popup must use the registered background bridge for start and status requests');
@@ -52,11 +52,18 @@ check(background.includes('message.action === "wblock:filterUpdate:getStatus"') 
 check(native.includes('case "startFilterUpdate":') &&
   native.includes('case "getFilterUpdateStatus":'),
   'native handler must register both update actions');
-check(service.includes('maybeRunAutoUpdate(') && service.includes('force: true'),
-  'popup start must reuse the forced shared auto-update pipeline');
+check(manager.includes('handleFilterUpdateRequest()') &&
+  manager.includes('trigger: "Popup"') && manager.includes('force: true') &&
+  manager.includes('FilterUpdatePopupStatus.finish(outcome)'),
+  'resident-app popup requests must run and publish the forced shared update directly');
+check(native.includes('NSRunningApplication.runningApplications') &&
+  native.includes('FilterUpdatePopupStatus.requestUpdate()') &&
+  popupStatus.includes('CFNotificationCenterPostNotification') &&
+  manager.includes('CFNotificationCenterAddObserver'),
+  'native start must signal a running app without activating or foregrounding it');
 check(service.includes('FilterUpdatePopupStatus.beginIfIdle()') &&
   service.includes('FilterUpdatePopupStatus.finish(outcome)'),
-  'XPC service must claim and publish lifecycle status');
+  'XPC fallback must retain lifecycle status for a terminated app');
 check(xpc.includes('public func startFilterUpdate') && xpc.includes('filterProxy.startFilterUpdate'),
   'XPC bridge must expose an acknowledged background start request');
 check(popupStatus.includes('.noFilterUpdates') && popupStatus.includes('case .failed(let message)'),

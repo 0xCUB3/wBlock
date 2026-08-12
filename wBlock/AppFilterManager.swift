@@ -11,6 +11,7 @@ import wBlockCoreService
 
 private extension Notification.Name {
     static let wBlockResumeRequest = Notification.Name("wBlockResumeRequest")
+    static let wBlockFilterUpdateRequest = Notification.Name("wBlockFilterUpdateRequest")
 }
 
 #if os(macOS)
@@ -102,12 +103,17 @@ class AppFilterManager: ObservableObject {
     let dataManager = ProtobufDataManager.shared
     private var setupTask: Task<Void, Never>?
     private var resumeRequestObserver: NSObjectProtocol?
+    private var filterUpdateRequestObserver: NSObjectProtocol?
     private var resumeApplyInFlight = false
+    private var filterUpdateInFlight = false
 
     deinit {
         setupTask?.cancel()
         if let resumeRequestObserver {
             NotificationCenter.default.removeObserver(resumeRequestObserver)
+        }
+        if let filterUpdateRequestObserver {
+            NotificationCenter.default.removeObserver(filterUpdateRequestObserver)
         }
     }
 
@@ -267,6 +273,7 @@ class AppFilterManager: ObservableObject {
         self.pausedComponents = BlockingPauseStore.pausedComponents()
         self.isBlockingPaused = !self.pausedComponents.isEmpty
         registerResumeRequestObserver()
+        registerFilterUpdateRequestObserver()
 
         // Wait for ProtobufDataManager to finish loading before setting up.
         setupTask = Task { @MainActor [weak self] in
@@ -337,6 +344,54 @@ class AppFilterManager: ObservableObject {
 
     private static let resumeRequestCallback: CFNotificationCallback = { _, _, _, _, _ in
         NotificationCenter.default.post(name: .wBlockResumeRequest, object: nil)
+    }
+
+    private static let filterUpdateRequestRelay: Void = {
+        CFNotificationCenterAddObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            nil,
+            AppFilterManager.filterUpdateRequestCallback,
+            FilterUpdatePopupStatus.requestNotificationName as CFString,
+            nil,
+            .deliverImmediately
+        )
+    }()
+
+    private func registerFilterUpdateRequestObserver() {
+        _ = Self.filterUpdateRequestRelay
+        filterUpdateRequestObserver = NotificationCenter.default.addObserver(
+            forName: .wBlockFilterUpdateRequest,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, FilterUpdatePopupStatus.consumeUpdateRequest() else { return }
+                await self.handleFilterUpdateRequest()
+            }
+        }
+
+        if FilterUpdatePopupStatus.consumeUpdateRequest() {
+            Task { @MainActor [weak self] in
+                await self?.handleFilterUpdateRequest()
+            }
+        }
+    }
+
+    private func handleFilterUpdateRequest() async {
+        guard !filterUpdateInFlight else { return }
+        filterUpdateInFlight = true
+        defer { filterUpdateInFlight = false }
+
+        await waitUntilReady()
+        let outcome = await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
+            trigger: "Popup",
+            force: true
+        )
+        FilterUpdatePopupStatus.finish(outcome)
+    }
+
+    private static let filterUpdateRequestCallback: CFNotificationCallback = { _, _, _, _, _ in
+        NotificationCenter.default.post(name: .wBlockFilterUpdateRequest, object: nil)
     }
 
     /// Resets the manager to its initial state so onboarding can run again.

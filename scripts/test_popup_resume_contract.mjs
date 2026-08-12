@@ -20,17 +20,17 @@ function check(condition, message) {
 
 check(html.includes('id="paused-prompt"') && html.includes('id="resume-blocking"'),
   'Paused popup must expose an explicit prompt and Resume Blocking button');
-check(html.indexOf('id="resume-blocking"') > html.indexOf('class="filter-update-action"'),
-  'Resume Blocking must be a standalone action at the bottom of the popup');
-check(!html.slice(html.indexOf('id="paused-prompt"'), html.indexOf('class="resume-action"')).includes('id="resume-blocking"'),
+check(html.includes('class="popup-action-row"') &&
+  html.indexOf('id="resume-blocking"') > html.indexOf('id="update-filters"'),
+  'Resume Blocking must sit beside Update Filters in the bottom action row');
+check(!html.slice(html.indexOf('id="paused-prompt"'), html.indexOf('class="popup-actions"')).includes('id="resume-blocking"'),
   'Resume Blocking must not remain inside the paused prompt card');
-check(html.includes('class="resume-action"') && html.includes('class="resume-action" aria-live="polite" hidden'),
+check(html.includes('id="resume-blocking"') && html.includes('aria-live="polite" hidden'),
   'Resume action must be hidden unless the authoritative state is paused');
-check(popup.includes('resumeAction.hidden = !(blockingPaused && resumeAvailable)') &&
-  css.includes('.resume-action {') && css.includes('justify-content: center;') &&
-  css.includes('.resume-action .btn {') && css.includes('flex: 0 0 auto;') &&
-  css.includes('[aria-busy="true"]'),
-  'Standalone resume action must be centered, modest, and have a compact busy state');
+check(popup.includes('resumeButton.hidden = !(blockingPaused && resumeAvailable)') &&
+  css.includes('.popup-action-row .btn {') && css.includes('flex: 1 1 0;') &&
+  css.includes('width: 0;') && css.includes('#resume-blocking[aria-busy="true"]'),
+  'Resume and Update must have equal dimensions with compact in-button progress');
 check(!css.includes('.paused-prompt .btn'),
   'Paused prompt card must not style Resume Blocking as a full-width card button');
 check(popup.includes("action: 'resumeBlocking'"),

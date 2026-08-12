@@ -233,26 +233,14 @@ body {
   font-weight: 600;
 }
 
-.resume-action {
-  display: flex;
-  justify-content: center;
-  margin: 2px 0 12px;
-}
-
-.resume-action .btn {
-  flex: 0 0 auto;
-  min-height: 36px;
-  padding: 8px 16px;
-}
-
-.resume-action .btn[aria-busy="true"] {
+#resume-blocking[aria-busy="true"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
 }
 
-.resume-action .btn[aria-busy="true"]::before {
+#resume-blocking[aria-busy="true"]::before {
   content: "";
   width: 12px;
   height: 12px;
@@ -268,7 +256,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .resume-action .btn[aria-busy="true"]::before {
+  #resume-blocking[aria-busy="true"]::before {
     animation: none;
   }
 }
@@ -442,17 +430,22 @@ body {
   margin-top: 10px;
 }
 
-.filter-update-action {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.popup-actions {
   margin: 2px 0 12px;
 }
 
-.filter-update-button {
-  flex: 0 0 auto;
-  min-height: 36px;
-  padding: 8px 16px;
+.popup-action-row {
+  display: flex;
+  gap: 10px;
+}
+
+.popup-action-row .btn {
+  flex: 1 1 0;
+  width: 0;
+}
+
+.popup-action-row .btn[hidden] {
+  display: none;
 }
 
 .filter-update-status {

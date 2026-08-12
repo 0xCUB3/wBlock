@@ -73,13 +73,12 @@
 
         <div id="userscript-commands" class="section" hidden></div>
 
-        <div class="filter-update-action">
-            <button id="update-filters" class="btn filter-update-button" type="button" data-i18n="popup_button_update_filters">Update Filters</button>
+        <div class="popup-actions">
+            <div class="popup-action-row">
+                <button id="update-filters" class="btn" type="button" data-i18n="popup_button_update_filters">Update Filters</button>
+                <button id="resume-blocking" class="btn btn-primary" type="button" data-i18n="popup_button_resume_blocking" aria-live="polite" hidden>Resume Blocking</button>
+            </div>
             <div id="filter-update-status" class="filter-update-status" role="status" aria-live="polite" hidden></div>
-        </div>
-
-        <div class="resume-action" aria-live="polite" hidden>
-            <button id="resume-blocking" class="btn btn-primary" type="button" data-i18n="popup_button_resume_blocking">Resume Blocking</button>
         </div>
 
         <footer class="footer">

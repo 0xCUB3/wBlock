@@ -43,6 +43,8 @@ public enum FilterUpdatePopupStatus {
     private static let checkedFiltersKey = "wblock.filterUpdatePopup.checkedFilters"
     private static let updatedFiltersKey = "wblock.filterUpdatePopup.updatedFilters"
     private static let errorKey = "wblock.filterUpdatePopup.error"
+    private static let requestKey = "wblock.filterUpdatePopup.requested"
+    public static let requestNotificationName = "skula.wBlock.filter-update-requested"
     private static let staleAfter: TimeInterval = 300
     private static let lock = NSLock()
 
@@ -62,6 +64,35 @@ public enum FilterUpdatePopupStatus {
         defaults.set(0, forKey: updatedFiltersKey)
         defaults.removeObject(forKey: errorKey)
         defaults.synchronize()
+        return true
+    }
+
+    /// Asks a resident containing app to run the update without activating it.
+    @discardableResult
+    public static func requestUpdate(
+        groupIdentifier: String = GroupIdentifier.shared.value
+    ) -> Bool {
+        guard beginIfIdle(groupIdentifier: groupIdentifier),
+              let defaults = UserDefaults(suiteName: groupIdentifier)
+        else { return false }
+        defaults.set(true, forKey: requestKey)
+        CFNotificationCenterPostNotification(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            CFNotificationName(rawValue: requestNotificationName as CFString),
+            nil,
+            nil,
+            true
+        )
+        return true
+    }
+
+    public static func consumeUpdateRequest(
+        groupIdentifier: String = GroupIdentifier.shared.value
+    ) -> Bool {
+        guard let defaults = UserDefaults(suiteName: groupIdentifier),
+              defaults.bool(forKey: requestKey)
+        else { return false }
+        defaults.set(false, forKey: requestKey)
         return true
     }
 

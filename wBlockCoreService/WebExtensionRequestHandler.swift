@@ -587,6 +587,20 @@ public enum WebExtensionRequestHandler {
 
     private static func handleStartFilterUpdate(context: NSExtensionContext) {
         #if os(macOS)
+        let containingAppIsRunning = NSRunningApplication.runningApplications(
+            withBundleIdentifier: "skula.wBlock"
+        ).contains { !$0.isTerminated }
+        if containingAppIsRunning {
+            let accepted = FilterUpdatePopupStatus.requestUpdate()
+            let response = createResponse(with: [
+                "ok": true,
+                "accepted": accepted,
+                "state": FilterUpdatePopupStatus.State.running.rawValue
+            ])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+
         Task {
             switch await FilterUpdateClient.shared.startFilterUpdate() {
             case .started:
