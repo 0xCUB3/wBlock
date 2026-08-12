@@ -114,16 +114,31 @@ public enum FilterListContentValidator {
     }
 
     private static func containsJavaScriptContent(_ content: String) -> Bool {
-        let lowercased = content.lowercased()
-        return lowercased.contains("<script")
-            || lowercased.contains("console.log(")
-            || lowercased.contains("document.")
-            || lowercased.contains("window.")
-            || lowercased.contains("=>")
-            || lowercased.contains("function ")
-            || lowercased.contains("const ")
-            || lowercased.contains("let ")
-            || lowercased.contains("var ")
+        // Adblock comments and section headers are not executable JavaScript.
+        // Inspect only non-comment lines so prose such as `! window.alert(...)`
+        // cannot make an otherwise valid filter list look like a script.
+        let executableText = content
+            .components(separatedBy: .newlines)
+            .filter { line in
+                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                return !trimmed.isEmpty
+                    && !trimmed.hasPrefix("!")
+                    && !trimmed.hasPrefix("#")
+                    && !trimmed.hasPrefix("[")
+                    && !trimmed.hasPrefix("//")
+            }
+            .joined(separator: "\n")
+            .lowercased()
+
+        return executableText.contains("<script")
+            || executableText.contains("console.log(")
+            || executableText.contains("document.")
+            || executableText.contains("window.")
+            || executableText.contains("=>")
+            || executableText.contains("function ")
+            || executableText.contains("const ")
+            || executableText.contains("let ")
+            || executableText.contains("var ")
     }
 
     private static func containsUserScriptMetadataBlock(_ content: String) -> Bool {

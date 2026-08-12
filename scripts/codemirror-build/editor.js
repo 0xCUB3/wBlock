@@ -163,6 +163,7 @@ function baseExtensions() {
     theme(),
     EditorView.updateListener.of((update) => {
       if (!update.docChanged || suppressDirty) return;
+      post({ type: "documentChanged" });
       if (!dirtyKnown) {
         dirtyKnown = true;
         post({ type: "dirtyStateChanged", isDirty: true });

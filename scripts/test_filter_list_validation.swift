@@ -50,6 +50,14 @@ struct FilterListValidationTests {
             """,
             "expected allowlist-only exception rules to be accepted"
         )
+        expectValidContent(
+            """
+            ! This documentation mentions window.alert() and console.log().
+            ! Header: document.querySelector and function examples are prose.
+            ||example.com^
+            """,
+            "expected JavaScript-looking adblock comments and headers to be ignored"
+        )
         expectInvalidContent(
             """
             // ==UserScript==
@@ -62,6 +70,10 @@ struct FilterListValidationTests {
         )
         expectInvalidContent("<html><body>challenge</body></html>", "expected HTML to be rejected")
         expectInvalidContent("console.log('masquerading as a filter');", "expected JavaScript content to be rejected")
+        expectInvalidContent(
+            "! harmless comment\nwindow.alert('executable');",
+            "expected executable JavaScript outside comments to remain rejected"
+        )
         expectSupportedFile("rules.txt", "expected .txt filter files to be accepted")
         expectSupportedFile("rules.list", "expected .list filter files to be accepted")
         expectSupportedFile("rules.json", "expected .json filter files to be accepted")

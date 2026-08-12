@@ -286,12 +286,16 @@ extension ProtobufDataManager {
             script.injectInto = protoData.injectInto
             script.grant = protoData.grant
             script.isLocal = protoData.isLocal || inferredIsLocalFromURL
-            script.updateURL = protoData.updateURL.isEmpty ? nil : protoData.updateURL
-            script.downloadURL = protoData.downloadURL.isEmpty ? nil : protoData.downloadURL
+            // Legacy local records sometimes retained metadata URLs. Never expose
+            // those endpoints to the updater after the record is classified local.
+            script.updateURL = script.isLocal || protoData.updateURL.isEmpty ? nil : protoData.updateURL
+            script.downloadURL = script.isLocal || protoData.downloadURL.isEmpty ? nil : protoData.downloadURL
             script.updatesAutomatically = protoData.hasUpdatesAutomatically ? protoData.updatesAutomatically : true
             script.isUserStyle = protoData.isUserStyle
             script.category = protoData.category == .unspecified ? .scripts : mapProtoToFilterListCategory(protoData.category)
-            script.localImportIdentity = protoData.hasLocalImportIdentity ? protoData.localImportIdentity : nil
+            script.localImportIdentity = protoData.hasLocalImportIdentity
+                ? UserScriptImportIdentity.normalized(protoData.localImportIdentity)
+                : nil
             return script
         }
     }
@@ -315,15 +319,15 @@ extension ProtobufDataManager {
             protoUserScript.grant = userScript.grant
             protoUserScript.isLocal =
                 userScript.isLocal || (userScript.url == nil) || (userScript.url?.isFileURL == true)
-            protoUserScript.updateURL = userScript.updateURL ?? ""
-            protoUserScript.downloadURL = userScript.downloadURL ?? ""
+            protoUserScript.updateURL = protoUserScript.isLocal ? "" : (userScript.updateURL ?? "")
+            protoUserScript.downloadURL = protoUserScript.isLocal ? "" : (userScript.downloadURL ?? "")
             protoUserScript.updatesAutomatically = userScript.updatesAutomatically
             protoUserScript.isUserStyle = userScript.isUserStyle
             protoUserScript.content = ""
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
             
             protoUserScript.category = mapFilterListCategoryToProto(userScript.category)
-            if let identity = userScript.localImportIdentity {
+            if let identity = UserScriptImportIdentity.normalized(userScript.localImportIdentity) {
                 protoUserScript.localImportIdentity = identity
             } else {
                 protoUserScript.clearLocalImportIdentity()
@@ -347,15 +351,15 @@ extension ProtobufDataManager {
             protoUserScript.grant = userScript.grant
             protoUserScript.isLocal =
                 userScript.isLocal || (userScript.url == nil) || (userScript.url?.isFileURL == true)
-            protoUserScript.updateURL = userScript.updateURL ?? ""
-            protoUserScript.downloadURL = userScript.downloadURL ?? ""
+            protoUserScript.updateURL = protoUserScript.isLocal ? "" : (userScript.updateURL ?? "")
+            protoUserScript.downloadURL = protoUserScript.isLocal ? "" : (userScript.downloadURL ?? "")
             protoUserScript.updatesAutomatically = userScript.updatesAutomatically
             protoUserScript.isUserStyle = userScript.isUserStyle
             protoUserScript.content = ""
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
             
             protoUserScript.category = mapFilterListCategoryToProto(userScript.category)
-            if let identity = userScript.localImportIdentity {
+            if let identity = UserScriptImportIdentity.normalized(userScript.localImportIdentity) {
                 protoUserScript.localImportIdentity = identity
             } else {
                 protoUserScript.clearLocalImportIdentity()
@@ -688,12 +692,12 @@ extension ProtobufDataManager {
             protoUserScript.grant = userScript.grant
             protoUserScript.isLocal =
                 userScript.isLocal || (userScript.url == nil) || (userScript.url?.isFileURL == true)
-            protoUserScript.updateURL = userScript.updateURL ?? ""
-            protoUserScript.downloadURL = userScript.downloadURL ?? ""
+            protoUserScript.updateURL = protoUserScript.isLocal ? "" : (userScript.updateURL ?? "")
+            protoUserScript.downloadURL = protoUserScript.isLocal ? "" : (userScript.downloadURL ?? "")
             protoUserScript.updatesAutomatically = userScript.updatesAutomatically
             protoUserScript.isUserStyle = userScript.isUserStyle
             protoUserScript.category = mapFilterListCategoryToProto(userScript.category)
-            if let identity = userScript.localImportIdentity {
+            if let identity = UserScriptImportIdentity.normalized(userScript.localImportIdentity) {
                 protoUserScript.localImportIdentity = identity
             } else {
                 protoUserScript.clearLocalImportIdentity()

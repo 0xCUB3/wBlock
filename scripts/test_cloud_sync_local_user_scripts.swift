@@ -135,6 +135,66 @@ struct CloudSyncLocalUserScriptTests {
         let normalized = CloudSyncLocalUserScriptReconciler.normalizedName("  Bypass Paywalls Clean  ")
         expect(normalized == "bypass paywalls clean", "names should be normalized consistently")
 
+        // Modern payloads match by stable local identity even after a display-name
+        // override and content change. A remote script cannot participate.
+        let modernLocal = CloudSyncLocalUserScript(
+            name: "Renamed Local",
+            content: "// script changed",
+            isEnabled: true,
+            category: "custom",
+            localImportIdentity: "file:/tmp/source.user.js"
+        )
+        let oldDisplayName = CloudSyncLocalUserScript(
+            name: "Old Display Name",
+            content: "// script old",
+            isEnabled: false,
+            category: "custom",
+            localImportIdentity: "file:/tmp/source.user.js"
+        )
+        expect(
+            CloudSyncLocalUserScriptReconciler.matches(existing: oldDisplayName, remote: modernLocal),
+            "modern payloads should reconcile changed content by local identity"
+        )
+        let sameNameDifferentImport = CloudSyncLocalUserScript(
+            name: "Renamed Local",
+            content: "// other",
+            isEnabled: true,
+            localImportIdentity: "file:/tmp/other.user.js"
+        )
+        expect(
+            !CloudSyncLocalUserScriptReconciler.matches(existing: sameNameDifferentImport, remote: modernLocal),
+            "different stable local identities must not collide on display name"
+        )
+
+        // Legacy payloads have no identity and retain name matching. Missing
+        // category is represented by nil so the apply layer can preserve custom state.
+        let legacy = CloudSyncLocalUserScript(
+            name: "Legacy Name",
+            content: "// legacy",
+            isEnabled: true,
+            category: nil
+        )
+        let legacyExisting = CloudSyncLocalUserScript(
+            name: "Legacy Name",
+            content: "// existing",
+            isEnabled: false,
+            category: "custom",
+            localImportIdentity: "file:/tmp/legacy.user.js"
+        )
+        expect(
+            CloudSyncLocalUserScriptReconciler.matches(existing: legacyExisting, remote: legacy),
+            "legacy payloads should retain name fallback even for identity-bearing local entries"
+        )
+        expect(legacy.category == nil, "legacy payloads must preserve missing category as nil")
+
+        let keptByIdentity = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
+            localScripts: [legacyExisting],
+            remoteScripts: [modernLocal, oldDisplayName],
+            deletedNames: [],
+            lastSyncedNames: ["old display name"]
+        )
+        expect(keptByIdentity.isEmpty, "identity-matched modern content must not be deleted")
+
         // 1. deletedNamesToMergeDuringUploadReconciliation
         let mergedWithLocalReAdd =
             CloudSyncLocalUserScriptReconciler.deletedNamesToMergeDuringUploadReconciliation(

@@ -17,6 +17,12 @@ public enum UserScriptImportIdentity {
         let digest = SHA256.hash(data: Data(content.utf8))
         return "content:" + digest.map { String(format: "%02x", $0) }.joined()
     }
+
+    public static func normalized(_ identity: String?) -> String? {
+        guard let identity else { return nil }
+        let value = identity.trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? nil : value
+    }
 }
 
 public enum UserScriptURLSupport {
@@ -166,15 +172,20 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     
     public static func matchesLocalImport(
         existing: UserScript,
-        stableIdentity: String,
+        stableIdentity: String?,
         canonicalName: String
     ) -> Bool {
         guard existing.isLocal else { return false }
-        if let existingIdentity = existing.localImportIdentity {
+        let stableIdentity = UserScriptImportIdentity.normalized(stableIdentity)
+        let existingIdentity = UserScriptImportIdentity.normalized(existing.localImportIdentity)
+        if let stableIdentity, let existingIdentity {
+            // A stable identity mismatch must not fall through to a display-name
+            // match: two different local files may intentionally share a name.
             return existingIdentity == stableIdentity
         }
         // Preserve replacement behavior for entries written before stable
-        // local-import identities were introduced.
+        // local-import identities were introduced, and for legacy sync payloads
+        // that do not carry the additive identity field.
         return existing.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
             == canonicalName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }

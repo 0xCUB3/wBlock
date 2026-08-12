@@ -53,6 +53,7 @@ public enum UserScriptManagerNotificationKey {
     public static let name = "name"
     public static let url = "url"
     public static let isLocal = "isLocal"
+    public static let localImportIdentity = "localImportIdentity"
 }
 
 public enum BuiltInUserScriptSection: String, Hashable, Sendable {
@@ -1058,6 +1059,9 @@ public class UserScriptManager: ObservableObject {
             UserScriptManagerNotificationKey.isLocal: userScript.isLocal,
         ]
 
+        if let identity = UserScriptImportIdentity.normalized(userScript.localImportIdentity) {
+            info[UserScriptManagerNotificationKey.localImportIdentity] = identity
+        }
         if let url = userScript.url?.absoluteString {
             info[UserScriptManagerNotificationKey.url] = url
         }
@@ -1859,11 +1863,13 @@ public class UserScriptManager: ObservableObject {
         copy.resourceContents = script.resourceContents
         copy.noframes = script.noframes
         copy.isLocal = script.isLocal || script.url == nil || script.url?.isFileURL == true
-        copy.updateURL = script.updateURL
-        copy.downloadURL = script.downloadURL
+        copy.updateURL = copy.isLocal ? nil : script.updateURL
+        copy.downloadURL = copy.isLocal ? nil : script.downloadURL
         copy.lastUpdated = script.lastUpdated
         copy.isUserStyle = script.isUserStyle
         copy.updatesAutomatically = script.updatesAutomatically
+        copy.category = script.category
+        copy.localImportIdentity = UserScriptImportIdentity.normalized(script.localImportIdentity)
         return copy
     }
 
@@ -1880,13 +1886,37 @@ public class UserScriptManager: ObservableObject {
 
         for restoredScript in restoredScripts {
             let restoredLocalName = restoredScript.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            let existingIndex = mergedScripts.firstIndex { script in
-                if let restoredURL = restoredScript.url {
-                    return script.url == restoredURL
+            let restoredIsLocal = restoredScript.isLocal
+                || restoredScript.url == nil
+                || restoredScript.url?.isFileURL == true
+            let restoredIdentity = UserScriptImportIdentity.normalized(restoredScript.localImportIdentity)
+            let existingIndex: Int?
+            if restoredIsLocal, let restoredIdentity {
+                // Prefer an exact identity match before applying the legacy name
+                // fallback. This keeps duplicate display names independent.
+                existingIndex = mergedScripts.firstIndex { script in
+                    script.isLocal
+                        && UserScriptImportIdentity.normalized(script.localImportIdentity) == restoredIdentity
+                } ?? mergedScripts.firstIndex { script in
+                    guard script.isLocal,
+                          UserScriptImportIdentity.normalized(script.localImportIdentity) == nil
+                    else { return false }
+                    return script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                        == restoredLocalName
                 }
+            } else {
+                existingIndex = mergedScripts.firstIndex { script in
+                    if restoredIsLocal {
+                        guard script.isLocal else { return false }
+                        // A legacy backup has no identity, so preserve the old
+                        // name-based replacement behavior.
+                        return script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                            == restoredLocalName
+                    }
 
-                return script.isLocal
-                    && script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == restoredLocalName
+                    guard let restoredURL = restoredScript.url else { return false }
+                    return !script.isLocal && script.url == restoredURL
+                }
             }
 
             let targetID = existingIndex.map { mergedScripts[$0].id } ?? restoredScript.id
@@ -2127,7 +2157,9 @@ public class UserScriptManager: ObservableObject {
         fromSourceContent content: String,
         nameOverride: String? = nil,
         descriptionOverride: String? = nil,
-        category: FilterListCategory? = nil
+        category: FilterListCategory? = nil,
+        localImportIdentity: String? = nil,
+        legacyLocalImportMatching: Bool = false
     ) async -> Error? {
         isLoading = true
         statusDescription = "Adding userscript..."
@@ -2142,7 +2174,8 @@ public class UserScriptManager: ObservableObject {
                 nameOverride: nameOverride,
                 descriptionOverride: descriptionOverride,
                 categoryOverride: category,
-                localImportIdentity: UserScriptImportIdentity.forContent(content)
+                localImportIdentity: localImportIdentity ?? UserScriptImportIdentity.forContent(content),
+                legacyLocalImportMatching: legacyLocalImportMatching
             )
 
             isLoading = false
@@ -2165,7 +2198,8 @@ public class UserScriptManager: ObservableObject {
         nameOverride: String? = nil,
         descriptionOverride: String? = nil,
         categoryOverride: FilterListCategory? = nil,
-        localImportIdentity: String? = nil
+        localImportIdentity: String? = nil,
+        legacyLocalImportMatching: Bool = false
     ) async throws -> UserScript {
         let trimmedContent = rawContent.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -2194,11 +2228,15 @@ public class UserScriptManager: ObservableObject {
             ? overrideName
             : (!metadataName.isEmpty ? metadataName : (fallbackName.isEmpty ? "Pasted Userscript" : fallbackName))
 
-        let stableIdentity = localImportIdentity ?? UserScriptImportIdentity.forContent(rawContent)
+        let stableIdentity = UserScriptImportIdentity.normalized(localImportIdentity)
+            ?? UserScriptImportIdentity.forContent(rawContent)
         let existingIndex = userScripts.firstIndex {
             UserScript.matchesLocalImport(
                 existing: $0,
-                stableIdentity: stableIdentity,
+                // A legacy CloudSync entry deliberately has no identity, so it
+                // retains the old name-based replacement behavior. Normal local
+                // imports pass an explicit file/content identity.
+                stableIdentity: legacyLocalImportMatching ? nil : stableIdentity,
                 canonicalName: canonicalName
             )
         }
@@ -2208,7 +2246,7 @@ public class UserScriptManager: ObservableObject {
         newUserScript.isEnabled = existingIndex.map { userScripts[$0].isEnabled } ?? true
         newUserScript.updatesAutomatically = existingIndex.map { userScripts[$0].updatesAutomatically } ?? true
         newUserScript.isLocal = true
-        newUserScript.localImportIdentity = stableIdentity
+        newUserScript.localImportIdentity = UserScriptImportIdentity.normalized(stableIdentity)
         newUserScript.lastUpdated = Date()
 
         newUserScript.description = descriptionOverride ?? tempScript.description
@@ -2522,7 +2560,11 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func updateUserScript(_ userScript: UserScript) async {
-        guard let url = userScript.url else { return }
+        guard let index = userScripts.firstIndex(where: { $0.id == userScript.id }),
+              !userScripts[index].isLocal,
+              let url = userScripts[index].url,
+              url.scheme?.lowercased() == "http" || url.scheme?.lowercased() == "https"
+        else { return }
 
         await MainActor.run {
             isLoading = true

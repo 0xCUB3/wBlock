@@ -80,6 +80,41 @@ private struct SelectedUserScript: Identifiable {
     let id: UUID
 }
 
+private struct EditorMetadataAutofillState: Equatable {
+    private(set) var lastAutofilledName = ""
+    private(set) var lastAutofilledDescription = ""
+    private(set) var nameWasManuallyEdited = false
+    private(set) var descriptionWasManuallyEdited = false
+
+    mutating func autofill(
+        name metadataName: String,
+        description metadataDescription: String,
+        currentName: String,
+        currentDescription: String
+    ) -> (name: String, description: String) {
+        let name = metadataName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let description = metadataDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !nameWasManuallyEdited {
+            lastAutofilledName = name.isEmpty ? "Pasted Userscript" : name
+        }
+        if !descriptionWasManuallyEdited {
+            lastAutofilledDescription = description
+        }
+        return (
+            nameWasManuallyEdited ? currentName : lastAutofilledName,
+            descriptionWasManuallyEdited ? currentDescription : lastAutofilledDescription
+        )
+    }
+
+    mutating func noteNameEdit(_ value: String) {
+        if value != lastAutofilledName { nameWasManuallyEdited = true }
+    }
+
+    mutating func noteDescriptionEdit(_ value: String) {
+        if value != lastAutofilledDescription { descriptionWasManuallyEdited = true }
+    }
+}
+
 struct UserScriptManagerView: View {
     @ObservedObject var userScriptManager: UserScriptManager
     let hasPendingChanges: Bool
@@ -1478,6 +1513,8 @@ struct AddUserScriptView: View {
     @State private var stagedName = ""
     @State private var stagedDescription = ""
     @State private var selectedCategory: FilterListCategory = .scripts
+    @State private var editorMetadataState = EditorMetadataAutofillState()
+    @State private var editorMetadataRefreshTask: Task<Void, Never>?
     @State private var addMode: AddMode = .url
     @State private var showHints: Bool = false
     @State private var isEditorLineWrappingEnabled = false
@@ -1520,12 +1557,26 @@ struct AddUserScriptView: View {
         .onChangeCompat(of: addMode) { _, newValue in
             urlFieldFocused = newValue == .url
             if newValue == .editor {
-                refreshEditorMetadata()
+                scheduleEditorMetadataRefresh()
             }
         }
         #endif
         .onChangeCompat(of: urlInput) { _, newValue in
             validateInput(newValue)
+        }
+        .onChangeCompat(of: editorController.documentRevision) { _, _ in
+            scheduleEditorMetadataRefresh()
+        }
+        .onChangeCompat(of: stagedName) { _, newValue in
+            guard addMode == .editor else { return }
+            editorMetadataState.noteNameEdit(newValue)
+        }
+        .onChangeCompat(of: stagedDescription) { _, newValue in
+            guard addMode == .editor else { return }
+            editorMetadataState.noteDescriptionEdit(newValue)
+        }
+        .onDisappear {
+            editorMetadataRefreshTask?.cancel()
         }
         .alert("Replace Existing Content?", isPresented: $showingPasteReplacementConfirmation) {
             Button("Cancel", role: .cancel) { pendingPasteText = nil }
@@ -1664,7 +1715,7 @@ struct AddUserScriptView: View {
         }
         .padding(.bottom, 16)
         .task {
-            refreshEditorMetadata()
+            scheduleEditorMetadataRefresh()
         }
     }
 
@@ -2263,30 +2314,39 @@ struct AddUserScriptView: View {
         }
     }
 
-    private func refreshEditorMetadata() {
-        Task { @MainActor in
+    private func scheduleEditorMetadataRefresh() {
+        editorMetadataRefreshTask?.cancel()
+        editorMetadataRefreshTask = Task { @MainActor in
+            // CodeMirror can emit one revision per keystroke. Debounce the scan and
+            // parse only the metadata-sized prefix, never the whole source document.
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            guard !Task.isCancelled else { return }
             let content = await editorController.currentText()
-            guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
             _ = editorMetadataOverrides(for: content)
         }
     }
 
     private func editorMetadataOverrides(for content: String) -> (name: String, description: String) {
+        let boundedContent = content
+            .components(separatedBy: .newlines)
+            .prefix(120)
+            .joined(separator: "\n")
+            .prefix(16_000)
         var parsed = UserScript(
             name: UserScriptURLSupport.displayName(forFilename: "Pasted Userscript"),
-            content: content
+            content: String(boundedContent)
         )
         parsed.parseMetadata()
 
-        let metadataName = parsed.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let metadataDescription = parsed.description.trimmingCharacters(in: .whitespacesAndNewlines)
-        if stagedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            stagedName = metadataName.isEmpty ? "Pasted Userscript" : metadataName
-        }
-        if stagedDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            stagedDescription = metadataDescription
-        }
-        return (stagedName, stagedDescription)
+        let values = editorMetadataState.autofill(
+            name: parsed.name,
+            description: parsed.description,
+            currentName: stagedName,
+            currentDescription: stagedDescription
+        )
+        if stagedName != values.name { stagedName = values.name }
+        if stagedDescription != values.description { stagedDescription = values.description }
+        return values
     }
 
     private func validateInput(_ newValue: String) {
@@ -2339,6 +2399,7 @@ struct AddUserScriptView: View {
     private func replaceEditorText(with string: String) {
         editorImportError = nil
         editorController.replaceText(string)
+        scheduleEditorMetadataRefresh()
         DispatchQueue.main.async {
             editorController.focus()
         }
