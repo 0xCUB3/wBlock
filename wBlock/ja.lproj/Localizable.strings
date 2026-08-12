@@ -862,6 +862,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "ここでサイトを例外に登録するか、Safari の wBlock ポップアップからサイトごとにユーザースクリプトと要素ザッパーのルールを調整します。";
 "Whitelisted" = "例外に登録済み";
 "Wrap Lines" = "行を折り返す";
+"On" = "オン";
+"Off" = "オフ";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "地域フィルターは後で設定からいつでも追加できます。";
@@ -913,6 +915,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear All" = "すべて消去";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "この推奨フィルタは wBlock の基本保護の一部です。無効にするとブロック範囲が狭くなる場合があります。";
 "Pasting will replace the existing editor content." = "貼り付けると、エディタの既存の内容が置き換えられます。";
+"Pasting will replace the existing content." = "貼り付けると、既存の内容が置き換えられます。";
 "This removes all saved element zapper rules from every site." = "すべてのサイトから保存済みの Element Zapper ルールを削除します。";
 "Clear Element Zapper Rules" = "Element Zapper のルールを消去";
 "Advanced" = "詳細";

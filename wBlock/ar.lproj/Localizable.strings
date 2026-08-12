@@ -862,6 +862,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "استثنِ موقعًا هنا، أو اضبط سكريبتات المستخدم وقواعد أداة إخفاء العناصر لكل موقع من نافذة wBlock المنبثقة في Safari.";
 "Whitelisted" = "مستثنى";
 "Wrap Lines" = "التفاف الأسطر";
+"On" = "تشغيل";
+"Off" = "إيقاف";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "يمكنك دائمًا إضافة فلاتر إقليمية لاحقًا من الإعدادات.";
@@ -913,6 +915,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear All" = "مسح الكل";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "هذا المرشح الموصى به جزء من حماية wBlock الأساسية. قد يؤدي تعطيله إلى تقليل نطاق الحظر.";
 "Pasting will replace the existing editor content." = "سيؤدي اللصق إلى استبدال محتوى المحرر الحالي.";
+"Pasting will replace the existing content." = "سيؤدي اللصق إلى استبدال المحتوى الحالي.";
 "This removes all saved element zapper rules from every site." = "يؤدي هذا إلى إزالة جميع قواعد Element Zapper المحفوظة من كل المواقع.";
 "Clear Element Zapper Rules" = "مسح قواعد Element Zapper";
 "Advanced" = "متقدم";

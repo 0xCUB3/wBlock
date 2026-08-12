@@ -862,6 +862,10 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "在这里将网站列入白名单，或从 Safari 中的 wBlock 弹出窗口按网站调整用户脚本和元素清除器规则。";
 "Whitelisted" = "已列入白名单";
 "Wrap Lines" = "自动换行";
+"On" = "开";
+"Off" = "关";
+"On" = "开";
+"Off" = "关";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "你随时都可以稍后在设置中添加地区过滤器。";
@@ -913,6 +917,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear All" = "全部清除";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "此推荐过滤器是 wBlock 基本保护的一部分。停用后，拦截范围可能会缩小。";
 "Pasting will replace the existing editor content." = "粘贴会替换编辑器中的现有内容。";
+"Pasting will replace the existing content." = "粘贴会替换现有内容。";
+"Pasting will replace the existing content." = "粘贴会替换现有内容。";
 "This removes all saved element zapper rules from every site." = "这会删除所有网站中保存的 Element Zapper 规则。";
 "Clear Element Zapper Rules" = "清除 Element Zapper 规则";
 "Advanced" = "高级";

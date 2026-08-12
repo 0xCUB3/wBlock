@@ -862,6 +862,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "여기에서 사이트를 예외로 등록하거나, Safari의 wBlock 팝업에서 사이트별 유저스크립트와 요소 제거기 규칙을 조정하세요.";
 "Whitelisted" = "예외 등록됨";
 "Wrap Lines" = "줄 바꿈";
+"On" = "켬";
+"Off" = "끔";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "지역 필터는 나중에 설정에서 언제든지 추가할 수 있습니다.";
@@ -913,6 +915,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear All" = "모두 지우기";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "이 추천 필터는 wBlock의 필수 보호 기능입니다. 비활성화하면 차단 범위가 줄어들 수 있습니다.";
 "Pasting will replace the existing editor content." = "붙여넣으면 편집기의 기존 내용이 바뀝니다.";
+"Pasting will replace the existing content." = "붙여넣으면 기존 내용이 바뀝니다.";
 "This removes all saved element zapper rules from every site." = "모든 사이트에서 저장된 Element Zapper 규칙을 삭제합니다.";
 "Clear Element Zapper Rules" = "Element Zapper 규칙 지우기";
 "Advanced" = "고급";

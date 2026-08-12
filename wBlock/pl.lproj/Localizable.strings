@@ -862,6 +862,8 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Dodaj tutaj witrynę do białej listy albo dostosuj skrypty użytkownika i reguły usuwacza elementów dla poszczególnych witryn z okna wBlock w Safari.";
 "Whitelisted" = "Na białej liście";
 "Wrap Lines" = "Zawijaj wiersze";
+"On" = "Wł.";
+"Off" = "Wył.";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "Filtry regionalne możesz zawsze dodać później w Ustawieniach.";
@@ -913,6 +915,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Clear All" = "Wyczyść wszystko";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Ten zalecany filtr jest częścią podstawowej ochrony wBlock. Jego wyłączenie może zmniejszyć zakres blokowania.";
 "Pasting will replace the existing editor content." = "Wklejenie zastąpi bieżącą zawartość edytora.";
+"Pasting will replace the existing content." = "Wklejenie zastąpi bieżącą zawartość.";
 "This removes all saved element zapper rules from every site." = "Spowoduje to usunięcie wszystkich zapisanych reguł Element Zappera ze wszystkich witryn.";
 "Clear Element Zapper Rules" = "Wyczyść reguły Element Zappera";
 "Advanced" = "Zaawansowane";

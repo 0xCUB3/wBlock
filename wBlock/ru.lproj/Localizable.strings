@@ -862,6 +862,10 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Добавьте сайт в белый список здесь или настройте пользовательские скрипты и правила скрытия элементов для каждого сайта во всплывающем окне wBlock в Safari.";
 "Whitelisted" = "В белом списке";
 "Wrap Lines" = "Перенос строк";
+"On" = "Вкл.";
+"Off" = "Выкл.";
+"On" = "Вкл.";
+"Off" = "Выкл.";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "Вы всегда можете добавить региональные фильтры позже в настройках.";
@@ -913,6 +917,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear All" = "Удалить всё";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Этот рекомендуемый фильтр входит в основную защиту wBlock. Его отключение может снизить эффективность блокировки.";
 "Pasting will replace the existing editor content." = "Вставка заменит текущее содержимое редактора.";
+"Pasting will replace the existing content." = "Вставка заменит текущее содержимое.";
+"Pasting will replace the existing content." = "Вставка заменит текущее содержимое.";
 "This removes all saved element zapper rules from every site." = "Это удалит все сохранённые правила Element Zapper со всех сайтов.";
 "Clear Element Zapper Rules" = "Удалить правила Element Zapper";
 "Advanced" = "Расширенные";

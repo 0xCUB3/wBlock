@@ -1716,7 +1716,11 @@ private struct AddUserScriptEditorSheet: View {
                 } label: {
                     Label("Wrap Lines", systemImage: isLineWrappingEnabled ? "text.justify.left" : "text.alignleft")
                 }
-                .accessibilityValue(isLineWrappingEnabled ? Text("On") : Text("Off"))
+                .accessibilityValue(
+                    isLineWrappingEnabled
+                        ? String(localized: "On")
+                        : String(localized: "Off")
+                )
 
                 Spacer()
 
@@ -1776,6 +1780,7 @@ struct AddUserScriptView: View {
     @State private var selectedCategory: FilterListCategory = .scripts
     @State private var editorMetadataState = EditorMetadataAutofillState()
     @State private var editorMetadataRefreshTask: Task<Void, Never>?
+    @State private var metadataRefreshGeneration = 0
     @State private var addMode: AddMode = .url
     @State private var showHints: Bool = false
     @StateObject private var editorController: CodeMirrorEditorController
@@ -1852,7 +1857,7 @@ struct AddUserScriptView: View {
                 pendingPasteText = nil
             }
         } message: {
-            Text("Pasting will replace the existing editor content.")
+            Text("Pasting will replace the existing content.")
         }
         .sheet(isPresented: $isShowingEditor) {
             AddUserScriptEditorSheet(
@@ -2559,12 +2564,33 @@ struct AddUserScriptView: View {
 
     private func scheduleEditorMetadataRefresh() {
         editorMetadataRefreshTask?.cancel()
+        metadataRefreshGeneration &+= 1
+        let generation = metadataRefreshGeneration
+        let editorRevision = editorController.documentRevision
+        let readsEditor = isShowingEditor
         editorMetadataRefreshTask = Task { @MainActor in
             // CodeMirror can emit one revision per keystroke. Debounce the scan and
             // parse only the metadata-sized prefix, never the whole source document.
             try? await Task.sleep(nanoseconds: 250_000_000)
-            guard !Task.isCancelled else { return }
-            let content = await editorController.currentText()
+            guard !Task.isCancelled,
+                  generation == metadataRefreshGeneration,
+                  addMode == .text
+            else { return }
+
+            let content: String
+            if readsEditor {
+                guard editorController.documentRevision == editorRevision else { return }
+                content = await editorController.currentText()
+                guard !Task.isCancelled,
+                      generation == metadataRefreshGeneration,
+                      editorController.documentRevision == editorRevision
+                else { return }
+            } else {
+                content = textInput
+                guard content == textInput else { return }
+            }
+
+            guard generation == metadataRefreshGeneration else { return }
             _ = editorMetadataOverrides(for: content)
         }
     }

@@ -862,6 +862,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Βάλτε έναν ιστότοπο στη λευκή λίστα εδώ ή προσαρμόστε τον κώδικα χρήστη και τους κανόνες αποκλεισμού στοιχείων ανά ιστότοπο από το αναδυόμενο παράθυρο του wBlock στο Safari.";
 "Whitelisted" = "Στη λευκή λίστα";
 "Wrap Lines" = "Αναδίπλωση γραμμών";
+"On" = "Ενεργό";
+"Off" = "Ανενεργό";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "Μπορείτε πάντα να προσθέσετε τοπικά φίλτρα αργότερα από τις Ρυθμίσεις.";
@@ -913,6 +915,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear All" = "Εκκαθάριση όλων";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Αυτό το προτεινόμενο φίλτρο αποτελεί μέρος της βασικής προστασίας του wBlock. Η απενεργοποίησή του μπορεί να μειώσει την κάλυψη αποκλεισμού.";
 "Pasting will replace the existing editor content." = "Η επικόλληση θα αντικαταστήσει το υπάρχον περιεχόμενο του επεξεργαστή.";
+"Pasting will replace the existing content." = "Η επικόλληση θα αντικαταστήσει το υπάρχον περιεχόμενο.";
 "This removes all saved element zapper rules from every site." = "Αυτό αφαιρεί όλους τους αποθηκευμένους κανόνες Element Zapper από κάθε ιστότοπο.";
 "Clear Element Zapper Rules" = "Εκκαθάριση κανόνων Element Zapper";
 "Advanced" = "Για προχωρημένους";

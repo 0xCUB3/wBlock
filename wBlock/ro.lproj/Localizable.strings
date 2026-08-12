@@ -862,6 +862,10 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Adaugă un site în lista albă aici sau ajustează scripturile utilizator și regulile eliminatorului de elemente pe site din popup-ul wBlock din Safari.";
 "Whitelisted" = "În lista albă";
 "Wrap Lines" = "Încadrare linii";
+"On" = "Activat";
+"Off" = "Dezactivat";
+"On" = "Activat";
+"Off" = "Dezactivat";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "Poți adăuga oricând filtre regionale mai târziu din Setări.";
@@ -913,6 +917,8 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Clear All" = "Șterge tot";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Acest filtru recomandat face parte din protecția esențială a wBlock. Dezactivarea lui poate reduce acoperirea blocării.";
 "Pasting will replace the existing editor content." = "Lipirea va înlocui conținutul existent al editorului.";
+"Pasting will replace the existing content." = "Lipirea va înlocui conținutul existent.";
+"Pasting will replace the existing content." = "Lipirea va înlocui conținutul existent.";
 "This removes all saved element zapper rules from every site." = "Aceasta elimină de pe toate site-urile regulile Element Zapper salvate.";
 "Clear Element Zapper Rules" = "Șterge regulile Element Zapper";
 "Advanced" = "Avansat";

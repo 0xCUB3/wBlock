@@ -862,6 +862,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Tegyél itt engedélyezőlistára egy webhelyet, vagy állítsd be webhelyenként a felhasználói szkripteket és az elemeltávolító szabályokat a wBlock Safari felugró ablakában.";
 "Whitelisted" = "Engedélyezőlistán";
 "Wrap Lines" = "Sortördelés";
+"On" = "Be";
+"Off" = "Ki";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "A regionális szűrőket később is bármikor hozzáadhatod a Beállításokban.";
@@ -913,6 +915,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Clear All" = "Összes törlése";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Ez az ajánlott szűrő a wBlock alapvető védelmének része. Kikapcsolása csökkentheti a blokkolás lefedettségét.";
 "Pasting will replace the existing editor content." = "A beillesztés lecseréli a szerkesztő meglévő tartalmát.";
+"Pasting will replace the existing content." = "A beillesztés lecseréli a meglévő tartalmat.";
 "This removes all saved element zapper rules from every site." = "Ez eltávolítja az összes mentett Element Zapper-szabályt minden webhelyről.";
 "Clear Element Zapper Rules" = "Element Zapper-szabályok törlése";
 "Advanced" = "Speciális";
