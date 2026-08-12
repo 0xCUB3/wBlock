@@ -4,6 +4,13 @@ import wBlockCoreService
 @main
 struct Issue508ImportIdentityTests {
     static func main() {
+        let persistence = try! String(
+            contentsOf: URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+                .appendingPathComponent("wBlockCoreService/ProtobufDataManager+Extensions.swift"),
+            encoding: .utf8
+        )
+        expect(persistence.contains("protoUserScript.clearLocalImportIdentity()"), "legacy protobuf entries must keep identity absent")
+
         let source = """
         // ==UserScript==
         // @name Source Name

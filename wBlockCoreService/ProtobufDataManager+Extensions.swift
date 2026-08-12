@@ -323,7 +323,11 @@ extension ProtobufDataManager {
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
             
             protoUserScript.category = mapFilterListCategoryToProto(userScript.category)
-            protoUserScript.localImportIdentity = userScript.localImportIdentity ?? ""
+            if let identity = userScript.localImportIdentity {
+                protoUserScript.localImportIdentity = identity
+            } else {
+                protoUserScript.clearLocalImportIdentity()
+            }
             updatedData.userScripts[index] = protoUserScript
         } else {
             // Add new userscript
@@ -351,7 +355,11 @@ extension ProtobufDataManager {
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
             
             protoUserScript.category = mapFilterListCategoryToProto(userScript.category)
-            protoUserScript.localImportIdentity = userScript.localImportIdentity ?? ""
+            if let identity = userScript.localImportIdentity {
+                protoUserScript.localImportIdentity = identity
+            } else {
+                protoUserScript.clearLocalImportIdentity()
+            }
             updatedData.userScripts.append(protoUserScript)
         }
         
@@ -685,7 +693,11 @@ extension ProtobufDataManager {
             protoUserScript.updatesAutomatically = userScript.updatesAutomatically
             protoUserScript.isUserStyle = userScript.isUserStyle
             protoUserScript.category = mapFilterListCategoryToProto(userScript.category)
-            protoUserScript.localImportIdentity = userScript.localImportIdentity ?? ""
+            if let identity = userScript.localImportIdentity {
+                protoUserScript.localImportIdentity = identity
+            } else {
+                protoUserScript.clearLocalImportIdentity()
+            }
             protoUserScript.content = ""
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
             
