@@ -469,9 +469,9 @@ struct ContentView: View {
             }
 
             StatCard(
-                title: "Enabled Lists",
+                title: "Enabled",
                 value: "\(enabledListsCount)",
-                icon: "list.bullet.rectangle"
+                icon: "checkmark.circle"
             )
             #if os(iOS)
             .frame(maxWidth: .infinity, alignment: .leading)
