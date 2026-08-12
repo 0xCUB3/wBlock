@@ -74,8 +74,7 @@ struct ElementZapperSettingsView: View {
                     title: Text("Clear Element Zapper Rules?"),
                     message: Text("This removes all saved element zapper rules from every site."),
                     primaryButton: .destructive(Text("Clear All")) {
-                        ruleManager.deleteAllRules()
-                        filterManager.markNonSelectionChangesPending()
+                        clearAllRules()
                     },
                     secondaryButton: .cancel(Text("Cancel"))
                 )
@@ -151,9 +150,7 @@ struct ElementZapperSettingsView: View {
                         .truncationMode(.tail)
                     Spacer()
                     Button {
-                        pendingUndo = UndoEntry(rule: rule, domain: domain, index: index)
-                        ruleManager.deleteRule(rule, forDomain: domain)
-                        filterManager.markNonSelectionChangesPending()
+                        deleteRule(rule, from: domain, at: index)
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.secondary)
@@ -214,11 +211,7 @@ struct ElementZapperSettingsView: View {
         HStack {
             Text("Rule deleted")
             Spacer()
-            Button("Undo") {
-                guard let undo = pendingUndo else { return }
-                ruleManager.restoreRule(undo.rule, forDomain: undo.domain, at: undo.index)
-                pendingUndo = nil
-            }
+            Button("Undo") { restoreDeletedRule() }
             .font(.subheadline.bold())
         }
         .padding(.horizontal, 16)
@@ -229,6 +222,36 @@ struct ElementZapperSettingsView: View {
             guard pendingUndo != nil else { return }
             try? await TaskSleep.sleep(for: .seconds(5))
             pendingUndo = nil
+        }
+    }
+
+    private func deleteRule(_ rule: String, from domain: String, at index: Int) {
+        Task { @MainActor in
+            await dataManager.deleteZapperRule(rule, forHost: domain)
+            await ruleManager.refreshNow()
+            pendingUndo = UndoEntry(rule: rule, domain: domain, index: index)
+            filterManager.markNonSelectionChangesPending()
+        }
+    }
+
+    private func restoreDeletedRule() {
+        guard let undo = pendingUndo else { return }
+        Task { @MainActor in
+            await dataManager.restoreZapperRule(undo.rule, forHost: undo.domain, at: undo.index)
+            await ruleManager.refreshNow()
+            pendingUndo = nil
+            filterManager.markNonSelectionChangesPending()
+        }
+    }
+
+    private func clearAllRules() {
+        Task { @MainActor in
+            for domain in dataManager.getZapperDomains() {
+                await dataManager.deleteAllZapperRules(forHost: domain)
+            }
+            await ruleManager.refreshNow()
+            pendingUndo = nil
+            filterManager.markNonSelectionChangesPending()
         }
     }
 
