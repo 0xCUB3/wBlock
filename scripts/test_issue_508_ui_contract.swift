@@ -33,6 +33,11 @@ require(content, "stagedFile != nil")
 require(content, "Text(\"Change File\")")
 require(content, "case .paste, .file: return \"Add\"")
 require(content, "FilterListContentValidator.isSupportedLocalFile")
+require(content, "if let flags = filter.flagEmojis")
+requireCondition(
+    !content.contains("Text(String(filter.localizedDisplayName.prefix(1)))"),
+    "filter rows must not repeat list-name initials as decorative labels"
+)
 let scripts = try source("wBlock/UserScriptManagerView.swift")
 let addContentShell = try source("wBlock/AddContentShell.swift")
 require(addContentShell, "protocol AddContentMode")

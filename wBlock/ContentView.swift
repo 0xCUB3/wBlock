@@ -729,10 +729,9 @@ struct FilterRowView: View {
         HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    Text(String(filter.localizedDisplayName.prefix(1)))
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 20, alignment: .leading)
+                    if let flags = filter.flagEmojis {
+                        Text(flags)
+                    }
                     Text(filter.localizedDisplayName)
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
