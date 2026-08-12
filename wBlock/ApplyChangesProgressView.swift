@@ -217,9 +217,7 @@ struct ApplyChangesProgressView: View {
     ) -> some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
-                    .imageScale(.medium)
+                SelectionIndicator(isSelected: isSelected, size: 18)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)

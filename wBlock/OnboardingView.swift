@@ -482,9 +482,7 @@ struct OnboardingView: View {
             setSelectedBlockingLevel(level.rawValue)
         } label: {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
-                    .font(.title3)
+                SelectionIndicator(isSelected: isSelected)
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
@@ -504,6 +502,7 @@ struct OnboardingView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .liquidGlassCompat(
             cornerRadius: 16,
             material: isSelected ? .thickMaterial : .regularMaterial
@@ -794,9 +793,7 @@ struct OnboardingView: View {
             hasManuallyEditedRegionalSelection = true
         } label: {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
-                    .font(.title3)
+                SelectionIndicator(isSelected: isSelected)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(filter.localizedDisplayName)
@@ -817,6 +814,7 @@ struct OnboardingView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .liquidGlassCompat(
             cornerRadius: 16,
             material: isSelected ? .thickMaterial : .regularMaterial
@@ -1047,9 +1045,7 @@ struct OnboardingView: View {
             }
         } label: {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
-                    .font(.title3)
+                SelectionIndicator(isSelected: isSelected)
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
@@ -1079,6 +1075,7 @@ struct OnboardingView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .liquidGlassCompat(
             cornerRadius: 16,
             material: isSelected ? .thickMaterial : .regularMaterial
