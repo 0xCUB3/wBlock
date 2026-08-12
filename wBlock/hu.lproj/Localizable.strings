@@ -836,6 +836,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Találtunk egy meglévő wBlock konfigurációt az iCloudban (\\(remoteConfigUpdatedAtText)). Kihagyhatod a kezdő beállítást, és ezt használhatod.";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Találtunk egy meglévő wBlock konfigurációt az iCloudban. Kihagyhatod a kezdő beállítást, és ezt használhatod.";
 "Web extension %@" = "Webes kiterjesztés %@";
+"Get Started" = "Kezdés";
+"The end of Safari ad-blocking B.S." = "Vége a Safari reklámblokkolási ostobaságainak";
 "Welcome to wBlock!" = "Üdvözli a wBlock!";
 "Whitelist" = "Engedélyezőlista";
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Tegyél itt engedélyezőlistára egy webhelyet, vagy állítsd be webhelyenként a felhasználói szkripteket és az elemeltávolító szabályokat a wBlock Safari felugró ablakában.";

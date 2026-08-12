@@ -15,6 +15,7 @@ struct OnboardingView: View {
     }
 
     enum OnboardingStep: Int, CaseIterable, Identifiable {
+        case welcome
         case protection
         case regional
         case sync
@@ -316,7 +317,7 @@ struct OnboardingView: View {
     }
 
     private var activeOnboardingSteps: [OnboardingStep] {
-        [.protection, .regional, .sync, .setup]
+        [.welcome, .protection, .regional, .sync, .setup]
     }
 
     private var currentStepIndex: Int {
@@ -332,7 +333,7 @@ struct OnboardingView: View {
                     .symbolRenderingMode(.hierarchical)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Set up wBlock")
+                    Text(step == .welcome ? "Welcome to wBlock!" : "Set up wBlock")
                         .font(.title2.bold())
                 }
 
@@ -364,6 +365,8 @@ struct OnboardingView: View {
     @ViewBuilder
     private var stepContent: some View {
         switch step {
+        case .welcome:
+            welcomeStep
         case .protection:
             blockingLevelStep
         case .regional:
@@ -377,7 +380,7 @@ struct OnboardingView: View {
 
     private var onboardingFooter: some View {
         HStack(spacing: 12) {
-            if step != .protection {
+            if step != .welcome {
                 Button("Back") {
                     retreatToPreviousStep()
                 }
@@ -386,7 +389,7 @@ struct OnboardingView: View {
 
             Spacer()
 
-            Button(step == .setup ? "Apply & Finish" : "Next") {
+            Button(step == .welcome ? "Get Started" : (step == .setup ? "Apply & Finish" : "Next")) {
                 if step == .setup {
                     Task {
                         await applySettings()
@@ -396,6 +399,7 @@ struct OnboardingView: View {
                 }
             }
             .buttonStyle(.borderedProminent)
+            .tint(step == .welcome ? .blue : nil)
             .disabled(footerButtonDisabled)
             .keyboardShortcut(.defaultAction)
         }
@@ -403,6 +407,8 @@ struct OnboardingView: View {
 
     private var footerButtonDisabled: Bool {
         switch step {
+        case .welcome:
+            return false
         case .protection:
             return selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .regional:
@@ -428,6 +434,35 @@ struct OnboardingView: View {
         withAnimation(.easeInOut(duration: 0.2)) {
             step = steps[steps.index(before: currentIndex)]
         }
+    }
+
+    private var welcomeStep: some View {
+        VStack(spacing: 24) {
+            #if os(macOS)
+            Image(nsImage: NSApp.applicationIconImage ?? NSImage())
+                .resizable()
+                .scaledToFit()
+                .frame(width: 128, height: 128)
+            #else
+            Image("AppIcon")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 128, height: 128)
+            #endif
+
+            VStack(spacing: 10) {
+                Text("Welcome to wBlock!")
+                    .font(.largeTitle.bold())
+                    .multilineTextAlignment(.center)
+                Text("The end of Safari ad-blocking B.S.")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 36)
     }
 
     private var blockingLevelStep: some View {

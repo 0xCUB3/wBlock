@@ -836,6 +836,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "我们在 iCloud (\\(remoteConfigUpdatedAtText)) 中找到现有的 wBlock 配置。你可以跳过引导并直接使用它。";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "我们在 iCloud 中找到现有的 wBlock 配置。你可以跳过引导并直接使用它。";
 "Web extension %@" = "网页扩展 %@";
+"Get Started" = "开始使用";
+"The end of Safari ad-blocking B.S." = "告别 Safari 广告拦截的糟心事";
 "Welcome to wBlock!" = "欢迎使用 wBlock！";
 "Whitelist" = "白名单";
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "在这里将网站列入白名单，或从 Safari 中的 wBlock 弹出窗口按网站调整用户脚本和元素清除器规则。";

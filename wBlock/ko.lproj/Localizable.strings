@@ -836,6 +836,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "iCloud에서 기존 wBlock 구성(\\(remoteConfigUpdatedAtText))을 찾았습니다. 초기 설정을 건너뛰고 해당 구성을 사용할 수 있습니다.";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "iCloud에서 기존 wBlock 구성을 찾았습니다. 초기 설정을 건너뛰고 해당 구성을 사용할 수 있습니다.";
 "Web extension %@" = "웹 확장 %@";
+"Get Started" = "시작하기";
+"The end of Safari ad-blocking B.S." = "Safari 광고 차단의 말도 안 되는 문제를 끝내세요";
 "Welcome to wBlock!" = "wBlock에 오신 것을 환영합니다!";
 "Whitelist" = "허용 목록";
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "여기에서 사이트를 예외로 등록하거나, Safari의 wBlock 팝업에서 사이트별 유저스크립트와 요소 제거기 규칙을 조정하세요.";

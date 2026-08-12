@@ -836,6 +836,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "iCloud'da (\\(remoteConfigUpdatedAtText)) mevcut bir wBlock yapılandırması bulundu. Kurulum sürecini atlayıp bunun yerine onu kullanabilirsiniz.";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "iCloud'da mevcut bir wBlock yapılandırması bulduk. İsterseniz kurulumu atlayıp doğrudan onu kullanabilirsiniz.";
 "Web extension %@" = "Web genişletmesi %@";
+"Get Started" = "Başlayın";
+"The end of Safari ad-blocking B.S." = "Safari'de reklam engelleme saçmalığına son";
 "Welcome to wBlock!" = "wBlock'a Hoş Geldiniz!";
 "Whitelist" = "İzin listesi";
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Bir siteyi buradan izin listesine ekleyebilir veya Safari'deki wBlock açılır penceresinden siteye özel kullanıcı betiği ve öğe gizleme kurallarını ayarlayabilirsiniz.";

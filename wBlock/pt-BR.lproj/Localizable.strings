@@ -836,6 +836,8 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Encontramos uma configuração existente do wBlock no iCloud (\\(remoteConfigUpdatedAtText)). Você pode pular a configuração inicial e usar essa configuração.";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Encontramos uma configuração existente do wBlock no iCloud. Você pode pular a configuração inicial e usar essa configuração.";
 "Web extension %@" = "Extensão web %@";
+"Get Started" = "Começar";
+"The end of Safari ad-blocking B.S." = "Chega de bobagens no bloqueio de anúncios do Safari";
 "Welcome to wBlock!" = "Bem-vindo ao wBlock!";
 "Whitelist" = "Lista de permissões";
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Adicione um site à lista de permissões aqui ou ajuste scripts de usuário e regras do ocultador de elementos por site no popup do wBlock no Safari.";

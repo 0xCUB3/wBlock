@@ -836,6 +836,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Мы нашли существующую конфигурацию wBlock в iCloud (\\(remoteConfigUpdatedAtText)). Можно пропустить начальную настройку и использовать ее.";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Мы нашли существующую конфигурацию wBlock в iCloud. Можно пропустить начальную настройку и использовать ее.";
 "Web extension %@" = "Веб-расширение %@";
+"Get Started" = "Начать";
+"The end of Safari ad-blocking B.S." = "Хватит с нелепостями блокировки рекламы в Safari";
 "Welcome to wBlock!" = "Добро пожаловать в wBlock!";
 "Whitelist" = "Белый список";
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Добавьте сайт в белый список здесь или настройте пользовательские скрипты и правила скрытия элементов для каждого сайта во всплывающем окне wBlock в Safari.";
