@@ -1027,7 +1027,8 @@ final class CloudSyncManager: ObservableObject {
             CloudSyncLocalUserScriptReconciler.deletedNamesToClearDuringReconciliation(
                 existingDeletedNames: deletedLocalUserScriptNameSet(),
                 remoteLocalScripts: remoteLocalScripts,
-                localNames: localNames
+                localNames: localNames,
+                remoteDeletedNames: remoteDeletedLocalNames
             )
         if !deletedLocalNamesToClear.isEmpty {
             clearDeletedLocalUserScriptNames(deletedLocalNamesToClear)
@@ -1206,7 +1207,10 @@ final class CloudSyncManager: ObservableObject {
                 category: local.category,
                 localImportIdentity: local.localImportIdentity
             )
-            guard let script = userScriptManager.userScripts.first(where: {
+            guard restorableRemoteLocalScripts.contains(where: {
+                CloudSyncLocalUserScriptReconciler.matches(existing: localModel, remote: $0)
+            }),
+            let script = userScriptManager.userScripts.first(where: {
                 CloudSyncLocalUserScriptReconciler.matches(existing: $0, remote: localModel)
             }) else {
                 continue

@@ -272,6 +272,15 @@ struct CloudSyncLocalUserScriptTests {
             "re-adding a local userscript locally should clear the local delete marker"
         )
 
+        let staleTombstoneToKeep =
+            CloudSyncLocalUserScriptReconciler.deletedNamesToClearDuringReconciliation(
+                existingDeletedNames: ["bypass paywalls clean"],
+                remoteLocalScripts: [bypass],
+                localNames: [],
+                remoteDeletedNames: ["bypass paywalls clean"]
+            )
+        expect(staleTombstoneToKeep.isEmpty, "a remote tombstone must survive a stale payload copy")
+
         // Two stable imports may share a display name. A legacy name tombstone
         // must not delete the surviving stable entry or suppress its restore.
         let firstDuplicate = CloudSyncLocalUserScript(

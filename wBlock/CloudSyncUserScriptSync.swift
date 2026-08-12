@@ -269,10 +269,12 @@ enum CloudSyncLocalUserScriptReconciler {
     static func deletedNamesToClearDuringReconciliation(
         existingDeletedNames: Set<String>,
         remoteLocalScripts: [CloudSyncLocalUserScript],
-        localNames: [String]
+        localNames: [String],
+        remoteDeletedNames: Set<String> = []
     ) -> Set<String> {
         normalizedNames(existingDeletedNames)
             .intersection(normalizedNames(remoteLocalScripts.map(\.name)).union(normalizedNames(localNames)))
+            .subtracting(normalizedNames(remoteDeletedNames))
     }
 
     static func deletedIdentitiesToClearDuringReconciliation(
