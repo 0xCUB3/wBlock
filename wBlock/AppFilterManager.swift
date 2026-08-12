@@ -25,7 +25,6 @@ struct ApplyFilterConfiguration: Equatable {
     let url: URL
     let category: FilterListCategory
     let isCustom: Bool
-    let isSelected: Bool
     let hasUserProvidedName: Bool
 
     init(_ filter: FilterList) {
@@ -34,7 +33,6 @@ struct ApplyFilterConfiguration: Equatable {
         url = filter.url
         category = filter.category
         isCustom = filter.isCustom
-        isSelected = filter.isSelected
         hasUserProvidedName = filter.hasUserProvidedName
     }
 }
