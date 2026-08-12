@@ -27,6 +27,7 @@ struct ContentView: View {
     @State private var showFilterSearch = false
     @State private var editingCustomFilter: FilterList?
     @State private var isForeignFiltersExpanded = ProtobufDataManager.shared.isForeignFiltersExpanded
+    @AppStorage("adGuardAnnoyancesExpanded") private var isAdGuardAnnoyancesExpanded = true
     @State private var showingCapacityPopover = false
     @State private var selectedTab: Int = 0
     @State private var pendingEssentialFilter: FilterList?
@@ -341,8 +342,20 @@ struct ContentView: View {
                     }
                 } else {
                     Section(item.category.localizedName) {
-                        ForEach(item.filters) { filter in
-                            filterRowView(for: filter)
+                        ForEach(FilterListGrouping.groups(for: item.filters)) { group in
+                            if group.isAdGuardAnnoyances {
+                                DisclosureGroup(isExpanded: adGuardAnnoyancesExpansion) {
+                                    ForEach(group.filters) { filter in
+                                        filterRowView(for: filter)
+                                    }
+                                } label: {
+                                    Text(group.title ?? "")
+                                }
+                            } else {
+                                ForEach(group.filters) { filter in
+                                    filterRowView(for: filter)
+                                }
+                            }
                         }
                     }
                 }
@@ -500,6 +513,16 @@ struct ContentView: View {
         .padding(.horizontal)
     }
 
+    private var adGuardAnnoyancesExpansion: Binding<Bool> {
+        Binding(
+            get: {
+                isAdGuardAnnoyancesExpanded
+                    || !filterSearchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            },
+            set: { isAdGuardAnnoyancesExpanded = $0 }
+        )
+    }
+
     private func foreignFilterGroupHeader(_ title: String) -> some View {
         Text(title)
             .font(.caption.weight(.semibold))
@@ -537,11 +560,31 @@ struct ContentView: View {
             .padding(.horizontal, 4)
 
             VStack(spacing: 0) {
-                ForEach(filters) { filter in
-                    filterRowView(for: filter)
-                    if filter.id != filters.last?.id {
-                        Divider()
-                            .padding(.leading, 16)
+                ForEach(FilterListGrouping.groups(for: filters)) { group in
+                    if group.isAdGuardAnnoyances {
+                        DisclosureGroup(isExpanded: adGuardAnnoyancesExpansion) {
+                            VStack(spacing: 0) {
+                                ForEach(group.filters) { filter in
+                                    filterRowView(for: filter)
+                                    if filter.id != group.filters.last?.id {
+                                        Divider()
+                                            .padding(.leading, 16)
+                                    }
+                                }
+                            }
+                        } label: {
+                            Text(group.title ?? "")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.primary)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                        }
+                    } else if let filter = group.filters.first {
+                        filterRowView(for: filter)
+                        if filter.id != filters.last?.id {
+                            Divider()
+                                .padding(.leading, 16)
+                        }
                     }
                 }
             }
