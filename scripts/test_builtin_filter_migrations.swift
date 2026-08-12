@@ -23,8 +23,8 @@ for (oldName, newName) in migrations {
     expect(loader.contains("\"\(newName)\": [\"\(oldName)\"]"), "missing built-in name migration for \(oldName)")
 }
 expect(loader.contains("migrateBuiltInFilterFilesIfNeeded"), "built-in cache migration is not defined")
-expect(loader.contains("diff-baseline-\\(oldName).txt"), "built-in delta baselines are not migrated")
-expect(loader.contains("appendingPathComponent(\"\\(oldName).txt\")"), "offline filter cache is not migrated")
+expect(loader.contains("prefix: \"diff-baseline-\""), "built-in delta baselines are not migrated")
+expect(loader.contains("name: oldName"), "offline filter cache is not migrated safely")
 expect(manager.contains("loader.migrateBuiltInFilterFilesIfNeeded(defaultFilter)"), "built-in cache migration is not run during setup")
 expect(loader.contains("static func canonicalFilterURLString"), "filter URL canonicalization is not exposed")
 expect(sync.contains("FilterListLoader.canonicalFilterURLString"), "CloudSync does not canonicalize filter URLs")
