@@ -4,6 +4,7 @@ import Foundation
 let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
 let locales = ["ar", "de", "el", "en", "es", "fr", "hu", "it", "ja", "ko", "pl", "pt-BR", "ro", "ru", "tr", "zh-Hans", "zh-Hant"]
 let requiredKeys = [
+    "The selected file is too large. Maximum size is 10 MB.",
     "Requirements", "Disable Essential Filter?", "Replace Existing Content?",
     "Clear Element Zapper Rules?", "Clear All",
     "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage.",
