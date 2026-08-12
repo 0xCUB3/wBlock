@@ -904,3 +904,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Include a host name" = "Include a host name";
 "Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Do not use a userscript URL ending in .js, .mjs, or .cjs";
 "wBlock will fetch and enable the filter list automatically" = "wBlock will fetch and enable the filter list automatically";
+/* Issue 508 UI follow-up */
+"Starts with http:// or https://" = "Starts with http:// or https://";
+"Ends with .js, .user.js, or .user.css" = "Ends with .js, .user.js, or .user.css";
+"Hosted on a trusted source" = "Hosted on a trusted source";

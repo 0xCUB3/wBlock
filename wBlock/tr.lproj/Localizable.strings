@@ -888,15 +888,15 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Bu önerilen filtre wBlock’un temel korumasının parçasıdır. Devre dışı bırakmak engelleme kapsamını azaltabilir.";
 "Pasting will replace the existing editor content." = "Yapıştırma, mevcut düzenleyici içeriğinin yerine geçer.";
 "This removes all saved element zapper rules from every site." = "Bu işlem tüm sitelerdeki kaydedilmiş Element Zapper kurallarını kaldırır.";
-"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"Clear Element Zapper Rules" = "Element Zapper kurallarını temizle";
 "Advanced" = "Gelişmiş";
 "Help" = "Yardım";
-"FAQ" = "FAQ";
-"Report Issues" = "Report Issues";
+"FAQ" = "Sık sorulan sorular";
+"Report Issues" = "Sorunları bildir";
 "Contact Us" = "Bize ulaşın";
 "Version" = "Sürüm";
 "Developer" = "Geliştirici";
-"GPL-3.0 License" = "GPL-3.0 License";
+"GPL-3.0 License" = "GPL-3.0 Lisansı";
 "Privacy Policy" = "Gizlilik Politikası";
 
 /* Issue 508 UI */
@@ -904,3 +904,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Include a host name" = "Bir ana bilgisayar adı ekleyin";
 "Do not use a userscript URL ending in .js, .mjs, or .cjs" = ".js, .mjs veya .cjs ile biten Userscript URL’si kullanmayın";
 "wBlock will fetch and enable the filter list automatically" = "wBlock filtre listesini otomatik olarak indirip etkinleştirir";
+
+/* Issue 508 UI follow-up */
+"Starts with http:// or https://" = "http:// veya https:// ile başlar";
+"Ends with .js, .user.js, or .user.css" = ".js, .user.js veya .user.css ile biter";
+"Hosted on a trusted source" = "Güvenilir bir kaynakta barındırılır";

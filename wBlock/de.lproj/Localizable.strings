@@ -888,19 +888,24 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Dieser empfohlene Filter gehört zum grundlegenden Schutz von wBlock. Das Deaktivieren kann den Blockierschutz verringern.";
 "Pasting will replace the existing editor content." = "Beim Einfügen wird der vorhandene Editorinhalt ersetzt.";
 "This removes all saved element zapper rules from every site." = "Dadurch werden alle gespeicherten Element-Zapper-Regeln von jeder Website entfernt.";
-"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"Clear Element Zapper Rules" = "Element-Zapper-Regeln löschen";
 "Advanced" = "Erweitert";
 "Help" = "Hilfe";
-"FAQ" = "FAQ";
-"Report Issues" = "Report Issues";
+"FAQ" = "Häufig gestellte Fragen";
+"Report Issues" = "Probleme melden";
 "Contact Us" = "Kontakt";
-"Version" = "Version";
+"Version" = "Versionsnummer";
 "Developer" = "Entwickler";
-"GPL-3.0 License" = "GPL-3.0 License";
+"GPL-3.0 License" = "GPL-3.0-Lizenz";
 "Privacy Policy" = "Datenschutzrichtlinie";
 
 /* Issue 508 UI */
 "Use a valid http:// or https:// URL" = "Verwende eine gültige http://- oder https://-URL";
 "Include a host name" = "Gib einen Hostnamen an";
 "Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Verwende keine Userscript-URL mit der Endung .js, .mjs oder .cjs";
-"wBlock will fetch and enable the filter list automatically" = "wBlock lädt die Filterliste herunter und aktiviert sie automatisch";
+"wBlock will fetch and enable the filter list automatically" = "wBlock lädt die Filterliste automatisch herunter und aktiviert sie";
+
+/* Issue 508 UI follow-up */
+"Starts with http:// or https://" = "Beginnt mit http:// oder https://";
+"Ends with .js, .user.js, or .user.css" = "Endet mit .js, .user.js oder .user.css";
+"Hosted on a trusted source" = "Von einer vertrauenswürdigen Quelle gehostet";

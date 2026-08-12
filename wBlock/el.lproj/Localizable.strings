@@ -888,15 +888,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Αυτό το προτεινόμενο φίλτρο αποτελεί μέρος της βασικής προστασίας του wBlock. Η απενεργοποίησή του μπορεί να μειώσει την κάλυψη αποκλεισμού.";
 "Pasting will replace the existing editor content." = "Η επικόλληση θα αντικαταστήσει το υπάρχον περιεχόμενο του επεξεργαστή.";
 "This removes all saved element zapper rules from every site." = "Αυτό αφαιρεί όλους τους αποθηκευμένους κανόνες Element Zapper από κάθε ιστότοπο.";
-"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"Clear Element Zapper Rules" = "Εκκαθάριση κανόνων Element Zapper";
 "Advanced" = "Για προχωρημένους";
 "Help" = "Βοήθεια";
-"FAQ" = "FAQ";
-"Report Issues" = "Report Issues";
+"FAQ" = "Συχνές ερωτήσεις";
+"Report Issues" = "Αναφορά προβλημάτων";
 "Contact Us" = "Επικοινωνία";
 "Version" = "Έκδοση";
 "Developer" = "Προγραμματιστής";
-"GPL-3.0 License" = "GPL-3.0 License";
+"GPL-3.0 License" = "Άδεια GPL-3.0";
 "Privacy Policy" = "Πολιτική απορρήτου";
 
 /* Issue 508 UI */
@@ -904,3 +904,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Include a host name" = "Συμπλήρωσε όνομα κεντρικού υπολογιστή";
 "Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Μην χρησιμοποιείς URL userscript που τελειώνει σε .js, .mjs ή .cjs";
 "wBlock will fetch and enable the filter list automatically" = "Το wBlock θα ανακτήσει και θα ενεργοποιήσει αυτόματα τη λίστα φίλτρων";
+
+/* Issue 508 UI follow-up */
+"Starts with http:// or https://" = "Ξεκινά με http:// ή https://";
+"Ends with .js, .user.js, or .user.css" = "Τελειώνει σε .js, .user.js ή .user.css";
+"Hosted on a trusted source" = "Φιλοξενείται σε αξιόπιστη πηγή";

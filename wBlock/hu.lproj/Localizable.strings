@@ -885,18 +885,18 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Replace Existing Content?" = "Lecseréli a meglévő tartalmat?";
 "Clear Element Zapper Rules?" = "Törli az Element Zapper szabályait?";
 "Clear All" = "Összes törlése";
-"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage.";
-"Pasting will replace the existing editor content." = "Pasting will replace the existing editor content.";
-"This removes all saved element zapper rules from every site." = "This removes all saved element zapper rules from every site.";
-"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Ez az ajánlott szűrő a wBlock alapvető védelmének része. Kikapcsolása csökkentheti a blokkolás lefedettségét.";
+"Pasting will replace the existing editor content." = "A beillesztés lecseréli a szerkesztő meglévő tartalmát.";
+"This removes all saved element zapper rules from every site." = "Ez eltávolítja az összes mentett Element Zapper-szabályt minden webhelyről.";
+"Clear Element Zapper Rules" = "Element Zapper-szabályok törlése";
 "Advanced" = "Speciális";
 "Help" = "Súgó";
-"FAQ" = "FAQ";
-"Report Issues" = "Report Issues";
+"FAQ" = "Gyakori kérdések";
+"Report Issues" = "Probléma bejelentése";
 "Contact Us" = "Kapcsolat";
 "Version" = "Verzió";
 "Developer" = "Fejlesztő";
-"GPL-3.0 License" = "GPL-3.0 License";
+"GPL-3.0 License" = "GPL-3.0 licenc";
 "Privacy Policy" = "Adatvédelmi irányelvek";
 
 /* Issue 508 UI */
@@ -904,3 +904,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Include a host name" = "Adj meg állomásnevet";
 "Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Ne használj .js, .mjs vagy .cjs végződésű Userscript URL-t";
 "wBlock will fetch and enable the filter list automatically" = "A wBlock automatikusan letölti és engedélyezi a szűrőlistát";
+
+/* Issue 508 UI follow-up */
+"Starts with http:// or https://" = "http:// vagy https:// előtaggal kezdődik";
+"Ends with .js, .user.js, or .user.css" = ".js, .user.js vagy .user.css végződésű";
+"Hosted on a trusted source" = "Megbízható forrásról származik";

@@ -887,16 +887,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear All" = "모두 지우기";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "이 추천 필터는 wBlock의 필수 보호 기능입니다. 비활성화하면 차단 범위가 줄어들 수 있습니다.";
 "Pasting will replace the existing editor content." = "붙여넣으면 편집기의 기존 내용이 바뀝니다.";
-"This removes all saved element zapper rules from every site." = "모든 사이트에서 저장된 요소 제거기 규칙을 삭제합니다.";
-"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"This removes all saved element zapper rules from every site." = "모든 사이트에서 저장된 Element Zapper 규칙을 삭제합니다.";
+"Clear Element Zapper Rules" = "Element Zapper 규칙 지우기";
 "Advanced" = "고급";
 "Help" = "도움말";
-"FAQ" = "FAQ";
-"Report Issues" = "Report Issues";
+"FAQ" = "자주 묻는 질문";
+"Report Issues" = "문제 신고";
 "Contact Us" = "문의하기";
 "Version" = "버전";
 "Developer" = "개발자";
-"GPL-3.0 License" = "GPL-3.0 License";
+"GPL-3.0 License" = "GPL-3.0 라이선스";
 "Privacy Policy" = "개인정보 처리방침";
 
 /* Issue 508 UI */
@@ -904,3 +904,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Include a host name" = "호스트 이름을 포함하세요";
 "Do not use a userscript URL ending in .js, .mjs, or .cjs" = ".js, .mjs 또는 .cjs로 끝나는 Userscript URL은 사용하지 마세요";
 "wBlock will fetch and enable the filter list automatically" = "wBlock이 필터 목록을 자동으로 가져와 활성화합니다";
+
+/* Issue 508 UI follow-up */
+"Starts with http:// or https://" = "http:// 또는 https://로 시작";
+"Ends with .js, .user.js, or .user.css" = ".js, .user.js 또는 .user.css로 끝남";
+"Hosted on a trusted source" = "신뢰할 수 있는 소스에서 호스팅됨";

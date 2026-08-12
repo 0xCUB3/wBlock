@@ -883,20 +883,20 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Issue 508 UI */
 "Disable Essential Filter?" = "要停用必要过滤器吗？";
 "Replace Existing Content?" = "要替换现有内容吗？";
-"Clear Element Zapper Rules?" = "要清除元素 Zapper 规则吗？";
+"Clear Element Zapper Rules?" = "要清除 Element Zapper 规则吗？";
 "Clear All" = "全部清除";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "此推荐过滤器是 wBlock 基本保护的一部分。停用后，拦截范围可能会缩小。";
 "Pasting will replace the existing editor content." = "粘贴会替换编辑器中的现有内容。";
-"This removes all saved element zapper rules from every site." = "这会删除所有网站中保存的元素 Zapper 规则。";
-"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"This removes all saved element zapper rules from every site." = "这会删除所有网站中保存的 Element Zapper 规则。";
+"Clear Element Zapper Rules" = "清除 Element Zapper 规则";
 "Advanced" = "高级";
 "Help" = "帮助";
-"FAQ" = "FAQ";
-"Report Issues" = "Report Issues";
+"FAQ" = "常见问题";
+"Report Issues" = "报告问题";
 "Contact Us" = "联系我们";
 "Version" = "版本";
 "Developer" = "开发者";
-"GPL-3.0 License" = "GPL-3.0 License";
+"GPL-3.0 License" = "GPL-3.0 许可证";
 "Privacy Policy" = "隐私政策";
 
 /* Issue 508 UI */
@@ -904,3 +904,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Include a host name" = "包含主机名";
 "Do not use a userscript URL ending in .js, .mjs, or .cjs" = "不要使用以 .js、.mjs 或 .cjs 结尾的 Userscript URL";
 "wBlock will fetch and enable the filter list automatically" = "wBlock 将自动获取并启用过滤列表";
+
+/* Issue 508 UI follow-up */
+"Starts with http:// or https://" = "以 http:// 或 https:// 开头";
+"Ends with .js, .user.js, or .user.css" = "以 .js、.user.js 或 .user.css 结尾";
+"Hosted on a trusted source" = "托管在可信来源";
