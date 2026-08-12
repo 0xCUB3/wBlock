@@ -10,6 +10,12 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
 @main
 struct CloudSyncLocalUserScriptTests {
     static func main() {
+        let cloudSource = try! String(contentsOfFile: "wBlock/CloudSyncManager.swift", encoding: .utf8)
+        expect(cloudSource.contains("let description: String?"), "CloudSync local payload description must be optional")
+        expect(cloudSource.contains("description: script.description"), "CloudSync serialization must carry local descriptions")
+        expect(cloudSource.contains("descriptionOverride: local.description ?? existing?.description"), "content updates must preserve legacy descriptions")
+        expect(cloudSource.contains("if let description = local.description"), "present descriptions must be applied")
+
         let bypass = CloudSyncLocalUserScript(name: "Bypass Paywalls Clean", content: "// script A", isEnabled: true)
         let other = CloudSyncLocalUserScript(name: "Other Script", content: "// script B", isEnabled: false)
         let foo = CloudSyncLocalUserScript(name: "Foo", content: "// script C", isEnabled: true)
@@ -186,6 +192,37 @@ struct CloudSyncLocalUserScriptTests {
             "legacy payloads should retain name fallback even for identity-bearing local entries"
         )
         expect(legacy.category == nil, "legacy payloads must preserve missing category as nil")
+
+        let described = CloudSyncLocalUserScript(
+            name: "Described Local",
+            content: "// described",
+            isEnabled: true,
+            description: "Remote description",
+            localImportIdentity: "file:/tmp/described.user.js"
+        )
+        let decodedDescribed = try! JSONDecoder().decode(
+            CloudSyncLocalUserScript.self,
+            from: JSONEncoder().encode(described)
+        )
+        expect(decodedDescribed == described, "local userscript description must survive encode/decode")
+        let legacyJSON = #"{"name":"Legacy Name","content":"// legacy","isEnabled":true}"#.data(using: .utf8)!
+        let decodedLegacy = try! JSONDecoder().decode(CloudSyncLocalUserScript.self, from: legacyJSON)
+        expect(decodedLegacy.description == nil, "legacy payloads must decode an absent description")
+        expect(
+            CloudSyncLocalUserScriptReconciler.resolvedDescription(existing: described, remote: legacy) == described.description,
+            "absent remote descriptions must preserve the existing description"
+        )
+        let restoredDescription = CloudSyncLocalUserScript(
+            name: described.name,
+            content: described.content,
+            isEnabled: described.isEnabled,
+            description: "Restored description",
+            localImportIdentity: described.localImportIdentity
+        )
+        expect(
+            CloudSyncLocalUserScriptReconciler.resolvedDescription(existing: described, remote: restoredDescription) == "Restored description",
+            "present remote descriptions must update by stable identity"
+        )
 
         let keptByIdentity = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
             localScripts: [legacyExisting],

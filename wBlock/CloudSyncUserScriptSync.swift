@@ -1,10 +1,11 @@
 import Foundation
 import wBlockCoreService
 
-struct CloudSyncLocalUserScript: Equatable {
+struct CloudSyncLocalUserScript: Codable, Equatable {
     let name: String
     let content: String
     let isEnabled: Bool
+    let description: String?
     let updatesAutomatically: Bool?
     let category: String?
     let localImportIdentity: String?
@@ -21,6 +22,7 @@ struct CloudSyncLocalUserScript: Equatable {
         name: String,
         content: String,
         isEnabled: Bool,
+        description: String? = nil,
         updatesAutomatically: Bool? = nil,
         category: String? = nil,
         localImportIdentity: String? = nil
@@ -28,6 +30,7 @@ struct CloudSyncLocalUserScript: Equatable {
         self.name = name
         self.content = content
         self.isEnabled = isEnabled
+        self.description = description
         self.updatesAutomatically = updatesAutomatically
         self.category = category
         self.localImportIdentity = localImportIdentity
@@ -52,10 +55,18 @@ enum CloudSyncLocalUserScriptReconciler {
                 name: existing.name,
                 content: existing.content,
                 isEnabled: existing.isEnabled,
+                description: existing.description,
                 localImportIdentity: existing.localImportIdentity
             ),
             remote: remote
         )
+    }
+
+    static func resolvedDescription(
+        existing: CloudSyncLocalUserScript,
+        remote: CloudSyncLocalUserScript
+    ) -> String? {
+        remote.description ?? existing.description
     }
 
     static func matches(existing: CloudSyncLocalUserScript, remote: CloudSyncLocalUserScript) -> Bool {

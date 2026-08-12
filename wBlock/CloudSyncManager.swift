@@ -1009,6 +1009,7 @@ final class CloudSyncManager: ObservableObject {
                 name: $0.name,
                 content: $0.content,
                 isEnabled: $0.isEnabled,
+                description: $0.description,
                 localImportIdentity: $0.localImportIdentity
             )
         }
@@ -1017,6 +1018,7 @@ final class CloudSyncManager: ObservableObject {
                 name: $0.name,
                 content: $0.content,
                 isEnabled: $0.isEnabled,
+                description: $0.description,
                 updatesAutomatically: $0.updatesAutomatically,
                 category: $0.category,
                 localImportIdentity: $0.localImportIdentity
@@ -1121,6 +1123,7 @@ final class CloudSyncManager: ObservableObject {
                     name: $0.name,
                     content: $0.content,
                     isEnabled: $0.isEnabled,
+                    description: $0.description,
                     localImportIdentity: $0.localImportIdentity
                 )
             },
@@ -1158,11 +1161,19 @@ final class CloudSyncManager: ObservableObject {
             deletedIdentities: deletedLocalIdentities
         )
         for local in restorableRemoteLocalScripts {
-            if let existing = userScriptManager.userScripts.first(where: {
+            let existing = userScriptManager.userScripts.first(where: {
                 CloudSyncLocalUserScriptReconciler.matches(existing: $0, remote: local)
-            }), existing.content == local.content {
+            })
+            if let existing, existing.content == local.content {
                 await userScriptManager.setUserScript(existing, isEnabled: local.isEnabled)
                 await userScriptManager.setUserScript(existing, updatesAutomatically: local.resolvedUpdatesAutomatically)
+                if let description = local.description {
+                    _ = await userScriptManager.setUserScriptMetadataOverrides(
+                        for: existing.id,
+                        name: existing.name,
+                        description: description
+                    )
+                }
                 if let category = local.category,
                    let resolvedCategory = FilterListCategory(rawValue: category) {
                     await userScriptManager.setUserScript(existing, category: resolvedCategory)
@@ -1173,6 +1184,7 @@ final class CloudSyncManager: ObservableObject {
             _ = await userScriptManager.addUserScript(
                 fromSourceContent: local.content,
                 nameOverride: local.name,
+                descriptionOverride: local.description ?? existing?.description,
                 category: local.category.flatMap(FilterListCategory.init(rawValue:)),
                 localImportIdentity: local.localImportIdentity,
                 legacyLocalImportMatching: local.localImportIdentity == nil
@@ -1203,6 +1215,7 @@ final class CloudSyncManager: ObservableObject {
                 name: local.name,
                 content: local.content,
                 isEnabled: local.isEnabled,
+                description: local.description,
                 updatesAutomatically: local.updatesAutomatically,
                 category: local.category,
                 localImportIdentity: local.localImportIdentity
@@ -1278,6 +1291,7 @@ final class CloudSyncManager: ObservableObject {
                 name: $0.name,
                 content: $0.content,
                 isEnabled: $0.isEnabled,
+                description: $0.description,
                 localImportIdentity: $0.localImportIdentity
             )
         }
@@ -1414,6 +1428,7 @@ final class CloudSyncManager: ObservableObject {
                 name: $0.name,
                 content: $0.content,
                 isEnabled: $0.isEnabled,
+                description: $0.description,
                 updatesAutomatically: $0.updatesAutomatically,
                 category: $0.category,
                 localImportIdentity: $0.localImportIdentity
@@ -1424,6 +1439,7 @@ final class CloudSyncManager: ObservableObject {
                 name: $0.name,
                 content: $0.content,
                 isEnabled: $0.isEnabled,
+                description: $0.description,
                 localImportIdentity: $0.localImportIdentity
             )
         }
@@ -1517,6 +1533,7 @@ final class CloudSyncManager: ObservableObject {
             _ = await userScriptManager.addUserScript(
                 fromSourceContent: local.content,
                 nameOverride: local.name,
+                descriptionOverride: local.description,
                 category: local.category.flatMap(FilterListCategory.init(rawValue:)),
                 localImportIdentity: local.localImportIdentity,
                 legacyLocalImportMatching: local.localImportIdentity == nil
@@ -1660,6 +1677,7 @@ final class CloudSyncManager: ObservableObject {
                     name: script.name,
                     content: script.content,
                     isEnabled: script.isEnabled,
+                    description: script.description,
                     updatesAutomatically: script.updatesAutomatically,
                     category: script.category.rawValue,
                     localImportIdentity: script.localImportIdentity,
@@ -2226,6 +2244,8 @@ private struct SyncPayload: Codable {
         let name: String
         let content: String
         let isEnabled: Bool
+        /// Optional for compatibility with older CloudKit payloads.
+        let description: String?
         let updatesAutomatically: Bool?
         /// Optional for compatibility with older CloudKit payloads.
         let category: String?
