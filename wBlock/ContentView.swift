@@ -898,7 +898,7 @@ struct ContentModifiers: ViewModifier {
 
 private extension FilterListCategory {
     static var userListCategories: [FilterListCategory] {
-        [.custom] + allCases.filter { $0 != .all && $0 != .custom }
+        [.custom] + allCases.filter { $0 != .all && $0 != .custom && $0 != .scripts }
     }
 }
 
