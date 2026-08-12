@@ -38,6 +38,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let category: FilterListCategory
     let displayCategory: UserScriptDisplayCategory
     let isBuiltIn: Bool
+    let isIntegrated: Bool
     let isCustom: Bool
     let builtInSection: BuiltInUserScriptSection?
     let isBeta: Bool
@@ -68,6 +69,8 @@ private struct UserScriptListItem: Identifiable, Hashable {
             persistedCategory: script.category
         )
         isBuiltIn = builtInSection != nil
+        isIntegrated = builtInSection != nil && builtInDisplayRole == .functionality
+            && (script.name == "Tube Cleaner" || script.name == "Player Cleaner")
         isCustom = builtInSection == nil
         self.builtInSection = builtInSection
         self.isBeta = isBeta
@@ -635,27 +638,6 @@ struct UserScriptManagerView: View {
                         .buttonStyle(.plain)
                         .accessibilityLabel("Info")
                     }
-                    Badge(
-                        text: script.isUserStyle ? "Userstyle" : "Userscript",
-                        color: script.isUserStyle ? .purple : .red
-                    )
-                    if script.isBuiltIn {
-                        Badge(text: "Built-in", color: .orange)
-                    } else if script.isLocal {
-                        Badge(text: "Local Import", color: .blue)
-                    } else if script.isCustom {
-                        Badge(text: "Custom", color: .blue)
-                    }
-                    if script.isBeta {
-                        Text("Beta")
-                            .font(.caption2)
-                            .fontWeight(.medium)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.orange.opacity(0.15))
-                            .foregroundStyle(.orange)
-                            .cornerRadius(4)
-                    }
                 }
 
                 if !script.localizedDisplayDescription.isEmpty {
@@ -665,6 +647,21 @@ struct UserScriptManagerView: View {
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+
+                HStack(spacing: 6) {
+                    Text(script.isIntegrated ? "Integrated" : (script.isUserStyle ? "Userstyle" : "Userscript"))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    if script.isLocal {
+                        Badge(text: "Local Import", color: .blue)
+                    } else if script.isCustom {
+                        Badge(text: "Custom", color: .blue)
+                    }
+                    if script.isBeta {
+                        Badge(text: "Beta", color: .orange)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 HStack(spacing: 4) {
                     if !script.version.isEmpty {

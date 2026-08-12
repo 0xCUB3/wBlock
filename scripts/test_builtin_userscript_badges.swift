@@ -9,8 +9,14 @@ guard source.contains("isBuiltIn: userScriptManager.isDefaultUserScript(script)"
     fputs("FAIL: userscript details do not classify remote built-ins by built-in identity\n", stderr)
     exit(1)
 }
-guard source.contains("isBuiltIn: isBuiltIn") else {
-    fputs("FAIL: userscript badge view does not use the built-in identity\n", stderr)
+guard source.contains("isIntegrated = builtInSection != nil")
+    && source.contains(#"Text(script.isIntegrated ? "Integrated" : (script.isUserStyle ? "Userstyle" : "Userscript"))"#) else {
+    fputs("FAIL: app-shipped multi-feature cleaners need a compact Integrated type label\n", stderr)
+    exit(1)
+}
+guard !source.contains("Badge(\n                        text: script.isUserStyle")
+    && !source.contains(#"Badge(text: "Built-in""#) else {
+    fputs("FAIL: type and built-in labels must not clutter the title row\n", stderr)
     exit(1)
 }
 guard core.contains("name: \"AdGuard Extra\"") && core.contains("isDefaultUserScript") else {

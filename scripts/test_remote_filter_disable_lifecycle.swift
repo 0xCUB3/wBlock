@@ -33,7 +33,7 @@ check(manager.contains("await saveFilterLists()"), "cleanup must persist the ret
 
 check(pipeline.contains("let previouslyAppliedFilterIDs = appliedSelectedFilterIDs"), "apply must capture the applied selection before the run")
 check(pipeline.contains("let runSnapshot = activeApplySnapshot ?? ApplyRunSnapshot("), "apply must use the captured run snapshot")
-check(pipeline.contains("let allSelectedFilters = runSnapshot.filters.filter { $0.isSelected }"), "blocker generation must use the run snapshot selection")
+check(pipeline.contains("runSnapshot.filters.filter { $0.isSelected }"), "blocker generation must use the run snapshot selection")
 check(pipeline.contains("runSnapshot.activeZapperRules"), "blocker generation must use the run snapshot zapper state")
 let cleanupUsesSnapshot = pipeline.components(separatedBy: "previouslyAppliedFilterIDs: previouslyAppliedFilterIDs").count - 1
 check(cleanupUsesSnapshot >= 3, "each apply success path must clean up against the captured applied selection")

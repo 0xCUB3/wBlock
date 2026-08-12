@@ -439,6 +439,7 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "包含 // ==UserScript== 元数据块（或用于用户样式的 /* ==UserStyle== */），以便 wBlock 读取名称和 URL 模式。";
 "IndianList" = "IndianList";
 "Info" = "信息";
+"Integrated" = "集成功能";
 "YouTube Ad Blocking" = "YouTube 广告拦截";
 "Blocks YouTube ads with a document-start proxy engine and remotely verified rules." = "使用文档启动代理引擎和远程验证的规则拦截 YouTube 广告。";
 "Info.plist missing" = "缺少 Info.plist";
