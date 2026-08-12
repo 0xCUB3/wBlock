@@ -21,4 +21,7 @@ require(scripts.contains("ContextMenuActionAvailability.userScriptActions"), "sc
 require(scripts.contains("setUserScriptMetadataOverrides"), "editable script metadata must use persisted overrides")
 require(scripts.contains("private struct ScriptURLView") && scripts.contains("Label(\"Copy URL\""), "remote script Info must offer Copy URL")
 require(scripts.contains("canEdit: script.isLocal && !userScriptManager.isDefaultUserScript(script)"), "remote and built-in scripts must not expose edit")
+require(scripts.contains("if selection.action == .info"), "Info must use a metadata-only popup")
+require(scripts.contains("UserScriptInfoView("), "userscript Info must open the metadata view")
+require(scripts.contains("startsEditing: selection.action == .editContent"), "Edit Content must open the editor directly")
 print("PASS")

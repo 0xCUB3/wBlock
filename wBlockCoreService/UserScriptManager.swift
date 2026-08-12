@@ -383,11 +383,7 @@ public class UserScriptManager: ObservableObject {
         guard script.content.isEmpty else { return script }
 
         return await Task.detached { [script] in
-            var hydratedScript = script
-            if let content = Self.readUserScriptContentOffMain(script) {
-                hydratedScript.replaceContentAndParseMetadata(content)
-            }
-            return hydratedScript
+            Self.hydrateUserScriptFromDisk(script)
         }.value
     }
 
@@ -807,9 +803,7 @@ public class UserScriptManager: ObservableObject {
     ) -> [UserScript] {
         var scripts = userScripts
         for i in scripts.indices {
-            if let content = readUserScriptContentOffMain(scripts[i]) {
-                scripts[i].replaceContentAndParseMetadata(content)
-            }
+            scripts[i] = hydrateUserScriptFromDisk(scripts[i])
 
             guard includeResources else { continue }
             if let resources = readUserScriptResourcesOffMain(scripts[i]) {
@@ -817,6 +811,23 @@ public class UserScriptManager: ObservableObject {
             }
         }
         return scripts
+    }
+
+    /// Hydrates source content without discarding display metadata chosen for a local import.
+    nonisolated private static func hydrateUserScriptFromDisk(_ script: UserScript) -> UserScript {
+        var hydratedScript = script
+        guard let content = readUserScriptContentOffMain(script) else { return hydratedScript }
+
+        let persistedName = script.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let persistedDescription = script.description
+        hydratedScript.replaceContentAndParseMetadata(content)
+        if script.isLocal {
+            if !persistedName.isEmpty {
+                hydratedScript.name = script.name
+            }
+            hydratedScript.description = persistedDescription
+        }
+        return hydratedScript
     }
 
     /// Read userscript content off the main thread
@@ -2601,17 +2612,19 @@ public class UserScriptManager: ObservableObject {
     }
 
     /// Persists display metadata overrides for an editable local import.
+    @discardableResult
     public func setUserScriptMetadataOverrides(
         for scriptId: UUID,
         name: String,
         description: String
-    ) async {
-        guard let index = indexOfUserScript(withId: scriptId), userScripts[index].isLocal else { return }
+    ) async -> Bool {
+        guard let index = indexOfUserScript(withId: scriptId), userScripts[index].isLocal else { return false }
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else { return }
+        guard !trimmedName.isEmpty else { return false }
         userScripts[index].name = trimmedName
         userScripts[index].description = description.trimmingCharacters(in: .whitespacesAndNewlines)
         await persistUserScriptsNow(invalidateExecutionCache: false)
+        return true
     }
 
     public struct AutoUpdateResult: Sendable {

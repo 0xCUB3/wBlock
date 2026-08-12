@@ -35,6 +35,9 @@ struct FilterInfoView: View {
                 } else {
                     Badge(text: "Built-in", color: .orange)
                 }
+                if filter.sourceRuleCount == nil {
+                    Badge(text: "Not Downloaded", color: .red)
+                }
             }
 
             Text(filter.category.localizedName)
