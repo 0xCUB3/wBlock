@@ -225,9 +225,15 @@ struct SettingsView: View {
             }
 
             NavigationLink {
-                SiteSettingsView(filterManager: filterManager)
+                SiteSettingsView()
             } label: {
                 Label("Site Settings", systemImage: "globe")
+            }
+
+            NavigationLink {
+                ElementZapperSettingsView(filterManager: filterManager)
+            } label: {
+                Label("Element zapper", systemImage: "wand.and.stars")
             }
 
             backupButtons

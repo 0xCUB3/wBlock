@@ -1,0 +1,231 @@
+import SwiftUI
+import wBlockCoreService
+
+/// Per-domain element zapper rules and their apply switches.
+struct ElementZapperSettingsView: View {
+    @ObservedObject var filterManager: AppFilterManager
+    @ObservedObject private var ruleManager = ZapperRuleManager.shared
+    @State private var searchText = ""
+    @State private var expandedDomains: Set<String> = []
+    @State private var pendingConfirmation = false
+    @State private var pendingUndo: UndoEntry?
+    #if os(macOS)
+    @State private var showSearch = false
+    #endif
+
+    private struct UndoEntry {
+        let rule: String
+        let domain: String
+        let index: Int
+    }
+
+    private var filteredDomains: [String] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !query.isEmpty else { return ruleManager.domains }
+        return ruleManager.domains.filter { $0.localizedCaseInsensitiveContains(query) }
+    }
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                VStack(spacing: 16) {
+                    if !ruleManager.domains.isEmpty {
+                        Button(role: .destructive) {
+                            pendingConfirmation = true
+                        } label: {
+                            Label("Clear Element Zapper Rules", systemImage: "trash")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                    if filteredDomains.isEmpty {
+                        emptyState
+                    } else {
+                        rulesCard
+                    }
+
+                    Spacer(minLength: pendingUndo == nil ? 20 : 72)
+                }
+                .padding(.vertical)
+                .padding(.horizontal)
+            }
+
+            if pendingUndo != nil {
+                undoBanner
+                    .padding(.horizontal)
+                    .padding(.bottom, 16)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: pendingUndo?.rule)
+        .navigationTitle("Element zapper")
+        .task { await ruleManager.refreshNow() }
+        .alert("Clear Element Zapper Rules?", isPresented: $pendingConfirmation) {
+            Button("Clear All", role: .destructive) {
+                ruleManager.deleteAllRules()
+                filterManager.markNonSelectionChangesPending()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This removes all saved element zapper rules from every site.")
+        }
+        #if os(iOS)
+        .searchable(text: $searchText, prompt: "Search")
+        .navigationBarTitleDisplayMode(.inline)
+        #else
+        .toolbar {
+            ToolbarItem(placement: .automatic) {
+                ToolbarSearchField(text: $searchText, isExpanded: $showSearch)
+            }
+        }
+        #endif
+    }
+
+    private var rulesCard: some View {
+        VStack(spacing: 0) {
+            ForEach(filteredDomains, id: \.self) { domain in
+                domainHeader(domain)
+                if expandedDomains.contains(domain) {
+                    domainRules(domain)
+                }
+                if domain != filteredDomains.last {
+                    Divider().padding(.leading, 16)
+                }
+            }
+        }
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func domainHeader(_ domain: String) -> some View {
+        let expanded = expandedDomains.contains(domain)
+        return Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                if expanded { expandedDomains.remove(domain) }
+                else { expandedDomains.insert(domain) }
+            }
+        } label: {
+            HStack {
+                Text(domain)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer()
+                Text(localizedRuleCount(ruleManager.ruleCount(forDomain: domain)))
+                    .strikethrough(ruleManager.isDisabled(domain))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(16)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func domainRules(_ domain: String) -> some View {
+        zapperToggle(domain)
+        ForEach(ruleManager.rules(for: domain).indices, id: \.self) { index in
+            let rule = ruleManager.rules(for: domain)[index]
+            VStack(spacing: 0) {
+                Divider().padding(.leading, 16)
+                HStack(spacing: 12) {
+                    Text(rule)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Spacer()
+                    Button {
+                        pendingUndo = UndoEntry(rule: rule, domain: domain, index: index)
+                        ruleManager.deleteRule(rule, forDomain: domain)
+                        filterManager.markNonSelectionChangesPending()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                            .font(.system(size: 18))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.vertical, 10)
+                .padding(.leading, 32)
+                .padding(.trailing, 16)
+            }
+        }
+        Text("Changes take full effect after the next apply.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 32)
+            .padding(.trailing, 16)
+            .padding(.bottom, 12)
+    }
+
+    private func zapperToggle(_ domain: String) -> some View {
+        VStack(spacing: 0) {
+            Divider().padding(.leading, 16)
+            HStack {
+                Text("Apply rules on this site")
+                Spacer()
+                Toggle("", isOn: Binding(
+                    get: { !ruleManager.isDisabled(domain) },
+                    set: { enabled in
+                        ruleManager.setDisabled(!enabled, forDomain: domain)
+                        filterManager.markNonSelectionChangesPending()
+                    }
+                ))
+                .labelsHidden()
+                .toggleStyle(.switch)
+            }
+            .padding(.vertical, 10)
+            .padding(.leading, 32)
+            .padding(.trailing, 16)
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "wand.and.stars")
+                .font(.system(size: 44))
+                .foregroundStyle(.secondary.opacity(0.6))
+            Text("No zapper rules for this site.")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            Text("No zapper rules for this site.")
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 48)
+    }
+
+    private var undoBanner: some View {
+        HStack {
+            Text("Rule deleted")
+            Spacer()
+            Button("Undo") {
+                guard let undo = pendingUndo else { return }
+                ruleManager.restoreRule(undo.rule, forDomain: undo.domain, at: undo.index)
+                pendingUndo = nil
+            }
+            .font(.subheadline.bold())
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+        .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
+        .task(id: pendingUndo?.rule) {
+            guard pendingUndo != nil else { return }
+            try? await TaskSleep.sleep(for: .seconds(5))
+            pendingUndo = nil
+        }
+    }
+
+    private func localizedRuleCount(_ count: Int) -> String {
+        let key = count == 1 ? "%d rule" : "%d rules"
+        return String.localizedStringWithFormat(NSLocalizedString(key, comment: "Element zapper rule count"), count)
+    }
+}

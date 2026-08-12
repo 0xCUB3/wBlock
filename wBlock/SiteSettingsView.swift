@@ -1,12 +1,9 @@
 import SwiftUI
 import wBlockCoreService
 
-/// Unified per-site settings: whitelist state, per-site userscript exceptions,
-/// and element zapper rules. One card, one expandable row per domain.
+/// Per-site blocking and userscript settings. Element Zapper has its own destination.
 struct SiteSettingsView: View {
-    @ObservedObject var filterManager: AppFilterManager
     @ObservedObject private var dataManager = ProtobufDataManager.shared
-    @ObservedObject private var ruleManager = ZapperRuleManager.shared
     @ObservedObject private var userScriptManager = UserScriptManager.shared
     @State private var newDomain: String = ""
     @State private var isAddingDomain: Bool = false
@@ -17,18 +14,23 @@ struct SiteSettingsView: View {
     @State private var expandedDomains: Set<String> = []
     private enum PendingConfirmation: Identifiable {
         case reset(domain: String)
-        case clearAll
 
         var id: String {
             switch self {
             case .reset(let domain): return "reset:\(domain)"
-            case .clearAll: return "clear-all"
             }
         }
     }
 
+    private struct SiteUndoSnapshot {
+        let domain: String
+        let wasWhitelisted: Bool
+        let wasFilterDisabled: Bool
+        let disabledScriptHosts: [String: [String]]
+    }
+
     @State private var pendingConfirmation: PendingConfirmation?
-    @State private var pendingUndo: (rule: String, domain: String, index: Int)? = nil
+    @State private var pendingUndo: SiteUndoSnapshot?
     @FocusState private var isTextFieldFocused: Bool
 
     private struct SiteSummary: Identifiable {
@@ -36,8 +38,6 @@ struct SiteSettingsView: View {
         let isWhitelisted: Bool
         let isFilterDisabled: Bool
         let scriptsOffCount: Int
-        let zapperRuleCount: Int
-        let isZapperDisabled: Bool
 
         var id: String { domain }
     }
@@ -47,16 +47,6 @@ struct SiteSettingsView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     addSiteSection
-
-                    if !ruleManager.domains.isEmpty {
-                        Button(role: .destructive) {
-                            pendingConfirmation = .clearAll
-                        } label: {
-                            Label("Clear Element Zapper Rules", systemImage: "trash")
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .buttonStyle(.bordered)
-                    }
 
                     let sites = filteredSites
                     if !sites.isEmpty {
@@ -78,11 +68,8 @@ struct SiteSettingsView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: pendingUndo?.rule)
+        .animation(.easeInOut(duration: 0.25), value: pendingUndo?.domain)
         .navigationTitle("Site Settings")
-        .task {
-            await ruleManager.refreshNow()
-        }
         #if os(iOS)
         .searchable(text: $searchText, prompt: "Search")
         .navigationBarTitleDisplayMode(.inline)
@@ -95,16 +82,6 @@ struct SiteSettingsView: View {
         #endif
         .alert(item: $pendingConfirmation) { confirmation in
             switch confirmation {
-            case .clearAll:
-                return Alert(
-                    title: Text("Clear Element Zapper Rules?"),
-                    message: Text("This removes all saved element zapper rules from every site."),
-                    primaryButton: .destructive(Text("Clear All")) {
-                        ruleManager.deleteAllRules()
-                        filterManager.markNonSelectionChangesPending()
-                    },
-                    secondaryButton: .cancel(Text("Cancel"))
-                )
             case .reset(let domain):
                 return Alert(
                     title: Text("Reset Site Settings"),
@@ -180,7 +157,6 @@ struct SiteSettingsView: View {
 
         var domains = whitelisted
         domains.formUnion(filterDisabled)
-        domains.formUnion(ruleManager.domains)
         domains.formUnion(scriptsOffByHost.keys)
 
         return domains.sorted().map { domain in
@@ -189,8 +165,6 @@ struct SiteSettingsView: View {
                 isWhitelisted: whitelisted.contains(domain),
                 isFilterDisabled: filterDisabled.contains(domain),
                 scriptsOffCount: scriptsOffByHost[domain] ?? 0,
-                zapperRuleCount: ruleManager.ruleCount(forDomain: domain),
-                isZapperDisabled: ruleManager.isDisabled(domain)
             )
         }
 
@@ -253,13 +227,6 @@ struct SiteSettingsView: View {
                         summaryBadge(
                             Text(localizedScriptsOffCount(site.scriptsOffCount)),
                             systemImage: "scroll"
-                        )
-                    }
-                    if site.zapperRuleCount > 0 {
-                        summaryBadge(
-                            Text(localizedRuleCount(site.zapperRuleCount)),
-                            systemImage: "wand.and.stars",
-                            struckThrough: site.isZapperDisabled
                         )
                     }
                 }
@@ -338,59 +305,6 @@ struct SiteSettingsView: View {
             }
         }
 
-        let rules = ruleManager.rules(for: site.domain)
-        if !rules.isEmpty {
-            toggleRow(isOn: Binding(
-                get: { !ruleManager.isDisabled(site.domain) },
-                set: { apply in
-                    ruleManager.setDisabled(!apply, forDomain: site.domain)
-                    filterManager.markNonSelectionChangesPending()
-                }
-            )) {
-                Text("Apply rules on this site")
-                    .font(.body)
-            }
-
-            ForEach(rules.indices, id: \.self) { ruleIndex in
-                let rule = rules[ruleIndex]
-
-                VStack(spacing: 0) {
-                    Divider()
-                        .padding(.leading, 16)
-
-                    HStack(alignment: .center, spacing: 12) {
-                        Text(rule)
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-
-                        Spacer()
-
-                        Button {
-                            deleteRule(rule, from: site.domain, at: ruleIndex)
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.secondary)
-                                .font(.system(size: 18))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.vertical, 10)
-                    .padding(.leading, 32)
-                    .padding(.trailing, 16)
-                }
-            }
-
-            Text("Changes take full effect after the next apply.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 32)
-                .padding(.trailing, 16)
-                .padding(.bottom, 12)
-        }
-
         VStack(spacing: 0) {
             Divider()
                 .padding(.leading, 16)
@@ -462,15 +376,30 @@ struct SiteSettingsView: View {
 
     private var undoBanner: some View {
         HStack {
-            Text("Rule deleted")
+            Text("Reset Site Settings")
                 .font(.subheadline)
                 .foregroundStyle(.primary)
 
             Spacer()
 
             Button("Undo") {
-                if let undo = pendingUndo {
-                    ruleManager.restoreRule(undo.rule, forDomain: undo.domain, at: undo.index)
+                guard let undo = pendingUndo else { return }
+                Task { @MainActor in
+                    let currentWhitelisted = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
+                    let restoredWhitelisted = undo.wasWhitelisted
+                        ? DisabledSitesNormalizer.normalizedDomains(from: currentWhitelisted + [undo.domain])
+                        : currentWhitelisted.filter { $0 != undo.domain }
+                    await dataManager.setWhitelistedDomains(restoredWhitelisted)
+
+                    let currentFilterDisabled = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
+                    let restoredFilterDisabled = undo.wasFilterDisabled
+                        ? DisabledSitesNormalizer.normalizedDomains(from: currentFilterDisabled + [undo.domain])
+                        : currentFilterDisabled.filter { $0 != undo.domain }
+                    await dataManager.setFilterDisabledDomains(restoredFilterDisabled)
+
+                    for (scriptID, hosts) in undo.disabledScriptHosts {
+                        await dataManager.setUserScriptDisabledHosts(hosts, forScriptID: scriptID)
+                    }
                     pendingUndo = nil
                 }
             }
@@ -480,7 +409,7 @@ struct SiteSettingsView: View {
         .padding(.vertical, 12)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
         .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
-        .task(id: pendingUndo?.rule) {
+        .task(id: pendingUndo?.domain) {
             guard pendingUndo != nil else { return }
             try? await TaskSleep.sleep(for: .seconds(5))
             await MainActor.run {
@@ -557,15 +486,22 @@ struct SiteSettingsView: View {
         }
     }
 
-    private func deleteRule(_ rule: String, from domain: String, at index: Int) {
-        pendingUndo = (rule: rule, domain: domain, index: index)
-        ruleManager.deleteRule(rule, forDomain: domain)
-        filterManager.markNonSelectionChangesPending()
-    }
-
     private func resetSite(_ domain: String) {
+        let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
+        let currentFilterDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
+        let disabledScriptHosts = dataManager.getUserScriptDisabledHosts().reduce(into: [String: [String]]()) { result, entry in
+            if entry.value.contains(domain) {
+                result[entry.key] = entry.value
+            }
+        }
+        pendingUndo = SiteUndoSnapshot(
+            domain: domain,
+            wasWhitelisted: currentDomains.contains(domain),
+            wasFilterDisabled: currentFilterDomains.contains(domain),
+            disabledScriptHosts: disabledScriptHosts
+        )
+
         Task { @MainActor in
-            let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
             if currentDomains.contains(domain) {
                 await dataManager.setWhitelistedDomains(currentDomains.filter { $0 != domain })
             }
@@ -581,15 +517,6 @@ struct SiteSettingsView: View {
                 )
             }
 
-            if ruleManager.ruleCount(forDomain: domain) > 0 {
-                ruleManager.deleteAllRules(forDomain: domain)
-                filterManager.markNonSelectionChangesPending()
-            }
-            if ruleManager.isDisabled(domain) {
-                ruleManager.setDisabled(false, forDomain: domain)
-                filterManager.markNonSelectionChangesPending()
-            }
-
             expandedDomains.remove(domain)
         }
     }
@@ -602,11 +529,4 @@ struct SiteSettingsView: View {
         )
     }
 
-    private func localizedRuleCount(_ count: Int) -> String {
-        let key = count == 1 ? "%d rule" : "%d rules"
-        return String.localizedStringWithFormat(
-            NSLocalizedString(key, comment: "Element zapper rule count"),
-            count
-        )
-    }
 }
