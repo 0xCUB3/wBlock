@@ -924,6 +924,7 @@ public class ProtobufDataManager: ObservableObject {
         await updateDataImmediately { data in
             var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
             let insertIndex = min(max(index, 0), ruleList.selectors.count)
+            ruleList.pendingDeletions.removeAll { $0 == selector }
             ruleList.selectors.insert(selector, at: insertIndex)
             data.extensionData.zapperRulesByHost[host] = ruleList
             data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
