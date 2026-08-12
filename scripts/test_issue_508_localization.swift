@@ -46,6 +46,31 @@ func unescapeSourceLiteral(_ value: String) -> String {
         .replacingOccurrences(of: "\\\\", with: "\\")
 }
 
+func sourceKeyOccurrences(for locale: String) -> [String: [Int]] {
+    let path = root.appendingPathComponent("wBlock/\(locale).lproj/Localizable.strings")
+    guard let contents = try? String(contentsOf: path, encoding: .utf8) else {
+        fail("could not read \(path.path)")
+    }
+    let pattern = #"(?m)^[[:space:]]*\"((?:\\.|[^\"\\])*)\"[[:space:]]*="#
+    guard let regex = try? NSRegularExpression(pattern: pattern) else {
+        fail("invalid localization table pattern")
+    }
+
+    var occurrences: [String: [Int]] = [:]
+    let range = NSRange(contents.startIndex..<contents.endIndex, in: contents)
+    for match in regex.matches(in: contents, range: range) {
+        guard let keyRange = Range(match.range(at: 1), in: contents),
+              let declarationRange = Range(match.range, in: contents)
+        else { continue }
+        let key = unescapeSourceLiteral(String(contents[keyRange]))
+        let line = contents[..<declarationRange.lowerBound].reduce(into: 1) { count, character in
+            if character == "\n" { count += 1 }
+        }
+        occurrences[key, default: []].append(line)
+    }
+    return occurrences
+}
+
 func localizedKeys(in sources: [(path: String, contents: String)]) -> Set<String> {
     let pattern = #"(?:String\s*\(\s*localized:\s*|LocalizedStrings\s*\.\s*(?:text|format)\s*\(\s*|NSLocalizedString\s*\(\s*)\"((?:\\.|[^\"\\])*)\""#
     guard let regex = try? NSRegularExpression(pattern: pattern) else {
@@ -85,6 +110,15 @@ func placeholderTokens(_ value: String) -> [String] {
     let range = NSRange(value.startIndex..<value.endIndex, in: value)
     return regex.matches(in: value, range: range).compactMap { match in
         Range(match.range, in: value).map { String(value[$0]) }
+    }
+}
+
+for locale in locales {
+    let duplicates = sourceKeyOccurrences(for: locale).filter { $0.value.count > 1 }
+    guard duplicates.isEmpty else {
+        let details = duplicates.map { "\($0.key.debugDescription) at lines \($0.value)" }
+            .joined(separator: "; ")
+        fail("duplicate localization keys in \(locale): \(details)")
     }
 }
 
