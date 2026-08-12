@@ -865,8 +865,6 @@ private struct ScriptStatusBadgesView: View {
             }
             if !isDownloaded && !script.isLocal {
                 Badge(text: "Not Downloaded", color: .red)
-            } else if isDownloaded {
-                Badge(text: "Downloaded", color: .green)
             }
         }
     }
@@ -892,14 +890,14 @@ private struct ScriptURLView: View {
     let isBundled: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Source URL").font(.caption).fontWeight(.medium).foregroundStyle(.secondary)
             if isBundled {
                 Text("Ships with the app")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else if let url = script.url {
+            }
+            if let url = script.url {
                 Text(url.absoluteString)
                     .font(.caption)
                     .foregroundStyle(.blue)
