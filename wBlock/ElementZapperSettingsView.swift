@@ -181,8 +181,11 @@ struct ElementZapperSettingsView: View {
                 Toggle("", isOn: Binding(
                     get: { !ruleManager.isDisabled(domain) },
                     set: { enabled in
-                        ruleManager.setDisabled(!enabled, forDomain: domain)
-                        filterManager.markNonSelectionChangesPending()
+                        Task { @MainActor in
+                            await dataManager.setZapperRulesDisabled(!enabled, forHost: domain)
+                            await ruleManager.refreshNow()
+                            filterManager.markNonSelectionChangesPending()
+                        }
                     }
                 ))
                 .labelsHidden()
