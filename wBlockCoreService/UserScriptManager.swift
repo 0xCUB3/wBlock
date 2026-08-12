@@ -1993,7 +1993,87 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    public func addUserScript(fromLocalFile fileURL: URL) async -> Error? {
+    public func stageUserScriptImport(fromLocalFile fileURL: URL) throws -> UserScript {
+        let accessed = fileURL.startAccessingSecurityScopedResource()
+        defer {
+            if accessed {
+                fileURL.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        let filename = fileURL.lastPathComponent
+        let lowercased = filename.lowercased()
+        let isSupportedType = lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
+            || lowercased.hasSuffix(".user.css") || lowercased.hasSuffix(".css")
+        guard isSupportedType else { throw UserScriptImportError.unsupportedType }
+
+        let data: Data
+        do {
+            data = try Data(contentsOf: fileURL)
+        } catch {
+            throw UserScriptImportError.unreadableFile
+        }
+        guard let content = String(data: data, encoding: .utf8) else {
+            throw UserScriptImportError.unreadableFile
+        }
+
+        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedContent.isEmpty else { throw UserScriptImportError.emptyContent }
+        guard hasMetadataBlock(in: content) else { throw UserScriptImportError.missingMetadata }
+
+        var staged = UserScript(name: baseName(for: fileURL), content: content)
+        staged.parseMetadata()
+        if staged.isUserStyle,
+           let style = UserStyleSupport.parsed(from: content),
+           !style.isPreprocessorSupported
+        {
+            throw UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor)
+        }
+        if staged.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            staged.name = baseName(for: fileURL)
+        }
+        staged.isEnabled = true
+        staged.isLocal = true
+        return staged
+    }
+
+    public func addUserScript(
+        fromStagedImport staged: UserScript,
+        nameOverride: String,
+        descriptionOverride: String,
+        category: FilterListCategory
+    ) async -> Error? {
+        isLoading = true
+        statusDescription = staged.isUserStyle ? "Importing userstyle..." : "Importing userscript..."
+        hasError = false
+
+        do {
+            _ = try await importLocalUserScript(
+                content: staged.content,
+                fallbackName: staged.name,
+                importedStatusVerb: "Imported",
+                replacedStatusVerb: "Replaced",
+                nameOverride: nameOverride,
+                descriptionOverride: descriptionOverride,
+                categoryOverride: category
+            )
+            isLoading = false
+            return nil
+        } catch {
+            hasError = true
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            statusDescription = "Import failed"
+            isLoading = false
+            return error
+        }
+    }
+
+    public func addUserScript(
+        fromLocalFile fileURL: URL,
+        nameOverride: String? = nil,
+        descriptionOverride: String? = nil,
+        category: FilterListCategory? = nil
+    ) async -> Error? {
         isLoading = true
         statusDescription = UserStyleSupport.isUserStylePath(fileURL.lastPathComponent)
             ? "Importing userstyle..." : "Importing userscript..."
@@ -2007,29 +2087,16 @@ public class UserScriptManager: ObservableObject {
         }
 
         do {
-            let filename = fileURL.lastPathComponent
-            let lowercased = filename.lowercased()
-            let isSupportedType = lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
-                || lowercased.hasSuffix(".user.css") || lowercased.hasSuffix(".css")
-
-            guard isSupportedType else { throw UserScriptImportError.unsupportedType }
-
-            let data: Data
-            do {
-                data = try Data(contentsOf: fileURL)
-            } catch {
-                throw UserScriptImportError.unreadableFile
-            }
-
-            guard let content = String(data: data, encoding: .utf8) else {
-                throw UserScriptImportError.unreadableFile
-            }
+            let staged = try stageUserScriptImport(fromLocalFile: fileURL)
 
             _ = try await importLocalUserScript(
-                content: content,
-                fallbackName: baseName(for: fileURL),
+                content: staged.content,
+                fallbackName: staged.name,
                 importedStatusVerb: "Imported",
-                replacedStatusVerb: "Replaced"
+                replacedStatusVerb: "Replaced",
+                nameOverride: nameOverride,
+                descriptionOverride: descriptionOverride,
+                categoryOverride: category
             )
 
             isLoading = false
@@ -2043,7 +2110,12 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    public func addUserScript(fromSourceContent content: String) async -> Error? {
+    public func addUserScript(
+        fromSourceContent content: String,
+        nameOverride: String? = nil,
+        descriptionOverride: String? = nil,
+        category: FilterListCategory? = nil
+    ) async -> Error? {
         isLoading = true
         statusDescription = "Adding userscript..."
         hasError = false
@@ -2053,7 +2125,10 @@ public class UserScriptManager: ObservableObject {
                 content: content,
                 fallbackName: "Pasted Userscript",
                 importedStatusVerb: "Added",
-                replacedStatusVerb: "Updated"
+                replacedStatusVerb: "Updated",
+                nameOverride: nameOverride,
+                descriptionOverride: descriptionOverride,
+                categoryOverride: category
             )
 
             isLoading = false
@@ -2072,7 +2147,10 @@ public class UserScriptManager: ObservableObject {
         content rawContent: String,
         fallbackName: String,
         importedStatusVerb: String,
-        replacedStatusVerb: String
+        replacedStatusVerb: String,
+        nameOverride: String? = nil,
+        descriptionOverride: String? = nil,
+        categoryOverride: FilterListCategory? = nil
     ) async throws -> UserScript {
         let trimmedContent = rawContent.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -2096,8 +2174,10 @@ public class UserScriptManager: ObservableObject {
 
         let metadataName = tempScript.name.trimmingCharacters(in: .whitespacesAndNewlines)
         let fallbackName = fallbackName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let canonicalName = !metadataName.isEmpty
-            ? metadataName : (fallbackName.isEmpty ? "Pasted Userscript" : fallbackName)
+        let overrideName = nameOverride?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let canonicalName = !overrideName.isEmpty
+            ? overrideName
+            : (!metadataName.isEmpty ? metadataName : (fallbackName.isEmpty ? "Pasted Userscript" : fallbackName))
 
         let existingIndex = userScripts.firstIndex { script in
             script.isLocal
@@ -2112,7 +2192,7 @@ public class UserScriptManager: ObservableObject {
         newUserScript.isLocal = true
         newUserScript.lastUpdated = Date()
 
-        newUserScript.description = tempScript.description
+        newUserScript.description = descriptionOverride ?? tempScript.description
         newUserScript.version = tempScript.version
         newUserScript.matches = tempScript.matches
         newUserScript.excludeMatches = tempScript.excludeMatches
@@ -2128,6 +2208,7 @@ public class UserScriptManager: ObservableObject {
         newUserScript.updateURL = tempScript.updateURL
         newUserScript.downloadURL = tempScript.downloadURL
         newUserScript.isUserStyle = tempScript.isUserStyle
+        newUserScript.category = categoryOverride ?? existingIndex.map { userScripts[$0].category } ?? .scripts
 
         let processedContent = await processRequireDirectives(newUserScript)
         let resourceContents = await processResourceDirectives(newUserScript)

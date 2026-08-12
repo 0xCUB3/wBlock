@@ -910,3 +910,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Starts with http:// or https://" = "يبدأ بـ http:// أو https://";
 "Ends with .js, .user.js, or .user.css" = "ينتهي بـ .js أو .user.js أو .user.css";
 "Hosted on a trusted source" = "مستضاف على مصدر موثوق";
+
+"The file must include userscript or userstyle metadata." = "يجب أن يتضمن الملف بيانات وصفية لسكريبت المستخدم أو نمط المستخدم.";

@@ -1449,6 +1449,10 @@ struct AddUserScriptView: View {
     @State private var showingPasteReplacementConfirmation = false
     @State private var pendingPasteText: String?
     @State private var showingFileImporter = false
+    @State private var stagedFile: StagedScriptFile?
+    @State private var stagedName = ""
+    @State private var stagedDescription = ""
+    @State private var selectedCategory: FilterListCategory = .scripts
     @State private var addMode: AddMode = .url
     @State private var showHints: Bool = false
     @State private var isEditorLineWrappingEnabled = false
@@ -1459,6 +1463,12 @@ struct AddUserScriptView: View {
         self.userScriptManager = userScriptManager
         self.onScriptAdded = onScriptAdded
         _editorController = StateObject(wrappedValue: CodeMirrorEditorController(text: ""))
+    }
+
+    private struct StagedScriptFile {
+        let filename: String
+        let content: String
+        let parsed: UserScript
     }
 
     private enum AddMode: String, CaseIterable, Identifiable {
@@ -1503,7 +1513,7 @@ struct AddUserScriptView: View {
         .fileImporter(isPresented: $showingFileImporter, allowedContentTypes: allowedImportTypes) { result in
             switch result {
             case .success(let url):
-                importFile(at: url)
+                stageFile(at: url)
             case .failure(let error):
                 if (error as? CocoaError)?.code != .userCancelled {
                     fileImportError = error.localizedDescription
@@ -1627,21 +1637,41 @@ struct AddUserScriptView: View {
     private var fileTab: some View {
         Form {
             Section {
-                Button {
-                    showingFileImporter = true
-                    fileImportError = nil
-                } label: {
-                    Label("Choose File", systemImage: "doc")
+                fileSelectionButton
+                if let stagedFile {
+                    TextField("Name", text: $stagedName)
+                        .textInputAutocapitalization(.words)
+                        .autocorrectionDisabled()
+                    TextField("Description", text: $stagedDescription)
+                        .textInputAutocapitalization(.sentences)
+                        .autocorrectionDisabled()
+                    userScriptCategoryPicker
                 }
-                .disabled(isAdding)
             } footer: {
                 fileImportMessage
             }
 
             Section {
-                requirementsDisclosure
+                fileRequirementsPanel
             }
         }
+    }
+
+    private var fileSelectionButton: some View {
+        Button {
+            showingFileImporter = true
+            fileImportError = nil
+        } label: {
+            HStack {
+                Image(systemName: "doc")
+                Text(stagedFile?.filename ?? "Choose File")
+                Spacer()
+                if stagedFile != nil {
+                    Text("Change File").foregroundStyle(.secondary)
+                }
+            }
+        }
+        .disabled(isAdding)
     }
     #endif
 
@@ -1778,36 +1808,16 @@ struct AddUserScriptView: View {
                 Text("Import File")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-
                 Text("Local imports won't auto-update; re-import to replace.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Button {
-                showingFileImporter = true
-                fileImportError = nil
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: "doc")
-                    Text("Choose File")
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 10)
-                .padding(.horizontal, 12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(.quaternary, lineWidth: 1)
-                )
+            fileSelectionButton
+            if stagedFile != nil {
+                userScriptMetaFields
             }
-            .buttonStyle(.plain)
-            .disabled(isAdding)
-
+            fileRequirementsPanel
             if let fileImportError {
                 Text(fileImportError)
                     .font(.caption)
@@ -1817,15 +1827,36 @@ struct AddUserScriptView: View {
         .padding(16)
         .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
     }
+
+    private var fileSelectionButton: some View {
+        Button {
+            showingFileImporter = true
+            fileImportError = nil
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "doc")
+                Text(stagedFile?.filename ?? "Choose File")
+                Spacer()
+                if stagedFile != nil {
+                    Text("Change File").foregroundStyle(.secondary)
+                }
+            }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(.quaternary, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(isAdding)
+    }
     #endif
 
     private var addButtonTitle: String {
-        switch addMode {
-        case .url, .editor:
-            return "Add"
-        case .file:
-            return "Import"
-        }
+        "Add"
     }
 
     private var requirementsPanel: some View {
@@ -1853,6 +1884,27 @@ struct AddUserScriptView: View {
         .font(.footnote)
     }
 
+    private var userScriptCategoryPicker: some View {
+        Picker("Category", selection: $selectedCategory) {
+            ForEach(FilterListCategory.allCases.filter { $0 != .all }) { category in
+                Text(category.localizedName).tag(category)
+            }
+        }
+        .pickerStyle(.menu)
+    }
+
+    private var userScriptMetaFields: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextField("Name", text: $stagedName)
+                .textFieldStyle(.roundedBorder)
+                .autocorrectionDisabled()
+            TextField("Description", text: $stagedDescription)
+                .textFieldStyle(.roundedBorder)
+                .autocorrectionDisabled()
+            userScriptCategoryPicker
+        }
+    }
+
     private var fileImportMessage: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Local imports won't auto-update; re-import to replace.")
@@ -1867,6 +1919,22 @@ struct AddUserScriptView: View {
 
     private var requirementsDisclosure: some View {
         requirementsPanel
+    }
+
+    private var fileRequirementsPanel: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Requirements", systemImage: "info.circle")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            Text("The file must include userscript or userstyle metadata.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text("Local imports won't auto-update; re-import to replace.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(16)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
     }
 
     private var editorToolbar: some View {
@@ -1995,7 +2063,7 @@ struct AddUserScriptView: View {
         case .editor:
             return editorController.isDirty
         case .file:
-            return true
+            return stagedFile != nil && !stagedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
     }
 
@@ -2032,8 +2100,29 @@ struct AddUserScriptView: View {
         case .editor:
             addScriptFromEditor()
         case .file:
+            guard let stagedFile else { return }
+            isAdding = true
             fileImportError = nil
-            showingFileImporter = true
+            Task(priority: .userInitiated) {
+                let error = await userScriptManager.addUserScript(
+                    fromStagedImport: stagedFile.parsed,
+                    nameOverride: stagedName,
+                    descriptionOverride: stagedDescription,
+                    category: selectedCategory
+                )
+                if let error {
+                    await MainActor.run {
+                        fileImportError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                        isAdding = false
+                    }
+                } else {
+                    await MainActor.run {
+                        isAdding = false
+                        onScriptAdded()
+                        dismiss()
+                    }
+                }
+            }
         }
     }
 
@@ -2092,27 +2181,24 @@ struct AddUserScriptView: View {
         }
     }
 
-    private func importFile(at url: URL) {
-        isAdding = true
-        fileImportError = nil
-
-        Task(priority: .userInitiated) {
-            let error = await userScriptManager.addUserScript(fromLocalFile: url)
-
-            if let error {
-                await MainActor.run {
-                    fileImportError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-                    isAdding = false
-                }
-            } else {
-                await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Imported userscript from file"), metadata: ["file": url.lastPathComponent])
-
-                await MainActor.run {
-                    isAdding = false
-                    onScriptAdded()
-                    dismiss()
-                }
-            }
+    private func stageFile(at url: URL) {
+        do {
+            let parsed = try userScriptManager.stageUserScriptImport(fromLocalFile: url)
+            let content = parsed.content
+            stagedFile = StagedScriptFile(
+                filename: url.lastPathComponent,
+                content: content,
+                parsed: parsed
+            )
+            let metadataName = parsed.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            stagedName = metadataName.isEmpty
+                ? UserScriptURLSupport.displayName(forFilename: url.lastPathComponent)
+                : metadataName
+            stagedDescription = parsed.description.trimmingCharacters(in: .whitespacesAndNewlines)
+            selectedCategory = .scripts
+            fileImportError = nil
+        } catch {
+            fileImportError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
     }
 

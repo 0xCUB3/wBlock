@@ -910,3 +910,5 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Starts with http:// or https://" = "http:// vagy https:// előtaggal kezdődik";
 "Ends with .js, .user.js, or .user.css" = ".js, .user.js vagy .user.css végződésű";
 "Hosted on a trusted source" = "Megbízható forrásról származik";
+
+"The file must include userscript or userstyle metadata." = "A fájlnak userscript- vagy userstyle-metaadatokat kell tartalmaznia.";

@@ -910,3 +910,5 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Starts with http:// or https://" = "Zaczyna się od http:// lub https://";
 "Ends with .js, .user.js, or .user.css" = "Kończy się na .js, .user.js lub .user.css";
 "Hosted on a trusted source" = "Hostowany w zaufanym źródle";
+
+"The file must include userscript or userstyle metadata." = "Plik musi zawierać metadane userscriptu lub userstyle.";

@@ -101,6 +101,7 @@ message UserScriptData {
   int64 last_updated = 18;
   optional bool updates_automatically = 19;
   bool is_user_style = 20;
+  FilterListCategory category = 21;
 }
 
 // Whitelist/disabled sites data

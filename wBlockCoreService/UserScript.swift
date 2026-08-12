@@ -142,6 +142,8 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     public var content: String = ""
     public var lastUpdated: Date?
     public var updatesAutomatically: Bool = true
+    /// User-selected category for local organization. Existing scripts default to Scripts.
+    public var category: FilterListCategory = .scripts
     
     /// Computed property to check if the userscript is downloaded and ready to use
     public var isDownloaded: Bool {

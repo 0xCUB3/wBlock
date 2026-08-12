@@ -910,3 +910,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Starts with http:// or https://" = "以 http:// 或 https:// 開頭";
 "Ends with .js, .user.js, or .user.css" = "以 .js、.user.js 或 .user.css 結尾";
 "Hosted on a trusted source" = "託管於可信任的來源";
+
+"The file must include userscript or userstyle metadata." = "檔案必須包含使用者腳本或使用者樣式中繼資料。";

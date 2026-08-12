@@ -910,3 +910,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Starts with http:// or https://" = "http:// 또는 https://로 시작";
 "Ends with .js, .user.js, or .user.css" = ".js, .user.js 또는 .user.css로 끝남";
 "Hosted on a trusted source" = "신뢰할 수 있는 소스에서 호스팅됨";
+
+"The file must include userscript or userstyle metadata." = "파일에는 사용자 스크립트 또는 사용자 스타일 메타데이터가 포함되어야 합니다.";

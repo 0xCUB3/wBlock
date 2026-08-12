@@ -909,3 +909,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Starts with http:// or https://" = "Starts with http:// or https://";
 "Ends with .js, .user.js, or .user.css" = "Ends with .js, .user.js, or .user.css";
 "Hosted on a trusted source" = "Hosted on a trusted source";
+
+"The file must include userscript or userstyle metadata." = "The file must include userscript or userstyle metadata.";
