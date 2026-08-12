@@ -112,6 +112,10 @@ extension AppFilterManager {
             await MainActor.run { self.prepareApplyRunState() }
         }
 
+        // A deselected remote custom list is no longer retained as a downloaded baseline.
+        // Local and inline imports deliberately keep their content and metadata.
+        await clearDownloadedStateForDeselectedRemoteFilters()
+
         // While blocking is globally paused, never write real rules back to disk — leave the
         // content blockers empty until the user explicitly resumes. This keeps manual Apply
         // Changes, auto-update runs, and fast disabled-site updates consistent with pause.

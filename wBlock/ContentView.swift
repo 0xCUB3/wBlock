@@ -651,7 +651,11 @@ struct FilterRowView: View {
                 }
                 .font(.body)
 
-                if let rawCount = filter.rawSourceRuleCount,
+                if filter.isCustom && !filter.isInlineUserList && filter.sourceRuleCount == nil {
+                    Text("Not Downloaded")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else if let rawCount = filter.rawSourceRuleCount,
                    let expandedCount = filter.sourceRuleCount,
                    rawCount != expandedCount {
                     // Both counts available and different — show expansion

@@ -233,6 +233,47 @@ extension AppFilterManager {
         }
     }
 
+    /// Drops downloaded state only after a remote custom filter is deselected and applied.
+    /// The definition metadata remains so re-enabling can fetch the same source again.
+    func clearDownloadedStateForDeselectedRemoteFilters() async {
+        let filtersToClear = filterLists.filter { filter in
+            guard appliedSelectedFilterIDs.contains(filter.id), !filter.isSelected,
+                  filter.isCustom, !filter.isInlineUserList
+            else { return false }
+            let scheme = filter.url.scheme?.lowercased()
+            return scheme == "http" || scheme == "https"
+        }
+        guard !filtersToClear.isEmpty else { return }
+
+        if let containerURL = loader.getSharedContainerURL() {
+            for filter in filtersToClear {
+                let filename = ContentBlockerIncrementalCache.localFilename(for: filter)
+                try? FileManager.default.removeItem(at: containerURL.appendingPathComponent(filename))
+                try? FileManager.default.removeItem(
+                    at: containerURL.appendingPathComponent("diff-baseline-\(filename)")
+                )
+                // Clean up the legacy name-based cache as well.
+                try? FileManager.default.removeItem(
+                    at: containerURL.appendingPathComponent("\(filter.name).txt")
+                )
+            }
+        }
+
+        for filter in filtersToClear {
+            guard let index = filterLists.firstIndex(where: { $0.id == filter.id }) else { continue }
+            filterLists[index].version = ""
+            filterLists[index].sourceRuleCount = nil
+            filterLists[index].rawSourceRuleCount = nil
+            filterLists[index].lastUpdated = nil
+            filterLists[index].etag = nil
+            filterLists[index].serverLastModified = nil
+            filterLists[index].limitExceededReason = nil
+            await dataManager.setFilterValidators(filter.id.uuidString, etag: nil, lastModified: nil)
+        }
+
+        await saveFilterLists()
+    }
+
     func removeCustomFilterList(_ filter: FilterList) {
         if filter.isCustom {
             CloudSyncManager.shared.recordDeletedCustomListURL(filter.url.absoluteString)

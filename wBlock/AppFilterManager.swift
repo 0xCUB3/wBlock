@@ -74,7 +74,7 @@ class AppFilterManager: ObservableObject {
         filterLists.filter(\.isCustom)
     }
 
-    private var appliedSelectedFilterIDs: Set<UUID> = []
+    var appliedSelectedFilterIDs: Set<UUID> = []
     private var appliedCustomFilterKeys: Set<String> = []
     private var hasPendingSelectionChanges = false
     private var hasPendingNonSelectionChanges = false
