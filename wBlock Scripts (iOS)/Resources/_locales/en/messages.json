@@ -11,9 +11,9 @@
     "message": "Loading…",
     "description": "Popup status shown while loading state is being resolved."
   },
-  "popup_disable_on_site": {
-    "message": "Disable on this site",
-    "description": "Label for the site-specific disable toggle in the popup."
+  "popup_enable_on_site": {
+    "message": "Enable on this site",
+    "description": "Label for the site-specific enable toggle in the popup."
   },
   "popup_element_zapper": {
     "message": "Element zapper",

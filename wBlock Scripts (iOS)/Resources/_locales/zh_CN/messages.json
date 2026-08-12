@@ -11,9 +11,9 @@
     "message": "加载中…",
     "description": "Popup status shown while loading state is being resolved."
   },
-  "popup_disable_on_site": {
-    "message": "在此网站禁用",
-    "description": "Label for the site-specific disable toggle in the popup."
+  "popup_enable_on_site": {
+    "message": "在此网站启用",
+    "description": "Label for the site-specific enable toggle in the popup."
   },
   "popup_element_zapper": {
     "message": "元素清除器",

@@ -11,9 +11,9 @@
     "message": "読み込み中…",
     "description": "Popup status shown while loading state is being resolved."
   },
-  "popup_disable_on_site": {
-    "message": "このサイトで無効化",
-    "description": "Label for the site-specific disable toggle in the popup."
+  "popup_enable_on_site": {
+    "message": "このサイトで有効にする",
+    "description": "Label for the site-specific enable toggle in the popup."
   },
   "popup_element_zapper": {
     "message": "要素ザッパー",

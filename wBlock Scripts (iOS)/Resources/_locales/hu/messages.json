@@ -11,9 +11,9 @@
     "message": "Betöltés…",
     "description": "Popup status shown while loading state is being resolved."
   },
-  "popup_disable_on_site": {
-    "message": "Letiltás ezen a webhelyen",
-    "description": "Label for the site-specific disable toggle in the popup."
+  "popup_enable_on_site": {
+    "message": "Engedélyezés ezen a webhelyen",
+    "description": "Label for the site-specific enable toggle in the popup."
   },
   "popup_element_zapper": {
     "message": "Elemeltávolító",

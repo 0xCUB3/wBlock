@@ -11,9 +11,9 @@
     "message": "Φόρτωση…",
     "description": "Popup status shown while loading state is being resolved."
   },
-  "popup_disable_on_site": {
-    "message": "Απενεργοποίηση σε αυτόν τον ιστότοπο",
-    "description": "Label for the site-specific disable toggle in the popup."
+  "popup_enable_on_site": {
+    "message": "Ενεργοποίηση σε αυτόν τον ιστότοπο",
+    "description": "Label for the site-specific enable toggle in the popup."
   },
   "popup_element_zapper": {
     "message": "Αποκλεισμός στοιχείου",

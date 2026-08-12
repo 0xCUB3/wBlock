@@ -793,7 +793,7 @@ async function invokeUserscriptCommand(tabId, frameId, bridgeId, commandId) {
 function setupListeners() {
     const rulesToggle = document.getElementById('zapper-rules-toggle');
     const rulesContainer = document.getElementById('zapper-rules');
-    const disableToggle = document.getElementById('disable-toggle');
+    const disableToggle = document.getElementById('enable-toggle');
     const zapperEnabledToggle = document.getElementById('zapper-enabled-toggle');
     const zapperActivate = document.getElementById('zapper-activate');
     const zapperClear = document.getElementById('zapper-clear');
@@ -852,7 +852,7 @@ function setupListeners() {
             try {
                 setError('');
                 disableToggle.disabled = true;
-                const next = disableToggle.checked;
+                const next = !disableToggle.checked;
                 setStatus(next
                     ? t('popup_status_disabling', undefined, 'Disabling…')
                     : t('popup_status_enabling', undefined, 'Enabling…'), 'neutral');
@@ -889,7 +889,7 @@ function setupListeners() {
                 const disabled = Boolean(response && response.disabled);
                 zapperEnabledToggle.checked = !disabled;
                 if (zapperActivate) {
-                    zapperActivate.disabled = (disableToggle ? disableToggle.checked : false) || disabled;
+                    zapperActivate.disabled = (disableToggle ? !disableToggle.checked : false) || disabled;
                 }
                 await notifyZapperRulesChanged(tab.id);
                 await reloadActiveTab(tab.id);
@@ -1024,7 +1024,7 @@ async function refreshUi() {
     });
 
     const hostEl = document.getElementById('site-host');
-    const disableToggle = document.getElementById('disable-toggle');
+    const disableToggle = document.getElementById('enable-toggle');
     const zapperEnabledToggle = document.getElementById('zapper-enabled-toggle');
     const zapperActivate = document.getElementById('zapper-activate');
     const rulesToggle = document.getElementById('zapper-rules-toggle');
@@ -1069,7 +1069,7 @@ async function refreshUi() {
     const pageUserScriptsPromise = fetchPageUserScripts(tab.url);
     let pageUserScriptsRenderedDisabled = null;
     const renderPageUserScriptsPromise = pageUserScriptsPromise.then((scripts) => {
-        pageUserScriptsRenderedDisabled = disableToggle ? disableToggle.checked : false;
+        pageUserScriptsRenderedDisabled = disableToggle ? !disableToggle.checked : false;
         renderPageUserScripts(scripts, pageUserScriptsRenderedDisabled);
         return scripts;
     });
@@ -1089,7 +1089,7 @@ async function refreshUi() {
     const effectiveDisabled = blockingPaused || disabled;
     const zapperRulesDisabled = zapperState.disabled === true;
     if (disableToggle) {
-        disableToggle.checked = disabled;
+        disableToggle.checked = !disabled;
         disableToggle.disabled = blockingPaused;
     }
     if (zapperEnabledToggle) {
