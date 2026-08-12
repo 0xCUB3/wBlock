@@ -10,6 +10,8 @@ struct ElementZapperSettingsView: View {
     @State private var expandedDomains: Set<String> = []
     @State private var pendingConfirmation: PendingConfirmation?
     @State private var pendingUndo: UndoEntry?
+    @State private var isMutating = false
+    @State private var mutationVersion = 0
     #if os(macOS)
     @State private var showSearch = false
     #endif
@@ -22,7 +24,10 @@ struct ElementZapperSettingsView: View {
     private struct UndoEntry {
         let rule: String
         let domain: String
-        let index: Int
+        let originalIndex: Int
+        let previousRule: String?
+        let nextRule: String?
+        let version: Int
     }
 
     private var filteredDomains: [String] {
@@ -65,6 +70,7 @@ struct ElementZapperSettingsView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: pendingUndo?.rule)
+        .disabled(isMutating || ruleManager.isMutationInFlight)
         .navigationTitle("Element Zapper")
         .task { await ruleManager.refreshNow() }
         .alert(item: $pendingConfirmation) { confirmation in
@@ -181,10 +187,12 @@ struct ElementZapperSettingsView: View {
                 Toggle("", isOn: Binding(
                     get: { !ruleManager.isDisabled(domain) },
                     set: { enabled in
-                        Task { @MainActor in
-                            await dataManager.setZapperRulesDisabled(!enabled, forHost: domain)
-                            await ruleManager.refreshNow()
-                            filterManager.markNonSelectionChangesPending()
+                        invalidateUndoAndStartMutation {
+                            await ruleManager.performMutation {
+                                await dataManager.setZapperRulesDisabled(!enabled, forHost: domain)
+                                await ruleManager.refreshNow()
+                                filterManager.markNonSelectionChangesPending()
+                            }
                         }
                     }
                 ))
@@ -229,32 +237,87 @@ struct ElementZapperSettingsView: View {
     }
 
     private func deleteRule(_ rule: String, from domain: String, at index: Int) {
+        guard !isMutating else { return }
+        let currentRules = ruleManager.rules(for: domain)
+        guard index < currentRules.count, currentRules[index] == rule else { return }
+        let version = beginMutation(invalidateUndo: true)
+        let undo = UndoEntry(
+            rule: rule,
+            domain: domain,
+            originalIndex: index,
+            previousRule: index > 0 ? currentRules[index - 1] : nil,
+            nextRule: index + 1 < currentRules.count ? currentRules[index + 1] : nil,
+            version: version
+        )
         Task { @MainActor in
-            await dataManager.deleteZapperRule(rule, forHost: domain)
-            await ruleManager.refreshNow()
-            pendingUndo = UndoEntry(rule: rule, domain: domain, index: index)
-            filterManager.markNonSelectionChangesPending()
+            await ruleManager.performMutation {
+                await dataManager.deleteZapperRule(rule, forHost: domain)
+                await ruleManager.refreshNow()
+                filterManager.markNonSelectionChangesPending()
+            }
+            guard mutationVersion == version else { return }
+            pendingUndo = undo
+            isMutating = false
         }
     }
 
     private func restoreDeletedRule() {
-        guard let undo = pendingUndo else { return }
-        Task { @MainActor in
-            await dataManager.restoreZapperRule(undo.rule, forHost: undo.domain, at: undo.index)
-            await ruleManager.refreshNow()
+        guard !isMutating, let undo = pendingUndo, undo.version == mutationVersion else { return }
+        let currentRules = ruleManager.rules(for: undo.domain)
+        guard !currentRules.contains(undo.rule) else {
             pendingUndo = nil
-            filterManager.markNonSelectionChangesPending()
+            return
+        }
+        let version = beginMutation(invalidateUndo: false)
+        let insertIndex: Int
+        if let nextRule = undo.nextRule, let nextIndex = currentRules.firstIndex(of: nextRule) {
+            insertIndex = nextIndex
+        } else if let previousRule = undo.previousRule, let previousIndex = currentRules.firstIndex(of: previousRule) {
+            insertIndex = previousIndex + 1
+        } else {
+            insertIndex = min(max(undo.originalIndex, 0), currentRules.count)
+        }
+        Task { @MainActor in
+            await ruleManager.performMutation {
+                await dataManager.restoreZapperRule(undo.rule, forHost: undo.domain, at: insertIndex)
+                await ruleManager.refreshNow()
+                filterManager.markNonSelectionChangesPending()
+            }
+            guard mutationVersion == version else { return }
+            pendingUndo = nil
+            isMutating = false
         }
     }
 
     private func clearAllRules() {
+        guard !isMutating else { return }
+        _ = beginMutation(invalidateUndo: true)
         Task { @MainActor in
-            for domain in dataManager.getZapperDomains() {
-                await dataManager.deleteAllZapperRules(forHost: domain)
+            await ruleManager.performMutation {
+                for domain in dataManager.getZapperDomains() {
+                    await dataManager.deleteAllZapperRules(forHost: domain)
+                }
+                await ruleManager.refreshNow()
+                filterManager.markNonSelectionChangesPending()
             }
-            await ruleManager.refreshNow()
-            pendingUndo = nil
-            filterManager.markNonSelectionChangesPending()
+            isMutating = false
+        }
+    }
+
+    @discardableResult
+    private func beginMutation(invalidateUndo: Bool) -> Int {
+        mutationVersion += 1
+        if invalidateUndo { pendingUndo = nil }
+        isMutating = true
+        return mutationVersion
+    }
+
+    private func invalidateUndoAndStartMutation(_ operation: @escaping @MainActor () async -> Void) {
+        guard !isMutating else { return }
+        _ = beginMutation(invalidateUndo: true)
+        Task { @MainActor in
+            await operation()
+            isMutating = false
         }
     }
 

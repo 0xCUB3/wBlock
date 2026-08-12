@@ -19,6 +19,28 @@ final class ZapperRuleManager: ObservableObject {
 
     /// Convenience binding target: rules for the currently selected domain.
     @Published private(set) var rulesForSelectedDomain: [String] = []
+    @Published private(set) var isMutationInFlight = false
+    private var mutationTail: Task<Void, Never>?
+    private var mutationGeneration = 0
+
+    /// Serializes app-level zapper mutations so delete, undo, and clear cannot
+    /// overlap with a disk refresh or with one another.
+    func performMutation(_ operation: @escaping @MainActor () async -> Void) async {
+        mutationGeneration += 1
+        let generation = mutationGeneration
+        let previous = mutationTail
+        let task = Task { @MainActor in
+            await previous?.value
+            isMutationInFlight = true
+            defer { isMutationInFlight = false }
+            await operation()
+        }
+        mutationTail = task
+        await task.value
+        if mutationGeneration == generation {
+            mutationTail = nil
+        }
+    }
 
     /// When set, automatically loads rulesForSelectedDomain. Cleared to nil when no domain is selected.
     @Published var selectedDomain: String? {
