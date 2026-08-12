@@ -16,6 +16,7 @@ public enum UserScriptImportError: LocalizedError {
     case unsupportedType
     case unreadableFile
     case emptyContent
+    case fileTooLarge
     case missingMetadata
     case unsupportedStylePreprocessor(String)
 
@@ -27,6 +28,8 @@ public enum UserScriptImportError: LocalizedError {
             return "Couldn't read the selected file."
         case .emptyContent:
             return "The file is empty."
+        case .fileTooLarge:
+            return String(localized: "The selected file is too large. Maximum size is 10 MB.", comment: "Local userscript import size error")
         case .missingMetadata:
             return "Not a userscript or userstyle: missing metadata block."
         case .unsupportedStylePreprocessor(let preprocessor):
@@ -322,7 +325,7 @@ public class UserScriptManager: ObservableObject {
     private static let maximumRequireBytes = 5 * 1024 * 1024
     private static let maximumRequireBytesPerScript = 20 * 1024 * 1024
     private static let maximumRequiresPerScript = 32
-    private static let maximumUserScriptBytes = 10 * 1024 * 1024
+    private static let maximumUserScriptBytes = UserScriptImportLimits.maximumSourceFileBytes
 
     nonisolated private static func resourceCacheFitsLimits(_ resources: [String: String]) -> Bool {
         guard resources.count <= maximumResourcesPerScript else { return false }
@@ -1801,6 +1804,7 @@ public class UserScriptManager: ObservableObject {
         updated.isEnabled = existing.isEnabled
         updated.isLocal = existing.isLocal
         updated.updatesAutomatically = existing.updatesAutomatically
+        updated.category = existing.category
         updated.content = content
         updated.resourceContents = resources
         updated.lastUpdated = Date()
@@ -1816,7 +1820,7 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    private func hasMetadataBlock(in content: String) -> Bool {
+    nonisolated private static func hasMetadataBlock(in content: String) -> Bool {
         if UserScript.detectsUserStyle(in: content) { return true }
 
         let lines = content.split(whereSeparator: \.isNewline)
@@ -1834,7 +1838,7 @@ public class UserScriptManager: ObservableObject {
         return false
     }
 
-    private func baseName(for fileURL: URL) -> String {
+    nonisolated private static func baseName(for fileURL: URL) -> String {
         UserScriptURLSupport.displayName(forFilename: fileURL.lastPathComponent)
     }
 
@@ -1993,19 +1997,17 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    public func stageUserScriptImport(fromLocalFile fileURL: URL) throws -> UserScript {
-        let accessed = fileURL.startAccessingSecurityScopedResource()
-        defer {
-            if accessed {
-                fileURL.stopAccessingSecurityScopedResource()
-            }
-        }
-
+    nonisolated public static func stageUserScriptImport(fromLocalFile fileURL: URL) throws -> UserScript {
         let filename = fileURL.lastPathComponent
         let lowercased = filename.lowercased()
         let isSupportedType = lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
             || lowercased.hasSuffix(".user.css") || lowercased.hasSuffix(".css")
         guard isSupportedType else { throw UserScriptImportError.unsupportedType }
+
+        let fileSize = try fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        guard fileSize <= UserScriptImportLimits.maximumSourceFileBytes else {
+            throw UserScriptImportError.fileTooLarge
+        }
 
         let data: Data
         do {
@@ -2019,9 +2021,9 @@ public class UserScriptManager: ObservableObject {
 
         let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedContent.isEmpty else { throw UserScriptImportError.emptyContent }
-        guard hasMetadataBlock(in: content) else { throw UserScriptImportError.missingMetadata }
+        guard Self.hasMetadataBlock(in: content) else { throw UserScriptImportError.missingMetadata }
 
-        var staged = UserScript(name: baseName(for: fileURL), content: content)
+        var staged = UserScript(name: Self.baseName(for: fileURL), content: content)
         staged.parseMetadata()
         if staged.isUserStyle,
            let style = UserStyleSupport.parsed(from: content),
@@ -2030,11 +2032,20 @@ public class UserScriptManager: ObservableObject {
             throw UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor)
         }
         if staged.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            staged.name = baseName(for: fileURL)
+            staged.name = Self.baseName(for: fileURL)
         }
+        // Metadata is retained in the source for display, but local imports can
+        // never use its remote update endpoints.
+        staged.updateURL = nil
+        staged.downloadURL = nil
         staged.isEnabled = true
         staged.isLocal = true
+        staged.localImportIdentity = UserScriptImportIdentity.forFileURL(fileURL)
         return staged
+    }
+
+    public func stageUserScriptImport(fromLocalFile fileURL: URL) throws -> UserScript {
+        try Self.stageUserScriptImport(fromLocalFile: fileURL)
     }
 
     public func addUserScript(
@@ -2055,7 +2066,8 @@ public class UserScriptManager: ObservableObject {
                 replacedStatusVerb: "Replaced",
                 nameOverride: nameOverride,
                 descriptionOverride: descriptionOverride,
-                categoryOverride: category
+                categoryOverride: category,
+                localImportIdentity: staged.localImportIdentity
             )
             isLoading = false
             return nil
@@ -2096,7 +2108,8 @@ public class UserScriptManager: ObservableObject {
                 replacedStatusVerb: "Replaced",
                 nameOverride: nameOverride,
                 descriptionOverride: descriptionOverride,
-                categoryOverride: category
+                categoryOverride: category,
+                localImportIdentity: staged.localImportIdentity
             )
 
             isLoading = false
@@ -2128,7 +2141,8 @@ public class UserScriptManager: ObservableObject {
                 replacedStatusVerb: "Updated",
                 nameOverride: nameOverride,
                 descriptionOverride: descriptionOverride,
-                categoryOverride: category
+                categoryOverride: category,
+                localImportIdentity: UserScriptImportIdentity.forContent(content)
             )
 
             isLoading = false
@@ -2150,7 +2164,8 @@ public class UserScriptManager: ObservableObject {
         replacedStatusVerb: String,
         nameOverride: String? = nil,
         descriptionOverride: String? = nil,
-        categoryOverride: FilterListCategory? = nil
+        categoryOverride: FilterListCategory? = nil,
+        localImportIdentity: String? = nil
     ) async throws -> UserScript {
         let trimmedContent = rawContent.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -2158,7 +2173,7 @@ public class UserScriptManager: ObservableObject {
             throw UserScriptImportError.emptyContent
         }
 
-        guard hasMetadataBlock(in: rawContent) else {
+        guard Self.hasMetadataBlock(in: rawContent) else {
             throw UserScriptImportError.missingMetadata
         }
 
@@ -2179,10 +2194,13 @@ public class UserScriptManager: ObservableObject {
             ? overrideName
             : (!metadataName.isEmpty ? metadataName : (fallbackName.isEmpty ? "Pasted Userscript" : fallbackName))
 
-        let existingIndex = userScripts.firstIndex { script in
-            script.isLocal
-                && script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-                    == canonicalName.lowercased()
+        let stableIdentity = localImportIdentity ?? UserScriptImportIdentity.forContent(rawContent)
+        let existingIndex = userScripts.firstIndex {
+            UserScript.matchesLocalImport(
+                existing: $0,
+                stableIdentity: stableIdentity,
+                canonicalName: canonicalName
+            )
         }
 
         let scriptID = existingIndex.flatMap { userScripts[$0].id } ?? UUID()
@@ -2190,6 +2208,7 @@ public class UserScriptManager: ObservableObject {
         newUserScript.isEnabled = existingIndex.map { userScripts[$0].isEnabled } ?? true
         newUserScript.updatesAutomatically = existingIndex.map { userScripts[$0].updatesAutomatically } ?? true
         newUserScript.isLocal = true
+        newUserScript.localImportIdentity = stableIdentity
         newUserScript.lastUpdated = Date()
 
         newUserScript.description = descriptionOverride ?? tempScript.description
@@ -2205,8 +2224,10 @@ public class UserScriptManager: ObservableObject {
         newUserScript.resource = tempScript.resource
         newUserScript.resourceContents = tempScript.resourceContents
         newUserScript.noframes = tempScript.noframes
-        newUserScript.updateURL = tempScript.updateURL
-        newUserScript.downloadURL = tempScript.downloadURL
+        // Local imports retain the source metadata in content, but never retain
+        // remote endpoints that an updater could fetch.
+        newUserScript.updateURL = nil
+        newUserScript.downloadURL = nil
         newUserScript.isUserStyle = tempScript.isUserStyle
         newUserScript.category = categoryOverride ?? existingIndex.map { userScripts[$0].category } ?? .scripts
 
@@ -2296,6 +2317,15 @@ public class UserScriptManager: ObservableObject {
         logger.info("💾 Persisting userscript setEnabled for \(userScript.name): \(isEnabled)")
         await persistUserScriptsNow()
         logger.info("💾 Userscripts saved after setEnabled")
+    }
+
+    /// Sets the userscript category used for local organization and sync.
+    public func setUserScript(_ userScript: UserScript, category: FilterListCategory) async {
+        guard let index = userScripts.firstIndex(where: { $0.id == userScript.id }) else { return }
+        guard userScripts[index].category != category else { return }
+
+        userScripts[index].category = category
+        await persistUserScriptsNow(invalidateExecutionCache: false)
     }
 
     /// Sets whether bulk and scheduled updates should include this userscript.
@@ -2564,6 +2594,7 @@ public class UserScriptManager: ObservableObject {
     /// Resolves the lightweight metadata URL for a userscript.
     /// Priority: @updateURL > .user.js -> .meta.js derivation > nil (skip meta check).
     private func resolveMetaURL(for script: UserScript) -> URL? {
+        guard !script.isLocal else { return nil }
         if let updateURLString = script.updateURL, let url = URL(string: updateURLString) {
             return url
         }
@@ -2577,6 +2608,7 @@ public class UserScriptManager: ObservableObject {
     /// Resolves the full script download URL.
     /// Priority: @downloadURL > script.url.
     private func resolveDownloadURL(for script: UserScript) -> URL? {
+        guard !script.isLocal else { return nil }
         if let downloadURLString = script.downloadURL, let url = URL(string: downloadURLString) {
             return url
         }
@@ -2648,7 +2680,9 @@ public class UserScriptManager: ObservableObject {
     /// Phase 2: download full script, process directives, write if content changed.
     /// Falls back to full download + content comparison if meta check is inconclusive.
     private func updateSingleScript(_ candidate: UserScript) async throws -> Bool {
-        guard userScripts.contains(where: { $0.id == candidate.id }) else { return false }
+        guard !candidate.isLocal,
+              userScripts.contains(where: { $0.id == candidate.id })
+        else { return false }
 
         // Phase 1: Try meta check
         let metaURL = resolveMetaURL(for: candidate)
@@ -2706,7 +2740,7 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func downloadAndEnableUserScript(_ userScript: UserScript) async {
-        guard let url = userScript.url else { return }
+        guard !userScript.isLocal, let url = userScript.url else { return }
 
         await MainActor.run {
             isLoading = true

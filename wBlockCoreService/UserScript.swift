@@ -5,7 +5,19 @@
 //  Created by Alexander Skula on 6/7/25.
 //
 
+import CryptoKit
 import Foundation
+
+public enum UserScriptImportIdentity {
+    public static func forFileURL(_ url: URL) -> String {
+        "file:\(url.standardizedFileURL.path)"
+    }
+
+    public static func forContent(_ content: String) -> String {
+        let digest = SHA256.hash(data: Data(content.utf8))
+        return "content:" + digest.map { String(format: "%02x", $0) }.joined()
+    }
+}
 
 public enum UserScriptURLSupport {
     public static func validatedRemoteURL(from rawValue: String) -> URL? {
@@ -72,6 +84,11 @@ public enum UserScriptURLSupport {
         return lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
             || lowercased.hasSuffix(".user.css") || lowercased.hasSuffix(".css")
     }
+}
+
+public enum UserScriptImportLimits {
+    /// Maximum source size shared by local staging and remote script imports.
+    public static let maximumSourceFileBytes = 10 * 1024 * 1024
 }
 
 public struct UserScriptResource: Codable, Hashable, Sendable {
@@ -144,7 +161,24 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     public var updatesAutomatically: Bool = true
     /// User-selected category for local organization. Existing scripts default to Scripts.
     public var category: FilterListCategory = .scripts
+    /// Stable identity for local imports. Legacy entries may not have one.
+    public var localImportIdentity: String?
     
+    public static func matchesLocalImport(
+        existing: UserScript,
+        stableIdentity: String,
+        canonicalName: String
+    ) -> Bool {
+        guard existing.isLocal else { return false }
+        if let existingIdentity = existing.localImportIdentity {
+            return existingIdentity == stableIdentity
+        }
+        // Preserve replacement behavior for entries written before stable
+        // local-import identities were introduced.
+        return existing.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            == canonicalName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
     /// Computed property to check if the userscript is downloaded and ready to use
     public var isDownloaded: Bool {
         !content.isEmpty

@@ -291,6 +291,7 @@ extension ProtobufDataManager {
             script.updatesAutomatically = protoData.hasUpdatesAutomatically ? protoData.updatesAutomatically : true
             script.isUserStyle = protoData.isUserStyle
             script.category = protoData.category == .unspecified ? .scripts : mapProtoToFilterListCategory(protoData.category)
+            script.localImportIdentity = protoData.hasLocalImportIdentity ? protoData.localImportIdentity : nil
             return script
         }
     }
@@ -322,6 +323,7 @@ extension ProtobufDataManager {
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
             
             protoUserScript.category = mapFilterListCategoryToProto(userScript.category)
+            protoUserScript.localImportIdentity = userScript.localImportIdentity ?? ""
             updatedData.userScripts[index] = protoUserScript
         } else {
             // Add new userscript
@@ -349,6 +351,7 @@ extension ProtobufDataManager {
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
             
             protoUserScript.category = mapFilterListCategoryToProto(userScript.category)
+            protoUserScript.localImportIdentity = userScript.localImportIdentity ?? ""
             updatedData.userScripts.append(protoUserScript)
         }
         
@@ -682,6 +685,7 @@ extension ProtobufDataManager {
             protoUserScript.updatesAutomatically = userScript.updatesAutomatically
             protoUserScript.isUserStyle = userScript.isUserStyle
             protoUserScript.category = mapFilterListCategoryToProto(userScript.category)
+            protoUserScript.localImportIdentity = userScript.localImportIdentity ?? ""
             protoUserScript.content = ""
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
             

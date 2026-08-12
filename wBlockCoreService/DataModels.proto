@@ -102,6 +102,7 @@ message UserScriptData {
   optional bool updates_automatically = 19;
   bool is_user_style = 20;
   FilterListCategory category = 21;
+  optional string local_import_identity = 22;
 }
 
 // Whitelist/disabled sites data
