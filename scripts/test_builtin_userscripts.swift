@@ -8,6 +8,13 @@ let onboardingSource = try String(contentsOfFile: "wBlock/OnboardingView.swift",
 let tinyShieldURL = "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
 let tinyShieldDescription = "tinyShield helps block ads reinserted by Ad-Shield on matching sites."
 
+guard source.contains("YouTube Ad Blocking")
+    && source.contains("SysAdminDoc/YoutubeAdblock/main/YoutubeAdblock.user.js")
+    && source.contains("Blocks YouTube ads with a document-start proxy engine") else {
+    fputs("FAIL: maintained YouTube ad blocking userscript should be available but disabled by default\n", stderr)
+    exit(1)
+}
+
 guard !source.contains("adamlui/youtube-classic") else {
     fputs("FAIL: retired YouTube Classic userscript should not be offered as a built-in\n", stderr)
     exit(1)

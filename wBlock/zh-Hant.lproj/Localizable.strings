@@ -439,6 +439,8 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "包含 // ==UserScript== 中繼資料區塊（或用於使用者樣式的 /* ==UserStyle== */），以便 wBlock 讀取名稱和 URL 模式。";
 "IndianList" = "IndianList";
 "Info" = "資訊";
+"YouTube Ad Blocking" = "YouTube 廣告封鎖";
+"Blocks YouTube ads with a document-start proxy engine and remotely verified rules." = "使用文件啟動代理引擎和遠端驗證的規則封鎖 YouTube 廣告。";
 "Info.plist missing" = "缺少 Info.plist";
 "Initialized with %d filter list(s)." = "使用 %d 過濾器清單進行初始化。";
 "International" = "國際";

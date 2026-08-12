@@ -146,6 +146,13 @@ enum BuiltInUserScripts {
             isBeta: true
         ),
         BuiltInUserScriptDefinition(
+            name: "YouTube Ad Blocking",
+            url: "https://raw.githubusercontent.com/SysAdminDoc/YoutubeAdblock/main/YoutubeAdblock.user.js",
+            isEnabledByDefault: false,
+            description: "Blocks YouTube ads with a document-start proxy engine and remotely verified rules.",
+            displayRole: .blocking
+        ),
+        BuiltInUserScriptDefinition(
             name: "Return YouTube Dislike",
             url: "https://raw.githubusercontent.com/Anarios/return-youtube-dislike/main/Extensions/UserScript/Return%20Youtube%20Dislike.user.js",
             isEnabledByDefault: false,

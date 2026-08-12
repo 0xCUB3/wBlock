@@ -439,6 +439,8 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "Inclua o bloco de metadados // ==UserScript== (ou /* ==UserStyle== */ para estilos de usuário) para que o wBlock possa ler o nome e os padrões de URL.";
 "IndianList" = "IndianList";
 "Info" = "Informações";
+"YouTube Ad Blocking" = "Bloqueio de anúncios do YouTube";
+"Blocks YouTube ads with a document-start proxy engine and remotely verified rules." = "Bloqueia anúncios do YouTube com um mecanismo proxy no início do documento e regras verificadas remotamente.";
 "Info.plist missing" = "Info.plist ausente";
 "Initialized with %d filter list(s)." = "Inicializado com lista(s) de filtros %d.";
 "International" = "Internacionais";

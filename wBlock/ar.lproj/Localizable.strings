@@ -439,6 +439,8 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "ضمّن كتلة البيانات الوصفية // ==UserScript== (أو /* ==UserStyle== */ لأنماط المستخدم) حتى يتمكن wBlock من قراءة الاسم وأنماط عناوين URL.";
 "IndianList" = "IndianList";
 "Info" = "معلومات";
+"YouTube Ad Blocking" = "حظر إعلانات YouTube";
+"Blocks YouTube ads with a document-start proxy engine and remotely verified rules." = "يحظر إعلانات YouTube باستخدام محرك وكيل يبدأ مع تحميل المستند وقواعد يتم التحقق منها عن بُعد.";
 "Info.plist missing" = "ملف Info.plist مفقود";
 "Initialized with %d filter list(s)." = "تمت التهيئة باستخدام قائمة (قوائم) عوامل التصفية %d.";
 "International" = "دولية";
