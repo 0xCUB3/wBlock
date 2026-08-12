@@ -406,7 +406,7 @@
 "go" = "Μετάβαση";
 "Go to line" = "Μετάβαση στη γραμμή";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"Hagezi Pro Mini" = "Hagezi Pro Mini";
+"HaGeZi Pro Mini" = "Hagezi Pro Mini";
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Χειρίζεται προηγμένες περιπτώσεις anti-adblock που χάνουν τους κανόνες φιλτραρίσματος.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Αποκρύπτει αναδυόμενα παράθυρα, banner και άλλα ανεπιθύμητα στοιχεία σελίδας.";
@@ -856,3 +856,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Search languages" = "Αναζήτηση γλωσσών";
 
 "Built-in" = "Ενσωματωμένο";
+
+/* Filter catalog additions */
+"Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
+"Adblock Warning Removal List" = "Adblock Warning Removal List";
+"Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
+"Stevo's AI Blocklist" = "Stevo's AI Blocklist";
+"AdGuard Allowlist" = "AdGuard Allowlist";
+"Blocks tracking pixels and other mail tracking techniques." = "Blocks tracking pixels and other mail tracking techniques.";
+"Allows sites and resources that should not be blocked." = "Allows sites and resources that should not be blocked.";

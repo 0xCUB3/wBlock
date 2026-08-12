@@ -406,7 +406,7 @@
 "go" = "跳转";
 "Go to line" = "跳转到行";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"Hagezi Pro Mini" = "Hagezi Pro Mini";
+"HaGeZi Pro Mini" = "Hagezi Pro Mini";
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "处理过滤规则遗漏的高级反广告拦截案例。";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "隐藏页内弹出窗口、横幅和其他不需要的页面元素。";
@@ -856,3 +856,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Search languages" = "搜索语言";
 
 "Built-in" = "内置";
+
+/* Filter catalog additions */
+"Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
+"Adblock Warning Removal List" = "Adblock Warning Removal List";
+"Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
+"Stevo's AI Blocklist" = "Stevo's AI Blocklist";
+"AdGuard Allowlist" = "AdGuard Allowlist";
+"Blocks tracking pixels and other mail tracking techniques." = "Blocks tracking pixels and other mail tracking techniques.";
+"Allows sites and resources that should not be blocked." = "Allows sites and resources that should not be blocked.";

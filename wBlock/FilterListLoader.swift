@@ -16,9 +16,9 @@ class FilterListLoader {
             "AdGuard URL Tracking Protection Filter",
             "Actually Legitimate URL Shortener Tool",
             "EasyPrivacy",
-            "Online Security Filter",
+            "Online Malicious URL Blocklist",
             "Peter Lowe's Blocklist",
-            "Anti-Adblock List",
+            "Adblock Warning Removal List",
         ]
     #else
         static let recommendedFilterNames: Set<String> = [
@@ -27,9 +27,9 @@ class FilterListLoader {
             "AdGuard URL Tracking Protection Filter",
             "Actually Legitimate URL Shortener Tool",
             "EasyPrivacy",
-            "Online Security Filter",
+            "Online Malicious URL Blocklist",
             "Peter Lowe's Blocklist",
-            "Anti-Adblock List",
+            "Adblock Warning Removal List",
             "AdGuard Mobile Filter",
         ]
     #endif
@@ -39,6 +39,8 @@ class FilterListLoader {
             URL(string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
         "https://raw.githubusercontent.com/List-KR/List-KR/master/filter-AdGuard-forward.txt": URL(
             string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
+        "https://raw.githubusercontent.com/easylist/easylist/refs/heads/master/fanboy-addon/fanboy_ai_suggestions.txt": URL(
+            string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260.txt")!,
         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt":
             URL(string: "https://filters.adtidy.org/ios/filters/11.txt")!,
     ]
@@ -201,16 +203,16 @@ class FilterListLoader {
                 category: FilterListCategory.annoyances,
                 description: "Blocks social media content on webpages."),
             FilterList(
-                id: UUID(), name: "Fanboy's Anti-AI Suggestions",
+                id: UUID(), name: "Stevo's AI Blocklist",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/easylist/easylist/refs/heads/master/fanboy-addon/fanboy_ai_suggestions.txt"
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260.txt"
                 )!, category: FilterListCategory.annoyances,
                 description:
                     "Blocks AI-generated suggestions and recommendations on search engines and websites."
             ),
             FilterList(
-                id: UUID(), name: "Online Security Filter",
+                id: UUID(), name: "Online Malicious URL Blocklist",
                 url: URL(
                     string:
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/208_optimized.txt"
@@ -218,19 +220,33 @@ class FilterListLoader {
                 description:
                     "Protects against suspicious URLs, phishing sites, and unwanted software."),
             FilterList(
+                id: UUID(), name: "Mail Tracking Protection Filter",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/25.txt"
+                )!, category: FilterListCategory.privacy,
+                description: "Blocks tracking pixels and other mail tracking techniques."),
+            FilterList(
                 id: UUID(), name: "Peter Lowe's Blocklist",
                 url: URL(
                     string:
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt"
-                )!, category: FilterListCategory.annoyances, isSelected: true,
+                )!, category: FilterListCategory.multipurpose, isSelected: true,
                 description: "Blocks ads and tracking servers to enhance privacy."),
             FilterList(
-                id: UUID(), name: "Anti-Adblock List",
+                id: UUID(), name: "Adblock Warning Removal List",
                 url: URL(
                     string:
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/207_optimized.txt"
                 )!, category: FilterListCategory.annoyances, isSelected: true,
                 description: "Bypasses Anti-Adblock scripts used on some websites."),
+            FilterList(
+                id: UUID(), name: "AdGuard Allowlist",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/10.txt"
+                )!, category: FilterListCategory.allowlists,
+                description: "Allows sites and resources that should not be blocked."),
             FilterList(
                 id: UUID(), name: "Bypass Paywalls Clean Filter",
                 url: URL(
@@ -708,11 +724,11 @@ class FilterListLoader {
             // macOS-only filters too large for iOS
             filterLists.append(
                 FilterList(
-                    id: UUID(), name: "Hagezi Pro Mini",
+                    id: UUID(), name: "HaGeZi Pro Mini",
                     url: URL(
                         string:
                             "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt"
-                    )!, category: FilterListCategory.annoyances, isSelected: true,
+                    )!, category: FilterListCategory.multipurpose, isSelected: true,
                     description:
                         "Extensive blocklist targeting ads, trackers, and other unwanted content."))
         #endif
