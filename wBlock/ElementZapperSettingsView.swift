@@ -202,7 +202,7 @@ struct ElementZapperSettingsView: View {
             Image(systemName: "wand.and.stars")
                 .font(.system(size: 44))
                 .foregroundStyle(.secondary.opacity(0.6))
-            Text("No zapper rules for this site.")
+            Text("No Element Zapper Rules")
                 .font(.headline)
                 .foregroundStyle(.secondary)
         }
