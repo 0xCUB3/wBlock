@@ -165,7 +165,8 @@ enum BuiltInUserScripts {
         BuiltInUserScriptDefinition(
             name: "AdGuard Extra",
             url: "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js",
-            isEnabledByDefault: false
+            isEnabledByDefault: false,
+            description: "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases."
         ),
         BuiltInUserScriptDefinition(
             name: "tinyShield",

@@ -526,6 +526,16 @@ struct UserScriptManagerView: View {
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
+                    if script.name == "AdGuard Extra" {
+                        Button {
+                            selectedScript = SelectedUserScript(id: script.id)
+                        } label: {
+                            Image(systemName: "info.circle")
+                                .foregroundStyle(.blue)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Info")
+                    }
                     Badge(
                         text: script.isUserStyle ? "Userstyle" : "Userscript",
                         color: script.isUserStyle ? .purple : .red

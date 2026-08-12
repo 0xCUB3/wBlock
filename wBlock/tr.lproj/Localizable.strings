@@ -877,3 +877,4 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Text" = "Metin";
 "Choose File" = "Dosya Seç";
 "Local imports won't auto-update; re-import to replace." = "Yerel içe aktarmalar otomatik güncellenmez; değiştirmek için yeniden içe aktarın.";
+"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra Twitch reklamlarını engeller ve karmaşık anti-adblock durumlarını ele alır.";
