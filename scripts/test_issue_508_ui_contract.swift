@@ -38,6 +38,7 @@ let addContentShell = try source("wBlock/AddContentShell.swift")
 require(addContentShell, "protocol AddContentMode")
 require(addContentShell, "struct AddContentModePicker")
 require(addContentShell, "struct AddContentRequirementsPanel")
+require(addContentShell, ".frame(maxWidth: .infinity, alignment: .leading)")
 for view in [content, scripts] {
     require(view, "AddContentModePicker(selection: $addMode)")
     require(view, "AddContentRequirementsPanel")

@@ -71,6 +71,7 @@ struct AddContentRequirementsPanel: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
     }
