@@ -1896,7 +1896,7 @@ struct AddUserScriptView: View {
             Button {
                 pasteScriptFromClipboard()
             } label: {
-                Label("Paste from Clipboard", systemImage: "doc.on.clipboard")
+                Label("Paste", systemImage: "doc.on.clipboard")
             }
             .disabled(isAdding)
         }
@@ -1915,7 +1915,7 @@ struct AddUserScriptView: View {
         }
         .buttonStyle(.plain)
         .disabled(isAdding)
-        .accessibilityLabel("Paste from Clipboard")
+        .accessibilityLabel("Paste")
     }
 
     private var validationBadge: some View {
