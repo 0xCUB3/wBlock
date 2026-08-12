@@ -227,11 +227,18 @@ struct UserScriptManagerView: View {
         .sheet(item: $selectedScript, onDismiss: {
             refreshScripts()
         }) { selection in
-            UserScriptContentView(
-                scriptId: selection.id,
-                userScriptManager: userScriptManager,
-                startsEditing: selection.action == .editContent
-            )
+            if selection.action == .info {
+                UserScriptInfoView(
+                    scriptId: selection.id,
+                    userScriptManager: userScriptManager
+                )
+            } else {
+                UserScriptContentView(
+                    scriptId: selection.id,
+                    userScriptManager: userScriptManager,
+                    startsEditing: selection.action == .editContent
+                )
+            }
         }
         .onAppear {
             refreshScripts()
@@ -856,7 +863,7 @@ private struct ScriptStatusBadgesView: View {
                 }
                 Badge(text: script.isEnabled ? "Enabled" : "Disabled", color: script.isEnabled ? .green : .secondary)
             }
-            if script.isEnabled && !isDownloaded {
+            if !isDownloaded && !script.isLocal {
                 Badge(text: "Not Downloaded", color: .red)
             } else if isDownloaded {
                 Badge(text: "Downloaded", color: .green)
@@ -1132,6 +1139,93 @@ struct ScriptContentMainView: View {
 }
 #endif
 
+struct UserScriptInfoView: View {
+    let scriptId: UUID
+    var userScriptManager: UserScriptManager
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var script: UserScript?
+    @State private var isPatternsExpanded = false
+    @State private var isLoading = true
+
+    var body: some View {
+        Group {
+            if let script {
+                #if os(iOS)
+                NavigationView {
+                    ScrollView {
+                        UserScriptInfoSidebar(
+                            script: script,
+                            contentLength: script.content.count,
+                            isPatternsExpanded: $isPatternsExpanded,
+                            formatFileSize: formatFileSize,
+                            isBundled: userScriptManager.isBundled(for: script),
+                            isBuiltIn: userScriptManager.isDefaultUserScript(script),
+                            isBeta: userScriptManager.isBeta(for: script),
+                            onUpdatesAutomaticallyChanged: setUpdatesAutomatically
+                        )
+                        .padding()
+                    }
+                    .navigationTitle(script.localizedDisplayName)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") { dismiss() }
+                        }
+                    }
+                }
+                #else
+                UserScriptInfoSidebar(
+                    script: script,
+                    contentLength: script.content.count,
+                    isPatternsExpanded: $isPatternsExpanded,
+                    formatFileSize: formatFileSize,
+                    isBundled: userScriptManager.isBundled(for: script),
+                    isBuiltIn: userScriptManager.isDefaultUserScript(script),
+                    isBeta: userScriptManager.isBeta(for: script),
+                    onUpdatesAutomaticallyChanged: setUpdatesAutomatically
+                )
+                .padding(20)
+                .frame(width: 460, height: 620)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Done") { dismiss() }
+                    }
+                }
+                #endif
+            } else if isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                Text("Unable to load script")
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .task(id: scriptId) {
+            isLoading = true
+            script = await userScriptManager.userScriptEditorSnapshot(withId: scriptId)
+            isLoading = false
+        }
+    }
+
+    private func setUpdatesAutomatically(_ updatesAutomatically: Bool) {
+        guard var currentScript = script else { return }
+        currentScript.updatesAutomatically = updatesAutomatically
+        script = currentScript
+        Task {
+            await userScriptManager.setUserScript(currentScript, updatesAutomatically: updatesAutomatically)
+        }
+    }
+
+    private func formatFileSize(_ bytes: Int) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.allowedUnits = [.useKB, .useMB]
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: Int64(bytes))
+    }
+}
+
 struct UserScriptContentView: View {
     let scriptId: UUID
     var userScriptManager: UserScriptManager
@@ -1371,6 +1465,7 @@ private struct UserScriptSourceSheet: View {
     @State private var isEditing: Bool
     @State private var isLineWrappingEnabled = false
     @State private var isSaving = false
+    @State private var validationMessage: String?
     @State private var editedName: String
     @State private var editedDescription: String
 
@@ -1497,11 +1592,16 @@ private struct UserScriptSourceSheet: View {
             }
 
             if isEditing && canEdit {
-                VStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 8) {
                     TextField("Name", text: $editedName)
                         .textFieldStyle(.roundedBorder)
                     TextField("Description", text: $editedDescription)
                         .textFieldStyle(.roundedBorder)
+                    if let validationMessage {
+                        Text(validationMessage)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 8)
@@ -1522,9 +1622,18 @@ private struct UserScriptSourceSheet: View {
 
     @MainActor
     private func saveChanges() async {
+        let trimmedName = editedName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            validationMessage = LocalizedStrings.text(
+                "Title is required.",
+                comment: "Userscript metadata validation error"
+            )
+            return
+        }
+
         isSaving = true
         let newContent = await editorController.currentText()
-        await onSave(newContent, editedName, editedDescription)
+        await onSave(newContent, trimmedName, editedDescription)
         isSaving = false
         dismiss()
     }
