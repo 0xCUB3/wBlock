@@ -396,17 +396,18 @@ enum BackupManager {
         }
         for entry in backup.userScripts {
             guard let disabledHosts = entry.disabledHosts, !disabledHosts.isEmpty else { continue }
-            guard let restoredScript = restoredUserScripts.first(where: { script in
-                if let entryURL = entry.url.flatMap(URL.init(string:)) {
-                    return script.url == entryURL
-                }
-                return script.isLocal
-                    && script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-                        == entry.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            }) else {
+            let restoredScript = entry.userScript
+            guard let matchingIndex = UserScriptRestoreMatcher.matchingIndex(
+                for: restoredScript,
+                in: restoredUserScripts
+            ) else {
                 continue
             }
-            await ProtobufDataManager.shared.setUserScriptDisabledHosts(disabledHosts, forScriptID: restoredScript.id.uuidString)
+            let matchedScript = restoredUserScripts[matchingIndex]
+            await ProtobufDataManager.shared.setUserScriptDisabledHosts(
+                disabledHosts,
+                forScriptID: matchedScript.id.uuidString
+            )
         }
 
         // 6. Mark unapplied changes so user can apply

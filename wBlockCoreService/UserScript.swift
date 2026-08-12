@@ -137,6 +137,46 @@ final class UserScriptPayloadDataCache: @unchecked Sendable {
     }
 }
 
+public enum UserScriptRestoreMatcher {
+    public static func matchingIndex(for restoredScript: UserScript, in existingScripts: [UserScript]) -> Int? {
+        let restoredIsLocal = restoredScript.isLocal
+            || restoredScript.url == nil
+            || restoredScript.url?.isFileURL == true
+
+        if restoredIsLocal {
+            if let identity = UserScriptImportIdentity.normalized(restoredScript.localImportIdentity),
+               let index = existingScripts.firstIndex(where: { script in
+                   script.isLocal
+                       && UserScriptImportIdentity.normalized(script.localImportIdentity) == identity
+               }) {
+                return index
+            }
+
+            // Identity-bearing backups may use the name fallback only to upgrade
+            // one legacy record. A legacy backup has no identity, so it may use a
+            // unique local name match regardless of the existing record's age.
+            let candidates = existingScripts.indices.filter { index in
+                let script = existingScripts[index]
+                let existingIdentity = UserScriptImportIdentity.normalized(script.localImportIdentity)
+                let restoredIdentity = UserScriptImportIdentity.normalized(restoredScript.localImportIdentity)
+                return script.isLocal
+                    && (restoredIdentity == nil || existingIdentity == nil)
+                    && normalizedName(script.name) == normalizedName(restoredScript.name)
+            }
+            return candidates.count == 1 ? candidates[0] : nil
+        }
+
+        guard let restoredURL = restoredScript.url else { return nil }
+        return existingScripts.firstIndex { script in
+            !script.isLocal && script.url == restoredURL
+        }
+    }
+
+    private static func normalizedName(_ name: String) -> String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+}
+
 public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public var name: String
@@ -170,6 +210,18 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     /// Stable identity for local imports. Legacy entries may not have one.
     public var localImportIdentity: String?
     
+    public static func localImportIdentityForUpdate(
+        existing: UserScript?,
+        requestedIdentity: String?,
+        preserveExistingIdentity: Bool
+    ) -> String? {
+        if preserveExistingIdentity,
+           let existingIdentity = UserScriptImportIdentity.normalized(existing?.localImportIdentity) {
+            return existingIdentity
+        }
+        return UserScriptImportIdentity.normalized(requestedIdentity)
+    }
+
     public static func matchesLocalImport(
         existing: UserScript,
         stableIdentity: String?,

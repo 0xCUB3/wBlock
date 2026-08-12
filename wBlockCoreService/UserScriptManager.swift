@@ -1885,40 +1885,10 @@ public class UserScriptManager: ObservableObject {
         var mergedScripts = userScripts
 
         for restoredScript in restoredScripts {
-            let restoredLocalName = restoredScript.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            let restoredIsLocal = restoredScript.isLocal
-                || restoredScript.url == nil
-                || restoredScript.url?.isFileURL == true
-            let restoredIdentity = UserScriptImportIdentity.normalized(restoredScript.localImportIdentity)
-            let existingIndex: Int?
-            if restoredIsLocal, let restoredIdentity {
-                // Prefer an exact identity match before applying the legacy name
-                // fallback. This keeps duplicate display names independent.
-                existingIndex = mergedScripts.firstIndex { script in
-                    script.isLocal
-                        && UserScriptImportIdentity.normalized(script.localImportIdentity) == restoredIdentity
-                } ?? mergedScripts.firstIndex { script in
-                    guard script.isLocal,
-                          UserScriptImportIdentity.normalized(script.localImportIdentity) == nil
-                    else { return false }
-                    return script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-                        == restoredLocalName
-                }
-            } else {
-                existingIndex = mergedScripts.firstIndex { script in
-                    if restoredIsLocal {
-                        guard script.isLocal else { return false }
-                        // A legacy backup has no identity, so preserve the old
-                        // name-based replacement behavior.
-                        return script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-                            == restoredLocalName
-                    }
-
-                    guard let restoredURL = restoredScript.url else { return false }
-                    return !script.isLocal && script.url == restoredURL
-                }
-            }
-
+            let existingIndex = UserScriptRestoreMatcher.matchingIndex(
+                for: restoredScript,
+                in: mergedScripts
+            )
             let targetID = existingIndex.map { mergedScripts[$0].id } ?? restoredScript.id
             let scriptToRestore = backupCopy(of: restoredScript, id: targetID)
 
