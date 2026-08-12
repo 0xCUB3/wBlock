@@ -78,6 +78,7 @@ private struct UserScriptDisplaySection: Identifiable {
 
 private struct SelectedUserScript: Identifiable {
     let id: UUID
+    let action: UserScriptContextMenuAction
 }
 
 private struct EditorMetadataAutofillState: Equatable {
@@ -235,7 +236,11 @@ struct UserScriptManagerView: View {
         .sheet(item: $selectedScript, onDismiss: {
             refreshScripts()
         }) { selection in
-            UserScriptContentView(scriptId: selection.id, userScriptManager: userScriptManager)
+            UserScriptContentView(
+                scriptId: selection.id,
+                userScriptManager: userScriptManager,
+                startsEditing: selection.action == .editContent
+            )
         }
         .onAppear {
             refreshScripts()
@@ -591,7 +596,7 @@ struct UserScriptManagerView: View {
                         .fixedSize(horizontal: false, vertical: true)
                     if script.name == "AdGuard Extra" {
                         Button {
-                            selectedScript = SelectedUserScript(id: script.id)
+                            selectedScript = SelectedUserScript(id: script.id, action: .info)
                         } label: {
                             Image(systemName: "info.circle")
                                 .foregroundStyle(.blue)
@@ -713,7 +718,7 @@ struct UserScriptManagerView: View {
             if script.isDownloaded {
                 // Defer to avoid race with context menu dismissal on iOS
                 DispatchQueue.main.async {
-                    selectedScript = SelectedUserScript(id: script.id)
+                    selectedScript = SelectedUserScript(id: script.id, action: .info)
                 }
             }
         }
@@ -2125,7 +2130,7 @@ struct AddUserScriptView: View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .foregroundStyle(.secondary)
-            Text(LocalizedStringKey(text))
+            Text(text)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
