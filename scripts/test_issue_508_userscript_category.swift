@@ -15,6 +15,8 @@ let persistence = source("wBlockCoreService/ProtobufDataManager+Extensions.swift
 
 expect(view.contains("let category: FilterListCategory"), "list identity must include userscript category")
 expect(view.contains("case localCategory(FilterListCategory)"), "local scripts must have category sections")
+expect(view.contains("$0.isUserStyle && !$0.isLocal"), "remote userstyles must remain visible")
+expect(view.contains("$0.isLocal && $0.builtInSection == nil"), "local scripts must remain visible")
 expect(view.contains("FilterListCategory.userScriptCategories"), "userscript picker must use sensible categories")
 expect(view.contains(".onReceive(userScriptManager.$userScripts)"), "category changes must refresh the displayed list")
 expect(model.contains("public var category: FilterListCategory = .scripts"), "userscript category must have a stable model field")
