@@ -1567,6 +1567,14 @@ struct AddUserScriptView: View {
             }
 
             Section {
+                Button {
+                    addMode = .editor
+                } label: {
+                    Label("Use Editor", systemImage: "curlybraces")
+                }
+            }
+
+            Section {
                 requirementsDisclosure
             }
         }
@@ -1713,6 +1721,13 @@ struct AddUserScriptView: View {
             }
 
             validationMessage
+
+            Button {
+                addMode = .editor
+            } label: {
+                Label("Use Editor", systemImage: "curlybraces")
+            }
+            .buttonStyle(.bordered)
         }
         .padding(16)
         .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
@@ -1884,6 +1899,8 @@ struct AddUserScriptView: View {
             }
             .disabled(isAdding)
         }
+        .padding(8)
+        .liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)
         .controlSize(.small)
     }
 
