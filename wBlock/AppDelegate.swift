@@ -201,7 +201,7 @@ extension AppDelegate: NSApplicationDelegate {
         switch response {
         case .alertFirstButtonReturn: // Apply Changes and Quit
             Task {
-                await filterManager.applyChanges()
+                await filterManager.performFilterUpdate(showProgress: true)
                 // Ensure changes are applied before terminating
                 DispatchQueue.main.async {
                     NSApp.reply(toApplicationShouldTerminate: true)
