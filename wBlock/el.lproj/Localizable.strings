@@ -854,3 +854,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Language picker */
 "Selected" = "Επιλεγμένες";
 "Search languages" = "Αναζήτηση γλωσσών";
+
+"Built-in" = "Ενσωματωμένο";

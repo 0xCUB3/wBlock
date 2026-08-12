@@ -854,3 +854,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Language picker */
 "Selected" = "已選擇";
 "Search languages" = "搜尋語言";
+
+"Built-in" = "內建";

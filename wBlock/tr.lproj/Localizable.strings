@@ -854,3 +854,5 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 /* Language picker */
 "Selected" = "Seçilenler";
 "Search languages" = "Dilleri ara";
+
+"Built-in" = "Yerleşik";

@@ -854,3 +854,5 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 /* Language picker */
 "Selected" = "Kiválasztva";
 "Search languages" = "Nyelvek keresése";
+
+"Built-in" = "Beépített";

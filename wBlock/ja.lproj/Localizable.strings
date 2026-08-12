@@ -854,3 +854,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Language picker */
 "Selected" = "選択済み";
 "Search languages" = "言語を検索";
+
+"Built-in" = "内蔵";

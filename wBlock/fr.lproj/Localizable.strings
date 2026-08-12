@@ -854,3 +854,5 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 /* Language picker */
 "Selected" = "Sélectionnées";
 "Search languages" = "Rechercher des langues";
+
+"Built-in" = "Intégré";

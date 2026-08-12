@@ -28,6 +28,8 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let isDownloaded: Bool
     let updatesAutomatically: Bool
     let isUserStyle: Bool
+    let isBuiltIn: Bool
+    let isCustom: Bool
     let builtInSection: BuiltInUserScriptSection?
     let isBeta: Bool
 
@@ -45,6 +47,8 @@ private struct UserScriptListItem: Identifiable, Hashable {
         isDownloaded = script.isDownloaded
         updatesAutomatically = script.updatesAutomatically
         isUserStyle = script.isUserStyle
+        isBuiltIn = builtInSection != nil
+        isCustom = builtInSection == nil
         self.builtInSection = builtInSection
         self.isBeta = isBeta
     }
@@ -514,7 +518,7 @@ struct UserScriptManagerView: View {
     #endif
 
     private func scriptRowView(script: UserScriptListItem) -> some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(script.localizedDisplayName)
@@ -522,6 +526,15 @@ struct UserScriptManagerView: View {
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
+                    Badge(
+                        text: script.isUserStyle ? "Userstyle" : "Userscript",
+                        color: script.isUserStyle ? .purple : .red
+                    )
+                    if script.isBuiltIn {
+                        Badge(text: "Built-in", color: .orange)
+                    } else if script.isCustom {
+                        Badge(text: "Custom", color: .blue)
+                    }
                     if script.isBeta {
                         Text("Beta")
                             .font(.caption2)
@@ -746,14 +759,20 @@ private struct ScriptNameAndDescriptionView: View {
 private struct ScriptStatusBadgesView: View {
     let script: UserScript
     let isDownloaded: Bool
+    let isBuiltIn: Bool
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                if script.isUserStyle {
-                    Badge(
-                        text: LocalizedStrings.text("Userstyle", comment: "Userstyle type badge"),
-                        color: .purple
-                    )
+                Badge(
+                    text: script.isUserStyle ? "Userstyle" : "Userscript",
+                    color: script.isUserStyle ? .purple : .red
+                )
+                if isBuiltIn {
+                    Badge(text: "Built-in", color: .orange)
+                } else if script.isLocal {
+                    Badge(text: "Local Import", color: .blue)
+                } else {
+                    Badge(text: "Custom", color: .blue)
                 }
                 if !script.version.isEmpty {
                     Badge(
@@ -946,7 +965,11 @@ struct UserScriptInfoSidebar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             ScriptNameAndDescriptionView(script: script, isBeta: isBeta)
-            ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0)
+            ScriptStatusBadgesView(
+                script: script,
+                isDownloaded: contentLength > 0,
+                isBuiltIn: isBundled
+            )
             // Bundled scripts update with the app, so auto-update controls are noise.
             if !isBundled && (script.url != nil || script.updateURL != nil || script.downloadURL != nil) {
                 ScriptUpdateSettingsView(

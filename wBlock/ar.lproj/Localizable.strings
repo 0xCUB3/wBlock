@@ -854,3 +854,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Language picker */
 "Selected" = "المحددة";
 "Search languages" = "البحث عن اللغات";
+
+"Built-in" = "مدمج";

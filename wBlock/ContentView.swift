@@ -610,6 +610,14 @@ struct FilterRowView: View {
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
+                    if filter.isCustom {
+                        Text("Custom")
+                            .font(.caption2.weight(.medium))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.blue.opacity(0.15), in: Capsule())
+                            .foregroundStyle(.blue)
+                    }
                 }
                 .font(.body)
 

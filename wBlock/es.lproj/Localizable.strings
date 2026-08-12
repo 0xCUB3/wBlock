@@ -854,3 +854,5 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 /* Language picker */
 "Selected" = "Seleccionados";
 "Search languages" = "Buscar idiomas";
+
+"Built-in" = "Integrado";

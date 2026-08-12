@@ -854,3 +854,5 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 /* Language picker */
 "Selected" = "Selectate";
 "Search languages" = "Caută limbi";
+
+"Built-in" = "Integrat";

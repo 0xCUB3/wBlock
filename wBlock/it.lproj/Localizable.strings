@@ -854,3 +854,5 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 /* Language picker */
 "Selected" = "Selezionate";
 "Search languages" = "Cerca lingue";
+
+"Built-in" = "Integrato";
