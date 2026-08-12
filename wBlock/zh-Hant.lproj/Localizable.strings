@@ -889,8 +889,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
 "AdGuard Allowlist" = "AdGuard Allowlist";
-"Blocks tracking pixels and other mail tracking techniques." = "Blocks tracking pixels and other mail tracking techniques.";
-"Allows sites and resources that should not be blocked." = "Allows sites and resources that should not be blocked.";
+"Blocks tracking pixels and other mail tracking techniques." = "封鎖追蹤像素和其他電子郵件追蹤技術。";
+"Allows sites and resources that should not be blocked." = "允許不應被封鎖的網站和資源。";
 
 
 /* Auto-update controls */
@@ -938,4 +938,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "The file must include userscript or userstyle metadata." = "檔案必須包含使用者腳本或使用者樣式中繼資料。";
 
-"Failed to clear downloaded custom filter state; apply again to retry." = "Failed to clear downloaded custom filter state; apply again to retry.";
+"Failed to clear downloaded custom filter state; apply again to retry." = "無法清除已下載自訂過濾器的狀態；請重新套用以重試。";
+"Failed to resume blocking." = "無法恢復封鎖。";

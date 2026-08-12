@@ -889,8 +889,8 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
 "AdGuard Allowlist" = "AdGuard Allowlist";
-"Blocks tracking pixels and other mail tracking techniques." = "Blocks tracking pixels and other mail tracking techniques.";
-"Allows sites and resources that should not be blocked." = "Allows sites and resources that should not be blocked.";
+"Blocks tracking pixels and other mail tracking techniques." = "Blochează pixelii de urmărire și alte tehnici de urmărire a e-mailurilor.";
+"Allows sites and resources that should not be blocked." = "Permite site-urile și resursele care nu ar trebui blocate.";
 
 
 /* Auto-update controls */
@@ -938,4 +938,5 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 "The file must include userscript or userstyle metadata." = "Fișierul trebuie să includă metadate pentru userscript sau userstyle.";
 
-"Failed to clear downloaded custom filter state; apply again to retry." = "Failed to clear downloaded custom filter state; apply again to retry.";
+"Failed to clear downloaded custom filter state; apply again to retry." = "Starea filtrului personalizat descărcat nu a putut fi eliminată; aplică din nou pentru a reîncerca.";
+"Failed to resume blocking." = "Reluarea blocării a eșuat.";

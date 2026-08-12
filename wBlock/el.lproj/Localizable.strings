@@ -889,8 +889,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
 "AdGuard Allowlist" = "AdGuard Allowlist";
-"Blocks tracking pixels and other mail tracking techniques." = "Blocks tracking pixels and other mail tracking techniques.";
-"Allows sites and resources that should not be blocked." = "Allows sites and resources that should not be blocked.";
+"Blocks tracking pixels and other mail tracking techniques." = "Αποκλείει pixel παρακολούθησης και άλλες τεχνικές παρακολούθησης email.";
+"Allows sites and resources that should not be blocked." = "Επιτρέπει ιστότοπους και πόρους που δεν πρέπει να αποκλείονται.";
 
 
 /* Auto-update controls */
@@ -938,4 +938,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "The file must include userscript or userstyle metadata." = "Το αρχείο πρέπει να περιλαμβάνει μεταδεδομένα userscript ή userstyle.";
 
-"Failed to clear downloaded custom filter state; apply again to retry." = "Failed to clear downloaded custom filter state; apply again to retry.";
+"Failed to clear downloaded custom filter state; apply again to retry." = "Δεν ήταν δυνατή η εκκαθάριση της κατάστασης του ληφθέντος προσαρμοσμένου φίλτρου· εφαρμόστε ξανά για νέα προσπάθεια.";
+"Failed to resume blocking." = "Αποτυχία συνέχισης του αποκλεισμού.";

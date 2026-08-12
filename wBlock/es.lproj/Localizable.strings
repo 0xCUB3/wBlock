@@ -889,8 +889,8 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
 "AdGuard Allowlist" = "AdGuard Allowlist";
-"Blocks tracking pixels and other mail tracking techniques." = "Blocks tracking pixels and other mail tracking techniques.";
-"Allows sites and resources that should not be blocked." = "Allows sites and resources that should not be blocked.";
+"Blocks tracking pixels and other mail tracking techniques." = "Bloquea píxeles de seguimiento y otras técnicas de seguimiento del correo.";
+"Allows sites and resources that should not be blocked." = "Permite sitios y recursos que no deberían bloquearse.";
 
 
 /* Auto-update controls */
@@ -938,4 +938,5 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 
 "The file must include userscript or userstyle metadata." = "El archivo debe incluir metadatos de userscript o userstyle.";
 
-"Failed to clear downloaded custom filter state; apply again to retry." = "Failed to clear downloaded custom filter state; apply again to retry.";
+"Failed to clear downloaded custom filter state; apply again to retry." = "No se pudo borrar el estado del filtro personalizado descargado; aplica los cambios de nuevo para reintentarlo.";
+"Failed to resume blocking." = "No se pudo reanudar el bloqueo.";

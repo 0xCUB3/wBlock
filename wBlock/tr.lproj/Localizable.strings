@@ -889,8 +889,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
 "AdGuard Allowlist" = "AdGuard Allowlist";
-"Blocks tracking pixels and other mail tracking techniques." = "Blocks tracking pixels and other mail tracking techniques.";
-"Allows sites and resources that should not be blocked." = "Allows sites and resources that should not be blocked.";
+"Blocks tracking pixels and other mail tracking techniques." = "İzleme piksellerini ve diğer e-posta izleme tekniklerini engeller.";
+"Allows sites and resources that should not be blocked." = "Engellenmemesi gereken sitelere ve kaynaklara izin verir.";
 
 
 /* Auto-update controls */
@@ -938,4 +938,5 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 "The file must include userscript or userstyle metadata." = "Dosya userscript veya userstyle meta verilerini içermelidir.";
 
-"Failed to clear downloaded custom filter state; apply again to retry." = "Failed to clear downloaded custom filter state; apply again to retry.";
+"Failed to clear downloaded custom filter state; apply again to retry." = "İndirilen özel filtrenin durumu temizlenemedi; yeniden denemek için tekrar uygulayın.";
+"Failed to resume blocking." = "Engelleme sürdürülemedi.";

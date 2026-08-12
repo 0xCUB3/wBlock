@@ -889,8 +889,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
 "AdGuard Allowlist" = "AdGuard Allowlist";
-"Blocks tracking pixels and other mail tracking techniques." = "Blocks tracking pixels and other mail tracking techniques.";
-"Allows sites and resources that should not be blocked." = "Allows sites and resources that should not be blocked.";
+"Blocks tracking pixels and other mail tracking techniques." = "トラッキングピクセルやその他のメール追跡技術をブロックします。";
+"Allows sites and resources that should not be blocked." = "ブロックすべきでないサイトやリソースを許可します。";
 
 
 /* Auto-update controls */
@@ -938,4 +938,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "The file must include userscript or userstyle metadata." = "ファイルにはユーザースクリプトまたはユーザースタイルのメタデータを含める必要があります。";
 
-"Failed to clear downloaded custom filter state; apply again to retry." = "Failed to clear downloaded custom filter state; apply again to retry.";
+"Failed to clear downloaded custom filter state; apply again to retry." = "ダウンロードしたカスタムフィルタの状態を消去できませんでした。もう一度適用して再試行してください。";
+"Failed to resume blocking." = "ブロックを再開できませんでした。";

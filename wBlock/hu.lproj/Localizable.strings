@@ -889,8 +889,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
 "AdGuard Allowlist" = "AdGuard Allowlist";
-"Blocks tracking pixels and other mail tracking techniques." = "Blocks tracking pixels and other mail tracking techniques.";
-"Allows sites and resources that should not be blocked." = "Allows sites and resources that should not be blocked.";
+"Blocks tracking pixels and other mail tracking techniques." = "Blokkolja a követőkódokat és az egyéb e-mail-követési technikákat.";
+"Allows sites and resources that should not be blocked." = "Engedélyezi azokat a webhelyeket és erőforrásokat, amelyeket nem kell blokkolni.";
 
 
 /* Auto-update controls */
@@ -938,4 +938,5 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 "The file must include userscript or userstyle metadata." = "A fájlnak userscript- vagy userstyle-metaadatokat kell tartalmaznia.";
 
-"Failed to clear downloaded custom filter state; apply again to retry." = "Failed to clear downloaded custom filter state; apply again to retry.";
+"Failed to clear downloaded custom filter state; apply again to retry." = "Nem sikerült törölni a letöltött egyéni szűrő állapotát; az újrapróbálkozáshoz alkalmazza ismét a módosításokat.";
+"Failed to resume blocking." = "Nem sikerült folytatni a blokkolást.";

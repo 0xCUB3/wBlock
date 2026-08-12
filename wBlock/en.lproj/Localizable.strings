@@ -938,3 +938,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "The file must include userscript or userstyle metadata." = "The file must include userscript or userstyle metadata.";
 
 "Failed to clear downloaded custom filter state; apply again to retry." = "Failed to clear downloaded custom filter state; apply again to retry.";
+"Failed to resume blocking." = "Failed to resume blocking.";
