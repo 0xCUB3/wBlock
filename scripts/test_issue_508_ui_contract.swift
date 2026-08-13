@@ -93,6 +93,13 @@ requireCondition(!settings.contains("bubble.left.and.bubble.right"), "Contact Us
 require(settings, "private var logTimestampControls")
 require(settings, "Toggle(\"Sync timestamps with device timezone\"")
 requireCondition(!settings.contains("Picker(\"Time zone\""), "timestamp settings must not show a custom time-zone picker")
+let dangerStart = settings.range(of: "private var dangerZoneSection")!.lowerBound
+let settingsContentStart = settings.range(of: "private var settingsContent", range: dangerStart..<settings.endIndex)!.lowerBound
+let dangerZone = String(settings[dangerStart..<settingsContentStart])
+require(dangerZone, ".buttonStyle(.bordered)")
+require(dangerZone, ".tint(.red)")
+require(dangerZone, ".controlSize(.small)")
+requireCondition(!dangerZone.contains(".frame(maxWidth: .infinity)"), "Restart Onboarding must not fill the settings row")
 let manager = try source("wBlock/AppFilterManager.swift")
 require(manager, "func setFilterListSelection(id: UUID, selected: Bool)")
 require(content, "setFilterListSelection(id: filter.id, selected: false)")

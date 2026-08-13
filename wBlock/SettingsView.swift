@@ -593,8 +593,10 @@ struct SettingsView: View {
                     isRestarting ? "Restarting…" : "Restart Onboarding",
                     systemImage: isRestarting ? "hourglass" : "arrow.counterclockwise"
                 )
-                .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.bordered)
+            .tint(.red)
+            .controlSize(.small)
             .disabled(isRestarting)
         }
     }
