@@ -28,6 +28,8 @@
 (function () {
     'use strict';
 
+    if (/(^|\.)amazon\.[a-z.]+$/i.test(location.hostname)) { return; }
+
     // ------------------------------------------------------------------
     // Player Cleaner
     //

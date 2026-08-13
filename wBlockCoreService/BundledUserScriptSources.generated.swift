@@ -7,7 +7,7 @@ import Foundation
 /// being downloaded from a remote URL. Content is embedded verbatim so the
 /// scripts work offline and update alongside the app.
 enum BundledUserScriptSources {
-    static let documentStartCacheRevision = "d24a42a98dd03422bc2fa58c54b50206b8f82930f2455c296f7408e70a2f119d"
+    static let documentStartCacheRevision = "9af569e428a6a3c3a0468b212bd9e0e07f0576dd5085fc786aad93a32eb6ad7f"
 
     /// Embedded source of tube-cleaner.user.js.
     static let tubeCleaner = ###"""
@@ -4292,6 +4292,8 @@ enum BundledUserScriptSources {
 
 (function () {
     'use strict';
+
+    if (/(^|\.)amazon\.[a-z.]+$/i.test(location.hostname)) { return; }
 
     // ------------------------------------------------------------------
     // Player Cleaner
