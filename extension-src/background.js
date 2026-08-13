@@ -25521,7 +25521,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   // short-lived, extension-private copy of scripts that do not depend on mutable
   // synchronous GM state so the static injector can start them before native IPC.
   // Generated from the canonical bundled userscript sources.
-  const WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION = "d24a42a98dd03422bc2fa58c54b50206b8f82930f2455c296f7408e70a2f119d";
+  const WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION = "9af569e428a6a3c3a0468b212bd9e0e07f0576dd5085fc786aad93a32eb6ad7f";
   let documentStartScriptCatalog = [];
   let documentStartScriptCatalogDisabledHosts = [];
   let documentStartScriptCacheEnabled = false;

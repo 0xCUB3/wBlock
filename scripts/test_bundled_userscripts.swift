@@ -193,6 +193,7 @@ for needle in [
     ".video-js",                 // video.js detection
     ".jwplayer",                 // JW Player detection
     ".plyr",                     // Plyr detection
+    "amazon\\.[a-z.]+$",        // Amazon keeps its native review-video player
     "playsInline",                // native controls/PiP
     "recoverSidecarTracks",       // native subtitle/chapter recovery
     "navigator.mediaSession",     // system Now Playing integration
