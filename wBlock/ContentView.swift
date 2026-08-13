@@ -373,12 +373,11 @@ struct ContentView: View {
                     Section {
                         ForEach(FilterListGrouping.groups(for: item.filters)) { group in
                             if group.isAdGuardAnnoyances {
-                                DisclosureGroup(isExpanded: adGuardAnnoyancesExpansion) {
+                                adGuardAnnoyancesHeader(group)
+                                if adGuardAnnoyancesExpansion.wrappedValue {
                                     ForEach(group.filters) { filter in
                                         filterRowView(for: filter)
                                     }
-                                } label: {
-                                    Text(LocalizedStringKey(group.title ?? ""))
                                 }
                             } else {
                                 ForEach(group.filters) { filter in
@@ -554,6 +553,64 @@ struct ContentView: View {
         )
     }
 
+    private func adGuardAnnoyancesSelection(_ group: FilterListGroup) -> Binding<Bool> {
+        Binding(
+            get: { group.filters.contains(where: \.isSelected) },
+            set: { selected in
+                filterManager.setFilterListSelections(
+                    ids: Set(group.filters.map(\.id)),
+                    selected: selected
+                )
+            }
+        )
+    }
+
+    private func adGuardAnnoyancesHeader(_ group: FilterListGroup) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    adGuardAnnoyancesExpansion.wrappedValue.toggle()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(LocalizedStringKey(group.title ?? ""))
+                            .fontWeight(.medium)
+                            .foregroundStyle(.primary)
+                        if let count = group.sourceRuleCount, count > 0 {
+                            Text(
+                                String.localizedStringWithFormat(
+                                    NSLocalizedString("(%@ rules)", comment: "Filter rule count summary"),
+                                    count.formatted()
+                                )
+                            )
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        }
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                        .rotationEffect(
+                            .degrees(adGuardAnnoyancesExpansion.wrappedValue ? 90 : 0)
+                        )
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Toggle("", isOn: adGuardAnnoyancesSelection(group))
+                .labelsHidden()
+                .accessibilityLabel(Text(LocalizedStringKey(group.title ?? "")))
+        }
+        #if os(macOS)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        #endif
+    }
+
     private func categoryHeader(_ category: FilterListCategory) -> some View {
         HStack(spacing: 6) {
             Text(category.localizedName)
@@ -629,29 +686,7 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 ForEach(FilterListGrouping.groups(for: filters)) { group in
                     if group.isAdGuardAnnoyances {
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.15)) {
-                                adGuardAnnoyancesExpansion.wrappedValue.toggle()
-                            }
-                        } label: {
-                            HStack(spacing: 8) {
-                                Text(LocalizedStringKey(group.title ?? ""))
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.primary)
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.tertiary)
-                                    .rotationEffect(
-                                        .degrees(adGuardAnnoyancesExpansion.wrappedValue ? 90 : 0)
-                                    )
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-
+                        adGuardAnnoyancesHeader(group)
                         if adGuardAnnoyancesExpansion.wrappedValue {
                             Divider()
                                 .padding(.leading, 16)

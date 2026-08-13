@@ -755,6 +755,26 @@ class AppFilterManager: ObservableObject {
         return true
     }
 
+    func setFilterListSelections(ids: Set<UUID>, selected: Bool) {
+        var updated = filterLists
+        var changed = false
+        for index in updated.indices where ids.contains(updated[index].id) && updated[index].isSelected != selected {
+            updated[index].isSelected = selected
+            if selected {
+                updated[index].limitExceededReason = nil
+            }
+            changed = true
+        }
+        guard changed else { return }
+
+        filterLists = updated
+        if selected {
+            autoDisabledFilters.removeAll { ids.contains($0.id) }
+        }
+        saveFilterListsCoalesced()
+        refreshPendingChanges()
+    }
+
     // MARK: - Rule limit UX
 
     func showRuleLimitWarning() {

@@ -13,6 +13,10 @@ struct FilterListGroup: Identifiable {
     var id: Kind { kind }
     var isAdGuardAnnoyances: Bool { kind == .adGuardAnnoyances }
     var title: String? { isAdGuardAnnoyances ? "AdGuard Annoyances" : nil }
+    var sourceRuleCount: Int? {
+        let counts = filters.compactMap(\.sourceRuleCount)
+        return counts.count == filters.count ? counts.reduce(0, +) : nil
+    }
 }
 
 enum FilterListGrouping {
