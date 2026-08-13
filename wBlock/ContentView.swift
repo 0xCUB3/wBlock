@@ -299,26 +299,27 @@ struct ContentView: View {
                 minHeight: 550, idealHeight: 720, maxHeight: .infinity
             )
             .toolbar {
-                ToolbarItemGroup(placement: .automatic) {
-                    ToolbarSearchField(
-                        text: $filterSearchText,
-                        isExpanded: $showFilterSearch,
-                        prompt: "Search filters"
-                    )
+                if !showFilterSearch {
+                    ToolbarItemGroup(placement: .automatic) {
+                        Button {
+                            showingAddFilterSheet = true
+                        } label: {
+                            Label("Add Filter", systemImage: "plus")
+                        }
 
-                    if !showFilterSearch {
                         applyChangesToolbarButton
                             .help(
                                 hasPendingChanges
                                     ? String(localized: "Apply your pending changes")
                                     : String(localized: "Apply changes")
                             )
+                    }
 
-                        Button {
-                            showingAddFilterSheet = true
-                        } label: {
-                            Label("Add Filter", systemImage: "plus")
-                        }
+                    if #available(macOS 26.0, *) {
+                        ToolbarSpacer(.fixed, placement: .automatic)
+                    }
+
+                    ToolbarItem(placement: .automatic) {
                         Button {
                             showOnlyEnabledLists.toggle()
                         } label: {
@@ -329,6 +330,18 @@ struct ContentView: View {
                                     : "line.3.horizontal.decrease.circle")
                         }
                     }
+
+                    if #available(macOS 26.0, *) {
+                        ToolbarSpacer(.fixed, placement: .automatic)
+                    }
+                }
+
+                ToolbarItem(placement: .automatic) {
+                    ToolbarSearchField(
+                        text: $filterSearchText,
+                        isExpanded: $showFilterSearch,
+                        prompt: "Search filters"
+                    )
                 }
             }
         #endif
