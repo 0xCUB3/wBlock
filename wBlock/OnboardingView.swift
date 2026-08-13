@@ -582,10 +582,12 @@ struct OnboardingView: View {
     }
 
     private var languagePicker: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(selectedLanguagePickerOptions) { lang in
+        VStack(spacing: 0) {
+            ForEach(Array(selectedLanguagePickerOptions.enumerated()), id: \.element.id) { index, lang in
                 HStack(spacing: 10) {
-                    Text(lang.flag)
+                    Text(lang.flag.isEmpty ? String(lang.nativeName.prefix(1)) : lang.flag)
+                        .fontWeight(lang.flag.isEmpty ? .semibold : .regular)
+                        .frame(width: 20)
                     Text(lang.nativeName)
                     Spacer()
                     Button {
@@ -597,8 +599,15 @@ struct OnboardingView: View {
                     .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+                .padding(.vertical, 9)
+
+                if index < selectedLanguagePickerOptions.count - 1 {
+                    Divider().padding(.leading, 42)
+                }
+            }
+
+            if !selectedLanguagePickerOptions.isEmpty {
+                Divider().padding(.leading, 42)
             }
 
             Menu {
@@ -610,10 +619,23 @@ struct OnboardingView: View {
                     }
                 }
             } label: {
-                Label("Add", systemImage: "plus")
+                HStack(spacing: 10) {
+                    Image(systemName: "plus")
+                        .frame(width: 20)
+                    Text("Add")
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .contentShape(Rectangle())
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.plain)
         }
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 
     private var regionalStep: some View {
@@ -641,7 +663,7 @@ struct OnboardingView: View {
     }
 
     private var userscriptsStep: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Userscripts")
                 .font(.title2.bold())
             Text("Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later.")
@@ -650,20 +672,31 @@ struct OnboardingView: View {
 
             let general = defaultUserScripts.filter { $0.languageCodes.isEmpty }
             let localized = defaultUserScripts.filter { !$0.languageCodes.isEmpty }
-            ForEach(general) { script in
-                userscriptCard(for: script)
+            if !general.isEmpty {
+                userscriptList(general)
             }
             ForEach(selectedLanguagePickerOptions) { language in
                 let scripts = localized.filter { $0.languageCodes.contains(language.code) }
                 if !scripts.isEmpty {
                     Text(language.nativeName)
                         .font(.headline)
-                    ForEach(scripts) { script in
-                        userscriptCard(for: script)
-                    }
+                        .padding(.top, 2)
+                    userscriptList(scripts)
                 }
             }
         }
+    }
+
+    private func userscriptList(_ scripts: [OnboardingUserScriptItem]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(scripts.enumerated()), id: \.element.id) { index, script in
+                userscriptCard(for: script)
+                if index < scripts.count - 1 {
+                    Divider().padding(.leading, 44)
+                }
+            }
+        }
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func emptyRegionalFilterGroup(for lang: LanguageOption) -> some View {
@@ -964,10 +997,10 @@ struct OnboardingView: View {
                 }
             }
         } label: {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .top, spacing: 10) {
                 SelectionIndicator(isSelected: isSelected)
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text(script.name)
                             .font(.headline)
@@ -991,15 +1024,12 @@ struct OnboardingView: View {
                 Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
-        .liquidGlassCompat(
-            cornerRadius: 16,
-            material: isSelected ? .thickMaterial : .regularMaterial
-        )
     }
 
     private func resolvedUserscriptDescription(for script: UserScript) -> String {
