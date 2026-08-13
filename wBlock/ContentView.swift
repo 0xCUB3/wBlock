@@ -290,8 +290,8 @@ struct ContentView: View {
                 minHeight: 550, idealHeight: 720, maxHeight: .infinity
             )
             .toolbar {
-                if !showFilterSearch {
-                    ToolbarItemGroup(placement: .automatic) {
+                ToolbarItemGroup(placement: .automatic) {
+                    if !showFilterSearch {
                         Button {
                             showingAddFilterSheet = true
                         } label: {
@@ -304,13 +304,7 @@ struct ContentView: View {
                                     ? String(localized: "Apply your pending changes")
                                     : String(localized: "Apply changes")
                             )
-                    }
 
-                    if #available(macOS 26.0, *) {
-                        ToolbarSpacer(.fixed, placement: .automatic)
-                    }
-
-                    ToolbarItem(placement: .automatic) {
                         Button {
                             showOnlyEnabledLists.toggle()
                         } label: {
@@ -320,10 +314,6 @@ struct ContentView: View {
                                     ? "line.3.horizontal.decrease.circle.fill"
                                     : "line.3.horizontal.decrease.circle")
                         }
-                    }
-
-                    if #available(macOS 26.0, *) {
-                        ToolbarSpacer(.fixed, placement: .automatic)
                     }
                 }
 
