@@ -120,7 +120,7 @@ final class UserScriptPayloadDataCache: @unchecked Sendable {
 
     private let cache = NSCache<NSString, Entry>()
 
-    init(countLimit: Int = 8, totalCostLimit: Int = 32 * 1024 * 1024) {
+    init(countLimit: Int = 2, totalCostLimit: Int = 8 * 1024 * 1024) {
         cache.countLimit = countLimit
         cache.totalCostLimit = totalCostLimit
     }

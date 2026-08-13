@@ -749,7 +749,8 @@ public class UserScriptManager: ObservableObject {
         // Update content from stored files (do file I/O off main thread)
         let updatedScripts = await hydrateUserScriptsFromDisk(
             newUserScripts,
-            includeResources: false
+            includeResources: false,
+            hydrateDisabled: false
         )
 
         // Only update if the scripts have actually changed to avoid unnecessary UI updates
@@ -761,22 +762,31 @@ public class UserScriptManager: ObservableObject {
 
     private func hydrateUserScriptsFromDisk(
         _ userScripts: [UserScript],
-        includeResources: Bool
+        includeResources: Bool,
+        hydrateDisabled: Bool = true
     ) async -> [UserScript] {
         await Task.detached {
             Self.hydrateUserScriptsFromDiskOffMain(
                 userScripts,
-                includeResources: includeResources
+                includeResources: includeResources,
+                hydrateDisabled: hydrateDisabled
             )
         }.value
     }
 
     nonisolated private static func hydrateUserScriptsFromDiskOffMain(
         _ userScripts: [UserScript],
-        includeResources: Bool
+        includeResources: Bool,
+        hydrateDisabled: Bool
     ) -> [UserScript] {
         var scripts = userScripts
         for i in scripts.indices {
+            if !hydrateDisabled && !scripts[i].isEnabled {
+                scripts[i].content = ""
+                scripts[i].resourceContents = [:]
+                continue
+            }
+
             scripts[i] = hydrateUserScriptFromDisk(scripts[i])
 
             guard includeResources else { continue }
@@ -795,6 +805,18 @@ public class UserScriptManager: ObservableObject {
         let persistedName = script.name.trimmingCharacters(in: .whitespacesAndNewlines)
         let persistedDescription = script.description
         hydratedScript.replaceContentAndParseMetadata(content)
+
+        // Parsing large scripts can allocate tens of thousands of metadata strings
+        // that are identical to the persisted protobuf values. Reuse the persisted
+        // array storage after validating it against the source-derived metadata.
+        let persistedArrayFields: [WritableKeyPath<UserScript, [String]>] = [
+            \.matches, \.excludeMatches, \.includes, \.excludes, \.grant,
+        ]
+        for keyPath in persistedArrayFields
+        where hydratedScript[keyPath: keyPath] == script[keyPath: keyPath] {
+            hydratedScript[keyPath: keyPath] = script[keyPath: keyPath]
+        }
+
         if script.isLocal {
             if !persistedName.isEmpty {
                 hydratedScript.name = script.name
@@ -1133,7 +1155,8 @@ public class UserScriptManager: ObservableObject {
         } else {
             let hydratedScripts = await hydrateUserScriptsFromDisk(
                 userScripts,
-                includeResources: true
+                includeResources: true,
+                hydrateDisabled: false
             )
 
             for script in hydratedScripts {
@@ -1837,6 +1860,10 @@ public class UserScriptManager: ObservableObject {
         updated.resourceContents = resources
         updated.lastUpdated = Date()
         return updated
+    }
+
+    public func hasDownloadedContent(for userScript: UserScript) -> Bool {
+        userScript.isDownloaded || userScriptFileExists(userScript)
     }
 
     private func userScriptFileExists(_ userScript: UserScript) -> Bool {

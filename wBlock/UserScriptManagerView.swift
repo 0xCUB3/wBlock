@@ -44,6 +44,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
 
     init(
         script: UserScript,
+        isDownloaded: Bool,
         isBuiltIn: Bool,
         builtInDisplayRole: BuiltInUserScriptDisplayRole?,
         isBeta: Bool = false
@@ -58,7 +59,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
         version = script.version
         lastUpdatedFormatted = script.lastUpdatedFormatted
         isLocal = script.isLocal
-        isDownloaded = script.isDownloaded
+        self.isDownloaded = isDownloaded
         updatesAutomatically = script.updatesAutomatically
         isUserStyle = script.isUserStyle
         category = script.category
@@ -416,6 +417,7 @@ struct UserScriptManagerView: View {
         scripts = userScriptManager.userScripts.map { script in
             UserScriptListItem(
                 script: script,
+                isDownloaded: userScriptManager.hasDownloadedContent(for: script),
                 isBuiltIn: userScriptManager.isDefaultUserScript(script),
                 builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
                 isBeta: userScriptManager.isBeta(for: script)

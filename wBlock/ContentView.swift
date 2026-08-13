@@ -386,10 +386,10 @@ struct ContentView: View {
         }
         #else
         ScrollView {
-            VStack(spacing: 20) {
+            LazyVStack(spacing: 20) {
                 statsCardsView
 
-                VStack(spacing: 16) {
+                LazyVStack(spacing: 16) {
                     ForEach(categorizedFilters, id: \.category) { item in
                         if item.category == .foreign {
                             macOSForeignFiltersView(filters: item.filters)
@@ -604,7 +604,7 @@ struct ContentView: View {
             }
             .padding(.horizontal, 4)
 
-            VStack(spacing: 0) {
+            LazyVStack(spacing: 0) {
                 ForEach(filters) { filter in
                     filterRowView(for: filter)
                     if filter.id != filters.last?.id {
@@ -620,7 +620,7 @@ struct ContentView: View {
     private func macOSForeignFiltersView(filters: [FilterList]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
-                VStack(spacing: 0) {
+                LazyVStack(spacing: 0) {
                     ForEach(ForeignFilterOrganizer.groups(for: filters)) { group in
                         HStack {
                             Text(group.title)
