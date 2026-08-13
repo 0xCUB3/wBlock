@@ -754,7 +754,7 @@ async function reloadActiveTab(tabId) {
     }
 }
 
-async function shouldShowOpenAppButton() {
+async function isMacPlatform() {
     try {
         const info = await browser.runtime.getPlatformInfo();
         return typeof info?.os === 'string' && info.os === 'mac';
@@ -1236,9 +1236,14 @@ function setupListeners() {
 
 async function refreshUi() {
     setError('');
-    refreshFilterUpdateStatus().catch((error) => {
-        console.warn('[wBlock] Failed to restore filter update status:', error);
-    });
+    const isMac = await isMacPlatform();
+    const updateFiltersButton = document.getElementById('update-filters');
+    if (updateFiltersButton) updateFiltersButton.hidden = !isMac;
+    if (isMac) {
+        refreshFilterUpdateStatus().catch((error) => {
+            console.warn('[wBlock] Failed to restore filter update status:', error);
+        });
+    }
     browser.runtime.sendMessage({ action: 'wblock:installRemoveParamDNRRules' }).catch((error) => {
         console.warn('[wBlock] Failed to refresh removeparam DNR rules:', error);
     });
@@ -1256,7 +1261,7 @@ async function refreshUi() {
     const resumeButton = document.getElementById('resume-blocking');
 
     if (openAppButton) {
-        openAppButton.hidden = !(await shouldShowOpenAppButton());
+        openAppButton.hidden = !isMac;
     }
     tab = await getActiveTabWithRetry();
     const pageSupport = getPageSupport(tab);
