@@ -84,7 +84,7 @@ struct wBlockApp: App {
                 ) {
                     Button("Restart", role: .destructive) {
                         Task { @MainActor in
-                            await dataManager.updateAppSettings(hasCompletedOnboarding: false)
+                            await filterManager.completeResetForOnboarding()
                         }
                     }
                     Button("Cancel", role: .cancel) {}

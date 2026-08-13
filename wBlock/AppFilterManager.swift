@@ -394,6 +394,28 @@ class AppFilterManager: ObservableObject {
         NotificationCenter.default.post(name: .wBlockFilterUpdateRequest, object: nil)
     }
 
+    /// Performs the complete reset used by every Restart Onboarding entry point.
+    @MainActor
+    func completeResetForOnboarding() async {
+        resetOnboardingUserDefaults()
+        await dataManager.resetToDefaultData(preservingOnboardingCompletion: true)
+        await resetForOnboarding()
+        await UserScriptManager.shared.simulateFreshInstall()
+        await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
+        _ = await dataManager.setHasCompletedOnboarding(false)
+    }
+
+    private func resetOnboardingUserDefaults() {
+        if let suiteDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) {
+            suiteDefaults.removePersistentDomain(forName: GroupIdentifier.shared.value)
+            suiteDefaults.synchronize()
+        }
+        if let bundleID = Bundle.main.bundleIdentifier {
+            UserDefaults.standard.removePersistentDomain(forName: bundleID)
+        }
+        UserDefaults.standard.synchronize()
+    }
+
     /// Resets the manager to its initial state so onboarding can run again.
     @MainActor
     func resetForOnboarding() async {

@@ -31,15 +31,7 @@ struct OnboardingView: View {
         dataManager.hasCompletedOnboarding
     }
 
-    private var selectedBlockingLevel: String {
-        dataManager.selectedBlockingLevel
-    }
-
-    private func setSelectedBlockingLevel(_ value: String) {
-        Task { @MainActor in
-            await dataManager.setSelectedBlockingLevel(value)
-        }
-    }
+    @State private var selectedBlockingLevel: String
     @State private var selectedUserscripts: Set<String> = []
     @State private var step: OnboardingStep = .welcome
     @State private var selectedLanguages: Set<String>
@@ -83,6 +75,7 @@ struct OnboardingView: View {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
         self.sharedDefaults = defaults
         _dataManager = StateObject(wrappedValue: ProtobufDataManager.shared)
+        _selectedBlockingLevel = State(initialValue: ProtobufDataManager.shared.selectedBlockingLevel)
 
         let stored = defaults.stringArray(forKey: Self.selectedLanguagesDefaultsKey)
         if let stored, !stored.isEmpty {
@@ -227,7 +220,6 @@ struct OnboardingView: View {
             }
         }
         .onChangeCompat(of: selectedLanguages) { _, newValue in
-            sharedDefaults.set(Array(newValue), forKey: Self.selectedLanguagesDefaultsKey)
             hasManuallyEditedRegionalSelection = false
             updateRegionalRecommendations(for: newValue)
             syncBaselineUserscriptSelection()
@@ -464,7 +456,7 @@ struct OnboardingView: View {
             == level.rawValue.lowercased()
 
         return Button {
-            setSelectedBlockingLevel(level.rawValue)
+            selectedBlockingLevel = level.rawValue
         } label: {
             HStack(alignment: .top, spacing: 12) {
                 SelectionIndicator(isSelected: isSelected)
@@ -1166,6 +1158,7 @@ struct OnboardingView: View {
                 }
             }
         }
+        await dataManager.setSelectedBlockingLevel(selectedBlockingLevel)
         sharedDefaults.set(Array(selectedLanguages), forKey: Self.selectedLanguagesDefaultsKey)
         filterManager.filterLists = updatedFilters
         await filterManager.saveFilterLists()

@@ -744,17 +744,6 @@ extension SettingsView {
 
     // MARK: - User Defaults / Onboarding
 
-    private func resetUserDefaults() {
-        if let suiteDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) {
-            suiteDefaults.removePersistentDomain(forName: GroupIdentifier.shared.value)
-            suiteDefaults.synchronize()
-        }
-        if let bundleID = Bundle.main.bundleIdentifier {
-            UserDefaults.standard.removePersistentDomain(forName: bundleID)
-        }
-        UserDefaults.standard.synchronize()
-    }
-
     private func restartOnboarding() {
         guard !isRestarting else { return }
         isRestarting = true
@@ -765,12 +754,7 @@ extension SettingsView {
             defer {
                 Task { @MainActor in isRestarting = false }
             }
-            resetUserDefaults()
-            await ProtobufDataManager.shared.resetToDefaultData()
-            await ProtobufDataManager.shared.setHasCompletedOnboarding(false)
-            await filterManager.resetForOnboarding()
-            await UserScriptManager.shared.simulateFreshInstall()
-            await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
+            await filterManager.completeResetForOnboarding()
             await MainActor.run {
                 nextScheduleLine = String(localized: "Next: Loading…")
             }
