@@ -95,7 +95,8 @@ struct FilterRulesView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 MonospacedTextView(
-                    text: Binding(get: { rules }, set: { _ in })
+                    text: Binding(get: { rules }, set: { _ in }),
+                    softTopEdge: true
                 )
             }
         }

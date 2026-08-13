@@ -5,6 +5,7 @@ import AppKit
 
 struct MonospacedTextView: NSViewRepresentable {
     @Binding var text: String
+    var softTopEdge = false
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = makeDocumentScrollView()
@@ -73,6 +74,7 @@ import UIKit
 
 struct MonospacedTextView: UIViewRepresentable {
     @Binding var text: String
+    var softTopEdge = false
 
     func makeUIView(context: Context) -> UITextView {
         let textView = UITextView(frame: .zero, textContainer: nil)
@@ -102,6 +104,9 @@ struct MonospacedTextView: UIViewRepresentable {
         textView.isScrollEnabled = true
         textView.alwaysBounceVertical = true
         textView.alwaysBounceHorizontal = true
+        if #available(iOS 26.0, *), softTopEdge {
+            textView.topEdgeEffect.style = .soft
+        }
         textView.showsVerticalScrollIndicator = true
         textView.showsHorizontalScrollIndicator = true
         textView.layoutManager.allowsNonContiguousLayout = true
