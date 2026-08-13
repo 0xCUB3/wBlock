@@ -61,6 +61,7 @@ struct BuiltInUserScriptDefinition {
     let url: String
     let isEnabledByDefault: Bool
     let description: String
+    let languages: [String]
     let displayRole: BuiltInUserScriptDisplayRole?
     /// Non-nil for userscripts that ship embedded in the framework instead of
     /// being downloaded from `url`. The `url` then acts only as a stable
@@ -75,6 +76,7 @@ struct BuiltInUserScriptDefinition {
         url: String,
         isEnabledByDefault: Bool,
         description: String = "Default userscript",
+        languages: [String] = [],
         displayRole: BuiltInUserScriptDisplayRole? = nil,
         bundledContent: String? = nil,
         isBeta: Bool = false
@@ -83,6 +85,7 @@ struct BuiltInUserScriptDefinition {
         self.url = url
         self.isEnabledByDefault = isEnabledByDefault
         self.description = description
+        self.languages = languages.map { $0.lowercased() }
         self.displayRole = displayRole
         self.bundledContent = bundledContent
         self.isBeta = isBeta
@@ -151,6 +154,7 @@ enum BuiltInUserScripts {
             name: "Bypass Paywalls Clean",
             url: "https://greasyfork.org/scripts/542351-bypass-paywalls-clean-en/code/Bypass%20Paywalls%20Clean%20(EN).user.js",
             isEnabledByDefault: false,
+            languages: ["en"],
             displayRole: .functionality
         ),
         BuiltInUserScriptDefinition(
@@ -189,6 +193,9 @@ enum BuiltInUserScripts {
     )
     static let isBetaByURL = Dictionary(
         uniqueKeysWithValues: definitions.filter(\.isBeta).map { ($0.url, true) }
+    )
+    static let languagesByURL = Dictionary(
+        uniqueKeysWithValues: definitions.map { ($0.url, $0.languages) }
     )
 
     /// Returns the embedded source for a bundled userscript URL, or nil when the
@@ -664,6 +671,11 @@ public class UserScriptManager: ObservableObject {
     public func builtInDisplayRole(for userScript: UserScript) -> BuiltInUserScriptDisplayRole? {
         guard let urlString = userScript.url?.absoluteString else { return nil }
         return BuiltInUserScripts.displayRoleByURL[urlString]
+    }
+
+    public func builtInLanguages(for userScript: UserScript) -> [String] {
+        guard let urlString = userScript.url?.absoluteString else { return [] }
+        return BuiltInUserScripts.languagesByURL[urlString] ?? []
     }
 
     public func isBeta(for userScript: UserScript) -> Bool {

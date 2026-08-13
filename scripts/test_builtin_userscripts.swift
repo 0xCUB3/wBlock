@@ -42,6 +42,15 @@ guard !source.contains("tinyShieldGroupedDefinition")
     exit(1)
 }
 
+guard source.contains("name: \"Bypass Paywalls Clean\"")
+    && source.contains("languages: [\"en\"]")
+    && source.contains("func builtInLanguages(for userScript: UserScript)")
+    && onboardingSource.contains("!Set(languages).isDisjoint(with: selectedLanguages)")
+    && onboardingSource.contains("selectedUserscripts = selectedUserscripts.intersection(visibleDefaultIDs)") else {
+    fputs("FAIL: onboarding must show and retain only userscripts matching selected languages\n", stderr)
+    exit(1)
+}
+
 
 guard source.contains("description: tinyShieldDescription") else {
     fputs("FAIL: tinyShield definitions should not fall back to the generic Default userscript description\n", stderr)

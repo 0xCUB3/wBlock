@@ -18,6 +18,7 @@ struct OnboardingView: View {
         case welcome
         case protection
         case regional
+        case userscripts
         case sync
         case setup
 
@@ -35,7 +36,6 @@ struct OnboardingView: View {
     @State private var selectedUserscripts: Set<String> = []
     @State private var step: OnboardingStep = .welcome
     @State private var selectedLanguages: Set<String>
-    @State private var languageSearchText = ""
     @State private var selectedRegionalFilters: Set<UUID> = []
     @State private var recommendedRegionalFilters: [FilterList] = []
     @State private var hasManuallyEditedRegionalSelection = false
@@ -101,6 +101,7 @@ struct OnboardingView: View {
         let name: String
         let description: String
         let isBaselineEnabledByDefault: Bool
+        let languageCodes: [String]
         let isBeta: Bool
     }
 
@@ -124,12 +125,17 @@ struct OnboardingView: View {
     private var defaultUserScripts: [OnboardingUserScriptItem] {
         userScriptManager.userScripts
             .filter(userScriptManager.isDefaultUserScript)
+            .filter { script in
+                let languages = userScriptManager.builtInLanguages(for: script)
+                return languages.isEmpty || !Set(languages).isDisjoint(with: selectedLanguages)
+            }
             .map { script in
                 OnboardingUserScriptItem(
                     id: script.id.uuidString,
                     name: script.localizedDisplayName,
                     description: resolvedUserscriptDescription(for: script),
                     isBaselineEnabledByDefault: isBaselineUserscriptEnabledByDefault(script),
+                    languageCodes: userScriptManager.builtInLanguages(for: script),
                     isBeta: userScriptManager.isBeta(for: script)
                 )
             }
@@ -294,7 +300,7 @@ struct OnboardingView: View {
     }
 
     private var activeOnboardingSteps: [OnboardingStep] {
-        [.welcome, .protection, .regional, .sync, .setup]
+        [.welcome, .protection, .regional, .userscripts, .sync, .setup]
     }
 
     private var currentStepIndex: Int {
@@ -348,6 +354,8 @@ struct OnboardingView: View {
             blockingLevelStep
         case .regional:
             regionalStep
+        case .userscripts:
+            userscriptsStep
         case .sync:
             syncStep
         case .setup:
@@ -509,25 +517,6 @@ struct OnboardingView: View {
         Locale(identifier: Bundle.main.preferredLocalizations.first ?? Locale.current.identifier)
     }
 
-    private func languageSearchForms(_ value: String) -> [String] {
-        let folded = value.folding(
-            options: [.diacriticInsensitive, .caseInsensitive],
-            locale: displayLocale
-        )
-        let transliterated = folded.applyingTransform(.toLatin, reverse: false)
-            ?? folded
-        return Array(Set([folded, transliterated].map { $0.lowercased() }))
-    }
-
-    private func matchesLanguageSearch(_ option: LanguageOption, query: String) -> Bool {
-        let queryForms = languageSearchForms(query)
-        let candidateForms = [option.name, option.nativeName, option.code]
-            .flatMap(languageSearchForms)
-        return queryForms.contains { queryForm in
-            candidateForms.contains { $0.contains(queryForm) }
-        }
-    }
-
     private var availableFilterLanguages: [LanguageOption] {
         var seen = Set<String>()
         var result: [LanguageOption] = []
@@ -584,110 +573,47 @@ struct OnboardingView: View {
         }
     }
 
-    private struct LanguagePickerSection: Identifiable {
-        let letter: String
-        let options: [LanguageOption]
-        var id: String { letter }
-    }
-
     private var selectedLanguagePickerOptions: [LanguageOption] {
         languagePickerOptions.filter { selectedLanguages.contains($0.code) }
     }
 
     private var unselectedLanguagePickerOptions: [LanguageOption] {
-        let query = languageSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return languagePickerOptions.filter { option in
-            guard !selectedLanguages.contains(option.code) else { return false }
-            guard !query.isEmpty else { return true }
-            return matchesLanguageSearch(option, query: query)
-        }
+        languagePickerOptions.filter { !selectedLanguages.contains($0.code) }
     }
 
-    private var languagePickerSections: [LanguagePickerSection] {
-        let grouped = Dictionary(grouping: unselectedLanguagePickerOptions) { option in
-            String(option.name.prefix(1)).uppercased(with: displayLocale)
-        }
-        return grouped
-            .map { LanguagePickerSection(letter: $0.key, options: $0.value) }
-            .sorted { $0.letter.localizedCaseInsensitiveCompare($1.letter) == .orderedAscending }
-    }
-
-    private var languagePickerGrid: some View {
+    private var languagePicker: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if !selectedLanguagePickerOptions.isEmpty {
-                Text("Selected")
-                    .font(.headline)
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                    ForEach(selectedLanguagePickerOptions) { lang in
-                        languageToggle(for: lang)
-                    }
-                }
-            }
-
-            TextField("Search languages", text: $languageSearchText)
-                .textFieldStyle(.roundedBorder)
-                .autocorrectionDisabled()
-
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                ForEach(languagePickerSections) { section in
-                    Section {
-                        ForEach(section.options) { lang in
-                            languageToggle(for: lang)
-                        }
-                    } header: {
-                        Text(section.letter)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 4)
-                            .padding(.top, 6)
-                    }
-                }
-            }
-        }
-    }
-
-    private func languageToggle(for lang: LanguageOption) -> some View {
-        let isOn = selectedLanguages.contains(lang.code)
-        return Button {
-            if isOn {
-                selectedLanguages.remove(lang.code)
-            } else {
-                selectedLanguages.insert(lang.code)
-            }
-        } label: {
-            HStack(spacing: 6) {
-                Text(String(lang.nativeName.prefix(1)))
-                    .fontWeight(.semibold)
-                    .frame(width: 20, alignment: .leading)
-
-                VStack(alignment: .leading, spacing: 1) {
+            ForEach(selectedLanguagePickerOptions) { lang in
+                HStack(spacing: 10) {
+                    Text(lang.flag)
                     Text(lang.nativeName)
-                        .lineLimit(1)
-                    if lang.nativeName != lang.name {
-                        Text(lang.name)
-                            .font(.caption2)
+                    Spacer()
+                    Button {
+                        selectedLanguages.remove(lang.code)
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+            }
+
+            Menu {
+                ForEach(unselectedLanguagePickerOptions) { lang in
+                    Button {
+                        selectedLanguages.insert(lang.code)
+                    } label: {
+                        Text(lang.nativeName)
                     }
                 }
-                Spacer(minLength: 0)
-                if isOn {
-                    Image(systemName: "checkmark")
-                        .font(.caption.bold())
-                        .foregroundStyle(Color.accentColor)
-                }
+            } label: {
+                Label("Add", systemImage: "plus")
             }
-            .font(.subheadline)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .contentShape(Rectangle())
+            .buttonStyle(.bordered)
         }
-        .buttonStyle(.plain)
-        .liquidGlassCompat(
-            cornerRadius: 10,
-            material: isOn ? .thickMaterial : .regularMaterial
-        )
     }
 
     private var regionalStep: some View {
@@ -696,7 +622,7 @@ struct OnboardingView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            languagePickerGrid
+            languagePicker
 
             if !recommendedRegionalFilters.isEmpty || !languagesWithoutRegionalFilters.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
@@ -711,11 +637,28 @@ struct OnboardingView: View {
                 }
             }
 
-            if !defaultUserScripts.isEmpty {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Baseline Userscripts")
+        }
+    }
+
+    private var userscriptsStep: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Userscripts")
+                .font(.title2.bold())
+            Text("Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            let general = defaultUserScripts.filter { $0.languageCodes.isEmpty }
+            let localized = defaultUserScripts.filter { !$0.languageCodes.isEmpty }
+            ForEach(general) { script in
+                userscriptCard(for: script)
+            }
+            ForEach(selectedLanguagePickerOptions) { language in
+                let scripts = localized.filter { $0.languageCodes.contains(language.code) }
+                if !scripts.isEmpty {
+                    Text(language.nativeName)
                         .font(.headline)
-                    ForEach(defaultUserScripts) { script in
+                    ForEach(scripts) { script in
                         userscriptCard(for: script)
                     }
                 }
@@ -1107,14 +1050,13 @@ struct OnboardingView: View {
         guard !defaultScripts.isEmpty else { return }
 
         let visibleDefaultIDs = Set(defaultUserScripts.map(\.id))
-        let allDefaultIDs = Set(defaultScripts.map { $0.id.uuidString })
         let visibleBaselineIDs = Set(defaultScripts.compactMap { script -> String? in
             guard isBaselineUserscriptEnabledByDefault(script) else { return nil }
             guard visibleDefaultIDs.contains(script.id.uuidString) else { return nil }
             return script.id.uuidString
         })
 
-        selectedUserscripts = selectedUserscripts.intersection(allDefaultIDs)
+        selectedUserscripts = selectedUserscripts.intersection(visibleDefaultIDs)
         selectedUserscripts.formUnion(visibleBaselineIDs.subtracting(manuallyDeselectedBaselineUserscripts))
         selectedUserscripts.formUnion(manuallySelectedUserscripts.intersection(visibleDefaultIDs))
     }
