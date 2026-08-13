@@ -364,8 +364,8 @@ struct UserScriptManagerView: View {
             }
         }
         .toolbar {
-            if !showSearch {
-                ToolbarItemGroup(placement: .automatic) {
+            ToolbarItemGroup(placement: .automatic) {
+                if !showSearch {
                     Button {
                         showingAddScriptSheet = true
                     } label: {
@@ -378,13 +378,7 @@ struct UserScriptManagerView: View {
                                 ? String(localized: "Apply your pending changes")
                                 : String(localized: "Apply changes")
                         )
-                }
 
-                if #available(macOS 26.0, *) {
-                    ToolbarSpacer(.fixed, placement: .automatic)
-                }
-
-                ToolbarItem(placement: .automatic) {
                     Button {
                         showOnlyEnabled.toggle()
                         ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
@@ -395,10 +389,6 @@ struct UserScriptManagerView: View {
                                 ? "line.3.horizontal.decrease.circle.fill"
                                 : "line.3.horizontal.decrease.circle")
                     }
-                }
-
-                if #available(macOS 26.0, *) {
-                    ToolbarSpacer(.fixed, placement: .automatic)
                 }
             }
 
