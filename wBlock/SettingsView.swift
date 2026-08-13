@@ -273,7 +273,7 @@ struct SettingsView: View {
                 Label("Report Issues", systemImage: "exclamationmark.triangle")
             }
             Link(destination: Self.contactURL) {
-                Label("Contact Us", systemImage: "bubble.left.and.bubble.right")
+                Label("Contact Us", systemImage: "bubble.left")
             }
             Button {
                 SafariExtensionSetupSupport.openScriptsExtensionSettings()
