@@ -72,44 +72,12 @@ struct MonospacedTextView: NSViewRepresentable {
 #elseif os(iOS)
 import UIKit
 
-private final class ProgressiveBlurTextView: UITextView {
-    let topBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
-    private let topBlurMask = CAGradientLayer()
-    var showsProgressiveTopBlur = false
-
-    override init(frame: CGRect, textContainer: NSTextContainer?) {
-        super.init(frame: frame, textContainer: textContainer)
-        topBlurView.isUserInteractionEnabled = false
-        topBlurMask.colors = [UIColor.black.cgColor, UIColor.clear.cgColor]
-        topBlurMask.locations = [0, 1]
-        topBlurView.layer.mask = topBlurMask
-        addSubview(topBlurView)
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        topBlurView.isHidden = !showsProgressiveTopBlur
-        topBlurView.frame = CGRect(
-            x: contentOffset.x,
-            y: contentOffset.y,
-            width: bounds.width,
-            height: 56
-        )
-        topBlurMask.frame = topBlurView.bounds
-        bringSubviewToFront(topBlurView)
-    }
-}
-
 struct MonospacedTextView: UIViewRepresentable {
     @Binding var text: String
     var softTopEdge = false
 
     func makeUIView(context: Context) -> UITextView {
-        let textView = ProgressiveBlurTextView(frame: .zero, textContainer: nil)
+        let textView = UITextView(frame: .zero, textContainer: nil)
         configure(textView: textView)
         textView.text = text
         return textView
@@ -136,8 +104,8 @@ struct MonospacedTextView: UIViewRepresentable {
         textView.isScrollEnabled = true
         textView.alwaysBounceVertical = true
         textView.alwaysBounceHorizontal = true
-        if let textView = textView as? ProgressiveBlurTextView {
-            textView.showsProgressiveTopBlur = softTopEdge
+        if #available(iOS 26.0, *), softTopEdge {
+            textView.topEdgeEffect.style = .soft
         }
         textView.showsVerticalScrollIndicator = true
         textView.showsHorizontalScrollIndicator = true
