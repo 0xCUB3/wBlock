@@ -23,4 +23,8 @@ guard core.contains("name: \"AdGuard Extra\"") && core.contains("isDefaultUserSc
     fputs("FAIL: AdGuard Extra built-in identity is not covered\n", stderr)
     exit(1)
 }
+guard !source.contains("if script.name == \"AdGuard Extra\" {") else {
+    fputs("FAIL: AdGuard Extra must not duplicate the row's details action with an inline info button\n", stderr)
+    exit(1)
+}
 print("PASS")
