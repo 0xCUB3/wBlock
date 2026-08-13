@@ -116,6 +116,19 @@ extension View {
     }
 
     @ViewBuilder
+    func glassButtonStyleCompat() -> some View {
+        #if os(iOS)
+        if #available(iOS 26.0, *) {
+            buttonStyle(.glass)
+        } else {
+            buttonStyle(.borderless)
+        }
+        #else
+        buttonStyle(.borderless)
+        #endif
+    }
+
+    @ViewBuilder
     func groupedFormStyleCompat() -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {
             formStyle(.grouped)

@@ -81,7 +81,7 @@ struct FilterRulesView: View {
                     .font(.headline)
                 Spacer()
                 Button("Done") { dismiss() }
-                    .buttonStyle(.borderless)
+                    .glassButtonStyleCompat()
             }
             .padding(16)
             Divider()
