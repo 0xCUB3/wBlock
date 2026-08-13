@@ -23,6 +23,11 @@ const popupStatus = read('wBlockCoreService/FilterUpdatePopupStatus.swift');
 
 check(html.includes('id="update-filters"') && html.includes('id="filter-update-status"'),
   'popup must expose an accessible update action and live status');
+check(html.includes('data-i18n="popup_button_update_filters" hidden') &&
+  popup.includes('const isMac = await isMacPlatform()') &&
+  popup.includes('updateFiltersButton.hidden = !isMac') &&
+  /if \(isMac\) \{\s*refreshFilterUpdateStatus\(\)/.test(popup),
+  'popup filter updates must remain hidden and inactive outside macOS');
 check(html.includes('class="popup-actions"') && html.includes('class="popup-action-row"') &&
   !html.includes('class="section filter-update-section"') &&
   !html.includes('data-i18n="popup_filter_update_label"') &&
