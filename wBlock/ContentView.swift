@@ -30,7 +30,6 @@ struct ContentView: View {
     @State private var selectedFilterRules: FilterList?
     @State private var selectedCategoryInfo: FilterListCategory?
     @State private var isForeignFiltersExpanded = ProtobufDataManager.shared.isForeignFiltersExpanded
-    @AppStorage("adGuardAnnoyancesExpanded") private var isAdGuardAnnoyancesExpanded = true
     @State private var showingCapacityPopover = false
     @State private var selectedTab: Int = 0
     @State private var pendingEssentialFilter: FilterList?
@@ -371,14 +370,8 @@ struct ContentView: View {
                     }
                 } else {
                     Section {
-                        ForEach(FilterListGrouping.groups(for: item.filters)) { group in
-                            if group.isAdGuardAnnoyances {
-                                adGuardAnnoyancesDisclosure(group)
-                            } else {
-                                ForEach(group.filters) { filter in
-                                    filterRowView(for: filter)
-                                }
-                            }
+                        ForEach(item.filters) { filter in
+                            filterRowView(for: filter)
                         }
                     } header: {
                         categoryHeader(item.category)
@@ -538,126 +531,6 @@ struct ContentView: View {
         .padding(.horizontal)
     }
 
-    private var adGuardAnnoyancesExpansion: Binding<Bool> {
-        Binding(
-            get: {
-                isAdGuardAnnoyancesExpanded
-                    || !filterSearchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            },
-            set: { isAdGuardAnnoyancesExpanded = $0 }
-        )
-    }
-
-    private func adGuardAnnoyancesSelection(ids: Set<UUID>) -> Binding<Bool> {
-        Binding(
-            get: {
-                filterManager.filterLists.contains { ids.contains($0.id) && $0.isSelected }
-            },
-            set: { selected in
-                filterManager.setFilterListSelections(ids: ids, selected: selected)
-            }
-        )
-    }
-
-    @ViewBuilder
-    private func adGuardAnnoyancesDisclosure(_ group: FilterListGroup) -> some View {
-        let ids = Set(group.filters.map(\.id))
-        #if os(macOS)
-        VStack(spacing: 0) {
-            HStack(alignment: .center, spacing: 10) {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        adGuardAnnoyancesExpansion.wrappedValue.toggle()
-                    }
-                } label: {
-                    HStack(alignment: .center, spacing: 10) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(LocalizedStringKey(group.title ?? ""))
-                                .fontWeight(.medium)
-                                .foregroundStyle(.primary)
-                            adGuardAnnoyancesSummary(group)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                        Image(
-                            systemName: adGuardAnnoyancesExpansion.wrappedValue
-                                ? "chevron.down"
-                                : "chevron.right"
-                        )
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 16, height: 16)
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-
-                adGuardAnnoyancesToggle(ids: ids, title: group.title)
-            }
-            .padding(16)
-
-            if adGuardAnnoyancesExpansion.wrappedValue {
-                Divider()
-                    .padding(.leading, 16)
-                ForEach(group.filters) { filter in
-                    filterRowView(for: filter)
-                    if filter.id != group.filters.last?.id {
-                        Divider()
-                            .padding(.leading, 16)
-                    }
-                }
-            }
-        }
-        #else
-        DisclosureGroup(isExpanded: adGuardAnnoyancesExpansion) {
-            ForEach(group.filters) { filter in
-                filterRowView(for: filter)
-            }
-        } label: {
-            HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(LocalizedStringKey(group.title ?? ""))
-                        .fontWeight(.medium)
-                        .foregroundStyle(.primary)
-                    adGuardAnnoyancesSummary(group)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                adGuardAnnoyancesToggle(ids: ids, title: group.title)
-            }
-        }
-        #endif
-    }
-
-    @ViewBuilder
-    private func adGuardAnnoyancesSummary(_ group: FilterListGroup) -> some View {
-        if let count = group.sourceRuleCount, count > 0 {
-            Text(
-                String.localizedStringWithFormat(
-                    NSLocalizedString("(%@ rules)", comment: "Filter rule count summary"),
-                    count.formatted()
-                )
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
-        Text(
-            LocalizedStrings.text(
-                "Blocks cookie notices, popups, mobile app banners, widgets, and other annoyances.",
-                comment: "AdGuard Annoyances aggregate description"
-            )
-        )
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private func adGuardAnnoyancesToggle(ids: Set<UUID>, title: String?) -> some View {
-        Toggle("", isOn: adGuardAnnoyancesSelection(ids: ids))
-            .labelsHidden()
-            .toggleStyle(.switch)
-            .accessibilityLabel(Text(LocalizedStringKey(title ?? "")))
-    }
-
     private func categoryHeader(_ category: FilterListCategory) -> some View {
         HStack(spacing: 6) {
             Text(category.localizedName)
@@ -732,15 +605,11 @@ struct ContentView: View {
             .padding(.horizontal, 4)
 
             VStack(spacing: 0) {
-                ForEach(FilterListGrouping.groups(for: filters)) { group in
-                    if group.isAdGuardAnnoyances {
-                        adGuardAnnoyancesDisclosure(group)
-                    } else if let filter = group.filters.first {
-                        filterRowView(for: filter)
-                        if filter.id != filters.last?.id {
-                            Divider()
-                                .padding(.leading, 16)
-                        }
+                ForEach(filters) { filter in
+                    filterRowView(for: filter)
+                    if filter.id != filters.last?.id {
+                        Divider()
+                            .padding(.leading, 16)
                     }
                 }
             }

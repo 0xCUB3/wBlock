@@ -35,6 +35,9 @@ require(content, "case .paste, .file: return \"Add\"")
 require(content, "FilterListContentValidator.isSupportedLocalFile")
 require(content, "if showsFlags, let flags = filter.flagEmojis")
 require(content, "filterRowView(for: filter, showsFlags: false)")
+require(content, "ForEach(item.filters) { filter in")
+require(content, "ForEach(filters) { filter in")
+requireCondition(!content.contains("adGuardAnnoyances"), "annoyance filters must render individually without aggregate dropdown state")
 requireCondition(
     !content.contains("Text(String(filter.localizedDisplayName.prefix(1)))"),
     "filter rows must not repeat list-name initials as decorative labels"
