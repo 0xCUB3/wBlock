@@ -50,5 +50,7 @@ for needle in ["captureApplySnapshot()", "commitApplySnapshot(_ snapshot: ApplyR
 for needle in ["let runSnapshot", "runSnapshot.filters.filter", "runSnapshot.activeZapperRules", "commitApplySnapshot(runSnapshot)"] {
     check(pipeline.contains(needle), "pipeline is missing captured-state use: \(needle)")
 }
+check(pipeline.contains("let refreshedSourceRuleCounts = Dictionary("), "apply must capture refreshed source counts after pre-apply hydration")
+check(pipeline.contains("refreshedSourceRuleCounts[$1.id] ?? $1.sourceRuleCount ?? 0"), "source summary must prefer refreshed counts for the captured selection")
 check(updater.contains("Preserve live user") && updater.contains("configuration changed while the download was in flight"), "pre-apply metadata updates must not overwrite live configuration")
 print("PASS")

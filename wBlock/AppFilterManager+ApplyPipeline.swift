@@ -294,6 +294,13 @@ extension AppFilterManager {
         let allSelectedFilters = pausedComponents.contains(.filters)
             ? []
             : runSnapshot.filters.filter { $0.isSelected }
+        // The snapshot preserves the user's selection, but its counts can predate the
+        // metadata hydration/download above on the first apply.
+        let refreshedSourceRuleCounts = Dictionary(
+            uniqueKeysWithValues: filterLists.compactMap { filter in
+                filter.sourceRuleCount.map { (filter.id, $0) }
+            }
+        )
         let generatedZapperRules = pausedComponents.contains(.elementZapper)
             ? []
             : ZapperContentBlockerRuleGenerator.generatedRules(
@@ -347,8 +354,9 @@ extension AppFilterManager {
 
         let totalFiltersCount = platformTargets.count
         await MainActor.run {
-            self.sourceRulesCount = allSelectedFilters.reduce(0) { $0 + ($1.sourceRuleCount ?? 0) }
-                + generatedZapperRules.count
+            self.sourceRulesCount = allSelectedFilters.reduce(0) {
+                $0 + (refreshedSourceRuleCounts[$1.id] ?? $1.sourceRuleCount ?? 0)
+            } + generatedZapperRules.count
 
             // Update ViewModel
             self.applyProgressViewModel.updateProcessedCount(0, total: totalFiltersCount)
