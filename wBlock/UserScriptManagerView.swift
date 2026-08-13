@@ -364,25 +364,19 @@ struct UserScriptManagerView: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .automatic) {
-                ToolbarSearchField(
-                    text: $searchText,
-                    isExpanded: $showSearch,
-                    prompt: "Search scripts"
-                )
-
                 if !showSearch {
+                    Button {
+                        showingAddScriptSheet = true
+                    } label: {
+                        Label("Add Userscript or Userstyle", systemImage: "plus")
+                    }
+
                     applyChangesToolbarButton
                         .help(
                             hasPendingChanges
                                 ? String(localized: "Apply your pending changes")
                                 : String(localized: "Apply changes")
                         )
-
-                    Button {
-                        showingAddScriptSheet = true
-                    } label: {
-                        Label("Add Userscript or Userstyle", systemImage: "plus")
-                    }
 
                     Button {
                         showOnlyEnabled.toggle()
@@ -395,6 +389,12 @@ struct UserScriptManagerView: View {
                                 : "line.3.horizontal.decrease.circle")
                     }
                 }
+
+                ToolbarSearchField(
+                    text: $searchText,
+                    isExpanded: $showSearch,
+                    prompt: "Search scripts"
+                )
             }
         }
         #endif
