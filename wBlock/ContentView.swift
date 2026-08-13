@@ -572,30 +572,39 @@ struct ContentView: View {
                     adGuardAnnoyancesExpansion.wrappedValue.toggle()
                 }
             } label: {
-                HStack(spacing: 8) {
-                    VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
                         Text(LocalizedStringKey(group.title ?? ""))
                             .fontWeight(.medium)
                             .foregroundStyle(.primary)
-                        if let count = group.sourceRuleCount, count > 0 {
-                            Text(
-                                String.localizedStringWithFormat(
-                                    NSLocalizedString("(%@ rules)", comment: "Filter rule count summary"),
-                                    count.formatted()
-                                )
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                            .rotationEffect(
+                                .degrees(adGuardAnnoyancesExpansion.wrappedValue ? 90 : 0)
                             )
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        }
                     }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                        .rotationEffect(
-                            .degrees(adGuardAnnoyancesExpansion.wrappedValue ? 90 : 0)
+                    if let count = group.sourceRuleCount, count > 0 {
+                        Text(
+                            String.localizedStringWithFormat(
+                                NSLocalizedString("(%@ rules)", comment: "Filter rule count summary"),
+                                count.formatted()
+                            )
                         )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    }
+                    Text(
+                        LocalizedStrings.text(
+                            "Blocks cookie notices, popups, mobile app banners, widgets, and other annoyances.",
+                            comment: "AdGuard Annoyances aggregate description"
+                        )
+                    )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -603,11 +612,11 @@ struct ContentView: View {
 
             Toggle("", isOn: adGuardAnnoyancesSelection(group))
                 .labelsHidden()
+                .toggleStyle(.switch)
                 .accessibilityLabel(Text(LocalizedStringKey(group.title ?? "")))
         }
         #if os(macOS)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(16)
         #endif
     }
 
