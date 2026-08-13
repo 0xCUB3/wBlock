@@ -10,6 +10,19 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
 @main
 struct CloudSyncRemoteUserScriptTests {
     static func main() {
+        let retiredTinyShield =
+            "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/a/tinyShield-ar.user.js"
+        expect(
+            CloudSyncRemoteUserScriptReconciler.normalizedURL("  \(retiredTinyShield)  ").isEmpty,
+            "retired regional tinyShield variants must not be restored from stale cloud payloads"
+        )
+        expect(
+            !CloudSyncRemoteUserScriptReconciler.normalizedURL(
+                "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
+            ).isEmpty,
+            "the supported global tinyShield userscript must remain syncable"
+        )
+
         let mergedWithLocalReAdd =
             CloudSyncRemoteUserScriptReconciler.deletedURLsToMergeDuringUploadReconciliation(
                 remoteDeletedURLs: ["https://example.com/foo.user.js"],

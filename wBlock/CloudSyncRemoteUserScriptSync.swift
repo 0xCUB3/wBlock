@@ -1,8 +1,12 @@
 import Foundation
 
 enum CloudSyncRemoteUserScriptReconciler {
+    private static let retiredTinyShieldPrefix =
+        "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/"
+
     static func normalizedURL(_ url: String) -> String {
-        url.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalized = url.trimmingCharacters(in: .whitespacesAndNewlines)
+        return normalized.hasPrefix(retiredTinyShieldPrefix) ? "" : normalized
     }
 
     static func deletedURLsToClearDuringUploadReconciliation(
