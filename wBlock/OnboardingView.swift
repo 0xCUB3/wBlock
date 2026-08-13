@@ -141,17 +141,6 @@ struct OnboardingView: View {
             }
     }
 
-    private func languageOption(forCode code: String) -> LanguageOption {
-        if let existing = languagePickerOptions.first(where: { $0.code == code }) {
-            return existing
-        }
-        return LanguageOption(
-            code: code,
-            name: displayLocale.localizedString(forLanguageCode: code) ?? code,
-            flag: FilterList.languageToFlag[code] ?? ""
-        )
-    }
-
     // Helper to get the Bypass Paywalls userscript and filter list names
     var bypassPaywallsScript: (id: String, name: String)? {
         userScriptManager.userScripts.first(where: {
@@ -530,10 +519,6 @@ struct OnboardingView: View {
             }
         }
         return result.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
-
-    private var selectedFilterLanguageOptions: [LanguageOption] {
-        availableFilterLanguages.filter { selectedLanguages.contains($0.code) }
     }
 
     private var pinnedLanguagePickerOptions: [LanguageOption] {

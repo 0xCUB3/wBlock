@@ -328,11 +328,6 @@ public enum FilterDiffUpdater {
         return try! NSRegularExpression(pattern: pattern, options: [])
     }()
 
-    private static let expiresRegex: NSRegularExpression = {
-        let pattern = #"(?i)(\d+)\s*([wdhm]?)"#
-        return try! NSRegularExpression(pattern: pattern, options: [])
-    }()
-
     private static let commandRegex: NSRegularExpression = {
         let pattern = #"^([ad])(\d+) (\d+)$"#
         return try! NSRegularExpression(pattern: pattern, options: [])

@@ -1849,7 +1849,7 @@ struct AddUserScriptView: View {
                             if isAdding {
                                 ProgressView()
                             } else {
-                                Text(LocalizedStringKey(addButtonTitle))
+                                Text("Add")
                             }
                         }
                         .disabled(!canSubmit || isAdding)
@@ -1912,7 +1912,7 @@ struct AddUserScriptView: View {
             }
 
             Section {
-                requirementsDisclosure
+                requirementsPanel
             }
         }
     }
@@ -2151,10 +2151,6 @@ struct AddUserScriptView: View {
     }
     #endif
 
-    private var addButtonTitle: String {
-        "Add"
-    }
-
     private var metadataRequirementText: LocalizedStringKey {
         "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns."
     }
@@ -2212,10 +2208,6 @@ struct AddUserScriptView: View {
             }
         }
         .font(.footnote)
-    }
-
-    private var requirementsDisclosure: some View {
-        requirementsPanel
     }
 
     private var fileRequirementsPanel: some View {
@@ -2293,7 +2285,7 @@ struct AddUserScriptView: View {
                     ProgressView()
                         .scaleEffect(0.9)
                 }
-                Text(LocalizedStringKey(isAdding ? "Adding…" : addButtonTitle))
+                Text(LocalizedStringKey(isAdding ? "Adding…" : "Add"))
                     .fontWeight(.semibold)
             }
         }

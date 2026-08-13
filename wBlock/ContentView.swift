@@ -127,7 +127,7 @@ struct ContentView: View {
                 scenePhase: scenePhase
             ))
         .sheet(item: $editingCustomFilter) { filter in
-            if isInlineUserList(filter) {
+            if filter.isInlineUserList {
                 EditUserListView(filterManager: filterManager, filter: filter)
             } else {
                 EditCustomFilterView(filterManager: filterManager, filter: filter)
@@ -216,14 +216,6 @@ struct ContentView: View {
         }
     }
     #endif
-
-    private func isInlineUserList(_ filter: FilterList) -> Bool {
-        filter.isInlineUserList
-    }
-
-    private func supportsCustomActions(_ filter: FilterList) -> Bool {
-        filter.isCustom
-    }
 
     private func applyPendingChanges() {
         guard !filterManager.isLoading else { return }
@@ -576,9 +568,7 @@ struct ContentView: View {
     private func filterRowView(for filter: FilterList, showsFlags: Bool = true) -> some View {
         FilterRowView(
             filter: filter,
-            isInlineUserList: isInlineUserList(filter),
             showsFlags: showsFlags,
-            supportsCustomActions: supportsCustomActions(filter),
             onInfo: { selectedFilterInfo = filter },
             onViewRules: { selectedFilterRules = filter },
             onEdit: { editingCustomFilter = filter },
@@ -655,9 +645,7 @@ struct ContentView: View {
 
 struct FilterRowView: View {
     let filter: FilterList
-    let isInlineUserList: Bool
     let showsFlags: Bool
-    let supportsCustomActions: Bool
     var onInfo: () -> Void
     var onViewRules: () -> Void
     var onEdit: () -> Void

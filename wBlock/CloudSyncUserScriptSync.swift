@@ -62,13 +62,6 @@ enum CloudSyncLocalUserScriptReconciler {
         )
     }
 
-    static func resolvedDescription(
-        existing: CloudSyncLocalUserScript,
-        remote: CloudSyncLocalUserScript
-    ) -> String? {
-        remote.description ?? existing.description
-    }
-
     static func matches(existing: CloudSyncLocalUserScript, remote: CloudSyncLocalUserScript) -> Bool {
         let existingIdentity = normalizedIdentity(existing.localImportIdentity)
         let remoteIdentity = normalizedIdentity(remote.localImportIdentity)
@@ -80,21 +73,6 @@ enum CloudSyncLocalUserScriptReconciler {
         // A missing identity means a legacy local record or sync payload. Preserve
         // the historical name match so old data can be upgraded safely.
         return normalizedName(existing.name) == normalizedName(remote.name)
-    }
-
-    static func missingRemoteScriptsToRestore(
-        remoteScripts: [CloudSyncLocalUserScript],
-        localNames: [String],
-        deletedNames: Set<String>
-    ) -> [CloudSyncLocalUserScript] {
-        let legacyLocalScripts = localNames.map {
-            CloudSyncLocalUserScript(name: $0, content: "", isEnabled: true)
-        }
-        return missingRemoteScriptsToRestore(
-            remoteScripts: remoteScripts,
-            localScripts: legacyLocalScripts,
-            deletedNames: deletedNames
-        )
     }
 
     static func localScriptsToDeleteDuringRemoteApply(
@@ -149,42 +127,6 @@ enum CloudSyncLocalUserScriptReconciler {
             else { return nil }
             return normalizedLocalName
         })
-    }
-
-    static func localNamesToDeleteDuringRemoteApply(
-        localNames: [String],
-        remoteScripts: [CloudSyncLocalUserScript],
-        deletedNames: Set<String>,
-        lastSyncedNames: Set<String>
-    ) -> Set<String> {
-        let localNormalized = Set(localNames.map(normalizedName))
-        let desiredRemote = Set(remoteScripts.map { normalizedName($0.name) }).filter { !$0.isEmpty }
-        let deletedNormalized = normalizedNames(deletedNames)
-        let syncedNormalized = normalizedNames(lastSyncedNames)
-
-        return localNormalized.filter { normalizedLocal in
-            if deletedNormalized.contains(normalizedLocal) {
-                return true
-            }
-            return syncedNormalized.contains(normalizedLocal) && !desiredRemote.contains(normalizedLocal)
-        }
-    }
-
-    static func localNamesNeverSyncedToUpload(
-        localNames: [String],
-        remoteScripts: [CloudSyncLocalUserScript],
-        deletedNames: Set<String>,
-        lastSyncedNames: Set<String>
-    ) -> Set<String> {
-        let desiredRemote = Set(remoteScripts.map { normalizedName($0.name) }).filter { !$0.isEmpty }
-        let deletedNormalized = normalizedNames(deletedNames)
-        let syncedNormalized = normalizedNames(lastSyncedNames)
-
-        return normalizedNames(localNames).filter { normalizedLocal in
-            !deletedNormalized.contains(normalizedLocal)
-                && !syncedNormalized.contains(normalizedLocal)
-                && !desiredRemote.contains(normalizedLocal)
-        }
     }
 
     /// Returns stable local imports that are absent from the winning payload.

@@ -1946,14 +1946,6 @@ final class CloudSyncManager: ObservableObject {
         return digest.map { String(format: "%02x", $0) }.joined()
     }
 
-    private static func sanitizedFilename(from input: String) -> String {
-        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty { return "Userscript" }
-        let allowed = CharacterSet.alphanumerics.union(.init(charactersIn: " -_()[]"))
-        let filtered = trimmed.unicodeScalars.map { allowed.contains($0) ? Character($0) : "-" }
-        return String(filtered).prefix(60).trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
     private static func inlineUserListID(from urlString: String) -> UUID? {
         guard let url = URL(string: urlString) else { return nil }
         guard url.scheme?.lowercased() == "wblock" else { return nil }

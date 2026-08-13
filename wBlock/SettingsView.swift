@@ -284,22 +284,6 @@ struct SettingsView: View {
     }
 
     @ViewBuilder
-    private var actionsFooterButton: some View {
-        HStack {
-            Button {
-                SafariExtensionSetupSupport.openScriptsExtensionSettings()
-            } label: {
-                Label("Open Safari Settings", systemImage: "gear")
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-
-            Spacer()
-        }
-        .padding(.top, 4)
-    }
-
-    @ViewBuilder
     private var backupButtons: some View {
         #if os(macOS)
         CompatibleLabeledContent {

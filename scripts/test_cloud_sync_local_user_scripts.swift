@@ -7,6 +7,10 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
     }
 }
 
+func stubScripts(_ names: [String]) -> [CloudSyncLocalUserScript] {
+    names.map { CloudSyncLocalUserScript(name: $0, content: "", isEnabled: true) }
+}
+
 @main
 struct CloudSyncLocalUserScriptTests {
     static func main() {
@@ -22,7 +26,7 @@ struct CloudSyncLocalUserScriptTests {
 
         let missingAfterDelete = CloudSyncLocalUserScriptReconciler.missingRemoteScriptsToRestore(
             remoteScripts: [bypass],
-            localNames: [],
+            localScripts: [],
             deletedNames: ["bypass paywalls clean"]
         )
         expect(
@@ -32,7 +36,7 @@ struct CloudSyncLocalUserScriptTests {
 
         let missingWithoutDelete = CloudSyncLocalUserScriptReconciler.missingRemoteScriptsToRestore(
             remoteScripts: [bypass, other],
-            localNames: ["Bypass Paywalls Clean"],
+            localScripts: stubScripts(["Bypass Paywalls Clean"]),
             deletedNames: []
         )
         expect(
@@ -40,8 +44,8 @@ struct CloudSyncLocalUserScriptTests {
             "only remote local scripts missing locally should be restored"
         )
 
-        let namesToDelete = CloudSyncLocalUserScriptReconciler.localNamesToDeleteDuringRemoteApply(
-            localNames: ["Bypass Paywalls Clean", "Local Only Script"],
+        let namesToDelete = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
+            localScripts: stubScripts(["Bypass Paywalls Clean", "Local Only Script"]),
             remoteScripts: [other],
             deletedNames: ["bypass paywalls clean"],
             lastSyncedNames: ["local only script"]
@@ -53,11 +57,12 @@ struct CloudSyncLocalUserScriptTests {
 
         // #437: a brand-new local userscript that was never synced must NOT be deleted on the
         // download path just because it is absent from a newer remote payload.
-        let neverSyncedKept = CloudSyncLocalUserScriptReconciler.localNamesToDeleteDuringRemoteApply(
-            localNames: ["Foo"],
+        let neverSyncedKept = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
+            localScripts: stubScripts(["Foo"]),
             remoteScripts: [],
             deletedNames: [],
-            lastSyncedNames: []
+            lastSyncedNames: [],
+            lastSyncedIdentities: []
         )
         expect(
             neverSyncedKept.isEmpty,
@@ -67,8 +72,8 @@ struct CloudSyncLocalUserScriptTests {
         // A local script that WAS previously synced and is now absent from remote (e.g. deleted on
         // another device after its tombstone aged out) should still be removed.
         let previouslySyncedRemoved =
-            CloudSyncLocalUserScriptReconciler.localNamesToDeleteDuringRemoteApply(
-                localNames: ["Foo"],
+            CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
+                localScripts: stubScripts(["Foo"]),
                 remoteScripts: [],
                 deletedNames: [],
                 lastSyncedNames: ["foo"]
@@ -79,11 +84,12 @@ struct CloudSyncLocalUserScriptTests {
         )
 
         // A tombstoned local script is removed even when it was never synced.
-        let tombstonedRemoved = CloudSyncLocalUserScriptReconciler.localNamesToDeleteDuringRemoteApply(
-            localNames: ["Foo"],
+        let tombstonedRemoved = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
+            localScripts: stubScripts(["Foo"]),
             remoteScripts: [],
             deletedNames: ["foo"],
-            lastSyncedNames: []
+            lastSyncedNames: [],
+            lastSyncedIdentities: []
         )
         expect(
             tombstonedRemoved == ["foo"],
@@ -91,11 +97,12 @@ struct CloudSyncLocalUserScriptTests {
         )
 
         // A local script still present in the remote payload is always kept.
-        let presentInRemoteKept = CloudSyncLocalUserScriptReconciler.localNamesToDeleteDuringRemoteApply(
-            localNames: ["Foo"],
+        let presentInRemoteKept = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
+            localScripts: stubScripts(["Foo"]),
             remoteScripts: [foo],
             deletedNames: [],
-            lastSyncedNames: ["foo"]
+            lastSyncedNames: ["foo"],
+            lastSyncedIdentities: []
         )
         expect(
             presentInRemoteKept.isEmpty,
@@ -104,8 +111,8 @@ struct CloudSyncLocalUserScriptTests {
 
         // Mixed case: only the tombstoned local is removed; the never-synced local is kept.
         let namesToDeleteNeverSynced =
-            CloudSyncLocalUserScriptReconciler.localNamesToDeleteDuringRemoteApply(
-                localNames: ["Bypass Paywalls Clean", "Local Only Script"],
+            CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
+                localScripts: stubScripts(["Bypass Paywalls Clean", "Local Only Script"]),
                 remoteScripts: [other],
                 deletedNames: ["bypass paywalls clean"],
                 lastSyncedNames: []
@@ -115,23 +122,27 @@ struct CloudSyncLocalUserScriptTests {
             "a never-synced local absent from remote must be kept; only the tombstoned local is removed (#437)"
         )
 
-        // localNamesNeverSyncedToUpload identifies kept scripts that still need uploading.
-        let neverSyncedToUpload = CloudSyncLocalUserScriptReconciler.localNamesNeverSyncedToUpload(
-            localNames: ["Foo", "Bar"],
+        // The identity-aware API identifies kept scripts that still need uploading.
+        let neverSyncedToUpload = CloudSyncLocalUserScriptReconciler.localScriptsNeverSyncedToUpload(
+            localScripts: stubScripts(["Foo", "Bar"]),
             remoteScripts: [other],
             deletedNames: [],
-            lastSyncedNames: []
+            deletedIdentities: [],
+            lastSyncedNames: [],
+            lastSyncedIdentities: []
         )
         expect(
-            neverSyncedToUpload == ["foo", "bar"],
+            Set(neverSyncedToUpload.map { CloudSyncLocalUserScriptReconciler.normalizedName($0.name) }) == ["foo", "bar"],
             "never-synced, non-tombstoned locals absent from remote should be scheduled for upload (#437)"
         )
 
-        let nothingToUpload = CloudSyncLocalUserScriptReconciler.localNamesNeverSyncedToUpload(
-            localNames: ["Foo", "Bar", "Other Script"],
+        let nothingToUpload = CloudSyncLocalUserScriptReconciler.localScriptsNeverSyncedToUpload(
+            localScripts: stubScripts(["Foo", "Bar", "Other Script"]),
             remoteScripts: [other],
             deletedNames: ["bar"],
-            lastSyncedNames: ["foo"]
+            deletedIdentities: [],
+            lastSyncedNames: ["foo"],
+            lastSyncedIdentities: []
         )
         expect(
             nothingToUpload.isEmpty,
@@ -208,22 +219,6 @@ struct CloudSyncLocalUserScriptTests {
         let legacyJSON = #"{"name":"Legacy Name","content":"// legacy","isEnabled":true}"#.data(using: .utf8)!
         let decodedLegacy = try! JSONDecoder().decode(CloudSyncLocalUserScript.self, from: legacyJSON)
         expect(decodedLegacy.description == nil, "legacy payloads must decode an absent description")
-        expect(
-            CloudSyncLocalUserScriptReconciler.resolvedDescription(existing: described, remote: legacy) == described.description,
-            "absent remote descriptions must preserve the existing description"
-        )
-        let restoredDescription = CloudSyncLocalUserScript(
-            name: described.name,
-            content: described.content,
-            isEnabled: described.isEnabled,
-            description: "Restored description",
-            localImportIdentity: described.localImportIdentity
-        )
-        expect(
-            CloudSyncLocalUserScriptReconciler.resolvedDescription(existing: described, remote: restoredDescription) == "Restored description",
-            "present remote descriptions must update by stable identity"
-        )
-
         let keptByIdentity = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
             localScripts: [legacyExisting],
             remoteScripts: [modernLocal, oldDisplayName],
