@@ -547,7 +547,6 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Вставьте прямую ссылку на .user.js. wBlock загрузит и установит его автоматически.";
 "Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "Вставьте прямую ссылку на .user.js, .js или .user.css. wBlock скачает и установит её за вас.";
 "Pause Blocking" = "Приостановить блокировку";
-"Pause components" = "Компоненты на паузе";
 "Enabled Userscripts & Userstyles" = "Включённые пользовательские скрипты и стили";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Пауза блокировки включена, пока выбранный компонент находится на паузе. Возобновление восстанавливает все компоненты.";
 "Temporarily pause selected components without changing their enabled settings." = "Временно приостановите выбранные компоненты, не изменяя их настройки включения.";

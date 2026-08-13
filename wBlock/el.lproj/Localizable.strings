@@ -547,7 +547,6 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Επικολλήστε τον άμεσο σύνδεσμο .user.js. Το wBlock θα τον κατεβάσει και θα τον εγκαταστήσει για εσάς.";
 "Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "Επικόλλησε τον άμεσο σύνδεσμο .user.js, .js ή .user.css. Το wBlock θα τον κατεβάσει και θα τον εγκαταστήσει για σένα.";
 "Pause Blocking" = "Παύση αποκλεισμού";
-"Pause components" = "Παύση στοιχείων";
 "Enabled Userscripts & Userstyles" = "Ενεργά σενάρια και στυλ χρήστη";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Η παύση αποκλεισμού είναι ενεργή όσο οποιοδήποτε επιλεγμένο στοιχείο βρίσκεται σε παύση. Η συνέχιση επαναφέρει όλα τα στοιχεία.";
 "Temporarily pause selected components without changing their enabled settings." = "Παύση των επιλεγμένων στοιχείων προσωρινά χωρίς αλλαγή των ρυθμίσεων ενεργοποίησής τους.";

@@ -953,7 +953,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Userscripts and scripts that add or restore useful website functionality." = "Scripturi care adaugă sau restaurează funcții utile ale site-urilor.";
 "Userstyles and scripts that change the appearance of websites." = "Userstyle-uri și scripturi care schimbă aspectul site-urilor.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Scripturi personalizate, la distanță și locale fără o categorie de afișare mai specifică.";
-"Pause components" = "Componente puse pe pauză";
 "Enabled Userscripts & Userstyles" = "Scripturi și stiluri de utilizator activate";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pauza blocării este activă cât timp orice componentă selectată este pusă pe pauză. Reluarea reactivează toate componentele.";
 "Temporarily pause selected components without changing their enabled settings." = "Pune temporar pe pauză componentele selectate fără a le modifica starea de activare.";

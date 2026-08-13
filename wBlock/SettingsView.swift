@@ -30,7 +30,6 @@ struct SettingsView: View {
     @State private var backupStatusMessage: String? = nil
     @State private var showingBackupStatus = false
     @State private var showingSyncAdoptPrompt = false
-    @State private var isPauseDetailsExpanded = false
     @State private var syncAdoptTimestamp: String?
     #if os(iOS)
         @State private var backupDocument: BackupDocument? = nil
@@ -517,12 +516,20 @@ struct SettingsView: View {
                 .toggleStyle(.switch)
                 #endif
 
-            DisclosureGroup("Pause components", isExpanded: $isPauseDetailsExpanded) {
+            Group {
                 Toggle("Filters", isOn: pauseComponentBinding(.filters))
                 Toggle("Enabled Userscripts & Userstyles", isOn: pauseComponentBinding(.userScripts))
                 Toggle("Element Zapper", isOn: pauseComponentBinding(.elementZapper))
             }
-            .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
+            .padding(.leading, 16)
+            #if os(macOS)
+            .controlSize(.mini)
+            #endif
+            .disabled(
+                !filterManager.isBlockingPaused
+                    || filterManager.isLoading
+                    || filterManager.isApplyInFlight
+            )
         } header: {
             Text("Blocking")
         } footer: {

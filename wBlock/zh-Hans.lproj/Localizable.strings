@@ -953,7 +953,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "为网站添加或恢复实用功能的用户脚本。";
 "Userstyles and scripts that change the appearance of websites." = "更改网站外观的用户样式和脚本。";
 "Custom, remote, and local scripts that do not have a more specific display category." = "没有更具体显示类别的自定义、远程和本地脚本。";
-"Pause components" = "暂停组件";
 "Enabled Userscripts & Userstyles" = "已启用的用户脚本和用户样式";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "只要有选定组件处于暂停状态，暂停拦截就会开启。恢复后将还原所有组件。";
 "Temporarily pause selected components without changing their enabled settings." = "暂时暂停选定组件，不更改其启用设置。";

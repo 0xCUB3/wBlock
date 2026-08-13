@@ -953,7 +953,6 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Userscripts and scripts that add or restore useful website functionality." = "Script che aggiungono o ripristinano funzionalità utili dei siti web.";
 "Userstyles and scripts that change the appearance of websites." = "Userstyle e script che modificano l’aspetto dei siti web.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Script personalizzati, remoti e locali senza una categoria di visualizzazione più specifica.";
-"Pause components" = "Componenti in pausa";
 "Enabled Userscripts & Userstyles" = "Userscript e Userstyle abilitati";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "La pausa del blocco è attiva finché un componente selezionato è in pausa. La ripresa riattiva tutti i componenti.";
 "Temporarily pause selected components without changing their enabled settings." = "Metti temporaneamente in pausa i componenti selezionati senza modificarne lo stato di abilitazione.";
