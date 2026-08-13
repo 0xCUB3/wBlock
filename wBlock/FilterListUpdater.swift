@@ -171,7 +171,7 @@ final class FilterListUpdater: @unchecked Sendable {
         // Pre-fetch all validators on MainActor BEFORE entering the task group
         // to avoid deadlock (MainActor suspends waiting for group, child tasks
         // need MainActor to read validators).
-        let eligibleFilters = filterLists.filter { $0.limitExceededReason == nil }
+        let eligibleFilters = filterLists
         var validatorsMap: [UUID: (etag: String?, lastModified: String?)] = [:]
         for filter in eligibleFilters {
             validatorsMap[filter.id] = await storedValidators(for: filter)
@@ -300,20 +300,12 @@ final class FilterListUpdater: @unchecked Sendable {
     }
 
     private func localDataForComparison(filter: FilterList) -> Data? {
-        if let localURL = loader.localFileURL(for: filter),
-           let localData = try? Data(contentsOf: localURL) {
-            return localData
-        }
-
-        if filter.isCustom, let containerURL = loader.getSharedContainerURL() {
-            // Backward compatibility: legacy custom filters were stored as "<name>.txt".
-            let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
-            if let legacyData = try? Data(contentsOf: legacyURL) {
-                return legacyData
-            }
-        }
-
-        return nil
+        guard let containerURL = loader.getSharedContainerURL(),
+              let localURL = ContentBlockerIncrementalCache.existingLocalFileURL(
+                  for: filter,
+                  containerURL: containerURL
+              ) else { return nil }
+        return try? Data(contentsOf: localURL)
     }
 
     /// Downloads remote content and compares it against the locally cached version
@@ -534,7 +526,18 @@ final class FilterListUpdater: @unchecked Sendable {
                 if let index = filterListManager?.filterLists.firstIndex(where: {
                     $0.id == finalFilter.id
                 }) {
-                    filterListManager?.filterLists[index] = finalFilter
+                    // Apply converts the captured snapshot. Preserve live user
+                    // configuration changed while the download was in flight.
+                    var merged = finalFilter
+                    let current = filterListManager!.filterLists[index]
+                    merged.name = current.name
+                    merged.url = current.url
+                    merged.category = current.category
+                    merged.isCustom = current.isCustom
+                    merged.isSelected = current.isSelected
+                    merged.hasUserProvidedName = current.hasUserProvidedName
+                    merged.description = current.description
+                    filterListManager?.filterLists[index] = merged
                     filterListManager?.objectWillChange.send()
                 }
             }
@@ -610,7 +613,9 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Checks for updates to userscripts and returns those with available updates
     func checkForScriptUpdates(scripts: [UserScript]) async -> [UserScript] {
-        let eligibleScripts = scripts.filter { $0.isDownloaded && $0.updateURL != nil && $0.updatesAutomatically }
+        let eligibleScripts = scripts.filter {
+            !$0.isLocal && $0.isDownloaded && $0.updateURL != nil && $0.updatesAutomatically
+        }
         return await boundedConcurrentCompactMap(eligibleScripts) { script in
             let hasUpdate = await self.hasScriptUpdate(for: script)
             return hasUpdate ? script : nil
@@ -619,7 +624,8 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Checks if a specific userscript has an update available
     private func hasScriptUpdate(for script: UserScript) async -> Bool {
-        guard let updateURLString = script.updateURL,
+        guard !script.isLocal,
+              let updateURLString = script.updateURL,
             let updateURL = URL(string: updateURLString)
         else {
             return false
@@ -659,7 +665,8 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Fetches and processes a userscript
     func fetchAndProcessScript(_ script: UserScript) async -> (UserScript?, Bool) {
-        guard let downloadURLString = script.downloadURL ?? script.updateURL,
+        guard !script.isLocal,
+              let downloadURLString = script.downloadURL ?? script.updateURL,
             let downloadURL = URL(string: downloadURLString)
         else {
             await ConcurrentLogManager.shared.error(
@@ -701,7 +708,7 @@ final class FilterListUpdater: @unchecked Sendable {
             return []
         }
 
-        let scriptsToUpdate = selectedScripts.filter(\.updatesAutomatically)
+        let scriptsToUpdate = selectedScripts.filter { !$0.isLocal && $0.updatesAutomatically }
         guard !scriptsToUpdate.isEmpty else {
             progressCallback(1.0)
             return []

@@ -189,7 +189,7 @@
 "Calculated source rule count for filter" = "Numărul de reguli sursă calculat pentru filtru";
 "Cancel" = "Anulează";
 "Category" = "Categorie";
-"Changes take full effect after the next apply." = "Modificările intră complet în vigoare după următoarea aplicare.";
+"Element Zapper changes take full effect after the next apply." = "Modificările instrumentului de eliminare a elementelor intră complet în vigoare după următoarea aplicare.";
 "Check for Updates" = "Verifică actualizările";
 "Checked %@" = "Verificat %@";
 "Checked %@ ago" = "Verificat acum %@";
@@ -290,6 +290,7 @@
 "Edit Name" = "Redenumește lista";
 "Edit User List" = "Editează lista";
 "Editor" = "Editor";
+"Use Editor" = "Folosește editorul";
 "Element zapper" = "Eliminator de elemente";
 "Enable" = "Activează";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Activează 'wBlock Scripts' → Permite întotdeauna pe fiecare site web";
@@ -406,7 +407,7 @@
 "go" = "Salt";
 "Go to line" = "Salt la linia";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"Hagezi Pro Mini" = "Hagezi Pro Mini";
+"HaGeZi Pro Mini" = "HaGeZi Pro Mini";
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Se ocupă de cazurile avansate anti-adblock care filtrează regulile ratate.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Ascunde ferestrele pop-up din pagină, bannere și alte elemente nedorite ale paginii.";
@@ -437,6 +438,7 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "Include blocul de metadate // ==UserScript== (sau /* ==UserStyle== */ pentru stiluri utilizator), astfel încât wBlock să poată citi numele și modelele URL.";
 "IndianList" = "IndianList";
 "Info" = "Informații";
+"Integrated" = "Integrat";
 "Info.plist missing" = "Lipsește Info.plist";
 "Initialized with %d filter list(s)." = "Inițializat cu listele de filtre %d.";
 "International" = "Internaționale";
@@ -465,7 +467,6 @@
 "Loading script metadata…" = "Se încarcă metadatele scriptului…";
 "Loading userscripts…" = "Se încarcă scripturile de utilizator…";
 "Local Import" = "Import local";
-"Log Timestamps" = "Marcaje temporale jurnal";
 "Logs" = "Jurnale";
 "Logs cleared" = "Jurnale șterse";
 "Logs will appear here as the app runs" = "Jurnalele vor apărea aici pe măsură ce aplicația rulează";
@@ -605,6 +606,7 @@
 "Report an Issue" = "Raportează o problemă";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "Necesar pentru userscripturi, blocare avansată a reclamelor și funcții de curățare";
 "Required for YouTube ad blocking and much more" = "Necesar pentru blocarea reclamelor YouTube și multe altele";
+"The selected file is too large. Maximum size is 10 MB." = "Fișierul selectat este prea mare. Dimensiunea maximă este de 10 MB.";
 "Requirements" = "Cerințe";
 "Reset Site Settings" = "Resetează setările site-ului";
 "Resetting…" = "Resetarea…¦";
@@ -704,7 +706,7 @@
 "Sync across devices" = "Sincronizare între dispozitive";
 "Sync Now" = "Sincronizează acum";
 "Sync settings across devices" = "Sincronizează setările între dispozitive";
-"Sync with device timezone" = "Sincronizează cu fusul orar al dispozitivului";
+"Sync timestamps with device timezone" = "Sincronizează marcajele temporale cu fusul orar al dispozitivului";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Sincronizează între dispozitive selecțiile de filtre, listele personalizate, scripturile utilizator și lista albă.";
 "Sync: Checking…" = "Sincronizare: Se verifică…";
 "Sync: Downloading…" = "Sincronizare: Se descarcă…";
@@ -751,7 +753,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Aceasta va elimina toate filtrele, userscripturile și preferințele, apoi va relansa fluxul de configurare inițială.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Aceasta va înlocui selecțiile actuale de filtre, lista albă și regulile pentru eliminatorul de elemente cu setările din copia de rezervă.";
 "This will reset all filters, userscripts, and preferences." = "Acest lucru va reseta toate filtrele, scripturile utilizator și preferințele.";
-"Time zone" = "Fus orar";
 "Timed out" = "Timp expirat";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "Titlu";
@@ -770,6 +771,9 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Unavailable" = "Indisponibil";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
 "Undo" = "Anulează";
+"Redo" = "Refă";
+"Element Zapper" = "Zapper de elemente";
+"No Element Zapper Rules" = "Nu există reguli pentru Zapper de elemente";
 "Update" = "Actualizează";
 "Update & Apply" = "Actualizează și aplică";
 "Update Filters" = "Update Filters";
@@ -811,6 +815,11 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Version \\(filter.version)" = "Versiunea \\(filter.version)";
 "Version \\(script.version)" = "Versiunea \\(script.version)";
 "Vietnamese adblock filter list." = "Lista de filtre vietnameze de blocare a reclamelor.";
+"Delete Script" = "Șterge scriptul";
+"Delete Style" = "Șterge stilul";
+"Edit Content" = "Editează conținutul";
+"Edit Rules" = "Editează regulile";
+"View Rules" = "Vezi regulile";
 "View Content" = "Vezi conținutul";
 "View Logs" = "Vezi jurnalele";
 "Waiting" = "În așteptare";
@@ -831,11 +840,28 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Am găsit o configurație wBlock existentă în iCloud (\\(remoteConfigUpdatedAtText)). Poți sări peste configurarea inițială și să o folosești pe aceea.";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Am găsit o configurație wBlock existentă în iCloud. Poți sări peste configurarea inițială și să o folosești pe aceea.";
 "Web extension %@" = "Extensie web %@";
+"Blocks advertisements and other promotional page elements." = "Blochează reclamele și alte elemente promoționale ale paginilor.";
+"Blocks trackers, analytics, and other privacy-invasive requests." = "Blochează instrumentele de urmărire, analizele și alte solicitări care afectează confidențialitatea.";
+"Blocks malicious URLs, phishing pages, and unwanted software." = "Blochează URL-urile rău intenționate, paginile de phishing și software-ul nedorit.";
+"Combines broad ad-blocking and tracking protection in one list." = "Combină blocarea extinsă a reclamelor și protecția împotriva urmăririi într-o singură listă.";
+"Contains filter lists that you added or imported yourself." = "Conține listele de filtre adăugate sau importate de tine.";
+"Get Started" = "Începe";
+"No default filters" = "Nu există filtre implicite";
+"Organizes userscripts and userstyles added to wBlock." = "Organizează userscripturile și userstyle-urile adăugate în wBlock.";
+"Provides newer rules and fixes that are still being tested." = "Oferă reguli și remedieri mai noi, aflate încă în testare.";
+"Recommended Filters" = "Filtre recomandate";
+"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Elimină notificările despre cookie-uri, ferestrele pop-up, bannerele și alte elemente deranjante.";
+"Reset to Default" = "Resetează la valorile implicite";
+"Shows all filter lists across every category." = "Afișează toate listele de filtre din fiecare categorie.";
+"Adds rules tailored to websites and languages from specific regions." = "Adaugă reguli adaptate site-urilor și limbilor din anumite regiuni.";
+"The end of Safari ad-blocking B.S." = "Sfârșitul prostiilor blocării reclamelor în Safari";
 "Welcome to wBlock!" = "Bine ai venit în wBlock!";
 "Whitelist" = "Listă albă";
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Adaugă un site în lista albă aici sau ajustează scripturile utilizator și regulile eliminatorului de elemente pe site din popup-ul wBlock din Safari.";
 "Whitelisted" = "În lista albă";
 "Wrap Lines" = "Încadrare linii";
+"On" = "Activat";
+"Off" = "Dezactivat";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "Poți adăuga oricând filtre regionale mai târziu din Setări.";
@@ -850,3 +876,78 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Actualizare automată: scadentă acum (va rula la următoarea declanșare)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 Actualizare automată: următoarea în %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Actualizare automată: nicio rulare anterioară (interval=%dh)";
+
+/* Language picker */
+"Selected" = "Selectate";
+"Search languages" = "Caută limbi";
+
+"Built-in" = "Integrat";
+
+/* Filter catalog additions */
+"Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
+"Adblock Warning Removal List" = "Adblock Warning Removal List";
+"Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
+"Stevo's AI Blocklist" = "Stevo's AI Blocklist";
+"AdGuard Allowlist" = "AdGuard Allowlist";
+"Blocks tracking pixels and other mail tracking techniques." = "Blochează pixelii de urmărire și alte tehnici de urmărire a e-mailurilor.";
+"Allows sites and resources that should not be blocked." = "Permite site-urile și resursele care nu ar trebui blocate.";
+
+
+/* Auto-update controls */
+"Auto-Update" = "Actualizare automată";
+"Auto-Update Filters & Userscripts" = "Actualizează automat filtrele și scripturile utilizatorilor";
+"Update Now" = "Actualizează acum";
+"Automatically updating %@" = "Actualizare automată %@";
+
+/* Add mode controls */
+"Text" = "Text";
+"Choose File" = "Alege fișier";
+"Change File" = "Schimbă fișierul";
+"Local imports won't auto-update; re-import to replace." = "Importurile locale nu se actualizează automat; importă din nou pentru înlocuire.";
+"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra blochează reclamele Twitch și gestionează cazuri complicate de anti-adblock.";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "Dezactivezi filtrul esențial?";
+"Replace Existing Content?" = "Înlocuiești conținutul existent?";
+"Clear Element Zapper Rules?" = "Ștergi regulile Element Zapper?";
+"Clear All" = "Șterge tot";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Acest filtru recomandat face parte din protecția esențială a wBlock. Dezactivarea lui poate reduce acoperirea blocării.";
+"Pasting will replace the existing editor content." = "Lipirea va înlocui conținutul existent al editorului.";
+"Pasting will replace the existing content." = "Lipirea va înlocui conținutul existent.";
+"This removes all saved element zapper rules from every site." = "Aceasta elimină de pe toate site-urile regulile Element Zapper salvate.";
+"Clear Element Zapper Rules" = "Șterge regulile Element Zapper";
+"Advanced" = "Avansat";
+"Help" = "Ajutor";
+"FAQ" = "Întrebări frecvente";
+"Report Issues" = "Raportează probleme";
+"Contact Us" = "Contact";
+"Version" = "Versiune";
+"Developer" = "Dezvoltator";
+"GPL-3.0 License" = "Licență GPL-3.0";
+"Privacy Policy" = "Politica de confidențialitate";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "Folosește un URL http:// sau https:// valid";
+"Include a host name" = "Include un nume de gazdă";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Nu folosi un URL de userscript care se termină în .js, .mjs sau .cjs";
+"wBlock will fetch and enable the filter list automatically" = "wBlock va descărca și activa automat lista de filtre";
+
+/* Issue 508 UI follow-up */
+"Starts with http:// or https://" = "Începe cu http:// sau https://";
+"Ends with .js, .user.js, or .user.css" = "Se termină în .js, .user.js sau .user.css";
+"Hosted on a trusted source" = "Găzduit pe o sursă de încredere";
+
+"The file must include userscript or userstyle metadata." = "Fișierul trebuie să includă metadate pentru userscript sau userstyle.";
+
+"Failed to clear downloaded custom filter state; apply again to retry." = "Starea filtrului personalizat descărcat nu a putut fi eliminată; aplică din nou pentru a reîncerca.";
+"Failed to resume blocking." = "Reluarea blocării a eșuat.";
+/* Userscript display categories */
+"Functionality" = "Funcționalitate";
+"Appearance" = "Aspect";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Scripturi care blochează reclamele, măsurile anti-blocare sau comportamentul nedorit al paginilor.";
+"Userscripts and scripts that add or restore useful website functionality." = "Scripturi care adaugă sau restaurează funcții utile ale site-urilor.";
+"Userstyles and scripts that change the appearance of websites." = "Userstyle-uri și scripturi care schimbă aspectul site-urilor.";
+"Custom, remote, and local scripts that do not have a more specific display category." = "Scripturi personalizate, la distanță și locale fără o categorie de afișare mai specifică.";
+"Enabled Userscripts & Userstyles" = "Scripturi și stiluri de utilizator activate";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pauza blocării este activă cât timp orice componentă selectată este pusă pe pauză. Reluarea reactivează toate componentele.";
+"Temporarily pause selected components without changing their enabled settings." = "Pune temporar pe pauză componentele selectate fără a le modifica starea de activare.";

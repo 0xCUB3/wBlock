@@ -11,9 +11,9 @@
     "message": "جارٍ التحميل…",
     "description": "Popup status shown while loading state is being resolved."
   },
-  "popup_disable_on_site": {
-    "message": "تعطيل على هذا الموقع",
-    "description": "Label for the site-specific disable toggle in the popup."
+  "popup_enable_on_site": {
+    "message": "تمكين على هذا الموقع",
+    "description": "Label for the site-specific enable toggle in the popup."
   },
   "popup_element_zapper": {
     "message": "أداة إخفاء العناصر",
@@ -74,6 +74,10 @@
   "popup_status_paused": {
     "message": "متوقف مؤقتًا",
     "description": "Status label indicating blocking is globally paused."
+  },
+  "popup_status_partially_paused": {
+    "message": "متوقفة جزئيًا",
+    "description": "Status label indicating that some blocking components are paused."
   },
   "popup_status_active": {
     "message": "نشط",
@@ -218,5 +222,65 @@
   "popup_error_update_userscript": {
     "message": "Failed to update userscript setting.",
     "description": "Error shown when popup fails to update a per-site userscript setting."
+  },
+  "popup_paused_prompt_title": {
+    "message": "الإيقاف المؤقت",
+    "description": "Title shown in the popup when global blocking is paused."
+  },
+  "popup_paused_partial_prompt_title": {
+    "message": "تم إيقاف بعض مكونات الحظر",
+    "description": "Title shown in the popup when only some blocking components are paused."
+  },
+  "popup_paused_prompt_message": {
+    "message": "استئناف الحظر يعيد جميع المكونات.",
+    "description": "Prompt explaining how to restore global blocking."
+  },
+  "popup_button_resume_blocking": {
+    "message": "استئناف الحظر",
+    "description": "Button that requests the containing app to resume global blocking."
+  },
+  "popup_status_resuming": {
+    "message": "جارٍ الاستئناف…",
+    "description": "Transient status shown while global blocking is being resumed."
+  },
+  "popup_status_error": {
+    "message": "خطأ",
+    "description": "Status shown when popup state cannot be loaded."
+  },
+  "popup_error_resume_blocking": {
+    "message": "تعذر استئناف الحظر.",
+    "description": "Error shown when global blocking cannot be resumed."
+  },
+  "popup_error_resume_unavailable": {
+    "message": "افتح wBlock لاستئناف الحظر. يجب أن يكون التطبيق قيد التشغيل.",
+    "description": "Shown when the containing app is unavailable while resuming blocking."
+  },
+  "popup_filter_update_label": {
+    "message": "الفلاتر",
+    "description": "Section label for the popup filter update action."
+  },
+  "popup_button_update_filters": {
+    "message": "تحديث الفلاتر",
+    "description": "Button label for starting a background filter update from the popup."
+  },
+  "popup_status_updating_filters": {
+    "message": "جارٍ تحديث الفلاتر…",
+    "description": "Compact status shown while filters are updating in the background."
+  },
+  "popup_status_filters_updated": {
+    "message": "تم تحديث الفلاتر ($1).",
+    "description": "Success status after filters changed. Placeholder 1 is the number of updated filters."
+  },
+  "popup_status_filters_no_change": {
+    "message": "الفلاتر محدثة.",
+    "description": "Status shown when the update found no filter changes."
+  },
+  "popup_error_filter_update": {
+    "message": "فشل تحديث الفلاتر.",
+    "description": "Error status shown when a background filter update fails."
+  },
+  "popup_error_filter_update_start": {
+    "message": "تعذر بدء تحديث الفلاتر.",
+    "description": "Error shown when the background filter update cannot be started."
   }
 }

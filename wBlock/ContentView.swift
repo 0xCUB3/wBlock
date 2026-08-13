@@ -26,9 +26,13 @@ struct ContentView: View {
     @State private var filterSearchText = ""
     @State private var showFilterSearch = false
     @State private var editingCustomFilter: FilterList?
+    @State private var selectedFilterInfo: FilterList?
+    @State private var selectedFilterRules: FilterList?
+    @State private var selectedCategoryInfo: FilterListCategory?
     @State private var isForeignFiltersExpanded = ProtobufDataManager.shared.isForeignFiltersExpanded
     @State private var showingCapacityPopover = false
     @State private var selectedTab: Int = 0
+    @State private var pendingEssentialFilter: FilterList?
     @Environment(\.scenePhase) var scenePhase
 
     private var hasCompletedOnboarding: Bool {
@@ -65,14 +69,8 @@ struct ContentView: View {
         return blockers.count * 150_000
     }
 
-    private var isApproachingTotalSafariRuleCapacity: Bool {
-        guard hasAppliedFilters else { return false }
-        let warningThreshold = Int(Double(totalSafariRuleCapacity) * 0.8)
-        return appliedSafariRulesCount >= warningThreshold
-    }
-
     private var shouldShowRuleLimitIndicator: Bool {
-        isApproachingTotalSafariRuleCapacity || !filterManager.extensionsApproachingLimit.isEmpty
+        hasAppliedFilters && appliedSafariRulesCount >= totalSafariRuleCapacity
     }
 
     private var displayableCategories: [FilterListCategory] {
@@ -129,11 +127,42 @@ struct ContentView: View {
                 scenePhase: scenePhase
             ))
         .sheet(item: $editingCustomFilter) { filter in
-            if isInlineUserList(filter) {
+            if filter.isInlineUserList {
                 EditUserListView(filterManager: filterManager, filter: filter)
             } else {
                 EditCustomFilterView(filterManager: filterManager, filter: filter)
             }
+        }
+        .sheet(item: $selectedFilterInfo) { filter in
+            FilterInfoView(filter: filter)
+        }
+        .sheet(item: $selectedFilterRules) { filter in
+            FilterRulesView(filter: filter)
+        }
+        .sheet(item: $selectedCategoryInfo) { category in
+            FilterCategoryInfoView(
+                category: category,
+                defaultFilterNames: defaultFilterNames(for: category),
+                onReset: { resetCategory(category) }
+            )
+        }
+        .onChangeCompat(of: selectedTab) { _, _ in
+            filterSearchText = ""
+            showFilterSearch = false
+        }
+        .alert("Disable Essential Filter?", isPresented: Binding(
+            get: { pendingEssentialFilter != nil },
+            set: { if !$0 { pendingEssentialFilter = nil } }
+        )) {
+            Button("Cancel", role: .cancel) { pendingEssentialFilter = nil }
+            Button("Disable", role: .destructive) {
+                if let filter = pendingEssentialFilter {
+                    filterManager.setFilterListSelection(id: filter.id, selected: false)
+                }
+                pendingEssentialFilter = nil
+            }
+        } message: {
+            Text("This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage.")
         }
         .onChangeCompat(of: dataManager.isForeignFiltersExpanded) { _, newValue in
             guard isForeignFiltersExpanded != newValue else { return }
@@ -187,14 +216,6 @@ struct ContentView: View {
         }
     }
     #endif
-
-    private func isInlineUserList(_ filter: FilterList) -> Bool {
-        filter.isInlineUserList
-    }
-
-    private func supportsCustomActions(_ filter: FilterList) -> Bool {
-        filter.isCustom
-    }
 
     private func applyPendingChanges() {
         guard !filterManager.isLoading else { return }
@@ -269,26 +290,27 @@ struct ContentView: View {
                 minHeight: 550, idealHeight: 720, maxHeight: .infinity
             )
             .toolbar {
-                ToolbarItemGroup(placement: .automatic) {
-                    ToolbarSearchField(
-                        text: $filterSearchText,
-                        isExpanded: $showFilterSearch,
-                        prompt: "Search filters"
-                    )
+                if !showFilterSearch {
+                    ToolbarItemGroup(placement: .automatic) {
+                        Button {
+                            showingAddFilterSheet = true
+                        } label: {
+                            Label("Add Filter", systemImage: "plus")
+                        }
 
-                    if !showFilterSearch {
                         applyChangesToolbarButton
                             .help(
                                 hasPendingChanges
                                     ? String(localized: "Apply your pending changes")
                                     : String(localized: "Apply changes")
                             )
+                    }
 
-                        Button {
-                            showingAddFilterSheet = true
-                        } label: {
-                            Label("Add Filter", systemImage: "plus")
-                        }
+                    if #available(macOS 26.0, *) {
+                        ToolbarSpacer(.fixed, placement: .automatic)
+                    }
+
+                    ToolbarItem(placement: .automatic) {
                         Button {
                             showOnlyEnabledLists.toggle()
                         } label: {
@@ -299,6 +321,18 @@ struct ContentView: View {
                                     : "line.3.horizontal.decrease.circle")
                         }
                     }
+
+                    if #available(macOS 26.0, *) {
+                        ToolbarSpacer(.fixed, placement: .automatic)
+                    }
+                }
+
+                ToolbarItem(placement: .automatic) {
+                    ToolbarSearchField(
+                        text: $filterSearchText,
+                        isExpanded: $showFilterSearch,
+                        prompt: "Search filters"
+                    )
                 }
             }
         #endif
@@ -319,18 +353,20 @@ struct ContentView: View {
                             ForEach(ForeignFilterOrganizer.groups(for: item.filters)) { group in
                                 foreignFilterGroupHeader(group.title)
                                 ForEach(group.filters) { filter in
-                                    filterRowView(for: filter)
+                                    filterRowView(for: filter, showsFlags: false)
                                 }
                             }
                         } label: {
-                            Text(item.category.localizedName)
+                            categoryHeader(item.category)
                         }
                     }
                 } else {
-                    Section(item.category.localizedName) {
+                    Section {
                         ForEach(item.filters) { filter in
                             filterRowView(for: filter)
                         }
+                    } header: {
+                        categoryHeader(item.category)
                     }
                 }
             }
@@ -342,10 +378,10 @@ struct ContentView: View {
         }
         #else
         ScrollView {
-            VStack(spacing: 20) {
+            LazyVStack(spacing: 20) {
                 statsCardsView
 
-                VStack(spacing: 16) {
+                LazyVStack(spacing: 16) {
                     ForEach(categorizedFilters, id: \.category) { item in
                         if item.category == .foreign {
                             macOSForeignFiltersView(filters: item.filters)
@@ -369,8 +405,14 @@ struct ContentView: View {
                 userScriptManager: userScriptManager,
                 hasPendingChanges: hasPendingChanges,
                 isApplyingChanges: filterManager.isLoading,
-                onApplyChanges: applyPendingChanges
+                onApplyChanges: applyPendingChanges,
+                tabSelection: selectedTab
             )
+                .safeAreaInset(edge: .top) {
+                    if filterManager.isBlockingPaused {
+                        pauseBlockingBanner
+                    }
+                }
                 #if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
@@ -396,7 +438,7 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Pause Blocking")
                     .font(.subheadline.weight(.semibold))
-                Text("Blocking is paused. Tap Resume to re-enable all blocking.")
+                Text("Pause Blocking is on while any selected component is paused. Resume restores all components.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -438,7 +480,7 @@ struct ContentView: View {
                 StatCard(
                     title: {
                         #if os(iOS)
-                        return "Rules"
+                        return "Safari Rules"
                         #else
                         return (enabledListsCount == 0 || !hasAppliedFilters) ? "Source Rules" : "Safari Rules"
                         #endif
@@ -470,15 +512,49 @@ struct ContentView: View {
             }
 
             StatCard(
-                title: "Enabled Lists",
+                title: "Enabled",
                 value: "\(enabledListsCount)",
-                icon: "list.bullet.rectangle"
+                icon: "checkmark.circle"
             )
             #if os(iOS)
             .frame(maxWidth: .infinity, alignment: .leading)
             #endif
         }
         .padding(.horizontal)
+    }
+
+    private func categoryHeader(_ category: FilterListCategory) -> some View {
+        HStack(spacing: 6) {
+            Text(category.localizedName)
+            Button {
+                selectedCategoryInfo = category
+            } label: {
+                Image(systemName: "info.circle")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .accessibilityLabel("Info")
+        }
+    }
+
+    private func defaultFilterNames(for category: FilterListCategory) -> [String] {
+        FilterCategorySupport.defaultFilterNames(
+            for: category,
+            defaults: FilterListLoader().getDefaultFilterLists()
+        )
+    }
+
+    private func resetCategory(_ category: FilterListCategory) {
+        let defaultNames = Set(defaultFilterNames(for: category))
+        for filter in filterManager.filterLists {
+            guard let selection = FilterCategorySupport.resetSelection(
+                for: filter,
+                category: category,
+                defaultNames: defaultNames
+            ) else { continue }
+            filterManager.setFilterListSelection(id: filter.id, selected: selection)
+        }
+        filterManager.flushPendingSave()
     }
 
     private func foreignFilterGroupHeader(_ title: String) -> some View {
@@ -489,15 +565,21 @@ struct ContentView: View {
             .padding(.top, 6)
     }
 
-    private func filterRowView(for filter: FilterList) -> some View {
+    private func filterRowView(for filter: FilterList, showsFlags: Bool = true) -> some View {
         FilterRowView(
             filter: filter,
-            isInlineUserList: isInlineUserList(filter),
-            supportsCustomActions: supportsCustomActions(filter),
+            showsFlags: showsFlags,
+            onInfo: { selectedFilterInfo = filter },
+            onViewRules: { selectedFilterRules = filter },
             onEdit: { editingCustomFilter = filter },
             onDelete: { filterManager.removeFilterList(filter) },
-            onToggle: { _ in filterManager.toggleFilterListSelection(id: filter.id) },
-            onShowRuleLimitWarning: { filterManager.showRuleLimitWarning(for: filter) }
+            onToggle: { newValue in
+                if !newValue && FilterListLoader.recommendedFilterNames.contains(filter.name) {
+                    pendingEssentialFilter = filter
+                } else {
+                    filterManager.toggleFilterListSelection(id: filter.id)
+                }
+            }
         )
     }
 
@@ -505,14 +587,14 @@ struct ContentView: View {
     private func macOSFilterSectionView(category: FilterListCategory, filters: [FilterList]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(category.localizedName)
+                categoryHeader(category)
                     .font(.headline)
                     .foregroundStyle(.primary)
                 Spacer()
             }
             .padding(.horizontal, 4)
 
-            VStack(spacing: 0) {
+            LazyVStack(spacing: 0) {
                 ForEach(filters) { filter in
                     filterRowView(for: filter)
                     if filter.id != filters.last?.id {
@@ -528,7 +610,7 @@ struct ContentView: View {
     private func macOSForeignFiltersView(filters: [FilterList]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
-                VStack(spacing: 0) {
+                LazyVStack(spacing: 0) {
                     ForEach(ForeignFilterOrganizer.groups(for: filters)) { group in
                         HStack {
                             Text(group.title)
@@ -541,7 +623,7 @@ struct ContentView: View {
                         .padding(.vertical, 8)
 
                         ForEach(group.filters) { filter in
-                            filterRowView(for: filter)
+                            filterRowView(for: filter, showsFlags: false)
                             if filter.id != group.filters.last?.id {
                                 Divider()
                                     .padding(.leading, 16)
@@ -551,7 +633,7 @@ struct ContentView: View {
                 }
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
             } label: {
-                Text(FilterListCategory.foreign.localizedName)
+                categoryHeader(.foreign)
                     .font(.headline)
                     .foregroundStyle(.primary)
             }
@@ -563,56 +645,80 @@ struct ContentView: View {
 
 struct FilterRowView: View {
     let filter: FilterList
-    let isInlineUserList: Bool
-    let supportsCustomActions: Bool
+    let showsFlags: Bool
+    var onInfo: () -> Void
+    var onViewRules: () -> Void
     var onEdit: () -> Void
     var onDelete: () -> Void
     var onToggle: (Bool) -> Void
-    var onShowRuleLimitWarning: () -> Void
 
     @ViewBuilder
     private var contextMenuItems: some View {
-        if supportsCustomActions {
+        let actions = ContextMenuActionAvailability.filterActions(for: filter)
+        if actions.contains(.info) {
+            Button {
+                onInfo()
+            } label: {
+                Label("Info", systemImage: "info.circle")
+            }
+        }
+        if actions.contains(.viewRules) {
+            Button {
+                onViewRules()
+            } label: {
+                Label("View Rules", systemImage: "doc.text")
+            }
+        }
+        if actions.contains(.editRules) {
             Button {
                 onEdit()
             } label: {
-                Label(isInlineUserList ? "Edit Rules" : "Edit Filter List", systemImage: "pencil")
+                Label("Edit Rules", systemImage: "pencil")
             }
-
+        }
+        if actions.contains(.deleteList) {
             Button(role: .destructive) {
                 onDelete()
             } label: {
                 Label("Delete Added List", systemImage: "trash")
             }
         }
-
-        Button {
-            #if os(macOS)
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(filter.url.absoluteString, forType: .string)
-            #else
-                UIPasteboard.general.string = filter.url.absoluteString
-            #endif
-        } label: {
-            Label("Copy URL", systemImage: "doc.on.doc")
-        }
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    if let flags = filter.flagEmojis {
+                    if showsFlags, let flags = filter.flagEmojis {
                         Text(flags)
                     }
                     Text(filter.localizedDisplayName)
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
+                    if filter.isInlineUserList {
+                        Text("Local Import")
+                            .font(.caption2.weight(.medium))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.blue.opacity(0.15), in: Capsule())
+                            .foregroundStyle(.blue)
+                    } else if filter.isCustom {
+                        Text("Custom")
+                            .font(.caption2.weight(.medium))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.blue.opacity(0.15), in: Capsule())
+                            .foregroundStyle(.blue)
+                    }
                 }
                 .font(.body)
 
-                if let rawCount = filter.rawSourceRuleCount,
+                if filter.isCustom && !filter.isInlineUserList && filter.sourceRuleCount == nil {
+                    Text("Not Downloaded")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else if let rawCount = filter.rawSourceRuleCount,
                    let expandedCount = filter.sourceRuleCount,
                    rawCount != expandedCount {
                     // Both counts available and different — show expansion
@@ -648,21 +754,6 @@ struct FilterRowView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(nil)
                         .fixedSize(horizontal: false, vertical: true)
-                }
-
-                if let limitReason = filter.limitExceededReason {
-                    HStack(spacing: 4) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.caption2)
-                        Text(limitReason)
-                            .font(.caption2)
-                            .lineLimit(nil)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .foregroundStyle(.orange)
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 8)
-                    .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
                 }
 
                 HStack(spacing: 4) {
@@ -701,9 +792,6 @@ struct FilterRowView: View {
                     set: { newValue in
                         // Defer state change to next run loop to avoid layout invalidation during scroll
                         DispatchQueue.main.async {
-                            if newValue && filter.limitExceededReason != nil {
-                                onShowRuleLimitWarning()
-                            }
                             onToggle(newValue)
                         }
                     }
@@ -721,6 +809,26 @@ struct FilterRowView: View {
         #endif
     }
 }
+
+#if os(iOS)
+private struct OnboardingPresentationModifier: ViewModifier {
+    @Binding var isPresented: Bool
+    let filterManager: AppFilterManager
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            content.sheet(isPresented: $isPresented) {
+                OnboardingView(filterManager: filterManager)
+            }
+        } else {
+            content.fullScreenCover(isPresented: $isPresented) {
+                OnboardingView(filterManager: filterManager)
+            }
+        }
+    }
+}
+#endif
 
 struct ContentModifiers: ViewModifier {
     @ObservedObject var filterManager: AppFilterManager
@@ -848,9 +956,10 @@ struct ContentModifiers: ViewModifier {
                 ) { _ in
                     applyFilterChangesFromExternalTrigger()
                 }
-                .fullScreenCover(isPresented: $showOnboardingSheet) {
-                    OnboardingView(filterManager: filterManager)
-                }
+                .modifier(OnboardingPresentationModifier(
+                    isPresented: $showOnboardingSheet,
+                    filterManager: filterManager
+                ))
             #elseif os(macOS)
                 .sheet(isPresented: $showOnboardingSheet) {
                     OnboardingView(filterManager: filterManager)
@@ -890,7 +999,7 @@ struct ContentModifiers: ViewModifier {
 
 private extension FilterListCategory {
     static var userListCategories: [FilterListCategory] {
-        [.custom] + allCases.filter { $0 != .all && $0 != .custom }
+        [.custom] + allCases.filter { $0 != .all && $0 != .custom && $0 != .scripts }
     }
 }
 
@@ -903,6 +1012,28 @@ private func userListCategoryPicker(selection: Binding<FilterListCategory>) -> s
     .pickerStyle(.menu)
 }
 
+
+enum FilterListAddValidationMode {
+    case url
+    case text
+    case file
+}
+
+struct FilterListAddValidation {
+    static func isDuplicateName(
+        candidate: String,
+        mode: FilterListAddValidationMode,
+        urlCount: Int,
+        existingNames: [String]
+    ) -> Bool {
+        let trimmedCandidate = candidate.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedCandidate.isEmpty else { return false }
+        guard mode != .url || urlCount <= 1 else { return false }
+        return existingNames.contains {
+            $0.caseInsensitiveCompare(trimmedCandidate) == .orderedSame
+        }
+    }
+}
 
 struct AddFilterListView: View {
     @ObservedObject var filterManager: AppFilterManager
@@ -920,13 +1051,29 @@ struct AddFilterListView: View {
     @State private var userListTitle: String = ""
     @State private var userListDescription: String = ""
     @State private var selectedCategory: FilterListCategory = .custom
+    @State private var stagedFile: StagedFilterFile?
+    @State private var isStagingFile = false
+    @State private var stagingGeneration = 0
 
-    private enum AddMode: String, CaseIterable, Identifiable {
+    private struct StagedFilterFile {
+        let filename: String
+        let content: String
+    }
+
+    private enum AddMode: String, CaseIterable, Identifiable, AddContentMode {
         case url = "URL"
-        case paste = "Paste"
+        case paste = "Text"
         case file = "File"
 
         var id: String { rawValue }
+        var localizedTitle: LocalizedStringKey { LocalizedStringKey(rawValue) }
+        var systemImage: String {
+            switch self {
+            case .url: return "link"
+            case .paste: return "text.alignleft"
+            case .file: return "doc"
+            }
+        }
     }
 
     @State private var addMode: AddMode = .url
@@ -989,34 +1136,17 @@ struct AddFilterListView: View {
         #endif
         .fileImporter(
             isPresented: $showingFileImporter,
-            allowedContentTypes: [UTType.plainText, UTType.text],
+            allowedContentTypes: filterImportTypes,
             allowsMultipleSelection: false
         ) { result in
             switch result {
             case .success(let urls):
                 guard let url = urls.first else { return }
-                Task { @MainActor in
-                    isSaving = true
-                    defer { isSaving = false }
-
-                    let title = userListTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let description = userListDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-                    url.withSecurityScopedAccess { accessibleURL in
-						filterManager.addUserListFromFile(
-							accessibleURL,
-							nameOverride: title,
-							description: description.isEmpty ? nil : description,
-							category: selectedCategory
-						)
-                    }
-                    if !filterManager.hasError {
-                        dismiss()
-                    } else {
-                        importErrorMessage = filterManager.statusDescription
-                    }
-                }
+                stageFile(at: url)
             case .failure(let error):
-                importErrorMessage = error.localizedDescription
+                if (error as? CocoaError)?.code != .userCancelled {
+                    importErrorMessage = error.localizedDescription
+                }
             }
         }
         .alert(
@@ -1072,32 +1202,17 @@ struct AddFilterListView: View {
 	        }
 
 	        private var modePickerCard: some View {
-	            HStack(spacing: 10) {
-	                Text("Add Mode")
-	                    .font(.caption)
-	                    .foregroundStyle(.secondary)
-
-	                Picker("", selection: $addMode) {
-	                    ForEach(AddMode.allCases) { mode in
-	                        Text(LocalizedStringKey(mode.rawValue)).tag(mode)
-	                    }
-	                }
-	                .pickerStyle(.segmented)
-	                .labelsHidden()
-	                .controlSize(.small)
-	                .animation(.easeInOut(duration: 0.15), value: addMode)
-
-	                Spacer(minLength: 0)
-	            }
-	            .padding(16)
-	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+	            AddContentModePicker(selection: $addMode)
 	        }
 
 	        @ViewBuilder
 	        private var macosModeContent: some View {
 	            switch addMode {
 	            case .url:
-	                macosURLCard
+	                VStack(alignment: .leading, spacing: 16) {
+	                    macosURLCard
+	                    filterRequirementsPanel
+	                }
 	            case .paste:
 	                macosPasteCard
 	            case .file:
@@ -1163,6 +1278,7 @@ struct AddFilterListView: View {
                                 .stroke(.quaternary, lineWidth: 1)
                         )
 	                }
+                filterTextRequirementsPanel
 	            }
 	            .padding(16)
 	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
@@ -1170,35 +1286,64 @@ struct AddFilterListView: View {
 
 	        private var macosFileCard: some View {
 	            VStack(alignment: .leading, spacing: 12) {
-	                userListMetaFields
-
-	                Button {
-	                    showingFileImporter = true
-	                } label: {
-	                    HStack(spacing: 10) {
-	                        Image(systemName: "doc")
-	                        Text("Choose File…")
-	                        Spacer()
-	                        Image(systemName: "chevron.right")
-	                            .font(.caption2)
-	                            .foregroundStyle(.secondary)
-	                    }
-	                    .padding(.vertical, 10)
-	                    .padding(.horizontal, 12)
-	                    .frame(maxWidth: .infinity, alignment: .leading)
-	                    .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-	                    .overlay(
-	                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-	                            .stroke(.quaternary, lineWidth: 1)
-	                    )
-	                }
-	                .buttonStyle(.plain)
-	                .disabled(isSaving || !canSubmit)
+                    fileSelectionButton
+                    if stagedFile != nil {
+                        userListMetaFields
+                    }
+                    filterFileRequirementsPanel
 	            }
 	            .padding(16)
 	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
 	        }
+
+        private var fileSelectionButton: some View {
+            Button {
+                showingFileImporter = true
+                importErrorMessage = nil
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "doc")
+                    Text(stagedFile?.filename ?? "Choose File")
+                    if isStagingFile { ProgressView().controlSize(.small) }
+                    Spacer()
+                    if stagedFile != nil {
+                        Text("Change File")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 10)
+                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(.quaternary, lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
+            .disabled(isSaving)
+        }
 	    #endif
+
+        #if os(iOS)
+        private var fileSelectionButton: some View {
+            Button {
+                showingFileImporter = true
+                importErrorMessage = nil
+            } label: {
+                HStack {
+                    Image(systemName: "doc")
+                    Text(stagedFile?.filename ?? "Choose File")
+                    if isStagingFile { ProgressView().controlSize(.small) }
+                    Spacer()
+                    if stagedFile != nil {
+                        Text("Change File").foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .disabled(isSaving)
+        }
+        #endif
 
 	    private var addTabs: some View {
 	        TabView(selection: $addMode) {
@@ -1208,7 +1353,7 @@ struct AddFilterListView: View {
 
 	            pasteTab
 	                .tag(AddMode.paste)
-	                .tabItem { Label("Paste", systemImage: "text.badge.plus") }
+	                .tabItem { Label("Text", systemImage: "text.alignleft") }
 
 	            fileTab
 	                .tag(AddMode.file)
@@ -1264,25 +1409,64 @@ struct AddFilterListView: View {
                 SyntaxHighlightingTextView(text: $pastedRules)
                     .frame(minHeight: 220)
             }
+            Section {
+                filterTextRequirementsPanel
+            }
         }
     }
 
 		    private var fileTab: some View {
-		        Form {
-		            Section {
-		            TextField("Title", text: $userListTitle)
-		                    #if os(iOS)
-		                .textInputAutocapitalization(.words)
-		            #endif
-		                    .autocorrectionDisabled()
-	                TextField("Description", text: $userListDescription)
-	                    #if os(iOS)
-	                        .textInputAutocapitalization(.sentences)
-	                    #endif
-	                    .autocorrectionDisabled()
-                userListCategoryPicker(selection: $selectedCategory)
-		        }
-		    }
+                Form {
+                    Section {
+                        fileSelectionButton
+                        if stagedFile != nil {
+                            TextField("Name", text: $userListTitle)
+                                #if os(iOS)
+                                .textInputAutocapitalization(.words)
+                                #endif
+                                .autocorrectionDisabled()
+                            TextField("Description", text: $userListDescription)
+                                #if os(iOS)
+                                .textInputAutocapitalization(.sentences)
+                                #endif
+                                .autocorrectionDisabled()
+                            userListCategoryPicker(selection: $selectedCategory)
+                        }
+                    }
+                    Section {
+                        filterFileRequirementsPanel
+                    } footer: {
+                        if let importErrorMessage {
+                            Text(importErrorMessage).foregroundStyle(.orange)
+                        }
+                    }
+                }
+            }
+
+    private var filterTextRequirementsPanel: some View {
+        AddContentRequirementsPanel(requirements: [
+            AddContentRequirement(systemImage: "character.cursor.ibeam", text: "Title is required."),
+            AddContentRequirement(systemImage: "checkmark.circle", text: "Rules")
+        ])
+    }
+
+    private var filterFileRequirementsPanel: some View {
+        AddContentRequirementsPanel(requirements: [
+            AddContentRequirement(systemImage: "doc", text: "Choose File"),
+            AddContentRequirement(systemImage: "character.cursor.ibeam", text: "Title is required."),
+            AddContentRequirement(systemImage: "checkmark.circle", text: "That doesn't look like a filter list.")
+        ])
+    }
+
+	    private var filterRequirementsPanel: some View {
+        AddContentRequirementsPanel(
+            requirements: [
+                AddContentRequirement(systemImage: "link", text: "Use a valid http:// or https:// URL"),
+                AddContentRequirement(systemImage: "globe", text: "Include a host name"),
+                AddContentRequirement(systemImage: "checkmark.circle", text: "Do not use a userscript URL ending in .js, .mjs, or .cjs")
+            ],
+            footer: "wBlock will fetch and enable the filter list automatically"
+        )
     }
 
 	    private var urlInputEditor: some View {
@@ -1365,7 +1549,9 @@ struct AddFilterListView: View {
             return !userListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 && !pastedRules.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .file:
-            return !userListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            return !isStagingFile
+                && stagedFile != nil
+                && !userListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
     }
 
@@ -1410,7 +1596,25 @@ struct AddFilterListView: View {
                 }
             }
         case .file:
-            showingFileImporter = true
+            guard let stagedFile else { return }
+            isSaving = true
+            Task { @MainActor in
+                let finalName = userListTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                let finalDescription = userListDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+                filterManager.addUserList(
+                    name: finalName,
+                    description: finalDescription.isEmpty ? nil : finalDescription,
+                    content: stagedFile.content,
+                    category: selectedCategory,
+                    isSelected: true
+                )
+                isSaving = false
+                if !filterManager.hasError {
+                    dismiss()
+                } else {
+                    importErrorMessage = filterManager.statusDescription
+                }
+            }
         }
     }
 
@@ -1423,20 +1627,19 @@ struct AddFilterListView: View {
                     comment: "Bulk filter URL add button"
                 )
             }
-            return "Add URL"
-        case .paste: return "Add Rules"
-        case .file: return "Choose File"
+            return "Add"
+        case .paste, .file: return "Add"
         }
     }
 
     private var userListMetaFields: some View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Title")
+                Text("Name")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                TextField("User List", text: $userListTitle)
+                TextField("Name", text: $userListTitle)
                     .textFieldStyle(.roundedBorder)
                     .autocorrectionDisabled()
                     #if os(iOS)
@@ -1468,7 +1671,86 @@ struct AddFilterListView: View {
     }
     }
 
+    private var filterImportTypes: [UTType] {
+        FilterListContentValidator.supportedLocalFileExtensions.compactMap {
+            UTType(filenameExtension: $0, conformingTo: .plainText)
+        }
+    }
+
     // MARK: - Helpers
+
+    private func stageFile(at url: URL) {
+        stagingGeneration += 1
+        let generation = stagingGeneration
+        isStagingFile = true
+        importErrorMessage = nil
+        let didAccess = url.startAccessingSecurityScopedResource()
+
+        Task { @MainActor in
+            defer {
+                if didAccess {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+
+            do {
+                let result = try await Task.detached(priority: .userInitiated) {
+                    () throws -> (content: String, title: String?, description: String?) in
+                    guard FilterListContentValidator.isSupportedLocalFile(url) else {
+                        throw NSError(domain: "wBlock.filterImport", code: 3, userInfo: [
+                            NSLocalizedDescriptionKey: LocalizedStrings.text(
+                                "That doesn't look like a filter list.",
+                                comment: "User list validation error"
+                            )
+                        ])
+                    }
+                    let fileSize = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+                    guard fileSize <= UserScriptImportLimits.maximumSourceFileBytes else {
+                        throw NSError(domain: "wBlock.filterImport", code: 2, userInfo: [
+                            NSLocalizedDescriptionKey: LocalizedStrings.text(
+                                "The selected file is too large. Maximum size is 10 MB.",
+                                comment: "Local filter import size error"
+                            )
+                        ])
+                    }
+                    let content = try String(contentsOf: url, encoding: .utf8)
+                    let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmedContent.isEmpty,
+                          FilterListContentValidator.appearsToBeFilterList(trimmedContent)
+                    else {
+                        throw NSError(domain: "wBlock.filterImport", code: 1, userInfo: [
+                            NSLocalizedDescriptionKey: LocalizedStrings.text(
+                                "That doesn't look like a filter list.",
+                                comment: "User list validation error"
+                            )
+                        ])
+                    }
+
+                    let metadata = FilterListMetadataParser.parse(from: content, maxLines: 80)
+                    return (content, metadata.title, metadata.description)
+                }.value
+
+                guard generation == stagingGeneration else { return }
+                stagedFile = StagedFilterFile(filename: url.lastPathComponent, content: result.content)
+                let metadataTitle = result.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                userListTitle = metadataTitle.isEmpty ? fallbackFileName(for: url) : metadataTitle
+                userListDescription = result.description?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                isStagingFile = false
+            } catch {
+                guard generation == stagingGeneration else { return }
+                isStagingFile = false
+                importErrorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func fallbackFileName(for url: URL) -> String {
+        let name = url.deletingPathExtension().lastPathComponent
+            .replacingOccurrences(of: "-", with: " ")
+            .replacingOccurrences(of: "_", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return name.isEmpty ? "User List" : name
+    }
 
     private func validationState(for rawValue: String) -> ValidationState {
         guard !rawValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -1503,11 +1785,27 @@ struct AddFilterListView: View {
     }
 
     private var isCustomNameDuplicate: Bool {
-        let candidate = trimmedCustomName
-        guard newURLs.count <= 1, !candidate.isEmpty else { return false }
-        return filterManager.filterLists.contains(where: {
-            $0.name.caseInsensitiveCompare(candidate) == .orderedSame
-        })
+        FilterListAddValidation.isDuplicateName(
+            candidate: duplicateNameCandidate,
+            mode: validationMode,
+            urlCount: newURLs.count,
+            existingNames: filterManager.filterLists.map(\.name)
+        )
+    }
+
+    private var duplicateNameCandidate: String {
+        switch addMode {
+        case .url: return customName
+        case .paste, .file: return userListTitle
+        }
+    }
+
+    private var validationMode: FilterListAddValidationMode {
+        switch addMode {
+        case .url: return .url
+        case .paste: return .text
+        case .file: return .file
+        }
     }
 
     private enum ValidationState: Equatable {
@@ -1914,23 +2212,16 @@ struct EditUserListView: View {
 
     private func loadContent() {
         isLoadingContent = true
-        let filterID = filter.id
-        let filterName = filter.name
         Task {
             let loadedRules = await Task.detached { () -> String? in
                 guard let containerURL = FileManager.default.containerURL(
                     forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
-                ) else {
-                    return nil
-                }
-
-                let idBasedURL = containerURL.appendingPathComponent("custom-\(filterID.uuidString).txt")
-                if let loaded = try? String(contentsOf: idBasedURL, encoding: .utf8) {
-                    return loaded
-                }
-
-                let legacyURL = containerURL.appendingPathComponent("\(filterName).txt")
-                return try? String(contentsOf: legacyURL, encoding: .utf8)
+                ),
+                let fileURL = ContentBlockerIncrementalCache.existingLocalFileURL(
+                    for: filter,
+                    containerURL: containerURL
+                ) else { return nil }
+                return try? String(contentsOf: fileURL, encoding: .utf8)
             }.value
 
             await MainActor.run {

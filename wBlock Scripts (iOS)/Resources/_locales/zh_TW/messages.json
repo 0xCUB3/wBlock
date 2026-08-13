@@ -11,9 +11,9 @@
     "message": "載入中…",
     "description": "Popup status shown while loading state is being resolved."
   },
-  "popup_disable_on_site": {
-    "message": "在此網站停用",
-    "description": "Label for the site-specific disable toggle in the popup."
+  "popup_enable_on_site": {
+    "message": "在此網站啟用",
+    "description": "Label for the site-specific enable toggle in the popup."
   },
   "popup_element_zapper": {
     "message": "元素消除器",
@@ -74,6 +74,10 @@
   "popup_status_paused": {
     "message": "已暫停",
     "description": "Status label indicating blocking is globally paused."
+  },
+  "popup_status_partially_paused": {
+    "message": "部分暫停",
+    "description": "Status label indicating that some blocking components are paused."
   },
   "popup_status_active": {
     "message": "作用中",
@@ -218,5 +222,65 @@
   "popup_error_update_userscript": {
     "message": "Failed to update userscript setting.",
     "description": "Error shown when popup fails to update a per-site userscript setting."
+  },
+  "popup_paused_prompt_title": {
+    "message": "封鎖功能已暫停",
+    "description": "Title shown in the popup when global blocking is paused."
+  },
+  "popup_paused_partial_prompt_title": {
+    "message": "部分封鎖元件已暫停",
+    "description": "Title shown in the popup when only some blocking components are paused."
+  },
+  "popup_paused_prompt_message": {
+    "message": "恢復會還原所有元件。",
+    "description": "Prompt explaining how to restore global blocking."
+  },
+  "popup_button_resume_blocking": {
+    "message": "恢復封鎖功能",
+    "description": "Button that requests the containing app to resume global blocking."
+  },
+  "popup_status_resuming": {
+    "message": "正在恢復…",
+    "description": "Transient status shown while global blocking is being resumed."
+  },
+  "popup_status_error": {
+    "message": "錯誤",
+    "description": "Status shown when popup state cannot be loaded."
+  },
+  "popup_error_resume_blocking": {
+    "message": "無法恢復封鎖功能。",
+    "description": "Error shown when global blocking cannot be resumed."
+  },
+  "popup_error_resume_unavailable": {
+    "message": "請開啟 wBlock 以恢復封鎖功能。App 必須正在執行。",
+    "description": "Shown when the containing app is unavailable while resuming blocking."
+  },
+  "popup_filter_update_label": {
+    "message": "過濾器",
+    "description": "Section label for the popup filter update action."
+  },
+  "popup_button_update_filters": {
+    "message": "更新過濾器",
+    "description": "Button label for starting a background filter update from the popup."
+  },
+  "popup_status_updating_filters": {
+    "message": "正在更新過濾器…",
+    "description": "Compact status shown while filters are updating in the background."
+  },
+  "popup_status_filters_updated": {
+    "message": "過濾器已更新（$1）。",
+    "description": "Success status after filters changed. Placeholder 1 is the number of updated filters."
+  },
+  "popup_status_filters_no_change": {
+    "message": "過濾器已是最新。",
+    "description": "Status shown when the update found no filter changes."
+  },
+  "popup_error_filter_update": {
+    "message": "過濾器更新失敗。",
+    "description": "Error status shown when a background filter update fails."
+  },
+  "popup_error_filter_update_start": {
+    "message": "無法開始更新過濾器。",
+    "description": "Error shown when the background filter update cannot be started."
   }
 }

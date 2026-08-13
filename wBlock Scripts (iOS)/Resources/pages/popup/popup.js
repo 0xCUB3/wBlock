@@ -6,6 +6,9 @@ const SUPPORT_PROBE_ATTEMPTS = 5;
 const SUPPORT_PROBE_RETRY_DELAY_MS = 200;
 const TOP_FRAME_ID = 0;
 const NATIVE_MESSAGE_TIMEOUT_MS = 3500;
+const FILTER_UPDATE_POLL_INTERVAL_MS = 500;
+const FILTER_UPDATE_POLL_ATTEMPTS = 120;
+let resumeInFlight = false;
 
 function t(key, substitutions, fallback = '') {
     const message = browser.i18n.getMessage(key, substitutions);
@@ -294,6 +297,116 @@ function setStatus(text, kind = 'neutral') {
     else statusEl.classList.add('is-neutral');
 }
 
+let filterUpdatePollPromise = null;
+let filterUpdatePollToken = 0;
+
+function renderFilterUpdateStatus(snapshot) {
+    const button = document.getElementById('update-filters');
+    const statusEl = document.getElementById('filter-update-status');
+    if (!button || !statusEl) return;
+
+    const state = snapshot && typeof snapshot.state === 'string' ? snapshot.state : 'idle';
+    statusEl.classList.remove('is-running', 'is-success', 'is-error');
+    statusEl.hidden = state === 'idle';
+    button.disabled = state === 'running';
+    if (state === 'running') {
+        button.setAttribute('aria-busy', 'true');
+        statusEl.classList.add('is-running');
+        statusEl.textContent = t('popup_status_updating_filters', undefined, 'Updating filters…');
+        return;
+    }
+    button.removeAttribute('aria-busy');
+    if (state === 'succeeded') {
+        statusEl.classList.add('is-success');
+        const count = Number(snapshot.updatedFilters);
+        statusEl.textContent = count > 0
+            ? t('popup_status_filters_updated', [String(count)], `Filters updated (${count}).`)
+            : t('popup_status_filters_updated', undefined, 'Filters updated.');
+    } else if (state === 'no_change') {
+        statusEl.classList.add('is-success');
+        statusEl.textContent = t('popup_status_filters_no_change', undefined, 'Filters are up to date.');
+    } else if (state === 'failed') {
+        statusEl.classList.add('is-error');
+        statusEl.textContent = snapshot.error || t('popup_error_filter_update', undefined, 'Filter update failed.');
+    }
+}
+
+async function getFilterUpdateStatus() {
+    const response = await withTimeout(
+        browser.runtime.sendMessage({ action: 'wblock:filterUpdate:getStatus' }),
+        NATIVE_MESSAGE_TIMEOUT_MS,
+        'Filter update status timed out.'
+    );
+    if (!response || response.ok !== true || typeof response.state !== 'string') {
+        throw new Error((response && response.error) || 'Invalid filter update status.');
+    }
+    return response;
+}
+
+async function pollFilterUpdateStatus() {
+    if (filterUpdatePollPromise) return filterUpdatePollPromise;
+    const token = ++filterUpdatePollToken;
+    filterUpdatePollPromise = (async () => {
+        let waitingForStart = 5;
+        for (let attempt = 0; attempt < FILTER_UPDATE_POLL_ATTEMPTS; attempt += 1) {
+            if (token !== filterUpdatePollToken) return null;
+            const snapshot = await getFilterUpdateStatus();
+            if (snapshot.state === 'running') {
+                waitingForStart = 0;
+                renderFilterUpdateStatus(snapshot);
+            } else if (snapshot.state === 'idle' && waitingForStart > 0) {
+                // The XPC acknowledgement can arrive just before the shared status write.
+                waitingForStart -= 1;
+                renderFilterUpdateStatus({ state: 'running' });
+            } else {
+                renderFilterUpdateStatus(snapshot);
+                return snapshot;
+            }
+            await sleep(FILTER_UPDATE_POLL_INTERVAL_MS);
+        }
+        throw new Error(t('popup_error_filter_update', undefined, 'Filter update status is unavailable.'));
+    })().finally(() => {
+        filterUpdatePollPromise = null;
+    });
+    return filterUpdatePollPromise;
+}
+
+async function refreshFilterUpdateStatus() {
+    try {
+        const snapshot = await getFilterUpdateStatus();
+        renderFilterUpdateStatus(snapshot);
+        if (snapshot.state === 'running') {
+            await pollFilterUpdateStatus();
+        }
+    } catch (error) {
+        console.warn('[wBlock] Filter update status unavailable:', error);
+    }
+}
+
+async function startFilterUpdate() {
+    const button = document.getElementById('update-filters');
+    if (!button || button.disabled) return;
+    setError('');
+    renderFilterUpdateStatus({ state: 'running' });
+    try {
+        const response = await withTimeout(
+            browser.runtime.sendMessage({ action: 'wblock:filterUpdate:start' }),
+            NATIVE_MESSAGE_TIMEOUT_MS,
+            'Filter update start timed out.'
+        );
+        if (!response || response.ok !== true || response.state !== 'running') {
+            throw new Error((response && response.error) || t('popup_error_filter_update_start', undefined, 'Could not start filter update.'));
+        }
+        await pollFilterUpdateStatus();
+    } catch (error) {
+        console.error('[wBlock] Filter update failed:', error);
+        renderFilterUpdateStatus({
+            state: 'failed',
+            error: (error && error.message) || t('popup_error_filter_update', undefined, 'Filter update failed.'),
+        });
+    }
+}
+
 async function getActiveTab() {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
     return tabs && tabs.length ? tabs[0] : null;
@@ -522,11 +635,71 @@ async function getBlockingPausedState() {
         const response = await sendNativeMessageWithTimeout({
             action: 'getBlockingPausedState',
         });
-        return Boolean(response && response.paused);
+        if (!response || typeof response.paused !== 'boolean' ||
+            typeof response.filtersPaused !== 'boolean' ||
+            typeof response.userScriptsPaused !== 'boolean' ||
+            typeof response.elementZapperPaused !== 'boolean' ||
+            typeof response.resumeAvailable !== 'boolean') {
+            throw new Error('Invalid pause state response');
+        }
+        return response;
     } catch (error) {
         console.error('[wBlock] Failed to get pause state:', error);
-        return false;
+        return null;
     }
+}
+
+async function getResumeRequestStatus() {
+    try {
+        const response = await sendNativeMessageWithTimeout({
+            action: 'getResumeRequestStatus',
+        });
+        if (!response || response.ok !== true || typeof response.status !== 'string') {
+            return null;
+        }
+        return response;
+    } catch (error) {
+        console.warn('[wBlock] Resume status unavailable:', error);
+        return null;
+    }
+}
+
+async function resumeBlocking() {
+    let response;
+    try {
+        response = await sendNativeMessageWithTimeout({
+            action: 'resumeBlocking',
+        }, 10000);
+    } catch (error) {
+        console.warn('[wBlock] Containing app did not answer resume request:', error);
+        return { status: 'unavailable' };
+    }
+    if (!response || response.ok !== true) {
+        throw new Error((response && response.error) || 'Resume request failed');
+    }
+    if (response.status === 'succeeded' && response.paused === false) {
+        return { status: 'succeeded' };
+    }
+    // A wake failure only means the app was not launched by this request. Keep polling
+    // briefly because a resident containing app can still consume the Darwin request.
+    if (typeof response.status !== 'string') {
+        return { status: 'unavailable' };
+    }
+
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+        await sleep(300);
+        const status = await getResumeRequestStatus();
+        if (!status) continue;
+        if (status.status === 'succeeded' && status.paused === false) {
+            return { status: 'succeeded' };
+        }
+        if (status.status === 'failed') {
+            throw new Error(status.error || 'Resume request failed');
+        }
+    }
+    // A pending request means the extension bridge is alive, but the containing app
+    // may be terminated. Do not claim Active; leave the paused UI authoritative.
+    return { status: 'unavailable' };
 }
 
 async function getSiteDisabledState(host) {
@@ -793,7 +966,7 @@ async function invokeUserscriptCommand(tabId, frameId, bridgeId, commandId) {
 function setupListeners() {
     const rulesToggle = document.getElementById('zapper-rules-toggle');
     const rulesContainer = document.getElementById('zapper-rules');
-    const disableToggle = document.getElementById('disable-toggle');
+    const disableToggle = document.getElementById('enable-toggle');
     const zapperEnabledToggle = document.getElementById('zapper-enabled-toggle');
     const zapperActivate = document.getElementById('zapper-activate');
     const zapperClear = document.getElementById('zapper-clear');
@@ -801,6 +974,16 @@ function setupListeners() {
     const userscriptsList = document.getElementById('userscripts-list');
     const userscriptsToggle = document.getElementById('userscripts-toggle');
     const openAppButton = document.getElementById('open-app');
+    const resumeButton = document.getElementById('resume-blocking');
+    const updateFiltersButton = document.getElementById('update-filters');
+
+    if (updateFiltersButton) {
+        updateFiltersButton.addEventListener('click', () => {
+            startFilterUpdate().catch((error) => {
+                console.error('[wBlock] Filter update action failed:', error);
+            });
+        });
+    }
 
     if (userscriptsToggle) {
         userscriptsToggle.addEventListener('click', () => {
@@ -852,7 +1035,7 @@ function setupListeners() {
             try {
                 setError('');
                 disableToggle.disabled = true;
-                const next = disableToggle.checked;
+                const next = !disableToggle.checked;
                 setStatus(next
                     ? t('popup_status_disabling', undefined, 'Disabling…')
                     : t('popup_status_enabling', undefined, 'Enabling…'), 'neutral');
@@ -889,7 +1072,7 @@ function setupListeners() {
                 const disabled = Boolean(response && response.disabled);
                 zapperEnabledToggle.checked = !disabled;
                 if (zapperActivate) {
-                    zapperActivate.disabled = (disableToggle ? disableToggle.checked : false) || disabled;
+                    zapperActivate.disabled = (disableToggle ? !disableToggle.checked : false) || disabled;
                 }
                 await notifyZapperRulesChanged(tab.id);
                 await reloadActiveTab(tab.id);
@@ -974,6 +1157,40 @@ function setupListeners() {
         });
     }
 
+    if (resumeButton) {
+        resumeButton.addEventListener('click', async () => {
+            if (resumeInFlight) return;
+            resumeInFlight = true;
+            try {
+                setError('');
+                resumeButton.disabled = true;
+                resumeButton.setAttribute('aria-busy', 'true');
+                setStatus(t('popup_status_resuming', undefined, 'Resuming…'), 'neutral');
+                const result = await resumeBlocking();
+                if (result.status === 'unavailable') {
+                    setError(t(
+                        'popup_error_resume_unavailable',
+                        undefined,
+                        'Open wBlock to resume blocking.'
+                    ));
+                    resumeButton.disabled = false;
+                    resumeButton.removeAttribute('aria-busy');
+                    setStatus(t('popup_status_paused', undefined, 'Paused'), 'disabled');
+                    return;
+                }
+                await refreshUi();
+            } catch (error) {
+                console.error('[wBlock] Failed to resume blocking:', error);
+                setError(t('popup_error_resume_blocking', undefined, 'Failed to resume blocking.'));
+                resumeButton.disabled = false;
+                resumeButton.removeAttribute('aria-busy');
+                setStatus(t('popup_status_paused', undefined, 'Paused'), 'disabled');
+            } finally {
+                resumeInFlight = false;
+            }
+        });
+    }
+
     if (openAppButton) {
         openAppButton.addEventListener('click', async () => {
             try {
@@ -1019,17 +1236,24 @@ function setupListeners() {
 
 async function refreshUi() {
     setError('');
+    refreshFilterUpdateStatus().catch((error) => {
+        console.warn('[wBlock] Failed to restore filter update status:', error);
+    });
     browser.runtime.sendMessage({ action: 'wblock:installRemoveParamDNRRules' }).catch((error) => {
         console.warn('[wBlock] Failed to refresh removeparam DNR rules:', error);
     });
 
     const hostEl = document.getElementById('site-host');
-    const disableToggle = document.getElementById('disable-toggle');
+    const disableToggle = document.getElementById('enable-toggle');
     const zapperEnabledToggle = document.getElementById('zapper-enabled-toggle');
     const zapperActivate = document.getElementById('zapper-activate');
     const rulesToggle = document.getElementById('zapper-rules-toggle');
     const openAppButton = document.getElementById('open-app');
     const userscriptsSection = document.getElementById('userscripts-section');
+    const pausedPrompt = document.getElementById('paused-prompt');
+    const pausedPromptTitle = document.getElementById('paused-prompt-title');
+    const pausedPromptMessage = document.getElementById('paused-prompt-message');
+    const resumeButton = document.getElementById('resume-blocking');
 
     if (openAppButton) {
         openAppButton.hidden = !(await shouldShowOpenAppButton());
@@ -1044,6 +1268,8 @@ async function refreshUi() {
         setStatus(t('popup_status_unsupported', undefined, 'Unsupported'), 'neutral');
         if (disableToggle) disableToggle.disabled = true;
         if (zapperEnabledToggle) zapperEnabledToggle.disabled = true;
+        if (pausedPrompt) pausedPrompt.hidden = true;
+        if (resumeButton) resumeButton.hidden = true;
         if (zapperActivate) zapperActivate.disabled = true;
         if (rulesToggle) rulesToggle.disabled = true;
         currentPageUserScripts = [];
@@ -1069,7 +1295,7 @@ async function refreshUi() {
     const pageUserScriptsPromise = fetchPageUserScripts(tab.url);
     let pageUserScriptsRenderedDisabled = null;
     const renderPageUserScriptsPromise = pageUserScriptsPromise.then((scripts) => {
-        pageUserScriptsRenderedDisabled = disableToggle ? disableToggle.checked : false;
+        pageUserScriptsRenderedDisabled = disableToggle ? !disableToggle.checked : false;
         renderPageUserScripts(scripts, pageUserScriptsRenderedDisabled);
         return scripts;
     });
@@ -1080,41 +1306,85 @@ async function refreshUi() {
 
     setStatus(t('popup_status_checking', undefined, 'Checking…'), 'neutral');
 
-    const [blockingPaused, disabled, zapperState, contentScriptReachable] = await Promise.all([
+    const [pauseState, disabled, zapperState, contentScriptReachable] = await Promise.all([
         blockingPausedPromise,
         disabledPromise,
         zapperStatePromise,
         contentScriptReachablePromise,
     ]);
-    const effectiveDisabled = blockingPaused || disabled;
+    if (pauseState === null) {
+        setStatus(t('popup_status_error', undefined, 'Error'), 'disabled');
+        setError(t('popup_error_load_popup', undefined, 'Failed to load popup.'));
+        if (disableToggle) disableToggle.disabled = true;
+        if (zapperEnabledToggle) zapperEnabledToggle.disabled = true;
+        if (zapperActivate) zapperActivate.disabled = true;
+        if (resumeButton) resumeButton.disabled = true;
+        if (pausedPrompt) pausedPrompt.hidden = true;
+        if (resumeButton) resumeButton.hidden = true;
+        return;
+    }
+
+    const blockingPaused = pauseState.paused;
+    const resumeAvailable = pauseState.resumeAvailable;
+    const filtersPaused = pauseState.filtersPaused;
+    const userScriptsPaused = pauseState.userScriptsPaused;
+    const zapperPaused = pauseState.elementZapperPaused;
+    const partiallyPaused = blockingPaused && !(
+        filtersPaused && userScriptsPaused && zapperPaused
+    );
+    const siteDisabled = disabled;
     const zapperRulesDisabled = zapperState.disabled === true;
     if (disableToggle) {
-        disableToggle.checked = disabled;
-        disableToggle.disabled = blockingPaused;
+        disableToggle.checked = !disabled;
+        disableToggle.disabled = filtersPaused;
+    }
+    if (pausedPrompt) pausedPrompt.hidden = !blockingPaused;
+    if (resumeButton) resumeButton.hidden = !(blockingPaused && resumeAvailable);
+    if (pausedPromptTitle) {
+        pausedPromptTitle.textContent = partiallyPaused
+            ? t('popup_paused_partial_prompt_title', undefined, 'Some blocking components are paused')
+            : t('popup_paused_prompt_title', undefined, 'Blocking is paused');
+    }
+    if (pausedPromptMessage) {
+        pausedPromptMessage.textContent = t(
+            'popup_paused_prompt_message',
+            undefined,
+            'Resume restores all components.'
+        );
+    }
+    if (resumeButton) {
+        resumeButton.disabled = !(blockingPaused && resumeAvailable);
+        resumeButton.removeAttribute('aria-busy');
     }
     if (zapperEnabledToggle) {
         zapperEnabledToggle.checked = !zapperRulesDisabled;
-        zapperEnabledToggle.disabled = effectiveDisabled;
+        zapperEnabledToggle.disabled = siteDisabled || zapperPaused;
     }
-    setStatus(blockingPaused
-        ? t('popup_status_paused', undefined, 'Paused')
-        : disabled
-            ? t('popup_status_disabled', undefined, 'Disabled')
-            : t('popup_status_active', undefined, 'Active'),
-    effectiveDisabled ? 'disabled' : 'active');
+    setStatus(
+        blockingPaused && !partiallyPaused
+            ? t('popup_status_paused', undefined, 'Paused')
+            : blockingPaused
+                ? t('popup_status_partially_paused', undefined, 'Partially Paused')
+                : siteDisabled
+                    ? t('popup_status_disabled', undefined, 'Disabled')
+                    : t('popup_status_active', undefined, 'Active'),
+        blockingPaused || siteDisabled ? 'disabled' : 'active'
+    );
 
     if (zapperActivate) {
-        zapperActivate.disabled = effectiveDisabled || zapperRulesDisabled;
+        zapperActivate.disabled = siteDisabled || zapperPaused || zapperRulesDisabled;
     }
     if (rulesToggle) {
-        rulesToggle.disabled = false;
+        rulesToggle.disabled = zapperPaused;
     }
     await renderPageUserScriptsPromise;
-    if (pageUserScriptsRenderedDisabled !== effectiveDisabled) {
-        renderPageUserScripts(await pageUserScriptsPromise, effectiveDisabled);
+    if (pageUserScriptsRenderedDisabled !== disabled) {
+        renderPageUserScripts(await pageUserScriptsPromise, disabled);
     }
     currentZapperRules = zapperState.rules;
-    await zapperCountPromise;
+    const zapperCount = await zapperCountPromise;
+    const zapperClear = document.getElementById('zapper-clear');
+    if (zapperClear) zapperClear.disabled = zapperPaused || zapperCount === 0;
     renderUserscriptCommands(contentScriptReachable ? await fetchUserscriptCommands(tab.id) : []);
     if (zapperRulesExpanded) {
         renderZapperRules(currentZapperRules);

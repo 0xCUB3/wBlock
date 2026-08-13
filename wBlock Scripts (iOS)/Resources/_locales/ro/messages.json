@@ -11,9 +11,9 @@
     "message": "Se încarcă…",
     "description": "Popup status shown while loading state is being resolved."
   },
-  "popup_disable_on_site": {
-    "message": "Dezactivează pe acest site",
-    "description": "Label for the site-specific disable toggle in the popup."
+  "popup_enable_on_site": {
+    "message": "Activează pe acest site",
+    "description": "Label for the site-specific enable toggle in the popup."
   },
   "popup_element_zapper": {
     "message": "Eliminator de elemente",
@@ -74,6 +74,10 @@
   "popup_status_paused": {
     "message": "În pauză",
     "description": "Status label indicating blocking is globally paused."
+  },
+  "popup_status_partially_paused": {
+    "message": "Pauză parțială",
+    "description": "Status label indicating that some blocking components are paused."
   },
   "popup_status_active": {
     "message": "Activ",
@@ -218,5 +222,65 @@
   "popup_error_update_userscript": {
     "message": "Failed to update userscript setting.",
     "description": "Error shown when popup fails to update a per-site userscript setting."
+  },
+  "popup_paused_prompt_title": {
+    "message": "Blocarea este întreruptă",
+    "description": "Title shown in the popup when global blocking is paused."
+  },
+  "popup_paused_partial_prompt_title": {
+    "message": "Unele componente de blocare sunt puse pe pauză",
+    "description": "Title shown in the popup when only some blocking components are paused."
+  },
+  "popup_paused_prompt_message": {
+    "message": "Reluarea restabilește toate componentele.",
+    "description": "Prompt explaining how to restore global blocking."
+  },
+  "popup_button_resume_blocking": {
+    "message": "Reia blocarea",
+    "description": "Button that requests the containing app to resume global blocking."
+  },
+  "popup_status_resuming": {
+    "message": "Se reia…",
+    "description": "Transient status shown while global blocking is being resumed."
+  },
+  "popup_status_error": {
+    "message": "Eroare",
+    "description": "Status shown when popup state cannot be loaded."
+  },
+  "popup_error_resume_blocking": {
+    "message": "Blocarea nu a putut fi reluată.",
+    "description": "Error shown when global blocking cannot be resumed."
+  },
+  "popup_error_resume_unavailable": {
+    "message": "Deschide wBlock pentru a relua blocarea. Aplicația trebuie să ruleze.",
+    "description": "Shown when the containing app is unavailable while resuming blocking."
+  },
+  "popup_filter_update_label": {
+    "message": "Filtre",
+    "description": "Section label for the popup filter update action."
+  },
+  "popup_button_update_filters": {
+    "message": "Actualizează filtrele",
+    "description": "Button label for starting a background filter update from the popup."
+  },
+  "popup_status_updating_filters": {
+    "message": "Se actualizează filtrele…",
+    "description": "Compact status shown while filters are updating in the background."
+  },
+  "popup_status_filters_updated": {
+    "message": "Filtre actualizate ($1).",
+    "description": "Success status after filters changed. Placeholder 1 is the number of updated filters."
+  },
+  "popup_status_filters_no_change": {
+    "message": "Filtrele sunt actualizate.",
+    "description": "Status shown when the update found no filter changes."
+  },
+  "popup_error_filter_update": {
+    "message": "Actualizarea filtrelor a eșuat.",
+    "description": "Error status shown when a background filter update fails."
+  },
+  "popup_error_filter_update_start": {
+    "message": "Actualizarea filtrelor nu a putut fi pornită.",
+    "description": "Error shown when the background filter update cannot be started."
   }
 }

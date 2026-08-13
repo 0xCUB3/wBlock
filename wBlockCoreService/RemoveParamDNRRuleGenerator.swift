@@ -402,11 +402,14 @@ public enum RemoveParamDNRRuleGenerator {
             condition.resourceTypes = ["main_frame", "sub_frame"]
         }
 
-        let domains = parseDomainOption(named: "domain", from: optionPairs)
+        guard let domains = parseDomainOption(named: "domain", from: optionPairs),
+              let toDomains = parseDomainOption(named: "to", from: optionPairs)
+        else {
+            return nil
+        }
         if !domains.included.isEmpty { condition.initiatorDomains = domains.included }
         if !domains.excluded.isEmpty { condition.excludedInitiatorDomains = domains.excluded }
 
-        let toDomains = parseDomainOption(named: "to", from: optionPairs)
         if !toDomains.included.isEmpty { condition.requestDomains = toDomains.included }
         if !toDomains.excluded.isEmpty { condition.excludedRequestDomains = toDomains.excluded }
 
@@ -465,18 +468,44 @@ public enum RemoveParamDNRRuleGenerator {
     private static func parseDomainOption(
         named optionName: String,
         from options: [(name: String, value: String?)]
-    ) -> (included: [String], excluded: [String]) {
-        guard let value = options.first(where: { $0.name == optionName })?.value else {
+    ) -> (included: [String], excluded: [String])? {
+        let matchingOptions = options.filter { $0.name == optionName }
+        guard let firstOption = matchingOptions.first else {
             return ([], [])
         }
 
+        guard let firstValue = firstOption.value,
+              let parsed = parseDomainOptionValue(firstValue)
+        else {
+            return nil
+        }
+
+        // Preserve the existing first-option behavior while validating every
+        // duplicate option so a later malformed scope cannot widen the rule.
+        for option in matchingOptions.dropFirst() {
+            guard let value = option.value, parseDomainOptionValue(value) != nil else {
+                return nil
+            }
+        }
+        return parsed
+    }
+
+    private static func parseDomainOptionValue(
+        _ value: String
+    ) -> (included: [String], excluded: [String])? {
+        guard !value.isEmpty else { return nil }
+
+        let rawDomains = value.split(separator: "|", omittingEmptySubsequences: false)
+        guard !rawDomains.isEmpty else { return nil }
+
         var included: [String] = []
         var excluded: [String] = []
-        for rawDomain in value.split(separator: "|", omittingEmptySubsequences: true) {
+        for rawDomain in rawDomains {
             var domain = String(rawDomain).trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            guard !domain.isEmpty else { return nil }
             let isExcluded = domain.hasPrefix("~")
             if isExcluded { domain.removeFirst() }
-            guard isSupportedDomain(domain) else { continue }
+            guard isSupportedDomain(domain) else { return nil }
             if isExcluded {
                 excluded.append(domain)
             } else {

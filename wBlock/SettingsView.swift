@@ -9,6 +9,11 @@ struct SettingsView: View {
     @ObservedObject private var syncManager = CloudSyncManager.shared
     private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
     private static let reportIssueURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new/choose")!
+    private static let developerURL = URL(string: "https://github.com/0xCUB3")!
+    private static let licenseURL = URL(string: "https://www.gnu.org/licenses/gpl-3.0.html")!
+    private static let privacyPolicyURL = URL(string: "https://github.com/0xCUB3/wBlock/blob/main/PRIVACY_POLICY.md")!
+    private static let faqURL = URL(string: "https://github.com/0xCUB3/wBlock#faq")!
+    private static let contactURL = URL(string: "https://discord.gg/5kmuEbwsut")!
     @AppStorage(LogTimeZonePreference.storageKey) private var logTimeZoneIdentifier: String = LogTimeZonePreference.deviceIdentifier
     @State private var nextScheduleLine = String(localized: "Next: Loading…")
     @State private var isOverdue = false
@@ -49,11 +54,11 @@ struct SettingsView: View {
     }
 
     private var footerStatusLine: String {
-        #if os(macOS)
-        return "\(compactStatusLine) · \(launchAgentStatusLine)"
-        #else
-        return compactStatusLine
-        #endif
+        let schedule = String.localizedStringWithFormat(
+            NSLocalizedString("Automatically updating %@", comment: "Auto-update schedule prefix"),
+            compactStatusLine
+        )
+        return schedule
     }
 
     var body: some View {
@@ -204,35 +209,78 @@ struct SettingsView: View {
         )
     }
 
-    @ViewBuilder
-    private var actionsSection: some View {
-        NavigationLink {
-            LogsView()
-        } label: {
-            Label("View Logs", systemImage: "doc.text.magnifyingglass")
-        }
+    private func pauseComponentBinding(_ component: BlockingPauseComponents) -> Binding<Bool> {
+        Binding(
+            get: { filterManager.pausedComponents.contains(component) },
+            set: { newValue in
+                var components = filterManager.pausedComponents
+                if newValue {
+                    components.insert(component)
+                } else {
+                    components.remove(component)
+                }
+                Task { await filterManager.setPausedComponents(components) }
+            }
+        )
+    }
 
-        NavigationLink {
-            SiteSettingsView(filterManager: filterManager)
-        } label: {
-            Label("Site Settings", systemImage: "globe")
+    @ViewBuilder
+    private var advancedSection: some View {
+        Section("Advanced") {
+            logTimestampControls
+
+            NavigationLink {
+                LogsView()
+            } label: {
+                Label("View Logs", systemImage: "doc.text.magnifyingglass")
+            }
+
+            NavigationLink {
+                SiteSettingsView()
+            } label: {
+                Label("Site Settings", systemImage: "globe")
+            }
+
+            NavigationLink {
+                ElementZapperSettingsView(filterManager: filterManager)
+            } label: {
+                Label("Element Zapper", systemImage: "wand.and.stars")
+            }
+
+            backupButtons
+        }
+    }
+
+    private var logTimestampControls: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle("Sync timestamps with device timezone", isOn: usesDeviceTimeZoneBinding)
+            Text("Controls the time zone used when displaying and exporting log timestamps.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .onChangeCompat(of: logTimeZoneIdentifier) { _ in
+            LogDateFormatters.configureIfNeeded()
         }
     }
 
     @ViewBuilder
-    private var actionsFooterButton: some View {
-        HStack {
+    private var helpSection: some View {
+        Section("Help") {
+            Link(destination: Self.faqURL) {
+                Label("FAQ", systemImage: "questionmark.circle")
+            }
+            Link(destination: Self.reportIssueURL) {
+                Label("Report Issues", systemImage: "exclamationmark.triangle")
+            }
+            Link(destination: Self.contactURL) {
+                Label("Contact Us", systemImage: "bubble.left")
+            }
             Button {
                 SafariExtensionSetupSupport.openScriptsExtensionSettings()
             } label: {
                 Label("Open Safari Settings", systemImage: "gear")
             }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-
-            Spacer()
         }
-        .padding(.top, 4)
     }
 
     @ViewBuilder
@@ -269,18 +317,19 @@ struct SettingsView: View {
     @ViewBuilder
     private var autoUpdateSection: some View {
         Section {
-            Toggle("Auto-Update Filters", isOn: autoUpdateToggleBinding)
+            #if os(iOS)
+            Button {
+                filterManager.checkAndEnableFilters(forceReload: true)
+            } label: {
+                Label("Update Now", systemImage: "arrow.triangle.2.circlepath")
+            }
+            .disabled(filterManager.isLoading)
+            #endif
+
+            Toggle("Auto-Update Filters & Userscripts", isOn: autoUpdateToggleBinding)
                 #if os(macOS)
                 .toggleStyle(.switch)
                 #endif
-
-            #if os(macOS)
-            if launchAgentNeedsApproval {
-                Button("Open Login Items") {
-                    AutoUpdateLaunchAgentManager.shared.openLoginItemsSettings()
-                }
-            }
-            #endif
 
             if autoUpdateEnabled {
                 Picker("Update Interval", selection: autoUpdateIntervalBinding) {
@@ -294,7 +343,22 @@ struct SettingsView: View {
                 #endif
             }
         } header: {
-            Text("Filter Auto-Update")
+            #if os(macOS)
+            HStack {
+                Text("Auto-Update")
+                Spacer()
+                Button {
+                    filterManager.checkAndEnableFilters(forceReload: true)
+                } label: {
+                    Label("Update Now", systemImage: "arrow.triangle.2.circlepath")
+                }
+                .buttonStyle(.borderless)
+                .controlSize(.small)
+                .disabled(filterManager.isLoading)
+            }
+            #else
+            Text("Auto-Update")
+            #endif
         } footer: {
             VStack(alignment: .leading, spacing: 2) {
                 if autoUpdateEnabled {
@@ -303,27 +367,51 @@ struct SettingsView: View {
                     Text("Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app.")
                     #endif
                 }
+                #if os(macOS)
+                macOSAutoUpdateDiagnosticsView
+                #endif
             }
         }
     }
 
+    #if os(macOS)
+    @ViewBuilder
+    private var macOSAutoUpdateDiagnosticsView: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text("Background Diagnostics")
+                .fontWeight(.medium)
+            Text("·")
+            Text(launchAgentStatusLine)
+            if launchAgentNeedsApproval {
+                Button("Open Login Items") {
+                    AutoUpdateLaunchAgentManager.shared.openLoginItemsSettings()
+                }
+                .buttonStyle(.link)
+                .controlSize(.small)
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    }
+    #endif
+
     #if os(iOS)
     @ViewBuilder
     private var iOSAutoUpdateDiagnosticsView: some View {
-        DisclosureGroup("Background Diagnostics") {
-            VStack(alignment: .leading, spacing: 8) {
-                backgroundTaskDiagnosticsView(
-                    title: "BGAppRefresh",
-                    diagnostics: autoUpdateDiagnostics.bgAppRefresh
-                )
-                backgroundTaskDiagnosticsView(
-                    title: "BGProcessing",
-                    diagnostics: autoUpdateDiagnostics.bgProcessing
-                )
-                diagnosticDetailView(title: "Foreground Catch-up", detail: foregroundCatchUpDiagnosticsLine)
-            }
-            .padding(.top, 6)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Background Diagnostics")
+                .font(.headline)
+            backgroundTaskDiagnosticsView(
+                title: "BGAppRefresh",
+                diagnostics: autoUpdateDiagnostics.bgAppRefresh
+            )
+            backgroundTaskDiagnosticsView(
+                title: "BGProcessing",
+                diagnostics: autoUpdateDiagnostics.bgProcessing
+            )
+            diagnosticDetailView(title: "Foreground Catch-up", detail: foregroundCatchUpDiagnosticsLine)
         }
+        .padding(.top, 6)
     }
     #endif
 
@@ -414,17 +502,32 @@ struct SettingsView: View {
     private var pauseBlockingSection: some View {
         Section {
             Toggle("Pause Blocking", isOn: pauseBlockingBinding)
-                .disabled(filterManager.isLoading)
+                .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
                 #if os(macOS)
                 .toggleStyle(.switch)
                 #endif
+
+            Group {
+                Toggle("Filters", isOn: pauseComponentBinding(.filters))
+                Toggle("Enabled Userscripts & Userstyles", isOn: pauseComponentBinding(.userScripts))
+                Toggle("Element Zapper", isOn: pauseComponentBinding(.elementZapper))
+            }
+            .padding(.leading, 16)
+            #if os(macOS)
+            .controlSize(.mini)
+            #endif
+            .disabled(
+                !filterManager.isBlockingPaused
+                    || filterManager.isLoading
+                    || filterManager.isApplyInFlight
+            )
         } header: {
             Text("Blocking")
         } footer: {
             Text(
                 filterManager.isBlockingPaused
-                    ? "Blocking is paused. Content blockers are emptied until you turn this back on."
-                    : "Temporarily disable all content blockers without turning them off in Safari Settings."
+                    ? "Pause Blocking is on while any selected component is paused. Resume restores all components."
+                    : "Temporarily pause selected components without changing their enabled settings."
             )
         }
     }
@@ -432,37 +535,21 @@ struct SettingsView: View {
     @ViewBuilder
     private var aboutSection: some View {
         Section("About") {
-            CompatibleLabeledContent("wBlock Version") {
+            CompatibleLabeledContent("Version") {
                 Text(
                     Bundle.main.infoDictionary?["CFBundleShortVersionString"]
                         as? String ?? "Unknown"
                 )
             }
-
-            Link(destination: Self.reportIssueURL) {
-                Label("Report an Issue", systemImage: "ladybug")
+            Link(destination: Self.developerURL) {
+                Label("Developer", systemImage: "person")
             }
-        }
-    }
-
-    @ViewBuilder
-    private var logsSection: some View {
-        Section {
-            Toggle("Sync with device timezone", isOn: usesDeviceTimeZoneBinding)
-            if !logTimeZoneIdentifier.isEmpty {
-                Picker("Time zone", selection: $logTimeZoneIdentifier) {
-                    ForEach(sortedTimeZoneIdentifiers, id: \.self) { identifier in
-                        Text(timeZoneDisplayName(for: identifier)).tag(identifier)
-                    }
-                }
+            Link(destination: Self.licenseURL) {
+                Label("GPL-3.0 License", systemImage: "doc.text")
             }
-        } header: {
-            Text("Log Timestamps")
-        } footer: {
-            Text("Controls the time zone used when displaying and exporting log timestamps.")
-        }
-        .onChangeCompat(of: logTimeZoneIdentifier) { _ in
-            LogDateFormatters.configureIfNeeded()
+            Link(destination: Self.privacyPolicyURL) {
+                Label("Privacy Policy", systemImage: "hand.raised")
+            }
         }
     }
 
@@ -480,30 +567,20 @@ struct SettingsView: View {
         )
     }
 
-    private var sortedTimeZoneIdentifiers: [String] {
-        TimeZone.knownTimeZoneIdentifiers.sorted()
-    }
-
-    private func timeZoneDisplayName(for identifier: String) -> String {
-        let name = TimeZone.localizedName(for: identifier) ?? identifier
-        return "\(name) (\(identifier))"
-    }
-
     @ViewBuilder
     private var dangerZoneSection: some View {
         Section("Danger Zone") {
             Button(role: .destructive) {
                 showingRestartConfirmation = true
             } label: {
-                HStack {
-                    if isRestarting {
-                        ProgressView()
-                            .progressViewStyle(.circular)
-                            .padding(.trailing, 8)
-                    }
-                    Text(isRestarting ? "Restarting…" : "Restart Onboarding")
-                }
+                Label(
+                    isRestarting ? "Restarting…" : "Restart Onboarding",
+                    systemImage: isRestarting ? "hourglass" : "arrow.counterclockwise"
+                )
             }
+            .buttonStyle(.bordered)
+            .tint(.red)
+            .controlSize(.small)
             .disabled(isRestarting)
         }
     }
@@ -515,18 +592,10 @@ struct SettingsView: View {
             List {
                 pauseBlockingSection
 
-                Section {
-                    actionsSection
-                    backupButtons
-                } header: {
-                    Text("Actions")
-                } footer: {
-                    actionsFooterButton
-                }
-
                 autoUpdateSection
                 syncSection
-                logsSection
+                advancedSection
+                helpSection
                 aboutSection
                 dangerZoneSection
             }
@@ -538,18 +607,10 @@ struct SettingsView: View {
             Form {
                 pauseBlockingSection
 
-                Section {
-                    actionsSection
-                    backupButtons
-                } header: {
-                    Text("Actions")
-                } footer: {
-                    actionsFooterButton
-                }
-
                 autoUpdateSection
                 syncSection
-                logsSection
+                advancedSection
+                helpSection
                 aboutSection
                 dangerZoneSection
             }
@@ -667,17 +728,6 @@ extension SettingsView {
 
     // MARK: - User Defaults / Onboarding
 
-    private func resetUserDefaults() {
-        if let suiteDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) {
-            suiteDefaults.removePersistentDomain(forName: GroupIdentifier.shared.value)
-            suiteDefaults.synchronize()
-        }
-        if let bundleID = Bundle.main.bundleIdentifier {
-            UserDefaults.standard.removePersistentDomain(forName: bundleID)
-        }
-        UserDefaults.standard.synchronize()
-    }
-
     private func restartOnboarding() {
         guard !isRestarting else { return }
         isRestarting = true
@@ -688,12 +738,7 @@ extension SettingsView {
             defer {
                 Task { @MainActor in isRestarting = false }
             }
-            resetUserDefaults()
-            await ProtobufDataManager.shared.resetToDefaultData()
-            await ProtobufDataManager.shared.setHasCompletedOnboarding(false)
-            await filterManager.resetForOnboarding()
-            await UserScriptManager.shared.simulateFreshInstall()
-            await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
+            await filterManager.completeResetForOnboarding()
             await MainActor.run {
                 nextScheduleLine = String(localized: "Next: Loading…")
             }

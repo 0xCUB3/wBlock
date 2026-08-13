@@ -15,13 +15,13 @@ internal import SwiftProtobuf
 // incompatible with the version of SwiftProtobuf to which you are linking.
 // Please ensure that you are building against the same version of the API
 // that was used to generate this file.
-fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAPIVersionCheck {
+fileprivate nonisolated struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAPIVersionCheck {
   struct _2: SwiftProtobuf.ProtobufAPIVersion_2 {}
   typealias Version = _2
 }
 
 /// Filter list categories
-enum Wblock_Data_FilterListCategory: SwiftProtobuf.Enum, Swift.CaseIterable {
+nonisolated enum Wblock_Data_FilterListCategory: SwiftProtobuf.Enum, Swift.CaseIterable {
   typealias RawValue = Int
   case unspecified // = 0
   case all // = 1
@@ -96,7 +96,7 @@ enum Wblock_Data_FilterListCategory: SwiftProtobuf.Enum, Swift.CaseIterable {
 }
 
 /// Platform enumeration
-enum Wblock_Data_Platform: SwiftProtobuf.Enum, Swift.CaseIterable {
+nonisolated enum Wblock_Data_Platform: SwiftProtobuf.Enum, Swift.CaseIterable {
   typealias RawValue = Int
   case unspecified // = 0
   case macos // = 1
@@ -135,7 +135,7 @@ enum Wblock_Data_Platform: SwiftProtobuf.Enum, Swift.CaseIterable {
 }
 
 /// Main data container for all app data
-struct Wblock_Data_AppData: @unchecked Sendable {
+nonisolated struct Wblock_Data_AppData: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -218,7 +218,7 @@ struct Wblock_Data_AppData: @unchecked Sendable {
 }
 
 /// Reusable wrapper for a list of hostnames (proto3 maps cannot hold repeated values)
-struct Wblock_Data_HostList: Sendable {
+nonisolated struct Wblock_Data_HostList: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -231,7 +231,7 @@ struct Wblock_Data_HostList: Sendable {
 }
 
 /// App-wide settings
-struct Wblock_Data_AppSettings: Sendable {
+nonisolated struct Wblock_Data_AppSettings: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -273,7 +273,7 @@ struct Wblock_Data_AppSettings: Sendable {
 }
 
 /// Filter list data structure
-struct Wblock_Data_FilterListData: Sendable {
+nonisolated struct Wblock_Data_FilterListData: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -315,7 +315,7 @@ struct Wblock_Data_FilterListData: Sendable {
 }
 
 /// Userscript data structure
-struct Wblock_Data_UserScriptData: @unchecked Sendable {
+nonisolated struct Wblock_Data_UserScriptData: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -436,6 +436,20 @@ struct Wblock_Data_UserScriptData: @unchecked Sendable {
     set {_uniqueStorage()._isUserStyle = newValue}
   }
 
+  var category: Wblock_Data_FilterListCategory {
+    get {_storage._category}
+    set {_uniqueStorage()._category = newValue}
+  }
+
+  var localImportIdentity: String {
+    get {_storage._localImportIdentity ?? String()}
+    set {_uniqueStorage()._localImportIdentity = newValue}
+  }
+  /// Returns true if `localImportIdentity` has been explicitly set.
+  var hasLocalImportIdentity: Bool {_storage._localImportIdentity != nil}
+  /// Clears the value of `localImportIdentity`. Subsequent reads from it will return its default value.
+  mutating func clearLocalImportIdentity() {_uniqueStorage()._localImportIdentity = nil}
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -444,7 +458,7 @@ struct Wblock_Data_UserScriptData: @unchecked Sendable {
 }
 
 /// Whitelist/disabled sites data
-struct Wblock_Data_WhitelistData: Sendable {
+nonisolated struct Wblock_Data_WhitelistData: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -461,7 +475,7 @@ struct Wblock_Data_WhitelistData: Sendable {
 }
 
 /// Rule count tracking data
-struct Wblock_Data_RuleCountData: Sendable {
+nonisolated struct Wblock_Data_RuleCountData: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -480,7 +494,7 @@ struct Wblock_Data_RuleCountData: Sendable {
 }
 
 /// Performance and timing data
-struct Wblock_Data_PerformanceData: Sendable {
+nonisolated struct Wblock_Data_PerformanceData: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -511,7 +525,7 @@ struct Wblock_Data_PerformanceData: Sendable {
 }
 
 /// Per-host element zapper rule list
-struct Wblock_Data_ZapperRuleList: Sendable {
+nonisolated struct Wblock_Data_ZapperRuleList: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -529,7 +543,7 @@ struct Wblock_Data_ZapperRuleList: Sendable {
 }
 
 /// Extension-specific data for Safari extensions
-struct Wblock_Data_ExtensionData: Sendable {
+nonisolated struct Wblock_Data_ExtensionData: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -549,7 +563,7 @@ struct Wblock_Data_ExtensionData: Sendable {
 }
 
 /// Tab-specific blocking data
-struct Wblock_Data_TabData: Sendable {
+nonisolated struct Wblock_Data_TabData: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -568,7 +582,7 @@ struct Wblock_Data_TabData: Sendable {
 }
 
 /// Auto-update metadata and scheduling
-struct Wblock_Data_BackgroundTaskDiagnostics: Sendable {
+nonisolated struct Wblock_Data_BackgroundTaskDiagnostics: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -598,7 +612,7 @@ struct Wblock_Data_BackgroundTaskDiagnostics: Sendable {
   init() {}
 }
 
-struct Wblock_Data_SilentPushDiagnostics: Sendable {
+nonisolated struct Wblock_Data_SilentPushDiagnostics: Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -614,7 +628,7 @@ struct Wblock_Data_SilentPushDiagnostics: Sendable {
   init() {}
 }
 
-struct Wblock_Data_AutoUpdateMetadata: @unchecked Sendable {
+nonisolated struct Wblock_Data_AutoUpdateMetadata: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -717,17 +731,17 @@ struct Wblock_Data_AutoUpdateMetadata: @unchecked Sendable {
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
-fileprivate let _protobuf_package = "wblock.data"
+fileprivate nonisolated let _protobuf_package = "wblock.data"
 
-extension Wblock_Data_FilterListCategory: SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Wblock_Data_FilterListCategory: SwiftProtobuf._ProtoNameProviding {
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0FILTER_LIST_CATEGORY_UNSPECIFIED\0\u{1}FILTER_LIST_CATEGORY_ALL\0\u{1}FILTER_LIST_CATEGORY_ADS\0\u{1}FILTER_LIST_CATEGORY_PRIVACY\0\u{1}FILTER_LIST_CATEGORY_SECURITY\0\u{1}FILTER_LIST_CATEGORY_MULTIPURPOSE\0\u{1}FILTER_LIST_CATEGORY_ANNOYANCES\0\u{1}FILTER_LIST_CATEGORY_EXPERIMENTAL\0\u{1}FILTER_LIST_CATEGORY_CUSTOM\0\u{1}FILTER_LIST_CATEGORY_FOREIGN\0\u{1}FILTER_LIST_CATEGORY_SCRIPTS\0\u{1}FILTER_LIST_CATEGORY_ALLOWLISTS\0")
 }
 
-extension Wblock_Data_Platform: SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Wblock_Data_Platform: SwiftProtobuf._ProtoNameProviding {
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0PLATFORM_UNSPECIFIED\0\u{1}PLATFORM_MACOS\0\u{1}PLATFORM_IOS\0")
 }
 
-extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".AppData"
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}settings\0\u{3}filter_lists\0\u{3}user_scripts\0\u{1}whitelist\0\u{3}rule_counts\0\u{1}performance\0\u{3}auto_update\0\u{3}extension_data\0\u{3}user_script_disabled_hosts\0")
 
@@ -853,7 +867,7 @@ extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
   }
 }
 
-extension Wblock_Data_HostList: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Wblock_Data_HostList: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".HostList"
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}hosts\0")
 
@@ -883,7 +897,7 @@ extension Wblock_Data_HostList: SwiftProtobuf.Message, SwiftProtobuf._MessageImp
   }
 }
 
-extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".AppSettings"
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}has_completed_onboarding\0\u{3}selected_blocking_level\0\u{3}last_update_check\0\u{3}show_advanced_features\0\u{3}app_version\0\u{3}last_terminology_sanitization_version\0\u{3}has_enabled_content_blockers\0\u{3}has_enabled_platform_extension\0\u{3}has_set_all_websites_permission\0\u{3}userscript_show_enabled_only\0\u{3}excluded_default_userscript_urls\0\u{3}is_foreign_filters_expanded\0\u{3}is_badge_counter_enabled\0")
 
@@ -973,7 +987,7 @@ extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._Message
   }
 }
 
-extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".FilterListData"
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{1}category\0\u{3}is_selected\0\u{1}description\0\u{1}version\0\u{3}source_rule_count\0\u{3}last_updated\0\u{3}is_custom\0\u{3}local_file_path\0")
 
@@ -1057,9 +1071,9 @@ extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftProtobuf._Mess
   }
 }
 
-extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".UserScriptData"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{3}is_enabled\0\u{1}description\0\u{1}version\0\u{1}matches\0\u{3}exclude_matches\0\u{1}includes\0\u{1}excludes\0\u{3}run_at\0\u{3}inject_into\0\u{1}grant\0\u{3}is_local\0\u{3}update_url\0\u{3}download_url\0\u{1}content\0\u{3}last_updated\0\u{3}updates_automatically\0\u{3}is_user_style\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{3}is_enabled\0\u{1}description\0\u{1}version\0\u{1}matches\0\u{3}exclude_matches\0\u{1}includes\0\u{1}excludes\0\u{3}run_at\0\u{3}inject_into\0\u{1}grant\0\u{3}is_local\0\u{3}update_url\0\u{3}download_url\0\u{1}content\0\u{3}last_updated\0\u{3}updates_automatically\0\u{3}is_user_style\0\u{1}category\0\u{3}local_import_identity\0")
 
   fileprivate class _StorageClass {
     var _id: String = String()
@@ -1082,6 +1096,8 @@ extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._Mess
     var _lastUpdated: Int64 = 0
     var _updatesAutomatically: Bool? = nil
     var _isUserStyle: Bool = false
+    var _category: Wblock_Data_FilterListCategory = .unspecified
+    var _localImportIdentity: String? = nil
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -1112,6 +1128,8 @@ extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._Mess
       _lastUpdated = source._lastUpdated
       _updatesAutomatically = source._updatesAutomatically
       _isUserStyle = source._isUserStyle
+      _category = source._category
+      _localImportIdentity = source._localImportIdentity
     }
   }
 
@@ -1150,6 +1168,8 @@ extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._Mess
         case 18: try { try decoder.decodeSingularInt64Field(value: &_storage._lastUpdated) }()
         case 19: try { try decoder.decodeSingularBoolField(value: &_storage._updatesAutomatically) }()
         case 20: try { try decoder.decodeSingularBoolField(value: &_storage._isUserStyle) }()
+        case 21: try { try decoder.decodeSingularEnumField(value: &_storage._category) }()
+        case 22: try { try decoder.decodeSingularStringField(value: &_storage._localImportIdentity) }()
         default: break
         }
       }
@@ -1222,6 +1242,12 @@ extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._Mess
       if _storage._isUserStyle != false {
         try visitor.visitSingularBoolField(value: _storage._isUserStyle, fieldNumber: 20)
       }
+      if _storage._category != .unspecified {
+        try visitor.visitSingularEnumField(value: _storage._category, fieldNumber: 21)
+      }
+      try { if let v = _storage._localImportIdentity {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 22)
+      } }()
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1251,6 +1277,8 @@ extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._Mess
         if _storage._lastUpdated != rhs_storage._lastUpdated {return false}
         if _storage._updatesAutomatically != rhs_storage._updatesAutomatically {return false}
         if _storage._isUserStyle != rhs_storage._isUserStyle {return false}
+        if _storage._category != rhs_storage._category {return false}
+        if _storage._localImportIdentity != rhs_storage._localImportIdentity {return false}
         return true
       }
       if !storagesAreEqual {return false}
@@ -1260,7 +1288,7 @@ extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._Mess
   }
 }
 
-extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".WhitelistData"
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}disabled_sites\0\u{3}last_updated\0\u{3}filter_disabled_sites\0")
 
@@ -1300,7 +1328,7 @@ extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftProtobuf._Messa
   }
 }
 
-extension Wblock_Data_RuleCountData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Wblock_Data_RuleCountData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".RuleCountData"
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}last_rule_count\0\u{3}rule_counts_by_category\0\u{3}categories_approaching_limit\0\u{3}last_updated\0")
 
@@ -1345,7 +1373,7 @@ extension Wblock_Data_RuleCountData: SwiftProtobuf.Message, SwiftProtobuf._Messa
   }
 }
 
-extension Wblock_Data_PerformanceData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Wblock_Data_PerformanceData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".PerformanceData"
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}last_conversion_time\0\u{3}last_reload_time\0\u{3}last_fast_update_time\0\u{3}fast_update_count\0\u{3}source_rules_count\0\u{3}conversion_stage_description\0\u{3}current_filter_name\0\u{3}processed_filters_count\0\u{3}total_filters_count\0\u{3}current_platform\0")
 
@@ -1420,7 +1448,7 @@ extension Wblock_Data_PerformanceData: SwiftProtobuf.Message, SwiftProtobuf._Mes
   }
 }
 
-extension Wblock_Data_ZapperRuleList: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Wblock_Data_ZapperRuleList: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ZapperRuleList"
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}selectors\0\u{3}pending_deletions\0\u{1}disabled\0")
 
@@ -1460,7 +1488,7 @@ extension Wblock_Data_ZapperRuleList: SwiftProtobuf.Message, SwiftProtobuf._Mess
   }
 }
 
-extension Wblock_Data_ExtensionData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Wblock_Data_ExtensionData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ExtensionData"
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}tab_blocked_requests\0\u{3}zapper_rules\0\u{3}last_updated\0\u{3}zapper_rules_by_host\0")
 
@@ -1505,7 +1533,7 @@ extension Wblock_Data_ExtensionData: SwiftProtobuf.Message, SwiftProtobuf._Messa
   }
 }
 
-extension Wblock_Data_TabData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Wblock_Data_TabData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".TabData"
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}blocked_count\0\u{3}is_disabled\0\u{1}host\0\u{3}last_updated\0")
 
@@ -1550,7 +1578,7 @@ extension Wblock_Data_TabData: SwiftProtobuf.Message, SwiftProtobuf._MessageImpl
   }
 }
 
-extension Wblock_Data_BackgroundTaskDiagnostics: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Wblock_Data_BackgroundTaskDiagnostics: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".BackgroundTaskDiagnostics"
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}last_registration_time\0\u{3}last_registration_result\0\u{3}last_registration_error\0\u{3}last_schedule_attempt_time\0\u{3}last_schedule_result\0\u{3}last_schedule_error\0\u{3}last_start_time\0\u{3}last_completion_time\0\u{3}last_completion_result\0\u{3}last_expiration_time\0")
 
@@ -1625,7 +1653,7 @@ extension Wblock_Data_BackgroundTaskDiagnostics: SwiftProtobuf.Message, SwiftPro
   }
 }
 
-extension Wblock_Data_SilentPushDiagnostics: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Wblock_Data_SilentPushDiagnostics: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".SilentPushDiagnostics"
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}last_received_time\0\u{3}last_completion_time\0\u{3}last_result\0")
 
@@ -1665,7 +1693,7 @@ extension Wblock_Data_SilentPushDiagnostics: SwiftProtobuf.Message, SwiftProtobu
   }
 }
 
-extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+nonisolated extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".AutoUpdateMetadata"
   static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}enabled\0\u{3}interval_hours\0\u{3}last_check_time\0\u{3}last_successful_time\0\u{3}next_eligible_time\0\u{3}force_next\0\u{3}is_running\0\u{3}running_since_timestamp\0\u{3}filter_etags\0\u{3}filter_last_modified\0\u{4}\u{2}bg_app_refresh\0\u{3}bg_processing\0\u{3}silent_push\0\u{3}last_foreground_catch_up_time\0\u{3}last_foreground_catch_up_reason\0\u{c}\u{b}\u{1}")
 

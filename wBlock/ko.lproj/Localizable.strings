@@ -189,7 +189,7 @@
 "Calculated source rule count for filter" = "필터의 소스 규칙 수를 계산했습니다";
 "Cancel" = "취소";
 "Category" = "카테고리";
-"Changes take full effect after the next apply." = "변경 사항은 다음 적용 후 완전히 반영됩니다.";
+"Element Zapper changes take full effect after the next apply." = "요소 제거기의 변경 사항은 다음 적용 후 완전히 적용됩니다.";
 "Check for Updates" = "업데이트 확인";
 "Checked %@" = "%@ 확인됨";
 "Checked %@ ago" = "%@ 전 확인됨";
@@ -290,6 +290,7 @@
 "Edit Name" = "목록 이름 변경";
 "Edit User List" = "목록 편집";
 "Editor" = "Editor";
+"Use Editor" = "편집기 사용";
 "Element zapper" = "요소 제거기";
 "Enable" = "활성화";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "'wBlock Scripts' 활성화 → 모든 웹 사이트에서 항상 허용";
@@ -406,7 +407,7 @@
 "go" = "이동";
 "Go to line" = "줄로 이동";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"Hagezi Pro Mini" = "Hagezi Pro Mini";
+"HaGeZi Pro Mini" = "HaGeZi Pro Mini";
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "필터 규칙이 놓친 고급 광고 차단 방지 사례를 처리합니다.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "페이지 내 팝업, 배너 및 기타 원치 않는 페이지 요소를 숨깁니다.";
@@ -437,6 +438,7 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "wBlock이 이름과 URL 패턴을 읽을 수 있도록 // ==UserScript== 메타데이터 블록(또는 유저스타일의 경우 /* ==UserStyle== */)을 포함하세요.";
 "IndianList" = "IndianList";
 "Info" = "정보";
+"Integrated" = "통합 기능";
 "Info.plist missing" = "Info.plist가 없습니다";
 "Initialized with %d filter list(s)." = "%d 필터 목록으로 초기화되었습니다.";
 "International" = "국제";
@@ -465,7 +467,6 @@
 "Loading script metadata…" = "스크립트 메타데이터 불러오는 중…";
 "Loading userscripts…" = "유저스크립트 불러오는 중…";
 "Local Import" = "로컬 가져오기";
-"Log Timestamps" = "로그 타임스탬프";
 "Logs" = "로그";
 "Logs cleared" = "로그를 지웠습니다";
 "Logs will appear here as the app runs" = "앱이 실행되면 여기에 로그가 표시됩니다";
@@ -542,6 +543,9 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "직접 .user.js 링크를 붙여넣으세요. wBlock이 다운로드 및 설치를 진행합니다.";
 "Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "직접 .user.js, .js 또는 .user.css 링크를 붙여넣으세요. wBlock이 다운로드하고 설치합니다.";
 "Pause Blocking" = "차단 일시정지";
+"Enabled Userscripts & Userstyles" = "활성화된 유저스크립트 및 유저스타일";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "선택한 구성 요소 중 하나라도 일시정지되면 차단 일시정지가 켜집니다. 재개하면 모든 구성 요소가 복원됩니다.";
+"Temporarily pause selected components without changing their enabled settings." = "활성화 설정을 변경하지 않고 선택한 구성 요소를 일시적으로 일시정지합니다.";
 "Pausing blocking..." = "차단을 일시정지하는 중…";
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
@@ -605,6 +609,7 @@
 "Report an Issue" = "문제 신고";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "유저스크립트, 고급 광고 차단, 클리너 기능에 필요합니다";
 "Required for YouTube ad blocking and much more" = "YouTube 광고 차단 및 기타 기능에 필요함";
+"The selected file is too large. Maximum size is 10 MB." = "선택한 파일이 너무 큽니다. 최대 크기는 10MB입니다.";
 "Requirements" = "요구 사항";
 "Reset Site Settings" = "사이트 설정 재설정";
 "Resetting…" = "재설정 중...";
@@ -704,7 +709,7 @@
 "Sync across devices" = "여러 기기에서 동기화";
 "Sync Now" = "지금 동기화";
 "Sync settings across devices" = "기기 간 설정 동기화";
-"Sync with device timezone" = "기기 시간대와 동기화";
+"Sync timestamps with device timezone" = "타임스탬프를 기기 시간대와 동기화";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "필터 선택, 사용자 지정 목록, 유저스크립트, 허용 목록을 기기 간에 동기화하세요.";
 "Sync: Checking…" = "동기화: 확인 중…";
 "Sync: Downloading…" = "동기화: 다운로드 중…";
@@ -751,7 +756,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "이 작업은 모든 필터, 사용자 스크립트, 설정을 제거한 다음 온보딩 흐름을 다시 시작합니다.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "현재 필터 선택, 허용 목록, 요소 제거 규칙이 백업된 설정으로 대체됩니다.";
 "This will reset all filters, userscripts, and preferences." = "모든 필터, 유저스크립트 및 환경설정이 초기화됩니다.";
-"Time zone" = "시간대";
 "Timed out" = "시간 초과";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "제목";
@@ -770,6 +774,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "사용할 수 없음";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
 "Undo" = "실행 취소";
+"Redo" = "다시 실행";
+"Element Zapper" = "요소 제거기";
+"No Element Zapper Rules" = "요소 제거 규칙 없음";
 "Update" = "업데이트";
 "Update & Apply" = "업데이트 및 적용";
 "Update Filters" = "Update Filters";
@@ -811,6 +818,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Version \\(filter.version)" = "버전 \\(filter.version)";
 "Version \\(script.version)" = "버전 \\(script.version)";
 "Vietnamese adblock filter list." = "베트남어 광고 차단 필터 목록.";
+"Delete Script" = "스크립트 삭제";
+"Delete Style" = "스타일 삭제";
+"Edit Content" = "콘텐츠 편집";
+"Edit Rules" = "규칙 편집";
+"View Rules" = "규칙 보기";
 "View Content" = "콘텐츠 보기";
 "View Logs" = "로그 보기";
 "Waiting" = "대기 중";
@@ -831,11 +843,28 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "iCloud에서 기존 wBlock 구성(\\(remoteConfigUpdatedAtText))을 찾았습니다. 초기 설정을 건너뛰고 해당 구성을 사용할 수 있습니다.";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "iCloud에서 기존 wBlock 구성을 찾았습니다. 초기 설정을 건너뛰고 해당 구성을 사용할 수 있습니다.";
 "Web extension %@" = "웹 확장 %@";
+"Blocks advertisements and other promotional page elements." = "광고 및 기타 홍보성 페이지 요소를 차단합니다.";
+"Blocks trackers, analytics, and other privacy-invasive requests." = "추적기, 분석 도구 및 개인정보를 침해하는 요청을 차단합니다.";
+"Blocks malicious URLs, phishing pages, and unwanted software." = "악성 URL, 피싱 페이지 및 원치 않는 소프트웨어를 차단합니다.";
+"Combines broad ad-blocking and tracking protection in one list." = "광범위한 광고 차단과 추적 방지를 하나의 목록으로 결합합니다.";
+"Contains filter lists that you added or imported yourself." = "직접 추가하거나 가져온 필터 목록을 포함합니다.";
+"Get Started" = "시작하기";
+"No default filters" = "기본 필터 없음";
+"Organizes userscripts and userstyles added to wBlock." = "wBlock에 추가한 유저스크립트와 유저스타일을 정리합니다.";
+"Provides newer rules and fixes that are still being tested." = "아직 테스트 중인 최신 규칙과 수정 사항을 제공합니다.";
+"Recommended Filters" = "추천 필터";
+"Removes cookie notices, pop-ups, banners, and other distracting elements." = "쿠키 알림, 팝업, 배너 및 기타 방해 요소를 제거합니다.";
+"Reset to Default" = "기본값으로 재설정";
+"Shows all filter lists across every category." = "모든 카테고리의 필터 목록을 표시합니다.";
+"Adds rules tailored to websites and languages from specific regions." = "특정 지역의 웹사이트와 언어에 맞춘 규칙을 추가합니다.";
+"The end of Safari ad-blocking B.S." = "Safari 광고 차단의 말도 안 되는 문제를 끝내세요";
 "Welcome to wBlock!" = "wBlock에 오신 것을 환영합니다!";
 "Whitelist" = "허용 목록";
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "여기에서 사이트를 예외로 등록하거나, Safari의 wBlock 팝업에서 사이트별 유저스크립트와 요소 제거기 규칙을 조정하세요.";
 "Whitelisted" = "예외 등록됨";
 "Wrap Lines" = "줄 바꿈";
+"On" = "켬";
+"Off" = "끔";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "지역 필터는 나중에 설정에서 언제든지 추가할 수 있습니다.";
@@ -850,3 +879,75 @@ To re-enable these filters, disable other large filters and apply changes again.
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 자동 업데이트: 지금 실행 대기 (다음 트리거 시 실행)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 자동 업데이트: 다음까지 %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 자동 업데이트: 아직 실행된 적 없음 (간격=%dh)";
+
+/* Language picker */
+"Selected" = "선택됨";
+"Search languages" = "언어 검색";
+
+"Built-in" = "기본 제공";
+
+/* Filter catalog additions */
+"Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
+"Adblock Warning Removal List" = "Adblock Warning Removal List";
+"Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
+"Stevo's AI Blocklist" = "Stevo's AI Blocklist";
+"AdGuard Allowlist" = "AdGuard Allowlist";
+"Blocks tracking pixels and other mail tracking techniques." = "추적 픽셀 및 기타 메일 추적 기술을 차단합니다.";
+"Allows sites and resources that should not be blocked." = "차단하지 않아야 하는 사이트와 리소스를 허용합니다.";
+
+
+/* Auto-update controls */
+"Auto-Update" = "자동 업데이트";
+"Auto-Update Filters & Userscripts" = "필터 및 사용자 스크립트 자동 업데이트";
+"Update Now" = "지금 업데이트";
+"Automatically updating %@" = "자동 업데이트 %@";
+
+/* Add mode controls */
+"Text" = "텍스트";
+"Choose File" = "파일 선택";
+"Change File" = "파일 변경";
+"Local imports won't auto-update; re-import to replace." = "로컬 가져오기는 자동으로 업데이트되지 않습니다. 교체하려면 다시 가져오세요.";
+"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra는 Twitch 광고를 차단하고 복잡한 안티 광고 차단 사례를 처리합니다.";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "필수 필터를 비활성화할까요?";
+"Replace Existing Content?" = "기존 콘텐츠를 바꿀까요?";
+"Clear Element Zapper Rules?" = "요소 제거기 규칙을 지울까요?";
+"Clear All" = "모두 지우기";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "이 추천 필터는 wBlock의 필수 보호 기능입니다. 비활성화하면 차단 범위가 줄어들 수 있습니다.";
+"Pasting will replace the existing editor content." = "붙여넣으면 편집기의 기존 내용이 바뀝니다.";
+"Pasting will replace the existing content." = "붙여넣으면 기존 내용이 바뀝니다.";
+"This removes all saved element zapper rules from every site." = "모든 사이트에서 저장된 Element Zapper 규칙을 삭제합니다.";
+"Clear Element Zapper Rules" = "Element Zapper 규칙 지우기";
+"Advanced" = "고급";
+"Help" = "도움말";
+"FAQ" = "자주 묻는 질문";
+"Report Issues" = "문제 신고";
+"Contact Us" = "문의하기";
+"Version" = "버전";
+"Developer" = "개발자";
+"GPL-3.0 License" = "GPL-3.0 라이선스";
+"Privacy Policy" = "개인정보 처리방침";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "유효한 http:// 또는 https:// URL을 사용하세요";
+"Include a host name" = "호스트 이름을 포함하세요";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = ".js, .mjs 또는 .cjs로 끝나는 Userscript URL은 사용하지 마세요";
+"wBlock will fetch and enable the filter list automatically" = "wBlock이 필터 목록을 자동으로 가져와 활성화합니다";
+
+/* Issue 508 UI follow-up */
+"Starts with http:// or https://" = "http:// 또는 https://로 시작";
+"Ends with .js, .user.js, or .user.css" = ".js, .user.js 또는 .user.css로 끝남";
+"Hosted on a trusted source" = "신뢰할 수 있는 소스에서 호스팅됨";
+
+"The file must include userscript or userstyle metadata." = "파일에는 사용자 스크립트 또는 사용자 스타일 메타데이터가 포함되어야 합니다.";
+
+"Failed to clear downloaded custom filter state; apply again to retry." = "다운로드한 사용자 지정 필터 상태를 지우지 못했습니다. 다시 적용하여 재시도하세요.";
+"Failed to resume blocking." = "차단을 재개하지 못했습니다.";
+/* Userscript display categories */
+"Functionality" = "기능";
+"Appearance" = "모양";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "광고, 광고 차단 방지 조치 또는 원치 않는 페이지 동작을 차단하는 사용자 스크립트입니다.";
+"Userscripts and scripts that add or restore useful website functionality." = "웹사이트의 유용한 기능을 추가하거나 복원하는 사용자 스크립트입니다.";
+"Userstyles and scripts that change the appearance of websites." = "웹사이트의 모양을 변경하는 사용자 스타일과 스크립트입니다.";
+"Custom, remote, and local scripts that do not have a more specific display category." = "더 구체적인 표시 카테고리가 없는 사용자 지정, 원격 및 로컬 스크립트입니다.";

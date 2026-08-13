@@ -189,7 +189,7 @@
 "Calculated source rule count for filter" = "已計算過濾器的來源規則數量";
 "Cancel" = "取消";
 "Category" = "分類";
-"Changes take full effect after the next apply." = "變更會在下次套用後完全生效。";
+"Element Zapper changes take full effect after the next apply." = "元素隱藏工具的更改會在下次套用後完全生效。";
 "Check for Updates" = "檢查更新";
 "Checked %@" = "已檢查 %@";
 "Checked %@ ago" = "%@ 前檢查";
@@ -290,6 +290,7 @@
 "Edit Name" = "重新命名清單";
 "Edit User List" = "編輯清單";
 "Editor" = "Editor";
+"Use Editor" = "使用編輯器";
 "Element zapper" = "元素消除器";
 "Enable" = "啟用";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "啟用「wBlock Scripts」→ 在所有網站上一律允許";
@@ -406,7 +407,7 @@
 "go" = "跳至";
 "Go to line" = "跳至行";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"Hagezi Pro Mini" = "Hagezi Pro Mini";
+"HaGeZi Pro Mini" = "HaGeZi Pro Mini";
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "處理過濾規則遺漏的高級反廣告攔截案例。";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "隱藏頁內彈出視窗、橫幅和其他不必要的頁面元素。";
@@ -437,6 +438,7 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "包含 // ==UserScript== 中繼資料區塊（或用於使用者樣式的 /* ==UserStyle== */），以便 wBlock 讀取名稱和 URL 模式。";
 "IndianList" = "IndianList";
 "Info" = "資訊";
+"Integrated" = "整合功能";
 "Info.plist missing" = "缺少 Info.plist";
 "Initialized with %d filter list(s)." = "使用 %d 過濾器清單進行初始化。";
 "International" = "國際";
@@ -465,7 +467,6 @@
 "Loading script metadata…" = "正在載入腳本中繼資料…";
 "Loading userscripts…" = "正在載入使用者腳本…";
 "Local Import" = "本機匯入";
-"Log Timestamps" = "日誌時間戳";
 "Logs" = "日誌";
 "Logs cleared" = "日誌已清除";
 "Logs will appear here as the app runs" = "應用程式執行時，日誌會顯示在這裡";
@@ -542,6 +543,9 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "貼上直接的 .user.js 連結。wBlock 會為你下載並安裝。";
 "Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "貼上直接的 .user.js、.js 或 .user.css 連結。wBlock 會為你下載並安裝。";
 "Pause Blocking" = "暫停封鎖";
+"Enabled Userscripts & Userstyles" = "已啟用的使用者腳本與樣式";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "只要有選取的元件處於暫停狀態，暫停封鎖就會開啟。恢復後會還原所有元件。";
+"Temporarily pause selected components without changing their enabled settings." = "暫時暫停選取的元件，但不變更其啟用設定。";
 "Pausing blocking..." = "正在暫停封鎖…";
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
@@ -605,6 +609,7 @@
 "Report an Issue" = "回報問題";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "使用者腳本、進階廣告封鎖與清理功能所必需";
 "Required for YouTube ad blocking and much more" = "YouTube 廣告封鎖及更多功能所需";
+"The selected file is too large. Maximum size is 10 MB." = "所選檔案太大。最大大小為 10 MB。";
 "Requirements" = "需求";
 "Reset Site Settings" = "重置網站設定";
 "Resetting…" = "重置…";
@@ -704,7 +709,7 @@
 "Sync across devices" = "跨裝置同步";
 "Sync Now" = "立即同步";
 "Sync settings across devices" = "跨裝置同步設定";
-"Sync with device timezone" = "與裝置時區同步";
+"Sync timestamps with device timezone" = "將時間戳記與裝置時區同步";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "在裝置間同步你的過濾器選擇、自訂清單、使用者腳本與白名單。";
 "Sync: Checking…" = "同步：檢查中…";
 "Sync: Downloading…" = "同步：下載中…";
@@ -751,7 +756,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "這會移除所有過濾器、使用者腳本與偏好設定，然後重新啟動導覽流程。";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "這會以備份設定取代你目前的過濾器選擇、白名單與元素清除規則。";
 "This will reset all filters, userscripts, and preferences." = "這將重設所有過濾器、使用者腳本與偏好設定。";
-"Time zone" = "時區";
 "Timed out" = "逾時";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "標題";
@@ -770,6 +774,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "無法使用";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
 "Undo" = "復原";
+"Redo" = "重做";
+"Element Zapper" = "元素清除器";
+"No Element Zapper Rules" = "沒有元素清除規則";
 "Update" = "更新";
 "Update & Apply" = "更新並套用";
 "Update Filters" = "Update Filters";
@@ -811,6 +818,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Version \\(filter.version)" = "版本 \\(filter.version)";
 "Version \\(script.version)" = "版本 \\(script.version)";
 "Vietnamese adblock filter list." = "越南廣告攔截過濾器清單。";
+"Delete Script" = "刪除腳本";
+"Delete Style" = "刪除樣式";
+"Edit Content" = "編輯內容";
+"Edit Rules" = "編輯規則";
+"View Rules" = "檢視規則";
 "View Content" = "檢視內容";
 "View Logs" = "檢視日誌";
 "Waiting" = "等待中";
@@ -831,11 +843,28 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "我們在 iCloud (\\(remoteConfigUpdatedAtText)) 找到既有的 wBlock 設定。你可以略過初始設定並改用它。";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "我們在 iCloud 找到既有的 wBlock 設定。你可以略過初始設定並改用它。";
 "Web extension %@" = "網頁擴充功能 %@";
+"Blocks advertisements and other promotional page elements." = "封鎖廣告和其他網頁宣傳元素。";
+"Blocks trackers, analytics, and other privacy-invasive requests." = "封鎖追蹤器、分析工具和其他侵犯隱私的請求。";
+"Blocks malicious URLs, phishing pages, and unwanted software." = "封鎖惡意 URL、網路釣魚頁面和不需要的軟體。";
+"Combines broad ad-blocking and tracking protection in one list." = "在一個清單中結合廣泛的廣告封鎖和追蹤防護。";
+"Contains filter lists that you added or imported yourself." = "包含你新增或匯入的過濾器清單。";
+"Get Started" = "開始使用";
+"No default filters" = "沒有預設過濾器";
+"Organizes userscripts and userstyles added to wBlock." = "整理新增至 wBlock 的使用者腳本和使用者樣式。";
+"Provides newer rules and fixes that are still being tested." = "提供仍在測試中的較新規則和修正。";
+"Recommended Filters" = "推薦過濾器";
+"Removes cookie notices, pop-ups, banners, and other distracting elements." = "移除 Cookie 通知、彈出式視窗、橫幅和其他干擾元素。";
+"Reset to Default" = "重設為預設值";
+"Shows all filter lists across every category." = "顯示所有類別中的過濾器清單。";
+"Adds rules tailored to websites and languages from specific regions." = "為特定地區的網站和語言新增適用規則。";
+"The end of Safari ad-blocking B.S." = "告別 Safari 廣告攔截的糟心事";
 "Welcome to wBlock!" = "歡迎使用 wBlock！";
 "Whitelist" = "白名單";
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "在這裡將網站列入白名單，或從 Safari 中的 wBlock 彈出視窗按網站調整使用者腳本和元素消除器規則。";
 "Whitelisted" = "已列入白名單";
 "Wrap Lines" = "自動換行";
+"On" = "開啟";
+"Off" = "關閉";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "你之後可隨時在「設定」新增區域過濾器。";
@@ -850,3 +879,75 @@ To re-enable these filters, disable other large filters and apply changes again.
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 自動更新：現已到期（將在下次觸發時執行）";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 自動更新：下次在 %dh %dm %ds 後";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 自動更新：尚未執行過（間隔=%dh）";
+
+/* Language picker */
+"Selected" = "已選擇";
+"Search languages" = "搜尋語言";
+
+"Built-in" = "內建";
+
+/* Filter catalog additions */
+"Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
+"Adblock Warning Removal List" = "Adblock Warning Removal List";
+"Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
+"Stevo's AI Blocklist" = "Stevo's AI Blocklist";
+"AdGuard Allowlist" = "AdGuard Allowlist";
+"Blocks tracking pixels and other mail tracking techniques." = "封鎖追蹤像素和其他電子郵件追蹤技術。";
+"Allows sites and resources that should not be blocked." = "允許不應被封鎖的網站和資源。";
+
+
+/* Auto-update controls */
+"Auto-Update" = "自動更新";
+"Auto-Update Filters & Userscripts" = "自動更新過濾器與使用者腳本";
+"Update Now" = "立即更新";
+"Automatically updating %@" = "正在自動更新 %@";
+
+/* Add mode controls */
+"Text" = "文字";
+"Choose File" = "選擇檔案";
+"Change File" = "更改檔案";
+"Local imports won't auto-update; re-import to replace." = "本機匯入不會自動更新；請重新匯入以取代。";
+"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra 可封鎖 Twitch 廣告，並處理複雜的反廣告封鎖情況。";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "要停用必要過濾器嗎？";
+"Replace Existing Content?" = "要替換現有內容嗎？";
+"Clear Element Zapper Rules?" = "要清除 Element Zapper 規則嗎？";
+"Clear All" = "全部清除";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "此推薦過濾器是 wBlock 基本保護的一部分。停用後可能會降低封鎖涵蓋範圍。";
+"Pasting will replace the existing editor content." = "貼上會取代編輯器中的現有內容。";
+"Pasting will replace the existing content." = "貼上會取代現有內容。";
+"This removes all saved element zapper rules from every site." = "這會刪除所有網站中儲存的 Element Zapper 規則。";
+"Clear Element Zapper Rules" = "清除 Element Zapper 規則";
+"Advanced" = "進階";
+"Help" = "說明";
+"FAQ" = "常見問題";
+"Report Issues" = "回報問題";
+"Contact Us" = "聯絡我們";
+"Version" = "版本";
+"Developer" = "開發者";
+"GPL-3.0 License" = "GPL-3.0 授權條款";
+"Privacy Policy" = "隱私政策";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "使用有效的 http:// 或 https:// URL";
+"Include a host name" = "包含主機名稱";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "不要使用以 .js、.mjs 或 .cjs 結尾的 Userscript URL";
+"wBlock will fetch and enable the filter list automatically" = "wBlock 會自動擷取並啟用過濾清單";
+
+/* Issue 508 UI follow-up */
+"Starts with http:// or https://" = "以 http:// 或 https:// 開頭";
+"Ends with .js, .user.js, or .user.css" = "以 .js、.user.js 或 .user.css 結尾";
+"Hosted on a trusted source" = "託管於可信任的來源";
+
+"The file must include userscript or userstyle metadata." = "檔案必須包含使用者腳本或使用者樣式中繼資料。";
+
+"Failed to clear downloaded custom filter state; apply again to retry." = "無法清除已下載自訂過濾器的狀態；請重新套用以重試。";
+"Failed to resume blocking." = "無法恢復封鎖。";
+/* Userscript display categories */
+"Functionality" = "功能";
+"Appearance" = "外觀";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "封鎖廣告、反廣告封鎖措施或不需要的網頁行為的使用者腳本。";
+"Userscripts and scripts that add or restore useful website functionality." = "為網站新增或恢復實用功能的使用者腳本。";
+"Userstyles and scripts that change the appearance of websites." = "變更網站外觀的使用者樣式與腳本。";
+"Custom, remote, and local scripts that do not have a more specific display category." = "沒有更具體顯示類別的自訂、遠端與本機腳本。";

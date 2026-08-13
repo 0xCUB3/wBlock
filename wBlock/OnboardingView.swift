@@ -15,8 +15,10 @@ struct OnboardingView: View {
     }
 
     enum OnboardingStep: Int, CaseIterable, Identifiable {
+        case welcome
         case protection
         case regional
+        case userscripts
         case sync
         case setup
 
@@ -30,17 +32,9 @@ struct OnboardingView: View {
         dataManager.hasCompletedOnboarding
     }
 
-    private var selectedBlockingLevel: String {
-        dataManager.selectedBlockingLevel
-    }
-
-    private func setSelectedBlockingLevel(_ value: String) {
-        Task { @MainActor in
-            await dataManager.setSelectedBlockingLevel(value)
-        }
-    }
+    @State private var selectedBlockingLevel: String
     @State private var selectedUserscripts: Set<String> = []
-    @State private var step: OnboardingStep = .protection
+    @State private var step: OnboardingStep = .welcome
     @State private var selectedLanguages: Set<String>
     @State private var selectedRegionalFilters: Set<UUID> = []
     @State private var recommendedRegionalFilters: [FilterList] = []
@@ -81,6 +75,7 @@ struct OnboardingView: View {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
         self.sharedDefaults = defaults
         _dataManager = StateObject(wrappedValue: ProtobufDataManager.shared)
+        _selectedBlockingLevel = State(initialValue: ProtobufDataManager.shared.selectedBlockingLevel)
 
         let stored = defaults.stringArray(forKey: Self.selectedLanguagesDefaultsKey)
         if let stored, !stored.isEmpty {
@@ -106,9 +101,8 @@ struct OnboardingView: View {
         let name: String
         let description: String
         let isBaselineEnabledByDefault: Bool
-        let isRegional: Bool
+        let languageCodes: [String]
         let isBeta: Bool
-        let languages: [String]
     }
 
     private let userscriptDescriptionFallbacksByName: [String: String] = [
@@ -130,13 +124,10 @@ struct OnboardingView: View {
 
     private var defaultUserScripts: [OnboardingUserScriptItem] {
         userScriptManager.userScripts
+            .filter(userScriptManager.isDefaultUserScript)
             .filter { script in
-                guard userScriptManager.isDefaultUserScript(script) else { return false }
-                guard userScriptManager.builtInSection(for: script) == .foreign else { return true }
-
-                let scriptLanguages = Set(userScriptManager.builtInLanguages(for: script).map { $0.lowercased() })
-                guard !scriptLanguages.isEmpty else { return false }
-                return !scriptLanguages.isDisjoint(with: selectedLanguages.map { $0.lowercased() })
+                let languages = userScriptManager.builtInLanguages(for: script)
+                return languages.isEmpty || !Set(languages).isDisjoint(with: selectedLanguages)
             }
             .map { script in
                 OnboardingUserScriptItem(
@@ -144,26 +135,10 @@ struct OnboardingView: View {
                     name: script.localizedDisplayName,
                     description: resolvedUserscriptDescription(for: script),
                     isBaselineEnabledByDefault: isBaselineUserscriptEnabledByDefault(script),
-                    isRegional: userScriptManager.builtInSection(for: script) == .foreign,
-                    isBeta: userScriptManager.isBeta(for: script),
-                    languages: userScriptManager.builtInLanguages(for: script).map { $0.lowercased() }
+                    languageCodes: userScriptManager.builtInLanguages(for: script),
+                    isBeta: userScriptManager.isBeta(for: script)
                 )
             }
-    }
-
-    private var generalDefaultUserScripts: [OnboardingUserScriptItem] {
-        defaultUserScripts.filter { !$0.isRegional }
-    }
-
-    private func languageOption(forCode code: String) -> LanguageOption {
-        if let existing = languagePickerOptions.first(where: { $0.code == code }) {
-            return existing
-        }
-        return LanguageOption(
-            code: code,
-            name: Locale.current.localizedString(forLanguageCode: code) ?? code,
-            flag: FilterList.languageToFlag[code] ?? ""
-        )
     }
 
     // Helper to get the Bypass Paywalls userscript and filter list names
@@ -198,6 +173,7 @@ struct OnboardingView: View {
             onboardingFooter
         }
         .padding()
+        .interactiveDismissDisabled(!hasCompletedOnboarding)
     #if os(macOS)
         .frame(minWidth: 440, maxWidth: 540, minHeight: 620, maxHeight: 820)
     #endif
@@ -239,7 +215,6 @@ struct OnboardingView: View {
             }
         }
         .onChangeCompat(of: selectedLanguages) { _, newValue in
-            sharedDefaults.set(Array(newValue), forKey: Self.selectedLanguagesDefaultsKey)
             hasManuallyEditedRegionalSelection = false
             updateRegionalRecommendations(for: newValue)
             syncBaselineUserscriptSelection()
@@ -314,7 +289,7 @@ struct OnboardingView: View {
     }
 
     private var activeOnboardingSteps: [OnboardingStep] {
-        [.protection, .regional, .sync, .setup]
+        [.welcome, .protection, .regional, .userscripts, .sync, .setup]
     }
 
     private var currentStepIndex: Int {
@@ -330,7 +305,7 @@ struct OnboardingView: View {
                     .symbolRenderingMode(.hierarchical)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Set up wBlock")
+                    Text(step == .welcome ? "Welcome to wBlock!" : "Set up wBlock")
                         .font(.title2.bold())
                 }
 
@@ -362,10 +337,14 @@ struct OnboardingView: View {
     @ViewBuilder
     private var stepContent: some View {
         switch step {
+        case .welcome:
+            welcomeStep
         case .protection:
             blockingLevelStep
         case .regional:
             regionalStep
+        case .userscripts:
+            userscriptsStep
         case .sync:
             syncStep
         case .setup:
@@ -375,7 +354,7 @@ struct OnboardingView: View {
 
     private var onboardingFooter: some View {
         HStack(spacing: 12) {
-            if step != .protection {
+            if step != .welcome {
                 Button("Back") {
                     retreatToPreviousStep()
                 }
@@ -384,7 +363,7 @@ struct OnboardingView: View {
 
             Spacer()
 
-            Button(step == .setup ? "Apply & Finish" : "Next") {
+            Button(step == .welcome ? "Get Started" : (step == .setup ? "Apply & Finish" : "Next")) {
                 if step == .setup {
                     Task {
                         await applySettings()
@@ -394,6 +373,7 @@ struct OnboardingView: View {
                 }
             }
             .buttonStyle(.borderedProminent)
+            .tint(step == .welcome ? .blue : nil)
             .disabled(footerButtonDisabled)
             .keyboardShortcut(.defaultAction)
         }
@@ -401,6 +381,8 @@ struct OnboardingView: View {
 
     private var footerButtonDisabled: Bool {
         switch step {
+        case .welcome:
+            return false
         case .protection:
             return selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .regional:
@@ -428,6 +410,35 @@ struct OnboardingView: View {
         }
     }
 
+    private var welcomeStep: some View {
+        VStack(spacing: 24) {
+            #if os(macOS)
+            Image(nsImage: NSApp.applicationIconImage ?? NSImage())
+                .resizable()
+                .scaledToFit()
+                .frame(width: 128, height: 128)
+            #else
+            Image("AppIcon")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 128, height: 128)
+            #endif
+
+            VStack(spacing: 10) {
+                Text("Welcome to wBlock!")
+                    .font(.largeTitle.bold())
+                    .multilineTextAlignment(.center)
+                Text("The end of Safari ad-blocking B.S.")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 36)
+    }
+
     private var blockingLevelStep: some View {
         VStack(alignment: .leading, spacing: 14) {
             ForEach(BlockingLevel.allCases) { level in
@@ -442,12 +453,10 @@ struct OnboardingView: View {
             == level.rawValue.lowercased()
 
         return Button {
-            setSelectedBlockingLevel(level.rawValue)
+            selectedBlockingLevel = level.rawValue
         } label: {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
-                    .font(.title3)
+                SelectionIndicator(isSelected: isSelected)
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
@@ -467,6 +476,7 @@ struct OnboardingView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .liquidGlassCompat(
             cornerRadius: 16,
             material: isSelected ? .thickMaterial : .regularMaterial
@@ -486,7 +496,14 @@ struct OnboardingView: View {
         let code: String
         let name: String
         let flag: String
+        var nativeName: String {
+            Locale(identifier: code).localizedString(forLanguageCode: code) ?? name
+        }
         var id: String { code }
+    }
+
+    private var displayLocale: Locale {
+        Locale(identifier: Bundle.main.preferredLocalizations.first ?? Locale.current.identifier)
     }
 
     private var availableFilterLanguages: [LanguageOption] {
@@ -496,7 +513,7 @@ struct OnboardingView: View {
             for lang in filter.languages {
                 let lc = lang.lowercased()
                 guard seen.insert(lc).inserted else { continue }
-                let name = Locale.current.localizedString(forLanguageCode: lc) ?? lc
+                let name = displayLocale.localizedString(forLanguageCode: lc) ?? lc
                 let flag = FilterList.languageToFlag[lc] ?? ""
                 result.append(LanguageOption(code: lc, name: name, flag: flag))
             }
@@ -504,15 +521,11 @@ struct OnboardingView: View {
         return result.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
-    private var selectedFilterLanguageOptions: [LanguageOption] {
-        availableFilterLanguages.filter { selectedLanguages.contains($0.code) }
-    }
-
     private var pinnedLanguagePickerOptions: [LanguageOption] {
         var options: [LanguageOption] = []
         if !availableFilterLanguages.contains(where: { $0.code == Self.englishLanguageCode }) {
             let englishName =
-                Locale.current.localizedString(forLanguageCode: Self.englishLanguageCode) ?? "English"
+                displayLocale.localizedString(forLanguageCode: Self.englishLanguageCode) ?? "English"
             options.append(
                 LanguageOption(code: Self.englishLanguageCode, name: englishName, flag: "")
             )
@@ -545,75 +558,69 @@ struct OnboardingView: View {
         }
     }
 
-    private struct LanguagePickerSection: Identifiable {
-        let letter: String
-        let options: [LanguageOption]
-        var id: String { letter }
+    private var selectedLanguagePickerOptions: [LanguageOption] {
+        languagePickerOptions.filter { selectedLanguages.contains($0.code) }
     }
 
-    private var languagePickerSections: [LanguagePickerSection] {
-        let grouped = Dictionary(grouping: availableFilterLanguages) { option in
-            String(option.name.prefix(1)).uppercased(with: Locale.current)
-        }
-        return grouped
-            .map { LanguagePickerSection(letter: $0.key, options: $0.value) }
-            .sorted { $0.letter.localizedCaseInsensitiveCompare($1.letter) == .orderedAscending }
+    private var unselectedLanguagePickerOptions: [LanguageOption] {
+        languagePickerOptions.filter { !selectedLanguages.contains($0.code) }
     }
 
-    private var languagePickerGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-            ForEach(pinnedLanguagePickerOptions) { lang in
-                languageToggle(for: lang)
-            }
-            ForEach(languagePickerSections) { section in
-                Section {
-                    ForEach(section.options) { lang in
-                        languageToggle(for: lang)
+    private var languagePicker: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(selectedLanguagePickerOptions.enumerated()), id: \.element.id) { index, lang in
+                HStack(spacing: 10) {
+                    Text(lang.flag.isEmpty ? String(lang.nativeName.prefix(1)) : lang.flag)
+                        .fontWeight(lang.flag.isEmpty ? .semibold : .regular)
+                        .frame(width: 20)
+                    Text(lang.nativeName)
+                    Spacer()
+                    Button {
+                        selectedLanguages.remove(lang.code)
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
                     }
-                } header: {
-                    Text(section.letter)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 4)
-                        .padding(.top, 6)
+                    .buttonStyle(.plain)
                 }
-            }
-        }
-    }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
 
-    private func languageToggle(for lang: LanguageOption) -> some View {
-        let isOn = selectedLanguages.contains(lang.code)
-        return Button {
-            if isOn {
-                selectedLanguages.remove(lang.code)
-            } else {
-                selectedLanguages.insert(lang.code)
-            }
-        } label: {
-            HStack(spacing: 6) {
-                if !lang.flag.isEmpty {
-                    Text(lang.flag)
-                }
-                Text(lang.name)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-                if isOn {
-                    Image(systemName: "checkmark")
-                        .font(.caption.bold())
-                        .foregroundStyle(Color.accentColor)
+                if index < selectedLanguagePickerOptions.count - 1 {
+                    Divider().padding(.leading, 42)
                 }
             }
-            .font(.subheadline)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .contentShape(Rectangle())
+
+            if !selectedLanguagePickerOptions.isEmpty {
+                Divider().padding(.leading, 42)
+            }
+
+            Menu {
+                ForEach(unselectedLanguagePickerOptions) { lang in
+                    Button {
+                        selectedLanguages.insert(lang.code)
+                    } label: {
+                        Text(lang.nativeName)
+                    }
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "plus")
+                        .frame(width: 20)
+                    Text("Add")
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
-        .liquidGlassCompat(
-            cornerRadius: 10,
-            material: isOn ? .thickMaterial : .regularMaterial
-        )
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 
     private var regionalStep: some View {
@@ -622,7 +629,7 @@ struct OnboardingView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
-            languagePickerGrid
+            languagePicker
 
             if !recommendedRegionalFilters.isEmpty || !languagesWithoutRegionalFilters.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
@@ -637,16 +644,44 @@ struct OnboardingView: View {
                 }
             }
 
-            if !defaultUserScripts.isEmpty {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Baseline Userscripts")
+        }
+    }
+
+    private var userscriptsStep: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Userscripts")
+                .font(.title2.bold())
+            Text("Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            let general = defaultUserScripts.filter { $0.languageCodes.isEmpty }
+            let localized = defaultUserScripts.filter { !$0.languageCodes.isEmpty }
+            if !general.isEmpty {
+                userscriptList(general)
+            }
+            ForEach(selectedLanguagePickerOptions) { language in
+                let scripts = localized.filter { $0.languageCodes.contains(language.code) }
+                if !scripts.isEmpty {
+                    Text(language.nativeName)
                         .font(.headline)
-                    ForEach(generalDefaultUserScripts) { script in
-                        userscriptCard(for: script)
-                    }
+                        .padding(.top, 2)
+                    userscriptList(scripts)
                 }
             }
         }
+    }
+
+    private func userscriptList(_ scripts: [OnboardingUserScriptItem]) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(scripts.enumerated()), id: \.element.id) { index, script in
+                userscriptCard(for: script)
+                if index < scripts.count - 1 {
+                    Divider().padding(.leading, 44)
+                }
+            }
+        }
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func emptyRegionalFilterGroup(for lang: LanguageOption) -> some View {
@@ -696,9 +731,7 @@ struct OnboardingView: View {
             hasManuallyEditedRegionalSelection = true
         } label: {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
-                    .font(.title3)
+                SelectionIndicator(isSelected: isSelected)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(filter.localizedDisplayName)
@@ -719,6 +752,7 @@ struct OnboardingView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .liquidGlassCompat(
             cornerRadius: 16,
             material: isSelected ? .thickMaterial : .regularMaterial
@@ -948,12 +982,10 @@ struct OnboardingView: View {
                 }
             }
         } label: {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
-                    .font(.title3)
+            HStack(alignment: .top, spacing: 10) {
+                SelectionIndicator(isSelected: isSelected)
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text(script.name)
                             .font(.headline)
@@ -977,14 +1009,12 @@ struct OnboardingView: View {
                 Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .liquidGlassCompat(
-            cornerRadius: 16,
-            material: isSelected ? .thickMaterial : .regularMaterial
-        )
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private func resolvedUserscriptDescription(for script: UserScript) -> String {
@@ -1035,28 +1065,18 @@ struct OnboardingView: View {
         guard !defaultScripts.isEmpty else { return }
 
         let visibleDefaultIDs = Set(defaultUserScripts.map(\.id))
-        let allDefaultIDs = Set(defaultScripts.map { $0.id.uuidString })
-        let allForeignDefaultIDs = Set(defaultScripts.compactMap { script -> String? in
-            userScriptManager.builtInSection(for: script) == .foreign ? script.id.uuidString : nil
-        })
         let visibleBaselineIDs = Set(defaultScripts.compactMap { script -> String? in
             guard isBaselineUserscriptEnabledByDefault(script) else { return nil }
             guard visibleDefaultIDs.contains(script.id.uuidString) else { return nil }
             return script.id.uuidString
         })
 
-        selectedUserscripts = selectedUserscripts.intersection(allDefaultIDs)
-        selectedUserscripts.subtract(allForeignDefaultIDs.subtracting(visibleDefaultIDs))
+        selectedUserscripts = selectedUserscripts.intersection(visibleDefaultIDs)
         selectedUserscripts.formUnion(visibleBaselineIDs.subtracting(manuallyDeselectedBaselineUserscripts))
         selectedUserscripts.formUnion(manuallySelectedUserscripts.intersection(visibleDefaultIDs))
     }
 
     private func isBaselineUserscriptEnabledByDefault(_ script: UserScript) -> Bool {
-        if userScriptManager.builtInSection(for: script) == .foreign {
-            let languages = Set(userScriptManager.builtInLanguages(for: script).map { $0.lowercased() })
-            return !languages.isEmpty && !languages.isDisjoint(with: selectedLanguages.map { $0.lowercased() })
-        }
-
         return script.name.localizedCaseInsensitiveCompare("AdGuard Extra") == .orderedSame
             || script.name.localizedCaseInsensitiveCompare("tinyShield") == .orderedSame
     }
@@ -1095,6 +1115,7 @@ struct OnboardingView: View {
                 }
             }
         }
+        await dataManager.setSelectedBlockingLevel(selectedBlockingLevel)
         sharedDefaults.set(Array(selectedLanguages), forKey: Self.selectedLanguagesDefaultsKey)
         filterManager.filterLists = updatedFilters
         await filterManager.saveFilterLists()

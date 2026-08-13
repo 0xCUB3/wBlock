@@ -189,7 +189,7 @@
 "Calculated source rule count for filter" = "已计算过滤器的源规则数量";
 "Cancel" = "取消";
 "Category" = "类别";
-"Changes take full effect after the next apply." = "更改会在下次应用后完全生效。";
+"Element Zapper changes take full effect after the next apply." = "元素隐藏工具的更改会在下次应用后完全生效。";
 "Check for Updates" = "检查更新";
 "Checked %@" = "已检查 %@";
 "Checked %@ ago" = "%@ 前已检查";
@@ -290,6 +290,7 @@
 "Edit Name" = "重命名列表";
 "Edit User List" = "编辑列表";
 "Editor" = "Editor";
+"Use Editor" = "使用编辑器";
 "Element zapper" = "元素清除器";
 "Enable" = "启用";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "启用 'wBlock Scripts' → 在每个网站上始终允许";
@@ -406,7 +407,7 @@
 "go" = "跳转";
 "Go to line" = "跳转到行";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"Hagezi Pro Mini" = "Hagezi Pro Mini";
+"HaGeZi Pro Mini" = "HaGeZi Pro Mini";
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "处理过滤规则遗漏的高级反广告拦截案例。";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "隐藏页内弹出窗口、横幅和其他不需要的页面元素。";
@@ -437,6 +438,7 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "包含 // ==UserScript== 元数据块（或用于用户样式的 /* ==UserStyle== */），以便 wBlock 读取名称和 URL 模式。";
 "IndianList" = "IndianList";
 "Info" = "信息";
+"Integrated" = "集成功能";
 "Info.plist missing" = "缺少 Info.plist";
 "Initialized with %d filter list(s)." = "使用 %d 过滤器列表进行初始化。";
 "International" = "国际";
@@ -465,7 +467,6 @@
 "Loading script metadata…" = "正在加载脚本元数据…";
 "Loading userscripts…" = "正在加载用户脚本…";
 "Local Import" = "本地导入";
-"Log Timestamps" = "日志时间戳";
 "Logs" = "日志";
 "Logs cleared" = "日志已清除";
 "Logs will appear here as the app runs" = "应用运行时日志将显示在这里";
@@ -605,6 +606,7 @@
 "Report an Issue" = "报告问题";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "用户脚本、高级广告拦截和清理功能所必需";
 "Required for YouTube ad blocking and much more" = "YouTube 广告拦截及更多功能所必需";
+"The selected file is too large. Maximum size is 10 MB." = "所选文件太大。最大大小为 10 MB。";
 "Requirements" = "要求";
 "Reset Site Settings" = "重置网站设置";
 "Resetting…" = "重置……";
@@ -704,7 +706,7 @@
 "Sync across devices" = "跨设备同步";
 "Sync Now" = "立即同步";
 "Sync settings across devices" = "跨设备同步设置";
-"Sync with device timezone" = "与设备时区同步";
+"Sync timestamps with device timezone" = "将时间戳与设备时区同步";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "在设备间同步你的过滤器选择、自定义列表、用户脚本和白名单。";
 "Sync: Checking…" = "同步：检查中…";
 "Sync: Downloading…" = "同步：下载中…";
@@ -751,7 +753,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "这将移除所有过滤器、用户脚本和偏好设置，然后重新启动引导流程。";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "这将用备份中的设置替换你当前的过滤器选择、白名单和元素清除规则。";
 "This will reset all filters, userscripts, and preferences." = "这将重置所有过滤器、用户脚本和偏好设置。";
-"Time zone" = "时区";
 "Timed out" = "超时";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "标题";
@@ -770,6 +771,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "不可用";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
 "Undo" = "撤销";
+"Redo" = "重做";
+"Element Zapper" = "元素清除器";
+"No Element Zapper Rules" = "没有元素清除规则";
 "Update" = "更新";
 "Update & Apply" = "更新并应用";
 "Update Filters" = "Update Filters";
@@ -811,6 +815,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Version \\(filter.version)" = "版本 \\(filter.version)";
 "Version \\(script.version)" = "版本 \\(script.version)";
 "Vietnamese adblock filter list." = "越南广告拦截过滤器列表。";
+"Delete Script" = "删除脚本";
+"Delete Style" = "删除样式";
+"Edit Content" = "编辑内容";
+"Edit Rules" = "编辑规则";
+"View Rules" = "查看规则";
 "View Content" = "查看内容";
 "View Logs" = "查看日志";
 "Waiting" = "等待中";
@@ -831,11 +840,28 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "我们在 iCloud (\\(remoteConfigUpdatedAtText)) 中找到现有的 wBlock 配置。你可以跳过引导并直接使用它。";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "我们在 iCloud 中找到现有的 wBlock 配置。你可以跳过引导并直接使用它。";
 "Web extension %@" = "网页扩展 %@";
+"Blocks advertisements and other promotional page elements." = "拦截广告及其他页面推广元素。";
+"Blocks trackers, analytics, and other privacy-invasive requests." = "拦截跟踪器、分析工具及其他侵犯隐私的请求。";
+"Blocks malicious URLs, phishing pages, and unwanted software." = "拦截恶意 URL、钓鱼页面和不需要的软件。";
+"Combines broad ad-blocking and tracking protection in one list." = "在一个列表中结合全面的广告拦截和跟踪保护。";
+"Contains filter lists that you added or imported yourself." = "包含你添加或导入的过滤器列表。";
+"Get Started" = "开始使用";
+"No default filters" = "没有默认过滤器";
+"Organizes userscripts and userstyles added to wBlock." = "整理添加到 wBlock 的用户脚本和用户样式。";
+"Provides newer rules and fixes that are still being tested." = "提供仍在测试中的新规则和修复。";
+"Recommended Filters" = "推荐过滤器";
+"Removes cookie notices, pop-ups, banners, and other distracting elements." = "移除 Cookie 提示、弹窗、横幅及其他干扰元素。";
+"Reset to Default" = "恢复默认设置";
+"Shows all filter lists across every category." = "显示所有类别中的过滤器列表。";
+"Adds rules tailored to websites and languages from specific regions." = "为特定地区的网站和语言添加定制规则。";
+"The end of Safari ad-blocking B.S." = "告别 Safari 广告拦截的糟心事";
 "Welcome to wBlock!" = "欢迎使用 wBlock！";
 "Whitelist" = "白名单";
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "在这里将网站列入白名单，或从 Safari 中的 wBlock 弹出窗口按网站调整用户脚本和元素清除器规则。";
 "Whitelisted" = "已列入白名单";
 "Wrap Lines" = "自动换行";
+"On" = "开";
+"Off" = "关";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "你随时都可以稍后在设置中添加地区过滤器。";
@@ -850,3 +876,78 @@ To re-enable these filters, disable other large filters and apply changes again.
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 自动更新：现已到期（将在下次触发时运行）";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 自动更新：下次在 %dh %dm %ds 后";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 自动更新：尚未运行过（间隔=%dh）";
+
+/* Language picker */
+"Selected" = "已选择";
+"Search languages" = "搜索语言";
+
+"Built-in" = "内置";
+
+/* Filter catalog additions */
+"Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
+"Adblock Warning Removal List" = "Adblock Warning Removal List";
+"Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
+"Stevo's AI Blocklist" = "Stevo's AI Blocklist";
+"AdGuard Allowlist" = "AdGuard Allowlist";
+"Blocks tracking pixels and other mail tracking techniques." = "拦截跟踪像素及其他邮件跟踪技术。";
+"Allows sites and resources that should not be blocked." = "允许不应被拦截的网站和资源。";
+
+
+/* Auto-update controls */
+"Auto-Update" = "自动更新";
+"Auto-Update Filters & Userscripts" = "自动更新过滤器和用户脚本";
+"Update Now" = "立即更新";
+"Automatically updating %@" = "正在自动更新 %@";
+
+/* Add mode controls */
+"Text" = "文本";
+"Choose File" = "选择文件";
+"Change File" = "更改文件";
+"Local imports won't auto-update; re-import to replace." = "本地导入不会自动更新；请重新导入以替换。";
+"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra 可拦截 Twitch 广告，并处理复杂的反广告拦截情况。";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "要停用必要过滤器吗？";
+"Replace Existing Content?" = "要替换现有内容吗？";
+"Clear Element Zapper Rules?" = "要清除 Element Zapper 规则吗？";
+"Clear All" = "全部清除";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "此推荐过滤器是 wBlock 基本保护的一部分。停用后，拦截范围可能会缩小。";
+"Pasting will replace the existing editor content." = "粘贴会替换编辑器中的现有内容。";
+"Pasting will replace the existing content." = "粘贴会替换现有内容。";
+"This removes all saved element zapper rules from every site." = "这会删除所有网站中保存的 Element Zapper 规则。";
+"Clear Element Zapper Rules" = "清除 Element Zapper 规则";
+"Advanced" = "高级";
+"Help" = "帮助";
+"FAQ" = "常见问题";
+"Report Issues" = "报告问题";
+"Contact Us" = "联系我们";
+"Version" = "版本";
+"Developer" = "开发者";
+"GPL-3.0 License" = "GPL-3.0 许可证";
+"Privacy Policy" = "隐私政策";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "使用有效的 http:// 或 https:// URL";
+"Include a host name" = "包含主机名";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "不要使用以 .js、.mjs 或 .cjs 结尾的 Userscript URL";
+"wBlock will fetch and enable the filter list automatically" = "wBlock 将自动获取并启用过滤列表";
+
+/* Issue 508 UI follow-up */
+"Starts with http:// or https://" = "以 http:// 或 https:// 开头";
+"Ends with .js, .user.js, or .user.css" = "以 .js、.user.js 或 .user.css 结尾";
+"Hosted on a trusted source" = "托管在可信来源";
+
+"The file must include userscript or userstyle metadata." = "文件必须包含用户脚本或用户样式元数据。";
+
+"Failed to clear downloaded custom filter state; apply again to retry." = "无法清除已下载自定义过滤器的状态；请重新应用以重试。";
+"Failed to resume blocking." = "无法恢复拦截。";
+/* Userscript display categories */
+"Functionality" = "功能";
+"Appearance" = "外观";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "拦截广告、反广告拦截措施或不需要的网页行为的用户脚本。";
+"Userscripts and scripts that add or restore useful website functionality." = "为网站添加或恢复实用功能的用户脚本。";
+"Userstyles and scripts that change the appearance of websites." = "更改网站外观的用户样式和脚本。";
+"Custom, remote, and local scripts that do not have a more specific display category." = "没有更具体显示类别的自定义、远程和本地脚本。";
+"Enabled Userscripts & Userstyles" = "已启用的用户脚本和用户样式";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "只要有选定组件处于暂停状态，暂停拦截就会开启。恢复后将还原所有组件。";
+"Temporarily pause selected components without changing their enabled settings." = "暂时暂停选定组件，不更改其启用设置。";

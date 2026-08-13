@@ -5,7 +5,25 @@
 //  Created by Alexander Skula on 6/7/25.
 //
 
+import CryptoKit
 import Foundation
+
+public enum UserScriptImportIdentity {
+    public static func forFileURL(_ url: URL) -> String {
+        "file:\(url.standardizedFileURL.path)"
+    }
+
+    public static func forContent(_ content: String) -> String {
+        let digest = SHA256.hash(data: Data(content.utf8))
+        return "content:" + digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    public static func normalized(_ identity: String?) -> String? {
+        guard let identity else { return nil }
+        let value = identity.trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? nil : value
+    }
+}
 
 public enum UserScriptURLSupport {
     public static func validatedRemoteURL(from rawValue: String) -> URL? {
@@ -74,6 +92,11 @@ public enum UserScriptURLSupport {
     }
 }
 
+public enum UserScriptImportLimits {
+    /// Maximum source size shared by local staging and remote script imports.
+    public static let maximumSourceFileBytes = 10 * 1024 * 1024
+}
+
 public struct UserScriptResource: Codable, Hashable, Sendable {
     public let name: String
     public let url: String
@@ -97,7 +120,7 @@ final class UserScriptPayloadDataCache: @unchecked Sendable {
 
     private let cache = NSCache<NSString, Entry>()
 
-    init(countLimit: Int = 8, totalCostLimit: Int = 32 * 1024 * 1024) {
+    init(countLimit: Int = 2, totalCostLimit: Int = 8 * 1024 * 1024) {
         cache.countLimit = countLimit
         cache.totalCostLimit = totalCostLimit
     }
@@ -111,6 +134,46 @@ final class UserScriptPayloadDataCache: @unchecked Sendable {
         let data = Data(text.utf8)
         cache.setObject(Entry(source: source, data: data), forKey: cacheKey, cost: data.count)
         return data
+    }
+}
+
+public enum UserScriptRestoreMatcher {
+    public static func matchingIndex(for restoredScript: UserScript, in existingScripts: [UserScript]) -> Int? {
+        let restoredIsLocal = restoredScript.isLocal
+            || restoredScript.url == nil
+            || restoredScript.url?.isFileURL == true
+
+        if restoredIsLocal {
+            if let identity = UserScriptImportIdentity.normalized(restoredScript.localImportIdentity),
+               let index = existingScripts.firstIndex(where: { script in
+                   script.isLocal
+                       && UserScriptImportIdentity.normalized(script.localImportIdentity) == identity
+               }) {
+                return index
+            }
+
+            // Identity-bearing backups may use the name fallback only to upgrade
+            // one legacy record. A legacy backup has no identity, so it may use a
+            // unique local name match regardless of the existing record's age.
+            let candidates = existingScripts.indices.filter { index in
+                let script = existingScripts[index]
+                let existingIdentity = UserScriptImportIdentity.normalized(script.localImportIdentity)
+                let restoredIdentity = UserScriptImportIdentity.normalized(restoredScript.localImportIdentity)
+                return script.isLocal
+                    && (restoredIdentity == nil || existingIdentity == nil)
+                    && normalizedName(script.name) == normalizedName(restoredScript.name)
+            }
+            return candidates.count == 1 ? candidates[0] : nil
+        }
+
+        guard let restoredURL = restoredScript.url else { return nil }
+        return existingScripts.firstIndex { script in
+            !script.isLocal && script.url == restoredURL
+        }
+    }
+
+    private static func normalizedName(_ name: String) -> String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 }
 
@@ -142,7 +205,43 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     public var content: String = ""
     public var lastUpdated: Date?
     public var updatesAutomatically: Bool = true
+    /// User-selected category for local organization. Existing scripts default to Scripts.
+    public var category: FilterListCategory = .scripts
+    /// Stable identity for local imports. Legacy entries may not have one.
+    public var localImportIdentity: String?
     
+    public static func localImportIdentityForUpdate(
+        existing: UserScript?,
+        requestedIdentity: String?,
+        preserveExistingIdentity: Bool
+    ) -> String? {
+        if preserveExistingIdentity,
+           let existingIdentity = UserScriptImportIdentity.normalized(existing?.localImportIdentity) {
+            return existingIdentity
+        }
+        return UserScriptImportIdentity.normalized(requestedIdentity)
+    }
+
+    public static func matchesLocalImport(
+        existing: UserScript,
+        stableIdentity: String?,
+        canonicalName: String
+    ) -> Bool {
+        guard existing.isLocal else { return false }
+        let stableIdentity = UserScriptImportIdentity.normalized(stableIdentity)
+        let existingIdentity = UserScriptImportIdentity.normalized(existing.localImportIdentity)
+        if let stableIdentity, let existingIdentity {
+            // A stable identity mismatch must not fall through to a display-name
+            // match: two different local files may intentionally share a name.
+            return existingIdentity == stableIdentity
+        }
+        // Preserve replacement behavior for entries written before stable
+        // local-import identities were introduced, and for legacy sync payloads
+        // that do not carry the additive identity field.
+        return existing.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            == canonicalName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
     /// Computed property to check if the userscript is downloaded and ready to use
     public var isDownloaded: Bool {
         !content.isEmpty

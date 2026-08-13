@@ -44,11 +44,43 @@ struct FilterListValidationTests {
         )
         expectValidContent(
             """
+            import.example.com
+            class.example.com
+            return.example.com
+            """,
+            "expected keyword-looking host-only ABP rules to be accepted"
+        )
+        expectValidContent(
+            """
             [Adblock Plus]
             ! Title: Referral Allowlist
             @@||example.com^
             """,
             "expected allowlist-only exception rules to be accepted"
+        )
+        expectValidContent(
+            """
+            ! This documentation mentions window.alert() and console.log().
+            ! Header: document.querySelector and function examples are prose.
+            ||example.com^
+            """,
+            "expected JavaScript-looking adblock comments and headers to be ignored"
+        )
+        expectValidContent(
+            """
+            ||window.example^$script,domain=document.example
+            document.example##.paywall
+            window.example#@#.allowed
+            """,
+            "expected hostnames containing window/document and ABP options/cosmetic rules to be accepted"
+        )
+        expectValidContent(
+            """
+            ! comments are valid filter-list lines
+            !#include /filters/ads.txt
+            ||ads.example^
+            """,
+            "expected comments and directives alongside a network rule to be accepted"
         )
         expectInvalidContent(
             """
@@ -61,6 +93,28 @@ struct FilterListValidationTests {
             "expected userscript metadata blocks to be rejected as filters"
         )
         expectInvalidContent("<html><body>challenge</body></html>", "expected HTML to be rejected")
+        expectInvalidContent(
+            "[{\"trigger\":{\"url-filter\":\"example\"},\"action\":{\"type\":\"block\"}}]",
+            "expected Safari content blocker JSON to be rejected without a semantic importer"
+        )
+        expectInvalidContent("console.log('masquerading as a filter');", "expected JavaScript content to be rejected")
+        expectInvalidContent(
+            "! harmless comment\nwindow.alert('executable');",
+            "expected executable JavaScript outside comments to remain rejected"
+        )
+        expectInvalidContent(
+            "const rule = '||example.com^';",
+            "expected JavaScript declarations to be rejected even when they contain filter text"
+        )
+        expectInvalidContent(
+            "(() => { document.example = true; })();",
+            "expected JavaScript arrow-function files to be rejected"
+        )
+        expectSupportedFile("rules.txt", "expected .txt filter files to be accepted")
+        expectSupportedFile("rules.list", "expected .list filter files to be accepted")
+        expectUnsupportedFile("rules.json", "expected Safari content blocker JSON files to be rejected")
+        expectUnsupportedFile("script.js", "expected JavaScript files to be rejected as filters")
+        expectUnsupportedFile("rules.user.js", "expected userscript files to be rejected as filters")
 
         print("PASS")
     }
@@ -98,6 +152,18 @@ struct FilterListValidationTests {
 
     private static func expectInvalidContent(_ content: String, _ message: String) {
         guard !FilterListContentValidator.appearsToBeFilterList(content) else {
+            fail(message)
+        }
+    }
+
+    private static func expectSupportedFile(_ filename: String, _ message: String) {
+        guard FilterListContentValidator.isSupportedLocalFile(URL(fileURLWithPath: filename)) else {
+            fail(message)
+        }
+    }
+
+    private static func expectUnsupportedFile(_ filename: String, _ message: String) {
+        guard !FilterListContentValidator.isSupportedLocalFile(URL(fileURLWithPath: filename)) else {
             fail(message)
         }
     }

@@ -16,6 +16,7 @@ public enum UserScriptImportError: LocalizedError {
     case unsupportedType
     case unreadableFile
     case emptyContent
+    case fileTooLarge
     case missingMetadata
     case unsupportedStylePreprocessor(String)
 
@@ -27,6 +28,8 @@ public enum UserScriptImportError: LocalizedError {
             return "Couldn't read the selected file."
         case .emptyContent:
             return "The file is empty."
+        case .fileTooLarge:
+            return String(localized: "The selected file is too large. Maximum size is 10 MB.", comment: "Local userscript import size error")
         case .missingMetadata:
             return "Not a userscript or userstyle: missing metadata block."
         case .unsupportedStylePreprocessor(let preprocessor):
@@ -50,20 +53,16 @@ public enum UserScriptManagerNotificationKey {
     public static let name = "name"
     public static let url = "url"
     public static let isLocal = "isLocal"
-}
-
-public enum BuiltInUserScriptSection: String, Hashable, Sendable {
-    case general
-    case foreign
+    public static let localImportIdentity = "localImportIdentity"
 }
 
 struct BuiltInUserScriptDefinition {
     let name: String
     let url: String
     let isEnabledByDefault: Bool
-    let section: BuiltInUserScriptSection
     let description: String
     let languages: [String]
+    let displayRole: BuiltInUserScriptDisplayRole?
     /// Non-nil for userscripts that ship embedded in the framework instead of
     /// being downloaded from `url`. The `url` then acts only as a stable
     /// identity (for sync, per-site toggles, and protection); it is never
@@ -76,18 +75,18 @@ struct BuiltInUserScriptDefinition {
         name: String,
         url: String,
         isEnabledByDefault: Bool,
-        section: BuiltInUserScriptSection = .general,
         description: String = "Default userscript",
         languages: [String] = [],
+        displayRole: BuiltInUserScriptDisplayRole? = nil,
         bundledContent: String? = nil,
         isBeta: Bool = false
     ) {
         self.name = name
         self.url = url
         self.isEnabledByDefault = isEnabledByDefault
-        self.section = section
         self.description = description
-        self.languages = languages
+        self.languages = languages.map { $0.lowercased() }
+        self.displayRole = displayRole
         self.bundledContent = bundledContent
         self.isBeta = isBeta
     }
@@ -101,10 +100,12 @@ enum BuiltInUserScripts {
         "https://userscripts.adtidy.org/beta/popup-blocker/2.5/popupblocker.user.js"
     static let tinyShieldURL =
         "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
-    static let tinyShieldGroupedURLPrefix =
+    static let legacyTinyShieldGroupedURLPrefix =
         "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/"
     static let tinyShieldDescription =
         "tinyShield helps block ads reinserted by Ad-Shield on matching sites."
+    static let retiredYouTubeAdBlockURL =
+        "https://raw.githubusercontent.com/SysAdminDoc/YoutubeAdblock/main/YoutubeAdblock.user.js"
 
     // Bundled "cleaner" userscripts (Vinegar/Baking Soda style). These ship
     // embedded in the framework; the URLs below are stable identities only and
@@ -119,28 +120,13 @@ enum BuiltInUserScripts {
     static let playerCleanerDescription =
         "Gives custom web players native controls, auto PiP, background playback, restored subtitle and chapter tracks, Now Playing metadata, and remembered playback preferences."
 
-    private static func tinyShieldGroupedDefinition(
-        _ domainGroup: String,
-        displayDomain: String? = nil,
-        languages: [String]
-    ) -> BuiltInUserScriptDefinition {
-        let initial = domainGroup.prefix(1).lowercased()
-        return BuiltInUserScriptDefinition(
-            name: "tinyShield (\(displayDomain ?? domainGroup))",
-            url: "\(tinyShieldGroupedURLPrefix)\(initial)/tinyShield-\(domainGroup).user.js",
-            isEnabledByDefault: false,
-            section: .foreign,
-            description: tinyShieldDescription,
-            languages: languages
-        )
-    }
-
     static let definitions: [BuiltInUserScriptDefinition] = [
         BuiltInUserScriptDefinition(
             name: "Tube Cleaner",
             url: tubeCleanerURL,
             isEnabledByDefault: false,
             description: tubeCleanerDescription,
+            displayRole: .functionality,
             bundledContent: BundledUserScriptSources.tubeCleaner,
             isBeta: true
         ),
@@ -149,61 +135,51 @@ enum BuiltInUserScripts {
             url: playerCleanerURL,
             isEnabledByDefault: false,
             description: playerCleanerDescription,
+            displayRole: .functionality,
             bundledContent: BundledUserScriptSources.playerCleaner,
             isBeta: true
         ),
         BuiltInUserScriptDefinition(
             name: "Return YouTube Dislike",
             url: "https://raw.githubusercontent.com/Anarios/return-youtube-dislike/main/Extensions/UserScript/Return%20Youtube%20Dislike.user.js",
-            isEnabledByDefault: false
+            isEnabledByDefault: false,
+            displayRole: .functionality
         ),
         BuiltInUserScriptDefinition(
             name: "Bypass Paywalls Clean",
             url: "https://greasyfork.org/scripts/542351-bypass-paywalls-clean-en/code/Bypass%20Paywalls%20Clean%20(EN).user.js",
-            isEnabledByDefault: false
+            isEnabledByDefault: false,
+            languages: ["en"],
+            displayRole: .functionality
         ),
         BuiltInUserScriptDefinition(
             name: "AdGuard Extra",
             url: "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js",
-            isEnabledByDefault: false
+            isEnabledByDefault: false,
+            description: "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases.",
+            displayRole: .blocking
         ),
         BuiltInUserScriptDefinition(
             name: "tinyShield",
             url: tinyShieldURL,
             isEnabledByDefault: true,
-            description: tinyShieldDescription
+            description: tinyShieldDescription,
+            displayRole: .blocking
         ),
         BuiltInUserScriptDefinition(
             name: popupBlockerName,
             url: popupBlockerStableURL,
-            isEnabledByDefault: false
+            isEnabledByDefault: false,
+            displayRole: .blocking
         ),
-        tinyShieldGroupedDefinition("autobild.de", languages: ["de"]),
-        tinyShieldGroupedDefinition("bild.de", languages: ["de"]),
-        tinyShieldGroupedDefinition("computerbild.de", languages: ["de"]),
-        tinyShieldGroupedDefinition("gutefrage.net", languages: ["de"]),
-        tinyShieldGroupedDefinition("welt.de", languages: ["de"]),
-        tinyShieldGroupedDefinition("geo.fr", languages: ["fr"]),
-        tinyShieldGroupedDefinition("lerobert.com", languages: ["fr"]),
-        tinyShieldGroupedDefinition("programme-tv.net", languages: ["fr"]),
-        tinyShieldGroupedDefinition("kuruma-news.jp", languages: ["ja"]),
-        tinyShieldGroupedDefinition("oricon.co.jp", languages: ["ja"]),
-        tinyShieldGroupedDefinition("toyokeizai.net", languages: ["ja"]),
-        tinyShieldGroupedDefinition("dogdrip.net", languages: ["ko"]),
-        tinyShieldGroupedDefinition("sportalkorea.com", languages: ["ko"]),
-        tinyShieldGroupedDefinition("ygosu.com", languages: ["ko"]),
-        tinyShieldGroupedDefinition("dziennik.pl", languages: ["pl"]),
-        tinyShieldGroupedDefinition("doviz.com", languages: ["tr"]),
-        tinyShieldGroupedDefinition("elnacional.cat", languages: ["ca"]),
-        tinyShieldGroupedDefinition("pravda.com.ua", languages: ["uk"]),
-        tinyShieldGroupedDefinition("slobodnadalmacija.hr", languages: ["hr"])
     ]
 
     static let protectedURLs = Set(definitions.map(\.url))
     static let legacyProtectedURLs = Set([legacyPopupBlockerBetaURL])
     static let allProtectedURLs = protectedURLs.union(legacyProtectedURLs)
-    static let sectionByURL = Dictionary(uniqueKeysWithValues: definitions.map { ($0.url, $0.section) })
-    static let languagesByURL = Dictionary(uniqueKeysWithValues: definitions.map { ($0.url, $0.languages) })
+    static let displayRoleByURL = Dictionary(uniqueKeysWithValues: definitions.compactMap { definition in
+        definition.displayRole.map { (definition.url, $0) }
+    })
     /// Embedded source for bundled userscripts, keyed by their identity URL.
     static let bundledContentByURL: [String: String] = Dictionary(
         uniqueKeysWithValues: definitions.compactMap { definition in
@@ -212,6 +188,9 @@ enum BuiltInUserScripts {
     )
     static let isBetaByURL = Dictionary(
         uniqueKeysWithValues: definitions.filter(\.isBeta).map { ($0.url, true) }
+    )
+    static let languagesByURL = Dictionary(
+        uniqueKeysWithValues: definitions.map { ($0.url, $0.languages) }
     )
 
     /// Returns the embedded source for a bundled userscript URL, or nil when the
@@ -321,7 +300,7 @@ public class UserScriptManager: ObservableObject {
     private static let maximumRequireBytes = 5 * 1024 * 1024
     private static let maximumRequireBytesPerScript = 20 * 1024 * 1024
     private static let maximumRequiresPerScript = 32
-    private static let maximumUserScriptBytes = 10 * 1024 * 1024
+    private static let maximumUserScriptBytes = UserScriptImportLimits.maximumSourceFileBytes
 
     nonisolated private static func resourceCacheFitsLimits(_ resources: [String: String]) -> Bool {
         guard resources.count <= maximumResourcesPerScript else { return false }
@@ -378,12 +357,19 @@ public class UserScriptManager: ObservableObject {
         guard script.content.isEmpty else { return script }
 
         return await Task.detached { [script] in
-            var hydratedScript = script
-            if let content = Self.readUserScriptContentOffMain(script) {
-                hydratedScript.replaceContentAndParseMetadata(content)
-            }
-            return hydratedScript
+            Self.hydrateUserScriptFromDisk(script)
         }.value
+    }
+
+    /// Returns local scripts with source hydrated for cloud serialization and reconciliation.
+    /// The hydrated copies are deliberately not assigned to `userScripts`, preserving the
+    /// disk-backed idle representation for disabled scripts.
+    public func cloudSyncLocalUserScripts() async -> [UserScript] {
+        await hydrateUserScriptsFromDisk(
+            userScripts.filter(\.isLocal),
+            includeResources: false,
+            hydrateDisabled: true
+        )
     }
 
     private func resolveMetadataURL(_ rawValue: String, relativeTo userScript: UserScript) -> URL? {
@@ -688,9 +674,9 @@ public class UserScriptManager: ObservableObject {
         return BuiltInUserScripts.allProtectedURLs.contains(urlString)
     }
 
-    public func builtInSection(for userScript: UserScript) -> BuiltInUserScriptSection? {
+    public func builtInDisplayRole(for userScript: UserScript) -> BuiltInUserScriptDisplayRole? {
         guard let urlString = userScript.url?.absoluteString else { return nil }
-        return BuiltInUserScripts.sectionByURL[urlString]
+        return BuiltInUserScripts.displayRoleByURL[urlString]
     }
 
     public func builtInLanguages(for userScript: UserScript) -> [String] {
@@ -774,7 +760,8 @@ public class UserScriptManager: ObservableObject {
         // Update content from stored files (do file I/O off main thread)
         let updatedScripts = await hydrateUserScriptsFromDisk(
             newUserScripts,
-            includeResources: false
+            includeResources: false,
+            hydrateDisabled: false
         )
 
         // Only update if the scripts have actually changed to avoid unnecessary UI updates
@@ -786,25 +773,32 @@ public class UserScriptManager: ObservableObject {
 
     private func hydrateUserScriptsFromDisk(
         _ userScripts: [UserScript],
-        includeResources: Bool
+        includeResources: Bool,
+        hydrateDisabled: Bool = true
     ) async -> [UserScript] {
         await Task.detached {
             Self.hydrateUserScriptsFromDiskOffMain(
                 userScripts,
-                includeResources: includeResources
+                includeResources: includeResources,
+                hydrateDisabled: hydrateDisabled
             )
         }.value
     }
 
     nonisolated private static func hydrateUserScriptsFromDiskOffMain(
         _ userScripts: [UserScript],
-        includeResources: Bool
+        includeResources: Bool,
+        hydrateDisabled: Bool
     ) -> [UserScript] {
         var scripts = userScripts
         for i in scripts.indices {
-            if let content = readUserScriptContentOffMain(scripts[i]) {
-                scripts[i].replaceContentAndParseMetadata(content)
+            if !hydrateDisabled && !scripts[i].isEnabled {
+                scripts[i].content = ""
+                scripts[i].resourceContents = [:]
+                continue
             }
+
+            scripts[i] = hydrateUserScriptFromDisk(scripts[i])
 
             guard includeResources else { continue }
             if let resources = readUserScriptResourcesOffMain(scripts[i]) {
@@ -812,6 +806,35 @@ public class UserScriptManager: ObservableObject {
             }
         }
         return scripts
+    }
+
+    /// Hydrates source content without discarding display metadata chosen for a local import.
+    nonisolated private static func hydrateUserScriptFromDisk(_ script: UserScript) -> UserScript {
+        var hydratedScript = script
+        guard let content = readUserScriptContentOffMain(script) else { return hydratedScript }
+
+        let persistedName = script.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let persistedDescription = script.description
+        hydratedScript.replaceContentAndParseMetadata(content)
+
+        // Parsing large scripts can allocate tens of thousands of metadata strings
+        // that are identical to the persisted protobuf values. Reuse the persisted
+        // array storage after validating it against the source-derived metadata.
+        let persistedArrayFields: [WritableKeyPath<UserScript, [String]>] = [
+            \.matches, \.excludeMatches, \.includes, \.excludes, \.grant,
+        ]
+        for keyPath in persistedArrayFields
+        where hydratedScript[keyPath: keyPath] == script[keyPath: keyPath] {
+            hydratedScript[keyPath: keyPath] = script[keyPath: keyPath]
+        }
+
+        if script.isLocal {
+            if !persistedName.isEmpty {
+                hydratedScript.name = script.name
+            }
+            hydratedScript.description = persistedDescription
+        }
+        return hydratedScript
     }
 
     /// Read userscript content off the main thread
@@ -1054,6 +1077,9 @@ public class UserScriptManager: ObservableObject {
             UserScriptManagerNotificationKey.isLocal: userScript.isLocal,
         ]
 
+        if let identity = UserScriptImportIdentity.normalized(userScript.localImportIdentity) {
+            info[UserScriptManagerNotificationKey.localImportIdentity] = identity
+        }
         if let url = userScript.url?.absoluteString {
             info[UserScriptManagerNotificationKey.url] = url
         }
@@ -1122,7 +1148,9 @@ public class UserScriptManager: ObservableObject {
             }
         }
 
+        await removeRetiredYouTubeAdBlockIfNeeded()
         await migrateLegacyPopupBlockerIfNeeded()
+        await migrateLegacyTinyShieldVariantsIfNeeded()
 
         // Always check for missing default scripts first
         await checkAndAddMissingDefaultScripts()
@@ -1138,7 +1166,8 @@ public class UserScriptManager: ObservableObject {
         } else {
             let hydratedScripts = await hydrateUserScriptsFromDisk(
                 userScripts,
-                includeResources: true
+                includeResources: true,
+                hydrateDisabled: false
             )
 
             for script in hydratedScripts {
@@ -1410,6 +1439,21 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
+    private func removeRetiredYouTubeAdBlockIfNeeded() async {
+        let retiredScripts = userScripts.filter {
+            $0.url?.absoluteString == BuiltInUserScripts.retiredYouTubeAdBlockURL
+        }
+        guard !retiredScripts.isEmpty else { return }
+
+        for script in retiredScripts {
+            removeUserScriptFile(script)
+        }
+        userScripts.removeAll {
+            $0.url?.absoluteString == BuiltInUserScripts.retiredYouTubeAdBlockURL
+        }
+        await persistUserScriptsNow()
+    }
+
     @MainActor
     private func migrateLegacyPopupBlockerIfNeeded() async {
         guard let stableURL = URL(string: BuiltInUserScripts.popupBlockerStableURL) else {
@@ -1475,6 +1519,28 @@ public class UserScriptManager: ObservableObject {
         if needsStableDownload {
             await downloadMissingDefaultScripts()
         }
+    }
+
+    private func migrateLegacyTinyShieldVariantsIfNeeded() async {
+        let legacyScripts = userScripts.filter {
+            $0.url?.absoluteString.hasPrefix(BuiltInUserScripts.legacyTinyShieldGroupedURLPrefix) == true
+        }
+        guard !legacyScripts.isEmpty else { return }
+
+        let shouldEnableFullScript = legacyScripts.contains { $0.isEnabled }
+        for script in legacyScripts {
+            removeUserScriptFile(script)
+        }
+        userScripts.removeAll {
+            $0.url?.absoluteString.hasPrefix(BuiltInUserScripts.legacyTinyShieldGroupedURLPrefix) == true
+        }
+        if shouldEnableFullScript,
+           let fullIndex = userScripts.firstIndex(where: {
+               $0.url?.absoluteString == BuiltInUserScripts.tinyShieldURL
+           }) {
+            userScripts[fullIndex].isEnabled = true
+        }
+        await persistUserScriptsNow()
     }
 
     private func shouldPrefetchMetadata(for userScript: UserScript) -> Bool {
@@ -1800,10 +1866,15 @@ public class UserScriptManager: ObservableObject {
         updated.isEnabled = existing.isEnabled
         updated.isLocal = existing.isLocal
         updated.updatesAutomatically = existing.updatesAutomatically
+        updated.category = existing.category
         updated.content = content
         updated.resourceContents = resources
         updated.lastUpdated = Date()
         return updated
+    }
+
+    public func hasDownloadedContent(for userScript: UserScript) -> Bool {
+        userScript.isDownloaded || userScriptFileExists(userScript)
     }
 
     private func userScriptFileExists(_ userScript: UserScript) -> Bool {
@@ -1815,7 +1886,7 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    private func hasMetadataBlock(in content: String) -> Bool {
+    nonisolated private static func hasMetadataBlock(in content: String) -> Bool {
         if UserScript.detectsUserStyle(in: content) { return true }
 
         let lines = content.split(whereSeparator: \.isNewline)
@@ -1833,7 +1904,7 @@ public class UserScriptManager: ObservableObject {
         return false
     }
 
-    private func baseName(for fileURL: URL) -> String {
+    nonisolated private static func baseName(for fileURL: URL) -> String {
         UserScriptURLSupport.displayName(forFilename: fileURL.lastPathComponent)
     }
 
@@ -1854,11 +1925,13 @@ public class UserScriptManager: ObservableObject {
         copy.resourceContents = script.resourceContents
         copy.noframes = script.noframes
         copy.isLocal = script.isLocal || script.url == nil || script.url?.isFileURL == true
-        copy.updateURL = script.updateURL
-        copy.downloadURL = script.downloadURL
+        copy.updateURL = copy.isLocal ? nil : script.updateURL
+        copy.downloadURL = copy.isLocal ? nil : script.downloadURL
         copy.lastUpdated = script.lastUpdated
         copy.isUserStyle = script.isUserStyle
         copy.updatesAutomatically = script.updatesAutomatically
+        copy.category = script.category
+        copy.localImportIdentity = UserScriptImportIdentity.normalized(script.localImportIdentity)
         return copy
     }
 
@@ -1874,16 +1947,10 @@ public class UserScriptManager: ObservableObject {
         var mergedScripts = userScripts
 
         for restoredScript in restoredScripts {
-            let restoredLocalName = restoredScript.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            let existingIndex = mergedScripts.firstIndex { script in
-                if let restoredURL = restoredScript.url {
-                    return script.url == restoredURL
-                }
-
-                return script.isLocal
-                    && script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == restoredLocalName
-            }
-
+            let existingIndex = UserScriptRestoreMatcher.matchingIndex(
+                for: restoredScript,
+                in: mergedScripts
+            )
             let targetID = existingIndex.map { mergedScripts[$0].id } ?? restoredScript.id
             let scriptToRestore = backupCopy(of: restoredScript, id: targetID)
 
@@ -1992,7 +2059,95 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    public func addUserScript(fromLocalFile fileURL: URL) async -> Error? {
+    nonisolated public static func stageUserScriptImport(fromLocalFile fileURL: URL) throws -> UserScript {
+        let filename = fileURL.lastPathComponent
+        let lowercased = filename.lowercased()
+        let isSupportedType = lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
+            || lowercased.hasSuffix(".user.css") || lowercased.hasSuffix(".css")
+        guard isSupportedType else { throw UserScriptImportError.unsupportedType }
+
+        let fileSize = try fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        guard fileSize <= UserScriptImportLimits.maximumSourceFileBytes else {
+            throw UserScriptImportError.fileTooLarge
+        }
+
+        let data: Data
+        do {
+            data = try Data(contentsOf: fileURL)
+        } catch {
+            throw UserScriptImportError.unreadableFile
+        }
+        guard let content = String(data: data, encoding: .utf8) else {
+            throw UserScriptImportError.unreadableFile
+        }
+
+        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedContent.isEmpty else { throw UserScriptImportError.emptyContent }
+        guard Self.hasMetadataBlock(in: content) else { throw UserScriptImportError.missingMetadata }
+
+        var staged = UserScript(name: Self.baseName(for: fileURL), content: content)
+        staged.parseMetadata()
+        if staged.isUserStyle,
+           let style = UserStyleSupport.parsed(from: content),
+           !style.isPreprocessorSupported
+        {
+            throw UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor)
+        }
+        if staged.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            staged.name = Self.baseName(for: fileURL)
+        }
+        // Metadata is retained in the source for display, but local imports can
+        // never use its remote update endpoints.
+        staged.updateURL = nil
+        staged.downloadURL = nil
+        staged.isEnabled = true
+        staged.isLocal = true
+        staged.localImportIdentity = UserScriptImportIdentity.forFileURL(fileURL)
+        return staged
+    }
+
+    public func stageUserScriptImport(fromLocalFile fileURL: URL) throws -> UserScript {
+        try Self.stageUserScriptImport(fromLocalFile: fileURL)
+    }
+
+    public func addUserScript(
+        fromStagedImport staged: UserScript,
+        nameOverride: String,
+        descriptionOverride: String,
+        category: FilterListCategory
+    ) async -> Error? {
+        isLoading = true
+        statusDescription = staged.isUserStyle ? "Importing userstyle..." : "Importing userscript..."
+        hasError = false
+
+        do {
+            _ = try await importLocalUserScript(
+                content: staged.content,
+                fallbackName: staged.name,
+                importedStatusVerb: "Imported",
+                replacedStatusVerb: "Replaced",
+                nameOverride: nameOverride,
+                descriptionOverride: descriptionOverride,
+                categoryOverride: category,
+                localImportIdentity: staged.localImportIdentity
+            )
+            isLoading = false
+            return nil
+        } catch {
+            hasError = true
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            statusDescription = "Import failed"
+            isLoading = false
+            return error
+        }
+    }
+
+    public func addUserScript(
+        fromLocalFile fileURL: URL,
+        nameOverride: String? = nil,
+        descriptionOverride: String? = nil,
+        category: FilterListCategory? = nil
+    ) async -> Error? {
         isLoading = true
         statusDescription = UserStyleSupport.isUserStylePath(fileURL.lastPathComponent)
             ? "Importing userstyle..." : "Importing userscript..."
@@ -2006,29 +2161,17 @@ public class UserScriptManager: ObservableObject {
         }
 
         do {
-            let filename = fileURL.lastPathComponent
-            let lowercased = filename.lowercased()
-            let isSupportedType = lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
-                || lowercased.hasSuffix(".user.css") || lowercased.hasSuffix(".css")
-
-            guard isSupportedType else { throw UserScriptImportError.unsupportedType }
-
-            let data: Data
-            do {
-                data = try Data(contentsOf: fileURL)
-            } catch {
-                throw UserScriptImportError.unreadableFile
-            }
-
-            guard let content = String(data: data, encoding: .utf8) else {
-                throw UserScriptImportError.unreadableFile
-            }
+            let staged = try stageUserScriptImport(fromLocalFile: fileURL)
 
             _ = try await importLocalUserScript(
-                content: content,
-                fallbackName: baseName(for: fileURL),
+                content: staged.content,
+                fallbackName: staged.name,
                 importedStatusVerb: "Imported",
-                replacedStatusVerb: "Replaced"
+                replacedStatusVerb: "Replaced",
+                nameOverride: nameOverride,
+                descriptionOverride: descriptionOverride,
+                categoryOverride: category,
+                localImportIdentity: staged.localImportIdentity
             )
 
             isLoading = false
@@ -2042,7 +2185,14 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    public func addUserScript(fromSourceContent content: String) async -> Error? {
+    public func addUserScript(
+        fromSourceContent content: String,
+        nameOverride: String? = nil,
+        descriptionOverride: String? = nil,
+        category: FilterListCategory? = nil,
+        localImportIdentity: String? = nil,
+        legacyLocalImportMatching: Bool = false
+    ) async -> Error? {
         isLoading = true
         statusDescription = "Adding userscript..."
         hasError = false
@@ -2052,7 +2202,12 @@ public class UserScriptManager: ObservableObject {
                 content: content,
                 fallbackName: "Pasted Userscript",
                 importedStatusVerb: "Added",
-                replacedStatusVerb: "Updated"
+                replacedStatusVerb: "Updated",
+                nameOverride: nameOverride,
+                descriptionOverride: descriptionOverride,
+                categoryOverride: category,
+                localImportIdentity: localImportIdentity ?? UserScriptImportIdentity.forContent(content),
+                legacyLocalImportMatching: legacyLocalImportMatching
             )
 
             isLoading = false
@@ -2071,7 +2226,12 @@ public class UserScriptManager: ObservableObject {
         content rawContent: String,
         fallbackName: String,
         importedStatusVerb: String,
-        replacedStatusVerb: String
+        replacedStatusVerb: String,
+        nameOverride: String? = nil,
+        descriptionOverride: String? = nil,
+        categoryOverride: FilterListCategory? = nil,
+        localImportIdentity: String? = nil,
+        legacyLocalImportMatching: Bool = false
     ) async throws -> UserScript {
         let trimmedContent = rawContent.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -2079,7 +2239,7 @@ public class UserScriptManager: ObservableObject {
             throw UserScriptImportError.emptyContent
         }
 
-        guard hasMetadataBlock(in: rawContent) else {
+        guard Self.hasMetadataBlock(in: rawContent) else {
             throw UserScriptImportError.missingMetadata
         }
 
@@ -2095,13 +2255,22 @@ public class UserScriptManager: ObservableObject {
 
         let metadataName = tempScript.name.trimmingCharacters(in: .whitespacesAndNewlines)
         let fallbackName = fallbackName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let canonicalName = !metadataName.isEmpty
-            ? metadataName : (fallbackName.isEmpty ? "Pasted Userscript" : fallbackName)
+        let overrideName = nameOverride?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let canonicalName = !overrideName.isEmpty
+            ? overrideName
+            : (!metadataName.isEmpty ? metadataName : (fallbackName.isEmpty ? "Pasted Userscript" : fallbackName))
 
-        let existingIndex = userScripts.firstIndex { script in
-            script.isLocal
-                && script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-                    == canonicalName.lowercased()
+        let stableIdentity = UserScriptImportIdentity.normalized(localImportIdentity)
+            ?? UserScriptImportIdentity.forContent(rawContent)
+        let existingIndex = userScripts.firstIndex {
+            UserScript.matchesLocalImport(
+                existing: $0,
+                // A legacy CloudSync entry deliberately has no identity, so it
+                // retains the old name-based replacement behavior. Normal local
+                // imports pass an explicit file/content identity.
+                stableIdentity: legacyLocalImportMatching ? nil : stableIdentity,
+                canonicalName: canonicalName
+            )
         }
 
         let scriptID = existingIndex.flatMap { userScripts[$0].id } ?? UUID()
@@ -2109,9 +2278,17 @@ public class UserScriptManager: ObservableObject {
         newUserScript.isEnabled = existingIndex.map { userScripts[$0].isEnabled } ?? true
         newUserScript.updatesAutomatically = existingIndex.map { userScripts[$0].updatesAutomatically } ?? true
         newUserScript.isLocal = true
+        // A legacy CloudSync update matched by display name must not replace the
+        // stable file identity. Otherwise its next delete/backup can target the
+        // wrong duplicate and lose the existing per-site state keyed by script ID.
+        newUserScript.localImportIdentity = UserScript.localImportIdentityForUpdate(
+            existing: existingIndex.map { userScripts[$0] },
+            requestedIdentity: stableIdentity,
+            preserveExistingIdentity: legacyLocalImportMatching
+        ) ?? UserScriptImportIdentity.normalized(stableIdentity)
         newUserScript.lastUpdated = Date()
 
-        newUserScript.description = tempScript.description
+        newUserScript.description = descriptionOverride ?? tempScript.description
         newUserScript.version = tempScript.version
         newUserScript.matches = tempScript.matches
         newUserScript.excludeMatches = tempScript.excludeMatches
@@ -2124,9 +2301,12 @@ public class UserScriptManager: ObservableObject {
         newUserScript.resource = tempScript.resource
         newUserScript.resourceContents = tempScript.resourceContents
         newUserScript.noframes = tempScript.noframes
-        newUserScript.updateURL = tempScript.updateURL
-        newUserScript.downloadURL = tempScript.downloadURL
+        // Local imports retain the source metadata in content, but never retain
+        // remote endpoints that an updater could fetch.
+        newUserScript.updateURL = nil
+        newUserScript.downloadURL = nil
         newUserScript.isUserStyle = tempScript.isUserStyle
+        newUserScript.category = categoryOverride ?? existingIndex.map { userScripts[$0].category } ?? .scripts
 
         let processedContent = await processRequireDirectives(newUserScript)
         let resourceContents = await processResourceDirectives(newUserScript)
@@ -2214,6 +2394,15 @@ public class UserScriptManager: ObservableObject {
         logger.info("💾 Persisting userscript setEnabled for \(userScript.name): \(isEnabled)")
         await persistUserScriptsNow()
         logger.info("💾 Userscripts saved after setEnabled")
+    }
+
+    /// Sets the userscript category used for local organization and sync.
+    public func setUserScript(_ userScript: UserScript, category: FilterListCategory) async {
+        guard let index = userScripts.firstIndex(where: { $0.id == userScript.id }) else { return }
+        guard userScripts[index].category != category else { return }
+
+        userScripts[index].category = category
+        await persistUserScriptsNow(invalidateExecutionCache: false)
     }
 
     /// Sets whether bulk and scheduled updates should include this userscript.
@@ -2410,7 +2599,11 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func updateUserScript(_ userScript: UserScript) async {
-        guard let url = userScript.url else { return }
+        guard let index = userScripts.firstIndex(where: { $0.id == userScript.id }),
+              !userScripts[index].isLocal,
+              let url = userScripts[index].url,
+              url.scheme?.lowercased() == "http" || url.scheme?.lowercased() == "https"
+        else { return }
 
         await MainActor.run {
             isLoading = true
@@ -2469,6 +2662,22 @@ public class UserScriptManager: ObservableObject {
         logger.info("Saved edited content for \(self.userScripts[index].name)")
     }
 
+    /// Persists display metadata overrides for an editable local import.
+    @discardableResult
+    public func setUserScriptMetadataOverrides(
+        for scriptId: UUID,
+        name: String,
+        description: String
+    ) async -> Bool {
+        guard let index = indexOfUserScript(withId: scriptId), userScripts[index].isLocal else { return false }
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return false }
+        userScripts[index].name = trimmedName
+        userScripts[index].description = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        await persistUserScriptsNow(invalidateExecutionCache: false)
+        return true
+    }
+
     public struct AutoUpdateResult: Sendable {
         public let updated: Int
         public let failed: Int
@@ -2482,6 +2691,7 @@ public class UserScriptManager: ObservableObject {
     /// Resolves the lightweight metadata URL for a userscript.
     /// Priority: @updateURL > .user.js -> .meta.js derivation > nil (skip meta check).
     private func resolveMetaURL(for script: UserScript) -> URL? {
+        guard !script.isLocal else { return nil }
         if let updateURLString = script.updateURL, let url = URL(string: updateURLString) {
             return url
         }
@@ -2495,6 +2705,7 @@ public class UserScriptManager: ObservableObject {
     /// Resolves the full script download URL.
     /// Priority: @downloadURL > script.url.
     private func resolveDownloadURL(for script: UserScript) -> URL? {
+        guard !script.isLocal else { return nil }
         if let downloadURLString = script.downloadURL, let url = URL(string: downloadURLString) {
             return url
         }
@@ -2566,7 +2777,9 @@ public class UserScriptManager: ObservableObject {
     /// Phase 2: download full script, process directives, write if content changed.
     /// Falls back to full download + content comparison if meta check is inconclusive.
     private func updateSingleScript(_ candidate: UserScript) async throws -> Bool {
-        guard userScripts.contains(where: { $0.id == candidate.id }) else { return false }
+        guard !candidate.isLocal,
+              userScripts.contains(where: { $0.id == candidate.id })
+        else { return false }
 
         // Phase 1: Try meta check
         let metaURL = resolveMetaURL(for: candidate)
@@ -2624,7 +2837,7 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func downloadAndEnableUserScript(_ userScript: UserScript) async {
-        guard let url = userScript.url else { return }
+        guard !userScript.isLocal, let url = userScript.url else { return }
 
         await MainActor.run {
             isLoading = true
@@ -2665,14 +2878,13 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func getEnabledUserScriptsForURL(_ url: String) -> [UserScript] {
+        guard !BlockingPauseStore.isPaused(.userScripts) else { return [] }
         let enabledScripts = userScripts.filter { $0.isEnabled }
         let matchingScripts = enabledScripts.filter { $0.matches(url: url) }
         let host = URL(string: url)?.host ?? ""
-        let runnableScripts = Self.suppressingRedundantTinyShieldVariants(
-            matchingScripts.filter {
-                !isUserScript($0, disabledOnHost: host)
-            }
-        )
+        let runnableScripts = matchingScripts.filter {
+            !isUserScript($0, disabledOnHost: host)
+        }
 
         #if DEBUG
         logger.debug(
@@ -2684,6 +2896,7 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func enabledDocumentStartUserScriptsForCache() async -> [UserScript] {
+        guard !BlockingPauseStore.isPaused(.userScripts) else { return [] }
         let scripts = userScripts.filter {
             $0.isEnabled && !$0.isUserStyle && $0.runAt == "document-start"
         }
@@ -2691,20 +2904,8 @@ public class UserScriptManager: ObservableObject {
         return hydrated.filter(BuiltInUserScripts.isCanonicalBundled)
     }
 
-    /// The grouped regional tinyShield scripts are strict subsets of the full tinyShield
-    /// script. When both would run on a page, the same code would execute twice, so the
-    /// full script wins and the grouped variants are dropped.
-    private static func suppressingRedundantTinyShieldVariants(_ scripts: [UserScript]) -> [UserScript] {
-        guard scripts.contains(where: { $0.url?.absoluteString == BuiltInUserScripts.tinyShieldURL }) else {
-            return scripts
-        }
-        return scripts.filter { script in
-            guard let urlString = script.url?.absoluteString else { return true }
-            return !urlString.hasPrefix(BuiltInUserScripts.tinyShieldGroupedURLPrefix)
-        }
-    }
-
     public func pageUserScripts(for url: String) -> [(script: UserScript, disabledForSite: Bool)] {
+        guard !BlockingPauseStore.isPaused(.userScripts) else { return [] }
         let host = URL(string: url)?.host ?? ""
         let pageScripts = userScripts
             .filter { $0.isEnabled && $0.matches(url: url) }
@@ -2712,16 +2913,7 @@ public class UserScriptManager: ObservableObject {
                 (script: script, disabledForSite: isUserScript(script, disabledOnHost: host))
             }
 
-        // Mirror the injection-time dedup: hide grouped tinyShield variants whenever the
-        // full script actually runs on this page, so the popup reflects what is injected.
-        let fullTinyShieldRuns = pageScripts.contains {
-            !$0.disabledForSite && $0.script.url?.absoluteString == BuiltInUserScripts.tinyShieldURL
-        }
-        guard fullTinyShieldRuns else { return pageScripts }
-        return pageScripts.filter { item in
-            guard let urlString = item.script.url?.absoluteString else { return true }
-            return !urlString.hasPrefix(BuiltInUserScripts.tinyShieldGroupedURLPrefix)
-        }
+        return pageScripts
     }
 
     @discardableResult

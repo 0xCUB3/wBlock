@@ -16,4 +16,22 @@ class FilterUpdateService: NSObject, FilterUpdateProtocol {
             reply(outcome.isSuccessfulForBackgroundTask)
         }
     }
+
+    func startFilterUpdate(_ reply: @escaping (Bool) -> Void) {
+        guard FilterUpdatePopupStatus.beginIfIdle() else {
+            reply(false)
+            return
+        }
+
+        // Acknowledge after claiming the shared status, then keep the existing
+        // updater alive in the background. No containing-app activation occurs.
+        reply(true)
+        Task {
+            let outcome = await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
+                trigger: "XPCService",
+                force: true
+            )
+            FilterUpdatePopupStatus.finish(outcome)
+        }
+    }
 }

@@ -6,13 +6,47 @@
 //
 
 import SwiftUI
+import CoreFoundation
 import wBlockCoreService
+
+private extension Notification.Name {
+    static let wBlockResumeRequest = Notification.Name("wBlockResumeRequest")
+    static let wBlockFilterUpdateRequest = Notification.Name("wBlockFilterUpdateRequest")
+}
 
 #if os(macOS)
     let APP_CONTENT_BLOCKER_ID = "skula.wBlock.wBlock-Filters"
 #else
     let APP_CONTENT_BLOCKER_ID = "skula.wBlock.wBlock-Filters-iOS"
 #endif
+
+struct ApplyFilterConfiguration: Equatable {
+    let id: UUID
+    let name: String
+    let url: URL
+    let category: FilterListCategory
+    let isCustom: Bool
+    let hasUserProvidedName: Bool
+
+    init(_ filter: FilterList) {
+        id = filter.id
+        name = filter.name
+        url = filter.url
+        category = filter.category
+        isCustom = filter.isCustom
+        hasUserProvidedName = filter.hasUserProvidedName
+    }
+}
+
+struct ApplyRunSnapshot {
+    let filters: [FilterList]
+    let configurations: [ApplyFilterConfiguration]
+    let selectedFilterIDs: Set<UUID>
+    let customFilterKeys: Set<String>
+    let disabledSites: [String]
+    let activeZapperRules: [String: [String]]
+    let disabledZapperDomains: Set<String>
+}
 
 @MainActor
 class AppFilterManager: ObservableObject {
@@ -33,6 +67,7 @@ class AppFilterManager: ObservableObject {
     @Published var showingApplyProgressSheet = false
     @Published var suppressBlockingOverlay = false
     @Published var isBlockingPaused: Bool = false
+    @Published var pausedComponents: BlockingPauseComponents = []
     @Published var autoDisabledFilters: [FilterList] = []  // Filters auto-disabled due to rule limits
     @Published var showingAutoDisabledAlert = false
 
@@ -53,6 +88,8 @@ class AppFilterManager: ObservableObject {
 
     /// Ensures only one apply/update pipeline runs at a time across entry points.
     var isApplyInFlight = false
+    /// Set only after the current apply has reached a successful terminal state.
+    var lastApplySucceeded = false
 
     // Internal counters used for apply-run summary/progress math.
     var sourceRulesCount: Int = 0
@@ -65,6 +102,20 @@ class AppFilterManager: ObservableObject {
     let logManager: ConcurrentLogManager
     let dataManager = ProtobufDataManager.shared
     private var setupTask: Task<Void, Never>?
+    private var resumeRequestObserver: NSObjectProtocol?
+    private var filterUpdateRequestObserver: NSObjectProtocol?
+    private var resumeApplyInFlight = false
+    private var filterUpdateInFlight = false
+
+    deinit {
+        setupTask?.cancel()
+        if let resumeRequestObserver {
+            NotificationCenter.default.removeObserver(resumeRequestObserver)
+        }
+        if let filterUpdateRequestObserver {
+            NotificationCenter.default.removeObserver(filterUpdateRequestObserver)
+        }
+    }
 
     // Per-site disable tracking
     var lastKnownDisabledSites: [String] = []
@@ -73,17 +124,23 @@ class AppFilterManager: ObservableObject {
         filterLists.filter(\.isCustom)
     }
 
-    private var appliedSelectedFilterIDs: Set<UUID> = []
+    var appliedSelectedFilterIDs: Set<UUID> = []
     private var appliedCustomFilterKeys: Set<String> = []
+    private var appliedFilterConfigurations: [ApplyFilterConfiguration] = []
+    var activeApplySnapshot: ApplyRunSnapshot?
     private var hasPendingSelectionChanges = false
     private var hasPendingNonSelectionChanges = false
 
-    private var selectedFilterIDs: Set<UUID> {
+    var selectedFilterIDs: Set<UUID> {
         Set(filterLists.filter(\.isSelected).map(\.id))
     }
 
-    private var customFilterKeys: Set<String> {
+    var customFilterKeys: Set<String> {
         Set(filterLists.filter(\.isCustom).map(\.url.absoluteString))
+    }
+
+    var filterConfigurations: [ApplyFilterConfiguration] {
+        filterLists.map(ApplyFilterConfiguration.init)
     }
 
     var filterListIndexByID: [UUID: Int] {
@@ -96,8 +153,8 @@ class AppFilterManager: ObservableObject {
     }
 
     func refreshPendingChanges() {
-        hasPendingSelectionChanges =
-            selectedFilterIDs != appliedSelectedFilterIDs
+        hasPendingSelectionChanges = selectedFilterIDs != appliedSelectedFilterIDs
+        hasPendingNonSelectionChanges = filterConfigurations != appliedFilterConfigurations
             || customFilterKeys != appliedCustomFilterKeys
         refreshHasUnappliedChanges()
     }
@@ -112,11 +169,36 @@ class AppFilterManager: ObservableObject {
     func markCurrentStateApplied() {
         appliedSelectedFilterIDs = selectedFilterIDs
         appliedCustomFilterKeys = customFilterKeys
+        appliedFilterConfigurations = filterConfigurations
         hasPendingSelectionChanges = false
         hasPendingNonSelectionChanges = false
         hasUnappliedChanges = false
         autoApplyTask?.cancel()
         autoApplyTask = nil
+    }
+
+    func captureApplySnapshot() {
+        activeApplySnapshot = ApplyRunSnapshot(
+            filters: filterLists,
+            configurations: filterConfigurations,
+            selectedFilterIDs: selectedFilterIDs,
+            customFilterKeys: customFilterKeys,
+            disabledSites: effectiveFilterDisabledSites(),
+            activeZapperRules: dataManager.getActiveZapperRulesByHost(),
+            disabledZapperDomains: Set(dataManager.getDisabledZapperDomains())
+        )
+    }
+
+    func commitApplySnapshot(_ snapshot: ApplyRunSnapshot) {
+        appliedSelectedFilterIDs = snapshot.selectedFilterIDs
+        appliedCustomFilterKeys = snapshot.customFilterKeys
+        appliedFilterConfigurations = snapshot.configurations
+        hasPendingSelectionChanges = selectedFilterIDs != snapshot.selectedFilterIDs
+        hasPendingNonSelectionChanges = filterConfigurations != snapshot.configurations
+            || effectiveFilterDisabledSites() != snapshot.disabledSites
+            || dataManager.getActiveZapperRulesByHost() != snapshot.activeZapperRules
+            || Set(dataManager.getDisabledZapperDomains()) != snapshot.disabledZapperDomains
+        refreshHasUnappliedChanges()
     }
 
     private func refreshHasUnappliedChanges() {
@@ -129,12 +211,17 @@ class AppFilterManager: ObservableObject {
         }
     }
 
-    private func scheduleAutoApplyDebounce() {
+    func scheduleAutoApplyDebounce() {
         autoApplyTask?.cancel()
         autoApplyTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 3_000_000_000)
             guard !Task.isCancelled else { return }
-            guard let self, self.hasUnappliedChanges, !self.isLoading, !self.isApplyInFlight, !self.isBlockingPaused else { return }
+            guard let self,
+                  self.hasUnappliedChanges,
+                  !self.isLoading,
+                  !self.isApplyInFlight,
+                  !self.pausedComponents.contains(.filters)
+            else { return }
             self.checkAndEnableFilters(forceReload: true)
         }
     }
@@ -183,12 +270,150 @@ class AppFilterManager: ObservableObject {
             self.currentPlatform = .iOS
         #endif
 
-        self.isBlockingPaused = BlockingPauseStore.isPaused()
+        self.pausedComponents = BlockingPauseStore.pausedComponents()
+        self.isBlockingPaused = !self.pausedComponents.isEmpty
+        registerResumeRequestObserver()
+        registerFilterUpdateRequestObserver()
 
         // Wait for ProtobufDataManager to finish loading before setting up.
         setupTask = Task { @MainActor [weak self] in
             await self?.setupAsync()
         }
+    }
+
+    private static let resumeRequestRelay: Void = {
+        let notificationName = BlockingPauseStore.resumeRequestNotificationName as CFString
+        // Darwin notifications do not retain their observer pointer. Keep this relay
+        // process-global and forward locally; individual managers own removable
+        // NotificationCenter tokens instead of registering an unowned self pointer.
+        CFNotificationCenterAddObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            nil,
+            AppFilterManager.resumeRequestCallback,
+            notificationName,
+            nil,
+            .deliverImmediately
+        )
+    }()
+
+    private func registerResumeRequestObserver() {
+        _ = Self.resumeRequestRelay
+        resumeRequestObserver = NotificationCenter.default.addObserver(
+            forName: .wBlockResumeRequest,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                guard BlockingPauseStore.consumeResumeRequest() else { return }
+                await self.handleResumeRequest()
+            }
+        }
+
+        if BlockingPauseStore.consumeResumeRequest() {
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                await self.handleResumeRequest()
+            }
+        }
+    }
+
+    private func handleResumeRequest() async {
+        guard !resumeApplyInFlight else { return }
+        resumeApplyInFlight = true
+        defer { resumeApplyInFlight = false }
+
+        // The manager is created before launch migration and filter-list loading finish.
+        // Waiting here prevents a Safari request from applying an empty startup snapshot.
+        await waitUntilReady()
+        guard BlockingPauseStore.isPaused() else {
+            BlockingPauseStore.setResumeSucceeded()
+            return
+        }
+
+        BlockingPauseStore.setResumeApplying()
+        let succeeded = await setBlockingPaused(false)
+        if succeeded {
+            BlockingPauseStore.setResumeSucceeded()
+        } else {
+            BlockingPauseStore.setResumeFailed(
+                statusDescription.isEmpty ? "Failed to resume blocking." : statusDescription
+            )
+        }
+    }
+
+    private static let resumeRequestCallback: CFNotificationCallback = { _, _, _, _, _ in
+        NotificationCenter.default.post(name: .wBlockResumeRequest, object: nil)
+    }
+
+    private static let filterUpdateRequestRelay: Void = {
+        CFNotificationCenterAddObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            nil,
+            AppFilterManager.filterUpdateRequestCallback,
+            FilterUpdatePopupStatus.requestNotificationName as CFString,
+            nil,
+            .deliverImmediately
+        )
+    }()
+
+    private func registerFilterUpdateRequestObserver() {
+        _ = Self.filterUpdateRequestRelay
+        filterUpdateRequestObserver = NotificationCenter.default.addObserver(
+            forName: .wBlockFilterUpdateRequest,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, FilterUpdatePopupStatus.consumeUpdateRequest() else { return }
+                await self.handleFilterUpdateRequest()
+            }
+        }
+
+        if FilterUpdatePopupStatus.consumeUpdateRequest() {
+            Task { @MainActor [weak self] in
+                await self?.handleFilterUpdateRequest()
+            }
+        }
+    }
+
+    private func handleFilterUpdateRequest() async {
+        guard !filterUpdateInFlight else { return }
+        filterUpdateInFlight = true
+        defer { filterUpdateInFlight = false }
+
+        await waitUntilReady()
+        let outcome = await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
+            trigger: "Popup",
+            force: true
+        )
+        FilterUpdatePopupStatus.finish(outcome)
+    }
+
+    private static let filterUpdateRequestCallback: CFNotificationCallback = { _, _, _, _, _ in
+        NotificationCenter.default.post(name: .wBlockFilterUpdateRequest, object: nil)
+    }
+
+    /// Performs the complete reset used by every Restart Onboarding entry point.
+    @MainActor
+    func completeResetForOnboarding() async {
+        resetOnboardingUserDefaults()
+        await dataManager.resetToDefaultData(preservingOnboardingCompletion: true)
+        await resetForOnboarding()
+        await UserScriptManager.shared.simulateFreshInstall()
+        await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
+        _ = await dataManager.setHasCompletedOnboarding(false)
+    }
+
+    private func resetOnboardingUserDefaults() {
+        if let suiteDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) {
+            suiteDefaults.removePersistentDomain(forName: GroupIdentifier.shared.value)
+            suiteDefaults.synchronize()
+        }
+        if let bundleID = Bundle.main.bundleIdentifier {
+            UserDefaults.standard.removePersistentDomain(forName: bundleID)
+        }
+        UserDefaults.standard.synchronize()
     }
 
     /// Resets the manager to its initial state so onboarding can run again.
@@ -298,6 +523,9 @@ class AppFilterManager: ObservableObject {
 
         var migratedFilterLists = loader.migrateFilterURLs(in: storedFilterLists)
         let defaultLists = loader.getDefaultFilterLists()
+        for defaultFilter in defaultLists {
+            loader.migrateBuiltInFilterFilesIfNeeded(defaultFilter)
+        }
         var addedDefaultFilters = false
         let originalURLsByID = Dictionary(
             storedFilterLists.map { ($0.id, $0.url) },
@@ -527,83 +755,52 @@ class AppFilterManager: ObservableObject {
     }
 
     func toggleFilterListSelection(id: UUID) {
-        if let index = filterListIndexByID[id] {
-            filterLists[index].isSelected.toggle()
+        guard let index = filterListIndexByID[id] else { return }
+        setFilterListSelection(id: id, selected: !filterLists[index].isSelected)
+    }
 
-            if filterLists[index].isSelected {
-                filterLists[index].limitExceededReason = nil
-                autoDisabledFilters.removeAll { $0.id == id }
-            }
-
-            saveFilterListsCoalesced()
-            refreshPendingChanges()
+    /// Sets a filter's selection state without depending on the caller's stale toggle state.
+    @discardableResult
+    func setFilterListSelection(id: UUID, selected: Bool) -> Bool {
+        guard let index = filterListIndexByID[id], filterLists[index].isSelected != selected else {
+            return false
         }
+
+        filterLists[index].isSelected = selected
+        if selected {
+            filterLists[index].limitExceededReason = nil
+            autoDisabledFilters.removeAll { $0.id == id }
+        }
+
+        saveFilterListsCoalesced()
+        refreshPendingChanges()
+        return true
     }
 
     // MARK: - Rule limit UX
 
-    func showRuleLimitWarning(for filter: FilterList? = nil) {
+    func showRuleLimitWarning() {
         let ruleLimitPerBlocker = 150_000
         let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
         let totalCapacity = platformTargets.count * ruleLimitPerBlocker
 
         let totalRules = lastRuleCount
-        let totalWarningThreshold = Int(Double(totalCapacity) * 0.8)
+        guard totalRules >= totalCapacity else { return }
 
         var message = ""
-        if let filter, let reason = filter.limitExceededReason, !reason.isEmpty {
-            message = reason
-        } else {
-            let currentRulesLine: String
-            if totalRules >= totalWarningThreshold {
-                currentRulesLine = LocalizedStrings.format(
-                    "Current Safari rules: %@ (near limit)",
-                    comment: "Rule limit warning current rules line when near limit",
-                    totalRules.formatted()
-                )
-            } else {
-                currentRulesLine = LocalizedStrings.format(
-                    "Current Safari rules: %@",
-                    comment: "Rule limit warning current rules line",
-                    totalRules.formatted()
-                )
-            }
+        let currentRulesLine = LocalizedStrings.format(
+            "Current Safari rules: %@",
+            comment: "Rule limit warning current rules line",
+            totalRules.formatted()
+        )
 
-            message = LocalizedStrings.format(
-                "Safari limits each content blocker extension to %@ rules.\nTotal capacity (all wBlock blockers): %@ rules.\n\n%@\n\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists.",
-                comment: "Rule limit warning body",
-                ruleLimitPerBlocker.formatted(),
-                totalCapacity.formatted(),
-                currentRulesLine
-            )
-        }
-
-        let perBlockerWarningThreshold = Int(Double(ruleLimitPerBlocker) * 0.8)
-        let nearLimitBlockers = platformTargets
-            .map { target -> (name: String, count: Int) in
-                (target.displayName, ruleCountsByExtension[target.bundleIdentifier] ?? 0)
-            }
-            .filter { $0.count >= perBlockerWarningThreshold }
-            .sorted { $0.count > $1.count }
-
-        if !nearLimitBlockers.isEmpty {
-            message += "\n\n"
-            message += LocalizedStrings.text(
-                "Blockers near the per-extension limit:",
-                comment: "Rule limit warning section header"
-            )
-            message += "\n"
-            message += nearLimitBlockers
-                .map {
-                    LocalizedStrings.format(
-                        "%@: %@",
-                        comment: "Rule limit warning blocker row",
-                        $0.name,
-                        $0.count.formatted()
-                    )
-                }
-                .joined(separator: "\n")
-        }
+        message = LocalizedStrings.format(
+            "Safari limits each content blocker extension to %@ rules.\nTotal capacity (all wBlock blockers): %@ rules.\n\n%@\n\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists.",
+            comment: "Rule limit warning body",
+            ruleLimitPerBlocker.formatted(),
+            totalCapacity.formatted(),
+            currentRulesLine
+        )
 
         message += "\n\n"
         message += LocalizedStrings.text(
@@ -611,8 +808,8 @@ class AppFilterManager: ObservableObject {
             comment: "Rule limit warning footer note about extra lists"
         )
 
-        let isNearLimit = totalRules >= totalWarningThreshold || !nearLimitBlockers.isEmpty
-        ruleLimitWarningTitle = isNearLimit
+        let isAtTotalLimit = totalRules >= totalCapacity
+        ruleLimitWarningTitle = isAtTotalLimit
             ? LocalizedStrings.text("Rule Limit Warning", comment: "Rule limit warning title")
             : LocalizedStrings.text("Rule Capacity", comment: "Rule capacity title")
         ruleLimitWarningMessage = message

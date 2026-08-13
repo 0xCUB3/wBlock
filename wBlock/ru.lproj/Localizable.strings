@@ -189,7 +189,7 @@
 "Calculated source rule count for filter" = "Подсчитано количество исходных правил фильтра";
 "Cancel" = "Отмена";
 "Category" = "Категория";
-"Changes take full effect after the next apply." = "Изменения полностью вступят в силу после следующего применения.";
+"Element Zapper changes take full effect after the next apply." = "Изменения в инструменте удаления элементов полностью вступят в силу после следующего применения.";
 "Check for Updates" = "Проверить обновления";
 "Checked %@" = "Проверено %@";
 "Checked %@ ago" = "Проверено %@ назад";
@@ -290,6 +290,7 @@
 "Edit Name" = "Переименовать список";
 "Edit User List" = "Редактировать список";
 "Editor" = "Editor";
+"Use Editor" = "Использовать редактор";
 "Element zapper" = "Скрытие элементов";
 "Enable" = "Включить";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Включите 'wBlock Scripts' → Всегда разрешать на всех веб-сайтах";
@@ -406,7 +407,7 @@
 "go" = "Перейти";
 "Go to line" = "Перейти к строке";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"Hagezi Pro Mini" = "Hagezi Pro Mini";
+"HaGeZi Pro Mini" = "HaGeZi Pro Mini";
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Обрабатывает расширенные случаи антиблокировки рекламы, которые пропускают правила фильтрации.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Скрывает всплывающие окна, баннеры и другие нежелательные элементы страницы.";
@@ -437,6 +438,7 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "Добавьте блок метаданных // ==UserScript== (или /* ==UserStyle== */ для пользовательских стилей), чтобы wBlock мог прочитать имя и шаблоны URL.";
 "IndianList" = "IndianList";
 "Info" = "Информация";
+"Integrated" = "Встроенная функция";
 "Info.plist missing" = "Отсутствует Info.plist";
 "Initialized with %d filter list(s)." = "Инициализируется с помощью списков фильтров %d.";
 "International" = "Международные";
@@ -465,7 +467,6 @@
 "Loading script metadata…" = "Загрузка метаданных скрипта…";
 "Loading userscripts…" = "Загрузка пользовательских скриптов…";
 "Local Import" = "Локальный импорт";
-"Log Timestamps" = "Метки времени журналов";
 "Logs" = "Журналы";
 "Logs cleared" = "Журналы очищены";
 "Logs will appear here as the app runs" = "Журналы будут появляться здесь во время работы приложения";
@@ -542,6 +543,9 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Вставьте прямую ссылку на .user.js. wBlock загрузит и установит его автоматически.";
 "Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "Вставьте прямую ссылку на .user.js, .js или .user.css. wBlock скачает и установит её за вас.";
 "Pause Blocking" = "Приостановить блокировку";
+"Enabled Userscripts & Userstyles" = "Включённые пользовательские скрипты и стили";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "Пауза блокировки включена, пока выбранный компонент находится на паузе. Возобновление восстанавливает все компоненты.";
+"Temporarily pause selected components without changing their enabled settings." = "Временно приостановите выбранные компоненты, не изменяя их настройки включения.";
 "Pausing blocking..." = "Приостановка блокировки…";
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
@@ -605,6 +609,7 @@
 "Report an Issue" = "Сообщить о проблеме";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "Нужно для пользовательских скриптов, расширенной блокировки и функций очистки";
 "Required for YouTube ad blocking and much more" = "Требуется для блокировки рекламы на YouTube и многого другого";
+"The selected file is too large. Maximum size is 10 MB." = "Выбранный файл слишком велик. Максимальный размер — 10 МБ.";
 "Requirements" = "Требования";
 "Reset Site Settings" = "Сбросить настройки сайта";
 "Resetting…" = "Сброс…";
@@ -704,7 +709,7 @@
 "Sync across devices" = "Синхронизация между устройствами";
 "Sync Now" = "Синхронизировать сейчас";
 "Sync settings across devices" = "Синхронизировать настройки между устройствами";
-"Sync with device timezone" = "Синхронизировать с часовым поясом устройства";
+"Sync timestamps with device timezone" = "Синхронизировать метки времени с часовым поясом устройства";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Синхронизируйте выбранные фильтры, пользовательские списки, пользовательские скрипты и белый список между устройствами.";
 "Sync: Checking…" = "Синхронизация: Проверка…";
 "Sync: Downloading…" = "Синхронизация: Загрузка…";
@@ -751,7 +756,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Это удалит все фильтры, пользовательские скрипты и настройки, а затем заново запустит начальную настройку.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Это заменит текущие выбранные фильтры, белый список и правила скрытия элементов настройками из резервной копии.";
 "This will reset all filters, userscripts, and preferences." = "Это сбросит все фильтры, пользовательские скрипты и настройки.";
-"Time zone" = "Часовой пояс";
 "Timed out" = "Время ожидания истекло";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "Название";
@@ -770,6 +774,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "Недоступно";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
 "Undo" = "Отменить";
+"Redo" = "Повторить";
+"Element Zapper" = "Zapper элементов";
+"No Element Zapper Rules" = "Нет правил Zapper для элементов";
 "Update" = "Обновить";
 "Update & Apply" = "Обновить и применить";
 "Update Filters" = "Update Filters";
@@ -811,6 +818,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Version \\(filter.version)" = "Версия \\(filter.version)";
 "Version \\(script.version)" = "Версия \\(script.version)";
 "Vietnamese adblock filter list." = "Вьетнамский список фильтров блокировки рекламы.";
+"Delete Script" = "Удалить скрипт";
+"Delete Style" = "Удалить стиль";
+"Edit Content" = "Изменить содержимое";
+"Edit Rules" = "Изменить правила";
+"View Rules" = "Показать правила";
 "View Content" = "Показать содержимое";
 "View Logs" = "Просмотр журналов";
 "Waiting" = "Ожидание";
@@ -831,11 +843,28 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Мы нашли существующую конфигурацию wBlock в iCloud (\\(remoteConfigUpdatedAtText)). Можно пропустить начальную настройку и использовать ее.";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Мы нашли существующую конфигурацию wBlock в iCloud. Можно пропустить начальную настройку и использовать ее.";
 "Web extension %@" = "Веб-расширение %@";
+"Blocks advertisements and other promotional page elements." = "Блокирует рекламу и другие рекламные элементы на страницах.";
+"Blocks trackers, analytics, and other privacy-invasive requests." = "Блокирует трекеры, аналитику и другие запросы, нарушающие конфиденциальность.";
+"Blocks malicious URLs, phishing pages, and unwanted software." = "Блокирует вредоносные URL, фишинговые страницы и нежелательное ПО.";
+"Combines broad ad-blocking and tracking protection in one list." = "Объединяет широкую блокировку рекламы и защиту от отслеживания в одном списке.";
+"Contains filter lists that you added or imported yourself." = "Содержит списки фильтров, добавленные или импортированные вами.";
+"Get Started" = "Начать";
+"No default filters" = "Нет фильтров по умолчанию";
+"Organizes userscripts and userstyles added to wBlock." = "Упорядочивает пользовательские скрипты и стили, добавленные в wBlock.";
+"Provides newer rules and fixes that are still being tested." = "Предоставляет новые правила и исправления, которые ещё тестируются.";
+"Recommended Filters" = "Рекомендуемые фильтры";
+"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Удаляет уведомления о cookie, всплывающие окна, баннеры и другие отвлекающие элементы.";
+"Reset to Default" = "Сбросить по умолчанию";
+"Shows all filter lists across every category." = "Показывает все списки фильтров во всех категориях.";
+"Adds rules tailored to websites and languages from specific regions." = "Добавляет правила для сайтов и языков определённых регионов.";
+"The end of Safari ad-blocking B.S." = "Хватит с нелепостями блокировки рекламы в Safari";
 "Welcome to wBlock!" = "Добро пожаловать в wBlock!";
 "Whitelist" = "Белый список";
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Добавьте сайт в белый список здесь или настройте пользовательские скрипты и правила скрытия элементов для каждого сайта во всплывающем окне wBlock в Safari.";
 "Whitelisted" = "В белом списке";
 "Wrap Lines" = "Перенос строк";
+"On" = "Вкл.";
+"Off" = "Выкл.";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "Вы всегда можете добавить региональные фильтры позже в настройках.";
@@ -850,3 +879,75 @@ To re-enable these filters, disable other large filters and apply changes again.
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Автообновление: пора (запустится при следующем триггере)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 Автообновление: следующее через %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Автообновление: ещё не запускалось (интервал=%dh)";
+
+/* Language picker */
+"Selected" = "Выбранные";
+"Search languages" = "Поиск языков";
+
+"Built-in" = "Встроенный";
+
+/* Filter catalog additions */
+"Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
+"Adblock Warning Removal List" = "Adblock Warning Removal List";
+"Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
+"Stevo's AI Blocklist" = "Stevo's AI Blocklist";
+"AdGuard Allowlist" = "AdGuard Allowlist";
+"Blocks tracking pixels and other mail tracking techniques." = "Блокирует пиксели отслеживания и другие методы отслеживания электронной почты.";
+"Allows sites and resources that should not be blocked." = "Разрешает сайты и ресурсы, которые не следует блокировать.";
+
+
+/* Auto-update controls */
+"Auto-Update" = "Автообновление";
+"Auto-Update Filters & Userscripts" = "Автообновление фильтров и пользовательских скриптов";
+"Update Now" = "Обновить сейчас";
+"Automatically updating %@" = "Автоматическое обновление %@";
+
+/* Add mode controls */
+"Text" = "Текст";
+"Choose File" = "Выбрать файл";
+"Change File" = "Изменить файл";
+"Local imports won't auto-update; re-import to replace." = "Локальные импорты не обновляются автоматически; импортируйте заново для замены.";
+"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra блокирует рекламу Twitch и обрабатывает сложные случаи обхода блокировщиков.";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "Отключить основной фильтр?";
+"Replace Existing Content?" = "Заменить существующее содержимое?";
+"Clear Element Zapper Rules?" = "Удалить правила Element Zapper?";
+"Clear All" = "Удалить всё";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Этот рекомендуемый фильтр входит в основную защиту wBlock. Его отключение может снизить эффективность блокировки.";
+"Pasting will replace the existing editor content." = "Вставка заменит текущее содержимое редактора.";
+"Pasting will replace the existing content." = "Вставка заменит текущее содержимое.";
+"This removes all saved element zapper rules from every site." = "Это удалит все сохранённые правила Element Zapper со всех сайтов.";
+"Clear Element Zapper Rules" = "Удалить правила Element Zapper";
+"Advanced" = "Расширенные";
+"Help" = "Помощь";
+"FAQ" = "Частые вопросы";
+"Report Issues" = "Сообщить о проблеме";
+"Contact Us" = "Связаться с нами";
+"Version" = "Версия";
+"Developer" = "Разработчик";
+"GPL-3.0 License" = "Лицензия GPL-3.0";
+"Privacy Policy" = "Политика конфиденциальности";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "Используйте действительный URL http:// или https://";
+"Include a host name" = "Укажите имя хоста";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Не используйте URL Userscript с окончанием .js, .mjs или .cjs";
+"wBlock will fetch and enable the filter list automatically" = "wBlock автоматически загрузит и включит список фильтров";
+
+/* Issue 508 UI follow-up */
+"Starts with http:// or https://" = "Начинается с http:// или https://";
+"Ends with .js, .user.js, or .user.css" = "Заканчивается на .js, .user.js или .user.css";
+"Hosted on a trusted source" = "Размещён в надёжном источнике";
+
+"The file must include userscript or userstyle metadata." = "Файл должен содержать метаданные userscript или userstyle.";
+
+"Failed to clear downloaded custom filter state; apply again to retry." = "Не удалось очистить состояние загруженного пользовательского фильтра; примените изменения ещё раз, чтобы повторить попытку.";
+"Failed to resume blocking." = "Не удалось возобновить блокировку.";
+/* Userscript display categories */
+"Functionality" = "Функциональность";
+"Appearance" = "Внешний вид";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Скрипты, блокирующие рекламу, меры против блокировщиков и нежелательное поведение страниц.";
+"Userscripts and scripts that add or restore useful website functionality." = "Скрипты, добавляющие или восстанавливающие полезные функции сайтов.";
+"Userstyles and scripts that change the appearance of websites." = "Юзерстили и скрипты, изменяющие внешний вид сайтов.";
+"Custom, remote, and local scripts that do not have a more specific display category." = "Пользовательские, удалённые и локальные скрипты без более подходящей категории отображения.";

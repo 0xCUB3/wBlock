@@ -1,12 +1,9 @@
 import SwiftUI
 import wBlockCoreService
 
-/// Unified per-site settings: whitelist state, per-site userscript exceptions,
-/// and element zapper rules. One card, one expandable row per domain.
+/// Per-site blocking and userscript settings. Element Zapper has its own destination.
 struct SiteSettingsView: View {
-    @ObservedObject var filterManager: AppFilterManager
     @ObservedObject private var dataManager = ProtobufDataManager.shared
-    @ObservedObject private var ruleManager = ZapperRuleManager.shared
     @ObservedObject private var userScriptManager = UserScriptManager.shared
     @State private var newDomain: String = ""
     @State private var isAddingDomain: Bool = false
@@ -15,8 +12,34 @@ struct SiteSettingsView: View {
     @State private var showSearch: Bool = false
     #endif
     @State private var expandedDomains: Set<String> = []
-    @State private var domainPendingReset: String? = nil
-    @State private var pendingUndo: (rule: String, domain: String, index: Int)? = nil
+    private enum PendingConfirmation: Identifiable {
+        case reset(domain: String)
+
+        var id: String {
+            switch self {
+            case .reset(let domain): return "reset:\(domain)"
+            }
+        }
+    }
+
+    private struct SiteSettingsSnapshot: Equatable {
+        let isWhitelisted: Bool
+        let isFilterDisabled: Bool
+        let disabledScriptIDs: Set<String>
+    }
+
+    private struct SiteUndoState {
+        let id = UUID()
+        let domain: String
+        let before: SiteSettingsSnapshot
+        let after: SiteSettingsSnapshot
+    }
+
+    @State private var pendingConfirmation: PendingConfirmation?
+    @State private var pendingUndo: SiteUndoState?
+    @State private var pendingRedo: SiteUndoState?
+    @State private var isMutationInFlight = false
+    @State private var mutationGeneration = 0
     @FocusState private var isTextFieldFocused: Bool
 
     private struct SiteSummary: Identifiable {
@@ -24,8 +47,6 @@ struct SiteSettingsView: View {
         let isWhitelisted: Bool
         let isFilterDisabled: Bool
         let scriptsOffCount: Int
-        let zapperRuleCount: Int
-        let isZapperDisabled: Bool
 
         var id: String { domain }
     }
@@ -35,32 +56,32 @@ struct SiteSettingsView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     addSiteSection
+                        .disabled(isMutationInFlight)
 
                     let sites = filteredSites
                     if !sites.isEmpty {
                         sitesCard(sites)
+                            .disabled(isMutationInFlight)
                     } else if allSites.isEmpty {
                         emptyStateView
                     }
 
-                    Spacer(minLength: pendingUndo != nil ? 72 : 20)
+                    Spacer(minLength: pendingUndo != nil || pendingRedo != nil ? 72 : 20)
                 }
                 .padding(.vertical)
                 .padding(.horizontal)
             }
 
-            if pendingUndo != nil {
+            if pendingUndo != nil || pendingRedo != nil {
                 undoBanner
                     .padding(.horizontal)
                     .padding(.bottom, 16)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: pendingUndo?.rule)
+        .animation(.easeInOut(duration: 0.25), value: pendingUndo?.id)
+        .animation(.easeInOut(duration: 0.25), value: pendingRedo?.id)
         .navigationTitle("Site Settings")
-        .task {
-            await ruleManager.refreshNow()
-        }
         #if os(iOS)
         .searchable(text: $searchText, prompt: "Search")
         .navigationBarTitleDisplayMode(.inline)
@@ -71,30 +92,26 @@ struct SiteSettingsView: View {
             }
         }
         #endif
-        .alert(
-            "Reset Site Settings",
-            isPresented: Binding(
-                get: { domainPendingReset != nil },
-                set: { if !$0 { domainPendingReset = nil } }
-            )
-        ) {
-            Button("Cancel", role: .cancel) { domainPendingReset = nil }
-            Button("Remove", role: .destructive) {
-                if let domain = domainPendingReset {
-                    resetSite(domain)
-                }
-                domainPendingReset = nil
-            }
-        } message: {
-            Text(
-                String(
-                    format: NSLocalizedString(
-                        "This removes all settings for %@.",
-                        comment: "Reset site settings confirmation message"
+        .alert(item: $pendingConfirmation) { confirmation in
+            switch confirmation {
+            case .reset(let domain):
+                return Alert(
+                    title: Text("Reset Site Settings"),
+                    message: Text(
+                        String.localizedStringWithFormat(
+                            NSLocalizedString(
+                                "This removes all settings for %@.",
+                                comment: "Reset site settings confirmation message"
+                            ),
+                            domain
+                        )
                     ),
-                    domainPendingReset ?? ""
+                    primaryButton: .destructive(Text("Remove")) {
+                        resetSite(domain)
+                    },
+                    secondaryButton: .cancel(Text("Cancel"))
                 )
-            )
+            }
         }
     }
 
@@ -152,7 +169,6 @@ struct SiteSettingsView: View {
 
         var domains = whitelisted
         domains.formUnion(filterDisabled)
-        domains.formUnion(ruleManager.domains)
         domains.formUnion(scriptsOffByHost.keys)
 
         return domains.sorted().map { domain in
@@ -161,8 +177,6 @@ struct SiteSettingsView: View {
                 isWhitelisted: whitelisted.contains(domain),
                 isFilterDisabled: filterDisabled.contains(domain),
                 scriptsOffCount: scriptsOffByHost[domain] ?? 0,
-                zapperRuleCount: ruleManager.ruleCount(forDomain: domain),
-                isZapperDisabled: ruleManager.isDisabled(domain)
             )
         }
 
@@ -227,13 +241,6 @@ struct SiteSettingsView: View {
                             systemImage: "scroll"
                         )
                     }
-                    if site.zapperRuleCount > 0 {
-                        summaryBadge(
-                            Text(localizedRuleCount(site.zapperRuleCount)),
-                            systemImage: "wand.and.stars",
-                            struckThrough: site.isZapperDisabled
-                        )
-                    }
                 }
                 .padding(.trailing, 4)
 
@@ -247,7 +254,7 @@ struct SiteSettingsView: View {
         .buttonStyle(.plain)
         .contextMenu {
             Button(role: .destructive) {
-                domainPendingReset = site.domain
+                pendingConfirmation = .reset(domain: site.domain)
             } label: {
                 Label("Reset Site Settings", systemImage: "trash")
             }
@@ -288,7 +295,7 @@ struct SiteSettingsView: View {
             toggleRow(isOn: Binding(
                 get: { !userScriptManager.isUserScript(script, disabledOnHost: site.domain) },
                 set: { runs in
-                    Task { @MainActor in
+                    mutateSite(site.domain) {
                         await userScriptManager.setUserScript(
                             withId: script.id,
                             disabledOnHost: site.domain,
@@ -310,65 +317,12 @@ struct SiteSettingsView: View {
             }
         }
 
-        let rules = ruleManager.rules(for: site.domain)
-        if !rules.isEmpty {
-            toggleRow(isOn: Binding(
-                get: { !ruleManager.isDisabled(site.domain) },
-                set: { apply in
-                    ruleManager.setDisabled(!apply, forDomain: site.domain)
-                    filterManager.markNonSelectionChangesPending()
-                }
-            )) {
-                Text("Apply rules on this site")
-                    .font(.body)
-            }
-
-            ForEach(rules.indices, id: \.self) { ruleIndex in
-                let rule = rules[ruleIndex]
-
-                VStack(spacing: 0) {
-                    Divider()
-                        .padding(.leading, 16)
-
-                    HStack(alignment: .center, spacing: 12) {
-                        Text(rule)
-                            .font(.system(.caption, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-
-                        Spacer()
-
-                        Button {
-                            deleteRule(rule, from: site.domain, at: ruleIndex)
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.secondary)
-                                .font(.system(size: 18))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.vertical, 10)
-                    .padding(.leading, 32)
-                    .padding(.trailing, 16)
-                }
-            }
-
-            Text("Changes take full effect after the next apply.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 32)
-                .padding(.trailing, 16)
-                .padding(.bottom, 12)
-        }
-
         VStack(spacing: 0) {
             Divider()
                 .padding(.leading, 16)
 
             Button {
-                domainPendingReset = site.domain
+                pendingConfirmation = .reset(domain: site.domain)
             } label: {
                 HStack {
                     Text("Reset Site Settings")
@@ -430,38 +384,105 @@ struct SiteSettingsView: View {
         .padding(.vertical, 40)
     }
 
-    // MARK: - Undo banner
+    // MARK: - Undo and redo
 
     private var undoBanner: some View {
         HStack {
-            Text("Rule deleted")
+            Text("Site Settings")
                 .font(.subheadline)
                 .foregroundStyle(.primary)
-
             Spacer()
-
-            Button("Undo") {
-                if let undo = pendingUndo {
-                    ruleManager.restoreRule(undo.rule, forDomain: undo.domain, at: undo.index)
-                    pendingUndo = nil
-                }
+            if pendingUndo != nil {
+                Button("Undo") { undoSiteMutation() }
+                    .font(.subheadline.bold())
+                    .disabled(isMutationInFlight)
             }
-            .font(.subheadline.bold())
+            if pendingRedo != nil {
+                Button("Redo") { redoSiteMutation() }
+                    .font(.subheadline.bold())
+                    .disabled(isMutationInFlight)
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
         .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
-        .task(id: pendingUndo?.rule) {
-            guard pendingUndo != nil else { return }
-            try? await TaskSleep.sleep(for: .seconds(5))
-            await MainActor.run {
-                pendingUndo = nil
-            }
+    }
+
+    private func undoSiteMutation() {
+        guard let state = pendingUndo, let generation = beginMutation() else { return }
+        Task { @MainActor in
+            defer { finishMutation(generation) }
+            await apply(state.before, to: state.domain)
+            guard generation == mutationGeneration else { return }
+            pendingUndo = nil
+            pendingRedo = state
+        }
+    }
+
+    private func redoSiteMutation() {
+        guard let state = pendingRedo, let generation = beginMutation() else { return }
+        Task { @MainActor in
+            defer { finishMutation(generation) }
+            await apply(state.after, to: state.domain)
+            guard generation == mutationGeneration else { return }
+            pendingRedo = nil
+            pendingUndo = state
         }
     }
 
     // MARK: - State helpers
+
+    private func siteSnapshot(_ domain: String) -> SiteSettingsSnapshot {
+        let disabledHosts = dataManager.getUserScriptDisabledHosts()
+        return SiteSettingsSnapshot(
+            isWhitelisted: isWhitelisted(domain),
+            isFilterDisabled: isFilterDisabled(domain),
+            disabledScriptIDs: Set(disabledHosts.compactMap { scriptID, hosts in
+                hosts.contains(domain) ? scriptID : nil
+            })
+        )
+    }
+
+    private func mutateSite(_ domain: String, operation: @escaping @MainActor () async -> Void) {
+        guard let generation = beginMutation() else { return }
+        Task { @MainActor in
+            defer { finishMutation(generation) }
+            let before = siteSnapshot(domain)
+            await operation()
+            guard generation == mutationGeneration else { return }
+            let after = siteSnapshot(domain)
+            guard before != after else { return }
+            pendingUndo = SiteUndoState(domain: domain, before: before, after: after)
+            pendingRedo = nil
+        }
+    }
+
+    private func beginMutation() -> Int? {
+        guard !isMutationInFlight else { return nil }
+        mutationGeneration += 1
+        isMutationInFlight = true
+        return mutationGeneration
+    }
+
+    private func finishMutation(_ generation: Int) {
+        guard generation == mutationGeneration else { return }
+        isMutationInFlight = false
+    }
+
+    private func apply(_ snapshot: SiteSettingsSnapshot, to domain: String) async {
+        let domains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
+        await dataManager.setWhitelistedDomains(snapshot.isWhitelisted ? DisabledSitesNormalizer.normalizedDomains(from: domains + [domain]) : domains.filter { $0 != domain })
+        let filterDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
+        await dataManager.setFilterDisabledDomains(snapshot.isFilterDisabled ? DisabledSitesNormalizer.normalizedDomains(from: filterDomains + [domain]) : filterDomains.filter { $0 != domain })
+        let disabledHosts = dataManager.getUserScriptDisabledHosts()
+        for scriptID in Set(disabledHosts.keys).union(snapshot.disabledScriptIDs) {
+            var hosts = disabledHosts[scriptID] ?? []
+            hosts.removeAll { $0 == domain }
+            if snapshot.disabledScriptIDs.contains(scriptID) { hosts.append(domain) }
+            await dataManager.setUserScriptDisabledHosts(Array(Set(hosts)).sorted(), forScriptID: scriptID)
+        }
+    }
 
     private func isWhitelisted(_ domain: String) -> Bool {
         DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites).contains(domain)
@@ -486,82 +507,43 @@ struct SiteSettingsView: View {
     // MARK: - Actions
 
     private func addDomain() {
-        guard let normalizedDomain = addableDomain else { return }
-
+        guard !isMutationInFlight, let normalizedDomain = addableDomain else { return }
         isAddingDomain = true
-
-        Task { @MainActor in
+        mutateSite(normalizedDomain) {
             let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
-            let updatedDomains = DisabledSitesNormalizer.normalizedDomains(
-                from: currentDomains + [normalizedDomain]
-            )
-            await dataManager.setWhitelistedDomains(updatedDomains)
+            await dataManager.setWhitelistedDomains(DisabledSitesNormalizer.normalizedDomains(from: currentDomains + [normalizedDomain]))
             newDomain = ""
             isAddingDomain = false
             isTextFieldFocused = true
-            withAnimation(.easeInOut(duration: 0.2)) {
-                expandedDomains.insert(normalizedDomain)
-            }
+            withAnimation(.easeInOut(duration: 0.2)) { expandedDomains.insert(normalizedDomain) }
         }
     }
 
     private func setFilterDisabled(_ disabled: Bool, domain: String) {
-        Task { @MainActor in
+        mutateSite(domain) {
             let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
-            let updatedDomains = disabled
-                ? DisabledSitesNormalizer.normalizedDomains(from: currentDomains + [domain])
-                : currentDomains.filter { $0 != domain }
-            await dataManager.setFilterDisabledDomains(updatedDomains)
+            let updated = disabled ? DisabledSitesNormalizer.normalizedDomains(from: currentDomains + [domain]) : currentDomains.filter { $0 != domain }
+            await dataManager.setFilterDisabledDomains(updated)
         }
     }
 
     private func setWhitelisted(_ whitelisted: Bool, domain: String) {
-        Task { @MainActor in
+        mutateSite(domain) {
             let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
-            let updatedDomains: [String]
-            if whitelisted {
-                guard !currentDomains.contains(domain) else { return }
-                updatedDomains = DisabledSitesNormalizer.normalizedDomains(from: currentDomains + [domain])
-            } else {
-                updatedDomains = currentDomains.filter { $0 != domain }
-            }
-            await dataManager.setWhitelistedDomains(updatedDomains)
+            let updated = whitelisted ? DisabledSitesNormalizer.normalizedDomains(from: currentDomains + [domain]) : currentDomains.filter { $0 != domain }
+            await dataManager.setWhitelistedDomains(updated)
         }
     }
 
-    private func deleteRule(_ rule: String, from domain: String, at index: Int) {
-        pendingUndo = (rule: rule, domain: domain, index: index)
-        ruleManager.deleteRule(rule, forDomain: domain)
-        filterManager.markNonSelectionChangesPending()
-    }
-
     private func resetSite(_ domain: String) {
-        Task { @MainActor in
+        mutateSite(domain) {
             let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
-            if currentDomains.contains(domain) {
-                await dataManager.setWhitelistedDomains(currentDomains.filter { $0 != domain })
-            }
+            if currentDomains.contains(domain) { await dataManager.setWhitelistedDomains(currentDomains.filter { $0 != domain }) }
             let filterDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
-            if filterDomains.contains(domain) {
-                await dataManager.setFilterDisabledDomains(filterDomains.filter { $0 != domain })
-            }
-
+            if filterDomains.contains(domain) { await dataManager.setFilterDisabledDomains(filterDomains.filter { $0 != domain }) }
             for (scriptID, hosts) in dataManager.getUserScriptDisabledHosts() where hosts.contains(domain) {
-                await dataManager.setUserScriptDisabledHosts(
-                    hosts.filter { $0 != domain },
-                    forScriptID: scriptID
-                )
+                await dataManager.setUserScriptDisabledHosts(hosts.filter { $0 != domain }, forScriptID: scriptID)
             }
-
-            if ruleManager.ruleCount(forDomain: domain) > 0 {
-                ruleManager.deleteAllRules(forDomain: domain)
-                filterManager.markNonSelectionChangesPending()
-            }
-            if ruleManager.isDisabled(domain) {
-                ruleManager.setDisabled(false, forDomain: domain)
-                filterManager.markNonSelectionChangesPending()
-            }
-
             expandedDomains.remove(domain)
         }
     }
@@ -574,11 +556,4 @@ struct SiteSettingsView: View {
         )
     }
 
-    private func localizedRuleCount(_ count: Int) -> String {
-        let key = count == 1 ? "%d rule" : "%d rules"
-        return String.localizedStringWithFormat(
-            NSLocalizedString(key, comment: "Element zapper rule count"),
-            count
-        )
-    }
 }

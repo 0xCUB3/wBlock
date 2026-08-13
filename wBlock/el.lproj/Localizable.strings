@@ -189,7 +189,7 @@
 "Calculated source rule count for filter" = "Υπολογισμός αριθμού κανόνων πηγής για το φίλτρο";
 "Cancel" = "Ακύρωση";
 "Category" = "Κατηγορία";
-"Changes take full effect after the next apply." = "Οι αλλαγές εφαρμόζονται πλήρως μετά την επόμενη εφαρμογή.";
+"Element Zapper changes take full effect after the next apply." = "Οι αλλαγές στο Element Zapper εφαρμόζονται πλήρως μετά την επόμενη εφαρμογή.";
 "Check for Updates" = "Έλεγχος για ενημερώσεις";
 "Checked %@" = "Ελέγχθηκε %@";
 "Checked %@ ago" = "Ελέγχθηκε %@ πριν";
@@ -290,6 +290,7 @@
 "Edit Name" = "Μετονομασία λίστας";
 "Edit User List" = "Επεξεργασία λίστας";
 "Editor" = "Editor";
+"Use Editor" = "Χρήση επεξεργαστή";
 "Element zapper" = "Αποκλεισμός στοιχείου";
 "Enable" = "Ενεργοποίηση";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Ενεργοποίηση 'wBlock Scripts' → Να επιτρέπονται πάντα σε κάθε ιστότοπο";
@@ -406,7 +407,7 @@
 "go" = "Μετάβαση";
 "Go to line" = "Μετάβαση στη γραμμή";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"Hagezi Pro Mini" = "Hagezi Pro Mini";
+"HaGeZi Pro Mini" = "HaGeZi Pro Mini";
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Χειρίζεται προηγμένες περιπτώσεις anti-adblock που χάνουν τους κανόνες φιλτραρίσματος.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Αποκρύπτει αναδυόμενα παράθυρα, banner και άλλα ανεπιθύμητα στοιχεία σελίδας.";
@@ -437,6 +438,7 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "Συμπεριλάβετε το μπλοκ μεταδεδομένων // ==UserScript== (ή /* ==UserStyle== */ για στυλ χρήστη), ώστε το wBlock να μπορεί να διαβάσει το όνομα και τα μοτίβα URL.";
 "IndianList" = "IndianList";
 "Info" = "Πληροφορίες";
+"Integrated" = "Ενσωματωμένο";
 "Info.plist missing" = "Λείπει το Info.plist";
 "Initialized with %d filter list(s)." = "Αρχικοποιήθηκε με λίστες φίλτρων %d.";
 "International" = "Διεθνή";
@@ -465,7 +467,6 @@
 "Loading script metadata…" = "Φόρτωση μεταδεδομένων κώδικα…";
 "Loading userscripts…" = "Φόρτωση κώδικα χρήστη…";
 "Local Import" = "Τοπική Εισαγωγή";
-"Log Timestamps" = "Χρονοσφραγίδες καταγραφής";
 "Logs" = "Αρχεία Καταγραφής";
 "Logs cleared" = "Εκκαθάριση αρχείων καταγραφής";
 "Logs will appear here as the app runs" = "Τα αρχεία καταγραφής θα εμφανίζονται εδώ καθώς εκτελείται η εφαρμογή";
@@ -542,6 +543,9 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Επικολλήστε τον άμεσο σύνδεσμο .user.js. Το wBlock θα τον κατεβάσει και θα τον εγκαταστήσει για εσάς.";
 "Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "Επικόλλησε τον άμεσο σύνδεσμο .user.js, .js ή .user.css. Το wBlock θα τον κατεβάσει και θα τον εγκαταστήσει για σένα.";
 "Pause Blocking" = "Παύση αποκλεισμού";
+"Enabled Userscripts & Userstyles" = "Ενεργά σενάρια και στυλ χρήστη";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "Η παύση αποκλεισμού είναι ενεργή όσο οποιοδήποτε επιλεγμένο στοιχείο βρίσκεται σε παύση. Η συνέχιση επαναφέρει όλα τα στοιχεία.";
+"Temporarily pause selected components without changing their enabled settings." = "Παύση των επιλεγμένων στοιχείων προσωρινά χωρίς αλλαγή των ρυθμίσεων ενεργοποίησής τους.";
 "Pausing blocking..." = "Παύση αποκλεισμού…";
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
@@ -605,6 +609,7 @@
 "Report an Issue" = "Αναφορά προβλήματος";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "Απαιτείται για userscripts, προηγμένο αποκλεισμό διαφημίσεων και λειτουργίες καθαρισμού";
 "Required for YouTube ad blocking and much more" = "Απαιτείται για τον αποκλεισμό διαφημίσεων YouTube και πολλά άλλα";
+"The selected file is too large. Maximum size is 10 MB." = "Το επιλεγμένο αρχείο είναι πολύ μεγάλο. Το μέγιστο μέγεθος είναι 10 MB.";
 "Requirements" = "Απαιτήσεις";
 "Reset Site Settings" = "Επαναφορά ρυθμίσεων ιστότοπου";
 "Resetting…" = "Επαναφορά â¦";
@@ -704,7 +709,7 @@
 "Sync across devices" = "Συγχρονισμός μεταξύ συσκευών";
 "Sync Now" = "Συγχρονισμός τώρα";
 "Sync settings across devices" = "Συγχρονισμός ρυθμίσεων σε όλες τις συσκευές";
-"Sync with device timezone" = "Συγχρονισμός με τη ζώνη ώρας συσκευής";
+"Sync timestamps with device timezone" = "Συγχρονισμός χρονικών σημάνσεων με τη ζώνη ώρας συσκευής";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Συγχρονισμός των επιλογών φίλτρων, των προσαρμοσμένων λιστών, του κώδικα χρήστη και της λίστας επιτρεπόμενων σε όλες τις συσκευές.";
 "Sync: Checking…" = "Συγχρονισμός: Έλεγχος…";
 "Sync: Downloading…" = "Συγχρονισμός: Λήψη…";
@@ -751,7 +756,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Αυτό θα αφαιρέσει όλα τα φίλτρα, τα userscripts και τις προτιμήσεις και έπειτα θα ξεκινήσει ξανά τη ροή αρχικής ρύθμισης.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Αυτό θα αντικαταστήσει τις τρέχουσες επιλογές φίλτρων, τη λίστα επιτρεπόμενων και τους κανόνες του στοιχειο-αφανιστή με τις ρυθμίσεις του αντιγράφου ασφαλείας.";
 "This will reset all filters, userscripts, and preferences." = "Αυτό θα επαναφέρει όλα τα φίλτρα, τον κώδικα χρήστη και τις προτιμήσεις.";
-"Time zone" = "Ζώνη ώρας";
 "Timed out" = "Έληξε ο χρόνος";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "Τίτλος";
@@ -770,6 +774,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "Μη διαθέσιμο";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
 "Undo" = "Αναίρεση";
+"Redo" = "Επανάληψη";
+"Element Zapper" = "Zapper στοιχείων";
+"No Element Zapper Rules" = "Δεν υπάρχουν κανόνες Zapper στοιχείων";
 "Update" = "Ενημέρωση";
 "Update & Apply" = "Ενημέρωση & εφαρμογή";
 "Update Filters" = "Update Filters";
@@ -811,6 +818,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Version \\(filter.version)" = "Έκδοση \(filter.version)";
 "Version \\(script.version)" = "Έκδοση \(script.version)";
 "Vietnamese adblock filter list." = "Λίστα φίλτρων αποκλεισμού διαφημίσεων Βιετνάμ.";
+"Delete Script" = "Διαγραφή σεναρίου";
+"Delete Style" = "Διαγραφή στυλ";
+"Edit Content" = "Επεξεργασία περιεχομένου";
+"Edit Rules" = "Επεξεργασία κανόνων";
+"View Rules" = "Προβολή κανόνων";
 "View Content" = "Προβολή Περιεχομένου";
 "View Logs" = "Προβολή αρχείων καταγραφής";
 "Waiting" = "Αναμονή";
@@ -831,11 +843,28 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Βρήκαμε μια υπάρχουσα διαμόρφωση wBlock στο iCloud (\(remoteConfigUpdatedAtText)). Μπορείτε να παραλείψετε την ενσωμάτωση και να χρησιμοποιήσετε αυτήν.";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Βρήκαμε μια υπάρχουσα διαμόρφωση wBlock στο iCloud. Μπορείτε να παραλείψετε την ενσωμάτωση και να χρησιμοποιήσετε αυτήν.";
 "Web extension %@" = "Επέκταση web %@";
+"Blocks advertisements and other promotional page elements." = "Αποκλείει διαφημίσεις και άλλα προωθητικά στοιχεία σελίδων.";
+"Blocks trackers, analytics, and other privacy-invasive requests." = "Αποκλείει trackers, αναλυτικά συστήματα και άλλα αιτήματα που παραβιάζουν το απόρρητο.";
+"Blocks malicious URLs, phishing pages, and unwanted software." = "Αποκλείει κακόβουλες URL, σελίδες ηλεκτρονικού ψαρέματος και ανεπιθύμητο λογισμικό.";
+"Combines broad ad-blocking and tracking protection in one list." = "Συνδυάζει ευρύ αποκλεισμό διαφημίσεων και προστασία από την παρακολούθηση σε μία λίστα.";
+"Contains filter lists that you added or imported yourself." = "Περιέχει λίστες φίλτρων που προσθέσατε ή εισαγάγατε.";
+"Get Started" = "Έναρξη";
+"No default filters" = "Δεν υπάρχουν προεπιλεγμένα φίλτρα";
+"Organizes userscripts and userstyles added to wBlock." = "Οργανώνει τα userscripts και userstyles που προσθέσατε στο wBlock.";
+"Provides newer rules and fixes that are still being tested." = "Παρέχει νεότερους κανόνες και διορθώσεις που δοκιμάζονται ακόμη.";
+"Recommended Filters" = "Προτεινόμενα φίλτρα";
+"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Αφαιρεί ειδοποιήσεις cookie, αναδυόμενα παράθυρα, banner και άλλα ενοχλητικά στοιχεία.";
+"Reset to Default" = "Επαναφορά στις προεπιλογές";
+"Shows all filter lists across every category." = "Εμφανίζει όλες τις λίστες φίλτρων από κάθε κατηγορία.";
+"Adds rules tailored to websites and languages from specific regions." = "Προσθέτει κανόνες για ιστοτόπους και γλώσσες συγκεκριμένων περιοχών.";
+"The end of Safari ad-blocking B.S." = "Το τέλος της ανοησίας με τον αποκλεισμό διαφημίσεων στο Safari";
 "Welcome to wBlock!" = "Καλώς ορίσατε στο wBlock!";
 "Whitelist" = "Λίστα επιτρεπόμενων";
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Βάλτε έναν ιστότοπο στη λευκή λίστα εδώ ή προσαρμόστε τον κώδικα χρήστη και τους κανόνες αποκλεισμού στοιχείων ανά ιστότοπο από το αναδυόμενο παράθυρο του wBlock στο Safari.";
 "Whitelisted" = "Στη λευκή λίστα";
 "Wrap Lines" = "Αναδίπλωση γραμμών";
+"On" = "Ενεργό";
+"Off" = "Ανενεργό";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "Μπορείτε πάντα να προσθέσετε τοπικά φίλτρα αργότερα από τις Ρυθμίσεις.";
@@ -850,3 +879,75 @@ To re-enable these filters, disable other large filters and apply changes again.
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Αυτόματη ενημέρωση: οφείλεται τώρα (θα εκτελεστεί στο επόμενο έναυσμα)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 Αυτόματη ενημέρωση: επόμενη σε %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Αυτόματη ενημέρωση: δεν έχει εκτελεστεί ξανά (διάστημα=%dh)";
+
+/* Language picker */
+"Selected" = "Επιλεγμένες";
+"Search languages" = "Αναζήτηση γλωσσών";
+
+"Built-in" = "Ενσωματωμένο";
+
+/* Filter catalog additions */
+"Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
+"Adblock Warning Removal List" = "Adblock Warning Removal List";
+"Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
+"Stevo's AI Blocklist" = "Stevo's AI Blocklist";
+"AdGuard Allowlist" = "AdGuard Allowlist";
+"Blocks tracking pixels and other mail tracking techniques." = "Αποκλείει pixel παρακολούθησης και άλλες τεχνικές παρακολούθησης email.";
+"Allows sites and resources that should not be blocked." = "Επιτρέπει ιστότοπους και πόρους που δεν πρέπει να αποκλείονται.";
+
+
+/* Auto-update controls */
+"Auto-Update" = "Αυτόματη ενημέρωση";
+"Auto-Update Filters & Userscripts" = "Αυτόματη ενημέρωση φίλτρων και σεναρίων χρήστη";
+"Update Now" = "Ενημέρωση τώρα";
+"Automatically updating %@" = "Αυτόματη ενημέρωση %@";
+
+/* Add mode controls */
+"Text" = "Κείμενο";
+"Choose File" = "Επιλογή αρχείου";
+"Change File" = "Αλλαγή αρχείου";
+"Local imports won't auto-update; re-import to replace." = "Οι τοπικές εισαγωγές δεν ενημερώνονται αυτόματα· εισαγάγετε ξανά για αντικατάσταση.";
+"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "Το AdGuard Extra αποκλείει διαφημίσεις στο Twitch και αντιμετωπίζει σύνθετες περιπτώσεις anti-adblock.";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "Απενεργοποίηση βασικού φίλτρου;";
+"Replace Existing Content?" = "Αντικατάσταση υπάρχοντος περιεχομένου;";
+"Clear Element Zapper Rules?" = "Εκκαθάριση κανόνων Element Zapper;";
+"Clear All" = "Εκκαθάριση όλων";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Αυτό το προτεινόμενο φίλτρο αποτελεί μέρος της βασικής προστασίας του wBlock. Η απενεργοποίησή του μπορεί να μειώσει την κάλυψη αποκλεισμού.";
+"Pasting will replace the existing editor content." = "Η επικόλληση θα αντικαταστήσει το υπάρχον περιεχόμενο του επεξεργαστή.";
+"Pasting will replace the existing content." = "Η επικόλληση θα αντικαταστήσει το υπάρχον περιεχόμενο.";
+"This removes all saved element zapper rules from every site." = "Αυτό αφαιρεί όλους τους αποθηκευμένους κανόνες Element Zapper από κάθε ιστότοπο.";
+"Clear Element Zapper Rules" = "Εκκαθάριση κανόνων Element Zapper";
+"Advanced" = "Για προχωρημένους";
+"Help" = "Βοήθεια";
+"FAQ" = "Συχνές ερωτήσεις";
+"Report Issues" = "Αναφορά προβλημάτων";
+"Contact Us" = "Επικοινωνία";
+"Version" = "Έκδοση";
+"Developer" = "Προγραμματιστής";
+"GPL-3.0 License" = "Άδεια GPL-3.0";
+"Privacy Policy" = "Πολιτική απορρήτου";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "Χρησιμοποίησε έγκυρο URL http:// ή https://";
+"Include a host name" = "Συμπλήρωσε όνομα κεντρικού υπολογιστή";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Μην χρησιμοποιείς URL userscript που τελειώνει σε .js, .mjs ή .cjs";
+"wBlock will fetch and enable the filter list automatically" = "Το wBlock θα ανακτήσει και θα ενεργοποιήσει αυτόματα τη λίστα φίλτρων";
+
+/* Issue 508 UI follow-up */
+"Starts with http:// or https://" = "Ξεκινά με http:// ή https://";
+"Ends with .js, .user.js, or .user.css" = "Τελειώνει σε .js, .user.js ή .user.css";
+"Hosted on a trusted source" = "Φιλοξενείται σε αξιόπιστη πηγή";
+
+"The file must include userscript or userstyle metadata." = "Το αρχείο πρέπει να περιλαμβάνει μεταδεδομένα userscript ή userstyle.";
+
+"Failed to clear downloaded custom filter state; apply again to retry." = "Δεν ήταν δυνατή η εκκαθάριση της κατάστασης του ληφθέντος προσαρμοσμένου φίλτρου· εφαρμόστε ξανά για νέα προσπάθεια.";
+"Failed to resume blocking." = "Αποτυχία συνέχισης του αποκλεισμού.";
+/* Userscript display categories */
+"Functionality" = "Λειτουργικότητα";
+"Appearance" = "Εμφάνιση";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Scripts που εμποδίζουν διαφημίσεις, μέτρα κατά του αποκλεισμού ή ανεπιθύμητη συμπεριφορά σελίδων.";
+"Userscripts and scripts that add or restore useful website functionality." = "Scripts που προσθέτουν ή επαναφέρουν χρήσιμες λειτουργίες ιστοτόπων.";
+"Userstyles and scripts that change the appearance of websites." = "Userstyles και scripts που αλλάζουν την εμφάνιση ιστοτόπων.";
+"Custom, remote, and local scripts that do not have a more specific display category." = "Προσαρμοσμένα, απομακρυσμένα και τοπικά scripts χωρίς ειδικότερη κατηγορία εμφάνισης.";

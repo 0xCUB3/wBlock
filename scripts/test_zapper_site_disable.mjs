@@ -14,6 +14,9 @@ const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const scriptPath = process.argv[2]
   ?? path.join(repoRoot, "wBlock Scripts (iOS)", "Resources", "zapper-content.js");
 const source = readFileSync(scriptPath, "utf8");
+const backgroundSource = readFileSync(path.join(repoRoot, "extension-src", "background.js"), "utf8");
+const managerSource = readFileSync(path.join(repoRoot, "wBlock", "ZapperRuleManager.swift"), "utf8");
+const nativeSource = readFileSync(path.join(repoRoot, "wBlockCoreService", "WebExtensionRequestHandler.swift"), "utf8");
 
 let failures = 0;
 const check = (name, cond) => {
@@ -169,6 +172,19 @@ function loadScript(sandbox) {
   vm.createContext(sandbox);
   vm.runInContext(source, sandbox, { filename: "zapper-content.js" });
 }
+
+check(
+  "app-originated refresh dispatches through Safari to every content script",
+  managerSource.includes('withName: "wblock:zapperRulesChanged"')
+    && backgroundSource.includes('action === "wblock:zapperRulesChanged"')
+    && backgroundSource.includes('type: "wblock:zapper:reloadRules"')
+    && source.includes("message.type === 'wblock:zapper:reloadRules'")
+    && source.includes("reloadRulesAndApply().catch")
+);
+check(
+  "global element-zapper pause is authoritative in native rule responses",
+  nativeSource.includes("BlockingPauseStore.isPaused(.elementZapper)")
+);
 
 // Scenario 1+2: enabled rules apply, then native disable + reloadRules clears them.
 {

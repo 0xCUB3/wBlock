@@ -16,9 +16,9 @@ class FilterListLoader {
             "AdGuard URL Tracking Protection Filter",
             "Actually Legitimate URL Shortener Tool",
             "EasyPrivacy",
-            "Online Security Filter",
+            "Online Malicious URL Blocklist",
             "Peter Lowe's Blocklist",
-            "Anti-Adblock List",
+            "Adblock Warning Removal List",
         ]
     #else
         static let recommendedFilterNames: Set<String> = [
@@ -27,20 +27,30 @@ class FilterListLoader {
             "AdGuard URL Tracking Protection Filter",
             "Actually Legitimate URL Shortener Tool",
             "EasyPrivacy",
-            "Online Security Filter",
+            "Online Malicious URL Blocklist",
             "Peter Lowe's Blocklist",
-            "Anti-Adblock List",
+            "Adblock Warning Removal List",
             "AdGuard Mobile Filter",
         ]
     #endif
 
-    private let filterURLMigrations: [String: URL] = [
+    private static let filterURLMigrations: [String: URL] = [
         "https://raw.githubusercontent.com/List-KR/List-KR/refs/heads/master/filter-AdGuard-forward.txt":
             URL(string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
         "https://raw.githubusercontent.com/List-KR/List-KR/master/filter-AdGuard-forward.txt": URL(
             string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
+        "https://raw.githubusercontent.com/easylist/easylist/refs/heads/master/fanboy-addon/fanboy_ai_suggestions.txt": URL(
+            string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260.txt")!,
         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt":
             URL(string: "https://filters.adtidy.org/ios/filters/11.txt")!,
+    ]
+
+    /// New built-in names and the names used by the previous catalog release.
+    private static let filterNameMigrations: [String: [String]] = [
+        "Online Malicious URL Blocklist": ["Online Security Filter"],
+        "Adblock Warning Removal List": ["Anti-Adblock List"],
+        "Stevo's AI Blocklist": ["Fanboy's Anti-AI Suggestions"],
+        "HaGeZi Pro Mini": ["Hagezi Pro Mini"],
     ]
 
     func localFileURL(for filter: FilterList) -> URL? {
@@ -58,7 +68,10 @@ class FilterListLoader {
         let newURL = containerURL.appendingPathComponent(
             ContentBlockerIncrementalCache.localFilename(for: filter)
         )
-        let oldURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        guard let oldURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+            name: filter.name,
+            containerURL: containerURL
+        ) else { return }
 
         guard !FileManager.default.fileExists(atPath: newURL.path),
             FileManager.default.fileExists(atPath: oldURL.path)
@@ -82,10 +95,48 @@ class FilterListLoader {
         }
     }
 
+    /// Renames cached built-in content and delta baselines before catalog metadata is hydrated.
+    func migrateBuiltInFilterFilesIfNeeded(_ filter: FilterList) {
+        guard !filter.isCustom,
+              let oldNames = Self.filterNameMigrations[filter.name],
+              let containerURL = getSharedContainerURL()
+        else { return }
+
+        let localFilename = ContentBlockerIncrementalCache.localFilename(for: filter)
+        let newLocalURL = containerURL.appendingPathComponent(localFilename)
+        let newBaselineURL = containerURL.appendingPathComponent("diff-baseline-\(localFilename)")
+        for oldName in oldNames {
+            if let oldURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                name: oldName,
+                containerURL: containerURL
+            ) {
+                Self.migrateFileIfNeeded(from: oldURL, to: newLocalURL)
+            }
+            if let oldBaselineURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                name: oldName,
+                containerURL: containerURL,
+                prefix: "diff-baseline-"
+            ) {
+                Self.migrateFileIfNeeded(from: oldBaselineURL, to: newBaselineURL)
+            }
+        }
+    }
+
+    static func migrateFileIfNeeded(from oldURL: URL, to newURL: URL) {
+        guard !FileManager.default.fileExists(atPath: newURL.path),
+              FileManager.default.fileExists(atPath: oldURL.path)
+        else { return }
+        try? FileManager.default.moveItem(at: oldURL, to: newURL)
+    }
+
+    static func canonicalFilterURLString(_ urlString: String) -> String {
+        filterURLMigrations[urlString]?.absoluteString ?? urlString
+    }
+
     /// Updates any known legacy filter URLs to their current endpoints.
     func migrateFilterURLs(in filters: [FilterList]) -> [FilterList] {
         filters.map { filter in
-            guard let newURL = filterURLMigrations[filter.url.absoluteString] else {
+            guard let newURL = Self.filterURLMigrations[filter.url.absoluteString] else {
                 return filter
             }
 
@@ -201,16 +252,16 @@ class FilterListLoader {
                 category: FilterListCategory.annoyances,
                 description: "Blocks social media content on webpages."),
             FilterList(
-                id: UUID(), name: "Fanboy's Anti-AI Suggestions",
+                id: UUID(), name: "Stevo's AI Blocklist",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/easylist/easylist/refs/heads/master/fanboy-addon/fanboy_ai_suggestions.txt"
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260.txt"
                 )!, category: FilterListCategory.annoyances,
                 description:
                     "Blocks AI-generated suggestions and recommendations on search engines and websites."
             ),
             FilterList(
-                id: UUID(), name: "Online Security Filter",
+                id: UUID(), name: "Online Malicious URL Blocklist",
                 url: URL(
                     string:
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/208_optimized.txt"
@@ -218,19 +269,33 @@ class FilterListLoader {
                 description:
                     "Protects against suspicious URLs, phishing sites, and unwanted software."),
             FilterList(
+                id: UUID(), name: "Mail Tracking Protection Filter",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/25.txt"
+                )!, category: FilterListCategory.privacy,
+                description: "Blocks tracking pixels and other mail tracking techniques."),
+            FilterList(
                 id: UUID(), name: "Peter Lowe's Blocklist",
                 url: URL(
                     string:
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt"
-                )!, category: FilterListCategory.annoyances, isSelected: true,
+                )!, category: FilterListCategory.multipurpose, isSelected: true,
                 description: "Blocks ads and tracking servers to enhance privacy."),
             FilterList(
-                id: UUID(), name: "Anti-Adblock List",
+                id: UUID(), name: "Adblock Warning Removal List",
                 url: URL(
                     string:
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/207_optimized.txt"
                 )!, category: FilterListCategory.annoyances, isSelected: true,
                 description: "Bypasses Anti-Adblock scripts used on some websites."),
+            FilterList(
+                id: UUID(), name: "AdGuard Allowlist",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/10.txt"
+                )!, category: FilterListCategory.allowlists,
+                description: "Allows sites and resources that should not be blocked."),
             FilterList(
                 id: UUID(), name: "Bypass Paywalls Clean Filter",
                 url: URL(
@@ -708,11 +773,11 @@ class FilterListLoader {
             // macOS-only filters too large for iOS
             filterLists.append(
                 FilterList(
-                    id: UUID(), name: "Hagezi Pro Mini",
+                    id: UUID(), name: "HaGeZi Pro Mini",
                     url: URL(
                         string:
                             "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt"
-                    )!, category: FilterListCategory.annoyances, isSelected: true,
+                    )!, category: FilterListCategory.multipurpose, isSelected: true,
                     description:
                         "Extensive blocklist targeting ads, trackers, and other unwanted content."))
         #endif
@@ -726,8 +791,11 @@ class FilterListLoader {
 
     /// Checks if a filter file exists locally
     func filterFileExists(_ filter: FilterList) -> Bool {
-        guard let fileURL = localFileURL(for: filter) else { return false }
-        return FileManager.default.fileExists(atPath: fileURL.path)
+        guard let containerURL = getSharedContainerURL() else { return false }
+        return ContentBlockerIncrementalCache.existingLocalFileURL(
+            for: filter,
+            containerURL: containerURL
+        ) != nil
     }
 
     /// Gets the URL for the shared container
@@ -738,7 +806,12 @@ class FilterListLoader {
 
     /// Reads the content of a filter list from the local file system
     func readLocalFilterContent(_ filter: FilterList) -> String? {
-        guard let fileURL = localFileURL(for: filter) else { return nil }
+        guard let containerURL = getSharedContainerURL() else { return nil }
+        migrateCustomFilterFileIfNeeded(filter)
+        guard let fileURL = ContentBlockerIncrementalCache.existingLocalFileURL(
+            for: filter,
+            containerURL: containerURL
+        ) else { return nil }
 
         do {
             return try String(contentsOf: fileURL, encoding: .utf8)

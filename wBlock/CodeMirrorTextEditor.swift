@@ -18,6 +18,8 @@ final class CodeMirrorEditorController: ObservableObject {
     fileprivate weak var bridge: (any CodeMirrorEditorBridge)?
 
     @Published private(set) var isDirty = false
+    /// Increments for document edits so consumers can debounce bounded metadata scans.
+    @Published private(set) var documentRevision = 0
     @Published private(set) var analysis: CodeMirrorDocumentAnalysis?
 
     init(text: String, isUserStyle: Bool = false) {
@@ -61,6 +63,10 @@ final class CodeMirrorEditorController: ObservableObject {
     fileprivate func updateDirtyState(_ isDirty: Bool) {
         guard self.isDirty != isDirty else { return }
         self.isDirty = isDirty
+    }
+
+    fileprivate func noteDocumentChanged() {
+        documentRevision &+= 1
     }
 
     fileprivate func updateAnalysis(_ analysis: CodeMirrorDocumentAnalysis) {
@@ -322,6 +328,8 @@ extension CodeMirrorTextEditor {
                     controller.isDocumentClean = !isDirty
                     controller.updateDirtyState(isDirty)
                 }
+            case "documentChanged":
+                controller.noteDocumentChanged()
             default:
                 break
             }

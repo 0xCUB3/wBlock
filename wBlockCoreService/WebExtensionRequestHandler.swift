@@ -140,6 +140,12 @@ public enum WebExtensionRequestHandler {
             case "getBlockingPausedState":
                 handleGetBlockingPausedState(context: context)
                 return
+            case "resumeBlocking":
+                handleResumeBlocking(context: context)
+                return
+            case "getResumeRequestStatus":
+                handleGetResumeRequestStatus(context: context)
+                return
             case "getBlockingState":
                 handleGetBlockingState(message: message!, context: context)
                 return
@@ -161,6 +167,12 @@ public enum WebExtensionRequestHandler {
             case "setSiteZapperDisabled":
                 handleSetSiteZapperDisabled(message: message!, context: context)
                 return
+            case "startFilterUpdate":
+                handleStartFilterUpdate(context: context)
+                return
+            case "getFilterUpdateStatus":
+                handleGetFilterUpdateStatus(context: context)
+                return
             case "openContainingApp":
                 handleOpenContainingApp(context: context)
                 return
@@ -175,9 +187,9 @@ public enum WebExtensionRequestHandler {
         let payload = message?["payload"] as? [String: Any] ?? [:]
         if let urlString = payload["url"] as? String {
             if let url = URL(string: urlString) {
-                // Respect global pause and per-site disable immediately for advanced rules.
+                // Respect the filter pause and per-site disable immediately for advanced rules.
                 Task { @MainActor in
-                    let paused = BlockingPauseStore.isPaused()
+                    let paused = BlockingPauseStore.isPaused(.filters)
                     if paused {
                         message?["payload"] = emptyRulesPayload(disabled: false, paused: true)
                     } else {
@@ -468,14 +480,66 @@ public enum WebExtensionRequestHandler {
     }
 
     private static func handleGetBlockingPausedState(context: NSExtensionContext) {
-        let response = createResponse(with: ["paused": BlockingPauseStore.isPaused()])
+        let components = BlockingPauseStore.pausedComponents()
+        #if os(macOS)
+        let resumeAvailable = NSRunningApplication.runningApplications(
+            withBundleIdentifier: "skula.wBlock"
+        ).contains { !$0.isTerminated }
+        #else
+        let resumeAvailable = false
+        #endif
+        let response = createResponse(with: [
+            "paused": !components.isEmpty,
+            "filtersPaused": components.contains(.filters),
+            "userScriptsPaused": components.contains(.userScripts),
+            "elementZapperPaused": components.contains(.elementZapper),
+            "resumeAvailable": resumeAvailable
+        ])
+        context.completeRequest(returningItems: [response])
+    }
+
+    private static func handleResumeBlocking(context: NSExtensionContext) {
+        let paused = BlockingPauseStore.isPaused()
+        let wake: (supported: Bool, attempted: Bool, succeeded: Bool, error: String?)
+        if paused {
+            // Darwin notification reaches a resident containing app without changing its
+            // activation state. A terminated app cannot be resumed from Safari's native
+            // messaging host; the popup must keep the paused state and offer an explicit
+            // Open wBlock action instead of foregrounding the app as a side effect.
+            BlockingPauseStore.requestResume()
+            wake = (false, false, false, nil)
+        } else {
+            wake = (true, false, true, nil)
+        }
+        let resumeStatus = BlockingPauseStore.resumeStatus()
+        let response = createResponse(with: [
+            "ok": true,
+            "requested": paused,
+            "paused": BlockingPauseStore.isPaused(),
+            "status": paused ? resumeStatus.status.rawValue : BlockingPauseStore.ResumeStatus.succeeded.rawValue,
+            "error": resumeStatus.error,
+            "wakeSupported": wake.supported,
+            "wakeAttempted": wake.attempted,
+            "wakeSucceeded": wake.succeeded
+        ])
+        context.completeRequest(returningItems: [response])
+    }
+
+    private static func handleGetResumeRequestStatus(context: NSExtensionContext) {
+        let resumeStatus = BlockingPauseStore.resumeStatus()
+        let response = createResponse(with: [
+            "ok": true,
+            "status": resumeStatus.status.rawValue,
+            "error": resumeStatus.error,
+            "paused": BlockingPauseStore.isPaused()
+        ])
         context.completeRequest(returningItems: [response])
     }
 
     private static func handleGetBlockingState(message: [String: Any?], context: NSExtensionContext) {
         let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         Task { @MainActor in
-            let paused = BlockingPauseStore.isPaused()
+            let paused = BlockingPauseStore.isPaused(.filters)
             let disabledSites = await currentDisabledSites()
             let disabled = !host.isEmpty && HostMatcher.isHostDisabled(host: host, disabledSites: disabledSites)
             let response = createResponse(with: ["disabled": disabled, "paused": paused])
@@ -487,7 +551,7 @@ public enum WebExtensionRequestHandler {
         let offset = message["offset"] as? Int ?? 0
         let limit = message["limit"] as? Int ?? 250
         let payload: [String: Any]
-        if BlockingPauseStore.isPaused() {
+        if BlockingPauseStore.isPaused(.filters) {
             payload = RemoveParamDNRRuleGenerator.emptyRulesPayload(offset: offset, limit: limit)
         } else {
             payload = RemoveParamDNRRuleGenerator.loadRulesPayload(
@@ -500,21 +564,103 @@ public enum WebExtensionRequestHandler {
         context.completeRequest(returningItems: [response])
     }
 
-    private static func handleOpenContainingApp(context: NSExtensionContext) {
-        let opened: Bool
-        let error: String?
-
+    private static func requestContainingAppWake() -> (supported: Bool, attempted: Bool, opened: Bool, error: String?) {
         #if os(macOS)
-        opened = NSWorkspace.shared.open(URL(string: "wblockapp://open")!)
-        error = opened ? nil : "Failed to open the app"
+        let opened = NSWorkspace.shared.open(URL(string: "wblockapp://open")!)
+        return (
+            supported: true,
+            attempted: true,
+            opened: opened,
+            error: opened ? nil : "Failed to open wBlock. Open it manually to resume blocking."
+        )
         #else
-        opened = false
-        error = "Unavailable on iOS"
+        // Safari's iOS web-extension host cannot call UIApplication.open or otherwise
+        // wake the containing app. This is a platform limitation, not an apply result.
+        return (
+            supported: false,
+            attempted: false,
+            opened: false,
+            error: "Open wBlock to resume blocking."
+        )
         #endif
+    }
 
+    private static func handleStartFilterUpdate(context: NSExtensionContext) {
+        #if os(macOS)
+        let containingAppIsRunning = NSRunningApplication.runningApplications(
+            withBundleIdentifier: "skula.wBlock"
+        ).contains { !$0.isTerminated }
+        if containingAppIsRunning {
+            let accepted = FilterUpdatePopupStatus.requestUpdate()
+            let response = createResponse(with: [
+                "ok": true,
+                "accepted": accepted,
+                "state": FilterUpdatePopupStatus.State.running.rawValue
+            ])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+
+        Task {
+            switch await FilterUpdateClient.shared.startFilterUpdate() {
+            case .started:
+                let response = createResponse(with: [
+                    "ok": true,
+                    "accepted": true,
+                    "state": FilterUpdatePopupStatus.State.running.rawValue
+                ])
+                context.completeRequest(returningItems: [response])
+            case .alreadyRunning:
+                let response = createResponse(with: [
+                    "ok": true,
+                    "accepted": false,
+                    "state": FilterUpdatePopupStatus.State.running.rawValue
+                ])
+                context.completeRequest(returningItems: [response])
+            case .timedOut, .unavailable:
+                let response = createResponse(with: [
+                    "ok": false,
+                    "accepted": false,
+                    "state": FilterUpdatePopupStatus.State.failed.rawValue,
+                    "error": "The background update service is unavailable."
+                ])
+                context.completeRequest(returningItems: [response])
+            }
+        }
+        #else
         let response = createResponse(with: [
-            "opened": opened,
-            "error": error
+            "ok": false,
+            "accepted": false,
+            "state": FilterUpdatePopupStatus.State.failed.rawValue,
+            "error": "Background filter updates are unavailable on this platform."
+        ])
+        context.completeRequest(returningItems: [response])
+        #endif
+    }
+
+    private static func handleGetFilterUpdateStatus(context: NSExtensionContext) {
+        let status = FilterUpdatePopupStatus.consumeSnapshot()
+        var payload: [String: Any?] = [
+            "ok": true,
+            "state": status.state.rawValue,
+            "startedAt": status.startedAt,
+            "finishedAt": status.finishedAt,
+            "checkedFilters": status.checkedFilters,
+            "updatedFilters": status.updatedFilters,
+            "error": status.error
+        ]
+        if status.state == .failed, status.error == nil {
+            payload["error"] = "The background update did not complete."
+        }
+        let response = createResponse(with: payload)
+        context.completeRequest(returningItems: [response])
+    }
+
+    private static func handleOpenContainingApp(context: NSExtensionContext) {
+        let wake = requestContainingAppWake()
+        let response = createResponse(with: [
+            "opened": wake.opened,
+            "error": wake.error
         ])
         context.completeRequest(returningItems: [response])
     }
@@ -662,9 +808,8 @@ public enum WebExtensionRequestHandler {
     /// Returns enabled userscripts for a URL. By default this uses lightweight descriptors,
     /// but callers can request hydrated payloads to avoid repeated native chunk messages.
     private static func handleGetUserScriptsRequest(message: [String: Any?], context: NSExtensionContext) {
-        // While blocking is globally paused, serve no userscripts so the paused state also
-        // suppresses userscript/userstyle injection — not just the declarative blockers.
-        if BlockingPauseStore.isPaused() {
+        // While the userscript component is paused, serve no userscripts or userstyles.
+        if BlockingPauseStore.isPaused(.userScripts) {
             let response = createResponse(with: userScriptsResponse(userScripts: [], cacheAllowed: false))
             context.completeRequest(returningItems: [response])
             return
@@ -802,7 +947,7 @@ public enum WebExtensionRequestHandler {
     }
 
     private static func handleGetDocumentStartUserScriptCatalogRequest(context: NSExtensionContext) {
-        guard documentStartCacheAllowed, !BlockingPauseStore.isPaused() else {
+        guard documentStartCacheAllowed, !BlockingPauseStore.isPaused(.userScripts) else {
             let response = createResponse(with: documentStartCacheResponse(
                 userScripts: [],
                 disabledHosts: [],
@@ -926,7 +1071,7 @@ public enum WebExtensionRequestHandler {
 
     private static func handleGetPageUserScriptsRequest(message: [String: Any?], context: NSExtensionContext) {
         // Mirrors the pause check above so the page‑level userscript listing also reports none.
-        if BlockingPauseStore.isPaused() {
+        if BlockingPauseStore.isPaused(.userScripts) {
             let response = createResponse(with: ["userScripts": []])
             context.completeRequest(returningItems: [response])
             return
@@ -1245,7 +1390,8 @@ public enum WebExtensionRequestHandler {
             await ProtobufDataManager.shared.waitUntilLoaded()
             _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
             let rules = ProtobufDataManager.shared.getZapperRules(forHost: hostname)
-            let disabled = ProtobufDataManager.shared.isZapperDisabled(forHost: hostname)
+            let disabled = BlockingPauseStore.isPaused(.elementZapper)
+                || ProtobufDataManager.shared.isZapperDisabled(forHost: hostname)
             let response = createResponse(with: ["ok": true, "rules": rules, "disabled": disabled])
             context.completeRequest(returningItems: [response])
         }
@@ -1306,6 +1452,11 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
+            guard !BlockingPauseStore.isPaused(.userScripts) else {
+                let response = createResponse(with: ["error": "Requested content not available"])
+                context.completeRequest(returningItems: [response])
+                return
+            }
             let manager = UserScriptManager.shared
             await manager.waitUntilReady()
             guard let script = manager.userScript(withId: scriptId) else {

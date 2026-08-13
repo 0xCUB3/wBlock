@@ -88,28 +88,29 @@ struct LogsView: View {
                     Text("Logs")
                         .font(.headline)
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    HStack {
-                        Button {
-                            Task {
-                                exportText = await ConcurrentLogManager.shared.exportAsText(
-                                    entries: Array(filteredEntries.reversed())
-                                )
-                                showingShareSheet = true
-                            }
-                        } label: {
-                            Image(systemName: "square.and.arrow.up")
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {
+                        Task {
+                            exportText = await ConcurrentLogManager.shared.exportAsText(
+                                entries: Array(filteredEntries.reversed())
+                            )
+                            showingShareSheet = true
                         }
-                        Button {
-                            Task {
-                                await ConcurrentLogManager.shared.clearLogs()
-                                await loadLogs()
-                            }
-                        } label: {
-                            Image(systemName: "trash")
-                        }
-                        .disabled(entries.isEmpty)
+                    } label: {
+                        Label("Export", systemImage: "square.and.arrow.up")
                     }
+                    .accessibilityLabel("Export")
+
+                    Button {
+                        Task {
+                            await ConcurrentLogManager.shared.clearLogs()
+                            await loadLogs()
+                        }
+                    } label: {
+                        Label("Clear", systemImage: "trash")
+                    }
+                    .disabled(entries.isEmpty)
+                    .accessibilityLabel("Clear")
                 }
             }
             #else

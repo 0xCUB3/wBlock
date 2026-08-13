@@ -2,6 +2,9 @@ import Foundation
 import os.log
 import Darwin
 import wBlockCoreService
+#if os(macOS)
+import SafariServices
+#endif
 
 /// ZapperRuleManager is the unified data layer for element zapper rules stored in protobuf.
 ///
@@ -19,6 +22,29 @@ final class ZapperRuleManager: ObservableObject {
 
     /// Convenience binding target: rules for the currently selected domain.
     @Published private(set) var rulesForSelectedDomain: [String] = []
+    @Published private(set) var isMutationInFlight = false
+    private var mutationTail: Task<Void, Never>?
+    private var mutationGeneration = 0
+
+    /// Serializes app-level zapper mutations so delete, undo, and clear cannot
+    /// overlap with a disk refresh or with one another.
+    func performMutation(_ operation: @escaping @MainActor () async -> Void) async {
+        mutationGeneration += 1
+        let generation = mutationGeneration
+        let previous = mutationTail
+        let task = Task { @MainActor in
+            await previous?.value
+            isMutationInFlight = true
+            defer { isMutationInFlight = false }
+            await operation()
+        }
+        mutationTail = task
+        await task.value
+        Self.notifySafariRulesChanged()
+        if mutationGeneration == generation {
+            mutationTail = nil
+        }
+    }
 
     /// When set, automatically loads rulesForSelectedDomain. Cleared to nil when no domain is selected.
     @Published var selectedDomain: String? {
@@ -32,6 +58,19 @@ final class ZapperRuleManager: ObservableObject {
     }
 
     private let logger = Logger(subsystem: "skula.wBlock", category: "ZapperRuleManager")
+    static func notifySafariRulesChanged() {
+        #if os(macOS)
+        SFSafariApplication.dispatchMessage(
+            withName: "wblock:zapperRulesChanged",
+            toExtensionWithIdentifier: "skula.wBlock.wBlock-Scripts",
+            userInfo: ["action": "wblock:zapperRulesChanged"]
+        ) { error in
+            if let error {
+                os_log("Failed to refresh Safari zapper rules: %{public}@", type: .error, error.localizedDescription)
+            }
+        }
+        #endif
+    }
     private let dataDirectoryMonitor = ProtobufDataDirectoryMonitor(
         queue: DispatchQueue(label: "skula.wBlock.zapper-rules-monitor", qos: .utility)
     )
@@ -81,6 +120,18 @@ final class ZapperRuleManager: ObservableObject {
             if selectedDomain == hostname {
                 rulesForSelectedDomain = []
             }
+        }
+    }
+
+    /// Removes every stored rule for every hostname and refreshes local state.
+    func deleteAllRules() {
+        Task { @MainActor in
+            for domain in ProtobufDataManager.shared.getZapperDomains() {
+                await ProtobufDataManager.shared.deleteAllZapperRules(forHost: domain)
+            }
+            await refreshFromDisk()
+            selectedDomain = nil
+            rulesForSelectedDomain = []
         }
     }
 

@@ -3,7 +3,13 @@ import wBlockCoreService
 
 extension AppFilterManager {
     // MARK: - List Management
-    func addFilterList(name: String, urlString: String, category: FilterListCategory = .custom, hasUserProvidedName: Bool = false) {
+    func addFilterList(
+        name: String,
+        urlString: String,
+        category: FilterListCategory = .custom,
+        hasUserProvidedName: Bool = false,
+        isSelected: Bool = true
+    ) {
         guard let url = FilterListURLSupport.validatedRemoteURL(from: urlString)
         else {
             statusDescription = LocalizedStrings.format(
@@ -44,7 +50,7 @@ extension AppFilterManager {
             url: url,
             category: category,
             isCustom: true,
-            isSelected: true,
+            isSelected: isSelected,
             description: LocalizedStrings.text("User-added filter list.", comment: "Default custom filter description"),
             sourceRuleCount: nil,
             hasUserProvidedName: hasUserProvidedName)
@@ -88,9 +94,7 @@ extension AppFilterManager {
             category: category,
             isCustom: true,
             isSelected: isSelected,
-            description: trimmedDescription?.isEmpty == false
-                ? trimmedDescription!
-                : LocalizedStrings.text("User list.", comment: "Default user list description"),
+            description: trimmedDescription?.isEmpty == false ? trimmedDescription! : "",
             sourceRuleCount: Self.countRulesInUserListContent(trimmedContent)
         )
 
@@ -235,6 +239,107 @@ extension AppFilterManager {
         }
     }
 
+    /// Drops downloaded state only after a remote custom filter is deselected and applied.
+    /// The definition metadata remains so re-enabling can fetch the same source again.
+    @discardableResult
+    func clearDownloadedStateForDeselectedRemoteFilters(
+        previouslyAppliedFilterIDs: Set<UUID>? = nil
+    ) async -> Bool {
+        let appliedIDs = previouslyAppliedFilterIDs ?? appliedSelectedFilterIDs
+        let filtersToClear = filterLists.filter { filter in
+            guard appliedIDs.contains(filter.id), !filter.isSelected,
+                  filter.isCustom, !filter.isInlineUserList
+            else { return false }
+            let scheme = filter.url.scheme?.lowercased()
+            return scheme == "http" || scheme == "https"
+        }
+        guard !filtersToClear.isEmpty else { return true }
+
+        guard let containerURL = loader.getSharedContainerURL() else {
+            await recordDownloadedStateCleanupFailure(
+                filters: filtersToClear,
+                error: "Shared app-group directory is unavailable"
+            )
+            return false
+        }
+
+        var failures: [String] = []
+        let fileManager = FileManager.default
+        for filter in filtersToClear {
+            let filename = ContentBlockerIncrementalCache.localFilename(for: filter)
+            var urls = [
+                containerURL.appendingPathComponent(filename),
+                containerURL.appendingPathComponent("diff-baseline-\(filename)")
+            ]
+            if let legacyURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                name: filter.name,
+                containerURL: containerURL
+            ) {
+                urls.append(legacyURL)
+            }
+            if let legacyBaselineURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                name: filter.name,
+                containerURL: containerURL,
+                prefix: "diff-baseline-"
+            ) {
+                urls.append(legacyBaselineURL)
+            }
+
+            for url in urls where fileManager.fileExists(atPath: url.path) {
+                do {
+                    try fileManager.removeItem(at: url)
+                } catch {
+                    // A concurrent cleanup may have removed the file; every other
+                    // deletion failure must keep metadata and the retry marker intact.
+                    if (error as NSError).code != NSFileNoSuchFileError {
+                        failures.append("\(url.lastPathComponent): \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
+
+        guard failures.isEmpty else {
+            await recordDownloadedStateCleanupFailure(
+                filters: filtersToClear,
+                error: failures.joined(separator: "; ")
+            )
+            return false
+        }
+
+        for filter in filtersToClear {
+            guard let index = filterLists.firstIndex(where: { $0.id == filter.id }) else { continue }
+            filterLists[index].version = ""
+            filterLists[index].sourceRuleCount = nil
+            filterLists[index].rawSourceRuleCount = nil
+            filterLists[index].lastUpdated = nil
+            filterLists[index].etag = nil
+            filterLists[index].serverLastModified = nil
+            filterLists[index].limitExceededReason = nil
+            await dataManager.setFilterValidators(filter.id.uuidString, etag: nil, lastModified: nil)
+        }
+
+        await saveFilterLists()
+        return true
+    }
+
+    private func recordDownloadedStateCleanupFailure(filters: [FilterList], error: String) async {
+        let names = filters.map(\.name).joined(separator: ", ")
+        let message = LocalizedStrings.text(
+            "Failed to clear downloaded custom filter state; apply again to retry.",
+            comment: "Remote custom filter cleanup failure status"
+        )
+        hasError = true
+        statusDescription = message
+        applyProgressViewModel.markFailed(message: message)
+        applyProgressViewModel.updateIsLoading(false)
+        markNonSelectionChangesPending()
+        await ConcurrentLogManager.shared.error(
+            .filterApply,
+            message,
+            metadata: ["filters": names, "error": error, "action": "Apply again to retry"]
+        )
+    }
+
     func removeCustomFilterList(_ filter: FilterList) {
         if filter.isCustom {
             CloudSyncManager.shared.recordDeletedCustomListURL(filter.url.absoluteString)
@@ -249,9 +354,19 @@ extension AppFilterManager {
                 ContentBlockerIncrementalCache.localFilename(for: filter)
             )
             try? FileManager.default.removeItem(at: idFileURL)
-            // Clean up any legacy name-based file.
-            let legacyFileURL = containerURL.appendingPathComponent("\(filter.name).txt")
-            try? FileManager.default.removeItem(at: legacyFileURL)
+            if let legacyFileURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                name: filter.name,
+                containerURL: containerURL
+            ) {
+                try? FileManager.default.removeItem(at: legacyFileURL)
+            }
+            if let legacyBaselineURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                name: filter.name,
+                containerURL: containerURL,
+                prefix: "diff-baseline-"
+            ) {
+                try? FileManager.default.removeItem(at: legacyBaselineURL)
+            }
         }
         Task {
             await ConcurrentLogManager.shared.info(
@@ -318,6 +433,13 @@ extension AppFilterManager {
     }
 
     func updateUserList(id: UUID, name: String, description: String, category: FilterListCategory, content: String) {
+        guard !isApplyInFlight else {
+            statusDescription = LocalizedStrings.text(
+                "Apply already in progress.",
+                comment: "User list edit blocked during apply"
+            )
+            return
+        }
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)

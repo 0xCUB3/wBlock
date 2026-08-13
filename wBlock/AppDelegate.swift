@@ -201,7 +201,7 @@ extension AppDelegate: NSApplicationDelegate {
         switch response {
         case .alertFirstButtonReturn: // Apply Changes and Quit
             Task {
-                await filterManager.applyChanges()
+                await filterManager.performFilterUpdate(showProgress: true)
                 // Ensure changes are applied before terminating
                 DispatchQueue.main.async {
                     NSApp.reply(toApplicationShouldTerminate: true)
@@ -263,7 +263,7 @@ extension AppDelegate: NSApplicationDelegate {
     }
     
     func applicationWillBecomeActive(_ notification: Notification) {
-        guard !BlockingPauseStore.isPaused() else { return }
+        guard !BlockingPauseStore.isPaused(.filters) else { return }
 
         // Check if update is overdue when app becomes active
         Task {
@@ -378,7 +378,7 @@ extension AppDelegate: UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        guard !BlockingPauseStore.isPaused() else { return }
+        guard !BlockingPauseStore.isPaused(.filters) else { return }
 
         // Run opportunistic updates only when app is active (not during background launches).
         Task {

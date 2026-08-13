@@ -189,7 +189,7 @@
 "Calculated source rule count for filter" = "Calculated source rule count for filter";
 "Cancel" = "Cancel";
 "Category" = "Category";
-"Changes take full effect after the next apply." = "Changes take full effect after the next apply.";
+"Element Zapper changes take full effect after the next apply." = "Element Zapper changes take full effect after the next apply.";
 "Check for Updates" = "Check for Updates";
 "Checked %@" = "Checked %@";
 "Checked %@ ago" = "Checked %@ ago";
@@ -290,6 +290,7 @@
 "Edit Name" = "Rename List";
 "Edit User List" = "Edit List";
 "Editor" = "Editor";
+"Use Editor" = "Use Editor";
 "Element zapper" = "Element zapper";
 "Enable" = "Enable";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Enable 'wBlock Scripts' → Always Allow on Every Website";
@@ -406,7 +407,7 @@
 "go" = "Go";
 "Go to line" = "Go to line";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"Hagezi Pro Mini" = "Hagezi Pro Mini";
+"HaGeZi Pro Mini" = "HaGeZi Pro Mini";
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Handles advanced anti-adblock cases that filter rules miss.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Hides in-page pop-ups, banners, and other unwanted page elements.";
@@ -437,6 +438,7 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns.";
 "IndianList" = "IndianList";
 "Info" = "Info";
+"Integrated" = "Integrated";
 "Info.plist missing" = "Info.plist missing";
 "Initialized with %d filter list(s)." = "Initialized with %d filter list(s).";
 "International" = "International";
@@ -465,7 +467,6 @@
 "Loading script metadata…" = "Loading script metadata…";
 "Loading userscripts…" = "Loading userscripts…";
 "Local Import" = "Local Import";
-"Log Timestamps" = "Log Timestamps";
 "Logs" = "Logs";
 "Logs cleared" = "Logs cleared";
 "Logs will appear here as the app runs" = "Logs will appear here as the app runs";
@@ -605,6 +606,7 @@
 "Report an Issue" = "Report an Issue";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "Required for userscripts, advanced ad blocking, and cleaner features";
 "Required for YouTube ad blocking and much more" = "Required for YouTube ad blocking and much more";
+"The selected file is too large. Maximum size is 10 MB." = "The selected file is too large. Maximum size is 10 MB.";
 "Requirements" = "Requirements";
 "Reset Site Settings" = "Reset Site Settings";
 "Resetting…" = "Resetting…";
@@ -704,7 +706,7 @@
 "Sync across devices" = "Sync across devices";
 "Sync Now" = "Sync Now";
 "Sync settings across devices" = "Sync settings across devices";
-"Sync with device timezone" = "Sync with device timezone";
+"Sync timestamps with device timezone" = "Sync timestamps with device timezone";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Sync your filter selections, custom lists, userscripts, and whitelist across devices.";
 "Sync: Checking…" = "Sync: Checking…";
 "Sync: Downloading…" = "Sync: Downloading…";
@@ -751,7 +753,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings.";
 "This will reset all filters, userscripts, and preferences." = "This will reset all filters, userscripts, and preferences.";
-"Time zone" = "Time zone";
 "Timed out" = "Timed out";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "Title";
@@ -770,6 +771,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable" = "Unavailable";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
 "Undo" = "Undo";
+"Redo" = "Redo";
+"Element Zapper" = "Element Zapper";
+"No Element Zapper Rules" = "No Element Zapper Rules";
 "Update" = "Update";
 "Update & Apply" = "Update & Apply";
 "Update Filters" = "Update Filters";
@@ -811,6 +815,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Version \\(filter.version)" = "Version \\(filter.version)";
 "Version \\(script.version)" = "Version \\(script.version)";
 "Vietnamese adblock filter list." = "Vietnamese adblock filter list.";
+"Delete Script" = "Delete Script";
+"Delete Style" = "Delete Style";
+"Edit Content" = "Edit Content";
+"Edit Rules" = "Edit Rules";
+"View Rules" = "View Rules";
 "View Content" = "View Content";
 "View Logs" = "View Logs";
 "Waiting" = "Waiting";
@@ -831,11 +840,28 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead.";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead.";
 "Web extension %@" = "Web extension %@";
+"Blocks advertisements and other promotional page elements." = "Blocks advertisements and other promotional page elements.";
+"Blocks trackers, analytics, and other privacy-invasive requests." = "Blocks trackers, analytics, and other privacy-invasive requests.";
+"Blocks malicious URLs, phishing pages, and unwanted software." = "Blocks malicious URLs, phishing pages, and unwanted software.";
+"Combines broad ad-blocking and tracking protection in one list." = "Combines broad ad-blocking and tracking protection in one list.";
+"Contains filter lists that you added or imported yourself." = "Contains filter lists that you added or imported yourself.";
+"Get Started" = "Get Started";
+"No default filters" = "No default filters";
+"Organizes userscripts and userstyles added to wBlock." = "Organizes userscripts and userstyles added to wBlock.";
+"Provides newer rules and fixes that are still being tested." = "Provides newer rules and fixes that are still being tested.";
+"Recommended Filters" = "Recommended Filters";
+"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Removes cookie notices, pop-ups, banners, and other distracting elements.";
+"Reset to Default" = "Reset to Default";
+"Shows all filter lists across every category." = "Shows all filter lists across every category.";
+"Adds rules tailored to websites and languages from specific regions." = "Adds rules tailored to websites and languages from specific regions.";
+"The end of Safari ad-blocking B.S." = "The end of Safari ad-blocking B.S.";
 "Welcome to wBlock!" = "Welcome to wBlock!";
 "Whitelist" = "Whitelist";
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari.";
 "Whitelisted" = "Whitelisted";
 "Wrap Lines" = "Wrap Lines";
+"On" = "On";
+"Off" = "Off";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "You can always add regional filters later from Settings.";
@@ -850,3 +876,77 @@ To re-enable these filters, disable other large filters and apply changes again.
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Auto-update: due now (will run on next trigger)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 Auto-update: next in %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Auto-update: no prior run yet (interval=%dh)";
+
+/* Language picker */
+"Selected" = "Selected";
+"Search languages" = "Search languages";
+
+"Built-in" = "Built-in";
+
+/* Filter catalog additions */
+"Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
+"Adblock Warning Removal List" = "Adblock Warning Removal List";
+"Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
+"Stevo's AI Blocklist" = "Stevo's AI Blocklist";
+"AdGuard Allowlist" = "AdGuard Allowlist";
+"Blocks tracking pixels and other mail tracking techniques." = "Blocks tracking pixels and other mail tracking techniques.";
+"Allows sites and resources that should not be blocked." = "Allows sites and resources that should not be blocked.";
+
+
+/* Auto-update controls */
+"Auto-Update" = "Auto-Update";
+"Auto-Update Filters & Userscripts" = "Auto-Update Filters & Userscripts";
+"Update Now" = "Update Now";
+"Automatically updating %@" = "Automatically updating %@";
+
+/* Add mode controls */
+"Text" = "Text";
+"Choose File" = "Choose File";
+"Change File" = "Change File";
+"Local imports won't auto-update; re-import to replace." = "Local imports won't auto-update; re-import to replace.";
+"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases.";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "Disable Essential Filter?";
+"Replace Existing Content?" = "Replace Existing Content?";
+"Clear Element Zapper Rules?" = "Clear Element Zapper Rules?";
+"Clear All" = "Clear All";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage.";
+"Pasting will replace the existing editor content." = "Pasting will replace the existing editor content.";
+"Pasting will replace the existing content." = "Pasting will replace the existing content.";
+"This removes all saved element zapper rules from every site." = "This removes all saved element zapper rules from every site.";
+"Clear Element Zapper Rules" = "Clear Element Zapper Rules";
+"Advanced" = "Advanced";
+"Help" = "Help";
+"FAQ" = "FAQ";
+"Report Issues" = "Report Issues";
+"Contact Us" = "Contact Us";
+"Version" = "Version";
+"Developer" = "Developer";
+"GPL-3.0 License" = "GPL-3.0 License";
+"Privacy Policy" = "Privacy Policy";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "Use a valid http:// or https:// URL";
+"Include a host name" = "Include a host name";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Do not use a userscript URL ending in .js, .mjs, or .cjs";
+"wBlock will fetch and enable the filter list automatically" = "wBlock will fetch and enable the filter list automatically";
+/* Issue 508 UI follow-up */
+"Starts with http:// or https://" = "Starts with http:// or https://";
+"Ends with .js, .user.js, or .user.css" = "Ends with .js, .user.js, or .user.css";
+"Hosted on a trusted source" = "Hosted on a trusted source";
+
+"The file must include userscript or userstyle metadata." = "The file must include userscript or userstyle metadata.";
+
+"Failed to clear downloaded custom filter state; apply again to retry." = "Failed to clear downloaded custom filter state; apply again to retry.";
+"Failed to resume blocking." = "Failed to resume blocking.";
+/* Userscript display categories */
+"Functionality" = "Functionality";
+"Appearance" = "Appearance";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior.";
+"Userscripts and scripts that add or restore useful website functionality." = "Userscripts and scripts that add or restore useful website functionality.";
+"Userstyles and scripts that change the appearance of websites." = "Userstyles and scripts that change the appearance of websites.";
+"Custom, remote, and local scripts that do not have a more specific display category." = "Custom, remote, and local scripts that do not have a more specific display category.";
+"Enabled Userscripts & Userstyles" = "Enabled Userscripts & Userstyles";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pause Blocking is on while any selected component is paused. Resume restores all components.";
+"Temporarily pause selected components without changing their enabled settings." = "Temporarily pause selected components without changing their enabled settings.";

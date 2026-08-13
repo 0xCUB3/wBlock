@@ -436,6 +436,7 @@ public actor SharedAutoUpdateManager {
 
     private func autoUpdateUserScriptsIfNeeded() async -> (updated: Int, failed: Int) {
         let manager = await MainActor.run { UserScriptManager.shared }
+        guard !BlockingPauseStore.isPaused(.userScripts) else { return (0, 0) }
         let result = await manager.autoUpdateEnabledUserScripts()
         return (result.updated, result.failed)
     }
@@ -666,7 +667,14 @@ public actor SharedAutoUpdateManager {
             return .skipped(reason: "already_running")
         }
 
-        if BlockingPauseStore.isPaused() {
+        if BlockingPauseStore.isPaused(.filters) {
+            // A filter-only pause must preserve generated zapper rules; the full inert
+            // output repair is reserved for the legacy/all-content-blocking pause.
+            guard BlockingPauseStore.isContentBlockingPaused() else {
+                appendSharedLog("Auto-update skipped: filters are paused; zapper output remains active")
+                appendSkipTelemetry(trigger: trigger, reason: "filters_paused")
+                return .skipped(reason: "filters_paused")
+            }
             let persistedOutputsContainRules = contentBlockerOutputsContainRules()
             let helperStagedOutputs = persistedOutputsContainRules && isExternalHelperTrigger(trigger)
             let repairedOutputs = persistedOutputsContainRules
@@ -1512,8 +1520,12 @@ public actor SharedAutoUpdateManager {
             return localData
         }
 
-        guard filter.isCustom else { return nil }
-        let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        guard filter.isCustom,
+              let legacyURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
+                  name: filter.name,
+                  containerURL: containerURL
+              )
+        else { return nil }
         return try? Data(contentsOf: legacyURL)
     }
 
@@ -1809,7 +1821,13 @@ public actor SharedAutoUpdateManager {
         let ordered = ContentBlockerMappingService.orderedForDistribution(selectedFilters)
         let byTarget = ContentBlockerMappingService.distribute(selectedFilters: selectedFilters, across: targets)
         let affinitySnapshot = SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: containerURL)
-        let zapper = await MainActor.run { ZapperContentBlockerRuleGenerator.generatedRulesText(from: ProtobufDataManager.shared.getActiveZapperRulesByHost()) }
+        let zapper = await MainActor.run {
+            BlockingPauseStore.isPaused(.elementZapper)
+                ? nil
+                : ZapperContentBlockerRuleGenerator.generatedRulesText(
+                    from: ProtobufDataManager.shared.getActiveZapperRulesByHost()
+                )
+        }
         var results: [String: ConversionTargetResult] = [:]
         let works = targets.map { target in
             ConversionTargetWork(

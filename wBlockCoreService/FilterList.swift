@@ -97,7 +97,9 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     /// Returns flag emojis for this filter's languages, or nil if none
     public var flagEmojis: String? {
         guard !languages.isEmpty else { return nil }
+        var seen = Set<String>()
         let flags = languages.compactMap { Self.languageToFlag[$0] }
+            .filter { seen.insert($0).inserted }
         return flags.isEmpty ? nil : flags.joined(separator: " ")
     }
 

@@ -33,7 +33,7 @@ let popupSource = try read("wBlock Scripts (iOS)/Resources/pages/popup/popup.js"
 
 assertContains(
     contentBlockerHandler,
-    "BlockingPauseStore.isPaused(groupIdentifier: groupIdentifier)",
+    "BlockingPauseStore.isContentBlockingPaused(groupIdentifier: groupIdentifier)",
     "Content blocker extensions must serve inert rules directly while blocking is paused"
 )
 assertContains(
@@ -158,7 +158,17 @@ assertNotContains(
 )
 assertContains(
     applyPipeline,
-    "await MainActor.run { self.isBlockingPaused = false }\n            await applyChanges()\n            await MainActor.run {",
+    "let allSelectedFilters = pausedComponents.contains(.filters)",
+    "Filter apply must omit filter lists only when Filters is paused"
+)
+assertContains(
+    applyPipeline,
+    "let generatedZapperRules = pausedComponents.contains(.elementZapper)",
+    "Filter apply must omit generated zapper rules only when Element Zapper is paused"
+)
+assertContains(
+    applyPipeline,
+    "await applyChangesUnlocked(\n                allowUserInteraction: false,\n                prepareState: true,\n                skipPreApplyUpdates: false,\n                allowPausedResume: true",
     "Resuming blocking must use the standard visible apply pipeline"
 )
 assertNotContains(
@@ -168,12 +178,12 @@ assertNotContains(
 )
 assertContains(
     appDelegate,
-    "func applicationWillBecomeActive(_ notification: Notification) {\n        guard !BlockingPauseStore.isPaused() else { return }\n\n        // Check if update is overdue when app becomes active\n        Task {",
+    "func applicationWillBecomeActive(_ notification: Notification) {\n        guard !BlockingPauseStore.isPaused(.filters) else { return }\n\n        // Check if update is overdue when app becomes active\n        Task {",
     "macOS foreground activation must skip opportunistic updates while blocking is paused"
 )
 assertContains(
     appDelegate,
-    "func applicationDidBecomeActive(_ application: UIApplication) {\n        guard !BlockingPauseStore.isPaused() else { return }\n\n        // Run opportunistic updates only when app is active (not during background launches).\n        Task {",
+    "func applicationDidBecomeActive(_ application: UIApplication) {\n        guard !BlockingPauseStore.isPaused(.filters) else { return }\n\n        // Run opportunistic updates only when app is active (not during background launches).\n        Task {",
     "Foreground activation must skip opportunistic updates while blocking is paused"
 )
 assertContains(

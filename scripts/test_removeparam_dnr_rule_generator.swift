@@ -62,6 +62,33 @@ struct RemoveParamDNRRuleGeneratorTests {
         expectEqual(typed.condition.resourceTypes, ["xmlhttprequest"], "xmlhttprequest resource type")
         expectEqual(typed.condition.domainType, "thirdParty", "third-party domain type")
 
+        let scopedRegressionText = """
+        ||wildcard.example^$removeparam=utm,domain=*.example
+        ||slash.example^$removeparam=utm,domain=example.com/path
+        ||port.example^$removeparam=utm,to=example.com:443
+        ||empty-domain.example^$removeparam=utm,domain=
+        ||empty-to.example^$removeparam=utm,to=
+        ||empty-domain-segment.example^$removeparam=utm,domain=good.example||other.example
+        ||empty-to-segment.example^$removeparam=utm,to=target.example|
+        ||mixed-invalid.example^$removeparam=utm,domain=good.example|bad/*.example
+        ||valid-scoped.example^$removeparam=utm,domain=good.example|~excluded.example,to=target.example|~not-target.example
+        ||unscoped.example^$removeparam=utm
+        """
+        let scopedRegression = RemoveParamDNRRuleGenerator.generateRules(from: scopedRegressionText)
+        expectEqual(scopedRegression.summary.removeParamRules, 10, "scoped regression source count")
+        expectEqual(scopedRegression.summary.skippedRules, 8, "malformed scoped rules skipped")
+        expectEqual(scopedRegression.rules.count, 2, "valid scoped and unscoped rules generated")
+
+        let validScoped = scopedRegression.rules[0]
+        expectEqual(validScoped.condition.initiatorDomains, ["good.example"], "valid included initiator domain")
+        expectEqual(validScoped.condition.excludedInitiatorDomains, ["excluded.example"], "valid excluded initiator domain")
+        expectEqual(validScoped.condition.requestDomains, ["target.example"], "valid included request domain")
+        expectEqual(validScoped.condition.excludedRequestDomains, ["not-target.example"], "valid excluded request domain")
+
+        let unscoped = scopedRegression.rules[1]
+        expectEqual(unscoped.condition.initiatorDomains, nil, "unscoped initiator domains")
+        expectEqual(unscoped.condition.requestDomains, nil, "unscoped request domains")
+
         let encoder = JSONEncoder()
         _ = try encoder.encode(rules)
 

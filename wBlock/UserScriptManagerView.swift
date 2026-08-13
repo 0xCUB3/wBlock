@@ -8,6 +8,13 @@
 import SwiftUI
 import wBlockCoreService
 import UniformTypeIdentifiers
+
+private extension FilterListCategory {
+    static var userScriptCategories: [FilterListCategory] {
+        [.scripts, .custom]
+    }
+}
+
 #if os(iOS)
 import UIKit
 #elseif os(macOS)
@@ -28,10 +35,20 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let isDownloaded: Bool
     let updatesAutomatically: Bool
     let isUserStyle: Bool
-    let builtInSection: BuiltInUserScriptSection?
+    let category: FilterListCategory
+    let displayCategory: UserScriptDisplayCategory
+    let isBuiltIn: Bool
+    let isIntegrated: Bool
+    let isCustom: Bool
     let isBeta: Bool
 
-    init(script: UserScript, builtInSection: BuiltInUserScriptSection?, isBeta: Bool = false) {
+    init(
+        script: UserScript,
+        isDownloaded: Bool,
+        isBuiltIn: Bool,
+        builtInDisplayRole: BuiltInUserScriptDisplayRole?,
+        isBeta: Bool = false
+    ) {
         id = script.id
         name = script.name
         localizedDisplayName = script.localizedDisplayName
@@ -42,28 +59,70 @@ private struct UserScriptListItem: Identifiable, Hashable {
         version = script.version
         lastUpdatedFormatted = script.lastUpdatedFormatted
         isLocal = script.isLocal
-        isDownloaded = script.isDownloaded
+        self.isDownloaded = isDownloaded
         updatesAutomatically = script.updatesAutomatically
         isUserStyle = script.isUserStyle
-        self.builtInSection = builtInSection
+        category = script.category
+        displayCategory = UserScriptDisplayCategorySupport.category(
+            isUserStyle: script.isUserStyle,
+            builtInRole: builtInDisplayRole,
+            persistedCategory: script.category
+        )
+        self.isBuiltIn = isBuiltIn
+        isIntegrated = isBuiltIn && builtInDisplayRole == .functionality
+            && (script.name == "Tube Cleaner" || script.name == "Player Cleaner")
+        isCustom = !isBuiltIn
         self.isBeta = isBeta
     }
 }
 
-private enum UserScriptSectionKind: Hashable {
-    case general
-    case styles
-    case foreign
-}
+private typealias UserScriptSectionKind = UserScriptDisplayCategory
 
 private struct UserScriptDisplaySection: Identifiable {
     let id: UserScriptSectionKind
     let title: LocalizedStringKey
+    let description: LocalizedStringKey?
     let scripts: [UserScriptListItem]
 }
 
 private struct SelectedUserScript: Identifiable {
     let id: UUID
+    let action: UserScriptContextMenuAction
+}
+
+private struct EditorMetadataAutofillState: Equatable {
+    private(set) var lastAutofilledName = ""
+    private(set) var lastAutofilledDescription = ""
+    private(set) var nameWasManuallyEdited = false
+    private(set) var descriptionWasManuallyEdited = false
+
+    mutating func autofill(
+        name metadataName: String,
+        description metadataDescription: String,
+        currentName: String,
+        currentDescription: String
+    ) -> (name: String, description: String) {
+        let name = metadataName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let description = metadataDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !nameWasManuallyEdited {
+            lastAutofilledName = name.isEmpty ? "Pasted Userscript" : name
+        }
+        if !descriptionWasManuallyEdited {
+            lastAutofilledDescription = description
+        }
+        return (
+            nameWasManuallyEdited ? currentName : lastAutofilledName,
+            descriptionWasManuallyEdited ? currentDescription : lastAutofilledDescription
+        )
+    }
+
+    mutating func noteNameEdit(_ value: String) {
+        if value != lastAutofilledName { nameWasManuallyEdited = true }
+    }
+
+    mutating func noteDescriptionEdit(_ value: String) {
+        if value != lastAutofilledDescription { descriptionWasManuallyEdited = true }
+    }
 }
 
 struct UserScriptManagerView: View {
@@ -71,6 +130,7 @@ struct UserScriptManagerView: View {
     let hasPendingChanges: Bool
     let isApplyingChanges: Bool
     let onApplyChanges: () -> Void
+    let tabSelection: Int
 
     @State private var scripts: [UserScriptListItem] = []
     @State private var showingAddScriptSheet = false
@@ -79,7 +139,6 @@ struct UserScriptManagerView: View {
     @State private var searchText = ""
     @State private var showSearch = false
     @State private var downloadingScriptIDs = Set<UUID>()
-    @AppStorage("userscriptsForeignSectionExpanded") private var isForeignUserScriptsExpanded = false
     @State private var isDropTarget = false
     @State private var isDropProcessing = false
     @State private var dropErrorMessage: String?
@@ -135,32 +194,17 @@ struct UserScriptManagerView: View {
     }
 
     private var displayedScriptSections: [UserScriptDisplaySection] {
-        let displayed = displayedScripts
-        let styles = displayed.filter(\.isUserStyle)
-        let standardScripts = displayed.filter { !$0.isUserStyle && $0.builtInSection != .foreign }
-        let foreignScripts = displayed.filter { !$0.isUserStyle && $0.builtInSection == .foreign }
-        var sections: [UserScriptDisplaySection] = []
-
-        if !standardScripts.isEmpty {
-            sections.append(UserScriptDisplaySection(id: .general, title: "Userscripts", scripts: standardScripts))
+        UserScriptDisplayCategorySupport.orderedGroups(
+            displayedScripts,
+            category: { $0.displayCategory }
+        ).map { group in
+            UserScriptDisplaySection(
+                id: group.category,
+                title: LocalizedStringKey(group.category.rawValue),
+                description: LocalizedStringKey(group.category.descriptionKey),
+                scripts: group.items
+            )
         }
-        if !styles.isEmpty {
-            sections.append(UserScriptDisplaySection(id: .styles, title: "Userstyles", scripts: styles))
-        }
-        if !foreignScripts.isEmpty {
-            sections.append(UserScriptDisplaySection(id: .foreign, title: "International", scripts: foreignScripts))
-        }
-
-        return sections
-    }
-
-    private func copyScriptURL(_ url: URL) {
-        #if os(iOS)
-        UIPasteboard.general.string = url.absoluteString
-        #elseif os(macOS)
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(url.absoluteString, forType: .string)
-        #endif
     }
 
     var body: some View {
@@ -175,11 +219,29 @@ struct UserScriptManagerView: View {
         .sheet(item: $selectedScript, onDismiss: {
             refreshScripts()
         }) { selection in
-            UserScriptContentView(scriptId: selection.id, userScriptManager: userScriptManager)
+            if selection.action == .info {
+                UserScriptInfoView(
+                    scriptId: selection.id,
+                    userScriptManager: userScriptManager
+                )
+            } else {
+                UserScriptContentView(
+                    scriptId: selection.id,
+                    userScriptManager: userScriptManager,
+                    startsEditing: selection.action == .editContent
+                )
+            }
         }
         .onAppear {
             refreshScripts()
             showOnlyEnabled = ProtobufDataManager.shared.getUserScriptShowEnabledOnly()
+        }
+        .onReceive(userScriptManager.$userScripts) { _ in
+            refreshScripts()
+        }
+        .onChangeCompat(of: tabSelection) { _, _ in
+            searchText = ""
+            showSearch = false
         }
         .alert("Import Failed", isPresented: Binding(
             get: { dropErrorMessage != nil },
@@ -213,26 +275,15 @@ struct UserScriptManagerView: View {
                 }
             } else {
                 ForEach(sections) { scriptSection in
-                    if scriptSection.id == .foreign {
-                        Section {
-                            DisclosureGroup(isExpanded: $isForeignUserScriptsExpanded) {
-                                ForEach(scriptSection.scripts) { script in
-                                    scriptRowView(script: script)
-                                }
-                            } label: {
-                                Text(scriptSection.title)
-                            }
+                    Section {
+                        ForEach(scriptSection.scripts) { script in
+                            scriptRowView(script: script)
                         }
-                    } else {
-                        Section(scriptSection.title) {
-                            ForEach(scriptSection.scripts) { script in
-                                scriptRowView(script: script)
-                            }
-                        }
+                    } header: {
+                        displaySectionHeader(scriptSection)
                     }
                 }
-            }
-        }
+            }        }
         .unifiedTabListStyle()
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
@@ -313,27 +364,27 @@ struct UserScriptManagerView: View {
             }
         }
         .toolbar {
-            ToolbarItemGroup(placement: .automatic) {
-                ToolbarSearchField(
-                    text: $searchText,
-                    isExpanded: $showSearch,
-                    prompt: "Search scripts"
-                )
-
-                if !showSearch {
-                    applyChangesToolbarButton
-                        .help(
-                            hasPendingChanges
-                                ? String(localized: "Apply your pending changes")
-                                : String(localized: "Apply changes")
-                        )
-
+            if !showSearch {
+                ToolbarItemGroup(placement: .automatic) {
                     Button {
                         showingAddScriptSheet = true
                     } label: {
                         Label("Add Userscript or Userstyle", systemImage: "plus")
                     }
 
+                    applyChangesToolbarButton
+                        .help(
+                            hasPendingChanges
+                                ? String(localized: "Apply your pending changes")
+                                : String(localized: "Apply changes")
+                        )
+                }
+
+                if #available(macOS 26.0, *) {
+                    ToolbarSpacer(.fixed, placement: .automatic)
+                }
+
+                ToolbarItem(placement: .automatic) {
                     Button {
                         showOnlyEnabled.toggle()
                         ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
@@ -345,6 +396,18 @@ struct UserScriptManagerView: View {
                                 : "line.3.horizontal.decrease.circle")
                     }
                 }
+
+                if #available(macOS 26.0, *) {
+                    ToolbarSpacer(.fixed, placement: .automatic)
+                }
+            }
+
+            ToolbarItem(placement: .automatic) {
+                ToolbarSearchField(
+                    text: $searchText,
+                    isExpanded: $showSearch,
+                    prompt: "Search scripts"
+                )
             }
         }
         #endif
@@ -354,7 +417,9 @@ struct UserScriptManagerView: View {
         scripts = userScriptManager.userScripts.map { script in
             UserScriptListItem(
                 script: script,
-                builtInSection: userScriptManager.builtInSection(for: script),
+                isDownloaded: userScriptManager.hasDownloadedContent(for: script),
+                isBuiltIn: userScriptManager.isDefaultUserScript(script),
+                builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
                 isBeta: userScriptManager.isBeta(for: script)
             )
         }
@@ -448,29 +513,47 @@ struct UserScriptManagerView: View {
         .padding(.horizontal)
     }
 
+    private func displaySectionHeader(_ section: UserScriptDisplaySection) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(section.title)
+            if let description = section.description {
+                Text(description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
     #if os(macOS)
     private func scriptsListView(sections: [UserScriptDisplaySection]) -> some View {
         LazyVStack(spacing: 16) {
             ForEach(sections) { scriptSection in
-                if scriptSection.id == .foreign {
-                    macOSForeignScriptsView(scripts: scriptSection.scripts)
-                } else {
-                    macOSUserScriptSectionView(title: scriptSection.title, scripts: scriptSection.scripts)
-                }
+                macOSUserScriptSectionView(
+                    title: scriptSection.title,
+                    description: scriptSection.description,
+                    scripts: scriptSection.scripts
+                )
             }
-        }
-        .padding(.horizontal)
+        }        .padding(.horizontal)
     }
 
     private func macOSUserScriptSectionView(
         title: LocalizedStringKey,
+        description: LocalizedStringKey?,
         scripts: [UserScriptListItem]
     ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(title)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                    if let description {
+                        Text(description)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 Spacer()
             }
             .padding(.horizontal, 4)
@@ -489,32 +572,10 @@ struct UserScriptManagerView: View {
         }
     }
 
-    private func macOSForeignScriptsView(scripts: [UserScriptListItem]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            DisclosureGroup(isExpanded: $isForeignUserScriptsExpanded) {
-                VStack(spacing: 0) {
-                    ForEach(scripts.indices, id: \.self) { index in
-                        scriptRowView(script: scripts[index])
-
-                        if index < scripts.count - 1 {
-                            Divider()
-                                .padding(.leading, 16)
-                        }
-                    }
-                }
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-            } label: {
-                Text("International")
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-            }
-            .padding(.horizontal, 4)
-        }
-    }
     #endif
 
     private func scriptRowView(script: UserScriptListItem) -> some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(script.localizedDisplayName)
@@ -522,16 +583,6 @@ struct UserScriptManagerView: View {
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
-                    if script.isBeta {
-                        Text("Beta")
-                            .font(.caption2)
-                            .fontWeight(.medium)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.orange.opacity(0.15))
-                            .foregroundStyle(.orange)
-                            .cornerRadius(4)
-                    }
                 }
 
                 if !script.localizedDisplayDescription.isEmpty {
@@ -541,6 +592,21 @@ struct UserScriptManagerView: View {
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+
+                HStack(spacing: 6) {
+                    Text(script.isIntegrated ? "Integrated" : (script.isUserStyle ? "Userstyle" : "Userscript"))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    if script.isLocal {
+                        Badge(text: "Local Import", color: .blue)
+                    } else if script.isCustom {
+                        Badge(text: "Custom", color: .blue)
+                    }
+                    if script.isBeta {
+                        Badge(text: "Beta", color: .orange)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 HStack(spacing: 4) {
                     if !script.version.isEmpty {
@@ -568,17 +634,6 @@ struct UserScriptManagerView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-
-                if script.isLocal {
-                    Text("Local Import")
-                        .font(.caption2)
-                        .fontWeight(.medium)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.blue.opacity(0.12))
-                        .foregroundStyle(.blue)
-                        .cornerRadius(4)
-                }
 
                 if script.isEnabled && !script.isDownloaded {
                     Text("Not Downloaded")
@@ -636,39 +691,49 @@ struct UserScriptManagerView: View {
             if script.isDownloaded {
                 // Defer to avoid race with context menu dismissal on iOS
                 DispatchQueue.main.async {
-                    selectedScript = SelectedUserScript(id: script.id)
+                    selectedScript = SelectedUserScript(id: script.id, action: .info)
                 }
             }
         }
         .contextMenu {
-            #if os(macOS)
-            if script.isDownloaded {
+            let actions = ContextMenuActionAvailability.userScriptActions(
+                isBuiltIn: script.isBuiltIn,
+                isLocal: script.isLocal
+            )
+            if actions.contains(.info) {
                 Button {
-                    selectedScript = SelectedUserScript(id: script.id)
+                    selectedScript = SelectedUserScript(id: script.id, action: .info)
+                } label: {
+                    Label("Info", systemImage: "info.circle")
+                }
+            }
+            if actions.contains(.viewContent) {
+                Button {
+                    selectedScript = SelectedUserScript(id: script.id, action: .viewContent)
                 } label: {
                     Label("View Content", systemImage: "doc.text")
                 }
             }
-            #endif
-            if let url = script.url {
+            if actions.contains(.editContent) {
                 Button {
-                    copyScriptURL(url)
+                    selectedScript = SelectedUserScript(id: script.id, action: .editContent)
                 } label: {
-                    Label("Copy URL", systemImage: "doc.on.doc")
+                    Label("Edit Content", systemImage: "pencil")
                 }
             }
-            if let managedScript = userScriptManager.userScript(withId: script.id),
-                !userScriptManager.isDefaultUserScript(managedScript)
-            {
+            if actions.contains(.deleteScript),
+               let managedScript = userScriptManager.userScript(withId: script.id) {
                 Button(role: .destructive) {
                     Task {
-                        guard let managedScript = userScriptManager.userScript(withId: script.id) else { return }
                         await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Removing userscript"), metadata: ["script": script.name])
                         userScriptManager.removeUserScript(managedScript)
                         refreshScripts()
                     }
                 } label: {
-                    Label("Remove", systemImage: "trash")
+                    Label(
+                        script.isUserStyle ? "Delete Style" : "Delete Script",
+                        systemImage: "trash"
+                    )
                 }
             }
         }
@@ -746,31 +811,17 @@ private struct ScriptNameAndDescriptionView: View {
 private struct ScriptStatusBadgesView: View {
     let script: UserScript
     let isDownloaded: Bool
+    let isBuiltIn: Bool
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                if script.isUserStyle {
-                    Badge(
-                        text: LocalizedStrings.text("Userstyle", comment: "Userstyle type badge"),
-                        color: .purple
-                    )
+                ForEach(Array(InfoBadgeSupport.userScriptBadges(
+                    script,
+                    isDownloaded: isDownloaded,
+                    isBuiltIn: isBuiltIn
+                ).enumerated()), id: \.offset) { _, badge in
+                    InfoBadgeView(kind: badge)
                 }
-                if !script.version.isEmpty {
-                    Badge(
-                        text: LocalizedStrings.format(
-                            "v%@",
-                            comment: "Userscript version badge",
-                            script.version
-                        ),
-                        color: .blue
-                    )
-                }
-                Badge(text: script.isEnabled ? "Enabled" : "Disabled", color: script.isEnabled ? .green : .secondary)
-            }
-            if script.isEnabled && !isDownloaded {
-                Badge(text: "Not Downloaded", color: .red)
-            } else if isDownloaded {
-                Badge(text: "Downloaded", color: .green)
             }
         }
     }
@@ -796,20 +847,31 @@ private struct ScriptURLView: View {
     let isBundled: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("Source URL").font(.caption).fontWeight(.medium).foregroundStyle(.secondary)
             if isBundled {
                 Text("Ships with the app")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else {
-                Text(script.url?.absoluteString ?? "N/A")
+            }
+            if let url = script.url {
+                Text(url.absoluteString)
                     .font(.caption)
                     .foregroundStyle(.blue)
                     .textSelection(.enabled)
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
+                Button {
+                    #if os(iOS)
+                    UIPasteboard.general.string = url.absoluteString
+                    #elseif os(macOS)
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(url.absoluteString, forType: .string)
+                    #endif
+                } label: {
+                    Label("Copy URL", systemImage: "doc.on.doc")
+                }
+                .buttonStyle(.borderless)
             }
         }
     }
@@ -941,12 +1003,19 @@ struct UserScriptInfoSidebar: View {
     @Binding var isPatternsExpanded: Bool
     let formatFileSize: (Int) -> String
     let isBundled: Bool
+    let isBuiltIn: Bool
     let isBeta: Bool
     let onUpdatesAutomaticallyChanged: (Bool) -> Void
+    var fillsAvailableSpace = true
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             ScriptNameAndDescriptionView(script: script, isBeta: isBeta)
-            ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0)
+            ScriptStatusBadgesView(
+                script: script,
+                isDownloaded: contentLength > 0,
+                isBuiltIn: isBuiltIn
+            )
             // Bundled scripts update with the app, so auto-update controls are noise.
             if !isBundled && (script.url != nil || script.updateURL != nil || script.downloadURL != nil) {
                 ScriptUpdateSettingsView(
@@ -959,7 +1028,9 @@ struct UserScriptInfoSidebar: View {
             }
             if script.url != nil { ScriptURLView(script: script, isBundled: isBundled) }
             if !script.matches.isEmpty { ScriptMatchPatternsView(script: script, isPatternsExpanded: $isPatternsExpanded) }
-            Spacer()
+            if fillsAvailableSpace {
+                Spacer()
+            }
         }
     }
 }
@@ -1027,9 +1098,98 @@ struct ScriptContentMainView: View {
 }
 #endif
 
+struct UserScriptInfoView: View {
+    let scriptId: UUID
+    var userScriptManager: UserScriptManager
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var script: UserScript?
+    @State private var isPatternsExpanded = false
+    @State private var isLoading = true
+
+    var body: some View {
+        Group {
+            if let script {
+                #if os(iOS)
+                NavigationView {
+                    ScrollView {
+                        UserScriptInfoSidebar(
+                            script: script,
+                            contentLength: script.content.count,
+                            isPatternsExpanded: $isPatternsExpanded,
+                            formatFileSize: formatFileSize,
+                            isBundled: userScriptManager.isBundled(for: script),
+                            isBuiltIn: userScriptManager.isDefaultUserScript(script),
+                            isBeta: userScriptManager.isBeta(for: script),
+                            onUpdatesAutomaticallyChanged: setUpdatesAutomatically
+                        )
+                        .padding()
+                    }
+                    .navigationTitle(script.localizedDisplayName)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") { dismiss() }
+                        }
+                    }
+                }
+                #else
+                UserScriptInfoSidebar(
+                    script: script,
+                    contentLength: script.content.count,
+                    isPatternsExpanded: $isPatternsExpanded,
+                    formatFileSize: formatFileSize,
+                    isBundled: userScriptManager.isBundled(for: script),
+                    isBuiltIn: userScriptManager.isDefaultUserScript(script),
+                    isBeta: userScriptManager.isBeta(for: script),
+                    onUpdatesAutomaticallyChanged: setUpdatesAutomatically,
+                    fillsAvailableSpace: false
+                )
+                .padding(20)
+                .frame(width: 460)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Done") { dismiss() }
+                    }
+                }
+                #endif
+            } else if isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                Text("Unable to load script")
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .task(id: scriptId) {
+            isLoading = true
+            script = await userScriptManager.userScriptEditorSnapshot(withId: scriptId)
+            isLoading = false
+        }
+    }
+
+    private func setUpdatesAutomatically(_ updatesAutomatically: Bool) {
+        guard var currentScript = script else { return }
+        currentScript.updatesAutomatically = updatesAutomatically
+        script = currentScript
+        Task {
+            await userScriptManager.setUserScript(currentScript, updatesAutomatically: updatesAutomatically)
+        }
+    }
+
+    private func formatFileSize(_ bytes: Int) -> String {
+        let formatter = ByteCountFormatter()
+        formatter.allowedUnits = [.useKB, .useMB]
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: Int64(bytes))
+    }
+}
+
 struct UserScriptContentView: View {
     let scriptId: UUID
     var userScriptManager: UserScriptManager
+    var startsEditing: Bool = false
     @Environment(\.dismiss) private var dismiss
     @State private var script: UserScript?
     @State private var loadedContent = ""
@@ -1058,6 +1218,7 @@ struct UserScriptContentView: View {
                                 isPatternsExpanded: $isPatternsExpanded,
                                 formatFileSize: formatFileSize,
                                 isBundled: userScriptManager.isBundled(for: script),
+                                isBuiltIn: userScriptManager.isDefaultUserScript(script),
                                 isBeta: userScriptManager.isBeta(for: script),
                                 onUpdatesAutomaticallyChanged: setUpdatesAutomatically
                             )
@@ -1150,6 +1311,7 @@ struct UserScriptContentView: View {
                         isPatternsExpanded: $isPatternsExpanded,
                         formatFileSize: formatFileSize,
                         isBundled: userScriptManager.isBundled(for: script),
+                        isBuiltIn: userScriptManager.isDefaultUserScript(script),
                         isBeta: userScriptManager.isBeta(for: script),
                         onUpdatesAutomaticallyChanged: setUpdatesAutomatically
                     )
@@ -1192,8 +1354,14 @@ struct UserScriptContentView: View {
                 UserScriptSourceSheet(
                     script: script,
                     initialContent: loadedContent,
-                    onSave: { newContent in
+                    canEdit: script.isLocal && !userScriptManager.isDefaultUserScript(script),
+                    onSave: { newContent, name, description in
                         await userScriptManager.saveEditedContent(for: script.id, newContent: newContent)
+                        await userScriptManager.setUserScriptMetadataOverrides(
+                            for: script.id,
+                            name: name,
+                            description: description
+                        )
                         await MainActor.run {
                             loadedContent = newContent
                             updatePreview()
@@ -1221,6 +1389,9 @@ struct UserScriptContentView: View {
         script = metadata
         updatePreview()
         isLoadingContent = false
+        if startsEditing && metadata.isLocal && !userScriptManager.isDefaultUserScript(metadata) {
+            isShowingSourceSheet = true
+        }
     }
 
     private func setUpdatesAutomatically(_ updatesAutomatically: Bool) {
@@ -1246,24 +1417,32 @@ struct UserScriptContentView: View {
 private struct UserScriptSourceSheet: View {
     let script: UserScript
     let initialContent: String
-    let onSave: (String) async -> Void
+    let canEdit: Bool
+    let onSave: (String, String, String) async -> Void
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var editorController: CodeMirrorEditorController
     @State private var isEditing: Bool
     @State private var isLineWrappingEnabled = false
     @State private var isSaving = false
+    @State private var validationMessage: String?
+    @State private var editedName: String
+    @State private var editedDescription: String
 
     init(
         script: UserScript,
         initialContent: String,
-        onSave: @escaping (String) async -> Void
+        canEdit: Bool,
+        onSave: @escaping (String, String, String) async -> Void
     ) {
         self.script = script
         self.initialContent = initialContent
+        self.canEdit = canEdit
         self.onSave = onSave
         _editorController = StateObject(wrappedValue: CodeMirrorEditorController(text: initialContent, isUserStyle: script.isUserStyle))
         _isEditing = State(initialValue: false)
+        _editedName = State(initialValue: script.name)
+        _editedDescription = State(initialValue: script.description)
     }
 
     var body: some View {
@@ -1334,12 +1513,14 @@ private struct UserScriptSourceSheet: View {
                         }
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(isSaving || !editorController.isDirty)
+                    .disabled(isSaving || (!editorController.isDirty && !hasMetadataChanges))
                 } else {
-                    Button("Edit") {
-                        isEditing = true
-                        DispatchQueue.main.async {
-                            editorController.focus()
+                    if canEdit {
+                        Button("Edit") {
+                            isEditing = true
+                            DispatchQueue.main.async {
+                                editorController.focus()
+                            }
                         }
                     }
 
@@ -1370,19 +1551,49 @@ private struct UserScriptSourceSheet: View {
                 Divider()
             }
 
+            if isEditing && canEdit {
+                VStack(alignment: .leading, spacing: 8) {
+                    TextField("Name", text: $editedName)
+                        .textFieldStyle(.roundedBorder)
+                    TextField("Description", text: $editedDescription)
+                        .textFieldStyle(.roundedBorder)
+                    if let validationMessage {
+                        Text(validationMessage)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 8)
+            }
+
             CodeMirrorTextEditor(
                 controller: editorController,
-                isEditable: isEditing,
+                isEditable: isEditing && canEdit,
                 isLineWrappingEnabled: isLineWrappingEnabled
             )
         }
     }
 
+    private var hasMetadataChanges: Bool {
+        editedName.trimmingCharacters(in: .whitespacesAndNewlines) != script.name
+            || editedDescription.trimmingCharacters(in: .whitespacesAndNewlines) != script.description
+    }
+
     @MainActor
     private func saveChanges() async {
+        let trimmedName = editedName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            validationMessage = LocalizedStrings.text(
+                "Title is required.",
+                comment: "Userscript metadata validation error"
+            )
+            return
+        }
+
         isSaving = true
         let newContent = await editorController.currentText()
-        await onSave(newContent)
+        await onSave(newContent, trimmedName, editedDescription)
         isSaving = false
         dismiss()
     }
@@ -1403,6 +1614,95 @@ struct Badge: View {
     }
 }
 
+private struct AddUserScriptEditorSheet: View {
+    @ObservedObject var editorController: CodeMirrorEditorController
+    let onTextChanged: (String) -> Void
+    let onPaste: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var isLineWrappingEnabled = false
+
+    var body: some View {
+        Group {
+            #if os(iOS)
+            CompatibleNavigationStack {
+                editorBody
+                    .background(Color(.systemGray6))
+                    .navigationTitle("Editor")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done", action: finish)
+                        }
+                    }
+            }
+            #else
+            editorBody
+                .frame(width: 1000, height: 700)
+            #endif
+        }
+        .onDisappear {
+            Task { @MainActor in
+                onTextChanged(await editorController.currentText())
+            }
+        }
+    }
+
+    private var editorBody: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Button {
+                    editorController.openSearch()
+                } label: {
+                    Label("Search", systemImage: "magnifyingglass")
+                }
+                .accessibilityLabel("Search")
+
+                Button {
+                    isLineWrappingEnabled.toggle()
+                } label: {
+                    Label("Wrap Lines", systemImage: isLineWrappingEnabled ? "text.justify.left" : "text.alignleft")
+                }
+                .accessibilityValue(
+                    isLineWrappingEnabled
+                        ? String(localized: "On")
+                        : String(localized: "Off")
+                )
+
+                Spacer()
+
+                Button(action: onPaste) {
+                    Label("Paste", systemImage: "doc.on.clipboard")
+                }
+
+                #if os(macOS)
+                Button("Done", action: finish)
+                    .buttonStyle(.borderedProminent)
+                #endif
+            }
+            .padding(12)
+            .liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)
+            .padding(12)
+
+            CodeMirrorTextEditor(
+                controller: editorController,
+                isEditable: true,
+                isLineWrappingEnabled: isLineWrappingEnabled
+            )
+            .frame(minWidth: 420, minHeight: 360)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
+        }
+    }
+
+    private func finish() {
+        Task { @MainActor in
+            onTextChanged(await editorController.currentText())
+            dismiss()
+        }
+    }
+}
+
 struct AddUserScriptView: View {
     var userScriptManager: UserScriptManager
     var onScriptAdded: () -> Void
@@ -1414,12 +1714,25 @@ struct AddUserScriptView: View {
     @State private var isAdding: Bool = false
     @State private var fileImportError: String?
     @State private var editorImportError: String?
+    @State private var textInput = ""
+    @State private var isShowingEditor = false
+    @State private var showingPasteReplacementConfirmation = false
+    @State private var pendingPasteText: String?
     @State private var showingFileImporter = false
+    @State private var stagedFile: StagedScriptFile?
+    @State private var isStagingFile = false
+    @State private var stagingGeneration = 0
+    @State private var stagedName = ""
+    @State private var stagedDescription = ""
+    @State private var selectedCategory: FilterListCategory = .scripts
+    @State private var editorMetadataState = EditorMetadataAutofillState()
+    @State private var editorMetadataRefreshTask: Task<Void, Never>?
+    @State private var metadataRefreshGeneration = 0
     @State private var addMode: AddMode = .url
     @State private var showHints: Bool = false
-    @State private var isEditorLineWrappingEnabled = false
     @StateObject private var editorController: CodeMirrorEditorController
     @FocusState private var urlFieldFocused: Bool
+    @FocusState private var textInputFocused: Bool
 
     init(userScriptManager: UserScriptManager, onScriptAdded: @escaping () -> Void) {
         self.userScriptManager = userScriptManager
@@ -1427,12 +1740,26 @@ struct AddUserScriptView: View {
         _editorController = StateObject(wrappedValue: CodeMirrorEditorController(text: ""))
     }
 
-    private enum AddMode: String, CaseIterable, Identifiable {
+    private struct StagedScriptFile {
+        let filename: String
+        let content: String
+        let parsed: UserScript
+    }
+
+    private enum AddMode: String, CaseIterable, Identifiable, AddContentMode {
         case url = "URL"
-        case editor = "Editor"
+        case text = "Text"
         case file = "File"
 
         var id: String { rawValue }
+        var localizedTitle: LocalizedStringKey { LocalizedStringKey(rawValue) }
+        var systemImage: String {
+            switch self {
+            case .url: return "link"
+            case .text: return "text.alignleft"
+            case .file: return "doc"
+            }
+        }
     }
 
     var body: some View {
@@ -1450,15 +1777,54 @@ struct AddUserScriptView: View {
         }
         .onChangeCompat(of: addMode) { _, newValue in
             urlFieldFocused = newValue == .url
+            if newValue == .text {
+                scheduleEditorMetadataRefresh()
+            }
         }
         #endif
         .onChangeCompat(of: urlInput) { _, newValue in
             validateInput(newValue)
         }
+        .onChangeCompat(of: textInput) { _, _ in
+            guard addMode == .text else { return }
+            scheduleEditorMetadataRefresh()
+        }
+        .onChangeCompat(of: editorController.documentRevision) { _, _ in
+            syncTextFromEditor()
+        }
+        .onChangeCompat(of: stagedName) { _, newValue in
+            guard addMode == .text else { return }
+            editorMetadataState.noteNameEdit(newValue)
+        }
+        .onChangeCompat(of: stagedDescription) { _, newValue in
+            guard addMode == .text else { return }
+            editorMetadataState.noteDescriptionEdit(newValue)
+        }
+        .onDisappear {
+            editorMetadataRefreshTask?.cancel()
+        }
+        .alert("Replace Existing Content?", isPresented: $showingPasteReplacementConfirmation) {
+            Button("Cancel", role: .cancel) { pendingPasteText = nil }
+            Button("Replace", role: .destructive) {
+                if let pendingPasteText {
+                    replaceEditorText(with: pendingPasteText)
+                }
+                pendingPasteText = nil
+            }
+        } message: {
+            Text("Pasting will replace the existing content.")
+        }
+        .sheet(isPresented: $isShowingEditor) {
+            AddUserScriptEditorSheet(
+                editorController: editorController,
+                onTextChanged: applyEditorText,
+                onPaste: pasteScriptFromClipboard
+            )
+        }
         .fileImporter(isPresented: $showingFileImporter, allowedContentTypes: allowedImportTypes) { result in
             switch result {
             case .success(let url):
-                importFile(at: url)
+                stageFile(at: url)
             case .failure(let error):
                 if (error as? CocoaError)?.code != .userCancelled {
                     fileImportError = error.localizedDescription
@@ -1483,7 +1849,7 @@ struct AddUserScriptView: View {
                             if isAdding {
                                 ProgressView()
                             } else {
-                                Text(LocalizedStringKey(addButtonTitle))
+                                Text("Add")
                             }
                         }
                         .disabled(!canSubmit || isAdding)
@@ -1499,9 +1865,9 @@ struct AddUserScriptView: View {
                 .tag(AddMode.url)
                 .tabItem { Label("URL", systemImage: "link") }
 
-            editorTab
-                .tag(AddMode.editor)
-                .tabItem { Label("Editor", systemImage: "curlybraces") }
+            textTab
+                .tag(AddMode.text)
+                .tabItem { Label("Text", systemImage: "text.alignleft") }
 
             fileTab
                 .tag(AddMode.file)
@@ -1540,68 +1906,104 @@ struct AddUserScriptView: View {
             }
 
             Section {
-                requirementsDisclosure
+                Button(action: openEditorSheet) {
+                    Label("Use Editor", systemImage: "curlybraces")
+                }
+            }
+
+            Section {
+                requirementsPanel
             }
         }
     }
 
-    private var editorTab: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Script Content")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text("Paste or write a userscript or userstyle with a standard metadata block.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-
-            editorToolbar
+    private var textTab: some View {
+        ScrollView {
+            simpleTextContent
                 .padding(.horizontal, 20)
-
-            CodeMirrorTextEditor(
-                controller: editorController,
-                isEditable: true,
-                isLineWrappingEnabled: isEditorLineWrappingEnabled
-            )
-            .frame(minHeight: 320)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(.quaternary, lineWidth: 1)
-            )
-            .padding(.horizontal, 20)
-
-            editorImportMessage
-                .padding(.horizontal, 20)
-
-            Spacer(minLength: 0)
+                .padding(.vertical, 16)
         }
-        .padding(.bottom, 16)
+        .task {
+            scheduleEditorMetadataRefresh()
+        }
     }
 
     private var fileTab: some View {
         Form {
             Section {
-                Button {
-                    showingFileImporter = true
-                    fileImportError = nil
-                } label: {
-                    Label("Choose File…", systemImage: "tray.and.arrow.down")
+                fileSelectionButton
+                if let stagedFile {
+                    TextField("Name", text: $stagedName)
+                        .textInputAutocapitalization(.words)
+                        .autocorrectionDisabled()
+                    TextField("Description", text: $stagedDescription)
+                        .textInputAutocapitalization(.sentences)
+                        .autocorrectionDisabled()
+                    userScriptCategoryPicker
                 }
-                .disabled(isAdding)
             } footer: {
                 fileImportMessage
             }
 
             Section {
-                requirementsDisclosure
+                fileRequirementsPanel
             }
         }
     }
+
+    private var fileSelectionButton: some View {
+        Button {
+            showingFileImporter = true
+            fileImportError = nil
+        } label: {
+            HStack {
+                Image(systemName: "doc")
+                Text(stagedFile?.filename ?? "Choose File")
+                if isStagingFile { ProgressView().controlSize(.small) }
+                Spacer()
+                if stagedFile != nil {
+                    Text("Change File").foregroundStyle(.secondary)
+                }
+            }
+        }
+        .disabled(isAdding)
+    }
     #endif
+
+    private var simpleTextContent: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            TextEditor(text: $textInput)
+                .font(.body)
+                .autocorrectionDisabled()
+                .focused($textInputFocused)
+                .frame(minHeight: 260, idealHeight: 320, maxHeight: 500)
+                .padding(8)
+                .background(.background, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(.quaternary, lineWidth: 1)
+                )
+                .accessibilityLabel(Text("Script Content"))
+
+            HStack(spacing: 10) {
+                Button(action: pasteScriptFromClipboard) {
+                    Label("Paste", systemImage: "doc.on.clipboard")
+                }
+                .disabled(isAdding)
+
+                Button(action: openEditorSheet) {
+                    Label("Use Editor", systemImage: "curlybraces")
+                }
+                .disabled(isAdding)
+
+                Spacer()
+            }
+            .buttonStyle(.bordered)
+
+            editorRequirementsPanel
+            userScriptMetaFields
+        }
+    }
 
     #if os(macOS)
     private var macosBody: some View {
@@ -1614,9 +2016,6 @@ struct AddUserScriptView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     modePickerCard
                     macosModeContent
-                    if addMode == .url {
-                        requirementsCard
-                    }
                 }
                 .padding(.horizontal, SheetDesign.contentHorizontalPadding)
                 .padding(.top, 12)
@@ -1632,34 +2031,20 @@ struct AddUserScriptView: View {
     }
 
     private var modePickerCard: some View {
-        HStack(spacing: 10) {
-            Text("Add Mode")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Picker("", selection: $addMode) {
-                ForEach(AddMode.allCases) { mode in
-                    Text(LocalizedStringKey(mode.rawValue)).tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .controlSize(.small)
-            .animation(.easeInOut(duration: 0.15), value: addMode)
-
-            Spacer(minLength: 0)
-        }
-        .padding(16)
-        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+        AddContentModePicker(selection: $addMode)
     }
 
     @ViewBuilder
     private var macosModeContent: some View {
         switch addMode {
         case .url:
-            macosURLCard
-        case .editor:
-            macosEditorCard
+            VStack(alignment: .leading, spacing: 12) {
+                macosURLCard
+                validationMessage
+                requirementsPanel
+            }
+        case .text:
+            macosTextCard
         case .file:
             macosFileCard
         }
@@ -1669,9 +2054,6 @@ struct AddUserScriptView: View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Script or Style URL")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text("Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1700,41 +2082,19 @@ struct AddUserScriptView: View {
                 }
             }
 
-            validationMessage
+            Button(action: openEditorSheet) {
+                Label("Use Editor", systemImage: "curlybraces")
+            }
+            .buttonStyle(.bordered)
         }
         .padding(16)
         .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
     }
 
-    private var macosEditorCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Script Content")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text("Paste or write a userscript or userstyle with a standard metadata block.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            editorToolbar
-
-            CodeMirrorTextEditor(
-                controller: editorController,
-                isEditable: true,
-                isLineWrappingEnabled: isEditorLineWrappingEnabled
-            )
-            .frame(minHeight: 320)
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(.quaternary, lineWidth: 1)
-            )
-
-            editorImportMessage
-        }
-        .padding(16)
-        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+    private var macosTextCard: some View {
+        simpleTextContent
+            .padding(16)
+            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
     }
 
     private var macosFileCard: some View {
@@ -1743,36 +2103,16 @@ struct AddUserScriptView: View {
                 Text("Import File")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-
-                Text("Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace.")
+                Text("Local imports won't auto-update; re-import to replace.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Button {
-                showingFileImporter = true
-                fileImportError = nil
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: "tray.and.arrow.down")
-                    Text("Choose File…")
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 10)
-                .padding(.horizontal, 12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(.quaternary, lineWidth: 1)
-                )
+            fileSelectionButton
+            if stagedFile != nil {
+                userScriptMetaFields
             }
-            .buttonStyle(.plain)
-            .disabled(isAdding)
-
+            fileRequirementsPanel
             if let fileImportError {
                 Text(fileImportError)
                     .font(.caption)
@@ -1782,57 +2122,85 @@ struct AddUserScriptView: View {
         .padding(16)
         .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
     }
-    #endif
 
-    private var addButtonTitle: String {
-        switch addMode {
-        case .url, .editor:
-            return "Add"
-        case .file:
-            return "Import"
-        }
-    }
-
-    private var requirementsCard: some View {
-        DisclosureGroup(isExpanded: $showHints.animation(.easeInOut(duration: 0.2))) {
-            VStack(alignment: .leading, spacing: 8) {
-                requirementRow(icon: "link", text: "Starts with http:// or https://")
-                requirementRow(icon: "doc.text", text: "Ends with .js, .user.js, or .user.css")
-                requirementRow(icon: "checkmark.shield", text: "Hosted on a trusted source")
-            }
-            .padding(.top, 8)
+    private var fileSelectionButton: some View {
+        Button {
+            showingFileImporter = true
+            fileImportError = nil
         } label: {
-            HStack {
-                Image(systemName: "info.circle")
-                    .foregroundStyle(.secondary)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("URL requirements")
-                        .font(.headline)
-                    Text("Tap to review userscript guidelines.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                Image(systemName: "doc")
+                Text(stagedFile?.filename ?? "Choose File")
+                if isStagingFile { ProgressView().controlSize(.small) }
+                Spacer()
+                if stagedFile != nil {
+                    Text("Change File").foregroundStyle(.secondary)
                 }
             }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(.quaternary, lineWidth: 1)
+            )
         }
-        .padding(20)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .buttonStyle(.plain)
+        .disabled(isAdding)
+    }
+    #endif
+
+    private var metadataRequirementText: LocalizedStringKey {
+        "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns."
     }
 
-    private var editorImportMessage: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns.")
-                .foregroundStyle(.secondary)
+    private var requirementsPanel: some View {
+        AddContentRequirementsPanel(requirements: [
+            AddContentRequirement(systemImage: "link", text: "Starts with http:// or https://"),
+            AddContentRequirement(systemImage: "doc.text", text: "Ends with .js, .user.js, or .user.css"),
+            AddContentRequirement(systemImage: "checkmark.shield", text: "Hosted on a trusted source"),
+            AddContentRequirement(systemImage: "doc.badge.gearshape", text: metadataRequirementText)
+        ])
+    }
+
+    private var editorRequirementsPanel: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            AddContentRequirementsPanel(requirements: [
+                AddContentRequirement(systemImage: "doc.badge.gearshape", text: metadataRequirementText)
+            ])
             if let editorImportError {
                 Text(editorImportError)
+                    .font(.footnote)
                     .foregroundStyle(.orange)
             }
         }
-        .font(.footnote)
+    }
+
+    private var userScriptCategoryPicker: some View {
+        Picker("Category", selection: $selectedCategory) {
+            ForEach(FilterListCategory.userScriptCategories) { category in
+                Text(category.localizedName).tag(category)
+            }
+        }
+        .pickerStyle(.menu)
+    }
+
+    private var userScriptMetaFields: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextField("Name", text: $stagedName)
+                .textFieldStyle(.roundedBorder)
+                .autocorrectionDisabled()
+            TextField("Description", text: $stagedDescription)
+                .textFieldStyle(.roundedBorder)
+                .autocorrectionDisabled()
+            userScriptCategoryPicker
+        }
     }
 
     private var fileImportMessage: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace.")
+            Text("Local imports won't auto-update; re-import to replace.")
                 .foregroundStyle(.secondary)
             if let fileImportError {
                 Text(fileImportError)
@@ -1842,46 +2210,10 @@ struct AddUserScriptView: View {
         .font(.footnote)
     }
 
-    private var requirementsDisclosure: some View {
-        DisclosureGroup(isExpanded: $showHints.animation(.easeInOut(duration: 0.2))) {
-            VStack(alignment: .leading, spacing: 8) {
-                requirementRow(icon: "link", text: "Starts with http:// or https://")
-                requirementRow(icon: "doc.text", text: "Ends with .js, .user.js, or .user.css")
-                requirementRow(icon: "checkmark.shield", text: "Hosted on a trusted source")
-            }
-            .padding(.top, 8)
-        } label: {
-            Label("Requirements", systemImage: "info.circle")
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var editorToolbar: some View {
-        HStack(spacing: 10) {
-            Button {
-                editorController.openSearch()
-            } label: {
-                Label("Search", systemImage: "magnifyingglass")
-            }
-            .disabled(isAdding)
-
-            Button {
-                isEditorLineWrappingEnabled.toggle()
-            } label: {
-                Label("Wrap Lines", systemImage: isEditorLineWrappingEnabled ? "text.justify.left" : "text.alignleft")
-            }
-            .disabled(isAdding)
-
-            Spacer()
-
-            Button {
-                pasteScriptFromClipboard()
-            } label: {
-                Label("Paste from Clipboard", systemImage: "doc.on.clipboard")
-            }
-            .disabled(isAdding)
-        }
-        .controlSize(.small)
+    private var fileRequirementsPanel: some View {
+        AddContentRequirementsPanel(requirements: [
+            AddContentRequirement(systemImage: "doc.badge.gearshape", text: metadataRequirementText)
+        ])
     }
 
     private var compactPasteButton: some View {
@@ -1896,7 +2228,7 @@ struct AddUserScriptView: View {
         }
         .buttonStyle(.plain)
         .disabled(isAdding)
-        .accessibilityLabel("Paste from Clipboard")
+        .accessibilityLabel("Paste")
     }
 
     private var validationBadge: some View {
@@ -1945,15 +2277,6 @@ struct AddUserScriptView: View {
         .animation(.easeInOut(duration: 0.15), value: validationState)
     }
 
-    private func requirementRow(icon: String, text: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .foregroundStyle(.secondary)
-            Text(LocalizedStringKey(text))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-    }
 
     private var addButton: some View {
         Button(action: submit) {
@@ -1962,7 +2285,7 @@ struct AddUserScriptView: View {
                     ProgressView()
                         .scaleEffect(0.9)
                 }
-                Text(LocalizedStringKey(isAdding ? "Adding…" : addButtonTitle))
+                Text(LocalizedStringKey(isAdding ? "Adding…" : "Add"))
                     .fontWeight(.semibold)
             }
         }
@@ -1977,10 +2300,12 @@ struct AddUserScriptView: View {
         case .url:
             if case .valid = validationState { return true }
             return false
-        case .editor:
-            return editorController.isDirty
+        case .text:
+            return !textInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .file:
-            return true
+            return !isStagingFile
+                && stagedFile != nil
+                && !stagedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
     }
 
@@ -2014,11 +2339,32 @@ struct AddUserScriptView: View {
                     }
                 }
             }
-        case .editor:
-            addScriptFromEditor()
+        case .text:
+            addScriptFromText()
         case .file:
+            guard let stagedFile else { return }
+            isAdding = true
             fileImportError = nil
-            showingFileImporter = true
+            Task(priority: .userInitiated) {
+                let error = await userScriptManager.addUserScript(
+                    fromStagedImport: stagedFile.parsed,
+                    nameOverride: stagedName,
+                    descriptionOverride: stagedDescription,
+                    category: selectedCategory
+                )
+                if let error {
+                    await MainActor.run {
+                        fileImportError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                        isAdding = false
+                    }
+                } else {
+                    await MainActor.run {
+                        isAdding = false
+                        onScriptAdded()
+                        dismiss()
+                    }
+                }
+            }
         }
     }
 
@@ -2052,13 +2398,19 @@ struct AddUserScriptView: View {
         return types
     }
 
-    private func addScriptFromEditor() {
+    private func addScriptFromText() {
         isAdding = true
         editorImportError = nil
 
         Task(priority: .userInitiated) {
-            let content = await editorController.currentText()
-            let error = await userScriptManager.addUserScript(fromSourceContent: content)
+            let content = textInput
+            let metadata = editorMetadataOverrides(for: content)
+            let error = await userScriptManager.addUserScript(
+                fromSourceContent: content,
+                nameOverride: metadata.name,
+                descriptionOverride: metadata.description,
+                category: selectedCategory
+            )
 
             if let error {
                 await MainActor.run {
@@ -2077,28 +2429,100 @@ struct AddUserScriptView: View {
         }
     }
 
-    private func importFile(at url: URL) {
-        isAdding = true
+    private func stageFile(at url: URL) {
+        stagingGeneration += 1
+        let generation = stagingGeneration
+        isStagingFile = true
         fileImportError = nil
+        let didAccess = url.startAccessingSecurityScopedResource()
 
-        Task(priority: .userInitiated) {
-            let error = await userScriptManager.addUserScript(fromLocalFile: url)
-
-            if let error {
-                await MainActor.run {
-                    fileImportError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-                    isAdding = false
-                }
-            } else {
-                await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Imported userscript from file"), metadata: ["file": url.lastPathComponent])
-
-                await MainActor.run {
-                    isAdding = false
-                    onScriptAdded()
-                    dismiss()
+        Task { @MainActor in
+            defer {
+                if didAccess {
+                    url.stopAccessingSecurityScopedResource()
                 }
             }
+
+            do {
+                let parsed = try await Task.detached(priority: .userInitiated) {
+                    try UserScriptManager.stageUserScriptImport(fromLocalFile: url)
+                }.value
+
+                guard generation == stagingGeneration else { return }
+                stagedFile = StagedScriptFile(
+                    filename: url.lastPathComponent,
+                    content: parsed.content,
+                    parsed: parsed
+                )
+                let metadataName = parsed.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                stagedName = metadataName.isEmpty
+                    ? UserScriptURLSupport.displayName(forFilename: url.lastPathComponent)
+                    : metadataName
+                stagedDescription = parsed.description.trimmingCharacters(in: .whitespacesAndNewlines)
+                selectedCategory = .scripts
+                isStagingFile = false
+            } catch {
+                guard generation == stagingGeneration else { return }
+                isStagingFile = false
+                fileImportError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            }
         }
+    }
+
+    private func scheduleEditorMetadataRefresh() {
+        editorMetadataRefreshTask?.cancel()
+        metadataRefreshGeneration &+= 1
+        let generation = metadataRefreshGeneration
+        let editorRevision = editorController.documentRevision
+        let readsEditor = isShowingEditor
+        editorMetadataRefreshTask = Task { @MainActor in
+            // CodeMirror can emit one revision per keystroke. Debounce the scan and
+            // parse only the metadata-sized prefix, never the whole source document.
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            guard !Task.isCancelled,
+                  generation == metadataRefreshGeneration,
+                  addMode == .text
+            else { return }
+
+            let content: String
+            if readsEditor {
+                guard editorController.documentRevision == editorRevision else { return }
+                content = await editorController.currentText()
+                guard !Task.isCancelled,
+                      generation == metadataRefreshGeneration,
+                      editorController.documentRevision == editorRevision
+                else { return }
+            } else {
+                content = textInput
+                guard content == textInput else { return }
+            }
+
+            guard generation == metadataRefreshGeneration else { return }
+            _ = editorMetadataOverrides(for: content)
+        }
+    }
+
+    private func editorMetadataOverrides(for content: String) -> (name: String, description: String) {
+        let boundedContent = content
+            .components(separatedBy: .newlines)
+            .prefix(120)
+            .joined(separator: "\n")
+            .prefix(16_000)
+        var parsed = UserScript(
+            name: UserScriptURLSupport.displayName(forFilename: "Pasted Userscript"),
+            content: String(boundedContent)
+        )
+        parsed.parseMetadata()
+
+        let values = editorMetadataState.autofill(
+            name: parsed.name,
+            description: parsed.description,
+            currentName: stagedName,
+            currentDescription: stagedDescription
+        )
+        if stagedName != values.name { stagedName = values.name }
+        if stagedDescription != values.description { stagedDescription = values.description }
+        return values
     }
 
     private func validateInput(_ newValue: String) {
@@ -2137,10 +2561,50 @@ struct AddUserScriptView: View {
         guard let string = NSPasteboard.general.string(forType: .string) else { return }
         #endif
 
+        Task { @MainActor in
+            let currentText = isShowingEditor ? await editorController.currentText() : textInput
+            if currentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                replaceEditorText(with: string)
+            } else {
+                pendingPasteText = string
+                showingPasteReplacementConfirmation = true
+            }
+        }
+    }
+
+    private func replaceEditorText(with string: String) {
         editorImportError = nil
-        editorController.replaceText(string)
+        textInput = string
+        editorController.replaceText(string, markClean: true)
+        scheduleEditorMetadataRefresh()
         DispatchQueue.main.async {
-            editorController.focus()
+            if isShowingEditor {
+                editorController.focus()
+            } else {
+                textInputFocused = true
+            }
+        }
+    }
+
+    private func openEditorSheet() {
+        addMode = .text
+        editorController.replaceText(textInput, markClean: true)
+        isShowingEditor = true
+    }
+
+    private func applyEditorText(_ text: String) {
+        textInput = text
+        editorController.replaceText(text, markClean: true)
+        scheduleEditorMetadataRefresh()
+    }
+
+    private func syncTextFromEditor() {
+        guard isShowingEditor else { return }
+        Task { @MainActor in
+            let text = await editorController.currentText()
+            guard text != textInput else { return }
+            textInput = text
+            scheduleEditorMetadataRefresh()
         }
     }
 

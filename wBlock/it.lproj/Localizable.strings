@@ -189,7 +189,7 @@
 "Calculated source rule count for filter" = "Conteggio regole sorgente calcolato per il filtro";
 "Cancel" = "Annulla";
 "Category" = "Categoria";
-"Changes take full effect after the next apply." = "Le modifiche avranno pieno effetto dopo la prossima applicazione.";
+"Element Zapper changes take full effect after the next apply." = "Le modifiche al blocco elementi avranno pieno effetto dopo la prossima applicazione.";
 "Check for Updates" = "Controlla aggiornamenti";
 "Checked %@" = "Controllato %@";
 "Checked %@ ago" = "Controllato %@ fa";
@@ -290,6 +290,7 @@
 "Edit Name" = "Rinomina lista";
 "Edit User List" = "Modifica lista";
 "Editor" = "Editor";
+"Use Editor" = "Usa editor";
 "Element zapper" = "Zapper elementi";
 "Enable" = "Abilita";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Abilita 'wBlock Scripts' → Consenti sempre su tutti i siti web";
@@ -406,7 +407,7 @@
 "go" = "Vai";
 "Go to line" = "Vai alla riga";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"Hagezi Pro Mini" = "Hagezi Pro Mini";
+"HaGeZi Pro Mini" = "HaGeZi Pro Mini";
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Gestisce i casi avanzati di anti-blocco degli annunci in cui le regole di filtro non vengono rispettate.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Nasconde popup, banner e altri elementi della pagina indesiderati.";
@@ -437,6 +438,7 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "Includi il blocco di metadati // ==UserScript== (o /* ==UserStyle== */ per gli userstyle) così wBlock può leggere il nome e i pattern URL.";
 "IndianList" = "IndianList";
 "Info" = "Informazioni";
+"Integrated" = "Integrato";
 "Info.plist missing" = "Info.plist mancante";
 "Initialized with %d filter list(s)." = "Inizializzato con gli elenchi di filtri %d.";
 "International" = "Internazionali";
@@ -465,7 +467,6 @@
 "Loading script metadata…" = "Caricamento metadati dello script…";
 "Loading userscripts…" = "Caricamento userscript…";
 "Local Import" = "Importazione locale";
-"Log Timestamps" = "Timestamp dei log";
 "Logs" = "Log";
 "Logs cleared" = "Log cancellati";
 "Logs will appear here as the app runs" = "I log appariranno qui mentre l'app è in esecuzione";
@@ -605,6 +606,7 @@
 "Report an Issue" = "Segnala un problema";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "Necessario per userscript, blocco avanzato e funzioni di pulizia";
 "Required for YouTube ad blocking and much more" = "Necessario per il blocco degli annunci YouTube e molto altro";
+"The selected file is too large. Maximum size is 10 MB." = "Il file selezionato è troppo grande. La dimensione massima è di 10 MB.";
 "Requirements" = "Requisiti";
 "Reset Site Settings" = "Reimposta impostazioni sito";
 "Resetting…" = "Ripristinoâ¦";
@@ -704,7 +706,7 @@
 "Sync across devices" = "Sincronizza tra dispositivi";
 "Sync Now" = "Sincronizza ora";
 "Sync settings across devices" = "Sincronizza le impostazioni tra dispositivi";
-"Sync with device timezone" = "Sincronizza con il fuso orario del dispositivo";
+"Sync timestamps with device timezone" = "Sincronizza i timestamp con il fuso orario del dispositivo";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Sincronizza selezione filtri, liste personalizzate, userscript e whitelist tra dispositivi.";
 "Sync: Checking…" = "Sincronizzazione: Verifica…";
 "Sync: Downloading…" = "Sincronizzazione: Download…";
@@ -751,7 +753,6 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Questo rimuoverà tutti i filtri, gli userscript e le preferenze, quindi riavvierà il flusso di onboarding.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Questo sostituirà le selezioni filtro attuali, la whitelist e le regole dello zapper elementi con le impostazioni del backup.";
 "This will reset all filters, userscripts, and preferences." = "Questo reimposterà tutti i filtri, gli userscript e le preferenze.";
-"Time zone" = "Fuso orario";
 "Timed out" = "Tempo scaduto";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "Titolo";
@@ -770,6 +771,9 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Unavailable" = "Non disponibile";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
 "Undo" = "Annulla";
+"Redo" = "Ripristina";
+"Element Zapper" = "Zapper degli elementi";
+"No Element Zapper Rules" = "Nessuna regola dello zapper degli elementi";
 "Update" = "Aggiorna";
 "Update & Apply" = "Aggiorna e applica";
 "Update Filters" = "Update Filters";
@@ -811,6 +815,11 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Version \\(filter.version)" = "Versione \\(filter.version)";
 "Version \\(script.version)" = "Versione \\(script.version)";
 "Vietnamese adblock filter list." = "Elenco dei filtri per il blocco degli annunci vietnamiti.";
+"Delete Script" = "Elimina script";
+"Delete Style" = "Elimina stile";
+"Edit Content" = "Modifica contenuto";
+"Edit Rules" = "Modifica regole";
+"View Rules" = "Visualizza regole";
 "View Content" = "Visualizza contenuto";
 "View Logs" = "Visualizza log";
 "Waiting" = "In attesa";
@@ -831,11 +840,28 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Abbiamo trovato una configurazione wBlock esistente in iCloud (\\(remoteConfigUpdatedAtText)). Puoi saltare l'onboarding e usare quella.";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Abbiamo trovato una configurazione wBlock esistente in iCloud. Puoi saltare l'onboarding e usare quella.";
 "Web extension %@" = "Estensione web %@";
+"Blocks advertisements and other promotional page elements." = "Blocca gli annunci e altri elementi promozionali delle pagine.";
+"Blocks trackers, analytics, and other privacy-invasive requests." = "Blocca tracker, analisi e altre richieste invasive per la privacy.";
+"Blocks malicious URLs, phishing pages, and unwanted software." = "Blocca URL dannosi, pagine di phishing e software indesiderato.";
+"Combines broad ad-blocking and tracking protection in one list." = "Combina il blocco esteso degli annunci e la protezione dal tracciamento in un unico elenco.";
+"Contains filter lists that you added or imported yourself." = "Contiene gli elenchi di filtri aggiunti o importati da te.";
+"Get Started" = "Inizia";
+"No default filters" = "Nessun filtro predefinito";
+"Organizes userscripts and userstyles added to wBlock." = "Organizza gli userscript e gli userstyle aggiunti a wBlock.";
+"Provides newer rules and fixes that are still being tested." = "Fornisce regole e correzioni più recenti ancora in fase di test.";
+"Recommended Filters" = "Filtri consigliati";
+"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Rimuove avvisi sui cookie, popup, banner e altri elementi distraenti.";
+"Reset to Default" = "Ripristina impostazioni predefinite";
+"Shows all filter lists across every category." = "Mostra tutti gli elenchi di filtri di ogni categoria.";
+"Adds rules tailored to websites and languages from specific regions." = "Aggiunge regole adattate ai siti web e alle lingue di regioni specifiche.";
+"The end of Safari ad-blocking B.S." = "Basta con le stupidaggini del blocco pubblicità in Safari";
 "Welcome to wBlock!" = "Benvenuto in wBlock!";
 "Whitelist" = "Lista bianca";
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Aggiungi qui un sito come eccezione oppure regola userscript e regole dello zapper elementi per sito dal popup di wBlock in Safari.";
 "Whitelisted" = "In eccezione";
 "Wrap Lines" = "A capo automatico";
+"On" = "Attivo";
+"Off" = "Disattivato";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "Puoi sempre aggiungere i filtri regionali più tardi dalle Impostazioni.";
@@ -850,3 +876,78 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Aggiornamento automatico: dovuto ora (sarà eseguito al prossimo avvio)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 Aggiornamento automatico: prossimo tra %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Aggiornamento automatico: nessuna esecuzione precedente (intervallo=%dh)";
+
+/* Language picker */
+"Selected" = "Selezionate";
+"Search languages" = "Cerca lingue";
+
+"Built-in" = "Integrato";
+
+/* Filter catalog additions */
+"Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
+"Adblock Warning Removal List" = "Adblock Warning Removal List";
+"Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
+"Stevo's AI Blocklist" = "Stevo's AI Blocklist";
+"AdGuard Allowlist" = "AdGuard Allowlist";
+"Blocks tracking pixels and other mail tracking techniques." = "Blocca i pixel di tracciamento e altre tecniche di tracciamento della posta.";
+"Allows sites and resources that should not be blocked." = "Consente i siti e le risorse che non devono essere bloccati.";
+
+
+/* Auto-update controls */
+"Auto-Update" = "Aggiornamento automatico";
+"Auto-Update Filters & Userscripts" = "Aggiorna automaticamente filtri e script utente";
+"Update Now" = "Aggiorna ora";
+"Automatically updating %@" = "Aggiornamento automatico %@";
+
+/* Add mode controls */
+"Text" = "Testo";
+"Choose File" = "Scegli file";
+"Change File" = "Cambia file";
+"Local imports won't auto-update; re-import to replace." = "Le importazioni locali non si aggiornano automaticamente; importa di nuovo per sostituirle.";
+"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra blocca gli annunci di Twitch e gestisce casi complessi di anti-adblock.";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "Disattivare il filtro essenziale?";
+"Replace Existing Content?" = "Sostituire il contenuto esistente?";
+"Clear Element Zapper Rules?" = "Cancellare le regole di Element Zapper?";
+"Clear All" = "Cancella tutto";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Questo filtro consigliato fa parte della protezione essenziale di wBlock. Disattivarlo può ridurre la copertura del blocco.";
+"Pasting will replace the existing editor content." = "Incollare sostituirà il contenuto esistente dell’editor.";
+"Pasting will replace the existing content." = "Incollare sostituirà il contenuto esistente.";
+"This removes all saved element zapper rules from every site." = "Questa operazione rimuove da tutti i siti le regole salvate di Element Zapper.";
+"Clear Element Zapper Rules" = "Cancella le regole di Element Zapper";
+"Advanced" = "Avanzate";
+"Help" = "Aiuto";
+"FAQ" = "Domande frequenti";
+"Report Issues" = "Segnala problemi";
+"Contact Us" = "Contatti";
+"Version" = "Versione";
+"Developer" = "Sviluppatore";
+"GPL-3.0 License" = "Licenza GPL-3.0";
+"Privacy Policy" = "Informativa sulla privacy";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "Usa un URL http:// o https:// valido";
+"Include a host name" = "Includi un nome host";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Non usare un URL userscript che termina con .js, .mjs o .cjs";
+"wBlock will fetch and enable the filter list automatically" = "wBlock scaricherà e abiliterà automaticamente la lista di filtri";
+
+/* Issue 508 UI follow-up */
+"Starts with http:// or https://" = "Inizia con http:// o https://";
+"Ends with .js, .user.js, or .user.css" = "Termina con .js, .user.js o .user.css";
+"Hosted on a trusted source" = "Ospitato su una fonte affidabile";
+
+"The file must include userscript or userstyle metadata." = "Il file deve includere i metadati di uno userscript o userstyle.";
+
+"Failed to clear downloaded custom filter state; apply again to retry." = "Impossibile cancellare lo stato del filtro personalizzato scaricato; applica di nuovo per riprovare.";
+"Failed to resume blocking." = "Impossibile riprendere il blocco.";
+/* Userscript display categories */
+"Functionality" = "Funzionalità";
+"Appearance" = "Aspetto";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Script che bloccano annunci, misure anti-blocco o comportamenti indesiderati delle pagine.";
+"Userscripts and scripts that add or restore useful website functionality." = "Script che aggiungono o ripristinano funzionalità utili dei siti web.";
+"Userstyles and scripts that change the appearance of websites." = "Userstyle e script che modificano l’aspetto dei siti web.";
+"Custom, remote, and local scripts that do not have a more specific display category." = "Script personalizzati, remoti e locali senza una categoria di visualizzazione più specifica.";
+"Enabled Userscripts & Userstyles" = "Userscript e Userstyle abilitati";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "La pausa del blocco è attiva finché un componente selezionato è in pausa. La ripresa riattiva tutti i componenti.";
+"Temporarily pause selected components without changing their enabled settings." = "Metti temporaneamente in pausa i componenti selezionati senza modificarne lo stato di abilitazione.";

@@ -189,7 +189,7 @@
 "Calculated source rule count for filter" = "A szűrő forrásszabály-száma kiszámítva";
 "Cancel" = "Mégse";
 "Category" = "Kategória";
-"Changes take full effect after the next apply." = "A módosítások a következő alkalmazás után lépnek teljesen életbe.";
+"Element Zapper changes take full effect after the next apply." = "Az Elemeltávolító módosításai a következő alkalmazás után lépnek teljesen életbe.";
 "Check for Updates" = "Frissítések keresése";
 "Checked %@" = "Ellenőrizve: %@";
 "Checked %@ ago" = "Ellenőrizve %@ ezelőtt";
@@ -290,6 +290,7 @@
 "Edit Name" = "Lista átnevezése";
 "Edit User List" = "Lista szerkesztése";
 "Editor" = "Editor";
+"Use Editor" = "Szerkesztő használata";
 "Element zapper" = "Elemeltávolító";
 "Enable" = "Engedélyezés";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Engedélyezd a 'wBlock Scripts' bővítményt → Mindig engedélyezve minden webhelyen";
@@ -406,7 +407,7 @@
 "go" = "Ugrás";
 "Go to line" = "Ugrás sorra";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"Hagezi Pro Mini" = "Hagezi Pro Mini";
+"HaGeZi Pro Mini" = "HaGeZi Pro Mini";
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Kezeli a fejlett hirdetésblokkolás-ellenes eseteket, amelyek kihagyják a szabályokat.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Elrejti az oldalon belüli felugró ablakokat, szalaghirdetéseket és egyéb nem kívánt oldalelemeket.";
@@ -437,6 +438,7 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "Add meg a // ==UserScript== metaadatblokkot (vagy /* ==UserStyle== */ blokkot felhasználói stílusokhoz), hogy a wBlock ki tudja olvasni a nevet és az URL mintákat.";
 "IndianList" = "IndianList";
 "Info" = "Információ";
+"Integrated" = "Integrált";
 "Info.plist missing" = "Hiányzik az Info.plist";
 "Initialized with %d filter list(s)." = "%d szűrőlistával inicializálva.";
 "International" = "Nemzetközi";
@@ -465,7 +467,6 @@
 "Loading script metadata…" = "Szkriptmetaadatok betöltése…";
 "Loading userscripts…" = "Felhasználói szkriptek betöltése…";
 "Local Import" = "Helyi import";
-"Log Timestamps" = "Napló időbélyegzői";
 "Logs" = "Naplók";
 "Logs cleared" = "Naplók törölve";
 "Logs will appear here as the app runs" = "A naplók itt jelennek meg az alkalmazás futása közben";
@@ -542,6 +543,9 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Illeszd be a közvetlen .user.js linket. A wBlock letölti és telepíti neked.";
 "Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "Illeszd be a közvetlen .user.js, .js vagy .user.css linket. A wBlock letölti és telepíti neked.";
 "Pause Blocking" = "Blokkolás szüneteltetése";
+"Enabled Userscripts & Userstyles" = "Engedélyezett felhasználói szkriptek és stílusok";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "A blokkolás szünetel, amíg legalább egy kiválasztott összetevő szüneteltetve van. A folytatás minden összetevőt visszaállít.";
+"Temporarily pause selected components without changing their enabled settings." = "A kiválasztott összetevők ideiglenes szüneteltetése az engedélyezési beállításaik módosítása nélkül.";
 "Pausing blocking..." = "Blokkolás szüneteltetése…";
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
@@ -605,6 +609,7 @@
 "Report an Issue" = "Hiba bejelentése";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "Szükséges a userscriptekhez, a fejlett hirdetésblokkoláshoz és a tisztító funkciókhoz";
 "Required for YouTube ad blocking and much more" = "Szükséges a YouTube hirdetésblokkoláshoz és sok máshoz";
+"The selected file is too large. Maximum size is 10 MB." = "A kiválasztott fájl túl nagy. A maximális méret 10 MB.";
 "Requirements" = "Követelmények";
 "Reset Site Settings" = "Webhelybeállítások visszaállítása";
 "Resetting…" = "Resetingâ¦";
@@ -704,7 +709,7 @@
 "Sync across devices" = "Szinkronizálás az eszközök között";
 "Sync Now" = "Szinkronizálás most";
 "Sync settings across devices" = "Beállítások szinkronizálása az eszközök között";
-"Sync with device timezone" = "Szinkronizálás az eszköz időzónájával";
+"Sync timestamps with device timezone" = "Időbélyegek szinkronizálása az eszköz időzónájával";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Szinkronizáld az eszközök között a szűrőválasztásaidat, egyéni listáidat, felhasználói szkriptjeidet és az engedélyezőlistádat.";
 "Sync: Checking…" = "Szinkronizálás: Ellenőrzés…";
 "Sync: Downloading…" = "Szinkronizálás: Letöltés…";
@@ -751,7 +756,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Ez eltávolít minden szűrőt, felhasználói szkriptet és beállítást, majd újraindítja a kezdő beállítási folyamatot.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Ez a biztonsági mentésben lévő beállításokkal lecseréli a jelenlegi szűrőválasztásaidat, az engedélyezőlistádat és az elemeltávolító szabályaidat.";
 "This will reset all filters, userscripts, and preferences." = "Ez visszaállít minden szűrőt, felhasználói szkriptet és beállítást.";
-"Time zone" = "Időzóna";
 "Timed out" = "Időtúllépés";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "Cím";
@@ -770,6 +774,9 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Unavailable" = "Nem érhető el";
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
 "Undo" = "Visszavonás";
+"Redo" = "Újra";
+"Element Zapper" = "Elemzapper";
+"No Element Zapper Rules" = "Nincsenek elemzapper-szabályok";
 "Update" = "Frissítés";
 "Update & Apply" = "Frissítés és alkalmazás";
 "Update Filters" = "Update Filters";
@@ -811,6 +818,11 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Version \\(filter.version)" = "Verzió \\(filter.version)";
 "Version \\(script.version)" = "Verzió \\(script.version)";
 "Vietnamese adblock filter list." = "Vietnami hirdetésblokkoló szűrőlista.";
+"Delete Script" = "Szkript törlése";
+"Delete Style" = "Stílus törlése";
+"Edit Content" = "Tartalom szerkesztése";
+"Edit Rules" = "Szabályok szerkesztése";
+"View Rules" = "Szabályok megtekintése";
 "View Content" = "Tartalom megtekintése";
 "View Logs" = "Naplók megtekintése";
 "Waiting" = "Várakozás";
@@ -831,11 +843,28 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Találtunk egy meglévő wBlock konfigurációt az iCloudban (\\(remoteConfigUpdatedAtText)). Kihagyhatod a kezdő beállítást, és ezt használhatod.";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Találtunk egy meglévő wBlock konfigurációt az iCloudban. Kihagyhatod a kezdő beállítást, és ezt használhatod.";
 "Web extension %@" = "Webes kiterjesztés %@";
+"Blocks advertisements and other promotional page elements." = "Blokkolja a hirdetéseket és az oldalak egyéb promóciós elemeit.";
+"Blocks trackers, analytics, and other privacy-invasive requests." = "Blokkolja a nyomkövetőket, az elemzéseket és az adatvédelmet sértő kéréseket.";
+"Blocks malicious URLs, phishing pages, and unwanted software." = "Blokkolja a kártékony URL-eket, adathalász oldalakat és kéretlen szoftvereket.";
+"Combines broad ad-blocking and tracking protection in one list." = "Egy listában egyesíti az átfogó reklámblokkolást és a nyomkövetés elleni védelmet.";
+"Contains filter lists that you added or imported yourself." = "Az Ön által hozzáadott vagy importált szűrőlistákat tartalmazza.";
+"Get Started" = "Kezdés";
+"No default filters" = "Nincsenek alapértelmezett szűrők";
+"Organizes userscripts and userstyles added to wBlock." = "A wBlockhoz hozzáadott userscripteket és userstyle-okat rendezi.";
+"Provides newer rules and fixes that are still being tested." = "Még tesztelés alatt álló újabb szabályokat és javításokat biztosít.";
+"Recommended Filters" = "Ajánlott szűrők";
+"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Eltávolítja a cookie-értesítéseket, felugró ablakokat, bannereket és más zavaró elemeket.";
+"Reset to Default" = "Alapértékek visszaállítása";
+"Shows all filter lists across every category." = "Minden kategória összes szűrőlistáját megjeleníti.";
+"Adds rules tailored to websites and languages from specific regions." = "Bizonyos régiók webhelyeihez és nyelveihez igazított szabályokat ad hozzá.";
+"The end of Safari ad-blocking B.S." = "Vége a Safari reklámblokkolási ostobaságainak";
 "Welcome to wBlock!" = "Üdvözli a wBlock!";
 "Whitelist" = "Engedélyezőlista";
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Tegyél itt engedélyezőlistára egy webhelyet, vagy állítsd be webhelyenként a felhasználói szkripteket és az elemeltávolító szabályokat a wBlock Safari felugró ablakában.";
 "Whitelisted" = "Engedélyezőlistán";
 "Wrap Lines" = "Sortördelés";
+"On" = "Be";
+"Off" = "Ki";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
 "You can always add regional filters later from Settings." = "A regionális szűrőket később is bármikor hozzáadhatod a Beállításokban.";
@@ -850,3 +879,75 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Automatikus frissítés: esedékes (a következő indításkor lefut)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 Automatikus frissítés: következő %dh %dm %ds múlva";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Automatikus frissítés: még nem futott (időköz=%dh)";
+
+/* Language picker */
+"Selected" = "Kiválasztva";
+"Search languages" = "Nyelvek keresése";
+
+"Built-in" = "Beépített";
+
+/* Filter catalog additions */
+"Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
+"Adblock Warning Removal List" = "Adblock Warning Removal List";
+"Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
+"Stevo's AI Blocklist" = "Stevo's AI Blocklist";
+"AdGuard Allowlist" = "AdGuard Allowlist";
+"Blocks tracking pixels and other mail tracking techniques." = "Blokkolja a követőkódokat és az egyéb e-mail-követési technikákat.";
+"Allows sites and resources that should not be blocked." = "Engedélyezi azokat a webhelyeket és erőforrásokat, amelyeket nem kell blokkolni.";
+
+
+/* Auto-update controls */
+"Auto-Update" = "Automatikus frissítés";
+"Auto-Update Filters & Userscripts" = "Szűrők és felhasználói szkriptek automatikus frissítése";
+"Update Now" = "Frissítés most";
+"Automatically updating %@" = "Automatikus frissítés %@";
+
+/* Add mode controls */
+"Text" = "Szöveg";
+"Choose File" = "Fájl kiválasztása";
+"Change File" = "Fájl módosítása";
+"Local imports won't auto-update; re-import to replace." = "A helyi importok nem frissülnek automatikusan; az új importálással cserélhetők.";
+"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "Az AdGuard Extra blokkolja a Twitch-hirdetéseket, és kezeli a bonyolult reklámblokkolás-ellenes eseteket.";
+
+/* Issue 508 UI */
+"Disable Essential Filter?" = "Letiltja az alapvető szűrőt?";
+"Replace Existing Content?" = "Lecseréli a meglévő tartalmat?";
+"Clear Element Zapper Rules?" = "Törli az Element Zapper szabályait?";
+"Clear All" = "Összes törlése";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Ez az ajánlott szűrő a wBlock alapvető védelmének része. Kikapcsolása csökkentheti a blokkolás lefedettségét.";
+"Pasting will replace the existing editor content." = "A beillesztés lecseréli a szerkesztő meglévő tartalmát.";
+"Pasting will replace the existing content." = "A beillesztés lecseréli a meglévő tartalmat.";
+"This removes all saved element zapper rules from every site." = "Ez eltávolítja az összes mentett Element Zapper-szabályt minden webhelyről.";
+"Clear Element Zapper Rules" = "Element Zapper-szabályok törlése";
+"Advanced" = "Speciális";
+"Help" = "Súgó";
+"FAQ" = "Gyakori kérdések";
+"Report Issues" = "Probléma bejelentése";
+"Contact Us" = "Kapcsolat";
+"Version" = "Verzió";
+"Developer" = "Fejlesztő";
+"GPL-3.0 License" = "GPL-3.0 licenc";
+"Privacy Policy" = "Adatvédelmi irányelvek";
+
+/* Issue 508 UI */
+"Use a valid http:// or https:// URL" = "Érvényes http:// vagy https:// URL-t használj";
+"Include a host name" = "Adj meg állomásnevet";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Ne használj .js, .mjs vagy .cjs végződésű Userscript URL-t";
+"wBlock will fetch and enable the filter list automatically" = "A wBlock automatikusan letölti és engedélyezi a szűrőlistát";
+
+/* Issue 508 UI follow-up */
+"Starts with http:// or https://" = "http:// vagy https:// előtaggal kezdődik";
+"Ends with .js, .user.js, or .user.css" = ".js, .user.js vagy .user.css végződésű";
+"Hosted on a trusted source" = "Megbízható forrásról származik";
+
+"The file must include userscript or userstyle metadata." = "A fájlnak userscript- vagy userstyle-metaadatokat kell tartalmaznia.";
+
+"Failed to clear downloaded custom filter state; apply again to retry." = "Nem sikerült törölni a letöltött egyéni szűrő állapotát; az újrapróbálkozáshoz alkalmazza ismét a módosításokat.";
+"Failed to resume blocking." = "Nem sikerült folytatni a blokkolást.";
+/* Userscript display categories */
+"Functionality" = "Funkciók";
+"Appearance" = "Megjelenés";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Hirdetéseket, reklámblokkolás-ellenes intézkedéseket vagy nem kívánt oldalviselkedést blokkoló szkriptek.";
+"Userscripts and scripts that add or restore useful website functionality." = "Hasznos webhelyfunkciókat hozzáadó vagy helyreállító szkriptek.";
+"Userstyles and scripts that change the appearance of websites." = "A webhelyek megjelenését módosító userstyle-ok és szkriptek.";
+"Custom, remote, and local scripts that do not have a more specific display category." = "Egyéni, távoli és helyi szkriptek, amelyekhez nem illik pontosabb megjelenítési kategória.";

@@ -924,6 +924,7 @@ public class ProtobufDataManager: ObservableObject {
         await updateDataImmediately { data in
             var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
             let insertIndex = min(max(index, 0), ruleList.selectors.count)
+            ruleList.pendingDeletions.removeAll { $0 == selector }
             ruleList.selectors.insert(selector, at: insertIndex)
             data.extensionData.zapperRulesByHost[host] = ruleList
             data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
@@ -1334,7 +1335,7 @@ public class ProtobufDataManager: ObservableObject {
     }
     
     @MainActor
-    public func resetToDefaultData() async {
+    public func resetToDefaultData(preservingOnboardingCompletion: Bool = false) async {
         logger.info("🔄 Resetting protobuf data to default state")
         pendingSaveTask?.cancel()
         do {
@@ -1360,14 +1361,14 @@ public class ProtobufDataManager: ObservableObject {
             let storageResetError = storageResetResult.error ?? "unknown error"
             logger.error("⚠️ Failed to reset userscript storage during reset: \(storageResetError)")
         }
-        await createDefaultData()
+        await createDefaultData(hasCompletedOnboarding: preservingOnboardingCompletion)
     }
 
-    private func createDefaultData() async {
+    private func createDefaultData(hasCompletedOnboarding: Bool = false) async {
         var defaultData = Wblock_Data_AppData()
 
         // Initialize default settings
-        defaultData.settings.hasCompletedOnboarding_p = false
+        defaultData.settings.hasCompletedOnboarding_p = hasCompletedOnboarding
         defaultData.settings.selectedBlockingLevel = "recommended"
         defaultData.settings.lastUpdateCheck = Int64(Date().timeIntervalSince1970)
         defaultData.settings.showAdvancedFeatures = false

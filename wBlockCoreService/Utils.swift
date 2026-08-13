@@ -261,8 +261,9 @@ public enum ContentBlockerIncrementalCache {
             return "p|\(fingerprint)"
         }
 
-        guard filter.isCustom else { return "missing" }
-        let legacyURL = containerURL.appendingPathComponent("\(filter.name).txt")
+        guard filter.isCustom,
+              let legacyURL = safeLegacyFileURL(name: filter.name, containerURL: containerURL)
+        else { return "missing" }
         if let fingerprint = fileFingerprint(at: legacyURL) {
             return "l|\(fingerprint)"
         }
@@ -299,6 +300,52 @@ public enum ContentBlockerIncrementalCache {
             return "custom-\(filter.id.uuidString).txt"
         }
         return "\(filter.name).txt"
+    }
+
+    /// Resolves the current ID-based cache first, then a safe legacy name-based
+    /// cache. Callers can use the legacy result during startup while migration
+    /// finishes asynchronously.
+    public static func existingLocalFileURL(
+        for filter: FilterList,
+        containerURL: URL
+    ) -> URL? {
+        let currentURL = containerURL.appendingPathComponent(localFilename(for: filter))
+        if FileManager.default.fileExists(atPath: currentURL.path) {
+            return currentURL
+        }
+        guard filter.isCustom,
+              let legacyURL = safeLegacyFileURL(name: filter.name, containerURL: containerURL),
+              FileManager.default.fileExists(atPath: legacyURL.path)
+        else { return nil }
+        return legacyURL
+    }
+
+    /// Returns a legacy name-based cache/baseline path only when the name is a
+    /// single safe filename component inside the expected app-group directory.
+    /// Current ID-based paths must continue to use `localFilename(for:)`.
+    public static func safeLegacyFileURL(
+        name: String,
+        containerURL: URL,
+        prefix: String = ""
+    ) -> URL? {
+        guard !name.isEmpty,
+              !name.contains("/"),
+              !name.contains("\\"),
+              !name.contains("\0"),
+              name != ".",
+              name != ".."
+        else { return nil }
+
+        let expectedDirectory = containerURL.standardizedFileURL.resolvingSymlinksInPath()
+        let candidate = containerURL
+            .appendingPathComponent("\(prefix)\(name).txt", isDirectory: false)
+            .standardizedFileURL
+            .resolvingSymlinksInPath()
+        let expectedPath = expectedDirectory.path.hasSuffix("/")
+            ? expectedDirectory.path
+            : expectedDirectory.path + "/"
+        guard candidate.path.hasPrefix(expectedPath) else { return nil }
+        return candidate
     }
 
     public static func baseRulesFilename(for targetRulesFilename: String) -> String {
