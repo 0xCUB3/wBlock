@@ -20,17 +20,18 @@ require(content.contains("|| !filterSearchText.trimmingCharacters(in: .whitespac
 require(content.contains("Text(LocalizedStringKey(group.title ?? \"\"))"), "group title must be rendered")
 let aggregateDisclosure = content.components(separatedBy: "private func adGuardAnnoyancesDisclosure").last?
     .components(separatedBy: "private func categoryHeader").first ?? ""
-require(aggregateDisclosure.contains("DisclosureGroup(isExpanded: adGuardAnnoyancesExpansion)"), "aggregate row must use native disclosure behavior")
-require(!aggregateDisclosure.contains("Image(systemName: \"chevron.right\")"), "aggregate row must not draw a custom caret")
+require(aggregateDisclosure.contains("DisclosureGroup(isExpanded: adGuardAnnoyancesExpansion)"), "iOS aggregate row must retain native disclosure behavior")
 require(aggregateDisclosure.contains("group.sourceRuleCount"), "aggregate row must show the sum of child rules")
 require(aggregateDisclosure.contains("Toggle(\"\", isOn: adGuardAnnoyancesSelection(ids: ids))"), "aggregate row needs an all-child switch")
 require(aggregateDisclosure.contains(".toggleStyle(.switch)"), "aggregate row must use the same switch style as child filters")
-require(aggregateDisclosure.contains(".padding(.trailing, 16)"), "aggregate switch must share child rows' trailing inset")
-require(aggregateDisclosure.contains(".padding(.leading, 16)"), "macOS disclosure content must indent child filters")
 let macDisclosure = aggregateDisclosure.components(separatedBy: "#if os(macOS)").last?
     .components(separatedBy: "#else").first ?? ""
-let macLabel = macDisclosure.components(separatedBy: "} label: {").last ?? ""
-require(!macLabel.contains("adGuardAnnoyancesSummary(group)"), "macOS disclosure label must stay single-line so its native caret aligns with the title")
+require(macDisclosure.contains("HStack(alignment: .center, spacing: 10)"), "macOS aggregate must match ordinary row geometry")
+require(macDisclosure.contains(".padding(16)"), "macOS aggregate must use the same inset as ordinary rows")
+require(macDisclosure.contains("? \"chevron.down\"\n                                : \"chevron.right\""), "macOS trailing chevron must reflect expansion state")
+require(macDisclosure.contains("adGuardAnnoyancesToggle(ids: ids, title: group.title)"), "macOS switch must remain in the standard trailing-control position")
+require(macDisclosure.contains("if adGuardAnnoyancesExpansion.wrappedValue {\n                Divider()"), "expanded children must render directly below the aggregate row")
+require(!macDisclosure.contains("VStack(alignment: .leading, spacing: 0) {\n                adGuardAnnoyancesSummary"), "child rows must not have a disclosure-only horizontal offset")
 require(aggregateDisclosure.contains("Blocks cookie notices, popups, mobile app banners, widgets, and other annoyances."), "aggregate row needs a description")
 require(content.contains("filterManager.filterLists.contains { ids.contains($0.id) && $0.isSelected }"), "aggregate switch must read live manager state")
 require(content.components(separatedBy: "adGuardAnnoyancesDisclosure(group)").count == 3, "iOS and macOS must share the native disclosure")

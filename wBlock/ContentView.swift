@@ -563,30 +563,50 @@ struct ContentView: View {
     private func adGuardAnnoyancesDisclosure(_ group: FilterListGroup) -> some View {
         let ids = Set(group.filters.map(\.id))
         #if os(macOS)
-        DisclosureGroup(isExpanded: adGuardAnnoyancesExpansion) {
-            VStack(alignment: .leading, spacing: 0) {
-                adGuardAnnoyancesSummary(group)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
+        VStack(spacing: 0) {
+            HStack(alignment: .center, spacing: 10) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        adGuardAnnoyancesExpansion.wrappedValue.toggle()
+                    }
+                } label: {
+                    HStack(alignment: .center, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(LocalizedStringKey(group.title ?? ""))
+                                .fontWeight(.medium)
+                                .foregroundStyle(.primary)
+                            adGuardAnnoyancesSummary(group)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
+                        Image(
+                            systemName: adGuardAnnoyancesExpansion.wrappedValue
+                                ? "chevron.down"
+                                : "chevron.right"
+                        )
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 16, height: 16)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                adGuardAnnoyancesToggle(ids: ids, title: group.title)
+            }
+            .padding(16)
+
+            if adGuardAnnoyancesExpansion.wrappedValue {
+                Divider()
+                    .padding(.leading, 16)
                 ForEach(group.filters) { filter in
                     filterRowView(for: filter)
                     if filter.id != group.filters.last?.id {
                         Divider()
+                            .padding(.leading, 16)
                     }
                 }
             }
-            .padding(.leading, 16)
-        } label: {
-            HStack(spacing: 12) {
-                Text(LocalizedStringKey(group.title ?? ""))
-                    .fontWeight(.medium)
-                    .foregroundStyle(.primary)
-                Spacer()
-                adGuardAnnoyancesToggle(ids: ids, title: group.title)
-            }
-            .padding(.vertical, 12)
-            .padding(.trailing, 16)
         }
         #else
         DisclosureGroup(isExpanded: adGuardAnnoyancesExpansion) {
