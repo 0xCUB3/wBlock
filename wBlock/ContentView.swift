@@ -629,22 +629,39 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 ForEach(FilterListGrouping.groups(for: filters)) { group in
                     if group.isAdGuardAnnoyances {
-                        DisclosureGroup(isExpanded: adGuardAnnoyancesExpansion) {
-                            VStack(spacing: 0) {
-                                ForEach(group.filters) { filter in
-                                    filterRowView(for: filter)
-                                    if filter.id != group.filters.last?.id {
-                                        Divider()
-                                            .padding(.leading, 16)
-                                    }
-                                }
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                adGuardAnnoyancesExpansion.wrappedValue.toggle()
                             }
                         } label: {
-                            Text(LocalizedStringKey(group.title ?? ""))
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.primary)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
+                            HStack(spacing: 8) {
+                                Text(LocalizedStringKey(group.title ?? ""))
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
+                                    .rotationEffect(
+                                        .degrees(adGuardAnnoyancesExpansion.wrappedValue ? 90 : 0)
+                                    )
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+
+                        if adGuardAnnoyancesExpansion.wrappedValue {
+                            Divider()
+                                .padding(.leading, 16)
+                            ForEach(group.filters) { filter in
+                                filterRowView(for: filter)
+                                if filter.id != group.filters.last?.id {
+                                    Divider()
+                                        .padding(.leading, 16)
+                                }
+                            }
                         }
                     } else if let filter = group.filters.first {
                         filterRowView(for: filter)
