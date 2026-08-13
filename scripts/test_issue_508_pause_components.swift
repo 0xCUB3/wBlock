@@ -35,6 +35,15 @@ check(settings, ".disabled(filterManager.isLoading || filterManager.isApplyInFli
 check(pipeline, "pausedComponents.contains(.filters)\n            ? []", "filter lists must be omitted only for a filter pause")
 check(pipeline, "pausedComponents.contains(.elementZapper)\n            ? []", "generated zapper rules must be omitted only for a zapper pause")
 check(pipeline, "BlockingPauseStore.setPaused(false)", "resume must publish the shared unpaused state after apply")
+let resumePipeline = pipeline.components(separatedBy: "private func resumeBlocking() async -> Bool").last ?? ""
+let optimisticOff = resumePipeline.range(of: "self.pausedComponents = []\n                self.isBlockingPaused = false")
+let renderYield = resumePipeline.range(of: "await Task.yield()")
+let resumeApply = resumePipeline.range(of: "await applyChangesUnlocked(")
+check(optimisticOff != nil, "resume must optimistically switch off the visible pause controls")
+check(
+    optimisticOff!.lowerBound < renderYield!.lowerBound && renderYield!.lowerBound < resumeApply!.lowerBound,
+    "resume must yield a render pass after flipping the controls and before applying"
+)
 check(pipeline, "let succeeded = started && lastApplySucceeded && !hasError", "pause transitions must reject terminal errors even after a stale success flag")
 check(pipeline, "if started && !succeeded", "a started failed pause transition must enter the fail-closed fallback")
 check(pipeline, "private func failClosedAfterStartedPauseTransition() async", "pause failures need a dedicated fail-closed fallback")

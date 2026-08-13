@@ -1007,17 +1007,19 @@ extension AppFilterManager {
         let started = await performExclusiveApply {
             lastApplySucceeded = false
             BlockingPauseStore.setResumeApplying()
-            // Keep all components paused until the canonical apply has committed real output.
+            // Keep blocking fail-closed in shared storage, but let SwiftUI paint the
+            // requested off state before the apply pipeline occupies the main actor.
             BlockingPauseStore.setPaused(true)
             UserScriptManager.invalidateDocumentStartExecutionCache()
             await MainActor.run {
-                self.pausedComponents = .all
-                self.isBlockingPaused = true
+                self.pausedComponents = []
+                self.isBlockingPaused = false
                 self.statusDescription = LocalizedStrings.text(
                     "Applying filters...\n(This may take a while)",
                     comment: "Apply pipeline resume status"
                 )
             }
+            await Task.yield()
             await applyChangesUnlocked(
                 allowUserInteraction: false,
                 prepareState: true,
