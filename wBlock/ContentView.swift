@@ -1674,7 +1674,7 @@ struct AddFilterListView: View {
     private var filterImportTypes: [UTType] {
         FilterListContentValidator.supportedLocalFileExtensions.compactMap {
             UTType(filenameExtension: $0, conformingTo: .plainText)
-        } + [UTType.json]
+        }
     }
 
     // MARK: - Helpers

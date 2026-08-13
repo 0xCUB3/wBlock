@@ -15,6 +15,19 @@ func stubScripts(_ names: [String]) -> [CloudSyncLocalUserScript] {
 struct CloudSyncLocalUserScriptTests {
     static func main() {
         let cloudSource = try! String(contentsOfFile: "wBlock/CloudSyncManager.swift", encoding: .utf8)
+        let managerSource = try! String(contentsOfFile: "wBlockCoreService/UserScriptManager.swift", encoding: .utf8)
+        expect(
+            cloudSource.contains("let currentLocalScripts = await userScriptManager.cloudSyncLocalUserScripts()")
+                && cloudSource.contains("content: script.content")
+                && cloudSource.contains("description: script.description"),
+            "CloudSync payloads must serialize hydrated local source and metadata"
+        )
+        expect(
+            managerSource.contains("public func cloudSyncLocalUserScripts() async -> [UserScript]")
+                && managerSource.contains("hydrateDisabled: true")
+                && managerSource.contains("not assigned to `userScripts`"),
+            "CloudSync hydration must be an ephemeral snapshot and preserve idle disk-backed state"
+        )
         expect(cloudSource.contains("let description: String?"), "CloudSync local payload description must be optional")
         expect(cloudSource.contains("description: script.description"), "CloudSync serialization must carry local descriptions")
         expect(cloudSource.contains("descriptionOverride: local.description ?? existing?.description"), "content updates must preserve legacy descriptions")

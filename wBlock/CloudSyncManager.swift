@@ -1002,7 +1002,7 @@ final class CloudSyncManager: ObservableObject {
 
         let remoteDeletedLocalNames = Set(scripts.deletedLocalNames ?? [])
         let remoteDeletedLocalIdentities = Set(scripts.deletedLocalIdentities ?? [])
-        let currentLocalScripts = userScriptManager.userScripts.filter(\.isLocal)
+        let currentLocalScripts = await userScriptManager.cloudSyncLocalUserScripts()
         let localNames = currentLocalScripts.map(\.name)
         let currentLocalModels = currentLocalScripts.map {
             CloudSyncLocalUserScript(
@@ -1286,7 +1286,7 @@ final class CloudSyncManager: ObservableObject {
 
         let remoteDeletedLocalNames = Set(remotePayload.userScripts.deletedLocalNames ?? [])
         let remoteDeletedLocalIdentities = Set(remotePayload.userScripts.deletedLocalIdentities ?? [])
-        let localScripts = userScriptManager.userScripts.filter(\.isLocal).map {
+        let localScripts = (await userScriptManager.cloudSyncLocalUserScripts()).map {
             CloudSyncLocalUserScript(
                 name: $0.name,
                 content: $0.content,
@@ -1434,7 +1434,7 @@ final class CloudSyncManager: ObservableObject {
                 localImportIdentity: $0.localImportIdentity
             )
         }
-        let currentLocalScripts = userScriptManager.userScripts.filter(\.isLocal).map {
+        let currentLocalScripts = (await userScriptManager.cloudSyncLocalUserScripts()).map {
             CloudSyncLocalUserScript(
                 name: $0.name,
                 content: $0.content,
@@ -1642,6 +1642,7 @@ final class CloudSyncManager: ObservableObject {
         )
 
         let userScriptDisabledHosts = dataManager.getUserScriptDisabledHosts()
+        let currentLocalScripts = await userScriptManager.cloudSyncLocalUserScripts()
         let remoteScripts = userScriptManager.userScripts
             .filter { !$0.isLocal && $0.url != nil }
             .compactMap { script -> SyncPayload.RemoteUserScript? in
@@ -1660,7 +1661,7 @@ final class CloudSyncManager: ObservableObject {
 
         let deletedLocalNamesSet = deletedLocalUserScriptNameSet()
         let deletedLocalIdentitiesSet = deletedLocalUserScriptIdentitySet()
-        let localScripts = userScriptManager.userScripts
+        let localScripts = currentLocalScripts
             .filter { script in
                 guard script.isLocal else { return false }
                 if let identity = CloudSyncLocalUserScriptReconciler.normalizedIdentity(script.localImportIdentity) {

@@ -93,6 +93,10 @@ struct FilterListValidationTests {
             "expected userscript metadata blocks to be rejected as filters"
         )
         expectInvalidContent("<html><body>challenge</body></html>", "expected HTML to be rejected")
+        expectInvalidContent(
+            "[{\"trigger\":{\"url-filter\":\"example\"},\"action\":{\"type\":\"block\"}}]",
+            "expected Safari content blocker JSON to be rejected without a semantic importer"
+        )
         expectInvalidContent("console.log('masquerading as a filter');", "expected JavaScript content to be rejected")
         expectInvalidContent(
             "! harmless comment\nwindow.alert('executable');",
@@ -108,7 +112,7 @@ struct FilterListValidationTests {
         )
         expectSupportedFile("rules.txt", "expected .txt filter files to be accepted")
         expectSupportedFile("rules.list", "expected .list filter files to be accepted")
-        expectSupportedFile("rules.json", "expected .json filter files to be accepted")
+        expectUnsupportedFile("rules.json", "expected Safari content blocker JSON files to be rejected")
         expectUnsupportedFile("script.js", "expected JavaScript files to be rejected as filters")
         expectUnsupportedFile("rules.user.js", "expected userscript files to be rejected as filters")
 

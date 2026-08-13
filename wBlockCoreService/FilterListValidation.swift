@@ -72,7 +72,7 @@ public enum FilterListURLSupport {
 }
 
 public enum FilterListContentValidator {
-    public static let supportedLocalFileExtensions: Set<String> = ["txt", "list", "json"]
+    public static let supportedLocalFileExtensions: Set<String> = ["txt", "list"]
 
     public static func isSupportedLocalFile(_ url: URL) -> Bool {
         supportedLocalFileExtensions.contains(url.pathExtension.lowercased())

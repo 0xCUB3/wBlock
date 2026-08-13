@@ -361,6 +361,17 @@ public class UserScriptManager: ObservableObject {
         }.value
     }
 
+    /// Returns local scripts with source hydrated for cloud serialization and reconciliation.
+    /// The hydrated copies are deliberately not assigned to `userScripts`, preserving the
+    /// disk-backed idle representation for disabled scripts.
+    public func cloudSyncLocalUserScripts() async -> [UserScript] {
+        await hydrateUserScriptsFromDisk(
+            userScripts.filter(\.isLocal),
+            includeResources: false,
+            hydrateDisabled: true
+        )
+    }
+
     private func resolveMetadataURL(_ rawValue: String, relativeTo userScript: UserScript) -> URL? {
         let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
