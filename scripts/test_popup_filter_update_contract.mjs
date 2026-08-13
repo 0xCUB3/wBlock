@@ -68,6 +68,9 @@ check(xpc.includes('public func startFilterUpdate') && xpc.includes('filterProxy
   'XPC bridge must expose an acknowledged background start request');
 check(popupStatus.includes('.noFilterUpdates') && popupStatus.includes('case .failed(let message)'),
   'status store must preserve no-change and failure outcomes');
+check(native.includes('FilterUpdatePopupStatus.consumeSnapshot()') &&
+  popupStatus.includes('current.state != .idle, current.state != .running'),
+  'terminal status must be shown once, then clear before the popup reopens');
 
 const updateHandler = native.slice(native.indexOf('private static func handleStartFilterUpdate'), native.indexOf('private static func handleOpenContainingApp'));
 check(!updateHandler.includes('openContainingApp') && !updateHandler.includes('NSWorkspace') && !updateHandler.includes('openApplication'),

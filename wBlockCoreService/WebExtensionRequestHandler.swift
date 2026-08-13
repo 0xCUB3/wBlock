@@ -639,7 +639,7 @@ public enum WebExtensionRequestHandler {
     }
 
     private static func handleGetFilterUpdateStatus(context: NSExtensionContext) {
-        let status = FilterUpdatePopupStatus.snapshot()
+        let status = FilterUpdatePopupStatus.consumeSnapshot()
         var payload: [String: Any?] = [
             "ok": true,
             "state": status.state.rawValue,

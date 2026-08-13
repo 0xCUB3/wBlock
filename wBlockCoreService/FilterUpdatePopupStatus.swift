@@ -108,6 +108,27 @@ public enum FilterUpdatePopupStatus {
         return snapshot(unlockedDefaults: defaults, now: now)
     }
 
+
+    /// Returns the current status and acknowledges a terminal result. The popup keeps
+    /// the returned value in its DOM, while the next popup session starts clean.
+    public static func consumeSnapshot(
+        groupIdentifier: String = GroupIdentifier.shared.value,
+        now: Date = Date()
+    ) -> Snapshot {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let defaults = UserDefaults(suiteName: groupIdentifier) else {
+            return Snapshot(state: .failed, startedAt: nil, finishedAt: nil, checkedFilters: 0, updatedFilters: 0, error: "Shared update status is unavailable.")
+        }
+
+        let current = snapshot(unlockedDefaults: defaults, now: now)
+        guard current.state != .idle, current.state != .running else { return current }
+        [stateKey, startedAtKey, finishedAtKey, checkedFiltersKey, updatedFiltersKey, errorKey]
+            .forEach(defaults.removeObject(forKey:))
+        defaults.synchronize()
+        return current
+    }
+
     public static func finish(
         _ outcome: SharedAutoUpdateManager.AutoUpdateRunOutcome,
         groupIdentifier: String = GroupIdentifier.shared.value,
