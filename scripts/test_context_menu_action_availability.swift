@@ -28,6 +28,8 @@ if let infoStart = scripts.range(of: "struct UserScriptInfoView"),
    let contentStart = scripts.range(of: "struct UserScriptContentView") {
     let infoView = String(scripts[infoStart.lowerBound..<contentStart.lowerBound])
     require(infoView.contains("UserScriptInfoSidebar"), "Info must retain metadata rows")
+    require(infoView.contains("fillsAvailableSpace: false"), "macOS Info must size to its metadata content")
+    require(!infoView.contains("height: 620"), "macOS Info must not retain the oversized fixed height")
     require(!infoView.contains("Script Content"), "Info must not duplicate Script Content")
 } else {
     require(false, "metadata and content views must remain separate")

@@ -1004,6 +1004,8 @@ struct UserScriptInfoSidebar: View {
     let isBuiltIn: Bool
     let isBeta: Bool
     let onUpdatesAutomaticallyChanged: (Bool) -> Void
+    var fillsAvailableSpace = true
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             ScriptNameAndDescriptionView(script: script, isBeta: isBeta)
@@ -1024,7 +1026,9 @@ struct UserScriptInfoSidebar: View {
             }
             if script.url != nil { ScriptURLView(script: script, isBundled: isBundled) }
             if !script.matches.isEmpty { ScriptMatchPatternsView(script: script, isPatternsExpanded: $isPatternsExpanded) }
-            Spacer()
+            if fillsAvailableSpace {
+                Spacer()
+            }
         }
     }
 }
@@ -1136,10 +1140,11 @@ struct UserScriptInfoView: View {
                     isBundled: userScriptManager.isBundled(for: script),
                     isBuiltIn: userScriptManager.isDefaultUserScript(script),
                     isBeta: userScriptManager.isBeta(for: script),
-                    onUpdatesAutomaticallyChanged: setUpdatesAutomatically
+                    onUpdatesAutomaticallyChanged: setUpdatesAutomatically,
+                    fillsAvailableSpace: false
                 )
                 .padding(20)
-                .frame(width: 460, height: 620)
+                .frame(width: 460)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Done") { dismiss() }
