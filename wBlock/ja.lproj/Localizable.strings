@@ -469,7 +469,6 @@
 "Loading script metadata…" = "スクリプトのメタデータを読み込み中…";
 "Loading userscripts…" = "ユーザースクリプトを読み込み中…";
 "Local Import" = "ローカルインポート";
-"Log Timestamps" = "ログのタイムスタンプ";
 "Logs" = "ログ";
 "Logs cleared" = "ログを消去しました";
 "Logs will appear here as the app runs" = "アプリの実行中にここへログが表示されます";
@@ -712,7 +711,7 @@
 "Sync across devices" = "デバイス間で同期する";
 "Sync Now" = "今すぐ同期";
 "Sync settings across devices" = "設定をデバイス間で同期";
-"Sync with device timezone" = "デバイスのタイムゾーンに同期";
+"Sync timestamps with device timezone" = "タイムスタンプをデバイスのタイムゾーンに同期";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "フィルターの選択、カスタムリスト、ユーザースクリプト、ホワイトリストをデバイス間で同期します。";
 "Sync: Checking…" = "同期: 確認中…";
 "Sync: Downloading…" = "同期: ダウンロード中…";
@@ -759,7 +758,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "これにより、すべてのフィルター、ユーザースクリプト、設定が削除され、初期設定フローが再起動されます。";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "現在のフィルター選択、ホワイトリスト、要素ザッパーのルールがバックアップ設定に置き換えられます。";
 "This will reset all filters, userscripts, and preferences." = "これにより、すべてのフィルター、ユーザースクリプト、設定がリセットされます。";
-"Time zone" = "タイムゾーン";
 "Timed out" = "タイムアウト";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "タイトル";

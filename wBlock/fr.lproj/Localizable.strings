@@ -469,7 +469,6 @@
 "Loading script metadata…" = "Chargement des métadonnées du script…";
 "Loading userscripts…" = "Chargement des userscripts…";
 "Local Import" = "Importation locale";
-"Log Timestamps" = "Horodatage des journaux";
 "Logs" = "Journaux";
 "Logs cleared" = "Journaux effacés";
 "Logs will appear here as the app runs" = "Les journaux apparaîtront ici pendant l'exécution de l'app";
@@ -709,7 +708,7 @@
 "Sync across devices" = "Synchroniser sur tous les appareils";
 "Sync Now" = "Synchroniser maintenant";
 "Sync settings across devices" = "Synchroniser les réglages entre appareils";
-"Sync with device timezone" = "Synchroniser avec le fuseau horaire de l'appareil";
+"Sync timestamps with device timezone" = "Synchroniser les horodatages avec le fuseau horaire de l’appareil";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Synchronisez vos sélections de filtres, listes personnalisées, scripts utilisateur et liste blanche entre vos appareils.";
 "Sync: Checking…" = "Synchronisation : Vérification…";
 "Sync: Downloading…" = "Synchronisation : Téléchargement…";
@@ -756,7 +755,6 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Cela supprimera tous les filtres, userscripts et préférences, puis relancera le parcours d’accueil.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Cela remplacera vos sélections de filtres actuelles, la liste blanche et les règles du zappeur d’éléments par les réglages sauvegardés.";
 "This will reset all filters, userscripts, and preferences." = "Cela réinitialisera tous les filtres, scripts utilisateur et préférences.";
-"Time zone" = "Fuseau horaire";
 "Timed out" = "Délai dépassé";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "Titre";

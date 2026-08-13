@@ -469,7 +469,6 @@
 "Loading script metadata…" = "جارٍ تحميل بيانات تعريف السكربت…";
 "Loading userscripts…" = "جارٍ تحميل سكربتات المستخدم…";
 "Local Import" = "استيراد محلي";
-"Log Timestamps" = "طوابع زمنية للسجل";
 "Logs" = "السجلات";
 "Logs cleared" = "تم مسح السجلات";
 "Logs will appear here as the app runs" = "ستظهر السجلات هنا أثناء تشغيل التطبيق";
@@ -712,7 +711,7 @@
 "Sync across devices" = "المزامنة عبر الأجهزة";
 "Sync Now" = "المزامنة الآن";
 "Sync settings across devices" = "مزامنة الإعدادات عبر الأجهزة";
-"Sync with device timezone" = "المزامنة مع المنطقة الزمنية للجهاز";
+"Sync timestamps with device timezone" = "مزامنة الطوابع الزمنية مع المنطقة الزمنية للجهاز";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "زامن اختيارات الفلاتر والقوائم المخصصة وسكريبتات المستخدم والقائمة البيضاء عبر الأجهزة.";
 "Sync: Checking…" = "المزامنة: جارٍ التحقق…";
 "Sync: Downloading…" = "المزامنة: جارٍ التنزيل…";
@@ -759,7 +758,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "سيؤدي هذا إلى إزالة جميع المرشحات والسكريبتات والتفضيلات، ثم إعادة تشغيل مسار الإعداد الأولي.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "سيؤدي هذا إلى استبدال اختيارات المرشحات الحالية وقائمة السماح وقواعد إخفاء العناصر بالإعدادات المستعادة من النسخة الاحتياطية.";
 "This will reset all filters, userscripts, and preferences." = "سيؤدي هذا إلى إعادة تعيين جميع الفلاتر وسكريبتات المستخدم والتفضيلات.";
-"Time zone" = "المنطقة الزمنية";
 "Timed out" = "انتهت المهلة";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "العنوان";

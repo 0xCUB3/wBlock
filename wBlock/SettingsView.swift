@@ -252,19 +252,8 @@ struct SettingsView: View {
     }
 
     private var logTimestampControls: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Log Timestamps")
-                .font(.headline)
-
-            Toggle("Sync with device timezone", isOn: usesDeviceTimeZoneBinding)
-            if !logTimeZoneIdentifier.isEmpty {
-                Picker("Time zone", selection: $logTimeZoneIdentifier) {
-                    ForEach(sortedTimeZoneIdentifiers, id: \.self) { identifier in
-                        Text(timeZoneDisplayName(for: identifier)).tag(identifier)
-                    }
-                }
-            }
-
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle("Sync timestamps with device timezone", isOn: usesDeviceTimeZoneBinding)
             Text("Controls the time zone used when displaying and exporting log timestamps.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -592,15 +581,6 @@ struct SettingsView: View {
                 LogDateFormatters.configureIfNeeded()
             }
         )
-    }
-
-    private var sortedTimeZoneIdentifiers: [String] {
-        TimeZone.knownTimeZoneIdentifiers.sorted()
-    }
-
-    private func timeZoneDisplayName(for identifier: String) -> String {
-        let name = TimeZone.localizedName(for: identifier) ?? identifier
-        return "\(name) (\(identifier))"
     }
 
     @ViewBuilder

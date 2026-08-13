@@ -469,7 +469,6 @@
 "Loading script metadata…" = "Загрузка метаданных скрипта…";
 "Loading userscripts…" = "Загрузка пользовательских скриптов…";
 "Local Import" = "Локальный импорт";
-"Log Timestamps" = "Метки времени журналов";
 "Logs" = "Журналы";
 "Logs cleared" = "Журналы очищены";
 "Logs will appear here as the app runs" = "Журналы будут появляться здесь во время работы приложения";
@@ -712,7 +711,7 @@
 "Sync across devices" = "Синхронизация между устройствами";
 "Sync Now" = "Синхронизировать сейчас";
 "Sync settings across devices" = "Синхронизировать настройки между устройствами";
-"Sync with device timezone" = "Синхронизировать с часовым поясом устройства";
+"Sync timestamps with device timezone" = "Синхронизировать метки времени с часовым поясом устройства";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Синхронизируйте выбранные фильтры, пользовательские списки, пользовательские скрипты и белый список между устройствами.";
 "Sync: Checking…" = "Синхронизация: Проверка…";
 "Sync: Downloading…" = "Синхронизация: Загрузка…";
@@ -759,7 +758,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Это удалит все фильтры, пользовательские скрипты и настройки, а затем заново запустит начальную настройку.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Это заменит текущие выбранные фильтры, белый список и правила скрытия элементов настройками из резервной копии.";
 "This will reset all filters, userscripts, and preferences." = "Это сбросит все фильтры, пользовательские скрипты и настройки.";
-"Time zone" = "Часовой пояс";
 "Timed out" = "Время ожидания истекло";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "Название";

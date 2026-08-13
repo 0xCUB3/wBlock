@@ -469,7 +469,6 @@
 "Loading script metadata…" = "Caricamento metadati dello script…";
 "Loading userscripts…" = "Caricamento userscript…";
 "Local Import" = "Importazione locale";
-"Log Timestamps" = "Timestamp dei log";
 "Logs" = "Log";
 "Logs cleared" = "Log cancellati";
 "Logs will appear here as the app runs" = "I log appariranno qui mentre l'app è in esecuzione";
@@ -709,7 +708,7 @@
 "Sync across devices" = "Sincronizza tra dispositivi";
 "Sync Now" = "Sincronizza ora";
 "Sync settings across devices" = "Sincronizza le impostazioni tra dispositivi";
-"Sync with device timezone" = "Sincronizza con il fuso orario del dispositivo";
+"Sync timestamps with device timezone" = "Sincronizza i timestamp con il fuso orario del dispositivo";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Sincronizza selezione filtri, liste personalizzate, userscript e whitelist tra dispositivi.";
 "Sync: Checking…" = "Sincronizzazione: Verifica…";
 "Sync: Downloading…" = "Sincronizzazione: Download…";
@@ -756,7 +755,6 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Questo rimuoverà tutti i filtri, gli userscript e le preferenze, quindi riavvierà il flusso di onboarding.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Questo sostituirà le selezioni filtro attuali, la whitelist e le regole dello zapper elementi con le impostazioni del backup.";
 "This will reset all filters, userscripts, and preferences." = "Questo reimposterà tutti i filtri, gli userscript e le preferenze.";
-"Time zone" = "Fuso orario";
 "Timed out" = "Tempo scaduto";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "Titolo";

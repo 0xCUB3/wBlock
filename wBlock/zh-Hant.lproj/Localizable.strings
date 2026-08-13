@@ -469,7 +469,6 @@
 "Loading script metadata…" = "正在載入腳本中繼資料…";
 "Loading userscripts…" = "正在載入使用者腳本…";
 "Local Import" = "本機匯入";
-"Log Timestamps" = "日誌時間戳";
 "Logs" = "日誌";
 "Logs cleared" = "日誌已清除";
 "Logs will appear here as the app runs" = "應用程式執行時，日誌會顯示在這裡";
@@ -712,7 +711,7 @@
 "Sync across devices" = "跨裝置同步";
 "Sync Now" = "立即同步";
 "Sync settings across devices" = "跨裝置同步設定";
-"Sync with device timezone" = "與裝置時區同步";
+"Sync timestamps with device timezone" = "將時間戳記與裝置時區同步";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "在裝置間同步你的過濾器選擇、自訂清單、使用者腳本與白名單。";
 "Sync: Checking…" = "同步：檢查中…";
 "Sync: Downloading…" = "同步：下載中…";
@@ -759,7 +758,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "這會移除所有過濾器、使用者腳本與偏好設定，然後重新啟動導覽流程。";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "這會以備份設定取代你目前的過濾器選擇、白名單與元素清除規則。";
 "This will reset all filters, userscripts, and preferences." = "這將重設所有過濾器、使用者腳本與偏好設定。";
-"Time zone" = "時區";
 "Timed out" = "逾時";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "標題";

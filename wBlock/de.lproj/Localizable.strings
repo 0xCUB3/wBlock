@@ -469,7 +469,6 @@
 "Loading script metadata…" = "Skript-Metadaten werden geladen…";
 "Loading userscripts…" = "Userscripts werden geladen…";
 "Local Import" = "Lokaler Import";
-"Log Timestamps" = "Zeitstempel der Protokolle";
 "Logs" = "Protokolle";
 "Logs cleared" = "Protokolle gelöscht";
 "Logs will appear here as the app runs" = "Protokolle erscheinen hier, während die App läuft";
@@ -712,7 +711,7 @@
 "Sync across devices" = "Geräteübergreifend synchronisieren";
 "Sync Now" = "Jetzt synchronisieren";
 "Sync settings across devices" = "Einstellungen geräteübergreifend synchronisieren";
-"Sync with device timezone" = "Mit Gerätezeitzone synchronisieren";
+"Sync timestamps with device timezone" = "Zeitstempel mit der Gerätezeitzone synchronisieren";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Synchronisiere deine Filterauswahl, benutzerdefinierte Listen, Userskripte und Whitelist geräteübergreifend.";
 "Sync: Checking…" = "Sync: Prüft…";
 "Sync: Downloading…" = "Sync: Lädt herunter…";
@@ -759,7 +758,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Dadurch werden alle Filter, Userscripts und Einstellungen entfernt und der Einrichtungsablauf neu gestartet.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Dadurch werden deine aktuellen Filterauswahlen, die Whitelist und die Regeln des Element-Entferners durch die gesicherten Einstellungen ersetzt.";
 "This will reset all filters, userscripts, and preferences." = "Dadurch werden alle Filter, Userskripte und Einstellungen zurückgesetzt.";
-"Time zone" = "Zeitzone";
 "Timed out" = "Zeitüberschreitung";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "Titel";

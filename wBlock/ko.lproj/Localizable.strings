@@ -469,7 +469,6 @@
 "Loading script metadata…" = "스크립트 메타데이터 불러오는 중…";
 "Loading userscripts…" = "유저스크립트 불러오는 중…";
 "Local Import" = "로컬 가져오기";
-"Log Timestamps" = "로그 타임스탬프";
 "Logs" = "로그";
 "Logs cleared" = "로그를 지웠습니다";
 "Logs will appear here as the app runs" = "앱이 실행되면 여기에 로그가 표시됩니다";
@@ -712,7 +711,7 @@
 "Sync across devices" = "여러 기기에서 동기화";
 "Sync Now" = "지금 동기화";
 "Sync settings across devices" = "기기 간 설정 동기화";
-"Sync with device timezone" = "기기 시간대와 동기화";
+"Sync timestamps with device timezone" = "타임스탬프를 기기 시간대와 동기화";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "필터 선택, 사용자 지정 목록, 유저스크립트, 허용 목록을 기기 간에 동기화하세요.";
 "Sync: Checking…" = "동기화: 확인 중…";
 "Sync: Downloading…" = "동기화: 다운로드 중…";
@@ -759,7 +758,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "이 작업은 모든 필터, 사용자 스크립트, 설정을 제거한 다음 온보딩 흐름을 다시 시작합니다.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "현재 필터 선택, 허용 목록, 요소 제거 규칙이 백업된 설정으로 대체됩니다.";
 "This will reset all filters, userscripts, and preferences." = "모든 필터, 유저스크립트 및 환경설정이 초기화됩니다.";
-"Time zone" = "시간대";
 "Timed out" = "시간 초과";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "제목";

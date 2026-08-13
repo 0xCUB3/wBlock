@@ -469,7 +469,6 @@
 "Loading script metadata…" = "Loading script metadata…";
 "Loading userscripts…" = "Loading userscripts…";
 "Local Import" = "Local Import";
-"Log Timestamps" = "Log Timestamps";
 "Logs" = "Logs";
 "Logs cleared" = "Logs cleared";
 "Logs will appear here as the app runs" = "Logs will appear here as the app runs";
@@ -709,7 +708,7 @@
 "Sync across devices" = "Sync across devices";
 "Sync Now" = "Sync Now";
 "Sync settings across devices" = "Sync settings across devices";
-"Sync with device timezone" = "Sync with device timezone";
+"Sync timestamps with device timezone" = "Sync timestamps with device timezone";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Sync your filter selections, custom lists, userscripts, and whitelist across devices.";
 "Sync: Checking…" = "Sync: Checking…";
 "Sync: Downloading…" = "Sync: Downloading…";
@@ -756,7 +755,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings.";
 "This will reset all filters, userscripts, and preferences." = "This will reset all filters, userscripts, and preferences.";
-"Time zone" = "Time zone";
 "Timed out" = "Timed out";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "Title";

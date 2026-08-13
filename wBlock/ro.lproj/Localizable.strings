@@ -469,7 +469,6 @@
 "Loading script metadata…" = "Se încarcă metadatele scriptului…";
 "Loading userscripts…" = "Se încarcă scripturile de utilizator…";
 "Local Import" = "Import local";
-"Log Timestamps" = "Marcaje temporale jurnal";
 "Logs" = "Jurnale";
 "Logs cleared" = "Jurnale șterse";
 "Logs will appear here as the app runs" = "Jurnalele vor apărea aici pe măsură ce aplicația rulează";
@@ -709,7 +708,7 @@
 "Sync across devices" = "Sincronizare între dispozitive";
 "Sync Now" = "Sincronizează acum";
 "Sync settings across devices" = "Sincronizează setările între dispozitive";
-"Sync with device timezone" = "Sincronizează cu fusul orar al dispozitivului";
+"Sync timestamps with device timezone" = "Sincronizează marcajele temporale cu fusul orar al dispozitivului";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Sincronizează între dispozitive selecțiile de filtre, listele personalizate, scripturile utilizator și lista albă.";
 "Sync: Checking…" = "Sincronizare: Se verifică…";
 "Sync: Downloading…" = "Sincronizare: Se descarcă…";
@@ -756,7 +755,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Aceasta va elimina toate filtrele, userscripturile și preferințele, apoi va relansa fluxul de configurare inițială.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Aceasta va înlocui selecțiile actuale de filtre, lista albă și regulile pentru eliminatorul de elemente cu setările din copia de rezervă.";
 "This will reset all filters, userscripts, and preferences." = "Acest lucru va reseta toate filtrele, scripturile utilizator și preferințele.";
-"Time zone" = "Fus orar";
 "Timed out" = "Timp expirat";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "Titlu";

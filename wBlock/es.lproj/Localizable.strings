@@ -469,7 +469,6 @@
 "Loading script metadata…" = "Cargando metadatos del script…";
 "Loading userscripts…" = "Cargando scripts de usuario…";
 "Local Import" = "Importación local";
-"Log Timestamps" = "Marcas de tiempo de los registros";
 "Logs" = "Registros";
 "Logs cleared" = "Registros borrados";
 "Logs will appear here as the app runs" = "Los registros aparecerán aquí mientras la app se ejecuta";
@@ -709,7 +708,7 @@
 "Sync across devices" = "Sincronización entre dispositivos";
 "Sync Now" = "Sincronizar ahora";
 "Sync settings across devices" = "Sincronizar ajustes entre dispositivos";
-"Sync with device timezone" = "Sincronizar con la zona horaria del dispositivo";
+"Sync timestamps with device timezone" = "Sincronizar marcas de tiempo con la zona horaria del dispositivo";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Sincroniza tu selección de filtros, listas personalizadas, scripts de usuario y lista blanca entre dispositivos.";
 "Sync: Checking…" = "Sincronización: Comprobando…";
 "Sync: Downloading…" = "Sincronización: Descargando…";
@@ -756,7 +755,6 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Esto eliminará todos los filtros, userscripts y preferencias, y luego reiniciará el flujo de configuración inicial.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Esto reemplazará tus selecciones de filtros actuales, la lista blanca y las reglas del ocultador de elementos con los ajustes de la copia de seguridad.";
 "This will reset all filters, userscripts, and preferences." = "Esto restablecerá todos los filtros, scripts de usuario y preferencias.";
-"Time zone" = "Zona horaria";
 "Timed out" = "Se agotó el tiempo";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "Título";

@@ -469,7 +469,6 @@
 "Loading script metadata…" = "Betik meta verileri yükleniyor…";
 "Loading userscripts…" = "Kullanıcı betikleri güncelleniyor…";
 "Local Import" = "Yerel içe aktarma";
-"Log Timestamps" = "Günlük zaman damgaları";
 "Logs" = "Günlükler";
 "Logs cleared" = "Günlükler temizlendi";
 "Logs will appear here as the app runs" = "Uygulama çalıştıkça günlük kayıtları burada görünecektir";
@@ -709,7 +708,7 @@
 "Sync across devices" = "Cihazlar arasında eşitle";
 "Sync Now" = "Şimdi eşitle";
 "Sync settings across devices" = "Ayarları cihazlar arasında eşitle";
-"Sync with device timezone" = "Cihazın saat dilimiyle eşitle";
+"Sync timestamps with device timezone" = "Zaman damgalarını cihazın saat dilimiyle eşitle";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Filtre seçimlerinizi, özel listelerinizi, kullanıcı betiklerinizi ve izin listenizi tüm cihazlarınızda eşitleyin.";
 "Sync: Checking…" = "Eşitleme: Kontrol ediliyor…";
 "Sync: Downloading…" = "Eşitleme: İndiriliyor…";
@@ -756,7 +755,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Bu işlem tüm filtreleri, kullanıcı betiklerini ve tercihleri kaldıracak, ardından kurulum sürecini yeniden başlatacaktır.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Bu işlem, mevcut filtre seçimlerinizi, izin listenizi ve öğe gizleyici kurallarınızı yedeklenen ayarlar ile değiştirecektir.";
 "This will reset all filters, userscripts, and preferences." = "Bu işlem tüm filtreleri, kullanıcı betiklerini ve tercihleri sıfırlayacaktır.";
-"Time zone" = "Zaman dilimi";
 "Timed out" = "Zaman aşımı";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield, Ad-Shield tarafından eşleşen sitelerde yeniden eklenen reklamları engellemeye yardımcı olur.";
 "Title" = "Başlık";

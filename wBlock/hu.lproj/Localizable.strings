@@ -469,7 +469,6 @@
 "Loading script metadata…" = "Szkriptmetaadatok betöltése…";
 "Loading userscripts…" = "Felhasználói szkriptek betöltése…";
 "Local Import" = "Helyi import";
-"Log Timestamps" = "Napló időbélyegzői";
 "Logs" = "Naplók";
 "Logs cleared" = "Naplók törölve";
 "Logs will appear here as the app runs" = "A naplók itt jelennek meg az alkalmazás futása közben";
@@ -712,7 +711,7 @@
 "Sync across devices" = "Szinkronizálás az eszközök között";
 "Sync Now" = "Szinkronizálás most";
 "Sync settings across devices" = "Beállítások szinkronizálása az eszközök között";
-"Sync with device timezone" = "Szinkronizálás az eszköz időzónájával";
+"Sync timestamps with device timezone" = "Időbélyegek szinkronizálása az eszköz időzónájával";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Szinkronizáld az eszközök között a szűrőválasztásaidat, egyéni listáidat, felhasználói szkriptjeidet és az engedélyezőlistádat.";
 "Sync: Checking…" = "Szinkronizálás: Ellenőrzés…";
 "Sync: Downloading…" = "Szinkronizálás: Letöltés…";
@@ -759,7 +758,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Ez eltávolít minden szűrőt, felhasználói szkriptet és beállítást, majd újraindítja a kezdő beállítási folyamatot.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Ez a biztonsági mentésben lévő beállításokkal lecseréli a jelenlegi szűrőválasztásaidat, az engedélyezőlistádat és az elemeltávolító szabályaidat.";
 "This will reset all filters, userscripts, and preferences." = "Ez visszaállít minden szűrőt, felhasználói szkriptet és beállítást.";
-"Time zone" = "Időzóna";
 "Timed out" = "Időtúllépés";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "Cím";

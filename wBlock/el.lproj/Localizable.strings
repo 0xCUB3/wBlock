@@ -469,7 +469,6 @@
 "Loading script metadata…" = "Φόρτωση μεταδεδομένων κώδικα…";
 "Loading userscripts…" = "Φόρτωση κώδικα χρήστη…";
 "Local Import" = "Τοπική Εισαγωγή";
-"Log Timestamps" = "Χρονοσφραγίδες καταγραφής";
 "Logs" = "Αρχεία Καταγραφής";
 "Logs cleared" = "Εκκαθάριση αρχείων καταγραφής";
 "Logs will appear here as the app runs" = "Τα αρχεία καταγραφής θα εμφανίζονται εδώ καθώς εκτελείται η εφαρμογή";
@@ -712,7 +711,7 @@
 "Sync across devices" = "Συγχρονισμός μεταξύ συσκευών";
 "Sync Now" = "Συγχρονισμός τώρα";
 "Sync settings across devices" = "Συγχρονισμός ρυθμίσεων σε όλες τις συσκευές";
-"Sync with device timezone" = "Συγχρονισμός με τη ζώνη ώρας συσκευής";
+"Sync timestamps with device timezone" = "Συγχρονισμός χρονικών σημάνσεων με τη ζώνη ώρας συσκευής";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Συγχρονισμός των επιλογών φίλτρων, των προσαρμοσμένων λιστών, του κώδικα χρήστη και της λίστας επιτρεπόμενων σε όλες τις συσκευές.";
 "Sync: Checking…" = "Συγχρονισμός: Έλεγχος…";
 "Sync: Downloading…" = "Συγχρονισμός: Λήψη…";
@@ -759,7 +758,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Αυτό θα αφαιρέσει όλα τα φίλτρα, τα userscripts και τις προτιμήσεις και έπειτα θα ξεκινήσει ξανά τη ροή αρχικής ρύθμισης.";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Αυτό θα αντικαταστήσει τις τρέχουσες επιλογές φίλτρων, τη λίστα επιτρεπόμενων και τους κανόνες του στοιχειο-αφανιστή με τις ρυθμίσεις του αντιγράφου ασφαλείας.";
 "This will reset all filters, userscripts, and preferences." = "Αυτό θα επαναφέρει όλα τα φίλτρα, τον κώδικα χρήστη και τις προτιμήσεις.";
-"Time zone" = "Ζώνη ώρας";
 "Timed out" = "Έληξε ο χρόνος";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
 "Title" = "Τίτλος";
