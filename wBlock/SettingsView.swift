@@ -344,21 +344,19 @@ struct SettingsView: View {
     @ViewBuilder
     private var autoUpdateSection: some View {
         Section {
+            #if os(iOS)
             Button {
                 filterManager.checkAndEnableFilters(forceReload: true)
             } label: {
                 Label("Update Now", systemImage: "arrow.triangle.2.circlepath")
             }
             .disabled(filterManager.isLoading)
+            #endif
 
             Toggle("Auto-Update Filters & Userscripts", isOn: autoUpdateToggleBinding)
                 #if os(macOS)
                 .toggleStyle(.switch)
                 #endif
-
-            #if os(macOS)
-            macOSAutoUpdateDiagnosticsView
-            #endif
 
             if autoUpdateEnabled {
                 Picker("Update Interval", selection: autoUpdateIntervalBinding) {
@@ -372,7 +370,22 @@ struct SettingsView: View {
                 #endif
             }
         } header: {
+            #if os(macOS)
+            HStack {
+                Text("Auto-Update")
+                Spacer()
+                Button {
+                    filterManager.checkAndEnableFilters(forceReload: true)
+                } label: {
+                    Label("Update Now", systemImage: "arrow.triangle.2.circlepath")
+                }
+                .buttonStyle(.borderless)
+                .controlSize(.small)
+                .disabled(filterManager.isLoading)
+            }
+            #else
             Text("Auto-Update")
+            #endif
         } footer: {
             VStack(alignment: .leading, spacing: 2) {
                 if autoUpdateEnabled {
@@ -381,6 +394,9 @@ struct SettingsView: View {
                     Text("Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app.")
                     #endif
                 }
+                #if os(macOS)
+                macOSAutoUpdateDiagnosticsView
+                #endif
             }
         }
     }
@@ -388,19 +404,21 @@ struct SettingsView: View {
     #if os(macOS)
     @ViewBuilder
     private var macOSAutoUpdateDiagnosticsView: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
             Text("Background Diagnostics")
-                .font(.headline)
+                .fontWeight(.medium)
+            Text("·")
             Text(launchAgentStatusLine)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
             if launchAgentNeedsApproval {
                 Button("Open Login Items") {
                     AutoUpdateLaunchAgentManager.shared.openLoginItemsSettings()
                 }
+                .buttonStyle(.link)
+                .controlSize(.small)
             }
         }
-        .padding(.top, 6)
+        .font(.caption)
+        .foregroundStyle(.secondary)
     }
     #endif
 
