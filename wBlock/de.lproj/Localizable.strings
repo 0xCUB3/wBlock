@@ -439,8 +439,6 @@
 "IndianList" = "IndianList";
 "Info" = "Info";
 "Integrated" = "Integriert";
-"YouTube Ad Blocking" = "YouTube-Werbeblockierung";
-"Blocks YouTube ads with a document-start proxy engine and remotely verified rules." = "Blockiert YouTube-Werbung mit einer Proxy-Engine ab Dokumentstart und remote überprüften Regeln.";
 "Info.plist missing" = "Info.plist fehlt";
 "Initialized with %d filter list(s)." = "Initialisiert mit %d-Filterliste(n).";
 "International" = "International";

@@ -439,8 +439,6 @@
 "IndianList" = "IndianList";
 "Info" = "정보";
 "Integrated" = "통합 기능";
-"YouTube Ad Blocking" = "YouTube 광고 차단";
-"Blocks YouTube ads with a document-start proxy engine and remotely verified rules." = "문서 시작 프록시 엔진과 원격으로 검증된 규칙을 사용하여 YouTube 광고를 차단합니다.";
 "Info.plist missing" = "Info.plist가 없습니다";
 "Initialized with %d filter list(s)." = "%d 필터 목록으로 초기화되었습니다.";
 "International" = "국제";

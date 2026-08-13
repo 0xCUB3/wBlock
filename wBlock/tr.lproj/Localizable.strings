@@ -439,8 +439,6 @@
 "IndianList" = "IndianList";
 "Info" = "Bilgi";
 "Integrated" = "Entegre";
-"YouTube Ad Blocking" = "YouTube reklam engelleme";
-"Blocks YouTube ads with a document-start proxy engine and remotely verified rules." = "Belge başlangıcında çalışan bir proxy motoru ve uzaktan doğrulanan kurallarla YouTube reklamlarını engeller.";
 "Info.plist missing" = "Info.plist eksik";
 "Initialized with %d filter list(s)." = "%d filtre listesiyle başlatıldı.";
 "International" = "Uluslararası";

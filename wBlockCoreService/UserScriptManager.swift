@@ -104,6 +104,8 @@ enum BuiltInUserScripts {
         "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/"
     static let tinyShieldDescription =
         "tinyShield helps block ads reinserted by Ad-Shield on matching sites."
+    static let retiredYouTubeAdBlockURL =
+        "https://raw.githubusercontent.com/SysAdminDoc/YoutubeAdblock/main/YoutubeAdblock.user.js"
 
     // Bundled "cleaner" userscripts (Vinegar/Baking Soda style). These ship
     // embedded in the framework; the URLs below are stable identities only and
@@ -136,13 +138,6 @@ enum BuiltInUserScripts {
             displayRole: .functionality,
             bundledContent: BundledUserScriptSources.playerCleaner,
             isBeta: true
-        ),
-        BuiltInUserScriptDefinition(
-            name: "YouTube Ad Blocking",
-            url: "https://raw.githubusercontent.com/SysAdminDoc/YoutubeAdblock/main/YoutubeAdblock.user.js",
-            isEnabledByDefault: false,
-            description: "Blocks YouTube ads with a document-start proxy engine and remotely verified rules.",
-            displayRole: .blocking
         ),
         BuiltInUserScriptDefinition(
             name: "Return YouTube Dislike",
@@ -1120,6 +1115,7 @@ public class UserScriptManager: ObservableObject {
             }
         }
 
+        await removeRetiredYouTubeAdBlockIfNeeded()
         await migrateLegacyPopupBlockerIfNeeded()
         await migrateLegacyTinyShieldVariantsIfNeeded()
 
@@ -1407,6 +1403,21 @@ public class UserScriptManager: ObservableObject {
             await persistUserScriptsNow()
             logger.info("💾 Saved \(self.userScripts.count) default userscript placeholders")
         }
+    }
+
+    private func removeRetiredYouTubeAdBlockIfNeeded() async {
+        let retiredScripts = userScripts.filter {
+            $0.url?.absoluteString == BuiltInUserScripts.retiredYouTubeAdBlockURL
+        }
+        guard !retiredScripts.isEmpty else { return }
+
+        for script in retiredScripts {
+            removeUserScriptFile(script)
+        }
+        userScripts.removeAll {
+            $0.url?.absoluteString == BuiltInUserScripts.retiredYouTubeAdBlockURL
+        }
+        await persistUserScriptsNow()
     }
 
     @MainActor

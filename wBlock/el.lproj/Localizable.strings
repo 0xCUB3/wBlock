@@ -439,8 +439,6 @@
 "IndianList" = "IndianList";
 "Info" = "Πληροφορίες";
 "Integrated" = "Ενσωματωμένο";
-"YouTube Ad Blocking" = "Αποκλεισμός διαφημίσεων YouTube";
-"Blocks YouTube ads with a document-start proxy engine and remotely verified rules." = "Αποκλείει διαφημίσεις YouTube με μηχανή διαμεσολάβησης κατά την έναρξη του εγγράφου και κανόνες που επαληθεύονται απομακρυσμένα.";
 "Info.plist missing" = "Λείπει το Info.plist";
 "Initialized with %d filter list(s)." = "Αρχικοποιήθηκε με λίστες φίλτρων %d.";
 "International" = "Διεθνή";

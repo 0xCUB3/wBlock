@@ -439,8 +439,6 @@
 "IndianList" = "IndianList";
 "Info" = "Információ";
 "Integrated" = "Integrált";
-"YouTube Ad Blocking" = "YouTube-hirdetésblokkolás";
-"Blocks YouTube ads with a document-start proxy engine and remotely verified rules." = "Dokumentumindítási proxymotorral és távolról ellenőrzött szabályokkal blokkolja a YouTube-hirdetéseket.";
 "Info.plist missing" = "Hiányzik az Info.plist";
 "Initialized with %d filter list(s)." = "%d szűrőlistával inicializálva.";
 "International" = "Nemzetközi";

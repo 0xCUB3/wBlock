@@ -439,8 +439,6 @@
 "IndianList" = "IndianList";
 "Info" = "Informații";
 "Integrated" = "Integrat";
-"YouTube Ad Blocking" = "Blocarea reclamelor YouTube";
-"Blocks YouTube ads with a document-start proxy engine and remotely verified rules." = "Blochează reclamele YouTube cu un motor proxy pornit la începutul documentului și reguli verificate de la distanță.";
 "Info.plist missing" = "Lipsește Info.plist";
 "Initialized with %d filter list(s)." = "Inițializat cu listele de filtre %d.";
 "International" = "Internaționale";

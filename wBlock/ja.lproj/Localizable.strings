@@ -439,8 +439,6 @@
 "IndianList" = "IndianList";
 "Info" = "情報";
 "Integrated" = "統合機能";
-"YouTube Ad Blocking" = "YouTube 広告ブロック";
-"Blocks YouTube ads with a document-start proxy engine and remotely verified rules." = "ドキュメント開始時のプロキシエンジンとリモート検証済みルールで YouTube 広告をブロックします。";
 "Info.plist missing" = "Info.plist が見つかりません";
 "Initialized with %d filter list(s)." = "%d フィルター リストで初期化されます。";
 "International" = "国際";
