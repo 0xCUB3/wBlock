@@ -26,6 +26,11 @@ require(aggregateDisclosure.contains("group.sourceRuleCount"), "aggregate row mu
 require(aggregateDisclosure.contains("Toggle(\"\", isOn: adGuardAnnoyancesSelection(ids: ids))"), "aggregate row needs an all-child switch")
 require(aggregateDisclosure.contains(".toggleStyle(.switch)"), "aggregate row must use the same switch style as child filters")
 require(aggregateDisclosure.contains(".padding(.trailing, 16)"), "aggregate switch must share child rows' trailing inset")
+require(aggregateDisclosure.contains(".padding(.leading, 16)"), "macOS disclosure content must indent child filters")
+let macDisclosure = aggregateDisclosure.components(separatedBy: "#if os(macOS)").last?
+    .components(separatedBy: "#else").first ?? ""
+let macLabel = macDisclosure.components(separatedBy: "} label: {").last ?? ""
+require(!macLabel.contains("adGuardAnnoyancesSummary(group)"), "macOS disclosure label must stay single-line so its native caret aligns with the title")
 require(aggregateDisclosure.contains("Blocks cookie notices, popups, mobile app banners, widgets, and other annoyances."), "aggregate row needs a description")
 require(content.contains("filterManager.filterLists.contains { ids.contains($0.id) && $0.isSelected }"), "aggregate switch must read live manager state")
 require(content.components(separatedBy: "adGuardAnnoyancesDisclosure(group)").count == 3, "iOS and macOS must share the native disclosure")

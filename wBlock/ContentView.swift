@@ -559,16 +559,39 @@ struct ContentView: View {
         )
     }
 
+    @ViewBuilder
     private func adGuardAnnoyancesDisclosure(_ group: FilterListGroup) -> some View {
         let ids = Set(group.filters.map(\.id))
-        return DisclosureGroup(isExpanded: adGuardAnnoyancesExpansion) {
+        #if os(macOS)
+        DisclosureGroup(isExpanded: adGuardAnnoyancesExpansion) {
+            VStack(alignment: .leading, spacing: 0) {
+                adGuardAnnoyancesSummary(group)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+
+                ForEach(group.filters) { filter in
+                    filterRowView(for: filter)
+                    if filter.id != group.filters.last?.id {
+                        Divider()
+                    }
+                }
+            }
+            .padding(.leading, 16)
+        } label: {
+            HStack(spacing: 12) {
+                Text(LocalizedStringKey(group.title ?? ""))
+                    .fontWeight(.medium)
+                    .foregroundStyle(.primary)
+                Spacer()
+                adGuardAnnoyancesToggle(ids: ids, title: group.title)
+            }
+            .padding(.vertical, 12)
+            .padding(.trailing, 16)
+        }
+        #else
+        DisclosureGroup(isExpanded: adGuardAnnoyancesExpansion) {
             ForEach(group.filters) { filter in
                 filterRowView(for: filter)
-                #if os(macOS)
-                if filter.id != group.filters.last?.id {
-                    Divider()
-                }
-                #endif
             }
         } label: {
             HStack(alignment: .center, spacing: 12) {
@@ -576,38 +599,43 @@ struct ContentView: View {
                     Text(LocalizedStringKey(group.title ?? ""))
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
-                    if let count = group.sourceRuleCount, count > 0 {
-                        Text(
-                            String.localizedStringWithFormat(
-                                NSLocalizedString("(%@ rules)", comment: "Filter rule count summary"),
-                                count.formatted()
-                            )
-                        )
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    }
-                    Text(
-                        LocalizedStrings.text(
-                            "Blocks cookie notices, popups, mobile app banners, widgets, and other annoyances.",
-                            comment: "AdGuard Annoyances aggregate description"
-                        )
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    adGuardAnnoyancesSummary(group)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-
-                Toggle("", isOn: adGuardAnnoyancesSelection(ids: ids))
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .accessibilityLabel(Text(LocalizedStringKey(group.title ?? "")))
+                adGuardAnnoyancesToggle(ids: ids, title: group.title)
             }
-            #if os(macOS)
-            .padding(.vertical, 16)
-            .padding(.trailing, 16)
-            #endif
         }
+        #endif
+    }
+
+    @ViewBuilder
+    private func adGuardAnnoyancesSummary(_ group: FilterListGroup) -> some View {
+        if let count = group.sourceRuleCount, count > 0 {
+            Text(
+                String.localizedStringWithFormat(
+                    NSLocalizedString("(%@ rules)", comment: "Filter rule count summary"),
+                    count.formatted()
+                )
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+        Text(
+            LocalizedStrings.text(
+                "Blocks cookie notices, popups, mobile app banners, widgets, and other annoyances.",
+                comment: "AdGuard Annoyances aggregate description"
+            )
+        )
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func adGuardAnnoyancesToggle(ids: Set<UUID>, title: String?) -> some View {
+        Toggle("", isOn: adGuardAnnoyancesSelection(ids: ids))
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .accessibilityLabel(Text(LocalizedStringKey(title ?? "")))
     }
 
     private func categoryHeader(_ category: FilterListCategory) -> some View {
