@@ -33,7 +33,8 @@ require(content, "stagedFile != nil")
 require(content, "Text(\"Change File\")")
 require(content, "case .paste, .file: return \"Add\"")
 require(content, "FilterListContentValidator.isSupportedLocalFile")
-require(content, "if let flags = filter.flagEmojis")
+require(content, "if showsFlags, let flags = filter.flagEmojis")
+require(content, "filterRowView(for: filter, showsFlags: false)")
 requireCondition(
     !content.contains("Text(String(filter.localizedDisplayName.prefix(1)))"),
     "filter rows must not repeat list-name initials as decorative labels"

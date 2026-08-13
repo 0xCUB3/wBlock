@@ -362,7 +362,7 @@ struct ContentView: View {
                             ForEach(ForeignFilterOrganizer.groups(for: item.filters)) { group in
                                 foreignFilterGroupHeader(group.title)
                                 ForEach(group.filters) { filter in
-                                    filterRowView(for: filter)
+                                    filterRowView(for: filter, showsFlags: false)
                                 }
                             }
                         } label: {
@@ -653,10 +653,11 @@ struct ContentView: View {
             .padding(.top, 6)
     }
 
-    private func filterRowView(for filter: FilterList) -> some View {
+    private func filterRowView(for filter: FilterList, showsFlags: Bool = true) -> some View {
         FilterRowView(
             filter: filter,
             isInlineUserList: isInlineUserList(filter),
+            showsFlags: showsFlags,
             supportsCustomActions: supportsCustomActions(filter),
             onInfo: { selectedFilterInfo = filter },
             onViewRules: { selectedFilterRules = filter },
@@ -727,7 +728,7 @@ struct ContentView: View {
                         .padding(.vertical, 8)
 
                         ForEach(group.filters) { filter in
-                            filterRowView(for: filter)
+                            filterRowView(for: filter, showsFlags: false)
                             if filter.id != group.filters.last?.id {
                                 Divider()
                                     .padding(.leading, 16)
@@ -750,6 +751,7 @@ struct ContentView: View {
 struct FilterRowView: View {
     let filter: FilterList
     let isInlineUserList: Bool
+    let showsFlags: Bool
     let supportsCustomActions: Bool
     var onInfo: () -> Void
     var onViewRules: () -> Void
@@ -794,7 +796,7 @@ struct FilterRowView: View {
         HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    if let flags = filter.flagEmojis {
+                    if showsFlags, let flags = filter.flagEmojis {
                         Text(flags)
                     }
                     Text(filter.localizedDisplayName)
