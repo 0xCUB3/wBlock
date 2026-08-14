@@ -7,7 +7,7 @@ import Foundation
 /// being downloaded from a remote URL. Content is embedded verbatim so the
 /// scripts work offline and update alongside the app.
 enum BundledUserScriptSources {
-    static let documentStartCacheRevision = "9af569e428a6a3c3a0468b212bd9e0e07f0576dd5085fc786aad93a32eb6ad7f"
+    static let documentStartCacheRevision = "0a700c76430e9c71ff87d505cd6c8bfcb01ef997b7b7e0df53c875a82d4170e6"
 
     /// Embedded source of tube-cleaner.user.js.
     static let tubeCleaner = ###"""
@@ -4284,7 +4284,6 @@ enum BundledUserScriptSources {
 // @exclude      https://m.youtube.com/*
 // @exclude      https://music.youtube.com/*
 // @exclude      https://www.youtube-nocookie.com/*
-// @noframes
 // @run-at       document-start
 // @inject-into  page
 // @grant        none
@@ -4543,7 +4542,8 @@ enum BundledUserScriptSources {
         '.media-default-skin',       // videojs.org's modern demo wrapper
         '.WebPlayerContainer',       // ESPN / Disney BAM player
         '.mw-tmh-player',            // MediaWiki TimedMediaHandler
-        '[data-mw-tmh]'              // MediaWiki TimedMediaHandler
+        '[data-mw-tmh]',             // MediaWiki TimedMediaHandler
+        '[data-a-target="video-player"]' // Twitch player wrapper
     ];
     var PLAYER_SELECTOR = PLAYER_SELECTORS.join(',');
 
@@ -5107,7 +5107,7 @@ enum BundledUserScriptSources {
             '[data-clappr-player]', '.fluid_video_wrapper', 'mux-player',
             'media-controller', 'media-theme', 'media-theme-youtube',
             '.media-player', '.media-default-skin', '.WebPlayerContainer',
-            '.mw-tmh-player', '[data-mw-tmh]'];
+            '.mw-tmh-player', '[data-mw-tmh]', '[data-a-target="video-player"]'];
         for (var i = 0; i < wrapperSelectors.length; i++) {
             var ancestor = container.closest ? container.closest(wrapperSelectors[i]) : null;
             if (ancestor && ancestor.tagName !== 'VIDEO') { container = ancestor; }
@@ -5449,16 +5449,25 @@ enum BundledUserScriptSources {
     // chrome (siblings of the video's wrapper) that overlaps the media. Catches
     // players whose controls hang off an outer shell rather than the video's own
     // wrapper — the case a container-descendant sweep misses.
+    function isTwitchHost() {
+        try { return /(^|\.)twitch\.tv$/i.test(location.hostname); }
+        catch (e) { return false; }
+    }
+
     function hideOverlappingChrome(video) {
+        // Twitch's player is embedded in a persistent page shell; sibling and
+        // ancestor scans can otherwise classify stream metadata as chrome.
+        if (isTwitchHost()) { return; }
         var vr;
         try { vr = video.getBoundingClientRect(); } catch (e) { return; }
         if (vr.width < 2 || vr.height < 2) { return; }
-        var maxH = vr.height * 1.7 + 160, maxW = vr.width * 1.35 + 48;
+        // Never climb through the shell selected for this video. Some players
+        // (notably Twitch's persistent-player) sit inside a much larger layout
+        // container; its siblings are page content, not player chrome.
+        var shell = playerShell(video);
         var child = video;
-        for (var anc = video.parentElement; anc && anc.tagName !== 'BODY' && anc.tagName !== 'HTML'; child = anc, anc = anc.parentElement) {
-            var ar;
-            try { ar = anc.getBoundingClientRect(); } catch (e) { break; }
-            if (ar.height > maxH || ar.width > maxW) { break; }
+        for (var anc = video.parentElement; anc && anc !== shell.parentElement &&
+             anc.tagName !== 'BODY' && anc.tagName !== 'HTML'; child = anc, anc = anc.parentElement) {
             for (var c = 0; c < anc.children.length; c++) {
                 if (anc.children[c] !== child) { hideOverlappingSubtree(anc.children[c], video, vr); }
             }
@@ -5498,6 +5507,9 @@ enum BundledUserScriptSources {
     // (LinkedIn feed player). Also scans top-level body children geometrically
     // so off-viewport / zero-hit-test cases (and portal remounts) still get hid.
     function hideStackedChrome(video) {
+        // Keep Twitch page content outside the recognized player wrapper out of
+        // hit-test and detached-overlay scans.
+        if (isTwitchHost()) { return; }
         var vr;
         try { vr = video.getBoundingClientRect(); } catch (e) { return; }
         if (vr.width < 2 || vr.height < 2) { return; }
@@ -5975,7 +5987,9 @@ enum BundledUserScriptSources {
         // Must have (or be about to have) a source to be a real player.
         var src = video.currentSrc || video.src ||
             (video.getAttribute && video.getAttribute('src'));
-        if (!src && !(video.querySelector && video.querySelector('source'))) { return false; }
+        var hasSrcObject = false;
+        try { hasSrcObject = !!video.srcObject; } catch (e) { /* opaque media source */ }
+        if (!src && !hasSrcObject && !(video.querySelector && video.querySelector('source'))) { return false; }
         // Skip ambient/background/hero video: autoplay + muted is the dominant
         // decorative pattern that should keep no native controls. Facebook Reels
         // are the exception: their accessible audio control is the player UI.

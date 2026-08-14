@@ -41,6 +41,7 @@ const FIXTURE_PLAYER_UPGRADE_URL = pathToFileURL(join(__dirname, 'fixture-player
 const FIXTURE_PLAYER_EARLY_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-early.html')).href;
 const FIXTURE_PLAYER_ARTDECO_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-artdeco.html')).href;
 const FIXTURE_PLAYER_ESPN_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-espn.html')).href;
+const FIXTURE_PLAYER_TWITCH_URL = pathToFileURL(join(__dirname, 'fixture-player-cleaner-twitch.html')).href;
 
 const userscript = readFileSync(SCRIPT_PATH, 'utf8');
 const playerUserscript = readFileSync(PLAYER_SCRIPT_PATH, 'utf8');
@@ -320,6 +321,11 @@ async function runScenario(name, { device, fixture, ua, hasTouch, viewport, scri
   }));
   if (gotoURL) {
     await context.route(/https:\/\/www\.youtube\.com\/shorts\//, route => route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: responseBody || '',
+    }));
+    await context.route(/https:\/\/www\.twitch\.tv\//, route => route.fulfill({
       status: 200,
       contentType: 'text/html',
       body: responseBody || '',
@@ -1975,6 +1981,15 @@ async function qualityUISelectionCheck(page, scenario) {
   });
 
   // Case 4: already-native video untouched (gated the same way).
+  await check(page, S, 'enhances srcObject-only video without structural cleanup', () => {
+    const v = document.querySelector('#bare-srcobject video');
+    const c = document.getElementById('bare-srcobject');
+    const ok = !!(v && v.controls === true && v.getAttribute('data-wblock-player-cleaner') === '1' &&
+      v.srcObject && v.readyState === 4 && c && c.querySelector('video') === v);
+    return { pass: ok, detail: v ? `controls=${v.controls} attr=${v.getAttribute('data-wblock-player-cleaner')} src=${v.src} readyState=${v.readyState}` : 'no video' };
+  });
+
+  // Case 5: already-native video untouched (gated the same way).
   await check(page, S, 'leaves already-native video untouched', () => {
     const ev = document.querySelector('#bare-enhance video');
     const ran = !!(ev && ev.getAttribute('data-wblock-player-cleaner') === '1');
@@ -2510,10 +2525,9 @@ for (const config of [
   await browser.close();
 }
 
-// ---- Scenario 13: cleaners do not enter third-party embeds --------------
-// The production injector runs in every frame. Cleaner scripts intentionally
-// use @noframes: they may transform the host page's own player, but must never
-// modify a YouTube player embedded by another site.
+// ---- Scenario 13: cleaner frame policy -----------------------------------
+// Tube Cleaner remains top-frame-only, while Player Cleaner must reach a
+// third-party Plyr-style frame (with its YouTube exclusions still intact).
 {
   console.log('\n=== Scenario: Userscript injector (embed safety) ===');
   const S = 'injector-embed-safety';
@@ -2522,26 +2536,38 @@ for (const config of [
   const pageErrors = [];
   page.on('pageerror', e => pageErrors.push(e.message));
 
-  const descriptor = {
+  const descriptors = [{
     id: '00000000-0000-0000-0000-000000000002',
-    name: 'Embed Safety Probe',
+    name: 'Tube Cleaner',
     namespace: 'com.skula.wblock.tests',
     version: '1.0.0',
     description: '',
     runAt: 'document-start',
     noframes: true,
     injectInto: 'page',
-    content: 'window.__wblockEmbedSafetyProbe = (window.__wblockEmbedSafetyProbe || 0) + 1;',
+    content: 'window.__wblockTubeFrameProbe = (window.__wblockTubeFrameProbe || 0) + 1;',
     resourceNames: [],
     storageSnapshot: {},
-  };
+  }, {
+    id: '00000000-0000-0000-0000-000000000003',
+    name: 'Player Cleaner',
+    namespace: 'com.skula.wblock.tests',
+    version: '1.0.0',
+    description: '',
+    runAt: 'document-start',
+    noframes: false,
+    injectInto: 'page',
+    content: 'window.__wblockPlayerFrameProbe = (window.__wblockPlayerFrameProbe || 0) + 1;',
+    resourceNames: [],
+    storageSnapshot: {},
+  }];
   const mockBridge = `
     globalThis.browser = {
       runtime: {
         onMessage: { addListener: function () {} },
         sendMessage: function (message) {
           if (message && message.action === 'getUserScripts') {
-            return Promise.resolve({ userScripts: [${JSON.stringify(descriptor)}] });
+            return Promise.resolve({ userScripts: ${JSON.stringify(descriptors)} });
           }
           return Promise.resolve({});
         }
@@ -2556,12 +2582,18 @@ for (const config of [
   await page.waitForTimeout(100);
 
   const embedFrame = page.frames().find(frame => frame !== page.mainFrame());
-  const topRuns = await page.evaluate(() => window.__wblockEmbedSafetyProbe || 0);
-  const embedRuns = embedFrame
-    ? await embedFrame.evaluate(() => window.__wblockEmbedSafetyProbe || 0)
+  const topTubeRuns = await page.evaluate(() => window.__wblockTubeFrameProbe || 0);
+  const topPlayerRuns = await page.evaluate(() => window.__wblockPlayerFrameProbe || 0);
+  const embedTubeRuns = embedFrame
+    ? await embedFrame.evaluate(() => window.__wblockTubeFrameProbe || 0)
     : -1;
-  record(S, 'runs in the top-level document', topRuns === 1, `runs=${topRuns}`);
-  record(S, 'does not run in an embedded frame', embedRuns === 0, `runs=${embedRuns}`);
+  const embedPlayerRuns = embedFrame
+    ? await embedFrame.evaluate(() => window.__wblockPlayerFrameProbe || 0)
+    : -1;
+  record(S, 'Tube Cleaner runs in the top-level document', topTubeRuns === 1, `runs=${topTubeRuns}`);
+  record(S, 'Tube Cleaner stays out of embedded frames', embedTubeRuns === 0, `runs=${embedTubeRuns}`);
+  record(S, 'Player Cleaner runs in the top-level document', topPlayerRuns === 1, `runs=${topPlayerRuns}`);
+  record(S, 'Player Cleaner runs in an embedded frame', embedPlayerRuns === 1, `runs=${embedPlayerRuns}`);
   record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
   await browser.close();
 }
@@ -2666,6 +2698,33 @@ for (const config of [
     record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
     await browser.close();
   }
+}
+
+// ---- Scenario: Twitch persistent-player shell boundary -------------------
+{
+  const { browser, page, pageErrors } = await runScenario('Player Cleaner (Twitch shell boundary)', {
+    fixture: FIXTURE_PLAYER_TWITCH_URL,
+    gotoURL: 'https://www.twitch.tv/videos/fixture',
+    responseBody: readFileSync(join(__dirname, 'fixture-player-cleaner-twitch.html'), 'utf8'),
+    scriptSource: playerUserscript,
+    readySignal: '#twitch-video[data-wblock-player-cleaner]',
+    viewport: { width: 900, height: 700 },
+  });
+  const S = 'player-cleaner-twitch';
+  await check(page, S, 'preserves the stream and native controls', () => {
+    const v = document.getElementById('twitch-video');
+    return { pass: !!(v && v.controls && v.srcObject && !v._wblockCleaned), detail: v ? `controls=${v.controls} srcObject=${!!v.srcObject} cleaned=${!!v._wblockCleaned}` : 'no video' };
+  });
+  await check(page, S, 'hides player chrome but preserves page content', () => {
+    const chrome = document.getElementById('twitch-controls');
+    const content = document.getElementById('page-content');
+    const about = document.getElementById('stream-about');
+    const visible = el => { const s = getComputedStyle(el); return s.display !== 'none' && s.visibility !== 'hidden'; };
+    const unmarked = el => !el.hasAttribute('data-wblock-pc-hidden') && !el.closest('[data-wblock-pc-hidden]');
+    return { pass: !!(chrome && getComputedStyle(chrome).display === 'none' && content && visible(content) && about && visible(about) && unmarked(content) && unmarked(about)), detail: `chrome=${getComputedStyle(chrome).display} content=${getComputedStyle(content).display}/${getComputedStyle(content).visibility} about=${getComputedStyle(about).display}/${getComputedStyle(about).visibility} marked=${!unmarked(content) || !unmarked(about)}` };
+  });
+  record(S, 'no uncaught page errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await browser.close();
 }
 
 // ---- Summary -------------------------------------------------------------

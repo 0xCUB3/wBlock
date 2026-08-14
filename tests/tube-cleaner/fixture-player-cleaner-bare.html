@@ -37,6 +37,12 @@
   <!-- Case 4: a video that already has native controls. Expected: untouched. -->
   <video id="bare-native" controls src="https://example.com/media/native.mp4"></video>
 
+  <!-- Case 5: Twitch-style opaque MediaSourceHandle with no src/currentSrc.
+       Expected: enhanced in place without structural cleanup. -->
+  <div class="custom-wrap" id="bare-srcobject">
+    <video></video>
+  </div>
+
   <script>
     (function () {
       // Give the blob-source players an opaque MSE-style source so Player
@@ -47,6 +53,13 @@
       }
       setBlob('#bare-enhance video');
       setBlob('#bare-ambient video');
+      var srcObjectVideo = document.querySelector('#bare-srcobject video');
+      try {
+        Object.defineProperty(srcObjectVideo, 'srcObject', {
+          configurable: true, value: { kind: 'MediaSourceHandle' }
+        });
+        Object.defineProperty(srcObjectVideo, 'readyState', { configurable: true, value: 4 });
+      } catch (e) {}
 
       // Adversarial: the modern player keeps trying to hide native controls on
       // the enhanced video; the controls guard must win.

@@ -101,7 +101,9 @@ assertMetadata(playerSource, "// @name         Player Cleaner", "Player Cleaner"
 assertMetadata(playerSource, "// @match        http://*/*", "Player Cleaner")
 assertMetadata(playerSource, "// @match        https://*/*", "Player Cleaner")
 assertMetadata(playerSource, "// @exclude      https://www.youtube.com/*", "Player Cleaner")
-assertMetadata(playerSource, "// @noframes", "Player Cleaner")
+if playerSource.contains("// @noframes") {
+    fail("Player Cleaner must run in third-party player frames")
+}
 assertMetadata(playerSource, "// @run-at       document-start", "Player Cleaner")
 assertMetadata(playerSource, "// @inject-into  page", "Player Cleaner")
 assertMetadata(playerSource, "// @grant        none", "Player Cleaner")
@@ -190,6 +192,8 @@ for (name, source) in [("Tube Cleaner", tubeSource), ("Player Cleaner", playerSo
 }
 
 for needle in [
+    "hasSrcObject = !!video.srcObject", // Twitch/MediaSourceHandle bare detection
+    "if (!src && !hasSrcObject",         // opaque streams stay in place
     ".video-js",                 // video.js detection
     ".jwplayer",                 // JW Player detection
     ".plyr",                     // Plyr detection
