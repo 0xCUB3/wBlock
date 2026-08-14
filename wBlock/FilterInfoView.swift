@@ -18,8 +18,7 @@ struct FilterInfoView: View {
                     .font(.title2.weight(.semibold))
                     .textSelection(.enabled)
                 Spacer()
-                Button("Done") { dismiss() }
-                    .buttonStyle(.borderless)
+                SheetDoneButton { dismiss() }
             }
 
             HStack(spacing: 8) {
@@ -80,8 +79,7 @@ struct FilterRulesView: View {
                 Text(filter.localizedDisplayName)
                     .font(.headline)
                 Spacer()
-                Button("Done") { dismiss() }
-                    .glassButtonStyleCompat()
+                SheetDoneButton { dismiss() }
             }
             .padding(16)
             Divider()

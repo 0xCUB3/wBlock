@@ -2275,14 +2275,7 @@ struct RuleCapacityPopoverView: View {
                     .font(.headline)
                     .foregroundStyle(.blue)
                 Spacer()
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                        .font(.body)
-                }
-                .buttonStyle(.plain)
+                SheetDoneButton { dismiss() }
             }
 
             VStack(alignment: .leading, spacing: 6) {

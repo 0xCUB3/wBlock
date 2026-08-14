@@ -13,6 +13,20 @@ enum SheetDesign {
     static let contentHorizontalPadding: CGFloat = 20
 }
 
+// MARK: - Reusable Sheet Done Button
+
+struct SheetDoneButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button("Done") {
+            action()
+        }
+        .glassButtonStyleCompat()
+        .keyboardShortcut(.cancelAction)
+    }
+}
+
 // MARK: - Reusable Sheet Header
 
 struct SheetHeader: View {

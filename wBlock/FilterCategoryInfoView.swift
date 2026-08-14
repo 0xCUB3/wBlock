@@ -14,8 +14,7 @@ struct FilterCategoryInfoView: View {
                 Text(category.localizedName)
                     .font(.title2.weight(.semibold))
                 Spacer()
-                Button("Done") { dismiss() }
-                    .buttonStyle(.borderless)
+                SheetDoneButton { dismiss() }
             }
 
             Text(LocalizedStringKey(FilterCategorySupport.descriptionKey(for: category)))

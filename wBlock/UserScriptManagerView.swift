@@ -1119,7 +1119,7 @@ struct UserScriptInfoView: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .navigationBarTrailing) {
-                            Button("Done") { dismiss() }
+                            SheetDoneButton { dismiss() }
                         }
                     }
                 }
@@ -1139,7 +1139,7 @@ struct UserScriptInfoView: View {
                 .frame(width: 460)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Done") { dismiss() }
+                        SheetDoneButton { dismiss() }
                     }
                 }
                 #endif
@@ -1289,7 +1289,7 @@ struct UserScriptContentView: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .navigationBarTrailing) {
-                            Button("Done") { dismiss() }
+                            SheetDoneButton { dismiss() }
                         }
                     }
                 }
@@ -1318,7 +1318,7 @@ struct UserScriptContentView: View {
                     .frame(minWidth: 400)
                 }
                 .navigationTitle("")
-                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
+                .toolbar { ToolbarItem(placement: .cancellationAction) { SheetDoneButton { dismiss() } } }
                 .frame(width: 1000, height: 700)
                 #endif
             } else if isLoadingContent {
@@ -1517,7 +1517,7 @@ private struct UserScriptSourceSheet: View {
                         }
                     }
 
-                    Button("Done") {
+                    SheetDoneButton {
                         dismiss()
                     }
                 }
@@ -1629,7 +1629,7 @@ private struct AddUserScriptEditorSheet: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("Done", action: finish)
+                            SheetDoneButton(action: finish)
                         }
                     }
             }
@@ -1673,8 +1673,7 @@ private struct AddUserScriptEditorSheet: View {
                 }
 
                 #if os(macOS)
-                Button("Done", action: finish)
-                    .buttonStyle(.borderedProminent)
+                SheetDoneButton(action: finish)
                 #endif
             }
             .padding(12)
