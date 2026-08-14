@@ -119,7 +119,10 @@ public enum FilterListContentValidator {
     private static func isFilterSyntaxLine(_ line: String) -> Bool {
         if line.hasPrefix("!") { return true } // ABP comment/directive
         if line.contains("##") || line.contains("#@#")
-            || line.contains("#?#") || line.contains("#@?#") {
+            || line.contains("#?#") || line.contains("#@?#")
+            || line.contains("#$#") || line.contains("#@$#")
+            || line.contains("#$?#") || line.contains("#@$?#")
+            || line.contains("#%#") || line.contains("#@%#") {
             return true
         }
         if line.hasPrefix("@@") || line.hasPrefix("||") || line.hasPrefix("|") {

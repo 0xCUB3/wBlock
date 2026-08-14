@@ -82,6 +82,15 @@ struct FilterListValidationTests {
             """,
             "expected comments and directives alongside a network rule to be accepted"
         )
+        expectValidContent(
+            """
+            example.com#%#(()=>{window.advertising = false;})();
+            example.com#$#.sponsor { display: none !important; }
+            example.com#$?#div:has(> .promotion) { remove: true; }
+            example.com#@%#//scriptlet('set-constant', 'adblock', 'false')
+            """,
+            "expected AdGuard scriptlet and CSS injection rules to be accepted"
+        )
         expectInvalidContent(
             """
             // ==UserScript==
