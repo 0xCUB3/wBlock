@@ -19,10 +19,15 @@ final class ShieldActionExtension: ShieldActionDelegate {
         }
 
         let now = Date()
+        let expires = Date(
+            timeIntervalSince1970: ceil(
+                now.addingTimeInterval(15 * 60).timeIntervalSince1970
+            )
+        )
         let entry = ScreenTimeException(
             kind: kind,
             token: data,
-            expires: now.addingTimeInterval(15 * 60)
+            expires: expires
         )
         var exceptions = loadExceptions().filter { $0.expires > now }
         exceptions.removeAll { $0.kind == kind && $0.token == data }
