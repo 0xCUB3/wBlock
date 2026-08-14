@@ -457,7 +457,7 @@
 "Last: Never" = "前回: なし";
 "Latvian List" = "Latvian List";
 "Line %d isn’t a valid http(s) filter URL." = "%d行目は有効なhttp(s)フィルターURLではありません。";
-"List-KR" = "List-KR";
+"filterslists-KO" = "filterslists-KO";
 "Liste AR" = "Liste AR";
 "Liste FR" = "Liste FR";
 "Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "Liste FR + AdGuard フランス語フィルター。フランス語の Web サイト上の広告を特に削除するフィルター リスト。";

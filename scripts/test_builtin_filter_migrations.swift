@@ -18,6 +18,7 @@ let migrations = [
     ("Anti-Adblock List", "Adblock Warning Removal List"),
     ("Fanboy's Anti-AI Suggestions", "Stevo's AI Blocklist"),
     ("Hagezi Pro Mini", "HaGeZi Pro Mini"),
+    ("List-KR", "filterslists-KO"),
 ]
 for (oldName, newName) in migrations {
     expect(loader.contains("\"\(newName)\": [\"\(oldName)\"]"), "missing built-in name migration for \(oldName)")

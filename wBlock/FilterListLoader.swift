@@ -51,6 +51,7 @@ class FilterListLoader {
         "Adblock Warning Removal List": ["Anti-Adblock List"],
         "Stevo's AI Blocklist": ["Fanboy's Anti-AI Suggestions"],
         "HaGeZi Pro Mini": ["Hagezi Pro Mini"],
+        "filterslists-KO": ["List-KR"],
     ]
 
     func localFileURL(for filter: FilterList) -> URL? {
@@ -605,7 +606,7 @@ class FilterListLoader {
                 description: "Additional filter list for websites in Latvian.", languages: ["lv"],
                 trustLevel: "high"),
             FilterList(
-                id: UUID(), name: "List-KR",
+                id: UUID(), name: "filterslists-KO",
                 url: URL(
                     string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
                 category: .foreign,

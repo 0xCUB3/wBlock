@@ -457,7 +457,7 @@
 "Last: Never" = "Ostatnio: nigdy";
 "Latvian List" = "Latvian List";
 "Line %d isn’t a valid http(s) filter URL." = "Wiersz %d nie jest prawidłowym adresem URL filtra http(s).";
-"List-KR" = "List-KR";
+"filterslists-KO" = "filterslists-KO";
 "Liste AR" = "Liste AR";
 "Liste FR" = "Liste FR";
 "Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "Liste FR + filtr francuski AdGuard. Lista filtrów, która specjalnie usuwa reklamy na stronach internetowych w języku francuskim.";

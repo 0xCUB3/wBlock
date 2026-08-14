@@ -457,7 +457,7 @@
 "Last: Never" = "上次：從未";
 "Latvian List" = "Latvian List";
 "Line %d isn’t a valid http(s) filter URL." = "第 %d 行不是有效的 http(s) 篩選器 URL。";
-"List-KR" = "List-KR";
+"filterslists-KO" = "filterslists-KO";
 "Liste AR" = "Liste AR";
 "Liste FR" = "Liste FR";
 "Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "Liste FR + AdGuard 法語過濾器。專門刪除法語網站上的廣告的過濾器清單。";
