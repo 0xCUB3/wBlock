@@ -31,4 +31,24 @@ expect(loader.contains("static func canonicalFilterURLString"), "filter URL cano
 expect(sync.contains("FilterListLoader.canonicalFilterURLString"), "CloudSync does not canonicalize filter URLs")
 expect(sync.contains("map { FilterListLoader.canonicalFilterURLString($0.url.absoluteString) }"), "CloudSync payload does not use canonical filter identity")
 
+let compactLoader = loader.components(separatedBy: .whitespacesAndNewlines).joined()
+let optimizedURLMigrations = [
+    ("260.txt", "260_optimized.txt", "Stevo'sAIBlocklist"),
+    ("25.txt", "25_optimized.txt", "MailTrackingProtectionFilter"),
+    ("10.txt", "10_optimized.txt", "AdGuardAllowlist"),
+]
+let adGuardSafariPrefix = "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/"
+for (oldFilename, newFilename, compactName) in optimizedURLMigrations {
+    let oldURL = adGuardSafariPrefix + oldFilename
+    let newURL = adGuardSafariPrefix + newFilename
+    expect(
+        compactLoader.contains("\"\(oldURL)\":URL(string:\"\(newURL)\")!"),
+        "missing optimized URL migration for \(oldFilename)"
+    )
+    expect(
+        compactLoader.contains("name:\"\(compactName)\",url:URL(string:\"\(newURL)\")!"),
+        "default catalog does not use \(newFilename)"
+    )
+}
+
 print("PASS")

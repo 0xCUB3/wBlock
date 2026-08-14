@@ -40,7 +40,13 @@ class FilterListLoader {
         "https://raw.githubusercontent.com/List-KR/List-KR/master/filter-AdGuard-forward.txt": URL(
             string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
         "https://raw.githubusercontent.com/easylist/easylist/refs/heads/master/fanboy-addon/fanboy_ai_suggestions.txt": URL(
-            string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260.txt")!,
+            string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260_optimized.txt")!,
+        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260.txt": URL(
+            string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260_optimized.txt")!,
+        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/25.txt": URL(
+            string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/25_optimized.txt")!,
+        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/10.txt": URL(
+            string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/10_optimized.txt")!,
         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt":
             URL(string: "https://filters.adtidy.org/ios/filters/11.txt")!,
     ]
@@ -256,7 +262,7 @@ class FilterListLoader {
                 id: UUID(), name: "Stevo's AI Blocklist",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260.txt"
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260_optimized.txt"
                 )!, category: FilterListCategory.annoyances,
                 description:
                     "Blocks AI-generated suggestions and recommendations on search engines and websites."
@@ -273,7 +279,7 @@ class FilterListLoader {
                 id: UUID(), name: "Mail Tracking Protection Filter",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/25.txt"
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/25_optimized.txt"
                 )!, category: FilterListCategory.privacy,
                 description: "Blocks tracking pixels and other mail tracking techniques."),
             FilterList(
@@ -294,7 +300,7 @@ class FilterListLoader {
                 id: UUID(), name: "AdGuard Allowlist",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/10.txt"
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/10_optimized.txt"
                 )!, category: FilterListCategory.allowlists,
                 description: "Allows sites and resources that should not be blocked."),
             FilterList(
