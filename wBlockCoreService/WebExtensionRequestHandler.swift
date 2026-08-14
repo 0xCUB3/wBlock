@@ -807,7 +807,11 @@ public enum WebExtensionRequestHandler {
 
     /// Returns enabled userscripts for a URL. By default this uses lightweight descriptors,
     /// but callers can request hydrated payloads to avoid repeated native chunk messages.
-    private static func handleGetUserScriptsRequest(message: [String: Any?], context: NSExtensionContext) {
+    private static func handleGetUserScriptsRequest(
+        message: [String: Any?],
+        context: NSExtensionContext,
+        retryCount: Int = 0
+    ) {
         // While the userscript component is paused, serve no userscripts or userstyles.
         if BlockingPauseStore.isPaused(.userScripts) {
             let response = createResponse(with: userScriptsResponse(userScripts: [], cacheAllowed: false))
@@ -835,6 +839,7 @@ public enum WebExtensionRequestHandler {
 
             let userScriptManager = UserScriptManager.shared
             await userScriptManager.waitUntilReady()
+            let payloadMutationRevision = userScriptManager.payloadMutationRevision
             let userScripts = userScriptManager.getEnabledUserScriptsForURL(urlString)
 
             var userScriptDescriptors: [[String: Any]] = []
@@ -927,6 +932,24 @@ public enum WebExtensionRequestHandler {
                 }
             }
 
+            guard payloadMutationRevision == userScriptManager.payloadMutationRevision else {
+                if retryCount == 0 {
+                    handleGetUserScriptsRequest(
+                        message: message,
+                        context: context,
+                        retryCount: 1
+                    )
+                } else {
+                    let response = createResponse(with: userScriptsResponse(
+                        userScripts: [],
+                        cacheAllowed: false,
+                        error: "userscript-state-changed"
+                    ))
+                    context.completeRequest(returningItems: [response])
+                }
+                return
+            }
+
             let response = createResponse(with: userScriptsResponse(
                 userScripts: userScriptDescriptors,
                 cacheAllowed: documentStartCacheAllowed
@@ -937,13 +960,18 @@ public enum WebExtensionRequestHandler {
 
     private static func userScriptsResponse(
         userScripts: [[String: Any]],
-        cacheAllowed: Bool
+        cacheAllowed: Bool,
+        error: String? = nil
     ) -> [String: Any?] {
-        [
+        var response: [String: Any?] = [
             "userScripts": userScripts,
             "documentStartCacheAllowed": cacheAllowed,
             "cacheRevision": ""
         ]
+        if let error {
+            response["error"] = error
+        }
+        return response
     }
 
     private static func handleGetDocumentStartUserScriptCatalogRequest(context: NSExtensionContext) {

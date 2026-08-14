@@ -243,6 +243,7 @@ public class UserScriptManager: ObservableObject {
     @Published public var userScripts: [UserScript] = [] {
         didSet {
             rebuildUserScriptIndex()
+            payloadMutationRevision &+= 1
         }
     }
     @Published public var isLoading: Bool = false
@@ -275,6 +276,7 @@ public class UserScriptManager: ObservableObject {
     private var latestUserScriptIntentValues: [UUID: Bool] = [:]
     private var pendingUserScriptIntents: [UUID: Bool] = [:]
     public private(set) var localMutationRevision: UInt64 = 0
+    public private(set) var payloadMutationRevision: UInt64 = 0
     private var metadataPrefetchTask: Task<Void, Never>?
     private static let maximumResourceBytes = 10 * 1024 * 1024
     private static let maximumEncodedResourceBytes = ((maximumResourceBytes + 2) / 3) * 4 + 256
@@ -1119,7 +1121,7 @@ public class UserScriptManager: ObservableObject {
 
         logger.info("🗑️ Removed \(originalCount - self.userScripts.count) duplicate, \(self.userScripts.count) remaining")
 
-        await persistUserScriptsNow()
+        await persistUserScriptsNow(authoritative: true)
     }
 
     /// Checks for duplicates and presents confirmation dialog to user
@@ -1260,6 +1262,7 @@ public class UserScriptManager: ObservableObject {
 
     private func loadUserScripts() async {
         logger.info("📖 Loading userscripts from ProtobufDataManager...")
+        _ = await dataManager.refreshFromDiskIfModified(forceRead: true)
         userScripts = dataManager.getUserScripts(includePersistedContent: true)
         logger.info("📖 Loaded \(self.userScripts.count) userscripts from ProtobufDataManager")
 
@@ -1504,16 +1507,25 @@ public class UserScriptManager: ObservableObject {
 
         for (legacyURL, canonicalURLString) in BuiltInUserScripts.legacyBundledURLsByCanonical {
             guard let canonicalURL = URL(string: canonicalURLString),
-                  let legacy = userScripts.first(where: {
-                      $0.url?.absoluteString == legacyURL
-                  })
+                  let legacy = userScripts.first(where: { $0.url?.absoluteString == legacyURL })
             else { continue }
 
-            // Keep one legacy UUID as the canonical record. Per-site exceptions and
-            // GM storage are keyed by UUID, so replacing it would discard user state.
-            let retainedID = legacy.id
+            // Prefer an already-canonical record when one survives. Its enabled state
+            // is an explicit configured choice and must not be promoted by migration.
+            // If it does not exist, retain the legacy UUID so per-site state survives.
+            let canonicalWasConfigured = userScripts.contains {
+                $0.url?.absoluteString == canonicalURLString
+            }
+            let retainedID = userScripts.first(where: {
+                $0.url?.absoluteString == canonicalURLString
+            })?.id ?? legacy.id
             guard let retainedIndex = userScripts.firstIndex(where: { $0.id == retainedID }) else {
                 continue
+            }
+            if !canonicalWasConfigured {
+                userScripts[retainedIndex].isEnabled = userScripts.contains {
+                    $0.url?.absoluteString == legacyURL && $0.isEnabled
+                }
             }
 
             if userScripts[retainedIndex].content.isEmpty,
@@ -1545,9 +1557,6 @@ public class UserScriptManager: ObservableObject {
                 mergedDisabledHosts.formUnion(
                     dataManager.getUserScriptDisabledHosts(forScriptID: duplicateID.uuidString)
                 )
-                userScripts[currentRetainedIndex].isEnabled =
-                    userScripts[currentRetainedIndex].isEnabled || duplicate.isEnabled
-
                 if userScripts[currentRetainedIndex].content.isEmpty {
                     let duplicateContent = duplicate.content.isEmpty
                         ? readUserScriptContent(duplicate)
@@ -1583,7 +1592,7 @@ public class UserScriptManager: ObservableObject {
         }
 
         if didChange {
-            await persistUserScriptsNow()
+            await persistUserScriptsNow(authoritative: true)
         }
     }
 
@@ -1599,7 +1608,7 @@ public class UserScriptManager: ObservableObject {
         userScripts.removeAll {
             $0.url?.absoluteString == BuiltInUserScripts.retiredYouTubeAdBlockURL
         }
-        await persistUserScriptsNow()
+        await persistUserScriptsNow(authoritative: true)
     }
 
     @MainActor
@@ -1620,6 +1629,7 @@ public class UserScriptManager: ObservableObject {
         var didChange = false
         var needsStableDownload = false
         var scriptsToDeleteFromDisk: [UserScript] = []
+        let legacyWasEnabled = legacyIndices.contains { userScripts[$0].isEnabled }
 
         for legacyIndex in legacyIndices.sorted(by: >) {
             guard userScripts.indices.contains(legacyIndex) else { continue }
@@ -1630,12 +1640,9 @@ public class UserScriptManager: ObservableObject {
                 $0.id != legacyScript.id
                     && $0.url?.absoluteString == BuiltInUserScripts.popupBlockerStableURL
             }) {
-                if legacyScript.isEnabled && !userScripts[stableIndex].isEnabled {
-                    userScripts[stableIndex].isEnabled = true
-                    needsStableDownload = true
-                    didChange = true
-                }
-
+                // A surviving stable record is already configured. Do not let a legacy
+                // migration override its explicit disabled choice.
+                needsStableDownload = needsStableDownload || userScripts[stableIndex].isEnabled
                 scriptsToDeleteFromDisk.append(legacyScript)
                 userScripts.remove(at: legacyIndex)
                 didChange = true
@@ -1644,6 +1651,7 @@ public class UserScriptManager: ObservableObject {
 
             userScripts[legacyIndex].name = BuiltInUserScripts.popupBlockerName
             userScripts[legacyIndex].url = stableURL
+            userScripts[legacyIndex].isEnabled = legacyWasEnabled
             userScripts[legacyIndex].description = "Default userscript"
             userScripts[legacyIndex].version = ""
             userScripts[legacyIndex].updateURL = nil
@@ -1662,7 +1670,7 @@ public class UserScriptManager: ObservableObject {
             removeUserScriptFile(script)
         }
 
-        await persistUserScriptsNow()
+        await persistUserScriptsNow(authoritative: true)
 
         if needsStableDownload {
             await downloadMissingDefaultScripts()
@@ -1670,25 +1678,35 @@ public class UserScriptManager: ObservableObject {
     }
 
     private func migrateLegacyTinyShieldVariantsIfNeeded() async {
-        let legacyScripts = userScripts.filter {
-            $0.url?.absoluteString.hasPrefix(BuiltInUserScripts.legacyTinyShieldGroupedURLPrefix) == true
+        let legacyIndices = userScripts.indices.filter {
+            userScripts[$0].url?.absoluteString.hasPrefix(BuiltInUserScripts.legacyTinyShieldGroupedURLPrefix) == true
         }
-        guard !legacyScripts.isEmpty else { return }
+        guard !legacyIndices.isEmpty else { return }
 
-        let shouldEnableFullScript = legacyScripts.contains { $0.isEnabled }
-        for script in legacyScripts {
-            removeUserScriptFile(script)
+        let fullIndex = userScripts.firstIndex {
+            $0.url?.absoluteString == BuiltInUserScripts.tinyShieldURL
         }
-        userScripts.removeAll {
-            $0.url?.absoluteString.hasPrefix(BuiltInUserScripts.legacyTinyShieldGroupedURLPrefix) == true
+        var retainedIndex = fullIndex ?? legacyIndices[0]
+        if fullIndex == nil {
+            // No canonical record survived: migrate one legacy record in place so the
+            // consolidated legacy choice becomes the configured canonical choice.
+            userScripts[retainedIndex].isEnabled = legacyIndices.contains { userScripts[$0].isEnabled }
+            userScripts[retainedIndex].url = URL(string: BuiltInUserScripts.tinyShieldURL)
+            userScripts[retainedIndex].name = "tinyShield"
+            userScripts[retainedIndex].description = BuiltInUserScripts.tinyShieldDescription
         }
-        if shouldEnableFullScript,
-           let fullIndex = userScripts.firstIndex(where: {
-               $0.url?.absoluteString == BuiltInUserScripts.tinyShieldURL
-           }) {
-            userScripts[fullIndex].isEnabled = true
+
+        let duplicateIDs = legacyIndices.compactMap { index -> UUID? in
+            guard userScripts.indices.contains(index), index != retainedIndex else { return nil }
+            return userScripts[index].id
         }
-        await persistUserScriptsNow()
+        for id in duplicateIDs {
+            guard let index = indexOfUserScript(withId: id) else { continue }
+            removeUserScriptFile(userScripts[index])
+            userScripts.remove(at: index)
+            if index < retainedIndex { retainedIndex -= 1 }
+        }
+        await persistUserScriptsNow(authoritative: true)
     }
 
     private func shouldPrefetchMetadata(for userScript: UserScript) -> Bool {
@@ -1976,9 +1994,20 @@ public class UserScriptManager: ObservableObject {
     /// Persists the current in-memory userscripts and waits for completion. Use this in async flows
     /// where the caller needs stronger ordering guarantees.
     @MainActor
-    private func persistUserScriptsNow(invalidateExecutionCache: Bool = true) async {
+    private func persistUserScriptsNow(
+        invalidateExecutionCache: Bool = true,
+        explicitEnabledStates: [UUID: Bool] = [:],
+        authoritative: Bool = false
+    ) async {
         logger.info("💾 Saving \(self.userScripts.count) userscripts to ProtobufDataManager")
-        await dataManager.updateUserScripts(userScripts)
+        if authoritative {
+            await dataManager.replaceUserScripts(userScripts)
+        } else {
+            await dataManager.updateUserScripts(
+                userScripts,
+                explicitEnabledStates: explicitEnabledStates
+            )
+        }
         if invalidateExecutionCache {
             Self.invalidateDocumentStartExecutionCache()
         }
@@ -2205,7 +2234,7 @@ public class UserScriptManager: ObservableObject {
         }
 
         userScripts = mergedScripts
-        await persistUserScriptsNow()
+        await persistUserScriptsNow(authoritative: true)
         // Flush the restored scripts to disk right away instead of relying on the
         // debounced save. The steps that run next (setUserScriptDisabledHosts) and
         // cross-process reloads use atomic read-modify-writes that read from disk; if
@@ -2676,11 +2705,17 @@ public class UserScriptManager: ObservableObject {
         userScripts[index].isEnabled = isEnabled
         statusDescription = isEnabled ? "Enabled \(userScript.name)" : "Disabled \(userScript.name)"
         logger.info("💾 Persisting userscript setEnabled for \(userScript.name): \(isEnabled)")
-        await persistUserScriptsNow()
+        await persistUserScriptsNow(
+            explicitEnabledStates: [userScript.id: isEnabled]
+        )
         guard isCurrentUserScriptIntent(userScript.id, revision: revision) else {
             // A newer toggle may have completed while persistence was reading shared state.
             // Rewrite the live array so the older completion cannot become the disk winner.
-            await persistUserScriptsNow()
+            await persistUserScriptsNow(
+                explicitEnabledStates: pendingUserScriptIntents.reduce(into: [:]) { result, entry in
+                    result[entry.key] = entry.value
+                }
+            )
             return
         }
         finishUserScriptIntent(userScript.id, revision: revision)
@@ -2810,7 +2845,13 @@ public class UserScriptManager: ObservableObject {
 
         if changed {
             logger.info("💾 Persisting batch userscript enable states for \(enabledIDs.count) scripts")
-            await persistUserScriptsNow()
+            await persistUserScriptsNow(
+                explicitEnabledStates: Dictionary(
+                    uniqueKeysWithValues: batchRevisions.keys.compactMap { id in
+                        enabledIDs.contains(id) ? (id, true) : (id, false)
+                    }
+                )
+            )
             logger.info("💾 Userscripts saved after batch setEnabled")
         } else {
             logger.info("ℹ️ No userscript enable state changes to persist (batch)")
@@ -2825,7 +2866,11 @@ public class UserScriptManager: ObservableObject {
         if batchWasSuperseded {
             // A newer per-script toggle won while the batch save was suspended. Persist the
             // current array once more so the stale batch cannot win on disk.
-            await persistUserScriptsNow()
+            await persistUserScriptsNow(
+                explicitEnabledStates: pendingUserScriptIntents.reduce(into: [:]) { result, entry in
+                    result[entry.key] = entry.value
+                }
+            )
         }
 
         if !failedRemoteEnables.isEmpty {
@@ -2855,9 +2900,12 @@ public class UserScriptManager: ObservableObject {
             // Remove file
             removeUserScriptFile(removedScript)
 
-            // Remove from memory
+            // Remove from memory and delete the exact persisted ID atomically. Ordinary
+            // upserts intentionally never interpret a missing ID as a deletion.
             userScripts.remove(at: index)
-            saveUserScripts()
+            Task { @MainActor [weak self] in
+                await self?.dataManager.removeUserScript(withId: removedScript.id)
+            }
 
             if removedScript.isLocal {
                 NotificationCenter.default.post(

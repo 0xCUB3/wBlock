@@ -301,92 +301,20 @@ extension ProtobufDataManager {
     }
     
     public func updateUserScript(_ userScript: UserScript) async {
-        var updatedData = appData
-        
-        if let index = updatedData.userScripts.firstIndex(where: { $0.id == userScript.id.uuidString }) {
-            var protoUserScript = updatedData.userScripts[index]
-            protoUserScript.name = userScript.name
-            protoUserScript.url = userScript.url?.absoluteString ?? ""
-            protoUserScript.isEnabled = userScript.isEnabled
-            protoUserScript.description_p = userScript.description
-            protoUserScript.version = userScript.version
-            protoUserScript.matches = userScript.matches
-            protoUserScript.excludeMatches = userScript.excludeMatches
-            protoUserScript.includes = userScript.includes
-            protoUserScript.excludes = userScript.excludes
-            protoUserScript.runAt = userScript.runAt
-            protoUserScript.injectInto = userScript.injectInto
-            protoUserScript.grant = userScript.grant
-            protoUserScript.isLocal =
-                userScript.isLocal || (userScript.url == nil) || (userScript.url?.isFileURL == true)
-            protoUserScript.updateURL = protoUserScript.isLocal ? "" : (userScript.updateURL ?? "")
-            protoUserScript.downloadURL = protoUserScript.isLocal ? "" : (userScript.downloadURL ?? "")
-            protoUserScript.updatesAutomatically = userScript.updatesAutomatically
-            protoUserScript.isUserStyle = userScript.isUserStyle
-            protoUserScript.content = ""
-            protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
-            
-            protoUserScript.category = mapFilterListCategoryToProto(userScript.category)
-            if let identity = UserScriptImportIdentity.normalized(userScript.localImportIdentity) {
-                protoUserScript.localImportIdentity = identity
-            } else {
-                protoUserScript.clearLocalImportIdentity()
-            }
-            updatedData.userScripts[index] = protoUserScript
-        } else {
-            // Add new userscript
-            var protoUserScript = Wblock_Data_UserScriptData()
-            protoUserScript.id = userScript.id.uuidString
-            protoUserScript.name = userScript.name
-            protoUserScript.url = userScript.url?.absoluteString ?? ""
-            protoUserScript.isEnabled = userScript.isEnabled
-            protoUserScript.description_p = userScript.description
-            protoUserScript.version = userScript.version
-            protoUserScript.matches = userScript.matches
-            protoUserScript.excludeMatches = userScript.excludeMatches
-            protoUserScript.includes = userScript.includes
-            protoUserScript.excludes = userScript.excludes
-            protoUserScript.runAt = userScript.runAt
-            protoUserScript.injectInto = userScript.injectInto
-            protoUserScript.grant = userScript.grant
-            protoUserScript.isLocal =
-                userScript.isLocal || (userScript.url == nil) || (userScript.url?.isFileURL == true)
-            protoUserScript.updateURL = protoUserScript.isLocal ? "" : (userScript.updateURL ?? "")
-            protoUserScript.downloadURL = protoUserScript.isLocal ? "" : (userScript.downloadURL ?? "")
-            protoUserScript.updatesAutomatically = userScript.updatesAutomatically
-            protoUserScript.isUserStyle = userScript.isUserStyle
-            protoUserScript.content = ""
-            protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
-            
-            protoUserScript.category = mapFilterListCategoryToProto(userScript.category)
-            if let identity = UserScriptImportIdentity.normalized(userScript.localImportIdentity) {
-                protoUserScript.localImportIdentity = identity
-            } else {
-                protoUserScript.clearLocalImportIdentity()
-            }
-            updatedData.userScripts.append(protoUserScript)
-        }
-        
-        appData = updatedData
-        await saveData()
+        await updateUserScripts([userScript])
     }
     
     public func removeUserScript(withId id: UUID) async {
-        var updatedData = appData
-        
-        // Prevent removal of built-in default userscripts.
-        if let script = updatedData.userScripts.first(where: { $0.id == id.uuidString }) {
-            if BuiltInUserScripts.allProtectedURLs.contains(script.url) {
-                return
-            }
+        let changed = await updateDataImmediately(userScriptsAreAuthoritative: true) { data in
+            guard let script = data.userScripts.first(where: { $0.id == id.uuidString }),
+                  !BuiltInUserScripts.allProtectedURLs.contains(script.url)
+            else { return }
+            data.userScripts.removeAll { $0.id == id.uuidString }
+            data.userScriptDisabledHosts.removeValue(forKey: id.uuidString)
         }
-        
-        updatedData.userScripts.removeAll { $0.id == id.uuidString }
-        updatedData.userScriptDisabledHosts.removeValue(forKey: id.uuidString)
-        
-        appData = updatedData
-        await saveData()
-        UserScriptManager.invalidateDocumentStartExecutionCache()
+        if changed {
+            UserScriptManager.invalidateDocumentStartExecutionCache()
+        }
     }
     
     // MARK: - Whitelist Management
@@ -670,12 +598,11 @@ extension ProtobufDataManager {
         await saveData()
     }
     
-    public func updateUserScripts(_ userScripts: [UserScript]) async {
-        // Refresh from disk to avoid overwriting changes written by other processes (app/extension).
-        var updatedData = await latestAppDataSnapshot()
-        updatedData.userScripts.removeAll()
-        
-        for userScript in userScripts {
+    public func updateUserScripts(
+        _ userScripts: [UserScript],
+        explicitEnabledStates: [UUID: Bool] = [:]
+    ) async {
+        let incoming = userScripts.map { userScript -> Wblock_Data_UserScriptData in
             var protoUserScript = Wblock_Data_UserScriptData()
             protoUserScript.id = userScript.id.uuidString
             protoUserScript.name = userScript.name
@@ -699,17 +626,54 @@ extension ProtobufDataManager {
             protoUserScript.category = mapFilterListCategoryToProto(userScript.category)
             if let identity = UserScriptImportIdentity.normalized(userScript.localImportIdentity) {
                 protoUserScript.localImportIdentity = identity
-            } else {
-                protoUserScript.clearLocalImportIdentity()
             }
-            protoUserScript.content = ""
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
-            
-            updatedData.userScripts.append(protoUserScript)
+            return protoUserScript
         }
-        
-        appData = updatedData
-        await saveData()
+        let explicit = Dictionary(uniqueKeysWithValues: explicitEnabledStates.map { ($0.key.uuidString, $0.value) })
+
+        _ = await updateDataImmediately { data in
+            data.userScripts = UserScriptPersistence.merge(
+                persisted: data.userScripts,
+                incoming: incoming,
+                explicitEnabledStates: explicit
+            )
+        }
+    }
+
+    /// Replaces the userscript collection intentionally. Ordinary upserts must use
+    /// `updateUserScripts` so records written by another process are not deleted.
+    public func replaceUserScripts(_ userScripts: [UserScript]) async {
+        let incoming = userScripts.map { userScript -> Wblock_Data_UserScriptData in
+            var record = Wblock_Data_UserScriptData()
+            record.id = userScript.id.uuidString
+            record.name = userScript.name
+            record.url = userScript.url?.absoluteString ?? ""
+            record.isEnabled = userScript.isEnabled
+            record.description_p = userScript.description
+            record.version = userScript.version
+            record.matches = userScript.matches
+            record.excludeMatches = userScript.excludeMatches
+            record.includes = userScript.includes
+            record.excludes = userScript.excludes
+            record.runAt = userScript.runAt
+            record.injectInto = userScript.injectInto
+            record.grant = userScript.grant
+            record.isLocal = userScript.isLocal || userScript.url == nil || userScript.url?.isFileURL == true
+            record.updateURL = record.isLocal ? "" : (userScript.updateURL ?? "")
+            record.downloadURL = record.isLocal ? "" : (userScript.downloadURL ?? "")
+            record.updatesAutomatically = userScript.updatesAutomatically
+            record.isUserStyle = userScript.isUserStyle
+            record.category = mapFilterListCategoryToProto(userScript.category)
+            if let identity = UserScriptImportIdentity.normalized(userScript.localImportIdentity) {
+                record.localImportIdentity = identity
+            }
+            record.lastUpdated = Int64(Date().timeIntervalSince1970)
+            return record
+        }
+        _ = await updateDataImmediately(userScriptsAreAuthoritative: true) { data in
+            data.userScripts = UserScriptPersistence.replace(with: incoming)
+        }
     }
 
     /// Drops legacy embedded userscript source bodies from protobuf once they have

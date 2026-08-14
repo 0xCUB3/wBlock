@@ -28,7 +28,21 @@ private func mergePersistedChanges(
 ) {
     preservePersistedValue(\.settings, in: &snapshot, comparedTo: previous, from: persisted)
     preservePersistedValue(\.filterLists, in: &snapshot, comparedTo: previous, from: persisted)
-    preservePersistedValue(\.userScripts, in: &snapshot, comparedTo: previous, from: persisted)
+    // Replace the old whole-field preservePersistedValue(\.userScripts) behavior with
+    // an ID-based merge so unlisted records survive ordinary upserts.
+    var explicitEnabledStates: [String: Bool] = [:]
+    let previousScriptsByID = Dictionary(uniqueKeysWithValues: previous.userScripts.map { ($0.id, $0) })
+    for script in snapshot.userScripts {
+        if let previousScript = previousScriptsByID[script.id],
+           previousScript.isEnabled != script.isEnabled {
+            explicitEnabledStates[script.id] = script.isEnabled
+        }
+    }
+    snapshot.userScripts = UserScriptPersistence.merge(
+        persisted: persisted.userScripts,
+        incoming: snapshot.userScripts,
+        explicitEnabledStates: explicitEnabledStates
+    )
     preservePersistedValue(\.whitelist, in: &snapshot, comparedTo: previous, from: persisted)
     preservePersistedValue(\.ruleCounts, in: &snapshot, comparedTo: previous, from: persisted)
     preservePersistedValue(\.performance, in: &snapshot, comparedTo: previous, from: persisted)
@@ -1166,8 +1180,14 @@ public class ProtobufDataManager: ObservableObject {
     /// Writes immediately for cross-process paths that need deterministic visibility.
     @MainActor
     @discardableResult
-    func updateDataImmediately(with block: @escaping @Sendable (inout Wblock_Data_AppData) -> Void) async -> Bool {
+    func updateDataImmediately(
+        userScriptsAreAuthoritative: Bool = false,
+        with block: @escaping @Sendable (inout Wblock_Data_AppData) -> Void
+    ) async -> Bool {
         pendingSaveTask?.cancel()
+        let pendingSnapshot = appData
+        let pendingRawData = try? pendingSnapshot.serializedData()
+        let pendingBaseline = lastSavedData
 
         do {
             let mutation = try await diskStore.mutateAppDataAtomically(
@@ -1175,14 +1195,57 @@ public class ProtobufDataManager: ObservableObject {
                 versionURL: dataVersionFileURL,
                 mutate: block
             )
-            appData = mutation.appData
-            lastSavedData = mutation.rawData
-            lastLoadedDataFileModificationDate = mutation.modificationDate
-            lastLoadedDataVersion = mutation.version
+            var finalAppData = mutation.appData
+            var finalRawData = mutation.rawData
+            var finalModificationDate = mutation.modificationDate
+            var finalVersion = mutation.version
+            var didWrite = mutation.didWrite
+
+            // The immediate mutation read the disk snapshot, but the actor may also
+            // have unsaved in-memory changes in another field. Rebase those changes
+            // over the mutation and persist the combined result instead of dropping
+            // them when appData is replaced below.
+            if let pendingRawData,
+               let pendingBaseline,
+               pendingRawData != pendingBaseline,
+               let previousSnapshot = try? Wblock_Data_AppData(serializedData: pendingBaseline) {
+                var rebased = pendingSnapshot
+                mergePersistedChanges(
+                    in: &rebased,
+                    comparedTo: previousSnapshot,
+                    from: mutation.appData
+                )
+                if userScriptsAreAuthoritative {
+                    // Replacement/removal already carries the manager’s complete collection.
+                    // Preserve pending host changes only for scripts that still exist.
+                    rebased.userScripts = mutation.appData.userScripts
+                    let survivingIDs = Set(rebased.userScripts.map(\.id))
+                    rebased.userScriptDisabledHosts = rebased.userScriptDisabledHosts.filter {
+                        survivingIDs.contains($0.key)
+                    }
+                }
+                if let result = try await diskStore.writeAppDataIfChanged(
+                    appData: rebased,
+                    previousData: mutation.rawData,
+                    to: dataFileURL,
+                    versionURL: dataVersionFileURL
+                ) {
+                    finalAppData = result.appData
+                    finalRawData = result.rawData
+                    finalModificationDate = result.modificationDate
+                    finalVersion = result.version
+                    didWrite = didWrite || result.didWrite
+                }
+            }
+
+            appData = finalAppData
+            lastSavedData = finalRawData
+            lastLoadedDataFileModificationDate = finalModificationDate
+            lastLoadedDataVersion = finalVersion
             lastError = nil
 
-            if mutation.didWrite {
-                logger.info("✅ Saved protobuf data (\(mutation.rawData.count) bytes)")
+            if didWrite {
+                logger.info("✅ Saved protobuf data (\(finalRawData.count) bytes)")
                 didSaveDataSubject.send()
             }
             return true
