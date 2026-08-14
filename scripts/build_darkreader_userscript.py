@@ -10,7 +10,7 @@ OUT = ROOT / "wBlockCoreService/BundledUserscripts/dark-reader.user.js"
 ADAPTER = r'''// ==UserScript==
 // @name         Dark Reader
 // @namespace    com.skula.wblock
-// @version      4.9.128-wblock.1
+// @version      4.9.128-wblock.2
 // @description  Dark Reader's MIT-licensed API engine, bundled for wBlock (beta; without the full site-fix database).
 // @author       Dark Reader Ltd. and wBlock
 // @match        http://*/*
@@ -49,9 +49,9 @@ ADAPTER += r'''/* Dark Reader v4.9.128 is vendored above this adapter. */
         });
     }
     var api = window.DarkReader;
-    if (!api || typeof api.enable !== 'function' || api.isEnabled()) return;
+    if (!api || typeof api.auto !== 'function') return;
     api.setFetchMethod(bridgeFetch);
-    api.enable();
+    api.auto();
 })();
 '''
 content = VENDOR.read_text() + '\n' + ADAPTER

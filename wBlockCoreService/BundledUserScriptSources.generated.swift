@@ -7,7 +7,7 @@ import Foundation
 /// being downloaded from a remote URL. Content is embedded verbatim so the
 /// scripts work offline and update alongside the app.
 enum BundledUserScriptSources {
-    static let documentStartCacheRevision = "6bd73b1c4a7e91d1a746c81167c66969b05f70b382d7cebc510beeba9cd28d8d"
+    static let documentStartCacheRevision = "0d26f5dd30e04ce841c711a40d0ea4d67b984df08c36448b6d133ea59f4ed2c3"
 
     /// Embedded source of tube-cleaner.user.js.
     static let tubeCleaner = ###"""
@@ -6281,7 +6281,7 @@ const __wblockDarkReaderChrome={runtime:{}};/**
 // ==UserScript==
 // @name         Dark Reader
 // @namespace    com.skula.wblock
-// @version      4.9.128-wblock.1
+// @version      4.9.128-wblock.2
 // @description  Dark Reader's MIT-licensed API engine, bundled for wBlock (beta; without the full site-fix database).
 // @author       Dark Reader Ltd. and wBlock
 // @match        http://*/*
@@ -6319,9 +6319,9 @@ const __wblockDarkReaderChrome={runtime:{}};/**
         });
     }
     var api = window.DarkReader;
-    if (!api || typeof api.enable !== 'function' || api.isEnabled()) return;
+    if (!api || typeof api.auto !== 'function') return;
     api.setFetchMethod(bridgeFetch);
-    api.enable();
+    api.auto();
 })();
 """###
 

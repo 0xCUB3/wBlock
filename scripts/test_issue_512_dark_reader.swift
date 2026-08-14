@@ -27,7 +27,8 @@ guard manager.components(separatedBy: "darkReaderURL").count >= 2 && !manager.co
 guard source.components(separatedBy: "@name         Dark Reader").count == 2 else { fail("Dark Reader metadata missing") }
 guard source.contains("@inject-into  content") && source.contains("@run-at       document-start") else { fail("content/document-start metadata missing") }
 guard source.contains("@match        http://*/*") && source.contains("@match        https://*/*") else { fail("ordinary page matches missing") }
-guard source.contains("api.enable();") && source.contains("api.setFetchMethod(bridgeFetch)") && source.contains("GM_xmlhttpRequest") else { fail("adapter contract missing") }
+guard source.contains("@version      4.9.128-wblock.2") else { fail("Dark Reader adapter version missing") }
+guard source.contains("api.auto();") && !source.contains("api.enable();") && source.contains("api.setFetchMethod(bridgeFetch)") && source.contains("GM_xmlhttpRequest") else { fail("system appearance adapter contract missing") }
 guard !source.contains("api.Plugins.fetch") else { fail("adapter must use the supported setFetchMethod API") }
 guard source.contains("data-wblock-userstyle") && vendor.contains("data-wblock-userstyle") else { fail("userstyle exclusion missing") }
 guard !source.contains("fetch(\"http") && !source.contains("import(\"http") else { fail("runtime executable download present") }
@@ -51,11 +52,11 @@ let vmScript = """
     const fs = require('fs'), vm = require('vm');
     const s = fs.readFileSync('wBlockCoreService/BundledUserscripts/dark-reader.user.js', 'utf8');
     const adapter = s.slice(s.indexOf('/* Dark Reader v4.9.128 is vendored above this adapter. */'));
-    let enabled = false, fetchMethod = null;
-    const window = {DarkReader: {enable: () => {enabled = true}, isEnabled: () => false, setFetchMethod: (f) => {fetchMethod = f}}};
+    let autoCalls = 0, fetchMethod = null;
+    const window = {DarkReader: {auto: () => {autoCalls += 1}, setFetchMethod: (f) => {fetchMethod = f}}};
     const context = {window, Response, GM_xmlhttpRequest: () => {}, console};
     vm.createContext(context); vm.runInContext(adapter, context);
-    if ('chrome' in window || !enabled || typeof fetchMethod !== 'function') throw new Error('adapter mutated chrome or did not activate API');
+    if ('chrome' in window || autoCalls !== 1 || typeof fetchMethod !== 'function') throw new Error('adapter mutated chrome or did not follow system appearance');
     """
 let probe = run(node, ["node", "-e", vmScript])
 guard probe.0 == 0 else { fail("direct JavaScript behavior: \(probe.1)") }
@@ -63,7 +64,7 @@ let bridgeProbe = """
 const fs = require('fs'), vm = require('vm');
 const s = fs.readFileSync('wBlockCoreService/BundledUserscripts/dark-reader.user.js', 'utf8');
 const adapter = s.slice(s.indexOf('/* Dark Reader v4.9.128 is vendored above this adapter. */'));
-let fetchMethod; const window = {DarkReader: {enable(){}, isEnabled(){return false}, setFetchMethod(f){fetchMethod=f}}};
+let fetchMethod; const window = {DarkReader: {auto(){}, setFetchMethod(f){fetchMethod=f}}};
 const context = {window, Response, GM_xmlhttpRequest(o){o.onload({response: new TextEncoder().encode('ok').buffer, status: 201, statusText: 'Created', responseHeaders: 'X-Test: yes\\r\\n'});}, console};
 vm.createContext(context); vm.runInContext(adapter, context);
 fetchMethod('https://example.invalid').then(async r => { if (new TextDecoder().decode(await r.arrayBuffer()) !== 'ok' || r.status !== 201 || r.statusText !== 'Created' || r.headers.get('X-Test') !== 'yes') throw new Error('bridge response mismatch'); }).catch(e => { console.error(e); process.exit(1); });
