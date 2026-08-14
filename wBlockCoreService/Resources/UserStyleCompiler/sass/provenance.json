@@ -1,0 +1,13 @@
+{
+  "source": "final/wblock-sass-1.102.0.js",
+  "sassVersion": "1.102.0",
+  "immutableVersion": "5.1.5",
+  "terserVersion": "5.50.0",
+  "terserIntegrity": "sha512-CN9BVxWhgS/hRxtUMjtC2uRWSTcSfQFHMDWma6sKKfIivCD91sM+FOPfvwoaRMqCSrUpe1nv3jDamd9eEQ4y+w==",
+  "terserOptions": "--compress --mangle --comments false",
+  "rawBytes": 5874010,
+  "minBytes": 3277321,
+  "minGzipBytes": 702615,
+  "rawSha256": "9e519296ea68c2ebdf6ec32cd3c119e7bf3f3e896d34211f19329def61133791",
+  "minSha256": "a575120ee471de3fc9f8ddad036f4296de483ec312daf960bdda8f289582d6c8"
+}

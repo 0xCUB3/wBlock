@@ -1346,7 +1346,9 @@ struct UserScriptContentView: View {
                     initialContent: loadedContent,
                     canEdit: script.isLocal && !userScriptManager.isDefaultUserScript(script),
                     onSave: { newContent, name, description in
-                        await userScriptManager.saveEditedContent(for: script.id, newContent: newContent)
+                        if let error = await userScriptManager.saveEditedContent(for: script.id, newContent: newContent) {
+                            return error
+                        }
                         await userScriptManager.setUserScriptMetadataOverrides(
                             for: script.id,
                             name: name,
@@ -1356,6 +1358,7 @@ struct UserScriptContentView: View {
                             loadedContent = newContent
                             updatePreview()
                         }
+                        return nil
                     }
                 )
             }
@@ -1408,7 +1411,7 @@ private struct UserScriptSourceSheet: View {
     let script: UserScript
     let initialContent: String
     let canEdit: Bool
-    let onSave: (String, String, String) async -> Void
+    let onSave: (String, String, String) async -> String?
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var editorController: CodeMirrorEditorController
@@ -1423,7 +1426,7 @@ private struct UserScriptSourceSheet: View {
         script: UserScript,
         initialContent: String,
         canEdit: Bool,
-        onSave: @escaping (String, String, String) async -> Void
+        onSave: @escaping (String, String, String) async -> String?
     ) {
         self.script = script
         self.initialContent = initialContent
@@ -1583,9 +1586,13 @@ private struct UserScriptSourceSheet: View {
 
         isSaving = true
         let newContent = await editorController.currentText()
-        await onSave(newContent, trimmedName, editedDescription)
+        let error = await onSave(newContent, trimmedName, editedDescription)
         isSaving = false
-        dismiss()
+        if let error {
+            validationMessage = error
+        } else {
+            dismiss()
+        }
     }
 
     private func handleCancel() {
@@ -2148,7 +2155,7 @@ struct AddUserScriptView: View {
     private var requirementsPanel: some View {
         AddContentRequirementsPanel(requirements: [
             AddContentRequirement(systemImage: "link", text: "Starts with http:// or https://"),
-            AddContentRequirement(systemImage: "doc.text", text: "Ends with .js, .user.js, or .user.css"),
+            AddContentRequirement(systemImage: "doc.text", text: "Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss"),
             AddContentRequirement(systemImage: "checkmark.shield", text: "Hosted on a trusted source"),
             AddContentRequirement(systemImage: "doc.badge.gearshape", text: metadataRequirementText)
         ])
@@ -2375,8 +2382,12 @@ struct AddUserScriptView: View {
             types.append(userJsExt)
         }
 
-        // Userstyles (.user.css / .css)
+        // Userstyles (.user.css / .css and offline compiler formats)
         types.append(UTType(filenameExtension: "css") ?? .plainText)
+        types.append(UTType(filenameExtension: "less") ?? .plainText)
+        for fileExtension in ["sass", "scss", "styl", "pcss"] {
+            types.append(UTType(filenameExtension: fileExtension) ?? .plainText)
+        }
 
         let userCssTypes = UTType.types(tag: "user.css", tagClass: .filenameExtension, conformingTo: nil)
         if !userCssTypes.isEmpty {
@@ -2525,7 +2536,7 @@ struct AddUserScriptView: View {
         }
 
         guard let url = UserScriptURLSupport.validatedRemoteURL(from: trimmed) else {
-            validationState = .invalid("Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css")
+            validationState = .invalid(String(localized: "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss"))
             return
         }
 

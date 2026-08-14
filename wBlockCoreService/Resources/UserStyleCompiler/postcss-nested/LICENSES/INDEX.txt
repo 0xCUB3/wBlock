@@ -1,0 +1,11 @@
+Exact license files copied from installed package directories
+
+cssesc-LICENSE-MIT.txt
+esbuild-LICENSE.md
+nanoid-LICENSE
+picocolors-LICENSE
+postcss-LICENSE
+postcss-nested-LICENSE
+postcss-selector-parser-LICENSE-MIT
+source-map-js-LICENSE
+util-deprecate-LICENSE

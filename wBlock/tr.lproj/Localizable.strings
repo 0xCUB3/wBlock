@@ -541,7 +541,7 @@
 "Paste one or more filter URLs, one per line." = "Her satıra bir tane gelecek şekilde, bir veya daha fazla filtre URL'si yapıştırın.";
 "Paste or write a userscript or userstyle with a standard metadata block." = "Standart bir meta veri bloğu içeren bir kullanıcı betiği veya kullanıcı stili yapıştırın ya da yazın.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = ".user.js bağlantısını doğrudan buraya yapıştırın. wBlock sizin için indirip yükleyecektir.";
-"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "Doğrudan .user.js, .js veya .user.css bağlantısını yapıştırın. wBlock sizin için indirip yükleyecektir.";
+"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Doğrudan .user.js, .js, .user.css, .less, .sass, .scss, .styl veya .pcss bağlantısını yapıştırın. wBlock indirip sizin için yükleyecektir.";
 "Pause Blocking" = "Engellemeyi duraklat";
 "Pausing blocking..." = "Engelleme duraklatılıyor...";
 "Persian Blocker" = "Persian Blocker";
@@ -565,7 +565,7 @@
 "Process completed with reload issues" = "İşlem, yeniden yükleme sorunlarıyla tamamlandı";
 "Progress" = "İlerleme";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Şüpheli URL'lere, kimlik avı sitelerine ve istenmeyen yazılımlara karşı korur.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = ".js, .user.js veya .user.css ile biten geçerli bir http:// veya https:// bağlantısı girin";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = ".js, .user.js, .user.css, .less, .sass, .scss, .styl veya .pcss ile biten geçerli bir http:// veya https:// bağlantısı sağlayın";
 "Provide a valid https:// link ending in .user.js" = ".user.js ile biten geçerli bir https:// bağlantısı sağlayın";
 "Psst! You forgot something!" = "Psst! Bir şeyi unuttun!";
 "Quit Without Applying" = "Değişiklikleri uygulamadan çık";
@@ -701,7 +701,7 @@
 "Successfully updated script" = "Betik başarıyla güncellendi";
 "Summary" = "Özet";
 "Supplement for EasyList China+EasyList and EasyPrivacy." = "EasyList China+EasyList ve EasyPrivacy için tamamlayıcı liste.";
-"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = ".user.js, .js ve .user.css dosyalarını destekler. Yerel içe aktarmalar otomatik olarak güncellenmez; değiştirmek için tekrar içe aktarın.";
+"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = ".user.js, .js, .user.css ve .less dosyalarını destekler. Yerel içe aktarmalar otomatik olarak güncellenmez; değiştirmek için yeniden içe aktarın.";
 "Sync" = "Eşitleme";
 "Sync across devices" = "Cihazlar arasında eşitle";
 "Sync Now" = "Şimdi eşitle";
@@ -934,7 +934,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 /* Issue 508 UI follow-up */
 "Starts with http:// or https://" = "http:// veya https:// ile başlar";
-"Ends with .js, .user.js, or .user.css" = ".js, .user.js veya .user.css ile biter";
+"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = ".js, .user.js, .user.css, .less, .sass, .scss, .styl veya .pcss ile biter";
 "Hosted on a trusted source" = "Güvenilir bir kaynakta barındırılır";
 
 "The file must include userscript or userstyle metadata." = "Dosya userscript veya userstyle meta verilerini içermelidir.";
@@ -951,3 +951,28 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Enabled Userscripts & Userstyles" = "Etkin kullanıcı betikleri ve stilleri";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Seçilen bileşenlerden biri duraklatıldığında Engellemeyi Duraklat etkindir. Sürdürme tüm bileşenleri geri yükler.";
 "Temporarily pause selected components without changing their enabled settings." = "Etkinleştirme ayarlarını değiştirmeden seçilen bileşenleri geçici olarak duraklatın.";
+
+/* Userstyle compiler diagnostics */
+"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = ".user.js, .js, .user.css, .less, .sass, .scss, .styl veya .pcss dosyası seçin.";
+"Couldn't read the selected file." = "Seçilen dosya okunamadı.";
+"The file is empty." = "Dosya boş.";
+"Not a userscript or userstyle: missing metadata block." = "userscript veya userstyle değil: meta veri bloğu eksik.";
+"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "Bu userstyle, henüz desteklenmeyen \"%@\" önişlemcisini gerektiriyor.";
+"This style file requires the \"%@\" preprocessor, but declares \"%@\"." = "Bu stil dosyası \"%@\" önişlemcisini gerektiriyor, ancak \"%@\" bildiriyor.";
+"Couldn't compile this userstyle: %@" = "Bu userstyle derlenemedi: %@";
+"Unknown compiler error." = "Bilinmeyen derleyici hatası.";
+"Couldn't save the edited source." = "Düzenlenen kaynak kaydedilemedi.";
+"Userstyle source exceeds the 2 MiB limit." = "Userstyle kaynağı 2 MiB sınırını aşıyor.";
+"Userstyle compiler resource is missing." = "Userstyle derleyici kaynağı eksik.";
+"Userstyle compiler resource failed to load." = "Userstyle derleyici kaynağı yüklenemedi.";
+"Userstyle compiler input could not be serialized." = "Userstyle derleyici girdisi serileştirilemedi.";
+"Userstyle compiler returned an invalid response." = "Userstyle derleyicisi geçersiz bir yanıt döndürdü.";
+"Userstyle compiler returned no CSS." = "Userstyle derleyicisi CSS döndürmedi.";
+"Userstyle compiler output exceeds the 10 MiB limit." = "Userstyle derleyicisi çıktısı 10 MiB sınırını aşıyor.";
+"Userstyle compiler failed." = "Userstyle derleyicisi başarısız oldu.";
+"line %@, column %@: %@" = "satır %@, sütun %@: %@";
+"line %@: %@" = "satır %@: %@";
+"column %@: %@" = "sütun %@: %@";
+"Userstyle compiler timed out." = "Kullanıcı stili derleyicisinin zaman aşımı oldu.";
+"Userstyle compiler must not run on the main thread." = "Kullanıcı stili derleyicisi ana iş parçacığında çalışmamalıdır.";
+"Dark Reader's MIT-licensed API engine, bundled for wBlock (beta; without the full site-fix database)." = "MIT lisanslı Dark Reader API motoru wBlock'a dahil edilmiştir (beta; tam site düzeltme veritabanı olmadan).";

@@ -1,0 +1,15 @@
+PostCSS nested artifact security record
+
+Generation-time bundle scan:
+- unresolved `require(...)` calls: absent
+- `process`, Node globals, and filesystem/path operations: absent or browser-aliased to empty modules
+- arbitrary plugin loading: absent
+- source maps and external file resolution: disabled
+
+Repository integration probe:
+- runs in a disposable nonpersistent WebKit Blob Worker
+- `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `importScripts`, nested workers, IndexedDB, Cache Storage, navigator, crypto, BroadcastChannel, and WebKit globals are denied before runtime evaluation
+- no `WKScriptMessageHandler` or other native object is exposed
+- timeout/recovery, valid compilation, and packaged-framework execution pass in `scripts/test_issue_511_preprocessors.sh`
+
+PostCSS's optional source-map implementation is browser-aliased to empty modules and is not invoked because this bridge passes no map, from, or to option.
