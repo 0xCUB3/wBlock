@@ -21,6 +21,7 @@ let userscripts = try source("wBlock/UserScriptManagerView.swift")
 require(design.contains("struct SheetDoneButton: View"), "shared Done button must be defined")
 require(design.contains("Button(\"Done\")"), "shared button must use localized Done")
 require(design.contains(".glassButtonStyleCompat()"), "shared button must own glass compatibility styling")
+require(design.contains("var usesAutomaticStyle = false"), "shared button must support native toolbar styling")
 require(design.contains(".keyboardShortcut(.cancelAction)"), "shared button must support the cancel shortcut")
 
 for (name, text) in [
@@ -41,5 +42,6 @@ require(occurrenceCount("SheetDoneButton", in: filterInfo) == 2, "both filter de
 require(occurrenceCount("SheetDoneButton", in: categoryInfo) == 1, "category detail popover must use the shared button")
 require(occurrenceCount("SheetDoneButton", in: content) == 1, "capacity popover must use the shared button")
 require(occurrenceCount("SheetDoneButton", in: userscripts) == 7, "all userscript detail and editor overlays must use the shared button")
+require(occurrenceCount("usesAutomaticStyle: true", in: userscripts) == 3, "iOS toolbar Done buttons must use native styling exactly once")
 require(!content.contains("Image(systemName: \"xmark.circle.fill\")"), "capacity popover must not use a custom xmark close control")
 print("PASS")

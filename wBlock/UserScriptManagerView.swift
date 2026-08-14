@@ -1119,7 +1119,7 @@ struct UserScriptInfoView: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .navigationBarTrailing) {
-                            SheetDoneButton { dismiss() }
+                            SheetDoneButton(action: { dismiss() }, usesAutomaticStyle: true)
                         }
                     }
                 }
@@ -1289,7 +1289,7 @@ struct UserScriptContentView: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .navigationBarTrailing) {
-                            SheetDoneButton { dismiss() }
+                            SheetDoneButton(action: { dismiss() }, usesAutomaticStyle: true)
                         }
                     }
                 }
@@ -1629,7 +1629,7 @@ private struct AddUserScriptEditorSheet: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
-                            SheetDoneButton(action: finish)
+                            SheetDoneButton(action: finish, usesAutomaticStyle: true)
                         }
                     }
             }

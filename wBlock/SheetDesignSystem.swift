@@ -17,12 +17,21 @@ enum SheetDesign {
 
 struct SheetDoneButton: View {
     let action: () -> Void
+    var usesAutomaticStyle = false
 
+    @ViewBuilder
     var body: some View {
+        if usesAutomaticStyle {
+            doneButton
+        } else {
+            doneButton.glassButtonStyleCompat()
+        }
+    }
+
+    private var doneButton: some View {
         Button("Done") {
             action()
         }
-        .glassButtonStyleCompat()
         .keyboardShortcut(.cancelAction)
     }
 }
