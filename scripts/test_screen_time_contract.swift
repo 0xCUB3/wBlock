@@ -14,6 +14,7 @@ func read(_ path: String) -> String {
 let manager = read("wBlock/ScreenTimeManager.swift")
 let settings = read("wBlock/ScreenTimeSettingsView.swift")
 let action = read("wBlock Shield Action/ShieldActionExtension.swift")
+let monitor = read("wBlock Device Activity Monitor/DeviceActivityMonitorExtension.swift")
 let monitorInfo = read("wBlock Device Activity Monitor/Info.plist")
 let project = read("wBlock.xcodeproj/project.pbxproj")
 let appEntitlements = read("wBlock/wBlock-ios.entitlements")
@@ -26,10 +27,17 @@ check(settings.contains("familyActivityPicker") && settings.contains("Before aut
 check(settings.contains("Open Settings") && settings.contains("authorizationStatus == .denied"), "denied authorization must direct users to Settings")
 check(action.contains("15 * 60") && action.contains("completion(.none)"), "shield action must grant a controlled 15-minute exception")
 check(action.contains("map(\\.expires)") && action.contains(".min()"), "multiple exceptions must restore at the earliest expiry")
+check(action.contains("next.addingTimeInterval(15 * 60)"), "exception schedules must satisfy Device Activity minimums")
+check(monitor.contains("intervalDidStart") && monitor.contains("restoreExpiredExceptions"), "exceptions must restore when their scheduled interval begins")
 check(monitorInfo.contains("com.apple.deviceactivity.monitor-extension"), "monitor extension point must match Apple's template")
+check(monitorInfo.contains("CFBundleExecutable") && monitorInfo.contains("CFBundlePackageType"), "extension manifests must be installable")
 check(appEntitlements.contains("com.apple.developer.family-controls"), "the iOS app must declare Family Controls")
 for name in ["wBlock Shield Configuration", "wBlock Shield Action", "wBlock Device Activity Monitor"] {
     check(project.contains(name), "project must contain \(name)")
+}
+check(project.components(separatedBy: "SKIP_INSTALL = YES").count >= 7, "Screen Time extensions must skip install")
+for dependency in ["F51300000000000000000070", "F51300000000000000000071", "F51300000000000000000072"] {
+    check(project.contains("\(dependency) = {isa = PBXTargetDependency; platformFilters = (ios, );"), "Screen Time dependencies must be iOS-only")
 }
 for locale in ["ar", "de", "el", "en", "es", "fr", "hu", "it", "ja", "ko", "pl", "pt-BR", "ro", "ru", "tr", "zh-Hans", "zh-Hant"] {
     let strings = read("wBlock/\(locale).lproj/Localizable.strings")

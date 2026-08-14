@@ -8,8 +8,17 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
     private let defaults = UserDefaults(suiteName: "group.skula.wBlock")!
     private let store = ManagedSettingsStore()
 
+    override func intervalDidStart(for activity: DeviceActivityName) {
+        super.intervalDidStart(for: activity)
+        restoreExpiredExceptions(for: activity)
+    }
+
     override func intervalDidEnd(for activity: DeviceActivityName) {
         super.intervalDidEnd(for: activity)
+        restoreExpiredExceptions(for: activity)
+    }
+
+    private func restoreExpiredExceptions(for activity: DeviceActivityName) {
         guard activity.rawValue == expectedActivity else { return }
 
         var exceptions = loadExceptions().filter { $0.expires > Date() }
@@ -90,8 +99,11 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         }
 
         let calendar = Calendar.current
-        let start = calendar.dateComponents([.hour, .minute, .second], from: Date().addingTimeInterval(-1))
-        let end = calendar.dateComponents([.hour, .minute, .second], from: next)
+        let start = calendar.dateComponents([.hour, .minute, .second], from: next)
+        let end = calendar.dateComponents(
+            [.hour, .minute, .second],
+            from: next.addingTimeInterval(15 * 60)
+        )
         do {
             try center.startMonitoring(
                 activity,

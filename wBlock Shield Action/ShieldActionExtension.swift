@@ -103,8 +103,11 @@ final class ShieldActionExtension: ShieldActionDelegate {
         }
 
         let calendar = Calendar.current
-        let start = calendar.dateComponents([.hour, .minute, .second], from: Date().addingTimeInterval(-1))
-        let end = calendar.dateComponents([.hour, .minute, .second], from: next)
+        let start = calendar.dateComponents([.hour, .minute, .second], from: next)
+        let end = calendar.dateComponents(
+            [.hour, .minute, .second],
+            from: next.addingTimeInterval(15 * 60)
+        )
         do {
             try center.startMonitoring(
                 activity,
