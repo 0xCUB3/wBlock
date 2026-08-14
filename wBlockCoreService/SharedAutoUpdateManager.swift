@@ -968,6 +968,13 @@ public actor SharedAutoUpdateManager {
                 }
             }
 
+            // Metadata fetches may have suspended while a user changed selection. Rebase
+            // immediately before both the persisted save and the rebuild snapshot.
+            let latestPersistedFilters = await ProtobufDataManager.shared.getFilterLists()
+            merged = FilterSelectionRebaser.rebaseSelection(
+                snapshot: merged,
+                latestPersisted: latestPersistedFilters
+            )
             try requireFinalSaveBudget()
             await saveFilterListsToProtobuf(merged)
             try await saveAutoUpdateStateImmediately(context: AutoUpdateBudgetPhase.finalStateSave)
@@ -1147,7 +1154,13 @@ public actor SharedAutoUpdateManager {
         }
 
         if didHydrate {
-            await saveFilterListsToProtobuf(hydratedFilters)
+            let latestPersistedFilters = await ProtobufDataManager.shared.getFilterLists()
+            let rebasedFilters = FilterSelectionRebaser.rebaseSelection(
+                snapshot: hydratedFilters,
+                latestPersisted: latestPersistedFilters
+            )
+            await saveFilterListsToProtobuf(rebasedFilters)
+            return rebasedFilters
         }
 
         return hydratedFilters

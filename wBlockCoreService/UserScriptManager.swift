@@ -204,6 +204,23 @@ enum BuiltInUserScripts {
 
 }
 
+public enum UserScriptMutationOrigin: Sendable, Equatable {
+    case local
+    case remoteSync
+}
+
+public struct UserScriptToggleState: Sendable {
+    public let isEnabled: Bool
+    public let desired: Bool
+    public let isInFlight: Bool
+
+    public init(isEnabled: Bool, desired: Bool, isInFlight: Bool) {
+        self.isEnabled = isEnabled
+        self.desired = desired
+        self.isInFlight = isInFlight
+    }
+}
+
 @MainActor
 public class UserScriptManager: ObservableObject {
     public static func invalidateDocumentStartExecutionCache() {
@@ -239,6 +256,7 @@ public class UserScriptManager: ObservableObject {
     @Published public var duplicatesMessage = ""
     @Published public var pendingDuplicatesToRemove: [UserScript] = []
     @Published public private(set) var isReady = false
+    @Published public private(set) var userScriptToggleStates: [UUID: UserScriptToggleState] = [:]
     @Published public private(set) var isPrefetchingDefaultMetadata = false
     @Published public private(set) var darkReaderFollowsSystemAppearance =
         DarkReaderAppearancePreference.followsSystemAppearance()
@@ -251,6 +269,12 @@ public class UserScriptManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private var initialLoadTask: Task<Void, Never>?
     private var userScriptIndexByID: [UUID: Int] = [:]
+    private var dataManagerSyncGeneration: UInt64 = 0
+    private var nextUserScriptIntentRevision: UInt64 = 0
+    private var userScriptIntentRevisions: [UUID: UInt64] = [:]
+    private var latestUserScriptIntentValues: [UUID: Bool] = [:]
+    private var pendingUserScriptIntents: [UUID: Bool] = [:]
+    public private(set) var localMutationRevision: UInt64 = 0
     private var metadataPrefetchTask: Task<Void, Never>?
     private static let maximumResourceBytes = 10 * 1024 * 1024
     private static let maximumEncodedResourceBytes = ((maximumResourceBytes + 2) / 3) * 4 + 256
@@ -309,6 +333,58 @@ public class UserScriptManager: ObservableObject {
     public func userScript(withId id: UUID) -> UserScript? {
         guard let index = indexOfUserScript(withId: id) else { return nil }
         return userScripts[index]
+    }
+
+    /// Returns the latest actual state plus any immediate desired state for a pending toggle.
+    public func userScriptToggleState(for id: UUID) -> UserScriptToggleState? {
+        guard let script = userScript(withId: id) else { return nil }
+        let desired = pendingUserScriptIntents[id] ?? script.isEnabled
+        return UserScriptToggleState(
+            isEnabled: script.isEnabled,
+            desired: desired,
+            isInFlight: pendingUserScriptIntents[id] != nil
+        )
+    }
+
+    private func beginUserScriptIntent(
+        for id: UUID,
+        desired: Bool,
+        origin: UserScriptMutationOrigin
+    ) -> UInt64 {
+        nextUserScriptIntentRevision &+= 1
+        let revision = nextUserScriptIntentRevision
+        userScriptIntentRevisions[id] = revision
+        latestUserScriptIntentValues[id] = desired
+        pendingUserScriptIntents[id] = desired
+        if origin == .local {
+            localMutationRevision &+= 1
+        }
+        if let script = userScript(withId: id) {
+            userScriptToggleStates[id] = UserScriptToggleState(
+                isEnabled: script.isEnabled,
+                desired: desired,
+                isInFlight: true
+            )
+        }
+        return revision
+    }
+
+    private func isCurrentUserScriptIntent(_ id: UUID, revision: UInt64) -> Bool {
+        userScriptIntentRevisions[id] == revision
+    }
+
+    private func finishUserScriptIntent(_ id: UUID, revision: UInt64) {
+        guard isCurrentUserScriptIntent(id, revision: revision) else { return }
+        pendingUserScriptIntents.removeValue(forKey: id)
+        userScriptToggleStates.removeValue(forKey: id)
+    }
+
+    private func applyLatestUserScriptIntents(to scripts: inout [UserScript]) {
+        for index in scripts.indices {
+            if let desired = latestUserScriptIntentValues[scripts[index].id] {
+                scripts[index].isEnabled = desired
+            }
+        }
     }
 
     public func userScriptEditorSnapshot(withId id: UUID) async -> UserScript? {
@@ -711,6 +787,8 @@ public class UserScriptManager: ObservableObject {
     }
 
     private func syncFromDataManager() async {
+        dataManagerSyncGeneration &+= 1
+        let generation = dataManagerSyncGeneration
         let newUserScripts = dataManager.getUserScripts()
         logger.info("🔄 Syncing userscripts from data manager: \(newUserScripts.count) scripts")
 
@@ -723,11 +801,16 @@ public class UserScriptManager: ObservableObject {
         }
 
         // Update content from stored files (do file I/O off main thread)
-        let updatedScripts = await hydrateUserScriptsFromDisk(
+        var updatedScripts = await hydrateUserScriptsFromDisk(
             newUserScripts,
             includeResources: false,
             hydrateDisabled: false
         )
+        guard generation == dataManagerSyncGeneration else {
+            logger.info("🔄 Ignoring stale userscript sync generation \(generation)")
+            return
+        }
+        applyLatestUserScriptIntents(to: &updatedScripts)
 
         // Only update if the scripts have actually changed to avoid unnecessary UI updates
         if !areUserScriptsEqual(userScripts, updatedScripts) {
@@ -2545,43 +2628,39 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func toggleUserScript(_ userScript: UserScript) async {
-        guard let initialIndex = userScripts.firstIndex(where: { $0.id == userScript.id }) else { return }
-        let shouldEnable = !userScripts[initialIndex].isEnabled
-
-        if shouldEnable {
-            let isReady = await ensureScriptReadyForEnabling(scriptID: userScript.id)
-            guard isReady else {
-                hasError = true
-                errorMessage = "Failed to download \(userScript.name). Please try again."
-                statusDescription = "Download failed"
-                return
-            }
-        }
-
-        guard let index = indexOfUserScript(withId: userScript.id),
-              userScripts.indices.contains(index)
-        else { return }
-
-        userScripts[index].isEnabled = shouldEnable
-        statusDescription =
-            userScripts[index].isEnabled
-            ? "Enabled \(userScript.name)" : "Disabled \(userScript.name)"
-        // Persist the change synchronously
-        logger.info(
-            "💾 Persisting userscript toggle for \(userScript.name): \(self.userScripts[index].isEnabled)"
-        )
-        await persistUserScriptsNow()
-        logger.info("💾 Userscripts saved after toggle")
+        guard let state = userScriptToggleState(for: userScript.id) else { return }
+        await setUserScript(userScript, isEnabled: !state.desired)
     }
 
-    /// Sets the enabled state for a userscript explicitly (idempotent)
-    public func setUserScript(_ userScript: UserScript, isEnabled: Bool) async {
-        guard let initialIndex = userScripts.firstIndex(where: { $0.id == userScript.id }) else { return }
-        guard userScripts[initialIndex].isEnabled != isEnabled else { return }
+    /// Sets the enabled state for a userscript explicitly (idempotent).
+    /// The intent is recorded before any download so a newer intent can cancel it.
+    public func setUserScript(
+        _ userScript: UserScript,
+        isEnabled: Bool,
+        origin: UserScriptMutationOrigin = .local
+    ) async {
+        guard self.userScript(withId: userScript.id) != nil else { return }
+        let revision = beginUserScriptIntent(
+            for: userScript.id,
+            desired: isEnabled,
+            origin: origin
+        )
+
+        guard let current = self.userScript(withId: userScript.id) else {
+            finishUserScriptIntent(userScript.id, revision: revision)
+            return
+        }
+        if current.isEnabled == isEnabled {
+            // Even an idempotent request invalidates an older suspended enable.
+            finishUserScriptIntent(userScript.id, revision: revision)
+            return
+        }
 
         if isEnabled {
             let isReady = await ensureScriptReadyForEnabling(scriptID: userScript.id)
+            guard isCurrentUserScriptIntent(userScript.id, revision: revision) else { return }
             guard isReady else {
+                finishUserScriptIntent(userScript.id, revision: revision)
                 hasError = true
                 errorMessage = "Failed to download \(userScript.name). Please try again."
                 statusDescription = "Download failed"
@@ -2589,15 +2668,22 @@ public class UserScriptManager: ObservableObject {
             }
         }
 
-        guard let index = indexOfUserScript(withId: userScript.id),
+        guard isCurrentUserScriptIntent(userScript.id, revision: revision),
+              let index = indexOfUserScript(withId: userScript.id),
               userScripts.indices.contains(index)
         else { return }
 
         userScripts[index].isEnabled = isEnabled
-        statusDescription =
-            isEnabled ? "Enabled \(userScript.name)" : "Disabled \(userScript.name)"
+        statusDescription = isEnabled ? "Enabled \(userScript.name)" : "Disabled \(userScript.name)"
         logger.info("💾 Persisting userscript setEnabled for \(userScript.name): \(isEnabled)")
         await persistUserScriptsNow()
+        guard isCurrentUserScriptIntent(userScript.id, revision: revision) else {
+            // A newer toggle may have completed while persistence was reading shared state.
+            // Rewrite the live array so the older completion cannot become the disk winner.
+            await persistUserScriptsNow()
+            return
+        }
+        finishUserScriptIntent(userScript.id, revision: revision)
         logger.info("💾 Userscripts saved after setEnabled")
     }
 
@@ -2649,9 +2735,18 @@ public class UserScriptManager: ObservableObject {
         return userScripts[currentIndex].isDownloaded
     }
 
-    /// Batch apply enabled state using a set of IDs (single persistence write)
+    /// Batch apply enabled state using a set of IDs (single persistence write).
+    /// Each script gets its own revision so a newer explicit toggle wins.
     public func setEnabledScripts(withIDs enabledIDs: Set<UUID>) async {
         var failedRemoteEnables = Set<String>()
+        var batchRevisions: [UUID: UInt64] = [:]
+        for script in userScripts {
+            batchRevisions[script.id] = beginUserScriptIntent(
+                for: script.id,
+                desired: enabledIDs.contains(script.id),
+                origin: .local
+            )
+        }
 
         // Ensure any scripts being enabled have content available. Keep IDs rather than
         // indices because downloads suspend and the array may be synchronized meanwhile.
@@ -2665,6 +2760,10 @@ public class UserScriptManager: ObservableObject {
         }
 
         for (scriptID, url) in remoteScriptIDsToDownload {
+            guard let revision = batchRevisions[scriptID],
+                  isCurrentUserScriptIntent(scriptID, revision: revision)
+            else { continue }
+
             if let index = indexOfUserScript(withId: scriptID),
                userScripts.indices.contains(index),
                let diskContent = readUserScriptContent(userScripts[index]),
@@ -2679,7 +2778,8 @@ public class UserScriptManager: ObservableObject {
 
             await downloadUserScriptInBackground(for: scriptID, from: url)
 
-            guard let currentIndex = indexOfUserScript(withId: scriptID),
+            guard isCurrentUserScriptIntent(scriptID, revision: revision),
+                  let currentIndex = indexOfUserScript(withId: scriptID),
                   userScripts.indices.contains(currentIndex)
             else { continue }
 
@@ -2690,6 +2790,10 @@ public class UserScriptManager: ObservableObject {
 
         var changed = false
         for i in userScripts.indices {
+            guard let revision = batchRevisions[userScripts[i].id],
+                  isCurrentUserScriptIntent(userScripts[i].id, revision: revision)
+            else { continue }
+
             let requestedEnable = enabledIDs.contains(userScripts[i].id)
             let canEnable = userScripts[i].isLocal || userScripts[i].isDownloaded
             let shouldEnable = requestedEnable && canEnable
@@ -2710,6 +2814,18 @@ public class UserScriptManager: ObservableObject {
             logger.info("💾 Userscripts saved after batch setEnabled")
         } else {
             logger.info("ℹ️ No userscript enable state changes to persist (batch)")
+        }
+
+        let batchWasSuperseded = batchRevisions.contains { scriptID, revision in
+            !isCurrentUserScriptIntent(scriptID, revision: revision)
+        }
+        for (scriptID, revision) in batchRevisions {
+            finishUserScriptIntent(scriptID, revision: revision)
+        }
+        if batchWasSuperseded {
+            // A newer per-script toggle won while the batch save was suspended. Persist the
+            // current array once more so the stale batch cannot win on disk.
+            await persistUserScriptsNow()
         }
 
         if !failedRemoteEnables.isEmpty {

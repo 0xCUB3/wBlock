@@ -99,6 +99,30 @@ final class CloudSyncManager: ObservableObject {
     private var pendingUploadTask: Task<Void, Never>?
     private var pendingSyncTask: Task<Void, Never>?
     private var isApplyingRemoteChanges: Bool = false
+
+    private struct LocalMutationRevisionSnapshot: Equatable {
+        let filterSelection: UInt64
+        let userScripts: UInt64
+    }
+
+    private func localMutationRevisionSnapshot() -> LocalMutationRevisionSnapshot {
+        LocalMutationRevisionSnapshot(
+            filterSelection: filterManager?.selectionMutationRevision ?? 0,
+            userScripts: userScriptManager.localMutationRevision
+        )
+    }
+
+    private func stableLocalPayloadAndMutationBaseline() async -> (
+        payload: SyncPayload, baseline: LocalMutationRevisionSnapshot
+    ) {
+        while true {
+            let baseline = localMutationRevisionSnapshot()
+            let payload = await buildPayloadRefreshingSnapshot()
+            guard localMutationRevisionSnapshot() == baseline else { continue }
+            return (payload, baseline)
+        }
+    }
+
     private var uploadCoordinator = CloudSyncUploadCoordinator()
     private let deletedMarkerTTLDays: Double = 90
     /// Minimum interval between automatic (AppActive) syncs. Manual/Launch triggers bypass it.
@@ -316,6 +340,8 @@ final class CloudSyncManager: ObservableObject {
         await dataManager.waitUntilLoaded()
         await userScriptManager.waitUntilReady()
 
+        // Protect choices made while the CloudKit fetch and decode are suspended.
+        let localMutationBaseline = localMutationRevisionSnapshot()
         do {
             guard let record = try await fetchRecord() else { return false }
             guard let payload = try decodePayload(from: record) else { return false }
@@ -326,7 +352,11 @@ final class CloudSyncManager: ObservableObject {
             lastErrorMessage = nil
             defer { finishSyncCycle() }
 
-            await applyRemotePayload(payload, trigger: trigger)
+            await applyRemotePayload(
+                payload,
+                trigger: trigger,
+                localMutationBaseline: localMutationBaseline
+            )
             logger.info("✅ Applied remote sync payload (\(trigger, privacy: .public))")
             return true
         } catch {
@@ -607,7 +637,9 @@ final class CloudSyncManager: ObservableObject {
         defer { finishSyncCycle() }
 
         do {
-            let localPayload = await buildPayloadRefreshingSnapshot()
+            let stableLocal = await stableLocalPayloadAndMutationBaseline()
+            let localPayload = stableLocal.payload
+            let localMutationBaseline = stableLocal.baseline
             let localUpdatedAt = localPayload.updatedAt
 
             guard let remoteRecord = try await fetchRecord() else {
@@ -661,7 +693,11 @@ final class CloudSyncManager: ObservableObject {
                     remotePayload = decoded
                 }
                 setStatus(.downloading)
-                await applyRemotePayload(remotePayload, trigger: trigger)
+                await applyRemotePayload(
+                    remotePayload,
+                    trigger: trigger,
+                    localMutationBaseline: localMutationBaseline
+                )
             } else {
                 setStatus(.uploading)
                 await uploadLatestPayload(trigger: "\(trigger)-LocalNewer", withinSyncSession: true)
@@ -673,8 +709,14 @@ final class CloudSyncManager: ObservableObject {
         }
     }
 
-    private func applyRemotePayload(_ payload: SyncPayload, trigger: String) async {
+    private func applyRemotePayload(
+        _ payload: SyncPayload,
+        trigger: String,
+        localMutationBaseline: LocalMutationRevisionSnapshot
+    ) async {
         logger.info("⬇️ Applying remote payload (\(trigger, privacy: .public))")
+        let filterSelectionRevisionAtStart = localMutationBaseline.filterSelection
+        let userScriptMutationRevisionAtStart = localMutationBaseline.userScripts
         isApplyingRemoteChanges = true
         defer { isApplyingRemoteChanges = false }
 
@@ -705,10 +747,17 @@ final class CloudSyncManager: ObservableObject {
         // Element zapper rules
         await applyRemoteZapperRules(payload.zapperRules ?? [:], disabledDomains: payload.zapperDisabledDomains)
 
-        await applyRemoteFilters(payload.filters, remoteUpdatedAt: payload.updatedAt)
+        await applyRemoteFilters(
+            payload.filters,
+            remoteUpdatedAt: payload.updatedAt,
+            localSelectionRevisionAtStart: filterSelectionRevisionAtStart
+        )
 
         // User scripts (remote URLs + local imports)
-        let keptUnsyncedLocalScripts = await applyRemoteUserScripts(payload.userScripts)
+        let keptUnsyncedLocalScripts = await applyRemoteUserScripts(
+            payload.userScripts,
+            localMutationRevisionAtStart: userScriptMutationRevisionAtStart
+        )
 
         // Record the local script identities/names that are now known-synced (present in the cloud payload).
         // Kept-but-never-synced local scripts are intentionally excluded here; they become synced
@@ -716,29 +765,50 @@ final class CloudSyncManager: ObservableObject {
         setLastSyncedLocalUserScriptNames(localUserScriptNames(in: payload))
         setLastSyncedLocalUserScriptIdentities(localUserScriptIdentities(in: payload))
 
-        // Mark local state as matching the remote payload so we don't echo-upload.
-        defaults.set(payload.contentHash, forKey: Keys.lastLocalHash)
-        defaults.set(payload.updatedAt, forKey: Keys.lastLocalUpdatedAt)
-        defaults.set(payload.contentHash, forKey: Keys.lastDownloadedHash)
-        defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastDownloadedAt)
-        defaults.set(payload.contentHash, forKey: Keys.lastUploadedHash)
-        defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
-        refreshStatusFromDefaults()
-
-        // A local userscript that was never synced and isn't in the winning remote payload was
-        // kept rather than deleted. Schedule an upload so it propagates to the cloud (#437). The
-        // request is deferred while syncing and picked up by finishSyncCycle().
-        if keptUnsyncedLocalScripts {
-            scheduleUpload(trigger: "\(trigger)-KeepUnsyncedLocal")
+        if let filterManager,
+           filterManager.selectionMutationRevision != filterSelectionRevisionAtStart
+        {
+            await filterManager.saveFilterLists()
         }
 
-        // Rebuild blockers so the synced config takes effect.
+        // Rebuild blockers so the synced config takes effect. A local toggle can happen
+        // during this await, so hash finalization is deliberately after the rebuild.
         if let filterManager {
             await filterManager.applyChanges(allowUserInteraction: true)
         }
+
+        let localMutationDuringApply =
+            (filterManager?.selectionMutationRevision ?? filterSelectionRevisionAtStart)
+                != filterSelectionRevisionAtStart
+            || userScriptManager.localMutationRevision != userScriptMutationRevisionAtStart
+
+        // A local enable/disable made during apply remains authoritative. Do not mark the
+        // remote hash as local/uploaded state; the follow-up upload must reconcile it.
+        if !localMutationDuringApply {
+            defaults.set(payload.contentHash, forKey: Keys.lastLocalHash)
+            defaults.set(payload.updatedAt, forKey: Keys.lastLocalUpdatedAt)
+            defaults.set(payload.contentHash, forKey: Keys.lastDownloadedHash)
+            defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastDownloadedAt)
+            defaults.set(payload.contentHash, forKey: Keys.lastUploadedHash)
+            defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
+            refreshStatusFromDefaults()
+        }
+
+        // A local userscript that was never synced, or a local toggle made during apply, needs
+        // a follow-up upload after the current sync becomes idle.
+        if keptUnsyncedLocalScripts {
+            scheduleUpload(trigger: "\(trigger)-KeepUnsyncedLocal")
+        }
+        if localMutationDuringApply && !keptUnsyncedLocalScripts {
+            scheduleUpload(trigger: "\(trigger)-LocalMutationDuringApply")
+        }
     }
 
-    private func applyRemoteFilters(_ filters: SyncPayload.Filters, remoteUpdatedAt: TimeInterval) async {
+    private func applyRemoteFilters(
+        _ filters: SyncPayload.Filters,
+        remoteUpdatedAt: TimeInterval,
+        localSelectionRevisionAtStart: UInt64
+    ) async {
         let remoteDeleted = Set(filters.deletedCustomURLs ?? [])
         let remoteCustomURLs = Set(filters.customLists.map(\.url))
         let localCustomURLs = currentLocalCustomURLs()
@@ -774,6 +844,8 @@ final class CloudSyncManager: ObservableObject {
             var changed = false
             var selectionChanged = false
             var nonSelectionChanged = false
+            let mayApplyRemoteSelection =
+                filterManager.selectionMutationRevision == localSelectionRevisionAtStart
 
             // Remove deleted custom lists (prevents resurrection + keeps UI consistent).
             if !deletedCustomURLs.isEmpty {
@@ -795,7 +867,7 @@ final class CloudSyncManager: ObservableObject {
                 let urlString = FilterListLoader.canonicalFilterURLString(
                     filterManager.filterLists[index].url.absoluteString
                 )
-                guard knownURLs.contains(urlString) else { continue }
+                guard knownURLs.contains(urlString), mayApplyRemoteSelection else { continue }
                 let shouldSelect = desiredSelected.contains(urlString)
                 if filterManager.filterLists[index].isSelected != shouldSelect {
                     filterManager.filterLists[index].isSelected = shouldSelect
@@ -848,7 +920,9 @@ final class CloudSyncManager: ObservableObject {
                             changed = true
                             nonSelectionChanged = true
                         }
-                        if filterManager.filterLists[existingIndex].isSelected != remoteCustom.isSelected {
+                        if mayApplyRemoteSelection,
+                           filterManager.filterLists[existingIndex].isSelected != remoteCustom.isSelected
+                        {
                             filterManager.filterLists[existingIndex].isSelected = remoteCustom.isSelected
                             changed = true
                             selectionChanged = true
@@ -860,7 +934,7 @@ final class CloudSyncManager: ObservableObject {
                             url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
                             category: remoteCategory,
                             isCustom: true,
-                            isSelected: remoteCustom.isSelected,
+                            isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
                             description: remoteCustom.description ?? "User-added filter list.",
                             sourceRuleCount: nil
                         )
@@ -906,11 +980,14 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
+        let mayApplyRemoteSelection =
+            filterManager == nil
+                || filterManager?.selectionMutationRevision == localSelectionRevisionAtStart
         for index in storedLists.indices where !storedLists[index].isCustom {
             let urlString = FilterListLoader.canonicalFilterURLString(
                 storedLists[index].url.absoluteString
             )
-            guard knownURLs.contains(urlString) else { continue }
+            guard knownURLs.contains(urlString), mayApplyRemoteSelection else { continue }
             storedLists[index].isSelected = desiredSelected.contains(urlString)
         }
 
@@ -940,7 +1017,9 @@ final class CloudSyncManager: ObservableObject {
                 if updated.category != remoteCategory {
                     updated.category = remoteCategory
                 }
-                updated.isSelected = remoteCustom.isSelected
+                if mayApplyRemoteSelection {
+                    updated.isSelected = remoteCustom.isSelected
+                }
                 storedLists[existingIndex] = updated
             } else {
                 let newFilter = FilterList(
@@ -949,7 +1028,7 @@ final class CloudSyncManager: ObservableObject {
                     url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
                     category: remoteCategory,
                     isCustom: true,
-                    isSelected: remoteCustom.isSelected,
+                    isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
                     description: remoteCustom.description ?? "User-added filter list.",
                     sourceRuleCount: nil
                 )
@@ -960,8 +1039,24 @@ final class CloudSyncManager: ObservableObject {
         await dataManager.updateFilterLists(storedLists)
     }
 
+    private func applyRemoteUserScriptEnabledState(
+        _ script: UserScript,
+        isEnabled: Bool,
+        localMutationRevisionAtStart: UInt64
+    ) async {
+        guard userScriptManager.localMutationRevision == localMutationRevisionAtStart else { return }
+        await userScriptManager.setUserScript(
+            script,
+            isEnabled: isEnabled,
+            origin: .remoteSync
+        )
+    }
+
     @discardableResult
-    private func applyRemoteUserScripts(_ scripts: SyncPayload.UserScripts) async -> Bool {
+    private func applyRemoteUserScripts(
+        _ scripts: SyncPayload.UserScripts,
+        localMutationRevisionAtStart: UInt64
+    ) async -> Bool {
         let remoteDeletedURLs = Set(scripts.deletedRemoteURLs ?? [])
         let remoteRemoteScriptURLs = Set(scripts.remote.map(\.url))
         let localRemoteScriptURLs = currentLocalRemoteUserScriptURLs()
@@ -1082,7 +1177,11 @@ final class CloudSyncManager: ObservableObject {
         for remote in desiredRemoteScripts {
             guard let url = URL(string: remote.url) else { continue }
             if let existing = userScriptManager.userScripts.first(where: { $0.url == url }) {
-                await userScriptManager.setUserScript(existing, isEnabled: remote.isEnabled)
+                await applyRemoteUserScriptEnabledState(
+                    existing,
+                    isEnabled: remote.isEnabled,
+                    localMutationRevisionAtStart: localMutationRevisionAtStart
+                )
                 await userScriptManager.setUserScript(existing, updatesAutomatically: remote.resolvedUpdatesAutomatically)
                 await userScriptManager.setUserScript(existing, category: remote.resolvedCategory)
             }
@@ -1103,7 +1202,11 @@ final class CloudSyncManager: ObservableObject {
             for remote in missingRemoteScripts {
                 guard let url = URL(string: remote.url) else { continue }
                 if let added = userScriptManager.userScripts.first(where: { $0.url == url }) {
-                    await userScriptManager.setUserScript(added, isEnabled: remote.isEnabled)
+                    await applyRemoteUserScriptEnabledState(
+                        added,
+                        isEnabled: remote.isEnabled,
+                        localMutationRevisionAtStart: localMutationRevisionAtStart
+                    )
                     await userScriptManager.setUserScript(added, updatesAutomatically: remote.resolvedUpdatesAutomatically)
                     await userScriptManager.setUserScript(added, category: remote.resolvedCategory)
                 }
@@ -1165,7 +1268,11 @@ final class CloudSyncManager: ObservableObject {
                 CloudSyncLocalUserScriptReconciler.matches(existing: $0, remote: local)
             })
             if let existing, existing.content == local.content {
-                await userScriptManager.setUserScript(existing, isEnabled: local.isEnabled)
+                await applyRemoteUserScriptEnabledState(
+                    existing,
+                    isEnabled: local.isEnabled,
+                    localMutationRevisionAtStart: localMutationRevisionAtStart
+                )
                 await userScriptManager.setUserScript(existing, updatesAutomatically: local.resolvedUpdatesAutomatically)
                 if let description = local.description {
                     _ = await userScriptManager.setUserScriptMetadataOverrides(
@@ -1193,7 +1300,11 @@ final class CloudSyncManager: ObservableObject {
             if let imported = userScriptManager.userScripts.first(where: {
                 CloudSyncLocalUserScriptReconciler.matches(existing: $0, remote: local)
             }) {
-                await userScriptManager.setUserScript(imported, isEnabled: local.isEnabled)
+                await applyRemoteUserScriptEnabledState(
+                    imported,
+                    isEnabled: local.isEnabled,
+                    localMutationRevisionAtStart: localMutationRevisionAtStart
+                )
                 await userScriptManager.setUserScript(imported, updatesAutomatically: local.resolvedUpdatesAutomatically)
                 if let category = local.category,
                    let resolvedCategory = FilterListCategory(rawValue: category) {
@@ -1522,7 +1633,11 @@ final class CloudSyncManager: ObservableObject {
             for remote in missingRemoteScripts {
                 guard let url = URL(string: remote.url) else { continue }
                 if let added = userScriptManager.userScripts.first(where: { $0.url == url }) {
-                    await userScriptManager.setUserScript(added, isEnabled: remote.isEnabled)
+                    await userScriptManager.setUserScript(
+                        added,
+                        isEnabled: remote.isEnabled,
+                        origin: .remoteSync
+                    )
                     await userScriptManager.setUserScript(added, updatesAutomatically: remote.resolvedUpdatesAutomatically)
                     await userScriptManager.setUserScript(added, category: remote.resolvedCategory)
                 }
@@ -1541,7 +1656,11 @@ final class CloudSyncManager: ObservableObject {
             if let imported = userScriptManager.userScripts.first(where: {
                 CloudSyncLocalUserScriptReconciler.matches(existing: $0, remote: local)
             }) {
-                await userScriptManager.setUserScript(imported, isEnabled: local.isEnabled)
+                await userScriptManager.setUserScript(
+                    imported,
+                    isEnabled: local.isEnabled,
+                    origin: .remoteSync
+                )
                 await userScriptManager.setUserScript(imported, updatesAutomatically: local.resolvedUpdatesAutomatically)
                 if let category = local.category,
                    let resolvedCategory = FilterListCategory(rawValue: category) {

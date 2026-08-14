@@ -57,6 +57,7 @@ struct OnboardingView: View {
     @State private var showingRestoreBackupConfirmation = false
     @State private var pendingBackup: WBlockBackup?
     @State private var backupRestoreError: String?
+    @State private var isApplyingSettings = false
 
     @ObservedObject var filterManager: AppFilterManager
     
@@ -388,7 +389,7 @@ struct OnboardingView: View {
         case .regional:
             return !hasLanguagePickerSelection
         case .setup:
-            return !hasEnabledContentBlockers || !hasEnabledAdvanced
+            return isApplyingSettings || !hasEnabledContentBlockers || !hasEnabledAdvanced
         default:
             return false
         }
@@ -1082,42 +1083,42 @@ struct OnboardingView: View {
     }
     
     func applySettings() async {
-        // 1. Set filter selection based on chosen blocking level
-        var updatedFilters = filterManager.filterLists
-        switch selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
-        case "minimal":
-            for i in updatedFilters.indices {
-                updatedFilters[i].isSelected = updatedFilters[i].name == "AdGuard Base Filter"
-            }
-        default:
-            // Disable all filters first
-            for i in updatedFilters.indices {
-                updatedFilters[i].isSelected = false
-            }
-            for i in updatedFilters.indices {
-                if FilterListLoader.recommendedFilterNames.contains(updatedFilters[i].name) {
-                    updatedFilters[i].isSelected = true
-                }
-            }
+        guard !isApplyingSettings else { return }
+        isApplyingSettings = true
+        defer { isApplyingSettings = false }
+        await filterManager.waitUntilReady()
+        await userScriptManager.waitUntilReady()
+
+        // Snapshot the then-current manager array and apply choices by stable IDs.
+        let currentFilters = filterManager.filterLists
+        let normalizedLevel = selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        var selectedFilterIDs = Set<UUID>()
+        if normalizedLevel == "minimal" {
+            selectedFilterIDs.formUnion(currentFilters.filter { $0.name == "AdGuard Base Filter" }.map(\.id))
+        } else {
+            selectedFilterIDs.formUnion(
+                currentFilters
+                    .filter { FilterListLoader.recommendedFilterNames.contains($0.name) }
+                    .map(\.id)
+            )
         }
-        // If Bypass Paywalls userscript is selected, also enable the required filter list
-        if let bypassScript = bypassPaywallsScript, selectedUserscripts.contains(bypassScript.id), let filterName = bypassPaywallsFilterName {
-            for i in updatedFilters.indices {
-                if updatedFilters[i].name == filterName {
-                    updatedFilters[i].isSelected = true
-                }
-            }
+        if let bypassScript = bypassPaywallsScript,
+           selectedUserscripts.contains(bypassScript.id),
+           let filterName = bypassPaywallsFilterName,
+           let filter = currentFilters.first(where: { $0.name == filterName })
+        {
+            selectedFilterIDs.insert(filter.id)
         }
-        if !selectedRegionalFilters.isEmpty {
-            for i in updatedFilters.indices {
-                if selectedRegionalFilters.contains(updatedFilters[i].id) {
-                    updatedFilters[i].isSelected = true
-                }
-            }
-        }
+        selectedFilterIDs.formUnion(selectedRegionalFilters)
+
         await dataManager.setSelectedBlockingLevel(selectedBlockingLevel)
         sharedDefaults.set(Array(selectedLanguages), forKey: Self.selectedLanguagesDefaultsKey)
-        filterManager.filterLists = updatedFilters
+        for filter in currentFilters {
+            filterManager.setFilterListSelection(
+                id: filter.id,
+                selected: selectedFilterIDs.contains(filter.id)
+            )
+        }
         await filterManager.saveFilterLists()
 
         // 2. Enable/disable userscripts based on onboarding selection

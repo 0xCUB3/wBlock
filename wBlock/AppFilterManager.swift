@@ -125,6 +125,8 @@ class AppFilterManager: ObservableObject {
     }
 
     var appliedSelectedFilterIDs: Set<UUID> = []
+    /// Monotonic local selection revision used to protect local choices during remote/async work.
+    private(set) var selectionMutationRevision: UInt64 = 0
     private var appliedCustomFilterKeys: Set<String> = []
     private var appliedFilterConfigurations: [ApplyFilterConfiguration] = []
     var activeApplySnapshot: ApplyRunSnapshot?
@@ -766,6 +768,7 @@ class AppFilterManager: ObservableObject {
             return false
         }
 
+        selectionMutationRevision &+= 1
         filterLists[index].isSelected = selected
         if selected {
             filterLists[index].limitExceededReason = nil

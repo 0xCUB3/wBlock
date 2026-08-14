@@ -7,6 +7,22 @@
 
 import Foundation
 
+public enum FilterSelectionRebaser {
+    /// Keeps the update snapshot's metadata while taking selection from the latest persisted state.
+    public static func rebaseSelection(
+        snapshot: [FilterList],
+        latestPersisted: [FilterList]
+    ) -> [FilterList] {
+        let latestByID = Dictionary(uniqueKeysWithValues: latestPersisted.map { ($0.id, $0.isSelected) })
+        return snapshot.map { filter in
+            guard let isSelected = latestByID[filter.id] else { return filter }
+            var rebased = filter
+            rebased.isSelected = isSelected
+            return rebased
+        }
+    }
+}
+
 public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public var name: String

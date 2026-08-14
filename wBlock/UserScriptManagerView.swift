@@ -569,7 +569,12 @@ struct UserScriptManagerView: View {
     #endif
 
     private func scriptRowView(script: UserScriptListItem) -> some View {
-        HStack(alignment: .center, spacing: 10) {
+        let managedScript = userScriptManager.userScript(withId: script.id)
+        let toggleState = userScriptManager.userScriptToggleState(for: script.id)
+        let displayedEnabled = toggleState?.desired ?? managedScript?.isEnabled ?? script.isEnabled
+        let isToggleInFlight = toggleState?.isInFlight ?? false
+
+        return HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(script.localizedDisplayName)
@@ -629,7 +634,7 @@ struct UserScriptManagerView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                if script.isEnabled && !script.isDownloaded {
+                if displayedEnabled && !script.isDownloaded {
                     Text("Not Downloaded")
                         .font(.caption2)
                         .fontWeight(.medium)
@@ -660,10 +665,15 @@ struct UserScriptManagerView: View {
 
             HStack(spacing: 8) {
                 Toggle("", isOn: Binding(
-                    get: { script.isEnabled || downloadingScriptIDs.contains(script.id) },
+                    get: { displayedEnabled || downloadingScriptIDs.contains(script.id) },
                     set: { newValue in
+                        guard let latestState = userScriptManager.userScriptToggleState(for: script.id),
+                              latestState.desired != newValue
+                        else { return }
                         let shouldDownloadBeforeEnabling =
-                            newValue && !script.isDownloaded && !script.isLocal && script.url != nil
+                            newValue && !(managedScript?.isDownloaded ?? script.isDownloaded)
+                                && !(managedScript?.isLocal ?? script.isLocal)
+                                && (managedScript?.url ?? script.url) != nil
                         if shouldDownloadBeforeEnabling {
                             downloadingScriptIDs.insert(script.id)
                         }
@@ -688,7 +698,11 @@ struct UserScriptManagerView: View {
                 ))
                 .labelsHidden()
                 .toggleStyle(.switch)
-                .disabled(downloadingScriptIDs.contains(script.id) || (script.isLocal && !script.isDownloaded))
+                .disabled(
+                    isToggleInFlight
+                        || downloadingScriptIDs.contains(script.id)
+                        || (script.isLocal && !script.isDownloaded)
+                )
                 .frame(alignment: .center)
             }
         }

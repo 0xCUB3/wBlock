@@ -567,7 +567,7 @@ struct ContentView: View {
                 if !newValue && FilterListLoader.recommendedFilterNames.contains(filter.name) {
                     pendingEssentialFilter = filter
                 } else {
-                    filterManager.toggleFilterListSelection(id: filter.id)
+                    filterManager.setFilterListSelection(id: filter.id, selected: newValue)
                 }
             }
         )
@@ -780,7 +780,8 @@ struct FilterRowView: View {
                 isOn: Binding(
                     get: { filter.isSelected },
                     set: { newValue in
-                        // Defer state change to next run loop to avoid layout invalidation during scroll
+                        // Keep the explicit Toggle value across the deferred callback. The row's
+                        // captured filter can be stale after another state update.
                         DispatchQueue.main.async {
                             onToggle(newValue)
                         }
