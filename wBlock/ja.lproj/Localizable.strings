@@ -541,7 +541,7 @@
 "Paste one or more filter URLs, one per line." = "1行に1つずつ、1つ以上のフィルターURLを貼り付けてください。";
 "Paste or write a userscript or userstyle with a standard metadata block." = "標準のメタデータブロックを含むユーザースクリプトまたはユーザースタイルを貼り付けるか記述してください。";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "直接の .user.js リンクを貼り付けてください。wBlockがダウンロードしてインストールします。";
-"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "直接の .user.js、.js、または .user.css リンクを貼り付けてください。wBlock がダウンロードしてインストールします。";
+"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "直接の .user.js、.js、.user.css、.less、.sass、.scss、.styl、または .pcss リンクを貼り付けてください。wBlock がダウンロードしてインストールします。";
 "Pause Blocking" = "ブロックを一時停止";
 "Enabled Userscripts & Userstyles" = "有効なユーザースクリプトとユーザースタイル";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "選択したコンポーネントのいずれかが一時停止している間、ブロックの一時停止が有効です。再開するとすべてのコンポーネントが戻ります。";
@@ -568,7 +568,7 @@
 "Process completed with reload issues" = "プロセスは完了しましたが、再読み込みに問題があります";
 "Progress" = "進行状況";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "不審な URL、フィッシング サイト、望ましくないソフトウェアから保護します。";
-"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = ".js、.user.js、または .user.css で終わる有効な http:// または https:// リンクを指定してください";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "末尾が .js、.user.js、.user.css、.less、.sass、.scss、.styl、または .pcss の有効な http:// または https:// リンクを指定してください";
 "Provide a valid https:// link ending in .user.js" = ".user.js で終わる有効なhttps://リンクを入力してください";
 "Psst! You forgot something!" = "おっと！忘れている項目があります！";
 "Quit Without Applying" = "申請せずに終了する";
@@ -704,7 +704,7 @@
 "Successfully updated script" = "スクリプトを更新しました";
 "Summary" = "概要";
 "Supplement for EasyList China+EasyList and EasyPrivacy." = "EasyList China+EasyList および EasyPrivacy の補足。";
-"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = ".user.js、.js、.user.css ファイルに対応。ローカルインポートは自動更新されないため、置き換えるには再インポートしてください。";
+"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = ".user.js、.js、.user.css、.less ファイルに対応しています。ローカルインポートは自動更新されません。置き換えるには再インポートしてください。";
 "Sync" = "同期";
 "Sync across devices" = "デバイス間で同期する";
 "Sync Now" = "今すぐ同期";
@@ -937,7 +937,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Issue 508 UI follow-up */
 "Starts with http:// or https://" = "http:// または https:// で始まる";
-"Ends with .js, .user.js, or .user.css" = ".js、.user.js、.user.css で終わる";
+"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "末尾が .js、.user.js、.user.css、.less、.sass、.scss、.styl、または .pcss";
 "Hosted on a trusted source" = "信頼できるソースでホストされている";
 
 "The file must include userscript or userstyle metadata." = "ファイルにはユーザースクリプトまたはユーザースタイルのメタデータを含める必要があります。";
@@ -951,3 +951,27 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "ウェブサイトに便利な機能を追加または復元するユーザースクリプトです。";
 "Userstyles and scripts that change the appearance of websites." = "ウェブサイトの外観を変更するユーザースタイルとスクリプトです。";
 "Custom, remote, and local scripts that do not have a more specific display category." = "より具体的な表示カテゴリに分類されないカスタム、リモート、ローカルスクリプトです。";
+
+/* Userstyle compiler diagnostics */
+"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = ".user.js、.js、.user.css、.less、.sass、.scss、.styl、または .pcss ファイルを選択してください。";
+"Couldn't read the selected file." = "選択したファイルを読み取れませんでした。";
+"The file is empty." = "ファイルが空です。";
+"Not a userscript or userstyle: missing metadata block." = "userscript または userstyle ではありません。メタデータブロックがありません。";
+"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "この userstyle には\"%@\"プリプロセッサが必要ですが、まだ対応していません。";
+"This style file requires the \"%@\" preprocessor, but declares \"%@\"." = "このスタイルファイルには\"%@\"プリプロセッサが必要ですが、\"%@\"と宣言されています。";
+"Couldn't compile this userstyle: %@" = "userstyle をコンパイルできませんでした：%@";
+"Unknown compiler error." = "不明なコンパイラーエラーです。";
+"Couldn't save the edited source." = "編集したソースを保存できませんでした。";
+"Userstyle source exceeds the 2 MiB limit." = "userstyle のソースが 2 MiB の上限を超えています。";
+"Userstyle compiler resource is missing." = "userstyle コンパイラーのリソースがありません。";
+"Userstyle compiler resource failed to load." = "userstyle コンパイラーのリソースを読み込めませんでした。";
+"Userstyle compiler input could not be serialized." = "userstyle コンパイラーの入力をシリアライズできませんでした。";
+"Userstyle compiler returned an invalid response." = "userstyle コンパイラーが無効な応答を返しました。";
+"Userstyle compiler returned no CSS." = "userstyle コンパイラーが CSS を返しませんでした。";
+"Userstyle compiler output exceeds the 10 MiB limit." = "userstyle コンパイラーの出力が 10 MiB の上限を超えています。";
+"Userstyle compiler failed." = "userstyle コンパイラーに失敗しました。";
+"line %@, column %@: %@" = "行 %@、列 %@：%@";
+"line %@: %@" = "行 %@：%@";
+"column %@: %@" = "列 %@：%@";
+"Userstyle compiler timed out." = "ユーザースタイルコンパイラがタイムアウトしました。";
+"Userstyle compiler must not run on the main thread." = "ユーザースタイルコンパイラはメインスレッドで実行してはいけません。";

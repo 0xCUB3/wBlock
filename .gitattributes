@@ -1,0 +1,4 @@
+# Byte-exact vendored compiler artifacts and upstream license texts.
+wBlockCoreService/Resources/UserStyleCompiler/sass/LICENSE.sass -whitespace
+wBlockCoreService/Resources/UserStyleCompiler/stylus/stylus-jsc.js -whitespace
+wBlockCoreService/Resources/UserStyleCompiler/stylus/licenses/** -whitespace

@@ -541,7 +541,7 @@
 "Paste one or more filter URLs, one per line." = "한 줄에 하나씩, 하나 이상의 필터 URL을 붙여넣으세요.";
 "Paste or write a userscript or userstyle with a standard metadata block." = "표준 메타데이터 블록이 포함된 유저스크립트 또는 유저스타일을 붙여넣거나 작성하세요.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "직접 .user.js 링크를 붙여넣으세요. wBlock이 다운로드 및 설치를 진행합니다.";
-"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "직접 .user.js, .js 또는 .user.css 링크를 붙여넣으세요. wBlock이 다운로드하고 설치합니다.";
+"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "직접 .user.js, .js, .user.css, .less, .sass, .scss, .styl 또는 .pcss 링크를 붙여넣으세요. wBlock이 다운로드하여 설치합니다.";
 "Pause Blocking" = "차단 일시정지";
 "Enabled Userscripts & Userstyles" = "활성화된 유저스크립트 및 유저스타일";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "선택한 구성 요소 중 하나라도 일시정지되면 차단 일시정지가 켜집니다. 재개하면 모든 구성 요소가 복원됩니다.";
@@ -568,7 +568,7 @@
 "Process completed with reload issues" = "프로세스가 완료되었지만 다시 로드에 문제가 있습니다";
 "Progress" = "진행 상황";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "의심스러운 URL, 피싱 사이트, 원치 않는 소프트웨어로부터 보호합니다.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = ".js, .user.js 또는 .user.css로 끝나는 유효한 http:// 또는 https:// 링크를 제공하세요";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = ".js, .user.js, .user.css, .less, .sass, .scss, .styl 또는 .pcss로 끝나는 유효한 http:// 또는 https:// 링크를 입력하세요";
 "Provide a valid https:// link ending in .user.js" = ".user.js로 끝나는 유효한 https:// 링크를 입력하세요";
 "Psst! You forgot something!" = "잠시만요! 잊으신 게 있네요!";
 "Quit Without Applying" = "신청하지 않고 종료";
@@ -704,7 +704,7 @@
 "Successfully updated script" = "스크립트를 업데이트했습니다";
 "Summary" = "요약";
 "Supplement for EasyList China+EasyList and EasyPrivacy." = "EasyList China+EasyList 및 EasyPrivacy에 대한 보충 자료입니다.";
-"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = ".user.js, .js 및 .user.css 파일을 지원합니다. 로컬 가져오기는 자동 업데이트되지 않으며, 교체하려면 다시 가져와야 합니다.";
+"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = ".user.js, .js, .user.css 및 .less 파일을 지원합니다. 로컬 가져오기는 자동으로 업데이트되지 않으므로 교체하려면 다시 가져오세요.";
 "Sync" = "동기화";
 "Sync across devices" = "여러 기기에서 동기화";
 "Sync Now" = "지금 동기화";
@@ -937,7 +937,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Issue 508 UI follow-up */
 "Starts with http:// or https://" = "http:// 또는 https://로 시작";
-"Ends with .js, .user.js, or .user.css" = ".js, .user.js 또는 .user.css로 끝남";
+"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = ".js, .user.js, .user.css, .less, .sass, .scss, .styl 또는 .pcss로 끝남";
 "Hosted on a trusted source" = "신뢰할 수 있는 소스에서 호스팅됨";
 
 "The file must include userscript or userstyle metadata." = "파일에는 사용자 스크립트 또는 사용자 스타일 메타데이터가 포함되어야 합니다.";
@@ -951,3 +951,27 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "웹사이트의 유용한 기능을 추가하거나 복원하는 사용자 스크립트입니다.";
 "Userstyles and scripts that change the appearance of websites." = "웹사이트의 모양을 변경하는 사용자 스타일과 스크립트입니다.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "더 구체적인 표시 카테고리가 없는 사용자 지정, 원격 및 로컬 스크립트입니다.";
+
+/* Userstyle compiler diagnostics */
+"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = ".user.js, .js, .user.css, .less, .sass, .scss, .styl 또는 .pcss 파일을 선택하세요.";
+"Couldn't read the selected file." = "선택한 파일을 읽을 수 없습니다.";
+"The file is empty." = "파일이 비어 있습니다.";
+"Not a userscript or userstyle: missing metadata block." = "userscript 또는 userstyle이 아닙니다. 메타데이터 블록이 없습니다.";
+"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "이 userstyle에는 아직 지원되지 않는 \"%@\" 전처리기가 필요합니다.";
+"This style file requires the \"%@\" preprocessor, but declares \"%@\"." = "이 스타일 파일에는 \"%@\" 전처리기가 필요하지만 \"%@\"으로 선언되어 있습니다.";
+"Couldn't compile this userstyle: %@" = "이 userstyle을 컴파일할 수 없습니다: %@";
+"Unknown compiler error." = "알 수 없는 컴파일러 오류입니다.";
+"Couldn't save the edited source." = "편집한 소스를 저장할 수 없습니다.";
+"Userstyle source exceeds the 2 MiB limit." = "userstyle 소스가 2MiB 제한을 초과합니다.";
+"Userstyle compiler resource is missing." = "userstyle 컴파일러 리소스가 없습니다.";
+"Userstyle compiler resource failed to load." = "userstyle 컴파일러 리소스를 불러오지 못했습니다.";
+"Userstyle compiler input could not be serialized." = "userstyle 컴파일러 입력을 직렬화할 수 없습니다.";
+"Userstyle compiler returned an invalid response." = "userstyle 컴파일러가 잘못된 응답을 반환했습니다.";
+"Userstyle compiler returned no CSS." = "userstyle 컴파일러가 CSS를 반환하지 않았습니다.";
+"Userstyle compiler output exceeds the 10 MiB limit." = "userstyle 컴파일러 출력이 10MiB 제한을 초과합니다.";
+"Userstyle compiler failed." = "userstyle 컴파일러가 실패했습니다.";
+"line %@, column %@: %@" = "줄 %@, 열 %@: %@";
+"line %@: %@" = "줄 %@: %@";
+"column %@: %@" = "열 %@: %@";
+"Userstyle compiler timed out." = "사용자 스타일 컴파일러 시간이 초과되었습니다.";
+"Userstyle compiler must not run on the main thread." = "사용자 스타일 컴파일러는 메인 스레드에서 실행하면 안 됩니다.";

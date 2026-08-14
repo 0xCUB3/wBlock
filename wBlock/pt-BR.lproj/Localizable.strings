@@ -541,7 +541,7 @@
 "Paste one or more filter URLs, one per line." = "Cole uma ou mais URLs de filtro, uma por linha.";
 "Paste or write a userscript or userstyle with a standard metadata block." = "Cole ou escreva um script ou estilo de usuário com um bloco de metadados padrão.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Cole o link direto .user.js. O wBlock vai baixar e instalar para você.";
-"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "Cole o link direto .user.js, .js ou .user.css. O wBlock vai baixá-lo e instalá-lo para você.";
+"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Cole o link direto .user.js, .js, .user.css, .less, .sass, .scss, .styl ou .pcss. O wBlock fará o download e a instalação.";
 "Pause Blocking" = "Pausar bloqueio";
 "Pausing blocking..." = "Pausando o bloqueio…";
 "Persian Blocker" = "Persian Blocker";
@@ -565,7 +565,7 @@
 "Process completed with reload issues" = "Processo concluído com problemas de recarregamento";
 "Progress" = "Progresso";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Protege contra URLs suspeitos, sites de phishing e software indesejado.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = "Forneça um link http:// ou https:// válido terminado em .js, .user.js ou .user.css";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Forneça um link http:// ou https:// válido que termine em .js, .user.js, .user.css, .less, .sass, .scss, .styl ou .pcss";
 "Provide a valid https:// link ending in .user.js" = "Forneça um link https:// válido que termine em .user.js";
 "Psst! You forgot something!" = "Psiu! Você esqueceu algo!";
 "Quit Without Applying" = "Sair sem se inscrever";
@@ -701,7 +701,7 @@
 "Successfully updated script" = "Script atualizado com sucesso";
 "Summary" = "Resumo";
 "Supplement for EasyList China+EasyList and EasyPrivacy." = "Suplemento para EasyList China+EasyList e EasyPrivacy.";
-"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = "Compatível com arquivos .user.js, .js e .user.css. Importações locais não serão atualizadas automaticamente; reimporte para substituir.";
+"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "Compatível com arquivos .user.js, .js, .user.css e .less. As importações locais não são atualizadas automaticamente; importe novamente para substituir.";
 "Sync" = "Sincronização";
 "Sync across devices" = "Sincronizar entre dispositivos";
 "Sync Now" = "Sincronizar agora";
@@ -934,7 +934,7 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 
 /* Issue 508 UI follow-up */
 "Starts with http:// or https://" = "Começa com http:// ou https://";
-"Ends with .js, .user.js, or .user.css" = "Termina com .js, .user.js ou .user.css";
+"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Termina em .js, .user.js, .user.css, .less, .sass, .scss, .styl ou .pcss";
 "Hosted on a trusted source" = "Hospedado em uma fonte confiável";
 
 "The file must include userscript or userstyle metadata." = "O arquivo deve incluir metadados de userscript ou userstyle.";
@@ -951,3 +951,27 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Enabled Userscripts & Userstyles" = "Scripts e estilos de usuário ativados";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "A pausa do bloqueio fica ativa enquanto qualquer componente selecionado estiver pausado. Retomar restaura todos os componentes.";
 "Temporarily pause selected components without changing their enabled settings." = "Pause temporariamente os componentes selecionados sem alterar suas configurações de ativação.";
+
+/* Userstyle compiler diagnostics */
+"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "Escolha um arquivo .user.js, .js, .user.css, .less, .sass, .scss, .styl ou .pcss.";
+"Couldn't read the selected file." = "Não foi possível ler o arquivo selecionado.";
+"The file is empty." = "O arquivo está vazio.";
+"Not a userscript or userstyle: missing metadata block." = "Não é um userscript ou userstyle: falta o bloco de metadados.";
+"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "Este userstyle precisa do pré-processador \"%@\", que ainda não é compatível.";
+"This style file requires the \"%@\" preprocessor, but declares \"%@\"." = "Este arquivo de estilo requer o pré-processador \"%@\", mas declara \"%@\".";
+"Couldn't compile this userstyle: %@" = "Não foi possível compilar este userstyle: %@";
+"Unknown compiler error." = "Erro de compilador desconhecido.";
+"Couldn't save the edited source." = "Não foi possível salvar o código-fonte editado.";
+"Userstyle source exceeds the 2 MiB limit." = "O código-fonte do userstyle excede o limite de 2 MiB.";
+"Userstyle compiler resource is missing." = "O recurso do compilador de userstyle está ausente.";
+"Userstyle compiler resource failed to load." = "Falha ao carregar o recurso do compilador de userstyle.";
+"Userstyle compiler input could not be serialized." = "Não foi possível serializar a entrada do compilador de userstyle.";
+"Userstyle compiler returned an invalid response." = "O compilador de userstyle retornou uma resposta inválida.";
+"Userstyle compiler returned no CSS." = "O compilador de userstyle não retornou CSS.";
+"Userstyle compiler output exceeds the 10 MiB limit." = "A saída do compilador de userstyle excede o limite de 10 MiB.";
+"Userstyle compiler failed." = "Falha no compilador de userstyle.";
+"line %@, column %@: %@" = "linha %@, coluna %@: %@";
+"line %@: %@" = "linha %@: %@";
+"column %@: %@" = "coluna %@: %@";
+"Userstyle compiler timed out." = "O compilador de Userstyle atingiu o tempo limite.";
+"Userstyle compiler must not run on the main thread." = "O compilador de Userstyle não deve ser executado na thread principal.";

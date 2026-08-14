@@ -541,7 +541,7 @@
 "Paste one or more filter URLs, one per line." = "الصق عنوان URL لفلتر واحد أو أكثر، عنوان واحد في كل سطر.";
 "Paste or write a userscript or userstyle with a standard metadata block." = "الصق أو اكتب سكريبت مستخدم أو نمط مستخدم مع كتلة بيانات وصفية قياسية.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "الصق رابط .user.js المباشر. سيقوم wBlock بتنزيله وتثبيته لك.";
-"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "ألصق الرابط المباشر لملف .user.js أو .js أو .user.css. سيقوم wBlock بتنزيله وتثبيته لك.";
+"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "الصق رابط .user.js أو .js أو .user.css أو .less أو .sass أو .scss أو .styl أو .pcss المباشر. سيقوم wBlock بتنزيله وتثبيته لك.";
 "Pause Blocking" = "إيقاف الحظر مؤقتًا";
 "Enabled Userscripts & Userstyles" = "النصوص والأنماط المفعّلة للمستخدم";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "إيقاف الحظر مؤقتًا مفعّل عند إيقاف أي مكوّن محدد مؤقتًا. الاستئناف يعيد جميع المكونات.";
@@ -568,7 +568,7 @@
 "Process completed with reload issues" = "اكتملت العملية مع وجود مشكلات إعادة التحميل";
 "Progress" = "التقدم";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "يحمي من عناوين URL المشبوهة ومواقع التصيد والبرامج غير المرغوب فيها.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = "قدّم رابط http:// أو https:// صالحًا ينتهي بـ .js أو .user.js أو .user.css";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "قدّم رابط http:// أو https:// صالحًا ينتهي بـ .js أو .user.js أو .user.css أو .less أو .sass أو .scss أو .styl أو .pcss";
 "Provide a valid https:// link ending in .user.js" = "قدّم رابط https:// صالحًا ينتهي بـ .user.js";
 "Psst! You forgot something!" = "مهلًا! لقد نسيت شيئًا!";
 "Quit Without Applying" = "استقال دون التقديم";
@@ -704,7 +704,7 @@
 "Successfully updated script" = "تم تحديث البرنامج النصي بنجاح";
 "Summary" = "الملخص";
 "Supplement for EasyList China+EasyList and EasyPrivacy." = "ملحق لـ EasyList China+EasyList وEasyPrivacy.";
-"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = "يدعم ملفات .user.js و .js و .user.css. لن تتحدث الاستيرادات المحلية تلقائيًا؛ أعد الاستيراد للاستبدال.";
+"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "يدعم ملفات .user.js و.js و.user.css و.less. لن تُحدَّث الاستيرادات المحلية تلقائيًا؛ أعد الاستيراد لاستبدالها.";
 "Sync" = "مزامنة";
 "Sync across devices" = "المزامنة عبر الأجهزة";
 "Sync Now" = "المزامنة الآن";
@@ -937,7 +937,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Issue 508 UI follow-up */
 "Starts with http:// or https://" = "يبدأ بـ http:// أو https://";
-"Ends with .js, .user.js, or .user.css" = "ينتهي بـ .js أو .user.js أو .user.css";
+"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "ينتهي بـ .js أو .user.js أو .user.css أو .less أو .sass أو .scss أو .styl أو .pcss";
 "Hosted on a trusted source" = "مستضاف على مصدر موثوق";
 
 "The file must include userscript or userstyle metadata." = "يجب أن يتضمن الملف بيانات وصفية لسكريبت المستخدم أو نمط المستخدم.";
@@ -951,3 +951,27 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "سكريبتات تضيف وظائف مفيدة إلى مواقع الويب أو تستعيدها.";
 "Userstyles and scripts that change the appearance of websites." = "أنماط وسكريبتات تغيّر مظهر مواقع الويب.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "سكريبتات مخصصة وبعيدة ومحلية لا تنتمي إلى فئة عرض أكثر تحديدًا.";
+
+/* Userstyle compiler diagnostics */
+"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "اختر ملفًا من نوع .user.js أو .js أو .user.css أو .less أو .sass أو .scss أو .styl أو .pcss.";
+"Couldn't read the selected file." = "تعذّرت قراءة الملف المحدد.";
+"The file is empty." = "الملف فارغ.";
+"Not a userscript or userstyle: missing metadata block." = "ليس userscript أو userstyle: كتلة البيانات الوصفية مفقودة.";
+"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "يحتاج هذا userstyle إلى المعالج المسبق \"%@\"، وهو غير مدعوم بعد.";
+"This style file requires the \"%@\" preprocessor, but declares \"%@\"." = "يتطلب ملف النمط هذا المعالج المسبق \"%@\"، لكنه يعلن عن \"%@\".";
+"Couldn't compile this userstyle: %@" = "تعذّر تجميع userstyle هذا: %@";
+"Unknown compiler error." = "خطأ غير معروف في المترجم.";
+"Couldn't save the edited source." = "تعذّر حفظ المصدر المعدّل.";
+"Userstyle source exceeds the 2 MiB limit." = "يتجاوز مصدر userstyle حد 2 MiB.";
+"Userstyle compiler resource is missing." = "مورد مترجم userstyle مفقود.";
+"Userstyle compiler resource failed to load." = "تعذّر تحميل مورد مترجم userstyle.";
+"Userstyle compiler input could not be serialized." = "تعذّر تحويل إدخال مترجم userstyle إلى تسلسل.";
+"Userstyle compiler returned an invalid response." = "أعاد مترجم userstyle استجابة غير صالحة.";
+"Userstyle compiler returned no CSS." = "لم يُعد مترجم userstyle أي CSS.";
+"Userstyle compiler output exceeds the 10 MiB limit." = "يتجاوز خرج مترجم userstyle حد 10 MiB.";
+"Userstyle compiler failed." = "فشل مترجم userstyle.";
+"line %@, column %@: %@" = "السطر %@، العمود %@: %@";
+"line %@: %@" = "السطر %@: %@";
+"column %@: %@" = "العمود %@: %@";
+"Userstyle compiler timed out." = "انتهت مهلة مترجم أنماط المستخدم.";
+"Userstyle compiler must not run on the main thread." = "يجب ألا يعمل مترجم أنماط المستخدم على الخيط الرئيسي.";

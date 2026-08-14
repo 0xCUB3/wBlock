@@ -868,7 +868,7 @@ public enum WebExtensionRequestHandler {
                     // no GM machinery, no resources, and no namespace to ship. Oversized
                     // payloads hydrate through the chunk path, which recomputes the same
                     // effective CSS from the page URL.
-                    guard let css = UserStyleSupport.effectiveCSS(forContent: script.content, url: urlString) else {
+                    guard let css = UserStyleSupport.effectiveCSS(forContent: script.content, compiledBody: script.compiledStyleBody, url: urlString) else {
                         continue
                     }
                     var descriptor: [String: Any] = [
@@ -1469,10 +1469,17 @@ public enum WebExtensionRequestHandler {
             switch kind {
             case .content:
                 let pageURL = message["url"] as? String
-                let cacheKey = "content:\(scriptId.uuidString):\(pageURL ?? "")"
+                let artifactIdentity: String = {
+                    guard let body = script.compiledStyleBody,
+                          let style = UserStyleSupport.parsed(from: script.content, compiledBody: nil, compileSource: false),
+                          let revision = UserStylePreprocessorService.compilerRevision(for: style.preprocessor)
+                    else { return "none" }
+                    return "\(revision):\(UserStylePreprocessorService.digest(body))"
+                }()
+                let cacheKey = "content:\(scriptId.uuidString):\(pageURL ?? ""):\(artifactIdentity)"
                 data = userScriptPayloadDataCache.data(for: cacheKey, source: script.content) { source in
                     if script.isUserStyle, let pageURL, !pageURL.isEmpty {
-                        return UserStyleSupport.effectiveCSS(forContent: source, url: pageURL)
+                        return UserStyleSupport.effectiveCSS(forContent: source, compiledBody: script.compiledStyleBody, url: pageURL)
                     }
                     return UserScript.executableContent(from: source)
                 }
