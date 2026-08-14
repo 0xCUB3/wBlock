@@ -23,7 +23,7 @@
 <br>
 
 ![Version](https://img.shields.io/github/v/release/0xCUB3/wBlock?style=flat&label=version&color=gray)
-![Platform](https://img.shields.io/badge/macOS_12.3+_|_iOS_15.4+-gray?style=flat&logo=apple&logoColor=white)
+![Platform](https://img.shields.io/badge/macOS_12.3+_|_iOS_15.4+_|_visionOS_1.0+-gray?style=flat&logo=apple&logoColor=white)
 ![License](https://img.shields.io/badge/GPL--3.0-gray?style=flat&label=license)
 
 [![Join Discord](https://img.shields.io/badge/Join-Discord-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.gg/Y3yTFPpbXr)
@@ -40,7 +40,7 @@
 <br>
 
 <p align="center">
-A Safari content blocker for macOS, iOS, and iPadOS.<br>
+A Safari content blocker for macOS, iOS, iPadOS, and visionOS.<br>
 750,000 rules across 5 extensions, Protocol Buffer storage, LZ4 compression, and iCloud sync.
 </p>
 

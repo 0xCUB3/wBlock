@@ -1,10 +1,10 @@
 # Safari ad blocker comparison
 
-_Last reviewed: July 8, 2026._
+_Last reviewed: August 14, 2026._
 
 Safari blockers don't work like classic uBlock Origin on Firefox. With Apple's Content Blocking API, an app gives Safari a compiled rule list and Safari applies it inside the browser engine. Privacy improves because Safari doesn't have to ask the app what to do while a page loads.
 
-Anything more hands-on, cosmetic filtering, scriptlets, element picking, YouTube workarounds, per-page controls, ends up in a Safari Web Extension or injected script. This guide compares wBlock, uBlock Origin Lite, Wipr 2, and AdGuard's Safari apps: AdGuard Mini on macOS and AdGuard for iOS on iPhone and iPad.
+Anything more hands-on, cosmetic filtering, scriptlets, element picking, YouTube workarounds, per-page controls, ends up in a Safari Web Extension or injected script. This guide compares wBlock, uBlock Origin Lite, Wipr 2, and AdGuard's Safari apps: AdGuard Mini on macOS and AdGuard for iOS on iPhone, iPad, and Apple Vision.
 
 ## Short version
 
@@ -23,7 +23,7 @@ Anything more hands-on, cosmetic filtering, scriptlets, element picking, YouTube
 |License|GPL-3.0|GPL-3.0|Proprietary|Mini: AdGuard source license; iOS: GPL-3.0|
 |macOS support|Yes|Yes|Yes|Yes via Mini|
 |iOS / iPadOS support|Yes|Yes|Yes|Yes via AdGuard for iOS|
-|visionOS support|Extension pieces|Yes|Yes|No|
+|visionOS support|Yes via iPad-compatible app|Yes|Yes|Yes via AdGuard for iOS|
 |Static rule capacity|750,000 compiled Safari rules|DNR-based, browser-dependent|4 blocklist extensions, total not published|900,000 Mini; iOS uses six 150k slots|
 |Custom filter lists|Yes|Yes, newer support with MV3 constraints|No|Yes|
 |Userscripts|Yes|No|No|No in Mini / iOS|
@@ -33,7 +33,7 @@ Anything more hands-on, cosmetic filtering, scriptlets, element picking, YouTube
 
 ## wBlock
 
-wBlock is a native Safari blocker for macOS, iOS, and iPadOS. It uses five Safari content blocker extensions per platform, giving it five 150,000-rule slots and a 750,000-rule ceiling when all slots are available. That number is the compiled Safari rule count, not the raw number of filter-list lines. A single AdGuard rule can expand, collapse, or disappear during conversion depending on what Safari can express.
+wBlock is a Safari blocker for macOS, iOS, iPadOS, and visionOS. On Apple Vision, it runs as an iPad-compatible app with the same five Safari content blocker extensions. Those extensions provide five 150,000-rule slots and a 750,000-rule ceiling when all slots are available. That number is the compiled Safari rule count, not the raw number of filter-list lines. A single AdGuard rule can expand, collapse, or disappear during conversion depending on what Safari can express.
 
 Filter metadata and compiled data use Protocol Buffers and LZ4 compression. Filter lists are big, repetitive, and updated often; the app still needs to feel instant when a user enables a list or imports a custom subscription. Updates use `ETag` and `If-Modified-Since`, so a scheduled refresh can skip the full download when the server says nothing changed.
 
@@ -105,7 +105,7 @@ Sources: [Wipr 2 App Store](https://apps.apple.com/us/app/wipr-2/id1662217862), 
 
 ## AdGuard Mini and AdGuard for iOS
 
-AdGuard's Safari apps are split across products. AdGuard Mini is the macOS Safari app formerly called AdGuard for Safari. AdGuard for iOS is the iPhone and iPad app. The full AdGuard for Mac app is a different product: system-wide, paid, and outside this comparison.
+AdGuard's Safari apps are split across products. AdGuard Mini is the macOS Safari app formerly called AdGuard for Safari. AdGuard for iOS runs on iPhone, iPad, and Apple Vision; its App Store listing requires visionOS 1.0 or later. The full AdGuard for Mac app is a different product: system-wide, paid, and outside this comparison.
 
 <div align="center">
   <picture>
@@ -117,7 +117,7 @@ AdGuard's Safari apps are split across products. AdGuard Mini is the macOS Safar
 
 Mini uses six Safari content blockers: General, Privacy, Social, Security, Other, and Custom. With Safari's 150,000-rule limit per content blocker, Mini has a published ceiling of 900,000 compiled rules. It's more configurable than Wipr and more traditional than uBOL: filter categories, custom filters, user rules, element blocking, issue reporting, and an advanced rule editor. The free version covers basic Safari blocking. Pro unlocks real-time filter updates, AdGuard Extra for harder anti-adblock and ad cases, and a few other advanced filtering features.
 
-AdGuard for iOS follows the same shape, adapted to iPhone and iPad. It has six content blockers named General, Privacy, Social, Security, Custom, and Other. Safari protection includes filter groups, user rules, an allowlist, and custom filter URLs. The Safari Web Extension adds the in-browser controls: toggle protection for the current site, manually block an element, report a filtering issue, and apply advanced filtering rules, CSS rules, Extended CSS selectors, and scriptlets when Premium is enabled.
+AdGuard for iOS follows the same shape, adapted to iPhone, iPad, and Apple Vision. It has six content blockers named General, Privacy, Social, Security, Custom, and Other. Safari protection includes filter groups, user rules, an allowlist, and custom filter URLs. The Safari Web Extension adds the in-browser controls: toggle protection for the current site, manually block an element, report a filtering issue, and apply advanced filtering rules, CSS rules, Extended CSS selectors, and scriptlets when Premium is enabled.
 
 DNS protection is separate from Safari filtering. It can catch domain-level ad and tracking hosts outside Safari, usually through a local VPN-style setup on iOS, but it only sees hostnames. It can't hide page elements or make path-level HTTPS decisions after the connection is established. Safari content blockers handle page filtering, the Web Extension handles advanced page behavior, and DNS filtering catches domain-level hosts across the device.
 
@@ -125,7 +125,7 @@ AdGuard also has both AdGuard and AdGuard Pro in the iOS App Store. They used to
 
 AdGuard has the deepest filter ecosystem here. Regional coverage is broad, the rule syntax has been around for years, and the reporting flow is solid. The awkward part is the product split, plus the cost of the most advanced features.
 
-Sources: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html), [AdGuard Mini App Store](https://apps.apple.com/pl/app/adguard-mini/id1440147259?mt=12), [AdGuard Mini GitHub](https://github.com/AdguardTeam/AdGuardMiniForMac), [AdGuard rule limit KB](https://adguard.com/kb/adguard-mini-for-mac/solving-problems/rule-limit/), [AdGuard for iOS](https://adguard.com/en/adguard-ios/overview.html), [AdGuard for iOS GitHub](https://github.com/AdguardTeam/AdguardForiOS), [AdGuard iOS Safari protection KB](https://adguard.com/kb/adguard-for-ios/features/safari-protection/), [AdGuard iOS Web Extension KB](https://adguard.com/kb/adguard-for-ios/web-extension/), [AdGuard and AdGuard Pro KB](https://adguard.com/kb/adguard-for-ios/adguard-and-adguard-pro/)
+Sources: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html), [AdGuard Mini App Store](https://apps.apple.com/pl/app/adguard-mini/id1440147259?mt=12), [AdGuard Mini GitHub](https://github.com/AdguardTeam/AdGuardMiniForMac), [AdGuard rule limit KB](https://adguard.com/kb/adguard-mini-for-mac/solving-problems/rule-limit/), [AdGuard for iOS](https://adguard.com/en/adguard-ios/overview.html), [AdGuard for iOS App Store](https://apps.apple.com/us/app/adguard-ad-blocker-for-safari/id1047223162), [AdGuard for iOS GitHub](https://github.com/AdguardTeam/AdguardForiOS), [AdGuard iOS Safari protection KB](https://adguard.com/kb/adguard-for-ios/features/safari-protection/), [AdGuard iOS Web Extension KB](https://adguard.com/kb/adguard-for-ios/web-extension/), [AdGuard and AdGuard Pro KB](https://adguard.com/kb/adguard-for-ios/adguard-and-adguard-pro/)
 
 ## Feature details
 
@@ -135,7 +135,7 @@ Sources: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html), 
 |-|-|-|-|-|
 |macOS support|Yes|Yes|Yes|Yes via Mini|
 |iOS / iPadOS support|Yes|Yes|Yes|Yes via AdGuard for iOS|
-|visionOS support|Extension pieces|Yes|Yes|No|
+|visionOS support|Yes via iPad-compatible app|Yes|Yes|Yes via AdGuard for iOS|
 |Open source|Yes|Yes|No|Yes, license differs by app|
 |License|GPL-3.0|GPL-3.0|Proprietary|Mini: AdGuard source license; iOS: GPL-3.0|
 |Main implementation|Swift + JavaScript|JavaScript|Swift|Swift + web UI|
