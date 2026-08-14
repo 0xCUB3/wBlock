@@ -951,3 +951,19 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Enabled Userscripts & Userstyles" = "Etkin kullanıcı betikleri ve stilleri";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Seçilen bileşenlerden biri duraklatıldığında Engellemeyi Duraklat etkindir. Sürdürme tüm bileşenleri geri yükler.";
 "Temporarily pause selected components without changing their enabled settings." = "Etkinleştirme ayarlarını değiştirmeden seçilen bileşenleri geçici olarak duraklatın.";
+
+/* Screen Time */
+"Screen Time" = "Ekran Süresi";
+"Enable Screen Time blocking" = "Ekran Süresi engellemesini etkinleştir";
+"Choose websites and categories" = "Web sitelerini ve kategorileri seç";
+"Authorized" = "Yetkilendirildi";
+"Authorization denied" = "Yetkilendirme reddedildi";
+"Authorization not granted" = "Yetki verilmedi";
+"Before authorization" = "Yetkilendirmeden önce";
+"Screen Time setup was cancelled." = "Ekran Süresi kurulumu iptal edildi.";
+"Screen Time is unavailable or was not approved." = "Ekran Süresi kullanılamıyor veya onaylanmadı.";
+"Authorization" = "Yetkilendirme";
+"Authorize Screen Time" = "Ekran Süresi’ne izin ver";
+"Open Settings" = "Ayarlar’ı Aç";
+"Screen Time blocks only the websites and categories selected here. Safari filters and userscripts are unchanged." = "Ekran Süresi yalnızca burada seçilen web sitelerini ve kategorileri engeller. Safari filtreleri ve kullanıcı betikleri değişmez.";
+"wBlock uses Apple’s Family Controls permission to shield the websites and categories you choose. Application selections are ignored. Safari blocking continues if permission is unavailable." = "wBlock, seçtiğiniz web sitelerini ve kategorileri perdelemek için Apple’ın Aile Denetimleri iznini kullanır. Uygulama seçimleri yok sayılır. İzin kullanılamıyorsa Safari engellemesi devam eder.";

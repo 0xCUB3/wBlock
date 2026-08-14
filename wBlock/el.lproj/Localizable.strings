@@ -951,3 +951,19 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "Scripts που προσθέτουν ή επαναφέρουν χρήσιμες λειτουργίες ιστοτόπων.";
 "Userstyles and scripts that change the appearance of websites." = "Userstyles και scripts που αλλάζουν την εμφάνιση ιστοτόπων.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Προσαρμοσμένα, απομακρυσμένα και τοπικά scripts χωρίς ειδικότερη κατηγορία εμφάνισης.";
+
+/* Screen Time */
+"Screen Time" = "Χρόνος επί οθόνης";
+"Enable Screen Time blocking" = "Ενεργοποίηση αποκλεισμού με Χρόνο επί οθόνης";
+"Choose websites and categories" = "Επιλογή ιστότοπων και κατηγοριών";
+"Authorized" = "Εξουσιοδοτήθηκε";
+"Authorization denied" = "Η εξουσιοδότηση απορρίφθηκε";
+"Authorization not granted" = "Η εξουσιοδότηση δεν παραχωρήθηκε";
+"Before authorization" = "Πριν από την εξουσιοδότηση";
+"Screen Time setup was cancelled." = "Η ρύθμιση Χρόνου επί οθόνης ακυρώθηκε.";
+"Screen Time is unavailable or was not approved." = "Ο Χρόνος επί οθόνης δεν είναι διαθέσιμος ή δεν εγκρίθηκε.";
+"Authorization" = "Εξουσιοδότηση";
+"Authorize Screen Time" = "Εξουσιοδότηση Χρόνου επί οθόνης";
+"Open Settings" = "Άνοιγμα ρυθμίσεων";
+"Screen Time blocks only the websites and categories selected here. Safari filters and userscripts are unchanged." = "Ο Χρόνος επί οθόνης αποκλείει μόνο τους ιστότοπους και τις κατηγορίες που επιλέγετε εδώ. Τα φίλτρα και τα userscript του Safari δεν αλλάζουν.";
+"wBlock uses Apple’s Family Controls permission to shield the websites and categories you choose. Application selections are ignored. Safari blocking continues if permission is unavailable." = "Το wBlock χρησιμοποιεί την άδεια Οικογενειακών ελέγχων της Apple για να καλύπτει τους ιστότοπους και τις κατηγορίες που επιλέγετε. Οι επιλογές εφαρμογών αγνοούνται. Ο αποκλεισμός στο Safari συνεχίζεται αν η άδεια δεν είναι διαθέσιμη.";

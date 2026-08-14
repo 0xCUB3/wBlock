@@ -951,3 +951,19 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "為網站新增或恢復實用功能的使用者腳本。";
 "Userstyles and scripts that change the appearance of websites." = "變更網站外觀的使用者樣式與腳本。";
 "Custom, remote, and local scripts that do not have a more specific display category." = "沒有更具體顯示類別的自訂、遠端與本機腳本。";
+
+/* Screen Time */
+"Screen Time" = "螢幕使用時間";
+"Enable Screen Time blocking" = "啟用螢幕使用時間阻擋";
+"Choose websites and categories" = "選擇網站和類別";
+"Authorized" = "已授權";
+"Authorization denied" = "授權遭拒";
+"Authorization not granted" = "未授權";
+"Before authorization" = "授權之前";
+"Screen Time setup was cancelled." = "螢幕使用時間設定已取消。";
+"Screen Time is unavailable or was not approved." = "螢幕使用時間無法使用或未獲核准。";
+"Authorization" = "授權";
+"Authorize Screen Time" = "授權螢幕使用時間";
+"Open Settings" = "開啟設定";
+"Screen Time blocks only the websites and categories selected here. Safari filters and userscripts are unchanged." = "螢幕使用時間只會阻擋在此選取的網站和類別。Safari 過濾器和使用者腳本不會變更。";
+"wBlock uses Apple’s Family Controls permission to shield the websites and categories you choose. Application selections are ignored. Safari blocking continues if permission is unavailable." = "wBlock 使用 Apple 的家長監護權限來遮蔽你選取的網站和類別。App 選項會被忽略。如果權限無法使用，Safari 阻擋仍會繼續。";

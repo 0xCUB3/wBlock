@@ -951,3 +951,19 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "Скрипты, добавляющие или восстанавливающие полезные функции сайтов.";
 "Userstyles and scripts that change the appearance of websites." = "Юзерстили и скрипты, изменяющие внешний вид сайтов.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Пользовательские, удалённые и локальные скрипты без более подходящей категории отображения.";
+
+/* Screen Time */
+"Screen Time" = "Экранное время";
+"Enable Screen Time blocking" = "Включить блокировку через Экранное время";
+"Choose websites and categories" = "Выбрать сайты и категории";
+"Authorized" = "Авторизовано";
+"Authorization denied" = "В авторизации отказано";
+"Authorization not granted" = "Авторизация не предоставлена";
+"Before authorization" = "Перед авторизацией";
+"Screen Time setup was cancelled." = "Настройка Экранного времени отменена.";
+"Screen Time is unavailable or was not approved." = "Экранное время недоступно или не было одобрено.";
+"Authorization" = "Авторизация";
+"Authorize Screen Time" = "Разрешить Экранное время";
+"Open Settings" = "Открыть Настройки";
+"Screen Time blocks only the websites and categories selected here. Safari filters and userscripts are unchanged." = "Экранное время блокирует только выбранные здесь сайты и категории. Фильтры Safari и пользовательские скрипты не изменяются.";
+"wBlock uses Apple’s Family Controls permission to shield the websites and categories you choose. Application selections are ignored. Safari blocking continues if permission is unavailable." = "wBlock использует разрешение Apple «Семейный доступ» для блокировки выбранных сайтов и категорий. Выбор приложений игнорируется. Блокировка в Safari продолжает работать, если разрешение недоступно.";

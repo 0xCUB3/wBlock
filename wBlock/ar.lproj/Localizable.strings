@@ -951,3 +951,19 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "سكريبتات تضيف وظائف مفيدة إلى مواقع الويب أو تستعيدها.";
 "Userstyles and scripts that change the appearance of websites." = "أنماط وسكريبتات تغيّر مظهر مواقع الويب.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "سكريبتات مخصصة وبعيدة ومحلية لا تنتمي إلى فئة عرض أكثر تحديدًا.";
+
+/* Screen Time */
+"Screen Time" = "مدة استخدام الجهاز";
+"Enable Screen Time blocking" = "تفعيل الحظر بمدة استخدام الجهاز";
+"Choose websites and categories" = "اختيار مواقع الويب والفئات";
+"Authorized" = "مصرّح";
+"Authorization denied" = "رُفض التفويض";
+"Authorization not granted" = "لم يُمنح التفويض";
+"Before authorization" = "قبل التفويض";
+"Screen Time setup was cancelled." = "تم إلغاء إعداد مدة استخدام الجهاز.";
+"Screen Time is unavailable or was not approved." = "مدة استخدام الجهاز غير متاحة أو لم تتم الموافقة عليها.";
+"Authorization" = "التفويض";
+"Authorize Screen Time" = "السماح بميزة مدة استخدام الجهاز";
+"Open Settings" = "فتح الإعدادات";
+"Screen Time blocks only the websites and categories selected here. Safari filters and userscripts are unchanged." = "تحظر ميزة مدة استخدام الجهاز فقط مواقع الويب والفئات المحددة هنا. تظل عوامل تصفية Safari وبرامج المستخدم النصية دون تغيير.";
+"wBlock uses Apple’s Family Controls permission to shield the websites and categories you choose. Application selections are ignored. Safari blocking continues if permission is unavailable." = "يستخدم wBlock إذن أدوات الرقابة العائلية من Apple لحجب مواقع الويب والفئات التي تختارها. يتم تجاهل اختيارات التطبيقات. يستمر حظر Safari إذا لم يكن الإذن متاحًا.";

@@ -19,6 +19,9 @@ enum WBlockLaunchSetup {
         await dataManager.migrateMobileFilterToAdsCategory()
         await dataManager.migrateAllowlistsToDedicatedCategory()
         await UserScriptManager.shared.waitUntilReady()
+        #if os(iOS)
+        await ScreenTimeManager.shared.reconcile()
+        #endif
     }
 }
 
@@ -73,7 +76,12 @@ struct wBlockApp: App {
                 }
                 .onChangeCompat(of: scenePhase) { _, newPhase in
                     guard newPhase == .active, hasCompletedLaunchSetup else { return }
-                    Task { await CloudSyncManager.shared.syncNow(trigger: "AppActive") }
+                    Task {
+                        #if os(iOS)
+                        await ScreenTimeManager.shared.reconcile()
+                        #endif
+                        await CloudSyncManager.shared.syncNow(trigger: "AppActive")
+                    }
                 }
                 #if os(macOS)
                 .handlesExternalEvents(preferring: Set(["open"]), allowing: Set(["*"]))

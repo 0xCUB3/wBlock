@@ -54,6 +54,9 @@
 		F00100000000000000000002 /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		F00100000000000000000012 /* wBlockCoreService.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		FED6926A584C456FB473D01D /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FDD950C25AE42E1AE1469FC /* main.swift */; };
+		F51300000000000000000080 /* wBlock Shield Configuration.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F51300000000000000000030 /* wBlock Shield Configuration.appex */; platformFilters = (ios, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F51300000000000000000081 /* wBlock Shield Action.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F51300000000000000000031 /* wBlock Shield Action.appex */; platformFilters = (ios, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F51300000000000000000082 /* wBlock Device Activity Monitor.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F51300000000000000000032 /* wBlock Device Activity Monitor.appex */; platformFilters = (ios, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -211,6 +214,9 @@
 			remoteGlobalIDString = C1A41C442DE089C50056F63D;
 			remoteInfo = wBlockCoreService;
 		};
+		F51300000000000000000090 = {isa = PBXContainerItemProxy; containerPortal = C1A41C252DE0897C0056F63D /* Project object */; proxyType = 1; remoteGlobalIDString = F51300000000000000000010; remoteInfo = "wBlock Shield Configuration"; };
+		F51300000000000000000091 = {isa = PBXContainerItemProxy; containerPortal = C1A41C252DE0897C0056F63D /* Project object */; proxyType = 1; remoteGlobalIDString = F51300000000000000000011; remoteInfo = "wBlock Shield Action"; };
+		F51300000000000000000092 = {isa = PBXContainerItemProxy; containerPortal = C1A41C252DE0897C0056F63D /* Project object */; proxyType = 1; remoteGlobalIDString = F51300000000000000000012; remoteInfo = "wBlock Device Activity Monitor"; };
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -280,6 +286,9 @@
 				C1A41C762DE08AD30056F63D /* wBlock Ads.appex in Embed Foundation Extensions */,
 				C1F16C902DE355BC0031E7EF /* wBlock Foreign & Experimental iOS.appex in Embed Foundation Extensions */,
 				C1A41C892DE08BDA0056F63D /* wBlock Ads iOS.appex in Embed Foundation Extensions */,
+				F51300000000000000000080 /* wBlock Shield Configuration.appex in Embed Foundation Extensions */,
+				F51300000000000000000081 /* wBlock Shield Action.appex in Embed Foundation Extensions */,
+				F51300000000000000000082 /* wBlock Device Activity Monitor.appex in Embed Foundation Extensions */,
 				C1F16C6C2DE3558A0031E7EF /* wBlock Annoyances iOS.appex in Embed Foundation Extensions */,
 				C1F16BFA2DE354C30031E7EF /* wBlock Security.appex in Embed Foundation Extensions */,
 				C1F16C362DE355150031E7EF /* wBlock Custom.appex in Embed Foundation Extensions */,
@@ -338,6 +347,9 @@
 		C1F16C872DE355BC0031E7EF /* wBlock Foreign & Experimental iOS.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Foreign & Experimental iOS.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C1F16CAB2DE355DE0031E7EF /* wBlock Custom iOS.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "wBlock Custom iOS.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F00100000000000000000003 /* FilterUpdateLoginItem.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FilterUpdateLoginItem.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F51300000000000000000030 /* wBlock Shield Configuration.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.application-extension"; includeInIndex = 0; path = "wBlock Shield Configuration.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F51300000000000000000031 /* wBlock Shield Action.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.application-extension"; includeInIndex = 0; path = "wBlock Shield Action.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F51300000000000000000032 /* wBlock Device Activity Monitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.application-extension"; includeInIndex = 0; path = "wBlock Device Activity Monitor.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -471,6 +483,9 @@
 			);
 			target = C1A41C7F2DE08BDA0056F63D /* wBlock Ads iOS */;
 		};
+		F51300000000000000000100 /* Exceptions for "wBlock Shield Configuration" folder in "wBlock Shield Configuration" target */ = {isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (Info.plist,); target = F51300000000000000000010; };
+		F51300000000000000000101 /* Exceptions for "wBlock Shield Action" folder in "wBlock Shield Action" target */ = {isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (Info.plist,); target = F51300000000000000000011; };
+		F51300000000000000000102 /* Exceptions for "wBlock Device Activity Monitor" folder in "wBlock Device Activity Monitor" target */ = {isa = PBXFileSystemSynchronizedBuildFileExceptionSet; membershipExceptions = (Info.plist,); target = F51300000000000000000012; };
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -616,6 +631,30 @@
 				F00100000000000000000013 /* Exceptions for "FilterUpdateLoginItem" folder in "FilterUpdateLoginItem" target */,
 			);
 			path = FilterUpdateLoginItem;
+			sourceTree = "<group>";
+		};
+		F51300000000000000000020 /* wBlock Shield Configuration */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F51300000000000000000100 /* Exceptions for "wBlock Shield Configuration" folder in "wBlock Shield Configuration" target */,
+			);
+			path = "wBlock Shield Configuration";
+			sourceTree = "<group>";
+		};
+		F51300000000000000000021 /* wBlock Shield Action */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F51300000000000000000101 /* Exceptions for "wBlock Shield Action" folder in "wBlock Shield Action" target */,
+			);
+			path = "wBlock Shield Action";
+			sourceTree = "<group>";
+		};
+		F51300000000000000000022 /* wBlock Device Activity Monitor */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F51300000000000000000102 /* Exceptions for "wBlock Device Activity Monitor" folder in "wBlock Device Activity Monitor" target */,
+			);
+			path = "wBlock Device Activity Monitor";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -981,6 +1020,9 @@
 				C1F16CA12DE355CC0031E7EF /* PBXTargetDependency */,
 				C1F16CB32DE355DE0031E7EF /* PBXTargetDependency */,
 				867CCA2F2F696EA200719EFE /* PBXTargetDependency */,
+				F51300000000000000000070 /* PBXTargetDependency */,
+				F51300000000000000000071 /* PBXTargetDependency */,
+				F51300000000000000000072 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				C1A41C2F2DE0897C0056F63D /* wBlock */,
@@ -1349,6 +1391,42 @@
 			productReference = F00100000000000000000003 /* FilterUpdateLoginItem.app */;
 			productType = "com.apple.product-type.application";
 		};
+		F51300000000000000000010 /* wBlock Shield Configuration */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F5130000000000000000040 /* Build configuration list */;
+			buildPhases = (F51300000000000000000040 /* Sources */, F51300000000000000000050 /* Frameworks */, F51300000000000000000060 /* Resources */);
+			buildRules = ();
+			dependencies = ();
+			fileSystemSynchronizedGroups = (F51300000000000000000020 /* wBlock Shield Configuration */);
+			name = "wBlock Shield Configuration";
+			productName = "wBlock Shield Configuration";
+			productReference = F51300000000000000000030 /* wBlock Shield Configuration.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		F51300000000000000000011 /* wBlock Shield Action */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F5130000000000000000041 /* Build configuration list */;
+			buildPhases = (F51300000000000000000041 /* Sources */, F51300000000000000000051 /* Frameworks */, F51300000000000000000061 /* Resources */);
+			buildRules = ();
+			dependencies = ();
+			fileSystemSynchronizedGroups = (F51300000000000000000021 /* wBlock Shield Action */);
+			name = "wBlock Shield Action";
+			productName = "wBlock Shield Action";
+			productReference = F51300000000000000000031 /* wBlock Shield Action.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		F51300000000000000000012 /* wBlock Device Activity Monitor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F5130000000000000000042 /* Build configuration list */;
+			buildPhases = (F51300000000000000000042 /* Sources */, F51300000000000000000052 /* Frameworks */, F51300000000000000000062 /* Resources */);
+			buildRules = ();
+			dependencies = ();
+			fileSystemSynchronizedGroups = (F51300000000000000000022 /* wBlock Device Activity Monitor */);
+			name = "wBlock Device Activity Monitor";
+			productName = "wBlock Device Activity Monitor";
+			productReference = F51300000000000000000032 /* wBlock Device Activity Monitor.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -1359,6 +1437,9 @@
 				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
+					F51300000000000000000010 = { CreatedOnToolsVersion = 26.0; };
+					F51300000000000000000011 = { CreatedOnToolsVersion = 26.0; };
+					F51300000000000000000012 = { CreatedOnToolsVersion = 26.0; };
 					867CCA172F696EA200719EFE = {
 						CreatedOnToolsVersion = 26.3;
 					};
@@ -1458,6 +1539,9 @@
 				C1A41CB52DE08CAB0056F63D /* wBlock Scripts iOS */,
 				C1A2873C2E73617D00F5B43D /* FilterUpdateService */,
 				867CCA172F696EA200719EFE /* wBlock Scripts */,
+				F51300000000000000000010 /* wBlock Shield Configuration */,
+				F51300000000000000000011 /* wBlock Shield Action */,
+				F51300000000000000000012 /* wBlock Device Activity Monitor */,
 			);
 		};
 /* End PBXProject section */
@@ -1784,6 +1868,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F51300000000000000000040 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		F51300000000000000000050 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		F51300000000000000000060 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		F51300000000000000000041 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		F51300000000000000000051 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		F51300000000000000000061 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		F51300000000000000000042 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		F51300000000000000000052 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		F51300000000000000000062 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -1957,6 +2050,9 @@
 			target = C1A41C442DE089C50056F63D /* wBlockCoreService */;
 			targetProxy = F0010000000000000000000F /* PBXContainerItemProxy */;
 		};
+		F51300000000000000000070 = {isa = PBXTargetDependency; target = F51300000000000000000010 /* wBlock Shield Configuration */; targetProxy = F51300000000000000000090 /* PBXContainerItemProxy */; };
+		F51300000000000000000071 = {isa = PBXTargetDependency; target = F51300000000000000000011 /* wBlock Shield Action */; targetProxy = F51300000000000000000091 /* PBXContainerItemProxy */; };
+		F51300000000000000000072 = {isa = PBXTargetDependency; target = F51300000000000000000012 /* wBlock Device Activity Monitor */; targetProxy = F51300000000000000000092 /* PBXContainerItemProxy */; };
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -2208,6 +2304,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = wBlock/wBlock.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = wBlock/wBlock-ios.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = wBlock/wBlock-ios.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEAD_CODE_STRIPPING = YES;
@@ -2257,6 +2355,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = wBlock/wBlock.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = wBlock/wBlock-ios.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = wBlock/wBlock-ios.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 108;
 				DEAD_CODE_STRIPPING = YES;
@@ -3521,6 +3621,12 @@
 			};
 			name = Release;
 		};
+		F5130000000000000000010 /* Debug wBlock Shield Configuration */ = {isa = XCBuildConfiguration; buildSettings = {APPLICATION_EXTENSION_API_ONLY = YES; CURRENT_PROJECT_VERSION = 108; CODE_SIGN_ENTITLEMENTS = "wBlock Shield Configuration/wBlock Shield Configuration.entitlements"; INFOPLIST_FILE = "wBlock Shield Configuration/Info.plist"; IPHONEOS_DEPLOYMENT_TARGET = 15.4; MARKETING_VERSION = 3.0.0; PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Shield-Configuration"; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; }; name = Debug; };
+		F5130000000000000000011 /* Release wBlock Shield Configuration */ = {isa = XCBuildConfiguration; buildSettings = {APPLICATION_EXTENSION_API_ONLY = YES; CURRENT_PROJECT_VERSION = 108; CODE_SIGN_ENTITLEMENTS = "wBlock Shield Configuration/wBlock Shield Configuration.entitlements"; INFOPLIST_FILE = "wBlock Shield Configuration/Info.plist"; IPHONEOS_DEPLOYMENT_TARGET = 15.4; MARKETING_VERSION = 3.0.0; PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Shield-Configuration"; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; }; name = Release; };
+		F5130000000000000000012 /* Debug wBlock Shield Action */ = {isa = XCBuildConfiguration; buildSettings = {APPLICATION_EXTENSION_API_ONLY = YES; CURRENT_PROJECT_VERSION = 108; CODE_SIGN_ENTITLEMENTS = "wBlock Shield Action/wBlock Shield Action.entitlements"; INFOPLIST_FILE = "wBlock Shield Action/Info.plist"; IPHONEOS_DEPLOYMENT_TARGET = 15.4; MARKETING_VERSION = 3.0.0; PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Shield-Action"; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; }; name = Debug; };
+		F5130000000000000000013 /* Release wBlock Shield Action */ = {isa = XCBuildConfiguration; buildSettings = {APPLICATION_EXTENSION_API_ONLY = YES; CURRENT_PROJECT_VERSION = 108; CODE_SIGN_ENTITLEMENTS = "wBlock Shield Action/wBlock Shield Action.entitlements"; INFOPLIST_FILE = "wBlock Shield Action/Info.plist"; IPHONEOS_DEPLOYMENT_TARGET = 15.4; MARKETING_VERSION = 3.0.0; PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Shield-Action"; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; }; name = Release; };
+		F5130000000000000000014 /* Debug wBlock Device Activity Monitor */ = {isa = XCBuildConfiguration; buildSettings = {APPLICATION_EXTENSION_API_ONLY = YES; CURRENT_PROJECT_VERSION = 108; CODE_SIGN_ENTITLEMENTS = "wBlock Device Activity Monitor/wBlock Device Activity Monitor.entitlements"; INFOPLIST_FILE = "wBlock Device Activity Monitor/Info.plist"; IPHONEOS_DEPLOYMENT_TARGET = 15.4; MARKETING_VERSION = 3.0.0; PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Device-Activity-Monitor"; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; }; name = Debug; };
+		F5130000000000000000015 /* Release wBlock Device Activity Monitor */ = {isa = XCBuildConfiguration; buildSettings = {APPLICATION_EXTENSION_API_ONLY = YES; CURRENT_PROJECT_VERSION = 108; CODE_SIGN_ENTITLEMENTS = "wBlock Device Activity Monitor/wBlock Device Activity Monitor.entitlements"; INFOPLIST_FILE = "wBlock Device Activity Monitor/Info.plist"; IPHONEOS_DEPLOYMENT_TARGET = 15.4; MARKETING_VERSION = 3.0.0; PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Device-Activity-Monitor"; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; }; name = Release; };
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -3713,6 +3819,9 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		F5130000000000000000040 /* Build configuration list for PBXNativeTarget "wBlock Shield Configuration" */ = {isa = XCConfigurationList; buildConfigurations = (F5130000000000000000010 /* Debug */, F5130000000000000000011 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		F5130000000000000000041 /* Build configuration list for PBXNativeTarget "wBlock Shield Action" */ = {isa = XCConfigurationList; buildConfigurations = (F5130000000000000000012 /* Debug */, F5130000000000000000013 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		F5130000000000000000042 /* Build configuration list for PBXNativeTarget "wBlock Device Activity Monitor" */ = {isa = XCConfigurationList; buildConfigurations = (F5130000000000000000014 /* Debug */, F5130000000000000000015 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */

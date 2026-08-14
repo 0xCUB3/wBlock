@@ -951,3 +951,19 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Userscripts and scripts that add or restore useful website functionality." = "Hasznos webhelyfunkciókat hozzáadó vagy helyreállító szkriptek.";
 "Userstyles and scripts that change the appearance of websites." = "A webhelyek megjelenését módosító userstyle-ok és szkriptek.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Egyéni, távoli és helyi szkriptek, amelyekhez nem illik pontosabb megjelenítési kategória.";
+
+/* Screen Time */
+"Screen Time" = "Képernyőidő";
+"Enable Screen Time blocking" = "Képernyőidő-blokkolás engedélyezése";
+"Choose websites and categories" = "Webhelyek és kategóriák kiválasztása";
+"Authorized" = "Engedélyezve";
+"Authorization denied" = "Engedély megtagadva";
+"Authorization not granted" = "Az engedély nincs megadva";
+"Before authorization" = "Engedélyezés előtt";
+"Screen Time setup was cancelled." = "A Képernyőidő beállítása megszakadt.";
+"Screen Time is unavailable or was not approved." = "A Képernyőidő nem érhető el, vagy nem lett jóváhagyva.";
+"Authorization" = "Engedélyezés";
+"Authorize Screen Time" = "Képernyőidő engedélyezése";
+"Open Settings" = "Beállítások megnyitása";
+"Screen Time blocks only the websites and categories selected here. Safari filters and userscripts are unchanged." = "A Képernyőidő csak az itt kiválasztott webhelyeket és kategóriákat blokkolja. A Safari-szűrők és userscriptek nem változnak.";
+"wBlock uses Apple’s Family Controls permission to shield the websites and categories you choose. Application selections are ignored. Safari blocking continues if permission is unavailable." = "A wBlock az Apple Családi felügyelet engedélyével takarja el a kiválasztott webhelyeket és kategóriákat. Az alkalmazáskijelöléseket figyelmen kívül hagyja. A Safari blokkolása akkor is folytatódik, ha az engedély nem érhető el.";

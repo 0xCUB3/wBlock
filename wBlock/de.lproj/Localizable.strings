@@ -951,3 +951,19 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Userscripts and scripts that add or restore useful website functionality." = "Userscripts und Skripte, die nützliche Website-Funktionen hinzufügen oder wiederherstellen.";
 "Userstyles and scripts that change the appearance of websites." = "Userstyles und Skripte, die das Erscheinungsbild von Websites ändern.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Benutzerdefinierte, entfernte und lokale Skripte ohne eine spezifischere Anzeigekategorie.";
+
+/* Screen Time */
+"Screen Time" = "Bildschirmzeit";
+"Enable Screen Time blocking" = "Bildschirmzeit-Sperre aktivieren";
+"Choose websites and categories" = "Websites und Kategorien auswählen";
+"Authorized" = "Autorisiert";
+"Authorization denied" = "Autorisierung abgelehnt";
+"Authorization not granted" = "Autorisierung nicht erteilt";
+"Before authorization" = "Vor der Autorisierung";
+"Screen Time setup was cancelled." = "Einrichtung der Bildschirmzeit abgebrochen.";
+"Screen Time is unavailable or was not approved." = "Bildschirmzeit ist nicht verfügbar oder wurde nicht genehmigt.";
+"Authorization" = "Autorisierung";
+"Authorize Screen Time" = "Bildschirmzeit autorisieren";
+"Open Settings" = "Einstellungen öffnen";
+"Screen Time blocks only the websites and categories selected here. Safari filters and userscripts are unchanged." = "Bildschirmzeit blockiert nur die hier ausgewählten Websites und Kategorien. Safari-Filter und Userscripts bleiben unverändert.";
+"wBlock uses Apple’s Family Controls permission to shield the websites and categories you choose. Application selections are ignored. Safari blocking continues if permission is unavailable." = "wBlock verwendet Apples Berechtigung für Familienkontrollen, um die ausgewählten Websites und Kategorien zu sperren. Ausgewählte Apps werden ignoriert. Die Safari-Blockierung läuft weiter, wenn die Berechtigung nicht verfügbar ist.";

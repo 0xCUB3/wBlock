@@ -951,3 +951,19 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Enabled Userscripts & Userstyles" = "Scripturi și stiluri de utilizator activate";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pauza blocării este activă cât timp orice componentă selectată este pusă pe pauză. Reluarea reactivează toate componentele.";
 "Temporarily pause selected components without changing their enabled settings." = "Pune temporar pe pauză componentele selectate fără a le modifica starea de activare.";
+
+/* Screen Time */
+"Screen Time" = "Timp de utilizare";
+"Enable Screen Time blocking" = "Activează blocarea cu Timp de utilizare";
+"Choose websites and categories" = "Alege site-uri și categorii";
+"Authorized" = "Autorizat";
+"Authorization denied" = "Autorizare refuzată";
+"Authorization not granted" = "Autorizare neacordată";
+"Before authorization" = "Înainte de autorizare";
+"Screen Time setup was cancelled." = "Configurarea Timp de utilizare a fost anulată.";
+"Screen Time is unavailable or was not approved." = "Timp de utilizare nu este disponibil sau nu a fost aprobat.";
+"Authorization" = "Autorizare";
+"Authorize Screen Time" = "Autorizează Timp de utilizare";
+"Open Settings" = "Deschide Configurări";
+"Screen Time blocks only the websites and categories selected here. Safari filters and userscripts are unchanged." = "Timp de utilizare blochează numai site-urile și categoriile selectate aici. Filtrele Safari și scripturile de utilizator rămân neschimbate.";
+"wBlock uses Apple’s Family Controls permission to shield the websites and categories you choose. Application selections are ignored. Safari blocking continues if permission is unavailable." = "wBlock folosește permisiunea Controale familiale de la Apple pentru a acoperi site-urile și categoriile alese. Selecțiile de aplicații sunt ignorate. Blocarea în Safari continuă dacă permisiunea nu este disponibilă.";

@@ -950,3 +950,19 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enabled Userscripts & Userstyles" = "Enabled Userscripts & Userstyles";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pause Blocking is on while any selected component is paused. Resume restores all components.";
 "Temporarily pause selected components without changing their enabled settings." = "Temporarily pause selected components without changing their enabled settings.";
+
+/* Screen Time */
+"Screen Time" = "Screen Time";
+"Enable Screen Time blocking" = "Enable Screen Time blocking";
+"Choose websites and categories" = "Choose websites and categories";
+"Authorized" = "Authorized";
+"Authorization denied" = "Authorization denied";
+"Authorization not granted" = "Authorization not granted";
+"Before authorization" = "Before authorization";
+"Screen Time setup was cancelled." = "Screen Time setup was cancelled.";
+"Screen Time is unavailable or was not approved." = "Screen Time is unavailable or was not approved.";
+"Authorization" = "Authorization";
+"Authorize Screen Time" = "Authorize Screen Time";
+"Open Settings" = "Open Settings";
+"Screen Time blocks only the websites and categories selected here. Safari filters and userscripts are unchanged." = "Screen Time blocks only the websites and categories selected here. Safari filters and userscripts are unchanged.";
+"wBlock uses Apple’s Family Controls permission to shield the websites and categories you choose. Application selections are ignored. Safari blocking continues if permission is unavailable." = "wBlock uses Apple’s Family Controls permission to shield the websites and categories you choose. Application selections are ignored. Safari blocking continues if permission is unavailable.";

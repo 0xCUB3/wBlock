@@ -247,6 +247,14 @@ struct SettingsView: View {
                 Label("Element Zapper", systemImage: "wand.and.stars")
             }
 
+            #if os(iOS)
+            NavigationLink {
+                ScreenTimeSettingsView()
+            } label: {
+                Label("Screen Time", systemImage: "hourglass")
+            }
+            #endif
+
             backupButtons
         }
     }

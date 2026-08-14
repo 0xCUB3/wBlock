@@ -951,3 +951,19 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "ウェブサイトに便利な機能を追加または復元するユーザースクリプトです。";
 "Userstyles and scripts that change the appearance of websites." = "ウェブサイトの外観を変更するユーザースタイルとスクリプトです。";
 "Custom, remote, and local scripts that do not have a more specific display category." = "より具体的な表示カテゴリに分類されないカスタム、リモート、ローカルスクリプトです。";
+
+/* Screen Time */
+"Screen Time" = "スクリーンタイム";
+"Enable Screen Time blocking" = "スクリーンタイムのブロックを有効にする";
+"Choose websites and categories" = "Webサイトとカテゴリを選択";
+"Authorized" = "許可済み";
+"Authorization denied" = "認証が拒否されました";
+"Authorization not granted" = "認証されていません";
+"Before authorization" = "認証する前に";
+"Screen Time setup was cancelled." = "スクリーンタイムの設定がキャンセルされました。";
+"Screen Time is unavailable or was not approved." = "スクリーンタイムを利用できないか、承認されていません。";
+"Authorization" = "認証";
+"Authorize Screen Time" = "スクリーンタイムを許可";
+"Open Settings" = "設定を開く";
+"Screen Time blocks only the websites and categories selected here. Safari filters and userscripts are unchanged." = "スクリーンタイムは、ここで選択したWebサイトとカテゴリのみをブロックします。Safariフィルタとユーザースクリプトは変更されません。";
+"wBlock uses Apple’s Family Controls permission to shield the websites and categories you choose. Application selections are ignored. Safari blocking continues if permission is unavailable." = "wBlockはAppleのファミリーコントロール権限を使用して、選択したWebサイトとカテゴリをシールドします。アプリの選択は無視されます。権限を利用できない場合もSafariのブロックは継続します。";

@@ -951,3 +951,19 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Enabled Userscripts & Userstyles" = "Userscript e Userstyle abilitati";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "La pausa del blocco è attiva finché un componente selezionato è in pausa. La ripresa riattiva tutti i componenti.";
 "Temporarily pause selected components without changing their enabled settings." = "Metti temporaneamente in pausa i componenti selezionati senza modificarne lo stato di abilitazione.";
+
+/* Screen Time */
+"Screen Time" = "Tempo di utilizzo";
+"Enable Screen Time blocking" = "Attiva blocco con Tempo di utilizzo";
+"Choose websites and categories" = "Scegli siti web e categorie";
+"Authorized" = "Autorizzato";
+"Authorization denied" = "Autorizzazione negata";
+"Authorization not granted" = "Autorizzazione non concessa";
+"Before authorization" = "Prima dell’autorizzazione";
+"Screen Time setup was cancelled." = "La configurazione di Tempo di utilizzo è stata annullata.";
+"Screen Time is unavailable or was not approved." = "Tempo di utilizzo non è disponibile o non è stato approvato.";
+"Authorization" = "Autorizzazione";
+"Authorize Screen Time" = "Autorizza Tempo di utilizzo";
+"Open Settings" = "Apri Impostazioni";
+"Screen Time blocks only the websites and categories selected here. Safari filters and userscripts are unchanged." = "Tempo di utilizzo blocca solo i siti web e le categorie selezionati qui. I filtri di Safari e gli userscript non cambiano.";
+"wBlock uses Apple’s Family Controls permission to shield the websites and categories you choose. Application selections are ignored. Safari blocking continues if permission is unavailable." = "wBlock usa l’autorizzazione Controlli famiglia di Apple per schermare i siti web e le categorie che scegli. Le app selezionate vengono ignorate. Il blocco di Safari continua se l’autorizzazione non è disponibile.";

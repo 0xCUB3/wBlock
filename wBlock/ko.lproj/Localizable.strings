@@ -951,3 +951,19 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "웹사이트의 유용한 기능을 추가하거나 복원하는 사용자 스크립트입니다.";
 "Userstyles and scripts that change the appearance of websites." = "웹사이트의 모양을 변경하는 사용자 스타일과 스크립트입니다.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "더 구체적인 표시 카테고리가 없는 사용자 지정, 원격 및 로컬 스크립트입니다.";
+
+/* Screen Time */
+"Screen Time" = "스크린 타임";
+"Enable Screen Time blocking" = "스크린 타임 차단 활성화";
+"Choose websites and categories" = "웹사이트 및 카테고리 선택";
+"Authorized" = "승인됨";
+"Authorization denied" = "승인 거부됨";
+"Authorization not granted" = "승인되지 않음";
+"Before authorization" = "승인 전";
+"Screen Time setup was cancelled." = "스크린 타임 설정이 취소되었습니다.";
+"Screen Time is unavailable or was not approved." = "스크린 타임을 사용할 수 없거나 승인되지 않았습니다.";
+"Authorization" = "승인";
+"Authorize Screen Time" = "스크린 타임 승인";
+"Open Settings" = "설정 열기";
+"Screen Time blocks only the websites and categories selected here. Safari filters and userscripts are unchanged." = "스크린 타임은 여기에서 선택한 웹사이트와 카테고리만 차단합니다. Safari 필터와 유저스크립트는 변경되지 않습니다.";
+"wBlock uses Apple’s Family Controls permission to shield the websites and categories you choose. Application selections are ignored. Safari blocking continues if permission is unavailable." = "wBlock은 Apple의 가족 제어 권한을 사용하여 선택한 웹사이트와 카테고리를 가립니다. 앱 선택은 무시됩니다. 권한을 사용할 수 없어도 Safari 차단은 계속됩니다.";
