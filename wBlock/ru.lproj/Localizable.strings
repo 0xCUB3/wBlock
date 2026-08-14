@@ -973,3 +973,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "line %@, column %@: %@" = "строка %@, столбец %@: %@";
 "line %@: %@" = "строка %@: %@";
 "column %@: %@" = "столбец %@: %@";
+"Userstyle compiler timed out." = "Время ожидания компилятора стиля пользователя истекло.";
+"Userstyle compiler must not run on the main thread." = "Компилятор стиля пользователя не должен выполняться в главном потоке.";

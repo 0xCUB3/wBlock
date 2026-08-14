@@ -835,9 +835,9 @@ public class UserScriptManager: ObservableObject {
             let artifact = validatedCompiledStyleArtifact(for: content, metadata: metadata, scriptID: script.id)
             hydratedScript.replaceContentAndParseMetadata(content, compiledBody: artifact?.body)
             if artifact == nil, UserStylePreprocessorService.requiresCompilation(metadata.preprocessor) {
-                let request = UserStylePreprocessorService.request(
-                    source: UserStyleSupport.sourceBody(from: content), authoritativeContent: content,
-                    preprocessor: metadata.preprocessor, variables: metadata.variables)
+                let request = UserStyleSupport.compilationRequest(
+                    for: content, preprocessor: metadata.preprocessor,
+                    variables: metadata.variables)
                 if let rebuilt = try? UserStylePreprocessorService.compile(request) {
                     hydratedScript.replaceContentAndParseMetadata(content, compiledBody: rebuilt.body)
                     writeCompiledStyleArtifact(rebuilt, scriptID: script.id)
@@ -894,7 +894,8 @@ public class UserScriptManager: ObservableObject {
         for source: String, metadata: UserStyleSupport.ParsedStyle, scriptID: UUID
     ) -> UserStyleCompiledArtifact? {
         guard UserStylePreprocessorService.requiresCompilation(metadata.preprocessor) else { return nil }
-        let request = UserStylePreprocessorService.request(source: UserStyleSupport.sourceBody(from: source), authoritativeContent: source, preprocessor: metadata.preprocessor, variables: metadata.variables)
+        let request = UserStyleSupport.compilationRequest(
+            for: source, preprocessor: metadata.preprocessor, variables: metadata.variables)
         for directory in scriptsDirectoryURLs() {
             let url = compiledStyleURL(scriptID: scriptID, directory: directory)
             guard let data = try? Data(contentsOf: url), let artifact = try? JSONDecoder().decode(UserStyleCompiledArtifact.self, from: data) else { continue }
@@ -1979,10 +1980,8 @@ public class UserScriptManager: ObservableObject {
                       for: metadata.preprocessor
                   )
             else { return false }
-            let request = UserStylePreprocessorService.request(
-                source: UserStyleSupport.sourceBody(from: userScript.content),
-                authoritativeContent: userScript.content,
-                preprocessor: metadata.preprocessor,
+            let request = UserStyleSupport.compilationRequest(
+                for: userScript.content, preprocessor: metadata.preprocessor,
                 variables: metadata.variables
             )
             let artifact = UserStyleCompiledArtifact(

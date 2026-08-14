@@ -2,13 +2,12 @@
 //  UserStyleCompiler.swift
 //  wBlockCoreService
 //
-// Offline, compiler-neutral UserCSS preprocessing. Each compilation creates a
-// fresh JavaScriptCore context and exposes only the selected vendored bridge.
+// Offline, compiler-neutral UserCSS preprocessing. Execution is isolated by the
+// public WebKit compiler host; backend definitions remain compiler-neutral.
 //
 
 import CryptoKit
 import Foundation
-import JavaScriptCore
 
 public struct UserStyleCompilationRequest: Sendable, Hashable {
     public let source: String
@@ -132,7 +131,7 @@ private struct LessBackend: UserStylePreprocessorBackend {
     let maximumOutputBytes = UserStylePreprocessorService.maximumOutputBytes
     let consumesVariables = true
     func compile(_ request: UserStyleCompilationRequest) throws -> String {
-        try UserStyleCompiler.compileLess(request.source, variables: request.variables)
+        try UserStyleCompiler.compileLess(request)
     }
 }
 
@@ -147,7 +146,11 @@ private struct SassBackend: UserStylePreprocessorBackend {
         var variables: [String: String] = [:]
         for variable in request.variables { variables[variable.name] = variable.value }
         let prepared = UserStyleCompiler.prepareSassSource(request.source, syntax: syntax)
-        let css = try UserStyleCompiler.callJSONBridge(resource: "wblock-sass-1.102.0.min", extension: "js", function: "wblockSassCompile", request: ["source": prepared.source, "syntax": syntax, "variables": variables])
+        let css = try UserStyleCompiler.callJSONBridge(
+            resource: "wblock-sass-1.102.0.min", extension: "js", function: "wblockSassCompile",
+            request: ["source": prepared.source, "syntax": syntax, "variables": variables],
+            lineAdjustment: -variables.count
+        )
         return UserStyleCompiler.restoreSassDocumentRules(css, preludes: prepared.preludes)
     }
 }
@@ -185,10 +188,11 @@ enum UserStyleCompiler {
 
     static let maximumSourceBytes = UserStylePreprocessorService.maximumSourceBytes
     static let maximumOutputBytes = UserStylePreprocessorService.maximumOutputBytes
-    private static let renderLock = NSLock()
 #if DEBUG
     /// Test-only resource-name overrides; production always loads packaged resources.
-    static var compilerSourceOverrides: [String: String] = [:]
+    nonisolated(unsafe) static var compilerSourceOverrides: [String: String] = [:]
+    nonisolated(unsafe) static var debugDeadlineOverride: TimeInterval?
+
     static var compilerSourceOverride: String?
 #endif
 
@@ -205,97 +209,72 @@ enum UserStyleCompiler {
         return source.utf8.count + data.count
     }
 
-    private static func jsonLiteral(_ request: [String: Any]) -> String? {
-        guard let data = try? JSONSerialization.data(withJSONObject: request),
-              let string = String(data: data, encoding: .utf8) else { return nil }
-        return string
-    }
-
     static func compile(_ source: String, variables: [UserStyleSupport.Variable]) throws -> String {
         try compileLess(source, variables: variables)
     }
 
     static func compileLess(_ source: String, variables: [UserStyleSupport.Variable]) throws -> String {
-        let globals = Dictionary(uniqueKeysWithValues: variables.map { ($0.name, $0.value) })
-        let request: [String: Any] = ["source": source, "variables": globals]
-        guard serializedInputSize(source: source, metadata: ["variables": globals]) <= maximumSourceBytes else {
+        try compileLess(UserStyleCompilationRequest(source: source, preprocessor: "less", variables: variables))
+    }
+
+    static func compileLess(_ request: UserStyleCompilationRequest) throws -> String {
+        let globals = Dictionary(uniqueKeysWithValues: request.variables.map { ($0.name, $0.value) })
+        let bridgeRequest: [String: Any] = ["source": request.source, "variables": globals]
+        guard JSONSerialization.isValidJSONObject(bridgeRequest),
+              serializedInputSize(source: request.source, metadata: ["variables": globals]) <= maximumSourceBytes else {
             throw CompilationError(message: String(localized: "Userstyle source exceeds the 2 MiB limit.", comment: "Userstyle compiler source size error"))
         }
-        renderLock.lock(); defer { renderLock.unlock() }
 #if DEBUG
         let bundle = compilerSourceOverrides["less.min"] ?? compilerSourceOverride ?? loadCompilerBundle("less.min", extension: "js")
 #else
         let bundle = loadCompilerBundle("less.min", extension: "js")
 #endif
         guard let bundle else { throw CompilationError(message: String(localized: "Userstyle compiler resource is missing.", comment: "Userstyle compiler resource error")) }
-        let context = freshContext(needsLessBrowserShim: true)
-        context.evaluateScript(bundle)
-        guard context.exception == nil else {
-            throw CompilationError(message: context.exception?.toString() ?? String(localized: "Userstyle compiler resource failed to load.", comment: "Userstyle compiler load error"))
-        }
-        guard let requestJSON = jsonLiteral(request) else { throw CompilationError(message: String(localized: "Userstyle compiler input could not be serialized.", comment: "Userstyle compiler serialization error")) }
-        let script = """
-        (function(request) {
-            var result = null, failure = null;
+        let adapter = """
+        function(request) { return new Promise(function(resolve) {
+            var failure = null;
             less.render(request.source, {filename:'file:///userstyle.less', javascriptEnabled: false, processImports: false, globalVars:request.variables}, function(error, output) {
-                if (error) failure = {message: error.message || String(error), line: error.line, column: error.column};
-                else result = output && output.css;
+                if (error) failure = {message:error.message || String(error), line:error.line, column:error.column};
+                resolve(JSON.stringify(failure ? {error:failure} : {css:output && output.css}));
             });
-            return JSON.stringify(failure ? {error: failure} : {css: result});
-        })(\(requestJSON))
+        }); }
         """
-        guard let value = context.evaluateScript(script)?.toString(),
-              let data = value.data(using: .utf8),
-              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-        else { throw CompilationError(message: String(localized: "Userstyle compiler returned an invalid response.", comment: "Userstyle compiler response error")) }
-        if let error = object["error"] as? [String: Any] { throw formattedError(error, fallback: String(localized: "Userstyle compiler failed.", comment: "Generic userstyle compiler failure")) }
-        guard let result = object["css"] as? String else { throw CompilationError(message: String(localized: "Userstyle compiler returned no CSS.", comment: "Userstyle compiler empty output error")) }
-        guard result.utf8.count <= maximumOutputBytes else { throw CompilationError(message: String(localized: "Userstyle compiler output exceeds the 10 MiB limit.", comment: "Userstyle compiler output size error")) }
-        return result
+        let object = try UserStyleCompilerExecutionHost.run(runtime: bundle, request: bridgeRequest, adapter: adapter)
+        return try extractCSS(object)
     }
 
-    static func callJSONBridge(resource: String, extension: String, function: String, request: [String: Any]) throws -> String {
+    static func callJSONBridge(resource: String, extension: String, function: String, request: [String: Any], lineAdjustment: Int = 0) throws -> String {
         let source = request["source"] as? String ?? ""
         var metadata = request
         metadata.removeValue(forKey: "source")
-        guard serializedInputSize(source: source, metadata: metadata) <= maximumSourceBytes,
-              let requestJSON = jsonLiteral(request) else { throw CompilationError(message: String(localized: "Userstyle compiler input could not be serialized.", comment: "Userstyle compiler serialization error")) }
-        let context = try loadedContext(resource: resource, extension: `extension`)
-        let script = "(function(){ var r = (typeof \(function) === 'function') ? \(function)(\(requestJSON)) : null; return typeof r === 'string' ? r : JSON.stringify(r); })()"
-        guard let value = context.evaluateScript(script)?.toString(), let output = value.data(using: .utf8), let object = try? JSONSerialization.jsonObject(with: output) as? [String: Any] else { throw CompilationError(message: String(localized: "Userstyle compiler returned an invalid response.", comment: "Userstyle compiler response error")) }
-        if let error = object["error"] as? String { throw CompilationError(message: format(error: error, line: object["line"], column: object["column"])) }
-        if let error = object["error"] as? [String: Any] { throw formattedError(error, fallback: String(localized: "Userstyle compiler failed.", comment: "Generic userstyle compiler failure")) }
+        guard JSONSerialization.isValidJSONObject(request),
+              serializedInputSize(source: source, metadata: metadata) <= maximumSourceBytes else { throw CompilationError(message: String(localized: "Userstyle compiler input could not be serialized.", comment: "Userstyle compiler serialization error")) }
+#if DEBUG
+        let runtime = compilerSourceOverrides[resource] ?? loadCompilerBundle(resource, extension: `extension`)
+#else
+        let runtime = loadCompilerBundle(resource, extension: `extension`)
+#endif
+        guard let runtime else { throw CompilationError(message: String(localized: "Userstyle compiler resource is missing.", comment: "Userstyle compiler resource error")) }
+        let adapter = "function(request) { var r = (typeof \(function) === 'function') ? \(function)(request) : null; return typeof r === 'string' ? r : JSON.stringify(r); }"
+        let object = try UserStyleCompilerExecutionHost.run(runtime: runtime, request: request, adapter: adapter)
+        return try extractCSS(object, lineAdjustment: lineAdjustment)
+    }
+
+    static func callObjectBridge(resource: String, extension: String, function: String, request: [String: Any], lineAdjustment: Int = 0) throws -> String {
+        try callJSONBridge(resource: resource, extension: `extension`, function: function, request: request, lineAdjustment: lineAdjustment)
+    }
+
+    private static func extractCSS(_ object: [String: Any], lineAdjustment: Int = 0) throws -> String {
+        if let error = object["error"] as? String {
+            let message = lineAdjustment == 0
+                ? error
+                : String(error.split(separator: "\n", maxSplits: 1).first ?? Substring(error))
+            throw CompilationError(message: format(error: message, line: object["line"], column: object["column"], lineAdjustment: lineAdjustment))
+        }
+        if let error = object["error"] as? [String: Any] { throw formattedError(error, fallback: String(localized: "Userstyle compiler failed.", comment: "Generic userstyle compiler failure"), lineAdjustment: lineAdjustment) }
         guard let css = object["css"] as? String else { throw CompilationError(message: String(localized: "Userstyle compiler returned no CSS.", comment: "Userstyle compiler empty output error")) }
         guard css.utf8.count <= maximumOutputBytes else { throw CompilationError(message: String(localized: "Userstyle compiler output exceeds the 10 MiB limit.", comment: "Userstyle compiler output size error")) }
         return css
-    }
-
-    static func callObjectBridge(resource: String, extension: String, function: String, request: [String: Any]) throws -> String {
-        try callJSONBridge(resource: resource, extension: `extension`, function: function, request: request)
-    }
-
-    private static func loadedContext(resource: String, extension: String) throws -> JSContext {
-        renderLock.lock(); defer { renderLock.unlock() }
-#if DEBUG
-        let bundle = compilerSourceOverrides[resource] ?? loadCompilerBundle(resource, extension: `extension`)
-#else
-        let bundle = loadCompilerBundle(resource, extension: `extension`)
-#endif
-        guard let bundle else { throw CompilationError(message: String(localized: "Userstyle compiler resource is missing.", comment: "Userstyle compiler resource error")) }
-        let context = freshContext(); context.evaluateScript(bundle)
-        if let exception = context.exception { throw CompilationError(message: exception.toString() ?? String(localized: "Userstyle compiler resource failed to load.", comment: "Userstyle compiler load error")) }
-        return context
-    }
-
-    private static func freshContext(needsLessBrowserShim: Bool = false) -> JSContext {
-        let context = JSContext()!
-        context.exceptionHandler = { _, _ in }
-        if needsLessBrowserShim {
-            // Inert JavaScript values required by Less's browser UMD bootstrap.
-            // They expose no native object, DOM, network, filesystem, or timer.
-            context.evaluateScript("var window = this; var globalThis = this; var location = { href: 'file:///userstyle.less', hash: '' }; var document = { currentScript: null, getElementsByTagName: function() { return []; } };")
-        }
-        return context
     }
 
     static func prepareSassSource(_ source: String, syntax: String) -> (source: String, preludes: [String]) {
@@ -333,7 +312,14 @@ enum UserStyleCompiler {
             let prelude = captured.firstIndex(of: "{").map { String(captured[..<$0]).trimmingCharacters(in: .whitespacesAndNewlines) } ?? captured.trimmingCharacters(in: .whitespacesAndNewlines)
             preludes.append(prelude)
             let braceSuffix = captured.firstIndex(of: "{").map { String(captured[$0...]) } ?? (syntax == "scss" ? " {" : "")
-            output.append(indentation + "@media \(marker)" + braceSuffix)
+            let lineBreaksBeforeBody: Int
+            if let brace = captured.firstIndex(of: "{") {
+                lineBreaksBeforeBody = captured[..<brace].filter { $0 == "\n" }.count
+            } else {
+                lineBreaksBeforeBody = captured.filter { $0 == "\n" }.count
+            }
+            output.append(String(repeating: "\n", count: lineBreaksBeforeBody)
+                + indentation + "@media \(marker)" + braceSuffix)
             index = end + 1
         }
         return (output.joined(separator: "\n"), preludes)
@@ -372,13 +358,19 @@ enum UserStyleCompiler {
         return result
     }
 
-    private static func formattedError(_ error: [String: Any], fallback: String) -> CompilationError {
-        let message = error["message"] as? String ?? fallback
-        return CompilationError(message: format(error: message, line: error["line"], column: error["column"]))
+    private static func formattedError(_ error: [String: Any], fallback: String, lineAdjustment: Int = 0) -> CompilationError {
+        let rawMessage = error["message"] as? String ?? fallback
+        // Dart Sass includes a second, pre-adjustment source location in its
+        // multiline message when metadata variables were prepended. Keep the
+        // reason and use the normalized location rendered below.
+        let message = lineAdjustment == 0
+            ? rawMessage
+            : String(rawMessage.split(separator: "\n", maxSplits: 1).first ?? Substring(rawMessage))
+        return CompilationError(message: format(error: message, line: error["line"], column: error["column"], lineAdjustment: lineAdjustment))
     }
 
-    private static func format(error: String, line: Any?, column: Any?) -> String {
-        let lineNumber = (line as? NSNumber)?.intValue
+    private static func format(error: String, line: Any?, column: Any?, lineAdjustment: Int = 0) -> String {
+        let lineNumber: Int? = (line as? NSNumber).map { max(1, $0.intValue + lineAdjustment) }
         let columnNumber = (column as? NSNumber)?.intValue
         if let lineNumber, let columnNumber {
             return String(format: String(localized: "line %@, column %@: %@", comment: "Userstyle compiler diagnostic location"), "\(lineNumber)", "\(columnNumber)", error)

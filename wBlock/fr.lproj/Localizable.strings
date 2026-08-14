@@ -973,3 +973,5 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "line %@, column %@: %@" = "ligne %@, colonne %@ : %@";
 "line %@: %@" = "ligne %@ : %@";
 "column %@: %@" = "colonne %@ : %@";
+"Userstyle compiler timed out." = "Le délai d’exécution du compilateur Userstyle a expiré.";
+"Userstyle compiler must not run on the main thread." = "Le compilateur Userstyle ne doit pas s’exécuter sur le thread principal.";

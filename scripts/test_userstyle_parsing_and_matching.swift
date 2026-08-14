@@ -21,14 +21,21 @@ struct UserStyleParsingAndMatchingTests {
         }
         UserStyleCompiler.compilerSourceOverrides = overrides
 #endif
-        testDetectionAndMetadata()
-        testSectionParsingAndMatching()
-        testEffectiveCSSAssembly()
-        testVariableResolution()
-        testLessCompilation()
-        testCompiledStyleCacheAndArtifactIdentity()
-        testUserScriptIntegration()
-        testURLSupport()
+        let finished = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            testDetectionAndMetadata()
+            testSectionParsingAndMatching()
+            testEffectiveCSSAssembly()
+            testVariableResolution()
+            testLessCompilation()
+            testCompiledStyleCacheAndArtifactIdentity()
+            testUserScriptIntegration()
+            testURLSupport()
+            finished.signal()
+        }
+        while finished.wait(timeout: .now()) == .timedOut {
+            RunLoop.main.run(until: Date().addingTimeInterval(0.02))
+        }
         print("PASS: userstyle parsing and matching")
     }
 
@@ -294,6 +301,7 @@ struct UserStyleParsingAndMatchingTests {
         guard let parsed = UserStyleSupport.parsed(from: less) else {
             return fail("Less style should parse")
         }
+        if !parsed.isCompiled { fputs("valid Less error: \(parsed.compilationError ?? "nil")\n", stderr) }
         expect(parsed.isCompiled, "valid Less should compile")
         expect(!parsed.serializedConditions.contains("global"), "Less declarations outside a scope must not be global")
         guard let matchingCSS = UserStyleSupport.effectiveCSS(forContent: less, url: "https://example.com/page") else {
@@ -308,18 +316,22 @@ struct UserStyleParsingAndMatchingTests {
             "scoped Less must not apply to unrelated URLs"
         )
 
-        var returnedSynchronously = false
-        let importedCSS: String
-        do {
-            importedCSS = try UserStyleCompiler.compile(
+        let semaphore = DispatchSemaphore(value: 0)
+        var result: Result<String, Error>!
+        DispatchQueue.global().async {
+            result = Result { try UserStyleCompiler.compile(
                 "@import url(\"https://example.com/theme.css\"); body { color: red; }",
                 variables: []
-            )
-            returnedSynchronously = true
-        } catch {
-            return fail("CSS @import should compile without asynchronous resolution: \(error)")
+            ) }
+            semaphore.signal()
         }
-        expect(returnedSynchronously, "Less compilation should return synchronously")
+        semaphore.wait()
+        let importedCSS: String
+        switch result {
+        case .success(let css): importedCSS = css
+        case .failure(let error): return fail("CSS @import should compile without asynchronous resolution: \(error)")
+        case .none: return fail("Less compilation did not return")
+        }
         expect(importedCSS.contains("@import url(\"https://example.com/theme.css\")"),
                "ordinary CSS @import must remain in compiled output")
 
@@ -335,8 +347,58 @@ struct UserStyleParsingAndMatchingTests {
         }
         expect(UserStyleSupport.isUserStyleContent(malformed), "malformed Less remains a userstyle")
         expect(!broken.isCompiled, "malformed Less should fail compilation")
-        expect((broken.compilationError ?? "").contains("line"), "Less error should include a useful location")
+        let malformedRequest = UserStyleSupport.compilationRequest(
+            for: malformed, preprocessor: "less", variables: [])
+        expect(!malformedRequest.source.contains("==UserStyle=="), "compiler source must mask metadata")
+        expect(
+            malformedRequest.source.filter { $0 == "\n" }.count == malformed.filter { $0 == "\n" }.count,
+            "metadata masking must preserve editor lines"
+        )
+        expect(
+            (broken.compilationError ?? "").contains("line 6"),
+            "Less error should use editor EOF line 6: \(broken.compilationError ?? "missing diagnostic")"
+        )
         expect(UserStyleSupport.effectiveCSS(forContent: malformed, url: "https://example.com/") == nil, "failed Less must not inject CSS")
+
+        let malformedSCSSWithVariable = """
+        /* ==UserStyle==
+        @name Broken SCSS variable
+        @preprocessor scss
+        @var color accent "Accent" red
+        ==/UserStyle== */
+        .card { color: #; }
+        """
+        let variableDiagnostic = UserStyleSupport.parsed(from: malformedSCSSWithVariable)?.compilationError ?? ""
+        expect(variableDiagnostic.contains("line 6"),
+               "Sass variable prelude must not shift editor diagnostics: \(variableDiagnostic)")
+        expect(!variableDiagnostic.contains("7 │"),
+               "Sass diagnostics must not retain a contradictory generated-source location")
+
+        let malformedSCSSAfterPrefix = """
+        .before { color: red; }
+        /* ==UserStyle==
+        @name Broken SCSS after prefix
+        @preprocessor scss
+        ==/UserStyle== */
+        .after { color: #; }
+        """
+        let prefixDiagnostic = UserStyleSupport.parsed(from: malformedSCSSAfterPrefix)?.compilationError ?? ""
+        expect(prefixDiagnostic.contains("line 6"),
+               "non-leading metadata must not shift later diagnostics: \(prefixDiagnostic)")
+
+        let malformedScopedSCSS = """
+        /* ==UserStyle==
+        @name Broken SCSS document
+        @preprocessor scss
+        ==/UserStyle== */
+        @-moz-document domain("example.com"),
+          url-prefix("https://app.example.net/") {
+          .card { color: #; }
+        }
+        """
+        let scopedDiagnostic = UserStyleSupport.parsed(from: malformedScopedSCSS)?.compilationError ?? ""
+        expect(scopedDiagnostic.contains("line 7"),
+               "multiline document rewriting must preserve editor diagnostics: \(scopedDiagnostic)")
 
         let sass = """
         /* ==UserStyle==
@@ -415,7 +477,8 @@ struct UserStyleParsingAndMatchingTests {
         guard let scopedSassParsed = UserStyleSupport.parsed(from: scopedSass) else {
             return fail("Scoped Sass metadata should parse")
         }
-        expect(scopedSassParsed.isCompiled, "multiline scoped Sass should compile")
+        expect(scopedSassParsed.isCompiled,
+               "multiline scoped Sass should compile: \(scopedSassParsed.compilationError ?? "missing diagnostic")")
         let matchingSass = UserStyleSupport.effectiveCSS(
             forContent: scopedSass, url: "https://example.com/page"
         ) ?? ""
@@ -531,12 +594,16 @@ struct UserStyleParsingAndMatchingTests {
         expect(UserStyleSupport.effectiveCSS(forContent: source, compiledBody: nil, url: "https://example.com") == nil,
                "runtime must fail closed without compiler-backed output")
 
-        let request = UserStylePreprocessorService.request(
-            source: UserStyleSupport.sourceBody(from: source), authoritativeContent: source,
-            preprocessor: "less", variables: [])
+        let request = UserStyleSupport.compilationRequest(
+            for: source, preprocessor: "less", variables: [])
         let artifact = UserStyleCompiledArtifact(request: request, compilerRevision: UserStylePreprocessorService.lessRevision, body: "body { color: red; }")
         expect(UserStylePreprocessorService.validate(artifact, for: request), "exact artifact identity should validate")
-        let changedSource = UserStylePreprocessorService.request(source: request.source + "\n", authoritativeContent: changed, preprocessor: "less", variables: [])
+        expect(
+            request.source.filter { $0 == "\n" }.count == source.filter { $0 == "\n" }.count,
+            "sidecar request must preserve editor line mapping"
+        )
+        let changedSource = UserStyleSupport.compilationRequest(
+            for: changed, preprocessor: "less", variables: [])
         expect(!UserStylePreprocessorService.validate(artifact, for: changedSource), "changed source must reject the artifact")
         let changedOptions = UserStyleCompilationRequest(source: request.source, preprocessor: "less", variables: [], options: ["compress": "true"], sourceDigest: request.sourceDigest)
         expect(!UserStylePreprocessorService.validate(artifact, for: changedOptions), "changed options must reject the artifact")

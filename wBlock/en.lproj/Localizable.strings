@@ -972,3 +972,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "line %@, column %@: %@" = "line %@, column %@: %@";
 "line %@: %@" = "line %@: %@";
 "column %@: %@" = "column %@: %@";
+"Userstyle compiler timed out." = "Userstyle compiler timed out.";
+"Userstyle compiler must not run on the main thread." = "Userstyle compiler must not run on the main thread.";

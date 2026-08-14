@@ -82,7 +82,7 @@ public enum UserStyleSupport {
     }
 
     /// Preprocessors wBlock can apply natively or compile in the bounded offline
-    /// JavaScriptCore service. PostCSS is the fixed nested-plugin backend only.
+    /// WebKit compiler host. PostCSS is the fixed nested-plugin backend only.
     public static func isPreprocessorSupported(_ preprocessor: String) -> Bool {
         let normalized = UserStylePreprocessorService.normalize(preprocessor)
         return normalized == "default" || normalized == "uso" || UserStylePreprocessorService.backend(for: normalized) != nil
@@ -252,7 +252,7 @@ public enum UserStyleSupport {
 
     /// Parses metadata and a precompiled body. The no-compile form is used by
     /// main-actor metadata parsing and by runtime injection; runtime must never
-    /// turn a cache miss into a JavaScriptCore compilation.
+    /// turn a cache miss into a compiler-host compilation.
     static func parsed(from content: String, compiledBody: String?, compileSource: Bool) -> ParsedStyle? {
         guard isUserStyleContent(content) else { return nil }
         let revision = UserStylePreprocessorService.compilerRevision(
@@ -271,9 +271,27 @@ public enum UserStyleSupport {
         return parsed
     }
 
-    /// Returns the source body after removing the UserCSS metadata comment.
+    /// Returns compiler source with the UserCSS metadata masked as whitespace.
+    /// Preserving its line breaks keeps compiler line numbers aligned with the editor.
     static func sourceBody(from content: String) -> String {
-        parseSourceBody(content)
+        parseSourceBodyInfo(content).text
+    }
+
+    /// Builds one offset-safe identity for compilation and sidecar validation.
+    static func compilationRequest(
+        for content: String,
+        preprocessor: String,
+        variables: [Variable],
+        options: [String: String] = [:]
+    ) -> UserStyleCompilationRequest {
+        let sourceBody = parseSourceBodyInfo(content)
+        return UserStylePreprocessorService.request(
+            source: sourceBody.text,
+            authoritativeContent: content,
+            preprocessor: preprocessor,
+            variables: variables,
+            options: options
+        )
     }
 
     private static func cacheKey(for content: String) -> NSString {
@@ -447,15 +465,15 @@ public enum UserStyleSupport {
     private static func parse(_ content: String, compiledBody: String? = nil, compileSource: Bool = true) -> ParsedStyle {
         let metadata = parseMetadata(from: content)
         let normalizedPreprocessor = UserStylePreprocessorService.normalize(metadata.preprocessor ?? "default")
-        var body = compiledBody ?? parseSourceBody(content)
+        let sourceBody = parseSourceBodyInfo(content)
+        var body = compiledBody ?? sourceBody.text
         var isCompiled = !UserStylePreprocessorService.requiresCompilation(normalizedPreprocessor) || compiledBody != nil
         var compilationError: String?
         var compiledArtifact: UserStyleCompiledArtifact?
         if compiledBody == nil && compileSource && UserStylePreprocessorService.requiresCompilation(normalizedPreprocessor) {
             do {
-                let request = UserStylePreprocessorService.request(
-                    source: body,
-                    authoritativeContent: content,
+                let request = compilationRequest(
+                    for: content,
                     preprocessor: normalizedPreprocessor,
                     variables: metadata.variables
                 )
@@ -489,13 +507,24 @@ public enum UserStyleSupport {
 
     // MARK: Metadata directives
 
-    private static func parseSourceBody(_ content: String) -> String {
+    private struct SourceBody {
+        let text: String
+    }
+
+    private static func parseSourceBodyInfo(_ content: String) -> SourceBody {
         guard let metaStart = content.range(of: metadataStartMarker),
               let metaEnd = content.range(of: metadataEndMarker, range: metaStart.upperBound..<content.endIndex)
-        else { return content }
+        else { return SourceBody(text: content) }
         let commentStart = content.range(of: "/*", options: .backwards, range: content.startIndex..<metaStart.lowerBound)?.lowerBound ?? metaStart.lowerBound
         let commentEnd = content.range(of: "*/", range: metaEnd.upperBound..<content.endIndex)?.upperBound ?? metaEnd.upperBound
-        return String(content[..<commentStart]) + String(content[commentEnd...])
+        let prefix = String(content[..<commentStart])
+        let removed = String(content[commentStart..<commentEnd])
+        let suffix = String(content[commentEnd...])
+        let lineBreaks = removed.unicodeScalars.filter { scalar in
+            scalar.value == 10 || scalar.value == 13
+        }
+        let maskedMetadata = String(String.UnicodeScalarView(lineBreaks))
+        return SourceBody(text: prefix + maskedMetadata + suffix)
     }
 
     private static func parseMetadata(from content: String) -> MetadataAccumulator {

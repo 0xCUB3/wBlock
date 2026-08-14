@@ -973,3 +973,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "line %@, column %@: %@" = "γραμμή %@, στήλη %@: %@";
 "line %@: %@" = "γραμμή %@: %@";
 "column %@: %@" = "στήλη %@: %@";
+"Userstyle compiler timed out." = "Το χρονικό όριο του μεταγλωττιστή Userstyle έληξε.";
+"Userstyle compiler must not run on the main thread." = "Ο μεταγλωττιστής Userstyle δεν πρέπει να εκτελείται στο κύριο νήμα.";

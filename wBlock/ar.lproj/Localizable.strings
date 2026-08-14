@@ -973,3 +973,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "line %@, column %@: %@" = "السطر %@، العمود %@: %@";
 "line %@: %@" = "السطر %@: %@";
 "column %@: %@" = "العمود %@: %@";
+"Userstyle compiler timed out." = "انتهت مهلة مترجم أنماط المستخدم.";
+"Userstyle compiler must not run on the main thread." = "يجب ألا يعمل مترجم أنماط المستخدم على الخيط الرئيسي.";

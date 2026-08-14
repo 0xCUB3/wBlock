@@ -973,3 +973,5 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "line %@, column %@: %@" = "linia %@, coloana %@: %@";
 "line %@: %@" = "linia %@: %@";
 "column %@: %@" = "coloana %@: %@";
+"Userstyle compiler timed out." = "Compilatorul Userstyle a depășit limita de timp.";
+"Userstyle compiler must not run on the main thread." = "Compilatorul Userstyle nu trebuie să ruleze pe firul principal.";

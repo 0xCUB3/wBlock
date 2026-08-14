@@ -973,3 +973,5 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "line %@, column %@: %@" = "wiersz %@, kolumna %@: %@";
 "line %@: %@" = "wiersz %@: %@";
 "column %@: %@" = "kolumna %@: %@";
+"Userstyle compiler timed out." = "Przekroczono limit czasu kompilatora stylu użytkownika.";
+"Userstyle compiler must not run on the main thread." = "Kompilator stylu użytkownika nie może działać w wątku głównym.";

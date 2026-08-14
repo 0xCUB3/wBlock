@@ -973,3 +973,5 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "line %@, column %@: %@" = "linha %@, coluna %@: %@";
 "line %@: %@" = "linha %@: %@";
 "column %@: %@" = "coluna %@: %@";
+"Userstyle compiler timed out." = "O compilador de Userstyle atingiu o tempo limite.";
+"Userstyle compiler must not run on the main thread." = "O compilador de Userstyle não deve ser executado na thread principal.";

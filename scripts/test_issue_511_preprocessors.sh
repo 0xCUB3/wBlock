@@ -7,18 +7,37 @@ LOG="${TMPDIR:-/tmp}/wblock-issue-511-build.log"
 FRAMEWORKS="$DERIVED/Build/Products/Debug"
 
 cd "$ROOT"
+(
+  cd wBlockCoreService/Resources/UserStyleCompiler
+  shasum -a 256 -c SHA256SUMS-runtimes
+  shasum -a 256 -c SHA256SUMS-less
+  (cd sass && shasum -a 256 -c SHA256SUMS-sass)
+  (cd postcss-nested && shasum -a 256 -c SHA256SUMS-postcss-nested)
+  (cd stylus && shasum -a 256 -c SHA256SUMS-stylus)
+)
 rm -rf "$DERIVED"
 xcodebuild -project wBlock.xcodeproj -scheme wBlockCoreService \
   -destination 'platform=macOS' -derivedDataPath "$DERIVED" \
   CODE_SIGNING_ALLOWED=NO build >"$LOG" 2>&1
 
-swiftc -D DEBUG -framework JavaScriptCore \
+swiftc -D DEBUG -framework WebKit -framework CryptoKit \
   scripts/test_userstyle_parsing_and_matching.swift \
+  wBlockCoreService/UserStyleCompilerExecutionHost.swift \
   wBlockCoreService/UserStyleCompiler.swift \
   wBlockCoreService/UserStyle.swift \
   wBlockCoreService/UserScript.swift \
   wBlockCoreService/FilterListCategory.swift \
   -o "${TMPDIR:-/tmp}/wblock-userstyle-preprocessor-tests"
+
+swiftc -D DEBUG -framework WebKit -framework CryptoKit \
+  scripts/test_issue_511_compiler_timeout.swift \
+  wBlockCoreService/UserStyleCompilerExecutionHost.swift \
+  wBlockCoreService/UserStyleCompiler.swift \
+  wBlockCoreService/UserStyle.swift \
+  wBlockCoreService/UserScript.swift \
+  wBlockCoreService/FilterListCategory.swift \
+  -o "${TMPDIR:-/tmp}/wblock-compiler-timeout-tests"
+"${TMPDIR:-/tmp}/wblock-compiler-timeout-tests"
 
 WBLOCK_LESS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/less.min.js" \
 WBLOCK_SASS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/sass/wblock-sass-1.102.0.min.js" \

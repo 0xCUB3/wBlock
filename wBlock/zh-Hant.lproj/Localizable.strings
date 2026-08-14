@@ -973,3 +973,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "line %@, column %@: %@" = "第 %@ 行，第 %@ 欄：%@";
 "line %@: %@" = "第 %@ 行：%@";
 "column %@: %@" = "第 %@ 欄：%@";
+"Userstyle compiler timed out." = "使用者樣式編譯器逾時。";
+"Userstyle compiler must not run on the main thread." = "使用者樣式編譯器不得在主執行緒上執行。";

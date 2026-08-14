@@ -973,3 +973,5 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "line %@, column %@: %@" = "satır %@, sütun %@: %@";
 "line %@: %@" = "satır %@: %@";
 "column %@: %@" = "sütun %@: %@";
+"Userstyle compiler timed out." = "Kullanıcı stili derleyicisinin zaman aşımı oldu.";
+"Userstyle compiler must not run on the main thread." = "Kullanıcı stili derleyicisi ana iş parçacığında çalışmamalıdır.";

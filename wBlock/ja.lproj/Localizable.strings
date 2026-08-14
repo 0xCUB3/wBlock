@@ -973,3 +973,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "line %@, column %@: %@" = "行 %@、列 %@：%@";
 "line %@: %@" = "行 %@：%@";
 "column %@: %@" = "列 %@：%@";
+"Userstyle compiler timed out." = "ユーザースタイルコンパイラがタイムアウトしました。";
+"Userstyle compiler must not run on the main thread." = "ユーザースタイルコンパイラはメインスレッドで実行してはいけません。";

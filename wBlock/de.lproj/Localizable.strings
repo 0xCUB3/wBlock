@@ -973,3 +973,5 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "line %@, column %@: %@" = "Zeile %@, Spalte %@: %@";
 "line %@: %@" = "Zeile %@: %@";
 "column %@: %@" = "Spalte %@: %@";
+"Userstyle compiler timed out." = "Zeitüberschreitung beim Userstyle-Compiler.";
+"Userstyle compiler must not run on the main thread." = "Der Userstyle-Compiler darf nicht im Hauptthread ausgeführt werden.";
