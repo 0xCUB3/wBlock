@@ -976,3 +976,5 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Userstyle compiler timed out." = "Timeout del compilatore Userstyle.";
 "Userstyle compiler must not run on the main thread." = "Il compilatore Userstyle non deve essere eseguito sul thread principale.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Motore API di Dark Reader con licenza MIT per wBlock (beta; senza il database completo delle correzioni dei siti).";
+"Follow System Appearance" = "Segui l’aspetto del sistema";
+"When off, Dark Reader keeps websites dark in Light Mode." = "Se disattivato, Dark Reader mantiene scuri i siti web in modalità chiara.";

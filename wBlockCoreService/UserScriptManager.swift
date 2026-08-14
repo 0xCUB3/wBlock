@@ -116,7 +116,7 @@ enum BuiltInUserScripts {
 
     static let tubeCleanerURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js"
     static let playerCleanerURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/player-cleaner/dist/player-cleaner.user.js"
-    static let darkReaderURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/dark-reader/dist/dark-reader.user.js"
+    static let darkReaderURL = DarkReaderAppearancePreference.scriptURL
     static let darkReaderDescription =
         "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)."
     static let legacyBundledURLsByCanonical: [String: String] = [
@@ -240,6 +240,8 @@ public class UserScriptManager: ObservableObject {
     @Published public var pendingDuplicatesToRemove: [UserScript] = []
     @Published public private(set) var isReady = false
     @Published public private(set) var isPrefetchingDefaultMetadata = false
+    @Published public private(set) var darkReaderFollowsSystemAppearance =
+        DarkReaderAppearancePreference.followsSystemAppearance()
 
     private let userScriptSiteDisabledDefaultsKey = "userScriptDisabledHostsByID"
     private let sharedContainerIdentifier = GroupIdentifier.shared.value
@@ -644,6 +646,17 @@ public class UserScriptManager: ObservableObject {
     public func isBeta(for userScript: UserScript) -> Bool {
         guard let urlString = userScript.url?.absoluteString else { return false }
         return BuiltInUserScripts.isBetaByURL[urlString] ?? false
+    }
+
+    public func isDarkReader(_ userScript: UserScript) -> Bool {
+        DarkReaderAppearancePreference.matches(scriptURL: userScript.url)
+    }
+
+    public func setDarkReaderFollowsSystemAppearance(_ followsSystemAppearance: Bool) {
+        guard darkReaderFollowsSystemAppearance != followsSystemAppearance else { return }
+        DarkReaderAppearancePreference.setFollowsSystemAppearance(followsSystemAppearance)
+        darkReaderFollowsSystemAppearance = followsSystemAppearance
+        Self.invalidateDocumentStartExecutionCache()
     }
 
     private init() {

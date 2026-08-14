@@ -903,7 +903,7 @@ public enum WebExtensionRequestHandler {
                     )
                 }
                 if includeContent, !script.content.isEmpty {
-                    let executableContent = script.executableContent
+                    let executableContent = configuredExecutableContent(for: script)
                     let inlinePayloadBytes = executableContent.utf8.count
                         + script.resourceContents.values.reduce(0) { $0 + $1.utf8.count }
                     let perScriptCap = script.runAt == "document-start"
@@ -966,6 +966,17 @@ public enum WebExtensionRequestHandler {
             "documentStartCacheAllowed": allowed,
             "cacheRevision": ""
         ]
+    }
+
+    private static func configuredExecutableContent(for script: UserScript) -> String {
+        let executableContent = script.executableContent
+        guard DarkReaderAppearancePreference.matches(scriptURL: script.url) else {
+            return executableContent
+        }
+        return DarkReaderAppearancePreference.configuredExecutableContent(
+            executableContent,
+            followsSystemAppearance: DarkReaderAppearancePreference.followsSystemAppearance()
+        )
     }
 
     private static func userScriptDescriptor(_ script: UserScript) -> [String: Any] {
@@ -1431,11 +1442,24 @@ public enum WebExtensionRequestHandler {
                     return "\(revision):\(UserStylePreprocessorService.digest(body))"
                 }()
                 let cacheKey = "content:\(scriptId.uuidString):\(pageURL ?? ""):\(artifactIdentity)"
-                data = userScriptPayloadDataCache.data(for: cacheKey, source: script.content) { source in
-                    if script.isUserStyle, let pageURL, !pageURL.isEmpty {
-                        return UserStyleSupport.effectiveCSS(forContent: source, compiledBody: script.compiledStyleBody, url: pageURL)
+                if DarkReaderAppearancePreference.matches(scriptURL: script.url) {
+                    let followsSystemAppearance = DarkReaderAppearancePreference.followsSystemAppearance()
+                    let executableContent = DarkReaderAppearancePreference.configuredExecutableContent(
+                        script.executableContent,
+                        followsSystemAppearance: followsSystemAppearance
+                    )
+                    let mode = followsSystemAppearance ? "system" : "dark"
+                    data = userScriptPayloadDataCache.data(
+                        for: "\(cacheKey):dark-reader-\(mode)",
+                        source: executableContent
+                    )
+                } else {
+                    data = userScriptPayloadDataCache.data(for: cacheKey, source: script.content) { source in
+                        if script.isUserStyle, let pageURL, !pageURL.isEmpty {
+                            return UserStyleSupport.effectiveCSS(forContent: source, compiledBody: script.compiledStyleBody, url: pageURL)
+                        }
+                        return UserScript.executableContent(from: source)
                     }
-                    return UserScript.executableContent(from: source)
                 }
             case .resource:
                 // Lazily populate missing resources for scripts installed before caching existed.

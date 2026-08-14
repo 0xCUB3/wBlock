@@ -976,3 +976,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userstyle compiler timed out." = "Время ожидания компилятора стиля пользователя истекло.";
 "Userstyle compiler must not run on the main thread." = "Компилятор стиля пользователя не должен выполняться в главном потоке.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Механизм API Dark Reader под лицензией MIT для wBlock (бета; без полной базы исправлений сайтов).";
+"Follow System Appearance" = "Следовать оформлению системы";
+"When off, Dark Reader keeps websites dark in Light Mode." = "Если выключено, Dark Reader сохраняет тёмный вид сайтов в светлом режиме.";

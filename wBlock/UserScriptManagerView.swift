@@ -41,13 +41,15 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let isIntegrated: Bool
     let isCustom: Bool
     let isBeta: Bool
+    let isDarkReader: Bool
 
     init(
         script: UserScript,
         isDownloaded: Bool,
         isBuiltIn: Bool,
         builtInDisplayRole: BuiltInUserScriptDisplayRole?,
-        isBeta: Bool = false
+        isBeta: Bool = false,
+        isDarkReader: Bool = false
     ) {
         id = script.id
         name = script.name
@@ -73,6 +75,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
             && (script.name == "Tube Cleaner" || script.name == "Player Cleaner")
         isCustom = !isBuiltIn
         self.isBeta = isBeta
+        self.isDarkReader = isDarkReader
     }
 }
 
@@ -410,7 +413,8 @@ struct UserScriptManagerView: View {
                 isDownloaded: userScriptManager.hasDownloadedContent(for: script),
                 isBuiltIn: userScriptManager.isDefaultUserScript(script),
                 builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
-                isBeta: userScriptManager.isBeta(for: script)
+                isBeta: userScriptManager.isBeta(for: script),
+                isDarkReader: userScriptManager.isDarkReader(script)
             )
         }
     }
@@ -636,7 +640,20 @@ struct UserScriptManagerView: View {
                         .cornerRadius(4)
                 }
 
-
+                if script.isDarkReader {
+                    Divider()
+                        .padding(.vertical, 2)
+                    Toggle("Follow System Appearance", isOn: Binding(
+                        get: { userScriptManager.darkReaderFollowsSystemAppearance },
+                        set: { userScriptManager.setDarkReaderFollowsSystemAppearance($0) }
+                    ))
+                    .font(.subheadline)
+                    .toggleStyle(.switch)
+                    Text("When off, Dark Reader keeps websites dark in Light Mode.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             Spacer()

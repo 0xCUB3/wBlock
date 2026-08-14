@@ -976,3 +976,5 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Userstyle compiler timed out." = "Kullanıcı stili derleyicisinin zaman aşımı oldu.";
 "Userstyle compiler must not run on the main thread." = "Kullanıcı stili derleyicisi ana iş parçacığında çalışmamalıdır.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "wBlock için MIT lisanslı Dark Reader API motoru (beta; tam site düzeltme veritabanı olmadan).";
+"Follow System Appearance" = "Sistem görünümünü izle";
+"When off, Dark Reader keeps websites dark in Light Mode." = "Kapatıldığında Dark Reader, açık modda da web sitelerini karanlık tutar.";
