@@ -32,13 +32,24 @@ expect(style.range(of: "UserStylePreprocessorService.compile(request)")!.lowerBo
 
 expect(compiler.contains("javascriptEnabled: false"), "Less inline JavaScript must stay disabled")
 expect(compiler.contains("processImports: false"), "Less must preserve ordinary CSS imports without resolving them")
-expect(compiler.contains("var XMLHttpRequest = undefined"), "compiler sandbox must not expose network APIs")
+expect(compiler.contains("freshContext()") && compiler.contains("JSContext()"), "compiler must use a fresh sandboxed JavaScriptCore context")
+expect(!compiler.contains("XMLHttpRequest") && !compiler.contains("fetch") && !compiler.contains("navigator"), "compiler sandbox must not expose host APIs")
 expect(compiler.contains("JSONSerialization.data(withJSONObject: request)"), "compiler inputs must cross as JSON")
 expect(!compiler.contains("context.setObject("), "compiler must not expose native bridge objects")
+expect(!compiler.contains("@convention(block)"), "compiler must not bridge native callbacks")
+expect(!compiler.contains("JSValue(object:") && !compiler.contains("bridge.call(withArguments:"), "compiler invocation must remain JSON/evaluateScript only")
+expect(compiler.contains("compilerSourceOverrides"), "DEBUG overrides must be resource-specific")
+expect(compiler.contains("serializedInputSize"), "compiler input must be bounded before evaluation")
 expect(compiler.contains("maximumSourceBytes = 2 * 1024 * 1024"), "compiler source must be bounded")
 expect(compiler.contains("maximumOutputBytes = 10 * 1024 * 1024"), "compiler output must be bounded")
+expect(manager.contains("public func stageUserScriptImport(fromLocalFile fileURL: URL) async"), "instance staging must leave the main actor")
+expect(manager.contains("setResourceValues") && manager.contains("isExcludedFromBackup = true"), "sidecars must be excluded from backup")
 
-expect(script.contains("lowercased.hasSuffix(\".less\")"), ".less URLs must validate")
+for ext in [".less", ".sass", ".scss", ".styl", ".pcss"] {
+    expect(script.contains("hasSuffix(\"\(ext)\")"), "\(ext) URLs must validate")
+}
+expect(style.contains("expectedPreprocessor(for: url)"), "query-value style URLs must classify")
+expect(manager.contains("stylePreprocessorMismatch"), "extension/preprocessor mismatches must be rejected")
 expect(style.contains("lowercased.hasSuffix(\".less\")"), ".less paths must classify as userstyles")
 expect(manager.contains("lowercased.hasSuffix(\".less\")"), ".less local files must stage")
 expect(view.contains("UTType(filenameExtension: \"less\")"), "file importer must allow .less")

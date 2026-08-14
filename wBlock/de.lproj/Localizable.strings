@@ -541,7 +541,7 @@
 "Paste one or more filter URLs, one per line." = "Füge eine oder mehrere Filter-URLs ein, eine pro Zeile.";
 "Paste or write a userscript or userstyle with a standard metadata block." = "Füge ein Userskript oder einen Userstyle mit einem standardmäßigen Metadatenblock ein oder schreibe ihn.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Füge den direkten .user.js-Link ein. wBlock lädt ihn herunter und installiert ihn für dich.";
-"Paste the direct .user.js, .js, .user.css, or .less link. wBlock will download and install it for you." = "Paste the direct .user.js, .js, .user.css, or .less link. wBlock will download and install it for you.";
+"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Füge den direkten .user.js-, .js-, .user.css-, .less-, .sass-, .scss-, .styl- oder .pcss-Link ein. wBlock lädt ihn herunter und installiert ihn für dich.";
 "Pause Blocking" = "Blockieren pausieren";
 "Enabled Userscripts & Userstyles" = "Aktivierte Userscripts und Userstyles";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pause Blocking ist aktiv, solange eine ausgewählte Komponente pausiert ist. Fortsetzen aktiviert alle Komponenten wieder.";
@@ -568,7 +568,7 @@
 "Process completed with reload issues" = "Prozess mit Neu-Laden-Problemen abgeschlossen";
 "Progress" = "Fortschritt";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Schützt vor verdächtigen URLs, Phishing-Sites und unerwünschter Software.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, or .less" = "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, or .less";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Gib einen gültigen http://- oder https://-Link an, der auf .js, .user.js, .user.css, .less, .sass, .scss, .styl oder .pcss endet";
 "Provide a valid https:// link ending in .user.js" = "Gib einen gültigen https://-Link ein, der auf .user.js endet";
 "Psst! You forgot something!" = "Psst! Du hast etwas vergessen!";
 "Quit Without Applying" = "Kündigen, ohne sich zu bewerben";
@@ -704,7 +704,7 @@
 "Successfully updated script" = "Skript erfolgreich aktualisiert";
 "Summary" = "Zusammenfassung";
 "Supplement for EasyList China+EasyList and EasyPrivacy." = "Ergänzung zu EasyList China+EasyList und EasyPrivacy.";
-"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace.";
+"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "Unterstützt .user.js-, .js-, .user.css- und .less-Dateien. Lokale Importe werden nicht automatisch aktualisiert; importiere sie zum Ersetzen erneut.";
 "Sync" = "Synchronisierung";
 "Sync across devices" = "Geräteübergreifend synchronisieren";
 "Sync Now" = "Jetzt synchronisieren";
@@ -937,7 +937,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 
 /* Issue 508 UI follow-up */
 "Starts with http:// or https://" = "Beginnt mit http:// oder https://";
-"Ends with .js, .user.js, .user.css, or .less" = "Ends with .js, .user.js, .user.css, or .less";
+"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Endet mit .js, .user.js, .user.css, .less, .sass, .scss, .styl oder .pcss";
 "Hosted on a trusted source" = "Von einer vertrauenswürdigen Quelle gehostet";
 
 "The file must include userscript or userstyle metadata." = "Die Datei muss Metadaten für ein Userscript oder Userstyle enthalten.";
@@ -952,21 +952,24 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Userstyles and scripts that change the appearance of websites." = "Userstyles und Skripte, die das Erscheinungsbild von Websites ändern.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Benutzerdefinierte, entfernte und lokale Skripte ohne eine spezifischere Anzeigekategorie.";
 
-/* Less userstyle diagnostics */
-"Choose a .user.js, .js, .user.css, or .less file." = "Choose a .user.js, .js, .user.css, or .less file.";
-"Couldn't read the selected file." = "Couldn't read the selected file.";
-"The file is empty." = "The file is empty.";
-"Not a userscript or userstyle: missing metadata block." = "Not a userscript or userstyle: missing metadata block.";
-"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "This userstyle needs the \"%@\" preprocessor, which isn't supported yet.";
-"Couldn't compile this Less userstyle: %@" = "Couldn't compile this Less userstyle: %@";
-"Unknown compiler error." = "Unknown compiler error.";
-"Couldn't save the edited source." = "Couldn't save the edited source.";
-"Less compiler resource is missing." = "Less compiler resource is missing.";
-"Less source exceeds the 2 MiB limit." = "Less source exceeds the 2 MiB limit.";
-"Less compiler input could not be serialized." = "Less compiler input could not be serialized.";
-"Less compilation failed." = "Less compilation failed.";
-"Less compiler returned no CSS." = "Less compiler returned no CSS.";
-"Less compiler output exceeds the 10 MiB limit." = "Less compiler output exceeds the 10 MiB limit.";
-
-"line %@" = "line %@";
-"column %@" = "column %@";
+/* Userstyle compiler diagnostics */
+"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "Wähle eine .user.js-, .js-, .user.css-, .less-, .sass-, .scss-, .styl- oder .pcss-Datei aus.";
+"Couldn't read the selected file." = "Die ausgewählte Datei konnte nicht gelesen werden.";
+"The file is empty." = "Die Datei ist leer.";
+"Not a userscript or userstyle: missing metadata block." = "Kein Userscript oder Userstyle: Metadatenblock fehlt.";
+"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "Dieser Userstyle benötigt den Präprozessor \"%@\", der noch nicht unterstützt wird.";
+"This style file requires the \"%@\" preprocessor, but declares \"%@\"." = "Diese Stildatei benötigt den Präprozessor \"%@\", deklariert aber \"%@\".";
+"Couldn't compile this userstyle: %@" = "Dieser Userstyle konnte nicht kompiliert werden: %@";
+"Unknown compiler error." = "Unbekannter Compilerfehler.";
+"Couldn't save the edited source." = "Die bearbeitete Quelle konnte nicht gespeichert werden.";
+"Userstyle source exceeds the 2 MiB limit." = "Die Userstyle-Quelle überschreitet das Limit von 2 MiB.";
+"Userstyle compiler resource is missing." = "Die Userstyle-Compilerressource fehlt.";
+"Userstyle compiler resource failed to load." = "Die Userstyle-Compilerressource konnte nicht geladen werden.";
+"Userstyle compiler input could not be serialized." = "Die Eingabe für den Userstyle-Compiler konnte nicht serialisiert werden.";
+"Userstyle compiler returned an invalid response." = "Der Userstyle-Compiler gab eine ungültige Antwort zurück.";
+"Userstyle compiler returned no CSS." = "Der Userstyle-Compiler gab kein CSS zurück.";
+"Userstyle compiler output exceeds the 10 MiB limit." = "Die Ausgabe des Userstyle-Compilers überschreitet das Limit von 10 MiB.";
+"Userstyle compiler failed." = "Der Userstyle-Compiler ist fehlgeschlagen.";
+"line %@, column %@: %@" = "Zeile %@, Spalte %@: %@";
+"line %@: %@" = "Zeile %@: %@";
+"column %@: %@" = "Spalte %@: %@";

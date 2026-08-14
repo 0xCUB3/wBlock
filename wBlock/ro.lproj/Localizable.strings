@@ -541,7 +541,7 @@
 "Paste one or more filter URLs, one per line." = "Lipește unul sau mai multe URL-uri de filtru, câte unul pe linie.";
 "Paste or write a userscript or userstyle with a standard metadata block." = "Lipește sau scrie un script ori stil utilizator cu un bloc standard de metadate.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Lipește linkul direct .user.js. wBlock îl va descărca și instala pentru tine.";
-"Paste the direct .user.js, .js, .user.css, or .less link. wBlock will download and install it for you." = "Paste the direct .user.js, .js, .user.css, or .less link. wBlock will download and install it for you.";
+"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Lipește linkul direct .user.js, .js, .user.css, .less, .sass, .scss, .styl sau .pcss. wBlock îl va descărca și instala.";
 "Pause Blocking" = "Pauză blocare";
 "Pausing blocking..." = "Se pun în pauză blocarea…";
 "Persian Blocker" = "Persian Blocker";
@@ -565,7 +565,7 @@
 "Process completed with reload issues" = "Proces finalizat cu probleme de reîncărcare";
 "Progress" = "Progres";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Protejează împotriva adreselor URL suspecte, a site-urilor de phishing și a software-ului nedorit.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, or .less" = "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, or .less";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Furnizează un link http:// sau https:// valid, care se termină în .js, .user.js, .user.css, .less, .sass, .scss, .styl sau .pcss";
 "Provide a valid https:// link ending in .user.js" = "Furnizează un link https:// valid care se termină în .user.js";
 "Psst! You forgot something!" = "Psst! Ai uitat ceva!";
 "Quit Without Applying" = "Ieșiți fără a aplica";
@@ -701,7 +701,7 @@
 "Successfully updated script" = "Scriptul a fost actualizat";
 "Summary" = "Rezumat";
 "Supplement for EasyList China+EasyList and EasyPrivacy." = "Supliment pentru EasyList China+EasyList și EasyPrivacy.";
-"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace.";
+"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "Acceptă fișiere .user.js, .js, .user.css și .less. Importurile locale nu se actualizează automat; reimportă pentru înlocuire.";
 "Sync" = "Sincronizare";
 "Sync across devices" = "Sincronizare între dispozitive";
 "Sync Now" = "Sincronizează acum";
@@ -934,7 +934,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 /* Issue 508 UI follow-up */
 "Starts with http:// or https://" = "Începe cu http:// sau https://";
-"Ends with .js, .user.js, .user.css, or .less" = "Ends with .js, .user.js, .user.css, or .less";
+"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Se termină în .js, .user.js, .user.css, .less, .sass, .scss, .styl sau .pcss";
 "Hosted on a trusted source" = "Găzduit pe o sursă de încredere";
 
 "The file must include userscript or userstyle metadata." = "Fișierul trebuie să includă metadate pentru userscript sau userstyle.";
@@ -952,21 +952,24 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pauza blocării este activă cât timp orice componentă selectată este pusă pe pauză. Reluarea reactivează toate componentele.";
 "Temporarily pause selected components without changing their enabled settings." = "Pune temporar pe pauză componentele selectate fără a le modifica starea de activare.";
 
-/* Less userstyle diagnostics */
-"Choose a .user.js, .js, .user.css, or .less file." = "Choose a .user.js, .js, .user.css, or .less file.";
-"Couldn't read the selected file." = "Couldn't read the selected file.";
-"The file is empty." = "The file is empty.";
-"Not a userscript or userstyle: missing metadata block." = "Not a userscript or userstyle: missing metadata block.";
-"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "This userstyle needs the \"%@\" preprocessor, which isn't supported yet.";
-"Couldn't compile this Less userstyle: %@" = "Couldn't compile this Less userstyle: %@";
-"Unknown compiler error." = "Unknown compiler error.";
-"Couldn't save the edited source." = "Couldn't save the edited source.";
-"Less compiler resource is missing." = "Less compiler resource is missing.";
-"Less source exceeds the 2 MiB limit." = "Less source exceeds the 2 MiB limit.";
-"Less compiler input could not be serialized." = "Less compiler input could not be serialized.";
-"Less compilation failed." = "Less compilation failed.";
-"Less compiler returned no CSS." = "Less compiler returned no CSS.";
-"Less compiler output exceeds the 10 MiB limit." = "Less compiler output exceeds the 10 MiB limit.";
-
-"line %@" = "line %@";
-"column %@" = "column %@";
+/* Userstyle compiler diagnostics */
+"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "Alege un fișier .user.js, .js, .user.css, .less, .sass, .scss, .styl sau .pcss.";
+"Couldn't read the selected file." = "Fișierul selectat nu a putut fi citit.";
+"The file is empty." = "Fișierul este gol.";
+"Not a userscript or userstyle: missing metadata block." = "Nu este userscript sau userstyle: lipsește blocul de metadate.";
+"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "Acest userstyle necesită preprocesorul \"%@\", care nu este încă acceptat.";
+"This style file requires the \"%@\" preprocessor, but declares \"%@\"." = "Acest fișier de stil necesită preprocesorul \"%@\", dar declară \"%@\".";
+"Couldn't compile this userstyle: %@" = "Acest userstyle nu a putut fi compilat: %@";
+"Unknown compiler error." = "Eroare necunoscută a compilatorului.";
+"Couldn't save the edited source." = "Sursa editată nu a putut fi salvată.";
+"Userstyle source exceeds the 2 MiB limit." = "Sursa userstyle depășește limita de 2 MiB.";
+"Userstyle compiler resource is missing." = "Lipsește resursa compilatorului userstyle.";
+"Userstyle compiler resource failed to load." = "Resursa compilatorului userstyle nu a putut fi încărcată.";
+"Userstyle compiler input could not be serialized." = "Intrarea compilatorului userstyle nu a putut fi serializată.";
+"Userstyle compiler returned an invalid response." = "Compilatorul userstyle a returnat un răspuns nevalid.";
+"Userstyle compiler returned no CSS." = "Compilatorul userstyle nu a returnat CSS.";
+"Userstyle compiler output exceeds the 10 MiB limit." = "Ieșirea compilatorului userstyle depășește limita de 10 MiB.";
+"Userstyle compiler failed." = "Compilatorul userstyle a eșuat.";
+"line %@, column %@: %@" = "linia %@, coloana %@: %@";
+"line %@: %@" = "linia %@: %@";
+"column %@: %@" = "coloana %@: %@";

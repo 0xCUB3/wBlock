@@ -1,0 +1,9 @@
+Bundle scan:
+
+- require(...): absent
+- process.env.*: absent (process.env.LANG was esbuild-defined away)
+- fs.read/write/exists calls: absent
+- path.join/resolve/dirname calls: absent
+- Swift JavaScriptCore probe: passed with require/process/fs/path/document/window/navigator all undefined
+
+PostCSS's optional source-map implementation is browser-aliased to empty modules by esbuild browser conditions and is not invoked: this bridge passes no map/from/to option. No network, filesystem, Node, DOM, or native bridge is exposed by the global API.

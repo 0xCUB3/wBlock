@@ -98,7 +98,9 @@ public enum UserScriptURLSupport {
         let lowercased = path.lowercased()
         return lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
             || lowercased.hasSuffix(".user.css") || lowercased.hasSuffix(".css")
-            || lowercased.hasSuffix(".less")
+            || lowercased.hasSuffix(".less") || lowercased.hasSuffix(".sass")
+            || lowercased.hasSuffix(".scss") || lowercased.hasSuffix(".styl")
+            || lowercased.hasSuffix(".pcss")
     }
 }
 

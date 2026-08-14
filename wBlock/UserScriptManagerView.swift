@@ -2155,7 +2155,7 @@ struct AddUserScriptView: View {
     private var requirementsPanel: some View {
         AddContentRequirementsPanel(requirements: [
             AddContentRequirement(systemImage: "link", text: "Starts with http:// or https://"),
-            AddContentRequirement(systemImage: "doc.text", text: "Ends with .js, .user.js, .user.css, or .less"),
+            AddContentRequirement(systemImage: "doc.text", text: "Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss"),
             AddContentRequirement(systemImage: "checkmark.shield", text: "Hosted on a trusted source"),
             AddContentRequirement(systemImage: "doc.badge.gearshape", text: metadataRequirementText)
         ])
@@ -2382,9 +2382,12 @@ struct AddUserScriptView: View {
             types.append(userJsExt)
         }
 
-        // Userstyles (.user.css / .css / .less)
+        // Userstyles (.user.css / .css and offline compiler formats)
         types.append(UTType(filenameExtension: "css") ?? .plainText)
         types.append(UTType(filenameExtension: "less") ?? .plainText)
+        for fileExtension in ["sass", "scss", "styl", "pcss"] {
+            types.append(UTType(filenameExtension: fileExtension) ?? .plainText)
+        }
 
         let userCssTypes = UTType.types(tag: "user.css", tagClass: .filenameExtension, conformingTo: nil)
         if !userCssTypes.isEmpty {
@@ -2533,7 +2536,7 @@ struct AddUserScriptView: View {
         }
 
         guard let url = UserScriptURLSupport.validatedRemoteURL(from: trimmed) else {
-            validationState = .invalid(String(localized: "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, or .less"))
+            validationState = .invalid(String(localized: "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss"))
             return
         }
 

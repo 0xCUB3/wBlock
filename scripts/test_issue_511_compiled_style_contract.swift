@@ -29,5 +29,23 @@ expect(style.contains("compiledArtifact: UserStyleCompiledArtifact?"), "parsed s
 expect(script.contains("compiledStyleCacheKey") && script.contains("digest(content)"), "transient bodies must be keyed by source identity")
 expect(script.contains("compiledBody: String? = nil"), "source replacement must atomically accept an optional body")
 expect(manager.contains("guard writeUserScriptFiles(newUserScript) else") && manager.contains("CocoaError(.fileWriteUnknown)"), "local import writes before observable mutation")
+expect(!compiler.contains("@convention(block)") && !compiler.contains("JSValue(object:")
+       && !compiler.contains("call(withArguments:") && !compiler.contains("setObject("),
+       "compiler invocation must not expose native bridge objects")
+expect(manager.contains("public func stageUserScriptImport(fromLocalFile fileURL: URL) async throws"),
+       "MainActor file staging wrapper must move work off-main")
+expect(manager.contains("let editedStyle = await Task.detached"),
+       "edited compiler-backed styles must validate off-main")
+expect(manager.contains("expectedPreprocessor(for userScript: UserScript)")
+       && manager.contains("Self.expectedPreprocessor(for: existing)"),
+       "editor saves must preserve the compiler declared by specialized source paths")
+expect(manager.contains("!UserStyleSupport.isUserStylePath(filename)"),
+       "every style extension must fail closed without UserStyle metadata")
+expect(manager.contains("stylePreprocessorMismatch") && manager.contains("format: String("),
+       "specialized extensions must report distinct expected and declared preprocessors")
+expect(manager.contains("values.isExcludedFromBackup = true"),
+       "derived compiler sidecars must be excluded from backup")
+expect(compiler.contains("UserStyleCompiler.serializedInputSize(request) <= backend.maximumSourceBytes"),
+       "artifact validation and compilation must bound source plus metadata")
 
 print("PASS: issue #511 compiled style contract")

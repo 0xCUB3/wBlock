@@ -11,8 +11,8 @@
 //  that understands the UserCSS format.
 //
 //  Supported preprocessors: none/"default" (variables become CSS custom
-//  properties) and "uso" (textual /*[[name]]*/ substitution). Styles requiring
-//  "less" or "stylus" need a full compiler and are rejected at import.
+//  properties), "uso" (textual /*[[name]]*/ substitution), and the bounded
+//  offline Less, Sass/SCSS, Stylus, and PostCSS backends.
 //
 
 import CryptoKit
@@ -31,25 +31,58 @@ public enum UserStyleSupport {
 
     /// True when the content carries a `==UserStyle== ... ==/UserStyle==` metadata block.
     public static func isUserStyleContent(_ content: String) -> Bool {
-        guard let startRange = content.range(of: metadataStartMarker) else { return false }
-        return content.range(of: metadataEndMarker, range: startRange.upperBound..<content.endIndex) != nil
+        guard let startRange = content.range(of: metadataStartMarker),
+              let endRange = content.range(of: metadataEndMarker, range: startRange.upperBound..<content.endIndex)
+        else { return false }
+        // A marker pair alone is not a UserCSS document. Requiring @name prevents
+        // extension-based imports from being injected as styles.
+        let metadata = String(content[startRange.upperBound..<endRange.lowerBound])
+        return metadata.split(whereSeparator: \.isNewline).contains { line in
+            var value = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if value.hasPrefix("*") { value = String(value.dropFirst()).trimmingCharacters(in: .whitespaces) }
+            return value.hasPrefix("@name ") && value.dropFirst(6).trimmingCharacters(in: .whitespaces).isEmpty == false
+        }
     }
 
     /// True for URL paths / filenames that look like a userstyle source.
     public static func isUserStylePath(_ path: String) -> Bool {
         let lowercased = path.lowercased()
         return lowercased.hasSuffix(".user.css") || lowercased.hasSuffix(".css")
-            || lowercased.hasSuffix(".less")
+            || lowercased.hasSuffix(".less") || lowercased.hasSuffix(".sass")
+            || lowercased.hasSuffix(".scss") || lowercased.hasSuffix(".styl")
+            || lowercased.hasSuffix(".pcss")
     }
 
     public static func isUserStyleURL(_ url: URL) -> Bool {
-        if isUserStylePath(url.path) { return true }
-        return URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?
-            .compactMap(\.value).contains(where: isUserStylePath) ?? false
+        if expectedPreprocessor(for: url) != nil || isUserStylePath(url.path) { return true }
+        return URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.compactMap(\.value).contains(where: isUserStylePath) ?? false
     }
 
-    /// Preprocessors wBlock can apply natively or compile offline. Stylus, Sass,
-    /// SCSS, and PostCSS remain unsupported.
+    /// Returns the compiler required by a specialized style extension. Plain
+    /// CSS accepts any declared supported preprocessor.
+    public static func expectedPreprocessor(for url: URL) -> String? {
+        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        let candidates = [components?.path ?? ""] + (components?.queryItems?.compactMap(\.value) ?? [])
+        return candidates.compactMap(expectedPreprocessor(forPath:)).first
+    }
+
+    public static func expectedPreprocessor(forPath path: String) -> String? {
+        let lowercased = path.lowercased()
+        if lowercased.hasSuffix(".less") { return "less" }
+        if lowercased.hasSuffix(".sass") { return "sass" }
+        if lowercased.hasSuffix(".scss") { return "scss" }
+        if lowercased.hasSuffix(".styl") { return "stylus" }
+        if lowercased.hasSuffix(".pcss") { return "postcss" }
+        return nil
+    }
+
+    public static func expectedPreprocessorMismatch(for url: URL, declared: String) -> Bool {
+        guard let expected = expectedPreprocessor(for: url) else { return false }
+        return UserStylePreprocessorService.normalize(declared) != expected
+    }
+
+    /// Preprocessors wBlock can apply natively or compile in the bounded offline
+    /// JavaScriptCore service. PostCSS is the fixed nested-plugin backend only.
     public static func isPreprocessorSupported(_ preprocessor: String) -> Bool {
         let normalized = UserStylePreprocessorService.normalize(preprocessor)
         return normalized == "default" || normalized == "uso" || UserStylePreprocessorService.backend(for: normalized) != nil
@@ -61,6 +94,10 @@ public enum UserStyleSupport {
         public let name: String
         /// Default value with units already folded in (e.g. "16px", "#0021FF").
         public let value: String
+        public init(name: String, value: String) {
+            self.name = name
+            self.value = value
+        }
     }
 
     public enum Condition: Hashable, Sendable {
@@ -147,7 +184,7 @@ public enum UserStyleSupport {
         public let variables: [Variable]
         public let globalCSS: String
         public let sections: [Section]
-        /// False when Less compilation failed. Metadata remains available so callers
+        /// False when preprocessing failed. Metadata remains available so callers
         /// can classify the source and surface the compiler diagnostic.
         public let isCompiled: Bool
         public let compilationError: String?
@@ -379,8 +416,8 @@ public enum UserStyleSupport {
         guard !variables.isEmpty else { return css }
 
         let normalized = preprocessor.trimmingCharacters(in: .whitespaces).lowercased()
-        if UserStylePreprocessorService.requiresCompilation(normalized) {
-            // Compiler-backed preprocessors have already received metadata defaults.
+        if let backend = UserStylePreprocessorService.backend(for: normalized), backend.consumesVariables {
+            // Sass/SCSS, Stylus, and Less consumed metadata variables during compile.
             return css
         }
         if normalized == "uso" {

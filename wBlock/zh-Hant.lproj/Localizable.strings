@@ -541,7 +541,7 @@
 "Paste one or more filter URLs, one per line." = "貼上一個或多個篩選器 URL，每行一個。";
 "Paste or write a userscript or userstyle with a standard metadata block." = "貼上或撰寫含標準中繼資料區塊的使用者腳本或使用者樣式。";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "貼上直接的 .user.js 連結。wBlock 會為你下載並安裝。";
-"Paste the direct .user.js, .js, .user.css, or .less link. wBlock will download and install it for you." = "Paste the direct .user.js, .js, .user.css, or .less link. wBlock will download and install it for you.";
+"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "貼上直接的 .user.js、.js、.user.css、.less、.sass、.scss、.styl 或 .pcss 連結。wBlock 會為你下載並安裝。";
 "Pause Blocking" = "暫停封鎖";
 "Enabled Userscripts & Userstyles" = "已啟用的使用者腳本與樣式";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "只要有選取的元件處於暫停狀態，暫停封鎖就會開啟。恢復後會還原所有元件。";
@@ -568,7 +568,7 @@
 "Process completed with reload issues" = "流程已完成，但存在重新載入問題";
 "Progress" = "進度";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "防範可疑 URL、網路釣魚網站和不需要的軟體。";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, or .less" = "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, or .less";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "提供以 .js、.user.js、.user.css、.less、.sass、.scss、.styl 或 .pcss 結尾的有效 http:// 或 https:// 連結";
 "Provide a valid https:// link ending in .user.js" = "請提供以 .user.js 結尾的有效 https:// 連結";
 "Psst! You forgot something!" = "嘿！你忘了某些項目！";
 "Quit Without Applying" = "不申請就退出";
@@ -704,7 +704,7 @@
 "Successfully updated script" = "已更新腳本";
 "Summary" = "摘要";
 "Supplement for EasyList China+EasyList and EasyPrivacy." = "EasyList China+EasyList 和 EasyPrivacy 的補充。";
-"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace.";
+"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "支援 .user.js、.js、.user.css 和 .less 檔案。本機匯入不會自動更新；請重新匯入以取代。";
 "Sync" = "同步";
 "Sync across devices" = "跨裝置同步";
 "Sync Now" = "立即同步";
@@ -937,7 +937,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Issue 508 UI follow-up */
 "Starts with http:// or https://" = "以 http:// 或 https:// 開頭";
-"Ends with .js, .user.js, .user.css, or .less" = "Ends with .js, .user.js, .user.css, or .less";
+"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "以 .js、.user.js、.user.css、.less、.sass、.scss、.styl 或 .pcss 結尾";
 "Hosted on a trusted source" = "託管於可信任的來源";
 
 "The file must include userscript or userstyle metadata." = "檔案必須包含使用者腳本或使用者樣式中繼資料。";
@@ -952,21 +952,24 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userstyles and scripts that change the appearance of websites." = "變更網站外觀的使用者樣式與腳本。";
 "Custom, remote, and local scripts that do not have a more specific display category." = "沒有更具體顯示類別的自訂、遠端與本機腳本。";
 
-/* Less userstyle diagnostics */
-"Choose a .user.js, .js, .user.css, or .less file." = "Choose a .user.js, .js, .user.css, or .less file.";
-"Couldn't read the selected file." = "Couldn't read the selected file.";
-"The file is empty." = "The file is empty.";
-"Not a userscript or userstyle: missing metadata block." = "Not a userscript or userstyle: missing metadata block.";
-"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "This userstyle needs the \"%@\" preprocessor, which isn't supported yet.";
-"Couldn't compile this Less userstyle: %@" = "Couldn't compile this Less userstyle: %@";
-"Unknown compiler error." = "Unknown compiler error.";
-"Couldn't save the edited source." = "Couldn't save the edited source.";
-"Less compiler resource is missing." = "Less compiler resource is missing.";
-"Less source exceeds the 2 MiB limit." = "Less source exceeds the 2 MiB limit.";
-"Less compiler input could not be serialized." = "Less compiler input could not be serialized.";
-"Less compilation failed." = "Less compilation failed.";
-"Less compiler returned no CSS." = "Less compiler returned no CSS.";
-"Less compiler output exceeds the 10 MiB limit." = "Less compiler output exceeds the 10 MiB limit.";
-
-"line %@" = "line %@";
-"column %@" = "column %@";
+/* Userstyle compiler diagnostics */
+"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "選擇 .user.js、.js、.user.css、.less、.sass、.scss、.styl 或 .pcss 檔案。";
+"Couldn't read the selected file." = "無法讀取所選檔案。";
+"The file is empty." = "檔案是空的。";
+"Not a userscript or userstyle: missing metadata block." = "不是 userscript 或 userstyle：缺少中繼資料區塊。";
+"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "此 userstyle 需要\"%@\"預處理器，但目前尚未支援。";
+"This style file requires the \"%@\" preprocessor, but declares \"%@\"." = "此樣式檔案需要\"%@\"預處理器，但宣告為\"%@\"。";
+"Couldn't compile this userstyle: %@" = "無法編譯此 userstyle：%@";
+"Unknown compiler error." = "未知的編譯器錯誤。";
+"Couldn't save the edited source." = "無法儲存編輯後的原始碼。";
+"Userstyle source exceeds the 2 MiB limit." = "Userstyle 原始碼超過 2 MiB 限制。";
+"Userstyle compiler resource is missing." = "缺少 userstyle 編譯器資源。";
+"Userstyle compiler resource failed to load." = "無法載入 userstyle 編譯器資源。";
+"Userstyle compiler input could not be serialized." = "無法序列化 userstyle 編譯器輸入。";
+"Userstyle compiler returned an invalid response." = "userstyle 編譯器傳回無效回應。";
+"Userstyle compiler returned no CSS." = "userstyle 編譯器未傳回 CSS。";
+"Userstyle compiler output exceeds the 10 MiB limit." = "userstyle 編譯器輸出超過 10 MiB 限制。";
+"Userstyle compiler failed." = "userstyle 編譯器失敗。";
+"line %@, column %@: %@" = "第 %@ 行，第 %@ 欄：%@";
+"line %@: %@" = "第 %@ 行：%@";
+"column %@: %@" = "第 %@ 欄：%@";

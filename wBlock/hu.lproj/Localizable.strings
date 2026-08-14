@@ -541,7 +541,7 @@
 "Paste one or more filter URLs, one per line." = "Illesszen be egy vagy több szűrő URL-t, soronként egyet.";
 "Paste or write a userscript or userstyle with a standard metadata block." = "Illessz be vagy írj egy felhasználói szkriptet vagy stílust szabványos metaadatblokkal.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Illeszd be a közvetlen .user.js linket. A wBlock letölti és telepíti neked.";
-"Paste the direct .user.js, .js, .user.css, or .less link. wBlock will download and install it for you." = "Paste the direct .user.js, .js, .user.css, or .less link. wBlock will download and install it for you.";
+"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Illeszd be a közvetlen .user.js-, .js-, .user.css-, .less-, .sass-, .scss-, .styl- vagy .pcss-hivatkozást. A wBlock letölti és telepíti.";
 "Pause Blocking" = "Blokkolás szüneteltetése";
 "Enabled Userscripts & Userstyles" = "Engedélyezett felhasználói szkriptek és stílusok";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "A blokkolás szünetel, amíg legalább egy kiválasztott összetevő szüneteltetve van. A folytatás minden összetevőt visszaállít.";
@@ -568,7 +568,7 @@
 "Process completed with reload issues" = "A folyamat befejeződött, de újratöltési problémák vannak";
 "Progress" = "Folyamat";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Védelmet nyújt a gyanús URL-ek, adathalász webhelyek és nem kívánt szoftverek ellen.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, or .less" = "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, or .less";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Adj meg érvényes http:// vagy https:// hivatkozást, amely .js, .user.js, .user.css, .less, .sass, .scss, .styl vagy .pcss végű";
 "Provide a valid https:// link ending in .user.js" = "Adj meg egy érvényes, .user.js végű https:// hivatkozást";
 "Psst! You forgot something!" = "Pszt! Elfelejtettél valamit!";
 "Quit Without Applying" = "Kilépés jelentkezés nélkül";
@@ -704,7 +704,7 @@
 "Successfully updated script" = "A szkript frissítése sikeres";
 "Summary" = "Összegzés";
 "Supplement for EasyList China+EasyList and EasyPrivacy." = "Kiegészítés az EasyList China+EasyList és az EasyPrivacy programokhoz.";
-"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace.";
+"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "Támogatja a .user.js, .js, .user.css és .less fájlokat. A helyi importok nem frissülnek automatikusan; az új import felülírja őket.";
 "Sync" = "Szinkronizálás";
 "Sync across devices" = "Szinkronizálás az eszközök között";
 "Sync Now" = "Szinkronizálás most";
@@ -937,7 +937,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 /* Issue 508 UI follow-up */
 "Starts with http:// or https://" = "http:// vagy https:// előtaggal kezdődik";
-"Ends with .js, .user.js, .user.css, or .less" = "Ends with .js, .user.js, .user.css, or .less";
+"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = ".js, .user.js, .user.css, .less, .sass, .scss, .styl vagy .pcss végű";
 "Hosted on a trusted source" = "Megbízható forrásról származik";
 
 "The file must include userscript or userstyle metadata." = "A fájlnak userscript- vagy userstyle-metaadatokat kell tartalmaznia.";
@@ -952,21 +952,24 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Userstyles and scripts that change the appearance of websites." = "A webhelyek megjelenését módosító userstyle-ok és szkriptek.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Egyéni, távoli és helyi szkriptek, amelyekhez nem illik pontosabb megjelenítési kategória.";
 
-/* Less userstyle diagnostics */
-"Choose a .user.js, .js, .user.css, or .less file." = "Choose a .user.js, .js, .user.css, or .less file.";
-"Couldn't read the selected file." = "Couldn't read the selected file.";
-"The file is empty." = "The file is empty.";
-"Not a userscript or userstyle: missing metadata block." = "Not a userscript or userstyle: missing metadata block.";
-"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "This userstyle needs the \"%@\" preprocessor, which isn't supported yet.";
-"Couldn't compile this Less userstyle: %@" = "Couldn't compile this Less userstyle: %@";
-"Unknown compiler error." = "Unknown compiler error.";
-"Couldn't save the edited source." = "Couldn't save the edited source.";
-"Less compiler resource is missing." = "Less compiler resource is missing.";
-"Less source exceeds the 2 MiB limit." = "Less source exceeds the 2 MiB limit.";
-"Less compiler input could not be serialized." = "Less compiler input could not be serialized.";
-"Less compilation failed." = "Less compilation failed.";
-"Less compiler returned no CSS." = "Less compiler returned no CSS.";
-"Less compiler output exceeds the 10 MiB limit." = "Less compiler output exceeds the 10 MiB limit.";
-
-"line %@" = "line %@";
-"column %@" = "column %@";
+/* Userstyle compiler diagnostics */
+"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "Válassz egy .user.js, .js, .user.css, .less, .sass, .scss, .styl vagy .pcss fájlt.";
+"Couldn't read the selected file." = "A kijelölt fájl nem olvasható.";
+"The file is empty." = "A fájl üres.";
+"Not a userscript or userstyle: missing metadata block." = "Nem userscript vagy userstyle: hiányzik a metaadatblokk.";
+"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "Ehhez a userstyle-hoz a(z) \"%@\" előfeldolgozó szükséges, amely még nem támogatott.";
+"This style file requires the \"%@\" preprocessor, but declares \"%@\"." = "Ehhez a stílusfájlhoz a(z) \"%@\" előfeldolgozó szükséges, de \"%@\" van deklarálva.";
+"Couldn't compile this userstyle: %@" = "A userstyle fordítása sikertelen: %@";
+"Unknown compiler error." = "Ismeretlen fordítóhiba.";
+"Couldn't save the edited source." = "A szerkesztett forrás mentése sikertelen.";
+"Userstyle source exceeds the 2 MiB limit." = "A userstyle forrása meghaladja a 2 MiB-os korlátot.";
+"Userstyle compiler resource is missing." = "Hiányzik a userstyle fordítóerőforrása.";
+"Userstyle compiler resource failed to load." = "A userstyle fordítóerőforrásának betöltése sikertelen.";
+"Userstyle compiler input could not be serialized." = "A userstyle fordítóbemenete nem szerializálható.";
+"Userstyle compiler returned an invalid response." = "A userstyle fordítója érvénytelen választ adott.";
+"Userstyle compiler returned no CSS." = "A userstyle fordítója nem adott vissza CSS-t.";
+"Userstyle compiler output exceeds the 10 MiB limit." = "A userstyle fordító kimenete meghaladja a 10 MiB-os korlátot.";
+"Userstyle compiler failed." = "A userstyle fordítása sikertelen.";
+"line %@, column %@: %@" = "sor %@, oszlop %@: %@";
+"line %@: %@" = "sor %@: %@";
+"column %@: %@" = "oszlop %@: %@";

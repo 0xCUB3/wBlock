@@ -90,7 +90,7 @@ func localizedKeys(in sources: [(path: String, contents: String)]) -> Set<String
 }
 
 func branchAddedSourceLocalizedKeys() -> Set<String> {
-    let diffLines = run(["git", "diff", "origin/main...HEAD", "--unified=0", "--", "wBlock"])
+    let diffLines = run(["git", "diff", "origin/main", "--unified=0", "--", "wBlock"])
         .split(separator: "\n", omittingEmptySubsequences: false)
         .map(String.init)
     let added = diffLines.filter { $0.hasPrefix("+") && !$0.hasPrefix("+++") }

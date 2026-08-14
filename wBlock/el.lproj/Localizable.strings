@@ -541,7 +541,7 @@
 "Paste one or more filter URLs, one per line." = "Επικολλήστε μία ή περισσότερες διευθύνσεις URL φίλτρου, μία ανά γραμμή.";
 "Paste or write a userscript or userstyle with a standard metadata block." = "Επικολλήστε ή γράψτε ένα κώδικα χρήστη ή ένα στυλ χρήστη με ένα τυπικό αποκλεισμό μεταδεδομένων.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Επικολλήστε τον άμεσο σύνδεσμο .user.js. Το wBlock θα τον κατεβάσει και θα τον εγκαταστήσει για εσάς.";
-"Paste the direct .user.js, .js, .user.css, or .less link. wBlock will download and install it for you." = "Paste the direct .user.js, .js, .user.css, or .less link. wBlock will download and install it for you.";
+"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Επικολλήστε τον άμεσο σύνδεσμο .user.js, .js, .user.css, .less, .sass, .scss, .styl ή .pcss. Το wBlock θα τον κατεβάσει και θα τον εγκαταστήσει.";
 "Pause Blocking" = "Παύση αποκλεισμού";
 "Enabled Userscripts & Userstyles" = "Ενεργά σενάρια και στυλ χρήστη";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Η παύση αποκλεισμού είναι ενεργή όσο οποιοδήποτε επιλεγμένο στοιχείο βρίσκεται σε παύση. Η συνέχιση επαναφέρει όλα τα στοιχεία.";
@@ -568,7 +568,7 @@
 "Process completed with reload issues" = "Η διαδικασία ολοκληρώθηκε με προβλήματα επαναφόρτωσης";
 "Progress" = "Πρόοδος";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Προστατεύει από ύποπτες διευθύνσεις URL, ιστότοπους ηλεκτρονικού ψαρέματος (phishing) και ανεπιθύμητο λογισμικό.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, or .less" = "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, or .less";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Δώστε έναν έγκυρο σύνδεσμο http:// ή https:// που τελειώνει σε .js, .user.js, .user.css, .less, .sass, .scss, .styl ή .pcss";
 "Provide a valid https:// link ending in .user.js" = "Παρέχετε έναν έγκυρο σύνδεσμο https:// που τελειώνει σε .user.js";
 "Psst! You forgot something!" = "Ψστ! Ξέχασες κάτι!";
 "Quit Without Applying" = "Κλείστε χωρίς να κάνετε αίτηση";
@@ -704,7 +704,7 @@
 "Successfully updated script" = "Το σενάριο ενημερώθηκε επιτυχώς";
 "Summary" = "Σύνοψη";
 "Supplement for EasyList China+EasyList and EasyPrivacy." = "Συμπλήρωμα για EasyList China+EasyList και EasyPrivacy.";
-"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace.";
+"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "Υποστηρίζει αρχεία .user.js, .js, .user.css και .less. Οι τοπικές εισαγωγές δεν ενημερώνονται αυτόματα· εισαγάγετέ τες ξανά για αντικατάσταση.";
 "Sync" = "Συγχρονισμός";
 "Sync across devices" = "Συγχρονισμός μεταξύ συσκευών";
 "Sync Now" = "Συγχρονισμός τώρα";
@@ -937,7 +937,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Issue 508 UI follow-up */
 "Starts with http:// or https://" = "Ξεκινά με http:// ή https://";
-"Ends with .js, .user.js, .user.css, or .less" = "Ends with .js, .user.js, .user.css, or .less";
+"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Τελειώνει σε .js, .user.js, .user.css, .less, .sass, .scss, .styl ή .pcss";
 "Hosted on a trusted source" = "Φιλοξενείται σε αξιόπιστη πηγή";
 
 "The file must include userscript or userstyle metadata." = "Το αρχείο πρέπει να περιλαμβάνει μεταδεδομένα userscript ή userstyle.";
@@ -952,21 +952,24 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userstyles and scripts that change the appearance of websites." = "Userstyles και scripts που αλλάζουν την εμφάνιση ιστοτόπων.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Προσαρμοσμένα, απομακρυσμένα και τοπικά scripts χωρίς ειδικότερη κατηγορία εμφάνισης.";
 
-/* Less userstyle diagnostics */
-"Choose a .user.js, .js, .user.css, or .less file." = "Choose a .user.js, .js, .user.css, or .less file.";
-"Couldn't read the selected file." = "Couldn't read the selected file.";
-"The file is empty." = "The file is empty.";
-"Not a userscript or userstyle: missing metadata block." = "Not a userscript or userstyle: missing metadata block.";
-"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "This userstyle needs the \"%@\" preprocessor, which isn't supported yet.";
-"Couldn't compile this Less userstyle: %@" = "Couldn't compile this Less userstyle: %@";
-"Unknown compiler error." = "Unknown compiler error.";
-"Couldn't save the edited source." = "Couldn't save the edited source.";
-"Less compiler resource is missing." = "Less compiler resource is missing.";
-"Less source exceeds the 2 MiB limit." = "Less source exceeds the 2 MiB limit.";
-"Less compiler input could not be serialized." = "Less compiler input could not be serialized.";
-"Less compilation failed." = "Less compilation failed.";
-"Less compiler returned no CSS." = "Less compiler returned no CSS.";
-"Less compiler output exceeds the 10 MiB limit." = "Less compiler output exceeds the 10 MiB limit.";
-
-"line %@" = "line %@";
-"column %@" = "column %@";
+/* Userstyle compiler diagnostics */
+"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "Επιλέξτε ένα αρχείο .user.js, .js, .user.css, .less, .sass, .scss, .styl ή .pcss.";
+"Couldn't read the selected file." = "Δεν ήταν δυνατή η ανάγνωση του επιλεγμένου αρχείου.";
+"The file is empty." = "Το αρχείο είναι κενό.";
+"Not a userscript or userstyle: missing metadata block." = "Δεν είναι userscript ή userstyle: λείπει το μπλοκ μεταδεδομένων.";
+"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "Αυτό το userstyle χρειάζεται τον προεπεξεργαστή \"%@\", ο οποίος δεν υποστηρίζεται ακόμη.";
+"This style file requires the \"%@\" preprocessor, but declares \"%@\"." = "Αυτό το αρχείο στυλ απαιτεί τον προεπεξεργαστή \"%@\", αλλά δηλώνει \"%@\".";
+"Couldn't compile this userstyle: %@" = "Δεν ήταν δυνατή η μεταγλώττιση αυτού του userstyle: %@";
+"Unknown compiler error." = "Άγνωστο σφάλμα μεταγλωττιστή.";
+"Couldn't save the edited source." = "Δεν ήταν δυνατή η αποθήκευση της επεξεργασμένης πηγής.";
+"Userstyle source exceeds the 2 MiB limit." = "Η πηγή userstyle υπερβαίνει το όριο των 2 MiB.";
+"Userstyle compiler resource is missing." = "Λείπει ο πόρος του μεταγλωττιστή userstyle.";
+"Userstyle compiler resource failed to load." = "Αποτυχία φόρτωσης του πόρου του μεταγλωττιστή userstyle.";
+"Userstyle compiler input could not be serialized." = "Δεν ήταν δυνατή η σειριοποίηση της εισόδου του μεταγλωττιστή userstyle.";
+"Userstyle compiler returned an invalid response." = "Ο μεταγλωττιστής userstyle επέστρεψε μη έγκυρη απόκριση.";
+"Userstyle compiler returned no CSS." = "Ο μεταγλωττιστής userstyle δεν επέστρεψε CSS.";
+"Userstyle compiler output exceeds the 10 MiB limit." = "Η έξοδος του μεταγλωττιστή userstyle υπερβαίνει το όριο των 10 MiB.";
+"Userstyle compiler failed." = "Αποτυχία μεταγλωττιστή userstyle.";
+"line %@, column %@: %@" = "γραμμή %@, στήλη %@: %@";
+"line %@: %@" = "γραμμή %@: %@";
+"column %@: %@" = "στήλη %@: %@";
