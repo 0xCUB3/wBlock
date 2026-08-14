@@ -28,6 +28,7 @@ check(settings.contains("Open Settings") && settings.contains("authorizationStat
 check(action.contains("15 * 60") && action.contains("completion(.none)"), "shield action must grant a controlled 15-minute exception")
 check(action.contains("map(\\.expires)") && action.contains(".min()"), "multiple exceptions must restore at the earliest expiry")
 check(action.contains("next.addingTimeInterval(15 * 60)"), "exception schedules must satisfy Device Activity minimums")
+check(manager.contains("date.addingTimeInterval(15 * 60)"), "app reconciliation must preserve valid exception schedules")
 check(action.contains("timeIntervalSince1970: ceil"), "exception expiry must align with Device Activity second precision")
 check(monitor.contains("intervalDidStart") && monitor.contains("restoreExpiredExceptions"), "exceptions must restore when their scheduled interval begins")
 check(monitorInfo.contains("com.apple.deviceactivity.monitor-extension"), "monitor extension point must match Apple's template")

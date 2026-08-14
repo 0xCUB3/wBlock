@@ -163,8 +163,11 @@ private enum ScreenTimeMonitorScheduler {
         guard let date else { return true }
 
         let calendar = Calendar.current
-        let start = calendar.dateComponents([.hour, .minute, .second], from: Date().addingTimeInterval(-1))
-        let end = calendar.dateComponents([.hour, .minute, .second], from: date)
+        let start = calendar.dateComponents([.hour, .minute, .second], from: date)
+        let end = calendar.dateComponents(
+            [.hour, .minute, .second],
+            from: date.addingTimeInterval(15 * 60)
+        )
         do {
             try center.startMonitoring(
                 activity,
