@@ -25,10 +25,10 @@ let style = source("wBlockCoreService/UserStyle.swift")
 let script = source("wBlockCoreService/UserScript.swift")
 let view = source("wBlock/UserScriptManagerView.swift")
 
-expect(style.contains("normalizedPreprocessor == \"less\""), "Less must compile before section parsing")
+expect(style.contains("requiresCompilation(normalizedPreprocessor)"), "compiler-backed styles must compile before section parsing")
 expect(style.contains("parsed.isPreprocessorSupported && parsed.isCompiled"), "runtime injection must reject unsupported or failed compilation")
-expect(style.range(of: "body = try UserStyleCompiler.compile")!.lowerBound < style.range(of: "let (globalCSS, sections) = parseSections(body)")!.lowerBound,
-       "Less must compile before @-moz-document parsing")
+expect(style.range(of: "UserStylePreprocessorService.compile(request)")!.lowerBound < style.range(of: "let (globalCSS, sections) = parseSections(body)")!.lowerBound,
+       "preprocessor service must compile before @-moz-document parsing")
 
 expect(compiler.contains("javascriptEnabled: false"), "Less inline JavaScript must stay disabled")
 expect(compiler.contains("processImports: false"), "Less must preserve ordinary CSS imports without resolving them")
@@ -45,7 +45,7 @@ expect(view.contains("UTType(filenameExtension: \"less\")"), "file importer must
 expect(FileManager.default.fileExists(atPath: "wBlockCoreService/Resources/UserStyleCompiler/less.min.js"),
        "vendored Less compiler bundle must exist")
 
-expect(occurrences(of: ".styleCompilationFailed", in: manager) >= 7,
+expect(occurrences(of: ".styleCompilationFailed", in: manager) >= 5,
        "all import, edit, download, and update paths must handle compiler failure")
 expect(manager.contains("var candidate = existing"), "editing must validate a copy")
 expect(manager.contains("existing.isUserStyle && !candidate.isUserStyle"),

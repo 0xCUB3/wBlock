@@ -51,8 +51,8 @@ public enum UserStyleSupport {
     /// Preprocessors wBlock can apply natively or compile offline. Stylus, Sass,
     /// SCSS, and PostCSS remain unsupported.
     public static func isPreprocessorSupported(_ preprocessor: String) -> Bool {
-        let normalized = preprocessor.trimmingCharacters(in: .whitespaces).lowercased()
-        return normalized.isEmpty || normalized == "default" || normalized == "uso" || normalized == "less"
+        let normalized = UserStylePreprocessorService.normalize(preprocessor)
+        return normalized == "default" || normalized == "uso" || UserStylePreprocessorService.backend(for: normalized) != nil
     }
 
     // MARK: - Model
@@ -151,6 +151,7 @@ public enum UserStyleSupport {
         /// can classify the source and surface the compiler diagnostic.
         public let isCompiled: Bool
         public let compilationError: String?
+        public let compiledArtifact: UserStyleCompiledArtifact?
 
         public var isPreprocessorSupported: Bool {
             UserStyleSupport.isPreprocessorSupported(preprocessor)
@@ -209,14 +210,33 @@ public enum UserStyleSupport {
     /// Parses userstyle content, returning nil when no UserStyle metadata block exists.
     /// Results are cached by content identity; repeated per-page-load calls are cheap.
     public static func parsed(from content: String) -> ParsedStyle? {
+        parsed(from: content, compiledBody: nil, compileSource: true)
+    }
+
+    /// Parses metadata and a precompiled body. The no-compile form is used by
+    /// main-actor metadata parsing and by runtime injection; runtime must never
+    /// turn a cache miss into a JavaScriptCore compilation.
+    static func parsed(from content: String, compiledBody: String?, compileSource: Bool) -> ParsedStyle? {
         guard isUserStyleContent(content) else { return nil }
-        // Hash the source instead of using the full string as the NSCache key.
-        // Large userstyles would otherwise keep a second full copy alive in the key.
-        let key = cacheKey(for: content)
+        let revision = UserStylePreprocessorService.compilerRevision(
+            for: parseMetadata(from: content).preprocessor ?? "default"
+        ) ?? "native"
+        let compilerIdentity: String
+        if let compiledBody {
+            compilerIdentity = "precompiled:\(revision):\(UserStylePreprocessorService.digest(compiledBody))"
+        } else {
+            compilerIdentity = compileSource ? "compile:\(revision)" : "metadata-only:\(revision)"
+        }
+        let key = cacheKey(for: content + "\\0" + compilerIdentity)
         if let cached = parseCache.object(forKey: key) { return cached.value }
-        let parsed = parse(content)
+        let parsed = parse(content, compiledBody: compiledBody, compileSource: compileSource)
         parseCache.setObject(ParsedStyleBox(parsed), forKey: key)
         return parsed
+    }
+
+    /// Returns the source body after removing the UserCSS metadata comment.
+    static func sourceBody(from content: String) -> String {
+        parseSourceBody(content)
     }
 
     private static func cacheKey(for content: String) -> NSString {
@@ -231,7 +251,18 @@ public enum UserStyleSupport {
     /// Returns nil when nothing applies.
     public static func effectiveCSS(forContent content: String, url: String) -> String? {
         guard let parsed = parsed(from: content) else { return nil }
+        return effectiveCSS(forParsed: parsed, url: url)
+    }
 
+    /// Runtime-safe CSS assembly. A compiled body is mandatory for Less; this
+    /// overload intentionally has no compiler fallback.
+    public static func effectiveCSS(forContent content: String, compiledBody: String?, url: String) -> String? {
+        guard let parsed = parsed(from: content, compiledBody: compiledBody, compileSource: false) else { return nil }
+        guard !UserStylePreprocessorService.requiresCompilation(parsed.preprocessor) || compiledBody != nil else { return nil }
+        return effectiveCSS(forParsed: parsed, url: url)
+    }
+
+    private static func effectiveCSS(forParsed parsed: ParsedStyle, url: String) -> String? {
         guard parsed.isPreprocessorSupported && parsed.isCompiled else { return nil }
 
         var sectionPieces: [String] = []
@@ -348,8 +379,8 @@ public enum UserStyleSupport {
         guard !variables.isEmpty else { return css }
 
         let normalized = preprocessor.trimmingCharacters(in: .whitespaces).lowercased()
-        if normalized == "less" {
-            // Less has already received metadata defaults as global variables.
+        if UserStylePreprocessorService.requiresCompilation(normalized) {
+            // Compiler-backed preprocessors have already received metadata defaults.
             return css
         }
         if normalized == "uso" {
@@ -376,42 +407,25 @@ public enum UserStyleSupport {
 
     // MARK: - Parser internals
 
-    private static func parse(_ content: String) -> ParsedStyle {
-        var metadata = MetadataAccumulator()
-        var body = content
-
-        if let metaStart = content.range(of: metadataStartMarker),
-           let metaEnd = content.range(of: metadataEndMarker, range: metaStart.upperBound..<content.endIndex)
-        {
-            metadata = parseMetadataDirectives(String(content[metaStart.upperBound..<metaEnd.lowerBound]))
-
-            // Drop the comment hosting the metadata block from the CSS body.
-            let commentStart = content.range(
-                of: "/*",
-                options: .backwards,
-                range: content.startIndex..<metaStart.lowerBound
-            )?.lowerBound ?? metaStart.lowerBound
-            let commentEnd = content.range(
-                of: "*/",
-                range: metaEnd.upperBound..<content.endIndex
-            )?.upperBound ?? metaEnd.upperBound
-
-            var stripped = String()
-            stripped.reserveCapacity(content.count)
-            stripped.append(contentsOf: content[..<commentStart])
-            stripped.append(contentsOf: content[commentEnd...])
-            body = stripped
-        }
-
-        let normalizedPreprocessor = (metadata.preprocessor ?? "default")
-            .trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        var isCompiled = true
+    private static func parse(_ content: String, compiledBody: String? = nil, compileSource: Bool = true) -> ParsedStyle {
+        let metadata = parseMetadata(from: content)
+        let normalizedPreprocessor = UserStylePreprocessorService.normalize(metadata.preprocessor ?? "default")
+        var body = compiledBody ?? parseSourceBody(content)
+        var isCompiled = !UserStylePreprocessorService.requiresCompilation(normalizedPreprocessor) || compiledBody != nil
         var compilationError: String?
-        if normalizedPreprocessor == "less" {
+        var compiledArtifact: UserStyleCompiledArtifact?
+        if compiledBody == nil && compileSource && UserStylePreprocessorService.requiresCompilation(normalizedPreprocessor) {
             do {
-                // Compile before @-moz-document parsing. Less then expands nested
-                // selectors while preserving the existing section syntax.
-                body = try UserStyleCompiler.compile(body, variables: metadata.variables)
+                let request = UserStylePreprocessorService.request(
+                    source: body,
+                    authoritativeContent: content,
+                    preprocessor: normalizedPreprocessor,
+                    variables: metadata.variables
+                )
+                let artifact = try UserStylePreprocessorService.compile(request)
+                body = artifact.body
+                isCompiled = true
+                compiledArtifact = artifact
             } catch {
                 isCompiled = false
                 compilationError = error.localizedDescription
@@ -431,8 +445,27 @@ public enum UserStyleSupport {
             globalCSS: globalCSS,
             sections: sections,
             isCompiled: isCompiled,
-            compilationError: compilationError
+            compilationError: compilationError,
+            compiledArtifact: compiledArtifact
         )
+    }
+
+    // MARK: Metadata directives
+
+    private static func parseSourceBody(_ content: String) -> String {
+        guard let metaStart = content.range(of: metadataStartMarker),
+              let metaEnd = content.range(of: metadataEndMarker, range: metaStart.upperBound..<content.endIndex)
+        else { return content }
+        let commentStart = content.range(of: "/*", options: .backwards, range: content.startIndex..<metaStart.lowerBound)?.lowerBound ?? metaStart.lowerBound
+        let commentEnd = content.range(of: "*/", range: metaEnd.upperBound..<content.endIndex)?.upperBound ?? metaEnd.upperBound
+        return String(content[..<commentStart]) + String(content[commentEnd...])
+    }
+
+    private static func parseMetadata(from content: String) -> MetadataAccumulator {
+        guard let metaStart = content.range(of: metadataStartMarker),
+              let metaEnd = content.range(of: metadataEndMarker, range: metaStart.upperBound..<content.endIndex)
+        else { return MetadataAccumulator() }
+        return parseMetadataDirectives(String(content[metaStart.upperBound..<metaEnd.lowerBound]))
     }
 
     // MARK: Metadata directives

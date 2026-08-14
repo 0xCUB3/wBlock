@@ -213,13 +213,38 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     public var updateURL: String?
     public var downloadURL: String?
     public var content: String = ""
+    /// Derived CSS is process-local and deliberately excluded from Codable/protobuf/cloud.
+    /// Hydration populates it from a validated sidecar; runtime consumes it without compiling.
+    public var compiledStyleBody: String? {
+        get { Self.compiledStyleBodies.object(forKey: compiledStyleCacheKey)?.body }
+        set {
+            let key = compiledStyleCacheKey
+            if let newValue {
+                Self.compiledStyleBodies.setObject(CompiledStyleBodyBox(newValue), forKey: key)
+            } else {
+                Self.compiledStyleBodies.removeObject(forKey: key)
+            }
+        }
+    }
     public var lastUpdated: Date?
     public var updatesAutomatically: Bool = true
     /// User-selected category for local organization. Existing scripts default to Scripts.
     public var category: FilterListCategory = .scripts
     /// Stable identity for local imports. Legacy entries may not have one.
     public var localImportIdentity: String?
-    
+
+    private final class CompiledStyleBodyBox: NSObject {
+        let body: String
+        init(_ body: String) { self.body = body }
+    }
+    private static let compiledStyleBodies = NSCache<NSString, CompiledStyleBodyBox>()
+
+    /// A body is valid only for this script's current authoritative source.
+    /// Source identity keeps an uncommitted replacement candidate isolated.
+    private var compiledStyleCacheKey: NSString {
+        "\(id.uuidString):\(UserStylePreprocessorService.digest(content))" as NSString
+    }
+
     public static func localImportIdentityForUpdate(
         existing: UserScript?,
         requestedIdentity: String?,
@@ -308,8 +333,11 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         self.content = content
     }
 
-    mutating func replaceContentAndParseMetadata(_ content: String) {
+    mutating func replaceContentAndParseMetadata(_ content: String, compiledBody: String? = nil) {
         self.content = content
+        // Set the source first so the cache entry is installed under the new
+        // authoritative identity. A plain source replacement invalidates output.
+        self.compiledStyleBody = compiledBody
         parseMetadata()
     }
 
@@ -440,7 +468,13 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         downloadURL = nil
         isUserStyle = false
 
-        if Self.detectsUserStyle(in: content), let style = UserStyleSupport.parsed(from: content) {
+        if Self.detectsUserStyle(in: content),
+           let style = UserStyleSupport.parsed(
+               from: content,
+               compiledBody: compiledStyleBody,
+               compileSource: false
+           )
+        {
             applyUserStyleMetadata(style)
             return
         }

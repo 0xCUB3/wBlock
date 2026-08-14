@@ -818,9 +818,30 @@ public class UserScriptManager: ObservableObject {
         var hydratedScript = script
         guard let content = readUserScriptContentOffMain(script) else { return hydratedScript }
 
+        // Source is authoritative. The derived artifact is loaded or rebuilt off-main;
+        // neither protobuf hydration nor runtime injection ever compiles on @MainActor.
+        if UserScript.detectsUserStyle(in: content),
+           let metadata = UserStyleSupport.parsed(from: content, compiledBody: nil, compileSource: false) {
+            let artifact = validatedCompiledStyleArtifact(for: content, metadata: metadata, scriptID: script.id)
+            hydratedScript.replaceContentAndParseMetadata(content, compiledBody: artifact?.body)
+            if artifact == nil, UserStylePreprocessorService.requiresCompilation(metadata.preprocessor) {
+                let request = UserStylePreprocessorService.request(
+                    source: UserStyleSupport.sourceBody(from: content), authoritativeContent: content,
+                    preprocessor: metadata.preprocessor, variables: metadata.variables)
+                if let rebuilt = try? UserStylePreprocessorService.compile(request) {
+                    hydratedScript.replaceContentAndParseMetadata(content, compiledBody: rebuilt.body)
+                    writeCompiledStyleArtifact(rebuilt, scriptID: script.id)
+                } else {
+                    removeCompiledStyleArtifact(scriptID: script.id)
+                }
+            }
+        } else {
+            hydratedScript.replaceContentAndParseMetadata(content)
+            removeCompiledStyleArtifact(scriptID: script.id)
+        }
+
         let persistedName = script.name.trimmingCharacters(in: .whitespacesAndNewlines)
         let persistedDescription = script.description
-        hydratedScript.replaceContentAndParseMetadata(content)
 
         // Parsing large scripts can allocate tens of thousands of metadata strings
         // that are identical to the persisted protobuf values. Reuse the persisted
@@ -840,6 +861,60 @@ public class UserScriptManager: ObservableObject {
             hydratedScript.description = persistedDescription
         }
         return hydratedScript
+    }
+
+    nonisolated private static let compiledStyleSidecarSuffix = ".user.css.compiled.v1.json"
+
+    nonisolated private static func scriptsDirectoryURLs() -> [URL] {
+        var urls: [URL] = []
+        if let group = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)?.appendingPathComponent("userscripts") {
+            urls.append(group)
+        }
+        if let fallback = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?.appendingPathComponent("wBlock").appendingPathComponent("userscripts") {
+            urls.append(fallback)
+        }
+        return urls
+    }
+
+    nonisolated private static func compiledStyleURL(scriptID: UUID, directory: URL) -> URL {
+        directory.appendingPathComponent("\(scriptID.uuidString)\(compiledStyleSidecarSuffix)")
+    }
+
+    nonisolated private static func validatedCompiledStyleArtifact(
+        for source: String, metadata: UserStyleSupport.ParsedStyle, scriptID: UUID
+    ) -> UserStyleCompiledArtifact? {
+        guard UserStylePreprocessorService.requiresCompilation(metadata.preprocessor) else { return nil }
+        let request = UserStylePreprocessorService.request(source: UserStyleSupport.sourceBody(from: source), authoritativeContent: source, preprocessor: metadata.preprocessor, variables: metadata.variables)
+        for directory in scriptsDirectoryURLs() {
+            let url = compiledStyleURL(scriptID: scriptID, directory: directory)
+            guard let data = try? Data(contentsOf: url), let artifact = try? JSONDecoder().decode(UserStyleCompiledArtifact.self, from: data) else { continue }
+            if UserStylePreprocessorService.validate(artifact, for: request) {
+                writeCompiledStyleArtifact(artifact, scriptID: scriptID)
+                return artifact
+            }
+        }
+        return nil
+    }
+
+    @discardableResult
+    nonisolated private static func writeCompiledStyleArtifact(_ artifact: UserStyleCompiledArtifact, scriptID: UUID) -> Bool {
+        guard let data = try? JSONEncoder().encode(artifact) else { return false }
+        let directories = scriptsDirectoryURLs()
+        guard !directories.isEmpty else { return false }
+        var success = true
+        for directory in directories {
+            do {
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                try data.write(to: compiledStyleURL(scriptID: scriptID, directory: directory), options: .atomic)
+            } catch {
+                success = false
+            }
+        }
+        return success
+    }
+
+    nonisolated private static func removeCompiledStyleArtifact(scriptID: UUID) {
+        for directory in scriptsDirectoryURLs() { try? FileManager.default.removeItem(at: compiledStyleURL(scriptID: scriptID, directory: directory)) }
     }
 
     /// Read userscript content off the main thread
@@ -1074,6 +1149,7 @@ public class UserScriptManager: ObservableObject {
         }
 
         removeUserScriptResourcesFile(userScript)
+        Self.removeCompiledStyleArtifact(scriptID: userScript.id)
     }
 
     private func userScriptNotificationInfo(for userScript: UserScript) -> [String: Any] {
@@ -1628,6 +1704,18 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
+
+    /// UserCSS source is compiled as authored. Userscript-only dependency directives
+    /// must never change the source identity associated with a compiled artifact.
+    private func processedDependencies(
+        for userScript: UserScript
+    ) async -> (content: String, resources: [String: String]) {
+        guard !userScript.isUserStyle else { return (userScript.content, [:]) }
+        let content = await processRequireDirectives(userScript)
+        let resources = await processResourceDirectives(userScript)
+        return (content, resources)
+    }
+
     /// Downloads and processes @require dependencies for a userscript
     private func processRequireDirectives(_ userScript: UserScript) async -> String {
         guard !userScript.require.isEmpty else {
@@ -1794,8 +1882,9 @@ public class UserScriptManager: ObservableObject {
 
             // Process @require directives after metadata is parsed
             let scriptForDirectives = userScripts[currentIndex]
-            let processedContent = await processRequireDirectives(scriptForDirectives)
-            let resourceContents = await processResourceDirectives(scriptForDirectives)
+            let dependencies = await processedDependencies(for: scriptForDirectives)
+            let processedContent = dependencies.content
+            let resourceContents = dependencies.resources
 
             guard let finalIndex = indexOfUserScript(withId: scriptID),
                   userScripts.indices.contains(finalIndex)
@@ -1858,9 +1947,45 @@ public class UserScriptManager: ObservableObject {
     }
 
     private func writeUserScriptFiles(_ userScript: UserScript) -> Bool {
+        let metadata = userScript.isUserStyle
+            ? UserStyleSupport.parsed(
+                from: userScript.content, compiledBody: nil, compileSource: false
+            )
+            : nil
+        let needsArtifact = metadata.map {
+            UserStylePreprocessorService.requiresCompilation($0.preprocessor)
+        } ?? false
+
+        // Write derived output first. If the later source write fails, its digest no
+        // longer matches and hydration safely rejects the sidecar. The reverse order
+        // could expose new source without the artifact runtime requires.
+        if needsArtifact {
+            guard let metadata, let body = userScript.compiledStyleBody,
+                  let revision = UserStylePreprocessorService.compilerRevision(
+                      for: metadata.preprocessor
+                  )
+            else { return false }
+            let request = UserStylePreprocessorService.request(
+                source: UserStyleSupport.sourceBody(from: userScript.content),
+                authoritativeContent: userScript.content,
+                preprocessor: metadata.preprocessor,
+                variables: metadata.variables
+            )
+            let artifact = UserStyleCompiledArtifact(
+                request: request, compilerRevision: revision, body: body
+            )
+            guard UserStylePreprocessorService.validate(artifact, for: request),
+                  Self.writeCompiledStyleArtifact(artifact, scriptID: userScript.id)
+            else { return false }
+        }
+
         let contentSaved = writeUserScriptContent(userScript)
         let resourcesSaved = writeUserScriptResources(userScript)
-        return contentSaved && resourcesSaved
+        guard contentSaved && resourcesSaved else { return false }
+        if !needsArtifact {
+            Self.removeCompiledStyleArtifact(scriptID: userScript.id)
+        }
+        return true
     }
 
     private func validatedDownloadedUserScriptContent(
@@ -1883,10 +2008,11 @@ public class UserScriptManager: ObservableObject {
             if !style.isPreprocessorSupported {
                 throw UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor)
             }
-            if !style.isCompiled {
+            guard style.isCompiled else {
                 throw UserScriptImportError.styleCompilationFailed(
                     style.compilationError ?? UserScriptImportError.fallbackCompilerError)
             }
+            downloaded.compiledStyleBody = style.compiledArtifact?.body
         }
 
         return downloaded
@@ -2044,34 +2170,31 @@ public class UserScriptManager: ObservableObject {
                 return UserScriptImportError.missingMetadata
             }
             if newUserScript.isUserStyle,
-               let style = UserStyleSupport.parsed(from: newUserScript.content),
-               !style.isPreprocessorSupported
-            {
-                hasError = true
-                errorMessage = UserScriptImportError
-                    .unsupportedStylePreprocessor(style.preprocessor).errorDescription ?? ""
-                statusDescription = "Download failed"
-                isLoading = false
-                return UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor)
-            }
-            if newUserScript.isUserStyle,
-               let style = UserStyleSupport.parsed(from: newUserScript.content),
-               !style.isCompiled
-            {
-                hasError = true
-                errorMessage = UserScriptImportError.styleCompilationFailed(
-                    style.compilationError ?? UserScriptImportError.fallbackCompilerError).errorDescription ?? ""
-                statusDescription = "Download failed"
-                isLoading = false
-                return UserScriptImportError.styleCompilationFailed(style.compilationError ?? UserScriptImportError.fallbackCompilerError)
+               let style = UserStyleSupport.parsed(from: newUserScript.content) {
+                newUserScript.compiledStyleBody = style.compiledArtifact?.body
+                if !style.isPreprocessorSupported {
+                    hasError = true
+                    errorMessage = UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor).errorDescription ?? ""
+                    statusDescription = "Download failed"
+                    isLoading = false
+                    return UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor)
+                }
+                if !style.isCompiled {
+                    hasError = true
+                    errorMessage = UserScriptImportError.styleCompilationFailed(style.compilationError ?? UserScriptImportError.fallbackCompilerError).errorDescription ?? ""
+                    statusDescription = "Download failed"
+                    isLoading = false
+                    return UserScriptImportError.styleCompilationFailed(style.compilationError ?? UserScriptImportError.fallbackCompilerError)
+                }
             }
             newUserScript.isEnabled = true
             newUserScript.isLocal = false
             newUserScript.lastUpdated = Date()
 
             // Process @require directives and @resource directives
-            let processedContent = await processRequireDirectives(newUserScript)
-            let resourceContents = await processResourceDirectives(newUserScript)
+            let dependencies = await processedDependencies(for: newUserScript)
+            let processedContent = dependencies.content
+            let resourceContents = dependencies.resources
             newUserScript.content = processedContent
             newUserScript.resourceContents = resourceContents
 
@@ -2138,16 +2261,14 @@ public class UserScriptManager: ObservableObject {
         var staged = UserScript(name: Self.baseName(for: fileURL), content: content)
         staged.parseMetadata()
         if staged.isUserStyle,
-           let style = UserStyleSupport.parsed(from: content),
-           !style.isPreprocessorSupported
-        {
-            throw UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor)
-        }
-        if staged.isUserStyle,
-           let style = UserStyleSupport.parsed(from: content),
-           !style.isCompiled
-        {
-            throw UserScriptImportError.styleCompilationFailed(style.compilationError ?? UserScriptImportError.fallbackCompilerError)
+           let style = UserStyleSupport.parsed(from: content) {
+            guard style.isPreprocessorSupported else {
+                throw UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor)
+            }
+            guard style.isCompiled else {
+                throw UserScriptImportError.styleCompilationFailed(style.compilationError ?? UserScriptImportError.fallbackCompilerError)
+            }
+            staged.compiledStyleBody = style.compiledArtifact?.body
         }
         if staged.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             staged.name = Self.baseName(for: fileURL)
@@ -2302,17 +2423,14 @@ public class UserScriptManager: ObservableObject {
         var tempScript = UserScript(name: "", content: rawContent)
         tempScript.parseMetadata()
 
-        if tempScript.isUserStyle,
-           let style = UserStyleSupport.parsed(from: rawContent),
-           !style.isPreprocessorSupported
-        {
-            throw UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor)
-        }
-        if tempScript.isUserStyle,
-           let style = UserStyleSupport.parsed(from: rawContent),
-           !style.isCompiled
-        {
-            throw UserScriptImportError.styleCompilationFailed(style.compilationError ?? UserScriptImportError.fallbackCompilerError)
+        if tempScript.isUserStyle, let style = UserStyleSupport.parsed(from: rawContent) {
+            guard style.isPreprocessorSupported else {
+                throw UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor)
+            }
+            guard style.isCompiled else {
+                throw UserScriptImportError.styleCompilationFailed(style.compilationError ?? UserScriptImportError.fallbackCompilerError)
+            }
+            tempScript.compiledStyleBody = style.compiledArtifact?.body
         }
 
         let metadataName = tempScript.name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2370,11 +2488,16 @@ public class UserScriptManager: ObservableObject {
         newUserScript.isUserStyle = tempScript.isUserStyle
         newUserScript.category = categoryOverride ?? existingIndex.map { userScripts[$0].category } ?? .scripts
 
-        let processedContent = await processRequireDirectives(newUserScript)
-        let resourceContents = await processResourceDirectives(newUserScript)
-        newUserScript.content = processedContent
+        let dependencies = await processedDependencies(for: newUserScript)
+        let processedContent = dependencies.content
+        let resourceContents = dependencies.resources
+        newUserScript.replaceContentAndParseMetadata(processedContent, compiledBody: tempScript.compiledStyleBody)
         newUserScript.resourceContents = resourceContents
 
+        // Disk and sidecar writes must succeed before any observable mutation.
+        guard writeUserScriptFiles(newUserScript) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
         if let existingIndex {
             userScripts[existingIndex] = newUserScript
             statusDescription = "\(replacedStatusVerb) \(newUserScript.isUserStyle ? "userstyle" : "userscript"): \(newUserScript.name)"
@@ -2382,8 +2505,6 @@ public class UserScriptManager: ObservableObject {
             userScripts.append(newUserScript)
             statusDescription = "\(importedStatusVerb) \(newUserScript.isUserStyle ? "userstyle" : "userscript"): \(newUserScript.name)"
         }
-
-        _ = writeUserScriptFiles(newUserScript)
 
         NotificationCenter.default.post(
             name: .userScriptManagerDidImportLocalUserScript,
@@ -2685,8 +2806,9 @@ public class UserScriptManager: ObservableObject {
             )
 
             // Process @require directives and @resource directives
-            let processedContent = await processRequireDirectives(tempUserScript)
-            let resourceContents = await processResourceDirectives(tempUserScript)
+            let dependencies = await processedDependencies(for: tempUserScript)
+            let processedContent = dependencies.content
+            let resourceContents = dependencies.resources
 
             guard let index = userScripts.firstIndex(where: { $0.id == userScript.id }) else {
                 isLoading = false
@@ -2737,6 +2859,7 @@ public class UserScriptManager: ObservableObject {
             if !style.isCompiled {
                 return UserScriptImportError.styleCompilationFailed(style.compilationError ?? UserScriptImportError.fallbackCompilerError).errorDescription
             }
+            candidate.compiledStyleBody = style.compiledArtifact?.body
         }
         candidate.lastUpdated = Date()
         guard writeUserScriptFiles(candidate) else {
@@ -2891,8 +3014,9 @@ public class UserScriptManager: ObservableObject {
             replacing: candidate
         )
 
-        let processedContent = await processRequireDirectives(tempUserScript)
-        let resourceContents = await processResourceDirectives(tempUserScript)
+        let dependencies = await processedDependencies(for: tempUserScript)
+        let processedContent = dependencies.content
+        let resourceContents = dependencies.resources
 
         guard let index = userScripts.firstIndex(where: { $0.id == candidate.id }) else { return false }
 
@@ -2938,8 +3062,9 @@ public class UserScriptManager: ObservableObject {
 
             // Process @require directives and @resource directives after metadata is parsed
             if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
-                let processedContent = await processRequireDirectives(userScripts[index])
-                let resourceContents = await processResourceDirectives(userScripts[index])
+                let dependencies = await processedDependencies(for: userScripts[index])
+                let processedContent = dependencies.content
+                let resourceContents = dependencies.resources
 
                 userScripts[index].content = processedContent
                 userScripts[index].resourceContents = resourceContents

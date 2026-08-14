@@ -16,6 +16,7 @@ struct UserStyleParsingAndMatchingTests {
         testEffectiveCSSAssembly()
         testVariableResolution()
         testLessCompilation()
+        testCompiledStyleCacheAndArtifactIdentity()
         testUserScriptIntegration()
         testURLSupport()
         print("PASS: userstyle parsing and matching")
@@ -349,6 +350,51 @@ struct UserStyleParsingAndMatchingTests {
         } catch {
             fail("oversized Less source returned the wrong error")
         }
+    }
+
+    static func testCompiledStyleCacheAndArtifactIdentity() {
+        let source = """
+        /* ==UserStyle==
+        @name Cache Probe
+        @preprocessor less
+        ==/UserStyle== */
+        body { color: red; }
+        """
+        let changed = source.replacingOccurrences(of: "red", with: "blue")
+        let id = UUID()
+        var installed = UserScript(id: id, name: "Cache Probe", content: source)
+        installed.replaceContentAndParseMetadata(source, compiledBody: "installed-css")
+        var candidate = installed
+        candidate.replaceContentAndParseMetadata(changed, compiledBody: "candidate-css")
+        expect(installed.compiledStyleBody == "installed-css", "same UUID must not share a changed transient body")
+        expect(candidate.compiledStyleBody == "candidate-css", "candidate body must use its source identity")
+        expect(installed.content == source, "authoritative source must remain unchanged")
+
+        expect(UserStyleSupport.effectiveCSS(forContent: source, compiledBody: "body { color: red; }", url: "https://example.com")?.contains("color: red") == true,
+               "precompiled effective CSS should work without a compiler fallback")
+        expect(UserStyleSupport.effectiveCSS(forContent: source, compiledBody: nil, url: "https://example.com") == nil,
+               "runtime must fail closed without compiler-backed output")
+
+        let request = UserStylePreprocessorService.request(
+            source: UserStyleSupport.sourceBody(from: source), authoritativeContent: source,
+            preprocessor: "less", variables: [])
+        let artifact = UserStyleCompiledArtifact(request: request, compilerRevision: UserStylePreprocessorService.lessRevision, body: "body { color: red; }")
+        expect(UserStylePreprocessorService.validate(artifact, for: request), "exact artifact identity should validate")
+        let changedSource = UserStylePreprocessorService.request(source: request.source + "\n", authoritativeContent: changed, preprocessor: "less", variables: [])
+        expect(!UserStylePreprocessorService.validate(artifact, for: changedSource), "changed source must reject the artifact")
+        let changedOptions = UserStyleCompilationRequest(source: request.source, preprocessor: "less", variables: [], options: ["compress": "true"], sourceDigest: request.sourceDigest)
+        expect(!UserStylePreprocessorService.validate(artifact, for: changedOptions), "changed options must reject the artifact")
+        let changedRevision = UserStyleCompiledArtifact(request: request, compilerRevision: "other-revision", body: artifact.body)
+        expect(!UserStylePreprocessorService.validate(changedRevision, for: request), "changed revision must reject the artifact")
+        var tamperedJSON = try! JSONSerialization.jsonObject(
+            with: JSONEncoder().encode(artifact)
+        ) as! [String: Any]
+        tamperedJSON["body"] = "body { color: blue; }"
+        let changedBody = try! JSONDecoder().decode(
+            UserStyleCompiledArtifact.self,
+            from: JSONSerialization.data(withJSONObject: tamperedJSON)
+        )
+        expect(!UserStylePreprocessorService.validate(changedBody, for: request), "changed body digest must reject the artifact")
     }
 
     static func testUserScriptIntegration() {
