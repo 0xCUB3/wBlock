@@ -975,3 +975,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "column %@: %@" = "第 %@ 欄：%@";
 "Userstyle compiler timed out." = "使用者樣式編譯器逾時。";
 "Userstyle compiler must not run on the main thread." = "使用者樣式編譯器不得在主執行緒上執行。";
+"Dark Reader's MIT-licensed API engine, bundled for wBlock (beta; without the full site-fix database)." = "採用 MIT 授權的 Dark Reader API 引擎，已內建於 wBlock（測試版；不含完整的網站修正資料庫）。";
