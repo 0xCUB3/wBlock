@@ -975,3 +975,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "column %@: %@" = "列 %@：%@";
 "Userstyle compiler timed out." = "ユーザースタイルコンパイラがタイムアウトしました。";
 "Userstyle compiler must not run on the main thread." = "ユーザースタイルコンパイラはメインスレッドで実行してはいけません。";
+"Dark Reader's MIT-licensed API engine, bundled for wBlock (beta; without the full site-fix database)." = "MITライセンスのDark Reader APIエンジンをwBlockに同梱（ベータ版。サイト修正データベース全体は含まれません）。";

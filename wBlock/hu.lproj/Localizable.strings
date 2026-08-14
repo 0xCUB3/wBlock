@@ -975,3 +975,4 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "column %@: %@" = "oszlop %@: %@";
 "Userstyle compiler timed out." = "A felhasználói stílus fordítási ideje lejárt.";
 "Userstyle compiler must not run on the main thread." = "A felhasználói stílus fordítója nem futhat a fő szálon.";
+"Dark Reader's MIT-licensed API engine, bundled for wBlock (beta; without the full site-fix database)." = "A Dark Reader MIT-licencelt API-motorja a wBlockba csomagolva (béta; a teljes webhelyjavítási adatbázis nélkül).";

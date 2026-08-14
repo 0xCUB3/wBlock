@@ -50,6 +50,7 @@ func which(_ tool: String) -> String? {
 
 let tubeSource = read("wBlockCoreService/BundledUserscripts/tube-cleaner.user.js")
 let playerSource = read("wBlockCoreService/BundledUserscripts/player-cleaner.user.js")
+let darkReaderSource = read("wBlockCoreService/BundledUserscripts/dark-reader.user.js")
 let generated = read("wBlockCoreService/BundledUserScriptSources.generated.swift")
 let managerSource = read("wBlockCoreService/UserScriptManager.swift")
 let extensionBackgroundSource = read("extension-src/background.js")
@@ -65,6 +66,7 @@ if let node = which("node") {
     for file in [
         "wBlockCoreService/BundledUserscripts/tube-cleaner.user.js",
         "wBlockCoreService/BundledUserscripts/player-cleaner.user.js",
+        "wBlockCoreService/BundledUserscripts/dark-reader.user.js",
     ] {
         let result = run(node, ["--check", file])
         if result.status != 0 {
@@ -73,6 +75,17 @@ if let node = which("node") {
     }
 } else {
     fputs("WARN: node not found; skipping JS syntax check\n", stderr)
+}
+
+// Dark Reader: content-world API adapter, ordinary pages, and no runtime download.
+assertMetadata(darkReaderSource, "// @name         Dark Reader", "Dark Reader")
+assertMetadata(darkReaderSource, "// @match        http://*/*", "Dark Reader")
+assertMetadata(darkReaderSource, "// @match        https://*/*", "Dark Reader")
+assertMetadata(darkReaderSource, "// @run-at       document-start", "Dark Reader")
+assertMetadata(darkReaderSource, "// @inject-into  content", "Dark Reader")
+assertMetadata(darkReaderSource, "// @grant        GM_xmlhttpRequest", "Dark Reader")
+if darkReaderSource.contains("https://unpkg.com") || darkReaderSource.contains("jsdelivr.net") {
+    fail("Dark Reader must not download executable code at runtime")
 }
 
 // --- 2. Metadata ----------------------------------------------------------
@@ -231,6 +244,7 @@ func normalized(_ value: String) -> String {
 
 let tubeConstant = extractConstant(generated, "tubeCleaner")
 let playerConstant = extractConstant(generated, "playerCleaner")
+let darkReaderConstant = extractConstant(generated, "darkReader")
 let revisionPrefix = "static let documentStartCacheRevision = \""
 guard let revisionStart = generated.range(of: revisionPrefix) else {
     fail("generated Swift is missing the bundled cache revision")
@@ -254,7 +268,8 @@ for needle in [
         fail("shipped background lost generated cache behavior: \(needle)")
     }
 }
-guard generatorSource.contains("subprocess.run") &&
+guard generatorSource.contains("build_darkreader_userscript.py") &&
+      generatorSource.contains("subprocess.run") &&
       generatorSource.contains("minify-extension-js.sh") &&
       generatorSource.contains("__WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION__") else {
     fail("bundled generator does not rebuild all cache artifacts")
@@ -320,6 +335,9 @@ if normalized(tubeConstant) != normalized(tubeSource) {
 if normalized(playerConstant) != normalized(playerSource) {
     fail("generated playerCleaner constant drifted from player-cleaner.user.js; run scripts/generate_bundled_userscripts.py")
 }
+if normalized(darkReaderConstant) != normalized(darkReaderSource) {
+    fail("generated darkReader constant drifted from dark-reader.user.js; run scripts/generate_bundled_userscripts.py")
+}
 
 // --- 4. Generated Swift parses --------------------------------------------
 
@@ -347,8 +365,13 @@ for needle in [
     "let bundledContent: String?",
     "static let tubeCleanerURL",
     "static let playerCleanerURL",
+    "static let darkReaderURL",
+    "darkReaderDescription",
+    "name: \"Dark Reader\"",
+    "isEnabledByDefault: false",
     "bundledContent: BundledUserScriptSources.tubeCleaner",
     "bundledContent: BundledUserScriptSources.playerCleaner",
+    "bundledContent: BundledUserScriptSources.darkReader",
     "static func bundledContent(forURL url: String) -> String?",
     "private func applyBundledContent(to userScript: inout UserScript, content: String)",
     "private func refreshBundledUserScriptsIfNeeded() async",

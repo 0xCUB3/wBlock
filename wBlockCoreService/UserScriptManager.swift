@@ -127,6 +127,9 @@ enum BuiltInUserScripts {
     // are never fetched over the network.
     static let tubeCleanerURL = "https://bundled.wblock.invalid/tube-cleaner.user.js"
     static let playerCleanerURL = "https://bundled.wblock.invalid/player-cleaner.user.js"
+    static let darkReaderURL = "https://bundled.wblock.invalid/dark-reader.user.js"
+    static let darkReaderDescription =
+        "Dark Reader's MIT-licensed API engine, bundled for wBlock (beta; without the full site-fix database)."
     // Keep these in sync with the bare @description lines in the bundled
     // userscript headers. applyBundledContent rewrites them from metadata on
     // install/refresh, but placeholders should match until then.
@@ -152,6 +155,15 @@ enum BuiltInUserScripts {
             description: playerCleanerDescription,
             displayRole: .functionality,
             bundledContent: BundledUserScriptSources.playerCleaner,
+            isBeta: true
+        ),
+        BuiltInUserScriptDefinition(
+            name: "Dark Reader",
+            url: darkReaderURL,
+            isEnabledByDefault: false,
+            description: darkReaderDescription,
+            displayRole: .functionality,
+            bundledContent: BundledUserScriptSources.darkReader,
             isBeta: true
         ),
         BuiltInUserScriptDefinition(
