@@ -239,8 +239,10 @@ struct UserScriptManagerView: View {
             refreshScripts()
             showOnlyEnabled = ProtobufDataManager.shared.getUserScriptShowEnabledOnly()
         }
-        .onReceive(userScriptManager.$userScripts) { _ in
-            refreshScripts()
+        .onReceive(userScriptManager.$userScripts) { updatedScripts in
+            // @Published emits in willSet, so use the emitted array instead of
+            // reading the manager's still-stale value during this callback.
+            refreshScripts(updatedScripts)
         }
         .onChangeCompat(of: tabSelection) { _, _ in
             searchText = ""
@@ -407,7 +409,11 @@ struct UserScriptManagerView: View {
     }
 
     private func refreshScripts() {
-        scripts = userScriptManager.userScripts.map { script in
+        refreshScripts(userScriptManager.userScripts)
+    }
+
+    private func refreshScripts(_ updatedScripts: [UserScript]) {
+        scripts = updatedScripts.map { script in
             UserScriptListItem(
                 script: script,
                 isDownloaded: userScriptManager.hasDownloadedContent(for: script),
