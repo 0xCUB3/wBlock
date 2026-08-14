@@ -19,21 +19,26 @@ public enum UserScriptImportError: LocalizedError {
     case fileTooLarge
     case missingMetadata
     case unsupportedStylePreprocessor(String)
+    case styleCompilationFailed(String)
+
+    static let fallbackCompilerError = String(localized: "Unknown compiler error.", comment: "Fallback userstyle compiler error")
 
     public var errorDescription: String? {
         switch self {
         case .unsupportedType:
-            return "Choose a .user.js, .js, or .user.css file."
+            return String(localized: "Choose a .user.js, .js, .user.css, or .less file.", comment: "UserScript import file type error")
         case .unreadableFile:
-            return "Couldn't read the selected file."
+            return String(localized: "Couldn't read the selected file.", comment: "UserScript import read error")
         case .emptyContent:
-            return "The file is empty."
+            return String(localized: "The file is empty.", comment: "UserScript import empty file error")
         case .fileTooLarge:
             return String(localized: "The selected file is too large. Maximum size is 10 MB.", comment: "Local userscript import size error")
         case .missingMetadata:
-            return "Not a userscript or userstyle: missing metadata block."
+            return String(localized: "Not a userscript or userstyle: missing metadata block.", comment: "UserScript import metadata error")
         case .unsupportedStylePreprocessor(let preprocessor):
-            return "This userstyle needs the \"\(preprocessor)\" preprocessor, which isn't supported yet."
+            return String(localized: "This userstyle needs the \"%@\" preprocessor, which isn't supported yet.", comment: "Unsupported userstyle preprocessor error").replacingOccurrences(of: "%@", with: preprocessor)
+        case .styleCompilationFailed(let message):
+            return String(localized: "Couldn't compile this Less userstyle: %@", comment: "Less userstyle compilation wrapper").replacingOccurrences(of: "%@", with: message)
         }
     }
 }
@@ -1765,7 +1770,11 @@ public class UserScriptManager: ObservableObject {
                   userScripts.indices.contains(currentIndex)
             else { return }
 
-            userScripts[currentIndex].replaceContentAndParseMetadata(content)
+            let downloaded = try validatedDownloadedUserScriptContent(
+                content,
+                replacing: userScripts[currentIndex]
+            )
+            userScripts[currentIndex] = downloaded
             userScripts[currentIndex].lastUpdated = Date()
 
             // Update description and version from metadata, but keep disabled
@@ -1852,6 +1861,35 @@ public class UserScriptManager: ObservableObject {
         let contentSaved = writeUserScriptContent(userScript)
         let resourcesSaved = writeUserScriptResources(userScript)
         return contentSaved && resourcesSaved
+    }
+
+    private func validatedDownloadedUserScriptContent(
+        _ content: String,
+        replacing existing: UserScript
+    ) throws -> UserScript {
+        var downloaded = existing
+        downloaded.replaceContentAndParseMetadata(content)
+
+        if existing.isUserStyle {
+            guard UserStyleSupport.isUserStyleContent(content), downloaded.isUserStyle else {
+                throw UserScriptImportError.missingMetadata
+            }
+        }
+
+        if downloaded.isUserStyle {
+            guard let style = UserStyleSupport.parsed(from: content) else {
+                throw UserScriptImportError.missingMetadata
+            }
+            if !style.isPreprocessorSupported {
+                throw UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor)
+            }
+            if !style.isCompiled {
+                throw UserScriptImportError.styleCompilationFailed(
+                    style.compilationError ?? UserScriptImportError.fallbackCompilerError)
+            }
+        }
+
+        return downloaded
     }
 
     private func updatedUserScript(
@@ -1984,7 +2022,7 @@ public class UserScriptManager: ObservableObject {
     @discardableResult
     public func addUserScript(from url: URL) async -> Error? {
         isLoading = true
-        statusDescription = UserStyleSupport.isUserStylePath(url.path)
+        statusDescription = UserStyleSupport.isUserStyleURL(url)
             ? "Downloading userstyle..." : "Downloading userscript..."
         hasError = false
 
@@ -1998,7 +2036,7 @@ public class UserScriptManager: ObservableObject {
 
             // A .css URL must actually carry a UserStyle metadata block; otherwise the
             // content would be misclassified as a userscript and injected as JS.
-            if UserStyleSupport.isUserStylePath(url.path), !newUserScript.isUserStyle {
+            if UserStyleSupport.isUserStyleURL(url), !newUserScript.isUserStyle {
                 hasError = true
                 errorMessage = UserScriptImportError.missingMetadata.errorDescription ?? ""
                 statusDescription = "Download failed"
@@ -2015,6 +2053,17 @@ public class UserScriptManager: ObservableObject {
                 statusDescription = "Download failed"
                 isLoading = false
                 return UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor)
+            }
+            if newUserScript.isUserStyle,
+               let style = UserStyleSupport.parsed(from: newUserScript.content),
+               !style.isCompiled
+            {
+                hasError = true
+                errorMessage = UserScriptImportError.styleCompilationFailed(
+                    style.compilationError ?? UserScriptImportError.fallbackCompilerError).errorDescription ?? ""
+                statusDescription = "Download failed"
+                isLoading = false
+                return UserScriptImportError.styleCompilationFailed(style.compilationError ?? UserScriptImportError.fallbackCompilerError)
             }
             newUserScript.isEnabled = true
             newUserScript.isLocal = false
@@ -2064,6 +2113,7 @@ public class UserScriptManager: ObservableObject {
         let lowercased = filename.lowercased()
         let isSupportedType = lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
             || lowercased.hasSuffix(".user.css") || lowercased.hasSuffix(".css")
+            || lowercased.hasSuffix(".less")
         guard isSupportedType else { throw UserScriptImportError.unsupportedType }
 
         let fileSize = try fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
@@ -2092,6 +2142,12 @@ public class UserScriptManager: ObservableObject {
            !style.isPreprocessorSupported
         {
             throw UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor)
+        }
+        if staged.isUserStyle,
+           let style = UserStyleSupport.parsed(from: content),
+           !style.isCompiled
+        {
+            throw UserScriptImportError.styleCompilationFailed(style.compilationError ?? UserScriptImportError.fallbackCompilerError)
         }
         if staged.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             staged.name = Self.baseName(for: fileURL)
@@ -2251,6 +2307,12 @@ public class UserScriptManager: ObservableObject {
            !style.isPreprocessorSupported
         {
             throw UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor)
+        }
+        if tempScript.isUserStyle,
+           let style = UserStyleSupport.parsed(from: rawContent),
+           !style.isCompiled
+        {
+            throw UserScriptImportError.styleCompilationFailed(style.compilationError ?? UserScriptImportError.fallbackCompilerError)
         }
 
         let metadataName = tempScript.name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2613,9 +2675,14 @@ public class UserScriptManager: ObservableObject {
         do {
             let content = try await downloadUserScriptContent(from: url)
 
-            var tempUserScript = UserScript(
-                id: userScript.id, name: userScript.name, url: url, content: content)
-            tempUserScript.parseMetadata()
+            guard let current = userScripts.first(where: { $0.id == userScript.id }) else {
+                isLoading = false
+                return
+            }
+            let tempUserScript = try validatedDownloadedUserScriptContent(
+                content,
+                replacing: current
+            )
 
             // Process @require directives and @resource directives
             let processedContent = await processRequireDirectives(tempUserScript)
@@ -2653,13 +2720,32 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    public func saveEditedContent(for scriptId: UUID, newContent: String) async {
-        guard let index = indexOfUserScript(withId: scriptId) else { return }
-        userScripts[index].replaceContentAndParseMetadata(newContent)
-        userScripts[index].lastUpdated = Date()
-        _ = writeUserScriptFiles(userScripts[index])
+    public func saveEditedContent(for scriptId: UUID, newContent: String) async -> String? {
+        guard let index = indexOfUserScript(withId: scriptId) else { return nil }
+        let existing = userScripts[index]
+        var candidate = existing
+        candidate.replaceContentAndParseMetadata(newContent)
+        if existing.isUserStyle && !candidate.isUserStyle {
+            return UserScriptImportError.missingMetadata.errorDescription
+        }
+        if candidate.isUserStyle,
+           let style = UserStyleSupport.parsed(from: newContent)
+        {
+            if !style.isPreprocessorSupported {
+                return UserScriptImportError.unsupportedStylePreprocessor(style.preprocessor).errorDescription
+            }
+            if !style.isCompiled {
+                return UserScriptImportError.styleCompilationFailed(style.compilationError ?? UserScriptImportError.fallbackCompilerError).errorDescription
+            }
+        }
+        candidate.lastUpdated = Date()
+        guard writeUserScriptFiles(candidate) else {
+            return String(localized: "Couldn't save the edited source.", comment: "Userstyle editor save error")
+        }
+        userScripts[index] = candidate
         await persistUserScriptsNow()
         logger.info("Saved edited content for \(self.userScripts[index].name)")
+        return nil
     }
 
     /// Persists display metadata overrides for an editable local import.
@@ -2800,17 +2886,10 @@ public class UserScriptManager: ObservableObject {
 
         let rawContent = try await downloadUserScriptContent(from: downloadURL)
 
-        var tempUserScript = UserScript(
-            id: candidate.id, name: candidate.name, url: downloadURL, content: rawContent)
-        tempUserScript.parseMetadata()
-
-        // Never swap a working userstyle for one we cannot compile natively.
-        if tempUserScript.isUserStyle,
-           let style = UserStyleSupport.parsed(from: rawContent),
-           !style.isPreprocessorSupported
-        {
-            return false
-        }
+        let tempUserScript = try validatedDownloadedUserScriptContent(
+            rawContent,
+            replacing: candidate
+        )
 
         let processedContent = await processRequireDirectives(tempUserScript)
         let resourceContents = await processResourceDirectives(tempUserScript)
@@ -2847,9 +2926,15 @@ public class UserScriptManager: ObservableObject {
         do {
             let content = try await downloadUserScriptContent(from: url)
 
-            if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
-                userScripts[index].replaceContentAndParseMetadata(content)
+            guard let index = userScripts.firstIndex(where: { $0.id == userScript.id }) else {
+                isLoading = false
+                return
             }
+            let downloaded = try validatedDownloadedUserScriptContent(
+                content,
+                replacing: userScripts[index]
+            )
+            userScripts[index] = downloaded
 
             // Process @require directives and @resource directives after metadata is parsed
             if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {

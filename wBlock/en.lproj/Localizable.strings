@@ -541,7 +541,7 @@
 "Paste one or more filter URLs, one per line." = "Paste one or more filter URLs, one per line.";
 "Paste or write a userscript or userstyle with a standard metadata block." = "Paste or write a userscript or userstyle with a standard metadata block.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Paste the direct .user.js link. wBlock will download and install it for you.";
-"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you.";
+"Paste the direct .user.js, .js, .user.css, or .less link. wBlock will download and install it for you." = "Paste the direct .user.js, .js, .user.css, or .less link. wBlock will download and install it for you.";
 "Pause Blocking" = "Pause Blocking";
 "Pausing blocking..." = "Pausing blocking...";
 "Persian Blocker" = "Persian Blocker";
@@ -565,7 +565,7 @@
 "Process completed with reload issues" = "Process completed with reload issues";
 "Progress" = "Progress";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Protects against suspicious URLs, phishing sites, and unwanted software.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = "Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, or .less" = "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, or .less";
 "Provide a valid https:// link ending in .user.js" = "Provide a valid https:// link ending in .user.js";
 "Psst! You forgot something!" = "Psst! You forgot something!";
 "Quit Without Applying" = "Quit Without Applying";
@@ -701,7 +701,7 @@
 "Successfully updated script" = "Successfully updated script";
 "Summary" = "Summary";
 "Supplement for EasyList China+EasyList and EasyPrivacy." = "Supplement for EasyList China+EasyList and EasyPrivacy.";
-"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = "Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace.";
+"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace.";
 "Sync" = "Sync";
 "Sync across devices" = "Sync across devices";
 "Sync Now" = "Sync Now";
@@ -933,7 +933,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "wBlock will fetch and enable the filter list automatically" = "wBlock will fetch and enable the filter list automatically";
 /* Issue 508 UI follow-up */
 "Starts with http:// or https://" = "Starts with http:// or https://";
-"Ends with .js, .user.js, or .user.css" = "Ends with .js, .user.js, or .user.css";
+"Ends with .js, .user.js, .user.css, or .less" = "Ends with .js, .user.js, .user.css, or .less";
 "Hosted on a trusted source" = "Hosted on a trusted source";
 
 "The file must include userscript or userstyle metadata." = "The file must include userscript or userstyle metadata.";
@@ -950,3 +950,22 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enabled Userscripts & Userstyles" = "Enabled Userscripts & Userstyles";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pause Blocking is on while any selected component is paused. Resume restores all components.";
 "Temporarily pause selected components without changing their enabled settings." = "Temporarily pause selected components without changing their enabled settings.";
+
+/* Less userstyle diagnostics */
+"Choose a .user.js, .js, .user.css, or .less file." = "Choose a .user.js, .js, .user.css, or .less file.";
+"Couldn't read the selected file." = "Couldn't read the selected file.";
+"The file is empty." = "The file is empty.";
+"Not a userscript or userstyle: missing metadata block." = "Not a userscript or userstyle: missing metadata block.";
+"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "This userstyle needs the \"%@\" preprocessor, which isn't supported yet.";
+"Couldn't compile this Less userstyle: %@" = "Couldn't compile this Less userstyle: %@";
+"Unknown compiler error." = "Unknown compiler error.";
+"Couldn't save the edited source." = "Couldn't save the edited source.";
+"Less compiler resource is missing." = "Less compiler resource is missing.";
+"Less source exceeds the 2 MiB limit." = "Less source exceeds the 2 MiB limit.";
+"Less compiler input could not be serialized." = "Less compiler input could not be serialized.";
+"Less compilation failed." = "Less compilation failed.";
+"Less compiler returned no CSS." = "Less compiler returned no CSS.";
+"Less compiler output exceeds the 10 MiB limit." = "Less compiler output exceeds the 10 MiB limit.";
+
+"line %@" = "line %@";
+"column %@" = "column %@";

@@ -39,12 +39,20 @@ public enum UserStyleSupport {
     public static func isUserStylePath(_ path: String) -> Bool {
         let lowercased = path.lowercased()
         return lowercased.hasSuffix(".user.css") || lowercased.hasSuffix(".css")
+            || lowercased.hasSuffix(".less")
     }
 
-    /// Preprocessors wBlock can apply natively. "less"/"stylus" require a JS compiler.
+    public static func isUserStyleURL(_ url: URL) -> Bool {
+        if isUserStylePath(url.path) { return true }
+        return URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?
+            .compactMap(\.value).contains(where: isUserStylePath) ?? false
+    }
+
+    /// Preprocessors wBlock can apply natively or compile offline. Stylus, Sass,
+    /// SCSS, and PostCSS remain unsupported.
     public static func isPreprocessorSupported(_ preprocessor: String) -> Bool {
         let normalized = preprocessor.trimmingCharacters(in: .whitespaces).lowercased()
-        return normalized.isEmpty || normalized == "default" || normalized == "uso"
+        return normalized.isEmpty || normalized == "default" || normalized == "uso" || normalized == "less"
     }
 
     // MARK: - Model
@@ -139,6 +147,10 @@ public enum UserStyleSupport {
         public let variables: [Variable]
         public let globalCSS: String
         public let sections: [Section]
+        /// False when Less compilation failed. Metadata remains available so callers
+        /// can classify the source and surface the compiler diagnostic.
+        public let isCompiled: Bool
+        public let compilationError: String?
 
         public var isPreprocessorSupported: Bool {
             UserStyleSupport.isPreprocessorSupported(preprocessor)
@@ -219,6 +231,8 @@ public enum UserStyleSupport {
     /// Returns nil when nothing applies.
     public static func effectiveCSS(forContent content: String, url: String) -> String? {
         guard let parsed = parsed(from: content) else { return nil }
+
+        guard parsed.isPreprocessorSupported && parsed.isCompiled else { return nil }
 
         var sectionPieces: [String] = []
         for section in parsed.sections where section.matches(url: url) {
@@ -334,6 +348,10 @@ public enum UserStyleSupport {
         guard !variables.isEmpty else { return css }
 
         let normalized = preprocessor.trimmingCharacters(in: .whitespaces).lowercased()
+        if normalized == "less" {
+            // Less has already received metadata defaults as global variables.
+            return css
+        }
         if normalized == "uso" {
             // USO styles reference variables via /*[[name]]*/ placeholders. Unresolved
             // placeholders stay behind as harmless CSS comments.
@@ -385,6 +403,22 @@ public enum UserStyleSupport {
             body = stripped
         }
 
+        let normalizedPreprocessor = (metadata.preprocessor ?? "default")
+            .trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        var isCompiled = true
+        var compilationError: String?
+        if normalizedPreprocessor == "less" {
+            do {
+                // Compile before @-moz-document parsing. Less then expands nested
+                // selectors while preserving the existing section syntax.
+                body = try UserStyleCompiler.compile(body, variables: metadata.variables)
+            } catch {
+                isCompiled = false
+                compilationError = error.localizedDescription
+                body = ""
+            }
+        }
+
         let (globalCSS, sections) = parseSections(body)
 
         return ParsedStyle(
@@ -392,10 +426,12 @@ public enum UserStyleSupport {
             description: metadata.description,
             version: metadata.version,
             updateURL: metadata.updateURL,
-            preprocessor: metadata.preprocessor ?? "default",
+            preprocessor: normalizedPreprocessor,
             variables: metadata.variables,
             globalCSS: globalCSS,
-            sections: sections
+            sections: sections,
+            isCompiled: isCompiled,
+            compilationError: compilationError
         )
     }
 

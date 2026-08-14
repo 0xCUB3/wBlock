@@ -541,7 +541,7 @@
 "Paste one or more filter URLs, one per line." = "Вставьте один или несколько URL-адресов фильтров, по одному в строке.";
 "Paste or write a userscript or userstyle with a standard metadata block." = "Вставьте или напишите пользовательский скрипт или стиль со стандартным блоком метаданных.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Вставьте прямую ссылку на .user.js. wBlock загрузит и установит его автоматически.";
-"Paste the direct .user.js, .js, or .user.css link. wBlock will download and install it for you." = "Вставьте прямую ссылку на .user.js, .js или .user.css. wBlock скачает и установит её за вас.";
+"Paste the direct .user.js, .js, .user.css, or .less link. wBlock will download and install it for you." = "Paste the direct .user.js, .js, .user.css, or .less link. wBlock will download and install it for you.";
 "Pause Blocking" = "Приостановить блокировку";
 "Enabled Userscripts & Userstyles" = "Включённые пользовательские скрипты и стили";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Пауза блокировки включена, пока выбранный компонент находится на паузе. Возобновление восстанавливает все компоненты.";
@@ -568,7 +568,7 @@
 "Process completed with reload issues" = "Процесс завершён с проблемами перезагрузки";
 "Progress" = "Прогресс";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Защищает от подозрительных URL-адресов, фишинговых сайтов и нежелательного программного обеспечения.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, or .user.css" = "Укажите действительную ссылку http:// или https://, заканчивающуюся на .js, .user.js или .user.css";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, or .less" = "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, or .less";
 "Provide a valid https:// link ending in .user.js" = "Укажите корректную ссылку https://, оканчивающуюся на .user.js";
 "Psst! You forgot something!" = "Псс! Вы кое-что забыли!";
 "Quit Without Applying" = "Выйти без подачи заявления";
@@ -704,7 +704,7 @@
 "Successfully updated script" = "Скрипт обновлён";
 "Summary" = "Сводка";
 "Supplement for EasyList China+EasyList and EasyPrivacy." = "Дополнение к EasyList China+EasyList и EasyPrivacy.";
-"Supports .user.js, .js, and .user.css files. Local imports won't auto-update; re-import to replace." = "Поддерживаются файлы .user.js, .js и .user.css. Локальные импорты не обновляются автоматически; для замены импортируйте снова.";
+"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace.";
 "Sync" = "Синхронизация";
 "Sync across devices" = "Синхронизация между устройствами";
 "Sync Now" = "Синхронизировать сейчас";
@@ -937,7 +937,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Issue 508 UI follow-up */
 "Starts with http:// or https://" = "Начинается с http:// или https://";
-"Ends with .js, .user.js, or .user.css" = "Заканчивается на .js, .user.js или .user.css";
+"Ends with .js, .user.js, .user.css, or .less" = "Ends with .js, .user.js, .user.css, or .less";
 "Hosted on a trusted source" = "Размещён в надёжном источнике";
 
 "The file must include userscript or userstyle metadata." = "Файл должен содержать метаданные userscript или userstyle.";
@@ -951,3 +951,22 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "Скрипты, добавляющие или восстанавливающие полезные функции сайтов.";
 "Userstyles and scripts that change the appearance of websites." = "Юзерстили и скрипты, изменяющие внешний вид сайтов.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Пользовательские, удалённые и локальные скрипты без более подходящей категории отображения.";
+
+/* Less userstyle diagnostics */
+"Choose a .user.js, .js, .user.css, or .less file." = "Choose a .user.js, .js, .user.css, or .less file.";
+"Couldn't read the selected file." = "Couldn't read the selected file.";
+"The file is empty." = "The file is empty.";
+"Not a userscript or userstyle: missing metadata block." = "Not a userscript or userstyle: missing metadata block.";
+"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "This userstyle needs the \"%@\" preprocessor, which isn't supported yet.";
+"Couldn't compile this Less userstyle: %@" = "Couldn't compile this Less userstyle: %@";
+"Unknown compiler error." = "Unknown compiler error.";
+"Couldn't save the edited source." = "Couldn't save the edited source.";
+"Less compiler resource is missing." = "Less compiler resource is missing.";
+"Less source exceeds the 2 MiB limit." = "Less source exceeds the 2 MiB limit.";
+"Less compiler input could not be serialized." = "Less compiler input could not be serialized.";
+"Less compilation failed." = "Less compilation failed.";
+"Less compiler returned no CSS." = "Less compiler returned no CSS.";
+"Less compiler output exceeds the 10 MiB limit." = "Less compiler output exceeds the 10 MiB limit.";
+
+"line %@" = "line %@";
+"column %@" = "column %@";

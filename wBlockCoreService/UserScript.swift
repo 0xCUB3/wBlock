@@ -43,7 +43,16 @@ public enum UserScriptURLSupport {
     }
 
     public static func displayName(forRemoteURL url: URL) -> String {
-        displayName(forFilename: url.lastPathComponent)
+        let pathName = url.lastPathComponent
+        if hasSupportedExtension(in: pathName) {
+            return displayName(forFilename: pathName)
+        }
+        if let queryName = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?
+            .compactMap(\.value).first(where: { hasSupportedExtension(in: $0) })
+        {
+            return displayName(forFilename: queryName)
+        }
+        return displayName(forFilename: pathName)
     }
 
     public static func displayName(forFilename filename: String) -> String {
@@ -89,6 +98,7 @@ public enum UserScriptURLSupport {
         let lowercased = path.lowercased()
         return lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
             || lowercased.hasSuffix(".user.css") || lowercased.hasSuffix(".css")
+            || lowercased.hasSuffix(".less")
     }
 }
 

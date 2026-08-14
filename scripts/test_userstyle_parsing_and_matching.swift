@@ -4,10 +4,18 @@ import Foundation
 @main
 struct UserStyleParsingAndMatchingTests {
     static func main() {
+#if DEBUG
+        guard let bundlePath = ProcessInfo.processInfo.environment["WBLOCK_LESS_BUNDLE"],
+              let bundle = try? String(contentsOfFile: bundlePath, encoding: .utf8) else {
+            return fail("WBLOCK_LESS_BUNDLE must point to the vendored Less bundle")
+        }
+        UserStyleCompiler.compilerSourceOverride = bundle
+#endif
         testDetectionAndMetadata()
         testSectionParsingAndMatching()
         testEffectiveCSSAssembly()
         testVariableResolution()
+        testLessCompilation()
         testUserScriptIntegration()
         testURLSupport()
         print("PASS: userstyle parsing and matching")
@@ -66,7 +74,7 @@ struct UserStyleParsingAndMatchingTests {
         guard let lessParsed = UserStyleSupport.parsed(from: less) else {
             return fail("less style should still parse")
         }
-        expect(!lessParsed.isPreprocessorSupported, "less preprocessor should be unsupported")
+        expect(lessParsed.isPreprocessorSupported, "less preprocessor should be supported")
         expect(UserStyleSupport.isPreprocessorSupported("uso"), "uso preprocessor should be supported")
     }
 
@@ -253,6 +261,96 @@ struct UserStyleParsingAndMatchingTests {
         expect(!usoCSS.contains(":root {"), "uso preprocessor must not emit :root prelude")
     }
 
+    static func testLessCompilation() {
+        let less = """
+        /* ==UserStyle==
+        @name Less compilation
+        @preprocessor less
+        @var color accent "Accent" #e91e63
+        @var text label "Label" "wBlock"
+        ==/UserStyle== */
+        @outside: red;
+        .outside-mixin() { border: 1px solid blue; }
+        @-moz-document domain("example.com") {
+            .card {
+                color: @accent;
+                content: @label;
+                .outside-mixin();
+                .child { display: block; }
+            }
+        }
+        """
+        guard let parsed = UserStyleSupport.parsed(from: less) else {
+            return fail("Less style should parse")
+        }
+        expect(parsed.isCompiled, "valid Less should compile")
+        expect(!parsed.serializedConditions.contains("global"), "Less declarations outside a scope must not be global")
+        guard let matchingCSS = UserStyleSupport.effectiveCSS(forContent: less, url: "https://example.com/page") else {
+            return fail("matching Less section should produce CSS")
+        }
+        expect(matchingCSS.contains("color: #e91e63"), "Less variable default should render")
+        if !matchingCSS.contains("wBlock") { fputs("LESS CSS: \(matchingCSS)\n", stderr); fail("Less text variable should render") }
+        expect(matchingCSS.contains("border: 1px solid blue"), "Less mixin should render")
+        expect(matchingCSS.contains(".card .child"), "Less nesting should render")
+        expect(
+            UserStyleSupport.effectiveCSS(forContent: less, url: "https://unrelated.invalid/") == nil,
+            "scoped Less must not apply to unrelated URLs"
+        )
+
+        var returnedSynchronously = false
+        let importedCSS: String
+        do {
+            importedCSS = try UserStyleCompiler.compile(
+                "@import url(\"https://example.com/theme.css\"); body { color: red; }",
+                variables: []
+            )
+            returnedSynchronously = true
+        } catch {
+            return fail("CSS @import should compile without asynchronous resolution: \(error)")
+        }
+        expect(returnedSynchronously, "Less compilation should return synchronously")
+        expect(importedCSS.contains("@import url(\"https://example.com/theme.css\")"),
+               "ordinary CSS @import must remain in compiled output")
+
+        let malformed = """
+        /* ==UserStyle==
+        @name Broken Less
+        @preprocessor less
+        ==/UserStyle== */
+        body { color: red;
+        """
+        guard let broken = UserStyleSupport.parsed(from: malformed) else {
+            return fail("Malformed Less should preserve userstyle classification")
+        }
+        expect(UserStyleSupport.isUserStyleContent(malformed), "malformed Less remains a userstyle")
+        expect(!broken.isCompiled, "malformed Less should fail compilation")
+        expect((broken.compilationError ?? "").contains("line"), "Less error should include a useful location")
+        expect(UserStyleSupport.effectiveCSS(forContent: malformed, url: "https://example.com/") == nil, "failed Less must not inject CSS")
+
+        let stylus = """
+        /* ==UserStyle==
+        @name Stylus
+        @preprocessor stylus
+        ==/UserStyle== */
+        body { color: red; }
+        """
+        guard let unsupported = UserStyleSupport.parsed(from: stylus) else {
+            return fail("Stylus metadata should parse")
+        }
+        expect(!unsupported.isPreprocessorSupported, "Stylus should remain unsupported")
+        expect(UserStyleSupport.effectiveCSS(forContent: stylus, url: "https://example.com/") == nil, "unsupported Stylus must not inject raw CSS")
+
+        let oversized = String(repeating: "a", count: UserStyleCompiler.maximumSourceBytes + 1)
+        do {
+            _ = try UserStyleCompiler.compile(oversized, variables: [])
+            fail("oversized Less source should be rejected")
+        } catch let error as UserStyleCompiler.CompilationError {
+            expect(error.message.contains("2 MiB"), "oversized source should report its bound")
+        } catch {
+            fail("oversized Less source returned the wrong error")
+        }
+    }
+
     static func testUserScriptIntegration() {
         var style = UserScript(name: "fallback", content: sampleStyle)
         style.parseMetadata()
@@ -310,6 +408,16 @@ struct UserStyleParsingAndMatchingTests {
             UserScriptURLSupport.validatedRemoteURL(from: "https://example.com/styles/site.css") != nil,
             ".css remote URLs should validate"
         )
+        expect(UserStyleSupport.isUserStylePath("/styles/theme.less"), ".less paths should be recognized as userstyles")
+        expect(UserStyleSupport.isUserStyleURL(URL(string: "https://example.com/raw?filename=theme.less")!), ".less query URLs should be recognized as userstyles")
+        expect(
+            UserScriptURLSupport.validatedRemoteURL(from: "https://example.com/styles/theme.less") != nil,
+            ".less path remote URLs should validate"
+        )
+        expect(
+            UserScriptURLSupport.validatedRemoteURL(from: "https://example.com/raw?filename=theme.less") != nil,
+            ".less query-value remote URLs should validate"
+        )
         expect(
             UserScriptURLSupport.validatedRemoteURL(from: "https://example.com/styles/dark.scss") == nil,
             "unrelated extensions must not validate"
@@ -323,6 +431,12 @@ struct UserStyleParsingAndMatchingTests {
             UserScriptURLSupport.displayName(forFilename: "site.css"),
             "site",
             "display name should strip .css"
+        )
+        expectEqual(UserScriptURLSupport.displayName(forFilename: "theme.less"), "theme", "display name should strip .less")
+        expectEqual(
+            UserScriptURLSupport.displayName(forRemoteURL: URL(string: "https://example.com/raw?filename=theme.less")!),
+            "theme",
+            "display name should strip query-value .less"
         )
     }
 
