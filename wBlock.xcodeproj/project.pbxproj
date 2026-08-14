@@ -388,8 +388,6 @@
 		C1A41C472DE089C50056F63D /* Exceptions for "wBlockCoreService" folder in "wBlockCoreService" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				"BundledUserscripts/player-cleaner.user.js",
-				"BundledUserscripts/tube-cleaner.user.js",
 				DataModels.proto,
 			);
 			target = C1A41C442DE089C50056F63D /* wBlockCoreService */;

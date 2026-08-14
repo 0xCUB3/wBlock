@@ -14,10 +14,6 @@ scripts/codemirror-build/1/
 DerivedData/
 scripts/.mock_filter_server.log
 
-# Tube Cleaner test harness dependencies (source is committed, deps are not)
-tests/tube-cleaner/node_modules/
-tests/tube-cleaner/package-lock.json
-
 # CodeMirror bundle build dependencies (source is committed, deps are not)
 scripts/codemirror-build/node_modules/
 scripts/codemirror-build/package-lock.json

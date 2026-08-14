@@ -78,12 +78,6 @@ struct BuiltInUserScriptDefinition {
     let description: String
     let languages: [String]
     let displayRole: BuiltInUserScriptDisplayRole?
-    /// Non-nil for userscripts that ship embedded in the framework instead of
-    /// being downloaded from `url`. The `url` then acts only as a stable
-    /// identity (for sync, per-site toggles, and protection); it is never
-    /// fetched. Content refreshes automatically when the app ships a newer
-    /// bundled version.
-    let bundledContent: String?
     let isBeta: Bool
 
     init(
@@ -93,7 +87,6 @@ struct BuiltInUserScriptDefinition {
         description: String = "Default userscript",
         languages: [String] = [],
         displayRole: BuiltInUserScriptDisplayRole? = nil,
-        bundledContent: String? = nil,
         isBeta: Bool = false
     ) {
         self.name = name
@@ -102,7 +95,6 @@ struct BuiltInUserScriptDefinition {
         self.description = description
         self.languages = languages.map { $0.lowercased() }
         self.displayRole = displayRole
-        self.bundledContent = bundledContent
         self.isBeta = isBeta
     }
 }
@@ -122,17 +114,16 @@ enum BuiltInUserScripts {
     static let retiredYouTubeAdBlockURL =
         "https://raw.githubusercontent.com/SysAdminDoc/YoutubeAdblock/main/YoutubeAdblock.user.js"
 
-    // Bundled "cleaner" userscripts (Vinegar/Baking Soda style). These ship
-    // embedded in the framework; the URLs below are stable identities only and
-    // are never fetched over the network.
-    static let tubeCleanerURL = "https://bundled.wblock.invalid/tube-cleaner.user.js"
-    static let playerCleanerURL = "https://bundled.wblock.invalid/player-cleaner.user.js"
-    static let darkReaderURL = "https://bundled.wblock.invalid/dark-reader.user.js"
+    static let tubeCleanerURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js"
+    static let playerCleanerURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/player-cleaner/dist/player-cleaner.user.js"
+    static let darkReaderURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/dark-reader/dist/dark-reader.user.js"
     static let darkReaderDescription =
-        "Dark Reader's MIT-licensed API engine, bundled for wBlock (beta; without the full site-fix database)."
-    // Keep these in sync with the bare @description lines in the bundled
-    // userscript headers. applyBundledContent rewrites them from metadata on
-    // install/refresh, but placeholders should match until then.
+        "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)."
+    static let legacyBundledURLsByCanonical: [String: String] = [
+        "https://bundled.wblock.invalid/tube-cleaner.user.js": tubeCleanerURL,
+        "https://bundled.wblock.invalid/player-cleaner.user.js": playerCleanerURL,
+        "https://bundled.wblock.invalid/dark-reader.user.js": darkReaderURL,
+    ]
     static let tubeCleanerDescription =
         "Gives YouTube Safari-native controls, chapters, SponsorBlock skipping, picture-in-picture, background playback, quality selection, and audio-only mode."
     static let playerCleanerDescription =
@@ -145,7 +136,6 @@ enum BuiltInUserScripts {
             isEnabledByDefault: false,
             description: tubeCleanerDescription,
             displayRole: .functionality,
-            bundledContent: BundledUserScriptSources.tubeCleaner,
             isBeta: true
         ),
         BuiltInUserScriptDefinition(
@@ -154,7 +144,6 @@ enum BuiltInUserScripts {
             isEnabledByDefault: false,
             description: playerCleanerDescription,
             displayRole: .functionality,
-            bundledContent: BundledUserScriptSources.playerCleaner,
             isBeta: true
         ),
         BuiltInUserScriptDefinition(
@@ -163,7 +152,6 @@ enum BuiltInUserScripts {
             isEnabledByDefault: false,
             description: darkReaderDescription,
             displayRole: .functionality,
-            bundledContent: BundledUserScriptSources.darkReader,
             isBeta: true
         ),
         BuiltInUserScriptDefinition(
@@ -202,17 +190,11 @@ enum BuiltInUserScripts {
     ]
 
     static let protectedURLs = Set(definitions.map(\.url))
-    static let legacyProtectedURLs = Set([legacyPopupBlockerBetaURL])
+    static let legacyProtectedURLs = Set([legacyPopupBlockerBetaURL]).union(legacyBundledURLsByCanonical.keys)
     static let allProtectedURLs = protectedURLs.union(legacyProtectedURLs)
     static let displayRoleByURL = Dictionary(uniqueKeysWithValues: definitions.compactMap { definition in
         definition.displayRole.map { (definition.url, $0) }
     })
-    /// Embedded source for bundled userscripts, keyed by their identity URL.
-    static let bundledContentByURL: [String: String] = Dictionary(
-        uniqueKeysWithValues: definitions.compactMap { definition in
-            definition.bundledContent.map { (definition.url, $0) }
-        }
-    )
     static let isBetaByURL = Dictionary(
         uniqueKeysWithValues: definitions.filter(\.isBeta).map { ($0.url, true) }
     )
@@ -220,58 +202,6 @@ enum BuiltInUserScripts {
         uniqueKeysWithValues: definitions.map { ($0.url, $0.languages) }
     )
 
-    /// Returns the embedded source for a bundled userscript URL, or nil when the
-    /// URL refers to a normally-downloaded userscript.
-    static func bundledContent(forURL url: String) -> String? {
-        bundledContentByURL[url]
-    }
-
-    /// A stable URL is only an identity. A script is cacheable as bundled when
-    /// every persisted/execution-relevant descriptor field still matches the
-    /// embedded source. Runtime-loaded resource contents are deliberately ignored;
-    /// the resource declarations themselves remain part of the comparison.
-    static func isCanonicalBundled(_ script: UserScript) -> Bool {
-        guard let urlString = script.url?.absoluteString,
-              let canonicalContent = bundledContent(forURL: urlString),
-              !script.isUserStyle,
-              !script.content.isEmpty
-        else { return false }
-
-        var canonical = UserScript(id: script.id, name: script.name, url: script.url, content: canonicalContent)
-        canonical.isLocal = false
-        canonical.parseMetadata()
-        let storedNamespace = UserScriptMetadataParser.extractValue(
-            for: "namespace", from: script.content
-        ) ?? ""
-        let canonicalNamespace = UserScriptMetadataParser.extractValue(
-            for: "namespace", from: canonicalContent
-        ) ?? ""
-
-        // isEnabled is the user's selection, while lastUpdated and
-        // updatesAutomatically are runtime/preferences state rather than the
-        // bundled descriptor. All other UserScript fields are compared here.
-        return script.name == canonical.name
-            && storedNamespace == canonicalNamespace
-            && script.url == canonical.url
-            && script.description == canonical.description
-            && script.version == canonical.version
-            && script.matches == canonical.matches
-            && script.excludeMatches == canonical.excludeMatches
-            && script.includes == canonical.includes
-            && script.excludes == canonical.excludes
-            && script.runAt == canonical.runAt
-            && script.injectInto == canonical.injectInto
-            && script.grant == canonical.grant
-            && script.require == canonical.require
-            && script.resource == canonical.resource
-            && script.noframes == canonical.noframes
-            && script.isUserStyle == canonical.isUserStyle
-            && script.isLocal == canonical.isLocal
-            && script.updateURL == canonical.updateURL
-            && script.downloadURL == canonical.downloadURL
-            && script.content == canonical.content
-            && script.executableContent == canonical.executableContent
-    }
 }
 
 @MainActor
@@ -714,11 +644,6 @@ public class UserScriptManager: ObservableObject {
     public func isBeta(for userScript: UserScript) -> Bool {
         guard let urlString = userScript.url?.absoluteString else { return false }
         return BuiltInUserScripts.isBetaByURL[urlString] ?? false
-    }
-
-    public func isBundled(for userScript: UserScript) -> Bool {
-        guard let urlString = userScript.url?.absoluteString else { return false }
-        return BuiltInUserScripts.bundledContent(forURL: urlString) != nil
     }
 
     private init() {
@@ -1257,12 +1182,12 @@ public class UserScriptManager: ObservableObject {
         }
 
         await removeRetiredYouTubeAdBlockIfNeeded()
+        await migrateLegacyBundledUserScriptsIfNeeded()
         await migrateLegacyPopupBlockerIfNeeded()
         await migrateLegacyTinyShieldVariantsIfNeeded()
 
         // Always check for missing default scripts first
         await checkAndAddMissingDefaultScripts()
-        await refreshBundledUserScriptsIfNeeded()
         await refreshDefaultUserScriptDescriptionsIfNeeded()
 
         // Always check for duplicates - simplified approach
@@ -1363,10 +1288,6 @@ public class UserScriptManager: ObservableObject {
                 newUserScript.description = defaultScript.description
                 newUserScript.version = ""
 
-                if let bundledContent = defaultScript.bundledContent {
-                    applyBundledContent(to: &newUserScript, content: bundledContent)
-                }
-
                 userScripts.append(newUserScript)
                 hasAddedNew = true
                 logger.info("✅ Added default script: \(defaultScript.name)")
@@ -1417,60 +1338,6 @@ public class UserScriptManager: ObservableObject {
             || normalizedDescription == "ready to enable"
     }
 
-    /// Applies embedded bundled content to a userscript: parses metadata so the
-    /// localized name/description, version, and match rules populate immediately,
-    /// marks the script as not auto-updating from a URL (it updates with the app),
-    /// and writes the content to disk so the injector can run it.
-    private func applyBundledContent(to userScript: inout UserScript, content: String) {
-        userScript.replaceContentAndParseMetadata(content)
-        userScript.lastUpdated = Date()
-        userScript.updatesAutomatically = false
-        _ = writeUserScriptFiles(userScript)
-    }
-
-    /// Extracts the @version declared by a bundled userscript's metadata block.
-    private func bundledContentVersion(_ content: String) -> String {
-        var probe = UserScript(name: "probe", content: content)
-        probe.parseMetadata()
-        return probe.version
-    }
-
-    /// Installs or refreshes bundled userscripts. Runs on every load regardless
-    /// of enabled state so an app update that ships newer embedded script content
-    /// reaches users without a network fetch.
-    private func refreshBundledUserScriptsIfNeeded() async {
-        var didUpdate = false
-
-        for definition in defaultUserScripts {
-            guard let bundledContent = definition.bundledContent else { continue }
-            guard let index = userScripts.firstIndex(where: {
-                $0.url?.absoluteString == definition.url
-            }) else { continue }
-
-            let existing = userScripts[index]
-            // Bundled content shipped with the app is always canonical. Compare
-            // the full source (not just version ordering) so metadata resets,
-            // description edits, and body fixes all apply immediately on launch.
-            guard existing.content != bundledContent else { continue }
-
-            let wasInstalled = existing.content.isEmpty
-            let bundledVersion = bundledContentVersion(bundledContent)
-            var updated = existing
-            applyBundledContent(to: &updated, content: bundledContent)
-            // Preserve the user's enablement choice across refreshes.
-            updated.isEnabled = existing.isEnabled
-            userScripts[index] = updated
-            didUpdate = true
-            logger.info(
-                "📦 Bundled userscript \(wasInstalled ? "installed" : "refreshed"): \(definition.name) (v\(bundledVersion))"
-            )
-        }
-
-        if didUpdate {
-            await persistUserScriptsNow()
-        }
-    }
-
     private func downloadMissingDefaultScripts() async {
         logger.info("📥 Checking and downloading enabled userscripts that are missing content...")
 
@@ -1488,13 +1355,6 @@ public class UserScriptManager: ObservableObject {
             guard isDefaultScript else { continue }
             guard script.isEnabled else { continue }
             guard !script.isLocal else { continue }
-
-            // Bundled userscripts ship embedded in the app and are refreshed by
-            // refreshBundledUserScriptsIfNeeded(); never fetch them from a URL.
-            if let urlString = script.url?.absoluteString,
-               BuiltInUserScripts.bundledContent(forURL: urlString) != nil {
-                continue
-            }
 
             // Prefer local disk content if available (avoid unnecessary network requests on launch).
             if script.content.isEmpty, let diskContent = readUserScriptContent(script), !diskContent.isEmpty {
@@ -1532,10 +1392,6 @@ public class UserScriptManager: ObservableObject {
             newUserScript.description = defaultScript.description
             newUserScript.version = ""
 
-            if let bundledContent = defaultScript.bundledContent {
-                applyBundledContent(to: &newUserScript, content: bundledContent)
-            }
-
             userScripts.append(newUserScript)
             logger.info("✅ Added default userscript placeholder: \(defaultScript.name)")
         }
@@ -1544,6 +1400,94 @@ public class UserScriptManager: ObservableObject {
             logger.info("💾 About to save \(self.userScripts.count) default userscript placeholders")
             await persistUserScriptsNow()
             logger.info("💾 Saved \(self.userScripts.count) default userscript placeholders")
+        }
+    }
+
+    private func migrateLegacyBundledUserScriptsIfNeeded() async {
+        var didChange = false
+
+        for (legacyURL, canonicalURLString) in BuiltInUserScripts.legacyBundledURLsByCanonical {
+            guard let canonicalURL = URL(string: canonicalURLString),
+                  let legacy = userScripts.first(where: {
+                      $0.url?.absoluteString == legacyURL
+                  })
+            else { continue }
+
+            // Keep one legacy UUID as the canonical record. Per-site exceptions and
+            // GM storage are keyed by UUID, so replacing it would discard user state.
+            let retainedID = legacy.id
+            guard let retainedIndex = userScripts.firstIndex(where: { $0.id == retainedID }) else {
+                continue
+            }
+
+            if userScripts[retainedIndex].content.isEmpty,
+               let diskContent = readUserScriptContent(userScripts[retainedIndex]),
+               !diskContent.isEmpty {
+                userScripts[retainedIndex].replaceContentAndParseMetadata(diskContent)
+                userScripts[retainedIndex].resourceContents =
+                    readUserScriptResources(userScripts[retainedIndex]) ?? [:]
+            }
+
+            let duplicateIDs = userScripts.compactMap { script -> UUID? in
+                guard script.id != retainedID,
+                      script.url?.absoluteString == legacyURL
+                        || script.url?.absoluteString == canonicalURLString
+                else { return nil }
+                return script.id
+            }
+            var mergedDisabledHosts = Set(
+                dataManager.getUserScriptDisabledHosts(forScriptID: retainedID.uuidString)
+            )
+
+            for duplicateID in duplicateIDs {
+                guard let duplicateIndex = userScripts.firstIndex(where: {
+                    $0.id == duplicateID
+                }), let currentRetainedIndex = userScripts.firstIndex(where: {
+                    $0.id == retainedID
+                }) else { continue }
+                let duplicate = userScripts[duplicateIndex]
+                mergedDisabledHosts.formUnion(
+                    dataManager.getUserScriptDisabledHosts(forScriptID: duplicateID.uuidString)
+                )
+                userScripts[currentRetainedIndex].isEnabled =
+                    userScripts[currentRetainedIndex].isEnabled || duplicate.isEnabled
+
+                if userScripts[currentRetainedIndex].content.isEmpty {
+                    let duplicateContent = duplicate.content.isEmpty
+                        ? readUserScriptContent(duplicate)
+                        : duplicate.content
+                    if let duplicateContent, !duplicateContent.isEmpty {
+                        userScripts[currentRetainedIndex].replaceContentAndParseMetadata(duplicateContent)
+                        userScripts[currentRetainedIndex].resourceContents = duplicate.resourceContents.isEmpty
+                            ? (readUserScriptResources(duplicate) ?? [:])
+                            : duplicate.resourceContents
+                    }
+                }
+
+                removeUserScriptFile(duplicate)
+                userScripts.remove(at: duplicateIndex)
+                await dataManager.setUserScriptDisabledHosts(
+                    [], forScriptID: duplicateID.uuidString
+                )
+                didChange = true
+            }
+
+            guard let currentIndex = userScripts.firstIndex(where: {
+                $0.id == retainedID
+            }) else { continue }
+            userScripts[currentIndex].url = canonicalURL
+            userScripts[currentIndex].updatesAutomatically = true
+            if !userScripts[currentIndex].content.isEmpty {
+                _ = writeUserScriptFiles(userScripts[currentIndex])
+            }
+            await dataManager.setUserScriptDisabledHosts(
+                mergedDisabledHosts.sorted(), forScriptID: retainedID.uuidString
+            )
+            didChange = true
+        }
+
+        if didChange {
+            await persistUserScriptsNow()
         }
     }
 
@@ -1654,12 +1598,6 @@ public class UserScriptManager: ObservableObject {
     private func shouldPrefetchMetadata(for userScript: UserScript) -> Bool {
         guard !userScript.isLocal else { return false }
         guard isDefaultUserScript(userScript) else { return false }
-        // Bundled userscripts carry their metadata in the app; never fetch it.
-        if let urlString = userScript.url?.absoluteString,
-           BuiltInUserScripts.bundledContent(forURL: urlString) != nil {
-            return false
-        }
-
         let normalizedVersion = userScript.version.trimmingCharacters(in: .whitespacesAndNewlines)
 
         return normalizedVersion.isEmpty || shouldReplaceDefaultUserScriptDescription(userScript.description)
@@ -2689,16 +2627,6 @@ public class UserScriptManager: ObservableObject {
             return true
         }
 
-        // Bundled userscripts are reinstalled from the app, never downloaded.
-        if let urlString = script.url?.absoluteString,
-           let bundledContent = BuiltInUserScripts.bundledContent(forURL: urlString) {
-            var reinstalled = script
-            applyBundledContent(to: &reinstalled, content: bundledContent)
-            reinstalled.isEnabled = script.isEnabled
-            userScripts[index] = reinstalled
-            return true
-        }
-
         guard let url = script.url else { return false }
         await downloadUserScriptInBackground(for: scriptID, from: url)
 
@@ -3043,11 +2971,6 @@ public class UserScriptManager: ObservableObject {
             guard script.isEnabled && !script.isLocal && script.url != nil && script.updatesAutomatically else {
                 return false
             }
-            // Bundled userscripts update with the app, never from a URL.
-            if let urlString = script.url?.absoluteString,
-               BuiltInUserScripts.bundledContent(forURL: urlString) != nil {
-                return false
-            }
             return true
         }
 
@@ -3203,15 +3126,6 @@ public class UserScriptManager: ObservableObject {
         #endif
 
         return runnableScripts
-    }
-
-    public func enabledDocumentStartUserScriptsForCache() async -> [UserScript] {
-        guard !BlockingPauseStore.isPaused(.userScripts) else { return [] }
-        let scripts = userScripts.filter {
-            $0.isEnabled && !$0.isUserStyle && $0.runAt == "document-start"
-        }
-        let hydrated = await hydrateUserScriptsFromDisk(scripts, includeResources: true)
-        return hydrated.filter(BuiltInUserScripts.isCanonicalBundled)
     }
 
     public func pageUserScripts(for url: String) -> [(script: UserScript, disabledForSite: Bool)] {

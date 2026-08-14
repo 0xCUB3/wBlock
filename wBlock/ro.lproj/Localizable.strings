@@ -975,4 +975,4 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "column %@: %@" = "coloana %@: %@";
 "Userstyle compiler timed out." = "Compilatorul Userstyle a depășit limita de timp.";
 "Userstyle compiler must not run on the main thread." = "Compilatorul Userstyle nu trebuie să ruleze pe firul principal.";
-"Dark Reader's MIT-licensed API engine, bundled for wBlock (beta; without the full site-fix database)." = "Motorul API Dark Reader, licențiat MIT, inclus în wBlock (beta; fără baza completă de remedieri pentru site-uri).";
+"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Motorul API Dark Reader, licențiat MIT, pentru wBlock (beta; fără baza completă de remedieri pentru site-uri).";

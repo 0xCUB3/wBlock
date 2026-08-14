@@ -975,4 +975,4 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "column %@: %@" = "columna %@: %@";
 "Userstyle compiler timed out." = "El compilador de estilos de usuario agotó el tiempo de espera.";
 "Userstyle compiler must not run on the main thread." = "El compilador de estilos de usuario no debe ejecutarse en el hilo principal.";
-"Dark Reader's MIT-licensed API engine, bundled for wBlock (beta; without the full site-fix database)." = "Motor de API de Dark Reader con licencia MIT, incluido en wBlock (beta; sin la base de datos completa de correcciones de sitios).";
+"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Motor de API de Dark Reader con licencia MIT para wBlock (beta; sin la base de datos completa de correcciones de sitios).";

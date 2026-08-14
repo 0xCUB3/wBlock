@@ -22,6 +22,31 @@ struct CloudSyncRemoteUserScriptTests {
             ).isEmpty,
             "the supported global tinyShield userscript must remain syncable"
         )
+        let migratedURLs = [
+            "https://bundled.wblock.invalid/tube-cleaner.user.js":
+                "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js",
+            "https://bundled.wblock.invalid/player-cleaner.user.js":
+                "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/player-cleaner/dist/player-cleaner.user.js",
+            "https://bundled.wblock.invalid/dark-reader.user.js":
+                "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/dark-reader/dist/dark-reader.user.js",
+        ]
+        for (legacy, canonical) in migratedURLs {
+            expect(
+                CloudSyncRemoteUserScriptReconciler.normalizedURL("  \(legacy)  ") == canonical,
+                "legacy userscript identity must normalize to \(canonical)"
+            )
+        }
+        let canonicalTube = migratedURLs[
+            "https://bundled.wblock.invalid/tube-cleaner.user.js"
+        ]!
+        expect(
+            CloudSyncRemoteUserScriptReconciler.deletedURLsToMergeDuringRemoteApply(
+                remoteDeletedURLs: ["https://bundled.wblock.invalid/tube-cleaner.user.js"],
+                remoteRemoteScriptURLs: [canonicalTube],
+                localRemoteScriptURLs: []
+            ).isEmpty,
+            "legacy tombstones must not delete a canonical remote userscript"
+        )
 
         let mergedWithLocalReAdd =
             CloudSyncRemoteUserScriptReconciler.deletedURLsToMergeDuringUploadReconciliation(

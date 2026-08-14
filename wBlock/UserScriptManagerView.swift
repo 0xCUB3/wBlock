@@ -834,16 +834,10 @@ private struct ScriptFileInfoView: View {
 
 private struct ScriptURLView: View {
     let script: UserScript
-    let isBundled: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Source URL").font(.caption).fontWeight(.medium).foregroundStyle(.secondary)
-            if isBundled {
-                Text("Ships with the app")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
             if let url = script.url {
                 Text(url.absoluteString)
                     .font(.caption)
@@ -992,7 +986,6 @@ struct UserScriptInfoSidebar: View {
     let contentLength: Int
     @Binding var isPatternsExpanded: Bool
     let formatFileSize: (Int) -> String
-    let isBundled: Bool
     let isBuiltIn: Bool
     let isBeta: Bool
     let onUpdatesAutomaticallyChanged: (Bool) -> Void
@@ -1006,8 +999,7 @@ struct UserScriptInfoSidebar: View {
                 isDownloaded: contentLength > 0,
                 isBuiltIn: isBuiltIn
             )
-            // Bundled scripts update with the app, so auto-update controls are noise.
-            if !isBundled && (script.url != nil || script.updateURL != nil || script.downloadURL != nil) {
+            if script.url != nil || script.updateURL != nil || script.downloadURL != nil {
                 ScriptUpdateSettingsView(
                     updatesAutomatically: script.updatesAutomatically,
                     onChange: onUpdatesAutomaticallyChanged
@@ -1016,7 +1008,7 @@ struct UserScriptInfoSidebar: View {
             if contentLength > 0 {
                 ScriptFileInfoView(contentLength: contentLength, formatFileSize: formatFileSize)
             }
-            if script.url != nil { ScriptURLView(script: script, isBundled: isBundled) }
+            if script.url != nil { ScriptURLView(script: script) }
             if !script.matches.isEmpty { ScriptMatchPatternsView(script: script, isPatternsExpanded: $isPatternsExpanded) }
             if fillsAvailableSpace {
                 Spacer()
@@ -1108,7 +1100,6 @@ struct UserScriptInfoView: View {
                             contentLength: script.content.count,
                             isPatternsExpanded: $isPatternsExpanded,
                             formatFileSize: formatFileSize,
-                            isBundled: userScriptManager.isBundled(for: script),
                             isBuiltIn: userScriptManager.isDefaultUserScript(script),
                             isBeta: userScriptManager.isBeta(for: script),
                             onUpdatesAutomaticallyChanged: setUpdatesAutomatically
@@ -1129,7 +1120,6 @@ struct UserScriptInfoView: View {
                     contentLength: script.content.count,
                     isPatternsExpanded: $isPatternsExpanded,
                     formatFileSize: formatFileSize,
-                    isBundled: userScriptManager.isBundled(for: script),
                     isBuiltIn: userScriptManager.isDefaultUserScript(script),
                     isBeta: userScriptManager.isBeta(for: script),
                     onUpdatesAutomaticallyChanged: setUpdatesAutomatically,
@@ -1207,7 +1197,6 @@ struct UserScriptContentView: View {
                                 contentLength: loadedContent.count,
                                 isPatternsExpanded: $isPatternsExpanded,
                                 formatFileSize: formatFileSize,
-                                isBundled: userScriptManager.isBundled(for: script),
                                 isBuiltIn: userScriptManager.isDefaultUserScript(script),
                                 isBeta: userScriptManager.isBeta(for: script),
                                 onUpdatesAutomaticallyChanged: setUpdatesAutomatically
@@ -1300,7 +1289,6 @@ struct UserScriptContentView: View {
                         contentLength: loadedContent.count,
                         isPatternsExpanded: $isPatternsExpanded,
                         formatFileSize: formatFileSize,
-                        isBundled: userScriptManager.isBundled(for: script),
                         isBuiltIn: userScriptManager.isDefaultUserScript(script),
                         isBeta: userScriptManager.isBeta(for: script),
                         onUpdatesAutomaticallyChanged: setUpdatesAutomatically

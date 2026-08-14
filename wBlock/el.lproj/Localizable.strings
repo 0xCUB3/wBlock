@@ -975,4 +975,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "column %@: %@" = "στήλη %@: %@";
 "Userstyle compiler timed out." = "Το χρονικό όριο του μεταγλωττιστή Userstyle έληξε.";
 "Userstyle compiler must not run on the main thread." = "Ο μεταγλωττιστής Userstyle δεν πρέπει να εκτελείται στο κύριο νήμα.";
-"Dark Reader's MIT-licensed API engine, bundled for wBlock (beta; without the full site-fix database)." = "Η μηχανή API του Dark Reader με άδεια MIT, ενσωματωμένη στο wBlock (beta· χωρίς την πλήρη βάση διορθώσεων ιστοτόπων).";
+"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Η μηχανή API του Dark Reader με άδεια MIT για το wBlock (beta· χωρίς την πλήρη βάση διορθώσεων ιστοτόπων).";
