@@ -78,7 +78,7 @@ func body(of functionName: String) -> String {
 }
 
 for functionName in [
-    "downloadUserScriptInBackground(for scriptID: UUID",
+    "downloadUserScriptInBackground(\n        for scriptID: UUID",
     "updateUserScript(_ userScript: UserScript)",
     "updateSingleScript(_ candidate: UserScript)",
     "downloadAndEnableUserScript(_ userScript: UserScript)"

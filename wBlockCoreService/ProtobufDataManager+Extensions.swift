@@ -51,7 +51,7 @@ extension ProtobufDataManager {
             return protoFilterList
         }
         appData = updatedData
-        await saveData()
+        saveData()
     }
 
     // MARK: - Data Migration
@@ -68,7 +68,7 @@ extension ProtobufDataManager {
 
         if needsSave {
             appData = updatedData
-            await saveData()
+            saveData()
         }
     }
 
@@ -91,7 +91,7 @@ extension ProtobufDataManager {
 
         if needsSave {
             appData = updatedData
-            await saveData()
+            saveData()
         }
     }
 
@@ -109,7 +109,7 @@ extension ProtobufDataManager {
 
         if needsSave {
             appData = updatedData
-            await saveData()
+            saveData()
         }
     }
 
@@ -128,7 +128,7 @@ extension ProtobufDataManager {
 
         if needsSave {
             appData = updatedData
-            await saveData()
+            saveData()
         }
     }
 
@@ -173,7 +173,7 @@ extension ProtobufDataManager {
         }
 
         appData = updatedData
-        await saveData()
+        saveData()
     }
 
     // MARK: - Filter Lists
@@ -234,15 +234,13 @@ extension ProtobufDataManager {
         }
         
         appData = updatedData
-        await saveData()
+        saveData()
     }
     
     public func removeFilterList(withId id: UUID) async {
-        var updatedData = await latestAppDataSnapshot()
-        updatedData.filterLists.removeAll { $0.id == id.uuidString }
-        
-        appData = updatedData
-        await saveData()
+        _ = await updateDataImmediately(explicitlyDeletedFilterIDs: [id.uuidString]) { data in
+            data.filterLists.removeAll { $0.id == id.uuidString }
+        }
     }
     
     public func updateFilterListSelection(_ filterLists: [FilterList]) async {
@@ -256,7 +254,7 @@ extension ProtobufDataManager {
         }
         
         appData = updatedData
-        await saveData()
+        saveData()
     }
     
     // MARK: - Userscripts
@@ -381,7 +379,7 @@ extension ProtobufDataManager {
         }
         
         appData = updatedData
-        await saveData()
+        saveData()
     }
     
     // MARK: - Rule Count Management
@@ -410,7 +408,7 @@ extension ProtobufDataManager {
         updatedData.ruleCounts.lastUpdated = Int64(Date().timeIntervalSince1970)
         
         appData = updatedData
-        await saveData()
+        saveData()
     }
     
     // MARK: - Performance Data
@@ -464,7 +462,7 @@ extension ProtobufDataManager {
         }
         
         appData = updatedData
-        await saveData()
+        saveData()
     }
     
     // MARK: - Helper Methods
@@ -595,7 +593,7 @@ extension ProtobufDataManager {
         }
         
         appData = updatedData
-        await saveData()
+        saveData()
     }
     
     public func updateUserScripts(
@@ -626,17 +624,22 @@ extension ProtobufDataManager {
             protoUserScript.category = mapFilterListCategoryToProto(userScript.category)
             if let identity = UserScriptImportIdentity.normalized(userScript.localImportIdentity) {
                 protoUserScript.localImportIdentity = identity
+            } else {
+                protoUserScript.clearLocalImportIdentity()
             }
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
             return protoUserScript
         }
         let explicit = Dictionary(uniqueKeysWithValues: explicitEnabledStates.map { ($0.key.uuidString, $0.value) })
+        let knownIDs = Set(appData.userScripts.map(\.id))
+        let allowedInsertIDs = Set(incoming.map(\.id).filter { !knownIDs.contains($0) })
 
         _ = await updateDataImmediately { data in
             data.userScripts = UserScriptPersistence.merge(
                 persisted: data.userScripts,
                 incoming: incoming,
-                explicitEnabledStates: explicit
+                explicitEnabledStates: explicit,
+                allowedInsertIDs: allowedInsertIDs
             )
         }
     }
@@ -667,6 +670,8 @@ extension ProtobufDataManager {
             record.category = mapFilterListCategoryToProto(userScript.category)
             if let identity = UserScriptImportIdentity.normalized(userScript.localImportIdentity) {
                 record.localImportIdentity = identity
+            } else {
+                record.clearLocalImportIdentity()
             }
             record.lastUpdated = Int64(Date().timeIntervalSince1970)
             return record
@@ -693,7 +698,7 @@ extension ProtobufDataManager {
         guard didChange else { return false }
 
         appData = updatedData
-        await saveData()
+        saveData()
         return true
     }
 
@@ -708,14 +713,14 @@ extension ProtobufDataManager {
         guard !updatedData.settings.excludedDefaultUserscriptUrls.contains(url) else { return }
         updatedData.settings.excludedDefaultUserscriptUrls.append(url)
         appData = updatedData
-        Task { await saveData() }
+        Task { saveData() }
     }
 
     public func removeExcludedDefaultUserScriptURL(_ url: String) {
         var updatedData = appData
         updatedData.settings.excludedDefaultUserscriptUrls.removeAll { $0 == url }
         appData = updatedData
-        Task { await saveData() }
+        Task { saveData() }
     }
 
     // MARK: - UserScript UI State
@@ -728,7 +733,7 @@ extension ProtobufDataManager {
         var updatedData = appData
         updatedData.settings.userscriptShowEnabledOnly = value
         appData = updatedData
-        Task { await saveData() }
+        Task { saveData() }
     }
 }
 

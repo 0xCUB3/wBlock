@@ -652,18 +652,20 @@ struct UserScriptManagerView: View {
                 }
 
                 if script.isDarkReader {
-                    Divider()
-                        .padding(.vertical, 2)
-                    Toggle("Follow System Appearance", isOn: Binding(
-                        get: { userScriptManager.darkReaderFollowsSystemAppearance },
-                        set: { userScriptManager.setDarkReaderFollowsSystemAppearance($0) }
-                    ))
+                    DisclosureGroup("Appearance") {
+                        Toggle("Follow System Appearance", isOn: Binding(
+                            get: { userScriptManager.darkReaderFollowsSystemAppearance },
+                            set: { userScriptManager.setDarkReaderFollowsSystemAppearance($0) }
+                        ))
+                        .font(.subheadline)
+                        .toggleStyle(.switch)
+                        Text("When off, Dark Reader keeps websites dark in Light Mode.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     .font(.subheadline)
-                    .toggleStyle(.switch)
-                    Text("When off, Dark Reader keeps websites dark in Light Mode.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 2)
                 }
             }
 
@@ -686,7 +688,7 @@ struct UserScriptManagerView: View {
 
                         Task {
                             guard let managedScript = userScriptManager.userScript(withId: script.id) else {
-                                await MainActor.run { downloadingScriptIDs.remove(script.id) }
+                                await MainActor.run { _ = downloadingScriptIDs.remove(script.id) }
                                 return
                             }
                             await ConcurrentLogManager.shared.debug(
@@ -753,7 +755,7 @@ struct UserScriptManagerView: View {
                 Button(role: .destructive) {
                     Task {
                         await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Removing userscript"), metadata: ["script": script.name])
-                        userScriptManager.removeUserScript(managedScript)
+                        await userScriptManager.removeUserScript(managedScript)
                         refreshScripts()
                     }
                 } label: {
@@ -1953,7 +1955,7 @@ struct AddUserScriptView: View {
         Form {
             Section {
                 fileSelectionButton
-                if let stagedFile {
+                if stagedFile != nil {
                     TextField("Name", text: $stagedName)
                         .textInputAutocapitalization(.words)
                         .autocorrectionDisabled()

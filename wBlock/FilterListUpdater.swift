@@ -177,13 +177,16 @@ final class FilterListUpdater: @unchecked Sendable {
             validatorsMap[filter.id] = await storedValidators(for: filter)
         }
 
+        // Freeze the preflight map before capturing it in concurrent child tasks.
+        let validatorsByID = validatorsMap
+
         // Collect validator updates to apply after the group completes
         // (writing to ProtobufDataManager requires MainActor).
         let pendingValidatorUpdates = PendingValidatorUpdates()
         // Keep preflight update checks bounded so Apply Changes doesn't burst
         // one URLSession task per selected filter on iOS.
         let filtersWithUpdates = await boundedConcurrentCompactMap(eligibleFilters) { filter in
-            let validators = validatorsMap[filter.id] ?? (nil, nil)
+            let validators = validatorsByID[filter.id] ?? (nil, nil)
             let hasUpdate = await self.hasUpdateNoMainActor(
                 for: filter,
                 validators: validators,
@@ -270,6 +273,8 @@ final class FilterListUpdater: @unchecked Sendable {
                 return false
             case .unexpectedStatus:
                 throw URLError(.badServerResponse)
+            @unknown default:
+                throw URLError(.badServerResponse)
             }
         } catch {
             await ConcurrentLogManager.shared.debug(
@@ -329,6 +334,8 @@ final class FilterListUpdater: @unchecked Sendable {
         case .notModified, .unchangedContent, .invalidContent:
             return false
         case .unexpectedStatus:
+            throw URLError(.badServerResponse)
+        @unknown default:
             throw URLError(.badServerResponse)
         }
     }

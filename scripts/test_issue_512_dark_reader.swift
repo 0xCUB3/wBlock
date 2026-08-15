@@ -30,15 +30,17 @@ guard manager.contains("isEnabledByDefault: false") && manager.contains("isBeta:
 guard manager.contains("legacyBundledURLsByCanonical") && manager.contains("migrateLegacyBundledUserScriptsIfNeeded") else { fail("legacy migration missing") }
 guard manager.contains("updatesAutomatically = true") else { fail("legacy scripts must become auto-updating") }
 guard manager.contains("mergedDisabledHosts.formUnion")
-    && manager.contains("isEnabled || duplicate.isEnabled")
+    && manager.contains("if !canonicalWasConfigured")
+    && manager.contains("$0.url?.absoluteString == legacyURL && $0.isEnabled")
     && manager.contains("removeUserScriptFile(duplicate)")
-else { fail("duplicate migration must preserve enablement, per-site state, and cached files") }
+else { fail("duplicate migration must preserve explicit enablement, per-site state, and cached files") }
 guard cloud.contains("legacyBundledURLs") && cloud.contains("bundled.wblock.invalid") else { fail("cloud aliases missing") }
-guard handler.contains("documentStartCacheAllowed = false")
-    && handler.contains("\"cacheCategory\": \"mutable\"")
-    && handler.contains("allowed: false")
+guard !handler.contains("getDocumentStartUserScriptCatalog")
+    && !handler.contains("documentStartCacheAllowed")
+    && !handler.contains("cacheCategory")
+    && !handler.contains("cacheRevision")
     && !manager.contains("enabledDocumentStartUserScriptsForCache")
-else { fail("privileged bundled catalog or mutable descriptor contract missing") }
+else { fail("unreachable document-start catalog/cache contract remains") }
 guard !manager.contains("bundledContent") && !manager.contains("BundledUserScriptSources") && !handler.contains("BundledUserScriptSources") else { fail("embedded source symbols remain") }
 guard preference.contains("darkReaderFollowsSystemAppearance")
     && preference.contains("else { return true }")
@@ -48,10 +50,11 @@ guard manager.contains("@Published public private(set) var darkReaderFollowsSyst
     && manager.contains("setDarkReaderFollowsSystemAppearance")
     && manager.contains("invalidateDocumentStartExecutionCache")
 else { fail("Dark Reader preference is not observable or cache-safe") }
-guard view.contains("Follow System Appearance")
+guard view.contains("DisclosureGroup(\"Appearance\")")
+    && view.contains("Follow System Appearance")
     && view.contains("When off, Dark Reader keeps websites dark in Light Mode.")
     && view.contains("if script.isDarkReader")
-else { fail("Dark Reader appearance setting is not visible in its list row") }
+else { fail("Dark Reader appearance setting must be collapsed in its list-row disclosure") }
 guard handler.contains("configuredExecutableContent(for: script)")
     && handler.contains("dark-reader-\\(mode)")
     && handler.contains("DarkReaderAppearancePreference.followsSystemAppearance()")

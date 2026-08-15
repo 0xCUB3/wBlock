@@ -22,6 +22,9 @@ import os.log
 public enum WebExtensionRequestHandler {
     private static let sharedWebExtensionLogFilename = "web_extension.log"
     private static let userScriptPayloadDataCache = UserScriptPayloadDataCache()
+    private static let maximumGMXHRResponseBytes = 25 * 1024 * 1024
+    private static let maximumGMXHRRequestBodyBytes = 2 * 1024 * 1024
+    private static let maximumGMXHRHeaders = 128
 
     // Reused for shared-log timestamps. Requests can be handled on concurrent
     // threads, so formatting is serialized behind a lock.
@@ -113,9 +116,6 @@ public enum WebExtensionRequestHandler {
             case "getUserScripts":
                 handleGetUserScriptsRequest(message: message!, context: context)
                 return
-            case "getDocumentStartUserScriptCatalog":
-                handleGetDocumentStartUserScriptCatalogRequest(context: context)
-                return
             case "getUserScriptContentChunk":
                 handleUserScriptChunkRequest(message: message!, context: context, kind: .content)
                 return
@@ -124,6 +124,9 @@ public enum WebExtensionRequestHandler {
                 return
             case "getUserScriptResourceChunk":
                 handleUserScriptChunkRequest(message: message!, context: context, kind: .resource)
+                return
+            case "validateUserScriptExecution":
+                handleValidateUserScriptExecution(message: message!, context: context)
                 return
             case "setUserScriptStorageValue":
                 handleSetUserScriptStorageValue(message: message!, context: context)
@@ -814,13 +817,13 @@ public enum WebExtensionRequestHandler {
     ) {
         // While the userscript component is paused, serve no userscripts or userstyles.
         if BlockingPauseStore.isPaused(.userScripts) {
-            let response = createResponse(with: userScriptsResponse(userScripts: [], cacheAllowed: false))
+            let response = createResponse(with: userScriptsResponse(userScripts: []))
             context.completeRequest(returningItems: [response])
             return
         }
 
         guard let urlString = message["url"] as? String else {
-            let response = createResponse(with: userScriptsResponse(userScripts: [], cacheAllowed: false))
+            let response = createResponse(with: userScriptsResponse(userScripts: []))
             context.completeRequest(returningItems: [response])
             return
         }
@@ -831,7 +834,7 @@ public enum WebExtensionRequestHandler {
             let disabledSites = await currentDisabledSites()
             if let url = URL(string: urlString) {
                 if HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites) {
-                    let response = createResponse(with: userScriptsResponse(userScripts: [], cacheAllowed: false))
+                    let response = createResponse(with: userScriptsResponse(userScripts: []))
                     context.completeRequest(returningItems: [response])
                     return
                 }
@@ -894,6 +897,7 @@ public enum WebExtensionRequestHandler {
                             remainingInlineBudget -= cssBytes
                         }
                     }
+                    descriptor["payloadRevision"] = payloadMutationRevision
                     descriptorsByIndex[index] = descriptor
                     continue
                 }
@@ -923,6 +927,7 @@ public enum WebExtensionRequestHandler {
                     }
                 }
 
+                descriptor["payloadRevision"] = payloadMutationRevision
                 descriptorsByIndex[index] = descriptor
             }
 
@@ -942,7 +947,6 @@ public enum WebExtensionRequestHandler {
                 } else {
                     let response = createResponse(with: userScriptsResponse(
                         userScripts: [],
-                        cacheAllowed: false,
                         error: "userscript-state-changed"
                     ))
                     context.completeRequest(returningItems: [response])
@@ -951,8 +955,7 @@ public enum WebExtensionRequestHandler {
             }
 
             let response = createResponse(with: userScriptsResponse(
-                userScripts: userScriptDescriptors,
-                cacheAllowed: documentStartCacheAllowed
+                userScripts: userScriptDescriptors
             ))
             context.completeRequest(returningItems: [response])
         }
@@ -960,40 +963,13 @@ public enum WebExtensionRequestHandler {
 
     private static func userScriptsResponse(
         userScripts: [[String: Any]],
-        cacheAllowed: Bool,
         error: String? = nil
     ) -> [String: Any?] {
-        var response: [String: Any?] = [
-            "userScripts": userScripts,
-            "documentStartCacheAllowed": cacheAllowed,
-            "cacheRevision": ""
-        ]
+        var response: [String: Any?] = ["userScripts": userScripts]
         if let error {
             response["error"] = error
         }
         return response
-    }
-
-    private static func handleGetDocumentStartUserScriptCatalogRequest(context: NSExtensionContext) {
-        let response = createResponse(with: documentStartCacheResponse(
-            userScripts: [],
-            disabledHosts: [],
-            allowed: false
-        ))
-        context.completeRequest(returningItems: [response])
-    }
-
-    private static func documentStartCacheResponse(
-        userScripts: [[String: Any]],
-        disabledHosts: [String],
-        allowed: Bool
-    ) -> [String: Any?] {
-        [
-            "userScripts": userScripts,
-            "disabledHosts": disabledHosts,
-            "documentStartCacheAllowed": allowed,
-            "cacheRevision": ""
-        ]
     }
 
     private static func configuredExecutableContent(for script: UserScript) -> String {
@@ -1017,7 +993,7 @@ public enum WebExtensionRequestHandler {
         let injectInto = script.injectInto == "auto" && hasUnsafeWindowGrant
             ? "page" : script.injectInto
 
-        var descriptor: [String: Any] = [
+        let descriptor: [String: Any] = [
             "id": script.id.uuidString,
             "name": script.name,
             "namespace": UserScriptMetadataParser.extractValue(
@@ -1040,9 +1016,7 @@ public enum WebExtensionRequestHandler {
             "excludes": script.excludes,
             "updateURL": script.updateURL ?? "",
             "downloadURL": script.downloadURL ?? "",
-            "resourceNames": resourceNames,
-            "cacheCategory": "mutable",
-            "cacheRevision": ""
+            "resourceNames": resourceNames
         ]
         return descriptor
     }
@@ -1057,10 +1031,6 @@ public enum WebExtensionRequestHandler {
     /// native-messaging response.
     private static let totalInlineResponseBudget = 16 * 1024 * 1024
 
-    // SFSafariApplication can dispatch the invalidation message only on macOS.
-    // iOS therefore uses the fresh inline getUserScripts response and never
-    // enables either speculative cache.
-    private static let documentStartCacheAllowed = false
 
     private static func handleGetPageUserScriptsRequest(message: [String: Any?], context: NSExtensionContext) {
         // Mirrors the pause check above so the page‑level userscript listing also reports none.
@@ -1142,7 +1112,17 @@ public enum WebExtensionRequestHandler {
             return
         }
 
-        Task {
+        Task { @MainActor in
+            let manager = UserScriptManager.shared
+            await manager.refreshFromDiskForExecution()
+            guard let scriptUUID = UUID(uuidString: scriptID),
+                  let script = manager.userScript(withId: scriptUUID),
+                  script.isEnabled,
+                  script.usesGMStorage else {
+                let response = createResponse(with: ["ok": false, "error": "Userscript storage is not authorized"])
+                context.completeRequest(returningItems: [response])
+                return
+            }
             let result = await UserScriptStorageManager.shared.setSerializedValue(rawValue, forKey: key, scriptID: scriptID)
             let response = createResponse(with: result.ok
                 ? ["ok": true]
@@ -1160,7 +1140,17 @@ public enum WebExtensionRequestHandler {
             return
         }
 
-        Task {
+        Task { @MainActor in
+            let manager = UserScriptManager.shared
+            await manager.refreshFromDiskForExecution()
+            guard let scriptUUID = UUID(uuidString: scriptID),
+                  let script = manager.userScript(withId: scriptUUID),
+                  script.isEnabled,
+                  script.usesGMStorage else {
+                let response = createResponse(with: ["ok": false, "error": "Userscript storage is not authorized"])
+                context.completeRequest(returningItems: [response])
+                return
+            }
             let result = await UserScriptStorageManager.shared.deleteValue(forKey: key, scriptID: scriptID)
             let response = createResponse(with: result.ok
                 ? ["ok": true]
@@ -1181,10 +1171,21 @@ public enum WebExtensionRequestHandler {
         let method = ((message["method"] as? String) ?? "GET")
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .uppercased()
-        let headers = (message["headers"] as? [String: Any])?.reduce(into: [String: String]()) { partial, entry in
+        let rawHeaders = message["headers"] as? [String: Any] ?? [:]
+        guard rawHeaders.count <= maximumGMXHRHeaders else {
+            let response = createResponse(with: ["error": "Too many request headers"])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+        let headers = rawHeaders.reduce(into: [String: String]()) { partial, entry in
             partial[entry.key] = String(describing: entry.value)
-        } ?? [:]
+        }
         let body = message["body"] as? String
+        guard body?.utf8.count ?? 0 <= maximumGMXHRRequestBodyBytes else {
+            let response = createResponse(with: ["error": "Request body is too large"])
+            context.completeRequest(returningItems: [response])
+            return
+        }
         let anonymous = message["anonymous"] as? Bool ?? false
         let responseType = ((message["responseType"] as? String) ?? "text")
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1234,9 +1235,24 @@ public enum WebExtensionRequestHandler {
         }
 
         do {
-            let (data, response) = try await session.data(for: request)
+            let (bytes, response) = try await session.bytes(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
                 return ["error": "Invalid HTTP response"]
+            }
+            let expectedLength = httpResponse.expectedContentLength
+            if expectedLength > Int64(maximumGMXHRResponseBytes) {
+                return ["error": "GM_xmlhttpRequest response is too large"]
+            }
+            var data = Data()
+            data.reserveCapacity(min(
+                maximumGMXHRResponseBytes,
+                expectedLength > 0 ? Int(expectedLength) : 64 * 1024
+            ))
+            for try await byte in bytes {
+                if data.count >= maximumGMXHRResponseBytes {
+                    return ["error": "GM_xmlhttpRequest response is too large"]
+                }
+                data.append(byte)
             }
 
             let responseHeaders = httpResponse.allHeaderFields
@@ -1248,7 +1264,6 @@ public enum WebExtensionRequestHandler {
             let isBinaryResponse = nativeGMXmlhttpResponseIsBinary(responseType)
             let responseText = isBinaryResponse ? "" : decodeNativeGMXmlhttpResponseText(data, overrideMimeType: overrideMimeType, response: httpResponse)
             let responseLength = data.count
-            let expectedLength = httpResponse.expectedContentLength
             let responseTotal = expectedLength > 0 ? expectedLength : Int64(responseLength)
 
             return [
@@ -1411,6 +1426,47 @@ public enum WebExtensionRequestHandler {
         }
     }
 
+    private static func handleValidateUserScriptExecution(
+        message: [String: Any?],
+        context: NSExtensionContext
+    ) {
+        guard let scriptIDString = message["scriptId"] as? String,
+              let scriptID = UUID(uuidString: scriptIDString),
+              let pageURL = message["url"] as? String,
+              let requestedRevision = message["payloadRevision"] as? Int,
+              requestedRevision >= 0
+        else {
+            context.completeRequest(returningItems: [createResponse(with: [
+                "ok": false, "error": "Missing execution validation payload"
+            ])])
+            return
+        }
+
+        Task { @MainActor in
+            guard !BlockingPauseStore.isPaused(.userScripts) else {
+                context.completeRequest(returningItems: [createResponse(with: ["ok": false])])
+                return
+            }
+            let manager = UserScriptManager.shared
+            await manager.refreshFromDiskForExecution()
+            guard UInt64(requestedRevision) == manager.payloadMutationRevision,
+                  let script = manager.userScript(withId: scriptID),
+                  script.isEnabled,
+                  script.matches(url: pageURL),
+                  script.id.uuidString == scriptID.uuidString
+            else {
+                context.completeRequest(returningItems: [createResponse(with: [
+                    "ok": false, "error": "userscript-state-changed",
+                    "payloadRevision": manager.payloadMutationRevision
+                ])])
+                return
+            }
+            context.completeRequest(returningItems: [createResponse(with: [
+                "ok": true, "payloadRevision": manager.payloadMutationRevision
+            ])])
+        }
+    }
+
     private static func handleUserScriptChunkRequest(
         message: [String: Any?],
         context: NSExtensionContext,
@@ -1423,9 +1479,10 @@ public enum WebExtensionRequestHandler {
         }
 
         let chunkIndex = message["chunkIndex"] as? Int ?? 0
-        let chunkSize = message["chunkSize"] as? Int ?? 512 * 1024
+        let requestedChunkSize = message["chunkSize"] as? Int ?? 512 * 1024
+        let chunkSize = min(requestedChunkSize, 512 * 1024)
 
-        if chunkIndex < 0 || chunkSize <= 0 {
+        if chunkIndex < 0 || requestedChunkSize <= 0 || requestedChunkSize > 512 * 1024 {
             let response = createResponse(with: ["error": "Invalid chunkIndex/chunkSize"])
             context.completeRequest(returningItems: [response])
             return
@@ -1451,9 +1508,23 @@ public enum WebExtensionRequestHandler {
                 return
             }
             let manager = UserScriptManager.shared
-            await manager.waitUntilReady()
-            guard let script = manager.userScript(withId: scriptId) else {
-                let response = createResponse(with: ["error": "Userscript not found"])
+            await manager.refreshFromDiskForExecution()
+            guard let requestedRevision = message["payloadRevision"] as? Int,
+                  requestedRevision >= 0,
+                  UInt64(requestedRevision) == manager.payloadMutationRevision else {
+                let response = createResponse(with: [
+                    "error": "userscript-state-changed",
+                    "payloadRevision": manager.payloadMutationRevision
+                ])
+                context.completeRequest(returningItems: [response])
+                return
+            }
+            let payloadRevision = UInt64(requestedRevision)
+            guard let pageURL = message["url"] as? String, !pageURL.isEmpty,
+                  let script = manager.userScript(withId: scriptId),
+                  script.isEnabled,
+                  script.matches(url: pageURL) else {
+                let response = createResponse(with: ["error": "Userscript is no longer enabled for this page"])
                 context.completeRequest(returningItems: [response])
                 return
             }
@@ -1508,21 +1579,35 @@ public enum WebExtensionRequestHandler {
                 context.completeRequest(returningItems: [response])
                 return
             }
-            let totalChunks = Int(ceil(Double(data.count) / Double(chunkSize)))
-            guard totalChunks > 0, chunkIndex < totalChunks else {
-                let response = createResponse(with: ["error": "chunkIndex out of range", "totalChunks": totalChunks])
+            guard payloadRevision == manager.payloadMutationRevision else {
+                let response = createResponse(with: ["error": "userscript-state-changed", "payloadRevision": manager.payloadMutationRevision])
+                context.completeRequest(returningItems: [response])
+                return
+            }
+            let fullChunks = data.count / chunkSize
+            let remainderChunk = data.count % chunkSize == 0 ? 0 : 1
+            let (totalChunks, totalOverflow) = fullChunks.addingReportingOverflow(remainderChunk)
+            guard !totalOverflow, totalChunks > 0, chunkIndex < totalChunks else {
+                let response = createResponse(with: ["error": "chunkIndex out of range", "totalChunks": totalOverflow ? 0 : totalChunks])
                 context.completeRequest(returningItems: [response])
                 return
             }
 
-            let start = chunkIndex * chunkSize
-            let end = min(start + chunkSize, data.count)
+            let (start, startOverflow) = chunkIndex.multipliedReportingOverflow(by: chunkSize)
+            let (proposedEnd, endOverflow) = start.addingReportingOverflow(chunkSize)
+            guard !startOverflow, start < data.count else {
+                let response = createResponse(with: ["error": "chunkIndex out of range", "totalChunks": totalChunks])
+                context.completeRequest(returningItems: [response])
+                return
+            }
+            let end = endOverflow ? data.count : min(proposedEnd, data.count)
             let chunkData = data.subdata(in: start..<end)
 
             var responsePayload: [String: Any] = [
                 "scriptId": scriptId.uuidString,
                 "chunkIndex": chunkIndex,
                 "totalChunks": totalChunks,
+                "payloadRevision": payloadRevision,
                 "chunk": chunkData.base64EncodedString()
             ]
             if let resourceName {

@@ -58,7 +58,7 @@ require(autoUpdate.contains("return rebasedFilters"), "source-count hydration mu
 
 require(cloud.contains("selectionMutationRevision"), "cloud filter apply needs a local selection revision")
 require(cloud.contains("stableLocalPayloadAndMutationBaseline"), "two-way sync must pair its local payload with a stable mutation baseline")
-require(cloud.contains("let localMutationBaseline = localMutationRevisionSnapshot()"), "direct remote fetch must capture local mutations before network suspension")
+require(cloud.contains("let stableLocal = await stableLocalPayloadAndMutationBaseline()"), "direct remote fetch must capture a stable payload and mutation baseline before network suspension")
 require(cloud.contains("localMutationBaseline: LocalMutationRevisionSnapshot"), "remote apply must receive the pre-fetch conflict baseline")
 require(cloud.contains("localMutationRevisionAtStart"), "cloud userscript apply needs a local mutation revision")
 require(cloud.contains("origin: .remoteSync"), "remote userscript writes must not count as local intent")

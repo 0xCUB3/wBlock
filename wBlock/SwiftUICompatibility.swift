@@ -13,8 +13,12 @@ struct CompatibleNavigationStack<Content: View>: View {
 
     var body: some View {
         #if os(macOS)
-        if #unavailable(macOS 26.0), !requiresNavigationView {
-            content()
+        if !requiresNavigationView {
+            if #unavailable(macOS 26.0) {
+                content()
+            } else {
+                NavigationStack(root: content)
+            }
         } else if #available(macOS 13.0, *) {
             NavigationStack(root: content)
         } else {

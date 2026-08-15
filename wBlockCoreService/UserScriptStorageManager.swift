@@ -14,6 +14,11 @@ actor UserScriptStorageManager {
     private let decoder = JSONDecoder()
     private let storageFileName = "userscript_gm_storage.json"
     private let versionFileName = "userscript_gm_storage.version"
+    private let maximumKeyBytes = 4096
+    private let maximumValueBytes = 1024 * 1024
+    private let maximumKeysPerScript = 1024
+    private let maximumStorageBytesPerScript = 5 * 1024 * 1024
+    private let maximumStorageFileBytes = 25 * 1024 * 1024
 
     private var cachedStorage: [String: [String: String]] = [:]
     private var lastLoadedModificationDate: Date?
@@ -30,15 +35,32 @@ actor UserScriptStorageManager {
     }
 
     func setSerializedValue(_ rawValue: String, forKey key: String, scriptID: String) async -> (ok: Bool, error: String?) {
-        guard !scriptID.isEmpty, !key.isEmpty else {
-            return (false, "Missing userscript storage key")
+        guard UUID(uuidString: scriptID) != nil else {
+            return (false, "Invalid userscript ID")
+        }
+        guard !key.isEmpty else { return (false, "Userscript storage key is empty") }
+        guard key.utf8.count <= maximumKeyBytes else {
+            return (false, "Userscript storage key is too large")
+        }
+        guard rawValue.utf8.count <= maximumValueBytes else {
+            return (false, "Userscript storage value is too large")
         }
 
         do {
             try mutateStorageAtomically { storage in
                 var values = storage[scriptID] ?? [:]
                 values[key] = rawValue
+                guard values.count <= maximumKeysPerScript else {
+                    throw storageLimitError("Userscript storage has too many keys")
+                }
+                let perScriptBytes = try encodedByteCount(values)
+                guard perScriptBytes <= maximumStorageBytesPerScript else {
+                    throw storageLimitError("Userscript storage for this script is too large")
+                }
                 storage[scriptID] = values
+                guard try encodedByteCount(storage) <= maximumStorageFileBytes else {
+                    throw storageLimitError("Total userscript storage is too large")
+                }
             }
             return (true, nil)
         } catch {
@@ -47,8 +69,12 @@ actor UserScriptStorageManager {
     }
 
     func deleteValue(forKey key: String, scriptID: String) async -> (ok: Bool, error: String?) {
-        guard !scriptID.isEmpty, !key.isEmpty else {
-            return (false, "Missing userscript storage key")
+        guard UUID(uuidString: scriptID) != nil else {
+            return (false, "Invalid userscript ID")
+        }
+        guard !key.isEmpty else { return (false, "Userscript storage key is empty") }
+        guard key.utf8.count <= maximumKeyBytes else {
+            return (false, "Userscript storage key is too large")
         }
 
         do {
@@ -204,6 +230,9 @@ actor UserScriptStorageManager {
 
         do {
             let rawData = try Data(contentsOf: storageFileURL)
+            guard rawData.count <= maximumStorageFileBytes else {
+                throw NSError(domain: "UserScriptStorageManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "Userscript storage is too large"])
+            }
             let decoded = try decodeStorage(from: rawData)
             let didChange = decoded != cachedStorage
             cachedStorage = decoded
@@ -218,13 +247,30 @@ actor UserScriptStorageManager {
         }
     }
 
-    private func mutateStorageAtomically(_ mutate: (inout [String: [String: String]]) -> Void) throws {
+    private func storageLimitError(_ message: String) -> NSError {
+        NSError(domain: "UserScriptStorageManager", code: 2, userInfo: [NSLocalizedDescriptionKey: message])
+    }
+
+    private func encodedByteCount<T: Encodable>(_ value: T) throws -> Int {
+        try encoder.encode(value).count
+    }
+
+    private func mutateStorageAtomically(_ mutate: (inout [String: [String: String]]) throws -> Void) throws {
         try withExclusiveFileLock(for: storageFileURL) {
             let persistedRawData = try? Data(contentsOf: storageFileURL)
+            if let persistedRawData, persistedRawData.count > maximumStorageFileBytes {
+                throw storageLimitError("Total userscript storage is too large")
+            }
             var storage = try decodeStorage(from: persistedRawData)
-            mutate(&storage)
+            guard try encodedByteCount(storage) <= maximumStorageFileBytes else {
+                throw storageLimitError("Total userscript storage is too large")
+            }
+            try mutate(&storage)
 
             let updatedRawData = try encoder.encode(storage)
+            guard updatedRawData.count <= maximumStorageFileBytes else {
+                throw storageLimitError("Total userscript storage is too large")
+            }
             let currentVersion = dataVersion(for: versionFileURL)
 
             if persistedRawData == updatedRawData {

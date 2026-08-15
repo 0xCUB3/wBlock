@@ -228,17 +228,29 @@ public enum ContentBlockerIncrementalCache {
         try? FileManager.default.removeItem(at: url)
     }
 
-    public static func hasBaseRulesCache(
+    /// A cache hit is valid only when every artifact needed to reproduce the
+    /// target exists. In particular, a missing advanced sidecar must force a
+    /// conversion rather than silently dropping advanced rules.
+    public static func hasCoherentBaseRulesCache(
         targetRulesFilename: String,
         groupIdentifier: String
     ) -> Bool {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
-        ) else {
-            return false
-        }
+        ) else { return false }
+
         let baseURL = containerURL.appendingPathComponent(baseRulesFilename(for: targetRulesFilename))
-        return FileManager.default.fileExists(atPath: baseURL.path)
+        let countURL = containerURL.appendingPathComponent("\(baseURL.lastPathComponent).count")
+        let advancedURL = containerURL.appendingPathComponent(baseAdvancedRulesFilename(for: targetRulesFilename))
+        guard let data = try? Data(contentsOf: baseURL),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+              let countText = try? String(contentsOf: countURL, encoding: .utf8),
+              let count = Int(countText.trimmingCharacters(in: .whitespacesAndNewlines)),
+              count == json.count,
+              FileManager.default.fileExists(atPath: advancedURL.path),
+              (try? String(contentsOf: advancedURL, encoding: .utf8)) != nil
+        else { return false }
+        return true
     }
 
     public static func loadCachedAdvancedRules(
@@ -299,7 +311,20 @@ public enum ContentBlockerIncrementalCache {
         if filter.isCustom {
             return "custom-\(filter.id.uuidString).txt"
         }
+        guard isSafeFilenameComponent(filter.name) else {
+            // Restored/corrupt non-custom metadata must not turn into a path.
+            return "filter-\(filter.id.uuidString).txt"
+        }
         return "\(filter.name).txt"
+    }
+
+    private static func isSafeFilenameComponent(_ name: String) -> Bool {
+        !name.isEmpty
+            && name != "."
+            && name != ".."
+            && !name.contains("/")
+            && !name.contains("\\")
+            && !name.contains("\0")
     }
 
     /// Resolves the current ID-based cache first, then a safe legacy name-based

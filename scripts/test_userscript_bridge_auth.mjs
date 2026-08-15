@@ -50,6 +50,7 @@ const fakeScript = {
   injectInto: "page",
   runAt: "document-start",
   isEnabled: true,
+  payloadRevision: 0,
   cacheCategory: "bundled",
   cacheRevision,
 };

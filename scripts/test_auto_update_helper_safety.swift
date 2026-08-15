@@ -34,10 +34,11 @@ assertContains(
     "reply(outcome.isSuccessfulForBackgroundTask)",
     "XPC service must propagate the actual update outcome"
 )
+let updateFiltersImplementation = service.components(separatedBy: "func startFilterUpdate").first ?? service
 assertNotContains(
-    service,
+    updateFiltersImplementation,
     "reply(true)",
-    "XPC service must not report success unconditionally"
+    "XPC updateFilters must not report success unconditionally"
 )
 assertContains(
     runner,

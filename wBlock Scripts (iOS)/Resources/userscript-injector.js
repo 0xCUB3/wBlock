@@ -614,8 +614,12 @@ if (window.wBlockUserscriptInjectorHasRun) {
             if (first && first.error) throw new Error(first.error);
 
             const totalChunks = (first && typeof first.totalChunks === 'number') ? first.totalChunks : 1;
-            if (!Number.isInteger(totalChunks) || totalChunks < 1) {
+            if (!Number.isInteger(totalChunks) || totalChunks < 1 || totalChunks > 256) {
                 throw new Error('Invalid userscript chunk response');
+            }
+            const payloadRevision = first && first.payloadRevision;
+            if (!Number.isSafeInteger(payloadRevision) || payloadRevision < 0) {
+                throw new Error('Missing userscript payload revision');
             }
 
             const chunks = new Array(totalChunks);
@@ -635,7 +639,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 for (;;) {
                     const i = nextChunkIndex++;
                     if (i >= totalChunks) return;
-                    const resp = await this.sendNativeRequest(action, { ...params, chunkIndex: i, chunkSize });
+                    const resp = await this.sendNativeRequest(action, { ...params, chunkIndex: i, chunkSize, payloadRevision });
                     if (resp && resp.error) throw new Error(resp.error);
                     if (!resp || typeof resp.chunk !== 'string') {
                         throw new Error('Missing userscript chunk data');
@@ -672,12 +676,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
             }
 
             const payloadPromise = (async () => {
-                const chunkParams = { scriptId: script.id };
-                if (script.kind === 'style') {
-                    // Style chunks are computed per page URL on the native side
-                    // (effective CSS = global + matching @-moz-document sections).
-                    chunkParams.url = window.location.href;
-                }
+                const chunkParams = {
+                    scriptId: script.id,
+                    payloadRevision: script.payloadRevision
+                };
+                // Native validates the page URL and revision for the first request.
+                // Repeat the URL on every request so a chunk cannot cross pages.
+                chunkParams.url = window.location.href;
                 const content = await this.fetchTextFromChunks('getUserScriptContentChunk', chunkParams);
                 const resourceNames = Array.isArray(script.resourceNames) ? script.resourceNames : [];
                 const resources = {};
@@ -729,7 +734,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             }
         }
 
-        retryPendingScripts() {
+        async retryPendingScripts() {
             if (this.pendingScripts.length === 0) {
                 wBlockLog('[wBlock] No pending scripts to retry.');
                 return;
@@ -738,9 +743,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
             wBlockLog(`[wBlock] Retrying ${this.pendingScripts.length} pending scripts...`);
             const scriptsToRetry = [...this.pendingScripts];
             this.pendingScripts = [];
-            
             for (const script of scriptsToRetry) {
-                this.injectSingleScript(script);
+                await this.injectUserScript(script);
             }
         }
         scriptMatchesCurrentURL(script) {
@@ -1077,14 +1081,21 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     });
                 });
 
-            orderedScripts.forEach(script => this.injectUserScript(script, generation));
+            // Await each script: payload hydration and execution must preserve native order.
+            const runInOrder = async () => {
+                for (const script of orderedScripts) {
+                    if (generation !== this.documentStartRequestGeneration) return;
+                    await this.injectUserScript(script, generation);
+                }
+            };
+            runInOrder().catch(error => wBlockWarn('[wBlock] Ordered userscript injection failed:', error));
         }
 
         scriptExecutionKey(script) {
             return script && script.id ? String(script.id) : String(script && script.name || '');
         }
 
-        injectUserScript(script, generation = this.documentStartRequestGeneration) {
+        async injectUserScript(script, generation = this.documentStartRequestGeneration) {
             if (generation !== this.documentStartRequestGeneration) return;
             if (!script || !script.name) {
                 wBlockWarn('[wBlock] Attempted to inject invalid script object:', script);
@@ -1102,7 +1113,23 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 return;
             }
 
-            this.injectSingleScript(script, generation);
+            await this.injectSingleScriptAsync(script, generation);
+        }
+
+        async validateScriptForExecution(script) {
+            if (!script || !script.id || !Number.isSafeInteger(script.payloadRevision) || script.payloadRevision < 0) {
+                return false;
+            }
+            const result = await this.sendNativeRequest('validateUserScriptExecution', {
+                scriptId: script.id,
+                url: window.location.href,
+                payloadRevision: script.payloadRevision
+            });
+            if (!result || result.ok !== true) {
+                if (result && result.error) wBlockLog(`[wBlock] Native execution validation rejected ${script.name}: ${result.error}`);
+                return false;
+            }
+            return true;
         }
 
         injectSingleScript(script, generation = this.documentStartRequestGeneration) {
@@ -1133,6 +1160,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     if (css.length > 0) {
                         await this.waitForDocumentRoot();
                         if (generation !== this.documentStartRequestGeneration) return;
+                        if (!await this.validateScriptForExecution(fullStyle)) return;
                         this.injectStyleElement(fullStyle, css);
                         if (generation === this.documentStartRequestGeneration) {
                             this.injectedScripts.add(executionKey);
@@ -1219,6 +1247,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 }
 
                 if (generation !== this.documentStartRequestGeneration) return;
+                // Revalidate immediately before execution: another process may have
+                // disabled, removed, or replaced this descriptor during hydration.
+                if (!await this.validateScriptForExecution(fullScript)) return;
                 if (injectInto === 'content') {
                     // Execute directly in content script context (CSP-safe)
                     this.injectInContentContext(fullScript);

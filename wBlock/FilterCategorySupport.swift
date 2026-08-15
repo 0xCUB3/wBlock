@@ -26,6 +26,8 @@ enum FilterCategorySupport {
             "Organizes userscripts and userstyles added to wBlock."
         case .all:
             "Shows all filter lists across every category."
+        @unknown default:
+            "Shows all filter lists across every category."
         }
     }
 

@@ -21,7 +21,7 @@ expect(backup.contains("category = userScript.category.rawValue"), "backup expor
 expect(cloud.contains("let category: String?"), "CloudSync category must be optional")
 expect(cloud.contains("category: script.category.rawValue"), "CloudSync payload must include category")
 expect(cloud.contains("if let category = local.category")
-    && cloud.contains("setUserScript(existing, category: resolvedCategory)"), "CloudSync apply must restore local category")
+    && cloud.contains("setUserScript(existing, category: resolvedCategory, origin: .remoteSync)"), "CloudSync apply must restore local category")
 expect(cloud.contains("remote.resolvedCategory"), "CloudSync apply must restore remote category")
 expect(cloud.contains("existing.content == local.content"), "CloudSync must compare content before skipping")
 expect(cloud.contains("setUserScript(existing, category:"), "CloudSync category changes must not be skipped")

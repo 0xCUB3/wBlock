@@ -14,7 +14,8 @@ enum UserScriptPersistence {
     static func merge(
         persisted: [Wblock_Data_UserScriptData],
         incoming: [Wblock_Data_UserScriptData],
-        explicitEnabledStates: [String: Bool] = [:]
+        explicitEnabledStates: [String: Bool] = [:],
+        allowedInsertIDs: Set<String>? = nil
     ) -> [Wblock_Data_UserScriptData] {
         var merged = persisted
         var indexByID = Dictionary(
@@ -34,6 +35,7 @@ enum UserScriptPersistence {
                 }
                 merged[index] = record
             } else {
+                guard allowedInsertIDs?.contains(incomingRecord.id) ?? true else { continue }
                 var record = incomingRecord
                 if let explicitEnabled = explicitEnabledStates[incomingRecord.id] {
                     record.isEnabled = explicitEnabled

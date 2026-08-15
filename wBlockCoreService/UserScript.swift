@@ -482,7 +482,12 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         }
 
         // Resolve the user's preferred language code for locale-aware metadata.
-        let preferredLang = Locale.current.languageCode?.lowercased() ?? "en"
+        let preferredLang: String
+        if #available(macOS 13.0, iOS 16.0, *) {
+            preferredLang = Locale.current.language.languageCode?.identifier.lowercased() ?? "en"
+        } else {
+            preferredLang = Locale.current.languageCode?.lowercased() ?? "en"
+        }
 
         var nameByLocale: [String: String] = [:]    // locale → name
         var descByLocale: [String: String] = [:]    // locale → description

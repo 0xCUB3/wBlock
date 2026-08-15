@@ -15,7 +15,7 @@ expect(
     "default downloads should snapshot stable userscript IDs"
 )
 expect(
-    source.contains("private func downloadUserScriptInBackground(for scriptID: UUID"),
+    source.contains("private func downloadUserScriptInBackground(\n        for scriptID: UUID"),
     "download helper should accept a stable userscript ID"
 )
 expect(

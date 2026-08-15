@@ -1030,13 +1030,15 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         if let cachedHash = try? String(contentsOf: baseHashURL, encoding: .utf8)
             .trimmingCharacters(in: .whitespacesAndNewlines),
             cachedHash == effectiveRulesHash,
-            FileManager.default.fileExists(atPath: baseURL.path),
+            ContentBlockerIncrementalCache.hasCoherentBaseRulesCache(
+                targetRulesFilename: targetRulesFilename,
+                groupIdentifier: groupIdentifier
+            ),
             let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8),
-            isValidContentBlockerJSON(baseJSON)
-        {
+            isValidContentBlockerJSON(baseJSON),
             let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
-                .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? countRulesInJSON(baseJSON)
-
+                .flatMap({ Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) })
+        {
             let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
             let output = try saveContentBlockerIfChanged(
                 jsonRules: finalJSON,
@@ -1111,7 +1113,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
 
         if let currentSignature,
            currentSignature == storedSignature,
-           ContentBlockerIncrementalCache.hasBaseRulesCache(
+           ContentBlockerIncrementalCache.hasCoherentBaseRulesCache(
                 targetRulesFilename: rulesFilename,
                 groupIdentifier: groupIdentifier
            ) {
@@ -1333,9 +1335,14 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         // Preferred path: use cached base JSON (no ignore rules) + cheap string injection.
         let baseURL = containerURL.appendingPathComponent(baseFilename)
         let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
-        if FileManager.default.fileExists(atPath: baseURL.path),
+        if ContentBlockerIncrementalCache.hasCoherentBaseRulesCache(
+            targetRulesFilename: targetRulesFilename,
+            groupIdentifier: groupIdentifier
+        ),
            let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8),
-           isValidContentBlockerJSON(baseJSON) {
+           isValidContentBlockerJSON(baseJSON),
+           let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
+                .flatMap({ Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }) {
             let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
             let output = try saveContentBlockerIfChanged(
                 jsonRules: finalJSON,
@@ -1343,92 +1350,24 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                 targetRulesFilename: targetRulesFilename
             )
 
-            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
-                .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? 0
+            let advancedURL = containerURL.appendingPathComponent(
+                ContentBlockerIncrementalCache.baseAdvancedRulesFilename(for: targetRulesFilename)
+            )
+            let advancedRulesText = try String(contentsOf: advancedURL, encoding: .utf8)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
             let finalRuleCount = baseCount + sitesToUse.count
 
             os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
             return (
                 safariRulesCount: finalRuleCount,
-                advancedRulesText: nil,
+                advancedRulesText: advancedRulesText.isEmpty ? nil : advancedRulesText,
                 outputChanged: output.outputChanged
             )
         }
 
-        // Fallback/migration: derive a base JSON by stripping legacy disabled-site ignore rules (only),
-        // then persist it for future fast updates.
-        let targetURL = containerURL.appendingPathComponent(targetRulesFilename)
-        let existingJSON = try String(contentsOf: targetURL, encoding: .utf8)
-        let derived = try deriveBaseRulesFromLegacyFinalJSON(existingJSON)
-
-        _ = try saveContentBlockerIfChanged(
-            jsonRules: derived.baseJSON,
-            groupIdentifier: groupIdentifier,
-            targetRulesFilename: baseFilename
-        )
-        try saveBlockerListFile(contents: String(derived.baseRuleCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
-
-        let finalJSON = injectIgnoreRulesForDisabledSites(json: derived.baseJSON, disabledSites: sitesToUse)
-        let output = try saveContentBlockerIfChanged(
-            jsonRules: finalJSON,
-            groupIdentifier: groupIdentifier,
-            targetRulesFilename: targetRulesFilename
-        )
-
-        let finalRuleCount = derived.baseRuleCount + sitesToUse.count
-        os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
-        return (
-            safariRulesCount: finalRuleCount,
-            advancedRulesText: nil,
-            outputChanged: output.outputChanged
-        )
-    }
-
-    private struct DerivedBaseRules {
-        let baseJSON: String
-        let baseRuleCount: Int
-    }
-
-    private static func deriveBaseRulesFromLegacyFinalJSON(_ json: String) throws -> DerivedBaseRules {
-        guard let jsonData = json.data(using: .utf8),
-              let existingRules = try? JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]] else {
-            throw CocoaError(.fileReadCorruptFile)
-        }
-
-        let filteredRules = existingRules.filter { !isLegacyDisabledSiteIgnoreRule($0) }
-        guard let updatedData = try? JSONSerialization.data(withJSONObject: filteredRules, options: []),
-              let baseJSON = String(data: updatedData, encoding: .utf8) else {
-            throw CocoaError(.fileReadCorruptFile)
-        }
-        return DerivedBaseRules(baseJSON: baseJSON, baseRuleCount: filteredRules.count)
-    }
-
-    private static func isLegacyDisabledSiteIgnoreRule(_ rule: [String: Any]) -> Bool {
-        guard let action = rule["action"] as? [String: Any],
-              let type = action["type"] as? String,
-              type == "ignore-previous-rules",
-              let trigger = rule["trigger"] as? [String: Any],
-              let urlFilter = trigger["url-filter"] as? String,
-              urlFilter == ".*",
-              let ifDomain = trigger["if-domain"] as? [String],
-              ifDomain.count == 2 else {
-            return false
-        }
-
-        // Legacy injected rules used only these trigger keys and encoded subdomains as "*.<domain>".
-        if Set(trigger.keys) != Set(["url-filter", "if-domain"]) {
-            return false
-        }
-
-        let domainSet = Set(ifDomain)
-        for item in ifDomain where item.hasPrefix("*.") {
-            let base = String(item.dropFirst(2))
-            if domainSet.contains(base) {
-                return true
-            }
-        }
-
-        return false
+        // Without a complete cache this path cannot safely preserve advanced
+        // rules. The caller must take the full conversion path instead.
+        throw CocoaError(.fileReadCorruptFile)
     }
 
     private static func escapeForJSONString(_ value: String) -> String {
@@ -1703,7 +1642,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                 indexFileURL: directory.appendingPathComponent(Schema.FILTER_ENGINE_INDEX_FILE_NAME)
             )
 
-            var iterator = try storage.makeIterator()
+            let iterator = try storage.makeIterator()
             var decodedRuleCount = 0
             while iterator.next() != nil {
                 decodedRuleCount += 1

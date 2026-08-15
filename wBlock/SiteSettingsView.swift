@@ -515,7 +515,7 @@ struct SiteSettingsView: View {
             newDomain = ""
             isAddingDomain = false
             isTextFieldFocused = true
-            withAnimation(.easeInOut(duration: 0.2)) { expandedDomains.insert(normalizedDomain) }
+            withAnimation(.easeInOut(duration: 0.2)) { _ = expandedDomains.insert(normalizedDomain) }
         }
     }
 

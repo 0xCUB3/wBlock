@@ -46,7 +46,7 @@ let conversion = section(
 )
 let fastUpdate = section(
     from: "public static func fastUpdateDisabledSites(",
-    to: "private struct DerivedBaseRules"
+    to: "private static func escapeForJSONString"
 )
 require(conversion.contains("public static func convertFilterFromFile("), "legacy conversion API must remain public")
 require(conversion.contains("throws -> (safariRulesCount: Int, advancedRulesText: String?)"), "legacy conversion API must keep its two-field result")
@@ -57,15 +57,11 @@ require(fastUpdate.contains("public static func fastUpdateDisabledSites("), "leg
 require(fastUpdate.contains("throws -> (safariRulesCount: Int, advancedRulesText: String?)"), "legacy fast-update API must keep its two-field result")
 require(fastUpdate.contains("static func fastUpdateDisabledSitesWithOutputChange("), "changed fast-update result must use a named internal API")
 require(fastUpdate.contains("saveContentBlockerIfChanged"), "disabled-site fast updates must use save-if-changed")
-require(fastUpdate.contains("let existingJSON = try String(contentsOf: targetURL, encoding: .utf8)"), "legacy fallback must not synthesize missing JSON")
-require(fastUpdate.contains("let derived = try deriveBaseRulesFromLegacyFinalJSON(existingJSON)"), "legacy fallback must propagate corruption")
-require(!fastUpdate.contains("?? \"[]\""), "legacy fallback must not erase rules on missing output")
-let legacyDerivation = section(
-    from: "private static func deriveBaseRulesFromLegacyFinalJSON(",
-    to: "private static func isLegacyDisabledSiteIgnoreRule"
-)
-require(legacyDerivation.contains(") throws -> DerivedBaseRules"), "legacy derivation must throw on corruption")
-require(legacyDerivation.contains("CocoaError(.fileReadCorruptFile)"), "legacy corruption must be reported")
+require(fastUpdate.contains("hasCoherentBaseRulesCache"), "fast update must require a coherent base/count/advanced cache")
+require(fastUpdate.contains("advancedRulesText: advancedRulesText.isEmpty ? nil : advancedRulesText"), "fast update must preserve cached advanced rules")
+require(fastUpdate.contains("throw CocoaError(.fileReadCorruptFile)"), "incomplete cache must force the caller onto full conversion")
+require(!fastUpdate.contains("deriveBaseRulesFromLegacyFinalJSON"), "unsafe legacy derivation fallback must stay removed")
+require(!fastUpdate.contains("?? \"[]\""), "missing cache must not erase rules")
 
 let affinityProcessor = try String(contentsOfFile: "wBlockCoreService/SafariContentBlockerAffinityProcessor.swift", encoding: .utf8)
 require(source.contains("affinityFilterIDs: Set<UUID>"), "compileTargetRules must retain the affinity ID overload")

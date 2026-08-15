@@ -169,9 +169,6 @@ public actor SharedAutoUpdateManager {
     // Reused for shared-log timestamps; safe because all access is actor-isolated.
     private let sharedLogDateFormatter = ISO8601DateFormatter()
 
-    // Staleness threshold: if running flag is set for longer than this, it's considered stuck
-    private let runningFlagStalenessThreshold: TimeInterval = 180 // 3 minutes (reduced from 10)
-
     // Default interval (6 hours) — conservative to limit energy usage
     private let defaultIntervalHours: Double = 6
 
@@ -476,9 +473,6 @@ public actor SharedAutoUpdateManager {
         }
 
         // Cache miss - recompute from protobuf
-        // Check for and clear stale running flags
-        _ = await checkAndClearStaleRunningFlag()
-
         let interval = await getAutoUpdateIntervalHours()
         let nowTimestamp = now.timeIntervalSince1970
         let isRunning = await getAutoUpdateIsRunning()
@@ -574,41 +568,6 @@ public actor SharedAutoUpdateManager {
 
     // MARK: - State Management Helpers
 
-    /// Checks if the running flag is stale (stuck) and clears it if necessary.
-    /// Returns true if the flag was cleared due to staleness.
-    /// Note: Caller should invalidate status cache if this returns true
-    private func checkAndClearStaleRunningFlag() async -> Bool {
-        let isRunning = await getAutoUpdateIsRunning()
-        guard isRunning else {
-            return false // Not running, nothing to do
-        }
-
-        // Check if we have a timestamp for when the flag was set
-        let timestamp = await getAutoUpdateRunningSinceTimestamp()
-        guard timestamp > 0 else {
-            os_log("Running flag set without timestamp - clearing potentially stuck state", log: log, type: .info)
-            await clearPersistedRunningFlag(
-                clearedMessage: "Cleared stuck running flag (no timestamp)",
-                persistFailureMessage: "Failed to persist cleared running flag (no timestamp)"
-            )
-            return true
-        }
-
-        let now = Date().timeIntervalSince1970
-        let age = now - TimeInterval(timestamp)
-
-        if age > runningFlagStalenessThreshold {
-            os_log("Running flag stale (%.1f seconds old, threshold %.1f) - clearing stuck state", log: log, type: .info, age, runningFlagStalenessThreshold)
-            await clearPersistedRunningFlag(
-                clearedMessage: "Cleared stale running flag (age: \(Int(age))s, threshold: \(Int(runningFlagStalenessThreshold))s)",
-                persistFailureMessage: "Failed to persist cleared stale running flag"
-            )
-            return true
-        }
-
-        return false
-    }
-
     // MARK: - Core Logic
     private func runIfNeeded(
         trigger: String,
@@ -655,16 +614,24 @@ public actor SharedAutoUpdateManager {
             return .skipped(reason: "auto_update_disabled")
         }
 
-        let wasStale = await checkAndClearStaleRunningFlag()
-        if wasStale {
-            invalidateStatusCache()
-        }
-
-        let isRunning = await getAutoUpdateIsRunning()
-        if isRunning {
+        // The persisted flag is only informational. The kernel lease is the
+        // cross-process ownership check and is released automatically on crash.
+        guard let lease = SharedAutoUpdateLease.acquire(
+            groupIdentifier: GroupIdentifier.shared.value
+        ) else {
             os_log("Auto-update already running, skipping trigger: %{public}@", log: log, type: .info, trigger)
             appendSkipTelemetry(trigger: trigger, reason: "already_running")
             return .skipped(reason: "already_running")
+        }
+        // Keep the descriptor alive across every early return as well as a started run.
+        defer { withExtendedLifetime(lease) {} }
+        let isRunning = await getAutoUpdateIsRunning()
+        if isRunning {
+            await clearPersistedRunningFlag(
+                clearedMessage: "Cleared previous auto-update marker after acquiring kernel lease",
+                persistFailureMessage: "Failed to persist cleared auto-update marker"
+            )
+            invalidateStatusCache()
         }
 
         if BlockingPauseStore.isPaused(.filters) {
@@ -736,18 +703,10 @@ public actor SharedAutoUpdateManager {
 
         let startTimestamp = Date().timeIntervalSince1970
         await ProtobufDataManager.shared.setAutoUpdateIsRunning(true)
-        let heartbeatTask = Task.detached(priority: .utility) {
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 60_000_000_000)
-                if Task.isCancelled { break }
-                await ProtobufDataManager.shared.refreshAutoUpdateRunningTimestamp()
-            }
-        }
         invalidateStatusCache()
         os_log("Auto-update started at %.0f (trigger: %{public}@, forced: %d)", log: log, type: .info, startTimestamp, trigger, shouldForce)
 
         func finishStartedRun(_ outcome: AutoUpdateRunOutcome) async -> AutoUpdateRunOutcome {
-            heartbeatTask.cancel()
             await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
             let didPersistCleanup = await ProtobufDataManager.shared.saveDataImmediately()
             invalidateStatusCache()
@@ -817,11 +776,36 @@ public actor SharedAutoUpdateManager {
             try throwIfCancelled()
 
             guard !selectedFilters.isEmpty else {
-                if isExternalHelperTrigger(trigger), contentBlockerOutputsContainRules() {
-                    appendSharedLog(
-                        "Auto-update aborted: selected filter state was empty while existing blocker output is present (trigger=\(trigger))."
-                    )
-                    throw AutoUpdateError.selectedFilterStateUnavailable
+                // An empty selection is a valid first-run state, but never silently
+                // preserves output from a previous selection. Helpers stage the
+                // inert files for the app; app-owned triggers can reload them now.
+                let hasPersistedOutput = contentBlockerOutputsContainRules()
+                var outputStatus = "clean"
+                if hasPersistedOutput {
+                    let helperStaged = isExternalHelperTrigger(trigger)
+                    do {
+                        _ = try await rebuildAndReload(
+                            selectedFilters: [],
+                            policy: policy,
+                            reloadContentBlockers: !helperStaged
+                        )
+                    } catch {
+                        throw NSError(
+                            domain: "SharedAutoUpdateManager.EmptySelection",
+                            code: 1,
+                            userInfo: [
+                                NSUnderlyingErrorKey: error,
+                                NSLocalizedDescriptionKey:
+                                    "Failed to rebuild blocker output after selection became empty."
+                            ]
+                        )
+                    }
+                    if helperStaged {
+                        await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
+                        outputStatus = "pending app launch"
+                    } else {
+                        outputStatus = "cleared"
+                    }
                 }
 
                 try requireUserScriptsBudget()
@@ -837,7 +821,7 @@ public actor SharedAutoUpdateManager {
                 invalidateStatusCache()
 
                 appendSharedLog(
-                    "Auto-update skipped: no selected filters, userscripts +\(scriptsResult.updated)/-\(scriptsResult.failed), nextCheckIn=\(formatDurationSeconds(Int(interval * 3600)))"
+                    "Auto-update skipped: no selected filters, output=\(outputStatus), userscripts +\(scriptsResult.updated)/-\(scriptsResult.failed), nextCheckIn=\(formatDurationSeconds(Int(interval * 3600)))"
                 )
                 let durationMs = currentDurationMs()
                 appendTelemetry(

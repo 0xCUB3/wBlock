@@ -28,7 +28,7 @@ expect(manager.contains("displayRole: .blocking"), "blocking built-ins must be e
 expect(manager.contains("displayRole: .functionality"), "utility built-ins must be explicitly marked")
 expect(view.contains("UserScriptDisplayCategorySupport.orderedGroups"), "view must use pure display grouping")
 expect(view.contains("builtInDisplayRole: userScriptManager.builtInDisplayRole"), "view must map built-in roles")
-expect(view.contains("case foreign"), "regional section handling must remain available")
+expect(support.contains("_ = persistedCategory"), "persisted categories must remain available without creating a separate display section")
 expect(view.contains("script.category"), "persisted FilterListCategory must remain in list identity")
 
 print("PASS: userscript display category mapping and grouping")

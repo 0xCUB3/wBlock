@@ -275,13 +275,31 @@ public class UserScriptManager: ObservableObject {
     private var userScriptIntentRevisions: [UUID: UInt64] = [:]
     private var latestUserScriptIntentValues: [UUID: Bool] = [:]
     private var pendingUserScriptIntents: [UUID: Bool] = [:]
+    /// Monotonic revision of local-only userscript mutations. CloudSync can persist this
+    /// value to coalesce work; remote-origin changes deliberately do not advance it.
     public private(set) var localMutationRevision: UInt64 = 0
     public private(set) var payloadMutationRevision: UInt64 = 0
+    private var contentMutationRevisions: [UUID: UInt64] = [:]
+
+    public func currentLocalSyncMutationRevision() -> UInt64 { localMutationRevision }
+
+    private func recordLocalMutation() {
+        localMutationRevision &+= 1
+    }
+
+    private func recordScriptMutation(_ id: UUID) {
+        contentMutationRevisions[id, default: 0] &+= 1
+        recordLocalMutation()
+    }
+
+    private func scriptMutationRevision(_ id: UUID) -> UInt64 {
+        contentMutationRevisions[id, default: 0]
+    }
     private var metadataPrefetchTask: Task<Void, Never>?
-    private static let maximumResourceBytes = 10 * 1024 * 1024
-    private static let maximumEncodedResourceBytes = ((maximumResourceBytes + 2) / 3) * 4 + 256
-    private static let maximumResourcesPerScript = 64
-    private static let maximumStoredResourceBytesPerScript = 25 * 1024 * 1024
+    nonisolated private static let maximumResourceBytes = 10 * 1024 * 1024
+    nonisolated private static let maximumEncodedResourceBytes = ((maximumResourceBytes + 2) / 3) * 4 + 256
+    nonisolated private static let maximumResourcesPerScript = 64
+    nonisolated private static let maximumStoredResourceBytesPerScript = 25 * 1024 * 1024
     private static let maximumRequireBytes = 5 * 1024 * 1024
     private static let maximumRequireBytesPerScript = 20 * 1024 * 1024
     private static let maximumRequiresPerScript = 32
@@ -359,7 +377,7 @@ public class UserScriptManager: ObservableObject {
         latestUserScriptIntentValues[id] = desired
         pendingUserScriptIntents[id] = desired
         if origin == .local {
-            localMutationRevision &+= 1
+            recordScriptMutation(id)
         }
         if let script = userScript(withId: id) {
             userScriptToggleStates[id] = UserScriptToggleState(
@@ -786,6 +804,22 @@ public class UserScriptManager: ObservableObject {
         while !isReady {
             await Task.yield()
         }
+    }
+
+    /// Reloads the authoritative userscript records after another process may have
+    /// changed the shared container. Execution authorization must use this boundary,
+    /// rather than relying on this process's cached array or revision counter.
+    public func refreshFromDiskForExecution() async {
+        await waitUntilReady()
+        _ = await dataManager.refreshFromDiskIfModified(forceRead: true)
+        let diskScripts = dataManager.getUserScripts(includePersistedContent: true)
+        let hydratedScripts = await hydrateUserScriptsFromDisk(
+            diskScripts,
+            includeResources: false,
+            hydrateDisabled: false
+        )
+        guard areUserScriptsEqual(userScripts, hydratedScripts) == false else { return }
+        userScripts = hydratedScripts
     }
 
     private func syncFromDataManager() async {
@@ -1922,18 +1956,24 @@ public class UserScriptManager: ObservableObject {
         return resources
     }
 
-    private func downloadUserScriptInBackground(for scriptID: UUID, from url: URL) async {
+    private func downloadUserScriptInBackground(
+        for scriptID: UUID,
+        from url: URL,
+        origin: UserScriptMutationOrigin = .local
+    ) async {
         guard let index = indexOfUserScript(withId: scriptID),
               userScripts.indices.contains(index)
         else { return }
         let scriptName = userScripts[index].name
+        let mutationRevision = scriptMutationRevision(scriptID)
 
         logger.info("📥 Downloading userscript from: \(url)")
 
         do {
             let content = try await downloadUserScriptContent(from: url)
 
-            guard let currentIndex = indexOfUserScript(withId: scriptID),
+            guard mutationRevision == scriptMutationRevision(scriptID),
+                  let currentIndex = indexOfUserScript(withId: scriptID),
                   userScripts.indices.contains(currentIndex)
             else { return }
 
@@ -1965,17 +2005,20 @@ public class UserScriptManager: ObservableObject {
             let processedContent = dependencies.content
             let resourceContents = dependencies.resources
 
-            guard let finalIndex = indexOfUserScript(withId: scriptID),
+            guard mutationRevision == scriptMutationRevision(scriptID),
+                  let finalIndex = indexOfUserScript(withId: scriptID),
                   userScripts.indices.contains(finalIndex)
             else { return }
 
             userScripts[finalIndex].content = processedContent
             userScripts[finalIndex].resourceContents = resourceContents
             _ = writeUserScriptFiles(userScripts[finalIndex])
+            if origin == .local { recordScriptMutation(scriptID) }
             await persistUserScriptsNow()
             logger.info("✅ Downloaded and saved: \(self.userScripts[finalIndex].name)")
         } catch {
-            if let failedIndex = indexOfUserScript(withId: scriptID),
+            if mutationRevision == scriptMutationRevision(scriptID),
+               let failedIndex = indexOfUserScript(withId: scriptID),
                userScripts.indices.contains(failedIndex) {
                 userScripts[failedIndex].description = "Download failed - tap to retry"
                 userScripts[failedIndex].version = "Error"
@@ -2247,7 +2290,10 @@ public class UserScriptManager: ObservableObject {
     // MARK: - Public Methods
 
     @discardableResult
-    public func addUserScript(from url: URL) async -> Error? {
+    public func addUserScript(
+        from url: URL,
+        origin: UserScriptMutationOrigin = .local
+    ) async -> Error? {
         isLoading = true
         statusDescription = UserStyleSupport.isUserStyleURL(url)
             ? "Downloading userstyle..." : "Downloading userscript..."
@@ -2315,9 +2361,11 @@ public class UserScriptManager: ObservableObject {
             if let existingIndex = userScripts.firstIndex(where: { $0.url == url }) {
                 newUserScript.updatesAutomatically = userScripts[existingIndex].updatesAutomatically
                 userScripts[existingIndex] = newUserScript
+                if origin == .local { recordScriptMutation(newUserScript.id) }
                 statusDescription = "Updated \(newUserScript.isUserStyle ? "userstyle" : "userscript"): \(newUserScript.name)"
             } else {
                 userScripts.append(newUserScript)
+                if origin == .local { recordLocalMutation() }
                 statusDescription = "Added \(newUserScript.isUserStyle ? "userstyle" : "userscript"): \(newUserScript.name)"
             }
 
@@ -2422,7 +2470,8 @@ public class UserScriptManager: ObservableObject {
         fromStagedImport staged: UserScript,
         nameOverride: String,
         descriptionOverride: String,
-        category: FilterListCategory
+        category: FilterListCategory,
+        origin: UserScriptMutationOrigin = .local
     ) async -> Error? {
         isLoading = true
         statusDescription = staged.isUserStyle ? "Importing userstyle..." : "Importing userscript..."
@@ -2437,7 +2486,8 @@ public class UserScriptManager: ObservableObject {
                 nameOverride: nameOverride,
                 descriptionOverride: descriptionOverride,
                 categoryOverride: category,
-                localImportIdentity: staged.localImportIdentity
+                localImportIdentity: staged.localImportIdentity,
+                origin: origin
             )
             isLoading = false
             return nil
@@ -2454,7 +2504,8 @@ public class UserScriptManager: ObservableObject {
         fromLocalFile fileURL: URL,
         nameOverride: String? = nil,
         descriptionOverride: String? = nil,
-        category: FilterListCategory? = nil
+        category: FilterListCategory? = nil,
+        origin: UserScriptMutationOrigin = .local
     ) async -> Error? {
         isLoading = true
         statusDescription = UserStyleSupport.isUserStylePath(fileURL.lastPathComponent)
@@ -2479,7 +2530,8 @@ public class UserScriptManager: ObservableObject {
                 nameOverride: nameOverride,
                 descriptionOverride: descriptionOverride,
                 categoryOverride: category,
-                localImportIdentity: staged.localImportIdentity
+                localImportIdentity: staged.localImportIdentity,
+                origin: origin
             )
 
             isLoading = false
@@ -2499,7 +2551,8 @@ public class UserScriptManager: ObservableObject {
         descriptionOverride: String? = nil,
         category: FilterListCategory? = nil,
         localImportIdentity: String? = nil,
-        legacyLocalImportMatching: Bool = false
+        legacyLocalImportMatching: Bool = false,
+        origin: UserScriptMutationOrigin = .local
     ) async -> Error? {
         isLoading = true
         statusDescription = "Adding userscript..."
@@ -2515,7 +2568,8 @@ public class UserScriptManager: ObservableObject {
                 descriptionOverride: descriptionOverride,
                 categoryOverride: category,
                 localImportIdentity: localImportIdentity ?? UserScriptImportIdentity.forContent(content),
-                legacyLocalImportMatching: legacyLocalImportMatching
+                legacyLocalImportMatching: legacyLocalImportMatching,
+                origin: origin
             )
 
             isLoading = false
@@ -2539,7 +2593,8 @@ public class UserScriptManager: ObservableObject {
         descriptionOverride: String? = nil,
         categoryOverride: FilterListCategory? = nil,
         localImportIdentity: String? = nil,
-        legacyLocalImportMatching: Bool = false
+        legacyLocalImportMatching: Bool = false,
+        origin: UserScriptMutationOrigin = .local
     ) async throws -> UserScript {
         let trimmedContent = rawContent.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -2634,9 +2689,11 @@ public class UserScriptManager: ObservableObject {
         }
         if let existingIndex {
             userScripts[existingIndex] = newUserScript
+            if origin == .local { recordScriptMutation(newUserScript.id) }
             statusDescription = "\(replacedStatusVerb) \(newUserScript.isUserStyle ? "userstyle" : "userscript"): \(newUserScript.name)"
         } else {
             userScripts.append(newUserScript)
+            if origin == .local { recordLocalMutation() }
             statusDescription = "\(importedStatusVerb) \(newUserScript.isUserStyle ? "userstyle" : "userscript"): \(newUserScript.name)"
         }
 
@@ -2686,7 +2743,7 @@ public class UserScriptManager: ObservableObject {
         }
 
         if isEnabled {
-            let isReady = await ensureScriptReadyForEnabling(scriptID: userScript.id)
+            let isReady = await ensureScriptReadyForEnabling(scriptID: userScript.id, origin: origin)
             guard isCurrentUserScriptIntent(userScript.id, revision: revision) else { return }
             guard isReady else {
                 finishUserScriptIntent(userScript.id, revision: revision)
@@ -2723,20 +2780,30 @@ public class UserScriptManager: ObservableObject {
     }
 
     /// Sets the userscript category used for local organization and sync.
-    public func setUserScript(_ userScript: UserScript, category: FilterListCategory) async {
+    public func setUserScript(
+        _ userScript: UserScript,
+        category: FilterListCategory,
+        origin: UserScriptMutationOrigin = .local
+    ) async {
         guard let index = userScripts.firstIndex(where: { $0.id == userScript.id }) else { return }
         guard userScripts[index].category != category else { return }
 
         userScripts[index].category = category
+        if origin == .local { recordScriptMutation(userScript.id) }
         await persistUserScriptsNow(invalidateExecutionCache: false)
     }
 
     /// Sets whether bulk and scheduled updates should include this userscript.
-    public func setUserScript(_ userScript: UserScript, updatesAutomatically: Bool) async {
+    public func setUserScript(
+        _ userScript: UserScript,
+        updatesAutomatically: Bool,
+        origin: UserScriptMutationOrigin = .local
+    ) async {
         guard let index = userScripts.firstIndex(where: { $0.id == userScript.id }) else { return }
         guard userScripts[index].updatesAutomatically != updatesAutomatically else { return }
 
         userScripts[index].updatesAutomatically = updatesAutomatically
+        if origin == .local { recordScriptMutation(userScript.id) }
         statusDescription = updatesAutomatically
             ? "Automatic updates enabled for \(userScript.name)"
             : "Automatic updates paused for \(userScript.name)"
@@ -2745,7 +2812,10 @@ public class UserScriptManager: ObservableObject {
         logger.info("💾 Userscripts saved after update preference change")
     }
 
-    private func ensureScriptReadyForEnabling(scriptID: UUID) async -> Bool {
+    private func ensureScriptReadyForEnabling(
+        scriptID: UUID,
+        origin: UserScriptMutationOrigin = .local
+    ) async -> Bool {
         guard let index = indexOfUserScript(withId: scriptID),
               userScripts.indices.contains(index)
         else { return false }
@@ -2762,7 +2832,7 @@ public class UserScriptManager: ObservableObject {
         }
 
         guard let url = script.url else { return false }
-        await downloadUserScriptInBackground(for: scriptID, from: url)
+        await downloadUserScriptInBackground(for: scriptID, from: url, origin: origin)
 
         guard let currentIndex = indexOfUserScript(withId: scriptID),
               userScripts.indices.contains(currentIndex)
@@ -2887,7 +2957,10 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    public func removeUserScript(_ userScript: UserScript) {
+    public func removeUserScript(
+        _ userScript: UserScript,
+        origin: UserScriptMutationOrigin = .local
+    ) async {
         if isDefaultUserScript(userScript) {
             statusDescription = "Default userscripts can't be removed"
             logger.info("🛑 Prevented removal of default userscript: '\(userScript.name)'")
@@ -2897,15 +2970,15 @@ public class UserScriptManager: ObservableObject {
         if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
             let removedScript = userScripts[index]
 
-            // Remove file
-            removeUserScriptFile(removedScript)
-
-            // Remove from memory and delete the exact persisted ID atomically. Ordinary
-            // upserts intentionally never interpret a missing ID as a deletion.
+            // Remove from memory first so no later save snapshots include this ID.
             userScripts.remove(at: index)
-            Task { @MainActor [weak self] in
-                await self?.dataManager.removeUserScript(withId: removedScript.id)
-            }
+            if origin == .local { recordScriptMutation(removedScript.id) }
+
+            // Persist the exact deletion before touching sidecar files or returning. Any
+            // stale in-flight upsert is ignored by its ID-based merge, and suspension
+            // cannot leave an executable record on disk.
+            await dataManager.removeUserScript(withId: removedScript.id)
+            removeUserScriptFile(removedScript)
 
             if removedScript.isLocal {
                 NotificationCenter.default.post(
@@ -2964,6 +3037,7 @@ public class UserScriptManager: ObservableObject {
               url.scheme?.lowercased() == "http" || url.scheme?.lowercased() == "https"
         else { return }
 
+        let mutationRevision = scriptMutationRevision(userScript.id)
         await MainActor.run {
             isLoading = true
             statusDescription = "Updating \(userScript.name)..."
@@ -2972,7 +3046,8 @@ public class UserScriptManager: ObservableObject {
         do {
             let content = try await downloadUserScriptContent(from: url)
 
-            guard let current = userScripts.first(where: { $0.id == userScript.id }) else {
+            guard mutationRevision == scriptMutationRevision(userScript.id),
+                  let current = userScripts.first(where: { $0.id == userScript.id }) else {
                 isLoading = false
                 return
             }
@@ -2986,7 +3061,8 @@ public class UserScriptManager: ObservableObject {
             let processedContent = dependencies.content
             let resourceContents = dependencies.resources
 
-            guard let index = userScripts.firstIndex(where: { $0.id == userScript.id }) else {
+            guard mutationRevision == scriptMutationRevision(userScript.id),
+                  let index = userScripts.firstIndex(where: { $0.id == userScript.id }) else {
                 isLoading = false
                 return
             }
@@ -3000,6 +3076,7 @@ public class UserScriptManager: ObservableObject {
                 throw CocoaError(.fileWriteUnknown)
             }
             userScripts[index] = updated
+            recordScriptMutation(userScript.id)
             await persistUserScriptsNow()
             statusDescription = "Updated \(userScript.name)"
             updateAlertMessage = "\(userScript.name) has been successfully updated."
@@ -3071,6 +3148,7 @@ public class UserScriptManager: ObservableObject {
             return String(localized: "Couldn't save the edited source.", comment: "Userstyle editor save error")
         }
         userScripts[index] = candidate
+        recordScriptMutation(candidate.id)
         await persistUserScriptsNow()
         logger.info("Saved edited content for \(self.userScripts[index].name)")
         return nil
@@ -3081,13 +3159,15 @@ public class UserScriptManager: ObservableObject {
     public func setUserScriptMetadataOverrides(
         for scriptId: UUID,
         name: String,
-        description: String
+        description: String,
+        origin: UserScriptMutationOrigin = .local
     ) async -> Bool {
         guard let index = indexOfUserScript(withId: scriptId), userScripts[index].isLocal else { return false }
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return false }
         userScripts[index].name = trimmedName
         userScripts[index].description = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        if origin == .local { recordScriptMutation(userScripts[index].id) }
         await persistUserScriptsNow(invalidateExecutionCache: false)
         return true
     }

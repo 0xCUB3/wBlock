@@ -25517,18 +25517,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.warn("[wBlock] Failed to hydrate config cache:", error);
     }
   })();
-  // Safari cannot dynamically register arbitrary source at document_start. Keep a
-  // short-lived, extension-private copy of scripts that do not depend on mutable
-  // synchronous GM state so the static injector can start them before native IPC.
-  // Generated from the canonical bundled userscript sources.
-  const WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION = "0d26f5dd30e04ce841c711a40d0ea4d67b984df08c36448b6d133ea59f4ed2c3";
-  let documentStartScriptCatalog = [];
-  let documentStartScriptCatalogDisabledHosts = [];
-  let documentStartScriptCacheEnabled = false;
-  let documentStartCacheCapabilityKnown = false;
-  let documentStartCatalogGeneration = 0;
-  let documentStartCatalogRefresh = null;
-  const clearDocumentStartSessionCaches = async () => {
+  // Native validation is authoritative; only broadcast session invalidation to tabs.
+  const clearDocumentStartSessionCache = async () => {
     if (!browser.tabs || typeof browser.tabs.query !== "function") return;
     try {
       const tabs = await browser.tabs.query({});
@@ -25539,79 +25529,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }).catch(() => {});
       }));
     } catch {}
-  };
-  const clearDocumentStartScriptCache = async () => {
-    documentStartCatalogGeneration += 1;
-    // Detach the old promise immediately. Its finally handler is identity
-    // guarded below, so it cannot clear a refresh started for this generation.
-    documentStartCatalogRefresh = null;
-    documentStartCacheCapabilityKnown = false;
-    documentStartScriptCacheEnabled = false;
-    documentStartScriptCatalog = [];
-    documentStartScriptCatalogDisabledHosts = [];
-    await clearDocumentStartSessionCaches();
-  };
-  const CACHE_SAFE_DOCUMENT_START_GRANTS = new Set([
-    "none",
-    "unsafewindow",
-    "gm_info",
-    "gm.info",
-    "gm_xmlhttprequest",
-    "gm.xmlhttprequest"
-  ]);
-  const cacheableDocumentStartScript = script => {
-    if (!script || script.cacheCategory !== "bundled"
-      || script.cacheRevision !== WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION
-      || script.isEnabled !== true
-      || script.kind === "style" || script.runAt !== "document-start") return null;
-    if (script.injectInto !== "page" || typeof script.content !== "string" || script.content.length === 0) return null;
-    const grants = Array.isArray(script.grant) ? script.grant : [];
-    if (!grants.every(grant => CACHE_SAFE_DOCUMENT_START_GRANTS.has(String(grant).toLowerCase()))) return null;
-    if ((script.includes || []).length || (script.excludes || []).length || (script.excludeMatches || []).length) return null;
-    const resourceNames = Array.isArray(script.resourceNames) ? script.resourceNames : [];
-    const resources = script.resources && typeof script.resources === "object" ? script.resources : {};
-    if (resourceNames.some(name => typeof resources[name] !== "string")) return null;
-    const cached = { ...script };
-    delete cached.storageSnapshot;
-    return cached;
-  };
-  const simpleDocumentStartPatternMatches = (pattern, url) => {
-    const match = String(pattern).match(/^([^:]+):\/\/([^/]+)(\/.*)$/);
-    if (!match || match[3] !== "/*") return false;
-    const schemeMatches = match[1] === "*"
-      ? url.protocol === "http:" || url.protocol === "https:"
-      : `${match[1].toLowerCase()}:` === url.protocol;
-    const hostPattern = match[2].toLowerCase();
-    const host = url.hostname.toLowerCase();
-    return schemeMatches && (hostPattern === "*" || hostPattern === host
-      || (hostPattern.startsWith("*.") && (host === hostPattern.slice(2) || host.endsWith(`.${hostPattern.slice(2)}`))));
-  };
-  const cachedUserScriptMatchesURL = (script, urlString) => {
-    let url;
-    try {
-      url = new URL(urlString);
-    } catch {
-      return false;
-    }
-    const matches = Array.isArray(script.matches) ? script.matches : [];
-    if (!matches.some(pattern => simpleDocumentStartPatternMatches(pattern, url))) return false;
-    const host = url.hostname.toLowerCase();
-    const disabledHosts = Array.isArray(script.disabledHosts) ? script.disabledHosts : [];
-    return !disabledHosts.some(disabledHost => host === String(disabledHost).toLowerCase()
-      || host.endsWith(`.${String(disabledHost).toLowerCase()}`));
-  };
-  const cachedDocumentStartScriptsForURL = url => {
-    let host = "";
-    try {
-      host = new URL(url).hostname.toLowerCase();
-    } catch {
-      return [];
-    }
-    if (documentStartScriptCatalogDisabledHosts.some(disabledHost => host === String(disabledHost).toLowerCase()
-      || host.endsWith(`.${String(disabledHost).toLowerCase()}`))) {
-      return [];
-    }
-    return documentStartScriptCatalog.filter(script => cachedUserScriptMatchesURL(script, url));
   };
   let nativeMessageQueue = Promise.resolve();
   const nativeMessageTimeoutMs = request => {
@@ -25643,45 +25560,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       action
     );
   };
-  const refreshDocumentStartScriptCatalog = () => {
-    if (documentStartCatalogRefresh) return documentStartCatalogRefresh;
-    const generation = documentStartCatalogGeneration;
-    const request = sendPriorityNativeMessage({
-      action: "getDocumentStartUserScriptCatalog",
-      requestId: `userscript-catalog-${Date.now()}`
-    }).then(async response => {
-      if (generation !== documentStartCatalogGeneration) return;
-      const allowed = !!response && response.documentStartCacheAllowed === true
-        && response.cacheRevision === WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION
-        && Array.isArray(response.userScripts);
-      if (!allowed) {
-        if (generation !== documentStartCatalogGeneration) return;
-        documentStartCacheCapabilityKnown = true;
-        documentStartScriptCacheEnabled = false;
-        documentStartScriptCatalog = [];
-        documentStartScriptCatalogDisabledHosts = [];
-        return;
-      }
-      if (generation !== documentStartCatalogGeneration) return;
-      documentStartCacheCapabilityKnown = true;
-      documentStartScriptCacheEnabled = true;
-      documentStartScriptCatalog = response.userScripts.map(cacheableDocumentStartScript).filter(Boolean);
-      documentStartScriptCatalogDisabledHosts = Array.isArray(response.disabledHosts)
-        ? response.disabledHosts
-        : [];
-      return undefined;
-    }).catch(error => {
-      console.warn("[wBlock] Failed to refresh document-start userscript catalog:", error);
-    });
-    let refreshPromise;
-    refreshPromise = request.finally(() => {
-      if (documentStartCatalogRefresh === refreshPromise) {
-        documentStartCatalogRefresh = null;
-      }
-    });
-    documentStartCatalogRefresh = refreshPromise;
-    return refreshPromise;
-  };
   let nativeStatePort = null;
   let nativeStateReconnectTimer = null;
   const connectNativeStatePort = () => {
@@ -25698,7 +25576,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             (message.userInfo && message.userInfo.action)
           );
           if (action === "wblock:userscriptsChanged") {
-            clearDocumentStartScriptCache();
+            clearDocumentStartSessionCache();
           } else if (action === "wblock:zapperRulesChanged") {
             if (browser.tabs && typeof browser.tabs.query === "function") {
               browser.tabs.query({}).then(tabs => Promise.all(tabs.map(tab => {
@@ -25905,6 +25783,43 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return new TextDecoder("utf-8").decode(buffer);
     }
   };
+  const readGMFetchResponseBytes = async (response, maximumBytes) => {
+    if (!response.body || typeof response.body.getReader !== "function") {
+      throw new Error("GM_xmlhttpRequest response cannot be safely bounded");
+    }
+    const reader = response.body.getReader();
+    const chunks = [];
+    let total = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = value instanceof Uint8Array ? value : new Uint8Array(value || []);
+        total += chunk.byteLength;
+        if (total > maximumBytes) throw new Error("GM_xmlhttpRequest response is too large");
+        chunks.push(chunk);
+      }
+    } catch (error) {
+      try { await reader.cancel(); } catch (_) {}
+      throw error;
+    }
+    const result = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      result.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return result;
+  };
+  const decodeGMResponseBytes = (bytes, response, overrideMimeType) => {
+    const charset = extractCharsetFromContentType(overrideMimeType) || extractCharsetFromContentType(response.headers.get("content-type"));
+    if (typeof TextDecoder === "undefined") return String.fromCharCode(...bytes);
+    try {
+      return new TextDecoder(charset || "utf-8").decode(bytes);
+    } catch (_) {
+      return new TextDecoder("utf-8").decode(bytes);
+    }
+  };
   const parseGMResponseBody = (responseText, responseType) => {
     const normalized = normalizeGMResponseType(responseType);
     if (normalized === "json") {
@@ -25938,10 +25853,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   };
   const streamGMFetchResponseToPort = async (fetchResponse, sender, portName) => {
     if (!fetchResponse.body || typeof fetchResponse.body.getReader !== "function") {
+      const declaredLength = Number(fetchResponse.headers.get("content-length") || 0);
+      if (!Number.isFinite(declaredLength) || declaredLength > 25 * 1024 * 1024) {
+        throw new Error("GM_xmlhttpRequest response is too large");
+      }
       const text = await fetchResponse.text();
+      const responseLength = new TextEncoder().encode(text).byteLength;
+      if (responseLength > 25 * 1024 * 1024) throw new Error("GM_xmlhttpRequest response is too large");
       await sendGMPortMessage(sender, portName, text);
       await sendGMPortMessage(sender, portName, "[DONE]");
-      return { responseLength: new TextEncoder().encode(text).byteLength, sentDone: true };
+      return { responseLength, sentDone: true };
     }
 
     const reader = fetchResponse.body.getReader();
@@ -25962,6 +25883,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       const { done, value } = await reader.read();
       if (done) break;
       responseLength += value ? value.byteLength || value.length || 0 : 0;
+      if (responseLength > 25 * 1024 * 1024) {
+        try { await reader.cancel(); } catch (_) {}
+        throw new Error("GM_xmlhttpRequest response is too large");
+      }
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split(/\r?\n/);
       buffer = lines.pop() || "";
@@ -26047,23 +25972,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       pendingBlockingStateRequests.clear();
       await Promise.all([
         clearPersistedConfigCache(),
-        clearDocumentStartScriptCache()
+        clearDocumentStartSessionCache()
       ]);
       await scheduleInstallRemoveParamDNRRules(true);
       await refreshActionStateForAllTabs();
       return {
         ok: true
-      };
-    }
-    if (message && message.action === "getCachedDocumentStartUserScripts") {
-      if (!documentStartCacheCapabilityKnown) await refreshDocumentStartScriptCatalog();
-      const url = typeof message.url === "string" ? message.url : "";
-      return {
-        userScripts: documentStartCacheCapabilityKnown && documentStartScriptCacheEnabled
-          ? cachedDocumentStartScriptsForURL(url)
-          : [],
-        cacheRevision: WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION,
-        documentStartCacheAllowed: documentStartCacheCapabilityKnown && documentStartScriptCacheEnabled
       };
     }
     if (message && message.action === "wblock:installRemoveParamDNRRules") {
@@ -26174,29 +26088,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       try {
         const response = await sendPriorityNativeMessage(userScriptRequest);
         const scripts = response && response.userScripts ? response.userScripts : [];
-        const documentStartCacheAllowed = !!response
-          && response.documentStartCacheAllowed === true
-          && response.cacheRevision === WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION;
         if (response && response.error) {
-          return {
-            userScripts: scripts,
-            error: response.error,
-            documentStartCacheAllowed,
-            cacheRevision: response.cacheRevision
-          };
+          return { userScripts: scripts, error: response.error };
         }
-        return {
-          userScripts: scripts,
-          documentStartCacheAllowed,
-          cacheRevision: response && response.cacheRevision
-        };
+        return { userScripts: scripts };
       } catch (error) {
         console.error("[wBlock] Failed to get userscripts:", error);
         return {
           userScripts: [],
-          error: String(error && error.message ? error.message : error),
-          documentStartCacheAllowed: false,
-          cacheRevision: WBLOCK_BUNDLED_USERSCRIPT_CACHE_REVISION
+          error: String(error && error.message ? error.message : error)
         };
       }
     }
@@ -26254,7 +26154,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     if (message && message.action === "gmXmlhttpRequest") {
       try {
+        const MAX_GM_XHR_RESPONSE_BYTES = 25 * 1024 * 1024;
+        const MAX_GM_XHR_REQUEST_BODY_BYTES = 2 * 1024 * 1024;
         const requestHeaders = message.headers || {};
+        if (Object.keys(requestHeaders).length > 128) return { error: "Too many request headers" };
+        if (typeof message.body === "string" && new TextEncoder().encode(message.body).byteLength > MAX_GM_XHR_REQUEST_BODY_BYTES) return { error: "Request body is too large" };
         const streamPortName = typeof message.portName === "string" ? message.portName : "";
         const wantsStreamResponse = !!streamPortName || normalizeGMResponseType(message.responseType) === "stream" || normalizeGMResponseType(message.responseType) === "realstream";
         if (shouldUseNativeGMXmlhttpRequest(requestHeaders)) {
@@ -26310,6 +26214,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           responseHeaders[key] = value;
         });
         const responseType = normalizeGMResponseType(message.responseType);
+        const declaredLength = Number(fetchResponse.headers.get("content-length") || 0);
+        if (Number.isFinite(declaredLength) && declaredLength > MAX_GM_XHR_RESPONSE_BYTES) return { error: "GM_xmlhttpRequest response is too large" };
         if (streamPortName) {
           const streamResult = await streamGMFetchResponseToPort(fetchResponse, sender, streamPortName);
           return {
@@ -26330,16 +26236,14 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         let response = null;
         let responseBase64 = null;
         const responseMimeType = fetchResponse.headers.get("content-type") || "";
-        const declaredLength = Number(fetchResponse.headers.get("content-length") || 0);
         let responseLength = 0;
 
+        const responseBytes = await readGMFetchResponseBytes(fetchResponse, MAX_GM_XHR_RESPONSE_BYTES);
+        responseLength = responseBytes.byteLength;
         if (isBinaryGMResponseType(responseType)) {
-          const responseBuffer = await fetchResponse.arrayBuffer();
-          responseLength = responseBuffer.byteLength;
-          responseBase64 = arrayBufferToBase64(responseBuffer);
+          responseBase64 = arrayBufferToBase64(responseBytes);
         } else {
-          responseText = await decodeGMFetchResponseText(fetchResponse, message.overrideMimeType);
-          responseLength = new TextEncoder().encode(responseText).byteLength;
+          responseText = decodeGMResponseBytes(responseBytes, fetchResponse, message.overrideMimeType);
           response = parseGMResponseBody(responseText, responseType);
         }
         const responseTotal = Number.isFinite(declaredLength) && declaredLength > 0 ? declaredLength : responseLength;
@@ -26360,13 +26264,28 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return { error: error.message || String(error) };
       }
     }
+    if (message && message.action === "validateUserScriptExecution") {
+      try {
+        return await sendQueuedNativeMessage({
+          action: message.action,
+          requestId: "userscript-validate-" + Date.now(),
+          scriptId: message.scriptId,
+          url: message.url,
+          payloadRevision: message.payloadRevision
+        });
+      } catch (error) {
+        return { ok: false, error: String(error && error.message ? error.message : error) };
+      }
+    }
     if (message && (message.action === "getUserScriptContentChunk" || message.action === "getUserScriptResourceChunk")) {
       const chunkRequest = {
         action: message.action,
         requestId: "userscript-chunk-" + Date.now(),
         scriptId: message.scriptId,
         chunkIndex: message.chunkIndex,
-        chunkSize: message.chunkSize
+        chunkSize: message.chunkSize,
+        payloadRevision: message.payloadRevision,
+        url: message.url
       };
       if (typeof message.resourceName === "string" && message.resourceName.length > 0) {
         chunkRequest.resourceName = message.resourceName;
@@ -27052,11 +26971,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   };
   if (browser.runtime.onInstalled) {
     browser.runtime.onInstalled.addListener(() => {
+      clearDocumentStartSessionCache();
       scheduleInstallRemoveParamDNRRules(true);
     });
   }
   if (browser.runtime.onStartup) {
     browser.runtime.onStartup.addListener(() => {
+      clearDocumentStartSessionCache();
       scheduleInstallRemoveParamDNRRules(true);
     });
   }

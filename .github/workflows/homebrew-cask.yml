@@ -20,7 +20,29 @@ permissions:
   contents: write
 
 jobs:
+  verify:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Run regression tests
+        run: scripts/run-ci-tests.sh
+
+      - name: Build iOS Simulator Release
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project wBlock.xcodeproj \
+            -scheme wBlock \
+            -configuration Release \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
   build-and-release:
+    needs: verify
     runs-on: macos-26
     steps:
       - name: Checkout

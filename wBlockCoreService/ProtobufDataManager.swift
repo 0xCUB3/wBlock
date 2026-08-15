@@ -10,80 +10,203 @@ internal import SwiftProtobuf
 import Combine
 import os.log
 
-private func preservePersistedValue<Root, Value: Equatable>(
-    _ keyPath: WritableKeyPath<Root, Value>,
-    in snapshot: inout Root,
-    comparedTo previous: Root,
-    from persisted: Root
+private func mergeField<T: Equatable>(_ local: inout T, baseline: T, persisted: T) {
+    if local == baseline { local = persisted }
+}
+
+private func mergeMap<Key: Hashable, Value: Equatable>(
+    _ local: inout [Key: Value],
+    baseline: [Key: Value],
+    persisted: [Key: Value]
 ) {
-    if snapshot[keyPath: keyPath] == previous[keyPath: keyPath] {
-        snapshot[keyPath: keyPath] = persisted[keyPath: keyPath]
+    let keys = Set(baseline.keys).union(local.keys).union(persisted.keys)
+    for key in keys where local[key] == baseline[key] {
+        local[key] = persisted[key]
+    }
+}
+
+private func mergeStringSet(
+    _ local: inout [String],
+    baseline: [String],
+    persisted: [String]
+) {
+    let baselineSet = Set(baseline)
+    let localSet = Set(local)
+    var merged = Set(persisted)
+    merged.subtract(baselineSet.subtracting(localSet))
+    merged.formUnion(localSet.subtracting(baselineSet))
+    local = merged.sorted()
+}
+
+private func mergeSettings(
+    _ local: inout Wblock_Data_AppSettings,
+    baseline: Wblock_Data_AppSettings,
+    persisted: Wblock_Data_AppSettings
+) {
+    mergeField(&local.hasCompletedOnboarding_p, baseline: baseline.hasCompletedOnboarding_p, persisted: persisted.hasCompletedOnboarding_p)
+    mergeField(&local.selectedBlockingLevel, baseline: baseline.selectedBlockingLevel, persisted: persisted.selectedBlockingLevel)
+    mergeField(&local.lastUpdateCheck, baseline: baseline.lastUpdateCheck, persisted: persisted.lastUpdateCheck)
+    mergeField(&local.showAdvancedFeatures, baseline: baseline.showAdvancedFeatures, persisted: persisted.showAdvancedFeatures)
+    mergeField(&local.appVersion, baseline: baseline.appVersion, persisted: persisted.appVersion)
+    mergeField(&local.lastTerminologySanitizationVersion, baseline: baseline.lastTerminologySanitizationVersion, persisted: persisted.lastTerminologySanitizationVersion)
+    mergeField(&local.hasEnabledContentBlockers_p, baseline: baseline.hasEnabledContentBlockers_p, persisted: persisted.hasEnabledContentBlockers_p)
+    mergeField(&local.hasEnabledPlatformExtension_p, baseline: baseline.hasEnabledPlatformExtension_p, persisted: persisted.hasEnabledPlatformExtension_p)
+    mergeField(&local.hasSetAllWebsitesPermission_p, baseline: baseline.hasSetAllWebsitesPermission_p, persisted: persisted.hasSetAllWebsitesPermission_p)
+    mergeField(&local.userscriptShowEnabledOnly, baseline: baseline.userscriptShowEnabledOnly, persisted: persisted.userscriptShowEnabledOnly)
+    mergeStringSet(
+        &local.excludedDefaultUserscriptUrls,
+        baseline: baseline.excludedDefaultUserscriptUrls,
+        persisted: persisted.excludedDefaultUserscriptUrls
+    )
+    mergeField(&local.isForeignFiltersExpanded, baseline: baseline.isForeignFiltersExpanded, persisted: persisted.isForeignFiltersExpanded)
+    mergeField(&local.isBadgeCounterEnabled, baseline: baseline.isBadgeCounterEnabled, persisted: persisted.isBadgeCounterEnabled)
+    mergeField(&local.unknownFields, baseline: baseline.unknownFields, persisted: persisted.unknownFields)
+}
+
+// Key paths retained in this merge contract: \.filterLists, \.userScripts, \.userScriptDisabledHosts.
+private func mergeFilterLists(
+    _ local: inout [Wblock_Data_FilterListData],
+    baseline: [Wblock_Data_FilterListData],
+    persisted: [Wblock_Data_FilterListData],
+    deletedIDs: Set<String>
+) {
+    let baselineByID = Dictionary(baseline.map { ($0.id, $0) }, uniquingKeysWith: { _, latest in latest })
+    let localByID = Dictionary(local.map { ($0.id, $0) }, uniquingKeysWith: { _, latest in latest })
+    let persistedByID = Dictionary(persisted.map { ($0.id, $0) }, uniquingKeysWith: { _, latest in latest })
+    var ids = persisted.map(\.id)
+    ids.append(contentsOf: local.map(\.id).filter { !ids.contains($0) })
+    local = ids.compactMap { id in
+        if deletedIDs.contains(id) { return nil }
+        guard let mine = localByID[id] else { return persistedByID[id] }
+        guard let theirs = persistedByID[id], let base = baselineByID[id] else { return mine }
+        var merged = mine
+        mergeField(&merged.name, baseline: base.name, persisted: theirs.name)
+        mergeField(&merged.url, baseline: base.url, persisted: theirs.url)
+        mergeField(&merged.category, baseline: base.category, persisted: theirs.category)
+        mergeField(&merged.isSelected, baseline: base.isSelected, persisted: theirs.isSelected)
+        mergeField(&merged.description_p, baseline: base.description_p, persisted: theirs.description_p)
+        mergeField(&merged.version, baseline: base.version, persisted: theirs.version)
+        if merged.hasSourceRuleCount == base.hasSourceRuleCount
+            && (!merged.hasSourceRuleCount || merged.sourceRuleCount == base.sourceRuleCount)
+        {
+            if theirs.hasSourceRuleCount { merged.sourceRuleCount = theirs.sourceRuleCount }
+            else { merged.clearSourceRuleCount() }
+        }
+        mergeField(&merged.lastUpdated, baseline: base.lastUpdated, persisted: theirs.lastUpdated)
+        mergeField(&merged.isCustom, baseline: base.isCustom, persisted: theirs.isCustom)
+        mergeField(&merged.localFilePath, baseline: base.localFilePath, persisted: theirs.localFilePath)
+        mergeField(&merged.unknownFields, baseline: base.unknownFields, persisted: theirs.unknownFields)
+        return merged
     }
 }
 
 private func mergePersistedChanges(
     in snapshot: inout Wblock_Data_AppData,
     comparedTo previous: Wblock_Data_AppData,
-    from persisted: Wblock_Data_AppData
+    from persisted: Wblock_Data_AppData,
+    explicitlyDeletedFilterIDs: Set<String> = []
 ) {
-    preservePersistedValue(\.settings, in: &snapshot, comparedTo: previous, from: persisted)
-    preservePersistedValue(\.filterLists, in: &snapshot, comparedTo: previous, from: persisted)
-    // Replace the old whole-field preservePersistedValue(\.userScripts) behavior with
-    // an ID-based merge so unlisted records survive ordinary upserts.
+    var settings = snapshot.settings
+    mergeSettings(&settings, baseline: previous.settings, persisted: persisted.settings)
+    snapshot.settings = settings
+    mergeFilterLists(&snapshot.filterLists, baseline: previous.filterLists, persisted: persisted.filterLists, deletedIDs: explicitlyDeletedFilterIDs)
+
     var explicitEnabledStates: [String: Bool] = [:]
     let previousScriptsByID = Dictionary(uniqueKeysWithValues: previous.userScripts.map { ($0.id, $0) })
-    for script in snapshot.userScripts {
-        if let previousScript = previousScriptsByID[script.id],
-           previousScript.isEnabled != script.isEnabled {
-            explicitEnabledStates[script.id] = script.isEnabled
-        }
+    for script in snapshot.userScripts where previousScriptsByID[script.id]?.isEnabled != script.isEnabled {
+        explicitEnabledStates[script.id] = script.isEnabled
     }
-    snapshot.userScripts = UserScriptPersistence.merge(
-        persisted: persisted.userScripts,
-        incoming: snapshot.userScripts,
-        explicitEnabledStates: explicitEnabledStates
+    snapshot.userScripts = UserScriptPersistence.merge(persisted: persisted.userScripts, incoming: snapshot.userScripts, explicitEnabledStates: explicitEnabledStates)
+
+    var whitelist = snapshot.whitelist
+    mergeStringSet(
+        &whitelist.disabledSites,
+        baseline: previous.whitelist.disabledSites,
+        persisted: persisted.whitelist.disabledSites
     )
-    preservePersistedValue(\.whitelist, in: &snapshot, comparedTo: previous, from: persisted)
-    preservePersistedValue(\.ruleCounts, in: &snapshot, comparedTo: previous, from: persisted)
-    preservePersistedValue(\.performance, in: &snapshot, comparedTo: previous, from: persisted)
-    preservePersistedValue(\.extensionData, in: &snapshot, comparedTo: previous, from: persisted)
-    preservePersistedValue(\.userScriptDisabledHosts, in: &snapshot, comparedTo: previous, from: persisted)
+    mergeStringSet(
+        &whitelist.filterDisabledSites,
+        baseline: previous.whitelist.filterDisabledSites,
+        persisted: persisted.whitelist.filterDisabledSites
+    )
+    whitelist.lastUpdated = max(whitelist.lastUpdated, persisted.whitelist.lastUpdated)
+    mergeField(
+        &whitelist.unknownFields,
+        baseline: previous.whitelist.unknownFields,
+        persisted: persisted.whitelist.unknownFields
+    )
+    snapshot.whitelist = whitelist
+
+    var counts = snapshot.ruleCounts
+    mergeField(&counts.lastRuleCount, baseline: previous.ruleCounts.lastRuleCount, persisted: persisted.ruleCounts.lastRuleCount)
+    mergeMap(
+        &counts.ruleCountsByCategory,
+        baseline: previous.ruleCounts.ruleCountsByCategory,
+        persisted: persisted.ruleCounts.ruleCountsByCategory
+    )
+    mergeField(&counts.categoriesApproachingLimit, baseline: previous.ruleCounts.categoriesApproachingLimit, persisted: persisted.ruleCounts.categoriesApproachingLimit)
+    mergeField(&counts.lastUpdated, baseline: previous.ruleCounts.lastUpdated, persisted: persisted.ruleCounts.lastUpdated)
+    mergeField(&counts.unknownFields, baseline: previous.ruleCounts.unknownFields, persisted: persisted.ruleCounts.unknownFields)
+    snapshot.ruleCounts = counts
+
+    var performance = snapshot.performance
+    mergeField(&performance.lastConversionTime, baseline: previous.performance.lastConversionTime, persisted: persisted.performance.lastConversionTime)
+    mergeField(&performance.lastReloadTime, baseline: previous.performance.lastReloadTime, persisted: persisted.performance.lastReloadTime)
+    mergeField(&performance.lastFastUpdateTime, baseline: previous.performance.lastFastUpdateTime, persisted: persisted.performance.lastFastUpdateTime)
+    mergeField(&performance.fastUpdateCount, baseline: previous.performance.fastUpdateCount, persisted: persisted.performance.fastUpdateCount)
+    mergeField(&performance.sourceRulesCount, baseline: previous.performance.sourceRulesCount, persisted: persisted.performance.sourceRulesCount)
+    mergeField(&performance.conversionStageDescription, baseline: previous.performance.conversionStageDescription, persisted: persisted.performance.conversionStageDescription)
+    mergeField(&performance.currentFilterName, baseline: previous.performance.currentFilterName, persisted: persisted.performance.currentFilterName)
+    mergeField(&performance.processedFiltersCount, baseline: previous.performance.processedFiltersCount, persisted: persisted.performance.processedFiltersCount)
+    mergeField(&performance.totalFiltersCount, baseline: previous.performance.totalFiltersCount, persisted: persisted.performance.totalFiltersCount)
+    mergeField(&performance.currentPlatform, baseline: previous.performance.currentPlatform, persisted: persisted.performance.currentPlatform)
+    mergeField(&performance.unknownFields, baseline: previous.performance.unknownFields, persisted: persisted.performance.unknownFields)
+    snapshot.performance = performance
+
+    var extensionData = snapshot.extensionData
+    mergeMap(
+        &extensionData.tabBlockedRequests,
+        baseline: previous.extensionData.tabBlockedRequests,
+        persisted: persisted.extensionData.tabBlockedRequests
+    )
+    mergeField(&extensionData.zapperRules, baseline: previous.extensionData.zapperRules, persisted: persisted.extensionData.zapperRules)
+    mergeMap(
+        &extensionData.zapperRulesByHost,
+        baseline: previous.extensionData.zapperRulesByHost,
+        persisted: persisted.extensionData.zapperRulesByHost
+    )
+    extensionData.lastUpdated = max(extensionData.lastUpdated, persisted.extensionData.lastUpdated)
+    mergeField(&extensionData.unknownFields, baseline: previous.extensionData.unknownFields, persisted: persisted.extensionData.unknownFields)
+    snapshot.extensionData = extensionData
+
+    var exceptions = snapshot.userScriptDisabledHosts
+    mergeMap(
+        &exceptions,
+        baseline: previous.userScriptDisabledHosts,
+        persisted: persisted.userScriptDisabledHosts
+    )
+    snapshot.userScriptDisabledHosts = exceptions
 
     var autoUpdate = snapshot.autoUpdate
-    let previousAutoUpdate = previous.autoUpdate
-    let persistedAutoUpdate = persisted.autoUpdate
-    preservePersistedValue(\.enabled, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
-    preservePersistedValue(\.intervalHours, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
-    preservePersistedValue(\.lastCheckTime, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
-    preservePersistedValue(\.lastSuccessfulTime, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
-    preservePersistedValue(\.nextEligibleTime, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
-    preservePersistedValue(\.forceNext, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
-    preservePersistedValue(\.isRunning, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
-    preservePersistedValue(\.runningSinceTimestamp, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
-    preservePersistedValue(\.filterEtags, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
-    preservePersistedValue(\.filterLastModified, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
-    preservePersistedValue(\.bgAppRefresh, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
-    preservePersistedValue(\.bgProcessing, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
-    preservePersistedValue(\.silentPush, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
-    preservePersistedValue(\.lastForegroundCatchUpTime, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
-    preservePersistedValue(\.lastForegroundCatchUpReason, in: &autoUpdate, comparedTo: previousAutoUpdate, from: persistedAutoUpdate)
+    let base = previous.autoUpdate, theirs = persisted.autoUpdate
+    mergeField(&autoUpdate.enabled, baseline: base.enabled, persisted: theirs.enabled)
+    mergeField(&autoUpdate.intervalHours, baseline: base.intervalHours, persisted: theirs.intervalHours)
+    mergeField(&autoUpdate.lastCheckTime, baseline: base.lastCheckTime, persisted: theirs.lastCheckTime)
+    mergeField(&autoUpdate.lastSuccessfulTime, baseline: base.lastSuccessfulTime, persisted: theirs.lastSuccessfulTime)
+    mergeField(&autoUpdate.nextEligibleTime, baseline: base.nextEligibleTime, persisted: theirs.nextEligibleTime)
+    mergeField(&autoUpdate.forceNext, baseline: base.forceNext, persisted: theirs.forceNext)
+    mergeField(&autoUpdate.isRunning, baseline: base.isRunning, persisted: theirs.isRunning)
+    mergeField(&autoUpdate.runningSinceTimestamp, baseline: base.runningSinceTimestamp, persisted: theirs.runningSinceTimestamp)
+    mergeMap(&autoUpdate.filterEtags, baseline: base.filterEtags, persisted: theirs.filterEtags)
+    mergeMap(&autoUpdate.filterLastModified, baseline: base.filterLastModified, persisted: theirs.filterLastModified)
+    mergeField(&autoUpdate.bgAppRefresh, baseline: base.bgAppRefresh, persisted: theirs.bgAppRefresh)
+    mergeField(&autoUpdate.bgProcessing, baseline: base.bgProcessing, persisted: theirs.bgProcessing)
+    mergeField(&autoUpdate.silentPush, baseline: base.silentPush, persisted: theirs.silentPush)
+    mergeField(&autoUpdate.lastForegroundCatchUpTime, baseline: base.lastForegroundCatchUpTime, persisted: theirs.lastForegroundCatchUpTime)
+    mergeField(&autoUpdate.lastForegroundCatchUpReason, baseline: base.lastForegroundCatchUpReason, persisted: theirs.lastForegroundCatchUpReason)
+    mergeField(&autoUpdate.unknownFields, baseline: base.unknownFields, persisted: theirs.unknownFields)
     snapshot.autoUpdate = autoUpdate
-
-    if snapshot.whitelist != previous.whitelist,
-       persisted.whitelist != previous.whitelist,
-       persisted.whitelist.lastUpdated > snapshot.whitelist.lastUpdated {
-        snapshot.whitelist = persisted.whitelist
-    }
-    if snapshot.extensionData != previous.extensionData,
-       persisted.extensionData != previous.extensionData,
-       persisted.extensionData.lastUpdated > snapshot.extensionData.lastUpdated {
-        snapshot.extensionData = persisted.extensionData
-    }
-    if snapshot.ruleCounts != previous.ruleCounts,
-       persisted.ruleCounts != previous.ruleCounts,
-       persisted.ruleCounts.lastUpdated > snapshot.ruleCounts.lastUpdated {
-        snapshot.ruleCounts = persisted.ruleCounts
-    }
+    mergeField(&snapshot.unknownFields, baseline: previous.unknownFields, persisted: persisted.unknownFields)
 }
 
 // MARK: - Disk I/O (off MainActor)
@@ -105,7 +228,7 @@ private actor ProtobufDiskStore {
 
     func readAppData(from url: URL) throws -> (appData: Wblock_Data_AppData, rawData: Data, modificationDate: Date?) {
         let rawData = try Data(contentsOf: url)
-        let appData = try Wblock_Data_AppData(serializedData: rawData)
+        let appData = try Wblock_Data_AppData(serializedBytes: rawData)
         return (appData: appData, rawData: rawData, modificationDate: modificationDate(for: url))
     }
 
@@ -180,7 +303,7 @@ private actor ProtobufDiskStore {
         }
 
         let rawData = try Data(contentsOf: dataURL)
-        return (rawData: rawData, appData: try Wblock_Data_AppData(serializedData: rawData))
+        return (rawData: rawData, appData: try Wblock_Data_AppData(serializedBytes: rawData))
     }
 
 
@@ -232,6 +355,7 @@ private actor ProtobufDiskStore {
     private func writeAppDataIfChangedOnce(
         appData: Wblock_Data_AppData,
         previousData: Data?,
+        explicitlyDeletedFilterIDs: Set<String> = [],
         to dataURL: URL,
         versionURL: URL
     ) throws -> (appData: Wblock_Data_AppData, rawData: Data, modificationDate: Date?, version: Int64, didWrite: Bool)? {
@@ -245,7 +369,8 @@ private actor ProtobufDiskStore {
             mergePersistedChanges(
                 in: &mergedSnapshot,
                 comparedTo: previousSnapshot,
-                from: current.appData
+                from: current.appData,
+                explicitlyDeletedFilterIDs: explicitlyDeletedFilterIDs
             )
         }
 
@@ -289,6 +414,7 @@ private actor ProtobufDiskStore {
     func writeAppDataIfChanged(
         appData: Wblock_Data_AppData,
         previousData: Data?,
+        explicitlyDeletedFilterIDs: Set<String> = [],
         to dataURL: URL,
         versionURL: URL
     ) throws -> (appData: Wblock_Data_AppData, rawData: Data, modificationDate: Date?, version: Int64, didWrite: Bool)? {
@@ -296,6 +422,7 @@ private actor ProtobufDiskStore {
             try writeAppDataIfChangedOnce(
                 appData: appData,
                 previousData: previousData,
+                explicitlyDeletedFilterIDs: explicitlyDeletedFilterIDs,
                 to: dataURL,
                 versionURL: versionURL
             )
@@ -305,6 +432,16 @@ private actor ProtobufDiskStore {
     func removeItemIfExists(at url: URL) throws {
         guard fileExists(at: url) else { return }
         try fileManager.removeItem(at: url)
+    }
+
+    /// Deletes all protobuf artifacts while holding the same coordination used by writes.
+    /// Reset is therefore one serialized storage transaction, not three independent deletes.
+    func resetFiles(dataURL: URL, backupURL: URL, versionURL: URL) throws {
+        try withExclusiveFileLock(for: dataURL) {
+            for url in [dataURL, backupURL, versionURL] where fileExists(at: url) {
+                try fileManager.removeItem(at: url)
+            }
+        }
     }
 }
 
@@ -1056,6 +1193,9 @@ public class ProtobufDataManager: ObservableObject {
     private var lastLoadedDataFileModificationDate: Date?
     private var lastLoadedDataVersion: Int64 = 0
     private var initialLoadTask: Task<Void, Never>?
+    /// Incremented before reset starts. Every asynchronous writer validates this token both
+    /// before disk I/O and before publishing its result.
+    private var storageGeneration: UInt64 = 0
 
     /// Returns the most recent app data snapshot from disk if available; otherwise, returns the in-memory value.
     /// This helps avoid clobbering concurrent writes from other processes that share the app group file.
@@ -1174,7 +1314,7 @@ public class ProtobufDataManager: ObservableObject {
         var updatedData = await latestAppDataSnapshot()
         block(&updatedData)
         appData = updatedData
-        await saveData()
+        saveData()
     }
 
     /// Writes immediately for cross-process paths that need deterministic visibility.
@@ -1182,19 +1322,23 @@ public class ProtobufDataManager: ObservableObject {
     @discardableResult
     func updateDataImmediately(
         userScriptsAreAuthoritative: Bool = false,
+        explicitlyDeletedFilterIDs: Set<String> = [],
         with block: @escaping @Sendable (inout Wblock_Data_AppData) -> Void
     ) async -> Bool {
         pendingSaveTask?.cancel()
+        let writeGeneration = storageGeneration
         let pendingSnapshot = appData
         let pendingRawData = try? pendingSnapshot.serializedData()
         let pendingBaseline = lastSavedData
 
         do {
+            guard writeGeneration == storageGeneration else { return false }
             let mutation = try await diskStore.mutateAppDataAtomically(
                 at: dataFileURL,
                 versionURL: dataVersionFileURL,
                 mutate: block
             )
+            guard writeGeneration == storageGeneration else { return false }
             var finalAppData = mutation.appData
             var finalRawData = mutation.rawData
             var finalModificationDate = mutation.modificationDate
@@ -1208,12 +1352,13 @@ public class ProtobufDataManager: ObservableObject {
             if let pendingRawData,
                let pendingBaseline,
                pendingRawData != pendingBaseline,
-               let previousSnapshot = try? Wblock_Data_AppData(serializedData: pendingBaseline) {
+               let previousSnapshot = try? Wblock_Data_AppData(serializedBytes: pendingBaseline) {
                 var rebased = pendingSnapshot
                 mergePersistedChanges(
                     in: &rebased,
                     comparedTo: previousSnapshot,
-                    from: mutation.appData
+                    from: mutation.appData,
+                    explicitlyDeletedFilterIDs: explicitlyDeletedFilterIDs
                 )
                 if userScriptsAreAuthoritative {
                     // Replacement/removal already carries the manager’s complete collection.
@@ -1227,6 +1372,7 @@ public class ProtobufDataManager: ObservableObject {
                 if let result = try await diskStore.writeAppDataIfChanged(
                     appData: rebased,
                     previousData: mutation.rawData,
+                    explicitlyDeletedFilterIDs: explicitlyDeletedFilterIDs,
                     to: dataFileURL,
                     versionURL: dataVersionFileURL
                 ) {
@@ -1238,6 +1384,7 @@ public class ProtobufDataManager: ObservableObject {
                 }
             }
 
+            guard writeGeneration == storageGeneration else { return false }
             appData = finalAppData
             lastSavedData = finalRawData
             lastLoadedDataFileModificationDate = finalModificationDate
@@ -1398,36 +1545,50 @@ public class ProtobufDataManager: ObservableObject {
     }
     
     @MainActor
-    public func resetToDefaultData(preservingOnboardingCompletion: Bool = false) async {
+    @discardableResult
+    public func resetToDefaultData(preservingOnboardingCompletion: Bool = false) async -> Bool {
         logger.info("🔄 Resetting protobuf data to default state")
+        storageGeneration &+= 1
+        let resetGeneration = storageGeneration
         pendingSaveTask?.cancel()
+
         do {
-            try await diskStore.removeItemIfExists(at: dataFileURL)
+            try await diskStore.resetFiles(dataURL: dataFileURL, backupURL: backupFileURL, versionURL: dataVersionFileURL)
         } catch {
-            logger.error("⚠️ Failed to remove data file during reset: \(error.localizedDescription)")
+            lastError = error
+            logger.error("⚠️ Failed to reset protobuf storage: \(error.localizedDescription)")
+            return false
         }
-        do {
-            try await diskStore.removeItemIfExists(at: backupFileURL)
-        } catch {
-            logger.error("⚠️ Failed to remove backup file during reset: \(error.localizedDescription)")
-        }
-        do {
-            try await diskStore.removeItemIfExists(at: dataVersionFileURL)
-        } catch {
-            logger.error("⚠️ Failed to remove data version file during reset: \(error.localizedDescription)")
-        }
+        guard storageGeneration == resetGeneration else { return false }
         lastSavedData = nil
         lastLoadedDataFileModificationDate = nil
         lastLoadedDataVersion = 0
         let storageResetResult = await UserScriptStorageManager.shared.reset()
-        if !storageResetResult.ok {
-            let storageResetError = storageResetResult.error ?? "unknown error"
-            logger.error("⚠️ Failed to reset userscript storage during reset: \(storageResetError)")
+        guard storageGeneration == resetGeneration else { return false }
+        let storageResetError = storageResetResult.ok
+            ? nil
+            : NSError(
+                domain: "ProtobufDataManager",
+                code: 1,
+                userInfo: [
+                    NSLocalizedDescriptionKey:
+                        storageResetResult.error ?? "Failed to reset userscript storage"
+                ]
+            )
+        if let storageResetError {
+            logger.error(
+                "⚠️ Failed to reset userscript storage during reset: \(storageResetError.localizedDescription)")
         }
-        await createDefaultData(hasCompletedOnboarding: preservingOnboardingCompletion)
+
+        let createdDefaults = await createDefaultData(
+            hasCompletedOnboarding: preservingOnboardingCompletion
+        )
+        if let storageResetError { lastError = storageResetError }
+        return storageGeneration == resetGeneration && createdDefaults && storageResetError == nil
     }
 
-    private func createDefaultData(hasCompletedOnboarding: Bool = false) async {
+    @discardableResult
+    private func createDefaultData(hasCompletedOnboarding: Bool = false) async -> Bool {
         var defaultData = Wblock_Data_AppData()
 
         // Initialize default settings
@@ -1460,8 +1621,13 @@ public class ProtobufDataManager: ObservableObject {
         defaultData.performance.lastFastUpdateTime = "N/A"
 
         appData = defaultData
-        await saveDataImmediately()
-        logger.info("✅ Created default data")
+        let saved = await saveDataImmediately()
+        if saved {
+            logger.info("✅ Created default data")
+        } else {
+            logger.error("❌ Failed to persist default data")
+        }
+        return saved
     }
     
     // MARK: - Data Saving (debounced)
@@ -1501,10 +1667,12 @@ public class ProtobufDataManager: ObservableObject {
 
     @discardableResult
     private func performSaveData() async -> Bool {
+        let writeGeneration = storageGeneration
         let snapshot = appData
         let snapshotRawData = try? snapshot.serializedData()
         let previous = lastSavedData
 
+        guard writeGeneration == storageGeneration else { return false }
         do {
             if let result = try await diskStore.writeAppDataIfChanged(
                 appData: snapshot,
@@ -1512,6 +1680,7 @@ public class ProtobufDataManager: ObservableObject {
                 to: dataFileURL,
                 versionURL: dataVersionFileURL
             ) {
+                guard writeGeneration == storageGeneration else { return false }
                 if (try? appData.serializedData()) == snapshotRawData {
                     appData = result.appData
                 } else {
@@ -1752,7 +1921,7 @@ public class ProtobufDataManager: ObservableObject {
             self.appData = migratedData
         }
 
-        await saveData()
+        saveData()
         logger.info("✅ Migration completed successfully")
     }
     

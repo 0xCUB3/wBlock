@@ -62,16 +62,33 @@ extension AppFilterManager {
                     "newCount": "\(currentDisabledSites.count)",
                 ])
 
-            lastKnownDisabledSites = currentDisabledSites
-            // Only rebuild if we have applied filters (don't rebuild on startup)
+            // Only rebuild if we have applied filters (don't rebuild on startup). Keep the
+            // old snapshot until the complete fast transaction succeeds so failures stay dirty.
             if !hasUnappliedChanges && lastRuleCount > 0 {
                 await fastApplyDisabledSitesChanges()
+            } else {
+                lastKnownDisabledSites = currentDisabledSites
             }
         }
     }
 
-    /// Fast rebuild for disabled sites changes only - skips SafariConverterLib conversion
+    /// Fast rebuild for disabled sites changes only - skips SafariConverterLib conversion.
+    /// It uses the same exclusivity gate as the full apply pipeline.
     func fastApplyDisabledSitesChanges() async {
+        let started = await performExclusiveApply {
+            _ = await self.performFastDisabledSitesApply()
+        }
+        if !started {
+            // The active full apply will schedule one follow-up from the shared gate’s
+            // defer path. Avoid recursive polling while a long conversion is running.
+            hasUnappliedChanges = true
+            lastApplySucceeded = false
+            scheduleAutoApplyDebounce()
+        }
+    }
+
+    private func performFastDisabledSitesApply() async -> Bool {
+        let appliedSnapshot = effectiveFilterDisabledSites()
         await MainActor.run {
             self.isLoading = true
             self.statusDescription = LocalizedStrings.text(
@@ -115,13 +132,22 @@ extension AppFilterManager {
         let skippedCount = reloadSummary.skippedTargets
         let reloadTime = String(format: "%.2fs", Double(reloadSummary.reloadDurationMs) / 1000)
 
+        let succeeded = updateFailureCount == 0 && reloadSummary.failedTargets == 0
+
         await MainActor.run {
             self.lastReloadTime = reloadTime
             self.lastFastUpdateTime = reloadTime
             self.fastUpdateCount += 1
             self.isLoading = false
+            // Do not clear the dirty/error state on a partial update. The directory monitor
+            // will retry because lastKnownDisabledSites is advanced only on success.
+            self.hasError = !succeeded
+            self.lastApplySucceeded = succeeded
+            if !succeeded {
+                self.hasUnappliedChanges = true
+            }
 
-            if updateFailureCount == 0, reloadSummary.failedTargets == 0 {
+            if succeeded {
                 self.statusDescription = LocalizedStrings.format(
                     "Disabled sites updated successfully in %@ (fast update #%d)",
                     comment: "Disabled sites update success status",
@@ -150,6 +176,17 @@ extension AppFilterManager {
                 "failedCount": "\(reloadSummary.failedTargets)",
                 "reloadTime": reloadTime,
             ])
+
+        if succeeded {
+            lastKnownDisabledSites = appliedSnapshot
+            // If a newer snapshot arrived during the update, immediately schedule one
+            // follow-up rather than publishing the intermediate snapshot as current.
+            if effectiveFilterDisabledSites() != appliedSnapshot {
+                hasUnappliedChanges = true
+                scheduleAutoApplyDebounce()
+            }
+        }
+        return succeeded
     }
 
     nonisolated private static func reloadDisabledSitesTargetsInParallel(_ targets: [ContentBlockerTargetInfo]) async -> (

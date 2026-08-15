@@ -35,6 +35,24 @@ struct UserScriptPersistenceRaceTests {
         guard explicitlyEnabled.first(where: { $0.id == "A" })?.isEnabled == true else {
             fatalError("explicit enable intent did not rebase persisted state")
         }
+        let staleAfterDeletion = UserScriptPersistence.merge(
+            persisted: [b],
+            incoming: [a, b],
+            allowedInsertIDs: []
+        )
+        guard staleAfterDeletion.map(\.id) == ["B"] else {
+            fatalError("stale upsert resurrected a deleted ID")
+        }
+
+        let explicitInsertion = UserScriptPersistence.merge(
+            persisted: [b],
+            incoming: [a],
+            allowedInsertIDs: ["A"]
+        )
+        guard explicitInsertion.map(\.id) == ["B", "A"] else {
+            fatalError("genuinely new ID was not inserted")
+        }
+
         let authoritative = UserScriptPersistence.replace(with: [a, b])
         guard authoritative.map(\.id) == ["A", "B"] else {
             fatalError("authoritative replacement did not remove C")
@@ -45,13 +63,18 @@ struct UserScriptPersistenceRaceTests {
         let handler = try String(contentsOfFile: "wBlockCoreService/WebExtensionRequestHandler.swift", encoding: .utf8)
         guard persistence.contains("public func replaceUserScripts"),
               persistence.contains("public func removeUserScript(withId id: UUID)"),
-              manager.contains("dataManager.removeUserScript(withId: removedScript.id)"),
+              manager.contains("await dataManager.removeUserScript(withId: removedScript.id)"),
               handler.contains("let payloadMutationRevision = userScriptManager.payloadMutationRevision"),
               handler.contains("guard payloadMutationRevision == userScriptManager.payloadMutationRevision else"),
               manager.contains("payloadMutationRevision &+= 1"),
               persistence.contains("userScriptsAreAuthoritative: true"),
               handler.contains("error: \"userscript-state-changed\""),
-              handler.contains("private static let documentStartCacheAllowed = false")
+              handler.contains("multipliedReportingOverflow(by: chunkSize)"),
+              handler.contains("addingReportingOverflow(chunkSize)"),
+              !handler.contains("getDocumentStartUserScriptCatalog"),
+              !handler.contains("documentStartCacheAllowed"),
+              !handler.contains("cacheRevision"),
+              !handler.contains("cacheCategory")
         else { fatalError("authoritative deletion or payload revision contract is missing") }
 
         print("PASS: userscript persistence race contracts")

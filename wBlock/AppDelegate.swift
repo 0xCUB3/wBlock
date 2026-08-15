@@ -58,6 +58,7 @@ private final class BackgroundTaskHandle {
 #endif
 
 
+@MainActor
 class AppDelegate: NSObject {
     var filterManager: AppFilterManager?
     var hasPendingApplyNotification = false
@@ -339,6 +340,8 @@ extension AppDelegate: NSApplicationDelegate {
         case .succeeded, .timedOut:
             return
         case .unavailable:
+            break
+        @unknown default:
             break
         }
         #endif
@@ -669,7 +672,7 @@ extension AppDelegate: UIApplicationDelegate {
         let completionState = BGTaskCompletionState()
         let updateTask = Task {
             await ProtobufDataManager.shared.recordAutoUpdateTaskStart(kind)
-            let policy = await self.backgroundAutoUpdatePolicy(kind: kind, trigger: trigger)
+            let policy = self.backgroundAutoUpdatePolicy(kind: kind, trigger: trigger)
             let outcome = await self.runForcedAutoUpdate(trigger: trigger, policy: policy)
             let success = outcome.isSuccessfulForBackgroundTask
             let result = diagnosticResult(for: outcome)
@@ -699,7 +702,7 @@ extension AppDelegate: UIApplicationDelegate {
             }
         }
 
-        task.expirationHandler = {
+        task.expirationHandler = { [weak self] in
             os_log("%{public}@ expired - clearing running flag", type: .default, taskLabel)
             updateTask.cancel()
 
@@ -745,7 +748,7 @@ extension AppDelegate: UIApplicationDelegate {
     }
 }
 
-extension AppDelegate: UNUserNotificationCenterDelegate {
+extension AppDelegate: @preconcurrency UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
