@@ -126,6 +126,7 @@ struct OnboardingView: View {
     private var defaultUserScripts: [OnboardingUserScriptItem] {
         userScriptManager.userScripts
             .filter(userScriptManager.isDefaultUserScript)
+            .filter { !userScriptManager.isBeta(for: $0) }
             .filter { script in
                 let languages = userScriptManager.builtInLanguages(for: script)
                 return languages.isEmpty || !Set(languages).isDisjoint(with: selectedLanguages)
@@ -1050,7 +1051,7 @@ struct OnboardingView: View {
         guard !hasSeededUserscriptSelection else { return }
 
         let defaultScripts = userScriptManager.userScripts.filter {
-            userScriptManager.isDefaultUserScript($0)
+            userScriptManager.isDefaultUserScript($0) && !userScriptManager.isBeta(for: $0)
         }
         guard !defaultScripts.isEmpty else { return }
 
@@ -1061,7 +1062,7 @@ struct OnboardingView: View {
 
     private func syncBaselineUserscriptSelection() {
         let defaultScripts = userScriptManager.userScripts.filter {
-            userScriptManager.isDefaultUserScript($0)
+            userScriptManager.isDefaultUserScript($0) && !userScriptManager.isBeta(for: $0)
         }
         guard !defaultScripts.isEmpty else { return }
 
