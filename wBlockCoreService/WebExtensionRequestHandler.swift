@@ -1057,7 +1057,9 @@ public enum WebExtensionRequestHandler {
             }
 
             let manager = UserScriptManager.shared
-            await manager.waitUntilReady()
+            // The extension process can outlive an app-side userscript update.
+            // Reload shared-container records before listing versions/names.
+            await manager.refreshFromDiskForExecution()
             let pageScripts = manager.pageUserScripts(for: urlString)
             let descriptors = pageScripts.map { item -> [String: Any] in
                 [
