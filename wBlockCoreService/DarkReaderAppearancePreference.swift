@@ -7,11 +7,12 @@ import Foundation
 
 public enum DarkReaderAppearancePreference {
     public static let storageKey = "darkReaderFollowsSystemAppearance"
+    public static let storageSuiteName = "group.skula.wBlock"
     public static let scriptURL =
         "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/dark-reader/dist/dark-reader.user.js"
 
     public static func followsSystemAppearance(
-        groupIdentifier: String = GroupIdentifier.shared.value
+        groupIdentifier: String = storageSuiteName
     ) -> Bool {
         guard let defaults = UserDefaults(suiteName: groupIdentifier),
               defaults.object(forKey: storageKey) != nil
@@ -21,7 +22,7 @@ public enum DarkReaderAppearancePreference {
 
     public static func setFollowsSystemAppearance(
         _ followsSystemAppearance: Bool,
-        groupIdentifier: String = GroupIdentifier.shared.value
+        groupIdentifier: String = storageSuiteName
     ) {
         UserDefaults(suiteName: groupIdentifier)?.set(
             followsSystemAppearance,

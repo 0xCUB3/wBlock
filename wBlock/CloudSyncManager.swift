@@ -1276,11 +1276,11 @@ final class CloudSyncManager: ObservableObject {
             guard !normalizedURL.isEmpty, !deletedRemoteURLs.contains(normalizedURL) else {
                 return false
             }
-            return URL(string: remote.url) != nil
+            return CloudSyncRemoteUserScriptReconciler.canonicalURL(remote.url) != nil
         }
 
         for remote in desiredRemoteScripts {
-            guard let url = URL(string: remote.url) else { continue }
+            guard let url = CloudSyncRemoteUserScriptReconciler.canonicalURL(remote.url) else { continue }
             if let existing = userScriptManager.userScripts.first(where: { $0.url == url }) {
                 await applyRemoteUserScriptEnabledState(
                     existing,
@@ -1293,7 +1293,7 @@ final class CloudSyncManager: ObservableObject {
         }
 
         let missingRemoteScripts = desiredRemoteScripts.filter { remote in
-            guard let url = URL(string: remote.url) else { return false }
+            guard let url = CloudSyncRemoteUserScriptReconciler.canonicalURL(remote.url) else { return false }
             return userScriptManager.userScripts.first(where: { $0.url == url }) == nil
         }
 
@@ -1301,12 +1301,12 @@ final class CloudSyncManager: ObservableObject {
             let manager = userScriptManager
             await boundedConcurrentForEach(missingRemoteScripts, operation: { remote in
                 guard await manager.currentLocalSyncMutationRevision() == localMutationRevisionAtStart else { return }
-                guard let url = URL(string: remote.url) else { return }
+                guard let url = CloudSyncRemoteUserScriptReconciler.canonicalURL(remote.url) else { return }
                 await manager.addUserScript(from: url, origin: .remoteSync)
             }, onResult: { _ in })
 
             for remote in missingRemoteScripts {
-                guard let url = URL(string: remote.url) else { continue }
+                guard let url = CloudSyncRemoteUserScriptReconciler.canonicalURL(remote.url) else { continue }
                 if let added = userScriptManager.userScripts.first(where: { $0.url == url }) {
                     await applyRemoteUserScriptEnabledState(
                         added,
@@ -1426,7 +1426,7 @@ final class CloudSyncManager: ObservableObject {
 
         for remote in scripts.remote {
             guard let disabledHosts = remote.disabledHosts else { continue }
-            guard let url = URL(string: remote.url) else { continue }
+            guard let url = CloudSyncRemoteUserScriptReconciler.canonicalURL(remote.url) else { continue }
             guard let script = userScriptManager.userScripts.first(where: { $0.url == url }) else { continue }
             await dataManager.setUserScriptDisabledHosts(disabledHosts, forScriptID: script.id.uuidString)
         }
@@ -1742,12 +1742,12 @@ final class CloudSyncManager: ObservableObject {
             let manager = userScriptManager
             await boundedConcurrentForEach(missingRemoteScripts, operation: { remote in
 
-                guard let url = URL(string: remote.url) else { return }
+                guard let url = CloudSyncRemoteUserScriptReconciler.canonicalURL(remote.url) else { return }
                 await manager.addUserScript(from: url, origin: .remoteSync)
             }, onResult: { _ in })
 
             for remote in missingRemoteScripts {
-                guard let url = URL(string: remote.url) else { continue }
+                guard let url = CloudSyncRemoteUserScriptReconciler.canonicalURL(remote.url) else { continue }
                 if let added = userScriptManager.userScripts.first(where: { $0.url == url }) {
                     await userScriptManager.setUserScript(
                         added,

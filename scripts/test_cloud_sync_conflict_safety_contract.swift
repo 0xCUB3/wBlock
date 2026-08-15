@@ -16,6 +16,7 @@ expect(cloud.contains("localPayloadDiffersFromRemote"), "final content hash must
 expect(cloud.contains("isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false"), "new custom selections must honor the race guard")
 expect(!cloud.contains("isSelected: remoteCustom.isSelected"), "every new custom-filter path must honor the selection race guard")
 expect(cloud.contains("origin: .remoteSync"), "Cloud userscript mutations must identify their origin")
+expect(!cloud.contains("URL(string: remote.url)"), "Cloud userscript restores must canonicalize legacy aliases before lookup and download")
 expect(manager.contains("if origin == .local { recordScriptMutation"), "remote userscript mutations must not advance local revision")
 expect(manager.contains("public func removeUserScript(\n        _ userScript: UserScript,\n        origin:"), "deletions must carry mutation origin")
 print("PASS")

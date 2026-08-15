@@ -10,6 +10,23 @@ struct DarkReaderAppearancePreferenceTests {
         defer { defaults.removePersistentDomain(forName: suite) }
 
         expect(
+            DarkReaderAppearancePreference.storageSuiteName == "group.skula.wBlock",
+            "the preference must use the shared app-group suite"
+        )
+        expect(
+            DarkReaderAppearancePreference.matches(
+                scriptURL: URL(string: DarkReaderAppearancePreference.scriptURL)
+            ),
+            "the canonical Dark Reader URL must receive runtime configuration"
+        )
+        expect(
+            !DarkReaderAppearancePreference.matches(
+                scriptURL: URL(string: "https://bundled.wblock.invalid/dark-reader.user.js")
+            ),
+            "legacy aliases must be migrated before runtime configuration"
+        )
+
+        expect(
             DarkReaderAppearancePreference.followsSystemAppearance(groupIdentifier: suite),
             "the preference must default to following system appearance"
         )
@@ -22,7 +39,9 @@ struct DarkReaderAppearancePreferenceTests {
 
         let forced = DarkReaderAppearancePreference.configuredExecutableContent(
             "window.__darkReaderProbe = true;",
-            followsSystemAppearance: false
+            followsSystemAppearance: DarkReaderAppearancePreference.followsSystemAppearance(
+                groupIdentifier: suite
+            )
         )
         expect(
             forced.hasPrefix("const __wblockDarkReaderFollowsSystemAppearance = false;\n"),

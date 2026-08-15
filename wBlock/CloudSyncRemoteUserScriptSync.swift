@@ -15,6 +15,12 @@ enum CloudSyncRemoteUserScriptReconciler {
         return legacyBundledURLs[normalized] ?? normalized
     }
 
+    static func canonicalURL(_ url: String) -> URL? {
+        let normalized = normalizedURL(url)
+        guard !normalized.isEmpty else { return nil }
+        return URL(string: normalized)
+    }
+
     static func deletedURLsToClearDuringUploadReconciliation(
         existingDeletedURLs: Set<String>,
         localRemoteScriptURLs: Set<String>

@@ -35,7 +35,16 @@ struct CloudSyncRemoteUserScriptTests {
                 CloudSyncRemoteUserScriptReconciler.normalizedURL("  \(legacy)  ") == canonical,
                 "legacy userscript identity must normalize to \(canonical)"
             )
+            expect(
+                CloudSyncRemoteUserScriptReconciler.canonicalURL("  \(legacy)  ")?.absoluteString
+                    == canonical,
+                "legacy userscript restores must download the canonical URL"
+            )
         }
+        expect(
+            CloudSyncRemoteUserScriptReconciler.canonicalURL(retiredTinyShield) == nil,
+            "retired userscripts must not produce a restorable URL"
+        )
         let canonicalTube = migratedURLs[
             "https://bundled.wblock.invalid/tube-cleaner.user.js"
         ]!
