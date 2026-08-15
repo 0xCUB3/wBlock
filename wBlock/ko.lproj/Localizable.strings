@@ -978,3 +978,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "wBlock용 MIT 라이선스 Dark Reader API 엔진(베타, 전체 사이트 수정 데이터베이스 제외).";
 "Follow System Appearance" = "시스템 모드 따르기";
 "When off, Dark Reader keeps websites dark in Light Mode." = "끄면 라이트 모드에서도 Dark Reader가 웹사이트를 어둡게 유지합니다.";
+"Follow System" = "시스템 따르기";
+"Always Dark" = "항상 어둡게";

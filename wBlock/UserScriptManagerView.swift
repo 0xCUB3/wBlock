@@ -652,20 +652,12 @@ struct UserScriptManagerView: View {
                 }
 
                 if script.isDarkReader {
-                    DisclosureGroup("Appearance") {
-                        Toggle("Follow System Appearance", isOn: Binding(
+                    DarkReaderAppearancePicker(
+                        followsSystemAppearance: Binding(
                             get: { userScriptManager.darkReaderFollowsSystemAppearance },
                             set: { userScriptManager.setDarkReaderFollowsSystemAppearance($0) }
-                        ))
-                        .font(.subheadline)
-                        .toggleStyle(.switch)
-                        Text("When off, Dark Reader keeps websites dark in Light Mode.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .font(.subheadline)
-                    .padding(.top, 2)
+                        )
+                    )
                 }
             }
 
@@ -1635,6 +1627,57 @@ struct Badge: View {
         Text(LocalizedStringKey(text)).font(.caption2).fontWeight(.medium)
             .padding(.horizontal, 6).padding(.vertical, 2)
             .background(color.opacity(0.15)).foregroundStyle(color).cornerRadius(4)
+    }
+}
+
+private struct DarkReaderAppearancePicker: View {
+    @Binding var followsSystemAppearance: Bool
+
+    var body: some View {
+        Menu {
+            Button {
+                followsSystemAppearance = true
+            } label: {
+                appearanceMenuItem(title: "Follow System", selected: followsSystemAppearance)
+            }
+            Button {
+                followsSystemAppearance = false
+            } label: {
+                appearanceMenuItem(title: "Always Dark", selected: !followsSystemAppearance)
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: followsSystemAppearance ? "circle.lefthalf.filled" : "moon.fill")
+                    .imageScale(.small)
+                Text(followsSystemAppearance ? "Follow System" : "Always Dark")
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.primary.opacity(0.06))
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Appearance")
+        .accessibilityValue(followsSystemAppearance ? "Follow System" : "Always Dark")
+        .padding(.top, 2)
+    }
+
+    @ViewBuilder
+    private func appearanceMenuItem(title: LocalizedStringKey, selected: Bool) -> some View {
+        if selected {
+            Label(title, systemImage: "checkmark")
+        } else {
+            Text(title)
+        }
     }
 }
 

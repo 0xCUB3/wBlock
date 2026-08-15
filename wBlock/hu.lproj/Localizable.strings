@@ -978,3 +978,5 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "A Dark Reader MIT-licencelt API-motorja a wBlockhoz (béta; a teljes webhelyjavítási adatbázis nélkül).";
 "Follow System Appearance" = "Rendszermegjelenés követése";
 "When off, Dark Reader keeps websites dark in Light Mode." = "Kikapcsolva a Dark Reader világos módban is sötéten tartja a webhelyeket.";
+"Follow System" = "Rendszert követ";
+"Always Dark" = "Mindig sötét";

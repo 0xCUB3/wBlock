@@ -50,11 +50,11 @@ guard manager.contains("@Published public private(set) var darkReaderFollowsSyst
     && manager.contains("setDarkReaderFollowsSystemAppearance")
     && manager.contains("invalidateDocumentStartExecutionCache")
 else { fail("Dark Reader preference is not observable or cache-safe") }
-guard view.contains("DisclosureGroup(\"Appearance\")")
-    && view.contains("Follow System Appearance")
-    && view.contains("When off, Dark Reader keeps websites dark in Light Mode.")
+guard view.contains("DarkReaderAppearancePicker")
+    && view.contains("Follow System")
+    && view.contains("Always Dark")
     && view.contains("if script.isDarkReader")
-else { fail("Dark Reader appearance setting must be collapsed in its list-row disclosure") }
+else { fail("Dark Reader appearance setting must use a compact list-row menu") }
 guard handler.contains("configuredExecutableContent(for: script)")
     && handler.contains("dark-reader-\\(mode)")
     && handler.contains("DarkReaderAppearancePreference.followsSystemAppearance()")
@@ -73,8 +73,8 @@ for locale in try! FileManager.default.contentsOfDirectory(atPath: "wBlock").fil
     let strings = read("wBlock/\(locale)/Localizable.strings")
     guard strings.contains(description) else { fail("Dark Reader localization missing in \(locale)") }
     for key in [
-        "Follow System Appearance",
-        "When off, Dark Reader keeps websites dark in Light Mode.",
+        "Follow System",
+        "Always Dark",
     ] {
         guard strings.contains("\"\(key)\" =") else { fail("Dark Reader setting localization missing in \(locale): \(key)") }
     }

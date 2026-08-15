@@ -978,3 +978,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "wBlock向けのMITライセンスDark Reader APIエンジン（ベータ版。サイト修正データベース全体は含まれません）。";
 "Follow System Appearance" = "システムの外観に合わせる";
 "When off, Dark Reader keeps websites dark in Light Mode." = "オフにすると、ライトモードでもDark Readerがウェブサイトを暗く保ちます。";
+"Follow System" = "システムに合わせる";
+"Always Dark" = "常にダーク";
