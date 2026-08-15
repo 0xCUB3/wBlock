@@ -7,6 +7,7 @@ func read(_ path: String) -> String { guard let value = try? String(contentsOfFi
 let manager = read("wBlockCoreService/UserScriptManager.swift")
 let cloud = read("wBlock/CloudSyncRemoteUserScriptSync.swift")
 let handler = read("wBlockCoreService/WebExtensionRequestHandler.swift")
+let background = read("extension-src/background.js")
 let preference = read("wBlockCoreService/DarkReaderAppearancePreference.swift")
 let view = read("wBlock/UserScriptManagerView.swift")
 let appSources = manager + preference
@@ -59,6 +60,18 @@ guard handler.contains("configuredExecutableContent(for: script)")
     && handler.contains("dark-reader-\\(mode)")
     && handler.contains("DarkReaderAppearancePreference.followsSystemAppearance()")
 else { fail("Dark Reader preference does not cover inline and chunked payloads") }
+guard handler.contains("let injectInto = script.injectInto == \"auto\" && hasUnsafeWindowGrant")
+    && handler.contains("descriptor[\"contentDigest\"]")
+    && handler.contains("UserStylePreprocessorService.digest(")
+else { fail("canonical Dark Reader descriptor must retain content injection and its digest") }
+guard handler.contains("requestedContentDigest")
+    && handler.contains("userscript-integrity-mismatch")
+    && handler.contains("DarkReaderAppearancePreference.matches(scriptURL: script.url)")
+    && background.contains("message.contentDigest")
+else { fail("Dark Reader digest validation contract is missing") }
+guard preference.contains("__wblockDarkReaderFollowsSystemAppearance")
+    && !preference.contains("__wblockDarkReaderPreviousGlobal")
+else { fail("Dark Reader preference must only prepend its configuration constant") }
 for path in [
     "wBlockCoreService/BundledUserscripts",
     "wBlockCoreService/BundledUserScriptSources.generated.swift",

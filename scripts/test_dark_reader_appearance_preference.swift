@@ -48,6 +48,7 @@ struct DarkReaderAppearancePreferenceTests {
             "forced-dark runtime configuration missing"
         )
         expect(forced.hasSuffix("window.__darkReaderProbe = true;"), "script content was not preserved")
+        expect(!forced.contains("__wblockDarkReaderPreviousGlobal"), "page-global preservation wrapper must be absent")
 
         DarkReaderAppearancePreference.setFollowsSystemAppearance(true, groupIdentifier: suite)
         expect(

@@ -992,8 +992,7 @@ public enum WebExtensionRequestHandler {
         }
         let injectInto = script.injectInto == "auto" && hasUnsafeWindowGrant
             ? "page" : script.injectInto
-
-        let descriptor: [String: Any] = [
+        var descriptor: [String: Any] = [
             "id": script.id.uuidString,
             "name": script.name,
             "namespace": UserScriptMetadataParser.extractValue(
@@ -1018,6 +1017,11 @@ public enum WebExtensionRequestHandler {
             "downloadURL": script.downloadURL ?? "",
             "resourceNames": resourceNames
         ]
+        if DarkReaderAppearancePreference.matches(scriptURL: script.url) {
+            descriptor["contentDigest"] = UserStylePreprocessorService.digest(
+                configuredExecutableContent(for: script)
+            )
+        }
         return descriptor
     }
 
@@ -1432,11 +1436,14 @@ public enum WebExtensionRequestHandler {
         message: [String: Any?],
         context: NSExtensionContext
     ) {
+        let requestedContentDigest = message["contentDigest"] as? String
+        let hasContentDigest = message.keys.contains("contentDigest")
         guard let scriptIDString = message["scriptId"] as? String,
               let scriptID = UUID(uuidString: scriptIDString),
               let pageURL = message["url"] as? String,
               let requestedRevision = message["payloadRevision"] as? Int,
-              requestedRevision >= 0
+              requestedRevision >= 0,
+              !hasContentDigest || requestedContentDigest?.isEmpty == false
         else {
             context.completeRequest(returningItems: [createResponse(with: [
                 "ok": false, "error": "Missing execution validation payload"
@@ -1462,6 +1469,21 @@ public enum WebExtensionRequestHandler {
                     "payloadRevision": manager.payloadMutationRevision
                 ])])
                 return
+            }
+            if hasContentDigest {
+                guard DarkReaderAppearancePreference.matches(scriptURL: script.url),
+                      let requestedContentDigest,
+                      requestedContentDigest.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil,
+                      requestedContentDigest == UserStylePreprocessorService.digest(
+                          configuredExecutableContent(for: script)
+                      )
+                else {
+                    context.completeRequest(returningItems: [createResponse(with: [
+                        "ok": false, "error": "userscript-integrity-mismatch",
+                        "payloadRevision": manager.payloadMutationRevision
+                    ])])
+                    return
+                }
             }
             context.completeRequest(returningItems: [createResponse(with: [
                 "ok": true, "payloadRevision": manager.payloadMutationRevision

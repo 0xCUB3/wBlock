@@ -95,6 +95,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.registeredMenuCommands = new Map(); // bridgeId -> Map(commandId, descriptor)
             this.pendingMenuInvocations = new Map(); // requestId -> { resolve, timeoutId }
             this.scriptPayloadPromises = new Map(); // scriptId -> Promise<hydrated script>
+            this.warmStartValidationPromises = new Map(); // script key -> native validation promise
             this.documentStartRequestGeneration = 0;
             this.documentRootPromise = null; // earliest safe page-world injection point
             this.rydPrefetchEnabled = false;
@@ -124,10 +125,17 @@ if (window.wBlockUserscriptInjectorHasRun) {
             // and we forward them through the background/native layer (CORS-free).
             this.setupXhrBridge();
 
-            // Warm start is page-only and quarantined. Fresh native verification is
-            // still required before any extension privilege is made available.
-            this.loadWarmStartScripts();
-            this.requestUserScripts();
+            // Warm starts are quarantined. Page-world payloads retain their existing
+            // page-authority behavior; content-world candidates need native integrity
+            // validation before they can execute.
+            const warmStartValidationDispatch = this.loadWarmStartScripts();
+            if (warmStartValidationDispatch) {
+                warmStartValidationDispatch
+                    .catch(error => wBlockWarn('[wBlock] Warm-start integrity check failed:', error))
+                    .finally(() => this.requestUserScripts());
+            } else {
+                this.requestUserScripts();
+            }
         }
 
         invalidateDocumentStartSessionCache() {
@@ -141,6 +149,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.provisionalScripts.clear();
             this.storageBridgeScriptIDs.clear();
             this.scriptPayloadPromises.clear();
+            this.warmStartValidationPromises.clear();
             this.injectingScripts.clear();
             this.requestUserScripts(0, generation);
         }
@@ -799,8 +808,14 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
         isWarmStartEligible(script) {
             if (!script || script.isEnabled !== true || script.isLocal !== false || script.kind === 'style') return false;
-            if (script.injectInto !== 'page' || script.runAt !== 'document-start'
+            if (script.runAt !== 'document-start'
                 || script.noframes === true && window !== window.top) return false;
+            const isPageWarmStart = script.injectInto === 'page';
+            const isDarkReaderContentWarmStart = script.injectInto === 'content'
+                && script.sourceURL === 'https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/dark-reader/dist/dark-reader.user.js'
+                && typeof script.contentDigest === 'string'
+                && /^[0-9a-f]{64}$/.test(script.contentDigest);
+            if (!isPageWarmStart && !isDarkReaderContentWarmStart) return false;
             if (typeof script.content !== 'string' || !script.content || !/^https:\/\//i.test(script.sourceURL || '')) return false;
             if (!this.scriptMatchesCurrentURL(script)) return false;
             if ((script.includes || []).length || (script.excludes || []).length || (script.excludeMatches || []).length) return false;
@@ -816,7 +831,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
         loadWarmStartScripts() {
             try {
                 const raw = sessionStorage.getItem(WBLOCK_WARM_START_CACHE_KEY);
-                if (!raw) return;
+                if (!raw) return null;
                 if (new TextEncoder().encode(raw).length > WBLOCK_WARM_START_MAX_BYTES) {
                     sessionStorage.removeItem(WBLOCK_WARM_START_CACHE_KEY);
                     return;
@@ -837,11 +852,56 @@ if (window.wBlockUserscriptInjectorHasRun) {
                         } = script;
                         return { ...cached, __wblockWarmStart: true };
                     });
-                if (scripts.length) this.injectUserScripts(scripts);
+                if (scripts.length) {
+                    const validationDispatch = this.prepareWarmStartValidations(scripts);
+                    this.injectUserScripts(scripts);
+                    return validationDispatch;
+                }
             } catch (error) {
                 wBlockWarn('[wBlock] Warm-start cache rejected:', error);
                 try { sessionStorage.removeItem(WBLOCK_WARM_START_CACHE_KEY); } catch (_) {}
             }
+            return null;
+        }
+
+        async warmStartContentDigest(content) {
+            if (typeof crypto === 'undefined' || !crypto.subtle || typeof crypto.subtle.digest !== 'function') {
+                return null;
+            }
+            const bytes = new TextEncoder().encode(content);
+            const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+            return Array.from(digest, byte => byte.toString(16).padStart(2, '0')).join('');
+        }
+
+        prepareWarmStartValidations(scripts) {
+            const validationDispatches = [];
+            for (const script of scripts) {
+                if (!this.isWarmStartEligible(script) || script.injectInto !== 'content') continue;
+                const key = this.scriptExecutionKey(script);
+                let markDispatched;
+                const dispatched = new Promise(resolve => { markDispatched = resolve; });
+                const validation = (async () => {
+                    try {
+                        const actualDigest = await this.warmStartContentDigest(script.content);
+                        if (actualDigest !== script.contentDigest) {
+                            return { ok: false, error: 'userscript-integrity-mismatch' };
+                        }
+                        const nativeValidation = this.sendNativeRequest('validateUserScriptExecution', {
+                            scriptId: script.id,
+                            url: window.location.href,
+                            payloadRevision: script.payloadRevision,
+                            contentDigest: script.contentDigest
+                        });
+                        markDispatched();
+                        return await nativeValidation;
+                    } finally {
+                        markDispatched();
+                    }
+                })();
+                this.warmStartValidationPromises.set(key, validation);
+                validationDispatches.push(dispatched);
+            }
+            return validationDispatches.length > 0 ? Promise.all(validationDispatches) : null;
         }
 
         persistWarmStartScripts(scripts) {
@@ -904,9 +964,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
                     const scripts = response && response.userScripts ? response.userScripts : [];
                     this.reconcileWarmStart(scripts);
-                    // iOS cannot invalidate a trusted speculative cache, but this
-                    // snapshot has page authority only. Fresh native authority is
-                    // still required before any extension privilege is released.
+                    // Page-world warm starts have only page authority. Dark Reader's
+                    // content-world cache must pass local and native digest checks first.
+                    // Fresh reconciliation is still required before bridge privileges are released.
                     this.persistWarmStartScripts(scripts);
                     this.enableReturnYouTubeDislikePrefetch(scripts);
                     if (scripts.length === 0) wBlockLog('[wBlock] No userscripts found in getUserScripts response.');
@@ -1120,11 +1180,16 @@ if (window.wBlockUserscriptInjectorHasRun) {
             if (!script || !script.id || !Number.isSafeInteger(script.payloadRevision) || script.payloadRevision < 0) {
                 return false;
             }
-            const result = await this.sendNativeRequest('validateUserScriptExecution', {
+            const warmValidation = script.__wblockWarmStart === true
+                ? this.warmStartValidationPromises.get(this.scriptExecutionKey(script))
+                : null;
+            const result = await (warmValidation || this.sendNativeRequest('validateUserScriptExecution', {
                 scriptId: script.id,
                 url: window.location.href,
-                payloadRevision: script.payloadRevision
-            });
+                payloadRevision: script.payloadRevision,
+                ...(typeof script.contentDigest === 'string' && script.contentDigest.length > 0
+                    ? { contentDigest: script.contentDigest } : {})
+            }));
             if (!result || result.ok !== true) {
                 if (result && result.error) wBlockLog(`[wBlock] Native execution validation rejected ${script.name}: ${result.error}`);
                 return false;
@@ -1247,9 +1312,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 }
 
                 if (generation !== this.documentStartRequestGeneration) return;
-                // Revalidate immediately before execution: another process may have
-                // disabled, removed, or replaced this descriptor during hydration.
-                if (!await this.validateScriptForExecution(fullScript)) return;
+                // Warm-start page scripts are quarantined: execute their cached page
+                // payload before native validation, but do not release any bridge
+                // privilege until authoritative reconciliation succeeds.
+                if (!warmStart || injectInto === 'content') {
+                    const validated = await this.validateScriptForExecution(fullScript);
+                    if (generation !== this.documentStartRequestGeneration || !validated) return;
+                }
                 if (injectInto === 'content') {
                     // Execute directly in content script context (CSP-safe)
                     this.injectInContentContext(fullScript);

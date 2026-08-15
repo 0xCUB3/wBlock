@@ -26266,12 +26266,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     if (message && message.action === "validateUserScriptExecution") {
       try {
-        return await sendQueuedNativeMessage({
+        return await sendPriorityNativeMessage({
           action: message.action,
           requestId: "userscript-validate-" + Date.now(),
           scriptId: message.scriptId,
           url: message.url,
-          payloadRevision: message.payloadRevision
+          payloadRevision: message.payloadRevision,
+          ...(typeof message.contentDigest === "string" ? { contentDigest: message.contentDigest } : {})
         });
       } catch (error) {
         return { ok: false, error: String(error && error.message ? error.message : error) };
