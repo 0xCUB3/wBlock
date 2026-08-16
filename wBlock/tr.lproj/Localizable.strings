@@ -189,7 +189,7 @@
 "Calculated source rule count for filter" = "Filtrenin kaynak kural sayısı hesaplandı";
 "Cancel" = "İptal";
 "Category" = "Kategori";
-"Element Zapper changes take full effect after the next apply." = "Öğe Engelleyici değişiklikleri bir sonraki uygulama işleminden sonra tamamen geçerli olacaktır.";
+"Element Zapper changes take full effect after the next apply." = "Öğe gizleyici değişiklikleri, bir sonraki uygulama işleminden sonra etkinleşecektir.";
 "Check for Updates" = "Güncellemeleri denetle";
 "Checked %@" = "%@ kontrol edildi";
 "Checked %@ ago" = "%@ önce denetlendi";
@@ -218,7 +218,7 @@
 "Content filtering" = "İçerik filtreleme";
 "Continue" = "Devam";
 "Continue Setup" = "Kuruluma devam et";
-"Controls the time zone used when displaying and exporting log timestamps." = "Günlük zaman damgaları görüntülenirken ve dışa aktarılırken kullanılan saat dilimini denetler.";
+"Controls the time zone used when displaying and exporting log timestamps." = "Günlük zaman damgaları görüntülenirken ve dışa aktarılırken kullanılan saat dilimini kontrol eder.";
 "Conversion" = "Dönüşüm";
 "Conversion phase summary" = "Dönüştürme süreci özeti";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Kurallar dönüştürüldü, ancak bir veya daha fazla genişletme 5 denemenin ardından yeniden yüklenemedi.";
@@ -297,7 +297,7 @@
 "Enable all 5 Content Blocker extensions" = "5 İçerik Engelleyici genişletmesinin tümünü etkinleştirin";
 "Enable extra fixes and finish setup." = "Ek düzeltmeleri etkinleştirin ve kurulumu tamamlayın.";
 "Enable the Safari extensions so wBlock can block ads and run userscripts." = "wBlock'un reklamları engellemesi ve kullanıcı betik dosyalarını çalıştırabilmesi için Safari genişletmelerini etkinleştirin.";
-"Enable the Safari extensions so wBlock can block ads." = "wBlock'un reklamları engelleyebilmesi için Safari uzantılarını etkinleştirin.";
+"Enable the Safari extensions so wBlock can block ads." = "wBlock'un reklamları engelleyebilmesi için Safari genişletmelerini etkinleştirin.";
 "Enabled" = "Etkin";
 "Enabled Lists" = "Etkin liste";
 "Enter a valid http(s) URL to a .txt, .list, or .json filter." = ".txt, .list veya .json uzantılı filtre için geçerli bir http(s) URL'si girin.";
@@ -388,7 +388,7 @@
 "FilterApply" = "Filtreyi Uygula";
 "Filtering off" = "Filtreleme kapalı";
 "Filters" = "Filtreler";
-"Filters: %d / Userscripts: %d" = "Filtreler: %d / Kullanıcı betikleri: %d";
+"Filters: %d / Userscripts: %d" = "Filtre: %d / Kullanıcı betiği: %d";
 "Filters and scripts applied successfully." = "Filtreler ve betikler başarıyla uygulandı.";
 "Filters applied successfully." = "Filtreler başarıyla uygulandı.";
 "Filters Auto-Disabled" = "Filtreler otomatik devre dışı bırakıldı";
@@ -438,7 +438,7 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "wBlock'un adı ve URL kalıplarını okuyabilmesi için // ==UserScript== meta veri bloğunu (veya kullanıcı stilleri için /* ==UserStyle== */) ekleyin.";
 "IndianList" = "IndianList";
 "Info" = "Bilgi";
-"Integrated" = "Entegre";
+"Integrated" = "Dâhili";
 "Info.plist missing" = "Info.plist eksik";
 "Initialized with %d filter list(s)." = "%d filtre listesiyle başlatıldı.";
 "International" = "Uluslararası";
@@ -541,7 +541,7 @@
 "Paste one or more filter URLs, one per line." = "Her satıra bir tane gelecek şekilde, bir veya daha fazla filtre URL'si yapıştırın.";
 "Paste or write a userscript or userstyle with a standard metadata block." = "Standart bir meta veri bloğu içeren bir kullanıcı betiği veya kullanıcı stili yapıştırın ya da yazın.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = ".user.js bağlantısını doğrudan buraya yapıştırın. wBlock sizin için indirip yükleyecektir.";
-"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Doğrudan .user.js, .js, .user.css, .less, .sass, .scss, .styl veya .pcss bağlantısını yapıştırın. wBlock indirip sizin için yükleyecektir.";
+"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Doğrudan .user.js, .js, .user.css, .less, .sass, .scss, .styl veya .pcss bağlantısını yapıştırın. wBlock sizin için indirip kuracaktır.";
 "Pause Blocking" = "Engellemeyi duraklat";
 "Pausing blocking..." = "Engelleme duraklatılıyor...";
 "Persian Blocker" = "Persian Blocker";
@@ -565,7 +565,7 @@
 "Process completed with reload issues" = "İşlem, yeniden yükleme sorunlarıyla tamamlandı";
 "Progress" = "İlerleme";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Şüpheli URL'lere, kimlik avı sitelerine ve istenmeyen yazılımlara karşı korur.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = ".js, .user.js, .user.css, .less, .sass, .scss, .styl veya .pcss ile biten geçerli bir http:// veya https:// bağlantısı sağlayın";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Lütfen .js, .user.js, .user.css, .less, .sass, .scss, .styl veya .pcss ile biten geçerli bir http:// ya da https:// bağlantısı sağlayın";
 "Provide a valid https:// link ending in .user.js" = ".user.js ile biten geçerli bir https:// bağlantısı sağlayın";
 "Psst! You forgot something!" = "Psst! Bir şeyi unuttun!";
 "Quit Without Applying" = "Değişiklikleri uygulamadan çık";
@@ -605,8 +605,8 @@
 "replaced match on line $" = "$ satırındaki eşleşme değiştirildi";
 "Report an Issue" = "Bir sorun bildir";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "Kullanıcı betik dosyaları, gelişmiş reklam engelleme ve temizleyici özellikler için gereklidir";
-"Required for YouTube ad blocking and much more" = "YouTube reklam engelleme ve çok daha fazlası için gereklidir";
-"The selected file is too large. Maximum size is 10 MB." = "Seçilen dosya çok büyük. Maksimum boyut 10 MB'tır.";
+"Required for YouTube ad blocking and much more" = "YouTube'da reklam engelleme ve çok daha fazlası için gereklidir";
+"The selected file is too large. Maximum size is 10 MB." = "Seçilen dosya çok büyük. En fazla boyut 10 MB.";
 "Requirements" = "Gereksinimler";
 "Reset Site Settings" = "Site ayarlarını sıfırla";
 "Resetting…" = "Sıfırlanıyor…";
@@ -701,12 +701,12 @@
 "Successfully updated script" = "Betik başarıyla güncellendi";
 "Summary" = "Özet";
 "Supplement for EasyList China+EasyList and EasyPrivacy." = "EasyList China+EasyList ve EasyPrivacy için tamamlayıcı liste.";
-"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = ".user.js, .js, .user.css ve .less dosyalarını destekler. Yerel içe aktarmalar otomatik olarak güncellenmez; değiştirmek için yeniden içe aktarın.";
+"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = ".user.js, .js, .user.css ve .less dosyaları desteklenir. Yerelden içe aktarılanlar otomatik güncellenmez; güncellemek için tekrar içe aktarın.";
 "Sync" = "Eşitleme";
 "Sync across devices" = "Cihazlar arasında eşitle";
 "Sync Now" = "Şimdi eşitle";
 "Sync settings across devices" = "Ayarları cihazlar arasında eşitle";
-"Sync timestamps with device timezone" = "Zaman damgalarını cihazın saat dilimiyle eşitle";
+"Sync timestamps with device timezone" = "Zaman damgalarını cihaz saat dilimiyle eşitle";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Filtre seçimlerinizi, özel listelerinizi, kullanıcı betiklerinizi ve izin listenizi tüm cihazlarınızda eşitleyin.";
 "Sync: Checking…" = "Eşitleme: Kontrol ediliyor…";
 "Sync: Downloading…" = "Eşitleme: İndiriliyor…";
@@ -772,8 +772,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "E-postalarda, arama sonuçlarında ve yönlendirmelerdeki satış ortaklığı ve izleme referans bağlantılarının engelini kaldırır.";
 "Undo" = "Geri al";
 "Redo" = "Yinele";
-"Element Zapper" = "Öğe Zapper";
-"No Element Zapper Rules" = "Öğe Zapper kuralı yok";
+"Element Zapper" = "Öğe Gizleyici";
+"No Element Zapper Rules" = "Öğe gizleme kuralı yok";
 "Update" = "Güncelle";
 "Update & Apply" = "Uygula ve bitir";
 "Update Filters" = "Filtreleri Güncelle";
@@ -786,7 +786,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Updated %d/%d extensions in %@" = "%@ içinde %d/%d genişletme güncellendi";
 "Updated custom filter list" = "Özel filtre listesi güncellendi";
 "Updates" = "Güncellemeler";
-"Updates Paused" = "Güncellemeler Duraklatıldı";
+"Updates Paused" = "Güncelleme duraklatıldı";
 "Updating disabled sites..." = "Devre dışı bırakılan siteler güncelleniyor...";
 "Updating Scripts" = "Kullanıcı betiği güncellemeleri denetleniyor";
 "Updating…" = "Güncelleniyor…";
@@ -815,11 +815,11 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Version \\(filter.version)" = "Sürüm \\(filter.version)";
 "Version \\(script.version)" = "Sürüm \\(script.version)";
 "Vietnamese adblock filter list." = "Vietnamca reklam engelleme filtre listesi.";
-"Delete Script" = "Betiği Sil";
-"Delete Style" = "Stili Sil";
-"Edit Content" = "İçeriği Düzenle";
-"Edit Rules" = "Kuralları Düzenle";
-"View Rules" = "Kuralları Görüntüle";
+"Delete Script" = "Betiği sil";
+"Delete Style" = "Stili sil";
+"Edit Content" = "İçeriği düzenle";
+"Edit Rules" = "Kuralları düzenle";
+"View Rules" = "Kuralları görüntüle";
 "View Content" = "İçeriği görüntüle";
 "View Logs" = "Günlükleri görüntüle";
 "Waiting" = "Bekleniyor";
@@ -829,9 +829,9 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "wBlock" = "wBlock";
 "wBlock application appeared" = "wBlock uygulaması göründü";
 "wBlock filter update started." = "wBlock filtre güncellemesi başlatıldı.";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "YouTube reklamlarını engellemek için wBlock Scripts etkinleştirilmeli ve tüm web sitelerinde 'Izin Ver' olarak ayarlanmalıdır.";
+"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "YouTube reklamlarını engellemek için wBlock Scripts'in etkinleştirilmesi ve tüm web sitelerinde 'İzin Ver' olarak ayarlanması gerekir.";
 "wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "Kullanıcı betikleri ve gelişmiş engelleme için wBlock Scripts'in etkin olması ve 'Tüm Web Sitelerinde Her Zaman İzin Ver' şeklinde ayarlanması gerekir.";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "YouTube reklamlarını engellemek için wBlock Scripts etkinleştirilmeli ve 'Tüm Web Sitelerinde Her Zaman İzin Ver' olarak ayarlanmalıdır.";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "YouTube reklamlarını engelleyebilmek için wBlock Scripts'in etkinleştirilmesi ve tüm web sitelerinde 'Her Zaman İzin Ver' olarak ayarlanması gerekir.";
 "wBlock Version" = "wBlock sürümü";
 "wBlock will fetch and enable the script automatically." = "wBlock, betiği otomatik olarak indirip etkinleştirecektir.";
 "We don't have language data for %@. Try enabling filters manually if you see regional ads." = "%@ için dil verimiz bulunmuyor. Bölgesel reklamlar görürseniz filtreleri el ile etkinleştirmeyi deneyin.";
@@ -840,22 +840,22 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "iCloud'da (\\(remoteConfigUpdatedAtText)) mevcut bir wBlock yapılandırması bulundu. Kurulum sürecini atlayıp bunun yerine onu kullanabilirsiniz.";
 "We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "iCloud'da mevcut bir wBlock yapılandırması bulduk. İsterseniz kurulumu atlayıp doğrudan onu kullanabilirsiniz.";
 "Web extension %@" = "Web genişletmesi %@";
-"Blocks advertisements and other promotional page elements." = "Reklamları ve sayfaların diğer tanıtım öğelerini engeller.";
-"Blocks trackers, analytics, and other privacy-invasive requests." = "İzleyicileri, analiz araçlarını ve gizliliği ihlal eden diğer istekleri engeller.";
-"Blocks malicious URLs, phishing pages, and unwanted software." = "Kötü amaçlı URL'leri, kimlik avı sayfalarını ve istenmeyen yazılımları engeller.";
-"Combines broad ad-blocking and tracking protection in one list." = "Kapsamlı reklam engelleme ve izleme korumasını tek listede birleştirir.";
-"Contains filter lists that you added or imported yourself." = "Eklediğiniz veya içe aktardığınız filtre listelerini içerir.";
-"Get Started" = "Başlayın";
+"Blocks advertisements and other promotional page elements." = "Reklamları ve diğer tanıtım amaçlı sayfa öğelerini engeller.";
+"Blocks trackers, analytics, and other privacy-invasive requests." = "İzleyicileri, analitikleri ve gizliliği ihlal eden diğer istekleri engeller.";
+"Blocks malicious URLs, phishing pages, and unwanted software." = "Kötü amaçlı bağlantıları, oltalama sayfalarını ve istenmeyen yazılımları engeller.";
+"Combines broad ad-blocking and tracking protection in one list." = "Kapsamlı reklam engelleme ve izleme korumasını tek bir listede birleştirir.";
+"Contains filter lists that you added or imported yourself." = "Kendi eklediğiniz veya içe aktardığınız filtre listelerini içerir.";
+"Get Started" = "Başlarken";
 "No default filters" = "Varsayılan filtre yok";
-"Organizes userscripts and userstyles added to wBlock." = "wBlock'a eklenen kullanıcı betiklerini ve stillerini düzenler.";
-"Provides newer rules and fixes that are still being tested." = "Hâlâ test edilen daha yeni kurallar ve düzeltmeler sağlar.";
+"Organizes userscripts and userstyles added to wBlock." = "wBlock'a eklenen kullanıcı betiklerini ve kullanıcı stillerini düzenler.";
+"Provides newer rules and fixes that are still being tested." = "Henüz test aşamasında olan yeni kuralları ve düzeltmeleri sunar.";
 "Recommended Filters" = "Önerilen Filtreler";
-"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Çerez bildirimlerini, açılır pencereleri, banner'ları ve diğer dikkat dağıtıcı öğeleri kaldırır.";
-"Reset to Default" = "Varsayılana Sıfırla";
-"Shows all filter lists across every category." = "Tüm kategorilerdeki filtre listelerini gösterir.";
-"Adds rules tailored to websites and languages from specific regions." = "Belirli bölgelerdeki web sitelerine ve dillere uygun kurallar ekler.";
-"The end of Safari ad-blocking B.S." = "Safari'de reklam engelleme saçmalığına son";
-"Welcome to wBlock!" = "wBlock'a Hoş Geldiniz!";
+"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Çerez bildirimlerini, açılır pencereleri, afişleri ve dikkat dağıtan diğer öğeleri kaldırır.";
+"Reset to Default" = "Varsayılana sıfırla";
+"Shows all filter lists across every category." = "Tüm kategorilerdeki bütün filtre listelerini gösterir.";
+"Adds rules tailored to websites and languages from specific regions." = "Belirli bölgelere ait sitelere ve dillere özel kurallar ekler.";
+"The end of Safari ad-blocking B.S." = "Safari'deki reklam engelleme dertlerine son.";
+"Welcome to wBlock!" = "wBlock'a hoş geldiniz!";
 "Whitelist" = "İzin listesi";
 "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Bir siteyi buradan izin listesine ekleyebilir veya Safari'deki wBlock açılır penceresinden siteye özel kullanıcı betiği ve öğe gizleme kurallarını ayarlayabilirsiniz.";
 "Whitelisted" = "İzin listesinde";
@@ -878,8 +878,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Otomatik güncelleme: Daha önce çalıştırılmadı (aralık=%d sa)";
 
 /* Language picker */
-"Selected" = "Seçilenler";
-"Search languages" = "Dilleri ara";
+"Selected" = "Seçilen";
+"Search languages" = "Dil ara";
 
 "Built-in" = "Yerleşik";
 
@@ -888,95 +888,94 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Adblock Warning Removal List" = "Adblock Warning Removal List";
 "Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
-"AdGuard Allowlist" = "AdGuard Allowlist";
-"Blocks tracking pixels and other mail tracking techniques." = "İzleme piksellerini ve diğer e-posta izleme tekniklerini engeller.";
+"AdGuard Allowlist" = "AdGuard İzin Listesi";
+"Blocks tracking pixels and other mail tracking techniques." = "İzleme öğelerini ve diğer e-posta izleme yöntemlerini engeller.";
 "Allows sites and resources that should not be blocked." = "Engellenmemesi gereken sitelere ve kaynaklara izin verir.";
 
 
 /* Auto-update controls */
 "Auto-Update" = "Otomatik Güncelleme";
-"Auto-Update Filters & Userscripts" = "Filtreleri ve kullanıcı betiklerini otomatik güncelle";
-"Update Now" = "Şimdi Güncelle";
-"Automatically updating %@" = "Otomatik güncelleme %@";
+"Auto-Update Filters & Userscripts" = "Filtreleri ve Kullanıcı Betiklerini Otomatik Güncelle";
+"Update Now" = "Güncelle";
+"Automatically updating %@" = "%@ otomatik güncelleniyor";
 
 /* Add mode controls */
 "Text" = "Metin";
-"Choose File" = "Dosya Seç";
-"Change File" = "Dosyayı Değiştir";
-"Local imports won't auto-update; re-import to replace." = "Yerel içe aktarmalar otomatik güncellenmez; değiştirmek için yeniden içe aktarın.";
-"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra Twitch reklamlarını engeller ve karmaşık anti-adblock durumlarını ele alır.";
+"Choose File" = "Dosya seç";
+"Change File" = "Dosyayı değiştir";
+"Local imports won't auto-update; re-import to replace." = "Yerelden içe aktarmalar otomatik güncellenmez; güncellemek için yeniden içe aktarın.";
+"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra, Twitch reklamlarını engeller ve karmaşık reklam engelleyici karşıtı durumları çözer.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Temel filtre devre dışı bırakılsın mı?";
-"Replace Existing Content?" = "Mevcut içerik değiştirilsin mi?";
-"Clear Element Zapper Rules?" = "Element Zapper kuralları temizlensin mi?";
+"Replace Existing Content?" = "Mevcut içeriğin üzerine yazılsın mı?";
+"Clear Element Zapper Rules?" = "Öğe gizleme kuralları temizlensin mi?";
 "Clear All" = "Tümünü temizle";
-"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Bu önerilen filtre wBlock’un temel korumasının parçasıdır. Devre dışı bırakmak engelleme kapsamını azaltabilir.";
-"Pasting will replace the existing editor content." = "Yapıştırma, mevcut düzenleyici içeriğinin yerine geçer.";
-"Pasting will replace the existing content." = "Yapıştırma, mevcut içeriğin yerine geçer.";
-"This removes all saved element zapper rules from every site." = "Bu işlem tüm sitelerdeki kaydedilmiş Element Zapper kurallarını kaldırır.";
-"Clear Element Zapper Rules" = "Element Zapper kurallarını temizle";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Bu önerilen filtre, wBlock'un temel korumasının bir parçasıdır. Devre dışı bırakılması engelleme performansını azaltabilir.";
+"Pasting will replace the existing editor content." = "Yapıştırma işlemi mevcut düzenleyici içeriğinin yerini alacaktır.";
+"Pasting will replace the existing content." = "Yapıştırma işlemi mevcut içeriğin yerini alacaktır.";
+"This removes all saved element zapper rules from every site." = "Bu, tüm sitelerdeki kaydedilmiş öge gizleyici kurallarını siler.";
+"Clear Element Zapper Rules" = "Öğe gizleme kurallarını temizle";
 "Advanced" = "Gelişmiş";
 "Help" = "Yardım";
-"FAQ" = "Sık sorulan sorular";
-"Report Issues" = "Sorunları bildir";
+"FAQ" = "SSS";
+"Report Issues" = "Sorun bildir";
 "Contact Us" = "Bize ulaşın";
 "Version" = "Sürüm";
 "Developer" = "Geliştirici";
-"GPL-3.0 License" = "GPL-3.0 Lisansı";
-"Privacy Policy" = "Gizlilik Politikası";
+"GPL-3.0 License" = "GPL-3.0 Lisans";
+"Privacy Policy" = "Gizlilik politikası";
 
 /* Issue 508 UI */
-"Use a valid http:// or https:// URL" = "Geçerli bir http:// veya https:// URL kullanın";
-"Include a host name" = "Bir ana bilgisayar adı ekleyin";
-"Do not use a userscript URL ending in .js, .mjs, or .cjs" = ".js, .mjs veya .cjs ile biten Userscript URL’si kullanmayın";
-"wBlock will fetch and enable the filter list automatically" = "wBlock filtre listesini otomatik olarak indirip etkinleştirir";
-
+"Use a valid http:// or https:// URL" = "Geçerli bir http:// veya https:// URL'si kullanın";
+"Include a host name" = "Bir ana makine adı belirtin";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Sonu .js, .mjs veya .cjs ile biten bir kullanıcı betiği URL'si kullanmayın";
+"wBlock will fetch and enable the filter list automatically" = "wBlock, filtre listesini otomatik olarak alacak ve etkinleştirecektir";
 /* Issue 508 UI follow-up */
-"Starts with http:// or https://" = "http:// veya https:// ile başlar";
-"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = ".js, .user.js, .user.css, .less, .sass, .scss, .styl veya .pcss ile biter";
-"Hosted on a trusted source" = "Güvenilir bir kaynakta barındırılır";
+"Starts with http:// or https://" = "http:// veya https:// ile başlamalıdır";
+"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = ".js, .user.js, .user.css, .less, .sass, .scss, .styl veya .pcss ile bitmelidir";
+"Hosted on a trusted source" = "Güvenilir bir kaynakta barındırılıyor";
 
-"The file must include userscript or userstyle metadata." = "Dosya userscript veya userstyle meta verilerini içermelidir.";
+"The file must include userscript or userstyle metadata." = "Dosya, kullanıcı betiği veya kullanıcı stili üst verilerini içermelidir.";
 
-"Failed to clear downloaded custom filter state; apply again to retry." = "İndirilen özel filtrenin durumu temizlenemedi; yeniden denemek için tekrar uygulayın.";
+"Failed to clear downloaded custom filter state; apply again to retry." = "İndirilen özel filtre durumu temizlenemedi; tekrar denemek için yeniden uygulayın.";
 "Failed to resume blocking." = "Engelleme sürdürülemedi.";
 /* Userscript display categories */
 "Functionality" = "İşlevsellik";
 "Appearance" = "Görünüm";
-"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Reklamları, reklam engelleme karşıtı önlemleri veya istenmeyen sayfa davranışlarını engelleyen betikler.";
-"Userscripts and scripts that add or restore useful website functionality." = "Web sitelerine yararlı işlevler ekleyen veya bunları geri getiren betikler.";
-"Userstyles and scripts that change the appearance of websites." = "Web sitelerinin görünümünü değiştiren userstyle ve betikler.";
-"Custom, remote, and local scripts that do not have a more specific display category." = "Daha özel bir görüntüleme kategorisi olmayan özel, uzak ve yerel betikler.";
-"Enabled Userscripts & Userstyles" = "Etkin kullanıcı betikleri ve stilleri";
-"Pause Blocking is on while any selected component is paused. Resume restores all components." = "Seçilen bileşenlerden biri duraklatıldığında Engellemeyi Duraklat etkindir. Sürdürme tüm bileşenleri geri yükler.";
-"Temporarily pause selected components without changing their enabled settings." = "Etkinleştirme ayarlarını değiştirmeden seçilen bileşenleri geçici olarak duraklatın.";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Reklamları, reklam engelleyici karşıtı önlemleri veya istenmeyen sayfa davranışlarını engelleyen kullanıcı betiklerini ve betikleri engeller.";
+"Userscripts and scripts that add or restore useful website functionality." = "Sitelere yararlı işlevler kazandıran veya kaybolan işlevleri geri getiren kullanıcı betikleri.";
+"Userstyles and scripts that change the appearance of websites." = "Sitelerinin görünümünü değiştiren kullanıcı stilleri ve betikler.";
+"Custom, remote, and local scripts that do not have a more specific display category." = "Belirli bir kategoride yer almayan özel, harici ve yerel betikler.";
+"Enabled Userscripts & Userstyles" = "Etkin Kullanıcı Betikleri ve Kullanıcı Stilleri";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "Engellemeyi Duraklat özelliği, seçilen herhangi bir bileşen duraklatıldığı sürece etkindir. Sürdür seçeneği tüm bileşenleri eski haline getirir.";
+"Temporarily pause selected components without changing their enabled settings." = "Seçilen bileşenleri, etkin durumlarını değiştirmeden geçici olarak duraklatır.";
 
 /* Userstyle compiler diagnostics */
-"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = ".user.js, .js, .user.css, .less, .sass, .scss, .styl veya .pcss dosyası seçin.";
+"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "Bir .user.js, .js, .user.css, .less, .sass, .scss, .styl veya .pcss dosyası seçin.";
 "Couldn't read the selected file." = "Seçilen dosya okunamadı.";
 "The file is empty." = "Dosya boş.";
-"Not a userscript or userstyle: missing metadata block." = "userscript veya userstyle değil: meta veri bloğu eksik.";
-"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "Bu userstyle, henüz desteklenmeyen \"%@\" önişlemcisini gerektiriyor.";
-"This style file requires the \"%@\" preprocessor, but declares \"%@\"." = "Bu stil dosyası \"%@\" önişlemcisini gerektiriyor, ancak \"%@\" bildiriyor.";
-"Couldn't compile this userstyle: %@" = "Bu userstyle derlenemedi: %@";
+"Not a userscript or userstyle: missing metadata block." = "Kullanıcı betiği veya kullanıcı stili değil: Üst veri bloğu eksik.";
+"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "Bu kullanıcı stili henüz desteklenmeyen \"%@\" ön işleyicisine ihtiyaç duyuyor.";
+"This style file requires the \"%@\" preprocessor, but declares \"%@\"." = "Bu stil dosyası \"%@\" ön işleyicisini gerektiriyor ancak \"%@\" olarak tanımlanmış.";
+"Couldn't compile this userstyle: %@" = "Bu kullanıcı stili derlenemedi: %@";
 "Unknown compiler error." = "Bilinmeyen derleyici hatası.";
 "Couldn't save the edited source." = "Düzenlenen kaynak kaydedilemedi.";
-"Userstyle source exceeds the 2 MiB limit." = "Userstyle kaynağı 2 MiB sınırını aşıyor.";
-"Userstyle compiler resource is missing." = "Userstyle derleyici kaynağı eksik.";
-"Userstyle compiler resource failed to load." = "Userstyle derleyici kaynağı yüklenemedi.";
-"Userstyle compiler input could not be serialized." = "Userstyle derleyici girdisi serileştirilemedi.";
-"Userstyle compiler returned an invalid response." = "Userstyle derleyicisi geçersiz bir yanıt döndürdü.";
-"Userstyle compiler returned no CSS." = "Userstyle derleyicisi CSS döndürmedi.";
-"Userstyle compiler output exceeds the 10 MiB limit." = "Userstyle derleyicisi çıktısı 10 MiB sınırını aşıyor.";
-"Userstyle compiler failed." = "Userstyle derleyicisi başarısız oldu.";
-"line %@, column %@: %@" = "satır %@, sütun %@: %@";
-"line %@: %@" = "satır %@: %@";
-"column %@: %@" = "sütun %@: %@";
-"Userstyle compiler timed out." = "Kullanıcı stili derleyicisinin zaman aşımı oldu.";
+"Userstyle source exceeds the 2 MiB limit." = "Kullanıcı stili kaynağı 2 MiB sınırını aşıyor.";
+"Userstyle compiler resource is missing." = "Kullanıcı stili derleyici kaynağı eksik.";
+"Userstyle compiler resource failed to load." = "Kullanıcı stili derleyici kaynağı yüklenemedi.";
+"Userstyle compiler input could not be serialized." = "Kullanıcı stili derleyicisine gönderilen veri dönüştürülemedi.";
+"Userstyle compiler returned an invalid response." = "Kullanıcı stili derleyicisi geçersiz bir yanıt döndürdü.";
+"Userstyle compiler returned no CSS." = "Kullanıcı stili derleyicisi CSS çıktısı döndürmedi.";
+"Userstyle compiler output exceeds the 10 MiB limit." = "Kullanıcı stili derleyici çıktısı 10 MiB sınırını aşıyor.";
+"Userstyle compiler failed." = "Kullanıcı stili derleyicisi başarısız.";
+"line %@, column %@: %@" = "Satır %@, sütun %@: %@";
+"line %@: %@" = "Satır %@: %@";
+"column %@: %@" = "Sütun %@: %@";
+"Userstyle compiler timed out." = "Kullanıcı stili derleyicisi zaman aşımına uğradı.";
 "Userstyle compiler must not run on the main thread." = "Kullanıcı stili derleyicisi ana iş parçacığında çalışmamalıdır.";
-"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "wBlock için MIT lisanslı Dark Reader API motoru (beta; tam site düzeltme veritabanı olmadan).";
-"Follow System Appearance" = "Sistem görünümünü izle";
-"When off, Dark Reader keeps websites dark in Light Mode." = "Kapatıldığında Dark Reader, açık modda da web sitelerini karanlık tutar.";
-"Follow System" = "Sistemi izle";
+"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Dark Reader'ın wBlock için MIT lisanslı API motoru (beta; tüm site düzeltme veritabanını içermez).";
+"Follow System Appearance" = "Sistem görünümünü takip et";
+"When off, Dark Reader keeps websites dark in Light Mode." = "Kapatıldığında, Dark Reader, açık modda bile siteleri koyu tutar.";
+"Follow System" = "Sistemi takip et";
 "Always Dark" = "Her zaman koyu";
