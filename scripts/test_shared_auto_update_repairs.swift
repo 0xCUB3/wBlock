@@ -16,6 +16,8 @@ require(lease.contains("flock") && lease.contains("LOCK_EX | LOCK_NB"), "run own
 require(lease.contains("deinit") && lease.contains("LOCK_UN"), "the lease must release on process teardown")
 require(manager.contains("withExtendedLifetime(lease)"), "every early return must retain the lease until run exit")
 require(manager.contains("SharedAutoUpdateLease.acquire"), "every started run must acquire the shared lease")
+require(manager.contains("performExpiringActivity") && manager.contains("runTask.cancel()"), "app-process runs must defer suspension and cancel before suspending (0xDEAD10CC)")
+require(manager.contains("!Self.isAppExtensionProcess"), "the suspension shield must not wrap extension-process entry points")
 require(!manager.contains("heartbeatTask") && !manager.contains("runningFlagStalenessThreshold"), "run ownership must not use a wall-clock heartbeat")
 require(manager.contains("rebuildAndReload(\n                            selectedFilters: []"), "empty selections must rebuild through the normal pipeline")
 require(manager.contains("let hasPersistedOutput = contentBlockerOutputsContainRules()"), "clean first runs must be distinguished from stale output")

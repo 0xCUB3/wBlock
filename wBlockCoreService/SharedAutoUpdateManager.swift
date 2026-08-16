@@ -26,6 +26,38 @@ import SafariServices
 import UIKit
 #endif
 
+#if os(iOS)
+/// Holds a suspension-deferring assertion (`performExpiringActivity`) while an
+/// auto-update run holds kernel file locks in the app group container. If the
+/// system decides to suspend the app anyway, the expiration callback aborts
+/// the run so the locks are released before suspension instead of the process
+/// being killed with 0xDEAD10CC.
+private final class SuspensionShield: @unchecked Sendable {
+    private let completion = DispatchSemaphore(value: 0)
+
+    init(reason: String, onExpiration: @escaping @Sendable () -> Void) {
+        let completion = completion
+        ProcessInfo.processInfo.performExpiringActivity(withReason: reason) { expired in
+            if expired {
+                // Runs when suspension is imminent: immediately when no
+                // background time is available, otherwise concurrently with
+                // the blocked non-expired invocation below. Cancelling the
+                // run unwinds it, release() is then called, and the blocked
+                // invocation returns, letting the assertion lapse.
+                onExpiration()
+            } else {
+                // The assertion holds for as long as this invocation blocks.
+                completion.wait()
+            }
+        }
+    }
+
+    func release() {
+        completion.signal()
+    }
+}
+#endif
+
 /// Actor to ensure we don't run overlapping auto-updates from multiple extension
 /// entry points concurrently.
 public actor SharedAutoUpdateManager {
@@ -454,7 +486,32 @@ public actor SharedAutoUpdateManager {
         force: Bool = false,
         policy: AutoUpdateExecutionPolicy
     ) async -> AutoUpdateRunOutcome {
-        await runIfNeeded(trigger: trigger, force: force, policy: policy)
+        #if os(iOS)
+        // A started run holds an exclusive kernel flock on the app group's
+        // auto-update lease (and, during rebuilds, the engine file lock) for
+        // its entire duration. iOS kills any app that suspends while holding
+        // a file lock in a shared container (0xDEAD10CC), so in the app
+        // process every run is shielded by an expiring-activity assertion
+        // that defers suspension and cancels the run when suspension becomes
+        // imminent; the cancellation unwind releases the locks first.
+        // Extensions never start runs (safe mode) and macOS apps do not get
+        // suspended, so those paths run unshielded.
+        if !Self.isAppExtensionProcess {
+            let runTask = Task {
+                await self.runIfNeeded(trigger: trigger, force: force, policy: policy)
+            }
+            let shield = SuspensionShield(reason: "wBlock auto-update: \(trigger)") {
+                runTask.cancel()
+            }
+            defer { shield.release() }
+            return await withTaskCancellationHandler {
+                await runTask.value
+            } onCancel: {
+                runTask.cancel()
+            }
+        }
+        #endif
+        return await runIfNeeded(trigger: trigger, force: force, policy: policy)
     }
 
     /// Returns status about the next eligible auto-update time for UI/logging.
