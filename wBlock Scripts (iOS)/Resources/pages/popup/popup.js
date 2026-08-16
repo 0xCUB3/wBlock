@@ -914,13 +914,6 @@ function renderPageUserScripts(scripts, disabled = false) {
         name.textContent = script.name;
         text.appendChild(name);
 
-        if (typeof script.version === 'string' && script.version.trim()) {
-            const meta = document.createElement('span');
-            meta.className = 'userscript-meta';
-            meta.textContent = `v${script.version.trim()}`;
-            text.appendChild(meta);
-        }
-
         const control = document.createElement('span');
         control.className = 'switch';
 
