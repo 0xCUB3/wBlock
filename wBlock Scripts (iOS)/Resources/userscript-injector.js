@@ -13,6 +13,30 @@ var WBLOCK_WARM_START_MAX_SCRIPTS = 4;
 var WBLOCK_WARM_START_MAX_BYTES = 2 * 1024 * 1024;
 var WBLOCK_WARM_START_MAX_QUEUED_XHR = 32;
 
+// The warm-start cache lives in localStorage so a brand-new tab still gets the
+// before-first-paint injection of eligible document-start scripts; the old
+// sessionStorage cache was per-tab, which left the first navigation of every
+// new tab on the slow native path. The trust model is unchanged: both stores
+// are page-writable, the cache carries no bridge secrets, page-world entries
+// only ever gain page authority, and content-world entries (Dark Reader) still
+// require the digest check plus native validation before executing. The legacy
+// sessionStorage entry is read as a fallback once and cleared on write.
+function readWarmStartCache() {
+    var raw = null;
+    try { raw = localStorage.getItem(WBLOCK_WARM_START_CACHE_KEY); } catch (_) {}
+    if (raw !== null) return raw;
+    try { raw = sessionStorage.getItem(WBLOCK_WARM_START_CACHE_KEY); } catch (_) {}
+    return raw;
+}
+function writeWarmStartCache(serialized) {
+    try { localStorage.setItem(WBLOCK_WARM_START_CACHE_KEY, serialized); } catch (_) {}
+    try { sessionStorage.removeItem(WBLOCK_WARM_START_CACHE_KEY); } catch (_) {}
+}
+function removeWarmStartCache() {
+    try { localStorage.removeItem(WBLOCK_WARM_START_CACHE_KEY); } catch (_) {}
+    try { sessionStorage.removeItem(WBLOCK_WARM_START_CACHE_KEY); } catch (_) {}
+}
+
 var wBlockLog = (...args) => {
     if (WBLOCK_DEBUG_LOGGING) {
         console.log(...args);
@@ -830,16 +854,16 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
         loadWarmStartScripts() {
             try {
-                const raw = sessionStorage.getItem(WBLOCK_WARM_START_CACHE_KEY);
+                const raw = readWarmStartCache();
                 if (!raw) return null;
                 if (new TextEncoder().encode(raw).length > WBLOCK_WARM_START_MAX_BYTES) {
-                    sessionStorage.removeItem(WBLOCK_WARM_START_CACHE_KEY);
+                    removeWarmStartCache();
                     return;
                 }
                 const cache = JSON.parse(raw);
                 const age = cache && Number.isFinite(cache.savedAt) ? Date.now() - cache.savedAt : -1;
                 if (!cache || cache.version !== 1 || age < 0 || age > WBLOCK_WARM_START_LEASE_MS || !Array.isArray(cache.scripts)) {
-                    sessionStorage.removeItem(WBLOCK_WARM_START_CACHE_KEY);
+                    removeWarmStartCache();
                     return;
                 }
                 const scripts = cache.scripts
@@ -859,7 +883,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 }
             } catch (error) {
                 wBlockWarn('[wBlock] Warm-start cache rejected:', error);
-                try { sessionStorage.removeItem(WBLOCK_WARM_START_CACHE_KEY); } catch (_) {}
+                removeWarmStartCache();
             }
             return null;
         }
@@ -920,11 +944,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
                         bounded.push(cached);
                     }
                 }
-                sessionStorage.setItem(
-                    WBLOCK_WARM_START_CACHE_KEY,
-                    JSON.stringify({ version: 1, savedAt, scripts: bounded })
-                );
-            } catch (_) { /* page session storage is optional */ }
+                writeWarmStartCache(JSON.stringify({ version: 1, savedAt, scripts: bounded }));
+            } catch (_) { /* page storage is optional */ }
         }
 
         reconcileWarmStart(scripts) {
@@ -1252,7 +1273,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.injectingScripts.set(executionKey, generation);
             const warmStart = script.__wblockWarmStart === true;
             if (warmStart) {
-                // Session storage belongs to the page. Strip every bridge field
+                // The warm-start cache belongs to the page. Strip every bridge field
                 // before the first await so a fast native reply can only authorize
                 // the fresh token created by this isolated-world engine.
                 delete script.storageBridgeId;

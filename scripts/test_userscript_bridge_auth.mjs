@@ -145,6 +145,20 @@ function buildContentScriptSandbox(
   };
   sandbox.__sessionValues = sessionValues;
   sandbox.__sessionStorageWrites = sessionStorageWrites;
+  // The warm-start cache now lives in localStorage (sessionStorage is only a
+  // legacy read fallback), so the sandbox mocks both stores separately.
+  const localValues = new Map();
+  const localStorageWrites = [];
+  sandbox.localStorage = {
+    getItem: (key) => localValues.get(key) ?? null,
+    setItem: (key, value) => {
+      localStorageWrites.push([key, String(value)]);
+      localValues.set(key, String(value));
+    },
+    removeItem: (key) => localValues.delete(key),
+  };
+  sandbox.__localValues = localValues;
+  sandbox.__localStorageWrites = localStorageWrites;
   sandbox.document = {
     readyState: "complete",
     documentElement: docEl,
@@ -240,7 +254,8 @@ check("initialization makes one authoritative getUserScripts request", initialRe
 check("initialization makes zero cached requests", !contentSandbox.__sentMessages.some((m) => m && m.action === "getCachedDocumentStartUserScripts"));
 check(
   "cold initialization writes only the bounded warm-start cache",
-  contentSandbox.__sessionStorageWrites.every(([key]) => key === "__wblock_warm_start_v1")
+  [...contentSandbox.__sessionStorageWrites, ...contentSandbox.__localStorageWrites]
+    .every(([key]) => key === "__wblock_warm_start_v1")
 );
 
 // ---------------------------------------------------------------------------
@@ -278,7 +293,7 @@ const freshIOSWrapper = appendedScripts[freshIOSWrapperIndex] || "";
 check(
   "cache-disabled native response still runs and seeds only quarantined state",
   freshIOSWrapper.includes("const xhrBridgeId = '")
-    && freshIOSSandbox.__sessionStorageWrites.some(([key]) => key === "__wblock_warm_start_v1")
+    && freshIOSSandbox.__localStorageWrites.some(([key]) => key === "__wblock_warm_start_v1")
 );
 check(
   "fresh native scripts still request execution validation",
@@ -305,7 +320,7 @@ vm.createContext(seedSandbox);
 vm.runInContext(source, seedSandbox, { filename: "userscript-injector-warm-seed.js" });
 await tick();
 await tick();
-const seededCache = seedSandbox.__sessionValues.get("__wblock_warm_start_v1") || "";
+const seededCache = seedSandbox.__localValues.get("__wblock_warm_start_v1") || "";
 const seededPayload = seededCache ? JSON.parse(seededCache) : null;
 check(
   "iOS authoritative response seeds the quarantined Vencord warm start",

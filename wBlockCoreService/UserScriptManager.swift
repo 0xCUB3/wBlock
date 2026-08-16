@@ -818,6 +818,7 @@ public class UserScriptManager: ObservableObject {
             .store(in: &cancellables)
             logger.info("✅ UserScriptManager data sync observer setup complete")
             self.isReady = true
+            self.startDeferredStartupMaintenance()
         }
         initialLoadTask = task
     }
@@ -1388,12 +1389,23 @@ public class UserScriptManager: ObservableObject {
             userScripts = hydratedScripts
         }
 
-        // Only download scripts that are enabled but missing content (e.g., from migration).
-        await downloadMissingDefaultScripts()
+    }
 
-        // Heal Dark Reader installs whose persisted adapter cannot honor the
-        // appearance preference (pre-preference builds themed pages unconditionally).
-        await refreshOutdatedDarkReaderContentIfNeeded()
+    /// Startup maintenance that needs the network. It must not gate
+    /// `waitUntilReady()`: extension processes call `getUserScripts` while a page
+    /// is loading, and a slow or unreachable download server here used to stall
+    /// every userscript injection behind the injector's retry ladder until the
+    /// native request timed out (the "Dark Reader applies after ~15 seconds"
+    /// reports). Run it after readiness so cold starts answer from disk.
+    private func startDeferredStartupMaintenance() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            // Only download scripts that are enabled but missing content (e.g., from migration).
+            await self.downloadMissingDefaultScripts()
+            // Heal Dark Reader installs whose persisted adapter cannot honor the
+            // appearance preference (pre-preference builds themed pages unconditionally).
+            await self.refreshOutdatedDarkReaderContentIfNeeded()
+        }
     }
 
     private func migrateEmbeddedProtobufContentToFilesIfNeeded() -> (
@@ -3523,6 +3535,7 @@ public class UserScriptManager: ObservableObject {
         // until default script placeholders have been recreated.
         await setup()
         isReady = true
+        startDeferredStartupMaintenance()
 
         logger.info("🧪 Fresh install simulation complete")
     }
