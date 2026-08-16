@@ -756,22 +756,28 @@ public class UserScriptManager: ObservableObject {
         Task { await refreshOutdatedDarkReaderContentIfNeeded() }
     }
 
-    /// Installs made before the appearance preference shipped persist a Dark Reader
-    /// adapter that never reads the prepended preference constant: the first build
-    /// called DarkReader.enable() unconditionally, so pages stayed dark-themed even
-    /// with the system in light mode, and later pre-preference builds always followed
-    /// the system. Legacy migration intentionally keeps persisted content, and
-    /// auto-update is throttled (and effectively manual on iOS), so refresh such
-    /// content directly whenever we notice it.
+    /// Older installs persist a Dark Reader adapter that misbehaves in ways a
+    /// user cannot fix through settings. Legacy migration intentionally keeps
+    /// persisted content, and auto-update is throttled (and effectively manual
+    /// on iOS), so refresh such content directly whenever we notice it:
+    /// - Content without the prepended preference constant predates the
+    ///   appearance preference and cannot honor it (the first build themed
+    ///   pages unconditionally; later pre-preference builds always followed
+    ///   the system).
+    /// - Content without the built-in dark theme detector re-processes pages
+    ///   that already render dark, washing out their native dark themes.
     private func refreshOutdatedDarkReaderContentIfNeeded() async {
         guard let script = userScripts.first(where: {
             DarkReaderAppearancePreference.matches(scriptURL: $0.url)
         }),
-            !script.content.isEmpty,
-            !script.content.contains(DarkReaderAppearancePreference.appearanceFlagName)
+            !script.content.isEmpty
         else { return }
+        let isOutdated =
+            !script.content.contains(DarkReaderAppearancePreference.appearanceFlagName)
+            || !script.content.contains(DarkReaderAppearancePreference.darkThemeDetectionMarkerName)
+        guard isOutdated else { return }
 
-        logger.info("🔄 Dark Reader content predates the appearance preference; refreshing")
+        logger.info("🔄 Dark Reader content predates the appearance preference or dark theme detection; refreshing")
         do {
             if try await updateSingleScript(script) {
                 await persistUserScriptsNow()

@@ -39,6 +39,11 @@ public enum DarkReaderAppearancePreference {
     /// setting and cannot honor it.
     public static let appearanceFlagName = "__wblockDarkReaderFollowsSystemAppearance"
 
+    /// Marker present in adapter builds that withdraw the theme on natively dark
+    /// pages (the detector ported from Dark Reader's src/inject/detector.ts).
+    /// Content without it re-maps already-dark sites, washing out their colors.
+    public static let darkThemeDetectionMarkerName = "detectBuiltInDarkTheme"
+
     public static func configuredExecutableContent(
         _ executableContent: String,
         followsSystemAppearance: Bool

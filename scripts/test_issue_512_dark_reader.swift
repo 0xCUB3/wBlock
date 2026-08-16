@@ -72,6 +72,10 @@ else { fail("Dark Reader digest validation contract is missing") }
 guard preference.contains("__wblockDarkReaderFollowsSystemAppearance")
     && !preference.contains("__wblockDarkReaderPreviousGlobal")
 else { fail("Dark Reader preference must only prepend its configuration constant") }
+guard preference.contains("darkThemeDetectionMarkerName = \"detectBuiltInDarkTheme\"")
+    && manager.contains("DarkReaderAppearancePreference.darkThemeDetectionMarkerName")
+    && manager.contains("DarkReaderAppearancePreference.appearanceFlagName")
+else { fail("Dark Reader heal gate must refresh adapters lacking the appearance flag or the dark theme detector") }
 for path in [
     "wBlockCoreService/BundledUserscripts",
     "wBlockCoreService/BundledUserScriptSources.generated.swift",
