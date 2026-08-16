@@ -753,6 +753,34 @@ public class UserScriptManager: ObservableObject {
         DarkReaderAppearancePreference.setFollowsSystemAppearance(followsSystemAppearance)
         darkReaderFollowsSystemAppearance = followsSystemAppearance
         Self.invalidateDocumentStartExecutionCache()
+        Task { await refreshOutdatedDarkReaderContentIfNeeded() }
+    }
+
+    /// Installs made before the appearance preference shipped persist a Dark Reader
+    /// adapter that never reads the prepended preference constant: the first build
+    /// called DarkReader.enable() unconditionally, so pages stayed dark-themed even
+    /// with the system in light mode, and later pre-preference builds always followed
+    /// the system. Legacy migration intentionally keeps persisted content, and
+    /// auto-update is throttled (and effectively manual on iOS), so refresh such
+    /// content directly whenever we notice it.
+    private func refreshOutdatedDarkReaderContentIfNeeded() async {
+        guard let script = userScripts.first(where: {
+            DarkReaderAppearancePreference.matches(scriptURL: $0.url)
+        }),
+            !script.content.isEmpty,
+            !script.content.contains(DarkReaderAppearancePreference.appearanceFlagName)
+        else { return }
+
+        logger.info("🔄 Dark Reader content predates the appearance preference; refreshing")
+        do {
+            if try await updateSingleScript(script) {
+                await persistUserScriptsNow()
+                Self.invalidateDocumentStartExecutionCache()
+                logger.info("✅ Refreshed Dark Reader to an appearance-aware adapter")
+            }
+        } catch {
+            logger.error("❌ Dark Reader appearance refresh failed: \(error.localizedDescription)")
+        }
     }
 
     private init() {
@@ -1363,6 +1391,9 @@ public class UserScriptManager: ObservableObject {
         // Only download scripts that are enabled but missing content (e.g., from migration).
         await downloadMissingDefaultScripts()
 
+        // Heal Dark Reader installs whose persisted adapter cannot honor the
+        // appearance preference (pre-preference builds themed pages unconditionally).
+        await refreshOutdatedDarkReaderContentIfNeeded()
     }
 
     private func migrateEmbeddedProtobufContentToFilesIfNeeded() -> (

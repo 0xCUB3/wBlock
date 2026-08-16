@@ -34,11 +34,17 @@ public enum DarkReaderAppearancePreference {
         scriptURL?.absoluteString == self.scriptURL
     }
 
+    /// Name of the constant prepended to the script so the adapter can read the
+    /// preference. Content that does not reference it predates the appearance
+    /// setting and cannot honor it.
+    public static let appearanceFlagName = "__wblockDarkReaderFollowsSystemAppearance"
+
     public static func configuredExecutableContent(
         _ executableContent: String,
         followsSystemAppearance: Bool
     ) -> String {
         let value = followsSystemAppearance ? "true" : "false"
-        return "const __wblockDarkReaderFollowsSystemAppearance = \(value);\n\(executableContent)"
+        return "const \(appearanceFlagName) = \(value);\n\(executableContent)"
     }
 }
+
