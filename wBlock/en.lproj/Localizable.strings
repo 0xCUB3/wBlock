@@ -426,6 +426,7 @@
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud Sync is temporarily unavailable. Try again in a moment.";
 "iCloud Sync needs an active iCloud account on this device." = "iCloud Sync needs an active iCloud account on this device.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten.";
+"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it.";
 "Ignoring invalid filter response" = "Ignoring invalid filter response";
 "Import" = "Import";
 "Import Failed" = "Import Failed";

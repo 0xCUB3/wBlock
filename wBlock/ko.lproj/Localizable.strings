@@ -426,6 +426,7 @@
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud 동기화를 일시적으로 사용할 수 없습니다. 잠시 후에 다시 시도해 보세요.";
 "iCloud Sync needs an active iCloud account on this device." = "iCloud 동기화를 사용하려면 이 기기에 활성 iCloud 계정이 필요합니다.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "wBlock을 닫을 때 적용되지 않은 변경 사항이 있으면, 잊지 않도록 알림을 보내드립니다.";
+"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "개인정보 보호 브라우징을 사용한다면 wBlock Scripts와 콘텐츠 차단기 5개에 '개인정보 보호 브라우징에서 허용'도 켜세요. 이 설정이 없으면 쿠키 배너와 다른 scriptlet이 개인정보 보호 윈도우에서 실행되지 않습니다.";
 "Ignoring invalid filter response" = "잘못된 필터 응답을 무시합니다";
 "Import" = "가져오기";
 "Import Failed" = "가져오기 실패";

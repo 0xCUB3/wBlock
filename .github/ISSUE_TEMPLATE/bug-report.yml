@@ -45,6 +45,7 @@ body:
       options:
         - label: I have enabled all 5 wBlock Content Blocker extensions in Safari _(including Profiles, if applicable)_.
         - label: I have enabled `wBlock Scripts` and set it to `Allow` on all websites (`Always Allow on Every Website`) in Safari settings.
+        - label: I have enabled `Allow in Private Browsing` for `wBlock Scripts` and all 5 content blockers _(Safari → Settings → Extensions)_.
         - label: I have opened wBlock and pressed `Apply Changes` after changing filters, userscripts, whitelist, and/or extension settings.
         - label: For filtering issues, I have restarted iOS/iPadOS and/or macOS, opened wBlock, manually checked for updates 🔄, and reopened Safari. _(Optional)_
   - type: textarea

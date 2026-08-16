@@ -426,6 +426,7 @@
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "Synchronizacja iCloud jest tymczasowo niedostępna. Spróbuj ponownie za chwilę.";
 "iCloud Sync needs an active iCloud account on this device." = "iCloud Sync wymaga aktywnego konta iCloud na tym urządzeniu.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "Jeśli zamkniesz wBlock z niezastosowanymi zmianami, wyślemy delikatne przypomnienie, aby niczego nie pominąć.";
+"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Jeśli korzystasz z trybu prywatnego, włącz także Pozwól w trybie prywatnym dla wBlock Scripts i 5 blokerów treści. Bez tego powiadomienia o plikach cookie i inne skrypty nie zadziałają w oknach prywatnych.";
 "Ignoring invalid filter response" = "Ignorowanie nieprawidłowej odpowiedzi filtru";
 "Import" = "Importuj";
 "Import Failed" = "Import nie powiódł się";

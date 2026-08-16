@@ -426,6 +426,7 @@
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "Το iCloud Sync δεν είναι διαθέσιμο προσωρινά. Δοκιμάστε ξανά σε λίγο.";
 "iCloud Sync needs an active iCloud account on this device." = "Το iCloud Sync χρειάζεται έναν ενεργό λογαριασμό iCloud σε αυτήν τη συσκευή.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "Εάν κλείσετε το wBlock με μη εφαρμοσμένες αλλαγές, θα στείλουμε μια απαλή ώθηση, ώστε να μην ξεχαστεί τίποτα.";
+"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Αν χρησιμοποιείτε Ιδιωτική περιήγηση, ενεργοποιήστε επίσης την επιλογή Αποδοχή στην Ιδιωτική περιήγηση για το wBlock Scripts και τα 5 content blockers. Χωρίς αυτήν, οι ειδοποιήσεις cookie και τα άλλα scriptlets δεν θα εκτελούνται σε ιδιωτικά παράθυρα.";
 "Ignoring invalid filter response" = "Παράβλεψη μη έγκυρης απάντησης φίλτρου";
 "Import" = "Εισαγωγή";
 "Import Failed" = "Η εισαγωγή απέτυχε";

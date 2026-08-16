@@ -426,6 +426,7 @@
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud Eşitlemesi geçici olarak kullanılamıyor. Lütfen birazdan tekrar deneyin.";
 "iCloud Sync needs an active iCloud account on this device." = "iCloud Eşitlemesi için bu cihazda aktif bir iCloud hesabı gereklidir.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "wBlock'u uygulanmamış değişikliklerle kapatırsanız, hiçbir şeyin unutulmaması için size bir hatırlatma göndereceğiz.";
+"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Gizli Tarama kullanıyorsanız, wBlock Scripts ve 5 içerik engelleyici için Gizli Taramada İzin Ver seçeneğini de açın. Bu olmadan çerez bildirimleri ve diğer scriptlet’ler Gizli pencerelerde çalışmaz.";
 "Ignoring invalid filter response" = "Geçersiz filtre yanıtı yok sayılıyor";
 "Import" = "İçe aktar";
 "Import Failed" = "İçe aktarılamadı";

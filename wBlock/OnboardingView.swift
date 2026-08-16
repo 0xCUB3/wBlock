@@ -873,6 +873,10 @@ struct OnboardingView: View {
                                 detectedScriptsExtensionEnabled == false && !hasEnabledAdvanced
                                     ? .red : .secondary
                             )
+
+                            Text("If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
 
                         Spacer()

@@ -426,6 +426,7 @@
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "Az iCloud Sync átmenetileg nem érhető el. Próbálja újra egy pillanat múlva.";
 "iCloud Sync needs an active iCloud account on this device." = "Az iCloud Sync szolgáltatásnak aktív iCloud-fiókra van szüksége ezen az eszközön.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "Ha nem alkalmazott módosításokkal zárod be a wBlockot, küldünk egy finom emlékeztetőt, hogy semmi ne maradjon el.";
+"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Ha Privát böngészést használsz, kapcsold be a Privát böngészésben engedélyezést a wBlock Scripts és az 5 tartalomblokkoló számára is. Cookie-figyelmeztetések és más scriptletek e nélkül nem futnak a privát ablakokban.";
 "Ignoring invalid filter response" = "Érvénytelen szűroválasz figyelmen kívül hagyása";
 "Import" = "Importálás";
 "Import Failed" = "Importálás sikertelen";

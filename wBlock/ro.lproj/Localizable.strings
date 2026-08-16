@@ -426,6 +426,7 @@
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud Sync este temporar indisponibil. Încercați din nou peste un moment.";
 "iCloud Sync needs an active iCloud account on this device." = "iCloud Sync are nevoie de un cont iCloud activ pe acest dispozitiv.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "Dacă închizi wBlock cu modificări neaplicate, îți vom trimite o reamintire discretă ca să nu uiți nimic.";
+"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Dacă folosești Navigarea privată, activează și Permite în Navigarea privată pentru wBlock Scripts și cele 5 blocatoare de conținut. Altfel, notificările cookie și celelalte scriptlet-uri nu vor rula în ferestrele private.";
 "Ignoring invalid filter response" = "Se ignoră răspunsul de filtru nevalid";
 "Import" = "Importă";
 "Import Failed" = "Importul a eșuat";

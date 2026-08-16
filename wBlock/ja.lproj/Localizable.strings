@@ -426,6 +426,7 @@
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud 同期は一時的に利用できなくなります。しばらくしてからもう一度試してください。";
 "iCloud Sync needs an active iCloud account on this device." = "iCloud 同期には、このデバイス上でアクティブな iCloud アカウントが必要です。";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "未適用の変更がある状態でwBlockを閉じると、忘れないようやさしく通知します。";
+"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "プライベートブラウズを使う場合は、wBlock Scripts と 5 つのコンテンツブロッカーで「プライベートブラウズで許可」も有効にしてください。オフのままだと、Cookie 通知や他の scriptlet はプライベートウインドウで動作しません。";
 "Ignoring invalid filter response" = "無効なフィルターレスポンスを無視します";
 "Import" = "インポート";
 "Import Failed" = "インポートに失敗しました";

@@ -345,6 +345,16 @@ Player Cleaner (other sites' custom players), one demo per supported library:
 </details>
 
 <details>
+<summary><b>Why don't cookie banners or scriptlets work in Private Browsing?</b></summary>
+<br>
+Safari keeps Web Extensions off in Private Browsing until you enable <i>Allow in Private Browsing</i> for each one. Cookie-notice filters often dismiss banners with scriptlets (for example heise.de via Sourcepoint), and those only run through wBlock Scripts.
+<br><br>
+Safari → Settings → Extensions → enable <i>Allow in Private Browsing</i> for wBlock Scripts and all 5 wBlock content blockers, then reload the Private window.
+<br><br>
+If a banner is already gone in a normal window, that can just be a stored consent cookie. Clear that site's cookies and compare again before assuming the filter is broken only in Private Browsing.
+</details>
+
+<details>
 <summary><b>How often do filters update?</b></summary>
 <br>
 Auto-update intervals are configurable from 1 hour to 7 days, or manually triggered. On macOS, enabling auto-update registers a bundled launch agent that can keep checking while the app is closed through a background update service. On iOS and iPadOS, background checks are best-effort and may wait until the system wakes wBlock or you reopen it. Opening Safari does not trigger updates. Updates use HTTP conditional requests (If-Modified-Since/ETag headers) when servers support them, which reduces unnecessary downloads.

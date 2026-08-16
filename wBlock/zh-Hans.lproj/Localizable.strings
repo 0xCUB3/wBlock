@@ -426,6 +426,7 @@
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud 同步暂时不可用。稍后再试一次。";
 "iCloud Sync needs an active iCloud account on this device." = "iCloud 同步需要此设备上有一个有效的 iCloud 帐户。";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "如果你在有未应用更改时关闭 wBlock，我们会发送温和提醒，避免遗漏。";
+"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "如果使用私人浏览，请同时为 wBlock Scripts 和全部 5 个内容拦截器启用“在私人浏览中允许”。否则 Cookie 提示和其他 scriptlet 不会在私人窗口中运行。";
 "Ignoring invalid filter response" = "正在忽略无效的过滤器响应";
 "Import" = "导入";
 "Import Failed" = "导入失败";
