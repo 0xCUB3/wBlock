@@ -190,7 +190,7 @@ enum BuiltInUserScripts {
     ]
 
     static let protectedURLs = Set(definitions.map(\.url))
-    static let legacyProtectedURLs = Set([legacyPopupBlockerBetaURL]).union(legacyBundledURLsByCanonical.keys)
+    static let legacyProtectedURLs = Set(legacyBundledURLsByCanonical.keys)
     static let allProtectedURLs = protectedURLs.union(legacyProtectedURLs)
     static let displayRoleByURL = Dictionary(uniqueKeysWithValues: definitions.compactMap { definition in
         definition.displayRole.map { (definition.url, $0) }
@@ -263,6 +263,7 @@ public class UserScriptManager: ObservableObject {
         DarkReaderAppearancePreference.followsSystemAppearance()
 
     private let userScriptSiteDisabledDefaultsKey = "userScriptDisabledHostsByID"
+    private let legacyPopupBlockerMigrationDefaultsKey = "didCompleteLegacyPopupBlockerMigration"
     private let sharedContainerIdentifier = GroupIdentifier.shared.value
     private let dataManager = ProtobufDataManager.shared
     private let sharedDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
@@ -1696,10 +1697,18 @@ public class UserScriptManager: ObservableObject {
 
     @MainActor
     private func migrateLegacyPopupBlockerIfNeeded() async {
+        // One-shot migration: installs that shipped the beta popup blocker as the default
+        // are cleaned up once, but a beta URL the user adds deliberately afterwards is
+        // never removed again (issue reported by cameren: the app deleted the beta link
+        // on every relaunch).
+        guard !sharedDefaults.bool(forKey: legacyPopupBlockerMigrationDefaultsKey) else { return }
+
         guard let stableURL = URL(string: BuiltInUserScripts.popupBlockerStableURL) else {
             logger.error("❌ Invalid stable popup blocker URL: \(BuiltInUserScripts.popupBlockerStableURL)")
             return
         }
+
+        sharedDefaults.set(true, forKey: legacyPopupBlockerMigrationDefaultsKey)
 
         let legacyIndices = userScripts.indices.filter {
             userScripts[$0].url?.absoluteString == BuiltInUserScripts.legacyPopupBlockerBetaURL
