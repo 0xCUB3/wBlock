@@ -773,7 +773,43 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
     }
 
 
+    /// How long to wait for Safari to answer a reload request before treating the
+    /// attempt as failed. SFContentBlockerManager occasionally never invokes its
+    /// completion handler (e.g. under memory pressure while compiling a large
+    /// ruleset); without a watchdog the apply pipeline spins forever.
+    public static let reloadCompletionTimeout: TimeInterval = 30
+
+    /// Safari did not invoke the reload completion handler within
+    /// reloadCompletionTimeout.
+    public struct ReloadTimedOutError: LocalizedError, Sendable {
+        public let identifier: String
+
+        public var errorDescription: String? {
+            "Safari did not respond to the reload request for \(identifier) "
+                + "within \(Int(ContentBlockerService.reloadCompletionTimeout)) seconds."
+        }
+    }
+
+    /// Guards a checked continuation against being resumed by both the reload
+    /// completion handler and the watchdog timeout.
+    private final class ResumeOnceGate: @unchecked Sendable {
+        private let lock = NSLock()
+        private var resumed = false
+
+        func claim() -> Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            if resumed { return false }
+            resumed = true
+            return true
+        }
+    }
+
     /// Reloads the Safari content blocker extension with the specified identifier.
+    ///
+    /// The wait is bounded by reloadCompletionTimeout: if Safari never calls the
+    /// completion handler, the attempt fails with ReloadTimedOutError instead of
+    /// hanging the caller indefinitely.
     ///
     /// - Parameters:
     ///   - identifier: Bundle ID of the content blocker extension to reload.
@@ -785,8 +821,15 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         os_log(.info, "Start reloading the content blocker")
 
         let error: Error? = await withCheckedContinuation { continuation in
+            let gate = ResumeOnceGate()
             SFContentBlockerManager.reloadContentBlocker(withIdentifier: identifier) { error in
+                guard gate.claim() else { return }
                 continuation.resume(returning: error)
+            }
+            Task.detached {
+                try? await TaskSleep.sleep(for: .seconds(reloadCompletionTimeout))
+                guard gate.claim() else { return }
+                continuation.resume(returning: ReloadTimedOutError(identifier: identifier))
             }
         }
 
@@ -798,7 +841,13 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         case .failure(let error):
             // WKErrorDomain error 6 is a common error when the content blocker
             // cannot access the blocker list file.
-            if error.localizedDescription.contains("WKErrorDomain error 6") {
+            if error is ReloadTimedOutError {
+                os_log(
+                    .error,
+                    "Content blocker reload timed out waiting for Safari: %@",
+                    identifier
+                )
+            } else if error.localizedDescription.contains("WKErrorDomain error 6") {
                 os_log(
                     .error,
                     "Failed to reload content blocker, could not access blocker list file: %@",
@@ -864,6 +913,17 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             if case .success = result {
                 return ReloadAttemptResult(
                     success: true,
+                    attempts: attempt,
+                    durationMs: elapsedMs()
+                )
+            }
+
+            // A timed-out attempt means Safari is not answering reload requests at
+            // all; immediate retries only stack more long waits, so fail fast and
+            // let the caller surface the error.
+            if case .failure(let error) = result, error is ReloadTimedOutError {
+                return ReloadAttemptResult(
+                    success: false,
                     attempts: attempt,
                     durationMs: elapsedMs()
                 )
