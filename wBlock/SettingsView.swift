@@ -49,6 +49,12 @@ struct SettingsView: View {
         dataManager.autoUpdateDiagnostics
     }
 
+    #if os(macOS)
+    private var backgroundAgentDisabled: Bool {
+        dataManager.backgroundAgentDisabled
+    }
+    #endif
+
     private var compactStatusLine: String {
         return nextScheduleLine
     }
@@ -190,6 +196,24 @@ struct SettingsView: View {
             }
         )
     }
+
+    #if os(macOS)
+    private var backgroundAgentEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { !backgroundAgentDisabled },
+            set: { newValue in
+                Task {
+                    await dataManager.setBackgroundAgentDisabled(!newValue)
+                    let desired = dataManager.autoUpdateEnabled && !dataManager.backgroundAgentDisabled
+                    await MainActor.run {
+                        AutoUpdateLaunchAgentManager.shared.reconcileWithAutoUpdateSetting(desired)
+                    }
+                    await updateScheduleLine(shouldTriggerOverdue: false)
+                }
+            }
+        )
+    }
+    #endif
 
     private var syncEnabledBinding: Binding<Bool> {
         Binding(
@@ -337,6 +361,12 @@ struct SettingsView: View {
                         Text(intervalDescription(hours: hours)).tag(hours)
                     }
                 }
+
+                #if os(macOS)
+                Toggle("Background Update Agent", isOn: backgroundAgentEnabledBinding)
+                    .toggleStyle(.switch)
+                    .help("Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open.")
+                #endif
 
                 #if os(iOS)
                 iOSAutoUpdateDiagnosticsView
@@ -952,6 +982,11 @@ extension SettingsView {
         let launchAgentStatus = await MainActor.run {
             AutoUpdateLaunchAgentManager.shared.currentStatus()
         }
+        let agentIntentionallyOff = backgroundAgentDisabled && !launchAgentStatus.isRegistered
+        let launchAgentDetail = agentIntentionallyOff
+            ? String(localized: "Background agent off (updates run while wBlock is open)")
+            : launchAgentStatus.detail
+        let launchAgentApproval = agentIntentionallyOff ? false : launchAgentStatus.needsApproval
         #endif
 
         guard autoUpdateEnabled else {
@@ -959,8 +994,8 @@ extension SettingsView {
                 nextScheduleLine = String(localized: "Disabled")
                 isOverdue = false
                 #if os(macOS)
-                launchAgentStatusLine = launchAgentStatus.detail
-                launchAgentNeedsApproval = launchAgentStatus.needsApproval
+                launchAgentStatusLine = launchAgentDetail
+                launchAgentNeedsApproval = launchAgentApproval
                 #endif
             }
             return
@@ -975,8 +1010,8 @@ extension SettingsView {
             nextScheduleLine = scheduleDescription
             isOverdue = status.isOverdue
             #if os(macOS)
-            launchAgentStatusLine = launchAgentStatus.detail
-            launchAgentNeedsApproval = launchAgentStatus.needsApproval
+            launchAgentStatusLine = launchAgentDetail
+            launchAgentNeedsApproval = launchAgentApproval
             #endif
         }
 

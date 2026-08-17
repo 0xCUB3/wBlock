@@ -138,9 +138,11 @@
 "Background agent error: %@" = "バックグラウンド エージェント エラー: %@";
 "Background agent needs approval in Login Items" = "バックグラウンド エージェントはログイン項目で承認が必要です";
 "Background agent not registered" = "バックグラウンドエージェントが登録されていません";
+"Background agent off (updates run while wBlock is open)" = "バックグラウンドエージェントはオフです（更新は wBlock を開いている間に実行されます）";
 "Background agent registered" = "バックグラウンドエージェントが登録されました";
 "Background agent status unavailable" = "バックグラウンドエージェントステータスが利用不可";
 "Background Diagnostics" = "バックグラウンド診断";
+"Background Update Agent" = "バックグラウンド更新エージェント";
 "Backup" = "バックアップ";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@ のバックアップ（アプリ v%@、%@ 個のフィルター）です。現在のフィルター選択、ホワイトリスト、要素ザッパーのルールがこれで置き換えられます。";
 "Balanced defaults." = "バランスの取れた既定設定。";
@@ -451,6 +453,7 @@
 "Italian adblock filter list." = "イタリアの広告ブロック フィルター リスト。";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "すべて保持";
+"Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "wBlock が実行されていないときもフィルタを更新し続けます。常駐のログイン項目を避けるにはオフにしてください。その場合、更新は wBlock を開いている間のみ実行されます。";
 "Languages: %@" = "言語: %@";
 "Languages: \\(languageSummary)" = "言語: \\(languageSummary)";
 "Large file - scrolling may be slow" = "大きなファイルのため、スクロールが遅くなる場合があります";

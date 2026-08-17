@@ -138,9 +138,11 @@
 "Background agent error: %@" = "خطأ في عامل الخلفية: %@";
 "Background agent needs approval in Login Items" = "يحتاج وكيل الخلفية إلى الموافقة في عناصر تسجيل الدخول";
 "Background agent not registered" = "وكيل الخلفية غير مسجل";
+"Background agent off (updates run while wBlock is open)" = "عامل الخلفية متوقف (يتم التحديث أثناء فتح wBlock)";
 "Background agent registered" = "تم تسجيل وكيل الخلفية";
 "Background agent status unavailable" = "حالة وكيل الخلفية غير متاحة";
 "Background Diagnostics" = "تشخيصات الخلفية";
+"Background Update Agent" = "عامل التحديث في الخلفية";
 "Backup" = "نسخة احتياطية";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "نسخة احتياطية من %@ (إصدار التطبيق %@، %@ مرشحًا). سيؤدي هذا إلى استبدال اختيارات المرشحات الحالية وقائمة السماح وقواعد إخفاء العناصر.";
 "Balanced defaults." = "الإعدادات الافتراضية المتوازنة.";
@@ -451,6 +453,7 @@
 "Italian adblock filter list." = "قائمة مرشحات Adblock الإيطالية.";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "الاحتفاظ بالكل";
+"Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "يُبقي المرشحات محدّثة حتى عندما لا يعمل wBlock. أوقفه لتجنب عنصر تسجيل دخول دائم؛ عندها لن يتم التحديث إلا أثناء فتح wBlock.";
 "Languages: %@" = "اللغات: %@";
 "Languages: \\(languageSummary)" = "اللغات: \\(languageSummary)";
 "Large file - scrolling may be slow" = "ملف كبير - قد يكون التمرير بطيئًا";

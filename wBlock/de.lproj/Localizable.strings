@@ -138,9 +138,11 @@
 "Background agent error: %@" = "Fehler im Hintergrundagenten: %@";
 "Background agent needs approval in Login Items" = "Der Hintergrundagent muss in den Anmeldeobjekten genehmigt werden";
 "Background agent not registered" = "Hintergrundagent nicht registriert";
+"Background agent off (updates run while wBlock is open)" = "Hintergrundagent aus (Updates laufen, während wBlock geöffnet ist)";
 "Background agent registered" = "Hintergrundagent registriert";
 "Background agent status unavailable" = "Status des Hintergrundagenten nicht verfügbar";
 "Background Diagnostics" = "Hintergrunddiagnose";
+"Background Update Agent" = "Hintergrund-Update-Agent";
 "Backup" = "Sicherung";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Backup von %@ (App v%@, %@ Filter). Dadurch werden deine aktuellen Filterauswahlen, die Whitelist und die Regeln des Element-Entferners ersetzt.";
 "Balanced defaults." = "Ausgewogene Standardeinstellungen.";
@@ -451,6 +453,7 @@
 "Italian adblock filter list." = "Italienische Adblock-Filterliste.";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "Alle behalten";
+"Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "Hält Filter aktuell, auch wenn wBlock nicht läuft. Deaktivieren, um kein dauerhaftes Anmeldeobjekt zu verwenden; Updates laufen dann nur, während wBlock geöffnet ist.";
 "Languages: %@" = "Sprachen: %@";
 "Languages: \\(languageSummary)" = "Sprachen: \\(languageSummary)";
 "Large file - scrolling may be slow" = "Große Datei - Scrollen kann langsam sein";

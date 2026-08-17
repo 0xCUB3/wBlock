@@ -203,4 +203,9 @@ message AutoUpdateMetadata {
   SilentPushDiagnostics silent_push = 14;
   int64 last_foreground_catch_up_time = 15;
   string last_foreground_catch_up_reason = 16;
+  // User preference to opt out of the persistent background agent (macOS
+  // login item) while keeping auto-updates enabled. Stored inverted so the
+  // proto3 default (false) preserves the historical behavior of running the
+  // agent whenever auto-update is enabled.
+  bool background_agent_disabled = 17;
 }

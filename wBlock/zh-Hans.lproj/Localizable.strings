@@ -138,9 +138,11 @@
 "Background agent error: %@" = "后台代理错误：%@";
 "Background agent needs approval in Login Items" = "后台代理需要在登录项中获得批准";
 "Background agent not registered" = "后台代理未注册";
+"Background agent off (updates run while wBlock is open)" = "后台代理已关闭（更新将在 wBlock 打开时运行）";
 "Background agent registered" = "后台代理注册";
 "Background agent status unavailable" = "后台代理状态不可用";
 "Background Diagnostics" = "后台诊断";
+"Background Update Agent" = "后台更新代理";
 "Backup" = "备份";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "来自 %@ 的备份（应用 v%@，%@ 个过滤器）。这将替换你当前的过滤器选择、白名单和元素清除规则。";
 "Balanced defaults." = "平衡的默认设置。";
@@ -451,6 +453,7 @@
 "Italian adblock filter list." = "意大利广告拦截过滤器列表。";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "全部保留";
+"Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "在 wBlock 未运行时也保持过滤器更新。关闭可避免常驻登录项；此后更新仅在 wBlock 打开时运行。";
 "Languages: %@" = "语言：%@";
 "Languages: \\(languageSummary)" = "语言：\\(languageSummary)";
 "Large file - scrolling may be slow" = "文件较大，滚动可能较慢";

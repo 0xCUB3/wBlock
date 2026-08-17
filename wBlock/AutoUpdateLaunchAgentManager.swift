@@ -112,7 +112,9 @@ final class AutoUpdateLaunchAgentManager {
             return notFoundStatus()
         }
 
-        return ProtobufDataManager.shared.autoUpdateEnabled ? enabledStatus() : notRegisteredStatus()
+        let desired = ProtobufDataManager.shared.autoUpdateEnabled
+            && !ProtobufDataManager.shared.backgroundAgentDisabled
+        return desired ? enabledStatus() : notRegisteredStatus()
     }
 
     private var legacyLoginItemExists: Bool {

@@ -80,7 +80,7 @@ class AppDelegate: NSObject {
     /// Periodic timer for regular update checks
     private var periodicUpdateTimer: Timer?
     private var autoUpdateSaveObserver: AnyCancellable?
-    private var lastObservedAutoUpdateEnabled: Bool?
+    private var lastObservedLaunchAgentDesiredState: Bool?
     #endif
 
     #if os(iOS)
@@ -316,11 +316,12 @@ extension AppDelegate: NSApplicationDelegate {
 
     @MainActor private func reconcileMacOSLaunchAgentRegistration(reason: String) async {
         await ProtobufDataManager.shared.waitUntilLoaded()
-        let enabled = ProtobufDataManager.shared.autoUpdateEnabled
-        guard lastObservedAutoUpdateEnabled != enabled || reason == "Launch" else { return }
-        lastObservedAutoUpdateEnabled = enabled
+        let dataManager = ProtobufDataManager.shared
+        let desired = dataManager.autoUpdateEnabled && !dataManager.backgroundAgentDisabled
+        guard lastObservedLaunchAgentDesiredState != desired || reason == "Launch" else { return }
+        lastObservedLaunchAgentDesiredState = desired
 
-        let status = AutoUpdateLaunchAgentManager.shared.reconcileWithAutoUpdateSetting(enabled)
+        let status = AutoUpdateLaunchAgentManager.shared.reconcileWithAutoUpdateSetting(desired)
         os_log(
             "Launch agent reconciliation (%{public}@): %{public}@",
             type: .info,

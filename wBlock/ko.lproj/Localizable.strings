@@ -138,9 +138,11 @@
 "Background agent error: %@" = "백그라운드 에이전트 오류: %@";
 "Background agent needs approval in Login Items" = "백그라운드 에이전트는 로그인 항목에서 승인이 필요합니다.";
 "Background agent not registered" = "백그라운드 에이전트가 등록되지 않았습니다.";
+"Background agent off (updates run while wBlock is open)" = "백그라운드 에이전트 꺼짐(업데이트는 wBlock이 열려 있는 동안 실행됨)";
 "Background agent registered" = "백그라운드 에이전트가 등록됨";
 "Background agent status unavailable" = "백그라운드 에이전트 상태를 사용할 수 없음";
 "Background Diagnostics" = "백그라운드 진단";
+"Background Update Agent" = "백그라운드 업데이트 에이전트";
 "Backup" = "백업";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@의 백업입니다(앱 v%@, 필터 %@개). 현재 필터 선택, 허용 목록, 요소 제거 규칙이 이 백업으로 대체됩니다.";
 "Balanced defaults." = "균형 잡힌 기본 설정.";
@@ -451,6 +453,7 @@
 "Italian adblock filter list." = "이탈리아 광고 차단 필터 목록.";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "모두 유지";
+"Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "wBlock이 실행 중이 아닐 때도 필터를 계속 업데이트합니다. 상주 로그인 항목을 원하지 않으면 끄세요. 그러면 업데이트는 wBlock이 열려 있는 동안에만 실행됩니다.";
 "Languages: %@" = "언어: %@";
 "Languages: \\(languageSummary)" = "언어: \\(languageSummary)";
 "Large file - scrolling may be slow" = "대용량 파일 - 스크롤이 느려질 수 있음";

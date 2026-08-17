@@ -138,9 +138,11 @@
 "Background agent error: %@" = "Eroare agent de fundal: %@";
 "Background agent needs approval in Login Items" = "Agentul de fundal necesită aprobare în Elementele de conectare";
 "Background agent not registered" = "Agentul de fundal nu este înregistrat";
+"Background agent off (updates run while wBlock is open)" = "Agent în fundal dezactivat (actualizările rulează cât timp wBlock este deschis)";
 "Background agent registered" = "Agent de fundal înregistrat";
 "Background agent status unavailable" = "Starea agentului de fundal nu este disponibilă";
 "Background Diagnostics" = "Diagnostic de fundal";
+"Background Update Agent" = "Agent de actualizare în fundal";
 "Backup" = "Copie de rezervă";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Copie de rezervă din %@ (app v%@, %@ filtre). Aceasta va înlocui selecțiile actuale de filtre, lista albă și regulile pentru eliminatorul de elemente.";
 "Balanced defaults." = "Setări implicite echilibrate.";
@@ -451,6 +453,7 @@
 "Italian adblock filter list." = "Listă italiană de filtre de blocare a reclamelor.";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "Păstrează tot";
+"Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "Menține filtrele actualizate când wBlock nu rulează. Dezactivați pentru a evita un element de conectare persistent; actualizările vor rula atunci doar cât timp wBlock este deschis.";
 "Languages: %@" = "Limbi: %@";
 "Languages: \\(languageSummary)" = "Limbi: \\(languageSummary)";
 "Large file - scrolling may be slow" = "Fișier mare - derularea poate fi lentă";

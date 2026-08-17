@@ -138,9 +138,11 @@
 "Background agent error: %@" = "Háttérügynök hiba: %@";
 "Background agent needs approval in Login Items" = "A háttérügynök jóváhagyása szükséges a bejelentkezési elemeknél";
 "Background agent not registered" = "A háttérügynök nincs regisztrálva";
+"Background agent off (updates run while wBlock is open)" = "Háttérügynök kikapcsolva (a frissítések a wBlock megnyitása alatt futnak)";
 "Background agent registered" = "Regisztrált háttérügynök";
 "Background agent status unavailable" = "A háttérügynök állapota nem érhető el";
 "Background Diagnostics" = "Háttérdiagnosztika";
+"Background Update Agent" = "Háttérfrissítési ügynök";
 "Backup" = "Biztonsági mentés";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Biztonsági mentés innen: %@ (app v%@, %@ szűrő). Ez lecseréli a jelenlegi szűrőválasztásaidat, az engedélyezőlistádat és az elemeltávolító szabályaidat.";
 "Balanced defaults." = "Kiegyensúlyozott alapbeállítások.";
@@ -451,6 +453,7 @@
 "Italian adblock filter list." = "Olasz hirdetésblokkoló szűrőlista.";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "Összes megtartása";
+"Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "Naprakészen tartja a szűrőket akkor is, amikor a wBlock nem fut. Kapcsolja ki, ha nem szeretne állandó bejelentkezési elemet; a frissítések ekkor csak a wBlock megnyitása alatt futnak.";
 "Languages: %@" = "Nyelvek: %@";
 "Languages: \\(languageSummary)" = "Nyelvek: \\(languageSummary)";
 "Large file - scrolling may be slow" = "Nagy fájl - a görgetés lassú lehet";

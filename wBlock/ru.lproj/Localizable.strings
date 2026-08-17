@@ -138,9 +138,11 @@
 "Background agent error: %@" = "Ошибка фонового агента: %@.";
 "Background agent needs approval in Login Items" = "Фоновому агенту требуется одобрение элементов входа.";
 "Background agent not registered" = "Фоновый агент не зарегистрирован";
+"Background agent off (updates run while wBlock is open)" = "Фоновый агент выключен (обновления выполняются, пока wBlock открыт)";
 "Background agent registered" = "Зарегистрирован фоновый агент";
 "Background agent status unavailable" = "Статус фонового агента недоступен.";
 "Background Diagnostics" = "Диагностика в фоне";
+"Background Update Agent" = "Агент фонового обновления";
 "Backup" = "Резервная копия";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Резервная копия от %@ (версия приложения %@, фильтров: %@). Это заменит текущие выбранные фильтры, белый список и правила скрытия элементов.";
 "Balanced defaults." = "Сбалансированные настройки по умолчанию.";
@@ -451,6 +453,7 @@
 "Italian adblock filter list." = "Итальянский список фильтров блокировки рекламы.";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "Оставить все";
+"Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "Обновляет фильтры, даже когда wBlock не запущен. Отключите, чтобы не использовать постоянный объект входа; тогда обновления будут выполняться только пока wBlock открыт.";
 "Languages: %@" = "Языки: %@";
 "Languages: \\(languageSummary)" = "Языки: \\(languageSummary)";
 "Large file - scrolling may be slow" = "Большой файл - прокрутка может быть медленной";

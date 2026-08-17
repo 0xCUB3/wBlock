@@ -138,9 +138,11 @@
 "Background agent error: %@" = "Σφάλμα παρασκηνίου παρασκηνίου: %@";
 "Background agent needs approval in Login Items" = "Ο παράγοντας παρασκηνίου χρειάζεται έγκριση στα Στοιχεία σύνδεσης";
 "Background agent not registered" = "Ο πράκτορας παρασκηνίου δεν είναι εγγεγραμμένος";
+"Background agent off (updates run while wBlock is open)" = "Ο πράκτορας παρασκηνίου είναι απενεργοποιημένος (οι ενημερώσεις εκτελούνται όσο το wBlock είναι ανοιχτό)";
 "Background agent registered" = "Εγγεγραμμένος πράκτορας παρασκηνίου";
 "Background agent status unavailable" = "Η κατάσταση παρασκηνίου δεν είναι διαθέσιμη";
 "Background Diagnostics" = "Διαγνωστικά παρασκηνίου";
+"Background Update Agent" = "Πράκτορας ενημέρωσης παρασκηνίου";
 "Backup" = "Αντίγραφο ασφαλείας";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Αντίγραφο ασφαλείας από %@ (έκδοση εφαρμογής %@, %@ φίλτρα). Αυτό θα αντικαταστήσει τις τρέχουσες επιλογές φίλτρων, τη λίστα επιτρεπόμενων και τους κανόνες του στοιχειο-αφανιστή.";
 "Balanced defaults." = "Ισορροπημένες προεπιλογές.";
@@ -451,6 +453,7 @@
 "Italian adblock filter list." = "Ιταλική λίστα φίλτρων adblock.";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "Διατήρηση όλων";
+"Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "Διατηρεί τα φίλτρα ενημερωμένα όταν το wBlock δεν εκτελείται. Απενεργοποιήστε το για να αποφύγετε ένα μόνιμο στοιχείο σύνδεσης· οι ενημερώσεις θα εκτελούνται τότε μόνο όσο το wBlock είναι ανοιχτό.";
 "Languages: %@" = "Γλώσσες: %@";
 "Languages: \\(languageSummary)" = "Γλώσσες: \(languageSummary)";
 "Large file - scrolling may be slow" = "Μεγάλο αρχείο - η κύλιση μπορεί να είναι αργή";

@@ -204,6 +204,7 @@ private func mergePersistedChanges(
     mergeField(&autoUpdate.silentPush, baseline: base.silentPush, persisted: theirs.silentPush)
     mergeField(&autoUpdate.lastForegroundCatchUpTime, baseline: base.lastForegroundCatchUpTime, persisted: theirs.lastForegroundCatchUpTime)
     mergeField(&autoUpdate.lastForegroundCatchUpReason, baseline: base.lastForegroundCatchUpReason, persisted: theirs.lastForegroundCatchUpReason)
+    mergeField(&autoUpdate.backgroundAgentDisabled, baseline: base.backgroundAgentDisabled, persisted: theirs.backgroundAgentDisabled)
     mergeField(&autoUpdate.unknownFields, baseline: base.unknownFields, persisted: theirs.unknownFields)
     snapshot.autoUpdate = autoUpdate
     mergeField(&snapshot.unknownFields, baseline: previous.unknownFields, persisted: persisted.unknownFields)
@@ -618,6 +619,19 @@ public class ProtobufDataManager: ObservableObject {
     @MainActor
     public func setAutoUpdateIntervalHours(_ value: Double) async {
         await updateData { $0.autoUpdate.intervalHours = value }
+    }
+
+    /// User preference to opt out of the persistent macOS background agent
+    /// (login item) while keeping auto-updates enabled. Stored inverted so the
+    /// proto3 default (false) preserves the historical behavior of running the
+    /// agent whenever auto-update is enabled.
+    public var backgroundAgentDisabled: Bool {
+        appData.autoUpdate.backgroundAgentDisabled
+    }
+
+    @MainActor
+    public func setBackgroundAgentDisabled(_ value: Bool) async {
+        await updateData { $0.autoUpdate.backgroundAgentDisabled = value }
     }
 
     /// Last auto-update check time (Unix timestamp)

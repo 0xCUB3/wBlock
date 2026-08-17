@@ -138,9 +138,11 @@
 "Background agent error: %@" = "Arka plan görevi hatası: %@";
 "Background agent needs approval in Login Items" = "Arka plan görevi için Giriş Öğeleri bölümünde onay gerekiyor";
 "Background agent not registered" = "Arka plan görevi kayıtlı değil";
+"Background agent off (updates run while wBlock is open)" = "Arka plan aracısı kapalı (güncellemeler wBlock açıkken çalışır)";
 "Background agent registered" = "Arka plan görevi kaydedildi";
 "Background agent status unavailable" = "Arka plan görevi durumu kullanılamıyor";
 "Background Diagnostics" = "Arka plan görevleri";
+"Background Update Agent" = "Arka Plan Güncelleme Aracısı";
 "Backup" = "Yedek";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@ yedeklemesi (uygulama sürümü: %@, filtreler: %@). Bu işlem; mevcut filtre seçimlerinizi, izin listenizi ve öğe gizleyici kurallarınızı değiştirecektir.";
 "Balanced defaults." = "Dengeli ayarlar.";
@@ -451,6 +453,7 @@
 "Italian adblock filter list." = "İtalyanca reklam engelleme filtre listesi.";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "Tümünü tut";
+"Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "wBlock çalışmıyorken de filtreleri güncel tutar. Kalıcı bir oturum açma öğesi istemiyorsanız kapatın; güncellemeler yalnızca wBlock açıkken çalışır.";
 "Languages: %@" = "Dil: %@";
 "Languages: \\(languageSummary)" = "Dil: \\(languageSummary)";
 "Large file - scrolling may be slow" = "Büyük dosya - kaydırma işlemi yavaş olabilir";

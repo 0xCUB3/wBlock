@@ -722,6 +722,15 @@ nonisolated struct Wblock_Data_AutoUpdateMetadata: @unchecked Sendable {
     set {_uniqueStorage()._lastForegroundCatchUpReason = newValue}
   }
 
+  /// User preference to opt out of the persistent background agent (macOS
+  /// login item) while keeping auto-updates enabled. Stored inverted so the
+  /// proto3 default (false) preserves the historical behavior of running the
+  /// agent whenever auto-update is enabled.
+  var backgroundAgentDisabled: Bool {
+    get {_storage._backgroundAgentDisabled}
+    set {_uniqueStorage()._backgroundAgentDisabled = newValue}
+  }
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -1695,7 +1704,7 @@ nonisolated extension Wblock_Data_SilentPushDiagnostics: SwiftProtobuf.Message, 
 
 nonisolated extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".AutoUpdateMetadata"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}enabled\0\u{3}interval_hours\0\u{3}last_check_time\0\u{3}last_successful_time\0\u{3}next_eligible_time\0\u{3}force_next\0\u{3}is_running\0\u{3}running_since_timestamp\0\u{3}filter_etags\0\u{3}filter_last_modified\0\u{4}\u{2}bg_app_refresh\0\u{3}bg_processing\0\u{3}silent_push\0\u{3}last_foreground_catch_up_time\0\u{3}last_foreground_catch_up_reason\0\u{c}\u{b}\u{1}")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}enabled\0\u{3}interval_hours\0\u{3}last_check_time\0\u{3}last_successful_time\0\u{3}next_eligible_time\0\u{3}force_next\0\u{3}is_running\0\u{3}running_since_timestamp\0\u{3}filter_etags\0\u{3}filter_last_modified\0\u{4}\u{2}bg_app_refresh\0\u{3}bg_processing\0\u{3}silent_push\0\u{3}last_foreground_catch_up_time\0\u{3}last_foreground_catch_up_reason\0\u{3}background_agent_disabled\0\u{c}\u{b}\u{1}")
 
   fileprivate class _StorageClass {
     var _enabled: Bool = false
@@ -1713,6 +1722,7 @@ nonisolated extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, Swi
     var _silentPush: Wblock_Data_SilentPushDiagnostics? = nil
     var _lastForegroundCatchUpTime: Int64 = 0
     var _lastForegroundCatchUpReason: String = String()
+    var _backgroundAgentDisabled: Bool = false
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -1738,6 +1748,7 @@ nonisolated extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, Swi
       _silentPush = source._silentPush
       _lastForegroundCatchUpTime = source._lastForegroundCatchUpTime
       _lastForegroundCatchUpReason = source._lastForegroundCatchUpReason
+      _backgroundAgentDisabled = source._backgroundAgentDisabled
     }
   }
 
@@ -1771,6 +1782,7 @@ nonisolated extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, Swi
         case 14: try { try decoder.decodeSingularMessageField(value: &_storage._silentPush) }()
         case 15: try { try decoder.decodeSingularInt64Field(value: &_storage._lastForegroundCatchUpTime) }()
         case 16: try { try decoder.decodeSingularStringField(value: &_storage._lastForegroundCatchUpReason) }()
+        case 17: try { try decoder.decodeSingularBoolField(value: &_storage._backgroundAgentDisabled) }()
         default: break
         }
       }
@@ -1828,6 +1840,9 @@ nonisolated extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, Swi
       if !_storage._lastForegroundCatchUpReason.isEmpty {
         try visitor.visitSingularStringField(value: _storage._lastForegroundCatchUpReason, fieldNumber: 16)
       }
+      if _storage._backgroundAgentDisabled != false {
+        try visitor.visitSingularBoolField(value: _storage._backgroundAgentDisabled, fieldNumber: 17)
+      }
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1852,6 +1867,7 @@ nonisolated extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, Swi
         if _storage._silentPush != rhs_storage._silentPush {return false}
         if _storage._lastForegroundCatchUpTime != rhs_storage._lastForegroundCatchUpTime {return false}
         if _storage._lastForegroundCatchUpReason != rhs_storage._lastForegroundCatchUpReason {return false}
+        if _storage._backgroundAgentDisabled != rhs_storage._backgroundAgentDisabled {return false}
         return true
       }
       if !storagesAreEqual {return false}
