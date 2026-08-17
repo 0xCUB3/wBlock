@@ -158,8 +158,8 @@ struct ApplyChangesProgressView: View {
                     Section {
                         if let filters = filtersByCategory[category] {
                             ForEach(filters, id: \.id) { filter in
-                                selectionRow(
-                                    title: filter.localizedDisplayName,
+                                SelectableRow(
+                                    title: Text(filter.localizedDisplayName),
                                     subtitle: filter.localizedDisplayDescription,
                                     isSelected: selectedFilters.contains(filter.id)
                                 ) {
@@ -170,8 +170,8 @@ struct ApplyChangesProgressView: View {
 
                         if category == .scripts {
                             ForEach(filterManager.availableScriptUpdates, id: \.id) { script in
-                                selectionRow(
-                                    title: script.localizedDisplayName,
+                                SelectableRow(
+                                    title: Text(script.localizedDisplayName),
                                     subtitle: script.localizedDisplayDescription,
                                     isSelected: selectedScripts.contains(script.id)
                                 ) {
@@ -207,40 +207,6 @@ struct ApplyChangesProgressView: View {
             .toggleStyle(.switch)
             .labelsHidden()
         }
-    }
-
-    private func selectionRow(
-        title: String,
-        subtitle: String,
-        isSelected: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                SelectionIndicator(isSelected: isSelected, size: 18)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.body)
-                        .foregroundStyle(.primary)
-                        .multilineTextAlignment(.leading)
-
-                    if !subtitle.isEmpty {
-                        Text(subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-                    }
-                }
-
-                Spacer(minLength: 0)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(title)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     // MARK: - Progress

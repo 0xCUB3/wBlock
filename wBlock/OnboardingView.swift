@@ -454,35 +454,14 @@ struct OnboardingView: View {
             selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
             == level.rawValue.lowercased()
 
-        return Button {
+        return SelectableRow(
+            title: Text(LocalizedStringKey(level.rawValue)),
+            subtitle: blockingLevelDescription(level),
+            isSelected: isSelected,
+            style: .card
+        ) {
             selectedBlockingLevel = level.rawValue
-        } label: {
-            HStack(alignment: .top, spacing: 12) {
-                SelectionIndicator(isSelected: isSelected)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        Text(LocalizedStringKey(level.rawValue))
-                            .font(.headline)
-                    }
-
-                    Text(blockingLevelDescription(level))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-        .liquidGlassCompat(
-            cornerRadius: 16,
-            material: isSelected ? .thickMaterial : .regularMaterial
-        )
     }
 
     func blockingLevelDescription(_ level: BlockingLevel) -> String {
@@ -724,41 +703,19 @@ struct OnboardingView: View {
     private func regionalToggle(for filter: FilterList) -> some View {
         let isSelected = selectedRegionalFilters.contains(filter.id)
 
-        return Button {
+        return SelectableRow(
+            title: Text(filter.localizedDisplayName),
+            subtitle: filter.localizedDisplayDescription,
+            isSelected: isSelected,
+            style: .card
+        ) {
             if isSelected {
                 selectedRegionalFilters.remove(filter.id)
             } else {
                 selectedRegionalFilters.insert(filter.id)
             }
             hasManuallyEditedRegionalSelection = true
-        } label: {
-            HStack(alignment: .top, spacing: 12) {
-                SelectionIndicator(isSelected: isSelected)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(filter.localizedDisplayName)
-                        .font(.headline)
-
-                    if !filter.localizedDisplayDescription.isEmpty {
-                        Text(filter.localizedDisplayDescription)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                    }
-                }
-
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-        .liquidGlassCompat(
-            cornerRadius: 16,
-            material: isSelected ? .thickMaterial : .regularMaterial
-        )
     }
 
     private var syncStep: some View {
@@ -973,7 +930,13 @@ struct OnboardingView: View {
     private func userscriptCard(for script: OnboardingUserScriptItem) -> some View {
         let isSelected = selectedUserscripts.contains(script.id)
 
-        return Button {
+        return SelectableRow(
+            title: Text(script.name),
+            subtitle: script.description,
+            badge: script.isBeta ? Text("Beta") : nil,
+            isSelected: isSelected,
+            style: .groupedRow
+        ) {
             if isSelected {
                 selectedUserscripts.remove(script.id)
                 manuallySelectedUserscripts.remove(script.id)
@@ -987,40 +950,7 @@ struct OnboardingView: View {
                     manuallySelectedUserscripts.insert(script.id)
                 }
             }
-        } label: {
-            HStack(alignment: .top, spacing: 10) {
-                SelectionIndicator(isSelected: isSelected)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 6) {
-                        Text(script.name)
-                            .font(.headline)
-                        if script.isBeta {
-                            Text("Beta")
-                                .font(.caption2)
-                                .fontWeight(.medium)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.orange.opacity(0.15))
-                                .foregroundStyle(.orange)
-                                .cornerRadius(4)
-                        }
-                    }
-                    Text(script.description)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
-
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private func resolvedUserscriptDescription(for script: UserScript) -> String {
