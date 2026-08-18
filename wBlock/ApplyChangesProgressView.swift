@@ -92,8 +92,8 @@ struct ApplyChangesProgressView: View {
             minWidth: 460,
             idealWidth: 500,
             maxWidth: 560,
-            minHeight: mode == .progress ? 280 : (mode == .review ? 420 : 260),
-            idealHeight: mode == .progress ? 320 : (mode == .review ? 500 : 320),
+            minHeight: mode == .progress ? 300 : (mode == .review ? 420 : 260),
+            idealHeight: mode == .progress ? 340 : (mode == .review ? 500 : 320),
             maxHeight: 640
         )
         #endif
@@ -105,13 +105,12 @@ struct ApplyChangesProgressView: View {
         case .review:
             reviewContent
         case .progress:
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 14) {
                 sheetHeader
-                Spacer(minLength: 8)
                 progressField
-                Spacer(minLength: 8)
             }
             .padding(20)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         case .result:
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
@@ -224,13 +223,10 @@ struct ApplyChangesProgressView: View {
     // MARK: - Progress
 
     private var progressField: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            ApplyPhaseRail(nodes: presentation.nodes)
-            ApplyProgressField(
-                presentation: presentation,
-                displayedProgress: displayedProgress
-            )
-        }
+        ApplyProgressField(
+            presentation: presentation,
+            displayedProgress: displayedProgress
+        )
     }
 
     // MARK: - Result
@@ -377,136 +373,5 @@ struct ApplyChangesProgressView: View {
             return String(localized: "Something went wrong while applying changes.")
         }
         return viewModel.state.failureMessage
-    }
-}
-
-private struct ApplyPhaseRail: View {
-    let nodes: [ApplyProgressPresentation.Node]
-
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach(Array(nodes.enumerated()), id: \.element.id) { index, node in
-                if index > 0 {
-                    Capsule()
-                        .fill(connectorColor(before: nodes[index - 1]))
-                        .frame(height: 2)
-                        .frame(maxWidth: .infinity)
-                }
-                ApplyPhaseNode(node: node)
-            }
-        }
-        .frame(height: 18)
-        .accessibilityHidden(true)
-    }
-
-    private func connectorColor(before node: ApplyProgressPresentation.Node) -> Color {
-        switch node.status {
-        case .complete:
-            return Color.accentColor.opacity(0.7)
-        case .failed:
-            return Color.red.opacity(0.7)
-        case .active, .pending:
-            return Color.primary.opacity(0.12)
-        }
-    }
-}
-
-private struct ApplyPhaseNode: View {
-    let node: ApplyProgressPresentation.Node
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(fill)
-                .frame(width: size, height: size)
-            if node.status == .pending {
-                Circle()
-                    .strokeBorder(Color.primary.opacity(0.28), lineWidth: 1.5)
-                    .frame(width: size, height: size)
-            }
-        }
-        .frame(width: 14, height: 14)
-    }
-
-    private var size: CGFloat {
-        switch node.status {
-        case .active, .failed:
-            return 10
-        case .complete, .pending:
-            return 8
-        }
-    }
-
-    private var fill: Color {
-        switch node.status {
-        case .pending:
-            return .clear
-        case .active:
-            return .accentColor
-        case .complete:
-            return Color.accentColor.opacity(0.45)
-        case .failed:
-            return .red
-        }
-    }
-}
-
-private struct ApplyProgressField: View {
-    let presentation: ApplyProgressPresentation
-    let displayedProgress: Double
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(presentation.title)
-                .font(.title3.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-
-            Text(presentation.detail ?? " ")
-                .font(.subheadline)
-                .foregroundStyle(presentation.detail == nil ? .clear : .secondary)
-                .lineLimit(2)
-                .frame(minHeight: 20, alignment: .leading)
-
-            HStack(spacing: 10) {
-                ApplyProgressTrack(value: displayedProgress, isFailed: presentation.isFailed)
-                if let fraction = presentation.fractionLabel {
-                    Text(fraction)
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(presentation.title)
-        .accessibilityValue(presentation.accessibilityValue)
-    }
-}
-
-private struct ApplyProgressTrack: View {
-    let value: Double
-    let isFailed: Bool
-
-    var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.primary.opacity(0.08))
-                Capsule()
-                    .fill(isFailed ? Color.red : Color.accentColor)
-                    .frame(width: fillWidth(in: geo.size.width))
-            }
-        }
-        .frame(height: 7)
-        .accessibilityHidden(true)
-    }
-
-    private func fillWidth(in total: CGFloat) -> CGFloat {
-        let clamped = min(max(value, 0), 1)
-        if clamped <= 0 {
-            return 8
-        }
-        return max(8, total * clamped)
     }
 }

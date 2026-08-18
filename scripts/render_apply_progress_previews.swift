@@ -1,0 +1,98 @@
+import AppKit
+import SwiftUI
+
+@main
+struct ApplyProgressPreviewRenderer {
+    @MainActor
+    static func main() {
+        let app = NSApplication.shared
+        app.setActivationPolicy(.accessory)
+
+        let converting = convertingPresentation()
+        let outDir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("docs/media/img", isDirectory: true)
+
+        write(
+            sheet(converting),
+            appearance: .aqua,
+            to: outDir.appendingPathComponent("apply_progress_light.png")
+        )
+        write(
+            sheet(converting),
+            appearance: .darkAqua,
+            to: outDir.appendingPathComponent("apply_progress_dark.png")
+        )
+        print("wrote previews to \(outDir.path)")
+    }
+
+    @MainActor
+    private static func convertingPresentation() -> ApplyProgressPresentation {
+        let viewModel = ApplyChangesViewModel()
+        viewModel.beginProgressRun()
+        viewModel.updateFilterUpdatesFound(3)
+        viewModel.updateScriptsUpdateResult(updated: 2, failed: 0)
+        viewModel.updatePhaseCompletion(updating: true, scripts: true, reading: false)
+        viewModel.updateProcessedCount(0, total: 5)
+        viewModel.updatePhaseCompletion(reading: true, converting: false)
+        viewModel.updateConvertingDone(2)
+        viewModel.updateCurrentFilter("Privacy")
+        return ApplyProgressPresentation.make(from: viewModel.state)
+    }
+
+    private static func sheet(_ presentation: ApplyProgressPresentation) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Apply Changes")
+                .font(.title2.weight(.semibold))
+            ApplyProgressField(
+                presentation: presentation,
+                displayedProgress: presentation.progress
+            )
+        }
+        .padding(20)
+        .frame(width: 500, height: 318, alignment: .topLeading)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private static func write<V: View>(_ view: V, appearance: NSAppearance.Name, to url: URL) {
+        let size = CGSize(width: 500, height: 318)
+        let hosting = NSHostingView(
+            rootView: view.frame(width: size.width, height: size.height, alignment: .topLeading)
+        )
+        hosting.appearance = NSAppearance(named: appearance)
+        hosting.frame = NSRect(origin: .zero, size: size)
+
+        let window = NSWindow(
+            contentRect: hosting.frame,
+            styleMask: [.titled, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        window.isReleasedWhenClosed = false
+        window.title = "Apply Changes"
+        window.appearance = NSAppearance(named: appearance)
+        window.titlebarAppearsTransparent = true
+        window.backgroundColor = NSColor.windowBackgroundColor
+        window.contentView = hosting
+        window.orderFrontRegardless()
+        hosting.layoutSubtreeIfNeeded()
+        window.displayIfNeeded()
+        RunLoop.current.run(until: Date(timeIntervalSinceNow: 0.4))
+
+        guard let rep = hosting.bitmapImageRepForCachingDisplay(in: hosting.bounds) else {
+            fputs("FAIL: could not create bitmap for \(url.lastPathComponent)\n", stderr)
+            exit(1)
+        }
+        hosting.cacheDisplay(in: hosting.bounds, to: rep)
+        guard let data = rep.representation(using: .png, properties: [:]) else {
+            fputs("FAIL: could not encode \(url.lastPathComponent)\n", stderr)
+            exit(1)
+        }
+        do {
+            try data.write(to: url)
+        } catch {
+            fputs("FAIL: \(error)\n", stderr)
+            exit(1)
+        }
+        window.close()
+    }
+}

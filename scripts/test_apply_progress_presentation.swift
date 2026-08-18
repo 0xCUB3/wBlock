@@ -18,6 +18,7 @@ struct ApplyProgressPresentationTests {
         testClampsAndZeroTotals()
         testAccessibilityValue()
         testNodeOrderMatchesPhases()
+        testCompletedNodesKeepDetails()
         print("PASS")
     }
 
@@ -330,6 +331,39 @@ struct ApplyProgressPresentationTests {
     }
 
     @MainActor
+    private static func testCompletedNodesKeepDetails() {
+        let viewModel = ApplyChangesViewModel()
+        viewModel.beginProgressRun()
+        viewModel.updateFilterUpdatesFound(3)
+        viewModel.updateScriptsUpdateResult(updated: 2, failed: 0)
+        viewModel.updatePhaseCompletion(updating: true, scripts: true, reading: false)
+        viewModel.updateProcessedCount(0, total: 5)
+        viewModel.updatePhaseCompletion(reading: true, converting: false)
+        viewModel.updateConvertingDone(2)
+        viewModel.updateCurrentFilter("Privacy")
+
+        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
+        check(
+            node(presentation, .updating)?.detail == localizedCount("Downloaded %d updates", count: 3),
+            "completed update rows must keep their count"
+        )
+        check(
+            node(presentation, .scripts)?.detail == localizedCount("Updated %d scripts", count: 2),
+            "completed script rows must keep their count"
+        )
+        check(
+            node(presentation, .reading)?.detail == localizedCount("Preparing %d extensions", count: 5),
+            "completed reading rows must keep the extension count"
+        )
+        check(
+            node(presentation, .converting)?.detail == "Privacy · 2/5",
+            "the active converting row should show the target and fraction"
+        )
+        check(node(presentation, .reloading)?.detail == nil, "pending reload has no detail")
+        check(node(presentation, .saving)?.detail == nil, "pending save has no detail")
+    }
+
+    @MainActor
     private static func testNodeOrderMatchesPhases() {
         let viewModel = ApplyChangesViewModel()
         viewModel.beginProgressRun()
@@ -340,11 +374,18 @@ struct ApplyProgressPresentationTests {
         )
     }
 
+    private static func node(
+        _ presentation: ApplyProgressPresentation,
+        _ phase: ApplyChangesPhase
+    ) -> ApplyProgressPresentation.Node? {
+        presentation.nodes.first(where: { $0.phase == phase })
+    }
+
     private static func status(
         _ presentation: ApplyProgressPresentation,
         _ phase: ApplyChangesPhase
     ) -> ApplyChangesPhaseStatus? {
-        presentation.nodes.first(where: { $0.phase == phase })?.status
+        node(presentation, phase)?.status
     }
 
     private static func localizedCount(_ key: String, count: Int) -> String {

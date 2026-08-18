@@ -391,6 +391,7 @@ struct ApplyProgressPresentation: Equatable {
     struct Node: Equatable, Identifiable {
         let phase: ApplyChangesPhase
         let status: ApplyChangesPhaseStatus
+        let detail: String?
         var id: ApplyChangesPhase { phase }
     }
 
@@ -415,8 +416,14 @@ struct ApplyProgressPresentation: Equatable {
     }
 
     static func make(from state: ApplyChangesState) -> ApplyProgressPresentation {
-        let nodes = state.phases.map { Node(phase: $0.phase, status: $0.status) }
         let focused = focusedStep(in: state)
+        let nodes = state.phases.map { step in
+            Node(
+                phase: step.phase,
+                status: step.status,
+                detail: rowDetail(for: step, state: state)
+            )
+        }
         return ApplyProgressPresentation(
             nodes: nodes,
             title: focused?.phase.title ?? String(localized: "Apply Changes"),
@@ -475,6 +482,17 @@ struct ApplyProgressPresentation: Equatable {
         let clamped = (0...1).clamp(value)
         return formatter.string(from: NSNumber(value: clamped))
             ?? "\(Int((clamped * 100).rounded()))%"
+    }
+
+    private static func rowDetail(for step: ApplyChangesPhaseProgress, state: ApplyChangesState) -> String? {
+        let text = detail(for: step, state: state)
+        guard step.status == .active, let fraction = fractionLabel(for: step, state: state) else {
+            return text
+        }
+        if let text, !text.isEmpty, text != fraction {
+            return "\(text) · \(fraction)"
+        }
+        return fraction
     }
 
     private static func fractionLabel(for step: ApplyChangesPhaseProgress, state: ApplyChangesState) -> String? {
