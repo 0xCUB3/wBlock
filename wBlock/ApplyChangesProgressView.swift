@@ -71,7 +71,7 @@ struct ApplyChangesProgressView: View {
                     }
                 }
         }
-        .largeSheetPresentationCompat()
+        .applySheetPresentationCompat(prefersLarge: mode == .review || mode == .progress)
         .interactiveDismissDisabled(mode == .progress || isStartingSelectedUpdates)
         .onAppear {
             syncSelectionFromAvailableUpdates()
@@ -81,8 +81,8 @@ struct ApplyChangesProgressView: View {
             minWidth: 460,
             idealWidth: 500,
             maxWidth: 560,
-            minHeight: mode == .review ? 420 : 400,
-            idealHeight: mode == .review ? 500 : 440,
+            minHeight: mode == .progress ? 400 : (mode == .review ? 420 : 260),
+            idealHeight: mode == .progress ? 440 : (mode == .review ? 500 : 320),
             maxHeight: 640
         )
         #endif
@@ -93,22 +93,32 @@ struct ApplyChangesProgressView: View {
         switch mode {
         case .review:
             reviewContent
-        case .progress, .result, .failed:
-            applyRunContent
-        }
-    }
-
-    private var applyRunContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+        case .progress:
+            VStack(alignment: .leading, spacing: 12) {
                 sheetHeader
-                if mode == .failed { failureCard }
-                if mode == .progress { progressOverviewCard }
-                if mode == .result, let summary = viewModel.state.summary { summaryCard(summary) }
-                if mode != .result { phaseCard }
+                progressOverviewCard
+                phaseCard
             }
             .padding(20)
-            .animation(.easeInOut(duration: 0.28), value: mode)
+        case .result:
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    sheetHeader
+                    if let summary = viewModel.state.summary {
+                        summaryCard(summary)
+                    }
+                }
+                .padding(20)
+            }
+        case .failed:
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    sheetHeader
+                    failureCard
+                    phaseCard
+                }
+                .padding(20)
+            }
         }
     }
 
@@ -513,7 +523,7 @@ private struct PhaseRow: View {
                     ProgressView(value: subProgress.value)
                         .progressViewStyle(.linear)
                         .scaleEffect(y: 1.15)
-                        .animation(.easeInOut(duration: 0.2), value: subProgress.value)
+                        .animation(.linear(duration: 0.15), value: subProgress.value)
 
                     if let label = subProgress.label {
                         Text(label)
