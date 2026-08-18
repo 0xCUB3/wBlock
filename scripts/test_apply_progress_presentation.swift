@@ -20,6 +20,7 @@ struct ApplyProgressPresentationTests {
         testNodeOrderMatchesPhases()
         testCompletedNodesKeepDetails()
         testBarTracksVisibleStatus()
+        testUpdatingShowsCurrentFilter()
         print("PASS")
     }
 
@@ -216,9 +217,7 @@ struct ApplyProgressPresentationTests {
             sourceRules: 10,
             safariRules: 8,
             conversionTime: "0.20s",
-            reloadTime: "0.10s",
-            ruleCountsByBlocker: [:],
-            blockersApproachingLimit: []
+            reloadTime: "0.10s"
         )
         let presentation = ApplyProgressPresentation.make(from: viewModel.state)
         check(presentation.progress == 1, "summary completion is full progress")
@@ -330,6 +329,22 @@ struct ApplyProgressPresentationTests {
         let presentation = ApplyProgressPresentation.make(from: viewModel.state)
         check(presentation.accessibilityValue.contains("Ads"), "VoiceOver value must include the current target")
         check(presentation.accessibilityValue.contains("1/5"), "VoiceOver value must include the fraction")
+    }
+
+    @MainActor
+    private static func testUpdatingShowsCurrentFilter() {
+        let viewModel = ApplyChangesViewModel()
+        viewModel.beginProgressRun()
+        viewModel.updateCurrentFilter("AdGuard Base Filter")
+        viewModel.updatePhaseProgress(0.93)
+        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
+        check(presentation.detail == "AdGuard Base Filter", "the live update row must name the in-flight list")
+        check(
+            node(presentation, .updating)?.detail
+                == "AdGuard Base Filter · " + ApplyProgressPresentation.percentString(0.93),
+            "the update row should keep the list name and local fraction together"
+        )
+        checkAlmostEqual(presentation.progress, 0.93 / 6.0, "overall fill stays in the first segment")
     }
 
     @MainActor

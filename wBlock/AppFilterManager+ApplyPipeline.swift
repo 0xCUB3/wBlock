@@ -226,7 +226,6 @@ extension AppFilterManager {
                         await MainActor.run {
                             self.progress = prog * 0.1
                             self.applyProgressViewModel.updatePhaseProgress(Double(prog))
-                            self.applyProgressViewModel.updateProgress(Float(prog * 0.1))
                         }
                         await Self.allowProgressUIRefresh()
                     }
@@ -500,7 +499,6 @@ extension AppFilterManager {
                     )
                     self.processedFiltersCount += 1
                     self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7
-                    self.applyProgressViewModel.updateProgress(self.progress)
                     self.applyProgressViewModel.updateConvertingDone(self.processedFiltersCount)
                     self.applyProgressViewModel.updateCurrentFilter(blockerName)
                     self.ruleCountsByExtension[targetInfo.bundleIdentifier] = ruleCountForThisTarget
@@ -589,9 +587,6 @@ extension AppFilterManager {
             self.lastConversionTime = String(
                 format: "%.2fs", Date().timeIntervalSince(overallConversionStartTime))
             self.progress = 0.7
-
-            // Update ViewModel - conversion complete
-            self.applyProgressViewModel.updateProgress(self.progress)
             self.applyProgressViewModel.updatePhaseCompletion(converting: true, reloading: false)
         }
         await ConcurrentLogManager.shared.info(
@@ -670,9 +665,6 @@ extension AppFilterManager {
         // Build the combined filter engine after all content blockers are reloaded.
         await MainActor.run {
             self.progress = 0.9
-
-            // Update ViewModel
-            self.applyProgressViewModel.updateProgress(self.progress)
             self.applyProgressViewModel.updatePhaseCompletion(reloading: true, saving: false)
         }
 
@@ -729,7 +721,6 @@ extension AppFilterManager {
             : "\(advancedRulesByTarget.count) targets combined"
         await MainActor.run {
             self.progress = 1.0
-            self.applyProgressViewModel.updateProgress(1.0)
             self.isLoading = false
 
             // Hard failure already presented (e.g. advanced engine). Keep that terminal state.
@@ -759,25 +750,11 @@ extension AppFilterManager {
                 resultWarning = self.statusDescription
             }
 
-            let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: self.currentPlatform)
-            let ruleCountsByBlocker = Dictionary(
-                uniqueKeysWithValues: platformTargets.map { target in
-                    (target.displayName, self.ruleCountsByExtension[target.bundleIdentifier] ?? 0)
-                }
-            )
-            let blockersApproachingLimit = Set(
-                platformTargets
-                    .filter { self.extensionsApproachingLimit.contains($0.bundleIdentifier) }
-                    .map { $0.displayName }
-            )
-
             self.applyProgressViewModel.updateStatistics(
                 sourceRules: self.sourceRulesCount,
                 safariRules: self.lastRuleCount,
                 conversionTime: self.lastConversionTime,
                 reloadTime: self.lastReloadTime,
-                ruleCountsByBlocker: ruleCountsByBlocker,
-                blockersApproachingLimit: blockersApproachingLimit,
                 statusMessage: self.statusDescription,
                 resultWarning: resultWarning
             )
@@ -1075,7 +1052,6 @@ extension AppFilterManager {
         statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Apply pipeline status")
 
         applyProgressViewModel.beginProgressRun()
-        applyProgressViewModel.updateProgress(0)
 
         sourceRulesCount = 0
         processedFiltersCount = 0
@@ -1158,7 +1134,6 @@ extension AppFilterManager {
                     self.applyProgressViewModel.updateReloadingDone(completed)
                     self.progress =
                         0.7 + (Float(completed) / Float(max(1, totalCount)) * 0.2)
-                    self.applyProgressViewModel.updateProgress(self.progress)
                 }
                 await Self.allowProgressUIRefresh()
             }

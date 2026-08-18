@@ -36,17 +36,6 @@ enum ApplyChangesPhase: String, CaseIterable, Identifiable {
         case .saving: return String(localized: "Saving & Building")
         }
     }
-
-    var systemImage: String {
-        switch self {
-        case .updating: return "arrow.down.circle"
-        case .scripts: return "bolt.horizontal.circle"
-        case .reading: return "folder.badge.questionmark"
-        case .converting: return "gearshape.2"
-        case .reloading: return "arrow.clockwise"
-        case .saving: return "square.and.arrow.down"
-        }
-    }
 }
 
 /// Status flags for each phase row.
@@ -71,15 +60,12 @@ struct ApplyChangesSummary: Equatable {
     var safariRules: Int
     var conversionTime: String
     var reloadTime: String
-    var ruleCountsByBlocker: [String: Int]
-    var blockersApproachingLimit: Set<String>
 }
 
 /// Consolidated state for the apply progress presentation.
 struct ApplyChangesState: Equatable {
     var mode: ApplyChangesSheetMode = .progress
     var isLoading: Bool = false
-    var progress: Double = 0
     var statusMessage: String = ""
     var failureMessage: String = ""
     /// Non-fatal issues shown on the result screen (reload failures, etc.).
@@ -99,20 +85,8 @@ struct ApplyChangesState: Equatable {
     }
     var summary: ApplyChangesSummary? = nil
 
-    var progressPercentage: Int {
-        Int((0...1).clamp(progress) * 100)
-    }
-
     var totalUpdatesFound: Int {
         filterUpdatesFound + scriptsUpdatedCount
-    }
-
-    var isComplete: Bool {
-        mode == .result || summary != nil
-    }
-
-    var showsProgressChrome: Bool {
-        mode == .progress || mode == .result || mode == .failed
     }
 }
 
@@ -128,16 +102,10 @@ private extension ClosedRange where Bound == Double {
 class ApplyChangesViewModel: ObservableObject {
     @Published private(set) var state = ApplyChangesState()
 
-    private var lastProgressValue: Double = 0
-    private var lastProgressUpdate: Date = .distantPast
-    private let minProgressInterval: TimeInterval = 0.05
-    private let minProgressDelta: Double = 0.01
-
     // MARK: - Public API expected by AppFilterManager
 
     func presentReview() {
         state = ApplyChangesState(mode: .review)
-        resetProgressTracking()
     }
 
     func beginProgressRun() {
@@ -147,21 +115,6 @@ class ApplyChangesViewModel: ObservableObject {
             statusMessage: String(localized: "Checking for updates...")
         )
         resetPhases()
-        resetProgressTracking()
-    }
-
-    func updateProgress(_ progress: Float) {
-        let value = (0...1).clamp(Double(progress))
-        let now = Date()
-
-        let delta = abs(value - lastProgressValue)
-        if delta < minProgressDelta && now.timeIntervalSince(lastProgressUpdate) < minProgressInterval {
-            return
-        }
-
-        lastProgressValue = value
-        lastProgressUpdate = now
-        state.progress = value
     }
 
     func updateIsLoading(_ isLoading: Bool) {
@@ -173,7 +126,6 @@ class ApplyChangesViewModel: ObservableObject {
             state.failureMessage = ""
             state.summary = nil
             resetPhases()
-            resetProgressTracking()
         }
     }
 
@@ -191,18 +143,6 @@ class ApplyChangesViewModel: ObservableObject {
         if let converting { setPhase(.converting, isComplete: converting) }
         if let reloading { setPhase(.reloading, isComplete: reloading) }
         if let saving { setPhase(.saving, isComplete: saving) }
-    }
-
-    func markPhaseFailed(_ phase: ApplyChangesPhase, message: String? = nil) {
-        updatePhase(phase) { phaseProgress in
-            phaseProgress.status = .failed
-        }
-        state.mode = .failed
-        state.isLoading = false
-        if let message, !message.isEmpty {
-            state.failureMessage = message
-            state.statusMessage = message
-        }
     }
 
     func updateCurrentFilter(_ name: String) {
@@ -255,8 +195,6 @@ class ApplyChangesViewModel: ObservableObject {
         safariRules: Int,
         conversionTime: String,
         reloadTime: String,
-        ruleCountsByBlocker: [String: Int],
-        blockersApproachingLimit: Set<String>,
         statusMessage: String? = nil,
         resultWarning: String? = nil
     ) {
@@ -264,14 +202,9 @@ class ApplyChangesViewModel: ObservableObject {
             sourceRules: sourceRules,
             safariRules: safariRules,
             conversionTime: conversionTime,
-            reloadTime: reloadTime,
-            ruleCountsByBlocker: ruleCountsByBlocker,
-            blockersApproachingLimit: blockersApproachingLimit
+            reloadTime: reloadTime
         )
         state.isLoading = false
-        state.progress = 1
-        lastProgressValue = 1
-        lastProgressUpdate = Date()
 
         // Never let a summary overwrite a hard failure (e.g. advanced engine publish failed).
         if state.mode == .failed {
@@ -284,17 +217,9 @@ class ApplyChangesViewModel: ObservableObject {
         markAllPhasesComplete()
         state.mode = .result
         state.failureMessage = ""
-
-        if let resultWarning, !resultWarning.isEmpty {
-            state.resultWarning = resultWarning
-        } else {
-            state.resultWarning = ""
-        }
-
+        state.resultWarning = resultWarning ?? ""
         if let statusMessage, !statusMessage.isEmpty {
             state.statusMessage = statusMessage
-        } else if state.statusMessage.isEmpty || state.statusMessage.lowercased().contains("reloading") {
-            state.statusMessage = String(localized: "Filters and scripts applied successfully.")
         }
     }
 
@@ -312,17 +237,7 @@ class ApplyChangesViewModel: ObservableObject {
         }
     }
 
-    func reset() {
-        state = ApplyChangesState()
-        resetProgressTracking()
-    }
-
     // MARK: - Helpers
-
-    private func resetProgressTracking() {
-        lastProgressValue = 0
-        lastProgressUpdate = .distantPast
-    }
 
     private func resetPhases() {
         state.phases = ApplyChangesPhase.allCases.map { phase in
@@ -455,7 +370,7 @@ struct ApplyProgressPresentation: Equatable {
         }
         guard let focused = focusedStep(in: state),
               let index = phases.firstIndex(where: { $0.phase == focused.phase }) else {
-            return (0...1).clamp(state.progress)
+            return 0
         }
         if focused.status == .complete {
             return (0...1).clamp(Double(index + 1) / count)
@@ -529,6 +444,9 @@ struct ApplyProgressPresentation: Equatable {
         switch step.phase {
         case .updating:
             if step.status == .active {
+                if !state.currentFilterName.isEmpty {
+                    return state.currentFilterName
+                }
                 return state.statusMessage.isEmpty ? nil : state.statusMessage
             }
             if step.status == .complete {

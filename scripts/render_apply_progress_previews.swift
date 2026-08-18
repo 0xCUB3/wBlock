@@ -13,14 +13,28 @@ struct ApplyProgressPreviewRenderer {
             .appendingPathComponent("docs/media/img", isDirectory: true)
 
         write(
-            sheet(converting),
+            macSheet(converting),
+            size: CGSize(width: 500, height: 318),
             appearance: .aqua,
             to: outDir.appendingPathComponent("apply_progress_light.png")
         )
         write(
-            sheet(converting),
+            macSheet(converting),
+            size: CGSize(width: 500, height: 318),
             appearance: .darkAqua,
             to: outDir.appendingPathComponent("apply_progress_dark.png")
+        )
+        write(
+            iosSheet(converting),
+            size: CGSize(width: 390, height: 430),
+            appearance: .aqua,
+            to: outDir.appendingPathComponent("apply_progress_ios_light.png")
+        )
+        write(
+            iosSheet(converting),
+            size: CGSize(width: 390, height: 430),
+            appearance: .darkAqua,
+            to: outDir.appendingPathComponent("apply_progress_ios_dark.png")
         )
         print("wrote previews to \(outDir.path)")
     }
@@ -39,7 +53,7 @@ struct ApplyProgressPreviewRenderer {
         return ApplyProgressPresentation.make(from: viewModel.state)
     }
 
-    private static func sheet(_ presentation: ApplyProgressPresentation) -> some View {
+    private static func macSheet(_ presentation: ApplyProgressPresentation) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Apply Changes")
                 .font(.title2.weight(.semibold))
@@ -50,8 +64,34 @@ struct ApplyProgressPreviewRenderer {
         .background(Color(nsColor: .windowBackgroundColor))
     }
 
-    private static func write<V: View>(_ view: V, appearance: NSAppearance.Name, to url: URL) {
-        let size = CGSize(width: 500, height: 318)
+    private static func iosSheet(_ presentation: ApplyProgressPresentation) -> some View {
+        VStack(spacing: 0) {
+            Capsule()
+                .fill(Color.secondary.opacity(0.35))
+                .frame(width: 36, height: 5)
+                .padding(.top, 8)
+                .padding(.bottom, 12)
+
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Apply Changes")
+                    .font(.title2.weight(.semibold))
+                ApplyProgressField(presentation: presentation, groupedRows: true)
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 20)
+
+            Spacer(minLength: 0)
+        }
+        .frame(width: 390, height: 430, alignment: .top)
+        .background(Color(nsColor: .underPageBackgroundColor))
+    }
+
+    private static func write<V: View>(
+        _ view: V,
+        size: CGSize,
+        appearance: NSAppearance.Name,
+        to url: URL
+    ) {
         let hosting = NSHostingView(
             rootView: view.frame(width: size.width, height: size.height, alignment: .topLeading)
         )
@@ -60,15 +100,13 @@ struct ApplyProgressPreviewRenderer {
 
         let window = NSWindow(
             contentRect: hosting.frame,
-            styleMask: [.titled, .fullSizeContentView],
+            styleMask: [.borderless],
             backing: .buffered,
             defer: false
         )
         window.isReleasedWhenClosed = false
-        window.title = "Apply Changes"
         window.appearance = NSAppearance(named: appearance)
-        window.titlebarAppearsTransparent = true
-        window.backgroundColor = NSColor.windowBackgroundColor
+        window.backgroundColor = .clear
         window.contentView = hosting
         window.orderFrontRegardless()
         hosting.layoutSubtreeIfNeeded()

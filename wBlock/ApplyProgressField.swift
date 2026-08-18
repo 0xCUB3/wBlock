@@ -9,6 +9,13 @@ import SwiftUI
 
 struct ApplyProgressField: View {
     let presentation: ApplyProgressPresentation
+    var groupedRows: Bool = {
+        #if os(iOS)
+        true
+        #else
+        false
+        #endif
+    }()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -22,26 +29,38 @@ struct ApplyProgressField: View {
             .progressViewStyle(.linear)
             .tint(presentation.isFailed ? Color.red : Color.accentColor)
 
-            VStack(spacing: 0) {
-                ForEach(Array(presentation.nodes.enumerated()), id: \.element.id) { index, node in
-                    if index > 0 {
-                        Divider()
+            rows
+                .padding(.horizontal, groupedRows ? 12 : 0)
+                .background {
+                    if groupedRows {
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(Self.groupedFill)
                     }
-                    ApplyProgressRow(node: node)
                 }
-            }
-            #if os(iOS)
-            .padding(.horizontal, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color(uiColor: .secondarySystemGroupedBackground))
-            )
-            #endif
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(presentation.title)
         .accessibilityValue(presentation.accessibilityValue)
+    }
+
+    private static var groupedFill: Color {
+        #if os(iOS)
+        Color(uiColor: .secondarySystemGroupedBackground)
+        #else
+        Color(nsColor: .controlBackgroundColor)
+        #endif
+    }
+
+    private var rows: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(presentation.nodes.enumerated()), id: \.element.id) { index, node in
+                if index > 0 {
+                    Divider()
+                }
+                ApplyProgressRow(node: node)
+            }
+        }
     }
 }
 

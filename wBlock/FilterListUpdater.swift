@@ -378,6 +378,9 @@ final class FilterListUpdater: @unchecked Sendable {
             // Local / inline user lists are already stored on disk.
             return loader.filterFileExists(filter) ? .unchanged : .failed
         }
+        await MainActor.run {
+            filterListManager?.applyProgressViewModel.updateCurrentFilter(filter.name)
+        }
         do {
             let validators = await storedValidators(for: filter)
             
