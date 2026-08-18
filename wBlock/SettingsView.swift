@@ -251,14 +251,6 @@ struct SettingsView: View {
     @ViewBuilder
     private var advancedSection: some View {
         Section("Advanced") {
-            logTimestampControls
-
-            NavigationLink {
-                LogsView()
-            } label: {
-                Label("View Logs", systemImage: "doc.text.magnifyingglass")
-            }
-
             NavigationLink {
                 SiteSettingsView()
             } label: {
@@ -270,6 +262,14 @@ struct SettingsView: View {
             } label: {
                 Label("Element Zapper", systemImage: "wand.and.stars")
             }
+
+            NavigationLink {
+                LogsView()
+            } label: {
+                Label("View Logs", systemImage: "doc.text.magnifyingglass")
+            }
+
+            logTimestampControls
 
             backupButtons
         }
@@ -341,15 +341,6 @@ struct SettingsView: View {
     @ViewBuilder
     private var autoUpdateSection: some View {
         Section {
-            #if os(iOS)
-            Button {
-                filterManager.checkAndEnableFilters(forceReload: true)
-            } label: {
-                Label("Update Now", systemImage: "arrow.triangle.2.circlepath")
-            }
-            .disabled(filterManager.isLoading)
-            #endif
-
             Toggle("Auto-Update Filters & Userscripts", isOn: autoUpdateToggleBinding)
                 #if os(macOS)
                 .toggleStyle(.switch)
@@ -367,11 +358,24 @@ struct SettingsView: View {
                     .toggleStyle(.switch)
                     .help("Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open.")
                 #endif
-
-                #if os(iOS)
-                iOSAutoUpdateDiagnosticsView
-                #endif
             }
+
+            #if os(iOS)
+            Button {
+                filterManager.checkAndEnableFilters(forceReload: true)
+            } label: {
+                Label("Update Now", systemImage: "arrow.triangle.2.circlepath")
+            }
+            .disabled(filterManager.isLoading)
+
+            if autoUpdateEnabled {
+                NavigationLink {
+                    autoUpdateDiagnosticsDetail
+                } label: {
+                    Label("Background Diagnostics", systemImage: "stethoscope")
+                }
+            }
+            #endif
         } header: {
             #if os(macOS)
             HStack {
@@ -393,9 +397,6 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 if autoUpdateEnabled {
                     Text(footerStatusLine)
-                    #if os(iOS)
-                    Text("Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app.")
-                    #endif
                 }
                 #if os(macOS)
                 macOSAutoUpdateDiagnosticsView
@@ -427,21 +428,24 @@ struct SettingsView: View {
 
     #if os(iOS)
     @ViewBuilder
-    private var iOSAutoUpdateDiagnosticsView: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Background Diagnostics")
-                .font(.headline)
-            backgroundTaskDiagnosticsView(
-                title: "BGAppRefresh",
-                diagnostics: autoUpdateDiagnostics.bgAppRefresh
-            )
-            backgroundTaskDiagnosticsView(
-                title: "BGProcessing",
-                diagnostics: autoUpdateDiagnostics.bgProcessing
-            )
-            diagnosticDetailView(title: "Foreground Catch-up", detail: foregroundCatchUpDiagnosticsLine)
+    private var autoUpdateDiagnosticsDetail: some View {
+        List {
+            Section {
+                backgroundTaskDiagnosticsView(
+                    title: "App Refresh Task",
+                    diagnostics: autoUpdateDiagnostics.bgAppRefresh
+                )
+                backgroundTaskDiagnosticsView(
+                    title: "Processing Task",
+                    diagnostics: autoUpdateDiagnostics.bgProcessing
+                )
+                diagnosticDetailView(title: "Foreground Catch-up", detail: foregroundCatchUpDiagnosticsLine)
+            } footer: {
+                Text("Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app.")
+            }
         }
-        .padding(.top, 6)
+        .navigationTitle("Background Diagnostics")
+        .navigationBarTitleDisplayMode(.inline)
     }
     #endif
 
@@ -490,28 +494,25 @@ struct SettingsView: View {
     @ViewBuilder
     private var syncSection: some View {
         Section {
-            HStack(spacing: 12) {
-                Text("iCloud Sync")
+            Toggle("iCloud Sync", isOn: syncEnabledBinding)
+                #if os(macOS)
+                .toggleStyle(.switch)
+                #endif
 
-                Spacer()
-
+            if syncManager.isEnabled {
                 Button {
                     Task { await syncManager.syncNow(trigger: "Manual") }
                 } label: {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(
-                            (!syncManager.isEnabled || syncManager.isSyncing)
-                                ? .tertiary : .secondary
-                        )
+                    HStack {
+                        Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
+                        Spacer()
+                        if syncManager.isSyncing {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                    }
                 }
-                .buttonStyle(.plain)
-                .disabled(!syncManager.isEnabled || syncManager.isSyncing)
-                .accessibilityLabel("Sync Now")
-
-                Toggle("", isOn: syncEnabledBinding)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
+                .disabled(syncManager.isSyncing)
             }
         } header: {
             Text("Sync")
@@ -542,8 +543,8 @@ struct SettingsView: View {
                 Toggle("Enabled Userscripts & Userstyles", isOn: pauseComponentBinding(.userScripts))
                 Toggle("Element Zapper", isOn: pauseComponentBinding(.elementZapper))
             }
-            .padding(.leading, 16)
             #if os(macOS)
+            .padding(.leading, 16)
             .controlSize(.mini)
             #endif
             .disabled(
@@ -599,7 +600,7 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var dangerZoneSection: some View {
-        Section("Danger Zone") {
+        Section {
             Button(role: .destructive) {
                 showingRestartConfirmation = true
             } label: {
@@ -608,10 +609,16 @@ struct SettingsView: View {
                     systemImage: isRestarting ? "hourglass" : "arrow.counterclockwise"
                 )
             }
+            #if os(macOS)
             .buttonStyle(.bordered)
             .tint(.red)
             .controlSize(.small)
+            #endif
             .disabled(isRestarting)
+        } header: {
+            Text("Danger Zone")
+        } footer: {
+            Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
         }
     }
 
@@ -630,6 +637,7 @@ struct SettingsView: View {
                 dangerZoneSection
             }
             .unifiedTabListStyle()
+            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
         }
         #else
