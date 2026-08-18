@@ -783,7 +783,7 @@ class AppFilterManager: ObservableObject {
     // MARK: - Rule limit UX
 
     func showRuleLimitWarning() {
-        let ruleLimitPerBlocker = 150_000
+        let ruleLimitPerBlocker = ContentBlockerService.safariContentBlockerRuleLimit
         let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
         let totalCapacity = platformTargets.count * ruleLimitPerBlocker
 

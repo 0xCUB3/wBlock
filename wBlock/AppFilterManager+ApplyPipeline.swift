@@ -395,7 +395,7 @@ extension AppFilterManager {
         // Collect advanced rules by target bundle ID (single storage)
         var advancedRulesByTarget: [String: String] = [:]  // bundleIdentifier -> advanced rules
 
-        let ruleLimit = 150_000
+        let ruleLimit = ContentBlockerService.safariContentBlockerRuleLimit
         let warningThreshold = Int(Double(ruleLimit) * 0.8)  // 80% threshold
 
         let disabledSites = runSnapshot.disabledSites

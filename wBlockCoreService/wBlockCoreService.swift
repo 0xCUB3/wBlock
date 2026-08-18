@@ -67,6 +67,9 @@ public struct ContentBlockerSaveResult: Sendable {
 
     public static let inertContentBlockerRuleCount = 1
 
+    /// Safari's documented per-extension content blocker rule limit.
+    public static let safariContentBlockerRuleLimit = 150_000
+
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
@@ -1099,9 +1102,13 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
                 .flatMap({ Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) })
         {
-            let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
+            let finalized = finalizeContentBlockerJSON(
+                baseJSON: baseJSON,
+                disabledSites: sitesToUse,
+                knownBaseCount: baseCount
+            )
             let output = try saveContentBlockerIfChanged(
-                jsonRules: finalJSON,
+                jsonRules: finalized.json,
                 groupIdentifier: groupIdentifier,
                 targetRulesFilename: targetRulesFilename
             )
@@ -1112,7 +1119,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                 .flatMap { $0.isEmpty ? nil : $0 }
 
             return (
-                safariRulesCount: baseCount + sitesToUse.count,
+                safariRulesCount: finalized.ruleCount,
                 advancedRulesText: advancedText,
                 outputChanged: output.outputChanged
             )
@@ -1131,16 +1138,20 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         try saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
         try saveBlockerListFile(contents: result.advancedRulesText ?? "", groupIdentifier: groupIdentifier, filename: advancedFilename)
 
-        let finalJSON = injectIgnoreRulesForDisabledSites(json: result.safariRulesJSON, disabledSites: sitesToUse)
+        let finalized = finalizeContentBlockerJSON(
+            baseJSON: result.safariRulesJSON,
+            disabledSites: sitesToUse,
+            knownBaseCount: result.safariRulesCount
+        )
         let output = try saveContentBlockerIfChanged(
-            jsonRules: finalJSON,
+            jsonRules: finalized.json,
             groupIdentifier: groupIdentifier,
             targetRulesFilename: targetRulesFilename
         )
         try saveBlockerListFile(contents: effectiveRulesHash, groupIdentifier: groupIdentifier, filename: baseHashFilename)
 
         return (
-            safariRulesCount: result.safariRulesCount + sitesToUse.count,
+            safariRulesCount: finalized.ruleCount,
             advancedRulesText: result.advancedRulesText,
             outputChanged: output.outputChanged
         )
@@ -1403,9 +1414,13 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
            isValidContentBlockerJSON(baseJSON),
            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
                 .flatMap({ Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }) {
-            let finalJSON = injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sitesToUse)
+            let finalized = finalizeContentBlockerJSON(
+                baseJSON: baseJSON,
+                disabledSites: sitesToUse,
+                knownBaseCount: baseCount
+            )
             let output = try saveContentBlockerIfChanged(
-                jsonRules: finalJSON,
+                jsonRules: finalized.json,
                 groupIdentifier: groupIdentifier,
                 targetRulesFilename: targetRulesFilename
             )
@@ -1415,7 +1430,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             )
             let advancedRulesText = try String(contentsOf: advancedURL, encoding: .utf8)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            let finalRuleCount = baseCount + sitesToUse.count
+            let finalRuleCount = finalized.ruleCount
 
             os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
             return (
@@ -1428,6 +1443,76 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         // Without a complete cache this path cannot safely preserve advanced
         // rules. The caller must take the full conversion path instead.
         throw CocoaError(.fileReadCorruptFile)
+    }
+
+    /// Applies disabled-site ignore rules without exceeding Safari's per-extension limit.
+    /// When the combined list would overflow, trailing converted rules are dropped so
+    /// the ignore rules still fit.
+    public static func finalizeContentBlockerJSON(
+        baseJSON: String,
+        disabledSites: [String],
+        knownBaseCount: Int? = nil,
+        ruleLimit: Int = safariContentBlockerRuleLimit
+    ) -> (json: String, ruleCount: Int) {
+        let limit = max(ruleLimit, 0)
+        let sites = Array(
+            DisabledSitesNormalizer.normalizedDomains(from: disabledSites).prefix(limit)
+        )
+
+        guard !sites.isEmpty else {
+            if let knownBaseCount, knownBaseCount <= limit {
+                return (baseJSON, knownBaseCount)
+            }
+            if let truncated = truncateContentBlockerJSON(baseJSON, to: limit) {
+                return truncated
+            }
+            return (baseJSON, min(knownBaseCount ?? countRulesInJSON(baseJSON), limit))
+        }
+
+        let baseCount = knownBaseCount ?? countRulesInJSON(baseJSON)
+        if baseCount + sites.count <= limit {
+            return (
+                injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sites),
+                baseCount + sites.count
+            )
+        }
+
+        let maxBase = max(limit - sites.count, 0)
+        guard let truncated = truncateContentBlockerJSON(baseJSON, to: maxBase) else {
+            if baseCount <= maxBase {
+                return (
+                    injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sites),
+                    baseCount + sites.count
+                )
+            }
+            return (baseJSON, min(baseCount, limit))
+        }
+
+        return (
+            injectIgnoreRulesForDisabledSites(json: truncated.json, disabledSites: sites),
+            truncated.ruleCount + sites.count
+        )
+    }
+
+    private static func truncateContentBlockerJSON(
+        _ json: String,
+        to maxRules: Int
+    ) -> (json: String, ruleCount: Int)? {
+        guard maxRules >= 0 else { return nil }
+        guard var rules = parseContentBlockerRules(json) else { return nil }
+        if rules.count > maxRules {
+            rules.removeLast(rules.count - maxRules)
+        }
+        guard let data = try? JSONSerialization.data(withJSONObject: rules, options: []),
+              let text = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+        return (text, rules.count)
+    }
+
+    private static func parseContentBlockerRules(_ json: String) -> [[String: Any]]? {
+        guard let jsonData = json.data(using: .utf8) else { return nil }
+        return (try? JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]])
     }
 
     private static func escapeForJSONString(_ value: String) -> String {

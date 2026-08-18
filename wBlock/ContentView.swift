@@ -66,7 +66,7 @@ struct ContentView: View {
 
     private var totalSafariRuleCapacity: Int {
         let blockers = ContentBlockerTargetManager.shared.allTargets(forPlatform: filterManager.currentPlatform)
-        return blockers.count * 150_000
+        return blockers.count * ContentBlockerService.safariContentBlockerRuleLimit
     }
 
     private var shouldShowRuleLimitIndicator: Bool {
@@ -2251,7 +2251,7 @@ struct RuleCapacityPopoverView: View {
     }
 
     private var totalCapacity: Int {
-        targets.count * 150_000
+        targets.count * ContentBlockerService.safariContentBlockerRuleLimit
     }
 
     private var overallFraction: Double {
@@ -2310,7 +2310,7 @@ struct RuleCapacityPopoverView: View {
                 VStack(spacing: 8) {
                     ForEach(targets, id: \.slot) { target in
                         let count = filterManager.ruleCountsByExtension[target.bundleIdentifier] ?? 0
-                        let slotFraction = min(Double(count) / 150_000.0, 1.0)
+                        let slotFraction = min(Double(count) / Double(ContentBlockerService.safariContentBlockerRuleLimit), 1.0)
                         let subtitle = categorySubtitle(for: target.slot)
 
                         VStack(alignment: .leading, spacing: 3) {
@@ -2325,7 +2325,7 @@ struct RuleCapacityPopoverView: View {
                                     }
                                 }
                                 Spacer()
-                                Text("\(count.formatted()) / 150,000")
+                                Text("\(count.formatted()) / \(ContentBlockerService.safariContentBlockerRuleLimit.formatted())")
                                     .font(.caption.monospacedDigit())
                                     .foregroundStyle(slotFraction > 0.9 ? Color.red : (slotFraction > 0.8 ? Color.orange : Color.secondary))
                             }
