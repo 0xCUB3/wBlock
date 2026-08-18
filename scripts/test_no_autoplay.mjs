@@ -100,8 +100,15 @@ function createEnvironment(options = {}) {
     },
   });
 
+  const bodyElement = attrsMixin({
+    localName: "body",
+    querySelectorAll: (selector) => (selector === "video, audio" ? env.mediaInDom : []),
+    parentElement: documentElement,
+  });
+
   const documentStub = {
     documentElement: options.deferRoot ? null : documentElement,
+    body: bodyElement,
     head: null,
     addEventListener(type, fn) {
       if (!env.documentListeners.has(type)) env.documentListeners.set(type, []);
@@ -124,6 +131,7 @@ function createEnvironment(options = {}) {
     event.type = type;
     documentStub.dispatchEvent(event);
   };
+  env.body = bodyElement;
 
   function MutationObserver(callback) {
     this.callback = callback;
@@ -267,6 +275,32 @@ async function playResult(media) {
   const arrowVideo = env.makeMedia("video");
   env.dispatch("keydown", { key: "ArrowDown", target: arrowVideo, composedPath: () => [arrowVideo] });
   check("non-playback key does not unlock media", (await playResult(arrowVideo)) === "NotAllowedError");
+}
+
+// --- 2b. Page-level gestures never unlock a page's only video ---
+{
+  const env = createEnvironment({ hint: true, storage: { [ENABLED_KEY]: true } });
+  env.run();
+  const only = env.makeMedia("video");
+  only.parentElement = env.body;
+  env.mediaInDom.push(only);
+
+  env.dispatch("click", { target: env.body, composedPath: () => [env.body] });
+  check("a click on the body does not unlock the page's only video",
+    (await playResult(only)) === "NotAllowedError");
+
+  env.dispatch("keydown", { key: " ", target: env.body, composedPath: () => [env.body] });
+  check("pressing space on the page does not unlock the only video",
+    (await playResult(only)) === "NotAllowedError");
+
+  const unrelated = { localName: "div", querySelectorAll: () => [], parentElement: env.body };
+  env.dispatch("pointerdown", { target: unrelated, composedPath: () => [unrelated, env.body] });
+  check("a gesture in unrelated UI walks up but stops before the body",
+    (await playResult(only)) === "NotAllowedError");
+
+  env.dispatch("click", { target: only, composedPath: () => [only, env.body] });
+  check("a direct gesture on the only video still unlocks it",
+    (await playResult(only)) === "ok");
 }
 
 // --- 3. Boot scan and mutation observer disarm autoplaying media ---

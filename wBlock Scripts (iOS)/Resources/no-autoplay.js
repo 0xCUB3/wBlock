@@ -151,8 +151,13 @@
                     return;
                 }
             }
+            // Walk up from the target looking for player chrome that wraps
+            // exactly one media element. Stop before page-level containers:
+            // treating body/html as a "player" would let a gesture anywhere
+            // on the page unlock its only video.
             var el = event.target;
             for (i = 0; i < 8 && el; i++) {
+                if (el === doc.body || el === doc.documentElement || el === doc) return;
                 if (el.querySelectorAll) {
                     var list = el.querySelectorAll('video, audio');
                     if (list.length === 1) {
