@@ -215,7 +215,7 @@
 "Community-maintained options for additional regional coverage." = "Opțiuni întreținute de comunitate pentru acoperire regională suplimentară.";
 "Completed" = "Finalizat";
 "Comprehensive ad-blocking rules by AdGuard." = "Reguli cuprinzătoare de blocare a reclamelor de la AdGuard.";
-"Conditional check failed, falling back to full comparison" = "Verificarea condiționată a eșuat, se trece la compararea completă";
+"Conditional check failed" = "Verificarea condiționată a eșuat";
 "Contains new rules and fixes not yet included in other filters." = "Conține reguli și remedieri noi care nu sunt încă incluse în alte filtre.";
 "Content filtering" = "Filtrarea conținutului";
 "Continue" = "Continuă";

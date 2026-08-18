@@ -21,6 +21,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Fetch main
+        run: git fetch --no-tags --depth=1 origin main
+
       - name: Run regression tests
         run: scripts/run-ci-tests.sh
 

@@ -215,7 +215,7 @@
 "Community-maintained options for additional regional coverage." = "Von der Community gepflegte Optionen für zusätzliche regionale Abdeckung.";
 "Completed" = "Abgeschlossen";
 "Comprehensive ad-blocking rules by AdGuard." = "Umfassende Werbeblocker-Regeln von AdGuard.";
-"Conditional check failed, falling back to full comparison" = "Bedingte Prüfung fehlgeschlagen, Fallback auf vollständigen Vergleich";
+"Conditional check failed" = "Bedingte Prüfung fehlgeschlagen";
 "Contains new rules and fixes not yet included in other filters." = "Enthält neue Regeln und Korrekturen, die noch nicht in anderen Filtern enthalten sind.";
 "Content filtering" = "Inhaltsfilterung";
 "Continue" = "Fortfahren";

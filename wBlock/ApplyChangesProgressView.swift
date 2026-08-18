@@ -21,6 +21,10 @@ struct ApplyChangesProgressView: View {
         viewModel.state.mode
     }
 
+    private var presentation: ApplyProgressPresentation {
+        ApplyProgressPresentation.make(from: viewModel.state)
+    }
+
     private var filtersByCategory: [FilterListCategory: [FilterList]] {
         Dictionary(grouping: filterManager.availableUpdates, by: \.category)
     }
@@ -71,7 +75,10 @@ struct ApplyChangesProgressView: View {
                     }
                 }
         }
-        .applySheetPresentationCompat(prefersLarge: mode == .review || mode == .progress)
+        .applySheetPresentationCompat(
+            prefersLarge: mode == .review,
+            prefersTall: mode == .progress || mode == .failed
+        )
         .interactiveDismissDisabled(mode == .progress || isStartingSelectedUpdates)
         .onAppear {
             syncSelectionFromAvailableUpdates()
@@ -81,8 +88,8 @@ struct ApplyChangesProgressView: View {
             minWidth: 460,
             idealWidth: 500,
             maxWidth: 560,
-            minHeight: mode == .progress ? 400 : (mode == .review ? 420 : 260),
-            idealHeight: mode == .progress ? 440 : (mode == .review ? 500 : 320),
+            minHeight: mode == .result ? 260 : 420,
+            idealHeight: mode == .result ? 320 : 500,
             maxHeight: 640
         )
         #endif
@@ -94,12 +101,14 @@ struct ApplyChangesProgressView: View {
         case .review:
             reviewContent
         case .progress:
-            VStack(alignment: .leading, spacing: 12) {
-                sheetHeader
-                progressOverviewCard
-                phaseCard
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    sheetHeader
+                    progressField
+                }
+                .padding(20)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
-            .padding(20)
         case .result:
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
@@ -115,7 +124,7 @@ struct ApplyChangesProgressView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     sheetHeader
                     failureCard
-                    phaseCard
+                    progressField
                 }
                 .padding(20)
             }
@@ -211,43 +220,8 @@ struct ApplyChangesProgressView: View {
 
     // MARK: - Progress
 
-    private var progressOverviewCard: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-            StatCard(
-                title: String(localized: "Extensions"),
-                value: viewModel.state.totalCount > 0 ? viewModel.state.totalCount.formatted() : "—",
-                icon: "puzzlepiece.extension"
-            )
-            StatCard(
-                title: String(localized: "Updates"),
-                value: viewModel.state.totalUpdatesFound.formatted(),
-                icon: "arrow.down.circle",
-                metrics: [
-                    StatCardMetric(
-                        value: viewModel.state.filterUpdatesFound.formatted(),
-                        icon: "line.3.horizontal.decrease",
-                        accessibilityLabel: String(localized: "Filters")
-                    ),
-                    StatCardMetric(
-                        value: viewModel.state.scriptsUpdatedCount.formatted(),
-                        icon: "curlybraces",
-                        accessibilityLabel: String(localized: "Scripts")
-                    )
-                ]
-            )
-        }
-    }
-
-    private var phaseCard: some View {
-        VStack(spacing: 2) {
-            ForEach(viewModel.state.phases) { step in
-                PhaseRow(
-                    step: step,
-                    detail: detail(for: step),
-                    subProgress: subProgress(for: step.phase, status: step.status)
-                )
-            }
-        }
+    private var progressField: some View {
+        ApplyProgressField(presentation: presentation)
     }
 
     // MARK: - Result
@@ -394,166 +368,5 @@ struct ApplyChangesProgressView: View {
             return String(localized: "Something went wrong while applying changes.")
         }
         return viewModel.state.failureMessage
-    }
-
-    private func detail(for step: ApplyChangesPhaseProgress) -> String? {
-        switch step.phase {
-        case .updating:
-            if step.status == .active {
-                let message = viewModel.state.statusMessage
-                if !message.isEmpty {
-                    return message
-                }
-                return nil
-            }
-            if step.status == .complete {
-                let count = viewModel.state.filterUpdatesFound
-                if count > 0 {
-                    return localizedCountDetail("Downloaded %d updates", count: count)
-                }
-                return String(localized: "No updates available")
-            }
-            return nil
-        case .scripts:
-            if step.status == .active {
-                let message = viewModel.state.statusMessage
-                if message.localizedCaseInsensitiveContains("script") {
-                    return message
-                }
-                return nil
-            }
-            if step.status == .complete {
-                let updated = viewModel.state.scriptsUpdatedCount
-                let failed = viewModel.state.scriptsFailedCount
-                if failed > 0 {
-                    return String.localizedStringWithFormat(
-                        NSLocalizedString(
-                            "Updated %d, %d failed",
-                            comment: "Apply changes script phase detail"
-                        ),
-                        updated,
-                        failed
-                    )
-                }
-                if updated > 0 {
-                    return localizedCountDetail("Updated %d scripts", count: updated)
-                }
-                return String(localized: "No script updates")
-            }
-            return nil
-        case .reading:
-            guard viewModel.state.totalCount > 0 else { return nil }
-            return localizedCountDetail("Preparing %d extensions", count: viewModel.state.totalCount)
-        case .converting:
-            guard step.status == .active else { return nil }
-            guard !viewModel.state.currentFilterName.isEmpty else { return nil }
-            return viewModel.state.currentFilterName
-        case .saving:
-            return nil
-        case .reloading:
-            guard step.status == .active else { return nil }
-            guard !viewModel.state.currentFilterName.isEmpty else { return nil }
-            return viewModel.state.currentFilterName
-        }
-    }
-
-    private func localizedCountDetail(_ key: String, count: Int) -> String {
-        String.localizedStringWithFormat(
-            NSLocalizedString(key, comment: "Apply changes detail"),
-            count
-        )
-    }
-
-    private func subProgress(for phase: ApplyChangesPhase, status: ApplyChangesPhaseStatus) -> PhaseRow.SubProgress? {
-        guard status == .active else { return nil }
-        switch phase {
-        case .updating, .scripts:
-            let value = viewModel.state.phaseProgress
-            return PhaseRow.SubProgress(value: value, label: value > 0 ? "\(Int((value * 100).rounded()))%" : nil)
-        case .converting:
-            return countedSubProgress(viewModel.state.convertingDone)
-        case .reloading:
-            return countedSubProgress(viewModel.state.reloadingDone)
-        case .reading, .saving:
-            return nil
-        }
-    }
-
-    private func countedSubProgress(_ done: Int) -> PhaseRow.SubProgress {
-        let total = viewModel.state.totalCount
-        return PhaseRow.SubProgress(
-            value: Swift.min(Swift.max(Double(done) / Double(max(1, total)), 0), 1),
-            label: total > 0 ? "\(done)/\(total)" : nil
-        )
-    }
-}
-
-private struct PhaseRow: View {
-    let step: ApplyChangesPhaseProgress
-    let detail: String?
-    let subProgress: SubProgress?
-
-    struct SubProgress {
-        let value: Double
-        let label: String?
-    }
-
-    var body: some View {
-        VStack(spacing: 5) {
-            HStack(spacing: 12) {
-                statusLeading
-                    .frame(width: 18, height: 18)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(step.phase.title)
-                        .font(.subheadline)
-
-                    if let detail, !detail.isEmpty {
-                        Text(detail)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Spacer()
-            }
-
-            if let subProgress {
-                HStack(spacing: 10) {
-                    ProgressView(value: subProgress.value)
-                        .progressViewStyle(.linear)
-                        .scaleEffect(y: 1.15)
-                        .animation(.linear(duration: 0.15), value: subProgress.value)
-
-                    if let label = subProgress.label {
-                        Text(label)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                }
-                .padding(.leading, 30)
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-    }
-
-    @ViewBuilder
-    private var statusLeading: some View {
-        switch step.status {
-        case .pending:
-            Image(systemName: "circle")
-                .foregroundStyle(.tertiary)
-        case .active:
-            ProgressView()
-                .controlSize(.small)
-        case .complete:
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-        case .failed:
-            Image(systemName: "xmark.circle.fill")
-                .foregroundStyle(.red)
-        }
     }
 }

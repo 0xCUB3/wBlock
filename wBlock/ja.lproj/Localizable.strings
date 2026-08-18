@@ -215,7 +215,7 @@
 "Community-maintained options for additional regional coverage." = "地域カバーを強化するコミュニティ管理オプション。";
 "Completed" = "完了";
 "Comprehensive ad-blocking rules by AdGuard." = "AdGuard による包括的な広告ブロック ルール。";
-"Conditional check failed, falling back to full comparison" = "条件チェックに失敗したため、完全な比較にフォールバックします";
+"Conditional check failed" = "条件チェックに失敗しました";
 "Contains new rules and fixes not yet included in other filters." = "他のフィルターにはまだ含まれていない新しいルールと修正が含まれています。";
 "Content filtering" = "コンテンツフィルタリング";
 "Continue" = "続ける";

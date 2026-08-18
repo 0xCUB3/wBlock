@@ -92,7 +92,6 @@ extension AppFilterManager {
                         await MainActor.run {
                             self.progress = newProgress * 0.2
                             self.applyProgressViewModel.updatePhaseProgress(Double(newProgress))
-                            self.applyProgressViewModel.updateProgress(Float(newProgress * 0.2))
                             self.applyProgressViewModel.updateStageDescription(downloadingStatus)
                         }
                         await Self.allowProgressUIRefresh()
@@ -124,7 +123,6 @@ extension AppFilterManager {
                         let mapped = 0.2 + (newProgress * 0.1)
                         self.progress = mapped
                         self.applyProgressViewModel.updatePhaseProgress(Double(newProgress))
-                        self.applyProgressViewModel.updateProgress(mapped)
                         self.applyProgressViewModel.updateStageDescription(scriptsStatus)
                     }
                     await Self.allowProgressUIRefresh()

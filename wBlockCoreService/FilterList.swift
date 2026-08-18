@@ -131,6 +131,12 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         url.scheme?.lowercased() == "wblock" && url.host?.lowercased() == "userlist"
     }
 
+    /// Whether this list is fetched over HTTP(S).
+    public var isRemoteURL: Bool {
+        guard let scheme = url.scheme?.lowercased() else { return false }
+        return scheme == "http" || scheme == "https"
+    }
+
     /// Counts effective (non-comment, non-header, non-empty) rules in filter content.
     public static func countRules(in content: String) -> Int {
         var count = 0
@@ -176,6 +182,34 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
             return Self.weekdayFormatter.string(from: lastUpdated)
         } else {
             return Self.dateOnlyFormatter.string(from: lastUpdated)
+        }
+    }
+}
+
+public enum FilterRefreshPlanner {
+    /// Apply should not re-download lists that already exist when a successful
+    /// check happened inside the auto-update interval. Missing files still fetch.
+    public static func filtersRequiringNetworkRefresh(
+        _ filters: [FilterList],
+        fileExists: (FilterList) -> Bool,
+        lastSuccessfulCheck: Date?,
+        interval: TimeInterval,
+        now: Date = Date()
+    ) -> [FilterList] {
+        let skipExisting = lastSuccessfulCheck.map { last in
+            interval > 0 && now.timeIntervalSince(last) < interval
+        } ?? false
+
+        return filters.filter { filter in
+            guard filter.isRemoteURL else { return false }
+            if !fileExists(filter) { return true }
+            if skipExisting { return false }
+            if let lastUpdated = filter.lastUpdated,
+               interval > 0,
+               now.timeIntervalSince(lastUpdated) < interval {
+                return false
+            }
+            return true
         }
     }
 }

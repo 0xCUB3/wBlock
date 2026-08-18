@@ -215,7 +215,7 @@
 "Community-maintained options for additional regional coverage." = "Community-maintained options for additional regional coverage.";
 "Completed" = "Completed";
 "Comprehensive ad-blocking rules by AdGuard." = "Comprehensive ad-blocking rules by AdGuard.";
-"Conditional check failed, falling back to full comparison" = "Conditional check failed, falling back to full comparison";
+"Conditional check failed" = "Conditional check failed";
 "Contains new rules and fixes not yet included in other filters." = "Contains new rules and fixes not yet included in other filters.";
 "Content filtering" = "Content filtering";
 "Continue" = "Continue";
