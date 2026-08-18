@@ -123,6 +123,7 @@ compile_core_test filter-selection-rebase scripts/test_filter_selection_rebase.s
 compile_core_test issue-508-backup scripts/test_issue_508_backup_userscript.swift
 compile_core_test issue-508-import-identity scripts/test_issue_508_import_identity.swift
 compile_core_test issue-508-oversized-import scripts/test_issue_508_oversized_import.swift
+compile_core_test issue-531-custom-exception-affinity scripts/test_issue_531_custom_exception_affinity.swift
 compile_core_test removeparam-dnr scripts/test_removeparam_dnr_rule_generator.swift
 compile_core_test safari-affinity-snapshot scripts/test_safari_affinity_snapshot_behavior.swift
 compile_core_test safari-rule-limit-cap scripts/test_safari_rule_limit_cap.swift

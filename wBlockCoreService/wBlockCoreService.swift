@@ -1268,7 +1268,11 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                 contentsByFilterID[filter.id] = ""
                 continue
             }
-            contentsByFilterID[filter.id] = try String(contentsOf: sourceURL, encoding: .utf8)
+            let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
+            contentsByFilterID[filter.id] = SafariContentBlockerAffinityProcessor.affinitySourceContent(
+                for: filter,
+                rawContent: rawContent
+            ) ?? rawContent
         }
 
         return try compileTargetRules(

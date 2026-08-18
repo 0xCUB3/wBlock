@@ -22,8 +22,11 @@ public struct SafariContentBlockerAffinitySnapshot: Sendable {
                 for: filter,
                 containerURL: containerURL
             ),
-                let content = try? String(contentsOfFile: sourceURL.path, encoding: .utf8),
-                content.contains(SafariContentBlockerAffinityProcessor.directivePrefix)
+                let rawContent = try? String(contentsOfFile: sourceURL.path, encoding: .utf8),
+                let content = SafariContentBlockerAffinityProcessor.affinitySourceContent(
+                    for: filter,
+                    rawContent: rawContent
+                )
             else {
                 continue
             }
@@ -72,6 +75,78 @@ public enum SafariContentBlockerAffinityProcessor {
         snapshot(for: filters, containerURL: containerURL).filterIDs
     }
 
+    /// Returns the content that should participate in affinity-aware target
+    /// distribution, or `nil` when the filter contributes only to its
+    /// assigned target.
+    ///
+    /// Safari evaluates each content blocker extension's rule list
+    /// independently, so an `@@` exception only cancels block rules compiled
+    /// into the same extension. Custom filters land in a single slot while the
+    /// block rule they except usually lives in another, so top-level exception
+    /// rules in custom filters are wrapped in `!#safari_cb_affinity(all)`
+    /// blocks automatically and replicated to every target (issue #531).
+    /// Explicit affinity blocks authored by the user are preserved untouched.
+    public static func affinitySourceContent(
+        for filter: FilterList,
+        rawContent: String
+    ) -> String? {
+        if filter.isCustom,
+           let synthesized = contentWrappingCustomExceptionRules(in: rawContent) {
+            return synthesized
+        }
+        return rawContent.contains(directivePrefix) ? rawContent : nil
+    }
+
+    /// Wraps top-level `@@` exception rules in `!#safari_cb_affinity(all)`
+    /// blocks. Returns `nil` when the content has no top-level exceptions.
+    private static func contentWrappingCustomExceptionRules(in content: String) -> String? {
+        guard content.contains("@@") else { return nil }
+
+        let openDirectivePrefix = directivePrefix + "("
+        let lines = content.components(separatedBy: .newlines)
+        var output: [String] = []
+        output.reserveCapacity(lines.count + 8)
+        var insideExplicitBlock = false
+        var insideSynthesizedBlock = false
+        var wrappedAnyException = false
+
+        func closeSynthesizedBlock() {
+            guard insideSynthesizedBlock else { return }
+            output.append(directivePrefix)
+            insideSynthesizedBlock = false
+        }
+
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix(openDirectivePrefix) {
+                closeSynthesizedBlock()
+                insideExplicitBlock = true
+                output.append(line)
+                continue
+            }
+            if trimmed == directivePrefix {
+                closeSynthesizedBlock()
+                insideExplicitBlock = false
+                output.append(line)
+                continue
+            }
+            if !insideExplicitBlock, trimmed.hasPrefix("@@") {
+                if !insideSynthesizedBlock {
+                    output.append(directivePrefix + "(all)")
+                    insideSynthesizedBlock = true
+                    wrappedAnyException = true
+                }
+                output.append(line)
+                continue
+            }
+            closeSynthesizedBlock()
+            output.append(line)
+        }
+        closeSynthesizedBlock()
+
+        return wrappedAnyException ? output.joined(separator: "\n") : nil
+    }
+
     @discardableResult
     public static func appendAffinityFilteredContribution(
         for filter: FilterList,
@@ -117,7 +192,8 @@ public enum SafariContentBlockerAffinityProcessor {
         guard let sourceURL = sourceURL(for: filter, containerURL: containerURL) else {
             return false
         }
-        let content = try String(contentsOf: sourceURL, encoding: .utf8)
+        let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
+        let content = affinitySourceContent(for: filter, rawContent: rawContent) ?? rawContent
         return try appendAffinityFilteredContribution(
             for: filter,
             includeBaseRules: includeBaseRules,
