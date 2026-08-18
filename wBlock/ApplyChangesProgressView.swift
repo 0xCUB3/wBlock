@@ -88,8 +88,8 @@ struct ApplyChangesProgressView: View {
             minWidth: 460,
             idealWidth: 500,
             maxWidth: 560,
-            minHeight: mode == .progress ? 420 : (mode == .review ? 420 : 260),
-            idealHeight: mode == .progress ? 500 : (mode == .review ? 500 : 320),
+            minHeight: mode == .result ? 260 : 420,
+            idealHeight: mode == .result ? 320 : 500,
             maxHeight: 640
         )
         #endif
