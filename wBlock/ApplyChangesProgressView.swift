@@ -75,7 +75,10 @@ struct ApplyChangesProgressView: View {
                     }
                 }
         }
-        .applySheetPresentationCompat(prefersLarge: mode == .review)
+        .applySheetPresentationCompat(
+            prefersLarge: mode == .review,
+            prefersTall: mode == .progress || mode == .failed
+        )
         .interactiveDismissDisabled(mode == .progress || isStartingSelectedUpdates)
         .onAppear {
             syncSelectionFromAvailableUpdates()
@@ -85,8 +88,8 @@ struct ApplyChangesProgressView: View {
             minWidth: 460,
             idealWidth: 500,
             maxWidth: 560,
-            minHeight: mode == .progress ? 300 : (mode == .review ? 420 : 260),
-            idealHeight: mode == .progress ? 340 : (mode == .review ? 500 : 320),
+            minHeight: mode == .progress ? 420 : (mode == .review ? 420 : 260),
+            idealHeight: mode == .progress ? 500 : (mode == .review ? 500 : 320),
             maxHeight: 640
         )
         #endif

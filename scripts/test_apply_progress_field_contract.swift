@@ -16,6 +16,7 @@ func require(_ condition: Bool, _ message: String) {
 let view = try read("wBlock/ApplyChangesProgressView.swift")
 let field = try read("wBlock/ApplyProgressField.swift")
 let model = try read("wBlock/ApplyChangesViewModel.swift")
+let compat = try read("wBlock/SwiftUICompatibility.swift")
 
 require(model.contains("struct ApplyProgressPresentation"), "missing presentation model")
 require(model.contains("static func make(from state: ApplyChangesState)"), "presentation must be derived from apply state")
@@ -40,7 +41,9 @@ require(!field.contains("displayedProgress"), "the field must not keep a second 
 require(!view.contains("progressOverviewCard"), "mid-run StatCards must be gone")
 require(!view.contains("private struct PhaseRow"), "legacy phase rows must be removed")
 require(view.contains("prefersLarge: mode == .review"), "only the update review list should request a large sheet")
+require(view.contains("prefersTall: mode == .progress || mode == .failed"), "progress must open taller than medium so the phase list is not clipped")
 require(!view.contains("mode == .review || mode == .progress"), "progress should not force a large sheet")
+require(compat.contains(".height(560)"), "the tall detent must clear the stacked phase list")
 let progressCase = view.components(separatedBy: "case .progress:").dropFirst().first?
     .components(separatedBy: "case .").first ?? ""
 require(progressCase.contains("ScrollView"), "progress content must scroll if the phase list is taller than the sheet")
