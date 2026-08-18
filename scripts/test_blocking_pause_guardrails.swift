@@ -272,19 +272,29 @@ assertNotContains(
     "Content compatibility must not send an unrouted pause action"
 )
 
-let reloadCoordinator = contentBlockerService
+guard let reloadCoordinatorStart = contentBlockerService.range(of: "private actor ReloadCoordinator"),
+      let reloadCoordinatorEnd = contentBlockerService.range(
+        of: "private struct ReloadMarker",
+        range: reloadCoordinatorStart.upperBound..<contentBlockerService.endIndex
+      ) else {
+    fputs("FAIL: missing ReloadCoordinator actor\n", stderr)
+    exit(1)
+}
+let reloadCoordinator = String(
+    contentBlockerService[reloadCoordinatorStart.lowerBound..<reloadCoordinatorEnd.lowerBound]
+)
 assertContains(
-    reloadCoordinator,
+    contentBlockerService,
     "private actor ReloadCoordinator",
     "Reload coordination must serialize calls per target without a process-wide lock"
 )
 assertContains(
-    reloadCoordinator,
+    contentBlockerService,
     "private static let reloadCoordinator = ReloadCoordinator()",
     "Reload coordination must be process-scoped"
 )
 assertContains(
-    reloadCoordinator,
+    contentBlockerService,
     "await reloadCoordinator.withGate(key: identifier)",
     "Reload calls must acquire a gate keyed by target identifier"
 )
@@ -303,5 +313,82 @@ assertNotContains(
     "Task.detached",
     "Keyed gate release must not race through a detached task"
 )
+
+assertContains(
+    contentBlockerService,
+    "public static let reloadCompletionTimeout: TimeInterval = 30",
+    "Safari reload waits must stay bounded at 30 seconds"
+)
+assertContains(
+    contentBlockerService,
+    "public struct ReloadTimedOutError: LocalizedError, Sendable",
+    "A dropped Safari completion must fail as ReloadTimedOutError"
+)
+assertContains(
+    contentBlockerService,
+    "private final class ResumeOnceGate: @unchecked Sendable",
+    "Reload completion and the watchdog must share a resume-once gate"
+)
+guard let reloadStart = contentBlockerService.range(of: "public static func reloadContentBlocker("),
+      let retryStart = contentBlockerService.range(
+        of: "public static func reloadWithRetry(",
+        range: reloadStart.upperBound..<contentBlockerService.endIndex
+      ),
+      let retryRawStart = contentBlockerService.range(
+        of: "private static func reloadWithRetryRaw(",
+        range: retryStart.upperBound..<contentBlockerService.endIndex
+      ),
+      let retryRawEnd = contentBlockerService.range(
+        of: "public static func invalidateReloadMarker(",
+        range: retryRawStart.upperBound..<contentBlockerService.endIndex
+      ) else {
+    fputs("FAIL: missing reload watchdog sections\n", stderr)
+    exit(1)
+}
+let reloadContentBlocker = String(contentBlockerService[reloadStart.lowerBound..<retryStart.lowerBound])
+let reloadRetry = String(contentBlockerService[retryRawStart.lowerBound..<retryRawEnd.lowerBound])
+assertContains(
+    reloadContentBlocker,
+    "let gate = ResumeOnceGate()",
+    "Reload must claim a resume-once gate before waiting on Safari"
+)
+assertContains(
+    reloadContentBlocker,
+    "guard gate.claim() else { return }",
+    "Safari's completion handler must not resume after the watchdog"
+)
+assertContains(
+    reloadContentBlocker,
+    "Task.detached {",
+    "The reload watchdog must stay detached so a stuck MainActor cannot starve the timeout"
+)
+assertContains(
+    reloadContentBlocker,
+    "try? await TaskSleep.sleep(for: .seconds(reloadCompletionTimeout))",
+    "The watchdog must wait the documented reloadCompletionTimeout"
+)
+assertContains(
+    reloadContentBlocker,
+    "continuation.resume(returning: ReloadTimedOutError(identifier: identifier))",
+    "The watchdog must fail the attempt as ReloadTimedOutError"
+)
+assertContains(
+    reloadRetry,
+    "if case .failure(let error) = result, error is ReloadTimedOutError {",
+    "A timed-out reload must be recognized in the retry loop"
+)
+guard let timeoutCheck = reloadRetry.range(of: "error is ReloadTimedOutError"),
+      let timeoutReturn = reloadRetry.range(
+        of: "success: false",
+        range: timeoutCheck.upperBound..<reloadRetry.endIndex
+      ),
+      let retryDelay = reloadRetry.range(of: "let delayMs = min(200 * attempt, 1500)") else {
+    fputs("FAIL: timed-out reload must fail before the retry delay\n", stderr)
+    exit(1)
+}
+if timeoutReturn.lowerBound > retryDelay.lowerBound {
+    fputs("FAIL: timed-out reload must fail fast instead of retrying\n", stderr)
+    exit(1)
+}
 
 print("PASS: blocking pause and reload coordination guardrails")
