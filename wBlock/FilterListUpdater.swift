@@ -564,10 +564,10 @@ final class FilterListUpdater: @unchecked Sendable {
 
     private func refreshFilters(
         _ filters: [FilterList],
-        progressCallback: @escaping (Float) -> Void
+        progressCallback: @escaping (Float) async -> Void
     ) async -> [(FilterList, FilterFetchResult)] {
         guard !filters.isEmpty else {
-            progressCallback(1)
+            await progressCallback(1)
             return []
         }
 
@@ -578,7 +578,7 @@ final class FilterListUpdater: @unchecked Sendable {
             (filter, await self.fetchAndProcessFilterResult(filter))
         }, onResult: { result in
             results.append(result)
-            progressCallback(Float(results.count) / totalSteps)
+            await progressCallback(Float(results.count) / totalSteps)
         })
 
         return results
@@ -592,7 +592,7 @@ final class FilterListUpdater: @unchecked Sendable {
     /// Refreshes filters that need updates and continues even if some downloads fail.
     func refreshFiltersIfNeeded(
         _ filters: [FilterList],
-        progressCallback: @escaping (Float) -> Void
+        progressCallback: @escaping (Float) async -> Void
     ) async -> RefreshFiltersResult {
         var updated: [FilterList] = []
         var failedCount = 0
@@ -611,7 +611,7 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Updates selected filters and returns the list of successfully updated filters
     func updateSelectedFilters(
-        _ selectedFilters: [FilterList], progressCallback: @escaping (Float) -> Void
+        _ selectedFilters: [FilterList], progressCallback: @escaping (Float) async -> Void
     ) async -> [FilterList] {
         await refreshFilters(selectedFilters, progressCallback: progressCallback).compactMap {
             $0.1.succeeded ? $0.0 : nil
@@ -708,16 +708,16 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Updates selected scripts and returns the list of successfully updated scripts
     func updateSelectedScripts(
-        _ selectedScripts: [UserScript], progressCallback: @escaping (Float) -> Void
+        _ selectedScripts: [UserScript], progressCallback: @escaping (Float) async -> Void
     ) async -> [UserScript] {
         guard !selectedScripts.isEmpty else {
-            progressCallback(1.0)
+            await progressCallback(1.0)
             return []
         }
 
         let scriptsToUpdate = selectedScripts.filter { !$0.isLocal && $0.updatesAutomatically }
         guard !scriptsToUpdate.isEmpty else {
-            progressCallback(1.0)
+            await progressCallback(1.0)
             return []
         }
         let totalSteps = Float(scriptsToUpdate.count)
@@ -748,7 +748,7 @@ final class FilterListUpdater: @unchecked Sendable {
             }
 
             completedSteps += 1
-            progressCallback(completedSteps / totalSteps)
+            await progressCallback(completedSteps / totalSteps)
         })
 
         return updatedScripts

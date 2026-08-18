@@ -21,8 +21,8 @@ enum ApplyChangesPhase: String, CaseIterable, Identifiable {
     case scripts
     case reading
     case converting
-    case saving
     case reloading
+    case saving
 
     var id: String { rawValue }
 
@@ -32,8 +32,8 @@ enum ApplyChangesPhase: String, CaseIterable, Identifiable {
         case .scripts: return String(localized: "Updating Scripts")
         case .reading: return String(localized: "Reading Files")
         case .converting: return String(localized: "Converting Rules")
-        case .saving: return String(localized: "Saving & Building")
         case .reloading: return String(localized: "Reloading Extensions")
+        case .saving: return String(localized: "Saving & Building")
         }
     }
 
@@ -43,8 +43,8 @@ enum ApplyChangesPhase: String, CaseIterable, Identifiable {
         case .scripts: return "bolt.horizontal.circle"
         case .reading: return "folder.badge.questionmark"
         case .converting: return "gearshape.2"
-        case .saving: return "square.and.arrow.down"
         case .reloading: return "arrow.clockwise"
+        case .saving: return "square.and.arrow.down"
         }
     }
 }
@@ -92,6 +92,7 @@ struct ApplyChangesState: Equatable {
     /// Per-phase progress for target-based phases.
     var convertingDone: Int = 0
     var reloadingDone: Int = 0
+    var phaseProgress: Double = 0
     var filterUpdatesFound: Int = 0
     var phases: [ApplyChangesPhaseProgress] = ApplyChangesPhase.allCases.map {
         ApplyChangesPhaseProgress(phase: $0, status: .pending)
@@ -181,15 +182,15 @@ class ApplyChangesViewModel: ObservableObject {
         scripts: Bool? = nil,
         reading: Bool? = nil,
         converting: Bool? = nil,
-        saving: Bool? = nil,
-        reloading: Bool? = nil
+        reloading: Bool? = nil,
+        saving: Bool? = nil
     ) {
         if let updating { setPhase(.updating, isComplete: updating) }
         if let scripts { setPhase(.scripts, isComplete: scripts) }
         if let reading { setPhase(.reading, isComplete: reading) }
         if let converting { setPhase(.converting, isComplete: converting) }
-        if let saving { setPhase(.saving, isComplete: saving) }
         if let reloading { setPhase(.reloading, isComplete: reloading) }
+        if let saving { setPhase(.saving, isComplete: saving) }
     }
 
     func markPhaseFailed(_ phase: ApplyChangesPhase, message: String? = nil) {
@@ -225,6 +226,10 @@ class ApplyChangesViewModel: ObservableObject {
         let clamped = max(0, done)
         guard clamped != state.reloadingDone else { return }
         state.reloadingDone = clamped
+    }
+
+    func updatePhaseProgress(_ progress: Double) {
+        state.phaseProgress = (0...1).clamp(progress)
     }
 
     func updateStageDescription(_ description: String) {
@@ -356,6 +361,7 @@ class ApplyChangesViewModel: ObservableObject {
 
     private func activateNextPendingPhase(after phase: ApplyChangesPhase) {
         guard let currentIndex = state.phases.firstIndex(where: { $0.phase == phase }) else { return }
+        state.phaseProgress = 0
         var mutablePhases = state.phases
 
         if let nextIndex = mutablePhases[currentIndex...].dropFirst().firstIndex(where: { $0.status == .pending }) {

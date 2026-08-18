@@ -71,7 +71,7 @@ struct ApplyChangesProgressView: View {
                     }
                 }
         }
-        .applySheetPresentationCompat(prefersLarge: mode == .review || mode == .progress)
+        .largeSheetPresentationCompat()
         .interactiveDismissDisabled(mode == .progress || isStartingSelectedUpdates)
         .onAppear {
             syncSelectionFromAvailableUpdates()
@@ -81,8 +81,8 @@ struct ApplyChangesProgressView: View {
             minWidth: 460,
             idealWidth: 500,
             maxWidth: 560,
-            minHeight: mode == .progress ? 400 : (mode == .review ? 420 : 260),
-            idealHeight: mode == .progress ? 440 : (mode == .review ? 500 : 320),
+            minHeight: mode == .review ? 420 : 400,
+            idealHeight: mode == .review ? 500 : 440,
             maxHeight: 640
         )
         #endif
@@ -93,32 +93,22 @@ struct ApplyChangesProgressView: View {
         switch mode {
         case .review:
             reviewContent
-        case .progress:
-            VStack(alignment: .leading, spacing: 12) {
+        case .progress, .result, .failed:
+            applyRunContent
+        }
+    }
+
+    private var applyRunContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
                 sheetHeader
-                progressOverviewCard
-                phaseCard
+                if mode == .failed { failureCard }
+                if mode == .progress { progressOverviewCard }
+                if mode == .result, let summary = viewModel.state.summary { summaryCard(summary) }
+                if mode != .result { phaseCard }
             }
             .padding(20)
-        case .result:
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    sheetHeader
-                    if let summary = viewModel.state.summary {
-                        summaryCard(summary)
-                    }
-                }
-                .padding(20)
-            }
-        case .failed:
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    sheetHeader
-                    failureCard
-                    phaseCard
-                }
-                .padding(20)
-            }
+            .animation(.easeInOut(duration: 0.28), value: mode)
         }
     }
 
@@ -465,40 +455,26 @@ struct ApplyChangesProgressView: View {
     }
 
     private func subProgress(for phase: ApplyChangesPhase, status: ApplyChangesPhaseStatus) -> PhaseRow.SubProgress? {
+        guard status == .active else { return nil }
         switch phase {
+        case .updating, .scripts:
+            let value = viewModel.state.phaseProgress
+            return PhaseRow.SubProgress(value: value, label: value > 0 ? "\(Int((value * 100).rounded()))%" : nil)
         case .converting:
-            guard status == .active else { return nil }
-
-            let totalCount = viewModel.state.totalCount
-            let done = viewModel.state.convertingDone
-            let total = Double(max(1, totalCount))
-            let fraction = Swift.min(Swift.max(Double(done) / total, 0), 1)
-
-            if totalCount > 0, done >= totalCount {
-                return nil
-            }
-
-            let label = totalCount > 0 ? "\(done)/\(totalCount)" : nil
-            return PhaseRow.SubProgress(value: fraction, label: label)
-
+            return countedSubProgress(viewModel.state.convertingDone)
         case .reloading:
-            guard status == .active else { return nil }
-
-            let totalCount = viewModel.state.totalCount
-            let done = viewModel.state.reloadingDone
-            let total = Double(max(1, totalCount))
-            let fraction = Swift.min(Swift.max(Double(done) / total, 0), 1)
-
-            if totalCount > 0, done >= totalCount {
-                return nil
-            }
-
-            let label = totalCount > 0 ? "\(done)/\(totalCount)" : nil
-            return PhaseRow.SubProgress(value: fraction, label: label)
-
-        case .updating, .scripts, .reading, .saving:
+            return countedSubProgress(viewModel.state.reloadingDone)
+        case .reading, .saving:
             return nil
         }
+    }
+
+    private func countedSubProgress(_ done: Int) -> PhaseRow.SubProgress {
+        let total = viewModel.state.totalCount
+        return PhaseRow.SubProgress(
+            value: Swift.min(Swift.max(Double(done) / Double(max(1, total)), 0), 1),
+            label: total > 0 ? "\(done)/\(total)" : nil
+        )
     }
 }
 
@@ -537,6 +513,7 @@ private struct PhaseRow: View {
                     ProgressView(value: subProgress.value)
                         .progressViewStyle(.linear)
                         .scaleEffect(y: 1.15)
+                        .animation(.easeInOut(duration: 0.2), value: subProgress.value)
 
                     if let label = subProgress.label {
                         Text(label)
