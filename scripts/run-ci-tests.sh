@@ -78,6 +78,7 @@ compile_core_test apply-progress-presentation scripts/test_apply_progress_presen
   wBlock/ApplyChangesViewModel.swift
 compile_core_test apply-update-counts scripts/test_apply_update_counts.swift \
   wBlock/ApplyChangesViewModel.swift
+compile_core_test filter-refresh-planner scripts/test_filter_refresh_planner.swift
 compile_core_test cloud-custom-filters scripts/test_cloud_sync_custom_filters.swift \
   wBlock/CloudSyncCustomFilterSync.swift
 compile_core_test cloud-local-user-scripts scripts/test_cloud_sync_local_user_scripts.swift \

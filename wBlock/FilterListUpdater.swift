@@ -31,8 +31,8 @@ final class FilterListUpdater: @unchecked Sendable {
     // Configured URLSession for better resource management
     private lazy var urlSession: URLSession = {
         let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 30
-        config.timeoutIntervalForResource = 120
+        config.timeoutIntervalForRequest = 15
+        config.timeoutIntervalForResource = 30
         config.urlCache = URLCache(memoryCapacity: 2 * 1024 * 1024, diskCapacity: 0, diskPath: nil)  // 2MB memory, no disk cache
         return URLSession(configuration: config)
     }()
@@ -226,15 +226,13 @@ final class FilterListUpdater: @unchecked Sendable {
         validators: (etag: String?, lastModified: String?),
         pendingValidatorUpdates: PendingValidatorUpdates
     ) async -> Bool {
-        if let scheme = filter.url.scheme?.lowercased(), scheme != "http" && scheme != "https" {
-            return false
-        }
+        guard filter.isRemoteURL else { return false }
         do {
             let request = NetworkRequestFactory.makeConditionalRequest(
                 url: filter.url,
                 etag: validators.etag,
                 lastModified: validators.lastModified,
-                timeout: 20
+                timeout: 12
             )
 
             let (data, response) = try await urlSession.data(for: request)
@@ -278,15 +276,7 @@ final class FilterListUpdater: @unchecked Sendable {
             }
         } catch {
             await ConcurrentLogManager.shared.debug(
-                .filterUpdate, LocalizedStrings.text("Conditional check failed, falling back to full comparison"),
-                metadata: ["filter": filter.name, "error": error.localizedDescription])
-        }
-
-        do {
-            return try await compareRemoteToLocal(filter: filter)
-        } catch {
-            await ConcurrentLogManager.shared.error(
-                .filterUpdate, LocalizedStrings.text("Error checking update for filter"),
+                .filterUpdate, LocalizedStrings.text("Conditional check failed"),
                 metadata: ["filter": filter.name, "error": error.localizedDescription])
             return false
         }
@@ -311,33 +301,6 @@ final class FilterListUpdater: @unchecked Sendable {
                   containerURL: containerURL
               ) else { return nil }
         return try? Data(contentsOf: localURL)
-    }
-
-    /// Downloads remote content and compares it against the locally cached version
-    private func compareRemoteToLocal(filter: FilterList) async throws -> Bool {
-        let request = URLRequest(url: filter.url, cachePolicy: .reloadIgnoringLocalCacheData)
-        let (data, response) = try await urlSession.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
-        }
-
-        let localData = localDataForComparison(filter: filter)
-        let responseStatus = FilterUpdateResponseClassifier.classify(
-            statusCode: httpResponse.statusCode,
-            responseData: data,
-            localData: localData
-        )
-
-        switch responseStatus {
-        case .updatedContent:
-            return true
-        case .notModified, .unchangedContent, .invalidContent:
-            return false
-        case .unexpectedStatus:
-            throw URLError(.badServerResponse)
-        @unknown default:
-            throw URLError(.badServerResponse)
-        }
     }
 
     /// Validates if content appears to be a valid filter list.
@@ -374,7 +337,7 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Fetches, processes, and saves a filter list.
     private func fetchAndProcessFilterResult(_ filter: FilterList) async -> FilterFetchResult {
-        if let scheme = filter.url.scheme?.lowercased(), scheme != "http" && scheme != "https" {
+        if !filter.isRemoteURL {
             // Local / inline user lists are already stored on disk.
             return loader.filterFileExists(filter) ? .unchanged : .failed
         }
@@ -388,7 +351,7 @@ final class FilterListUpdater: @unchecked Sendable {
                 url: filter.url,
                 etag: validators.etag,
                 lastModified: validators.lastModified,
-                timeout: 30
+                timeout: 15
             )
             let (data, response) = try await urlSession.data(for: request)
 
@@ -597,9 +560,21 @@ final class FilterListUpdater: @unchecked Sendable {
         _ filters: [FilterList],
         progressCallback: @escaping (Float) async -> Void
     ) async -> RefreshFiltersResult {
+        let (lastSuccessfulCheck, interval) = await refreshFreshnessWindow()
+        let filtersToRefresh = FilterRefreshPlanner.filtersRequiringNetworkRefresh(
+            filters,
+            fileExists: { loader.filterFileExists($0) },
+            lastSuccessfulCheck: lastSuccessfulCheck,
+            interval: interval
+        )
+        guard !filtersToRefresh.isEmpty else {
+            await progressCallback(1)
+            return RefreshFiltersResult(updated: [], failedCount: 0)
+        }
+
         var updated: [FilterList] = []
         var failedCount = 0
-        for (filter, result) in await refreshFilters(filters, progressCallback: progressCallback) {
+        for (filter, result) in await refreshFilters(filtersToRefresh, progressCallback: progressCallback) {
             switch result {
             case .updated:
                 updated.append(filter)
@@ -609,7 +584,27 @@ final class FilterListUpdater: @unchecked Sendable {
                 break
             }
         }
+        let checkedAllExisting = lastSuccessfulCheck.map { Date().timeIntervalSince($0) >= interval } ?? true
+        if checkedAllExisting {
+            await markRefreshCheckSuccessful()
+        }
         return RefreshFiltersResult(updated: updated, failedCount: failedCount)
+    }
+
+    private func refreshFreshnessWindow() async -> (Date?, TimeInterval) {
+        await ProtobufDataManager.shared.waitUntilLoaded()
+        return await MainActor.run {
+            let last = ProtobufDataManager.shared.autoUpdateLastSuccessfulTime
+            let hours = ProtobufDataManager.shared.autoUpdateIntervalHours
+            let intervalHours = hours.isFinite && hours > 0 ? min(max(hours, 1), 24 * 7) : 6
+            let lastDate = last > 0 ? Date(timeIntervalSince1970: TimeInterval(last)) : nil
+            return (lastDate, intervalHours * 3600)
+        }
+    }
+
+    private func markRefreshCheckSuccessful() async {
+        await ProtobufDataManager.shared.waitUntilLoaded()
+        await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(Date().timeIntervalSince1970))
     }
 
     /// Updates selected filters and returns the list of successfully updated filters
