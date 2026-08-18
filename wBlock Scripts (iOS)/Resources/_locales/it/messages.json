@@ -282,5 +282,17 @@
   "popup_error_filter_update_start": {
     "message": "Impossibile avviare l’aggiornamento dei filtri.",
     "description": "Error shown when the background filter update cannot be started."
+  },
+  "popup_no_autoplay": {
+    "message": "Nessuna riproduzione automatica",
+    "description": "Section title for the No Autoplay controls in the popup."
+  },
+  "popup_no_autoplay_allow_site": {
+    "message": "Consenti la riproduzione automatica su questo sito",
+    "description": "Label for the per-site toggle that allows autoplay on the current site."
+  },
+  "popup_no_autoplay_hint": {
+    "message": "I contenuti restano in pausa finché non li tocchi o fai clic.",
+    "description": "Hint explaining what No Autoplay does."
   }
 }

@@ -282,5 +282,17 @@
   "popup_error_filter_update_start": {
     "message": "フィルターの更新を開始できません。",
     "description": "Error shown when the background filter update cannot be started."
+  },
+  "popup_no_autoplay": {
+    "message": "自動再生をブロック",
+    "description": "Section title for the No Autoplay controls in the popup."
+  },
+  "popup_no_autoplay_allow_site": {
+    "message": "このサイトで自動再生を許可",
+    "description": "Label for the per-site toggle that allows autoplay on the current site."
+  },
+  "popup_no_autoplay_hint": {
+    "message": "タップまたはクリックするまでメディアは一時停止のままです。",
+    "description": "Hint explaining what No Autoplay does."
   }
 }

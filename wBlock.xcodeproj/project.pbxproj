@@ -364,6 +364,7 @@
 				Resources/background.js,
 				Resources/content.js,
 				Resources/manifest.json,
+				"Resources/no-autoplay.js",
 				Resources/pages,
 				Resources/rules/csp_strip_rules.json,
 				"Resources/userscript-injector.js",

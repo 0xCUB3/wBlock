@@ -282,5 +282,17 @@
   "popup_error_filter_update_start": {
     "message": "無法開始更新過濾器。",
     "description": "Error shown when the background filter update cannot be started."
+  },
+  "popup_no_autoplay": {
+    "message": "停止自動播放",
+    "description": "Section title for the No Autoplay controls in the popup."
+  },
+  "popup_no_autoplay_allow_site": {
+    "message": "允許此網站自動播放",
+    "description": "Label for the per-site toggle that allows autoplay on the current site."
+  },
+  "popup_no_autoplay_hint": {
+    "message": "媒體會保持暫停，直到你點按或按一下它。",
+    "description": "Hint explaining what No Autoplay does."
   }
 }
