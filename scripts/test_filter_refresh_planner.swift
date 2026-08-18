@@ -62,6 +62,10 @@ struct FilterRefreshPlannerTests {
             updater.contains("FilterRefreshPlanner.filtersRequiringNetworkRefresh"),
             "apply refresh must use the freshness planner"
         )
+        check(
+            updater.contains("if checkedAllExisting && allSucceeded"),
+            "a failed or unavailable fetch must not mark the interval as successful"
+        )
         print("PASS")
     }
 

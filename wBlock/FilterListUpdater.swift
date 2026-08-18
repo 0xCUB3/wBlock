@@ -574,18 +574,22 @@ final class FilterListUpdater: @unchecked Sendable {
 
         var updated: [FilterList] = []
         var failedCount = 0
+        var allSucceeded = true
         for (filter, result) in await refreshFilters(filtersToRefresh, progressCallback: progressCallback) {
             switch result {
             case .updated:
                 updated.append(filter)
+            case .unchanged:
+                break
             case .failed:
                 failedCount += 1
-            case .unchanged, .unavailable:
-                break
+                allSucceeded = false
+            case .unavailable:
+                allSucceeded = false
             }
         }
         let checkedAllExisting = lastSuccessfulCheck.map { Date().timeIntervalSince($0) >= interval } ?? true
-        if checkedAllExisting {
+        if checkedAllExisting && allSucceeded {
             await markRefreshCheckSuccessful()
         }
         return RefreshFiltersResult(updated: updated, failedCount: failedCount)
