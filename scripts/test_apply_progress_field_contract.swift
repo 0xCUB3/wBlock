@@ -35,5 +35,11 @@ require(!view.contains("progressOverviewCard"), "mid-run StatCards must be gone"
 require(!view.contains("private struct PhaseRow"), "legacy phase rows must be removed")
 require(view.contains("prefersLarge: mode == .review"), "only the update review list should request a large sheet")
 require(!view.contains("mode == .review || mode == .progress"), "progress should not force a large sheet")
+let progressCase = view.components(separatedBy: "case .progress:").dropFirst().first?
+    .components(separatedBy: "case .").first ?? ""
+require(progressCase.contains("ScrollView"), "progress content must scroll if the phase list is taller than the sheet")
+require(!field.contains(".accessibilityLabel(presentation.title)"), "the field must not announce the active phase on top of the rows")
+require(field.contains(".accessibilityValue(node.accessibilityValue)"), "rows must announce their own status")
+require(model.contains("return String(localized: \"Failed\")"), "failed rows must stay distinguishable to VoiceOver")
 
 print("PASS: apply progress field contract")

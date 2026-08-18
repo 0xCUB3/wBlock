@@ -308,6 +308,13 @@ struct ApplyProgressPresentation: Equatable {
         let status: ApplyChangesPhaseStatus
         let detail: String?
         var id: ApplyChangesPhase { phase }
+
+        var accessibilityValue: String {
+            if status == .failed {
+                return String(localized: "Failed")
+            }
+            return detail ?? ""
+        }
     }
 
     let nodes: [Node]
@@ -322,15 +329,7 @@ struct ApplyProgressPresentation: Equatable {
     }
 
     var accessibilityValue: String {
-        var parts: [String] = []
-        if let detail, !detail.isEmpty {
-            parts.append(detail)
-        }
-        if let fractionLabel, !fractionLabel.isEmpty {
-            parts.append(fractionLabel)
-        }
-        parts.append(progressLabel)
-        return parts.joined(separator: ", ")
+        progressLabel
     }
 
     static func make(from state: ApplyChangesState) -> ApplyProgressPresentation {

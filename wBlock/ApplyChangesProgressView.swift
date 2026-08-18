@@ -98,12 +98,14 @@ struct ApplyChangesProgressView: View {
         case .review:
             reviewContent
         case .progress:
-            VStack(alignment: .leading, spacing: 14) {
-                sheetHeader
-                progressField
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    sheetHeader
+                    progressField
+                }
+                .padding(20)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
-            .padding(20)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         case .result:
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {

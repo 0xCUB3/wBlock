@@ -28,6 +28,8 @@ struct ApplyProgressField: View {
             }
             .progressViewStyle(.linear)
             .tint(presentation.isFailed ? Color.red : Color.accentColor)
+            .accessibilityLabel(String(localized: "Apply Changes"))
+            .accessibilityValue(presentation.progressLabel)
 
             rows
                 .padding(.horizontal, groupedRows ? 12 : 0)
@@ -40,8 +42,6 @@ struct ApplyProgressField: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(presentation.title)
-        .accessibilityValue(presentation.accessibilityValue)
     }
 
     private static var groupedFill: Color {
@@ -90,7 +90,7 @@ private struct ApplyProgressRow: View {
         .padding(.vertical, 7)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(node.phase.title)
-        .accessibilityValue(node.detail ?? "")
+        .accessibilityValue(node.accessibilityValue)
     }
 
     @ViewBuilder

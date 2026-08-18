@@ -238,6 +238,7 @@ struct ApplyProgressPresentationTests {
         check(presentation.title == ApplyChangesPhase.converting.title, "failure keeps the live phase")
         check(presentation.detail == "Conversion exploded", "failure detail is the message")
         check(node(presentation, .converting)?.detail == nil, "failed rows must not repeat the failure card")
+        check(node(presentation, .converting)?.accessibilityValue == String(localized: "Failed"), "failed rows must still speak their status")
         check(status(presentation, .converting) == .failed, "the live phase becomes failed")
         check(status(presentation, .reloading) == .pending, "later phases stay pending")
     }
@@ -327,8 +328,9 @@ struct ApplyProgressPresentationTests {
         viewModel.updateConvertingDone(1)
         viewModel.updateCurrentFilter("Ads")
         let presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.accessibilityValue.contains("Ads"), "VoiceOver value must include the current target")
-        check(presentation.accessibilityValue.contains("1/5"), "VoiceOver value must include the fraction")
+        check(presentation.accessibilityValue == presentation.progressLabel, "the bar VoiceOver value must only be overall progress")
+        check(node(presentation, .converting)?.accessibilityValue.contains("Ads") == true, "the live row VoiceOver value must include the current target")
+        check(node(presentation, .converting)?.accessibilityValue.contains("1/5") == true, "the live row VoiceOver value must include the fraction")
     }
 
     @MainActor

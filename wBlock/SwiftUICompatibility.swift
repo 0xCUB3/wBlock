@@ -112,7 +112,7 @@ extension View {
     @ViewBuilder
     func applySheetPresentationCompat(prefersLarge: Bool) -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {
-            presentationDetents([prefersLarge ? .large : .medium])
+            presentationDetents(prefersLarge ? [.large] : [.medium, .large])
                 .presentationDragIndicator(.visible)
         } else {
             self
