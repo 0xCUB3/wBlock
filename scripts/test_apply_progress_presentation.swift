@@ -342,9 +342,12 @@ struct ApplyProgressPresentationTests {
         let presentation = ApplyProgressPresentation.make(from: viewModel.state)
         check(presentation.detail == "AdGuard Base Filter", "the live update row must name the in-flight list")
         check(
-            node(presentation, .updating)?.detail
-                == "AdGuard Base Filter · " + ApplyProgressPresentation.percentString(0.93),
-            "the update row should keep the list name and local fraction together"
+            node(presentation, .updating)?.detail == "AdGuard Base Filter",
+            "the update row should keep the list name on its own line"
+        )
+        check(
+            node(presentation, .updating)?.accessory == ApplyProgressPresentation.percentString(0.93),
+            "the update row should keep the local fraction as a short accessory"
         )
         checkAlmostEqual(presentation.progress, 0.93 / 6.0, "overall fill stays in the first segment")
     }
@@ -415,8 +418,12 @@ struct ApplyProgressPresentationTests {
             "completed reading rows must keep the extension count"
         )
         check(
-            node(presentation, .converting)?.detail == "Privacy · 2/5",
-            "the active converting row should show the target and fraction"
+            node(presentation, .converting)?.detail == "Privacy",
+            "the active converting row should show the target under the title"
+        )
+        check(
+            node(presentation, .converting)?.accessory == "2/5",
+            "the active converting row should keep the fraction as a short accessory"
         )
         check(node(presentation, .reloading)?.detail == nil, "pending reload has no detail")
         check(node(presentation, .saving)?.detail == nil, "pending save has no detail")

@@ -9,18 +9,12 @@ import SwiftUI
 
 struct ApplyProgressField: View {
     let presentation: ApplyProgressPresentation
-    var groupedRows: Bool = {
-        #if os(iOS)
-        true
-        #else
-        false
-        #endif
-    }()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             ProgressView(value: presentation.progress) {
                 Text(presentation.title)
+                    .fixedSize(horizontal: false, vertical: true)
             } currentValueLabel: {
                 Text(presentation.progressLabel)
                     .monospacedDigit()
@@ -31,36 +25,17 @@ struct ApplyProgressField: View {
             .accessibilityLabel(String(localized: "Apply Changes"))
             .accessibilityValue(presentation.progressLabel)
 
-            rows
-                .padding(.horizontal, groupedRows ? 12 : 0)
-                .background {
-                    if groupedRows {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(Self.groupedFill)
+            VStack(spacing: 0) {
+                ForEach(Array(presentation.nodes.enumerated()), id: \.element.id) { index, node in
+                    if index > 0 {
+                        Divider()
                     }
+                    ApplyProgressRow(node: node)
                 }
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .contain)
-    }
-
-    private static var groupedFill: Color {
-        #if os(iOS)
-        Color(uiColor: .secondarySystemGroupedBackground)
-        #else
-        Color(nsColor: .controlBackgroundColor)
-        #endif
-    }
-
-    private var rows: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(presentation.nodes.enumerated()), id: \.element.id) { index, node in
-                if index > 0 {
-                    Divider()
-                }
-                ApplyProgressRow(node: node)
-            }
-        }
     }
 }
 
@@ -68,26 +43,39 @@ private struct ApplyProgressRow: View {
     let node: ApplyProgressPresentation.Node
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(alignment: .top, spacing: 10) {
             statusLeading
                 .frame(width: 16, height: 16)
+                .padding(.top, 3)
 
-            Text(node.phase.title)
-                .font(.body)
-                .foregroundStyle(node.status == .pending ? .secondary : .primary)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(node.phase.title)
+                        .font(.body)
+                        .foregroundStyle(node.status == .pending ? .secondary : .primary)
+                        .fixedSize(horizontal: false, vertical: true)
 
-            Spacer(minLength: 8)
+                    if let accessory = node.accessory, !accessory.isEmpty {
+                        Spacer(minLength: 8)
+                        Text(accessory)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                            .lineLimit(1)
+                            .layoutPriority(1)
+                    }
+                }
 
-            if let detail = node.detail, !detail.isEmpty {
-                Text(detail)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.trailing)
-                    .lineLimit(2)
+                if let detail = node.detail, !detail.isEmpty {
+                    Text(detail)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.vertical, 7)
+        .padding(.vertical, 8)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(node.phase.title)
         .accessibilityValue(node.accessibilityValue)

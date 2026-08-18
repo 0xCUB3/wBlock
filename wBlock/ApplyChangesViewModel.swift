@@ -307,13 +307,24 @@ struct ApplyProgressPresentation: Equatable {
         let phase: ApplyChangesPhase
         let status: ApplyChangesPhaseStatus
         let detail: String?
+        let accessory: String?
         var id: ApplyChangesPhase { phase }
 
         var accessibilityValue: String {
             if status == .failed {
                 return String(localized: "Failed")
             }
-            return detail ?? ""
+            switch (detail, accessory) {
+            case let (detail?, accessory?)
+                where !detail.isEmpty && !accessory.isEmpty && detail != accessory:
+                return "\(detail) · \(accessory)"
+            case let (detail?, _) where !detail.isEmpty:
+                return detail
+            case let (_, accessory?):
+                return accessory
+            default:
+                return ""
+            }
         }
     }
 
@@ -338,7 +349,8 @@ struct ApplyProgressPresentation: Equatable {
             Node(
                 phase: step.phase,
                 status: step.status,
-                detail: rowDetail(for: step, state: state)
+                detail: rowDetail(for: step, state: state),
+                accessory: fractionLabel(for: step, state: state)
             )
         }
         return ApplyProgressPresentation(
@@ -405,14 +417,7 @@ struct ApplyProgressPresentation: Equatable {
         if step.status == .failed {
             return nil
         }
-        let text = detail(for: step, state: state)
-        guard step.status == .active, let fraction = fractionLabel(for: step, state: state) else {
-            return text
-        }
-        if let text, !text.isEmpty, text != fraction {
-            return "\(text) · \(fraction)"
-        }
-        return fraction
+        return detail(for: step, state: state)
     }
 
     private static func fractionLabel(for step: ApplyChangesPhaseProgress, state: ApplyChangesState) -> String? {

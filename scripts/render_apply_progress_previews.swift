@@ -9,30 +9,31 @@ struct ApplyProgressPreviewRenderer {
         app.setActivationPolicy(.accessory)
 
         let converting = convertingPresentation()
+        let updating = updatingPresentation()
         let outDir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
             .appendingPathComponent("docs/media/img", isDirectory: true)
 
         write(
             macSheet(converting),
-            size: CGSize(width: 500, height: 318),
+            size: CGSize(width: 500, height: 400),
             appearance: .aqua,
             to: outDir.appendingPathComponent("apply_progress_light.png")
         )
         write(
             macSheet(converting),
-            size: CGSize(width: 500, height: 318),
+            size: CGSize(width: 500, height: 400),
             appearance: .darkAqua,
             to: outDir.appendingPathComponent("apply_progress_dark.png")
         )
         write(
-            iosSheet(converting),
-            size: CGSize(width: 390, height: 430),
+            iosSheet(updating),
+            size: CGSize(width: 320, height: 520),
             appearance: .aqua,
             to: outDir.appendingPathComponent("apply_progress_ios_light.png")
         )
         write(
-            iosSheet(converting),
-            size: CGSize(width: 390, height: 430),
+            iosSheet(updating),
+            size: CGSize(width: 320, height: 520),
             appearance: .darkAqua,
             to: outDir.appendingPathComponent("apply_progress_ios_dark.png")
         )
@@ -49,7 +50,16 @@ struct ApplyProgressPreviewRenderer {
         viewModel.updateProcessedCount(0, total: 5)
         viewModel.updatePhaseCompletion(reading: true, converting: false)
         viewModel.updateConvertingDone(2)
-        viewModel.updateCurrentFilter("Privacy")
+        viewModel.updateCurrentFilter("AdGuard Tracking Protection Filter")
+        return ApplyProgressPresentation.make(from: viewModel.state)
+    }
+
+    @MainActor
+    private static func updatingPresentation() -> ApplyProgressPresentation {
+        let viewModel = ApplyChangesViewModel()
+        viewModel.beginProgressRun()
+        viewModel.updateCurrentFilter("AdGuard Tracking Protection Filter")
+        viewModel.updatePhaseProgress(0.18)
         return ApplyProgressPresentation.make(from: viewModel.state)
     }
 
@@ -60,7 +70,7 @@ struct ApplyProgressPreviewRenderer {
             ApplyProgressField(presentation: presentation)
         }
         .padding(20)
-        .frame(width: 500, height: 318, alignment: .topLeading)
+        .frame(width: 500, height: 400, alignment: .topLeading)
         .background(Color(nsColor: .windowBackgroundColor))
     }
 
@@ -75,14 +85,14 @@ struct ApplyProgressPreviewRenderer {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Apply Changes")
                     .font(.title2.weight(.semibold))
-                ApplyProgressField(presentation: presentation, groupedRows: true)
+                ApplyProgressField(presentation: presentation)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 20)
 
             Spacer(minLength: 0)
         }
-        .frame(width: 390, height: 430, alignment: .top)
+        .frame(width: 320, height: 520, alignment: .top)
         .background(Color(nsColor: .underPageBackgroundColor))
     }
 
