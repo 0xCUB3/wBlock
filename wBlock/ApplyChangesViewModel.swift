@@ -402,6 +402,10 @@ struct ApplyProgressPresentation: Equatable {
     let progress: Double
     let isFailed: Bool
 
+    var progressLabel: String {
+        Self.percentString(progress)
+    }
+
     var accessibilityValue: String {
         var parts: [String] = []
         if let detail, !detail.isEmpty {
@@ -409,9 +413,8 @@ struct ApplyProgressPresentation: Equatable {
         }
         if let fractionLabel, !fractionLabel.isEmpty {
             parts.append(fractionLabel)
-        } else if progress > 0 {
-            parts.append(Self.percentString(progress))
         }
+        parts.append(progressLabel)
         return parts.joined(separator: ", ")
     }
 
@@ -485,6 +488,9 @@ struct ApplyProgressPresentation: Equatable {
     }
 
     private static func rowDetail(for step: ApplyChangesPhaseProgress, state: ApplyChangesState) -> String? {
+        if step.status == .failed {
+            return nil
+        }
         let text = detail(for: step, state: state)
         guard step.status == .active, let fraction = fractionLabel(for: step, state: state) else {
             return text

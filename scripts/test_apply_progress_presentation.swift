@@ -19,6 +19,7 @@ struct ApplyProgressPresentationTests {
         testAccessibilityValue()
         testNodeOrderMatchesPhases()
         testCompletedNodesKeepDetails()
+        testBarTracksVisibleStatus()
         print("PASS")
     }
 
@@ -237,6 +238,7 @@ struct ApplyProgressPresentationTests {
         check(presentation.isFailed, "failed runs must flag the field")
         check(presentation.title == ApplyChangesPhase.converting.title, "failure keeps the live phase")
         check(presentation.detail == "Conversion exploded", "failure detail is the message")
+        check(node(presentation, .converting)?.detail == nil, "failed rows must not repeat the failure card")
         check(status(presentation, .converting) == .failed, "the live phase becomes failed")
         check(status(presentation, .reloading) == .pending, "later phases stay pending")
     }
@@ -328,6 +330,46 @@ struct ApplyProgressPresentationTests {
         let presentation = ApplyProgressPresentation.make(from: viewModel.state)
         check(presentation.accessibilityValue.contains("Ads"), "VoiceOver value must include the current target")
         check(presentation.accessibilityValue.contains("1/5"), "VoiceOver value must include the fraction")
+    }
+
+    @MainActor
+    private static func testBarTracksVisibleStatus() {
+        let viewModel = ApplyChangesViewModel()
+        viewModel.beginProgressRun()
+        viewModel.updateFilterUpdatesFound(3)
+        viewModel.updateScriptsUpdateResult(updated: 2, failed: 0)
+        viewModel.updatePhaseCompletion(updating: true, scripts: true, reading: false)
+        viewModel.updateProcessedCount(0, total: 5)
+        viewModel.updatePhaseCompletion(reading: true, converting: false)
+        viewModel.updateConvertingDone(2)
+        viewModel.updateCurrentFilter("Privacy")
+
+        var presentation = ApplyProgressPresentation.make(from: viewModel.state)
+        let complete = presentation.nodes.filter { $0.status == .complete }.count
+        check(complete == 3, "three finished rows should already be checked")
+        check(presentation.nodes.first(where: { $0.status == .active })?.phase == .converting, "converting is the live row")
+        checkAlmostEqual(
+            presentation.progress,
+            (Double(complete) + 2.0 / 5.0) / 6.0,
+            "bar fill must equal finished rows plus the live fraction"
+        )
+        check(
+            presentation.progressLabel == ApplyProgressPresentation.percentString(presentation.progress),
+            "the bar caption must describe the same fill as the track"
+        )
+        check(presentation.progressLabel != presentation.fractionLabel, "the overall bar must not reuse the live row fraction")
+
+        viewModel.updateConvertingDone(4)
+        presentation = ApplyProgressPresentation.make(from: viewModel.state)
+        checkAlmostEqual(
+            presentation.progress,
+            (3.0 + 4.0 / 5.0) / 6.0,
+            "the bar must move when the live row's fraction moves"
+        )
+        check(
+            presentation.progressLabel == ApplyProgressPresentation.percentString(presentation.progress),
+            "the bar caption must stay locked to the new fill"
+        )
     }
 
     @MainActor

@@ -43,10 +43,7 @@ struct ApplyProgressPreviewRenderer {
         VStack(alignment: .leading, spacing: 14) {
             Text("Apply Changes")
                 .font(.title2.weight(.semibold))
-            ApplyProgressField(
-                presentation: presentation,
-                displayedProgress: presentation.progress
-            )
+            ApplyProgressField(presentation: presentation)
         }
         .padding(20)
         .frame(width: 500, height: 318, alignment: .topLeading)

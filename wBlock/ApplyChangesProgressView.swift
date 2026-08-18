@@ -16,7 +16,6 @@ struct ApplyChangesProgressView: View {
     @State private var selectedFilters: Set<UUID> = []
     @State private var selectedScripts: Set<UUID> = []
     @State private var isStartingSelectedUpdates = false
-    @State private var displayedProgress: Double = 0
 
     private var mode: ApplyChangesSheetMode {
         viewModel.state.mode
@@ -80,12 +79,6 @@ struct ApplyChangesProgressView: View {
         .interactiveDismissDisabled(mode == .progress || isStartingSelectedUpdates)
         .onAppear {
             syncSelectionFromAvailableUpdates()
-            displayedProgress = presentation.progress
-        }
-        .onChangeCompat(of: presentation.progress) { _, newValue in
-            withAnimation(.easeInOut(duration: newValue < displayedProgress ? 0.12 : 0.32)) {
-                displayedProgress = newValue
-            }
         }
         #if os(macOS)
         .frame(
@@ -223,10 +216,7 @@ struct ApplyChangesProgressView: View {
     // MARK: - Progress
 
     private var progressField: some View {
-        ApplyProgressField(
-            presentation: presentation,
-            displayedProgress: displayedProgress
-        )
+        ApplyProgressField(presentation: presentation)
     }
 
     // MARK: - Result

@@ -9,16 +9,15 @@ import SwiftUI
 
 struct ApplyProgressField: View {
     let presentation: ApplyProgressPresentation
-    let displayedProgress: Double
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            ProgressView(value: displayedProgress) {
+            ProgressView(value: presentation.progress) {
                 Text(presentation.title)
             } currentValueLabel: {
-                Text(presentation.fractionLabel ?? " ")
+                Text(presentation.progressLabel)
                     .monospacedDigit()
-                    .foregroundStyle(presentation.fractionLabel == nil ? .clear : .secondary)
+                    .foregroundStyle(.secondary)
             }
             .progressViewStyle(.linear)
             .tint(presentation.isFailed ? Color.red : Color.accentColor)
