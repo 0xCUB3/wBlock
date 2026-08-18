@@ -74,6 +74,8 @@ compile_direct_test site-settings-localization scripts/test_site_settings_locali
 
 # Core-module API tests. Source-only wBlock tests add their production source
 # explicitly; the remaining tests use the freshly built core framework.
+compile_core_test apply-progress-presentation scripts/test_apply_progress_presentation.swift \
+  wBlock/ApplyChangesViewModel.swift
 compile_core_test apply-update-counts scripts/test_apply_update_counts.swift \
   wBlock/ApplyChangesViewModel.swift
 compile_core_test cloud-custom-filters scripts/test_cloud_sync_custom_filters.swift \

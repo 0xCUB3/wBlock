@@ -384,3 +384,181 @@ class ApplyChangesViewModel: ObservableObject {
         state.phases = mutablePhases
     }
 }
+
+
+/// Derived, testable snapshot of the apply sheet's live progress field.
+struct ApplyProgressPresentation: Equatable {
+    struct Node: Equatable, Identifiable {
+        let phase: ApplyChangesPhase
+        let status: ApplyChangesPhaseStatus
+        var id: ApplyChangesPhase { phase }
+    }
+
+    let nodes: [Node]
+    let title: String
+    let detail: String?
+    let fractionLabel: String?
+    let progress: Double
+    let isFailed: Bool
+
+    var accessibilityValue: String {
+        var parts: [String] = []
+        if let detail, !detail.isEmpty {
+            parts.append(detail)
+        }
+        if let fractionLabel, !fractionLabel.isEmpty {
+            parts.append(fractionLabel)
+        } else if progress > 0 {
+            parts.append(Self.percentString(progress))
+        }
+        return parts.joined(separator: ", ")
+    }
+
+    static func make(from state: ApplyChangesState) -> ApplyProgressPresentation {
+        let nodes = state.phases.map { Node(phase: $0.phase, status: $0.status) }
+        let focused = focusedStep(in: state)
+        return ApplyProgressPresentation(
+            nodes: nodes,
+            title: focused?.phase.title ?? String(localized: "Apply Changes"),
+            detail: focused.flatMap { detail(for: $0, state: state) },
+            fractionLabel: focused.flatMap { fractionLabel(for: $0, state: state) },
+            progress: progress(from: state),
+            isFailed: state.mode == .failed || focused?.status == .failed
+        )
+    }
+
+    static func focusedStep(in state: ApplyChangesState) -> ApplyChangesPhaseProgress? {
+        if let failed = state.phases.first(where: { $0.status == .failed }) {
+            return failed
+        }
+        if let active = state.phases.first(where: { $0.status == .active }) {
+            return active
+        }
+        return state.phases.last(where: { $0.status == .complete }) ?? state.phases.first
+    }
+
+    static func progress(from state: ApplyChangesState) -> Double {
+        let phases = state.phases
+        let count = Double(max(phases.count, 1))
+        if phases.allSatisfy({ $0.status == .complete }) {
+            return 1
+        }
+        guard let focused = focusedStep(in: state),
+              let index = phases.firstIndex(where: { $0.phase == focused.phase }) else {
+            return (0...1).clamp(state.progress)
+        }
+        if focused.status == .complete {
+            return (0...1).clamp(Double(index + 1) / count)
+        }
+        return (0...1).clamp((Double(index) + localProgress(for: focused, state: state)) / count)
+    }
+
+    static func localProgress(for step: ApplyChangesPhaseProgress, state: ApplyChangesState) -> Double {
+        switch step.phase {
+        case .updating, .scripts:
+            return (0...1).clamp(state.phaseProgress)
+        case .converting:
+            guard state.totalCount > 0 else { return 0 }
+            return (0...1).clamp(Double(state.convertingDone) / Double(state.totalCount))
+        case .reloading:
+            guard state.totalCount > 0 else { return 0 }
+            return (0...1).clamp(Double(state.reloadingDone) / Double(state.totalCount))
+        case .reading, .saving:
+            return 0.2
+        }
+    }
+
+    static func percentString(_ value: Double) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .percent
+        formatter.maximumFractionDigits = 0
+        let clamped = (0...1).clamp(value)
+        return formatter.string(from: NSNumber(value: clamped))
+            ?? "\(Int((clamped * 100).rounded()))%"
+    }
+
+    private static func fractionLabel(for step: ApplyChangesPhaseProgress, state: ApplyChangesState) -> String? {
+        guard step.status == .active else { return nil }
+        switch step.phase {
+        case .updating, .scripts:
+            let value = (0...1).clamp(state.phaseProgress)
+            return value > 0 ? percentString(value) : nil
+        case .converting:
+            guard state.totalCount > 0 else { return nil }
+            return "\(state.convertingDone)/\(state.totalCount)"
+        case .reloading:
+            guard state.totalCount > 0 else { return nil }
+            return "\(state.reloadingDone)/\(state.totalCount)"
+        case .reading, .saving:
+            return nil
+        }
+    }
+
+    private static func detail(for step: ApplyChangesPhaseProgress, state: ApplyChangesState) -> String? {
+        if step.status == .failed {
+            if !state.failureMessage.isEmpty {
+                return state.failureMessage
+            }
+            return state.statusMessage.isEmpty ? nil : state.statusMessage
+        }
+
+        switch step.phase {
+        case .updating:
+            if step.status == .active {
+                return state.statusMessage.isEmpty ? nil : state.statusMessage
+            }
+            if step.status == .complete {
+                let count = state.filterUpdatesFound
+                if count > 0 {
+                    return localizedCount("Downloaded %d updates", count: count)
+                }
+                return String(localized: "No updates available")
+            }
+            return nil
+        case .scripts:
+            if step.status == .active {
+                let message = state.statusMessage
+                if message.localizedCaseInsensitiveContains("script") {
+                    return message
+                }
+                return nil
+            }
+            if step.status == .complete {
+                let updated = state.scriptsUpdatedCount
+                let failed = state.scriptsFailedCount
+                if failed > 0 {
+                    return String.localizedStringWithFormat(
+                        NSLocalizedString(
+                            "Updated %d, %d failed",
+                            comment: "Apply changes script phase detail"
+                        ),
+                        updated,
+                        failed
+                    )
+                }
+                if updated > 0 {
+                    return localizedCount("Updated %d scripts", count: updated)
+                }
+                return String(localized: "No script updates")
+            }
+            return nil
+        case .reading:
+            guard state.totalCount > 0 else { return nil }
+            return localizedCount("Preparing %d extensions", count: state.totalCount)
+        case .converting, .reloading:
+            guard step.status == .active else { return nil }
+            guard !state.currentFilterName.isEmpty else { return nil }
+            return state.currentFilterName
+        case .saving:
+            return nil
+        }
+    }
+
+    private static func localizedCount(_ key: String, count: Int) -> String {
+        String.localizedStringWithFormat(
+            NSLocalizedString(key, comment: "Apply changes detail"),
+            count
+        )
+    }
+}
+

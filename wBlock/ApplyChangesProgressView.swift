@@ -16,9 +16,14 @@ struct ApplyChangesProgressView: View {
     @State private var selectedFilters: Set<UUID> = []
     @State private var selectedScripts: Set<UUID> = []
     @State private var isStartingSelectedUpdates = false
+    @State private var displayedProgress: Double = 0
 
     private var mode: ApplyChangesSheetMode {
         viewModel.state.mode
+    }
+
+    private var presentation: ApplyProgressPresentation {
+        ApplyProgressPresentation.make(from: viewModel.state)
     }
 
     private var filtersByCategory: [FilterListCategory: [FilterList]] {
@@ -71,18 +76,24 @@ struct ApplyChangesProgressView: View {
                     }
                 }
         }
-        .applySheetPresentationCompat(prefersLarge: mode == .review || mode == .progress)
+        .applySheetPresentationCompat(prefersLarge: mode == .review)
         .interactiveDismissDisabled(mode == .progress || isStartingSelectedUpdates)
         .onAppear {
             syncSelectionFromAvailableUpdates()
+            displayedProgress = presentation.progress
+        }
+        .onChangeCompat(of: presentation.progress) { _, newValue in
+            withAnimation(.easeInOut(duration: newValue < displayedProgress ? 0.12 : 0.32)) {
+                displayedProgress = newValue
+            }
         }
         #if os(macOS)
         .frame(
             minWidth: 460,
             idealWidth: 500,
             maxWidth: 560,
-            minHeight: mode == .progress ? 400 : (mode == .review ? 420 : 260),
-            idealHeight: mode == .progress ? 440 : (mode == .review ? 500 : 320),
+            minHeight: mode == .progress ? 280 : (mode == .review ? 420 : 260),
+            idealHeight: mode == .progress ? 320 : (mode == .review ? 500 : 320),
             maxHeight: 640
         )
         #endif
@@ -94,10 +105,11 @@ struct ApplyChangesProgressView: View {
         case .review:
             reviewContent
         case .progress:
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 18) {
                 sheetHeader
-                progressOverviewCard
-                phaseCard
+                Spacer(minLength: 8)
+                progressField
+                Spacer(minLength: 8)
             }
             .padding(20)
         case .result:
@@ -115,7 +127,7 @@ struct ApplyChangesProgressView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     sheetHeader
                     failureCard
-                    phaseCard
+                    progressField
                 }
                 .padding(20)
             }
@@ -211,42 +223,13 @@ struct ApplyChangesProgressView: View {
 
     // MARK: - Progress
 
-    private var progressOverviewCard: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-            StatCard(
-                title: String(localized: "Extensions"),
-                value: viewModel.state.totalCount > 0 ? viewModel.state.totalCount.formatted() : "—",
-                icon: "puzzlepiece.extension"
+    private var progressField: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            ApplyPhaseRail(nodes: presentation.nodes)
+            ApplyProgressField(
+                presentation: presentation,
+                displayedProgress: displayedProgress
             )
-            StatCard(
-                title: String(localized: "Updates"),
-                value: viewModel.state.totalUpdatesFound.formatted(),
-                icon: "arrow.down.circle",
-                metrics: [
-                    StatCardMetric(
-                        value: viewModel.state.filterUpdatesFound.formatted(),
-                        icon: "line.3.horizontal.decrease",
-                        accessibilityLabel: String(localized: "Filters")
-                    ),
-                    StatCardMetric(
-                        value: viewModel.state.scriptsUpdatedCount.formatted(),
-                        icon: "curlybraces",
-                        accessibilityLabel: String(localized: "Scripts")
-                    )
-                ]
-            )
-        }
-    }
-
-    private var phaseCard: some View {
-        VStack(spacing: 2) {
-            ForEach(viewModel.state.phases) { step in
-                PhaseRow(
-                    step: step,
-                    detail: detail(for: step),
-                    subProgress: subProgress(for: step.phase, status: step.status)
-                )
-            }
         }
     }
 
@@ -395,165 +378,135 @@ struct ApplyChangesProgressView: View {
         }
         return viewModel.state.failureMessage
     }
+}
 
-    private func detail(for step: ApplyChangesPhaseProgress) -> String? {
-        switch step.phase {
-        case .updating:
-            if step.status == .active {
-                let message = viewModel.state.statusMessage
-                if !message.isEmpty {
-                    return message
+private struct ApplyPhaseRail: View {
+    let nodes: [ApplyProgressPresentation.Node]
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(Array(nodes.enumerated()), id: \.element.id) { index, node in
+                if index > 0 {
+                    Capsule()
+                        .fill(connectorColor(before: nodes[index - 1]))
+                        .frame(height: 2)
+                        .frame(maxWidth: .infinity)
                 }
-                return nil
+                ApplyPhaseNode(node: node)
             }
-            if step.status == .complete {
-                let count = viewModel.state.filterUpdatesFound
-                if count > 0 {
-                    return localizedCountDetail("Downloaded %d updates", count: count)
-                }
-                return String(localized: "No updates available")
-            }
-            return nil
-        case .scripts:
-            if step.status == .active {
-                let message = viewModel.state.statusMessage
-                if message.localizedCaseInsensitiveContains("script") {
-                    return message
-                }
-                return nil
-            }
-            if step.status == .complete {
-                let updated = viewModel.state.scriptsUpdatedCount
-                let failed = viewModel.state.scriptsFailedCount
-                if failed > 0 {
-                    return String.localizedStringWithFormat(
-                        NSLocalizedString(
-                            "Updated %d, %d failed",
-                            comment: "Apply changes script phase detail"
-                        ),
-                        updated,
-                        failed
-                    )
-                }
-                if updated > 0 {
-                    return localizedCountDetail("Updated %d scripts", count: updated)
-                }
-                return String(localized: "No script updates")
-            }
-            return nil
-        case .reading:
-            guard viewModel.state.totalCount > 0 else { return nil }
-            return localizedCountDetail("Preparing %d extensions", count: viewModel.state.totalCount)
-        case .converting:
-            guard step.status == .active else { return nil }
-            guard !viewModel.state.currentFilterName.isEmpty else { return nil }
-            return viewModel.state.currentFilterName
-        case .saving:
-            return nil
-        case .reloading:
-            guard step.status == .active else { return nil }
-            guard !viewModel.state.currentFilterName.isEmpty else { return nil }
-            return viewModel.state.currentFilterName
         }
+        .frame(height: 18)
+        .accessibilityHidden(true)
     }
 
-    private func localizedCountDetail(_ key: String, count: Int) -> String {
-        String.localizedStringWithFormat(
-            NSLocalizedString(key, comment: "Apply changes detail"),
-            count
-        )
-    }
-
-    private func subProgress(for phase: ApplyChangesPhase, status: ApplyChangesPhaseStatus) -> PhaseRow.SubProgress? {
-        guard status == .active else { return nil }
-        switch phase {
-        case .updating, .scripts:
-            let value = viewModel.state.phaseProgress
-            return PhaseRow.SubProgress(value: value, label: value > 0 ? "\(Int((value * 100).rounded()))%" : nil)
-        case .converting:
-            return countedSubProgress(viewModel.state.convertingDone)
-        case .reloading:
-            return countedSubProgress(viewModel.state.reloadingDone)
-        case .reading, .saving:
-            return nil
+    private func connectorColor(before node: ApplyProgressPresentation.Node) -> Color {
+        switch node.status {
+        case .complete:
+            return Color.accentColor.opacity(0.7)
+        case .failed:
+            return Color.red.opacity(0.7)
+        case .active, .pending:
+            return Color.primary.opacity(0.12)
         }
-    }
-
-    private func countedSubProgress(_ done: Int) -> PhaseRow.SubProgress {
-        let total = viewModel.state.totalCount
-        return PhaseRow.SubProgress(
-            value: Swift.min(Swift.max(Double(done) / Double(max(1, total)), 0), 1),
-            label: total > 0 ? "\(done)/\(total)" : nil
-        )
     }
 }
 
-private struct PhaseRow: View {
-    let step: ApplyChangesPhaseProgress
-    let detail: String?
-    let subProgress: SubProgress?
-
-    struct SubProgress {
-        let value: Double
-        let label: String?
-    }
+private struct ApplyPhaseNode: View {
+    let node: ApplyProgressPresentation.Node
 
     var body: some View {
-        VStack(spacing: 5) {
-            HStack(spacing: 12) {
-                statusLeading
-                    .frame(width: 18, height: 18)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(step.phase.title)
-                        .font(.subheadline)
-
-                    if let detail, !detail.isEmpty {
-                        Text(detail)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Spacer()
-            }
-
-            if let subProgress {
-                HStack(spacing: 10) {
-                    ProgressView(value: subProgress.value)
-                        .progressViewStyle(.linear)
-                        .scaleEffect(y: 1.15)
-                        .animation(.linear(duration: 0.15), value: subProgress.value)
-
-                    if let label = subProgress.label {
-                        Text(label)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                }
-                .padding(.leading, 30)
+        ZStack {
+            Circle()
+                .fill(fill)
+                .frame(width: size, height: size)
+            if node.status == .pending {
+                Circle()
+                    .strokeBorder(Color.primary.opacity(0.28), lineWidth: 1.5)
+                    .frame(width: size, height: size)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .frame(width: 14, height: 14)
     }
 
-    @ViewBuilder
-    private var statusLeading: some View {
-        switch step.status {
-        case .pending:
-            Image(systemName: "circle")
-                .foregroundStyle(.tertiary)
-        case .active:
-            ProgressView()
-                .controlSize(.small)
-        case .complete:
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.green)
-        case .failed:
-            Image(systemName: "xmark.circle.fill")
-                .foregroundStyle(.red)
+    private var size: CGFloat {
+        switch node.status {
+        case .active, .failed:
+            return 10
+        case .complete, .pending:
+            return 8
         }
+    }
+
+    private var fill: Color {
+        switch node.status {
+        case .pending:
+            return .clear
+        case .active:
+            return .accentColor
+        case .complete:
+            return Color.accentColor.opacity(0.45)
+        case .failed:
+            return .red
+        }
+    }
+}
+
+private struct ApplyProgressField: View {
+    let presentation: ApplyProgressPresentation
+    let displayedProgress: Double
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(presentation.title)
+                .font(.title3.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+
+            Text(presentation.detail ?? " ")
+                .font(.subheadline)
+                .foregroundStyle(presentation.detail == nil ? .clear : .secondary)
+                .lineLimit(2)
+                .frame(minHeight: 20, alignment: .leading)
+
+            HStack(spacing: 10) {
+                ApplyProgressTrack(value: displayedProgress, isFailed: presentation.isFailed)
+                if let fraction = presentation.fractionLabel {
+                    Text(fraction)
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(presentation.title)
+        .accessibilityValue(presentation.accessibilityValue)
+    }
+}
+
+private struct ApplyProgressTrack: View {
+    let value: Double
+    let isFailed: Bool
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.primary.opacity(0.08))
+                Capsule()
+                    .fill(isFailed ? Color.red : Color.accentColor)
+                    .frame(width: fillWidth(in: geo.size.width))
+            }
+        }
+        .frame(height: 7)
+        .accessibilityHidden(true)
+    }
+
+    private func fillWidth(in total: CGFloat) -> CGFloat {
+        let clamped = min(max(value, 0), 1)
+        if clamped <= 0 {
+            return 8
+        }
+        return max(8, total * clamped)
     }
 }
