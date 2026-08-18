@@ -215,7 +215,7 @@
 "Community-maintained options for additional regional coverage." = "由社区维护的额外地区覆盖选项。";
 "Completed" = "已完成";
 "Comprehensive ad-blocking rules by AdGuard." = "AdGuard 的综合广告拦截规则。";
-"Conditional check failed, falling back to full comparison" = "条件检查失败，回退到完整比较";
+"Conditional check failed" = "条件检查失败";
 "Contains new rules and fixes not yet included in other filters." = "包含其他过滤器中尚未包含的新规则和修复。";
 "Content filtering" = "内容过滤";
 "Continue" = "继续";

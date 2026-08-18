@@ -215,7 +215,7 @@
 "Community-maintained options for additional regional coverage." = "Közösség által karbantartott lehetőségek további regionális lefedettséghez.";
 "Completed" = "Befejezve";
 "Comprehensive ad-blocking rules by AdGuard." = "Átfogó hirdetésblokkolási szabályok az AdGuardtól.";
-"Conditional check failed, falling back to full comparison" = "A feltételes ellenőrzés sikertelen, visszaesés teljes összehasonlításra";
+"Conditional check failed" = "A feltételes ellenőrzés sikertelen";
 "Contains new rules and fixes not yet included in other filters." = "Új szabályokat és javításokat tartalmaz, amelyek még nem szerepelnek más szűrőkben.";
 "Content filtering" = "Tartalomszűrés";
 "Continue" = "Folytatás";

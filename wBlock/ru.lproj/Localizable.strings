@@ -215,7 +215,7 @@
 "Community-maintained options for additional regional coverage." = "Поддерживаемые сообществом варианты для дополнительного регионального покрытия.";
 "Completed" = "Завершено";
 "Comprehensive ad-blocking rules by AdGuard." = "Комплексные правила блокировки рекламы от AdGuard.";
-"Conditional check failed, falling back to full comparison" = "Условная проверка не удалась — откат к полному сравнению";
+"Conditional check failed" = "Условная проверка не удалась";
 "Contains new rules and fixes not yet included in other filters." = "Содержит новые правила и исправления, еще не включенные в другие фильтры.";
 "Content filtering" = "Фильтрация содержимого";
 "Continue" = "Продолжить";

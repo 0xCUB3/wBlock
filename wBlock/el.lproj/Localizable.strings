@@ -215,7 +215,7 @@
 "Community-maintained options for additional regional coverage." = "Επιλογές που διατηρούνται από την κοινότητα για πρόσθετη περιφερειακή κάλυψη.";
 "Completed" = "Ολοκληρώθηκε";
 "Comprehensive ad-blocking rules by AdGuard." = "Πλήρεις κανόνες αποκλεισμού διαφημίσεων από το AdGuard.";
-"Conditional check failed, falling back to full comparison" = "Αποτυχία υπό όρους ελέγχου, εναλλαγή σε πλήρη σύγκριση";
+"Conditional check failed" = "Αποτυχία υπό όρους ελέγχου";
 "Contains new rules and fixes not yet included in other filters." = "Περιέχει νέους κανόνες και διορθώσεις που δεν περιλαμβάνονται ακόμη σε άλλα φίλτρα.";
 "Content filtering" = "Φιλτράρισμα περιεχομένου";
 "Continue" = "Συνέχεια";

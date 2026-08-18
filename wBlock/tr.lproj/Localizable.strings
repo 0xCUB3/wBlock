@@ -215,7 +215,7 @@
 "Community-maintained options for additional regional coverage." = "Ek bölgesel kapsam için topluluk tarafından yönetilen seçenekler.";
 "Completed" = "Tamamlandı";
 "Comprehensive ad-blocking rules by AdGuard." = "AdGuard tarafından sunulan kapsamlı reklam engelleme kuralları.";
-"Conditional check failed, falling back to full comparison" = "Koşullu denetim başarısız oldu, tam karşılaştırmaya geri dönülüyor";
+"Conditional check failed" = "Koşullu denetim başarısız oldu";
 "Contains new rules and fixes not yet included in other filters." = "Diğer filtrelere henüz dâhil edilmemiş yeni kuralları ve düzeltmeleri içerir.";
 "Content filtering" = "İçerik filtreleme";
 "Continue" = "Devam";

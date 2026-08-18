@@ -215,7 +215,7 @@
 "Community-maintained options for additional regional coverage." = "خيارات يديرها المجتمع لتغطية إقليمية إضافية.";
 "Completed" = "مكتمل";
 "Comprehensive ad-blocking rules by AdGuard." = "قواعد شاملة لحظر الإعلانات من AdGuard.";
-"Conditional check failed, falling back to full comparison" = "فشل الفحص الشرطي، يتم الرجوع إلى مقارنة كاملة";
+"Conditional check failed" = "فشل الفحص الشرطي";
 "Contains new rules and fixes not yet included in other filters." = "يحتوي على قواعد وإصلاحات جديدة لم يتم تضمينها بعد في عوامل التصفية الأخرى.";
 "Content filtering" = "تصفية المحتوى";
 "Continue" = "متابعة";

@@ -215,7 +215,7 @@
 "Community-maintained options for additional regional coverage." = "추가 지역 커버리지를 위한 커뮤니티 유지 옵션.";
 "Completed" = "완료됨";
 "Comprehensive ad-blocking rules by AdGuard." = "AdGuard의 포괄적인 광고 차단 규칙.";
-"Conditional check failed, falling back to full comparison" = "조건 검사에 실패하여 전체 비교로 대체합니다";
+"Conditional check failed" = "조건 검사에 실패했습니다";
 "Contains new rules and fixes not yet included in other filters." = "아직 다른 필터에 포함되지 않은 새로운 규칙과 수정 사항이 포함되어 있습니다.";
 "Content filtering" = "콘텐츠 필터링";
 "Continue" = "계속";
