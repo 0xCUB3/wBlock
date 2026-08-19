@@ -21,7 +21,8 @@ check(html.includes('data-i18n="popup_enable_on_site"'), "popup uses the enable 
 check(html.includes('id="enable-toggle"'), "popup uses the enable toggle control");
 check(popup.includes("const disableToggle = document.getElementById('enable-toggle');"), "popup binds the enable control");
 check(popup.includes("const next = !disableToggle.checked;"), "checked=true maps to disabled=false when changing the site setting");
-check(popup.includes("disableToggle.checked = !disabled;"), "native disabled state is inverted for the checked enable control");
+check(popup.includes("const siteDisabled = disabled === true;"), "failed site-disabled reads must not count as enabled");
+check(popup.includes("disableToggle.checked = !siteDisabled;"), "native disabled state is inverted for the checked enable control");
 check(popup.includes("pageUserScriptsRenderedDisabled = disableToggle ? !disableToggle.checked : false;"), "userscript rendering uses the inverted enable state");
 check(popup.includes("zapperActivate.disabled = (disableToggle ? !disableToggle.checked : false) || disabled;"), "zapper activation uses the inverted enable state");
 
