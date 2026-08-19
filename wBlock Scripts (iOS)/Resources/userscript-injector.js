@@ -120,6 +120,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.pendingMenuInvocations = new Map(); // requestId -> { resolve, timeoutId }
             this.scriptPayloadPromises = new Map(); // scriptId -> Promise<hydrated script>
             this.warmStartValidationPromises = new Map(); // script key -> native validation promise
+            this.validationPrefetches = new Map(); // execution key -> { url, promise } for cold-path scripts
             this.documentStartRequestGeneration = 0;
             this.documentRootPromise = null; // earliest safe page-world injection point
             this.rydPrefetchEnabled = false;
@@ -831,16 +832,23 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         isWarmStartEligible(script) {
-            if (!script || script.isEnabled !== true || script.isLocal !== false || script.kind === 'style') return false;
+            if (!script || script.isEnabled !== true || script.kind === 'style') return false;
             if (script.runAt !== 'document-start'
                 || script.noframes === true && window !== window.top) return false;
-            const isPageWarmStart = script.injectInto === 'page';
-            const isDarkReaderContentWarmStart = script.injectInto === 'content'
+            const isRemote = script.isLocal === false && /^https:\/\//i.test(script.sourceURL || '');
+            // Local page-world scripts may warm start too: the cache lives in
+            // page-writable storage either way, cached page payloads execute with
+            // page authority only, and bridge privileges stay quarantined until
+            // fingerprint reconciliation against the authoritative native response
+            // (issue #537).
+            const isPageWarmStart = script.injectInto === 'page' && (isRemote || script.isLocal === true);
+            const isDarkReaderContentWarmStart = isRemote
+                && script.injectInto === 'content'
                 && script.sourceURL === 'https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/dark-reader/dist/dark-reader.user.js'
                 && typeof script.contentDigest === 'string'
                 && /^[0-9a-f]{64}$/.test(script.contentDigest);
             if (!isPageWarmStart && !isDarkReaderContentWarmStart) return false;
-            if (typeof script.content !== 'string' || !script.content || !/^https:\/\//i.test(script.sourceURL || '')) return false;
+            if (typeof script.content !== 'string' || !script.content) return false;
             if (!this.scriptMatchesCurrentURL(script)) return false;
             if ((script.includes || []).length || (script.excludes || []).length || (script.excludeMatches || []).length) return false;
             if ((script.resourceNames || []).length || (script.resourceURLs || []).length
@@ -1154,12 +1162,19 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 return leftPriority - rightPriority;
             });
 
+            // Hydrate payloads and dispatch native execution validation for every
+            // document-start script up front. The ordered loop below still executes
+            // scripts one at a time, but their native round-trips overlap instead of
+            // serializing, so a queued script no longer loses the race against the
+            // page's own code just because other scripts are enabled (issue #537).
             orderedScripts
                 .filter(script => script && script.runAt === 'document-start' && script.id)
                 .forEach(script => {
-                    this.ensureScriptPayload(script).catch(error => {
-                        wBlockWarn(`[wBlock] Failed to preload userscript payload for ${script.name}:`, error);
-                    });
+                    this.ensureScriptPayload(script)
+                        .then(fullScript => this.prefetchScriptValidation(fullScript))
+                        .catch(error => {
+                            wBlockWarn(`[wBlock] Failed to preload userscript payload for ${script.name}:`, error);
+                        });
                 });
 
             // Await each script: payload hydration and execution must preserve native order.
@@ -1197,20 +1212,56 @@ if (window.wBlockUserscriptInjectorHasRun) {
             await this.injectSingleScriptAsync(script, generation);
         }
 
-        async validateScriptForExecution(script) {
-            if (!script || !script.id || !Number.isSafeInteger(script.payloadRevision) || script.payloadRevision < 0) {
-                return false;
-            }
-            const warmValidation = script.__wblockWarmStart === true
-                ? this.warmStartValidationPromises.get(this.scriptExecutionKey(script))
-                : null;
-            const result = await (warmValidation || this.sendNativeRequest('validateUserScriptExecution', {
+        requestScriptValidation(script) {
+            return this.sendNativeRequest('validateUserScriptExecution', {
                 scriptId: script.id,
                 url: window.location.href,
                 payloadRevision: script.payloadRevision,
                 ...(typeof script.contentDigest === 'string' && script.contentDigest.length > 0
                     ? { contentDigest: script.contentDigest } : {})
-            }));
+            });
+        }
+
+        prefetchScriptValidation(script) {
+            if (!script || !script.id || script.__wblockWarmStart === true) return;
+            if (!Number.isSafeInteger(script.payloadRevision) || script.payloadRevision < 0) return;
+            const executionKey = this.scriptExecutionKey(script);
+            if (this.injectedScripts.has(executionKey)) return;
+            const url = window.location.href;
+            const existing = this.validationPrefetches.get(executionKey);
+            if (existing && existing.url === url && existing.payloadRevision === script.payloadRevision) return;
+            const promise = this.requestScriptValidation(script);
+            // The outcome is consumed (or the request retried) in
+            // validateScriptForExecution; never surface an unhandled rejection here.
+            promise.catch(() => {});
+            this.validationPrefetches.set(executionKey, { url, payloadRevision: script.payloadRevision, promise });
+        }
+
+        async validateScriptForExecution(script) {
+            if (!script || !script.id || !Number.isSafeInteger(script.payloadRevision) || script.payloadRevision < 0) {
+                return false;
+            }
+            const executionKey = this.scriptExecutionKey(script);
+            const warmValidation = script.__wblockWarmStart === true
+                ? this.warmStartValidationPromises.get(executionKey)
+                : null;
+            let result;
+            if (warmValidation) {
+                result = await warmValidation;
+            } else {
+                const prefetched = this.validationPrefetches.get(executionKey);
+                this.validationPrefetches.delete(executionKey);
+                if (prefetched && prefetched.url === window.location.href
+                    && prefetched.payloadRevision === script.payloadRevision) {
+                    try {
+                        result = await prefetched.promise;
+                    } catch (_) {
+                        result = await this.requestScriptValidation(script);
+                    }
+                } else {
+                    result = await this.requestScriptValidation(script);
+                }
+            }
             if (!result || result.ok !== true) {
                 if (result && result.error) wBlockLog(`[wBlock] Native execution validation rejected ${script.name}: ${result.error}`);
                 return false;

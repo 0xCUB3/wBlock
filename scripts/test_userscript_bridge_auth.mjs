@@ -723,5 +723,102 @@ check(
   (pageSandbox.__portMessages || []).includes("REAL"),
 );
 
+// ---------------------------------------------------------------------------
+// Cold-path validation round-trips must overlap, not serialize. With several
+// document-start scripts enabled, every script's validateUserScriptExecution
+// must be dispatched up front so a queued script does not lose the race
+// against the page's own code (issue #537).
+// ---------------------------------------------------------------------------
+
+const parallelScripts = [
+  { ...fakeScript, id: "parallel-1", name: "Parallel One", content: "window.__parallelOne = true;" },
+  { ...fakeScript, id: "parallel-2", name: "Parallel Two", content: "window.__parallelTwo = true;" },
+];
+const heldValidations = [];
+const parallelWrapperBase = appendedScripts.length;
+const parallelSandbox = buildContentScriptSandbox(
+  null, parallelScripts, "https://example.com/page", [], true,
+  (msg) => {
+    if (msg.action === "getUserScripts") {
+      return { userScripts: JSON.parse(JSON.stringify(parallelScripts)), documentStartCacheAllowed: true, cacheRevision };
+    }
+    if (msg.action === "validateUserScriptExecution") {
+      return new Promise((resolve) => { heldValidations.push({ scriptId: msg.scriptId, resolve }); });
+    }
+    return { ok: true };
+  },
+);
+vm.createContext(parallelSandbox);
+vm.runInContext(source, parallelSandbox, { filename: "userscript-injector-parallel-validation.js" });
+await tick();
+await tick();
+check(
+  "validation for queued document-start scripts dispatches concurrently",
+  heldValidations.length === 2,
+);
+check("no script executes before its validation resolves", appendedScripts.length === parallelWrapperBase);
+// Resolve out of order: execution must still follow the native script order.
+for (const held of [...heldValidations].reverse()) held.resolve({ ok: true });
+await tick();
+await tick();
+const parallelWrappers = appendedScripts.slice(parallelWrapperBase);
+check("both scripts execute once validations resolve", parallelWrappers.length === 2);
+check(
+  "execution preserves native order despite out-of-order validation replies",
+  (parallelWrappers[0] || "").includes("__parallelOne") && (parallelWrappers[1] || "").includes("__parallelTwo"),
+);
+
+// ---------------------------------------------------------------------------
+// Local page-world document-start scripts are warm-start eligible: they
+// execute quarantined with page authority before any native response, the
+// same as remote page-world scripts (issue #537).
+// ---------------------------------------------------------------------------
+
+const localScript = {
+  ...fakeScript,
+  id: "local-gtm-dummy",
+  name: "GTM Dummy Injector",
+  content: "window.__localWarmExecuted = true;",
+  sourceURL: "",
+  isLocal: true,
+  grant: [],
+};
+const localSeedSandbox = buildContentScriptSandbox(null, [localScript], "https://example.com/page");
+vm.createContext(localSeedSandbox);
+vm.runInContext(source, localSeedSandbox, { filename: "userscript-injector-local-warm-seed.js" });
+await tick();
+await tick();
+const localSeededCache = localSeedSandbox.__localValues.get("__wblock_warm_start_v1") || "";
+const localSeededPayload = localSeededCache ? JSON.parse(localSeededCache) : null;
+check(
+  "authoritative response seeds a local page-world script into the warm-start cache",
+  localSeededPayload?.scripts?.some((script) => script.id === localScript.id) === true,
+);
+
+const localWarmWrapperIndex = appendedScripts.length;
+const localWarmSandbox = buildContentScriptSandbox(
+  localSeededCache, [localScript], "https://example.com/page", [], true,
+  (msg) => (msg.action === "getUserScripts" ? new Promise(() => {}) : { ok: true }),
+);
+vm.createContext(localWarmSandbox);
+vm.runInContext(source, localWarmSandbox, { filename: "userscript-injector-local-warm-start.js" });
+await tick();
+const localWarmWrapper = appendedScripts[localWarmWrapperIndex] || "";
+check("local script warm-starts before any native response", localWarmWrapper.includes("__localWarmExecuted"));
+let localWarmExecutionSucceeded = true;
+try {
+  vm.runInContext(localWarmWrapper, localWarmSandbox, { filename: "userscript-injector-local-warm-page.js" });
+} catch {
+  localWarmExecutionSucceeded = false;
+}
+check(
+  "cached local page payload executes with page authority",
+  localWarmExecutionSucceeded && localWarmSandbox.__localWarmExecuted === true,
+);
+check(
+  "local warm start sends no validation request",
+  !localWarmSandbox.__sentMessages.some((message) => message.action === "validateUserScriptExecution"),
+);
+
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);
