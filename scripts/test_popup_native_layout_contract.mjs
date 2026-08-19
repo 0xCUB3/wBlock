@@ -78,6 +78,9 @@ if (sticky.get("position") !== "sticky" || sticky.get("top") !== "0") {
 if (sticky.get("background") !== "Canvas") {
   fail("sticky header must stay opaque on the sheet while scrolling");
 }
+if (sticky.get("margin") !== "-10px -12px 16px") {
+  fail("sections must sit below the header so the first card keeps its top edge");
+}
 
 const section = declarationsFor(".section");
 if (section.get("border") !== "0.5px solid var(--separator)") {
