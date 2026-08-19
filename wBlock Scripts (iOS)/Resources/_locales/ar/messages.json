@@ -282,5 +282,17 @@
   "popup_error_filter_update_start": {
     "message": "تعذر بدء تحديث الفلاتر.",
     "description": "Error shown when the background filter update cannot be started."
+  },
+  "popup_no_autoplay": {
+    "message": "إيقاف التشغيل التلقائي",
+    "description": "Section title for the No Autoplay controls in the popup."
+  },
+  "popup_no_autoplay_allow_site": {
+    "message": "السماح بالتشغيل التلقائي على هذا الموقع",
+    "description": "Label for the per-site toggle that allows autoplay on the current site."
+  },
+  "popup_no_autoplay_hint": {
+    "message": "تبقى الوسائط متوقفة مؤقتًا حتى تضغط أو تنقر عليها.",
+    "description": "Hint explaining what No Autoplay does."
   }
 }

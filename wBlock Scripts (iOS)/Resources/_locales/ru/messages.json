@@ -282,5 +282,17 @@
   "popup_error_filter_update_start": {
     "message": "Не удалось начать обновление фильтров.",
     "description": "Error shown when the background filter update cannot be started."
+  },
+  "popup_no_autoplay": {
+    "message": "Без автовоспроизведения",
+    "description": "Section title for the No Autoplay controls in the popup."
+  },
+  "popup_no_autoplay_allow_site": {
+    "message": "Разрешить автовоспроизведение на этом сайте",
+    "description": "Label for the per-site toggle that allows autoplay on the current site."
+  },
+  "popup_no_autoplay_hint": {
+    "message": "Медиа остаётся на паузе, пока вы не нажмёте на него.",
+    "description": "Hint explaining what No Autoplay does."
   }
 }

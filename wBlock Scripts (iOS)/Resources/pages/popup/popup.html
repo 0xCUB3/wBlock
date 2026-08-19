@@ -71,6 +71,26 @@
             <div id="zapper-rules" class="rules" hidden></div>
         </div>
 
+        <div class="section">
+            <div class="row">
+                <div id="no-autoplay-title" class="label" data-i18n="popup_no_autoplay">No Autoplay</div>
+                <div class="row-trailing">
+                    <label class="switch" for="no-autoplay-enabled-toggle">
+                        <input id="no-autoplay-enabled-toggle" type="checkbox" aria-labelledby="no-autoplay-title" />
+                        <span class="slider" aria-hidden="true"></span>
+                    </label>
+                </div>
+            </div>
+            <label id="no-autoplay-site-row" class="toggle-row" for="no-autoplay-site-toggle" hidden>
+                <span class="label" data-i18n="popup_no_autoplay_allow_site">Allow autoplay on this site</span>
+                <span class="switch">
+                    <input id="no-autoplay-site-toggle" type="checkbox" />
+                    <span class="slider" aria-hidden="true"></span>
+                </span>
+            </label>
+            <div class="hint" data-i18n="popup_no_autoplay_hint">Media stays paused until you tap or click it.</div>
+        </div>
+
         <div id="userscript-commands" class="section" hidden></div>
 
         <div class="popup-actions">

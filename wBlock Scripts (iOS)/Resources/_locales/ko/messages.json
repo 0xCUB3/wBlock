@@ -282,5 +282,17 @@
   "popup_error_filter_update_start": {
     "message": "필터 업데이트를 시작할 수 없습니다.",
     "description": "Error shown when the background filter update cannot be started."
+  },
+  "popup_no_autoplay": {
+    "message": "자동 재생 차단",
+    "description": "Section title for the No Autoplay controls in the popup."
+  },
+  "popup_no_autoplay_allow_site": {
+    "message": "이 사이트에서 자동 재생 허용",
+    "description": "Label for the per-site toggle that allows autoplay on the current site."
+  },
+  "popup_no_autoplay_hint": {
+    "message": "탭하거나 클릭하기 전에는 미디어가 일시 정지된 상태로 유지됩니다.",
+    "description": "Hint explaining what No Autoplay does."
   }
 }

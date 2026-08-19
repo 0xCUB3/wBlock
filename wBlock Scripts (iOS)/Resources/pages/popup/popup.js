@@ -1,6 +1,8 @@
 const NATIVE_HOST_ID = 'application.id';
 const ZAPPER_STORAGE_PREFIX = 'wblock.zapperRules.v1:';
 const ZAPPER_META_PREFIX = 'wblock.zapperMeta.v1:';
+const NO_AUTOPLAY_ENABLED_KEY = 'wblock.noAutoplay.enabled.v1';
+const NO_AUTOPLAY_ALLOW_PREFIX = 'wblock.noAutoplayAllow.v1:';
 const SUPPORT_PROBE_TIMEOUT_MS = 1200;
 const SUPPORT_PROBE_ATTEMPTS = 5;
 const SUPPORT_PROBE_RETRY_DELAY_MS = 200;
@@ -956,6 +958,55 @@ async function invokeUserscriptCommand(tabId, frameId, bridgeId, commandId) {
     }
 }
 
+let noAutoplaySiteDisabled = false;
+
+function noAutoplayAllowKey(siteHost) {
+    return `${NO_AUTOPLAY_ALLOW_PREFIX}${siteHost}`;
+}
+
+async function getNoAutoplayState(siteHost) {
+    const keys = [NO_AUTOPLAY_ENABLED_KEY];
+    if (siteHost) keys.push(noAutoplayAllowKey(siteHost));
+    try {
+        const result = await browser.storage.local.get(keys);
+        return {
+            enabled: result[NO_AUTOPLAY_ENABLED_KEY] === true,
+            siteAllowed: siteHost ? result[noAutoplayAllowKey(siteHost)] === true : false,
+        };
+    } catch {
+        return { enabled: false, siteAllowed: false };
+    }
+}
+
+async function setNoAutoplayEnabled(enabled) {
+    await browser.storage.local.set({ [NO_AUTOPLAY_ENABLED_KEY]: enabled === true });
+}
+
+async function setNoAutoplaySiteAllowed(siteHost, allowed) {
+    if (!siteHost) return;
+    if (allowed === true) {
+        await browser.storage.local.set({ [noAutoplayAllowKey(siteHost)]: true });
+    } else {
+        await browser.storage.local.remove(noAutoplayAllowKey(siteHost));
+    }
+}
+
+function updateNoAutoplayControls(state, options = {}) {
+    const enabledToggle = document.getElementById('no-autoplay-enabled-toggle');
+    const siteRow = document.getElementById('no-autoplay-site-row');
+    const siteToggle = document.getElementById('no-autoplay-site-toggle');
+    const locked = options.locked === true;
+    if (enabledToggle) {
+        enabledToggle.checked = state.enabled;
+        enabledToggle.disabled = locked;
+    }
+    if (siteRow) siteRow.hidden = !state.enabled || !options.host;
+    if (siteToggle) {
+        siteToggle.checked = state.siteAllowed;
+        siteToggle.disabled = locked || options.siteDisabled === true;
+    }
+}
+
 function setupListeners() {
     const rulesToggle = document.getElementById('zapper-rules-toggle');
     const rulesContainer = document.getElementById('zapper-rules');
@@ -1075,6 +1126,45 @@ function setupListeners() {
                 zapperEnabledToggle.checked = !nextEnabled;
             } finally {
                 zapperEnabledToggle.disabled = false;
+            }
+        });
+    }
+
+    const noAutoplayEnabledToggle = document.getElementById('no-autoplay-enabled-toggle');
+    const noAutoplaySiteToggle = document.getElementById('no-autoplay-site-toggle');
+
+    if (noAutoplayEnabledToggle) {
+        noAutoplayEnabledToggle.addEventListener('change', async () => {
+            const nextEnabled = noAutoplayEnabledToggle.checked;
+            try {
+                setError('');
+                noAutoplayEnabledToggle.disabled = true;
+                await setNoAutoplayEnabled(nextEnabled);
+                const state = await getNoAutoplayState(host);
+                updateNoAutoplayControls(state, { host, siteDisabled: noAutoplaySiteDisabled });
+            } catch (error) {
+                console.error('[wBlock] Failed to update No Autoplay state:', error);
+                setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
+                noAutoplayEnabledToggle.checked = !nextEnabled;
+            } finally {
+                noAutoplayEnabledToggle.disabled = false;
+            }
+        });
+    }
+
+    if (noAutoplaySiteToggle) {
+        noAutoplaySiteToggle.addEventListener('change', async () => {
+            const nextAllowed = noAutoplaySiteToggle.checked;
+            try {
+                setError('');
+                noAutoplaySiteToggle.disabled = true;
+                await setNoAutoplaySiteAllowed(host, nextAllowed);
+            } catch (error) {
+                console.error('[wBlock] Failed to update No Autoplay site setting:', error);
+                setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
+                noAutoplaySiteToggle.checked = !nextAllowed;
+            } finally {
+                noAutoplaySiteToggle.disabled = noAutoplaySiteDisabled;
             }
         });
     }
@@ -1286,6 +1376,7 @@ async function refreshUi() {
         });
         await updateZapperCount('');
         setRulesExpanded(false);
+        updateNoAutoplayControls(await getNoAutoplayState(''), { host: '', locked: true });
         return;
     }
 
@@ -1301,14 +1392,16 @@ async function refreshUi() {
     const contentScriptReachablePromise = probeTabSupport(tab.id);
     const zapperStatePromise = getAuthoritativeZapperState(host);
     const zapperCountPromise = updateZapperCount(host);
+    const noAutoplayStatePromise = getNoAutoplayState(host);
 
     setStatus(t('popup_status_checking', undefined, 'Checking…'), 'neutral');
 
-    const [pauseState, disabled, zapperState, contentScriptReachable] = await Promise.all([
+    const [pauseState, disabled, zapperState, contentScriptReachable, noAutoplayState] = await Promise.all([
         blockingPausedPromise,
         disabledPromise,
         zapperStatePromise,
         contentScriptReachablePromise,
+        noAutoplayStatePromise,
     ]);
     if (pauseState === null) {
         setStatus(t('popup_status_error', undefined, 'Error'), 'disabled');
@@ -1319,6 +1412,7 @@ async function refreshUi() {
         if (resumeButton) resumeButton.disabled = true;
         if (pausedPrompt) pausedPrompt.hidden = true;
         if (resumeButton) resumeButton.hidden = true;
+        updateNoAutoplayControls(noAutoplayState, { host, locked: true });
         return;
     }
 
@@ -1358,6 +1452,8 @@ async function refreshUi() {
         zapperEnabledToggle.checked = !zapperRulesDisabled;
         zapperEnabledToggle.disabled = siteDisabled || zapperPaused;
     }
+    noAutoplaySiteDisabled = siteDisabled;
+    updateNoAutoplayControls(noAutoplayState, { host, siteDisabled });
     setStatus(
         blockingPaused && !partiallyPaused
             ? t('popup_status_paused', undefined, 'Paused')

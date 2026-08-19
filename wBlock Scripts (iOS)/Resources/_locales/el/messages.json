@@ -282,5 +282,17 @@
   "popup_error_filter_update_start": {
     "message": "Δεν ήταν δυνατή η έναρξη της ενημέρωσης φίλτρων.",
     "description": "Error shown when the background filter update cannot be started."
+  },
+  "popup_no_autoplay": {
+    "message": "Χωρίς αυτόματη αναπαραγωγή",
+    "description": "Section title for the No Autoplay controls in the popup."
+  },
+  "popup_no_autoplay_allow_site": {
+    "message": "Να επιτρέπεται η αυτόματη αναπαραγωγή σε αυτόν τον ιστότοπο",
+    "description": "Label for the per-site toggle that allows autoplay on the current site."
+  },
+  "popup_no_autoplay_hint": {
+    "message": "Τα πολυμέσα παραμένουν σε παύση μέχρι να τα πατήσετε ή να κάνετε κλικ.",
+    "description": "Hint explaining what No Autoplay does."
   }
 }
