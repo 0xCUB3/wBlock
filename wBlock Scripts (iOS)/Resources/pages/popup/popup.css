@@ -39,6 +39,11 @@ body {
   min-width: 340px;
 }
 
+/* Safari iOS lets author display beat the UA [hidden] rule. */
+[hidden] {
+  display: none !important;
+}
+
 .popup {
   width: 100%;
   max-width: 380px;
@@ -167,6 +172,10 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+}
+
+#no-autoplay-site-row {
+  margin-top: 10px;
 }
 
 .row-trailing {
