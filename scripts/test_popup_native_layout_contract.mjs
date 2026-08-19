@@ -78,10 +78,13 @@ if (sticky.get("position") !== "sticky" || sticky.get("top") !== "0") {
 if (sticky.get("background") !== "Canvas") {
   fail("sticky header must stay opaque on the sheet while scrolling");
 }
+if (sticky.get("margin") !== "-10px -12px 16px") {
+  fail("sections must sit below the header so the first card keeps its top edge");
+}
 
 const section = declarationsFor(".section");
-if (section.get("box-shadow") !== "0 0 0 0.5px var(--separator)") {
-  fail("grouped rows must keep a hairline so they still read on the sheet");
+if (section.get("border") !== "0.5px solid var(--separator)") {
+  fail("grouped rows need a hairline border; a 0.5px shadow spread drops the top edge in Safari");
 }
 
 if (!js.includes("if (popup) popup.scrollTop = 0")) {
