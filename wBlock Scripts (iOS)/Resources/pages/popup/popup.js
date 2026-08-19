@@ -287,15 +287,18 @@ function setError(message) {
     }
     el.hidden = false;
     el.textContent = message;
+    const popup = document.querySelector('.popup');
+    if (popup) popup.scrollTop = 0;
 }
 
 function setStatus(text, kind = 'neutral') {
     const statusEl = document.getElementById('blocking-status');
     if (!statusEl) return;
     statusEl.textContent = text;
-    statusEl.classList.remove('is-active', 'is-disabled', 'is-neutral');
+    statusEl.classList.remove('is-active', 'is-disabled', 'is-neutral', 'is-error');
     if (kind === 'active') statusEl.classList.add('is-active');
     else if (kind === 'disabled') statusEl.classList.add('is-disabled');
+    else if (kind === 'error') statusEl.classList.add('is-error');
     else statusEl.classList.add('is-neutral');
 }
 
@@ -1098,8 +1101,25 @@ function setupListeners() {
                 await reloadActiveTab(tab.id);
             } catch (error) {
                 console.error('[wBlock] Failed to update disabled state:', error);
+                // The native write can finish after the popup times out. Re-read
+                // the authoritative state before treating this as a hard failure.
+                try {
+                    const actuallyDisabled = await getSiteDisabledState(host);
+                    disableToggle.checked = !actuallyDisabled;
+                    if (actuallyDisabled === next) {
+                        setStatus(next
+                            ? t('popup_status_disabled', undefined, 'Disabled')
+                            : t('popup_status_active', undefined, 'Active'),
+                        next ? 'disabled' : 'active');
+                        await reloadActiveTab(tab && tab.id);
+                        return;
+                    }
+                } catch (reconcileError) {
+                    console.warn('[wBlock] Failed to reconcile site setting after error:', reconcileError);
+                    disableToggle.checked = !disableToggle.checked;
+                }
                 setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
-                disableToggle.checked = !disableToggle.checked;
+                setStatus(t('popup_status_error', undefined, 'Error'), 'error');
             } finally {
                 disableToggle.disabled = false;
             }

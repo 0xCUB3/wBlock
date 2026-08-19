@@ -8,19 +8,21 @@
 </head>
 <body>
     <div class="popup">
-        <header class="top">
-            <img src="../../assets/images/shield-icon.png" alt="wBlock" class="app-icon">
-            <div class="top-text">
-                <div class="title-row">
-                    <div class="title-group">
-                        <div class="title">wBlock</div>
-                        <button id="open-app" class="top-open" type="button" hidden data-i18n="popup_button_open_short">Open</button>
+        <div class="popup-sticky">
+            <header class="top">
+                <img src="../../assets/images/shield-icon.png" alt="" class="app-icon">
+                <div class="top-text">
+                    <div class="title-row">
+                        <div class="title-group">
+                            <div id="site-host" class="title">—</div>
+                            <button id="open-app" class="top-open" type="button" hidden data-i18n="popup_button_open_short">Open</button>
+                        </div>
+                        <div id="blocking-status" class="pill" data-i18n="popup_status_loading">Loading…</div>
                     </div>
-                    <div id="blocking-status" class="pill" data-i18n="popup_status_loading">Loading…</div>
                 </div>
-                <div class="subtitle" id="site-host">—</div>
-            </div>
-        </header>
+            </header>
+            <div id="error" class="error" role="alert" hidden></div>
+        </div>
 
         <div class="section">
             <label class="toggle-row" for="enable-toggle">
@@ -39,7 +41,7 @@
                     <span data-i18n="popup_userscripts">Userscripts</span>
                     <span class="disclosure-meta">
                         <span id="userscripts-count" class="value">0</span>
-                        <span id="userscripts-chevron" class="chevron" aria-hidden="true">▾</span>
+                        <span id="userscripts-chevron" class="chevron" aria-hidden="true"></span>
                     </span>
                 </button>
                 <div id="userscripts-list" class="userscript-list" hidden></div>
@@ -62,14 +64,13 @@
                 <button id="zapper-activate" class="btn btn-primary" type="button" data-i18n="popup_button_activate">Activate</button>
                 <button id="zapper-clear" class="btn btn-secondary" type="button" disabled data-i18n="popup_button_clear">Clear</button>
             </div>
-            <div class="hint" data-i18n="popup_hint_tap_to_hide">Tap an element on the page to hide it. Use "Add Rule" in the zapper for manual selectors.</div>
-
             <button id="zapper-rules-toggle" class="disclosure" type="button" aria-expanded="false">
                 <span data-i18n="popup_rules">Rules</span>
-                <span id="zapper-rules-chevron" class="chevron" aria-hidden="true">▾</span>
+                <span id="zapper-rules-chevron" class="chevron" aria-hidden="true"></span>
             </button>
             <div id="zapper-rules" class="rules" hidden></div>
         </div>
+        <div class="hint" data-i18n="popup_hint_tap_to_hide">Tap an element on the page to hide it. Use "Add Rule" in the zapper for manual selectors.</div>
 
         <div class="section">
             <div class="row">
@@ -88,8 +89,8 @@
                     <span class="slider" aria-hidden="true"></span>
                 </span>
             </label>
-            <div class="hint" data-i18n="popup_no_autoplay_hint">Media stays paused until you tap or click it.</div>
         </div>
+        <div class="hint" data-i18n="popup_no_autoplay_hint">Media stays paused until you tap or click it.</div>
 
         <div id="userscript-commands" class="section" hidden></div>
 
@@ -101,9 +102,7 @@
             <div id="filter-update-status" class="filter-update-status" role="status" aria-live="polite" hidden></div>
         </div>
 
-        <footer class="footer">
-            <div id="error" class="error" hidden></div>
-        </footer>
+        <footer class="footer"></footer>
     </div>
 </body>
 </html>
