@@ -138,11 +138,11 @@
 "Background agent error: %@" = "Arka plan görevi hatası: %@";
 "Background agent needs approval in Login Items" = "Arka plan görevi için Giriş Öğeleri bölümünde onay gerekiyor";
 "Background agent not registered" = "Arka plan görevi kayıtlı değil";
-"Background agent off (updates run while wBlock is open)" = "Arka plan aracısı kapalı (güncellemeler wBlock açıkken çalışır)";
+"Background agent off (updates run while wBlock is open)" = "Arka plan hizmeti kapalı (güncellemeler yalnızca wBlock açıkken çalışır)";
 "Background agent registered" = "Arka plan görevi kaydedildi";
 "Background agent status unavailable" = "Arka plan görevi durumu kullanılamıyor";
 "Background Diagnostics" = "Arka plan görevleri";
-"Background Update Agent" = "Arka Plan Güncelleme Aracısı";
+"Background Update Agent" = "Arka Planda Güncelleme Hizmeti";
 "Backup" = "Yedek";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@ yedeklemesi (uygulama sürümü: %@, filtreler: %@). Bu işlem; mevcut filtre seçimlerinizi, izin listenizi ve öğe gizleyici kurallarınızı değiştirecektir.";
 "Balanced defaults." = "Dengeli ayarlar.";
@@ -215,7 +215,7 @@
 "Community-maintained options for additional regional coverage." = "Ek bölgesel kapsam için topluluk tarafından yönetilen seçenekler.";
 "Completed" = "Tamamlandı";
 "Comprehensive ad-blocking rules by AdGuard." = "AdGuard tarafından sunulan kapsamlı reklam engelleme kuralları.";
-"Conditional check failed" = "Koşullu denetim başarısız oldu";
+"Conditional check failed" = "Koşullu kontrol başarısız";
 "Contains new rules and fixes not yet included in other filters." = "Diğer filtrelere henüz dâhil edilmemiş yeni kuralları ve düzeltmeleri içerir.";
 "Content filtering" = "İçerik filtreleme";
 "Continue" = "Devam";
@@ -428,7 +428,7 @@
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud Eşitlemesi geçici olarak kullanılamıyor. Lütfen birazdan tekrar deneyin.";
 "iCloud Sync needs an active iCloud account on this device." = "iCloud Eşitlemesi için bu cihazda aktif bir iCloud hesabı gereklidir.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "wBlock'u uygulanmamış değişikliklerle kapatırsanız, hiçbir şeyin unutulmaması için size bir hatırlatma göndereceğiz.";
-"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Gizli Tarama kullanıyorsanız, wBlock Scripts ve 5 içerik engelleyici için Gizli Taramada İzin Ver seçeneğini de açın. Bu olmadan çerez bildirimleri ve diğer scriptlet’ler Gizli pencerelerde çalışmaz.";
+"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Özel Dolaşma kullanıyorsanız, wBlock Scripts ve 5 içerik engelleyici için Özel Dolaşmada İzin Ver seçeneğini de etkinleştirin. Bu ayar olmadan çerez bildirimleri ve diğer betikler Gizli pencerelerde çalışmaz.";
 "Ignoring invalid filter response" = "Geçersiz filtre yanıtı yok sayılıyor";
 "Import" = "İçe aktar";
 "Import Failed" = "İçe aktarılamadı";
@@ -453,7 +453,7 @@
 "Italian adblock filter list." = "İtalyanca reklam engelleme filtre listesi.";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "Tümünü tut";
-"Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "wBlock çalışmıyorken de filtreleri güncel tutar. Kalıcı bir oturum açma öğesi istemiyorsanız kapatın; güncellemeler yalnızca wBlock açıkken çalışır.";
+"Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "wBlock çalışmadığında da filtrelerin güncellenmeye devam etmesini sağlar. Kalıcı bir başlangıç öğesi oluşmasını istemiyorsanız bu seçeneği kapatın; bu durumda güncellemeler yalnızca wBlock açıkken çalışır.";
 "Languages: %@" = "Dil: %@";
 "Languages: \\(languageSummary)" = "Dil: \\(languageSummary)";
 "Large file - scrolling may be slow" = "Büyük dosya - kaydırma işlemi yavaş olabilir";
@@ -790,7 +790,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Updated %d/%d extensions in %@" = "%@ içinde %d/%d genişletme güncellendi";
 "Updated custom filter list" = "Özel filtre listesi güncellendi";
 "Updates" = "Güncellemeler";
-"Updates Paused" = "Güncelleme duraklatıldı";
+"Updates Paused" = "Güncellemeler duraklatıldı";
 "Updating disabled sites..." = "Devre dışı bırakılan siteler güncelleniyor...";
 "Updating Scripts" = "Kullanıcı betiği güncellemeleri denetleniyor";
 "Updating…" = "Güncelleniyor…";
