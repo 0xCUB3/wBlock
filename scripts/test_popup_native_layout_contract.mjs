@@ -79,9 +79,17 @@ if (!js.includes("kind === 'error'") || !js.includes("popup_status_error")) {
   fail("site-setting failures must flip the header status to Error");
 }
 
-if (!js.includes("const actuallyDisabled = await getSiteDisabledState(host)") ||
-    !js.includes("if (actuallyDisabled === next)")) {
-  fail("timed-out site toggles must reconcile with native state before showing failure");
+const handler = js.slice(js.indexOf("disableToggle.addEventListener('change'"));
+const nextIdx = handler.indexOf("const next = !disableToggle.checked;");
+const tryIdx = handler.indexOf("try {");
+if (!(nextIdx >= 0 && nextIdx < tryIdx)) {
+  fail("desired site state must be visible to the timeout catch");
+}
+
+if (!js.includes("return null;") ||
+    !js.includes("typeof actuallyDisabled === 'boolean'") ||
+    !js.includes("actuallyDisabled === next")) {
+  fail("timed-out site toggles must reconcile only from a confirmed native read");
 }
 
 console.log("PASS");
