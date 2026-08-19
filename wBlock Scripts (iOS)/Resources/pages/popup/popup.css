@@ -127,29 +127,35 @@ body {
 }
 
 .pill {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 650;
   letter-spacing: -0.08px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--subtext);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--separator);
+  background: var(--fill);
+  color: var(--text);
   white-space: nowrap;
 }
 
 .pill.is-active {
-  color: var(--accent);
+  background: rgba(52, 199, 89, 0.22);
+  border-color: rgba(52, 199, 89, 0.45);
 }
 
 .pill.is-disabled {
-  color: var(--subtext);
+  background: rgba(142, 142, 147, 0.22);
+  border-color: rgba(142, 142, 147, 0.5);
 }
 
 .pill.is-neutral {
-  color: var(--subtext);
+  background: var(--fill);
+  border-color: var(--separator);
 }
 
 .pill.is-error {
+  background: var(--danger-soft);
+  border-color: var(--danger);
   color: var(--danger);
 }
 
