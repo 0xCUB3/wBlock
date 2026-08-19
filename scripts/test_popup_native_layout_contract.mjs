@@ -80,8 +80,8 @@ if (sticky.get("background") !== "Canvas") {
 }
 
 const section = declarationsFor(".section");
-if (section.get("box-shadow") !== "0 0 0 0.5px var(--separator)") {
-  fail("grouped rows must keep a hairline so they still read on the sheet");
+if (section.get("border") !== "0.5px solid var(--separator)") {
+  fail("grouped rows need a hairline border; a 0.5px shadow spread drops the top edge in Safari");
 }
 
 if (!js.includes("if (popup) popup.scrollTop = 0")) {
