@@ -66,9 +66,22 @@ if (!html.includes('class="popup-sticky"') || html.indexOf('id="error"') > html.
   fail("errors must sit in the sticky header, above the first section");
 }
 
+const popup = declarationsFor(".popup");
+if (popup.get("background") !== "transparent") {
+  fail("popup must sit on Safari's sheet instead of painting a grouped well");
+}
+
 const sticky = declarationsFor(".popup-sticky");
 if (sticky.get("position") !== "sticky" || sticky.get("top") !== "0") {
   fail("status and errors must stay pinned while the popup scrolls");
+}
+if (sticky.get("background") !== "Canvas") {
+  fail("sticky header must stay opaque on the sheet while scrolling");
+}
+
+const section = declarationsFor(".section");
+if (section.get("box-shadow") !== "0 0 0 0.5px var(--separator)") {
+  fail("grouped rows must keep a hairline so they still read on the sheet");
 }
 
 if (!js.includes("if (popup) popup.scrollTop = 0")) {

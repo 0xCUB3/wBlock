@@ -1,6 +1,5 @@
 :root {
   color-scheme: light dark;
-  --grouped: #f2f2f7;
   --group: #ffffff;
   --separator: rgba(60, 60, 67, 0.12);
   --text: #000000;
@@ -15,8 +14,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --grouped: #000000;
-    --group: #1c1c1e;
+    --group: #2c2c2e;
     --separator: rgba(84, 84, 88, 0.65);
     --text: rgba(255, 255, 255, 0.92);
     --subtext: rgba(235, 235, 245, 0.6);
@@ -62,7 +60,7 @@ body {
   -webkit-overflow-scrolling: touch;
   padding: 10px 12px 12px;
   box-sizing: border-box;
-  background: var(--grouped);
+  background: transparent;
 }
 
 .popup-sticky {
@@ -71,7 +69,7 @@ body {
   z-index: 3;
   margin: -10px -12px 8px;
   padding: 10px 12px 8px;
-  background: var(--grouped);
+  background: Canvas;
 }
 
 .top {
@@ -160,6 +158,7 @@ body {
   border-radius: 10px;
   margin-bottom: 8px;
   overflow: hidden;
+  box-shadow: 0 0 0 0.5px var(--separator);
 }
 
 .section > * + * {
