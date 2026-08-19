@@ -92,7 +92,52 @@ public struct ContentBlockerSaveResult: Sendable {
 
     private enum CombinedEnginePublishError: Error {
         case supersededRequest
+        case suspensionImminent
     }
+
+    #if os(iOS)
+    /// Defers app suspension while a combined-engine publish holds kernel file
+    /// locks in the app group container. iOS kills any app that suspends while
+    /// holding a file lock in a shared container (0xDEAD10CC). If the system
+    /// decides to suspend anyway, the expiration callback flips a flag that the
+    /// publish checkpoints observe to unwind and release the locks first.
+    private final class EnginePublishSuspensionShield: @unchecked Sendable {
+        private let completion = DispatchSemaphore(value: 0)
+        private let stateLock = NSLock()
+        private var expired = false
+
+        init(reason: String) {
+            let completion = completion
+            ProcessInfo.processInfo.performExpiringActivity(withReason: reason) { [weak self] isExpired in
+                if isExpired {
+                    // Runs when suspension is imminent: immediately when no
+                    // background time is available, otherwise concurrently
+                    // with the blocked non-expired invocation below.
+                    self?.markExpired()
+                } else {
+                    // The assertion holds for as long as this invocation blocks.
+                    completion.wait()
+                }
+            }
+        }
+
+        var isExpired: Bool {
+            stateLock.lock()
+            defer { stateLock.unlock() }
+            return expired
+        }
+
+        private func markExpired() {
+            stateLock.lock()
+            expired = true
+            stateLock.unlock()
+        }
+
+        func release() {
+            completion.signal()
+        }
+    }
+    #endif
 
     /// Built-in compatibility rules that improve blocking of common dynamic ad script
     /// patterns and dynamic ad containers across filter sets.
@@ -1603,8 +1648,25 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         let rulesData = Data(combinedAdvancedRules.utf8)
         let fingerprint = combinedEngineFingerprint(rulesData: rulesData, safariVersion: safariVersion)
 
+        #if os(iOS)
+        // The section below holds exclusive kernel flocks on app group files for
+        // the entire rebuild. Defer suspension while they are held and unwind
+        // (releasing the locks) when suspension becomes imminent (0xDEAD10CC).
+        let shield = EnginePublishSuspensionShield(reason: "wBlock combined engine publish")
+        defer { shield.release() }
+        let ensureNotSuspending: () throws -> Void = {
+            if shield.isExpired {
+                os_log(.info, "Abandoning combined filter engine publish before suspension")
+                throw CombinedEnginePublishError.suspensionImminent
+            }
+        }
+        #else
+        let ensureNotSuspending: () throws -> Void = {}
+        #endif
+
         try measure(label: combinedAdvancedRules.isEmpty ? "Clearing filter engine" : "Building combined filter engine") {
             try withCombinedEngineBuildLock(at: baseURL) {
+                try ensureNotSuspending()
                 let skipped = try withEngineCriticalSection(at: baseURL) {
                     try withCombinedEngineRequestLock(at: baseURL) {
                         try ensureCombinedEngineRequestIsCurrent(at: baseURL, requestToken: requestToken)
@@ -1616,6 +1678,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                     return
                 }
 
+                try ensureNotSuspending()
                 let temporaryBuild = try buildTemporaryEngine(
                     rulesData: rulesData,
                     safariVersion: safariVersion,
@@ -1625,6 +1688,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
 
                 let published = try withEngineCriticalSection(at: baseURL) {
                     try withCombinedEngineRequestLock(at: baseURL) {
+                        try ensureNotSuspending()
                         try ensureCombinedEngineRequestIsCurrent(at: baseURL, requestToken: requestToken)
                         if canSkipCombinedEnginePublish(fingerprint: fingerprint, baseURL: baseURL) {
                             return false
