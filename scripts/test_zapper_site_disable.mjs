@@ -182,6 +182,17 @@ check(
     && source.includes("reloadRulesAndApply().catch")
 );
 check(
+  "refine mode renders tappable ancestor chips",
+  source.includes("function updateAncestorRow")
+    && source.includes("wblock-ancestor-chip")
+    && source.includes("state.ui.ancestorRow = ancestorRow")
+);
+check(
+  "done only reloads the page when zapper rules changed",
+  source.includes("async function finalizeSession()")
+    && source.includes("rulesSignature(state.rules) !== state.sessionRulesSignature")
+);
+check(
   "global element-zapper pause is authoritative in native rule responses",
   nativeSource.includes("BlockingPauseStore.isPaused(.elementZapper)")
 );

@@ -143,6 +143,10 @@
     "message": "Επιλογή παιδικού στοιχείου",
     "description": "Tooltip for choosing the child element in refine mode."
   },
+  "zapper_ancestors_aria_label": {
+    "message": "Γονικά στοιχεία",
+    "description": "Accessible label for the horizontal ancestor-chip list in zapper refine mode."
+  },
   "zapper_button_hide": {
     "message": "Απόκρυψη",
     "description": "Button label for confirming hide action in refine mode."
