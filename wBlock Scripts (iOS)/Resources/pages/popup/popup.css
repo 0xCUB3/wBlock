@@ -198,6 +198,10 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+#no-autoplay-section {
+  margin-top: 8px;
+}
+
 #no-autoplay-site-row {
   margin-top: 8px;
 }

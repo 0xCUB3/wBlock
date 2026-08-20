@@ -56,6 +56,12 @@ if (hidden.get("display") !== "none !important") {
   fail("[hidden] must force display:none so iOS cannot show flex toggle rows");
 }
 
+const autoplaySection = declarationsFor("#no-autoplay-section");
+const sectionTop = Number.parseInt(autoplaySection.get("margin-top") || "", 10);
+if (!Number.isFinite(sectionTop) || sectionTop < 8) {
+  fail("#no-autoplay-section must sit below the zapper hint so its top edge renders");
+}
+
 const siteRow = declarationsFor("#no-autoplay-site-row");
 const marginTop = Number.parseInt(siteRow.get("margin-top") || "", 10);
 if (!Number.isFinite(marginTop) || marginTop < 8) {
