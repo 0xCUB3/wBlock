@@ -73,7 +73,7 @@ public struct ContentBlockerSaveResult: Sendable {
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
-    private static let embeddedCompatibilityRulesVersion = "5"
+    public static let embeddedCompatibilityRulesVersion = "5"
     private static let combinedEngineMarkerFileName = "combined-rules.sha256"
     private static let combinedEngineMarkerFormatVersion = 2
     private static let combinedEngineBuildLockFileName = "combined-engine-build.lock"

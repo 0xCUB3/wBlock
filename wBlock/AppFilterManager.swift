@@ -50,6 +50,7 @@ struct ApplyRunSnapshot {
 
 @MainActor
 class AppFilterManager: ObservableObject {
+    private static let lastAppliedUpgradeSignatureKey = "wBlock.lastAppliedUpgradeSignature"
     @Published var filterLists: [FilterList] = []
     @Published var isLoading: Bool = false
     @Published var statusDescription: String = LocalizedStrings.text("Ready.", comment: "Filter manager idle status")
@@ -178,6 +179,21 @@ class AppFilterManager: ObservableObject {
         hasUnappliedChanges = false
         autoApplyTask?.cancel()
         autoApplyTask = nil
+    }
+
+    private func currentUpgradeSignature() -> String {
+        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        return "\(appVersion)|\(ContentBlockerService.embeddedCompatibilityRulesVersion)"
+    }
+
+    private func storedUpgradeSignature() -> String? {
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+        return defaults.string(forKey: Self.lastAppliedUpgradeSignatureKey)
+    }
+
+    func persistUpgradeRebuildSignature() {
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+        defaults.set(currentUpgradeSignature(), forKey: Self.lastAppliedUpgradeSignatureKey)
     }
 
     func captureApplySnapshot() {
@@ -498,6 +514,8 @@ class AppFilterManager: ObservableObject {
         // Migrate old AdGuard Annoyances filter to new split filters
         storedFilterLists = migrateOldAnnoyancesFilter(in: storedFilterLists)
 
+        var selectedDeprecatedListWasRemoved = false
+
         // Remove deprecated filter lists that are no longer shipped by wBlock.
         let deprecatedFilterLists = storedFilterLists.filter { filter in
             !filter.isCustom
@@ -524,6 +542,7 @@ class AppFilterManager: ObservableObject {
             }
 
             if removedSelected {
+                selectedDeprecatedListWasRemoved = true
                 markNonSelectionChangesPending()
             }
         }
@@ -603,7 +622,16 @@ class AppFilterManager: ObservableObject {
         // Set up observer for disabled sites changes
         setupDisabledSitesObserver()
 
-        markCurrentStateApplied()
+        let currentSignature = currentUpgradeSignature()
+        let storedSignature = storedUpgradeSignature()
+        let signatureMismatch = storedSignature != currentSignature
+        let needsRebuild = dataManager.hasCompletedOnboarding
+            && (hasURLMigrations || selectedDeprecatedListWasRemoved || signatureMismatch)
+        if needsRebuild {
+            markNonSelectionChangesPending()
+        } else {
+            markCurrentStateApplied()
+        }
         statusDescription = LocalizedStrings.format(
             "Initialized with %d filter list(s).",
             comment: "Filter manager initialization status",
