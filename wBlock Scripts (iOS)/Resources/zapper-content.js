@@ -795,6 +795,7 @@
   }
 
   function showToast(message) {
+    if (!state.active) return;
     ensureUi();
     const toast = state.ui.toast;
     if (!toast) return;
@@ -912,6 +913,7 @@
     state.undoStack.push(normalized);
     await trackPendingSave(saveRulesForHost(state.host, state.rules));
     await applyRulesToPage(state.rules);
+    if (!state.active) return;
     if (state.ui.undoButton) state.ui.undoButton.disabled = false;
     showToast(options.manual
       ? t('zapper_toast_rule_saved', undefined, 'Rule saved for this site.')
@@ -937,6 +939,7 @@
     state.rules = state.rules.filter((r) => r !== toRemove);
     await trackPendingSave(saveRulesForHost(state.host, state.rules));
     await applyRulesToPage(state.rules);
+    if (!state.active) return;
     if (state.ui.undoButton) state.ui.undoButton.disabled = state.undoStack.length === 0;
     showToast(t('zapper_toast_undone', undefined, 'Undone.'));
   }
