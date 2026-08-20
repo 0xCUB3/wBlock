@@ -819,6 +819,35 @@ class AppFilterManager: ObservableObject {
         }
     }
 
+    static func requiresFullApply(
+        hasUnappliedChanges: Bool,
+        missingFilterCount: Int,
+        missingScriptCount: Int
+    ) -> Bool {
+        hasUnappliedChanges || missingFilterCount > 0 || missingScriptCount > 0
+    }
+
+    func applyOrCheckForUpdates() {
+        guard !isLoading, !isApplyInFlight else { return }
+        Task {
+            await self.waitUntilReady()
+            await UserScriptManager.shared.waitUntilReady()
+            if self.filterUpdater.userScriptManager == nil {
+                self.setUserScriptManager(UserScriptManager.shared)
+            }
+            self.refreshMissingItems()
+            if Self.requiresFullApply(
+                hasUnappliedChanges: self.hasUnappliedChanges,
+                missingFilterCount: self.missingFilters.count,
+                missingScriptCount: self.missingUserScripts.count
+            ) {
+                await self.performFilterUpdate()
+            } else {
+                await self.checkForUpdates()
+            }
+        }
+    }
+
     func toggleFilterListSelection(id: UUID) {
         guard let index = filterListIndexByID[id] else { return }
         setFilterListSelection(id: id, selected: !filterLists[index].isSelected)

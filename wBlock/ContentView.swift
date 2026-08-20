@@ -219,7 +219,7 @@ struct ContentView: View {
 
     private func applyPendingChanges() {
         guard !filterManager.isLoading else { return }
-        filterManager.checkAndEnableFilters(forceReload: true)
+        filterManager.applyOrCheckForUpdates()
     }
 
     private var applyChangesToolbarButton: some View {
