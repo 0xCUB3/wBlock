@@ -170,6 +170,15 @@ public enum WebExtensionRequestHandler {
             case "setSiteZapperDisabled":
                 handleSetSiteZapperDisabled(message: message!, context: context)
                 return
+            case "getNoAutoplayState":
+                handleGetNoAutoplayState(message: message!, context: context)
+                return
+            case "setNoAutoplayEnabled":
+                handleSetNoAutoplayEnabled(message: message!, context: context)
+                return
+            case "setNoAutoplaySiteAllowed":
+                handleSetNoAutoplaySiteAllowed(message: message!, context: context)
+                return
             case "startFilterUpdate":
                 handleStartFilterUpdate(context: context)
                 return
@@ -1428,6 +1437,71 @@ public enum WebExtensionRequestHandler {
                 "ok": true,
                 "disabled": ProtobufDataManager.shared.isZapperDisabled(forHost: hostname),
             ])
+            context.completeRequest(returningItems: [response])
+        }
+    }
+
+    private static func handleGetNoAutoplayState(message: [String: Any?], context: NSExtensionContext) {
+        let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        Task { @MainActor in
+            await ProtobufDataManager.shared.waitUntilLoaded()
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            let siteAllowed = !host.isEmpty
+                && ProtobufDataManager.shared.isNoAutoplayAllowed(onHost: host)
+            let response = createResponse(with: [
+                "enabled": ProtobufDataManager.shared.isNoAutoplayEnabled,
+                "siteAllowed": siteAllowed,
+            ])
+            context.completeRequest(returningItems: [response])
+        }
+    }
+
+    private static func handleSetNoAutoplayEnabled(message: [String: Any?], context: NSExtensionContext) {
+        let enabled = message["enabled"] as? Bool ?? false
+        Task { @MainActor in
+            await ProtobufDataManager.shared.waitUntilLoaded()
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            let persisted = await ProtobufDataManager.shared.setNoAutoplayEnabled(enabled)
+            var payload: [String: Any?] = [
+                "ok": persisted,
+                "enabled": ProtobufDataManager.shared.isNoAutoplayEnabled,
+            ]
+            if !persisted {
+                payload["error"] = "Failed to save"
+            }
+            let response = createResponse(with: payload)
+            context.completeRequest(returningItems: [response])
+        }
+    }
+
+    private static func handleSetNoAutoplaySiteAllowed(message: [String: Any?], context: NSExtensionContext) {
+        let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !host.isEmpty else {
+            let response = createResponse(with: ["ok": false, "error": "Missing host"])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+
+        guard DisabledSitesNormalizer.normalizedDomain(host) != nil else {
+            let response = createResponse(with: ["ok": false, "error": "Invalid host"])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+
+        let allowed = message["allowed"] as? Bool ?? false
+        Task { @MainActor in
+            await ProtobufDataManager.shared.waitUntilLoaded()
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            let persisted = await ProtobufDataManager.shared.setNoAutoplaySiteAllowed(allowed, onHost: host)
+            var payload: [String: Any?] = [
+                "ok": persisted,
+                "enabled": ProtobufDataManager.shared.isNoAutoplayEnabled,
+                "siteAllowed": ProtobufDataManager.shared.isNoAutoplayAllowed(onHost: host),
+            ]
+            if !persisted {
+                payload["error"] = "Failed to save"
+            }
+            let response = createResponse(with: payload)
             context.completeRequest(returningItems: [response])
         }
     }

@@ -7,8 +7,9 @@
 // - extension storage is authoritative and corrects the hint both ways;
 // - locked media rejects play() with NotAllowedError and loses autoplay;
 // - user gestures (direct or via a single-media player) unlock media;
-// - per-site allow, the native disabled-sites state, and live storage
-//   changes stand the gate down (and re-arm it) without a reload;
+// - per-site allow, the native disabled-sites state, live storage changes,
+//   and a foreground return after a native-only change stand the gate down
+//   (and re-arm it) without a reload;
 // - a CSP that blocks inline scripts falls back to the isolated world where
 //   DOM-level enforcement (autoplay stripping, pause-on-play) still works.
 //
@@ -26,6 +27,7 @@ const source = readFileSync(scriptPath, "utf8");
 
 const ENABLED_KEY = "wblock.noAutoplay.enabled.v1";
 const ALLOW_PREFIX = "wblock.noAutoplayAllow.v1:";
+const NATIVE_MIGRATED_KEY = "wblock.noAutoplay.nativeMigrated.v1";
 const HINT_KEY = "__wblock_no_autoplay_arm_v1";
 const HOST = "example.com";
 
@@ -45,6 +47,7 @@ function createEnvironment(options = {}) {
     mediaInDom: [],
     localStore: new Map(),
     nativeCalls: [],
+    storageWrites: [],
   };
 
   if (options.hint) env.localStore.set(HINT_KEY, "1");
@@ -125,6 +128,7 @@ function createEnvironment(options = {}) {
     },
     querySelector: () => null,
     querySelectorAll: () => [],
+    visibilityState: options.visibilityState ?? "visible",
   };
 
   env.dispatch = (type, event) => {
@@ -132,6 +136,7 @@ function createEnvironment(options = {}) {
     documentStub.dispatchEvent(event);
   };
   env.body = bodyElement;
+  env.setVisibility = (state) => { documentStub.visibilityState = state; };
 
   function MutationObserver(callback) {
     this.callback = callback;
@@ -187,7 +192,17 @@ function createEnvironment(options = {}) {
         sendNativeMessage(_id, message) {
           env.nativeCalls.push(message);
           if (message && message.action === "getSiteDisabledState") {
+            if (options.siteDisabledUnknown === true) {
+              return Promise.reject(new Error("native unavailable"));
+            }
+            if (options.siteDisabledMalformed === true) {
+              return Promise.resolve({});
+            }
             return Promise.resolve({ disabled: options.nativeDisabled === true });
+          }
+          if (message && message.action === "getNoAutoplayState"
+              && options.nativeNoAutoplayState !== undefined) {
+            return Promise.resolve(options.nativeNoAutoplayState);
           }
           return Promise.resolve({});
         },
@@ -200,6 +215,17 @@ function createEnvironment(options = {}) {
               if (key in storageData) out[key] = storageData[key];
             }
             return out;
+          },
+          set: async (patch) => {
+            env.storageWrites.push(patch || {});
+            for (const [key, value] of Object.entries(patch || {})) {
+              storageData[key] = value;
+            }
+          },
+          remove: async (keys) => {
+            for (const key of Array.isArray(keys) ? keys : [keys]) {
+              delete storageData[key];
+            }
           },
         },
         onChanged: {
@@ -375,7 +401,42 @@ async function playResult(media) {
     env.nativeCalls.some((m) => m && m.action === "getSiteDisabledState" && m.host === HOST));
 }
 
-// --- 7. wBlock disabled on this site: gate stands down ---
+// --- 7. Unmigrated legacy state wins over native protobuf defaults ---
+{
+  const env = createEnvironment({
+    storage: { [ENABLED_KEY]: true },
+    nativeNoAutoplayState: { enabled: false, siteAllowed: false },
+  });
+  env.run();
+  await settle();
+  check("unmigrated legacy enabled state stays armed despite native defaults", env.gateMarker());
+  check("native default read does not write the legacy enabled key",
+    !env.storageWrites.some((patch) => Object.hasOwn(patch, ENABLED_KEY)));
+}
+
+// --- 8. Native Site Settings allow is honored before legacy migration ---
+{
+  const env = createEnvironment({
+    storage: { [ENABLED_KEY]: true },
+    nativeNoAutoplayState: { enabled: false, siteAllowed: true },
+  });
+  env.run();
+  await settle();
+  check("unmigrated native site allow stands the gate down despite legacy enabled", !env.gateMarker());
+}
+
+// --- 9. Native state wins after legacy migration completes ---
+{
+  const env = createEnvironment({
+    storage: { [ENABLED_KEY]: true, [NATIVE_MIGRATED_KEY]: true },
+    nativeNoAutoplayState: { enabled: false, siteAllowed: false },
+  });
+  env.run();
+  await settle();
+  check("migrated native defaults stand the gate down", !env.gateMarker());
+}
+
+// --- 9. wBlock disabled on this site: gate stands down ---
 {
   const env = createEnvironment({ hint: true, storage: { [ENABLED_KEY]: true }, nativeDisabled: true });
   env.run();
@@ -385,7 +446,7 @@ async function playResult(media) {
   check("site-disabled state stands the gate down", (await playResult(video)) === "ok");
 }
 
-// --- 8. Live storage changes disarm and re-arm without a reload ---
+// --- 9. Live storage changes disarm and re-arm without a reload ---
 {
   const env = createEnvironment({ hint: true, storage: { [ENABLED_KEY]: true } });
   env.run();
@@ -407,7 +468,28 @@ async function playResult(media) {
   check("re-arming does not inject a second gate", env.inlineExecutions === 1);
 }
 
-// --- 9. CSP fallback: gate runs in the isolated world ---
+// --- 10. A native-only site allow is refreshed when Safari becomes visible ---
+{
+  const nativeState = { enabled: true, siteAllowed: false };
+  const env = createEnvironment({
+    hint: true,
+    storage: { [NATIVE_MIGRATED_KEY]: true },
+    nativeNoAutoplayState: nativeState,
+  });
+  env.run();
+  await settle();
+  const video = env.makeMedia("video");
+  check("gate is armed before the native-only change", (await playResult(video)) === "NotAllowedError");
+
+  nativeState.siteAllowed = true;
+  env.setVisibility("visible");
+  env.dispatch("visibilitychange", {});
+  await settle();
+  check("visible return refreshes native site allow and stands the gate down",
+    (await playResult(video)) === "ok");
+}
+
+// --- 11. CSP fallback: gate runs in the isolated world ---
 {
   const env = createEnvironment({ hint: true, storage: { [ENABLED_KEY]: true }, cspBlocksInline: true });
   env.run();
@@ -430,7 +512,7 @@ async function playResult(media) {
     video.getAttribute("data-wblock-no-autoplay-unlocked") === "1");
 }
 
-// --- 10. document_start before the document element exists ---
+// --- 11. document_start before the document element exists ---
 {
   const env = createEnvironment({ hint: true, storage: { [ENABLED_KEY]: true }, deferRoot: true });
   env.run();
@@ -441,7 +523,7 @@ async function playResult(media) {
   check("deferred gate still blocks play()", (await playResult(video)) === "NotAllowedError");
 }
 
-// --- 11. Deferred arm is cancelled if the authoritative check says off ---
+// --- 12. Deferred arm is cancelled if the authoritative check says off ---
 {
   const env = createEnvironment({ hint: true, storage: {}, deferRoot: true });
   env.run();
@@ -452,12 +534,39 @@ async function playResult(media) {
   check("cancelled deferred arm clears the hint", !env.localStore.has(HINT_KEY));
 }
 
-// --- 12. Frames without a hostname never arm ---
+// --- 13. Frames without a hostname never arm ---
 {
   const env = createEnvironment({ hint: true, storage: { [ENABLED_KEY]: true }, hostname: "" });
   env.run();
   await settle();
   check("hostname-less frames stand down after the authoritative check", !env.localStore.has(HINT_KEY));
+}
+
+// --- 14. Unknown site-disabled state: stand down (fail closed) ---
+{
+  const env = createEnvironment({
+    hint: true,
+    storage: { [ENABLED_KEY]: true },
+    siteDisabledUnknown: true,
+  });
+  env.run();
+  check("stale hint still arms before the site-disabled check settles", env.gateMarker());
+  await settle();
+  check("unknown site-disabled state clears the hint", !env.localStore.has(HINT_KEY));
+  const video = env.makeMedia("video");
+  check("unknown site-disabled state stands the gate down", (await playResult(video)) === "ok");
+}
+
+{
+  const env = createEnvironment({
+    hint: true,
+    storage: { [ENABLED_KEY]: true },
+    siteDisabledMalformed: true,
+  });
+  env.run();
+  await settle();
+  check("malformed site-disabled response stands down", (await playResult(env.makeMedia("video"))) === "ok");
+  check("malformed site-disabled response clears the hint", !env.localStore.has(HINT_KEY));
 }
 
 if (failures > 0) {

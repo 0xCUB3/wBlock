@@ -29,6 +29,9 @@
 "1h" = "1s";
 "2." = "2.";
 "7d" = "7g";
+"Takes effect when No Autoplay is on." = "Otomatik oynatma yok özelliği açıkken geçerli olur.";
+"Autoplay on" = "Otomatik oynatma açık";
+"Allow autoplay on this site" = "Bu sitede otomatik oynatmaya izin ver";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) girdi";
 "\\(index + 1)." = "\\(index + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";

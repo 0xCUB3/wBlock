@@ -29,6 +29,9 @@
 "1h" = "1小时";
 "2." = "2.";
 "7d" = "7天";
+"Takes effect when No Autoplay is on." = "在“禁止自动播放”开启时生效。";
+"Autoplay on" = "自动播放已开启";
+"Allow autoplay on this site" = "允许此网站自动播放";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) 条目";
 "\\(index + 1)." = "\\(索引+1)。";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(刷新进度 * 100))%";

@@ -129,6 +129,16 @@ private func mergePersistedChanges(
         baseline: previous.whitelist.filterDisabledSites,
         persisted: persisted.whitelist.filterDisabledSites
     )
+    mergeField(
+        &whitelist.noAutoplayEnabled,
+        baseline: previous.whitelist.noAutoplayEnabled,
+        persisted: persisted.whitelist.noAutoplayEnabled
+    )
+    mergeStringSet(
+        &whitelist.noAutoplayAllowedSites,
+        baseline: previous.whitelist.noAutoplayAllowedSites,
+        persisted: persisted.whitelist.noAutoplayAllowedSites
+    )
     whitelist.lastUpdated = max(whitelist.lastUpdated, persisted.whitelist.lastUpdated)
     mergeField(
         &whitelist.unknownFields,

@@ -29,6 +29,9 @@
 "1h" = "1시간";
 "2." = "2.";
 "7d" = "7일";
+"Takes effect when No Autoplay is on." = "자동 재생 차단이 켜져 있을 때 적용됩니다.";
+"Autoplay on" = "자동 재생 켬";
+"Allow autoplay on this site" = "이 사이트에서 자동 재생 허용";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count)개 항목";
 "\\(index + 1)." = "\\(색인 + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";

@@ -29,6 +29,9 @@
 "1h" = "1時間";
 "2." = "2.";
 "7d" = "7日";
+"Takes effect when No Autoplay is on." = "「自動再生をブロック」がオンのときに有効になります。";
+"Autoplay on" = "自動再生オン";
+"Allow autoplay on this site" = "このサイトで自動再生を許可";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) 件";
 "\\(index + 1)." = "\\(インデックス + 1)。";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";

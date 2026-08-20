@@ -9,21 +9,27 @@
 // still apply to the shared document.
 //
 // State model:
-// - Global toggle:  browser.storage.local["wblock.noAutoplay.enabled.v1"]
-// - Per-site allow: browser.storage.local["wblock.noAutoplayAllow.v1:<host>"]
+// - Authoritative: native app state (protobuf) via getNoAutoplayState and popup
+//   setters; CloudSync keeps devices aligned after legacy state has migrated.
+// - Transition cache: until NATIVE_MIGRATED_KEY is true, a leftover enabled
+//   (ENABLED_KEY) value overrides native enabled state, while leftover and
+//   native per-site allow values both stand the gate down. Thereafter leftover
+//   values are only a native-read fallback and for live storage.onChanged
+//   reconcile.
 // - Sites where wBlock is disabled ("Enable on this site" off) stand down.
-// - Warm hint: page localStorage["__wblock_no_autoplay_arm_v1"] mirrors the
-//   last authoritative decision so repeat visits arm synchronously at
-//   document_start. The hint is page-writable by design (the same trust model
-//   as the userscript injector's warm-start cache): the worst a page can do is
-//   toggle its own first-paint arming, and the async authoritative check
-//   corrects it. Autoplay blocking is a convenience, not a security boundary.
+// - Warm hint: page localStorage[HINT_KEY] mirrors the last arming decision so
+//   repeat visits arm synchronously at document_start. The hint is page-writable
+//   by design (same trust model as the userscript injector warm-start cache):
+//   the worst a page can do is toggle its own first-paint arming, and the async
+//   authoritative check corrects it. Autoplay blocking is a convenience, not a
+//   security boundary.
 
 (function () {
     'use strict';
 
     var ENABLED_KEY = 'wblock.noAutoplay.enabled.v1';
     var ALLOW_PREFIX = 'wblock.noAutoplayAllow.v1:';
+    var NATIVE_MIGRATED_KEY = 'wblock.noAutoplay.nativeMigrated.v1';
     var HINT_KEY = '__wblock_no_autoplay_arm_v1';
     var NATIVE_MESSAGE_TIMEOUT_MS = 3500;
 
@@ -429,20 +435,72 @@
             browser.runtime.sendNativeMessage('application.id', { action: 'getSiteDisabledState', host: host }),
             NATIVE_MESSAGE_TIMEOUT_MS
         ).then(function (response) {
-            return !!(response && response.disabled);
+            if (!response || typeof response.disabled !== 'boolean') {
+                return null;
+            }
+            return response.disabled;
         }).catch(function () {
-            return false;
+            return null;
+        });
+    }
+
+    function getNativeNoAutoplayState(host) {
+        return withTimeout(
+            browser.runtime.sendNativeMessage('application.id', {
+                action: 'getNoAutoplayState',
+                host: host,
+            }),
+            NATIVE_MESSAGE_TIMEOUT_MS
+        ).then(function (response) {
+            if (!response
+                || typeof response.enabled !== 'boolean'
+                || typeof response.siteAllowed !== 'boolean') {
+                return null;
+            }
+            return {
+                enabled: response.enabled,
+                siteAllowed: response.siteAllowed,
+            };
+        }).catch(function () {
+            return null;
         });
     }
 
     async function computeShouldArm() {
         var host = location.hostname;
         if (!host) return false;
+        var enabled = false;
+        var siteAllowed = false;
         var allowKey = ALLOW_PREFIX + host;
-        var stored = await browser.storage.local.get([ENABLED_KEY, allowKey]);
-        if (!stored || stored[ENABLED_KEY] !== true) return false;
-        if (stored[allowKey] === true) return false;
-        if (await getSiteDisabled(host)) return false;
+        var stored = await browser.storage.local.get([
+            NATIVE_MIGRATED_KEY,
+            ENABLED_KEY,
+            allowKey,
+        ]);
+        var hasLegacyEnabled = !!(stored
+            && Object.prototype.hasOwnProperty.call(stored, ENABLED_KEY));
+        var legacyAllowed = !!(stored && stored[allowKey] === true);
+        var migrated = !!(stored && stored[NATIVE_MIGRATED_KEY] === true);
+        var native = await getNativeNoAutoplayState(host);
+
+        if (!migrated && hasLegacyEnabled) {
+            // Native protobuf defaults are indistinguishable from a user who
+            // turned the feature off. Until popup migration completes, retain
+            // a leftover enabled value, but still honor Site Settings writes
+            // that have already reached native storage.
+            enabled = stored[ENABLED_KEY] === true;
+            siteAllowed = legacyAllowed || !!(native && native.siteAllowed === true);
+        } else if (native) {
+            enabled = native.enabled === true;
+            siteAllowed = native.siteAllowed === true;
+        } else {
+            enabled = !!(stored && stored[ENABLED_KEY] === true);
+            siteAllowed = legacyAllowed;
+        }
+        if (!enabled) return false;
+        if (siteAllowed) return false;
+        var siteDisabled = await getSiteDisabled(host);
+        if (siteDisabled !== false) return false;
         return true;
     }
 
@@ -468,15 +526,26 @@
         ensureArmed();
     }
 
-    // Authoritative path: extension storage plus the native disabled-sites
-    // state. Corrects the hint in both directions.
+    // Authoritative path: native no-autoplay state (storage cache fallback) plus
+    // native disabled-sites state. Corrects the hint in both directions.
     reconcile();
+
+    // Native protobuf changes do not emit storage events, so refresh after
+    // Safari returns this page to the foreground.
+    try {
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') reconcile();
+        });
+        window.addEventListener('pageshow', reconcile);
+    } catch (e) { /* ignore */ }
 
     // Live updates when the popup changes the global or per-site setting.
     try {
         browser.storage.onChanged.addListener(function (changes, area) {
             if (area !== 'local') return;
-            if ((ENABLED_KEY in changes) || ((ALLOW_PREFIX + location.hostname) in changes)) {
+            if ((NATIVE_MIGRATED_KEY in changes)
+                || (ENABLED_KEY in changes)
+                || ((ALLOW_PREFIX + location.hostname) in changes)) {
                 reconcile();
             }
         });
