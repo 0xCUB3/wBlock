@@ -7,8 +7,9 @@
 // - extension storage is authoritative and corrects the hint both ways;
 // - locked media rejects play() with NotAllowedError and loses autoplay;
 // - user gestures (direct or via a single-media player) unlock media;
-// - per-site allow, the native disabled-sites state, and live storage
-//   changes stand the gate down (and re-arm it) without a reload;
+// - per-site allow, the native disabled-sites state, live storage changes,
+//   and a foreground return after a native-only change stand the gate down
+//   (and re-arm it) without a reload;
 // - a CSP that blocks inline scripts falls back to the isolated world where
 //   DOM-level enforcement (autoplay stripping, pause-on-play) still works.
 //
@@ -127,6 +128,7 @@ function createEnvironment(options = {}) {
     },
     querySelector: () => null,
     querySelectorAll: () => [],
+    visibilityState: options.visibilityState ?? "visible",
   };
 
   env.dispatch = (type, event) => {
@@ -134,6 +136,7 @@ function createEnvironment(options = {}) {
     documentStub.dispatchEvent(event);
   };
   env.body = bodyElement;
+  env.setVisibility = (state) => { documentStub.visibilityState = state; };
 
   function MutationObserver(callback) {
     this.callback = callback;
@@ -465,7 +468,28 @@ async function playResult(media) {
   check("re-arming does not inject a second gate", env.inlineExecutions === 1);
 }
 
-// --- 10. CSP fallback: gate runs in the isolated world ---
+// --- 10. A native-only site allow is refreshed when Safari becomes visible ---
+{
+  const nativeState = { enabled: true, siteAllowed: false };
+  const env = createEnvironment({
+    hint: true,
+    storage: { [NATIVE_MIGRATED_KEY]: true },
+    nativeNoAutoplayState: nativeState,
+  });
+  env.run();
+  await settle();
+  const video = env.makeMedia("video");
+  check("gate is armed before the native-only change", (await playResult(video)) === "NotAllowedError");
+
+  nativeState.siteAllowed = true;
+  env.setVisibility("visible");
+  env.dispatch("visibilitychange", {});
+  await settle();
+  check("visible return refreshes native site allow and stands the gate down",
+    (await playResult(video)) === "ok");
+}
+
+// --- 11. CSP fallback: gate runs in the isolated world ---
 {
   const env = createEnvironment({ hint: true, storage: { [ENABLED_KEY]: true }, cspBlocksInline: true });
   env.run();

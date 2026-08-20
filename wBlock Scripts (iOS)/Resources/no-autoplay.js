@@ -530,6 +530,15 @@
     // native disabled-sites state. Corrects the hint in both directions.
     reconcile();
 
+    // Native protobuf changes do not emit storage events, so refresh after
+    // Safari returns this page to the foreground.
+    try {
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible') reconcile();
+        });
+        document.addEventListener('pageshow', reconcile);
+    } catch (e) { /* ignore */ }
+
     // Live updates when the popup changes the global or per-site setting.
     try {
         browser.storage.onChanged.addListener(function (changes, area) {
