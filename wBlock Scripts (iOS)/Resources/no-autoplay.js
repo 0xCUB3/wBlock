@@ -11,10 +11,11 @@
 // State model:
 // - Authoritative: native app state (protobuf) via getNoAutoplayState and popup
 //   setters; CloudSync keeps devices aligned after legacy state has migrated.
-// - Transition cache: until NATIVE_MIGRATED_KEY is true, leftover enabled
-//   (ENABLED_KEY) and per-site allow (ALLOW_PREFIX + host) values override
-//   native protobuf defaults. Thereafter they are only a native-read fallback
-//   and for live storage.onChanged reconcile.
+// - Transition cache: until NATIVE_MIGRATED_KEY is true, a leftover enabled
+//   (ENABLED_KEY) value overrides native enabled state, while leftover and
+//   native per-site allow values both stand the gate down. Thereafter leftover
+//   values are only a native-read fallback and for live storage.onChanged
+//   reconcile.
 // - Sites where wBlock is disabled ("Enable on this site" off) stand down.
 // - Warm hint: page localStorage[HINT_KEY] mirrors the last arming decision so
 //   repeat visits arm synchronously at document_start. The hint is page-writable
@@ -476,25 +477,25 @@
             ENABLED_KEY,
             allowKey,
         ]);
-        var hasLegacyState = !!(stored && (
-            Object.prototype.hasOwnProperty.call(stored, ENABLED_KEY)
-            || Object.prototype.hasOwnProperty.call(stored, allowKey)
-        ));
-        if (stored && stored[NATIVE_MIGRATED_KEY] !== true && hasLegacyState) {
+        var hasLegacyEnabled = !!(stored
+            && Object.prototype.hasOwnProperty.call(stored, ENABLED_KEY));
+        var legacyAllowed = !!(stored && stored[allowKey] === true);
+        var migrated = !!(stored && stored[NATIVE_MIGRATED_KEY] === true);
+        var native = await getNativeNoAutoplayState(host);
+
+        if (!migrated && hasLegacyEnabled) {
             // Native protobuf defaults are indistinguishable from a user who
             // turned the feature off. Until popup migration completes, retain
-            // the Safari values rather than losing a leftover enabled setting.
+            // a leftover enabled value, but still honor Site Settings writes
+            // that have already reached native storage.
             enabled = stored[ENABLED_KEY] === true;
-            siteAllowed = stored[allowKey] === true;
+            siteAllowed = legacyAllowed || !!(native && native.siteAllowed === true);
+        } else if (native) {
+            enabled = native.enabled === true;
+            siteAllowed = native.siteAllowed === true;
         } else {
-            var native = await getNativeNoAutoplayState(host);
-            if (native) {
-                enabled = native.enabled === true;
-                siteAllowed = native.siteAllowed === true;
-            } else {
-                enabled = !!(stored && stored[ENABLED_KEY] === true);
-                siteAllowed = !!(stored && stored[allowKey] === true);
-            }
+            enabled = !!(stored && stored[ENABLED_KEY] === true);
+            siteAllowed = legacyAllowed;
         }
         if (!enabled) return false;
         if (siteAllowed) return false;

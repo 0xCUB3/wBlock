@@ -411,7 +411,18 @@ async function playResult(media) {
     !env.storageWrites.some((patch) => Object.hasOwn(patch, ENABLED_KEY)));
 }
 
-// --- 8. Native state wins after legacy migration completes ---
+// --- 8. Native Site Settings allow is honored before legacy migration ---
+{
+  const env = createEnvironment({
+    storage: { [ENABLED_KEY]: true },
+    nativeNoAutoplayState: { enabled: false, siteAllowed: true },
+  });
+  env.run();
+  await settle();
+  check("unmigrated native site allow stands the gate down despite legacy enabled", !env.gateMarker());
+}
+
+// --- 9. Native state wins after legacy migration completes ---
 {
   const env = createEnvironment({
     storage: { [ENABLED_KEY]: true, [NATIVE_MIGRATED_KEY]: true },
