@@ -3,6 +3,7 @@ const ZAPPER_STORAGE_PREFIX = 'wblock.zapperRules.v1:';
 const ZAPPER_META_PREFIX = 'wblock.zapperMeta.v1:';
 const NO_AUTOPLAY_ENABLED_KEY = 'wblock.noAutoplay.enabled.v1';
 const NO_AUTOPLAY_ALLOW_PREFIX = 'wblock.noAutoplayAllow.v1:';
+const NO_AUTOPLAY_NATIVE_MIGRATED_KEY = 'wblock.noAutoplay.nativeMigrated.v1';
 const SUPPORT_PROBE_TIMEOUT_MS = 1200;
 const SUPPORT_PROBE_ATTEMPTS = 5;
 const SUPPORT_PROBE_RETRY_DELAY_MS = 200;
@@ -967,7 +968,15 @@ function noAutoplayAllowKey(siteHost) {
     return `${NO_AUTOPLAY_ALLOW_PREFIX}${siteHost}`;
 }
 
-async function getNoAutoplayState(siteHost) {
+function isNativeNoAutoplayState(response) {
+    return Boolean(
+        response
+        && typeof response.enabled === 'boolean'
+        && typeof response.siteAllowed === 'boolean'
+    );
+}
+
+async function readNoAutoplayLocalCache(siteHost) {
     const keys = [NO_AUTOPLAY_ENABLED_KEY];
     if (siteHost) keys.push(noAutoplayAllowKey(siteHost));
     try {
@@ -976,22 +985,159 @@ async function getNoAutoplayState(siteHost) {
             enabled: result[NO_AUTOPLAY_ENABLED_KEY] === true,
             siteAllowed: siteHost ? result[noAutoplayAllowKey(siteHost)] === true : false,
         };
-    } catch {
-        return { enabled: false, siteAllowed: false };
+    } catch (error) {
+        console.warn('[wBlock] Failed to read No Autoplay local cache:', error);
+        return null;
     }
 }
 
+async function mirrorNoAutoplayLocalCache(enabled, siteHost, siteAllowed) {
+    try {
+        await browser.storage.local.set({ [NO_AUTOPLAY_ENABLED_KEY]: enabled === true });
+        if (siteHost) {
+            const allowKey = noAutoplayAllowKey(siteHost);
+            if (siteAllowed === true) {
+                await browser.storage.local.set({ [allowKey]: true });
+            } else {
+                await browser.storage.local.remove(allowKey);
+            }
+        }
+    } catch (error) {
+        console.warn('[wBlock] Failed to mirror No Autoplay cache:', error);
+    }
+}
+
+async function fetchNativeNoAutoplayState(siteHost) {
+    try {
+        const message = { action: 'getNoAutoplayState' };
+        if (siteHost) message.host = siteHost;
+        const response = await sendNativeMessageWithTimeout(message);
+        return isNativeNoAutoplayState(response) ? response : null;
+    } catch (error) {
+        console.warn('[wBlock] Failed to read native No Autoplay state:', error);
+        return null;
+    }
+}
+
+async function hasMigratedNoAutoplayToNative() {
+    try {
+        const result = await browser.storage.local.get(NO_AUTOPLAY_NATIVE_MIGRATED_KEY);
+        return result[NO_AUTOPLAY_NATIVE_MIGRATED_KEY] === true;
+    } catch {
+        return false;
+    }
+}
+
+async function markNoAutoplayNativeMigrated() {
+    try {
+        await browser.storage.local.set({ [NO_AUTOPLAY_NATIVE_MIGRATED_KEY]: true });
+    } catch (error) {
+        console.warn('[wBlock] Failed to persist No Autoplay native migration flag:', error);
+    }
+}
+
+async function collectLegacyNoAutoplayAllowHosts(siteHost, localSiteAllowed) {
+    const hosts = new Set();
+    if (siteHost && localSiteAllowed === true) {
+        hosts.add(siteHost);
+    }
+    let all;
+    try {
+        all = await browser.storage.local.get(null);
+    } catch (error) {
+        console.warn('[wBlock] Failed to enumerate legacy No Autoplay allows:', error);
+        throw error;
+    }
+    for (const [key, value] of Object.entries(all || {})) {
+        if (!key.startsWith(NO_AUTOPLAY_ALLOW_PREFIX) || value !== true) continue;
+        const host = key.slice(NO_AUTOPLAY_ALLOW_PREFIX.length);
+        if (host) hosts.add(host);
+    }
+    return [...hosts];
+}
+
+async function migrateLegacyNoAutoplayToNative(local, siteHost) {
+    if (await hasMigratedNoAutoplayToNative()) {
+        return true;
+    }
+    try {
+        const hosts = await collectLegacyNoAutoplayAllowHosts(siteHost, local.siteAllowed);
+        for (const host of hosts) {
+            const siteResponse = await sendNativeMessageWithTimeout({
+                action: 'setNoAutoplaySiteAllowed',
+                host,
+                allowed: true,
+            });
+            if (!siteResponse || siteResponse.ok !== true
+                || typeof siteResponse.enabled !== 'boolean'
+                || typeof siteResponse.siteAllowed !== 'boolean') {
+                return false;
+            }
+        }
+        if (local.enabled === true) {
+            const enabledResponse = await sendNativeMessageWithTimeout({
+                action: 'setNoAutoplayEnabled',
+                enabled: true,
+            });
+            if (!enabledResponse || enabledResponse.ok !== true || typeof enabledResponse.enabled !== 'boolean') {
+                return false;
+            }
+        }
+        await markNoAutoplayNativeMigrated();
+        return true;
+    } catch (error) {
+        console.warn('[wBlock] Failed to migrate No Autoplay state to native:', error);
+        return false;
+    }
+}
+
+async function getNoAutoplayState(siteHost) {
+    const local = await readNoAutoplayLocalCache(siteHost);
+    const localForMigrate = local ?? { enabled: false, siteAllowed: false };
+    let native = await fetchNativeNoAutoplayState(siteHost);
+    if (!native) {
+        return local ?? { enabled: false, siteAllowed: false };
+    }
+
+    const migrated = await migrateLegacyNoAutoplayToNative(localForMigrate, siteHost);
+    if (!migrated) {
+        if (local !== null) {
+            return local;
+        }
+        return { enabled: native.enabled, siteAllowed: native.siteAllowed };
+    }
+
+    native = await fetchNativeNoAutoplayState(siteHost) || native;
+    await mirrorNoAutoplayLocalCache(native.enabled, siteHost, native.siteAllowed);
+    return { enabled: native.enabled, siteAllowed: native.siteAllowed };
+}
+
 async function setNoAutoplayEnabled(enabled) {
-    await browser.storage.local.set({ [NO_AUTOPLAY_ENABLED_KEY]: enabled === true });
+    const nextEnabled = enabled === true;
+    const response = await sendNativeMessageWithTimeout({
+        action: 'setNoAutoplayEnabled',
+        enabled: nextEnabled,
+    });
+    if (!response || response.ok !== true || typeof response.enabled !== 'boolean') {
+        throw new Error('Native No Autoplay enabled write did not persist');
+    }
+    await mirrorNoAutoplayLocalCache(response.enabled, null, false);
 }
 
 async function setNoAutoplaySiteAllowed(siteHost, allowed) {
     if (!siteHost) return;
-    if (allowed === true) {
-        await browser.storage.local.set({ [noAutoplayAllowKey(siteHost)]: true });
-    } else {
-        await browser.storage.local.remove(noAutoplayAllowKey(siteHost));
+    const nextAllowed = allowed === true;
+    const response = await sendNativeMessageWithTimeout({
+        action: 'setNoAutoplaySiteAllowed',
+        host: siteHost,
+        allowed: nextAllowed,
+    });
+    if (!response || response.ok !== true
+        || typeof response.enabled !== 'boolean'
+        || typeof response.siteAllowed !== 'boolean') {
+        throw new Error('Native No Autoplay site allow write did not persist');
     }
+    await mirrorNoAutoplayLocalCache(response.enabled, siteHost, response.siteAllowed);
 }
 
 function updateNoAutoplayControls(state, options = {}) {

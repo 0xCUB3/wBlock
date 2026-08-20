@@ -187,6 +187,12 @@ function createEnvironment(options = {}) {
         sendNativeMessage(_id, message) {
           env.nativeCalls.push(message);
           if (message && message.action === "getSiteDisabledState") {
+            if (options.siteDisabledUnknown === true) {
+              return Promise.reject(new Error("native unavailable"));
+            }
+            if (options.siteDisabledMalformed === true) {
+              return Promise.resolve({});
+            }
             return Promise.resolve({ disabled: options.nativeDisabled === true });
           }
           return Promise.resolve({});
@@ -200,6 +206,16 @@ function createEnvironment(options = {}) {
               if (key in storageData) out[key] = storageData[key];
             }
             return out;
+          },
+          set: async (patch) => {
+            for (const [key, value] of Object.entries(patch || {})) {
+              storageData[key] = value;
+            }
+          },
+          remove: async (keys) => {
+            for (const key of Array.isArray(keys) ? keys : [keys]) {
+              delete storageData[key];
+            }
           },
         },
         onChanged: {
@@ -458,6 +474,33 @@ async function playResult(media) {
   env.run();
   await settle();
   check("hostname-less frames stand down after the authoritative check", !env.localStore.has(HINT_KEY));
+}
+
+// --- 13. Unknown site-disabled state: stand down (fail closed) ---
+{
+  const env = createEnvironment({
+    hint: true,
+    storage: { [ENABLED_KEY]: true },
+    siteDisabledUnknown: true,
+  });
+  env.run();
+  check("stale hint still arms before the site-disabled check settles", env.gateMarker());
+  await settle();
+  check("unknown site-disabled state clears the hint", !env.localStore.has(HINT_KEY));
+  const video = env.makeMedia("video");
+  check("unknown site-disabled state stands the gate down", (await playResult(video)) === "ok");
+}
+
+{
+  const env = createEnvironment({
+    hint: true,
+    storage: { [ENABLED_KEY]: true },
+    siteDisabledMalformed: true,
+  });
+  env.run();
+  await settle();
+  check("malformed site-disabled response stands down", (await playResult(env.makeMedia("video"))) === "ok");
+  check("malformed site-disabled response clears the hint", !env.localStore.has(HINT_KEY));
 }
 
 if (failures > 0) {

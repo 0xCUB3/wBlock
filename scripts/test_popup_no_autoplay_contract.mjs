@@ -76,4 +76,113 @@ if (!js.includes("siteRow.hidden = !state.enabled || !options.host")) {
   fail("site exception row must stay hidden unless No Autoplay is on for a site");
 }
 
+for (const needle of [
+  "getNoAutoplayState",
+  "setNoAutoplayEnabled",
+  "setNoAutoplaySiteAllowed",
+  "action: 'getNoAutoplayState'",
+  "action: 'setNoAutoplayEnabled'",
+  "action: 'setNoAutoplaySiteAllowed'",
+]) {
+  if (!js.includes(needle)) {
+    fail(`popup.js must contain ${needle}`);
+  }
+}
+
+function sliceBetween(startMarker, endMarker) {
+  const start = js.indexOf(startMarker);
+  if (start === -1) fail(`popup.js must contain ${startMarker}`);
+  const end = js.indexOf(endMarker, start + startMarker.length);
+  if (end === -1) fail(`popup.js must contain ${endMarker} after ${startMarker}`);
+  return js.slice(start, end);
+}
+
+const setEnabledBody = sliceBetween(
+  "async function setNoAutoplayEnabled(enabled)",
+  "async function setNoAutoplaySiteAllowed",
+);
+if (!setEnabledBody.includes("response.ok !== true")) {
+  fail("setNoAutoplayEnabled must fail closed when response.ok is not true");
+}
+if (setEnabledBody.includes("try {")) {
+  fail("setNoAutoplayEnabled must not catch native failures internally");
+}
+if (setEnabledBody.includes("markNoAutoplayNativeMigrated")) {
+  fail("setNoAutoplayEnabled must not mark native migration; only migrateLegacyNoAutoplayToNative may");
+}
+if (!setEnabledBody.includes("mirrorNoAutoplayLocalCache")) {
+  fail("setNoAutoplayEnabled must mirror native response after a successful write");
+}
+
+const setSiteBody = sliceBetween(
+  "async function setNoAutoplaySiteAllowed(siteHost, allowed)",
+  "function updateNoAutoplayControls",
+);
+if (!setSiteBody.includes("response.ok !== true")) {
+  fail("setNoAutoplaySiteAllowed must fail closed when response.ok is not true");
+}
+if (setSiteBody.includes("try {")) {
+  fail("setNoAutoplaySiteAllowed must not catch native failures internally");
+}
+if (setSiteBody.includes("markNoAutoplayNativeMigrated")) {
+  fail("setNoAutoplaySiteAllowed must not mark native migration; only migrateLegacyNoAutoplayToNative may");
+}
+if (!setSiteBody.includes("mirrorNoAutoplayLocalCache")) {
+  fail("setNoAutoplaySiteAllowed must mirror native response after a successful write");
+}
+
+const migrateBody = sliceBetween(
+  "async function migrateLegacyNoAutoplayToNative(local, siteHost)",
+  "async function getNoAutoplayState(siteHost)",
+);
+if (!migrateBody.includes("markNoAutoplayNativeMigrated")) {
+  fail("migrateLegacyNoAutoplayToNative must mark native migration after all writes succeed");
+}
+if (!migrateBody.includes("siteResponse.ok !== true")) {
+  fail("migrateLegacyNoAutoplayToNative must verify site allow writes with response.ok");
+}
+if (!migrateBody.includes("enabledResponse.ok !== true")) {
+  fail("migrateLegacyNoAutoplayToNative must verify enabled write with response.ok");
+}
+const collectBody = sliceBetween(
+  "async function collectLegacyNoAutoplayAllowHosts(siteHost, localSiteAllowed)",
+  "async function migrateLegacyNoAutoplayToNative(local, siteHost)",
+);
+if (!collectBody.includes("throw error") && !collectBody.includes("throw")) {
+  fail("collectLegacyNoAutoplayAllowHosts must throw on storage enumeration failure");
+}
+const hostsIdx = migrateBody.indexOf("collectLegacyNoAutoplayAllowHosts");
+const enabledWriteIdx = migrateBody.indexOf("setNoAutoplayEnabled");
+if (hostsIdx === -1 || enabledWriteIdx === -1 || hostsIdx > enabledWriteIdx) {
+  fail("migrateLegacyNoAutoplayToNative must copy allowed hosts before enabling No Autoplay");
+}
+const markIdx = migrateBody.indexOf("markNoAutoplayNativeMigrated");
+if (markIdx === -1) {
+  fail("migrateLegacyNoAutoplayToNative must call markNoAutoplayNativeMigrated");
+}
+const migrateBeforeMark = migrateBody.slice(0, markIdx);
+if (!migrateBeforeMark.includes("return false")) {
+  fail("migrateLegacyNoAutoplayToNative must abort without marking when writes fail");
+}
+if (migrateBeforeMark.lastIndexOf("return false") > migrateBeforeMark.lastIndexOf("ok !== true")) {
+  // last return false should follow ok checks in each branch
+}
+const getStateBody = sliceBetween(
+  "async function getNoAutoplayState(siteHost)",
+  "async function setNoAutoplayEnabled(enabled)",
+);
+if (!getStateBody.includes("return null")) {
+  // readNoAutoplayLocalCache returns null; getState should handle local === null
+}
+if (!getStateBody.includes("local !== null") && !getStateBody.includes("local ??")) {
+  fail("getNoAutoplayState must prefer local cache when migration did not complete");
+}
+const readCacheBody = sliceBetween(
+  "async function readNoAutoplayLocalCache(siteHost)",
+  "async function mirrorNoAutoplayLocalCache(enabled, siteHost, siteAllowed)",
+);
+if (!readCacheBody.includes("return null")) {
+  fail("readNoAutoplayLocalCache must return null on storage read failure");
+}
+
 console.log("PASS");
