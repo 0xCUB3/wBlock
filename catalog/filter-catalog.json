@@ -1,0 +1,557 @@
+{
+  "schemaVersion": 1,
+  "lists": [
+    {
+      "name": "AdGuard Base Filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/2_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/2_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/2_optimized.txt"
+      ]
+    },
+    {
+      "name": "AdGuard Tracking Protection Filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/3_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/3_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/3_optimized.txt"
+      ]
+    },
+    {
+      "name": "HaGeZi Referral Allowlist",
+      "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@main/adblock/whitelist-referral.txt"
+      ]
+    },
+    {
+      "name": "AdGuard URL Tracking Protection Filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_17_TrackParam/filter.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/filters/filter_17_TrackParam/filter.txt"
+      ]
+    },
+    {
+      "name": "Actually Legitimate URL Shortener Tool",
+      "url": "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/LegitimateURLShortener.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/DandelionSprout/adfilt@master/LegitimateURLShortener.txt"
+      ]
+    },
+    {
+      "name": "AdGuard Cookie Notices",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/18_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/18_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/18_optimized.txt"
+      ]
+    },
+    {
+      "name": "AdGuard Popups",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/19_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/19_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/19_optimized.txt"
+      ]
+    },
+    {
+      "name": "AdGuard Mobile App Banners",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/20_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/20_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/20_optimized.txt"
+      ]
+    },
+    {
+      "name": "AdGuard Other Annoyances",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/21_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/21_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/21_optimized.txt"
+      ]
+    },
+    {
+      "name": "AdGuard Widgets",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/22_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/22_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/22_optimized.txt"
+      ]
+    },
+    {
+      "name": "AdGuard Social Media Filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/4_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/4_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/4_optimized.txt"
+      ]
+    },
+    {
+      "name": "Fanboy's Annoyances Filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/122_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/122_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/122_optimized.txt"
+      ]
+    },
+    {
+      "name": "Fanboy's Social Blocking List",
+      "url": "https://easylist.to/easylist/fanboy-social.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "Stevo's AI Blocklist",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/260_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/260_optimized.txt"
+      ]
+    },
+    {
+      "name": "Online Malicious URL Blocklist",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/208_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/208_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/208_optimized.txt"
+      ]
+    },
+    {
+      "name": "Mail Tracking Protection Filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/25_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/25_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/25_optimized.txt"
+      ]
+    },
+    {
+      "name": "Peter Lowe's Blocklist",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/204_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/204_optimized.txt"
+      ]
+    },
+    {
+      "name": "Adblock Warning Removal List",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/207_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/207_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/207_optimized.txt"
+      ]
+    },
+    {
+      "name": "AdGuard Allowlist",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/10_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/10_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/10_optimized.txt"
+      ]
+    },
+    {
+      "name": "Bypass Paywalls Clean Filter",
+      "url": "https://bpc-filter-proxy.wmailrelayb8d890.workers.dev",
+      "fallbacks": []
+    },
+    {
+      "name": "AdGuard Experimental Filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/5_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/5_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/5_optimized.txt"
+      ]
+    },
+    {
+      "name": "ABPindo",
+      "url": "https://raw.githubusercontent.com/ABPindo/indonesianadblockrules/master/subscriptions/abpindo.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/ABPindo/indonesianadblockrules@master/subscriptions/abpindo.txt"
+      ]
+    },
+    {
+      "name": "ABPVN List",
+      "url": "https://raw.githubusercontent.com/abpvn/abpvn/master/filter/abpvn_adguard.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/abpvn/abpvn@master/filter/abpvn_adguard.txt"
+      ]
+    },
+    {
+      "name": "Adblock List for Finland",
+      "url": "https://raw.githubusercontent.com/finnish-easylist-addition/finnish-easylist-addition/gh-pages/Finland_adb.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/finnish-easylist-addition/finnish-easylist-addition@gh-pages/Finland_adb.txt"
+      ]
+    },
+    {
+      "name": "AdBlockID",
+      "url": "https://raw.githubusercontent.com/realodix/AdBlockID/main/dist/adblockid.adfl.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/realodix/AdBlockID@main/dist/adblockid.adfl.txt"
+      ]
+    },
+    {
+      "name": "Adblock List for Albania and Kosovo",
+      "url": "https://raw.githubusercontent.com/AnXh3L0/blocklist/master/albanian-easylist-addition/Albania.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/AnXh3L0/blocklist@master/albanian-easylist-addition/Albania.txt"
+      ]
+    },
+    {
+      "name": "AdGuard Chinese filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/224_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/224_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/224_optimized.txt"
+      ]
+    },
+    {
+      "name": "AdGuard Dutch filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/8_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/8_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/8_optimized.txt"
+      ]
+    },
+    {
+      "name": "AdGuard French filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/16_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/16_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/16_optimized.txt"
+      ]
+    },
+    {
+      "name": "AdGuard German filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/6_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/6_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/6_optimized.txt"
+      ]
+    },
+    {
+      "name": "AdGuard Japanese filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/7_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/7_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/7_optimized.txt"
+      ]
+    },
+    {
+      "name": "AdGuard Russian filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/1_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/1_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/1_optimized.txt"
+      ]
+    },
+    {
+      "name": "AdGuard Spanish/Portuguese filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/9_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/9_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/9_optimized.txt"
+      ]
+    },
+    {
+      "name": "AdGuard Turkish filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/13_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/13_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/13_optimized.txt"
+      ]
+    },
+    {
+      "name": "AdGuard Ukrainian filter",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/refs/heads/master/platforms/extension/safari/filters/23_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/23_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/23_optimized.txt"
+      ]
+    },
+    {
+      "name": "Bulgarian list",
+      "url": "https://stanev.org/abp/adblock_bg.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "CJX's Annoyances List",
+      "url": "https://raw.githubusercontent.com/cjx82630/cjxlist/master/cjx-annoyance.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/cjx82630/cjxlist@master/cjx-annoyance.txt"
+      ]
+    },
+    {
+      "name": "Dandelion Sprout's Nordic Filters",
+      "url": "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/NorwegianExperimentalList%20alternate%20versions/NordicFiltersAdGuard.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/DandelionSprout/adfilt@master/NorwegianExperimentalList%20alternate%20versions/NordicFiltersAdGuard.txt"
+      ]
+    },
+    {
+      "name": "Dandelion Sprout's Serbo-Croatian List",
+      "url": "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/SerboCroatianList.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/DandelionSprout/adfilt@master/SerboCroatianList.txt"
+      ]
+    },
+    {
+      "name": "EasyList China",
+      "url": "https://raw.githubusercontent.com/easylist/easylistchina/master/easylistchina.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/easylist/easylistchina@master/easylistchina.txt"
+      ]
+    },
+    {
+      "name": "EasyList Czech and Slovak",
+      "url": "https://raw.githubusercontent.com/tomasko126/easylistczechandslovak/master/filters.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/tomasko126/easylistczechandslovak@master/filters.txt"
+      ]
+    },
+    {
+      "name": "EasyList Dutch",
+      "url": "https://easylist-downloads.adblockplus.org/easylistdutch.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "EasyList Germany",
+      "url": "https://easylist.to/easylistgermany/easylistgermany.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "EasyList Hebrew",
+      "url": "https://raw.githubusercontent.com/easylist/EasyListHebrew/master/EasyListHebrew.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/easylist/EasyListHebrew@master/EasyListHebrew.txt"
+      ]
+    },
+    {
+      "name": "EasyList Italy",
+      "url": "https://easylist-downloads.adblockplus.org/easylistitaly.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "EasyList Lithuania",
+      "url": "https://raw.githubusercontent.com/EasyList-Lithuania/easylist_lithuania/master/easylistlithuania.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/EasyList-Lithuania/easylist_lithuania@master/easylistlithuania.txt"
+      ]
+    },
+    {
+      "name": "EasyList Polish",
+      "url": "https://easylist-downloads.adblockplus.org/easylistpolish.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "EasyList Portuguese",
+      "url": "https://easylist-downloads.adblockplus.org/easylistportuguese.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "EasyList Spanish",
+      "url": "https://easylist-downloads.adblockplus.org/easylistspanish.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "EasyList Thailand",
+      "url": "https://raw.githubusercontent.com/easylist-thailand/easylist-thailand/master/subscription/easylist-thailand.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/easylist-thailand/easylist-thailand@master/subscription/easylist-thailand.txt"
+      ]
+    },
+    {
+      "name": "Estonian List",
+      "url": "https://adblock.ee/list.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "Frellwit's Swedish Filter",
+      "url": "https://raw.githubusercontent.com/lassekongo83/Frellwits-filter-lists/master/Frellwits-Swedish-Filter.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/lassekongo83/Frellwits-filter-lists@master/Frellwits-Swedish-Filter.txt"
+      ]
+    },
+    {
+      "name": "Global Filters",
+      "url": "https://easylist-downloads.adblockplus.org/global-filters.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "Greek AdBlock Filter",
+      "url": "https://www.void.gr/kargig/void-gr-filters.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "Hungarian filter",
+      "url": "https://cdn.jsdelivr.net/gh/hufilter/hufilter@gh-pages/hufilter-adguard.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "Icelandic ABP List",
+      "url": "https://adblock.gardar.net/is.abp.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "IndianList",
+      "url": "https://easylist-downloads.adblockplus.org/indianlist.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "KAD - Anti-Scam",
+      "url": "https://raw.githubusercontent.com/FiltersHeroes/KAD/master/KAD.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/FiltersHeroes/KAD@master/KAD.txt"
+      ]
+    },
+    {
+      "name": "Latvian List",
+      "url": "https://raw.githubusercontent.com/Latvian-List/adblock-latvian/master/lists/latvian-list.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/Latvian-List/adblock-latvian@master/lists/latvian-list.txt"
+      ]
+    },
+    {
+      "name": "filterslists-KO",
+      "url": "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "Liste AR",
+      "url": "https://easylist-downloads.adblockplus.org/Liste_AR.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "Liste FR",
+      "url": "https://easylist-downloads.adblockplus.org/liste_fr.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "Macedonian adBlock Filters",
+      "url": "https://raw.githubusercontent.com/RandomAdversary/Macedonian-adBlock-Filters/master/Filters",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/RandomAdversary/Macedonian-adBlock-Filters@master/Filters"
+      ]
+    },
+    {
+      "name": "Official Polish filters for AdBlock, uBlock Origin & AdGuard",
+      "url": "https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-adblock-filters/adblock.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/MajkiIT/polish-ads-filter@master/polish-adblock-filters/adblock.txt"
+      ]
+    },
+    {
+      "name": "Persian Blocker",
+      "url": "https://raw.githubusercontent.com/MasterKia/PersianBlocker/main/PersianBlocker.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/MasterKia/PersianBlocker@main/PersianBlocker.txt"
+      ]
+    },
+    {
+      "name": "Polish Annoyances Filters",
+      "url": "https://raw.githubusercontent.com/PolishFiltersTeam/PolishAnnoyanceFilters/master/PPB.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/PolishFiltersTeam/PolishAnnoyanceFilters@master/PPB.txt"
+      ]
+    },
+    {
+      "name": "Polish Anti Adblock Filters",
+      "url": "https://raw.githubusercontent.com/olegwukr/polish-privacy-filters/master/anti-adblock.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/olegwukr/polish-privacy-filters@master/anti-adblock.txt"
+      ]
+    },
+    {
+      "name": "Polish Anti-Annoying Special Supplement",
+      "url": "https://raw.githubusercontent.com/FiltersHeroes/PolishAntiAnnoyingSpecialSupplement/master/polish_rss_filters.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/FiltersHeroes/PolishAntiAnnoyingSpecialSupplement@master/polish_rss_filters.txt"
+      ]
+    },
+    {
+      "name": "Polish GDPR-Cookies Filters",
+      "url": "https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/cookies_filters/adblock_cookies.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/MajkiIT/polish-ads-filter@master/cookies_filters/adblock_cookies.txt"
+      ]
+    },
+    {
+      "name": "Polish Social Filters",
+      "url": "https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/adblock_social_filters/adblock_social_list.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/MajkiIT/polish-ads-filter@master/adblock_social_filters/adblock_social_list.txt"
+      ]
+    },
+    {
+      "name": "Raajje AdList",
+      "url": "https://raw.githubusercontent.com/lonum1rus/Raajje-AdList/master/filter.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/lonum1rus/Raajje-AdList@master/filter.txt"
+      ]
+    },
+    {
+      "name": "road-block light",
+      "url": "https://raw.githubusercontent.com/tcptomato/ROad-Block/master/road-block-filters-light.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/tcptomato/ROad-Block@master/road-block-filters-light.txt"
+      ]
+    },
+    {
+      "name": "ROList",
+      "url": "https://www.zoso.ro/pages/rolist.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "ROLIST2",
+      "url": "https://www.zoso.ro/pages/rolist2.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "RU AdList",
+      "url": "https://easylist-downloads.adblockplus.org/advblock.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "RU AdList: Counters",
+      "url": "https://easylist-downloads.adblockplus.org/cntblock.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "Xfiles",
+      "url": "https://raw.githubusercontent.com/gioxx/xfiles/master/filtri.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/gioxx/xfiles@master/filtri.txt"
+      ]
+    },
+    {
+      "name": "xinggsf",
+      "url": "https://raw.githubusercontent.com/xinggsf/Adblock-Plus-Rule/master/rule.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/xinggsf/Adblock-Plus-Rule@master/rule.txt"
+      ]
+    },
+    {
+      "name": "YousList",
+      "url": "https://raw.githubusercontent.com/yous/YousList/master/youslist.txt",
+      "fallbacks": [
+        "https://cdn.jsdelivr.net/gh/yous/YousList@master/youslist.txt"
+      ]
+    },
+    {
+      "name": "EasyPrivacy",
+      "url": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt",
+      "fallbacks": [
+        "https://filters.adtidy.org/extension/safari/filters/118_optimized.txt",
+        "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/118_optimized.txt"
+      ]
+    },
+    {
+      "name": "AdGuard Mobile Filter",
+      "url": "https://filters.adtidy.org/ios/filters/11.txt",
+      "fallbacks": []
+    },
+    {
+      "name": "HaGeZi Pro Mini",
+      "url": "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt",
+      "fallbacks": []
+    }
+  ]
+}

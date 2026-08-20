@@ -228,24 +228,20 @@ final class FilterListUpdater: @unchecked Sendable {
     ) async -> Bool {
         guard filter.isRemoteURL else { return false }
         do {
-            let request = NetworkRequestFactory.makeConditionalRequest(
-                url: filter.url,
-                etag: validators.etag,
-                lastModified: validators.lastModified,
-                timeout: 12
-            )
-
-            let (data, response) = try await urlSession.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw URLError(.badServerResponse)
-            }
-
+            let result = try await FilterListFetchChain.fetch(
+                session: urlSession, primaryURL: filter.url,
+                fallbackURLs: FilterCatalogRemote.cached()?.fallbacks(for: filter) ?? FilterListURLMirror.fallbackURLs(for: filter.url),
+                etag: validators.etag, lastModified: validators.lastModified, timeout: 12)
+            let data = result.data
+            let httpResponse = result.response
             let localData = localDataForComparison(filter: filter)
             let responseStatus = FilterUpdateResponseClassifier.classify(
-                statusCode: httpResponse.statusCode,
-                responseData: data,
-                localData: localData
-            )
+                statusCode: httpResponse.statusCode, responseData: data, localData: localData)
+
+            if result.servedFallback {
+                await pendingValidatorUpdates.add(
+                    uuid: filter.id.uuidString, etag: nil, lastModified: nil)
+            }
 
             switch responseStatus {
             case .notModified:
@@ -253,6 +249,8 @@ final class FilterListUpdater: @unchecked Sendable {
             case .updatedContent:
                 return true
             case .unchangedContent:
+                // A successful primary response may refresh its validators.
+                guard !result.servedFallback else { return false }
                 let responseEtag = httpResponse.value(forHTTPHeaderField: "ETag")
                 let responseLastModified = httpResponse.value(forHTTPHeaderField: "Last-Modified")
                 if responseEtag != nil || responseLastModified != nil {
@@ -347,23 +345,12 @@ final class FilterListUpdater: @unchecked Sendable {
         do {
             let validators = await storedValidators(for: filter)
             
-            let request = NetworkRequestFactory.makeConditionalRequest(
-                url: filter.url,
-                etag: validators.etag,
-                lastModified: validators.lastModified,
-                timeout: 15
-            )
-            let (data, response) = try await urlSession.data(for: request)
-
-            guard let httpResponse = response as? HTTPURLResponse else {
-                await ConcurrentLogManager.shared.error(
-                    .network, LocalizedStrings.text("Failed to fetch filter - HTTP error"),
-                    metadata: [
-                        "filter": filter.name,
-                        "statusCode": "0",
-                    ])
-                return .unavailable
-            }
+            let result = try await FilterListFetchChain.fetch(
+                session: urlSession, primaryURL: filter.url,
+                fallbackURLs: FilterCatalogRemote.cached()?.fallbacks(for: filter) ?? FilterListURLMirror.fallbackURLs(for: filter.url),
+                etag: validators.etag, lastModified: validators.lastModified, timeout: 15)
+            let data = result.data
+            let httpResponse = result.response
 
             if httpResponse.statusCode == 304 {
                 // No changes on the server.
@@ -387,8 +374,11 @@ final class FilterListUpdater: @unchecked Sendable {
             }
 
             let uuid = filter.id.uuidString
-            let responseEtag = httpResponse.value(forHTTPHeaderField: "ETag")
-            let responseLastModified = httpResponse.value(forHTTPHeaderField: "Last-Modified")
+            if result.servedFallback {
+                await ProtobufDataManager.shared.setFilterValidators(uuid, etag: nil, lastModified: nil)
+            }
+            let responseEtag = result.servedFallback ? nil : httpResponse.value(forHTTPHeaderField: "ETag")
+            let responseLastModified = result.servedFallback ? nil : httpResponse.value(forHTTPHeaderField: "Last-Modified")
             if !FilterUpdateResponseClassifier.contentDiffers(
                 remoteData: data,
                 localData: localDataForComparison(filter: filter)
@@ -439,7 +429,7 @@ final class FilterListUpdater: @unchecked Sendable {
                 )
                 preprocessed = await preprocessor.preprocess(
                     content: processedContent,
-                    listURL: filter.url
+                    listURL: result.sourceURL
                 )
             }
 

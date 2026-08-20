@@ -1298,24 +1298,23 @@ public actor SharedAutoUpdateManager {
             return deltaOutcome
         }
 
-        let request = makeConditionalRequest(for: filter, etag: etag, lastModified: lastModified)
-
         do {
-            let (data, response) = try await urlSession.data(for: request)
-            guard let http = response as? HTTPURLResponse else {
-                return .error(filterName: filter.name, error: URLError(.badServerResponse))
-            }
-
-            let responseEtag = http.value(forHTTPHeaderField: "ETag")
-            let responseLastModified = http.value(forHTTPHeaderField: "Last-Modified")
+            let result = try await FilterListFetchChain.fetch(
+                session: urlSession, primaryURL: filter.url,
+                fallbackURLs: FilterCatalogRemote.cached()?.fallbacks(for: filter) ?? FilterListURLMirror.fallbackURLs(for: filter.url),
+                etag: etag, lastModified: lastModified, timeout: 30)
+            let data = result.data
+            let http = result.response
+            let responseEtag = result.servedFallback ? nil : http.value(forHTTPHeaderField: "ETag")
+            let responseLastModified = result.servedFallback ? nil : http.value(forHTTPHeaderField: "Last-Modified")
             let hasValidatorUpdates = responseEtag != nil || responseLastModified != nil
 
+            if result.servedFallback {
+                await ProtobufDataManager.shared.setFilterValidators(uuid, etag: nil, lastModified: nil)
+            }
             let localData = localDataForComparison(filter: filter, containerURL: containerURL)
             let responseStatus = FilterUpdateResponseClassifier.classify(
-                statusCode: http.statusCode,
-                responseData: data,
-                localData: localData
-            )
+                statusCode: http.statusCode, responseData: data, localData: localData)
 
             switch responseStatus {
             case .notModified:
@@ -1347,7 +1346,8 @@ public actor SharedAutoUpdateManager {
                 containerURL: containerURL,
                 localURL: localURL,
                 etag: responseEtag,
-                lastModified: responseLastModified
+                lastModified: responseLastModified,
+                sourceURL: result.sourceURL
             )
         } catch {
             return .error(filterName: filter.name, error: error)
@@ -1459,7 +1459,8 @@ public actor SharedAutoUpdateManager {
                 containerURL: containerURL,
                 localURL: localURL,
                 etag: nil,
-                lastModified: nil
+                lastModified: nil,
+                sourceURL: filter.url
             )
         case .badPatch:
             appendSharedLog(
@@ -1491,7 +1492,8 @@ public actor SharedAutoUpdateManager {
         containerURL: URL,
         localURL: URL,
         etag: String?,
-        lastModified: String?
+        lastModified: String?,
+        sourceURL: URL
     ) async -> FilterFetchOutcome {
         // PREP-07: Strip unknown !# directives before preprocessing.
         let processedContent = stripUnknownDirectives(from: rawContent)
@@ -1517,7 +1519,7 @@ public actor SharedAutoUpdateManager {
             )
             finalContent = await preprocessor.preprocess(
                 content: processedContent,
-                listURL: filter.url
+                listURL: sourceURL
             )
         }
 
