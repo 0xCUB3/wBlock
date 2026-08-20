@@ -174,6 +174,7 @@ extension AppFilterManager {
                 self.showingApplyProgressSheet = !(cleared && cleanupSucceeded)
                 if cleared && cleanupSucceeded {
                     self.lastApplySucceeded = true
+                    self.persistUpgradeRebuildSignature()
                     self.commitApplySnapshot(runSnapshot)
                 }
             }
@@ -335,6 +336,7 @@ extension AppFilterManager {
                 self.showingApplyProgressSheet = !(cleared && cleanupSucceeded)
                 if cleared && cleanupSucceeded {
                     self.lastApplySucceeded = true
+                    self.persistUpgradeRebuildSignature()
                     self.commitApplySnapshot(runSnapshot)
                     self.lastRuleCount = 0
                     self.ruleCountsByExtension.removeAll()
@@ -773,6 +775,7 @@ extension AppFilterManager {
             if cleanupSucceeded {
                 await MainActor.run {
                     self.lastApplySucceeded = true
+                    self.persistUpgradeRebuildSignature()
                     self.commitApplySnapshot(runSnapshot)
                 }
             }
@@ -939,6 +942,7 @@ extension AppFilterManager {
                     self.showingApplyProgressSheet = false
                     if cleared {
                         self.lastApplySucceeded = true
+                        self.persistUpgradeRebuildSignature()
                         self.markCurrentStateApplied()
                         self.statusDescription = LocalizedStrings.text(
                             "Blocking paused", comment: "Apply pipeline pause status"

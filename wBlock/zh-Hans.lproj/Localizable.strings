@@ -151,6 +151,7 @@
 "Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
 "Best default" = "最佳默认选项";
 "Beta" = "Beta";
+"Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Beta 用户脚本仍在测试中，可能会破坏页面或出现异常行为。你可以随时将其关闭。";
 "BGAppRefresh" = "后台应用程序刷新";
 "BGProcessing" = "后台处理";
 "Blocked requests (%d)" = "已拦截请求 (%d)";
@@ -297,6 +298,7 @@
 "Enable" = "启用";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "启用 'wBlock Scripts' → 在每个网站上始终允许";
 "Enable all 5 Content Blocker extensions" = "启用全部 5 个内容拦截扩展";
+"Enable Beta Userscript?" = "启用 Beta 用户脚本？";
 "Enable extra fixes and finish setup." = "启用额外修复并完成设置。";
 "Enable the Safari extensions so wBlock can block ads and run userscripts." = "启用 Safari 扩展，以便 wBlock 可以拦截广告并运行用户脚本。";
 "Enable the Safari extensions so wBlock can block ads." = "启用 Safari 扩展程序以使 wBlock 能够拦截广告。";

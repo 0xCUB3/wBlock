@@ -784,23 +784,37 @@ final class CloudSyncManager: ObservableObject {
             baseline: whitelistBaseline,
             remote: payload.whitelistDomains
         ))
-        await dataManager.setFilterDisabledDomains(Self.mergeStringSet(
-            local: currentContent.filterDisabledDomains ?? [],
-            baseline: filterDisabledBaseline ?? [],
-            remote: payload.filterDisabledDomains ?? []
-        ))
+        // A 2.2.0 payload omits these 3.0.0-only keys. Nil means no remote opinion:
+        // keep local. A present empty collection still means remote cleared the set.
+        if let remoteFilterDisabledDomains = payload.filterDisabledDomains {
+            await dataManager.setFilterDisabledDomains(Self.mergeStringSet(
+                local: currentContent.filterDisabledDomains ?? [],
+                baseline: filterDisabledBaseline ?? [],
+                remote: remoteFilterDisabledDomains
+            ))
+        }
 
         // Merge zapper hosts per key and disabled-host choices as a set.
-        let mergedZapperRules = Self.mergeDictionary(
-            local: currentContent.zapperRules ?? [:],
-            baseline: zapperBaseline ?? [:],
-            remote: payload.zapperRules ?? [:]
-        )
-        let mergedZapperDisabled = Self.mergeStringSet(
-            local: currentContent.zapperDisabledDomains ?? [],
-            baseline: zapperDisabledBaseline ?? [],
-            remote: payload.zapperDisabledDomains ?? []
-        )
+        let mergedZapperRules: [String: [String]]
+        if let remoteZapperRules = payload.zapperRules {
+            mergedZapperRules = Self.mergeDictionary(
+                local: currentContent.zapperRules ?? [:],
+                baseline: zapperBaseline ?? [:],
+                remote: remoteZapperRules
+            )
+        } else {
+            mergedZapperRules = currentContent.zapperRules ?? [:]
+        }
+        let mergedZapperDisabled: [String]
+        if let remoteZapperDisabledDomains = payload.zapperDisabledDomains {
+            mergedZapperDisabled = Self.mergeStringSet(
+                local: currentContent.zapperDisabledDomains ?? [],
+                baseline: zapperDisabledBaseline ?? [],
+                remote: remoteZapperDisabledDomains
+            )
+        } else {
+            mergedZapperDisabled = currentContent.zapperDisabledDomains ?? []
+        }
         await applyRemoteZapperRules(mergedZapperRules, disabledDomains: mergedZapperDisabled)
 
         await applyRemoteFilters(

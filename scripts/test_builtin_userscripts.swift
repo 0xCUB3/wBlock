@@ -14,8 +14,40 @@ guard !source.contains("name: \"YouTube Ad Blocking\"")
     exit(1)
 }
 
-guard !source.contains("adamlui/youtube-classic") else {
+guard let definitionsStart = source.range(of: "static let definitions: [BuiltInUserScriptDefinition] = [") else {
+    fputs("FAIL: BuiltInUserScripts.definitions block not found\n", stderr)
+    exit(1)
+}
+var definitionsIndex = definitionsStart.upperBound
+var definitionsDepth = 1
+while definitionsIndex < source.endIndex && definitionsDepth > 0 {
+    let character = source[definitionsIndex]
+    if character == "[" { definitionsDepth += 1 }
+    else if character == "]" { definitionsDepth -= 1 }
+    definitionsIndex = source.index(after: definitionsIndex)
+}
+let definitionsBlock = String(source[definitionsStart.lowerBound..<definitionsIndex])
+let sourceOutsideDefinitions = source.replacingOccurrences(of: definitionsBlock, with: "")
+
+guard !definitionsBlock.contains("YouTube Classic")
+    && !definitionsBlock.contains("adamlui/youtube-classic")
+    && source.contains("retiredYouTubeClassicURL")
+    && source.contains("removeRetiredYouTubeAdBlockIfNeeded()")
+    && (source.contains("isRetiredYouTubeClassicScript")
+        || sourceOutsideDefinitions.contains("adamlui/youtube-classic")) else {
     fputs("FAIL: retired YouTube Classic userscript should not be offered as a built-in\n", stderr)
+    exit(1)
+}
+
+guard !source.contains("urlString.contains(\"adamlui/youtube-classic\")")
+    && !source.contains("absoluteString.contains(\"adamlui/youtube-classic\")") else {
+    fputs("FAIL: isRetiredYouTubeClassicScript must not match adamlui/youtube-classic on full absoluteString\n", stderr)
+    exit(1)
+}
+
+guard source.contains("isRetiredYouTubeClassicScript")
+    && source.contains("url.path") else {
+    fputs("FAIL: isRetiredYouTubeClassicScript must use URL path-based matching\n", stderr)
     exit(1)
 }
 
@@ -38,6 +70,20 @@ guard !source.contains("tinyShieldGroupedDefinition")
     && source.contains("migrateLegacyTinyShieldVariantsIfNeeded()")
     && source.contains("legacyTinyShieldGroupedURLPrefix") else {
     fputs("FAIL: regional tinyShield defaults must be removed and migrated to the full script\n", stderr)
+    exit(1)
+}
+
+guard source.contains("anyLegacyEnabled")
+    && source.contains("userScripts[retainedIndex].isEnabled = userScripts[retainedIndex].isEnabled || anyLegacyEnabled") else {
+    fputs("FAIL: tinyShield migration must preserve blocking when any regional variant was enabled\n", stderr)
+    exit(1)
+}
+
+guard source.contains("if fullIndex == nil")
+    && source.contains("userScripts[retainedIndex].content = \"\"")
+    && source.contains("userScripts[retainedIndex].resourceContents = [:]")
+    && source.contains("await downloadMissingDefaultScripts()") else {
+    fputs("FAIL: tinyShield in-place migration must clear regional content and download canonical script\n", stderr)
     exit(1)
 }
 

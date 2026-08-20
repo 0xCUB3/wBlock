@@ -113,6 +113,8 @@ enum BuiltInUserScripts {
         "tinyShield helps block ads reinserted by Ad-Shield on matching sites."
     static let retiredYouTubeAdBlockURL =
         "https://raw.githubusercontent.com/SysAdminDoc/YoutubeAdblock/main/YoutubeAdblock.user.js"
+    static let retiredYouTubeClassicURL =
+        "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/greasemonkey/youtube-classic.user.js"
 
     static let tubeCleanerURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js"
     static let playerCleanerURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/player-cleaner/dist/player-cleaner.user.js"
@@ -1680,17 +1682,35 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
+    private func isRetiredYouTubeClassicScript(_ script: UserScript) -> Bool {
+        guard let url = script.url else { return false }
+        if url.absoluteString == BuiltInUserScripts.retiredYouTubeClassicURL {
+            return true
+        }
+        let path = url.path
+        if path.contains("/adamlui/youtube-classic/") {
+            return true
+        }
+        if path.hasPrefix("/adamlui/youtube-classic") {
+            let suffix = path.dropFirst("/adamlui/youtube-classic".count)
+            return suffix.isEmpty || suffix.hasPrefix("/")
+        }
+        return false
+    }
+
     private func removeRetiredYouTubeAdBlockIfNeeded() async {
-        let retiredScripts = userScripts.filter {
-            $0.url?.absoluteString == BuiltInUserScripts.retiredYouTubeAdBlockURL
+        let retiredScripts = userScripts.filter { script in
+            script.url?.absoluteString == BuiltInUserScripts.retiredYouTubeAdBlockURL
+                || isRetiredYouTubeClassicScript(script)
         }
         guard !retiredScripts.isEmpty else { return }
 
         for script in retiredScripts {
             removeUserScriptFile(script)
         }
-        userScripts.removeAll {
-            $0.url?.absoluteString == BuiltInUserScripts.retiredYouTubeAdBlockURL
+        userScripts.removeAll { script in
+            script.url?.absoluteString == BuiltInUserScripts.retiredYouTubeAdBlockURL
+                || isRetiredYouTubeClassicScript(script)
         }
         await persistUserScriptsNow(authoritative: true)
     }
@@ -1779,14 +1799,23 @@ public class UserScriptManager: ObservableObject {
             $0.url?.absoluteString == BuiltInUserScripts.tinyShieldURL
         }
         var retainedIndex = fullIndex ?? legacyIndices[0]
+        let anyLegacyEnabled = legacyIndices.contains { userScripts[$0].isEnabled }
+        var scriptsToDeleteFromDisk: [UserScript] = []
         if fullIndex == nil {
             // No canonical record survived: migrate one legacy record in place so the
             // consolidated legacy choice becomes the configured canonical choice.
-            userScripts[retainedIndex].isEnabled = legacyIndices.contains { userScripts[$0].isEnabled }
+            let legacyScript = userScripts[retainedIndex]
             userScripts[retainedIndex].url = URL(string: BuiltInUserScripts.tinyShieldURL)
             userScripts[retainedIndex].name = "tinyShield"
             userScripts[retainedIndex].description = BuiltInUserScripts.tinyShieldDescription
+            userScripts[retainedIndex].version = ""
+            userScripts[retainedIndex].updateURL = nil
+            userScripts[retainedIndex].downloadURL = nil
+            userScripts[retainedIndex].content = ""
+            userScripts[retainedIndex].resourceContents = [:]
+            scriptsToDeleteFromDisk.append(legacyScript)
         }
+        userScripts[retainedIndex].isEnabled = userScripts[retainedIndex].isEnabled || anyLegacyEnabled
 
         let duplicateIDs = legacyIndices.compactMap { index -> UUID? in
             guard userScripts.indices.contains(index), index != retainedIndex else { return nil }
@@ -1798,7 +1827,16 @@ public class UserScriptManager: ObservableObject {
             userScripts.remove(at: index)
             if index < retainedIndex { retainedIndex -= 1 }
         }
+
+        for script in scriptsToDeleteFromDisk {
+            removeUserScriptFile(script)
+        }
+
         await persistUserScriptsNow(authoritative: true)
+
+        if userScripts[retainedIndex].isEnabled {
+            await downloadMissingDefaultScripts()
+        }
     }
 
     private func shouldPrefetchMetadata(for userScript: UserScript) -> Bool {

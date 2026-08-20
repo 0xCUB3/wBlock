@@ -151,6 +151,7 @@
 "Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
 "Best default" = "Cea mai bună opțiune implicită";
 "Beta" = "Beta";
+"Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Userscripturile beta sunt încă în testare și pot strica pagini sau se pot comporta neașteptat. Le poți dezactiva oricând.";
 "BGAppRefresh" = "Actualizează aplicația de fundal";
 "BGProcessing" = "Procesare în fundal";
 "Blocked requests (%d)" = "Solicitări blocate (%d)";
@@ -297,6 +298,7 @@
 "Enable" = "Activează";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Activează 'wBlock Scripts' → Permite întotdeauna pe fiecare site web";
 "Enable all 5 Content Blocker extensions" = "Activează toate cele 5 extensii Content Blocker";
+"Enable Beta Userscript?" = "Activezi userscriptul beta?";
 "Enable extra fixes and finish setup." = "Activează remedieri suplimentare și finalizează configurarea.";
 "Enable the Safari extensions so wBlock can block ads and run userscripts." = "Activează extensiile Safari ca wBlock să poată bloca reclamele și să ruleze userscripturi.";
 "Enable the Safari extensions so wBlock can block ads." = "Activează extensiile Safari pentru ca wBlock să poată bloca reclamele.";
