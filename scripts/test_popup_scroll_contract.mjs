@@ -50,14 +50,22 @@ if (rootRule.get("background") !== "Canvas") {
 }
 
 const popup = declarationsFor(".popup");
-if (popup.get("overflow-y") !== "auto") {
-  fail(".popup must scroll vertically when runtime content exceeds the menu height");
+if (popup.get("overflow") !== "hidden") {
+  fail(".popup must keep the header pinned instead of scrolling it over the cards");
 }
 if (popup.get("max-height") !== "600px") {
   fail(".popup must be capped below Safari's popover clipping height");
 }
 if (popup.get("min-height") !== "0") {
   fail(".popup must be allowed to shrink before it can scroll");
+}
+
+const body = declarationsFor(".popup-body");
+if (body.get("overflow-y") !== "auto") {
+  fail(".popup-body must scroll vertically when runtime content exceeds the menu height");
+}
+if (body.get("min-height") !== "0") {
+  fail(".popup-body must be allowed to shrink before it can scroll");
 }
 
 const rules = declarationsFor(".rules");
