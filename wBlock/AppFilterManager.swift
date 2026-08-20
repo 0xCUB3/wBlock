@@ -551,14 +551,20 @@ class AppFilterManager: ObservableObject {
 
         // Merge any new default filters added in app updates
         if !migratedFilterLists.isEmpty {
-            let beforeMergeCount = migratedFilterLists.count
-            migratedFilterLists = FilterCatalogMerge.mergeDefaults(
-                into: migratedFilterLists,
-                defaults: defaultLists,
-                nameMigrations: FilterListLoader.filterNameMigrations)
-            addedDefaultFilters = migratedFilterLists.count > beforeMergeCount
+            let existingURLs = Set(migratedFilterLists.map { $0.url })
+
+            for defaultFilter in defaultLists {
+                if !existingURLs.contains(defaultFilter.url) {
+                    // New filter from app update - add unselected
+                    var newFilter = defaultFilter
+                    newFilter.isSelected = false
+                    migratedFilterLists.append(newFilter)
+                    addedDefaultFilters = true
+                }
+            }
         }
         migratedFilterLists = hydrateBuiltInFilterMetadata(in: migratedFilterLists, defaultLists: defaultLists)
+        migratedFilterLists = collapseDuplicateBuiltInURLs(migratedFilterLists)
         validatorClearIDs = migratedFilterLists.compactMap { filter in
             guard let originalURL = originalURLsByID[filter.id], originalURL != filter.url else { return nil }
             return filter.id.uuidString
@@ -607,6 +613,22 @@ class AppFilterManager: ObservableObject {
         Task { await updateVersionsAndCounts() }
     }
 
+
+    private func collapseDuplicateBuiltInURLs(_ filters: [FilterList]) -> [FilterList] {
+        var result: [FilterList] = []
+        for filter in filters {
+            guard !filter.isCustom else {
+                result.append(filter)
+                continue
+            }
+            if let index = result.firstIndex(where: { !$0.isCustom && $0.url == filter.url }) {
+                result[index].isSelected = result[index].isSelected || filter.isSelected
+            } else {
+                result.append(filter)
+            }
+        }
+        return result
+    }
 
     private func hydrateBuiltInFilterMetadata(in filters: [FilterList], defaultLists: [FilterList]) -> [FilterList] {
         let defaultsByURL = Dictionary(

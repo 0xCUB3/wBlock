@@ -1228,7 +1228,7 @@ public actor SharedAutoUpdateManager {
             guard let scheme = $0.url.scheme?.lowercased() else { return false }
             return scheme == "http" || scheme == "https"
         }
-
+        FilterCatalogRemote.loadCached(defaultURLs: Set(remoteFilters.map { $0.url }))
 
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
             throw AutoUpdateError.sharedContainerUnavailable
@@ -1301,7 +1301,7 @@ public actor SharedAutoUpdateManager {
         do {
             let result = try await FilterListFetchChain.fetch(
                 session: urlSession, primaryURL: filter.url,
-                fallbackURLs: FilterCatalogRemote.cached()?.fallbacks(for: filter) ?? FilterListURLMirror.fallbackURLs(for: filter.url),
+                fallbackURLs: FilterCatalogRemote.fallbacks(for: filter),
                 etag: etag, lastModified: lastModified, timeout: 30)
             let data = result.data
             let http = result.response

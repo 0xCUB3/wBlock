@@ -28,6 +28,16 @@ final class ChainProtocol: URLProtocol {
         func fetch() async throws -> FilterListFetchResult {
             try await FilterListFetchChain.fetch(session: session, primaryURL: primary, fallbackURLs: [fallback], etag: "old", retryDelay: 0)
         }
+        check(FilterUpdateResponseClassifier.isRetryable(statusCode: 403), "403 retry")
+        check(FilterUpdateResponseClassifier.isRetryable(statusCode: 404), "404 retry")
+        check(FilterUpdateResponseClassifier.isRetryable(statusCode: 429), "429 retry")
+        check(FilterUpdateResponseClassifier.isRetryable(statusCode: 500), "500 retry")
+        check(FilterUpdateResponseClassifier.looksLikeFilterListData(Data("||example.com^".utf8)), "filter data")
+        check(!FilterUpdateResponseClassifier.looksLikeFilterListData(Data("<html>challenge".utf8)), "HTML")
+        check(!FilterUpdateResponseClassifier.looksLikeFilterListData(Data("404: Not Found".utf8)), "404 body")
+        check(!FilterUpdateResponseClassifier.looksLikeFilterListData(Data()), "empty")
+        check(FilterUpdateResponseClassifier.classify(statusCode: 200, responseData: Data("<html>challenge</html>".utf8), localData: nil) == .invalidContent, "HTML invalid")
+        check(FilterUpdateResponseClassifier.classify(statusCode: 200, responseData: Data("404: Not Found".utf8), localData: nil) == .invalidContent, "404 body invalid")
         do { reset([304]); let r = try await fetch(); check(!r.servedFallback && ChainProtocol.requests.count == 1, "304 stops without fallback") } catch { check(false, "304 threw") }
         do { reset([200, 200, 200], [Data("<html>challenge</html>".utf8), Data("<html>challenge</html>".utf8), Data("||ok.com^".utf8)]); let r = try await fetch(); check(r.servedFallback && ChainProtocol.requests.count == 3, "HTML then fallback") } catch { check(false, "HTML fallback threw") }
         do { reset([200, 200, 200], [Data("rate limit exceeded".utf8), Data("rate limit exceeded".utf8), Data("||ok.com^".utf8)]); let r = try await fetch(); check(r.servedFallback && ChainProtocol.requests.count == 3, "plain 200 retries then fallback") } catch { check(false, "plain 200 fallback threw") }

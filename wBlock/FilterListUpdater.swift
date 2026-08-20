@@ -230,7 +230,7 @@ final class FilterListUpdater: @unchecked Sendable {
         do {
             let result = try await FilterListFetchChain.fetch(
                 session: urlSession, primaryURL: filter.url,
-                fallbackURLs: FilterCatalogRemote.cached()?.fallbacks(for: filter) ?? FilterListURLMirror.fallbackURLs(for: filter.url),
+                fallbackURLs: FilterCatalogRemote.fallbacks(for: filter),
                 etag: validators.etag, lastModified: validators.lastModified, timeout: 12)
             let data = result.data
             let httpResponse = result.response
@@ -347,7 +347,7 @@ final class FilterListUpdater: @unchecked Sendable {
             
             let result = try await FilterListFetchChain.fetch(
                 session: urlSession, primaryURL: filter.url,
-                fallbackURLs: FilterCatalogRemote.cached()?.fallbacks(for: filter) ?? FilterListURLMirror.fallbackURLs(for: filter.url),
+                fallbackURLs: FilterCatalogRemote.fallbacks(for: filter),
                 etag: validators.etag, lastModified: validators.lastModified, timeout: 15)
             let data = result.data
             let httpResponse = result.response

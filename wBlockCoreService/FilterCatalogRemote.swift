@@ -7,6 +7,13 @@ public struct FilterCatalogEntry: Codable, Equatable, Sendable {
     public let replaceFrom: [URL]
 
     private enum CodingKeys: String, CodingKey { case name, url, fallbacks, replaceFrom }
+    public init(name: String, url: URL, fallbacks: [URL] = [], replaceFrom: [URL] = []) {
+        self.name = name
+        self.url = url
+        self.fallbacks = fallbacks
+        self.replaceFrom = replaceFrom
+    }
+
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         name = try c.decode(String.self, forKey: .name)
@@ -24,7 +31,6 @@ public struct FilterCatalogOverlay: Codable, Equatable, Sendable {
         guard let decoded = try? JSONDecoder().decode(FilterCatalogOverlay.self, from: data), decoded.schemaVersion == 1 else { return nil }
         for entry in decoded.lists {
             guard entry.url.scheme?.lowercased() == "https",
-                  entry.fallbacks.allSatisfy({ $0.scheme?.lowercased() == "https" }),
                   entry.replaceFrom.allSatisfy({ $0.scheme?.lowercased() == "https" })
             else { return nil }
         }
@@ -32,21 +38,44 @@ public struct FilterCatalogOverlay: Codable, Equatable, Sendable {
             // Old replacement URLs intentionally are not in the baked-in
             // catalog. Only accept a replacement when its target is built in.
             guard entry.replaceFrom.isEmpty || defaultURLs.contains(entry.url) else { return nil }
-            return entry
+            let trustedFallbacks = entry.fallbacks.filter {
+                Self.allowsOverlayFallback(primary: entry.url, fallback: $0)
+            }
+            return FilterCatalogEntry(
+                name: entry.name,
+                url: entry.url,
+                fallbacks: trustedFallbacks,
+                replaceFrom: entry.replaceFrom
+            )
         }
         return FilterCatalogOverlay(schemaVersion: decoded.schemaVersion, lists: validLists)
     }
 
     public func fallbacks(for filter: FilterList) -> [URL] {
-        let match = lists.first { $0.url == filter.url || $0.name == filter.name }
+        if filter.isCustom {
+            return FilterListURLMirror.fallbackURLs(for: filter.url)
+        }
         var result = FilterListURLMirror.fallbackURLs(for: filter.url)
-        if let match { result.append(contentsOf: match.fallbacks) }
+        if let match = lists.first(where: { $0.url == filter.url }) {
+            result.append(contentsOf: match.fallbacks)
+        }
         var seen = Set<URL>()
         return result.filter {
             $0 != filter.url
                 && FilterListURLMirror.allowsFallback(primary: filter.url, fallback: $0)
                 && seen.insert($0).inserted
         }
+    }
+
+    private static func allowsOverlayFallback(primary: URL, fallback: URL) -> Bool {
+        guard fallback.scheme?.lowercased() == "https", let host = fallback.host?.lowercased() else {
+            return false
+        }
+        if host == "cdn.jsdelivr.net" { return true }
+        if host == "filters.adtidy.org" {
+            return FilterListURLMirror.allowsFallback(primary: primary, fallback: fallback)
+        }
+        return false
     }
 
     /// Applies only URL replacements whose target is already in the baked-in catalog.
@@ -68,9 +97,19 @@ public enum FilterCatalogRemote {
     private static let lock = NSLock()
     private static let cacheKey = "wBlock.filter-catalog.overlay"
 
+    private static var defaults: UserDefaults {
+        UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+    }
+
     public static func cached() -> FilterCatalogOverlay? { lock.lock(); defer { lock.unlock() }; return cachedOverlay }
+
+    public static func fallbacks(for filter: FilterList) -> [URL] {
+        cached()?.fallbacks(for: filter) ?? FilterListURLMirror.fallbackURLs(for: filter.url)
+    }
+
     public static func loadCached(defaultURLs: Set<URL>) {
-        guard let data = UserDefaults.standard.data(forKey: cacheKey), let overlay = FilterCatalogOverlay.parse(data, defaultURLs: defaultURLs) else { return }
+        guard let data = defaults.data(forKey: cacheKey),
+              let overlay = FilterCatalogOverlay.parse(data, defaultURLs: defaultURLs) else { return }
         install(overlay)
     }
     public static func install(_ overlay: FilterCatalogOverlay?) { lock.lock(); cachedOverlay = overlay; lock.unlock() }
@@ -84,7 +123,7 @@ public enum FilterCatalogRemote {
             guard let (data, response) = try? await session.data(from: source),
                   (response as? HTTPURLResponse)?.statusCode == 200,
                   let overlay = FilterCatalogOverlay.parse(data, defaultURLs: defaultURLs) else { continue }
-            UserDefaults.standard.set(data, forKey: cacheKey)
+            defaults.set(data, forKey: cacheKey)
             install(overlay); return
         }
     }
