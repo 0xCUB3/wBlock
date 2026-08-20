@@ -85,6 +85,7 @@ class AppFilterManager: ObservableObject {
 
     // New ViewModel-based progress tracking
     @Published var applyProgressViewModel = ApplyChangesViewModel()
+    private var validatorClearIDs: [String] = []
 
     /// Ensures only one apply/update pipeline runs at a time across entry points.
     var isApplyInFlight = false
@@ -481,6 +482,10 @@ class AppFilterManager: ObservableObject {
     private func setupAsync() async {
         await dataManager.waitUntilLoaded()
         setup()
+        for uuid in validatorClearIDs {
+            await dataManager.setFilterValidators(uuid, etag: nil, lastModified: nil)
+        }
+        validatorClearIDs.removeAll()
         setupTask = nil
     }
 
@@ -525,6 +530,16 @@ class AppFilterManager: ObservableObject {
 
         var migratedFilterLists = loader.migrateFilterURLs(in: storedFilterLists)
         let defaultLists = loader.getDefaultFilterLists()
+        // Catalog metadata is deliberately fetched after hydration. The baked-in
+        // derivation remains available immediately and does not alter setup state.
+        let defaultURLs = Set(defaultLists.map(\.url))
+        FilterCatalogRemote.loadCached(defaultURLs: defaultURLs)
+        if let overlay = FilterCatalogRemote.cached() {
+            migratedFilterLists = overlay.applyReplacements(to: migratedFilterLists, defaultURLs: defaultURLs)
+        }
+        Task.detached(priority: .utility) {
+            await FilterCatalogRemote.fetch(using: URLSession.shared, defaultURLs: defaultURLs)
+        }
         for defaultFilter in defaultLists {
             loader.migrateBuiltInFilterFilesIfNeeded(defaultFilter)
         }
@@ -548,8 +563,12 @@ class AppFilterManager: ObservableObject {
                 }
             }
         }
-
         migratedFilterLists = hydrateBuiltInFilterMetadata(in: migratedFilterLists, defaultLists: defaultLists)
+        migratedFilterLists = collapseDuplicateBuiltInURLs(migratedFilterLists)
+        validatorClearIDs = migratedFilterLists.compactMap { filter in
+            guard let originalURL = originalURLsByID[filter.id], originalURL != filter.url else { return nil }
+            return filter.id.uuidString
+        }
 
         filterLists = migratedFilterLists
         markCurrentStateApplied()
@@ -594,6 +613,22 @@ class AppFilterManager: ObservableObject {
         Task { await updateVersionsAndCounts() }
     }
 
+
+    private func collapseDuplicateBuiltInURLs(_ filters: [FilterList]) -> [FilterList] {
+        var result: [FilterList] = []
+        for filter in filters {
+            guard !filter.isCustom else {
+                result.append(filter)
+                continue
+            }
+            if let index = result.firstIndex(where: { !$0.isCustom && $0.url == filter.url }) {
+                result[index].isSelected = result[index].isSelected || filter.isSelected
+            } else {
+                result.append(filter)
+            }
+        }
+        return result
+    }
 
     private func hydrateBuiltInFilterMetadata(in filters: [FilterList], defaultLists: [FilterList]) -> [FilterList] {
         let defaultsByURL = Dictionary(

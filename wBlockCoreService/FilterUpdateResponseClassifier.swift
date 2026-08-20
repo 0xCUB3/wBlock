@@ -41,7 +41,13 @@ public enum FilterUpdateResponseClassifier {
         let prefix = data.prefix(2048)
         guard let text = String(data: prefix, encoding: .utf8) else { return false }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return !trimmed.hasPrefix("<!doctype html") && !trimmed.hasPrefix("<html")
+        guard trimmed != "404: not found",
+              !trimmed.hasPrefix("<!doctype html"), !trimmed.hasPrefix("<html") else { return false }
+        return true
+    }
+
+    public static func isRetryable(statusCode: Int) -> Bool {
+        statusCode == 403 || statusCode == 404 || statusCode == 408 || statusCode == 429 || statusCode >= 500
     }
 
     public static func contentDiffers(remoteData: Data, localData: Data?) -> Bool {

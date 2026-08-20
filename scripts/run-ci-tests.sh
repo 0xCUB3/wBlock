@@ -123,6 +123,8 @@ compile_direct_test filter-update-popup-status \
   wBlockCoreService/FilterUpdatePopupStatus.swift \
   scripts/test_filter_update_popup_status.swift
 compile_core_test filter-selection-rebase scripts/test_filter_selection_rebase.swift
+compile_core_test filter-catalog-remote scripts/test_filter_catalog_remote.swift
+compile_core_test filter-list-fetch-chain scripts/test_filter_list_fetch_chain.swift
 compile_core_test issue-508-backup scripts/test_issue_508_backup_userscript.swift
 compile_core_test issue-508-import-identity scripts/test_issue_508_import_identity.swift
 compile_core_test issue-508-oversized-import scripts/test_issue_508_oversized_import.swift
