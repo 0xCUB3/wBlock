@@ -151,6 +151,7 @@
 "Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
 "Best default" = "Legjobb alapértelmezett";
 "Beta" = "Beta";
+"Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "A beta userscriptek még tesztelés alatt állnak, ezért elronthatnak oldalakat vagy váratlanul viselkedhetnek. Bármikor kikapcsolhatod őket.";
 "BGAppRefresh" = "Háttér alkalmazás frissítése";
 "BGProcessing" = "Háttérfeldolgozás";
 "Blocked requests (%d)" = "Blokkolt kérések (%d)";
@@ -297,6 +298,7 @@
 "Enable" = "Engedélyezés";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Engedélyezd a 'wBlock Scripts' bővítményt → Mindig engedélyezve minden webhelyen";
 "Enable all 5 Content Blocker extensions" = "Engedélyezd mind az 5 tartalomblokkoló bővítményt";
+"Enable Beta Userscript?" = "Beta userscript engedélyezése?";
 "Enable extra fixes and finish setup." = "Engedélyezd az extra javításokat, és fejezd be a beállítást.";
 "Enable the Safari extensions so wBlock can block ads and run userscripts." = "Engedélyezd a Safari-bővítményeket, hogy a wBlock blokkolhassa a hirdetéseket és futtathasson userscripteket.";
 "Enable the Safari extensions so wBlock can block ads." = "Engedélyezze a Safari bővítményeket, hogy a wBlock blokkolhassa a hirdetéseket.";

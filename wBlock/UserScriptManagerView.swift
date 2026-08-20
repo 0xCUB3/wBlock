@@ -128,6 +128,22 @@ private struct EditorMetadataAutofillState: Equatable {
     }
 }
 
+private enum BetaUserscriptWarning {
+    static let acknowledgedKey = "wBlock.hasAcknowledgedBetaUserscriptWarning"
+
+    private static var defaults: UserDefaults {
+        UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+    }
+
+    static var hasAcknowledged: Bool {
+        defaults.bool(forKey: acknowledgedKey)
+    }
+
+    static func acknowledge() {
+        defaults.set(true, forKey: acknowledgedKey)
+    }
+}
+
 struct UserScriptManagerView: View {
     @ObservedObject var userScriptManager: UserScriptManager
     let hasPendingChanges: Bool
@@ -145,6 +161,7 @@ struct UserScriptManagerView: View {
     @State private var isDropTarget = false
     @State private var isDropProcessing = false
     @State private var dropErrorMessage: String?
+    @State private var pendingBetaEnableScript: UserScriptListItem?
 
     private var totalScriptsCount: Int {
         scripts.filter { !$0.isUserStyle }.count
@@ -255,6 +272,20 @@ struct UserScriptManagerView: View {
             Button("OK", role: .cancel) { dropErrorMessage = nil }
         } message: {
             Text(dropErrorMessage ?? "")
+        }
+        .alert("Enable Beta Userscript?", isPresented: Binding(
+            get: { pendingBetaEnableScript != nil },
+            set: { newValue in if !newValue { pendingBetaEnableScript = nil } }
+        )) {
+            Button("Cancel", role: .cancel) { pendingBetaEnableScript = nil }
+            Button("Enable") {
+                guard let script = pendingBetaEnableScript else { return }
+                pendingBetaEnableScript = nil
+                BetaUserscriptWarning.acknowledge()
+                applyEnabledState(for: script, newValue: true)
+            }
+        } message: {
+            Text("Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time.")
         }
     }
 
@@ -574,6 +605,37 @@ struct UserScriptManagerView: View {
 
     #endif
 
+    private func applyEnabledState(for script: UserScriptListItem, newValue: Bool) {
+        guard let latestState = userScriptManager.userScriptToggleState(for: script.id),
+              latestState.desired != newValue
+        else { return }
+        let managedScript = userScriptManager.userScript(withId: script.id)
+        let shouldDownloadBeforeEnabling =
+            newValue && !(managedScript?.isDownloaded ?? script.isDownloaded)
+                && !(managedScript?.isLocal ?? script.isLocal)
+                && (managedScript?.url ?? script.url) != nil
+        if shouldDownloadBeforeEnabling {
+            downloadingScriptIDs.insert(script.id)
+        }
+
+        Task {
+            guard let managedScript = userScriptManager.userScript(withId: script.id) else {
+                await MainActor.run { _ = downloadingScriptIDs.remove(script.id) }
+                return
+            }
+            await ConcurrentLogManager.shared.debug(
+                .userScript,
+                LocalizedStrings.text("Setting userscript enabled state"),
+                metadata: ["script": script.name, "enabled": "\(newValue)"]
+            )
+            await userScriptManager.setUserScript(managedScript, isEnabled: newValue)
+            await MainActor.run {
+                downloadingScriptIDs.remove(script.id)
+                refreshScripts()
+            }
+        }
+    }
+
     private func scriptRowView(script: UserScriptListItem) -> some View {
         let managedScript = userScriptManager.userScript(withId: script.id)
         let toggleState = userScriptManager.userScriptToggleState(for: script.id)
@@ -667,33 +729,11 @@ struct UserScriptManagerView: View {
                 Toggle("", isOn: Binding(
                     get: { displayedEnabled || downloadingScriptIDs.contains(script.id) },
                     set: { newValue in
-                        guard let latestState = userScriptManager.userScriptToggleState(for: script.id),
-                              latestState.desired != newValue
-                        else { return }
-                        let shouldDownloadBeforeEnabling =
-                            newValue && !(managedScript?.isDownloaded ?? script.isDownloaded)
-                                && !(managedScript?.isLocal ?? script.isLocal)
-                                && (managedScript?.url ?? script.url) != nil
-                        if shouldDownloadBeforeEnabling {
-                            downloadingScriptIDs.insert(script.id)
+                        if newValue, script.isBeta, !BetaUserscriptWarning.hasAcknowledged {
+                            pendingBetaEnableScript = script
+                            return
                         }
-
-                        Task {
-                            guard let managedScript = userScriptManager.userScript(withId: script.id) else {
-                                await MainActor.run { _ = downloadingScriptIDs.remove(script.id) }
-                                return
-                            }
-                            await ConcurrentLogManager.shared.debug(
-                                .userScript,
-                                LocalizedStrings.text("Setting userscript enabled state"),
-                                metadata: ["script": script.name, "enabled": "\(newValue)"]
-                            )
-                            await userScriptManager.setUserScript(managedScript, isEnabled: newValue)
-                            await MainActor.run {
-                                downloadingScriptIDs.remove(script.id)
-                                refreshScripts()
-                            }
-                        }
+                        applyEnabledState(for: script, newValue: newValue)
                     }
                 ))
                 .labelsHidden()

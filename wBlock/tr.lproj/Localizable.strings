@@ -151,6 +151,7 @@
 "Baseline userscripts are enabled by default. You can adjust them here." = "Temel kullanıcı betikleri varsayılan olarak etkindir. Bunları buradan ayarlayabilirsiniz.";
 "Best default" = "En iyi varsayılan";
 "Beta" = "Beta";
+"Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Beta kullanıcı betikleri hâlâ test ediliyor; sayfaları bozabilir veya beklenmedik şekilde davranabilir. Bunları istediğin zaman kapatabilirsin.";
 "BGAppRefresh" = "Arka planda uygulama yenileme";
 "BGProcessing" = "Arka planda işleme";
 "Blocked requests (%d)" = "Engellenen istek (%d)";
@@ -297,6 +298,7 @@
 "Enable" = "Etkinleştir";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "'wBlock Scripts' etkinleştirin → Tüm Web Sitelerinde Her Zaman İzin Ver";
 "Enable all 5 Content Blocker extensions" = "5 İçerik Engelleyici genişletmesinin tümünü etkinleştirin";
+"Enable Beta Userscript?" = "Beta kullanıcı betiği etkinleştirilsin mi?";
 "Enable extra fixes and finish setup." = "Ek düzeltmeleri etkinleştirin ve kurulumu tamamlayın.";
 "Enable the Safari extensions so wBlock can block ads and run userscripts." = "wBlock'un reklamları engellemesi ve kullanıcı betik dosyalarını çalıştırabilmesi için Safari genişletmelerini etkinleştirin.";
 "Enable the Safari extensions so wBlock can block ads." = "wBlock'un reklamları engelleyebilmesi için Safari genişletmelerini etkinleştirin.";

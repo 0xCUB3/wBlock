@@ -151,6 +151,7 @@
 "Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
 "Best default" = "おすすめの既定値";
 "Beta" = "Beta";
+"Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "ベータ版ユーザースクリプトはまだテスト中で、ページが崩れたり予期しない動作をしたりすることがあります。いつでもオフにできます。";
 "BGAppRefresh" = "アプリのバックグラウンド更新";
 "BGProcessing" = "バックグラウンド処理";
 "Blocked requests (%d)" = "ブロックしたリクエスト (%d)";
@@ -297,6 +298,7 @@
 "Enable" = "有効にする";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "'wBlock Scripts'を有効化 → すべてのWebサイトで常に許可";
 "Enable all 5 Content Blocker extensions" = "5つすべてのContent Blocker拡張機能を有効にする";
+"Enable Beta Userscript?" = "ベータ版ユーザースクリプトを有効にしますか？";
 "Enable extra fixes and finish setup." = "追加の修正を有効にして設定を完了します。";
 "Enable the Safari extensions so wBlock can block ads and run userscripts." = "広告ブロックとユーザースクリプト実行のため、Safari拡張機能を有効にしてください。";
 "Enable the Safari extensions so wBlock can block ads." = "wBlockが広告をブロックできるようにSafari拡張機能を有効にしてください。";

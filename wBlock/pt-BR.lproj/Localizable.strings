@@ -151,6 +151,7 @@
 "Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
 "Best default" = "Melhor padrão";
 "Beta" = "Beta";
+"Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Os userscripts beta ainda estão em testes e podem quebrar páginas ou se comportar de forma inesperada. Você pode desativá-los a qualquer momento.";
 "BGAppRefresh" = "Atualização de aplicativo em segundo plano";
 "BGProcessing" = "Processamento em segundo plano";
 "Blocked requests (%d)" = "Requisições bloqueadas (%d)";
@@ -297,6 +298,7 @@
 "Enable" = "Ativar";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Ative 'wBlock Scripts' → Sempre Permitir em Todos os Sites";
 "Enable all 5 Content Blocker extensions" = "Ative todas as 5 extensões de Bloqueador de Conteúdo";
+"Enable Beta Userscript?" = "Ativar userscript beta?";
 "Enable extra fixes and finish setup." = "Ative correções extras e conclua a configuração.";
 "Enable the Safari extensions so wBlock can block ads and run userscripts." = "Ative as extensões do Safari para que o wBlock possa bloquear anúncios e executar userscripts.";
 "Enable the Safari extensions so wBlock can block ads." = "Ative as extensões do Safari para que o wBlock possa bloquear anúncios.";

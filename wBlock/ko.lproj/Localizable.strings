@@ -151,6 +151,7 @@
 "Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
 "Best default" = "최적 기본값";
 "Beta" = "Beta";
+"Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "베타 유저스크립트는 아직 테스트 중이라 페이지가 깨지거나 예기치 않게 동작할 수 있습니다. 언제든지 끌 수 있습니다.";
 "BGAppRefresh" = "백그라운드 앱 새로 고침";
 "BGProcessing" = "백그라운드 처리";
 "Blocked requests (%d)" = "차단된 요청 (%d)";
@@ -297,6 +298,7 @@
 "Enable" = "활성화";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "'wBlock Scripts' 활성화 → 모든 웹 사이트에서 항상 허용";
 "Enable all 5 Content Blocker extensions" = "5개의 콘텐츠 차단기 확장 프로그램 모두 활성화";
+"Enable Beta Userscript?" = "베타 유저스크립트를 활성화할까요?";
 "Enable extra fixes and finish setup." = "추가 수정 기능을 켜고 설정을 완료하세요.";
 "Enable the Safari extensions so wBlock can block ads and run userscripts." = "광고 차단과 유저스크립트 실행을 위해 Safari 확장을 활성화하세요.";
 "Enable the Safari extensions so wBlock can block ads." = "wBlock이 광고를 차단할 수 있도록 Safari 확장을 활성화하세요.";

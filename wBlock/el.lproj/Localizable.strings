@@ -151,6 +151,7 @@
 "Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
 "Best default" = "Καλύτερη προεπιλογή";
 "Beta" = "Beta";
+"Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Τα beta userscripts βρίσκονται ακόμη υπό δοκιμή και μπορεί να χαλάσουν σελίδες ή να συμπεριφερθούν απρόσμενα. Μπορείτε να τα απενεργοποιήσετε ανά πάσα στιγμή.";
 "BGAppRefresh" = "Ανανέωση εφαρμογής στο παρασκήνιο";
 "BGProcessing" = "Επεξεργασία φόντου";
 "Blocked requests (%d)" = "Αποκλεισμένα αιτήματα (%d)";
@@ -297,6 +298,7 @@
 "Enable" = "Ενεργοποίηση";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Ενεργοποίηση 'wBlock Scripts' → Να επιτρέπονται πάντα σε κάθε ιστότοπο";
 "Enable all 5 Content Blocker extensions" = "Ενεργοποίηση και των 5 επεκτάσεων του Content Blocker";
+"Enable Beta Userscript?" = "Ενεργοποίηση beta userscript;";
 "Enable extra fixes and finish setup." = "Ενεργοποίηση επιπλέον διορθώσεων και ολοκλήρωση ρύθμισης.";
 "Enable the Safari extensions so wBlock can block ads and run userscripts." = "Ενεργοποιήστε τις επεκτάσεις του Safari ώστε το wBlock να μπορεί να αποκλείει διαφημίσεις και να εκτελεί userscripts.";
 "Enable the Safari extensions so wBlock can block ads." = "Ενεργοποιήστε τις επεκτάσεις του Safari ώστε το wBlock να μπορεί να αποκλείει διαφημίσεις.";

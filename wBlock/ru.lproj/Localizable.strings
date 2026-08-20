@@ -151,6 +151,7 @@
 "Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
 "Best default" = "Лучший вариант по умолчанию";
 "Beta" = "Beta";
+"Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Бета-скрипты ещё тестируются и могут ломать страницы или работать непредсказуемо. Вы можете отключить их в любой момент.";
 "BGAppRefresh" = "Фоновое обновление приложения";
 "BGProcessing" = "Фоновая обработка";
 "Blocked requests (%d)" = "Заблокированные запросы (%d)";
@@ -297,6 +298,7 @@
 "Enable" = "Включить";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Включите 'wBlock Scripts' → Всегда разрешать на всех веб-сайтах";
 "Enable all 5 Content Blocker extensions" = "Включите все 5 расширений Content Blocker";
+"Enable Beta Userscript?" = "Включить бета-скрипт?";
 "Enable extra fixes and finish setup." = "Включите дополнительные исправления и завершите настройку.";
 "Enable the Safari extensions so wBlock can block ads and run userscripts." = "Включите расширения Safari, чтобы wBlock мог блокировать рекламу и запускать пользовательские скрипты.";
 "Enable the Safari extensions so wBlock can block ads." = "Включите расширения Safari, чтобы wBlock мог блокировать рекламу.";
