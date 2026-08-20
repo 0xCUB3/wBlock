@@ -52,24 +52,32 @@ body {
 }
 
 .popup {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 380px;
   max-height: 600px;
   min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 10px 12px 12px;
+  overflow: hidden;
+  padding: 0;
   box-sizing: border-box;
   background: transparent;
 }
 
 .popup-sticky {
-  position: sticky;
-  top: 0;
+  flex: 0 0 auto;
   z-index: 3;
-  margin: -10px -12px 16px;
   padding: 10px 12px 8px;
-  background: Canvas;
+  background: transparent;
+}
+
+.popup-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 12px 12px;
+  box-sizing: border-box;
 }
 
 .top {
@@ -198,6 +206,10 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+#no-autoplay-section {
+  margin-top: 8px;
+}
+
 #no-autoplay-site-row {
   margin-top: 8px;
 }
@@ -319,7 +331,7 @@ body {
   padding: 2px 0 0;
 }
 
-.popup > .hint {
+.popup-body > .hint {
   padding: 6px 16px 12px;
   margin-top: -2px;
 }

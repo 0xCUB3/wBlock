@@ -62,23 +62,26 @@ if (checked.get("background") !== "var(--accent)") {
   fail("on-state toggles must use the blue accent, not a custom track color");
 }
 
-if (!html.includes('class="popup-sticky"') || html.indexOf('id="error"') > html.indexOf('class="section"')) {
-  fail("errors must sit in the sticky header, above the first section");
+if (!html.includes('class="popup-sticky"') || !html.includes('class="popup-body"') || html.indexOf('id="error"') > html.indexOf('class="section"')) {
+  fail("errors must sit in the pinned header, above the first section");
 }
 
 const popup = declarationsFor(".popup");
 if (popup.get("background") !== "transparent") {
   fail("popup must sit on Safari's sheet instead of painting a grouped well");
 }
+if (popup.get("display") !== "flex" || popup.get("flex-direction") !== "column") {
+  fail("popup must pin the header in a flex column so cards cannot paint through it");
+}
+if (popup.get("overflow") !== "hidden") {
+  fail("popup must not scroll the header over the first card");
+}
 
-const sticky = declarationsFor(".popup-sticky");
-if (sticky.get("position") !== "sticky" || sticky.get("top") !== "0") {
-  fail("status and errors must stay pinned while the popup scrolls");
+const body = declarationsFor(".popup-body");
+if (body.get("overflow-y") !== "auto") {
+  fail("cards must scroll under a pinned header");
 }
-if (sticky.get("background") !== "Canvas") {
-  fail("sticky header must stay opaque on the sheet while scrolling");
-}
-if (sticky.get("margin") !== "-10px -12px 16px") {
+if (body.get("padding") !== "16px 12px 12px") {
   fail("sections must sit below the header so the first card keeps its top edge");
 }
 
@@ -87,8 +90,8 @@ if (section.get("border") !== "0.5px solid var(--separator)") {
   fail("grouped rows need a hairline border; a 0.5px shadow spread drops the top edge in Safari");
 }
 
-if (!js.includes("if (popup) popup.scrollTop = 0")) {
-  fail("setError must jump back to the sticky banner");
+if (!js.includes("querySelector('.popup-body')") || !js.includes("popupBody.scrollTop = 0")) {
+  fail("setError must jump back to the pinned banner");
 }
 
 if (!js.includes("kind === 'error'") || !js.includes("popup_status_error")) {

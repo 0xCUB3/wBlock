@@ -287,8 +287,8 @@ function setError(message) {
     }
     el.hidden = false;
     el.textContent = message;
-    const popup = document.querySelector('.popup');
-    if (popup) popup.scrollTop = 0;
+    const popupBody = document.querySelector('.popup-body');
+    if (popupBody) popupBody.scrollTop = 0;
 }
 
 function setStatus(text, kind = 'neutral') {
