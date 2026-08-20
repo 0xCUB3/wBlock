@@ -39,6 +39,18 @@ guard !definitionsBlock.contains("YouTube Classic")
     exit(1)
 }
 
+guard !source.contains("urlString.contains(\"adamlui/youtube-classic\")")
+    && !source.contains("absoluteString.contains(\"adamlui/youtube-classic\")") else {
+    fputs("FAIL: isRetiredYouTubeClassicScript must not match adamlui/youtube-classic on full absoluteString\n", stderr)
+    exit(1)
+}
+
+guard source.contains("isRetiredYouTubeClassicScript")
+    && source.contains("url.path") else {
+    fputs("FAIL: isRetiredYouTubeClassicScript must use URL path-based matching\n", stderr)
+    exit(1)
+}
+
 guard source.contains("name: \"tinyShield\"") else {
     fputs("FAIL: tinyShield built-in userscript definition is missing\n", stderr)
     exit(1)
@@ -64,6 +76,14 @@ guard !source.contains("tinyShieldGroupedDefinition")
 guard source.contains("anyLegacyEnabled")
     && source.contains("userScripts[retainedIndex].isEnabled = userScripts[retainedIndex].isEnabled || anyLegacyEnabled") else {
     fputs("FAIL: tinyShield migration must preserve blocking when any regional variant was enabled\n", stderr)
+    exit(1)
+}
+
+guard source.contains("if fullIndex == nil")
+    && source.contains("userScripts[retainedIndex].content = \"\"")
+    && source.contains("userScripts[retainedIndex].resourceContents = [:]")
+    && source.contains("await downloadMissingDefaultScripts()") else {
+    fputs("FAIL: tinyShield in-place migration must clear regional content and download canonical script\n", stderr)
     exit(1)
 }
 
