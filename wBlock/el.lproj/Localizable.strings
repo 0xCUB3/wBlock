@@ -109,6 +109,7 @@
 "All Levels" = "Όλα τα επίπεδα";
 "All of these filter lists are already in wBlock." = "Όλες αυτές οι λίστες φίλτρων υπάρχουν ήδη στο wBlock.";
 "All websites" = "Όλοι οι ιστότοποι";
+"Allow autoplay on this site" = "Να επιτρέπεται η αυτόματη αναπαραγωγή σε αυτόν τον ιστότοπο";
 "Allowlists" = "Λίστες επιτρεπόμενων";
 "Already done this? Just check the boxes above." = "Το έχετε ήδη κάνει αυτό; Απλώς επιλέξτε τα παραπάνω πλαίσια.";
 "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "Βρέθηκε υπάρχουσα διαμόρφωση του wBlock στο iCloud (%@). Θέλεις να την υιοθετήσεις ή να ξεκινήσεις από την αρχή και να ανεβάσεις την τρέχουσα ρύθμισή σου;";
@@ -132,6 +133,7 @@
 "Auto Update" = "Αυτόματη Ενημέρωση";
 "Auto-Update Filters" = "Αυτόματη Ενημέρωση Φίλτρων";
 "Automatic Updates" = "Automatic Updates";
+"Autoplay on" = "Αυτόματη αναπαραγωγή ενεργή";
 "AutoUpdate" = "Αυτόματη Ενημέρωση";
 "Available Updates" = "Διαθέσιμες ενημερώσεις";
 "Back" = "Πίσω";
@@ -729,6 +731,7 @@
 "Synced yesterday at %@" = "Συγχρονίστηκε χθες στις %@";
 "Syncing iCloud configuration…" = "Συγχρονισμός διαμόρφωσης iCloud…";
 "System" = "Σύστημα";
+"Takes effect when No Autoplay is on." = "Ισχύει όταν η λειτουργία Χωρίς αυτόματη αναπαραγωγή είναι ενεργή.";
 "Tap to review userscript guidelines." = "Πατήστε για να ελέγξετε τις οδηγίες για τον κώδικα χρήστη.";
 "Auto-update: %@" = "Αυτόματη ενημέρωση: %@";
 "Tell us where you browse so we can enable the right regional filters." = "Πείτε μας πού περιηγείστε, ώστε να μπορέσουμε να ενεργοποιήσουμε τα σωστά τοπικά φίλτρα.";

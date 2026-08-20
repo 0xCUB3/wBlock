@@ -109,6 +109,7 @@
 "All Levels" = "Összes szint";
 "All of these filter lists are already in wBlock." = "Mindegyik szűrőlista szerepel már a wBlockban.";
 "All websites" = "Minden webhely";
+"Allow autoplay on this site" = "Automatikus lejátszás engedélyezése ezen a webhelyen";
 "Allowlists" = "Engedélyező listák";
 "Already done this? Just check the boxes above." = "Már megvan? Csak jelöld be a fenti négyzeteket.";
 "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "Meglévő wBlock-konfigurációt találtunk az iCloudban (%@). Szeretnéd ezt átvenni, vagy tiszta lappal indulni, és feltölteni a jelenlegi beállításaidat?";
@@ -132,6 +133,7 @@
 "Auto Update" = "Automatikus frissítés";
 "Auto-Update Filters" = "Szűrők automatikus frissítése";
 "Automatic Updates" = "Automatic Updates";
+"Autoplay on" = "Automatikus lejátszás be";
 "AutoUpdate" = "Automatikus frissítés";
 "Available Updates" = "Elérhető frissítések";
 "Back" = "Vissza";
@@ -729,6 +731,7 @@
 "Synced yesterday at %@" = "Tegnap %@-kor szinkronizálva";
 "Syncing iCloud configuration…" = "iCloud-konfiguráció szinkronizálása…";
 "System" = "Rendszer";
+"Takes effect when No Autoplay is on." = "Akkor lép életbe, ha az Automatikus lejátszás tiltása be van kapcsolva.";
 "Tap to review userscript guidelines." = "Koppints a felhasználói szkript irányelveinek megtekintéséhez.";
 "Auto-update: %@" = "Automatikus frissítés: %@";
 "Tell us where you browse so we can enable the right regional filters." = "Mondd meg, hol böngészel, hogy a megfelelő regionális szűrőket tudjuk engedélyezni.";

@@ -109,6 +109,7 @@
 "All Levels" = "Tüm düzeyler";
 "All of these filter lists are already in wBlock." = "Bu filtre listelerinin tümü zaten wBlock'ta mevcut.";
 "All websites" = "Tüm siteler";
+"Allow autoplay on this site" = "Bu sitede otomatik oynatmaya izin ver";
 "Allowlists" = "İzin listeleri";
 "Already done this? Just check the boxes above." = "Bunu zaten yaptınız mı? Yukarıdaki kutuları işaretlemeniz yeterli.";
 "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "iCloud'da (%@) mevcut bir wBlock yapılandırması bulundu. Bunu mu kullanmak istersiniz, yoksa mevcut ayarlarınızla sıfırdan başlayıp yeni bir kurulum mu yapmak istersiniz?";
@@ -132,6 +133,7 @@
 "Auto Update" = "Otomatik Güncelleme";
 "Auto-Update Filters" = "Filtreleri otomatik güncelle";
 "Automatic Updates" = "Otomatik Güncelleme";
+"Autoplay on" = "Otomatik oynatma açık";
 "AutoUpdate" = "Otomatik Güncelleme";
 "Available Updates" = "Mevcut güncellemeler";
 "Back" = "Geri";
@@ -726,6 +728,7 @@
 "Synced yesterday at %@" = "Dün %@ saatinde eşitlendi";
 "Syncing iCloud configuration…" = "iCloud yapılandırması eşitleniyor…";
 "System" = "Sistem";
+"Takes effect when No Autoplay is on." = "Otomatik oynatma yok özelliği açıkken geçerli olur.";
 "Tap to review userscript guidelines." = "Kullanıcı betiği yönergelerini incelemek için dokunun.";
 "Auto-update: %@" = "Otomatik güncelleme: %@";
 "Tell us where you browse so we can enable the right regional filters." = "Doğru bölgesel filtreleri etkinleştirebilmemiz için lütfen hangi sitelerde gezindiğinizi belirtin.";

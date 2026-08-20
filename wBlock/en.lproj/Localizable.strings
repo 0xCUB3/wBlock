@@ -109,6 +109,7 @@
 "All Levels" = "All Levels";
 "All of these filter lists are already in wBlock." = "All of these filter lists are already in wBlock.";
 "All websites" = "All websites";
+"Allow autoplay on this site" = "Allow autoplay on this site";
 "Allowlists" = "Allowlists";
 "Already done this? Just check the boxes above." = "Already done this? Just check the boxes above.";
 "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?";
@@ -132,6 +133,7 @@
 "Auto Update" = "Auto Update";
 "Auto-Update Filters" = "Auto-Update Filters";
 "Automatic Updates" = "Automatic Updates";
+"Autoplay on" = "Autoplay on";
 "AutoUpdate" = "AutoUpdate";
 "Available Updates" = "Available Updates";
 "Back" = "Back";
@@ -726,6 +728,7 @@
 "Synced yesterday at %@" = "Synced yesterday at %@";
 "Syncing iCloud configuration…" = "Syncing iCloud configuration…";
 "System" = "System";
+"Takes effect when No Autoplay is on." = "Takes effect when No Autoplay is on.";
 "Tap to review userscript guidelines." = "Tap to review userscript guidelines.";
 "Auto-update: %@" = "Auto-update: %@";
 "Tell us where you browse so we can enable the right regional filters." = "Tell us where you browse so we can enable the right regional filters.";

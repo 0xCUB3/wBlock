@@ -109,6 +109,7 @@
 "All Levels" = "Alle Stufen";
 "All of these filter lists are already in wBlock." = "Alle diese Filterlisten sind bereits in wBlock enthalten.";
 "All websites" = "Alle Websites";
+"Allow autoplay on this site" = "Autoplay auf dieser Website erlauben";
 "Allowlists" = "Allowlisten";
 "Already done this? Just check the boxes above." = "Schon erledigt? Setze einfach die Häkchen oben.";
 "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "In iCloud wurde eine vorhandene wBlock-Konfiguration gefunden (%@). Möchtest du sie übernehmen oder neu beginnen und deine aktuelle Einrichtung hochladen?";
@@ -132,6 +133,7 @@
 "Auto Update" = "Automatische Aktualisierung";
 "Auto-Update Filters" = "Filter automatisch aktualisieren";
 "Automatic Updates" = "Automatic Updates";
+"Autoplay on" = "Autoplay an";
 "AutoUpdate" = "Auto-Update";
 "Available Updates" = "Verfügbare Updates";
 "Back" = "Zurück";
@@ -729,6 +731,7 @@
 "Synced yesterday at %@" = "Gestern um %@ synchronisiert";
 "Syncing iCloud configuration…" = "iCloud-Konfiguration wird synchronisiert…";
 "System" = "System";
+"Takes effect when No Autoplay is on." = "Wirkt, wenn Keine automatische Wiedergabe aktiv ist.";
 "Tap to review userscript guidelines." = "Tippe, um die Userskript-Richtlinien anzusehen.";
 "Auto-update: %@" = "Automatische Aktualisierung: %@";
 "Tell us where you browse so we can enable the right regional filters." = "Sag uns, wo du surfst, damit wir die richtigen regionalen Filter aktivieren können.";

@@ -109,6 +109,7 @@
 "All Levels" = "所有等級";
 "All of these filter lists are already in wBlock." = "所有這些篩選器清單已存在於 wBlock 中。";
 "All websites" = "所有網站";
+"Allow autoplay on this site" = "允許此網站自動播放";
 "Allowlists" = "允許清單";
 "Already done this? Just check the boxes above." = "已經完成了嗎？勾選上方核取方塊即可。";
 "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "在 iCloud 中找到現有的 wBlock 設定（%@）。你想採用它，還是重新開始並上傳目前的設定？";
@@ -132,6 +133,7 @@
 "Auto Update" = "自動更新";
 "Auto-Update Filters" = "自動更新過濾器";
 "Automatic Updates" = "Automatic Updates";
+"Autoplay on" = "自動播放已開啟";
 "AutoUpdate" = "自動更新";
 "Available Updates" = "可用更新";
 "Back" = "返回";
@@ -729,6 +731,7 @@
 "Synced yesterday at %@" = "昨天 %@ 已同步";
 "Syncing iCloud configuration…" = "正在同步 iCloud 設定…";
 "System" = "系統";
+"Takes effect when No Autoplay is on." = "在「停止自動播放」開啟時生效。";
 "Tap to review userscript guidelines." = "點一下以查看使用者腳本指南。";
 "Auto-update: %@" = "自動更新：%@";
 "Tell us where you browse so we can enable the right regional filters." = "告訴我們你在哪裡瀏覽，我們就能啟用合適的區域過濾器。";
