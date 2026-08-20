@@ -19,4 +19,25 @@ expect(cloud.contains("origin: .remoteSync"), "Cloud userscript mutations must i
 expect(!cloud.contains("URL(string: remote.url)"), "Cloud userscript restores must canonicalize legacy aliases before lookup and download")
 expect(manager.contains("if origin == .local { recordScriptMutation"), "remote userscript mutations must not advance local revision")
 expect(manager.contains("public func removeUserScript(\n        _ userScript: UserScript,\n        origin:"), "deletions must carry mutation origin")
+
+guard let applyStart = cloud.range(of: "private func applyRemotePayload("),
+      let applyEnd = cloud.range(of: "private func encodedSectionEqual", range: applyStart.upperBound..<cloud.endIndex)
+else {
+    fputs("FAIL: applyRemotePayload not found\n", stderr)
+    exit(1)
+}
+let apply = String(cloud[applyStart.lowerBound..<applyEnd.lowerBound])
+
+func branchesOnOptionalRemote(_ field: String) -> Bool {
+    apply.contains("= payload.\(field)")
+        || apply.contains("payload.\(field) != nil")
+        || apply.contains("payload.\(field) == nil")
+}
+
+expect(branchesOnOptionalRemote("filterDisabledDomains"), "missing optional remote filterDisabledDomains must branch on if let / != nil")
+expect(!apply.contains("payload.filterDisabledDomains ??"), "missing optional remote filterDisabledDomains must not be coalesced to [] before merge")
+expect(branchesOnOptionalRemote("zapperRules"), "missing optional remote zapperRules must branch on if let / != nil")
+expect(!apply.contains("payload.zapperRules ??"), "missing optional remote zapperRules must not be coalesced to [:] before merge")
+expect(branchesOnOptionalRemote("zapperDisabledDomains"), "missing optional remote zapperDisabledDomains must branch on if let / != nil")
+expect(!apply.contains("payload.zapperDisabledDomains ??"), "missing optional remote zapperDisabledDomains must not be coalesced to [] before merge")
 print("PASS")
