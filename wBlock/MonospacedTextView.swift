@@ -12,16 +12,19 @@ struct MonospacedTextView: NSViewRepresentable {
 
         guard let textView = scrollView.documentView as? NSTextView else { return scrollView }
         textView.string = text
+        expandDocumentToFit(textView, in: scrollView)
         return scrollView
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
+        applyTrailingScrollerInset(to: scrollView)
         guard let textView = scrollView.documentView as? NSTextView else { return }
-        guard textView.string != text else { return }
-
-        let selectedRanges = textView.selectedRanges
-        textView.string = text
-        textView.selectedRanges = selectedRanges
+        if textView.string != text {
+            let selectedRanges = textView.selectedRanges
+            textView.string = text
+            textView.selectedRanges = selectedRanges
+        }
+        expandDocumentToFit(textView, in: scrollView)
     }
 
     private func makeDocumentScrollView() -> NSScrollView {
@@ -31,6 +34,7 @@ struct MonospacedTextView: NSViewRepresentable {
         scrollView.hasHorizontalScroller = true
         scrollView.hasVerticalScroller = true
         scrollView.autohidesScrollers = true
+        applyTrailingScrollerInset(to: scrollView)
 
         let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
         textView.frame = NSRect(x: 0, y: 0, width: 800, height: 600)
@@ -65,6 +69,43 @@ struct MonospacedTextView: NSViewRepresentable {
             textContainer.containerSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
             textContainer.widthTracksTextView = false
             textContainer.heightTracksTextView = false
+        }
+    }
+
+    private func applyTrailingScrollerInset(to scrollView: NSScrollView) {
+        var insets = scrollView.contentView.contentInsets
+        let desiredRight: CGFloat
+        if scrollView.effectiveScrollerStyle == .overlay {
+            desiredRight = NSScroller.scrollerWidth(
+                for: .regular,
+                scrollerStyle: .overlay
+            )
+        } else {
+            desiredRight = 0
+        }
+        if abs(insets.right - desiredRight) > 0.5 {
+            insets.right = desiredRight
+            scrollView.contentView.contentInsets = insets
+        }
+    }
+
+    private func expandDocumentToFit(_ textView: NSTextView, in scrollView: NSScrollView) {
+        guard let layoutManager = textView.layoutManager, let textContainer = textView.textContainer else { return }
+        layoutManager.ensureLayout(for: textContainer)
+        let used = layoutManager.usedRect(for: textContainer)
+        let inset = textView.textContainerInset
+        let trailingInset = scrollView.contentView.contentInsets.right
+        let width = max(
+            ceil(used.width + inset.width * 2),
+            scrollView.contentSize.width - trailingInset
+        )
+        let height = max(
+            ceil(used.height + inset.height * 2),
+            scrollView.contentSize.height
+        )
+        let newSize = NSSize(width: width, height: height)
+        if abs(textView.frame.width - newSize.width) > 0.5 || abs(textView.frame.height - newSize.height) > 0.5 {
+            textView.setFrameSize(newSize)
         }
     }
 }
@@ -103,19 +144,20 @@ struct MonospacedTextView: UIViewRepresentable {
         textView.smartDashesType = .no
         textView.isScrollEnabled = true
         textView.alwaysBounceVertical = true
-        textView.alwaysBounceHorizontal = true
+        textView.alwaysBounceHorizontal = false
         if #available(iOS 26.0, *), softTopEdge {
             textView.topEdgeEffect.style = .soft
         }
         textView.showsVerticalScrollIndicator = true
-        textView.showsHorizontalScrollIndicator = true
+        textView.showsHorizontalScrollIndicator = false
+        textView.contentInsetAdjustmentBehavior = .always
+        textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         textView.layoutManager.allowsNonContiguousLayout = true
-        textView.textContainerInset = UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
+        textView.textContainerInset = UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 20)
         textView.textContainer.lineFragmentPadding = 0
-        textView.textContainer.widthTracksTextView = false
+        textView.textContainer.widthTracksTextView = true
         textView.textContainer.heightTracksTextView = false
-        textView.textContainer.size = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-        textView.textContainer.lineBreakMode = .byClipping
+        textView.textContainer.lineBreakMode = .byWordWrapping
     }
 }
 
