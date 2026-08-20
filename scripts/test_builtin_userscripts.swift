@@ -61,6 +61,12 @@ guard !source.contains("tinyShieldGroupedDefinition")
     exit(1)
 }
 
+guard source.contains("anyLegacyEnabled")
+    && source.contains("userScripts[retainedIndex].isEnabled = userScripts[retainedIndex].isEnabled || anyLegacyEnabled") else {
+    fputs("FAIL: tinyShield migration must preserve blocking when any regional variant was enabled\n", stderr)
+    exit(1)
+}
+
 guard source.contains("name: \"Bypass Paywalls Clean\"")
     && source.contains("languages: [\"en\"]")
     && source.contains("func builtInLanguages(for userScript: UserScript)")

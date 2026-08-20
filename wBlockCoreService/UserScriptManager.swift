@@ -1791,14 +1791,15 @@ public class UserScriptManager: ObservableObject {
             $0.url?.absoluteString == BuiltInUserScripts.tinyShieldURL
         }
         var retainedIndex = fullIndex ?? legacyIndices[0]
+        let anyLegacyEnabled = legacyIndices.contains { userScripts[$0].isEnabled }
         if fullIndex == nil {
             // No canonical record survived: migrate one legacy record in place so the
             // consolidated legacy choice becomes the configured canonical choice.
-            userScripts[retainedIndex].isEnabled = legacyIndices.contains { userScripts[$0].isEnabled }
             userScripts[retainedIndex].url = URL(string: BuiltInUserScripts.tinyShieldURL)
             userScripts[retainedIndex].name = "tinyShield"
             userScripts[retainedIndex].description = BuiltInUserScripts.tinyShieldDescription
         }
+        userScripts[retainedIndex].isEnabled = userScripts[retainedIndex].isEnabled || anyLegacyEnabled
 
         let duplicateIDs = legacyIndices.compactMap { index -> UUID? in
             guard userScripts.indices.contains(index), index != retainedIndex else { return nil }
