@@ -732,6 +732,8 @@ final class CloudSyncManager: ObservableObject {
         let filtersBaseline = localPayloadBaseline.filters
         let whitelistBaseline = localPayloadBaseline.whitelistDomains
         let filterDisabledBaseline = localPayloadBaseline.filterDisabledDomains
+        let noAutoplayEnabledBaseline = localPayloadBaseline.noAutoplayEnabled
+        let noAutoplayAllowedBaseline = localPayloadBaseline.noAutoplayAllowedSites
         let zapperBaseline = localPayloadBaseline.zapperRules
         let zapperDisabledBaseline = localPayloadBaseline.zapperDisabledDomains
         isApplyingRemoteChanges = true
@@ -789,6 +791,23 @@ final class CloudSyncManager: ObservableObject {
             baseline: filterDisabledBaseline ?? [],
             remote: payload.filterDisabledDomains ?? []
         ))
+
+        // Autoplay fields are additive. Older payloads omit them; a missing remote
+        // value must not be treated as false/empty or it would wipe local state.
+        let currentNoAutoplayEnabled = currentContent.noAutoplayEnabled ?? false
+        let baselineNoAutoplayEnabled = noAutoplayEnabledBaseline ?? false
+        if currentNoAutoplayEnabled == baselineNoAutoplayEnabled,
+           let remoteNoAutoplayEnabled = payload.noAutoplayEnabled
+        {
+            await dataManager.setNoAutoplayEnabled(remoteNoAutoplayEnabled)
+        }
+        if let remoteNoAutoplayAllowedSites = payload.noAutoplayAllowedSites {
+            await dataManager.setNoAutoplayAllowedSites(Self.mergeStringSet(
+                local: currentContent.noAutoplayAllowedSites ?? [],
+                baseline: noAutoplayAllowedBaseline ?? [],
+                remote: remoteNoAutoplayAllowedSites
+            ))
+        }
 
         // Merge zapper hosts per key and disabled-host choices as a set.
         let mergedZapperRules = Self.mergeDictionary(
@@ -1819,6 +1838,8 @@ final class CloudSyncManager: ObservableObject {
             userScripts: content.userScripts,
             whitelistDomains: content.whitelistDomains,
             filterDisabledDomains: content.filterDisabledDomains,
+            noAutoplayEnabled: content.noAutoplayEnabled,
+            noAutoplayAllowedSites: content.noAutoplayAllowedSites,
             zapperRules: content.zapperRules,
             zapperDisabledDomains: content.zapperDisabledDomains
         )
@@ -1937,6 +1958,8 @@ final class CloudSyncManager: ObservableObject {
 
         let whitelistDomains = dataManager.getWhitelistedDomains().sorted()
         let filterDisabledDomains = dataManager.filterDisabledSites.sorted()
+        let noAutoplayEnabled = dataManager.isNoAutoplayEnabled
+        let noAutoplayAllowedSites = dataManager.noAutoplayAllowedSites.sorted()
         let zapperRules = Self.normalizedZapperRules(
             Dictionary(
                 uniqueKeysWithValues: dataManager.getZapperDomains().map { domain in
@@ -1952,6 +1975,8 @@ final class CloudSyncManager: ObservableObject {
             userScripts: userScripts,
             whitelistDomains: whitelistDomains,
             filterDisabledDomains: filterDisabledDomains,
+            noAutoplayEnabled: noAutoplayEnabled,
+            noAutoplayAllowedSites: noAutoplayAllowedSites,
             zapperRules: zapperRules,
             zapperDisabledDomains: zapperDisabledDomains
         )
@@ -2507,6 +2532,8 @@ private struct SyncPayload: Codable {
         let userScripts: UserScripts
         let whitelistDomains: [String]
         let filterDisabledDomains: [String]?
+        let noAutoplayEnabled: Bool?
+        let noAutoplayAllowedSites: [String]?
         let zapperRules: [String: [String]]?
         let zapperDisabledDomains: [String]?
     }
@@ -2519,6 +2546,8 @@ private struct SyncPayload: Codable {
     let userScripts: UserScripts
     let whitelistDomains: [String]
     let filterDisabledDomains: [String]?
+    let noAutoplayEnabled: Bool?
+    let noAutoplayAllowedSites: [String]?
     let zapperRules: [String: [String]]?
     let zapperDisabledDomains: [String]?
 }

@@ -13,6 +13,8 @@ struct WBlockBackup: Codable, Sendable {
     var customFilterLists: [CustomFilterEntry]
     var whitelistedDomains: [String]
     var filterDisabledDomains: [String]
+    var noAutoplayEnabled: Bool = false
+    var noAutoplayAllowedSites: [String] = []
     var zapperRules: [String: [String]]
     var disabledZapperDomains: [String]
 
@@ -165,6 +167,8 @@ struct WBlockBackup: Codable, Sendable {
         customFilterLists: [CustomFilterEntry],
         whitelistedDomains: [String],
         filterDisabledDomains: [String] = [],
+        noAutoplayEnabled: Bool = false,
+        noAutoplayAllowedSites: [String] = [],
         zapperRules: [String: [String]],
         disabledZapperDomains: [String],
         userScripts: [UserScriptEntry]
@@ -176,6 +180,8 @@ struct WBlockBackup: Codable, Sendable {
         self.customFilterLists = customFilterLists
         self.whitelistedDomains = whitelistedDomains
         self.filterDisabledDomains = filterDisabledDomains
+        self.noAutoplayEnabled = noAutoplayEnabled
+        self.noAutoplayAllowedSites = noAutoplayAllowedSites
         self.zapperRules = zapperRules
         self.disabledZapperDomains = disabledZapperDomains
         self.userScripts = userScripts
@@ -189,6 +195,8 @@ struct WBlockBackup: Codable, Sendable {
         case customFilterLists
         case whitelistedDomains
         case filterDisabledDomains
+        case noAutoplayEnabled
+        case noAutoplayAllowedSites
         case zapperRules
         case disabledZapperDomains
         case userScripts
@@ -203,6 +211,8 @@ struct WBlockBackup: Codable, Sendable {
         customFilterLists = try container.decode([CustomFilterEntry].self, forKey: .customFilterLists)
         whitelistedDomains = try container.decode([String].self, forKey: .whitelistedDomains)
         filterDisabledDomains = try container.decodeIfPresent([String].self, forKey: .filterDisabledDomains) ?? []
+        noAutoplayEnabled = try container.decodeIfPresent(Bool.self, forKey: .noAutoplayEnabled) ?? false
+        noAutoplayAllowedSites = try container.decodeIfPresent([String].self, forKey: .noAutoplayAllowedSites) ?? []
         zapperRules = try container.decode([String: [String]].self, forKey: .zapperRules)
         disabledZapperDomains = try container.decodeIfPresent([String].self, forKey: .disabledZapperDomains) ?? []
         userScripts = try container.decodeIfPresent([UserScriptEntry].self, forKey: .userScripts) ?? []
@@ -280,6 +290,8 @@ enum BackupManager {
         // Whitelist (live source is the protobuf store, not the legacy UserDefaults migration key)
         let whitelistedDomains = filterManager.dataManager.disabledSites
         let filterDisabledDomains = filterManager.dataManager.filterDisabledSites
+        let noAutoplayEnabled = filterManager.dataManager.isNoAutoplayEnabled
+        let noAutoplayAllowedSites = filterManager.dataManager.noAutoplayAllowedSites
         let (zapperRules, disabledZapperDomains) = await MainActor.run {
             var zapperRules: [String: [String]] = [:]
             let zapperDomains = ProtobufDataManager.shared.getZapperDomains()
@@ -300,6 +312,8 @@ enum BackupManager {
             customFilterLists: customEntries,
             whitelistedDomains: whitelistedDomains,
             filterDisabledDomains: filterDisabledDomains,
+            noAutoplayEnabled: noAutoplayEnabled,
+            noAutoplayAllowedSites: noAutoplayAllowedSites,
             zapperRules: zapperRules,
             disabledZapperDomains: disabledZapperDomains,
             userScripts: userScriptEntries
@@ -378,6 +392,8 @@ enum BackupManager {
         // 3. Restore whitelist
         await filterManager.dataManager.setWhitelistedDomains(backup.whitelistedDomains)
         await filterManager.dataManager.setFilterDisabledDomains(backup.filterDisabledDomains)
+        await filterManager.dataManager.setNoAutoplayEnabled(backup.noAutoplayEnabled)
+        await filterManager.dataManager.setNoAutoplayAllowedSites(backup.noAutoplayAllowedSites)
 
         // 4. Restore zapper rules (to protobuf)
         for (hostname, rules) in backup.zapperRules {

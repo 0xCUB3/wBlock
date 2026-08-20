@@ -110,6 +110,8 @@ message WhitelistData {
   repeated string disabled_sites = 1;
   int64 last_updated = 2;
   repeated string filter_disabled_sites = 3;
+  bool no_autoplay_enabled = 4;
+  repeated string no_autoplay_allowed_sites = 5;
 }
 
 // Rule count tracking data
