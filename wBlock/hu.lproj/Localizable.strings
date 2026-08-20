@@ -29,6 +29,9 @@
 "1h" = "1h";
 "2." = "2.";
 "7d" = "7d";
+"Takes effect when No Autoplay is on." = "Akkor lép életbe, ha az Automatikus lejátszás tiltása be van kapcsolva.";
+"Autoplay on" = "Automatikus lejátszás be";
+"Allow autoplay on this site" = "Automatikus lejátszás engedélyezése ezen a webhelyen";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) bejegyzés";
 "\\(index + 1)." = "\\(index + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";

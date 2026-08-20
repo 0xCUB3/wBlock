@@ -358,6 +358,59 @@ extension ProtobufDataManager {
         }
     }
 
+    public var isNoAutoplayEnabled: Bool {
+        appData.whitelist.noAutoplayEnabled
+    }
+
+    public var noAutoplayAllowedSites: [String] {
+        appData.whitelist.noAutoplayAllowedSites
+    }
+
+    @discardableResult
+    public func setNoAutoplayEnabled(_ enabled: Bool) async -> Bool {
+        return await updateDataImmediately { data in
+            data.whitelist.noAutoplayEnabled = enabled
+            data.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
+    @discardableResult
+    public func setNoAutoplayAllowedSites(_ sites: [String]) async -> Bool {
+        let normalized = DisabledSitesNormalizer.normalizedDomains(from: sites)
+        return await updateDataImmediately { data in
+            data.whitelist.noAutoplayAllowedSites = normalized
+            data.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
+    @discardableResult
+    public func setNoAutoplaySiteAllowed(_ allowed: Bool, onHost host: String) async -> Bool {
+        guard let normalizedHost = DisabledSitesNormalizer.normalizedDomain(host) else {
+            return false
+        }
+
+        return await updateDataImmediately { data in
+            var sites = Set(DisabledSitesNormalizer.normalizedDomains(
+                from: data.whitelist.noAutoplayAllowedSites
+            ))
+            if allowed {
+                sites.insert(normalizedHost)
+            } else {
+                sites.remove(normalizedHost)
+            }
+            data.whitelist.noAutoplayAllowedSites = Array(sites).sorted()
+            data.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
+    public func isNoAutoplayAllowed(onHost host: String) -> Bool {
+        guard let normalizedHost = DisabledSitesNormalizer.normalizedDomain(host) else {
+            return false
+        }
+        return DisabledSitesNormalizer.normalizedDomains(from: noAutoplayAllowedSites)
+            .contains(normalizedHost)
+    }
+
     // MARK: - App Settings
     public func updateAppSettings(
         hasCompletedOnboarding: Bool? = nil,

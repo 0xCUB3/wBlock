@@ -29,6 +29,9 @@
 "1h" = "1ч";
 "2." = "2.";
 "7d" = "7д";
+"Takes effect when No Autoplay is on." = "Действует, когда включена функция Без автовоспроизведения.";
+"Autoplay on" = "Автовоспроизведение включено";
+"Allow autoplay on this site" = "Разрешить автовоспроизведение на этом сайте";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) записей";
 "\\(index + 1)." = "\\(индекс + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";

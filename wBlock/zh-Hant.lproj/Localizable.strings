@@ -29,6 +29,9 @@
 "1h" = "1h";
 "2." = "2.";
 "7d" = "7d";
+"Takes effect when No Autoplay is on." = "在「停止自動播放」開啟時生效。";
+"Autoplay on" = "自動播放已開啟";
+"Allow autoplay on this site" = "允許此網站自動播放";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) 筆";
 "\\(index + 1)." = "\\(索引+1)。";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(刷新進度 * 100))%";

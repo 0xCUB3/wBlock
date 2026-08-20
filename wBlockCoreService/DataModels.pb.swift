@@ -469,6 +469,10 @@ nonisolated struct Wblock_Data_WhitelistData: Sendable {
 
   var filterDisabledSites: [String] = []
 
+  var noAutoplayEnabled: Bool = false
+
+  var noAutoplayAllowedSites: [String] = []
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -1299,7 +1303,7 @@ nonisolated extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftPr
 
 nonisolated extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".WhitelistData"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}disabled_sites\0\u{3}last_updated\0\u{3}filter_disabled_sites\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}disabled_sites\0\u{3}last_updated\0\u{3}filter_disabled_sites\0\u{3}no_autoplay_enabled\0\u{3}no_autoplay_allowed_sites\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1310,6 +1314,8 @@ nonisolated extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftPro
       case 1: try { try decoder.decodeRepeatedStringField(value: &self.disabledSites) }()
       case 2: try { try decoder.decodeSingularInt64Field(value: &self.lastUpdated) }()
       case 3: try { try decoder.decodeRepeatedStringField(value: &self.filterDisabledSites) }()
+      case 4: try { try decoder.decodeSingularBoolField(value: &self.noAutoplayEnabled) }()
+      case 5: try { try decoder.decodeRepeatedStringField(value: &self.noAutoplayAllowedSites) }()
       default: break
       }
     }
@@ -1325,6 +1331,12 @@ nonisolated extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftPro
     if !self.filterDisabledSites.isEmpty {
       try visitor.visitRepeatedStringField(value: self.filterDisabledSites, fieldNumber: 3)
     }
+    if self.noAutoplayEnabled != false {
+      try visitor.visitSingularBoolField(value: self.noAutoplayEnabled, fieldNumber: 4)
+    }
+    if !self.noAutoplayAllowedSites.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.noAutoplayAllowedSites, fieldNumber: 5)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1332,6 +1344,8 @@ nonisolated extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftPro
     if lhs.disabledSites != rhs.disabledSites {return false}
     if lhs.lastUpdated != rhs.lastUpdated {return false}
     if lhs.filterDisabledSites != rhs.filterDisabledSites {return false}
+    if lhs.noAutoplayEnabled != rhs.noAutoplayEnabled {return false}
+    if lhs.noAutoplayAllowedSites != rhs.noAutoplayAllowedSites {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

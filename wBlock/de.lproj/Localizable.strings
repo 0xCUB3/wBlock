@@ -29,6 +29,9 @@
 "1h" = "1h";
 "2." = "2.";
 "7d" = "7d";
+"Takes effect when No Autoplay is on." = "Wirkt, wenn Keine automatische Wiedergabe aktiv ist.";
+"Autoplay on" = "Autoplay an";
+"Allow autoplay on this site" = "Autoplay auf dieser Website erlauben";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) Einträge";
 "\\(index + 1)." = "\\(Index + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";

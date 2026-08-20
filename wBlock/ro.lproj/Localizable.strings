@@ -29,6 +29,9 @@
 "1h" = "1h";
 "2." = "2.";
 "7d" = "7d";
+"Takes effect when No Autoplay is on." = "Are efect când Fără redare automată este activat.";
+"Autoplay on" = "Redare automată activată";
+"Allow autoplay on this site" = "Permite redarea automată pe acest site";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) intrări";
 "\\(index + 1)." = "\\(index + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";

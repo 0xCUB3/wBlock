@@ -25,6 +25,7 @@ struct SiteSettingsView: View {
     private struct SiteSettingsSnapshot: Equatable {
         let isWhitelisted: Bool
         let isFilterDisabled: Bool
+        let isAutoplayAllowed: Bool
         let disabledScriptIDs: Set<String>
     }
 
@@ -46,6 +47,7 @@ struct SiteSettingsView: View {
         let domain: String
         let isWhitelisted: Bool
         let isFilterDisabled: Bool
+        let isAutoplayAllowed: Bool
         let scriptsOffCount: Int
 
         var id: String { domain }
@@ -121,6 +123,7 @@ struct SiteSettingsView: View {
         guard let normalized = DisabledSitesNormalizer.normalizedDomain(newDomain) else { return nil }
         let existing = Set(DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites))
             .union(DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites))
+            .union(DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayAllowedSites))
         return existing.contains(normalized) ? nil : normalized
     }
 
@@ -159,6 +162,7 @@ struct SiteSettingsView: View {
     private var allSites: [SiteSummary] {
         let whitelisted = Set(DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites))
         let filterDisabled = Set(DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites))
+        let autoplayAllowed = Set(DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayAllowedSites))
         let exceptionsByScript = dataManager.getUserScriptDisabledHosts()
         var scriptsOffByHost: [String: Int] = [:]
         for hosts in exceptionsByScript.values {
@@ -169,6 +173,7 @@ struct SiteSettingsView: View {
 
         var domains = whitelisted
         domains.formUnion(filterDisabled)
+        domains.formUnion(autoplayAllowed)
         domains.formUnion(scriptsOffByHost.keys)
 
         return domains.sorted().map { domain in
@@ -176,6 +181,7 @@ struct SiteSettingsView: View {
                 domain: domain,
                 isWhitelisted: whitelisted.contains(domain),
                 isFilterDisabled: filterDisabled.contains(domain),
+                isAutoplayAllowed: autoplayAllowed.contains(domain),
                 scriptsOffCount: scriptsOffByHost[domain] ?? 0,
             )
         }
@@ -235,6 +241,9 @@ struct SiteSettingsView: View {
                     } else if site.isFilterDisabled {
                         summaryBadge(Text("Filtering off"), systemImage: "line.3.horizontal.decrease.circle")
                     }
+                    if site.isAutoplayAllowed {
+                        summaryBadge(Text("Autoplay on"), systemImage: "play.circle")
+                    }
                     if site.scriptsOffCount > 0 {
                         summaryBadge(
                             Text(localizedScriptsOffCount(site.scriptsOffCount)),
@@ -288,6 +297,20 @@ struct SiteSettingsView: View {
         )) {
             Text("Content filtering")
                 .font(.body)
+        }
+        .disabled(site.isWhitelisted)
+
+        toggleRow(isOn: Binding(
+            get: { isAutoplayAllowed(site.domain) },
+            set: { setAutoplayAllowed($0, domain: site.domain) }
+        )) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Allow autoplay on this site")
+                    .font(.body)
+                Text("Takes effect when No Autoplay is on.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .disabled(site.isWhitelisted)
 
@@ -438,6 +461,7 @@ struct SiteSettingsView: View {
         return SiteSettingsSnapshot(
             isWhitelisted: isWhitelisted(domain),
             isFilterDisabled: isFilterDisabled(domain),
+            isAutoplayAllowed: isAutoplayAllowed(domain),
             disabledScriptIDs: Set(disabledHosts.compactMap { scriptID, hosts in
                 hosts.contains(domain) ? scriptID : nil
             })
@@ -475,6 +499,7 @@ struct SiteSettingsView: View {
         await dataManager.setWhitelistedDomains(snapshot.isWhitelisted ? DisabledSitesNormalizer.normalizedDomains(from: domains + [domain]) : domains.filter { $0 != domain })
         let filterDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
         await dataManager.setFilterDisabledDomains(snapshot.isFilterDisabled ? DisabledSitesNormalizer.normalizedDomains(from: filterDomains + [domain]) : filterDomains.filter { $0 != domain })
+        await dataManager.setNoAutoplaySiteAllowed(snapshot.isAutoplayAllowed, onHost: domain)
         let disabledHosts = dataManager.getUserScriptDisabledHosts()
         for scriptID in Set(disabledHosts.keys).union(snapshot.disabledScriptIDs) {
             var hosts = disabledHosts[scriptID] ?? []
@@ -490,6 +515,10 @@ struct SiteSettingsView: View {
 
     private func isFilterDisabled(_ domain: String) -> Bool {
         DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites).contains(domain)
+    }
+
+    private func isAutoplayAllowed(_ domain: String) -> Bool {
+        DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayAllowedSites).contains(domain)
     }
 
     private func siteUserScripts(for domain: String) -> [UserScript] {
@@ -535,12 +564,20 @@ struct SiteSettingsView: View {
         }
     }
 
+    private func setAutoplayAllowed(_ allowed: Bool, domain: String) {
+        mutateSite(domain) {
+            await dataManager.setNoAutoplaySiteAllowed(allowed, onHost: domain)
+        }
+    }
+
     private func resetSite(_ domain: String) {
         mutateSite(domain) {
             let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
             if currentDomains.contains(domain) { await dataManager.setWhitelistedDomains(currentDomains.filter { $0 != domain }) }
             let filterDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
             if filterDomains.contains(domain) { await dataManager.setFilterDisabledDomains(filterDomains.filter { $0 != domain }) }
+            let autoplaySites = DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayAllowedSites)
+            if autoplaySites.contains(domain) { await dataManager.setNoAutoplaySiteAllowed(false, onHost: domain) }
             for (scriptID, hosts) in dataManager.getUserScriptDisabledHosts() where hosts.contains(domain) {
                 await dataManager.setUserScriptDisabledHosts(hosts.filter { $0 != domain }, forScriptID: scriptID)
             }

@@ -29,6 +29,9 @@
 "1h" = "1 ώρα";
 "2." = "2.";
 "7d" = "7d";
+"Takes effect when No Autoplay is on." = "Ισχύει όταν η λειτουργία Χωρίς αυτόματη αναπαραγωγή είναι ενεργή.";
+"Autoplay on" = "Αυτόματη αναπαραγωγή ενεργή";
+"Allow autoplay on this site" = "Να επιτρέπεται η αυτόματη αναπαραγωγή σε αυτόν τον ιστότοπο";
 "\\(filteredEntries.count) entries" = "\(filteredEntries.count) καταχωρήσεις";
 "\\(index + 1)." = "\\(ευρετήριο + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";

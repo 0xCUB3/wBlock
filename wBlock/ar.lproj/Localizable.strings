@@ -29,6 +29,9 @@
 "1h" = "1h";
 "2." = "2.";
 "7d" = "7d";
+"Takes effect when No Autoplay is on." = "يسري عند تفعيل إيقاف التشغيل التلقائي.";
+"Autoplay on" = "التشغيل التلقائي مفعّل";
+"Allow autoplay on this site" = "السماح بالتشغيل التلقائي على هذا الموقع";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) إدخالات";
 "\\(index + 1)." = "\\(الفهرس + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(كثافة العمليات(refreshProgress * 100))%";
