@@ -84,6 +84,24 @@ check(applyBody.contains("refreshMissingItems()"), "applyOrCheckForUpdates must 
 check(applyBody.contains("performFilterUpdate()"), "applyOrCheckForUpdates must reference performFilterUpdate")
 check(applyBody.contains("checkForUpdates()"), "applyOrCheckForUpdates must reference checkForUpdates")
 
+guard let taskRange = applyBody.range(of: "Task {") else {
+    fputs("FAIL: applyOrCheckForUpdates missing Task {\n", stderr)
+    exit(1)
+}
+let beforeTask = applyBody[..<taskRange.lowerBound]
+check(
+    beforeTask.contains("isLoading = true"),
+    "applyOrCheckForUpdates must set isLoading = true synchronously before Task {"
+)
+check(
+    applyBody.contains("let started = await self.performFilterUpdate()"),
+    "applyOrCheckForUpdates must capture performFilterUpdate started result"
+)
+check(
+    applyBody.contains("if !started {") && applyBody.contains("self.isLoading = false"),
+    "applyOrCheckForUpdates must clear isLoading when performFilterUpdate did not start"
+)
+
 if let ifRange = applyBody.range(of: "if Self.requiresFullApply") {
     let afterIf = applyBody[ifRange.lowerBound...]
     guard let elseRange = afterIf.range(of: "} else {") else {

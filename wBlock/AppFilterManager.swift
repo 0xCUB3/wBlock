@@ -829,6 +829,8 @@ class AppFilterManager: ObservableObject {
 
     func applyOrCheckForUpdates() {
         guard !isLoading, !isApplyInFlight else { return }
+        isLoading = true
+        statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Update check status")
         Task {
             await self.waitUntilReady()
             await UserScriptManager.shared.waitUntilReady()
@@ -841,7 +843,10 @@ class AppFilterManager: ObservableObject {
                 missingFilterCount: self.missingFilters.count,
                 missingScriptCount: self.missingUserScripts.count
             ) {
-                await self.performFilterUpdate()
+                let started = await self.performFilterUpdate()
+                if !started {
+                    self.isLoading = false
+                }
             } else {
                 await self.checkForUpdates()
             }
