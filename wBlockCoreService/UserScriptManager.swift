@@ -113,6 +113,8 @@ enum BuiltInUserScripts {
         "tinyShield helps block ads reinserted by Ad-Shield on matching sites."
     static let retiredYouTubeAdBlockURL =
         "https://raw.githubusercontent.com/SysAdminDoc/YoutubeAdblock/main/YoutubeAdblock.user.js"
+    static let retiredYouTubeClassicURL =
+        "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/greasemonkey/youtube-classic.user.js"
 
     static let tubeCleanerURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js"
     static let playerCleanerURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/player-cleaner/dist/player-cleaner.user.js"
@@ -1680,17 +1682,27 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
+    private func isRetiredYouTubeClassicScript(_ script: UserScript) -> Bool {
+        guard let urlString = script.url?.absoluteString else { return false }
+        if urlString == BuiltInUserScripts.retiredYouTubeClassicURL {
+            return true
+        }
+        return urlString.contains("adamlui/youtube-classic")
+    }
+
     private func removeRetiredYouTubeAdBlockIfNeeded() async {
-        let retiredScripts = userScripts.filter {
-            $0.url?.absoluteString == BuiltInUserScripts.retiredYouTubeAdBlockURL
+        let retiredScripts = userScripts.filter { script in
+            script.url?.absoluteString == BuiltInUserScripts.retiredYouTubeAdBlockURL
+                || isRetiredYouTubeClassicScript(script)
         }
         guard !retiredScripts.isEmpty else { return }
 
         for script in retiredScripts {
             removeUserScriptFile(script)
         }
-        userScripts.removeAll {
-            $0.url?.absoluteString == BuiltInUserScripts.retiredYouTubeAdBlockURL
+        userScripts.removeAll { script in
+            script.url?.absoluteString == BuiltInUserScripts.retiredYouTubeAdBlockURL
+                || isRetiredYouTubeClassicScript(script)
         }
         await persistUserScriptsNow(authoritative: true)
     }

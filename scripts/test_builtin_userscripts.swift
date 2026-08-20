@@ -14,7 +14,27 @@ guard !source.contains("name: \"YouTube Ad Blocking\"")
     exit(1)
 }
 
-guard !source.contains("adamlui/youtube-classic") else {
+guard let definitionsStart = source.range(of: "static let definitions: [BuiltInUserScriptDefinition] = [") else {
+    fputs("FAIL: BuiltInUserScripts.definitions block not found\n", stderr)
+    exit(1)
+}
+var definitionsIndex = definitionsStart.upperBound
+var definitionsDepth = 1
+while definitionsIndex < source.endIndex && definitionsDepth > 0 {
+    let character = source[definitionsIndex]
+    if character == "[" { definitionsDepth += 1 }
+    else if character == "]" { definitionsDepth -= 1 }
+    definitionsIndex = source.index(after: definitionsIndex)
+}
+let definitionsBlock = String(source[definitionsStart.lowerBound..<definitionsIndex])
+let sourceOutsideDefinitions = source.replacingOccurrences(of: definitionsBlock, with: "")
+
+guard !definitionsBlock.contains("YouTube Classic")
+    && !definitionsBlock.contains("adamlui/youtube-classic")
+    && source.contains("retiredYouTubeClassicURL")
+    && source.contains("removeRetiredYouTubeAdBlockIfNeeded()")
+    && (source.contains("isRetiredYouTubeClassicScript")
+        || sourceOutsideDefinitions.contains("adamlui/youtube-classic")) else {
     fputs("FAIL: retired YouTube Classic userscript should not be offered as a built-in\n", stderr)
     exit(1)
 }
