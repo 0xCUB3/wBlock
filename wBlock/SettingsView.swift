@@ -362,7 +362,7 @@ struct SettingsView: View {
 
             #if os(iOS)
             Button {
-                filterManager.checkAndEnableFilters(forceReload: true)
+                filterManager.applyOrCheckForUpdates()
             } label: {
                 Label("Update Now", systemImage: "arrow.triangle.2.circlepath")
             }
@@ -382,7 +382,7 @@ struct SettingsView: View {
                 Text("Auto-Update")
                 Spacer()
                 Button {
-                    filterManager.checkAndEnableFilters(forceReload: true)
+                    filterManager.applyOrCheckForUpdates()
                 } label: {
                     Label("Update Now", systemImage: "arrow.triangle.2.circlepath")
                 }
