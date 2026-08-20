@@ -536,7 +536,7 @@
         document.addEventListener('visibilitychange', function () {
             if (document.visibilityState === 'visible') reconcile();
         });
-        document.addEventListener('pageshow', reconcile);
+        window.addEventListener('pageshow', reconcile);
     } catch (e) { /* ignore */ }
 
     // Live updates when the popup changes the global or per-site setting.
