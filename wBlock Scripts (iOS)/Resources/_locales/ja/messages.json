@@ -143,6 +143,10 @@
     "message": "子要素を選択",
     "description": "Tooltip for choosing the child element in refine mode."
   },
+  "zapper_ancestors_aria_label": {
+    "message": "上位要素",
+    "description": "Accessible label for the horizontal ancestor-chip list in zapper refine mode."
+  },
   "zapper_button_hide": {
     "message": "非表示",
     "description": "Button label for confirming hide action in refine mode."

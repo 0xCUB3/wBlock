@@ -143,6 +143,10 @@
     "message": "تحديد العنصر الفرعي",
     "description": "Tooltip for choosing the child element in refine mode."
   },
+  "zapper_ancestors_aria_label": {
+    "message": "العناصر الأصل",
+    "description": "Accessible label for the horizontal ancestor-chip list in zapper refine mode."
+  },
   "zapper_button_hide": {
     "message": "إخفاء",
     "description": "Button label for confirming hide action in refine mode."

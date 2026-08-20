@@ -182,8 +182,43 @@ check(
     && source.includes("reloadRulesAndApply().catch")
 );
 check(
+  "refine mode renders tappable ancestor chips",
+  source.includes("function updateAncestorRow")
+    && source.includes("wblock-ancestor-chip")
+    && source.includes("state.ui.ancestorRow = ancestorRow")
+);
+check(
+  "done only reloads the page when zapper rules changed",
+  source.includes("async function finalizeSession()")
+    && source.includes("rulesSignature(state.rules) !== state.sessionRulesSignature")
+);
+check(
   "global element-zapper pause is authoritative in native rule responses",
   nativeSource.includes("BlockingPauseStore.isPaused(.elementZapper)")
+);
+
+check(
+  "showToast returns when inactive before ensureUi (no toolbar recreation)",
+  (() => {
+    const fnMatch = source.match(/function showToast\(message\) \{([\s\S]*?)\n  \}/);
+    if (!fnMatch) return false;
+    const body = fnMatch[1];
+    const activeIdx = body.indexOf("if (!state.active) return;");
+    const ensureIdx = body.indexOf("ensureUi();");
+    return activeIdx >= 0 && ensureIdx >= 0 && activeIdx < ensureIdx;
+  })()
+);
+check(
+  "addSelectorRule re-checks state.active after pending save before toast/UI",
+  /async function addSelectorRule[\s\S]*await applyRulesToPage\(state\.rules\);\s*\n\s*if \(!state\.active\) return;/.test(
+    source
+  )
+);
+check(
+  "undoLastZap re-checks state.active after pending save before toast/UI",
+  /async function undoLastZap[\s\S]*await applyRulesToPage\(state\.rules\);\s*\n\s*if \(!state\.active\) return;/.test(
+    source
+  )
 );
 
 // Scenario 1+2: enabled rules apply, then native disable + reloadRules clears them.

@@ -58,6 +58,7 @@
     lastPickAt: 0,
     candidateElement: null,
     traversalPath: [],
+    refineOrigin: null,
     cleanupFns: [],
     ui: {
       root: null,
@@ -73,8 +74,10 @@
       cancelButton: null,
       navGroup: null,
       defaultGroup: null,
+      ancestorRow: null,
     },
     rulesDisabled: false,
+    sessionRulesSignature: '',
   };
 
   let ruleSyncIntervalId = null;
@@ -102,14 +105,20 @@
     ]);
   }
 
-  async function finalizeSessionAndReload() {
+  async function finalizeSession() {
     if (isFinalizingSession) return;
     isFinalizingSession = true;
 
     try {
       await waitForPendingSaves();
+      const shouldReload = rulesSignature(state.rules) !== state.sessionRulesSignature;
+      // Delay teardown until after the current input/click sequence completes
+      // so we don't accidentally retarget the synthetic click to the page.
+      await new Promise((resolve) => setTimeout(resolve, 0));
       deactivateZapper({ removeUi: true });
-      window.location.reload();
+      if (shouldReload) {
+        window.location.reload();
+      }
     } catch {
       deactivateZapper({ removeUi: true });
     } finally {
@@ -491,7 +500,8 @@
     const uiStyle = ensureStyleElement(UI_STYLE_ID);
     uiStyle.textContent = `
       #${UI_ROOT_ID} { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 2147483647; font-family: -apple-system, system-ui, sans-serif; touch-action: none; }
-      #${UI_ROOT_ID} .wblock-bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 16px; backdrop-filter: blur(16px); background: rgba(20, 20, 22, 0.78); color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.35); cursor: grab; }
+      #${UI_ROOT_ID}:focus { outline: none; }
+      #${UI_ROOT_ID} .wblock-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 16px; backdrop-filter: blur(16px); background: rgba(20, 20, 22, 0.78); color: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.35); cursor: grab; }
       #${UI_ROOT_ID} .wblock-bar.wblock-dragging { cursor: grabbing; }
       #${UI_ROOT_ID} .wblock-drag-hint { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.3); margin: 0 auto 6px; }
       #${UI_ROOT_ID} .wblock-status { font-size: 13px; line-height: 1.35; flex: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -503,6 +513,11 @@
       #${UI_ROOT_ID} .wblock-nav.wblock-active .wblock-hide-btn { background: rgba(249,115,22,0.88); animation: wblock-hide-pulse 1.8s ease-in-out 0.3s 2; }
       @keyframes wblock-hide-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(249,115,22,0); } 50% { box-shadow: 0 0 0 5px rgba(249,115,22,0.25); } }
       #${UI_ROOT_ID} .wblock-refine-active .wblock-done-btn { opacity: 0.45; }
+      #${UI_ROOT_ID} .wblock-ancestors { display: none; flex: 1 1 100%; align-items: center; gap: 6px; overflow-x: auto; overflow-y: hidden; touch-action: pan-x; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; padding: 2px 0 0; scrollbar-width: none; }
+      #${UI_ROOT_ID} .wblock-ancestors.wblock-active { display: flex; }
+      #${UI_ROOT_ID} .wblock-ancestors::-webkit-scrollbar { height: 0; display: none; }
+      #${UI_ROOT_ID} button.wblock-ancestor-chip { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 999px; padding: 6px 10px; min-height: 28px; max-width: 42vw; line-height: 1.1; font-size: 11px; font-weight: 650; color: #fff; background: rgba(255,255,255,0.14); touch-action: manipulation; -webkit-tap-highlight-color: transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+      #${UI_ROOT_ID} button.wblock-ancestor-chip.wblock-selected { background: rgba(249,115,22,0.88); box-shadow: 0 0 0 1px rgba(249,115,22,0.45); }
       #${UI_ROOT_ID} .wblock-more-btn { padding: 10px 8px; font-size: 16px; letter-spacing: 1px; line-height: 1; }
       #${UI_ROOT_ID} .wblock-overflow { position: absolute; bottom: calc(100% + 8px); right: 0; min-width: 160px; padding: 4px; border-radius: 12px; backdrop-filter: blur(16px); background: rgba(30, 30, 32, 0.88); box-shadow: 0 8px 24px rgba(0,0,0,0.4); opacity: 0; transform: translateY(4px) scale(0.97); transition: opacity 0.15s ease, transform 0.15s ease; pointer-events: none; }
       #${UI_ROOT_ID} .wblock-overflow.wblock-open { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
@@ -513,6 +528,7 @@
         #${UI_ROOT_ID} .wblock-actions { width: 100%; }
         #${UI_ROOT_ID} .wblock-actions button { flex-grow: 1; min-height: 44px; }
         #${UI_ROOT_ID} .wblock-overflow { left: 0; right: auto; }
+        #${UI_ROOT_ID} .wblock-ancestors { width: 100%; }
       }
       #${HIGHLIGHT_ID} { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid rgba(249,115,22,0.95); background: rgba(249,115,22,0.12); border-radius: 6px; transform: translate3d(0,0,0); }
       #${TOAST_ID} { position: absolute; left: 0; right: 0; bottom: 100%; margin-bottom: 8px; z-index: 2147483647; display: none; justify-content: center; pointer-events: none; }
@@ -521,6 +537,7 @@
 
     const root = document.createElement('div');
     root.id = UI_ROOT_ID;
+    root.tabIndex = -1;
     root.setAttribute('role', 'dialog');
     root.setAttribute('aria-label', t('zapper_aria_label', undefined, 'wBlock Element Zapper'));
 
@@ -611,7 +628,7 @@
         if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
       }
       doneButton.disabled = true;
-      finalizeSessionAndReload().catch(() => {});
+      finalizeSession().catch(() => {});
     };
     doneButton.addEventListener('click', onDone);
 
@@ -674,8 +691,18 @@
     actions.appendChild(defaultGroup);
     actions.appendChild(navGroup);
     actions.appendChild(doneButton);
+
+    const ancestorRow = document.createElement('div');
+    ancestorRow.className = 'wblock-ancestors';
+    ancestorRow.setAttribute('role', 'toolbar');
+    ancestorRow.setAttribute(
+      'aria-label',
+      t('zapper_ancestors_aria_label', undefined, 'Page ancestors')
+    );
+
     bar.appendChild(status);
     bar.appendChild(actions);
+    bar.appendChild(ancestorRow);
     root.appendChild(dragHint);
     root.appendChild(bar);
 
@@ -702,6 +729,7 @@
     state.ui.cancelButton = cancelButton;
     state.ui.navGroup = navGroup;
     state.ui.defaultGroup = defaultGroup;
+    state.ui.ancestorRow = ancestorRow;
 
     // --- Drag-to-move logic ---
     let dragStartY = 0;
@@ -731,12 +759,12 @@
     }
 
     const onBarPointerDown = (e) => {
-      if (e.target.closest('button')) return;
+      if (e.target.closest('button, .wblock-ancestors')) return;
       e.preventDefault();
       startDrag(e.clientY);
     };
     const onBarTouchStart = (e) => {
-      if (e.target.closest('button')) return;
+      if (e.target.closest('button, .wblock-ancestors')) return;
       if (e.touches.length !== 1) return;
       startDrag(e.touches[0].clientY);
     };
@@ -767,6 +795,7 @@
   }
 
   function showToast(message) {
+    if (!state.active) return;
     ensureUi();
     const toast = state.ui.toast;
     if (!toast) return;
@@ -884,6 +913,7 @@
     state.undoStack.push(normalized);
     await trackPendingSave(saveRulesForHost(state.host, state.rules));
     await applyRulesToPage(state.rules);
+    if (!state.active) return;
     if (state.ui.undoButton) state.ui.undoButton.disabled = false;
     showToast(options.manual
       ? t('zapper_toast_rule_saved', undefined, 'Rule saved for this site.')
@@ -909,6 +939,7 @@
     state.rules = state.rules.filter((r) => r !== toRemove);
     await trackPendingSave(saveRulesForHost(state.host, state.rules));
     await applyRulesToPage(state.rules);
+    if (!state.active) return;
     if (state.ui.undoButton) state.ui.undoButton.disabled = state.undoStack.length === 0;
     showToast(t('zapper_toast_undone', undefined, 'Undone.'));
   }
@@ -960,6 +991,7 @@
     state.ui.cancelButton = null;
     state.ui.navGroup = null;
     state.ui.defaultGroup = null;
+    state.ui.ancestorRow = null;
   }
 
   function clearCleanup() {
@@ -989,8 +1021,118 @@
     return cls ? `<${tag}.${cls}>` : `<${tag}>`;
   }
 
+  function truncateChipPart(value, maxLen) {
+    if (!value) return '';
+    return value.length > maxLen ? `${value.slice(0, Math.max(0, maxLen - 1))}\u2026` : value;
+  }
+
+  function chipLabel(el) {
+    if (!el || !(el instanceof Element)) return '';
+    const tag = el.tagName.toLowerCase();
+    if (el.id) return `${tag}#${truncateChipPart(el.id, 18)}`;
+    const cls = Array.from(el.classList || []).filter(Boolean)[0];
+    if (cls) return `${tag}.${truncateChipPart(cls, 16)}`;
+    return tag;
+  }
+
+  function isZapperBoundary(el) {
+    return !el || el === document.body || el === document.documentElement;
+  }
+
+  function collectSelectableAncestors(fromEl) {
+    const upward = [];
+    let el = fromEl;
+    while (el && el instanceof Element && !isZapperBoundary(el)) {
+      upward.push(el);
+      el = el.parentElement;
+    }
+    const chain = upward.reverse();
+    const maxChips = 10;
+    return chain.length > maxChips ? chain.slice(chain.length - maxChips) : chain;
+  }
+
+  function setAncestorRowActive(active) {
+    if (!state.ui.ancestorRow) return;
+    state.ui.ancestorRow.classList.toggle('wblock-active', Boolean(active));
+    if (state.ui.root) {
+      state.ui.root.style.touchAction = active ? 'pan-x' : '';
+    }
+  }
+
+  function clearAncestorRow() {
+    if (!state.ui.ancestorRow) return;
+    state.ui.ancestorRow.replaceChildren();
+    setAncestorRowActive(false);
+  }
+
+  function updateAncestorRow() {
+    const row = state.ui.ancestorRow;
+    const selected = state.candidateElement;
+    if (!row) return;
+    row.replaceChildren();
+    if (!selected) {
+      setAncestorRowActive(false);
+      return;
+    }
+    const chain = collectSelectableAncestors(selected);
+    if (chain.length === 0) {
+      setAncestorRowActive(false);
+      return;
+    }
+    setAncestorRowActive(true);
+    let selectedChip = null;
+    for (const el of chain) {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'wblock-ancestor-chip';
+      chip.textContent = chipLabel(el);
+      chip.title = elementLabel(el);
+      const isSelected = el === selected;
+      chip.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+      if (isSelected) {
+        chip.classList.add('wblock-selected');
+        selectedChip = chip;
+      }
+      chip.addEventListener('click', (event) => {
+        interceptEvent(event);
+        selectAncestorElement(el);
+      });
+      row.appendChild(chip);
+    }
+    if (selectedChip && typeof selectedChip.scrollIntoView === 'function') {
+      try {
+        selectedChip.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+      } catch {
+        selectedChip.scrollIntoView(false);
+      }
+    }
+  }
+
+  function selectAncestorElement(el) {
+    if (!el || !(el instanceof Element) || isZapperBoundary(el)) return;
+    if (el === state.candidateElement) return;
+    const origin = state.refineOrigin || state.candidateElement;
+    if (origin && (el === origin || (typeof el.contains === 'function' && el.contains(origin)))) {
+      const path = [];
+      let node = origin;
+      while (node && node !== el) {
+        path.push(node);
+        node = node.parentElement;
+      }
+      state.traversalPath = path;
+      state.candidateElement = el;
+    } else {
+      state.refineOrigin = el;
+      state.candidateElement = el;
+      state.traversalPath = [];
+    }
+    setHighlightForElement(el);
+    updateRefineStatus();
+  }
+
   function enterRefineMode(element) {
     state.candidateElement = element;
+    state.refineOrigin = element;
     state.traversalPath = [];
     setHighlightForElement(element);
     if (state.ui.navGroup) state.ui.navGroup.classList.add('wblock-active');
@@ -1002,8 +1144,10 @@
 
   function exitRefineMode() {
     state.candidateElement = null;
+    state.refineOrigin = null;
     state.traversalPath = [];
     clearHighlight();
+    clearAncestorRow();
     if (state.ui.navGroup) state.ui.navGroup.classList.remove('wblock-active');
     if (state.ui.defaultGroup) state.ui.defaultGroup.style.display = 'flex';
     const actionsEl = state.ui.doneButton && state.ui.doneButton.parentElement;
@@ -1021,20 +1165,21 @@
       state.ui.statusText.textContent = t(
         'zapper_status_refine',
         [label, t('zapper_button_hide', undefined, 'Hide')],
-        `${label} — ▲▼ to adjust, tap Hide to save`
+        `${label} \u2014 \u25B2\u25BC to adjust, tap Hide to save`
       );
     }
     const parent = el.parentElement;
-    const atTop = !parent || parent === document.body || parent === document.documentElement;
+    const atTop = isZapperBoundary(parent);
     if (state.ui.parentButton) state.ui.parentButton.disabled = atTop;
     if (state.ui.childButton) state.ui.childButton.disabled = state.traversalPath.length === 0;
+    updateAncestorRow();
   }
 
   function navigateParent() {
     const candidate = state.candidateElement;
     if (!candidate) return;
     const parent = candidate.parentElement;
-    if (!parent || parent === document.body || parent === document.documentElement) return;
+    if (isZapperBoundary(parent)) return;
     state.traversalPath.push(candidate);
     state.candidateElement = parent;
     setHighlightForElement(parent);
@@ -1073,13 +1218,16 @@
     state.undoStack = [];
     state.lastPickAt = 0;
     state.candidateElement = null;
+    state.refineOrigin = null;
     state.traversalPath = [];
     state.lastPointerX = -1;
     state.lastPointerY = -1;
     state.isScrolling = false;
+    state.sessionRulesSignature = rulesSignature(state.rules);
     if (state.ui.undoButton) state.ui.undoButton.disabled = true;
     if (state.ui.navGroup) state.ui.navGroup.classList.remove('wblock-active');
     if (state.ui.defaultGroup) state.ui.defaultGroup.style.display = 'flex';
+    clearAncestorRow();
     if (state.ui.statusText) {
       state.ui.statusText.textContent = t('zapper_status_tap_to_hide', undefined, 'Element Zapper: Tap an element to hide it.');
     }
@@ -1087,10 +1235,22 @@
 
     // After the popup closes, keyboard focus stays on Safari's chrome.
     // Without explicit focus, keydown events (like Escape) never reach our
-    // document listener.
-    setTimeout(() => {
-      document.documentElement.focus();
-    }, 80);
+    // listeners. Retry briefly so Activate works even if the first focus is stolen.
+    const focusZapperRoot = () => {
+      if (!state.active) return;
+      const rootEl = state.ui.root;
+      if (rootEl && typeof rootEl.focus === 'function') {
+        try {
+          rootEl.focus({ preventScroll: true });
+        } catch {
+          rootEl.focus();
+        }
+      }
+    };
+    focusZapperRoot();
+    setTimeout(focusZapperRoot, 0);
+    setTimeout(focusZapperRoot, 50);
+    setTimeout(focusZapperRoot, 150);
 
     const onMove = (event) => {
       if (!state.active) return;
@@ -1115,7 +1275,7 @@
       const el = elementFromEvent(event);
       if (!el || shouldIgnoreTarget(el)) return;
       interceptEvent(event);
-      document.documentElement.focus();
+      focusZapperRoot();
       state.lastPickAt = now;
       enterRefineMode(el);
     };
@@ -1141,7 +1301,7 @@
         if (state.candidateElement) {
           exitRefineMode();
         } else {
-          deactivateZapper();
+          deactivateZapper({ removeUi: true });
         }
         return;
       }
@@ -1176,12 +1336,14 @@
     // Ensure preventDefault works for touch-driven clicks.
     document.addEventListener('touchstart', pickFromEvent, touchOptions);
     document.addEventListener('keydown', onKeyDown, true);
+    window.addEventListener('keydown', onKeyDown, true);
 
     addCleanup(() => document.removeEventListener(moveEvent, onMove, true));
     addCleanup(() => document.removeEventListener(downEvent, pickFromEvent, true));
     addCleanup(() => document.removeEventListener('click', onClick, true));
     addCleanup(() => document.removeEventListener('touchstart', pickFromEvent, touchOptions));
     addCleanup(() => document.removeEventListener('keydown', onKeyDown, true));
+    addCleanup(() => window.removeEventListener('keydown', onKeyDown, true));
 
     let scrollTimer = 0;
     const onScroll = () => {
@@ -1215,6 +1377,7 @@
     if (!state.active && !removeUi) return;
     state.active = false;
     state.candidateElement = null;
+    state.refineOrigin = null;
     state.traversalPath = [];
     clearCleanup();
     clearHighlight();
