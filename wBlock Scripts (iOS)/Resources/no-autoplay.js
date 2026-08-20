@@ -10,10 +10,11 @@
 //
 // State model:
 // - Authoritative: native app state (protobuf) via getNoAutoplayState and popup
-//   setters; CloudSync keeps devices aligned.
-// - Cache: browser.storage.local holds leftover enabled (ENABLED_KEY) and
-//   per-site allow (ALLOW_PREFIX + host) values as fallback when native is
-//   unavailable and for live storage.onChanged reconcile.
+//   setters; CloudSync keeps devices aligned after legacy state has migrated.
+// - Transition cache: until NATIVE_MIGRATED_KEY is true, leftover enabled
+//   (ENABLED_KEY) and per-site allow (ALLOW_PREFIX + host) values override
+//   native protobuf defaults. Thereafter they are only a native-read fallback
+//   and for live storage.onChanged reconcile.
 // - Sites where wBlock is disabled ("Enable on this site" off) stand down.
 // - Warm hint: page localStorage[HINT_KEY] mirrors the last arming decision so
 //   repeat visits arm synchronously at document_start. The hint is page-writable
@@ -27,6 +28,7 @@
 
     var ENABLED_KEY = 'wblock.noAutoplay.enabled.v1';
     var ALLOW_PREFIX = 'wblock.noAutoplayAllow.v1:';
+    var NATIVE_MIGRATED_KEY = 'wblock.noAutoplay.nativeMigrated.v1';
     var HINT_KEY = '__wblock_no_autoplay_arm_v1';
     var NATIVE_MESSAGE_TIMEOUT_MS = 3500;
 
@@ -468,15 +470,31 @@
         if (!host) return false;
         var enabled = false;
         var siteAllowed = false;
-        var native = await getNativeNoAutoplayState(host);
-        if (native) {
-            enabled = native.enabled === true;
-            siteAllowed = native.siteAllowed === true;
+        var allowKey = ALLOW_PREFIX + host;
+        var stored = await browser.storage.local.get([
+            NATIVE_MIGRATED_KEY,
+            ENABLED_KEY,
+            allowKey,
+        ]);
+        var hasLegacyState = !!(stored && (
+            Object.prototype.hasOwnProperty.call(stored, ENABLED_KEY)
+            || Object.prototype.hasOwnProperty.call(stored, allowKey)
+        ));
+        if (stored && stored[NATIVE_MIGRATED_KEY] !== true && hasLegacyState) {
+            // Native protobuf defaults are indistinguishable from a user who
+            // turned the feature off. Until popup migration completes, retain
+            // the Safari values rather than losing a leftover enabled setting.
+            enabled = stored[ENABLED_KEY] === true;
+            siteAllowed = stored[allowKey] === true;
         } else {
-            var allowKey = ALLOW_PREFIX + host;
-            var stored = await browser.storage.local.get([ENABLED_KEY, allowKey]);
-            enabled = !!(stored && stored[ENABLED_KEY] === true);
-            siteAllowed = !!(stored && stored[allowKey] === true);
+            var native = await getNativeNoAutoplayState(host);
+            if (native) {
+                enabled = native.enabled === true;
+                siteAllowed = native.siteAllowed === true;
+            } else {
+                enabled = !!(stored && stored[ENABLED_KEY] === true);
+                siteAllowed = !!(stored && stored[allowKey] === true);
+            }
         }
         if (!enabled) return false;
         if (siteAllowed) return false;
@@ -515,7 +533,9 @@
     try {
         browser.storage.onChanged.addListener(function (changes, area) {
             if (area !== 'local') return;
-            if ((ENABLED_KEY in changes) || ((ALLOW_PREFIX + location.hostname) in changes)) {
+            if ((NATIVE_MIGRATED_KEY in changes)
+                || (ENABLED_KEY in changes)
+                || ((ALLOW_PREFIX + location.hostname) in changes)) {
                 reconcile();
             }
         });

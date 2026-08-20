@@ -26,6 +26,7 @@ const source = readFileSync(scriptPath, "utf8");
 
 const ENABLED_KEY = "wblock.noAutoplay.enabled.v1";
 const ALLOW_PREFIX = "wblock.noAutoplayAllow.v1:";
+const NATIVE_MIGRATED_KEY = "wblock.noAutoplay.nativeMigrated.v1";
 const HINT_KEY = "__wblock_no_autoplay_arm_v1";
 const HOST = "example.com";
 
@@ -397,7 +398,7 @@ async function playResult(media) {
     env.nativeCalls.some((m) => m && m.action === "getSiteDisabledState" && m.host === HOST));
 }
 
-// --- 7. A native default read does not overwrite leftover local state ---
+// --- 7. Unmigrated legacy state wins over native protobuf defaults ---
 {
   const env = createEnvironment({
     storage: { [ENABLED_KEY]: true },
@@ -405,12 +406,23 @@ async function playResult(media) {
   });
   env.run();
   await settle();
-  check("native default state is authoritative", !env.gateMarker());
+  check("unmigrated legacy enabled state stays armed despite native defaults", env.gateMarker());
   check("native default read does not write the legacy enabled key",
     !env.storageWrites.some((patch) => Object.hasOwn(patch, ENABLED_KEY)));
 }
 
-// --- 8. wBlock disabled on this site: gate stands down ---
+// --- 8. Native state wins after legacy migration completes ---
+{
+  const env = createEnvironment({
+    storage: { [ENABLED_KEY]: true, [NATIVE_MIGRATED_KEY]: true },
+    nativeNoAutoplayState: { enabled: false, siteAllowed: false },
+  });
+  env.run();
+  await settle();
+  check("migrated native defaults stand the gate down", !env.gateMarker());
+}
+
+// --- 9. wBlock disabled on this site: gate stands down ---
 {
   const env = createEnvironment({ hint: true, storage: { [ENABLED_KEY]: true }, nativeDisabled: true });
   env.run();
