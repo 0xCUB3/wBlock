@@ -87,6 +87,10 @@
     "message": "Website-Einstellung konnte nicht aktualisiert werden.",
     "description": "Error shown when popup fails to update per-site enabled state."
   },
+  "popup_warning_open_app_to_apply": {
+    "message": "Öffne wBlock, um das Anwenden der Filter abzuschließen.",
+    "description": "Warning shown when the site toggle persisted but a full filter apply is still required."
+  },
   "popup_error_zapper_unavailable": {
     "message": "Der Element-Zapper ist auf dieser Seite nicht verfügbar.",
     "description": "Error shown when zapper cannot be activated on the current tab."
@@ -102,6 +106,10 @@
   "popup_status_unsupported": {
     "message": "Nicht unterstützt",
     "description": "Status label indicating current page does not support popup actions."
+  },
+  "popup_status_unavailable": {
+    "message": "Nicht verfügbar",
+    "description": "Status label indicating the current site setting could not be read."
   },
   "popup_status_checking": {
     "message": "Wird geprüft…",

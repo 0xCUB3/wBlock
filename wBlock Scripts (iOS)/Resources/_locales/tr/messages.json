@@ -87,6 +87,10 @@
     "message": "Site ayarı güncellenemedi.",
     "description": "Error shown when popup fails to update per-site enabled state."
   },
+  "popup_warning_open_app_to_apply": {
+    "message": "Filtrelerin uygulanmasını tamamlamak için wBlock’u açın.",
+    "description": "Warning shown when the site toggle persisted but a full filter apply is still required."
+  },
   "popup_error_zapper_unavailable": {
     "message": "Öğe Zaplayıcı bu sayfada kullanılamıyor.",
     "description": "Error shown when zapper cannot be activated on the current tab."
@@ -102,6 +106,10 @@
   "popup_status_unsupported": {
     "message": "Desteklenmiyor",
     "description": "Status label indicating current page does not support popup actions."
+  },
+  "popup_status_unavailable": {
+    "message": "Kullanılamıyor",
+    "description": "Status label indicating the current site setting could not be read."
   },
   "popup_status_checking": {
     "message": "Kontrol ediliyor…",

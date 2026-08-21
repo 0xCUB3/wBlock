@@ -87,6 +87,10 @@
     "message": "更新网站设置失败。",
     "description": "Error shown when popup fails to update per-site enabled state."
   },
+  "popup_warning_open_app_to_apply": {
+    "message": "打开 wBlock 以完成过滤器应用。",
+    "description": "Warning shown when the site toggle persisted but a full filter apply is still required."
+  },
   "popup_error_zapper_unavailable": {
     "message": "此页面无法使用元素清除器。",
     "description": "Error shown when zapper cannot be activated on the current tab."
@@ -102,6 +106,10 @@
   "popup_status_unsupported": {
     "message": "不支持",
     "description": "Status label indicating current page does not support popup actions."
+  },
+  "popup_status_unavailable": {
+    "message": "不可用",
+    "description": "Status label indicating the current site setting could not be read."
   },
   "popup_status_checking": {
     "message": "正在检查…",
