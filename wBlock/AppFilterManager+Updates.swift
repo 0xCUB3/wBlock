@@ -30,21 +30,26 @@ extension AppFilterManager {
         saveFilterListsCoalesced()
     }
 
-    func checkForUpdates() async {
+    enum UpdateCheckScope {
+        case filters
+        case scripts
+        case all
+    }
+
+    func checkForUpdates(scope: UpdateCheckScope = .all) async {
         isLoading = true
         statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Update check status")
-        // Ensure counts are up-to-date before checking for updates
-        await updateVersionsAndCounts()
 
-        let enabledFilters = filterLists.filter { $0.isSelected }
-        let updatedFilters = await filterUpdater.checkForUpdates(filterLists: enabledFilters)
-
-        availableUpdates = updatedFilters
-
-        if let userScriptManager = filterUpdater.userScriptManager {
-            availableScriptUpdates = await filterUpdater.checkForScriptUpdates(scripts: userScriptManager.userScripts)
-        } else {
+        switch scope {
+        case .filters:
+            await checkEnabledFilterUpdates()
             availableScriptUpdates = []
+        case .scripts:
+            availableUpdates = []
+            await checkUserScriptUpdates()
+        case .all:
+            await checkEnabledFilterUpdates()
+            await checkUserScriptUpdates()
         }
 
         let totalUpdates = availableUpdates.count + availableScriptUpdates.count
@@ -66,6 +71,21 @@ extension AppFilterManager {
         }
 
         isLoading = false
+    }
+
+    private func checkEnabledFilterUpdates() async {
+        await updateVersionsAndCounts()
+        let enabledFilters = filterLists.filter { $0.isSelected }
+        availableUpdates = await filterUpdater.checkForUpdates(filterLists: enabledFilters)
+    }
+
+    private func checkUserScriptUpdates() async {
+        let userScriptManager = filterUpdater.userScriptManager ?? UserScriptManager.shared
+        await userScriptManager.waitUntilReady()
+        if filterUpdater.userScriptManager == nil {
+            setUserScriptManager(userScriptManager)
+        }
+        availableScriptUpdates = await filterUpdater.checkForScriptUpdates(scripts: userScriptManager.userScripts)
     }
 
     /// Downloads the selected filter/script updates, then runs the shared apply pipeline.

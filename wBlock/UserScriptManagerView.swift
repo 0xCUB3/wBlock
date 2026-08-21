@@ -150,6 +150,7 @@ struct UserScriptManagerView: View {
     let isApplyingChanges: Bool
     let onApplyChanges: () -> Void
     let tabSelection: Int
+    let onRefresh: () async -> Void
 
     @State private var scripts: [UserScriptListItem] = []
     @State private var showingAddScriptSheet = false
@@ -321,6 +322,9 @@ struct UserScriptManagerView: View {
                 }
             }        }
         .unifiedTabListStyle()
+        .refreshable {
+            await onRefresh()
+        }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 if #unavailable(iOS 26.0) {
