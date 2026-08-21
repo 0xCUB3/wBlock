@@ -536,6 +536,8 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
 
     private static let reloadMarkerSchema = 1
     private static let reloadMarkerFileSuffix = ".reload-marker.json"
+    private static let disabledSitesApplyInProgressFilename = ".disabled-sites-apply-in-progress"
+    private static let disabledSitesApplyInProgressMaximumAge: TimeInterval = 20
     private static let maxReloadVerificationPasses = 3
     private static let reloadCoordinator = ReloadCoordinator()
 
@@ -547,13 +549,13 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         #endif
         let os = ProcessInfo.processInfo.operatingSystemVersion
         let osVersion = "\(os.majorVersion).\(os.minorVersion).\(os.patchVersion)"
-        let info = Bundle.main.infoDictionary ?? [:]
+        // Markers are shared by the app and Scripts extension processes, whose bundle versions can differ.
         return ReloadContext(
             schema: reloadMarkerSchema,
             platform: platform,
             osVersion: osVersion,
-            appVersion: info["CFBundleShortVersionString"] as? String ?? "",
-            appBuild: info["CFBundleVersion"] as? String ?? ""
+            appVersion: "",
+            appBuild: ""
         )
     }
 
@@ -564,6 +566,45 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         containerURL.appendingPathComponent(
             "\(targetRulesFilename)\(reloadMarkerFileSuffix)"
         )
+    }
+
+    private static func disabledSitesApplyInProgressURL(groupIdentifier: String) -> URL? {
+        FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        )?.appendingPathComponent(disabledSitesApplyInProgressFilename)
+    }
+
+    /// Marks a Scripts-extension disabled-sites update as active so the containing
+    /// app does not begin a concurrent reload before Safari finishes the first one.
+    public static func markDisabledSitesApplyStarted(groupIdentifier: String) {
+        guard let stampURL = disabledSitesApplyInProgressURL(groupIdentifier: groupIdentifier) else {
+            return
+        }
+        let timestamp = String(Date().timeIntervalSince1970)
+        try? Data(timestamp.utf8).write(to: stampURL, options: .atomic)
+    }
+
+    /// Clears the cross-process disabled-sites update marker.
+    public static func markDisabledSitesApplyFinished(groupIdentifier: String) {
+        guard let stampURL = disabledSitesApplyInProgressURL(groupIdentifier: groupIdentifier) else {
+            return
+        }
+        try? FileManager.default.removeItem(at: stampURL)
+    }
+
+    /// Returns whether a Scripts-extension disabled-sites update started recently.
+    /// A stale or malformed stamp is ignored so a terminated extension cannot
+    /// block later app-side updates indefinitely.
+    public static func isDisabledSitesApplyInProgress(groupIdentifier: String) -> Bool {
+        guard let stampURL = disabledSitesApplyInProgressURL(groupIdentifier: groupIdentifier),
+              let timestampData = try? Data(contentsOf: stampURL),
+              let timestampString = String(data: timestampData, encoding: .utf8),
+              let timestamp = TimeInterval(timestampString.trimmingCharacters(in: .whitespacesAndNewlines))
+        else {
+            return false
+        }
+        let age = Date().timeIntervalSince1970 - timestamp
+        return age >= 0 && age < disabledSitesApplyInProgressMaximumAge
     }
 
     private static func validOutputDigest(_ data: Data?) -> String? {

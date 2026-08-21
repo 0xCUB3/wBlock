@@ -439,7 +439,8 @@ public enum WebExtensionRequestHandler {
                     "reloadDurationMs": 0,
                     "reloadedTargets": 0,
                     "skippedTargets": 0,
-                    "failedTargets": 0
+                    "failedTargets": 0,
+                    "requiresFullApply": false
                 ])
                 context.completeRequest(returningItems: [response])
                 return
@@ -485,7 +486,8 @@ public enum WebExtensionRequestHandler {
                 "reloadDurationMs": applyDurationMs,
                 "reloadedTargets": summary.reloadedTargets,
                 "skippedTargets": summary.skippedTargets,
-                "failedTargets": summary.failedTargets
+                "failedTargets": summary.failedTargets,
+                "requiresFullApply": summary.requiresFullApply
             ])
             context.completeRequest(returningItems: [response])
         }
@@ -748,72 +750,100 @@ public enum WebExtensionRequestHandler {
     private static func applyDisabledSitesFastPath(disabledSites: [String], platform: Platform) async -> (
         reloadedTargets: Int,
         skippedTargets: Int,
-        failedTargets: Int
+        failedTargets: Int,
+        requiresFullApply: Bool
     ) {
         let groupID = GroupIdentifier.shared.value
+        ContentBlockerService.markDisabledSitesApplyStarted(groupIdentifier: groupID)
+        defer {
+            ContentBlockerService.markDisabledSitesApplyFinished(groupIdentifier: groupID)
+        }
+
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: platform)
 
-        // Update JSON for all targets, then only reload targets that actually have rules.
+        // Update JSON for all targets, then reload only outputs whose bytes changed.
         var targetsToReload: [ContentBlockerTargetInfo] = []
         var updateFailures = 0
+        var fullApplyTargets = 0
         for target in targets {
             do {
-                let updateResult = try ContentBlockerService.fastUpdateDisabledSites(
+                let updateResult = try ContentBlockerService.fastUpdateDisabledSitesWithOutputChange(
                     groupIdentifier: groupID,
                     targetRulesFilename: target.rulesFilename,
                     disabledSites: disabledSites
                 )
-                if updateResult.safariRulesCount > 0 {
+                if updateResult.outputChanged {
                     targetsToReload.append(target)
                 }
+            } catch let error as CocoaError where error.code == .fileReadCorruptFile {
+                fullApplyTargets += 1
             } catch {
                 updateFailures += 1
             }
         }
 
-        let skippedTargets = max(targets.count - targetsToReload.count - updateFailures, 0)
+        let unchangedTargets = max(
+            targets.count - targetsToReload.count - updateFailures - fullApplyTargets,
+            0
+        )
         guard !targetsToReload.isEmpty else {
-            return (reloadedTargets: 0, skippedTargets: skippedTargets, failedTargets: updateFailures)
+            return (
+                reloadedTargets: 0,
+                skippedTargets: unchangedTargets,
+                failedTargets: updateFailures,
+                requiresFullApply: fullApplyTargets > 0
+            )
         }
 
         let results = await reloadTargetsWithRetry(targetsToReload)
         return (
             reloadedTargets: results.reloadedTargets,
-            skippedTargets: skippedTargets,
-            failedTargets: results.failedTargets + updateFailures
+            skippedTargets: unchangedTargets + results.skippedTargets,
+            failedTargets: results.failedTargets + updateFailures,
+            requiresFullApply: fullApplyTargets > 0
         )
     }
 
     private static func reloadTargetsWithRetry(_ targets: [ContentBlockerTargetInfo]) async -> (
         reloadedTargets: Int,
+        skippedTargets: Int,
         failedTargets: Int
     ) {
         let groupID = GroupIdentifier.shared.value
         // Safari reloads distinct content blocker identifiers independently, so reload
-        // them concurrently instead of serially. Behind the popup's 5s toggle timeout
+        // them concurrently instead of serially. Behind the popup's 10s toggle timeout
         // a sequential loop (`for target in targets { await ... }`) was the dominant
         // cost and the reason Disable-on-this-site intermittently reported failure on
         // profiles with several selected filter lists.
-        return await withTaskGroup(of: Bool.self) { group in
+        return await withTaskGroup(of: ContentBlockerService.ReloadAttemptResult.self) { group in
             for target in targets {
                 group.addTask {
-                    await ContentBlockerService.reloadWithRetry(
+                    await ContentBlockerService.reloadIfNeeded(
                         identifier: target.bundleIdentifier,
-                        groupIdentifier: groupID,
-                        targetRulesFilename: target.rulesFilename
-                    ).success
+                        targetRulesFilename: target.rulesFilename,
+                        groupIdentifier: groupID
+                    )
                 }
             }
             var reloadedTargets = 0
+            var skippedTargets = 0
             var failedTargets = 0
-            for await success in group {
-                if success {
-                    reloadedTargets += 1
+            for await result in group {
+                if result.success {
+                    if result.skipped {
+                        skippedTargets += 1
+                    } else {
+                        reloadedTargets += 1
+                    }
                 } else {
                     failedTargets += 1
                 }
             }
-            return (reloadedTargets: reloadedTargets, failedTargets: failedTargets)
+            return (
+                reloadedTargets: reloadedTargets,
+                skippedTargets: skippedTargets,
+                failedTargets: failedTargets
+            )
         }
     }
 
