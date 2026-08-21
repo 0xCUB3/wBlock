@@ -796,8 +796,6 @@ public enum WebExtensionRequestHandler {
             )
         }
 
-        // Keep the existing cross-process ownership stamp alive through Safari's retry window.
-        ContentBlockerService.refreshDisabledSitesApplyInProgress(groupIdentifier: groupID)
         let results = await reloadTargetsWithRetry(targetsToReload)
         return (
             reloadedTargets: results.reloadedTargets,

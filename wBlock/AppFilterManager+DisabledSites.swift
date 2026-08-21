@@ -3,8 +3,6 @@ import wBlockCoreService
 
 @MainActor
 private var disabledSitesApplyRetryTask: Task<Void, Never>?
-@MainActor
-private var disabledSitesApplyRetryID: UUID?
 
 extension AppFilterManager {
     /// Sets up an observer to automatically rebuild content blockers when disabled sites change
@@ -88,21 +86,9 @@ extension AppFilterManager {
     /// has had time to finish its Safari reload. Replacing the task coalesces
     /// repeated filesystem events without marking the app state dirty.
     private func scheduleDisabledSitesApplyRetry() {
-        let retryID = UUID()
         disabledSitesApplyRetryTask?.cancel()
-        disabledSitesApplyRetryID = retryID
         disabledSitesApplyRetryTask = Task { @MainActor [weak self] in
-            defer {
-                if disabledSitesApplyRetryID == retryID {
-                    disabledSitesApplyRetryTask = nil
-                    disabledSitesApplyRetryID = nil
-                }
-            }
-            do {
-                try await Task.sleep(nanoseconds: 2_000_000_000)
-            } catch {
-                return
-            }
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
             guard !Task.isCancelled else { return }
             await self?.checkForDisabledSitesChanges()
         }
