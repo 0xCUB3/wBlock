@@ -83,11 +83,18 @@ require(autoUpdate.contains("saveContentBlockerIfChanged"), "auto-update pause r
 require(source.contains("public static func reloadIfNeeded("), "reloads must go through the marker coordinator")
 require(autoUpdate.contains("groupIdentifier: GroupIdentifier.shared.value,\n                targetRulesFilename: target.rulesFilename"), "auto-update reloads must invalidate the mapped target marker")
 require(autoUpdate.contains("groupIdentifier: groupIdentifier,\n                    targetRulesFilename: target.rulesFilename"), "pause repair reloads must invalidate the mapped target marker")
-require(webExtension.contains("groupIdentifier: groupID,\n                        targetRulesFilename: target.rulesFilename"), "WebExtension reloads must invalidate the mapped target marker")
+require(webExtension.contains("await ContentBlockerService.reloadIfNeeded(\n                        identifier: target.bundleIdentifier,\n                        targetRulesFilename: target.rulesFilename,\n                        groupIdentifier: groupID"), "WebExtension disabled-sites fast path must certify mapped target markers via reloadIfNeeded")
 require(source.contains("public static func invalidateReloadMarker("), "raw reloads need an explicit marker invalidation API")
 require(source.contains("if let groupIdentifier, let targetRulesFilename"), "raw reload policy must require both target mapping fields")
 require(source.contains("outputDigest"), "marker must carry the exact output digest")
 require(source.contains("ReloadContext"), "marker must carry reload context")
+let reloadContext = section(
+    from: "private static var currentReloadContext",
+    to: "private static func reloadMarkerURL"
+)
+require(reloadContext.contains("sharedReloadIdentity()"), "reload context must use shared app-group identity")
+require(!reloadContext.contains("Bundle.main"), "reload context must not use process-specific Bundle.main metadata")
+require(source.contains("UserDefaults(suiteName: GroupIdentifier.shared.value)"), "reload identity must be readable from app-group defaults")
 require(source.contains("FileLock(") && source.contains("containerURL.appendingPathComponent(\".\\(targetRulesFilename).lock\")"), "marker checks must use the target output lock")
 require(source.contains("JSONEncoder().encode(newMarker).write(to: markerURL, options: .atomic)"), "marker writes must be atomic")
 require(source.contains("try? FileManager.default.removeItem(at: markerURL)"), "failed reloads must invalidate the marker")

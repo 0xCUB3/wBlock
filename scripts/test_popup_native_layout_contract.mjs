@@ -105,10 +105,18 @@ if (!(nextIdx >= 0 && nextIdx < tryIdx)) {
   fail("desired site state must be visible to the timeout catch");
 }
 
-if (!js.includes("return null;") ||
+if (!js.includes("readSiteDisabledStateAfterTimeout") ||
     !js.includes("typeof actuallyDisabled === 'boolean'") ||
     !js.includes("actuallyDisabled === next")) {
   fail("timed-out site toggles must reconcile only from a confirmed native read");
+}
+
+if (!js.includes("popup_status_unavailable") || !js.includes("siteDisabledUnknown")) {
+  fail("unreadable site state must not look enabled");
+}
+
+if (!js.includes("popup_warning_open_app_to_apply") || !js.includes("requiresFullApply")) {
+  fail("persisted toggles that still need a full apply must warn the user");
 }
 
 console.log("PASS");

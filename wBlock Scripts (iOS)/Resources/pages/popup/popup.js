@@ -581,6 +581,8 @@ let currentZapperRules = [];
 let currentPageUserScripts = [];
 let host = '';
 let tab = null;
+let siteToggleGeneration = 0;
+let siteToggleInFlight = false;
 
 const DISCLOSURE_DURATION_MS = 200;
 
@@ -816,6 +818,15 @@ async function getSiteDisabledState(host) {
         console.error('[wBlock] Failed to get disabled state:', error);
         return null;
     }
+}
+
+async function readSiteDisabledStateAfterTimeout(targetHost) {
+    let actuallyDisabled = await getSiteDisabledState(targetHost);
+    for (let attempt = 0; attempt < 2 && typeof actuallyDisabled !== 'boolean'; attempt += 1) {
+        await sleep(300);
+        actuallyDisabled = await getSiteDisabledState(targetHost);
+    }
+    return actuallyDisabled;
 }
 
 async function setSiteDisabledState(host, disabled) {
@@ -1348,52 +1359,77 @@ function setupListeners() {
 
     if (disableToggle) {
         disableToggle.addEventListener('change', async () => {
+            const generation = ++siteToggleGeneration;
+            siteToggleInFlight = true;
             const next = !disableToggle.checked;
+            const previousChecked = !disableToggle.checked;
+            const targetHost = host;
+            const targetTab = tab;
             try {
+                if (!targetHost) {
+                    disableToggle.checked = previousChecked;
+                    return;
+                }
+
                 setError('');
                 disableToggle.disabled = true;
                 setStatus(next
                     ? t('popup_status_disabling', undefined, 'Disabling…')
                     : t('popup_status_enabling', undefined, 'Enabling…'), 'neutral');
-                const updateResult = await setSiteDisabledState(host, next);
+                const updateResult = await setSiteDisabledState(targetHost, next);
                 try {
                     await browser.runtime.sendMessage({ action: 'wblock:clearCache' });
                 } catch (error) {
                     console.warn('[wBlock] Failed to clear configuration cache:', error);
                 }
-                const settleMs = updateResult && updateResult.failedTargets > 0 ? 1200 : 350;
-                await sleep(settleMs);
+                const failedTargets = Number(updateResult && updateResult.failedTargets) || 0;
+                const requiresFullApply = Boolean(updateResult && updateResult.requiresFullApply);
+                if (requiresFullApply) {
+                    setError(t(
+                        'popup_warning_open_app_to_apply',
+                        undefined,
+                        'Open wBlock to finish applying filters.'
+                    ));
+                } else if (failedTargets > 0) {
+                    setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
+                }
+                disableToggle.checked = !next;
                 setStatus(next
                     ? t('popup_status_disabled', undefined, 'Disabled')
                     : t('popup_status_active', undefined, 'Active'),
                 next ? 'disabled' : 'active');
-                await reloadActiveTab(tab.id);
+                await reloadActiveTab(targetTab && targetTab.id);
             } catch (error) {
                 console.error('[wBlock] Failed to update disabled state:', error);
                 // The native write can finish after the popup times out. Re-read
                 // the authoritative state before treating this as a hard failure.
+                let actuallyDisabled = null;
                 try {
-                    const actuallyDisabled = await getSiteDisabledState(host);
-                    if (typeof actuallyDisabled === 'boolean' && actuallyDisabled === next) {
-                        disableToggle.checked = !actuallyDisabled;
+                    actuallyDisabled = await readSiteDisabledStateAfterTimeout(targetHost);
+                } catch (reconcileError) {
+                    console.warn('[wBlock] Failed to reconcile site setting after error:', reconcileError);
+                    actuallyDisabled = null;
+                }
+                if (typeof actuallyDisabled === 'boolean') {
+                    disableToggle.checked = !actuallyDisabled;
+                    if (actuallyDisabled === next) {
                         setStatus(next
                             ? t('popup_status_disabled', undefined, 'Disabled')
                             : t('popup_status_active', undefined, 'Active'),
                         next ? 'disabled' : 'active');
-                        await reloadActiveTab(tab && tab.id);
+                        await reloadActiveTab(targetTab && targetTab.id);
                         return;
                     }
-                    disableToggle.checked = typeof actuallyDisabled === 'boolean'
-                        ? !actuallyDisabled
-                        : next;
-                } catch (reconcileError) {
-                    console.warn('[wBlock] Failed to reconcile site setting after error:', reconcileError);
-                    disableToggle.checked = next;
+                } else {
+                    disableToggle.checked = previousChecked;
                 }
                 setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
                 setStatus(t('popup_status_error', undefined, 'Error'), 'error');
             } finally {
-                disableToggle.disabled = false;
+                if (generation === siteToggleGeneration) {
+                    siteToggleInFlight = false;
+                    disableToggle.disabled = false;
+                }
             }
         });
     }
@@ -1610,7 +1646,10 @@ function setupListeners() {
 }
 
 async function refreshUi() {
-    setError('');
+    const generationAtStart = siteToggleGeneration;
+    if (!siteToggleInFlight) {
+        setError('');
+    }
     const isMac = await isMacPlatform();
     const updateFiltersButton = document.getElementById('update-filters');
     if (updateFiltersButton) updateFiltersButton.hidden = !isMac;
@@ -1717,10 +1756,16 @@ async function refreshUi() {
         filtersPaused && userScriptsPaused && zapperPaused
     );
     const siteDisabled = disabled === true;
+    const siteDisabledUnknown = disabled === null;
+    const skipSiteToggleCommit = siteToggleInFlight || generationAtStart !== siteToggleGeneration;
     const zapperRulesDisabled = zapperState.disabled === true;
     if (disableToggle) {
-        disableToggle.checked = !siteDisabled;
-        disableToggle.disabled = filtersPaused;
+        if (siteDisabledUnknown) {
+            disableToggle.disabled = true;
+        } else if (!skipSiteToggleCommit) {
+            disableToggle.checked = !siteDisabled;
+            disableToggle.disabled = filtersPaused;
+        }
     }
     if (pausedPrompt) pausedPrompt.hidden = !blockingPaused;
     if (resumeButton) resumeButton.hidden = !(blockingPaused && resumeAvailable);
@@ -1746,16 +1791,23 @@ async function refreshUi() {
     }
     noAutoplaySiteDisabled = siteDisabled;
     updateNoAutoplayControls(noAutoplayState, { host, siteDisabled });
-    setStatus(
-        blockingPaused && !partiallyPaused
-            ? t('popup_status_paused', undefined, 'Paused')
-            : blockingPaused
-                ? t('popup_status_partially_paused', undefined, 'Partially Paused')
-                : siteDisabled
-                    ? t('popup_status_disabled', undefined, 'Disabled')
-                    : t('popup_status_active', undefined, 'Active'),
-        blockingPaused || siteDisabled ? 'disabled' : 'active'
-    );
+    const shouldCommitSiteStatus = !skipSiteToggleCommit || blockingPaused;
+    if (shouldCommitSiteStatus) {
+        if (siteDisabledUnknown && !blockingPaused) {
+            setStatus(t('popup_status_unavailable', undefined, 'Unavailable'), 'neutral');
+        } else {
+            setStatus(
+                blockingPaused && !partiallyPaused
+                    ? t('popup_status_paused', undefined, 'Paused')
+                    : blockingPaused
+                        ? t('popup_status_partially_paused', undefined, 'Partially Paused')
+                        : siteDisabled
+                            ? t('popup_status_disabled', undefined, 'Disabled')
+                            : t('popup_status_active', undefined, 'Active'),
+                blockingPaused || siteDisabled ? 'disabled' : 'active'
+            );
+        }
+    }
 
     if (zapperActivate) {
         zapperActivate.disabled = siteDisabled || zapperPaused || zapperRulesDisabled;

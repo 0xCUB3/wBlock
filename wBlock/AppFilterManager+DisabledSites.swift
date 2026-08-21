@@ -1,6 +1,9 @@
 import Foundation
 import wBlockCoreService
 
+@MainActor
+private var disabledSitesApplyRetryTask: Task<Void, Never>?
+
 extension AppFilterManager {
     /// Sets up an observer to automatically rebuild content blockers when disabled sites change
     func setupDisabledSitesObserver() {
@@ -55,6 +58,13 @@ extension AppFilterManager {
         let currentDisabledSites = effectiveFilterDisabledSites()
 
         if currentDisabledSites != lastKnownDisabledSites {
+            if ContentBlockerService.isDisabledSitesApplyInProgress(
+                groupIdentifier: GroupIdentifier.shared.value
+            ) {
+                scheduleDisabledSitesApplyRetry()
+                return
+            }
+
             await ConcurrentLogManager.shared.info(
                 .whitelist, LocalizedStrings.text("Disabled sites changed, fast rebuilding content blockers"),
                 metadata: [
@@ -69,6 +79,18 @@ extension AppFilterManager {
             } else {
                 lastKnownDisabledSites = currentDisabledSites
             }
+        }
+    }
+
+    /// Retries the directory-monitor check after an extension-owned site toggle
+    /// has had time to finish its Safari reload. Replacing the task coalesces
+    /// repeated filesystem events without marking the app state dirty.
+    private func scheduleDisabledSitesApplyRetry() {
+        disabledSitesApplyRetryTask?.cancel()
+        disabledSitesApplyRetryTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard !Task.isCancelled else { return }
+            await self?.checkForDisabledSitesChanges()
         }
     }
 

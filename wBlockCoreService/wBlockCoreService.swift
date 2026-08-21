@@ -536,8 +536,30 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
 
     private static let reloadMarkerSchema = 1
     private static let reloadMarkerFileSuffix = ".reload-marker.json"
+    private static let disabledSitesApplyInProgressFilename = ".disabled-sites-apply-in-progress"
+    // Five total attempts can each wait reloadCompletionTimeout; retain one extra timeout as margin.
+    private static let disabledSitesApplyInProgressMaximumAge: TimeInterval = reloadCompletionTimeout * 6
+    private static let reloadContextAppVersionKey = "wBlock.reloadContext.appVersion"
+    private static let reloadContextAppBuildKey = "wBlock.reloadContext.appBuild"
     private static let maxReloadVerificationPasses = 3
     private static let reloadCoordinator = ReloadCoordinator()
+
+    /// Uses the containing app as the sole publisher so all app-group processes
+    /// compare reload markers against the same app upgrade identity.
+    private static func sharedReloadIdentity() -> (appVersion: String, appBuild: String) {
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value)
+        if Bundle.main.bundleIdentifier == "skula.wBlock" {
+            let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+            let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
+            defaults?.set(appVersion, forKey: reloadContextAppVersionKey)
+            defaults?.set(appBuild, forKey: reloadContextAppBuildKey)
+            return (appVersion, appBuild)
+        }
+        return (
+            defaults?.string(forKey: reloadContextAppVersionKey) ?? "",
+            defaults?.string(forKey: reloadContextAppBuildKey) ?? ""
+        )
+    }
 
     private static var currentReloadContext: ReloadContext {
         #if os(iOS)
@@ -547,13 +569,13 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         #endif
         let os = ProcessInfo.processInfo.operatingSystemVersion
         let osVersion = "\(os.majorVersion).\(os.minorVersion).\(os.patchVersion)"
-        let info = Bundle.main.infoDictionary ?? [:]
+        let identity = sharedReloadIdentity()
         return ReloadContext(
             schema: reloadMarkerSchema,
             platform: platform,
             osVersion: osVersion,
-            appVersion: info["CFBundleShortVersionString"] as? String ?? "",
-            appBuild: info["CFBundleVersion"] as? String ?? ""
+            appVersion: identity.appVersion,
+            appBuild: identity.appBuild
         )
     }
 
@@ -564,6 +586,47 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         containerURL.appendingPathComponent(
             "\(targetRulesFilename)\(reloadMarkerFileSuffix)"
         )
+    }
+
+    private static func disabledSitesApplyInProgressURL(groupIdentifier: String) -> URL? {
+        FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        )?.appendingPathComponent(disabledSitesApplyInProgressFilename)
+    }
+
+    /// Marks a Scripts-extension disabled-sites update as active so the containing
+    /// app does not begin a concurrent reload before Safari finishes the first one.
+    public static func markDisabledSitesApplyStarted(groupIdentifier: String) {
+        guard let stampURL = disabledSitesApplyInProgressURL(groupIdentifier: groupIdentifier),
+              let timestamp = String(Date().timeIntervalSince1970).data(using: .utf8)
+        else {
+            return
+        }
+        try? timestamp.write(to: stampURL, options: .atomic)
+    }
+
+    /// Clears the Scripts-extension disabled-sites update marker.
+    public static func markDisabledSitesApplyFinished(groupIdentifier: String) {
+        guard let stampURL = disabledSitesApplyInProgressURL(groupIdentifier: groupIdentifier) else {
+            return
+        }
+        try? FileManager.default.removeItem(at: stampURL)
+    }
+
+    /// Returns whether a Scripts-extension disabled-sites update started recently.
+    /// A stale or malformed stamp is ignored so a terminated extension cannot
+    /// block later app-side updates indefinitely.
+    public static func isDisabledSitesApplyInProgress(groupIdentifier: String) -> Bool {
+        guard let stampURL = disabledSitesApplyInProgressURL(groupIdentifier: groupIdentifier),
+              let data = try? Data(contentsOf: stampURL),
+              let timestampString = String(data: data, encoding: .utf8),
+              let timestamp = TimeInterval(timestampString.trimmingCharacters(in: .whitespacesAndNewlines))
+        else {
+            return false
+        }
+
+        let age = Date().timeIntervalSince1970 - timestamp
+        return age >= 0 && age < disabledSitesApplyInProgressMaximumAge
     }
 
     private static func validOutputDigest(_ data: Data?) -> String? {
