@@ -582,12 +582,107 @@ let currentPageUserScripts = [];
 let host = '';
 let tab = null;
 
+const DISCLOSURE_DURATION_MS = 200;
+
+function prefersReducedMotion() {
+    try {
+        return Boolean(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    } catch {
+        return false;
+    }
+}
+
+function setDisclosureInert(panel, inert) {
+    if ('inert' in panel) {
+        panel.inert = inert;
+        if (!inert) panel.removeAttribute('aria-hidden');
+        return;
+    }
+    if (inert) {
+        panel.setAttribute('aria-hidden', 'true');
+    } else {
+        panel.removeAttribute('aria-hidden');
+    }
+}
+
+function setDisclosureOpen(panel, open, toggle) {
+    if (!panel) return;
+
+    const alreadyOpen = !panel.hidden && panel.classList.contains('is-open');
+    const alreadyClosed = panel.hidden && !panel.classList.contains('is-open');
+    if (open && alreadyOpen) return;
+    if (!open && alreadyClosed) return;
+
+    const token = (Number(panel.dataset.disclosureToken) || 0) + 1;
+    panel.dataset.disclosureToken = String(token);
+
+    if (panel._disclosureOnEnd) {
+        panel.removeEventListener('transitionend', panel._disclosureOnEnd);
+        panel._disclosureOnEnd = null;
+    }
+    if (panel._disclosureTimer) {
+        clearTimeout(panel._disclosureTimer);
+        panel._disclosureTimer = 0;
+    }
+
+    const reduced = prefersReducedMotion();
+
+    if (open) {
+        setDisclosureInert(panel, false);
+        panel.hidden = false;
+        if (reduced) {
+            panel.classList.add('is-open');
+            return;
+        }
+        panel.classList.remove('is-open');
+        requestAnimationFrame(() => {
+            if (Number(panel.dataset.disclosureToken) !== token) return;
+            requestAnimationFrame(() => {
+                if (Number(panel.dataset.disclosureToken) !== token) return;
+                panel.classList.add('is-open');
+            });
+        });
+        return;
+    }
+
+    setDisclosureInert(panel, true);
+    if (toggle && panel.contains(document.activeElement)) {
+        toggle.focus();
+    }
+
+    const hide = () => {
+        if (Number(panel.dataset.disclosureToken) !== token) return;
+        if (panel._disclosureOnEnd) {
+            panel.removeEventListener('transitionend', panel._disclosureOnEnd);
+            panel._disclosureOnEnd = null;
+        }
+        if (panel._disclosureTimer) {
+            clearTimeout(panel._disclosureTimer);
+            panel._disclosureTimer = 0;
+        }
+        panel.hidden = true;
+        panel.classList.remove('is-open');
+    };
+
+    if (reduced) {
+        hide();
+        return;
+    }
+
+    panel.classList.remove('is-open');
+    panel._disclosureOnEnd = (event) => {
+        if (event.target !== panel) return;
+        hide();
+    };
+    panel.addEventListener('transitionend', panel._disclosureOnEnd);
+    panel._disclosureTimer = setTimeout(hide, DISCLOSURE_DURATION_MS + 50);
+}
+
 function setRulesExpanded(expanded) {
     zapperRulesExpanded = expanded;
     const toggle = document.getElementById('zapper-rules-toggle');
-    const container = document.getElementById('zapper-rules');
     if (toggle) toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-    if (container) container.hidden = !expanded;
+    setDisclosureOpen(document.getElementById('zapper-rules-panel'), expanded, toggle);
 }
 
 function setUserscriptsExpanded(expanded) {
@@ -597,8 +692,9 @@ function setUserscriptsExpanded(expanded) {
     const empty = document.getElementById('userscripts-empty');
     const hasScripts = currentPageUserScripts.length > 0;
     if (toggle) toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-    if (list) list.hidden = !expanded || !hasScripts;
-    if (empty) empty.hidden = !expanded || hasScripts;
+    if (list) list.hidden = !hasScripts;
+    if (empty) empty.hidden = hasScripts;
+    setDisclosureOpen(document.getElementById('userscripts-panel'), expanded, toggle);
 }
 
 function renderZapperRules(rules) {
@@ -909,7 +1005,11 @@ function renderPageUserScripts(scripts, disabled = false) {
     if (empty) empty.hidden = true;
 
     for (const script of normalizedScripts) {
-        const row = document.createElement('label');
+        const idSuffix = String(script.id).replace(/[^A-Za-z0-9_-]/g, '_');
+        const toggleId = `userscript-toggle-${idSuffix}`;
+        const nameId = `userscript-name-${idSuffix}`;
+
+        const row = document.createElement('div');
         row.className = 'userscript-row';
 
         const text = document.createElement('span');
@@ -917,16 +1017,21 @@ function renderPageUserScripts(scripts, disabled = false) {
 
         const name = document.createElement('span');
         name.className = 'userscript-name';
+        name.id = nameId;
         name.textContent = script.name;
         text.appendChild(name);
 
-        const control = document.createElement('span');
+        const control = document.createElement('label');
         control.className = 'switch';
+        control.htmlFor = toggleId;
 
         const input = document.createElement('input');
         input.type = 'checkbox';
+        input.id = toggleId;
         input.className = 'userscript-toggle';
         input.setAttribute('data-script-id', script.id);
+        input.setAttribute('aria-labelledby', nameId);
+        input.setAttribute('aria-label', script.name);
         input.checked = !script.disabledForSite;
         input.disabled = disabled;
 

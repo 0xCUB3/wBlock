@@ -349,6 +349,10 @@ body {
   text-align: left;
 }
 
+.disclosure:active {
+  background: var(--fill);
+}
+
 .chevron {
   width: 7px;
   height: 7px;
@@ -356,11 +360,37 @@ body {
   border-bottom: 1.5px solid currentColor;
   opacity: 0.35;
   transform: rotate(45deg);
-  transition: transform 0.18s ease;
+  transition: transform 0.2s ease-in-out;
 }
 
 .disclosure[aria-expanded="true"] .chevron {
   transform: rotate(225deg);
+}
+
+.disclosure-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.2s ease-in-out;
+}
+
+.disclosure-panel.is-open {
+  grid-template-rows: 1fr;
+}
+
+.disclosure-panel:not(.is-open) {
+  pointer-events: none;
+}
+
+.disclosure-panel-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disclosure-panel,
+  .chevron {
+    transition: none;
+  }
 }
 
 .disclosure-meta {

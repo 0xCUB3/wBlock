@@ -45,8 +45,12 @@
                         <span id="userscripts-chevron" class="chevron" aria-hidden="true"></span>
                     </span>
                 </button>
-                <div id="userscripts-list" class="userscript-list" hidden></div>
-                <div id="userscripts-empty" class="hint" hidden data-i18n="popup_userscripts_empty">No userscripts are running on this page.</div>
+                <div id="userscripts-panel" class="disclosure-panel" hidden>
+                    <div class="disclosure-panel-inner">
+                        <div id="userscripts-list" class="userscript-list" hidden></div>
+                        <div id="userscripts-empty" class="hint" hidden data-i18n="popup_userscripts_empty">No userscripts are running on this page.</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -69,7 +73,11 @@
                 <span data-i18n="popup_rules">Rules</span>
                 <span id="zapper-rules-chevron" class="chevron" aria-hidden="true"></span>
             </button>
-            <div id="zapper-rules" class="rules" hidden></div>
+            <div id="zapper-rules-panel" class="disclosure-panel" hidden>
+                <div class="disclosure-panel-inner">
+                    <div id="zapper-rules" class="rules"></div>
+                </div>
+            </div>
         </div>
         <div class="hint" data-i18n="popup_hint_tap_to_hide">Tap an element on the page to hide it. Use "Add Rule" in the zapper for manual selectors.</div>
 
