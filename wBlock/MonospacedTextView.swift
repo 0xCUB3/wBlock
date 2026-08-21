@@ -75,7 +75,7 @@ struct MonospacedTextView: NSViewRepresentable {
     private func applyTrailingScrollerInset(to scrollView: NSScrollView) {
         var insets = scrollView.contentView.contentInsets
         let desiredRight: CGFloat
-        if scrollView.effectiveScrollerStyle == .overlay {
+        if scrollView.scrollerStyle == .overlay {
             desiredRight = NSScroller.scrollerWidth(
                 for: .regular,
                 scrollerStyle: .overlay
