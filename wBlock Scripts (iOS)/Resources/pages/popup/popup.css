@@ -208,6 +208,8 @@ body {
 
 #no-autoplay-section {
   margin-top: 8px;
+  /* Safari clips this single-row card's 0.5px hairline when overflow is hidden. */
+  overflow: visible;
 }
 
 #no-autoplay-site-row {

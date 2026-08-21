@@ -61,6 +61,9 @@ const sectionTop = Number.parseInt(autoplaySection.get("margin-top") || "", 10);
 if (!Number.isFinite(sectionTop) || sectionTop < 8) {
   fail("#no-autoplay-section must sit below the zapper hint so its top edge renders");
 }
+if (autoplaySection.get("overflow") !== "visible") {
+  fail("#no-autoplay-section must not clip its hairline in Safari light mode");
+}
 
 const siteRow = declarationsFor("#no-autoplay-site-row");
 const marginTop = Number.parseInt(siteRow.get("margin-top") || "", 10);
