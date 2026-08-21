@@ -36,8 +36,26 @@ extension AppFilterManager {
         case all
     }
 
-    func checkForUpdates(scope: UpdateCheckScope = .all) async {
+    enum UpdateCheckPresentation {
+        case blocking
+        case refresh
+    }
+
+    func checkForUpdates(
+        scope: UpdateCheckScope = .all,
+        presentation: UpdateCheckPresentation = .blocking
+    ) async {
+        if presentation == .refresh {
+            suppressBlockingOverlay = true
+        }
         isLoading = true
+        defer {
+            isLoading = false
+            if presentation == .refresh {
+                suppressBlockingOverlay = false
+            }
+        }
+
         statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Update check status")
 
         switch scope {
@@ -62,15 +80,15 @@ extension AppFilterManager {
                 totalUpdates
             )
         } else {
-            showingNoUpdatesAlert = true
+            if presentation == .blocking {
+                showingNoUpdatesAlert = true
+            }
             statusDescription = LocalizedStrings.text("No updates available.", comment: "No updates status")
             Task {
                 await ConcurrentLogManager.shared.info(
                     .autoUpdate, LocalizedStrings.text("No updates available"), metadata: [:])
             }
         }
-
-        isLoading = false
     }
 
     private func checkEnabledFilterUpdates() async {

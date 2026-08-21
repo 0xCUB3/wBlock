@@ -364,7 +364,7 @@ struct ContentView: View {
         .unifiedTabListStyle()
         .refreshable {
             guard !filterManager.isLoading else { return }
-            await filterManager.checkForUpdates(scope: .filters)
+            await filterManager.checkForUpdates(scope: .filters, presentation: .refresh)
         }
         #else
         ScrollView {
@@ -399,7 +399,7 @@ struct ContentView: View {
                 tabSelection: selectedTab,
                 onRefresh: {
                     guard !filterManager.isLoading else { return }
-                    await filterManager.checkForUpdates(scope: .scripts)
+                    await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
                 }
             )
                 .safeAreaInset(edge: .top) {
