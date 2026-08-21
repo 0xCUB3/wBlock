@@ -72,6 +72,14 @@ if (!/id="no-autoplay-site-row"[^>]*\bhidden\b/.test(html)) {
   fail("site exception row must start hidden in markup");
 }
 
+if (/<label[^>]*id="no-autoplay-site-row"/i.test(html) || /<label[^>]*\bclass="[^"]*\btoggle-row\b[^"]*"[^>]*\bfor="no-autoplay-site-toggle"/i.test(html) || /<label[^>]*\bfor="no-autoplay-site-toggle"[^>]*\bclass="[^"]*\btoggle-row\b/i.test(html)) {
+  fail("site exception row must not be a wrapping label");
+}
+
+if (!/<div\s+id="no-autoplay-site-row"\s+class="toggle-row"[^>]*hidden[^>]*>[\s\S]*?<label\s+class="switch"\s+for="no-autoplay-site-toggle">\s*<input\s+id="no-autoplay-site-toggle"/m.test(html)) {
+  fail("site exception row must use switch-only label markup");
+}
+
 if (!js.includes("siteRow.hidden = !state.enabled || !options.host")) {
   fail("site exception row must stay hidden unless No Autoplay is on for a site");
 }

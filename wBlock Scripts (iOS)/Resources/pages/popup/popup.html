@@ -26,13 +26,13 @@
 
         <div class="popup-body">
         <div class="section">
-            <label class="toggle-row" for="enable-toggle">
-                <span class="label" data-i18n="popup_enable_on_site">Enable on this site</span>
-                <span class="switch">
-                    <input id="enable-toggle" type="checkbox" />
+            <div class="toggle-row">
+                <div id="enable-title" class="label" data-i18n="popup_enable_on_site">Enable on this site</div>
+                <label class="switch" for="enable-toggle">
+                    <input id="enable-toggle" type="checkbox" aria-labelledby="enable-title" />
                     <span class="slider" aria-hidden="true"></span>
-                </span>
-            </label>
+                </label>
+            </div>
             <div id="paused-prompt" class="paused-prompt" hidden>
                 <div id="paused-prompt-title" class="paused-prompt-title" data-i18n="popup_paused_prompt_title">Blocking is paused</div>
                 <div id="paused-prompt-message" class="hint" data-i18n="popup_paused_prompt_message">Resume restores all components.</div>
@@ -91,13 +91,13 @@
                     </label>
                 </div>
             </div>
-            <label id="no-autoplay-site-row" class="toggle-row" for="no-autoplay-site-toggle" hidden>
-                <span class="label" data-i18n="popup_no_autoplay_allow_site">Allow autoplay on this site</span>
-                <span class="switch">
-                    <input id="no-autoplay-site-toggle" type="checkbox" />
+            <div id="no-autoplay-site-row" class="toggle-row" hidden>
+                <div id="no-autoplay-site-title" class="label" data-i18n="popup_no_autoplay_allow_site">Allow autoplay on this site</div>
+                <label class="switch" for="no-autoplay-site-toggle">
+                    <input id="no-autoplay-site-toggle" type="checkbox" aria-labelledby="no-autoplay-site-title" />
                     <span class="slider" aria-hidden="true"></span>
-                </span>
-            </label>
+                </label>
+            </div>
         </div>
         <div class="hint" data-i18n="popup_no_autoplay_hint">Media stays paused until you tap or click it.</div>
 

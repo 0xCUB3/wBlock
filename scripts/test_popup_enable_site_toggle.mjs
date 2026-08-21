@@ -19,6 +19,8 @@ const check = (condition, message) => {
 
 check(html.includes('data-i18n="popup_enable_on_site"'), "popup uses the enable wording key");
 check(html.includes('id="enable-toggle"'), "popup uses the enable toggle control");
+check(!/<label[^>]*\bclass="[^"]*\btoggle-row\b[^"]*"[^>]*\bfor="enable-toggle"/i.test(html) && !/<label[^>]*\bfor="enable-toggle"[^>]*\bclass="[^"]*\btoggle-row\b/i.test(html), "enable row must not be a wrapping label");
+check(/<div\s+class="toggle-row">\s*<div\s+id="enable-title"\s+class="label"\s+data-i18n="popup_enable_on_site">[\s\S]*?<label\s+class="switch"\s+for="enable-toggle">\s*<input\s+id="enable-toggle"\s+type="checkbox"\s+aria-labelledby="enable-title"\s*\/>/m.test(html), "enable row must use switch-only label markup");
 check(popup.includes("const disableToggle = document.getElementById('enable-toggle');"), "popup binds the enable control");
 check(popup.includes("const next = !disableToggle.checked;"), "checked=true maps to disabled=false when changing the site setting");
 check(popup.includes("const siteDisabled = disabled === true;"), "failed site-disabled reads must not count as enabled");
