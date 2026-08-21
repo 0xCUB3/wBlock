@@ -446,6 +446,12 @@ public enum WebExtensionRequestHandler {
                 return
             }
 
+            let groupID = GroupIdentifier.shared.value
+            ContentBlockerService.markDisabledSitesApplyStarted(groupIdentifier: groupID)
+            defer {
+                ContentBlockerService.markDisabledSitesApplyFinished(groupIdentifier: groupID)
+            }
+
             await ProtobufDataManager.shared.setWhitelistedDomains(list)
 
             // Regenerate RemoveParam DNR rules detached from the response: they are read
@@ -754,11 +760,6 @@ public enum WebExtensionRequestHandler {
         requiresFullApply: Bool
     ) {
         let groupID = GroupIdentifier.shared.value
-        ContentBlockerService.markDisabledSitesApplyStarted(groupIdentifier: groupID)
-        defer {
-            ContentBlockerService.markDisabledSitesApplyFinished(groupIdentifier: groupID)
-        }
-
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: platform)
 
         // Update JSON for all targets, then reload only outputs whose bytes changed.
@@ -795,6 +796,8 @@ public enum WebExtensionRequestHandler {
             )
         }
 
+        // Keep the existing cross-process ownership stamp alive through Safari's retry window.
+        ContentBlockerService.refreshDisabledSitesApplyInProgress(groupIdentifier: groupID)
         let results = await reloadTargetsWithRetry(targetsToReload)
         return (
             reloadedTargets: results.reloadedTargets,

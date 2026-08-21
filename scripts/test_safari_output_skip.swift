@@ -88,6 +88,13 @@ require(source.contains("public static func invalidateReloadMarker("), "raw relo
 require(source.contains("if let groupIdentifier, let targetRulesFilename"), "raw reload policy must require both target mapping fields")
 require(source.contains("outputDigest"), "marker must carry the exact output digest")
 require(source.contains("ReloadContext"), "marker must carry reload context")
+let reloadContext = section(
+    from: "private static var currentReloadContext",
+    to: "private static func reloadMarkerURL"
+)
+require(reloadContext.contains("sharedReloadIdentity()"), "reload context must use shared app-group identity")
+require(!reloadContext.contains("Bundle.main"), "reload context must not use process-specific Bundle.main metadata")
+require(source.contains("UserDefaults(suiteName: GroupIdentifier.shared.value)"), "reload identity must be readable from app-group defaults")
 require(source.contains("FileLock(") && source.contains("containerURL.appendingPathComponent(\".\\(targetRulesFilename).lock\")"), "marker checks must use the target output lock")
 require(source.contains("JSONEncoder().encode(newMarker).write(to: markerURL, options: .atomic)"), "marker writes must be atomic")
 require(source.contains("try? FileManager.default.removeItem(at: markerURL)"), "failed reloads must invalidate the marker")
