@@ -613,7 +613,7 @@ final class FilterListUpdater: @unchecked Sendable {
     /// Checks for updates to userscripts and returns those with available updates
     func checkForScriptUpdates(scripts: [UserScript]) async -> [UserScript] {
         let eligibleScripts = scripts.filter {
-            !$0.isLocal && $0.isDownloaded && $0.updateURL != nil && $0.updatesAutomatically
+            !$0.isLocal && $0.isDownloaded && $0.isEligibleForUpdateCheck
         }
         return await boundedConcurrentCompactMap(eligibleScripts) { script in
             let hasUpdate = await self.hasScriptUpdate(for: script)
@@ -623,36 +623,60 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Checks if a specific userscript has an update available
     private func hasScriptUpdate(for script: UserScript) async -> Bool {
-        guard !script.isLocal,
-              let updateURLString = script.updateURL,
-            let updateURL = URL(string: updateURLString)
-        else {
+        guard !script.isLocal, script.isDownloaded, script.updatesAutomatically else {
+            return false
+        }
+
+        let metaURL = script.resolvedMetaURL
+        let downloadURL = script.resolvedDownloadURL
+
+        // Phase 1: Try checking metadata URL if available
+        if let metaURL = metaURL {
+            do {
+                let (data, _) = try await urlSession.data(from: metaURL)
+                if let onlineContent = String(data: data, encoding: .utf8) {
+                    var tempScript = UserScript(name: script.name, content: onlineContent)
+                    tempScript.parseMetadata()
+
+                    // If remote version is available, compare versions or treat missing local version as needing update
+                    if !tempScript.version.isEmpty {
+                        if script.version.isEmpty { return true }
+                        return UserScript.isVersionNewer(tempScript.version, than: script.version)
+                    }
+
+                    // If the meta URL was the same as the full download URL, compare content directly
+                    if metaURL == downloadURL {
+                        return onlineContent != script.content
+                    }
+                }
+            } catch {
+                await ConcurrentLogManager.shared.error(
+                    .userScript, LocalizedStrings.text("Error checking update for script"),
+                    metadata: ["script": script.name, "error": error.localizedDescription])
+            }
+        }
+
+        // Phase 2: Inconclusive meta check or separate download URL: fall back to full download + content comparison
+        guard let downloadURL = downloadURL, downloadURL != metaURL else {
             return false
         }
 
         do {
-            let (data, _) = try await urlSession.data(from: updateURL)
-            guard let onlineContent = String(data: data, encoding: .utf8) else {
+            let (data, response) = try await urlSession.data(from: downloadURL)
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200,
+                  let onlineContent = String(data: data, encoding: .utf8) else {
                 return false
             }
 
             var tempScript = UserScript(name: script.name, content: onlineContent)
             tempScript.parseMetadata()
 
-            // Compare versions numerically (remote must be strictly greater)
-            if !tempScript.version.isEmpty && !script.version.isEmpty {
+            if !tempScript.version.isEmpty {
+                if script.version.isEmpty { return true }
                 return UserScript.isVersionNewer(tempScript.version, than: script.version)
             }
 
-            // @updateURL may point to .meta.js (metadata only). Content comparison
-            // against a meta-only response would always return true, so if we can't
-            // compare versions from a meta source, we can't determine update status.
-            let isMeta = updateURLString.hasSuffix(".meta.js")
-            if isMeta {
-                return false
-            }
-
-            // Full script URL: fall back to content comparison
             return onlineContent != script.content
         } catch {
             await ConcurrentLogManager.shared.error(
@@ -665,8 +689,7 @@ final class FilterListUpdater: @unchecked Sendable {
     /// Fetches and processes a userscript
     func fetchAndProcessScript(_ script: UserScript) async -> (UserScript?, Bool) {
         guard !script.isLocal,
-              let downloadURLString = script.downloadURL ?? script.updateURL,
-            let downloadURL = URL(string: downloadURLString)
+              let downloadURL = script.resolvedDownloadURL
         else {
             await ConcurrentLogManager.shared.error(
                 .userScript, LocalizedStrings.text("No download URL for script"), metadata: ["script": script.name])

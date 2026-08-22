@@ -343,6 +343,39 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         parseMetadata()
     }
 
+    /// Resolves the metadata URL for checking updates.
+    /// Priority: updateURL > .user.js -> .meta.js derivation from url > url.
+    public var resolvedMetaURL: URL? {
+        guard !isLocal else { return nil }
+        if let updateURLString = updateURL, let url = URL(string: updateURLString) {
+            return url
+        }
+        guard let scriptURL = url else { return nil }
+        let urlString = scriptURL.absoluteString
+        if urlString.hasSuffix(".user.js") {
+            let metaString = String(urlString.dropLast(8)) + ".meta.js"
+            if let metaURL = URL(string: metaString) {
+                return metaURL
+            }
+        }
+        return scriptURL
+    }
+
+    /// Resolves the full script download URL.
+    /// Priority: downloadURL > url.
+    public var resolvedDownloadURL: URL? {
+        guard !isLocal else { return nil }
+        if let downloadURLString = downloadURL, let url = URL(string: downloadURLString) {
+            return url
+        }
+        return url
+    }
+
+    /// Returns true if this remote script has sufficient URL information and auto-update preference to check for updates.
+    public var isEligibleForUpdateCheck: Bool {
+        !isLocal && isDownloaded && updatesAutomatically && (resolvedMetaURL != nil || resolvedDownloadURL != nil)
+    }
+
     /// Compares two dot-separated version strings numerically.
     /// Returns true only if `remote` is strictly greater than `local`.
     /// Non-numeric segment prefixes (e.g. "0b") use leading digits only; no digits = 0.

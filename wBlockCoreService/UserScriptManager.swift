@@ -3282,24 +3282,14 @@ public class UserScriptManager: ObservableObject {
     /// Priority: @updateURL > .user.js -> .meta.js derivation > nil (skip meta check).
     private func resolveMetaURL(for script: UserScript) -> URL? {
         guard !script.isLocal else { return nil }
-        if let updateURLString = script.updateURL, let url = URL(string: updateURLString) {
-            return url
-        }
-        guard let scriptURL = script.url else { return nil }
-        let urlString = scriptURL.absoluteString
-        guard urlString.hasSuffix(".user.js") else { return nil }
-        let metaString = String(urlString.dropLast(8)) + ".meta.js"
-        return URL(string: metaString)
+        return script.resolvedMetaURL
     }
 
     /// Resolves the full script download URL.
     /// Priority: @downloadURL > script.url.
     private func resolveDownloadURL(for script: UserScript) -> URL? {
         guard !script.isLocal else { return nil }
-        if let downloadURLString = script.downloadURL, let url = URL(string: downloadURLString) {
-            return url
-        }
-        return script.url
+        return script.resolvedDownloadURL
     }
 
     /// Fetches a URL and parses @version from the metadata block.
