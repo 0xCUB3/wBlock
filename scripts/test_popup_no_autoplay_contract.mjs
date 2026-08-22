@@ -61,14 +61,63 @@ const sectionTop = Number.parseInt(autoplaySection.get("margin-top") || "", 10);
 if (!Number.isFinite(sectionTop) || sectionTop < 8) {
   fail("#no-autoplay-section must sit below the zapper hint so its top edge renders");
 }
+if (autoplaySection.get("overflow") !== "visible") {
+  fail("#no-autoplay-section overflow must be visible so WebKit does not clip abspos descendants of a radiused card");
+}
+if (autoplaySection.get("background") !== "transparent") {
+  fail("#no-autoplay-section background must be transparent; card chrome lives on ::before");
+}
+if (autoplaySection.get("border") !== "0") {
+  fail("#no-autoplay-section border must be 0; card chrome lives on ::before");
+}
+if (autoplaySection.get("border-radius") !== "0") {
+  fail("#no-autoplay-section border-radius must be 0 so WebKit does not clip abspos descendants");
+}
 
-for (const selector of ["#no-autoplay-section > .row", "#no-autoplay-section > .toggle-row"]) {
-  const row = declarationsFor(selector);
-  const rowPadTop = Number.parseInt(row.get("padding-top") || "", 10);
-  const rowPadBottom = Number.parseInt(row.get("padding-bottom") || "", 10);
-  if (!Number.isFinite(rowPadTop) || rowPadTop < 12 || !Number.isFinite(rowPadBottom) || rowPadBottom < 12) {
-    fail(`${selector} must inset the switch from the rounded top and bottom`);
-  }
+const autoplaySectionBefore = declarationsFor("#no-autoplay-section::before");
+if (autoplaySectionBefore.get("border-radius") !== "10px") {
+  fail("#no-autoplay-section::before must own the 10px card radius");
+}
+if (autoplaySectionBefore.get("background") !== "var(--group)") {
+  fail("#no-autoplay-section::before must paint var(--group)");
+}
+if (autoplaySectionBefore.get("border") !== "0.5px solid var(--separator)") {
+  fail("#no-autoplay-section::before must paint the 0.5px separator border");
+}
+
+const sliderRule = declarationsFor(".slider");
+if (sliderRule.get("position") !== "relative") {
+  fail(".slider position must be relative so the track stays in-flow");
+}
+if (sliderRule.has("inset")) {
+  fail(".slider must not use inset:0; the track is in-flow, not stretched abspos");
+}
+
+const switchRule = declarationsFor(".switch");
+const switchLineHeight = switchRule.get("line-height");
+if (switchLineHeight !== "0" && switchLineHeight !== "31px") {
+  fail(".switch must use line-height 0 or 31px so Safari does not clip the knob in the line box");
+}
+if (switchRule.get("overflow") !== "visible") {
+  fail(".switch must keep overflow visible so Safari does not clip the knob");
+}
+
+if (/<label[^>]*id="no-autoplay-title"/i.test(html) || /<label[^>]*\bclass="[^"]*\brow\b[^"]*"[^>]*\bfor="no-autoplay-enabled-toggle"/i.test(html) || /<label[^>]*\bfor="no-autoplay-enabled-toggle"[^>]*\bclass="[^"]*\brow\b/i.test(html)) {
+  fail("enabled row must not be a wrapping label");
+}
+
+const enabledSectionStart = html.indexOf('id="no-autoplay-section"');
+const enabledSectionEnd = html.indexOf('id="no-autoplay-site-row"');
+if (enabledSectionStart === -1 || enabledSectionEnd === -1 || enabledSectionStart > enabledSectionEnd) {
+  fail("enabled row must live in #no-autoplay-section before the site exception row");
+}
+const enabledRowHtml = html.slice(enabledSectionStart, enabledSectionEnd);
+if (enabledRowHtml.includes("row-trailing")) {
+  fail("enabled toggle must not be wrapped in .row-trailing");
+}
+
+if (!/<div\s+id="no-autoplay-title"[^>]*>[\s\S]*?<label\s+class="switch"\s+for="no-autoplay-enabled-toggle">\s*<input\s+id="no-autoplay-enabled-toggle"/m.test(html)) {
+  fail("enabled row must use switch-only label markup as a sibling of #no-autoplay-title");
 }
 
 if (!/id="no-autoplay-site-row"[^>]*\bhidden\b/.test(html)) {

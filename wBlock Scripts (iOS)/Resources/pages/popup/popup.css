@@ -208,14 +208,28 @@ body {
 
 #no-autoplay-section {
   margin-top: 8px;
+  overflow: visible;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  position: relative;
 }
 
-/* Extra vertical padding so the 31px switch sits below the 10px radius;
-   default rows only have 6px padding. */
-#no-autoplay-section > .row,
-#no-autoplay-section > .toggle-row {
-  padding-top: 14px;
-  padding-bottom: 14px;
+#no-autoplay-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  background: var(--group);
+  border: 0.5px solid var(--separator);
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#no-autoplay-section > * {
+  position: relative;
+  z-index: 1;
 }
 
 .row-trailing {
@@ -226,51 +240,48 @@ body {
 }
 
 .switch {
-  position: relative;
+  display: grid;
   width: 51px;
   height: 31px;
   flex: 0 0 auto;
+  place-items: stretch;
+  line-height: 0;
+  overflow: visible;
+  position: relative;
 }
 
 .switch input {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  opacity: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  grid-area: 1 / 1;
   margin: 0;
-  width: 100%;
-  height: 100%;
+  width: 51px;
+  height: 31px;
+  opacity: 0;
+  z-index: 1;
   cursor: pointer;
+  border: 0;
 }
 
 .slider {
-  position: absolute;
-  inset: 0;
-  background: var(--switch-off);
+  grid-area: 1 / 1;
+  position: relative;
+  display: block;
+  width: 51px;
+  height: 31px;
+  box-sizing: border-box;
   border: 0;
-  border-radius: 999px;
-  transition: background 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.slider:before {
-  content: "";
-  position: absolute;
-  height: 27px;
-  width: 27px;
-  left: 2px;
-  top: 2px;
-  background: #ffffff;
-  border-radius: 999px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 1px 1px rgba(0, 0, 0, 0.16);
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 15.5px;
+  background: var(--switch-off);
+  background-image: radial-gradient(circle 13.5px at 15.5px 15.5px, #ffffff 13.5px, transparent 14.5px);
+  background-repeat: no-repeat;
+  transition: background-color 0.28s cubic-bezier(0.4, 0, 0.2, 1), background-position 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
 }
 
 .switch input:checked + .slider {
   background: var(--accent);
-}
-
-.switch input:checked + .slider:before {
-  transform: translateX(20px);
+  background-image: radial-gradient(circle 13.5px at 35.5px 15.5px, #ffffff 13.5px, transparent 14.5px);
 }
 
 .switch input:disabled + .slider {
@@ -317,8 +328,7 @@ body {
     animation: none;
   }
 
-  .slider,
-  .slider:before {
+  .slider {
     transition: none;
   }
 }
