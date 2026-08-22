@@ -48,6 +48,10 @@ struct ApplyChangesProgressView: View {
         CompatibleNavigationStack {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .navigationTitle(headerTitle)
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button(mode == .review ? String(localized: "Cancel") : String(localized: "Done")) {
@@ -64,10 +68,7 @@ struct ApplyChangesProgressView: View {
                                     ProgressView()
                                         .controlSize(.small)
                                 } else {
-                                    Label(
-                                        String(localized: "Update & Apply"),
-                                        systemImage: "arrow.triangle.2.circlepath"
-                                    )
+                                    Text(String(localized: "Update & Apply"))
                                 }
                             }
                             .disabled(selectedUpdateCount == 0 || isStartingSelectedUpdates)
@@ -103,7 +104,6 @@ struct ApplyChangesProgressView: View {
         case .progress:
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    sheetHeader
                     progressField
                 }
                 .padding(20)
@@ -112,7 +112,6 @@ struct ApplyChangesProgressView: View {
         case .result:
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    sheetHeader
                     if let summary = viewModel.state.summary {
                         summaryCard(summary)
                     }
@@ -122,7 +121,6 @@ struct ApplyChangesProgressView: View {
         case .failed:
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    sheetHeader
                     failureCard
                     progressField
                 }
@@ -131,22 +129,10 @@ struct ApplyChangesProgressView: View {
         }
     }
 
-    @ViewBuilder
-    private var sheetHeader: some View {
-        Text(headerTitle)
-            .font(.title2.weight(.semibold))
-    }
-
     // MARK: - Review
 
     private var reviewContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(headerTitle)
-                .font(.title2.weight(.semibold))
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 4)
-
             Text(
                 String.localizedStringWithFormat(
                     NSLocalizedString(
@@ -160,6 +146,7 @@ struct ApplyChangesProgressView: View {
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 20)
+            .padding(.top, 8)
             .padding(.bottom, 12)
 
             List {

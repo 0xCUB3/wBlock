@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 struct CompatibleNavigationStack<Content: View>: View {
     /// Pre-Tahoe non-navigation tabs must not own stacks because SwiftUI can
@@ -115,16 +118,32 @@ extension View {
             if prefersLarge {
                 presentationDetents([.large])
                     .presentationDragIndicator(.visible)
+                    .applySheetOpaqueBackgroundCompat()
             } else if prefersTall {
                 presentationDetents([.height(560), .large])
                     .presentationDragIndicator(.visible)
+                    .applySheetOpaqueBackgroundCompat()
             } else {
                 presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
+                    .applySheetOpaqueBackgroundCompat()
             }
         } else {
             self
         }
+    }
+
+    @ViewBuilder
+    private func applySheetOpaqueBackgroundCompat() -> some View {
+        #if os(iOS)
+        if #available(iOS 16.4, *) {
+            presentationBackground(Color(uiColor: .systemBackground))
+        } else {
+            self
+        }
+        #else
+        self
+        #endif
     }
 
     @ViewBuilder
