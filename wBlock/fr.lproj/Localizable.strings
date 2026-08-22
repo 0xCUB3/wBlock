@@ -873,6 +873,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Off" = "Désactivé";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
+"You're already using the latest filters." = "Vous utilisez déjà les derniers filtres.";
 "You can always add regional filters later from Settings." = "Vous pourrez toujours ajouter des filtres régionaux plus tard depuis Réglages.";
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "Vous avez des modifications de filtres non appliquées dans wBlock. Touchez pour les appliquer maintenant !";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Vous avez des modifications de filtre non appliquées. Voulez-vous les appliquer avant d’arrêter ?";

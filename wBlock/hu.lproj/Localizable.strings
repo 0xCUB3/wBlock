@@ -876,6 +876,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Off" = "Ki";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
+"You're already using the latest filters." = "Már a legújabb szűrőket használod.";
 "You can always add regional filters later from Settings." = "A regionális szűrőket később is bármikor hozzáadhatod a Beállításokban.";
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "Nem alkalmazott szűrőmódosításaid vannak a wBlockban. Koppints most az alkalmazáshoz!";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Nem alkalmazott szűrőmódosítások vannak. Alkalmazni szeretné őket a kilépés előtt?";

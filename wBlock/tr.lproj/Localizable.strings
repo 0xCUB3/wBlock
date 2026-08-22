@@ -873,6 +873,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Off" = "Kapalı";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
+"You're already using the latest filters." = "Zaten en güncel filtreleri kullanıyorsunuz.";
 "You can always add regional filters later from Settings." = "Bölgesel filtreleri daha sonra Ayarlar bölümünden ekleyebilirsiniz.";
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "wBlock'ta uygulanmamış filtre değişiklikleriniz var. Uygulamak için şimdi dokunun!";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Uygulanmamış filtre değişiklikleriniz var. Çıkmadan önce bunları uygulamak istiyor musunuz?";

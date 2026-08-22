@@ -876,6 +876,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Off" = "關閉";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
+"You're already using the latest filters." = "你已經在使用最新的過濾器。";
 "You can always add regional filters later from Settings." = "你之後可隨時在「設定」新增區域過濾器。";
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "你在 wBlock 有尚未套用的過濾器變更。點一下立即套用！";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "您有未套用的篩選器變更。您想在戒菸前應用它們嗎？";

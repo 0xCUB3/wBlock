@@ -873,6 +873,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Off" = "Dezactivat";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
+"You're already using the latest filters." = "Folosești deja cele mai recente filtre.";
 "You can always add regional filters later from Settings." = "Poți adăuga oricând filtre regionale mai târziu din Setări.";
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "Ai modificări de filtre neaplicate în wBlock. Atinge pentru a le aplica acum!";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Ai modificări de filtru neaplicate. Vrei să le aplici înainte de a renunța?";

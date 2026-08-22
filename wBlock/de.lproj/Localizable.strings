@@ -876,6 +876,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Off" = "Aus";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
+"You're already using the latest filters." = "Du verwendest bereits die neuesten Filter.";
 "You can always add regional filters later from Settings." = "Du kannst regionale Filter später jederzeit in den Einstellungen hinzufügen.";
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "Du hast nicht angewendete Filteränderungen in wBlock. Tippe, um sie jetzt anzuwenden!";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Sie haben nicht angewendete Filteränderungen. Möchten Sie sie anwenden, bevor Sie mit dem Rauchen aufhören?";

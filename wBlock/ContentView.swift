@@ -852,7 +852,7 @@ struct ContentModifiers: ViewModifier {
             .alert("No Updates Found", isPresented: $filterManager.showingNoUpdatesAlert) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text("No updates available.")
+                Text("You're already using the latest filters.")
             }
             .alert(
                 filterManager.ruleLimitWarningTitle,

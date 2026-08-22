@@ -876,6 +876,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Off" = "إيقاف";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
+"You're already using the latest filters." = "أنت تستخدم بالفعل أحدث الفلاتر.";
 "You can always add regional filters later from Settings." = "يمكنك دائمًا إضافة فلاتر إقليمية لاحقًا من الإعدادات.";
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "لديك تغييرات فلترة غير مطبقة في wBlock. اضغط لتطبيقها الآن!";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "لديك تغييرات مرشح غير مطبقة. هل تريد تطبيقها قبل الإقلاع عن التدخين؟";

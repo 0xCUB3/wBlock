@@ -876,6 +876,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Off" = "Ανενεργό";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
+"You're already using the latest filters." = "Χρησιμοποιείτε ήδη τα πιο πρόσφατα φίλτρα.";
 "You can always add regional filters later from Settings." = "Μπορείτε πάντα να προσθέσετε τοπικά φίλτρα αργότερα από τις Ρυθμίσεις.";
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "Έχετε μη εφαρμοσμένες αλλαγές φίλτρου στο wBlock. Πατήστε για να τις εφαρμόσετε τώρα!";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Έχετε μη εφαρμοσμένες αλλαγές φίλτρων. Θέλετε να τα εφαρμόσετε πριν τα παρατήσετε;";
