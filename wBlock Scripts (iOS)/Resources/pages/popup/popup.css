@@ -208,12 +208,14 @@ body {
 
 #no-autoplay-section {
   margin-top: 8px;
-  /* Safari clips this single-row card's 0.5px hairline when overflow is hidden. */
-  overflow: visible;
 }
 
-#no-autoplay-site-row {
-  margin-top: 8px;
+/* Extra vertical padding so the 31px switch sits below the 10px radius;
+   default rows only have 6px padding. */
+#no-autoplay-section > .row,
+#no-autoplay-section > .toggle-row {
+  padding-top: 14px;
+  padding-bottom: 14px;
 }
 
 .row-trailing {

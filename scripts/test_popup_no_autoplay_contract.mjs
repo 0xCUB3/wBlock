@@ -61,14 +61,14 @@ const sectionTop = Number.parseInt(autoplaySection.get("margin-top") || "", 10);
 if (!Number.isFinite(sectionTop) || sectionTop < 8) {
   fail("#no-autoplay-section must sit below the zapper hint so its top edge renders");
 }
-if (autoplaySection.get("overflow") !== "visible") {
-  fail("#no-autoplay-section must not clip its hairline in Safari light mode");
-}
 
-const siteRow = declarationsFor("#no-autoplay-site-row");
-const marginTop = Number.parseInt(siteRow.get("margin-top") || "", 10);
-if (!Number.isFinite(marginTop) || marginTop < 8) {
-  fail("#no-autoplay-site-row must leave space under the No Autoplay toggle");
+for (const selector of ["#no-autoplay-section > .row", "#no-autoplay-section > .toggle-row"]) {
+  const row = declarationsFor(selector);
+  const rowPadTop = Number.parseInt(row.get("padding-top") || "", 10);
+  const rowPadBottom = Number.parseInt(row.get("padding-bottom") || "", 10);
+  if (!Number.isFinite(rowPadTop) || rowPadTop < 12 || !Number.isFinite(rowPadBottom) || rowPadBottom < 12) {
+    fail(`${selector} must inset the switch from the rounded top and bottom`);
+  }
 }
 
 if (!/id="no-autoplay-site-row"[^>]*\bhidden\b/.test(html)) {
