@@ -856,6 +856,10 @@ class AppFilterManager: ObservableObject {
     func forceApplyChanges() {
         guard !isLoading, !isApplyInFlight else { return }
         isLoading = true
+        showingNoUpdatesAlert = false
+        statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Apply pipeline status")
+        applyProgressViewModel.beginProgressRun()
+        showingApplyProgressSheet = true
         Task {
             await self.waitUntilReady()
             await UserScriptManager.shared.waitUntilReady()
@@ -865,7 +869,10 @@ class AppFilterManager: ObservableObject {
             self.refreshMissingItems()
             let started = await self.performFilterUpdate()
             if !started {
-                self.isLoading = false
+                if !self.isApplyInFlight {
+                    self.showingApplyProgressSheet = false
+                    self.isLoading = false
+                }
             }
         }
     }

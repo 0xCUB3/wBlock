@@ -149,12 +149,31 @@ check(
     "forceApplyChanges must set isLoading = true synchronously before Task {"
 )
 check(
+    forceBeforeTask.contains("showingNoUpdatesAlert = false"),
+    "forceApplyChanges must set showingNoUpdatesAlert = false synchronously before Task {"
+)
+check(
+    forceBeforeTask.contains("statusDescription = LocalizedStrings.text(\"Checking for updates...\", comment: \"Apply pipeline status\")"),
+    "forceApplyChanges must set statusDescription synchronously before Task {"
+)
+check(
+    forceBeforeTask.contains("applyProgressViewModel.beginProgressRun()"),
+    "forceApplyChanges must call beginProgressRun synchronously before Task {"
+)
+check(
+    forceBeforeTask.contains("showingApplyProgressSheet = true"),
+    "forceApplyChanges must set showingApplyProgressSheet = true synchronously before Task {"
+)
+check(
     forceBody.contains("let started = await self.performFilterUpdate()"),
     "forceApplyChanges must capture performFilterUpdate started result"
 )
 check(
-    forceBody.contains("if !started {") && forceBody.contains("self.isLoading = false"),
-    "forceApplyChanges must clear isLoading when performFilterUpdate did not start"
+    forceBody.contains("if !started {")
+        && forceBody.contains("if !self.isApplyInFlight {")
+        && forceBody.contains("self.showingApplyProgressSheet = false")
+        && forceBody.contains("self.isLoading = false"),
+    "forceApplyChanges must dismiss progress sheet and clear isLoading when performFilterUpdate did not start and no apply is in flight"
 )
 
 check(
