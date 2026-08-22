@@ -96,9 +96,20 @@ struct SheetBottomToolbar<Content: View>: View {
 // MARK: - Sheet Container
 
 struct SheetContainer<Content: View>: View {
+    enum Fill {
+        /// Form-style sheets: gray grouped canvas with inset white cards.
+        case grouped
+        /// Apply Changes-style sheets: one continuous systemBackground card.
+        case system
+        /// No opaque fill — system sheet chrome (liquid glass) shows through.
+        case clear
+    }
+
+    var fill: Fill = .grouped
     let content: Content
 
-    init(@ViewBuilder content: () -> Content) {
+    init(fill: Fill = .grouped, @ViewBuilder content: () -> Content) {
+        self.fill = fill
         self.content = content()
     }
 
@@ -107,9 +118,23 @@ struct SheetContainer<Content: View>: View {
             content
         }
         #if os(iOS)
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
+        .background { fillBackground }
         #endif
     }
+
+    #if os(iOS)
+    @ViewBuilder
+    private var fillBackground: some View {
+        switch fill {
+        case .grouped:
+            Color(.systemGroupedBackground).ignoresSafeArea()
+        case .system:
+            Color(uiColor: .systemBackground).ignoresSafeArea()
+        case .clear:
+            EmptyView()
+        }
+    }
+    #endif
 }
 
 // MARK: - Standard Button Styles

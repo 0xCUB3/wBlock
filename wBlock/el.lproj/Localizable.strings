@@ -419,6 +419,7 @@
 "Handles advanced anti-adblock cases that filter rules miss." = "Χειρίζεται προηγμένες περιπτώσεις anti-adblock που χάνουν τους κανόνες φιλτραρίσματος.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Αποκρύπτει αναδυόμενα παράθυρα, banner και άλλα ανεπιθύμητα στοιχεία σελίδας.";
 "Highlighting disabled for performance" = "Η επισήμανση απενεργοποιήθηκε για απόδοση";
+"Hold for 3 seconds to apply without checking for updates." = "Hold for 3 seconds to apply without checking for updates.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "Hufilter. Λίστα φίλτρων που καταργεί ειδικά τις διαφημίσεις σε ιστότοπους στην ουγγρική γλώσσα.";

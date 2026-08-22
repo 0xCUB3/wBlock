@@ -118,32 +118,16 @@ extension View {
             if prefersLarge {
                 presentationDetents([.large])
                     .presentationDragIndicator(.visible)
-                    .applySheetOpaqueBackgroundCompat()
             } else if prefersTall {
                 presentationDetents([.height(560), .large])
                     .presentationDragIndicator(.visible)
-                    .applySheetOpaqueBackgroundCompat()
             } else {
                 presentationDetents([.medium, .large])
                     .presentationDragIndicator(.visible)
-                    .applySheetOpaqueBackgroundCompat()
             }
         } else {
             self
         }
-    }
-
-    @ViewBuilder
-    private func applySheetOpaqueBackgroundCompat() -> some View {
-        #if os(iOS)
-        if #available(iOS 16.4, *) {
-            presentationBackground(Color(uiColor: .systemBackground))
-        } else {
-            self
-        }
-        #else
-        self
-        #endif
     }
 
     @ViewBuilder
@@ -240,5 +224,127 @@ extension CompatibleLabeledContent where Label == Text {
 extension AnyTransition {
     static var blurReplaceCompat: AnyTransition {
         .opacity.combined(with: .scale(scale: 0.98))
+    }
+}
+
+/// Tracks a 3s press without @State updates that would reset the drag gesture.
+private final class ApplyChangesHoldTracker {
+    var didBegin = false
+    var isPressing = false
+    var task: Task<Void, Never>?
+
+    func start(isDisabled: Bool, onFire: @escaping () -> Void) {
+        guard !isDisabled else { return }
+        cancel()
+        isPressing = true
+        task = Task {
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                guard !Task.isCancelled, self.isPressing else { return }
+                onFire()
+            }
+        }
+    }
+
+    func cancel() {
+        isPressing = false
+        task?.cancel()
+        task = nil
+    }
+
+    func reset() {
+        cancel()
+        didBegin = false
+    }
+}
+
+/// Toolbar Apply control: tap checks for updates, 3s hold force-applies.
+struct ApplyChangesHoldButton<Label: View>: View {
+    let isDisabled: Bool
+    let hasPendingChanges: Bool
+    let onTap: () -> Void
+    let onForceApply: () -> Void
+    let label: Label
+
+    @State private var lastForceApplyAt: Date?
+    @State private var hold = ApplyChangesHoldTracker()
+
+    init(
+        isDisabled: Bool,
+        hasPendingChanges: Bool,
+        onTap: @escaping () -> Void,
+        onForceApply: @escaping () -> Void,
+        @ViewBuilder label: () -> Label
+    ) {
+        self.isDisabled = isDisabled
+        self.hasPendingChanges = hasPendingChanges
+        self.onTap = onTap
+        self.onForceApply = onForceApply
+        self.label = label()
+    }
+
+    var body: some View {
+        Button(action: handleTap) {
+            label
+        }
+        .disabled(isDisabled)
+        .accessibilityLabel("Apply Changes")
+        .accessibilityHint("Hold for 3 seconds to apply without checking for updates.")
+        .help(helpText)
+        .simultaneousGesture(forceApplyHoldGesture)
+        .onChangeCompat(of: isDisabled) { disabled in
+            if disabled {
+                hold.cancel()
+            }
+        }
+    }
+
+    private var helpText: String {
+        let action = hasPendingChanges
+            ? String(localized: "Apply your pending changes")
+            : String(localized: "Apply changes")
+        return action
+            + " "
+            + String(localized: "Hold for 3 seconds to apply without checking for updates.")
+    }
+
+    private var forceApplyHoldGesture: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                if !hold.didBegin {
+                    hold.didBegin = true
+                    hold.start(isDisabled: isDisabled) {
+                        handleForceApply()
+                    }
+                }
+                let distance = hypot(value.translation.width, value.translation.height)
+                if distance > 80 {
+                    hold.cancel()
+                }
+            }
+            .onEnded { _ in
+                hold.reset()
+            }
+    }
+
+    private func handleTap() {
+        guard !isDisabled else { return }
+        if let lastForceApplyAt, Date().timeIntervalSince(lastForceApplyAt) < 1 {
+            return
+        }
+        onTap()
+    }
+
+    private func handleForceApply() {
+        guard !isDisabled else { return }
+        if let lastForceApplyAt, Date().timeIntervalSince(lastForceApplyAt) < 1 {
+            return
+        }
+        lastForceApplyAt = Date()
+        #if os(iOS)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        #endif
+        onForceApply()
     }
 }

@@ -149,6 +149,7 @@ struct UserScriptManagerView: View {
     let hasPendingChanges: Bool
     let isApplyingChanges: Bool
     let onApplyChanges: () -> Void
+    let onForceApplyChanges: () -> Void
     let tabSelection: Int
     let onRefresh: () async -> Void
 
@@ -177,9 +178,12 @@ struct UserScriptManagerView: View {
     }
 
     private var applyChangesToolbarButton: some View {
-        Button {
-            onApplyChanges()
-        } label: {
+        ApplyChangesHoldButton(
+            isDisabled: isApplyingChanges,
+            hasPendingChanges: hasPendingChanges,
+            onTap: onApplyChanges,
+            onForceApply: onForceApplyChanges
+        ) {
             if hasPendingChanges {
                 Text("Apply")
                     .fontWeight(.semibold)
@@ -187,8 +191,6 @@ struct UserScriptManagerView: View {
                 Image(systemName: "arrow.triangle.2.circlepath")
             }
         }
-        .disabled(isApplyingChanges)
-        .accessibilityLabel("Apply Changes")
     }
 
     private var trimmedSearchText: String {
@@ -413,11 +415,6 @@ struct UserScriptManagerView: View {
                     }
 
                     applyChangesToolbarButton
-                        .help(
-                            hasPendingChanges
-                                ? String(localized: "Apply your pending changes")
-                                : String(localized: "Apply changes")
-                        )
 
                     Button {
                         showOnlyEnabled.toggle()

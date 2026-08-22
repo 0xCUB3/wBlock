@@ -419,6 +419,7 @@
 "Handles advanced anti-adblock cases that filter rules miss." = "处理过滤规则遗漏的高级反广告拦截案例。";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "隐藏页内弹出窗口、横幅和其他不需要的页面元素。";
 "Highlighting disabled for performance" = "为提升性能已禁用高亮";
+"Hold for 3 seconds to apply without checking for updates." = "Hold for 3 seconds to apply without checking for updates.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "胡过滤器。专门删除匈牙利语网站上的广告的过滤器列表。";

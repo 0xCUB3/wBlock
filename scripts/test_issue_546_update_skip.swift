@@ -119,6 +119,44 @@ if let ifRange = applyBody.range(of: "if Self.requiresFullApply") {
     exit(1)
 }
 
+check(manager.contains("func forceApplyChanges()"), "forceApplyChanges must exist")
+let forceBody = extractFunctionBody(manager, signature: "func forceApplyChanges()")
+check(forceBody.contains("guard !isLoading, !isApplyInFlight else { return }"), "forceApplyChanges must guard against in-flight apply/loading")
+check(forceBody.contains("waitUntilReady()"), "forceApplyChanges must await waitUntilReady()")
+check(
+    forceBody.contains("UserScriptManager.shared.waitUntilReady()"),
+    "forceApplyChanges must await UserScriptManager.shared.waitUntilReady()"
+)
+check(
+    forceBody.contains("filterUpdater.userScriptManager == nil"),
+    "forceApplyChanges must nil-guard userScriptManager before setUserScriptManager"
+)
+check(
+    forceBody.contains("setUserScriptManager(UserScriptManager.shared)"),
+    "forceApplyChanges must setUserScriptManager when nil"
+)
+check(forceBody.contains("refreshMissingItems()"), "forceApplyChanges must refresh missing items")
+check(forceBody.contains("performFilterUpdate()"), "forceApplyChanges must reference performFilterUpdate")
+check(!forceBody.contains("checkForUpdates()"), "forceApplyChanges must never reference checkForUpdates")
+
+guard let forceTaskRange = forceBody.range(of: "Task {") else {
+    fputs("FAIL: forceApplyChanges missing Task {\n", stderr)
+    exit(1)
+}
+let forceBeforeTask = forceBody[..<forceTaskRange.lowerBound]
+check(
+    forceBeforeTask.contains("isLoading = true"),
+    "forceApplyChanges must set isLoading = true synchronously before Task {"
+)
+check(
+    forceBody.contains("let started = await self.performFilterUpdate()"),
+    "forceApplyChanges must capture performFilterUpdate started result"
+)
+check(
+    forceBody.contains("if !started {") && forceBody.contains("self.isLoading = false"),
+    "forceApplyChanges must clear isLoading when performFilterUpdate did not start"
+)
+
 check(
     manager.contains("self.checkAndEnableFilters(forceReload: true)"),
     "AppFilterManager debounce must still call checkAndEnableFilters(forceReload: true)"

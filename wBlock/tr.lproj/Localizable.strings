@@ -419,6 +419,7 @@
 "Handles advanced anti-adblock cases that filter rules miss." = "Filtre kurallarının gözden kaçırdığı gelişmiş reklam engelleyici tespiti durumları yönetir.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Sayfa içi açılır pencereleri, afişleri ve diğer istenmeyen sayfa öğelerini gizler.";
 "Highlighting disabled for performance" = "Performans nedeniyle vurgulama devre dışı bırakıldı";
+"Hold for 3 seconds to apply without checking for updates." = "Hold for 3 seconds to apply without checking for updates.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "Hufilter. Macarca dilindeki sitelerde reklamları özel olarak kaldıran filtre listesi.";

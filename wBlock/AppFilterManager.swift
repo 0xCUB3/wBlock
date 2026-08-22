@@ -853,6 +853,23 @@ class AppFilterManager: ObservableObject {
         }
     }
 
+    func forceApplyChanges() {
+        guard !isLoading, !isApplyInFlight else { return }
+        isLoading = true
+        Task {
+            await self.waitUntilReady()
+            await UserScriptManager.shared.waitUntilReady()
+            if self.filterUpdater.userScriptManager == nil {
+                self.setUserScriptManager(UserScriptManager.shared)
+            }
+            self.refreshMissingItems()
+            let started = await self.performFilterUpdate()
+            if !started {
+                self.isLoading = false
+            }
+        }
+    }
+
     func toggleFilterListSelection(id: UUID) {
         guard let index = filterListIndexByID[id] else { return }
         setFilterListSelection(id: id, selected: !filterLists[index].isSelected)

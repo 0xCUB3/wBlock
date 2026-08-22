@@ -44,43 +44,29 @@ struct ApplyChangesProgressView: View {
         filterManager.availableUpdates.count + filterManager.availableScriptUpdates.count
     }
 
+    private var isDismissDisabled: Bool {
+        mode == .progress || isStartingSelectedUpdates
+    }
+
     var body: some View {
-        CompatibleNavigationStack {
+        SheetContainer(fill: .clear) {
+            SheetHeader(title: headerTitle, isLoading: isDismissDisabled) {
+                isPresented = false
+            }
+
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .navigationTitle(headerTitle)
-                #if os(iOS)
-                .navigationBarTitleDisplayMode(.inline)
-                #endif
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button(mode == .review ? String(localized: "Cancel") : String(localized: "Done")) {
-                            isPresented = false
-                        }
-                        .disabled(mode == .progress)
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        if mode == .review {
-                            Button {
-                                Task { await startSelectedUpdates() }
-                            } label: {
-                                if isStartingSelectedUpdates {
-                                    ProgressView()
-                                        .controlSize(.small)
-                                } else {
-                                    Text(String(localized: "Update & Apply"))
-                                }
-                            }
-                            .disabled(selectedUpdateCount == 0 || isStartingSelectedUpdates)
-                        }
-                    }
-                }
+
+            if mode == .review {
+                reviewToolbar
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .applySheetPresentationCompat(
             prefersLarge: mode == .review,
             prefersTall: mode == .progress || mode == .failed
         )
-        .interactiveDismissDisabled(mode == .progress || isStartingSelectedUpdates)
+        .interactiveDismissDisabled(isDismissDisabled)
         .onAppear {
             syncSelectionFromAvailableUpdates()
         }
@@ -149,42 +135,82 @@ struct ApplyChangesProgressView: View {
             .padding(.top, 8)
             .padding(.bottom, 12)
 
-            List {
-                ForEach(visibleCategories, id: \.self) { category in
-                    Section {
-                        if let filters = filtersByCategory[category] {
-                            ForEach(filters, id: \.id) { filter in
-                                SelectableRow(
-                                    title: Text(filter.localizedDisplayName),
-                                    subtitle: filter.localizedDisplayDescription,
-                                    isSelected: selectedFilters.contains(filter.id)
-                                ) {
-                                    toggleFilter(filter)
-                                }
-                            }
-                        }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    ForEach(visibleCategories, id: \.self) { category in
+                        reviewSection(category)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
 
-                        if category == .scripts {
-                            ForEach(filterManager.availableScriptUpdates, id: \.id) { script in
-                                SelectableRow(
-                                    title: Text(script.localizedDisplayName),
-                                    subtitle: script.localizedDisplayDescription,
-                                    isSelected: selectedScripts.contains(script.id)
-                                ) {
-                                    toggleScript(script)
-                                }
-                            }
+    private func reviewSection(_ category: FilterListCategory) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            categoryHeader(category)
+
+            VStack(spacing: 0) {
+                if let filters = filtersByCategory[category] {
+                    ForEach(Array(filters.enumerated()), id: \.element.id) { index, filter in
+                        if index > 0 {
+                            Divider().padding(.leading, 44)
                         }
-                    } header: {
-                        categoryHeader(category)
+                        SelectableRow(
+                            title: Text(filter.localizedDisplayName),
+                            subtitle: filter.localizedDisplayDescription,
+                            isSelected: selectedFilters.contains(filter.id),
+                            style: .groupedRow
+                        ) {
+                            toggleFilter(filter)
+                        }
+                    }
+                }
+
+                if category == .scripts {
+                    ForEach(
+                        Array(filterManager.availableScriptUpdates.enumerated()),
+                        id: \.element.id
+                    ) { index, script in
+                        if index > 0 || filtersByCategory[category] != nil {
+                            Divider().padding(.leading, 44)
+                        }
+                        SelectableRow(
+                            title: Text(script.localizedDisplayName),
+                            subtitle: script.localizedDisplayDescription,
+                            isSelected: selectedScripts.contains(script.id),
+                            style: .groupedRow
+                        ) {
+                            toggleScript(script)
+                        }
                     }
                 }
             }
-            #if os(macOS)
-            .listStyle(.inset)
-            #else
-            .listStyle(.insetGrouped)
-            #endif
+            .liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)
+        }
+    }
+
+    private var reviewToolbar: some View {
+        SheetBottomToolbar {
+            Button {
+                Task { await startSelectedUpdates() }
+            } label: {
+                ZStack {
+                    Text(String(localized: "Update & Apply"))
+                        .opacity(isStartingSelectedUpdates ? 0 : 1)
+                    if isStartingSelectedUpdates {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .primaryActionButtonStyle()
+            .disabled(selectedUpdateCount == 0 || isStartingSelectedUpdates)
+            .keyboardShortcut(.defaultAction)
+            .accessibilityLabel(String(localized: "Update & Apply"))
         }
     }
 
@@ -203,6 +229,7 @@ struct ApplyChangesProgressView: View {
             .toggleStyle(.switch)
             .labelsHidden()
         }
+        .padding(.horizontal, 4)
     }
 
     // MARK: - Progress
@@ -344,9 +371,9 @@ struct ApplyChangesProgressView: View {
     private var headerTitle: String {
         switch mode {
         case .review:
-            return String(localized: "Available Updates")
+            return "Available Updates"
         case .progress, .result, .failed:
-            return String(localized: "Apply Changes")
+            return "Apply Changes"
         }
     }
 

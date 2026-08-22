@@ -223,9 +223,12 @@ struct ContentView: View {
     }
 
     private var applyChangesToolbarButton: some View {
-        Button {
-            applyPendingChanges()
-        } label: {
+        ApplyChangesHoldButton(
+            isDisabled: filterManager.isLoading,
+            hasPendingChanges: hasPendingChanges,
+            onTap: applyPendingChanges,
+            onForceApply: { filterManager.forceApplyChanges() }
+        ) {
             if hasPendingChanges {
                 Text("Apply")
                     .fontWeight(.semibold)
@@ -233,8 +236,6 @@ struct ContentView: View {
                 Image(systemName: applyChangesSymbolName)
             }
         }
-        .disabled(filterManager.isLoading)
-        .accessibilityLabel("Apply Changes")
     }
 
     private var filtersView: some View {
@@ -299,11 +300,6 @@ struct ContentView: View {
                         }
 
                         applyChangesToolbarButton
-                            .help(
-                                hasPendingChanges
-                                    ? String(localized: "Apply your pending changes")
-                                    : String(localized: "Apply changes")
-                            )
 
                         Button {
                             showOnlyEnabledLists.toggle()
@@ -396,6 +392,7 @@ struct ContentView: View {
                 hasPendingChanges: hasPendingChanges,
                 isApplyingChanges: filterManager.isLoading,
                 onApplyChanges: applyPendingChanges,
+                onForceApplyChanges: { filterManager.forceApplyChanges() },
                 tabSelection: selectedTab,
                 onRefresh: {
                     guard !filterManager.isLoading else { return }
