@@ -1,6 +1,103 @@
 import CryptoKit
 import SwiftUI
 import wBlockCoreService
+#if os(iOS)
+import UIKit
+#endif
+
+#if os(iOS)
+/// Cooperative cancel flag for the in-flight apply. Expiration callbacks set
+/// this off the MainActor so checkpoints can unwind and drop app-group file
+/// locks before iOS suspends (0xDEAD10CC).
+private enum ApplyCancellation {
+    private static let lock = NSLock()
+    private static var cancelled = false
+
+    static func reset() {
+        lock.lock()
+        cancelled = false
+        lock.unlock()
+    }
+
+    static func cancel() {
+        lock.lock()
+        cancelled = true
+        lock.unlock()
+    }
+
+    static var isCancelled: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return cancelled
+    }
+}
+
+/// Holds `performExpiringActivity` while apply owns shared-container locks.
+/// The non-expired callback blocks on a background thread; `release()` lets
+/// that assertion lapse. Never wait on that semaphore from the MainActor.
+private final class ApplySuspensionShield: @unchecked Sendable {
+    private let completion = DispatchSemaphore(value: 0)
+    private let stateLock = NSLock()
+    private var expired = false
+
+    init(reason: String, onExpiration: @escaping @Sendable () -> Void) {
+        let completion = completion
+        DispatchQueue.global(qos: .userInitiated).async {
+            ProcessInfo.processInfo.performExpiringActivity(withReason: reason) { [weak self] isExpired in
+                if isExpired {
+                    self?.markExpired()
+                    onExpiration()
+                } else {
+                    completion.wait()
+                }
+            }
+        }
+    }
+
+    var isExpired: Bool {
+        stateLock.lock()
+        defer { stateLock.unlock() }
+        return expired
+    }
+
+    private func markExpired() {
+        stateLock.lock()
+        expired = true
+        stateLock.unlock()
+    }
+
+    func release() {
+        completion.signal()
+    }
+}
+
+@MainActor
+private final class ApplyBackgroundTaskHandle {
+    private let application: UIApplication
+    private var identifier: UIBackgroundTaskIdentifier = .invalid
+
+    init(application: UIApplication) {
+        self.application = application
+    }
+
+    @discardableResult
+    func start(name: String, onExpiration: @escaping @Sendable () -> Void) -> Bool {
+        identifier = application.beginBackgroundTask(withName: name) { [weak self] in
+            onExpiration()
+            Task { @MainActor in
+                self?.end()
+            }
+        }
+        return identifier != .invalid
+    }
+
+    func end() {
+        guard identifier != .invalid else { return }
+        application.endBackgroundTask(identifier)
+        identifier = .invalid
+    }
+}
+#endif
 
 extension AppFilterManager {
     // MARK: - Helper Methods
@@ -45,11 +142,32 @@ extension AppFilterManager {
         }
     }
 
+    /// Fails the in-flight apply when iOS is about to suspend so file locks
+    /// unwind instead of killing the process with 0xDEAD10CC.
+    private func failApplyIfCancelled() async -> Bool {
+        #if os(iOS)
+        guard ApplyCancellation.isCancelled || Task.isCancelled else {
+            return false
+        }
+        await failApplyRun(
+            logMessage: LocalizedStrings.text(
+                "Apply cancelled to release file locks before suspension",
+                comment: "Apply pipeline suspension cancel"
+            )
+        )
+        return true
+        #else
+        return false
+        #endif
+    }
+
     // MARK: - Delegated methods
 
     /// Runs apply-related work exclusively. Concurrent callers are skipped.
+    /// On iOS the session also holds a suspension shield so closing the app
+    /// mid-apply can unwind shared-container locks instead of dying (0xDEAD10CC).
     @discardableResult
-    func performExclusiveApply(_ work: () async -> Void) async -> Bool {
+    func performExclusiveApply(_ work: @escaping () async -> Void) async -> Bool {
         if isApplyInFlight {
             await ConcurrentLogManager.shared.warning(
                 .filterApply,
@@ -69,7 +187,27 @@ extension AppFilterManager {
                 scheduleAutoApplyDebounce()
             }
         }
+
+        #if os(iOS)
+        ApplyCancellation.reset()
+        let applyTask = Task {
+            await work()
+        }
+        let shield = ApplySuspensionShield(reason: "wBlock apply") {
+            ApplyCancellation.cancel()
+            applyTask.cancel()
+        }
+        let backgroundTask = ApplyBackgroundTaskHandle(application: .shared)
+        backgroundTask.start(name: "wBlock apply") {
+            ApplyCancellation.cancel()
+            applyTask.cancel()
+        }
+        defer { shield.release() }
+        defer { backgroundTask.end() }
+        await applyTask.value
+        #else
         await work()
+        #endif
         return true
     }
 
@@ -189,6 +327,8 @@ extension AppFilterManager {
             try? await Task.sleep(nanoseconds: 280_000_000)  // ~0.28s for sheet presentation + layout
         }
 
+        if await failApplyIfCancelled() { return }
+
         await ConcurrentLogManager.shared.info(
             .filterApply, LocalizedStrings.text("Starting filter application process"),
             metadata: ["platform": currentPlatform == .macOS ? "macOS" : "iOS"])
@@ -292,6 +432,8 @@ extension AppFilterManager {
                 }
             }
         }
+
+        if await failApplyIfCancelled() { return }
 
         let allSelectedFilters = pausedComponents.contains(.filters)
             ? []
@@ -401,6 +543,7 @@ extension AppFilterManager {
         let warningThreshold = Int(Double(ruleLimit) * 0.8)  // 80% threshold
 
         let disabledSites = runSnapshot.disabledSites
+        if await failApplyIfCancelled() { return }
         let removeParamDNRSummary = await Task.detached(priority: .utility) {
             try? RemoveParamDNRRuleGenerator.saveRules(
                 for: allSelectedFilters,
@@ -427,6 +570,7 @@ extension AppFilterManager {
                 metadata: [:]
             )
         }
+        if await failApplyIfCancelled() { return }
         let affinitySnapshot = await Task.detached(priority: .utility) {
             guard let containerURL = FileManager.default.containerURL(
                 forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
@@ -458,6 +602,19 @@ extension AppFilterManager {
             conversionWork,
             operation: { work in
                 let conversionStart = Date()
+                #if os(iOS)
+                if ApplyCancellation.isCancelled || Task.isCancelled {
+                    return TargetConversionCompletion(
+                        work: work,
+                        outcome: nil,
+                        failureDescription: LocalizedStrings.text(
+                            "Apply cancelled to release file locks before suspension",
+                            comment: "Apply pipeline suspension cancel"
+                        ),
+                        durationMs: Int(Date().timeIntervalSince(conversionStart) * 1000)
+                    )
+                }
+                #endif
                 do {
                     let outcome = try ContentBlockerService.compileTargetRules(
                         filters: work.filters,
@@ -486,6 +643,11 @@ extension AppFilterManager {
             },
             onResult: { completion in
                 conversionCompletions[completion.work.targetInfo] = completion
+                #if os(iOS)
+                if ApplyCancellation.isCancelled || Task.isCancelled {
+                    return
+                }
+                #endif
                 guard let conversionResult = completion.outcome else { return }
                 let targetInfo = completion.work.targetInfo
                 let blockerName = targetInfo.displayName
@@ -531,6 +693,8 @@ extension AppFilterManager {
                 }
             }
         )
+
+        if await failApplyIfCancelled() { return }
 
         if let failedTarget = platformTargets.first(where: {
             conversionCompletions[$0]?.failureDescription != nil
@@ -665,6 +829,8 @@ extension AppFilterManager {
         }
 
         // Build the combined filter engine after all content blockers are reloaded.
+        if await failApplyIfCancelled() { return }
+
         await MainActor.run {
             self.progress = 0.9
             self.applyProgressViewModel.updatePhaseCompletion(reloading: true, saving: false)
@@ -810,6 +976,8 @@ extension AppFilterManager {
     /// Used both by the "no filters selected" apply path and by the global pause toggle.
     /// Returns `true` on success, `false` after reporting the failure via `failApplyRun`.
     func clearAllExtensionsAndEngine() async -> Bool {
+        if await failApplyIfCancelled() { return false }
+
         let currentPlatform = self.currentPlatform
 
         do {
@@ -906,7 +1074,7 @@ extension AppFilterManager {
             return await resumeBlocking()
         }
 
-        let started = await performExclusiveApply {
+        let started = await performExclusiveApply { [self] in
             lastApplySucceeded = false
             if normalized == .all {
                 BlockingPauseStore.setPaused(true)
@@ -995,7 +1163,7 @@ extension AppFilterManager {
             return true
         }
 
-        let started = await performExclusiveApply {
+        let started = await performExclusiveApply { [self] in
             lastApplySucceeded = false
             BlockingPauseStore.setResumeApplying()
             // Keep blocking fail-closed in shared storage, but let SwiftUI paint the
@@ -1140,6 +1308,10 @@ extension AppFilterManager {
                         0.7 + (Float(completed) / Float(max(1, totalCount)) * 0.2)
                 }
                 await Self.allowProgressUIRefresh()
+                if await self.failApplyIfCancelled() {
+                    group.cancelAll()
+                    break
+                }
             }
         }
 
@@ -1190,7 +1362,19 @@ extension AppFilterManager {
     }
 
     static func allowProgressUIRefresh() async {
+        #if os(iOS)
+        if ApplyCancellation.isCancelled || Task.isCancelled {
+            return
+        }
+        do {
+            try await Task.sleep(nanoseconds: 16_000_000)
+            try Task.checkCancellation()
+        } catch {
+            return
+        }
+        #else
         try? await Task.sleep(nanoseconds: 16_000_000)
+        #endif
     }
 
 }
