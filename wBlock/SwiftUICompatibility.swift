@@ -3,6 +3,26 @@ import SwiftUI
 import UIKit
 #endif
 
+#if os(iOS)
+struct ApplySheetGlassBackgroundModifier: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.presentationBackground {
+                Rectangle()
+                    .fill(.clear)
+                    .glassEffect(.regular, in: Rectangle())
+                    .ignoresSafeArea()
+            }
+        } else if #available(iOS 16.4, *) {
+            content.presentationBackground(.regularMaterial)
+        } else {
+            content
+        }
+    }
+}
+#endif
+
 struct CompatibleNavigationStack<Content: View>: View {
     /// Pre-Tahoe non-navigation tabs must not own stacks because SwiftUI can
     /// duplicate their window toolbar contributions after closing panels.
@@ -115,18 +135,29 @@ extension View {
     @ViewBuilder
     func applySheetPresentationCompat(prefersLarge: Bool, prefersTall: Bool = false) -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {
-            if prefersLarge {
-                presentationDetents([.large])
-                    .presentationDragIndicator(.visible)
-            } else if prefersTall {
-                presentationDetents([.height(560), .large])
-                    .presentationDragIndicator(.visible)
-            } else {
-                presentationDetents([.medium, .large])
-                    .presentationDragIndicator(.visible)
-            }
+            #if os(iOS)
+            applySheetDetentsCompat(prefersLarge: prefersLarge, prefersTall: prefersTall)
+                .modifier(ApplySheetGlassBackgroundModifier())
+            #else
+            applySheetDetentsCompat(prefersLarge: prefersLarge, prefersTall: prefersTall)
+            #endif
         } else {
             self
+        }
+    }
+
+    @available(iOS 16.0, macOS 13.0, *)
+    @ViewBuilder
+    private func applySheetDetentsCompat(prefersLarge: Bool, prefersTall: Bool) -> some View {
+        if prefersLarge {
+            presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        } else if prefersTall {
+            presentationDetents([.height(560), .large])
+                .presentationDragIndicator(.visible)
+        } else {
+            presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
     }
 

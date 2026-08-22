@@ -207,7 +207,7 @@ struct ApplyChangesProgressView: View {
                 }
                 .frame(maxWidth: .infinity)
             }
-            .primaryActionButtonStyle()
+            .updateAndApplyButtonStyle()
             .disabled(selectedUpdateCount == 0 || isStartingSelectedUpdates)
             .keyboardShortcut(.defaultAction)
             .accessibilityLabel(String(localized: "Update & Apply"))
@@ -382,5 +382,21 @@ struct ApplyChangesProgressView: View {
             return String(localized: "Something went wrong while applying changes.")
         }
         return viewModel.state.failureMessage
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func updateAndApplyButtonStyle() -> some View {
+        #if os(iOS)
+        if #available(iOS 26.0, *) {
+            self.buttonStyle(.glassProminent)
+                .controlSize(.large)
+        } else {
+            self.primaryActionButtonStyle()
+        }
+        #else
+        self.primaryActionButtonStyle()
+        #endif
     }
 }

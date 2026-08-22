@@ -56,21 +56,46 @@ struct SheetHeader: View {
                 .fontWeight(.semibold)
             Spacer()
             if !isLoading {
-                Button {
-                    onDismiss()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.gray)
-                        .font(.title2)
-                }
-                .buttonStyle(.plain)
-                .keyboardShortcut(.cancelAction)
-                .transition(.scale.combined(with: .opacity))
+                dismissControl
+                    .transition(.scale.combined(with: .opacity))
             }
         }
         .padding(.horizontal, 20)
         .padding(.top, 20)
         .background(Color.clear)
+    }
+
+    @ViewBuilder
+    private var dismissControl: some View {
+        #if os(iOS)
+        if #available(iOS 26.0, *) {
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(.glass)
+            .keyboardShortcut(.cancelAction)
+        } else {
+            Button {
+                onDismiss()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(.gray)
+                    .font(.title2)
+            }
+            .buttonStyle(.plain)
+            .keyboardShortcut(.cancelAction)
+        }
+        #else
+        Button {
+            onDismiss()
+        } label: {
+            Image(systemName: "xmark.circle.fill")
+                .foregroundStyle(.gray)
+                .font(.title2)
+        }
+        .buttonStyle(.plain)
+        .keyboardShortcut(.cancelAction)
+        #endif
     }
 }
 

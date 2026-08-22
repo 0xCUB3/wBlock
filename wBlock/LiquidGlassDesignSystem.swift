@@ -14,12 +14,23 @@ extension View {
         cornerRadius: CGFloat = 12,
         material: Material = .regularMaterial
     ) -> some View {
-        self
-            .background(material, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        #if os(iOS)
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        } else {
+            self.background(material, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                }
+        }
+        #else
+        self.background(material, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .stroke(Color.white.opacity(0.12), lineWidth: 1)
             }
+        #endif
     }
 }
 
