@@ -29,8 +29,8 @@
 "1h" = "1s";
 "2." = "2.";
 "7d" = "7g";
-"Takes effect when No Autoplay is on." = "Otomatik oynatma yok özelliği açıkken geçerli olur.";
-"Autoplay on" = "Otomatik oynatma açık";
+"Takes effect when No Autoplay is on." = "Otomatik Oynatma Kapalı olduğunda geçerli olur.";
+"Autoplay on" = "Otomatik Oynatma açık";
 "Allow autoplay on this site" = "Bu sitede otomatik oynatmaya izin ver";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) girdi";
 "\\(index + 1)." = "\\(index + 1).";
@@ -141,11 +141,11 @@
 "Background agent error: %@" = "Arka plan görevi hatası: %@";
 "Background agent needs approval in Login Items" = "Arka plan görevi için Giriş Öğeleri bölümünde onay gerekiyor";
 "Background agent not registered" = "Arka plan görevi kayıtlı değil";
-"Background agent off (updates run while wBlock is open)" = "Arka plan hizmeti kapalı (güncellemeler yalnızca wBlock açıkken çalışır)";
+"Background agent off (updates run while wBlock is open)" = "Arka plan aracısı kapalı (güncellemeler yalnızca wBlock açıkken çalışır)";
 "Background agent registered" = "Arka plan görevi kaydedildi";
 "Background agent status unavailable" = "Arka plan görevi durumu kullanılamıyor";
 "Background Diagnostics" = "Arka plan görevleri";
-"Background Update Agent" = "Arka Planda Güncelleme Hizmeti";
+"Background Update Agent" = "Arka Plan Güncelleme Aracısı";
 "Backup" = "Yedek";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@ yedeklemesi (uygulama sürümü: %@, filtreler: %@). Bu işlem; mevcut filtre seçimlerinizi, izin listenizi ve öğe gizleyici kurallarınızı değiştirecektir.";
 "Balanced defaults." = "Dengeli ayarlar.";
@@ -154,7 +154,7 @@
 "Baseline userscripts are enabled by default. You can adjust them here." = "Temel kullanıcı betikleri varsayılan olarak etkindir. Bunları buradan ayarlayabilirsiniz.";
 "Best default" = "En iyi varsayılan";
 "Beta" = "Beta";
-"Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Beta kullanıcı betikleri hâlâ test ediliyor; sayfaları bozabilir veya beklenmedik şekilde davranabilir. Bunları istediğin zaman kapatabilirsin.";
+"Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Beta kullanıcı betikleri henüz test aşamasındadır; sayfaların bozulmasına veya beklenmedik şekilde çalışmasına neden olabilir. İstediğiniz zaman bunları kapatabilirsiniz.";
 "BGAppRefresh" = "Arka planda uygulama yenileme";
 "BGProcessing" = "Arka planda işleme";
 "Blocked requests (%d)" = "Engellenen istek (%d)";
@@ -219,7 +219,7 @@
 "Community-maintained options for additional regional coverage." = "Ek bölgesel kapsam için topluluk tarafından yönetilen seçenekler.";
 "Completed" = "Tamamlandı";
 "Comprehensive ad-blocking rules by AdGuard." = "AdGuard tarafından sunulan kapsamlı reklam engelleme kuralları.";
-"Conditional check failed" = "Koşullu kontrol başarısız";
+"Conditional check failed" = "Koşullu denetim başarısız oldu";
 "Contains new rules and fixes not yet included in other filters." = "Diğer filtrelere henüz dâhil edilmemiş yeni kuralları ve düzeltmeleri içerir.";
 "Content filtering" = "İçerik filtreleme";
 "Continue" = "Devam";
@@ -301,7 +301,7 @@
 "Enable" = "Etkinleştir";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "'wBlock Scripts' etkinleştirin → Tüm Web Sitelerinde Her Zaman İzin Ver";
 "Enable all 5 Content Blocker extensions" = "5 İçerik Engelleyici genişletmesinin tümünü etkinleştirin";
-"Enable Beta Userscript?" = "Beta kullanıcı betiği etkinleştirilsin mi?";
+"Enable Beta Userscript?" = "Beta kullanıcı betikleri etkinleştirilsin mi?";
 "Enable extra fixes and finish setup." = "Ek düzeltmeleri etkinleştirin ve kurulumu tamamlayın.";
 "Enable the Safari extensions so wBlock can block ads and run userscripts." = "wBlock'un reklamları engellemesi ve kullanıcı betik dosyalarını çalıştırabilmesi için Safari genişletmelerini etkinleştirin.";
 "Enable the Safari extensions so wBlock can block ads." = "wBlock'un reklamları engelleyebilmesi için Safari genişletmelerini etkinleştirin.";
@@ -419,7 +419,7 @@
 "Handles advanced anti-adblock cases that filter rules miss." = "Filtre kurallarının gözden kaçırdığı gelişmiş reklam engelleyici tespiti durumları yönetir.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Sayfa içi açılır pencereleri, afişleri ve diğer istenmeyen sayfa öğelerini gizler.";
 "Highlighting disabled for performance" = "Performans nedeniyle vurgulama devre dışı bırakıldı";
-"Hold for 3 seconds to apply without checking for updates." = "Hold for 3 seconds to apply without checking for updates.";
+"Hold for 3 seconds to apply without checking for updates." = "Güncellemeleri denetlemeden uygulamak için 3 saniye basılı tutun.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "Hufilter. Macarca dilindeki sitelerde reklamları özel olarak kaldıran filtre listesi.";
