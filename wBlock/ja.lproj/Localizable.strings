@@ -151,7 +151,7 @@
 "Balanced defaults." = "バランスの取れた既定設定。";
 "Base filter only." = "ベースフィルターのみ。";
 "Baseline Userscripts" = "基本ユーザースクリプト";
-"Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
+"Baseline userscripts are enabled by default. You can adjust them here." = "基本ユーザースクリプトはデフォルトで有効になっています。ここで調整できます。";
 "Best default" = "おすすめの既定値";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "ベータ版ユーザースクリプトはまだテスト中で、ページが崩れたり予期しない動作をしたりすることがあります。いつでもオフにできます。";
@@ -203,10 +203,10 @@
 "Checking background agent…" = "バックグラウンドエージェントを確認中…";
 "Checking for Updates" = "フィルターを更新中";
 "Checking for updates..." = "アップデートをチェックしています...";
-"Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
+"Checks for wBlock filter updates and applies them when available." = "wBlock のフィルターのアップデートを確認し、利用可能な場合は適用します。";
 "Choose File…" = "ファイルを選択…";
 "Choose optional userscripts. These are disabled by default." = "任意のユーザースクリプトを選択してください。初期状態では無効です。";
-"Choose which filters and scripts to download, then apply changes." = "Choose which filters and scripts to download, then apply changes.";
+"Choose which filters and scripts to download, then apply changes." = "ダウンロードするフィルターとスクリプトを選択し、変更を適用してください。";
 "Choose your preferred blocking level. You can adjust enabled filters later." = "希望するブロックレベルを選択してください。有効なフィルターは後で調整できます。";
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Clear" = "クリア";
@@ -227,7 +227,7 @@
 "Controls the time zone used when displaying and exporting log timestamps." = "ログのタイムスタンプ表示および書き出しに使用するタイムゾーンを設定します。";
 "Conversion" = "変換";
 "Conversion phase summary" = "変換フェーズの概要";
-"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Converted rules, but one or more extensions failed to reload after 5 attempts.";
+"Converted rules, but one or more extensions failed to reload after 5 attempts." = "ルールは変換されましたが、5回試行した後も1つ以上の拡張機能の再読み込みに失敗しました。";
 "Converting %@…" = "%@ を変換中...";
 "Converting Rules" = "ルールを変換中";
 "Copy URL" = "URLをコピー";
@@ -419,7 +419,7 @@
 "Handles advanced anti-adblock cases that filter rules miss." = "フィルター ルールが見逃す高度な広告ブロック対策ケースを処理します。";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "ページ内のポップアップ、バナー、その他の不要なページ要素を非表示にします。";
 "Highlighting disabled for performance" = "パフォーマンスのためハイライトを無効化";
-"Hold for 3 seconds to apply without checking for updates." = "Hold for 3 seconds to apply without checking for updates.";
+"Hold for 3 seconds to apply without checking for updates." = "アップデートの有無を確認せずに適用するには、3秒間長押ししてください。";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "ヒューフィルター。ハンガリー語の Web サイト上の広告を特に削除するフィルター リスト。";
@@ -767,7 +767,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "現在のフィルター選択、ホワイトリスト、要素ザッパーのルールがバックアップ設定に置き換えられます。";
 "This will reset all filters, userscripts, and preferences." = "これにより、すべてのフィルター、ユーザースクリプト、設定がリセットされます。";
 "Timed out" = "タイムアウト";
-"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
+"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield は、該当するサイト上で Ad-Shield によって再挿入された広告のブロックを支援します。";
 "Title" = "タイトル";
 "Title (optional)" = "タイトル（任意）";
 "Title is required." = "タイトルは必須です。";
@@ -778,11 +778,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Trust: %@" = "信頼: %@";
 "Trust: \\(trust.capitalized)" = "信頼: \\(trust.capitalized)";
 "Tune filters for your country and language." = "国と言語に合わせてフィルターを調整します。";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
+"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "wBlock がスクリプトをまとめて、またはスケジュールに従ってアップデートする際に、現在のバージョンを維持するにはこれをオフにしてください。";
 "Unable to access shared container" = "共有コンテナにアクセスできません";
 "Unapplied Filter Changes" = "適用されていないフィルターの変更";
 "Unavailable" = "利用できません";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
+"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "メール、検索結果、リダイレクトで正常に機能しなくなるアフィリエイトリンクやトラッキング用のリファラルリンクのブロックを解除します。";
 "Undo" = "元に戻す";
 "Redo" = "やり直す";
 "Element Zapper" = "要素ザッパー";

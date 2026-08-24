@@ -151,7 +151,7 @@
 "Balanced defaults." = "Ισορροπημένες προεπιλογές.";
 "Base filter only." = "Μόνο βασικό φίλτρο.";
 "Baseline Userscripts" = "Βασικά σενάρια χρήστη";
-"Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
+"Baseline userscripts are enabled by default. You can adjust them here." = "Τα βασικά σενάρια χρήστη είναι ενεργοποιημένα από προεπιλογή. Μπορείτε να τα προσαρμόσετε εδώ.";
 "Best default" = "Καλύτερη προεπιλογή";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Τα beta userscripts βρίσκονται ακόμη υπό δοκιμή και μπορεί να χαλάσουν σελίδες ή να συμπεριφερθούν απρόσμενα. Μπορείτε να τα απενεργοποιήσετε ανά πάσα στιγμή.";
@@ -203,10 +203,10 @@
 "Checking background agent…" = "Έλεγχος πράκτορα παρασκηνίου…";
 "Checking for Updates" = "Έλεγχος για ενημερώσεις φίλτρων";
 "Checking for updates..." = "Έλεγχος για ενημερώσεις...";
-"Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
+"Checks for wBlock filter updates and applies them when available." = "Ελέγχει για ενημερώσεις φίλτρων του wBlock και τις εφαρμόζει όταν είναι διαθέσιμες.";
 "Choose File…" = "Επιλογή Αρχείου…";
 "Choose optional userscripts. These are disabled by default." = "Επιλέξτε προαιρετικά σενάρια χρήστη. Αυτά είναι απενεργοποιημένα από προεπιλογή.";
-"Choose which filters and scripts to download, then apply changes." = "Choose which filters and scripts to download, then apply changes.";
+"Choose which filters and scripts to download, then apply changes." = "Επιλέξτε ποια φίλτρα και σενάρια θα ληφθούν και, στη συνέχεια, εφαρμόστε τις αλλαγές.";
 "Choose your preferred blocking level. You can adjust enabled filters later." = "Επιλέξτε το προτιμώμενο επίπεδο αποκλεισμού. Μπορείτε να προσαρμόσετε τα ενεργοποιημένα φίλτρα αργότερα.";
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Clear" = " Εκκαθάριση";
@@ -227,7 +227,7 @@
 "Controls the time zone used when displaying and exporting log timestamps." = "Ελέγχει τη ζώνη ώρας που χρησιμοποιείται κατά την εμφάνιση και την εξαγωγή χρονοσφραγίδων καταγραφής.";
 "Conversion" = "Μετατροπή";
 "Conversion phase summary" = "Σύνοψη φάσης μετατροπής";
-"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Converted rules, but one or more extensions failed to reload after 5 attempts.";
+"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Οι κανόνες μετατράπηκαν, αλλά μία ή περισσότερες επεκτάσεις απέτυχαν να επαναφορτωθούν μετά από 5 προσπάθειες.";
 "Converting %@…" = "Μετατροπή %@â¦";
 "Converting Rules" = "Μετατροπή κανόνων";
 "Copy URL" = "Αντιγραφή URL";
@@ -419,7 +419,7 @@
 "Handles advanced anti-adblock cases that filter rules miss." = "Χειρίζεται προηγμένες περιπτώσεις anti-adblock που χάνουν τους κανόνες φιλτραρίσματος.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Αποκρύπτει αναδυόμενα παράθυρα, banner και άλλα ανεπιθύμητα στοιχεία σελίδας.";
 "Highlighting disabled for performance" = "Η επισήμανση απενεργοποιήθηκε για απόδοση";
-"Hold for 3 seconds to apply without checking for updates." = "Hold for 3 seconds to apply without checking for updates.";
+"Hold for 3 seconds to apply without checking for updates." = "Κρατήστε πατημένο για 3 δευτερόλεπτα για εφαρμογή χωρίς έλεγχο ενημερώσεων.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "Hufilter. Λίστα φίλτρων που καταργεί ειδικά τις διαφημίσεις σε ιστότοπους στην ουγγρική γλώσσα.";
@@ -767,7 +767,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Αυτό θα αντικαταστήσει τις τρέχουσες επιλογές φίλτρων, τη λίστα επιτρεπόμενων και τους κανόνες του στοιχειο-αφανιστή με τις ρυθμίσεις του αντιγράφου ασφαλείας.";
 "This will reset all filters, userscripts, and preferences." = "Αυτό θα επαναφέρει όλα τα φίλτρα, τον κώδικα χρήστη και τις προτιμήσεις.";
 "Timed out" = "Έληξε ο χρόνος";
-"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
+"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "Το tinyShield βοηθά στον αποκλεισμό διαφημίσεων που επανεισάγονται από το Ad-Shield σε αντίστοιχους ιστότοπους.";
 "Title" = "Τίτλος";
 "Title (optional)" = "Τίτλος (προαιρετικό)";
 "Title is required." = "Απαιτείται τίτλος.";
@@ -778,11 +778,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Trust: %@" = "Αξιόπιστο: %@";
 "Trust: \\(trust.capitalized)" = "Εμπιστοσύνη: \(trust.capitalized)";
 "Tune filters for your country and language." = "TΡύθμιση φίλτρων για τη χώρα και τη γλώσσα σας.";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
+"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Απενεργοποιήστε το για να διατηρήσετε την τρέχουσα έκδοση όταν το wBlock ενημερώνει σενάρια μαζικά ή βάσει προγράμματος.";
 "Unable to access shared container" = "Δεν είναι δυνατή η πρόσβαση στο κοινόχρηστο κοντέινερ";
 "Unapplied Filter Changes" = "Μη εφαρμοσμένες αλλαγές φίλτρου";
 "Unavailable" = "Μη διαθέσιμο";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
+"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Ξεμπλοκάρει συνδέσμους συνεργατών και παρακολούθησης που διαφορετικά σπάνε σε email, αποτελέσματα αναζήτησης και ανακατευθύνσεις.";
 "Undo" = "Αναίρεση";
 "Redo" = "Επανάληψη";
 "Element Zapper" = "Zapper στοιχείων";

@@ -151,7 +151,7 @@
 "Balanced defaults." = "Сбалансированные настройки по умолчанию.";
 "Base filter only." = "Только базовый фильтр.";
 "Baseline Userscripts" = "Базовые пользовательские скрипты";
-"Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
+"Baseline userscripts are enabled by default. You can adjust them here." = "Базовые пользовательские скрипты включены по умолчанию. Вы можете настроить их здесь.";
 "Best default" = "Лучший вариант по умолчанию";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Бета-скрипты ещё тестируются и могут ломать страницы или работать непредсказуемо. Вы можете отключить их в любой момент.";
@@ -203,10 +203,10 @@
 "Checking background agent…" = "Проверка фонового агента…";
 "Checking for Updates" = "Проверка обновлений фильтров";
 "Checking for updates..." = "Проверяем наличие обновлений...";
-"Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
+"Checks for wBlock filter updates and applies them when available." = "Проверяет обновления фильтров wBlock и применяет их при наличии.";
 "Choose File…" = "Выбрать файл…";
 "Choose optional userscripts. These are disabled by default." = "Выберите дополнительные пользовательские скрипты. По умолчанию они отключены.";
-"Choose which filters and scripts to download, then apply changes." = "Choose which filters and scripts to download, then apply changes.";
+"Choose which filters and scripts to download, then apply changes." = "Выберите фильтры и скрипты для загрузки, затем примените изменения.";
 "Choose your preferred blocking level. You can adjust enabled filters later." = "Выберите предпочтительный уровень блокировки. Позже можно изменить включенные фильтры.";
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Clear" = "Очистить";
@@ -227,7 +227,7 @@
 "Controls the time zone used when displaying and exporting log timestamps." = "Определяет часовой пояс для отображения и экспорта меток времени журналов.";
 "Conversion" = "Конвертация";
 "Conversion phase summary" = "Сводка фазы конвертации";
-"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Converted rules, but one or more extensions failed to reload after 5 attempts.";
+"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Правила преобразованы, но одно или несколько расширений не удалось перезагрузить после 5 попыток.";
 "Converting %@…" = "Преобразование %@â¦";
 "Converting Rules" = "Преобразование правил";
 "Copy URL" = "Копировать URL";
@@ -419,7 +419,7 @@
 "Handles advanced anti-adblock cases that filter rules miss." = "Обрабатывает расширенные случаи антиблокировки рекламы, которые пропускают правила фильтрации.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Скрывает всплывающие окна, баннеры и другие нежелательные элементы страницы.";
 "Highlighting disabled for performance" = "Подсветка отключена для производительности";
-"Hold for 3 seconds to apply without checking for updates." = "Hold for 3 seconds to apply without checking for updates.";
+"Hold for 3 seconds to apply without checking for updates." = "Удерживайте 3 секунды, чтобы применить без проверки обновлений.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "Хуфильтр. Список фильтров, который специально удаляет рекламу на веб-сайтах на венгерском языке.";
@@ -767,7 +767,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Это заменит текущие выбранные фильтры, белый список и правила скрытия элементов настройками из резервной копии.";
 "This will reset all filters, userscripts, and preferences." = "Это сбросит все фильтры, пользовательские скрипты и настройки.";
 "Timed out" = "Время ожидания истекло";
-"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
+"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield помогает блокировать рекламу, повторно вставляемую Ad-Shield на подходящих сайтах.";
 "Title" = "Название";
 "Title (optional)" = "Название (необязательно)";
 "Title is required." = "Необходимо указать название.";
@@ -778,11 +778,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Trust: %@" = "Доверие: %@";
 "Trust: \\(trust.capitalized)" = "Доверие: \\(trust.capitalized)";
 "Tune filters for your country and language." = "Настройте фильтры под вашу страну и язык.";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
+"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Отключите это, чтобы сохранить текущую версию, когда wBlock обновляет скрипты массово или по расписанию.";
 "Unable to access shared container" = "Нет доступа к общему контейнеру";
 "Unapplied Filter Changes" = "Непримененные изменения фильтра";
 "Unavailable" = "Недоступно";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
+"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Разблокирует партнёрские и отслеживающие реферальные ссылки, которые иначе ломаются в письмах, результатах поиска и перенаправлениях.";
 "Undo" = "Отменить";
 "Redo" = "Повторить";
 "Element Zapper" = "Zapper элементов";

@@ -151,7 +151,7 @@
 "Balanced defaults." = "Zrównoważone ustawienia domyślne.";
 "Base filter only." = "Tylko filtr podstawowy.";
 "Baseline Userscripts" = "Podstawowe skrypty użytkownika";
-"Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
+"Baseline userscripts are enabled by default. You can adjust them here." = "Podstawowe skrypty użytkownika są domyślnie włączone. Możesz je tutaj dostosować.";
 "Best default" = "Najlepszy domyślny wybór";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Skrypty użytkownika w wersji beta są wciąż testowane i mogą psuć strony lub działać nieprzewidywalnie. Możesz je wyłączyć w dowolnej chwili.";
@@ -203,10 +203,10 @@
 "Checking background agent…" = "Sprawdzanie agenta działającego w tle…";
 "Checking for Updates" = "Sprawdzanie aktualizacji filtrów";
 "Checking for updates..." = "Sprawdzam dostępność aktualizacji...";
-"Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
+"Checks for wBlock filter updates and applies them when available." = "Sprawdza aktualizacje filtrów wBlock i stosuje je, gdy są dostępne.";
 "Choose File…" = "Wybierz plik…";
 "Choose optional userscripts. These are disabled by default." = "Wybierz opcjonalne userskrypty. Domyślnie są wyłączone.";
-"Choose which filters and scripts to download, then apply changes." = "Choose which filters and scripts to download, then apply changes.";
+"Choose which filters and scripts to download, then apply changes." = "Wybierz filtry i skrypty do pobrania, a następnie zastosuj zmiany.";
 "Choose your preferred blocking level. You can adjust enabled filters later." = "Wybierz preferowany poziom blokowania. Włączone filtry możesz dostosować później.";
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Clear" = "Wyczyść";
@@ -227,7 +227,7 @@
 "Controls the time zone used when displaying and exporting log timestamps." = "Ustawia strefę czasową używaną do wyświetlania i eksportowania znaczników czasu logów.";
 "Conversion" = "Konwersja";
 "Conversion phase summary" = "Podsumowanie fazy konwersji";
-"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Converted rules, but one or more extensions failed to reload after 5 attempts.";
+"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Reguły zostały przekonwertowane, ale jedno lub więcej rozszerzeń nie zostało ponownie załadowanych po 5 próbach.";
 "Converting %@…" = "Konwersja %@â¦";
 "Converting Rules" = "Konwertowanie reguł";
 "Copy URL" = "Kopiuj URL";
@@ -419,7 +419,7 @@
 "Handles advanced anti-adblock cases that filter rules miss." = "Obsługuje zaawansowane przypadki zapobiegania blokowaniu reklam, które pomijają reguły filtrowania.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Ukrywa wyskakujące okienka, banery i inne niechciane elementy strony.";
 "Highlighting disabled for performance" = "Podświetlanie wyłączone ze względu na wydajność";
-"Hold for 3 seconds to apply without checking for updates." = "Hold for 3 seconds to apply without checking for updates.";
+"Hold for 3 seconds to apply without checking for updates." = "Przytrzymaj 3 sekundy, aby zastosować bez sprawdzania aktualizacji.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "Hufiltr. Lista filtrów, która specjalnie usuwa reklamy na stronach internetowych w języku węgierskim.";
@@ -764,7 +764,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "To zastąpi bieżące wybory filtrów, białą listę i reguły usuwacza elementów ustawieniami z kopii zapasowej.";
 "This will reset all filters, userscripts, and preferences." = "To zresetuje wszystkie filtry, skrypty użytkownika i preferencje.";
 "Timed out" = "Przekroczono limit czasu";
-"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
+"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield pomaga blokować reklamy ponownie wstawiane przez Ad-Shield na pasujących stronach.";
 "Title" = "Tytuł";
 "Title (optional)" = "Tytuł (opcjonalnie)";
 "Title is required." = "Tytuł jest wymagany.";
@@ -775,11 +775,11 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Trust: %@" = "Zaufanie: %@";
 "Trust: \\(trust.capitalized)" = "Zaufanie: \\(trust.capitalized)";
 "Tune filters for your country and language." = "Dostosuj filtry do kraju i języka.";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
+"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Wyłącz to, aby zachować bieżącą wersję, gdy wBlock aktualizuje skrypty zbiorczo lub według harmonogramu.";
 "Unable to access shared container" = "Brak dostępu do współdzielonego kontenera";
 "Unapplied Filter Changes" = "Niezastosowane zmiany filtrów";
 "Unavailable" = "Niedostępne";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
+"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Odblokowuje linki partnerskie i śledzące, które w przeciwnym razie psują się w e-mailach, wynikach wyszukiwania i przekierowaniach.";
 "Undo" = "Cofnij";
 "Redo" = "Ponów";
 "Element Zapper" = "Zapper elementów";

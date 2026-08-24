@@ -151,7 +151,7 @@
 "Balanced defaults." = "الإعدادات الافتراضية المتوازنة.";
 "Base filter only." = "الفلتر الأساسي فقط.";
 "Baseline Userscripts" = "سكربتات المستخدم الأساسية";
-"Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
+"Baseline userscripts are enabled by default. You can adjust them here." = "سكربتات المستخدم الأساسية مفعّلة افتراضيًا. يمكنك ضبطها هنا.";
 "Best default" = "الخيار الأفضل افتراضيًا";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "لا تزال السكربتات التجريبية قيد الاختبار وقد تعطّل الصفحات أو تتصرف بشكل غير متوقع. يمكنك إيقافها في أي وقت.";
@@ -203,10 +203,10 @@
 "Checking background agent…" = "جارٍ التحقق من عامل الخلفية…";
 "Checking for Updates" = "جارٍ التحقق من تحديثات عوامل التصفية";
 "Checking for updates..." = "جارٍ التحقق من وجود تحديثات...";
-"Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
+"Checks for wBlock filter updates and applies them when available." = "يتحقق من تحديثات فلاتر wBlock ويطبّقها عند توفرها.";
 "Choose File…" = "اختر ملفًا…";
 "Choose optional userscripts. These are disabled by default." = "اختر سكربتات مستخدم اختيارية. تكون معطلة افتراضيًا.";
-"Choose which filters and scripts to download, then apply changes." = "Choose which filters and scripts to download, then apply changes.";
+"Choose which filters and scripts to download, then apply changes." = "اختر الفلاتر والسكربتات المراد تنزيلها، ثم طبّق التغييرات.";
 "Choose your preferred blocking level. You can adjust enabled filters later." = "اختر مستوى الحظر المفضل لديك. يمكنك تعديل الفلاتر المفعّلة لاحقًا.";
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Clear" = "مسح";
@@ -227,7 +227,7 @@
 "Controls the time zone used when displaying and exporting log timestamps." = "يتحكم بالمنطقة الزمنية المستخدمة عند عرض طوابع السجل الزمنية وتصديرها.";
 "Conversion" = "التحويل";
 "Conversion phase summary" = "ملخص مرحلة التحويل";
-"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Converted rules, but one or more extensions failed to reload after 5 attempts.";
+"Converted rules, but one or more extensions failed to reload after 5 attempts." = "تم تحويل القواعد، لكن تعذّر إعادة تحميل امتداد واحد أو أكثر بعد 5 محاولات.";
 "Converting %@…" = "تحويل %@";
 "Converting Rules" = "جارٍ تحويل القواعد";
 "Copy URL" = "نسخ الرابط";
@@ -419,7 +419,7 @@
 "Handles advanced anti-adblock cases that filter rules miss." = "يتعامل مع حالات مكافحة الإعلانات المتقدمة التي تفوت قواعد التصفية.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "يخفي النوافذ المنبثقة واللافتات وعناصر الصفحة الأخرى غير المرغوب فيها داخل الصفحة.";
 "Highlighting disabled for performance" = "تم تعطيل التمييز للأداء";
-"Hold for 3 seconds to apply without checking for updates." = "Hold for 3 seconds to apply without checking for updates.";
+"Hold for 3 seconds to apply without checking for updates." = "اضغط مطولًا لمدة 3 ثوانٍ للتطبيق دون التحقق من التحديثات.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "هوفيلتر. قائمة التصفية التي تزيل الإعلانات على مواقع الويب باللغة المجرية على وجه التحديد.";
@@ -767,7 +767,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "سيؤدي هذا إلى استبدال اختيارات المرشحات الحالية وقائمة السماح وقواعد إخفاء العناصر بالإعدادات المستعادة من النسخة الاحتياطية.";
 "This will reset all filters, userscripts, and preferences." = "سيؤدي هذا إلى إعادة تعيين جميع الفلاتر وسكريبتات المستخدم والتفضيلات.";
 "Timed out" = "انتهت المهلة";
-"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
+"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "يساعد tinyShield في حظر الإعلانات التي يعيد Ad-Shield إدراجها في المواقع المطابقة.";
 "Title" = "العنوان";
 "Title (optional)" = "العنوان (اختياري)";
 "Title is required." = "العنوان مطلوب.";
@@ -778,11 +778,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Trust: %@" = "الثقة: %@";
 "Trust: \\(trust.capitalized)" = "الثقة: \\(trust.capitalized)";
 "Tune filters for your country and language." = "اضبط الفلاتر حسب بلدك ولغتك.";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
+"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "أوقف هذا الخيار للاحتفاظ بالإصدار الحالي عندما يحدّث wBlock السكربتات دفعة واحدة أو وفق جدول.";
 "Unable to access shared container" = "تعذّر الوصول إلى الحاوية المشتركة";
 "Unapplied Filter Changes" = "تغييرات التصفية غير المطبقة";
 "Unavailable" = "غير متاح";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
+"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "يلغي حظر روابط الإحالة التابعة والتتبع التي تتعطل في الرسائل ونتائج البحث وإعادة التوجيه.";
 "Undo" = "تراجع";
 "Redo" = "إعادة";
 "Element Zapper" = "مزيل العناصر";

@@ -151,7 +151,7 @@
 "Balanced defaults." = "Setări implicite echilibrate.";
 "Base filter only." = "Doar filtrul de bază.";
 "Baseline Userscripts" = "Userscript-uri de bază";
-"Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
+"Baseline userscripts are enabled by default. You can adjust them here." = "Userscript-urile de bază sunt activate implicit. Le poți ajusta aici.";
 "Best default" = "Cea mai bună opțiune implicită";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Userscripturile beta sunt încă în testare și pot strica pagini sau se pot comporta neașteptat. Le poți dezactiva oricând.";
@@ -203,10 +203,10 @@
 "Checking background agent…" = "Se verifică agentul de fundal…";
 "Checking for Updates" = "Se verifică actualizările filtrelor";
 "Checking for updates..." = "Se verifică actualizări...";
-"Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
+"Checks for wBlock filter updates and applies them when available." = "Verifică actualizările filtrelor wBlock și le aplică atunci când sunt disponibile.";
 "Choose File…" = "Alege fișier…";
 "Choose optional userscripts. These are disabled by default." = "Alege scripturi de utilizator opționale. Sunt dezactivate implicit.";
-"Choose which filters and scripts to download, then apply changes." = "Choose which filters and scripts to download, then apply changes.";
+"Choose which filters and scripts to download, then apply changes." = "Alege ce filtre și scripturi să descarci, apoi aplică modificările.";
 "Choose your preferred blocking level. You can adjust enabled filters later." = "Alege nivelul de blocare preferat. Poți ajusta ulterior filtrele activate.";
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Clear" = "Șterge";
@@ -227,7 +227,7 @@
 "Controls the time zone used when displaying and exporting log timestamps." = "Controlează fusul orar folosit la afișarea și exportarea marcajelor temporale ale jurnalului.";
 "Conversion" = "Conversie";
 "Conversion phase summary" = "Rezumat faza de conversie";
-"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Converted rules, but one or more extensions failed to reload after 5 attempts.";
+"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Regulile au fost convertite, dar una sau mai multe extensii nu s-au reîncărcat după 5 încercări.";
 "Converting %@…" = "Conversia %@â¦";
 "Converting Rules" = "Se convertesc regulile";
 "Copy URL" = "Copiază URL-ul";
@@ -419,7 +419,7 @@
 "Handles advanced anti-adblock cases that filter rules miss." = "Se ocupă de cazurile avansate anti-adblock care filtrează regulile ratate.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Ascunde ferestrele pop-up din pagină, bannere și alte elemente nedorite ale paginii.";
 "Highlighting disabled for performance" = "Evidențiere dezactivată pentru performanță";
-"Hold for 3 seconds to apply without checking for updates." = "Hold for 3 seconds to apply without checking for updates.";
+"Hold for 3 seconds to apply without checking for updates." = "Ține apăsat 3 secunde pentru a aplica fără a verifica actualizările.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "Hufilter. Listă de filtre care elimină în mod specific anunțurile de pe site-uri web în limba maghiară.";
@@ -764,7 +764,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Aceasta va înlocui selecțiile actuale de filtre, lista albă și regulile pentru eliminatorul de elemente cu setările din copia de rezervă.";
 "This will reset all filters, userscripts, and preferences." = "Acest lucru va reseta toate filtrele, scripturile utilizator și preferințele.";
 "Timed out" = "Timp expirat";
-"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
+"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield ajută la blocarea reclamelor reintroduse de Ad-Shield pe site-urile corespunzătoare.";
 "Title" = "Titlu";
 "Title (optional)" = "Titlu (opțional)";
 "Title is required." = "Titlul este obligatoriu.";
@@ -775,11 +775,11 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Trust: %@" = "Încredere: %@";
 "Trust: \\(trust.capitalized)" = "Încredere: \\(trust.capitalized)";
 "Tune filters for your country and language." = "Ajustează filtrele pentru țara și limba ta.";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
+"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Dezactivează această opțiune pentru a păstra versiunea curentă când wBlock actualizează scripturile în masă sau după un program.";
 "Unable to access shared container" = "Nu se poate accesa containerul partajat";
 "Unapplied Filter Changes" = "Modificări neaplicate ale filtrului";
 "Unavailable" = "Indisponibil";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
+"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Deblochează linkurile de afiliere și de urmărire care altfel se strică în e-mailuri, rezultate de căutare și redirecționări.";
 "Undo" = "Anulează";
 "Redo" = "Refă";
 "Element Zapper" = "Zapper de elemente";
