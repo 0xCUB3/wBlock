@@ -151,7 +151,7 @@
 "Balanced defaults." = "균형 잡힌 기본 설정.";
 "Base filter only." = "기본 필터만 사용.";
 "Baseline Userscripts" = "기본 유저스크립트";
-"Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
+"Baseline userscripts are enabled by default. You can adjust them here." = "基本ユーザースクリプトはデフォルトで有効になっています。ここで調整できます。";
 "Best default" = "최적 기본값";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "베타 유저스크립트는 아직 테스트 중이라 페이지가 깨지거나 예기치 않게 동작할 수 있습니다. 언제든지 끌 수 있습니다.";
@@ -203,10 +203,10 @@
 "Checking background agent…" = "백그라운드 에이전트 확인 중…";
 "Checking for Updates" = "필터 업데이트 확인 중";
 "Checking for updates..." = "업데이트 확인 중...";
-"Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
+"Checks for wBlock filter updates and applies them when available." = "wBlock のフィルターのアップデートを確認し、利用可能な場合は適用します。";
 "Choose File…" = "파일 선택…";
 "Choose optional userscripts. These are disabled by default." = "선택적 유저스크립트를 고르세요. 기본적으로 비활성화되어 있습니다.";
-"Choose which filters and scripts to download, then apply changes." = "Choose which filters and scripts to download, then apply changes.";
+"Choose which filters and scripts to download, then apply changes." = "ダウンロードするフィルターとスクリプトを選択し、変更を適用してください。";
 "Choose your preferred blocking level. You can adjust enabled filters later." = "선호하는 차단 수준을 선택하세요. 나중에 활성화된 필터를 조정할 수 있습니다.";
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Clear" = "지우기";
@@ -227,7 +227,7 @@
 "Controls the time zone used when displaying and exporting log timestamps." = "로그 타임스탬프를 표시하고 내보낼 때 사용하는 시간대를 설정합니다.";
 "Conversion" = "변환";
 "Conversion phase summary" = "변환 단계 요약";
-"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Converted rules, but one or more extensions failed to reload after 5 attempts.";
+"Converted rules, but one or more extensions failed to reload after 5 attempts." = "ルールは変換されましたが、5回試行した後も1つ以上の拡張機能の再読み込みに失敗しました。";
 "Converting %@…" = "%@ 변환 중…";
 "Converting Rules" = "규칙 변환 중";
 "Copy URL" = "URL 복사";
@@ -767,7 +767,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "현재 필터 선택, 허용 목록, 요소 제거 규칙이 백업된 설정으로 대체됩니다.";
 "This will reset all filters, userscripts, and preferences." = "모든 필터, 유저스크립트 및 환경설정이 초기화됩니다.";
 "Timed out" = "시간 초과";
-"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
+"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield は、該当するサイト上で Ad-Shield によって再挿入された広告のブロックを支援します。";
 "Title" = "제목";
 "Title (optional)" = "제목 (선택 사항)";
 "Title is required." = "제목이 필요합니다.";
@@ -778,11 +778,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Trust: %@" = "신뢰도: %@";
 "Trust: \\(trust.capitalized)" = "신뢰도: \\(trust.capitalized)";
 "Tune filters for your country and language." = "국가와 언어에 맞게 필터를 조정하세요.";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
+"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "wBlock がスクリプトをまとめて、またはスケジュールに従ってアップデートする際に、現在のバージョンを維持するにはこれをオフにしてください。";
 "Unable to access shared container" = "공유 컨테이너에 접근할 수 없습니다";
 "Unapplied Filter Changes" = "적용되지 않은 필터 변경 사항";
 "Unavailable" = "사용할 수 없음";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
+"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "メール、検索結果、リダイレクトで正常に機能しなくなるアフィリエイトリンクやトラッキング用のリファラルリンクのブロックを解除します。";
 "Undo" = "실행 취소";
 "Redo" = "다시 실행";
 "Element Zapper" = "요소 제거기";
