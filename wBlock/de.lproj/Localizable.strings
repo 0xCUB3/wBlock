@@ -151,7 +151,7 @@
 "Balanced defaults." = "Ausgewogene Standardeinstellungen.";
 "Base filter only." = "Nur Basisfilter.";
 "Baseline Userscripts" = "Basis-Benutzerskripte";
-"Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
+"Baseline userscripts are enabled by default. You can adjust them here." = "Basis-Benutzerskripte sind standardmäßig aktiviert. Du kannst sie hier anpassen.";
 "Best default" = "Beste Voreinstellung";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Beta-Userscripts werden noch getestet und können Seiten beschädigen oder sich unerwartet verhalten. Du kannst sie jederzeit wieder ausschalten.";
@@ -203,10 +203,10 @@
 "Checking background agent…" = "Hintergrundagent wird geprüft…";
 "Checking for Updates" = "Suche nach Filter-Updates";
 "Checking for updates..." = "Suche nach Updates...";
-"Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
+"Checks for wBlock filter updates and applies them when available." = "Prüft auf wBlock-Filter-Updates und wendet sie an, wenn sie verfügbar sind.";
 "Choose File…" = "Datei auswählen…";
 "Choose optional userscripts. These are disabled by default." = "Wähle optionale Userscripts. Diese sind standardmäßig deaktiviert.";
-"Choose which filters and scripts to download, then apply changes." = "Choose which filters and scripts to download, then apply changes.";
+"Choose which filters and scripts to download, then apply changes." = "Wähle, welche Filter und Skripte heruntergeladen werden sollen, und wende dann die Änderungen an.";
 "Choose your preferred blocking level. You can adjust enabled filters later." = "Wähle deine bevorzugte Blockierungsstufe. Aktivierte Filter kannst du später anpassen.";
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Clear" = "Löschen";
@@ -227,7 +227,7 @@
 "Controls the time zone used when displaying and exporting log timestamps." = "Legt die Zeitzone für die Anzeige und den Export von Protokoll-Zeitstempeln fest.";
 "Conversion" = "Konvertierung";
 "Conversion phase summary" = "Zusammenfassung der Konvertierungsphase";
-"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Converted rules, but one or more extensions failed to reload after 5 attempts.";
+"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Regeln wurden konvertiert, aber eine oder mehrere Erweiterungen konnten nach 5 Versuchen nicht neu geladen werden.";
 "Converting %@…" = "Konvertieren von %@â¦";
 "Converting Rules" = "Regeln werden konvertiert";
 "Copy URL" = "URL kopieren";
@@ -419,7 +419,7 @@
 "Handles advanced anti-adblock cases that filter rules miss." = "Behandelt erweiterte Anti-Adblock-Fälle, die von Filterregeln übersehen werden.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Versteckt In-Page-Popups, Banner und andere unerwünschte Seitenelemente.";
 "Highlighting disabled for performance" = "Hervorhebung aus Leistungsgründen deaktiviert";
-"Hold for 3 seconds to apply without checking for updates." = "Hold for 3 seconds to apply without checking for updates.";
+"Hold for 3 seconds to apply without checking for updates." = "3 Sekunden gedrückt halten, um ohne Update-Prüfung anzuwenden.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "Hufilter. Filterliste, die gezielt Werbung auf Websites in ungarischer Sprache entfernt.";
@@ -767,7 +767,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Dadurch werden deine aktuellen Filterauswahlen, die Whitelist und die Regeln des Element-Entferners durch die gesicherten Einstellungen ersetzt.";
 "This will reset all filters, userscripts, and preferences." = "Dadurch werden alle Filter, Userskripte und Einstellungen zurückgesetzt.";
 "Timed out" = "Zeitüberschreitung";
-"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
+"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield hilft, Anzeigen zu blockieren, die von Ad-Shield auf passenden Seiten erneut eingefügt werden.";
 "Title" = "Titel";
 "Title (optional)" = "Titel (optional)";
 "Title is required." = "Titel ist erforderlich.";
@@ -778,11 +778,11 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Trust: %@" = "Vertrauen: %@";
 "Trust: \\(trust.capitalized)" = "Vertrauen: \\(trust.capitalized)";
 "Tune filters for your country and language." = "Passe Filter für dein Land und deine Sprache an.";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
+"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Schalte dies aus, um die aktuelle Version zu behalten, wenn wBlock Skripte gesammelt oder nach Zeitplan aktualisiert.";
 "Unable to access shared container" = "Auf gemeinsamen Container kann nicht zugegriffen werden";
 "Unapplied Filter Changes" = "Nicht angewendete Filteränderungen";
 "Unavailable" = "Nicht verfügbar";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
+"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Hebt die Blockierung von Affiliate- und Tracking-Empfehlungslinks auf, die sonst in E-Mails, Suchergebnissen und Weiterleitungen kaputtgehen.";
 "Undo" = "Rückgängig";
 "Redo" = "Wiederholen";
 "Element Zapper" = "Element-Zapper";

@@ -782,7 +782,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unable to access shared container" = "共有コンテナにアクセスできません";
 "Unapplied Filter Changes" = "適用されていないフィルターの変更";
 "Unavailable" = "利用できません";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "メール、検索結果、リダイレクトで正常に機能しなくなるアフィリエイトリンクやトラッキング用のリファラルリンクのブロックを解除します。 ";
+"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "メール、検索結果、リダイレクトで正常に機能しなくなるアフィリエイトリンクやトラッキング用のリファラルリンクのブロックを解除します。";
 "Undo" = "元に戻す";
 "Redo" = "やり直す";
 "Element Zapper" = "要素ザッパー";

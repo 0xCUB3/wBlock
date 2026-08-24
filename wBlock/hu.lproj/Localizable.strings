@@ -151,7 +151,7 @@
 "Balanced defaults." = "Kiegyensúlyozott alapbeállítások.";
 "Base filter only." = "Csak az alap szűrő.";
 "Baseline Userscripts" = "Alapvető felhasználói szkriptek";
-"Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
+"Baseline userscripts are enabled by default. You can adjust them here." = "Az alapvető felhasználói szkriptek alapértelmezés szerint engedélyezve vannak. Itt tudod őket módosítani.";
 "Best default" = "Legjobb alapértelmezett";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "A beta userscriptek még tesztelés alatt állnak, ezért elronthatnak oldalakat vagy váratlanul viselkedhetnek. Bármikor kikapcsolhatod őket.";
@@ -203,10 +203,10 @@
 "Checking background agent…" = "Háttérügynök ellenőrzése…";
 "Checking for Updates" = "Szűrőfrissítések keresése";
 "Checking for updates..." = "Frissítések keresése...";
-"Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
+"Checks for wBlock filter updates and applies them when available." = "Ellenőrzi a wBlock szűrőfrissítéseit, és ha elérhetők, alkalmazza őket.";
 "Choose File…" = "Fájl kiválasztása…";
 "Choose optional userscripts. These are disabled by default." = "Válassz opcionális felhasználói szkripteket. Ezek alapértelmezetten le vannak tiltva.";
-"Choose which filters and scripts to download, then apply changes." = "Choose which filters and scripts to download, then apply changes.";
+"Choose which filters and scripts to download, then apply changes." = "Válaszd ki a letöltendő szűrőket és szkripteket, majd alkalmazd a módosításokat.";
 "Choose your preferred blocking level. You can adjust enabled filters later." = "Válaszd ki a kívánt blokkolási szintet. A későbbiekben módosíthatod az engedélyezett szűrőket.";
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Clear" = "Törlés";
@@ -227,7 +227,7 @@
 "Controls the time zone used when displaying and exporting log timestamps." = "A napló időbélyegzőinek megjelenítéséhez és exportálásához használt időzónát állítja be.";
 "Conversion" = "Konverzió";
 "Conversion phase summary" = "A konvertálási fázis összegzése";
-"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Converted rules, but one or more extensions failed to reload after 5 attempts.";
+"Converted rules, but one or more extensions failed to reload after 5 attempts." = "A szabályok konvertálva lettek, de egy vagy több bővítmény 5 próbálkozás után sem töltődött újra.";
 "Converting %@…" = "%@â¦ konvertálása";
 "Converting Rules" = "Szabályok átalakítása";
 "Copy URL" = "URL másolása";
@@ -419,7 +419,7 @@
 "Handles advanced anti-adblock cases that filter rules miss." = "Kezeli a fejlett hirdetésblokkolás-ellenes eseteket, amelyek kihagyják a szabályokat.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Elrejti az oldalon belüli felugró ablakokat, szalaghirdetéseket és egyéb nem kívánt oldalelemeket.";
 "Highlighting disabled for performance" = "Kiemelés letiltva a teljesítmény érdekében";
-"Hold for 3 seconds to apply without checking for updates." = "Hold for 3 seconds to apply without checking for updates.";
+"Hold for 3 seconds to apply without checking for updates." = "Tartsd lenyomva 3 másodpercig a frissítések ellenőrzése nélküli alkalmazáshoz.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "Hufilter. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a magyar nyelvű webhelyekről.";
@@ -767,7 +767,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Ez a biztonsági mentésben lévő beállításokkal lecseréli a jelenlegi szűrőválasztásaidat, az engedélyezőlistádat és az elemeltávolító szabályaidat.";
 "This will reset all filters, userscripts, and preferences." = "Ez visszaállít minden szűrőt, felhasználói szkriptet és beállítást.";
 "Timed out" = "Időtúllépés";
-"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
+"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "A tinyShield segít blokkolni az Ad-Shield által a megfelelő oldalakra újra beillesztett hirdetéseket.";
 "Title" = "Cím";
 "Title (optional)" = "Cím (opcionális)";
 "Title is required." = "A cím kötelező.";
@@ -778,11 +778,11 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Trust: %@" = "Megbízhatóság: %@";
 "Trust: \\(trust.capitalized)" = "Megbízhatóság: \\(trust.capitalized)";
 "Tune filters for your country and language." = "Hangold a szűrőket az országodhoz és nyelvedhez.";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
+"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Kapcsold ki, ha meg akarod tartani a jelenlegi verziót, amikor a wBlock tömegesen vagy ütemezetten frissíti a szkripteket.";
 "Unable to access shared container" = "Nem érhető el a megosztott konténer";
 "Unapplied Filter Changes" = "Nem alkalmazott szűrőmódosítások";
 "Unavailable" = "Nem érhető el";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
+"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Feloldja a partner- és követő hivatkozásokat, amelyek egyébként e-mailekben, keresési eredményekben és átirányításokban elromlanak.";
 "Undo" = "Visszavonás";
 "Redo" = "Újra";
 "Element Zapper" = "Elemzapper";

@@ -151,7 +151,7 @@
 "Balanced defaults." = "平衡的默认设置。";
 "Base filter only." = "仅基础过滤器。";
 "Baseline Userscripts" = "基础用户脚本";
-"Baseline userscripts are enabled by default. You can adjust them here." = "Baseline userscripts are enabled by default. You can adjust them here.";
+"Baseline userscripts are enabled by default. You can adjust them here." = "基础用户脚本默认启用。你可以在这里调整。";
 "Best default" = "最佳默认选项";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Beta 用户脚本仍在测试中，可能会破坏页面或出现异常行为。你可以随时将其关闭。";
@@ -203,10 +203,10 @@
 "Checking background agent…" = "正在检查后台代理…";
 "Checking for Updates" = "正在检查过滤器更新";
 "Checking for updates..." = "正在检查更新...";
-"Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
+"Checks for wBlock filter updates and applies them when available." = "检查 wBlock 过滤器更新，并在有可用更新时应用。";
 "Choose File…" = "选择文件…";
 "Choose optional userscripts. These are disabled by default." = "选择可选用户脚本。它们默认关闭。";
-"Choose which filters and scripts to download, then apply changes." = "Choose which filters and scripts to download, then apply changes.";
+"Choose which filters and scripts to download, then apply changes." = "选择要下载的过滤器和脚本，然后应用更改。";
 "Choose your preferred blocking level. You can adjust enabled filters later." = "选择你偏好的拦截级别。你可以稍后调整已启用的过滤器。";
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Clear" = "清除";
@@ -227,7 +227,7 @@
 "Controls the time zone used when displaying and exporting log timestamps." = "控制显示和导出日志时间戳时使用的时区。";
 "Conversion" = "转换";
 "Conversion phase summary" = "转换阶段摘要";
-"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Converted rules, but one or more extensions failed to reload after 5 attempts.";
+"Converted rules, but one or more extensions failed to reload after 5 attempts." = "规则已转换，但有一个或多个扩展在 5 次尝试后仍未能重新加载。";
 "Converting %@…" = "转换 %@…";
 "Converting Rules" = "正在转换规则";
 "Copy URL" = "复制 URL";
@@ -419,7 +419,7 @@
 "Handles advanced anti-adblock cases that filter rules miss." = "处理过滤规则遗漏的高级反广告拦截案例。";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "隐藏页内弹出窗口、横幅和其他不需要的页面元素。";
 "Highlighting disabled for performance" = "为提升性能已禁用高亮";
-"Hold for 3 seconds to apply without checking for updates." = "Hold for 3 seconds to apply without checking for updates.";
+"Hold for 3 seconds to apply without checking for updates." = "按住 3 秒即可在不检查更新的情况下应用。";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "胡过滤器。专门删除匈牙利语网站上的广告的过滤器列表。";
@@ -764,7 +764,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "这将用备份中的设置替换你当前的过滤器选择、白名单和元素清除规则。";
 "This will reset all filters, userscripts, and preferences." = "这将重置所有过滤器、用户脚本和偏好设置。";
 "Timed out" = "超时";
-"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
+"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield 可帮助拦截 Ad-Shield 在匹配站点上重新插入的广告。";
 "Title" = "标题";
 "Title (optional)" = "标题（可选）";
 "Title is required." = "标题为必填项。";
@@ -775,11 +775,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Trust: %@" = "信任度：%@";
 "Trust: \\(trust.capitalized)" = "信任度：\\(trust.capitalized)";
 "Tune filters for your country and language." = "根据你的国家/地区和语言调整过滤器。";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.";
+"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "关闭此项可在 wBlock 批量或按计划更新脚本时保留当前版本。";
 "Unable to access shared container" = "无法访问共享容器";
 "Unapplied Filter Changes" = "未应用的过滤器更改";
 "Unavailable" = "不可用";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
+"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "解除对联盟推广和跟踪推荐链接的拦截，否则这些链接会在邮件、搜索结果和重定向中失效。";
 "Undo" = "撤销";
 "Redo" = "重做";
 "Element Zapper" = "元素清除器";
