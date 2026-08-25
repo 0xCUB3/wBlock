@@ -195,7 +195,7 @@
 "Calculated source rule count for filter" = "フィルターのソースルール数を算出しました";
 "Cancel" = "キャンセル";
 "Category" = "カテゴリ";
-"Element Zapper changes take full effect after the next apply." = "要素削除ツールの変更は、次回の適用後に完全に反映されます。";
+"Element Zapper changes take full effect after the next apply." = "要素ブロックの変更は、次回の適用後に完全に反映されます。";
 "Check for Updates" = "アップデートを確認";
 "Checked %@" = "確認 %@";
 "Checked %@ ago" = "%@前に確認";
@@ -525,7 +525,7 @@
 "No Updates Found" = "更新は見つかりませんでした";
 "No Userscripts" = "ユーザースクリプトはありません";
 "No userscripts selected" = "ユーザースクリプトが選択されていません";
-"No zapper rules for this site." = "このサイトにザッパールールはありません。";
+"No zapper rules for this site." = "このサイトに要素ブロックのルールはありません。";
 "None" = "なし";
 "Not Downloaded" = "未ダウンロード";
 "Not recorded" = "記録なし";
@@ -552,10 +552,11 @@
 "Paste or write a userscript or userstyle with a standard metadata block." = "標準のメタデータブロックを含むユーザースクリプトまたはユーザースタイルを貼り付けるか記述してください。";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "直接の .user.js リンクを貼り付けてください。wBlockがダウンロードしてインストールします。";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "直接の .user.js、.js、.user.css、.less、.sass、.scss、.styl、または .pcss リンクを貼り付けてください。wBlock がダウンロードしてインストールします。";
-"Pause Blocking" = "全てのブロックを一時停止";
+"Pause Blocking" = "ブロックを一時停止";
 "Enabled Userscripts & Userstyles" = "有効なユーザースクリプトとユーザースタイル";
-"Pause Blocking is on while any selected component is paused. Resume restores all components." = "選択した機能が一時停止している間は、「ブロック一時停止」が有効になります。再開すると、すべての機能の一時停止が解除されます。";
-"Temporarily pause selected components without changing their enabled settings." = "フィルター、ユーザースクリプト・スタイル、要素ブロックの有効/無効の設定は変えずに、一時的に選択した機能を停止します。";"Pausing blocking..." = "ブロックを一時停止しています…";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "選択した機能が一時停止している間は、「ブロックを一時停止」が有効になります。再開すると、すべての機能の一時停止が解除されます。";
+"Temporarily pause selected components without changing their enabled settings." = "フィルター、ユーザースクリプト・スタイル、要素ブロックの有効/無効の設定は変えずに、一時的に選択した機能を停止します。";
+"Pausing blocking..." = "ブロックを一時停止しています…";
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Pick your base blocking level." = "基本のブロックレベルを選択してください。";
@@ -760,7 +761,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "このリストには、ノルウェー、デンマーク、アイスランド、デンマーク領土、および先住民族サーミ人の Web サイトが含まれています。";
 "This may take a while" = "時間がかかる場合があります";
 "This removes all settings for %@." = "%@ のすべての設定を削除します。";
-"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "%@ の例外登録、ユーザースクリプトの例外、ザッパールールを削除します。";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "%@ の例外登録、ユーザースクリプトの例外、要素ブロックのルールを削除します。";
 "This script hasn't been downloaded yet." = "このスクリプトはまだダウンロードされていません。";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "これにより、すべてのフィルター、ユーザースクリプト、設定が削除され、初期設定フローが再起動されます。";
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "現在のフィルター選択、ホワイトリスト、要素ブロックのルールがバックアップ設定に置き換えられます。";
@@ -881,7 +882,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "wBlockに未適用のフィルター変更があります。今すぐタップして適用してください！";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "未適用のフィルター変更があります。やめる前に適用しますか?";
 "YousList" = "YousList";
-"Zapper rules (%d)" = "ザッパールール (%d)";
+"Zapper rules (%d)" = "要素ブロックのルール (%d)";
 "·" = "·";
 "×%d" = "×%d";
 "⚠️ Auto-update: overdue (will run on next trigger)" = "⚠️ 自動更新: 期限超過（次回トリガーで実行されます）";
@@ -922,13 +923,13 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Issue 508 UI */
 "Disable Essential Filter?" = "必須フィルタを無効にしますか？";
 "Replace Existing Content?" = "既存の内容を置き換えますか？";
-"Clear Element Zapper Rules?" = "Element Zapper のルールを消去しますか？";
+"Clear Element Zapper Rules?" = "要素ブロックのルールを消去しますか？";
 "Clear All" = "すべて消去";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "この推奨フィルタは wBlock の基本保護の一部です。無効にするとブロック範囲が狭くなる場合があります。";
 "Pasting will replace the existing editor content." = "貼り付けると、エディタの既存の内容が置き換えられます。";
 "Pasting will replace the existing content." = "貼り付けると、既存の内容が置き換えられます。";
-"This removes all saved element zapper rules from every site." = "すべてのサイトから保存済みの Element Zapper ルールを削除します。";
-"Clear Element Zapper Rules" = "Element Zapper のルールを消去";
+"This removes all saved element zapper rules from every site." = "すべてのサイトから保存済みの要素ブロックのルールを削除します。";
+"Clear Element Zapper Rules" = "要素ブロックのルールを消去";
 "Advanced" = "詳細";
 "Help" = "ヘルプ";
 "FAQ" = "よくある質問";
