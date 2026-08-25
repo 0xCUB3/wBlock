@@ -34,6 +34,7 @@ struct SettingsView: View {
     #if os(iOS)
         @State private var backupDocument: BackupDocument? = nil
         @State private var showingExportSheet = false
+        @AppStorage(PortraitOrientationLock.storageKey) private var lockPortraitOrientation = false
     #endif
 
     // Computed properties backed by protobuf
@@ -247,6 +248,20 @@ struct SettingsView: View {
             }
         )
     }
+
+    #if os(iOS)
+    @ViewBuilder
+    private var displaySection: some View {
+        Section {
+            Toggle("Lock Portrait Orientation", isOn: $lockPortraitOrientation)
+                .onChangeCompat(of: lockPortraitOrientation) { _ in
+                    PortraitOrientationLock.apply()
+                }
+        } footer: {
+            Text("Keeps the app in portrait even if the device is rotated.")
+        }
+    }
+    #endif
 
     @ViewBuilder
     private var advancedSection: some View {
@@ -628,7 +643,7 @@ struct SettingsView: View {
         CompatibleNavigationStack {
             List {
                 pauseBlockingSection
-
+                displaySection
                 autoUpdateSection
                 syncSection
                 advancedSection

@@ -460,6 +460,7 @@
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "Păstrează tot";
 "Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "Menține filtrele actualizate când wBlock nu rulează. Dezactivați pentru a evita un element de conectare persistent; actualizările vor rula atunci doar cât timp wBlock este deschis.";
+"Keeps the app in portrait even if the device is rotated." = "Păstrează aplicația în modul portret chiar dacă dispozitivul este rotit.";
 "Languages: %@" = "Limbi: %@";
 "Languages: \\(languageSummary)" = "Limbi: \\(languageSummary)";
 "Large file - scrolling may be slow" = "Fișier mare - derularea poate fi lentă";
@@ -477,6 +478,7 @@
 "Loading script metadata…" = "Se încarcă metadatele scriptului…";
 "Loading userscripts…" = "Se încarcă scripturile de utilizator…";
 "Local Import" = "Import local";
+"Lock Portrait Orientation" = "Blochează orientarea portret";
 "Logs" = "Jurnale";
 "Logs cleared" = "Jurnale șterse";
 "Logs will appear here as the app runs" = "Jurnalele vor apărea aici pe măsură ce aplicația rulează";
