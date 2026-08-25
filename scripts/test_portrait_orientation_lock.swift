@@ -24,6 +24,13 @@ check(lock.contains("userInterfaceIdiom == .pad ? .all"), "iPad unlocked mask mu
 check(lock.contains("requestGeometryUpdate"), "must request a geometry update when the lock changes")
 check(lock.contains("setNeedsUpdateOfSupportedInterfaceOrientations"), "must refresh supported orientations")
 check(lock.contains("attemptRotationToDeviceOrientation"), "must still rotate on iOS 15")
+if let applyRange = lock.range(of: "static func apply()") {
+    let apply = String(lock[applyRange.lowerBound...])
+    let refresh = apply.range(of: "setNeedsUpdateOfSupportedInterfaceOrientations")
+    let geometry = apply.range(of: "requestGeometryUpdate")
+    check(refresh != nil && geometry != nil, "apply() must refresh orientations and request geometry")
+    check(refresh!.lowerBound < geometry!.lowerBound, "must refresh supported orientations before requesting geometry")
+}
 
 check(appDelegate.contains("supportedInterfaceOrientationsFor"), "AppDelegate must publish the lock mask")
 check(appDelegate.contains("PortraitOrientationLock.mask"), "AppDelegate must use the shared lock mask")

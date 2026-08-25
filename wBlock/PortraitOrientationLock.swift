@@ -27,8 +27,8 @@ enum PortraitOrientationLock {
         let orientations = mask
         if #available(iOS 16.0, *) {
             for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
-                scene.requestGeometryUpdate(.iOS(interfaceOrientations: orientations)) { _ in }
                 scene.keyWindow?.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+                scene.requestGeometryUpdate(.iOS(interfaceOrientations: orientations)) { _ in }
             }
         } else {
             UIViewController.attemptRotationToDeviceOrientation()
