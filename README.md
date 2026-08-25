@@ -332,7 +332,7 @@ Tube Cleaner (YouTube and embeds):
 <br>• <a href="https://www.youtube.com/watch?v=eRsGyueVLvQ">Sintel</a>
 <br>• <a href="https://www.youtube.com/watch?v=R6MlUcmOul8">Tears of Steel</a>
 <br>• Embeds: <a href="https://www.youtube.com/embed/aqz-KE-bpKQ">youtube.com/embed</a> and <a href="https://www.youtube-nocookie.com/embed/aqz-KE-bpKQ">youtube-nocookie.com/embed</a>
-<br>Check that native controls appear without a flash of YouTube chrome, that the quality and audio-only toolbar reappears when you move the mouse over an already-hovered player, that Picture-in-Picture works, and that audio keeps playing in another tab. The DA panel is off by default; enable it to test DeArrow titles, thumbnails, original-on-hover behavior, and channel exclusions. Ad behavior depends on the enabled wBlock filter lists.
+<br>Check that native controls appear without a flash of YouTube chrome, that the quality and audio-only controls work, that the toolbar reappears when you move the mouse over an already-hovered player, that Picture-in-Picture works, and that audio keeps playing in another tab. The DA panel is off by default; enable it to test DeArrow titles, thumbnails, original-on-hover behavior, and channel exclusions. Ad behavior depends on the enabled wBlock filter lists.
 <br><br>
 Player Cleaner (other sites' custom players), one demo per supported library:
 <br>• video.js / Media Chrome — <a href="https://videojs.org/">videojs.org</a>
