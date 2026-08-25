@@ -460,6 +460,7 @@
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "Manter todos";
 "Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "Mantém os filtros atualizados quando o wBlock não está em execução. Desative para evitar um item de início persistente; as atualizações só serão executadas enquanto o wBlock estiver aberto.";
+"Keeps the app in portrait even if the device is rotated." = "Mantém o app na vertical mesmo se o dispositivo for girado.";
 "Languages: %@" = "Idiomas: %@";
 "Languages: \\(languageSummary)" = "Idiomas: \\(languageSummary)";
 "Large file - scrolling may be slow" = "Arquivo grande - a rolagem pode ficar lenta";
@@ -477,6 +478,7 @@
 "Loading script metadata…" = "Carregando metadados do script…";
 "Loading userscripts…" = "Carregando scripts de usuário…";
 "Local Import" = "Importação local";
+"Lock Portrait Orientation" = "Bloquear orientação retrato";
 "Logs" = "Registros";
 "Logs cleared" = "Registros limpos";
 "Logs will appear here as the app runs" = "Os logs aparecerão aqui enquanto o app é executado";

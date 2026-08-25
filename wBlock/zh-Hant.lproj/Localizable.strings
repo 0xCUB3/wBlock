@@ -460,6 +460,7 @@
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "全部保留";
 "Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "在 wBlock 未執行時也保持過濾器更新。關閉可避免常駐登入項目；之後更新僅在 wBlock 開啟時執行。";
+"Keeps the app in portrait even if the device is rotated." = "即使旋轉裝置，也保持 App 為直向。";
 "Languages: %@" = "語言：%@";
 "Languages: \\(languageSummary)" = "語言：\\(languageSummary)";
 "Large file - scrolling may be slow" = "檔案較大，捲動可能較慢";
@@ -477,6 +478,7 @@
 "Loading script metadata…" = "正在載入腳本中繼資料…";
 "Loading userscripts…" = "正在載入使用者腳本…";
 "Local Import" = "本機匯入";
+"Lock Portrait Orientation" = "鎖定直向方向";
 "Logs" = "日誌";
 "Logs cleared" = "日誌已清除";
 "Logs will appear here as the app runs" = "應用程式執行時，日誌會顯示在這裡";

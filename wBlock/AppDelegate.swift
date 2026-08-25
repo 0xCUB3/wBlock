@@ -378,7 +378,12 @@ extension AppDelegate: UIApplicationDelegate {
         Task { @MainActor in
             await rescheduleBackgroundTasks(reason: "Launch")
         }
+        PortraitOrientationLock.apply()
         return true
+    }
+
+    func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
+        PortraitOrientationLock.mask
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
