@@ -147,7 +147,7 @@
 "Background Diagnostics" = "バックグラウンド診断";
 "Background Update Agent" = "バックグラウンド更新エージェント";
 "Backup" = "バックアップ";
-"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@ のバックアップ（アプリ v%@、%@ 個のフィルター）です。現在のフィルター選択、ホワイトリスト、要素ザッパーのルールがこれで置き換えられます。";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@ のバックアップ（アプリ v%@、%@ 個のフィルター）です。現在のフィルター選択、ホワイトリスト、要素ブロックのルールがこれで置き換えられます。";
 "Balanced defaults." = "バランスの取れた既定設定。";
 "Base filter only." = "ベースフィルターのみ。";
 "Baseline Userscripts" = "基本ユーザースクリプト";
@@ -297,7 +297,7 @@
 "Edit User List" = "リストを編集";
 "Editor" = "Editor";
 "Use Editor" = "エディタを使用";
-"Element zapper" = "要素ザッパー";
+"Element zapper" = "要素ブロック";
 "Enable" = "有効にする";
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "'wBlock Scripts'を有効化 → すべてのWebサイトで常に許可";
 "Enable all 5 Content Blocker extensions" = "5つすべてのContent Blocker拡張機能を有効にする";
@@ -552,11 +552,10 @@
 "Paste or write a userscript or userstyle with a standard metadata block." = "標準のメタデータブロックを含むユーザースクリプトまたはユーザースタイルを貼り付けるか記述してください。";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "直接の .user.js リンクを貼り付けてください。wBlockがダウンロードしてインストールします。";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "直接の .user.js、.js、.user.css、.less、.sass、.scss、.styl、または .pcss リンクを貼り付けてください。wBlock がダウンロードしてインストールします。";
-"Pause Blocking" = "ブロックを一時停止";
+"Pause Blocking" = "全てのブロックを一時停止";
 "Enabled Userscripts & Userstyles" = "有効なユーザースクリプトとユーザースタイル";
-"Pause Blocking is on while any selected component is paused. Resume restores all components." = "選択したコンポーネントのいずれかが一時停止している間、ブロックの一時停止が有効です。再開するとすべてのコンポーネントが戻ります。";
-"Temporarily pause selected components without changing their enabled settings." = "有効設定を変更せずに、選択したコンポーネントを一時停止します。";
-"Pausing blocking..." = "ブロックを一時停止しています…";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "選択した機能が一時停止している間は、「ブロック一時停止」が有効になります。再開すると、すべての機能の一時停止が解除されます。";
+"Temporarily pause selected components without changing their enabled settings." = "フィルター、ユーザースクリプト・スタイル、要素ブロックの有効/無効の設定は変えずに、一時的に選択した機能を停止します。";"Pausing blocking..." = "ブロックを一時停止しています…";
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Pick your base blocking level." = "基本のブロックレベルを選択してください。";
@@ -764,7 +763,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "%@ の例外登録、ユーザースクリプトの例外、ザッパールールを削除します。";
 "This script hasn't been downloaded yet." = "このスクリプトはまだダウンロードされていません。";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "これにより、すべてのフィルター、ユーザースクリプト、設定が削除され、初期設定フローが再起動されます。";
-"This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "現在のフィルター選択、ホワイトリスト、要素ザッパーのルールがバックアップ設定に置き換えられます。";
+"This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "現在のフィルター選択、ホワイトリスト、要素ブロックのルールがバックアップ設定に置き換えられます。";
 "This will reset all filters, userscripts, and preferences." = "これにより、すべてのフィルター、ユーザースクリプト、設定がリセットされます。";
 "Timed out" = "タイムアウト";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield は、該当するサイト上で Ad-Shield によって再挿入された広告のブロックを支援します。";
@@ -785,8 +784,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "メール、検索結果、リダイレクトで正常に機能しなくなるアフィリエイトリンクやトラッキング用のリファラルリンクのブロックを解除します。";
 "Undo" = "元に戻す";
 "Redo" = "やり直す";
-"Element Zapper" = "要素ザッパー";
-"No Element Zapper Rules" = "要素ザッパーのルールはありません";
+"Element Zapper" = "要素ブロック";
+"No Element Zapper Rules" = "要素ブロックのルールはありません";
 "Update" = "更新";
 "Update & Apply" = "更新して適用";
 "Update Filters" = "Update Filters";
@@ -870,7 +869,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "The end of Safari ad-blocking B.S." = "Safariの広告ブロックのくだらない問題に終止符を";
 "Welcome to wBlock!" = "wBlockへようこそ！";
 "Whitelist" = "ホワイトリスト";
-"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "ここでサイトを例外に登録するか、Safari の wBlock ポップアップからサイトごとにユーザースクリプトと要素ザッパーのルールを調整します。";
+"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "ここでサイトを例外に登録するか、Safari の wBlock ポップアップからサイトごとにユーザースクリプトと要素ブロックのルールを調整します。";
 "Whitelisted" = "例外に登録済み";
 "Wrap Lines" = "行を折り返す";
 "On" = "オン";
