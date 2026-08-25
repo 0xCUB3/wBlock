@@ -23,7 +23,54 @@ final class FilterListUpdater: @unchecked Sendable {
         }
     }
 
+    /// Body from a successful update check, reused by Update & Apply so the
+    /// second pass does not fetch the same list again.
+    private struct CachedFilterDownload: Sendable {
+        let data: Data
+        let sourceURL: URL
+        let servedFallback: Bool
+        let etag: String?
+        let lastModified: String?
+
+        init(from result: FilterListFetchResult) {
+            data = result.data
+            sourceURL = result.sourceURL
+            servedFallback = result.servedFallback
+            if result.servedFallback {
+                etag = nil
+                lastModified = nil
+            } else {
+                etag = result.response.value(forHTTPHeaderField: "ETag")
+                lastModified = result.response.value(forHTTPHeaderField: "Last-Modified")
+            }
+        }
+    }
+
+    private actor PendingFilterDownloads {
+        private struct Entry {
+            let download: CachedFilterDownload
+            let storedAt: Date
+        }
+
+        private var entries: [UUID: Entry] = [:]
+
+        func removeAll() {
+            entries.removeAll()
+        }
+
+        func store(_ id: UUID, download: CachedFilterDownload) {
+            entries[id] = Entry(download: download, storedAt: Date())
+        }
+
+        func take(_ id: UUID, maxAge: TimeInterval = 15 * 60) -> CachedFilterDownload? {
+            guard let entry = entries.removeValue(forKey: id) else { return nil }
+            guard Date().timeIntervalSince(entry.storedAt) <= maxAge else { return nil }
+            return entry.download
+        }
+    }
+
     private let loader: FilterListLoader
+    private let pendingDownloads = PendingFilterDownloads()
 
     weak var filterListManager: AppFilterManager?
     weak var userScriptManager: UserScriptManager?
@@ -168,6 +215,7 @@ final class FilterListUpdater: @unchecked Sendable {
     }
 
     func checkForUpdates(filterLists: [FilterList]) async -> [FilterList] {
+        await pendingDownloads.removeAll()
         // Pre-fetch all validators on MainActor BEFORE entering the task group
         // to avoid deadlock (MainActor suspends waiting for group, child tasks
         // need MainActor to read validators).
@@ -247,6 +295,8 @@ final class FilterListUpdater: @unchecked Sendable {
             case .notModified:
                 return false
             case .updatedContent:
+                await pendingDownloads.store(
+                    filter.id, download: CachedFilterDownload(from: result))
                 return true
             case .unchangedContent:
                 // A successful primary response may refresh its validators.
@@ -342,6 +392,9 @@ final class FilterListUpdater: @unchecked Sendable {
         await MainActor.run {
             filterListManager?.applyProgressViewModel.updateCurrentFilter(filter.name)
         }
+        if let cached = await pendingDownloads.take(filter.id) {
+            return await processDownloadedFilter(filter, download: cached)
+        }
         do {
             let validators = await storedValidators(for: filter)
             
@@ -349,7 +402,6 @@ final class FilterListUpdater: @unchecked Sendable {
                 session: urlSession, primaryURL: filter.url,
                 fallbackURLs: FilterCatalogRemote.fallbacks(for: filter),
                 etag: validators.etag, lastModified: validators.lastModified, timeout: 15)
-            let data = result.data
             let httpResponse = result.response
 
             if httpResponse.statusCode == 304 {
@@ -367,115 +419,37 @@ final class FilterListUpdater: @unchecked Sendable {
                 return .unavailable
             }
 
-            guard FilterUpdateResponseClassifier.looksLikeFilterListData(data) else {
-                await ConcurrentLogManager.shared.error(
-                    .network, LocalizedStrings.text("Ignoring invalid filter response"), metadata: ["filter": filter.name])
-                return .unavailable
-            }
+            return await processDownloadedFilter(filter, download: CachedFilterDownload(from: result))
+        } catch {
+            await ConcurrentLogManager.shared.error(
+                .network, LocalizedStrings.text("Error fetching filter"),
+                metadata: ["filter": filter.name, "error": "\(error)"])
+            return .unavailable
+        }
+    }
 
-            let uuid = filter.id.uuidString
-            if result.servedFallback {
-                await ProtobufDataManager.shared.setFilterValidators(uuid, etag: nil, lastModified: nil)
-            }
-            let responseEtag = result.servedFallback ? nil : httpResponse.value(forHTTPHeaderField: "ETag")
-            let responseLastModified = result.servedFallback ? nil : httpResponse.value(forHTTPHeaderField: "Last-Modified")
-            if !FilterUpdateResponseClassifier.contentDiffers(
-                remoteData: data,
-                localData: localDataForComparison(filter: filter)
-            ) {
-                if responseEtag != nil || responseLastModified != nil {
-                    await ProtobufDataManager.shared.setFilterValidators(
-                        uuid,
-                        etag: responseEtag,
-                        lastModified: responseLastModified
-                    )
-                }
-                return .unchanged
-            }
+    /// Saves a fetched (or previously checked) filter body. Shared by the
+    /// review-sheet apply path so the second pass can skip another GET.
+    private func processDownloadedFilter(
+        _ filter: FilterList,
+        download: CachedFilterDownload
+    ) async -> FilterFetchResult {
+        guard FilterUpdateResponseClassifier.looksLikeFilterListData(download.data) else {
+            await ConcurrentLogManager.shared.error(
+                .network, LocalizedStrings.text("Ignoring invalid filter response"), metadata: ["filter": filter.name])
+            return .unavailable
+        }
 
-            guard let content = String(data: data, encoding: .utf8) else {
-                await ConcurrentLogManager.shared.error(
-                    .network, LocalizedStrings.text("Failed to decode filter content"), metadata: ["filter": filter.name])
-                return .failed
-            }
-
-            // Strip unknown !# directives before validation and saving while preserving preprocessing and affinity directives.
-            let processedContent = await stripUnknownDirectives(from: content)
-
-            // Measure the pre-expansion rule count (before !#include resolution).
-            let rawCount = countRulesInContent(content: processedContent)
-
-            // Preprocess: expand !#include directives and evaluate !#if conditionals.
-            // Skip for built-in optimized lists — they are already pre-expanded.
-            let preprocessed: String
-            if filter.isOptimizedBuiltin {
-                preprocessed = processedContent
-            } else {
-                let filterName = filter.name
-                let preprocessor = FilterPreprocessor(
-                    urlSession: urlSession,
-                    onFetchError: { subURL, statusCode in
-                        let statusStr = statusCode.map { "\($0)" } ?? "network error"
-                        await ConcurrentLogManager.shared.warning(
-                            .filterUpdate,
-                            LocalizedStrings.text("!#include fetch failed"),
-                            metadata: [
-                                "filter": filterName,
-                                "subURL": subURL.absoluteString,
-                                "status": statusStr,
-                            ]
-                        )
-                    }
-                )
-                preprocessed = await preprocessor.preprocess(
-                    content: processedContent,
-                    listURL: result.sourceURL
-                )
-            }
-
-            guard isValidFilterContent(preprocessed) else {
-                await ConcurrentLogManager.shared.error(
-                    .network, LocalizedStrings.text("Downloaded content does not appear to be a valid filter list"),
-                    metadata: ["filter": filter.name, "contentLength": "\(preprocessed.count)"])
-                return .failed
-            }
-
-            let metadata = parseMetadata(from: preprocessed)
-            var updatedFilter = filter
-            if filter.isCustom, !filter.hasUserProvidedName, let title = metadata.title, !title.isEmpty {
-                updatedFilter.name = title
-            }
-            updatedFilter.version = metadata.version ?? "Unknown"
-            if let description = metadata.description, !description.isEmpty {
-                updatedFilter.description = description
-            }
-            updatedFilter.sourceRuleCount = countRulesInContent(content: preprocessed)
-            updatedFilter.rawSourceRuleCount = rawCount
-            updatedFilter.lastUpdated = Date()
-            
-            updatedFilter.etag = responseEtag
-            updatedFilter.serverLastModified = responseLastModified
-            
-            guard let containerURL = loader.getSharedContainerURL() else {
-                await ConcurrentLogManager.shared.error(
-                    .system, LocalizedStrings.text("Unable to access shared container"), metadata: [:])
-                return .failed
-            }
-
-            let fileURL = containerURL.appendingPathComponent(
-                ContentBlockerIncrementalCache.localFilename(for: filter)
-            )
-            do {
-                try preprocessed.write(to: fileURL, atomically: true, encoding: .utf8)
-            } catch {
-                await ConcurrentLogManager.shared.error(
-                    .system,
-                    LocalizedStrings.text("Failed to save downloaded filter"),
-                    metadata: ["filter": filter.name, "error": error.localizedDescription]
-                )
-                return .failed
-            }
-
+        let uuid = filter.id.uuidString
+        if download.servedFallback {
+            await ProtobufDataManager.shared.setFilterValidators(uuid, etag: nil, lastModified: nil)
+        }
+        let responseEtag = download.etag
+        let responseLastModified = download.lastModified
+        if !FilterUpdateResponseClassifier.contentDiffers(
+            remoteData: download.data,
+            localData: localDataForComparison(filter: filter)
+        ) {
             if responseEtag != nil || responseLastModified != nil {
                 await ProtobufDataManager.shared.setFilterValidators(
                     uuid,
@@ -483,35 +457,122 @@ final class FilterListUpdater: @unchecked Sendable {
                     lastModified: responseLastModified
                 )
             }
+            return .unchanged
+        }
 
-            let finalFilter = updatedFilter
-            await MainActor.run {
-                if let index = filterListManager?.filterLists.firstIndex(where: {
-                    $0.id == finalFilter.id
-                }) {
-                    // Apply converts the captured snapshot. Preserve live user
-                    // configuration changed while the download was in flight.
-                    var merged = finalFilter
-                    let current = filterListManager!.filterLists[index]
-                    merged.name = current.name
-                    merged.url = current.url
-                    merged.category = current.category
-                    merged.isCustom = current.isCustom
-                    merged.isSelected = current.isSelected
-                    merged.hasUserProvidedName = current.hasUserProvidedName
-                    merged.description = current.description
-                    filterListManager?.filterLists[index] = merged
-                    filterListManager?.objectWillChange.send()
+        guard let content = String(data: download.data, encoding: .utf8) else {
+            await ConcurrentLogManager.shared.error(
+                .network, LocalizedStrings.text("Failed to decode filter content"), metadata: ["filter": filter.name])
+            return .failed
+        }
+
+        // Strip unknown !# directives before validation and saving while preserving preprocessing and affinity directives.
+        let processedContent = await stripUnknownDirectives(from: content)
+
+        // Measure the pre-expansion rule count (before !#include resolution).
+        let rawCount = countRulesInContent(content: processedContent)
+
+        // Preprocess: expand !#include directives and evaluate !#if conditionals.
+        // Skip for built-in optimized lists — they are already pre-expanded.
+        let preprocessed: String
+        if filter.isOptimizedBuiltin {
+            preprocessed = processedContent
+        } else {
+            let filterName = filter.name
+            let preprocessor = FilterPreprocessor(
+                urlSession: urlSession,
+                onFetchError: { subURL, statusCode in
+                    let statusStr = statusCode.map { "\($0)" } ?? "network error"
+                    await ConcurrentLogManager.shared.warning(
+                        .filterUpdate,
+                        LocalizedStrings.text("!#include fetch failed"),
+                        metadata: [
+                            "filter": filterName,
+                            "subURL": subURL.absoluteString,
+                            "status": statusStr,
+                        ]
+                    )
                 }
-            }
+            )
+            preprocessed = await preprocessor.preprocess(
+                content: processedContent,
+                listURL: download.sourceURL
+            )
+        }
 
-            return .updated
+        guard isValidFilterContent(preprocessed) else {
+            await ConcurrentLogManager.shared.error(
+                .network, LocalizedStrings.text("Downloaded content does not appear to be a valid filter list"),
+                metadata: ["filter": filter.name, "contentLength": "\(preprocessed.count)"])
+            return .failed
+        }
+
+        let metadata = parseMetadata(from: preprocessed)
+        var updatedFilter = filter
+        if filter.isCustom, !filter.hasUserProvidedName, let title = metadata.title, !title.isEmpty {
+            updatedFilter.name = title
+        }
+        updatedFilter.version = metadata.version ?? "Unknown"
+        if let description = metadata.description, !description.isEmpty {
+            updatedFilter.description = description
+        }
+        updatedFilter.sourceRuleCount = countRulesInContent(content: preprocessed)
+        updatedFilter.rawSourceRuleCount = rawCount
+        updatedFilter.lastUpdated = Date()
+
+        updatedFilter.etag = responseEtag
+        updatedFilter.serverLastModified = responseLastModified
+
+        guard let containerURL = loader.getSharedContainerURL() else {
+            await ConcurrentLogManager.shared.error(
+                .system, LocalizedStrings.text("Unable to access shared container"), metadata: [:])
+            return .failed
+        }
+
+        let fileURL = containerURL.appendingPathComponent(
+            ContentBlockerIncrementalCache.localFilename(for: filter)
+        )
+        do {
+            try preprocessed.write(to: fileURL, atomically: true, encoding: .utf8)
         } catch {
             await ConcurrentLogManager.shared.error(
-                .network, LocalizedStrings.text("Error fetching filter"),
-                metadata: ["filter": filter.name, "error": "\(error)"])
-            return .unavailable
+                .system,
+                LocalizedStrings.text("Failed to save downloaded filter"),
+                metadata: ["filter": filter.name, "error": error.localizedDescription]
+            )
+            return .failed
         }
+
+        if responseEtag != nil || responseLastModified != nil {
+            await ProtobufDataManager.shared.setFilterValidators(
+                uuid,
+                etag: responseEtag,
+                lastModified: responseLastModified
+            )
+        }
+
+        let finalFilter = updatedFilter
+        await MainActor.run {
+            if let index = filterListManager?.filterLists.firstIndex(where: {
+                $0.id == finalFilter.id
+            }) {
+                // Apply converts the captured snapshot. Preserve live user
+                // configuration changed while the download was in flight.
+                var merged = finalFilter
+                let current = filterListManager!.filterLists[index]
+                merged.name = current.name
+                merged.url = current.url
+                merged.category = current.category
+                merged.isCustom = current.isCustom
+                merged.isSelected = current.isSelected
+                merged.hasUserProvidedName = current.hasUserProvidedName
+                merged.description = current.description
+                filterListManager?.filterLists[index] = merged
+                filterListManager?.objectWillChange.send()
+            }
+        }
+
+        return .updated
     }
 
     func fetchAndProcessFilter(_ filter: FilterList) async -> Bool {
@@ -528,16 +589,30 @@ final class FilterListUpdater: @unchecked Sendable {
         }
 
         let totalSteps = Float(filters.count)
-        var results: [(FilterList, FilterFetchResult)] = []
+        var resultsByID: [UUID: (FilterList, FilterFetchResult)] = [:]
+        var completed = 0
 
-        await boundedConcurrentForEach(filters, operation: { filter in
-            (filter, await self.fetchAndProcessFilterResult(filter))
-        }, onResult: { result in
-            results.append(result)
-            await progressCallback(Float(results.count) / totalSteps)
-        })
+        func runDownloadPass(_ passFilters: [FilterList]) async {
+            await boundedConcurrentForEach(passFilters, operation: { filter in
+                (filter, await self.fetchAndProcessFilterResult(filter))
+            }, onResult: { result in
+                resultsByID[result.0.id] = result
+                completed += 1
+                let fraction = min(1, Float(min(completed, filters.count)) / totalSteps)
+                await progressCallback(fraction)
+            })
+        }
 
-        return results
+        await runDownloadPass(filters)
+        let filtersToRetry = filters.filter { resultsByID[$0.id]?.1.succeeded != true }
+        if !filtersToRetry.isEmpty, !Task.isCancelled {
+            await runDownloadPass(filtersToRetry)
+        }
+        await progressCallback(1)
+
+        return filters.map { filter in
+            resultsByID[filter.id] ?? (filter, .unavailable)
+        }
     }
 
     struct RefreshFiltersResult: Sendable {
