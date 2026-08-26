@@ -40,15 +40,8 @@ public enum FilterListURLSupport {
         var invalidLineNumbers: [Int] = []
 
         for (index, line) in rawValue.components(separatedBy: "\n").enumerated() {
-            var candidate = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            let candidate = unwrappedURLLine(line)
             guard !candidate.isEmpty else { continue }
-
-            if let first = candidate.first, let last = candidate.last,
-               (first == "<" && last == ">")
-                || (first == "\"" && last == "\"")
-                || (first == "'" && last == "'") {
-                candidate = String(candidate.dropFirst().dropLast())
-            }
 
             guard let url = validatedRemoteURL(from: candidate) else {
                 invalidLineNumbers.append(index + 1)
@@ -62,12 +55,68 @@ public enum FilterListURLSupport {
         return FilterListURLParseResult(urls: urls, invalidLineNumbers: invalidLineNumbers)
     }
 
+    /// Cleans URL-field text so a paste cannot hide the link behind extra blank
+    /// lines. Bulk entry still works: a single trailing newline is kept while
+    /// typing so the next URL can be added.
+    public static func normalizeURLInput(from oldValue: String, to newValue: String) -> String {
+        normalizeURLInput(newValue, rejoinWrappedLines: looksLikePaste(from: oldValue, to: newValue))
+    }
+
+    public static func normalizeURLInput(_ rawValue: String, rejoinWrappedLines: Bool) -> String {
+        let hadTrailingNewline = rawValue.last?.isNewline ?? false
+        var lines: [String] = []
+
+        for line in rawValue.components(separatedBy: .newlines) {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+
+            if rejoinWrappedLines,
+               let last = lines.last,
+               isURLLineStart(last),
+               !isURLLineStart(trimmed) {
+                lines[lines.count - 1] = last + trimmed
+            } else {
+                lines.append(trimmed)
+            }
+        }
+
+        var result = lines.joined(separator: "\n")
+        if hadTrailingNewline && !rejoinWrappedLines && !result.isEmpty {
+            result += "\n"
+        }
+        return result
+    }
+
+    public static func looksLikePaste(from oldValue: String, to newValue: String) -> Bool {
+        if newValue == oldValue { return false }
+        if newValue.hasPrefix(oldValue) || oldValue.hasPrefix(newValue) {
+            return abs(newValue.count - oldValue.count) > 1
+        }
+        return newValue.count > 1
+    }
+
     private static func hasDisallowedScriptExtension(in path: String) -> Bool {
         let lowercased = path.lowercased()
         return lowercased.hasSuffix(".user.js")
             || lowercased.hasSuffix(".js")
             || lowercased.hasSuffix(".mjs")
             || lowercased.hasSuffix(".cjs")
+    }
+
+    private static func unwrappedURLLine(_ line: String) -> String {
+        var candidate = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let first = candidate.first, let last = candidate.last,
+           (first == "<" && last == ">")
+            || (first == "\"" && last == "\"")
+            || (first == "'" && last == "'") {
+            candidate = String(candidate.dropFirst().dropLast())
+        }
+        return candidate
+    }
+
+    private static func isURLLineStart(_ line: String) -> Bool {
+        let candidate = unwrappedURLLine(line).lowercased()
+        return candidate.hasPrefix("http://") || candidate.hasPrefix("https://")
     }
 }
 

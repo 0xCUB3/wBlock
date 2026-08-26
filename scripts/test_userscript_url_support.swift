@@ -39,6 +39,25 @@ struct UserScriptURLSupportTests {
         let plainName = UserScriptURLSupport.displayName(forRemoteURL: URL(string: "https://example.com/foo.js")!)
         expectEqual(plainName, "foo", "expected .js suffix to be stripped from remote display names")
 
+        expectEqual(
+            UserScriptURLSupport.normalizePastedURL("\nhttps://example.com/script.user.js\n\n"),
+            "https://example.com/script.user.js",
+            "expected extra blank lines around a pasted script URL to be stripped"
+        )
+        expectEqual(
+            UserScriptURLSupport.normalizePastedURL("""
+            https://greasyfork.org/scripts/123-very-long-name/
+            script.user.js
+            """),
+            "https://greasyfork.org/scripts/123-very-long-name/script.user.js",
+            "expected a wrapped pasted script URL to be rejoined"
+        )
+        expectValid(
+            "\nhttps://example.com/script.user.js\n",
+            expectedPath: "/script.user.js",
+            "expected script URL validation to accept a pasted URL with surrounding newlines"
+        )
+
         let userScriptName = UserScriptURLSupport.displayName(
             forRemoteURL: URL(string: "https://example.com/foo.user.js")!
         )

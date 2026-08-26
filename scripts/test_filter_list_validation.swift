@@ -35,6 +35,48 @@ struct FilterListValidationTests {
             "expected exact URL identity and invalid line numbers to be preserved"
         )
 
+        expectNormalizedURLInput(
+            from: "",
+            to: "\n\nhttps://example.com/filter.txt\n\n\n",
+            expected: "https://example.com/filter.txt",
+            "expected a pasted URL with extra blank lines to collapse onto one visible line"
+        )
+        expectNormalizedURLInput(
+            from: "",
+            to: """
+            https://raw.githubusercontent.com/easylist/easylist/master/easylist/
+            easylist_general_block.txt
+            """,
+            expected: "https://raw.githubusercontent.com/easylist/easylist/master/easylist/easylist_general_block.txt",
+            "expected a wrapped pasted URL to be rejoined"
+        )
+        expectNormalizedURLInput(
+            from: "",
+            to: """
+            https://example.com/one.txt
+
+            https://example.com/two.list
+            """,
+            expected: "https://example.com/one.txt\nhttps://example.com/two.list",
+            "expected multiple pasted URLs to stay one per line"
+        )
+        expectNormalizedURLInput(
+            from: "https://example.com/one.txt",
+            to: "https://example.com/one.txt\n",
+            expected: "https://example.com/one.txt\n",
+            "expected Return after a typed URL to keep a single trailing newline"
+        )
+        expectEqual(
+            FilterListURLSupport.looksLikePaste(from: "https://example.com/one.txt", to: "https://example.com/one.txt\n"),
+            false,
+            "expected a single Return not to be treated as a paste"
+        )
+        expectEqual(
+            FilterListURLSupport.looksLikePaste(from: "", to: "https://example.com/filter.txt\n\n"),
+            true,
+            "expected inserting a full URL to be treated as a paste"
+        )
+
         expectValidContent(
             """
             ! Title: Test List
@@ -150,6 +192,25 @@ struct FilterListValidationTests {
         guard result.urls.map(\.absoluteString) == expected,
               result.invalidLineNumbers == invalidLineNumbers else {
             fail(message)
+        }
+    }
+
+    private static func expectNormalizedURLInput(
+        from oldValue: String,
+        to newValue: String,
+        expected: String,
+        _ message: String
+    ) {
+        expectEqual(
+            FilterListURLSupport.normalizeURLInput(from: oldValue, to: newValue),
+            expected,
+            message
+        )
+    }
+
+    private static func expectEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
+        guard actual == expected else {
+            fail("\(message)\nactual: \(actual)\nexpected: \(expected)")
         }
     }
 

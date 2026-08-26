@@ -26,8 +26,18 @@ public enum UserScriptImportIdentity {
 }
 
 public enum UserScriptURLSupport {
+    /// Collapses a pasted script URL onto one line so extra newlines cannot
+    /// hide the link in the single-line URL field.
+    public static func normalizePastedURL(_ rawValue: String) -> String {
+        rawValue
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined()
+    }
+
     public static func validatedRemoteURL(from rawValue: String) -> URL? {
-        let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = normalizePastedURL(rawValue)
         guard !trimmed.isEmpty else { return nil }
         guard let components = URLComponents(string: trimmed),
               let scheme = components.scheme?.lowercased(),

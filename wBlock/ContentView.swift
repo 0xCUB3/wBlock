@@ -1118,6 +1118,12 @@ struct AddFilterListView: View {
 	            macosBody
 	        #endif
 	    }
+        .onChangeCompat(of: urlInput) { oldValue, newValue in
+            let normalized = FilterListURLSupport.normalizeURLInput(from: oldValue, to: newValue)
+            if normalized != newValue {
+                urlInput = normalized
+            }
+        }
         #if os(macOS)
 	    .onAppear {
 	        urlFieldIsFocused = addMode == .url

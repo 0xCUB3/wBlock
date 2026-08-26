@@ -1890,6 +1890,11 @@ struct AddUserScriptView: View {
         }
         #endif
         .onChangeCompat(of: urlInput) { _, newValue in
+            let normalized = UserScriptURLSupport.normalizePastedURL(newValue)
+            if normalized != newValue {
+                urlInput = normalized
+                return
+            }
             validateInput(newValue)
         }
         .onChangeCompat(of: textInput) { _, _ in
@@ -2656,11 +2661,11 @@ struct AddUserScriptView: View {
     private func pasteFromClipboard() {
         #if os(iOS)
         if let string = UIPasteboard.general.string {
-            urlInput = string
+            urlInput = UserScriptURLSupport.normalizePastedURL(string)
         }
         #elseif os(macOS)
         if let string = NSPasteboard.general.string(forType: .string) {
-            urlInput = string
+            urlInput = UserScriptURLSupport.normalizePastedURL(string)
         }
         #endif
     }

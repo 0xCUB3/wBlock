@@ -16,5 +16,6 @@ expect(source.contains("mode != .url || urlCount <= 1"), "URL custom-name valida
 expect(source.contains("case .paste, .file: return userListTitle"), "text and file modes must validate their editable title")
 expect(source.contains("validationMode"), "validation must follow the active mode")
 expect(source.contains("isCustomNameDuplicate"), "duplicate names must disable Add")
+expect(source.contains("FilterListURLSupport.normalizeURLInput(from:"), "URL paste must normalize extra lines")
 
 print("PASS: filter-list add validation contract")
