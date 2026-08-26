@@ -110,7 +110,7 @@ enum BuiltInUserScripts {
     static let legacyTinyShieldGroupedURLPrefix =
         "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/"
     static let tinyShieldDescription =
-        "tinyShield helps block ads reinserted by Ad-Shield on matching sites."
+        "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them."
     static let retiredYouTubeAdBlockURL =
         "https://raw.githubusercontent.com/SysAdminDoc/YoutubeAdblock/main/YoutubeAdblock.user.js"
     static let retiredYouTubeClassicURL =
@@ -202,6 +202,9 @@ enum BuiltInUserScripts {
     )
     static let languagesByURL = Dictionary(
         uniqueKeysWithValues: definitions.map { ($0.url, $0.languages) }
+    )
+    static let isEnabledByDefaultByURL = Dictionary(
+        uniqueKeysWithValues: definitions.map { ($0.url, $0.isEnabledByDefault) }
     )
 
 }
@@ -730,6 +733,11 @@ public class UserScriptManager: ObservableObject {
     public func isDefaultUserScript(_ userScript: UserScript) -> Bool {
         guard let urlString = userScript.url?.absoluteString else { return false }
         return BuiltInUserScripts.allProtectedURLs.contains(urlString)
+    }
+
+    public func isEnabledByDefault(_ userScript: UserScript) -> Bool {
+        guard let urlString = userScript.url?.absoluteString else { return false }
+        return BuiltInUserScripts.isEnabledByDefaultByURL[urlString] ?? false
     }
 
     public func builtInDisplayRole(for userScript: UserScript) -> BuiltInUserScriptDisplayRole? {
@@ -1521,6 +1529,7 @@ public class UserScriptManager: ObservableObject {
             || normalizedDescription == "default userscript"
             || normalizedDescription == "default userscript - downloading..."
             || normalizedDescription == "ready to enable"
+            || normalizedDescription == "tinyshield helps block ads reinserted by ad-shield on matching sites."
     }
 
     private func downloadMissingDefaultScripts() async {

@@ -17,6 +17,7 @@ let filterInfo = try source("wBlock/FilterInfoView.swift")
 let categoryInfo = try source("wBlock/FilterCategoryInfoView.swift")
 let content = try source("wBlock/ContentView.swift")
 let userscripts = try source("wBlock/UserScriptManagerView.swift")
+let userscriptCategoryInfo = try source("wBlock/UserScriptCategoryInfoView.swift")
 
 require(design.contains("struct SheetDoneButton: View"), "shared Done button must be defined")
 require(design.contains("Button(\"Done\")"), "shared button must use localized Done")
@@ -32,7 +33,8 @@ for (name, text) in [
     ("UserScriptInfoView", userscripts),
     ("UserScriptContentView", userscripts),
     ("UserScriptSourceSheet", userscripts),
-    ("AddUserScriptEditorSheet", userscripts)
+    ("AddUserScriptEditorSheet", userscripts),
+    ("UserScriptCategoryInfoView", userscriptCategoryInfo)
 ] {
     require(text.contains("SheetDoneButton"), "\(name) must use SheetDoneButton")
     require(!text.contains("Button(\"Done\""), "\(name) must not duplicate Button(\"Done\")")
@@ -42,6 +44,7 @@ require(occurrenceCount("SheetDoneButton", in: filterInfo) == 2, "both filter de
 require(occurrenceCount("SheetDoneButton", in: categoryInfo) == 1, "category detail popover must use the shared button")
 require(occurrenceCount("SheetDoneButton", in: content) == 1, "capacity popover must use the shared button")
 require(occurrenceCount("SheetDoneButton", in: userscripts) == 7, "all userscript detail and editor overlays must use the shared button")
+require(occurrenceCount("SheetDoneButton", in: userscriptCategoryInfo) == 1, "userscript category detail popover must use the shared button")
 require(occurrenceCount("usesAutomaticStyle: true", in: userscripts) == 3, "iOS toolbar Done buttons must use native styling exactly once")
 require(!content.contains("Image(systemName: \"xmark.circle.fill\")"), "capacity popover must not use a custom xmark close control")
 print("PASS")

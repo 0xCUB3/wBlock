@@ -5,11 +5,13 @@ public enum BuiltInUserScriptDisplayRole: String, Hashable, Sendable {
     case functionality
 }
 
-public enum UserScriptDisplayCategory: String, CaseIterable, Hashable, Sendable {
+public enum UserScriptDisplayCategory: String, CaseIterable, Hashable, Sendable, Identifiable {
     case blocking = "Blocking"
     case functionality = "Functionality"
     case appearance = "Appearance"
     case other = "Other"
+
+    public var id: String { rawValue }
 
     public var descriptionKey: String {
         switch self {

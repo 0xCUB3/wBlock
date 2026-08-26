@@ -767,6 +767,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will reset all filters, userscripts, and preferences." = "This will reset all filters, userscripts, and preferences.";
 "Timed out" = "Timed out";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
+"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them.";
 "Title" = "Title";
 "Title (optional)" = "Title (optional)";
 "Title is required." = "Title is required.";
@@ -859,9 +860,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Contains filter lists that you added or imported yourself." = "Contains filter lists that you added or imported yourself.";
 "Get Started" = "Get Started";
 "No default filters" = "No default filters";
+"No default scripts" = "No default scripts";
 "Organizes userscripts and userstyles added to wBlock." = "Organizes userscripts and userstyles added to wBlock.";
 "Provides newer rules and fixes that are still being tested." = "Provides newer rules and fixes that are still being tested.";
 "Recommended Filters" = "Recommended Filters";
+"Recommended Scripts" = "Recommended Scripts";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Removes cookie notices, pop-ups, banners, and other distracting elements.";
 "Reset to Default" = "Reset to Default";
 "Shows all filter lists across every category." = "Shows all filter lists across every category.";

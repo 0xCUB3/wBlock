@@ -6,7 +6,7 @@ let source = try String(contentsOfFile: "wBlockCoreService/UserScriptManager.swi
 let viewSource = try String(contentsOfFile: "wBlock/UserScriptManagerView.swift", encoding: .utf8)
 let onboardingSource = try String(contentsOfFile: "wBlock/OnboardingView.swift", encoding: .utf8)
 let tinyShieldURL = "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
-let tinyShieldDescription = "tinyShield helps block ads reinserted by Ad-Shield on matching sites."
+let tinyShieldDescription = "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them."
 
 guard !source.contains("name: \"YouTube Ad Blocking\"")
     && source.contains("removeRetiredYouTubeAdBlockIfNeeded()") else {
@@ -120,11 +120,12 @@ else {
 
 
 guard onboardingSource.contains("isBaselineUserscriptEnabledByDefault")
-    && onboardingSource.contains("AdGuard Extra")
-    && onboardingSource.contains("localizedCaseInsensitiveCompare(\"tinyShield\")")
+    && onboardingSource.contains("userScriptManager.isEnabledByDefault(script)")
+    && !onboardingSource.contains("localizedCaseInsensitiveCompare(\"AdGuard Extra\")")
+    && !onboardingSource.contains("localizedCaseInsensitiveCompare(\"tinyShield\")")
     && onboardingSource.contains("visibleBaselineIDs")
 else {
-    fputs("FAIL: onboarding should enable baseline userscripts by default\n", stderr)
+    fputs("FAIL: onboarding should enable baseline userscripts from isEnabledByDefault\n", stderr)
     exit(1)
 }
 

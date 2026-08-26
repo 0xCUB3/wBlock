@@ -164,6 +164,7 @@ struct UserScriptManagerView: View {
     @State private var isDropProcessing = false
     @State private var dropErrorMessage: String?
     @State private var pendingBetaEnableScript: UserScriptListItem?
+    @State private var selectedCategoryInfo: UserScriptDisplayCategory?
 
     private var totalScriptsCount: Int {
         scripts.filter { !$0.isUserStyle }.count
@@ -254,6 +255,13 @@ struct UserScriptManagerView: View {
                     startsEditing: selection.action == .editContent
                 )
             }
+        }
+        .sheet(item: $selectedCategoryInfo) { category in
+            UserScriptCategoryInfoView(
+                category: category,
+                defaultScriptNames: defaultScriptNames(for: category),
+                onReset: { resetCategory(category) }
+            )
         }
         .onAppear {
             refreshScripts()
@@ -547,7 +555,17 @@ struct UserScriptManagerView: View {
 
     private func displaySectionHeader(_ section: UserScriptDisplaySection) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(section.title)
+            HStack(spacing: 6) {
+                Text(section.title)
+                Button {
+                    selectedCategoryInfo = section.id
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .accessibilityLabel("Info")
+            }
             if let description = section.description {
                 Text(description)
                     .font(.caption)
@@ -556,31 +574,80 @@ struct UserScriptManagerView: View {
         }
     }
 
+    private func defaultScriptNames(for category: UserScriptDisplayCategory) -> [String] {
+        UserScriptCategorySupport.defaultScriptNames(
+            for: category,
+            scripts: userScriptManager.userScripts.map { script in
+                (
+                    name: script.name,
+                    displayCategory: UserScriptDisplayCategorySupport.category(
+                        isUserStyle: script.isUserStyle,
+                        builtInRole: userScriptManager.builtInDisplayRole(for: script),
+                        persistedCategory: script.category
+                    ),
+                    isEnabledByDefault: userScriptManager.isEnabledByDefault(script)
+                )
+            }
+        )
+    }
+
+    private func resetCategory(_ category: UserScriptDisplayCategory) {
+        var enabledIDs = Set(
+            userScriptManager.userScripts.filter(\.isEnabled).map(\.id)
+        )
+        for script in userScriptManager.userScripts {
+            let displayCategory = UserScriptDisplayCategorySupport.category(
+                isUserStyle: script.isUserStyle,
+                builtInRole: userScriptManager.builtInDisplayRole(for: script),
+                persistedCategory: script.category
+            )
+            guard let shouldEnable = UserScriptCategorySupport.resetEnabled(
+                isBuiltIn: userScriptManager.isDefaultUserScript(script),
+                displayCategory: displayCategory,
+                category: category,
+                isEnabledByDefault: userScriptManager.isEnabledByDefault(script)
+            ) else { continue }
+            if shouldEnable {
+                enabledIDs.insert(script.id)
+            } else {
+                enabledIDs.remove(script.id)
+            }
+        }
+        Task {
+            await userScriptManager.setEnabledScripts(withIDs: enabledIDs)
+            await MainActor.run { refreshScripts() }
+        }
+    }
+
     #if os(macOS)
     private func scriptsListView(sections: [UserScriptDisplaySection]) -> some View {
         LazyVStack(spacing: 16) {
             ForEach(sections) { scriptSection in
-                macOSUserScriptSectionView(
-                    title: scriptSection.title,
-                    description: scriptSection.description,
-                    scripts: scriptSection.scripts
-                )
+                macOSUserScriptSectionView(section: scriptSection)
             }
         }        .padding(.horizontal)
     }
 
     private func macOSUserScriptSectionView(
-        title: LocalizedStringKey,
-        description: LocalizedStringKey?,
-        scripts: [UserScriptListItem]
+        section: UserScriptDisplaySection
     ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                    if let description {
+                    HStack(spacing: 6) {
+                        Text(section.title)
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+                        Button {
+                            selectedCategoryInfo = section.id
+                        } label: {
+                            Image(systemName: "info.circle")
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel("Info")
+                    }
+                    if let description = section.description {
                         Text(description)
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -591,10 +658,10 @@ struct UserScriptManagerView: View {
             .padding(.horizontal, 4)
 
             VStack(spacing: 0) {
-                ForEach(scripts.indices, id: \.self) { index in
-                    scriptRowView(script: scripts[index])
+                ForEach(section.scripts.indices, id: \.self) { index in
+                    scriptRowView(script: section.scripts[index])
 
-                    if index < scripts.count - 1 {
+                    if index < section.scripts.count - 1 {
                         Divider()
                             .padding(.leading, 16)
                     }

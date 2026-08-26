@@ -116,6 +116,11 @@ struct OnboardingView: View {
                 "Handles advanced anti-adblock cases that filter rules miss.",
                 comment: "Default userscript description"
             ),
+        "tinyshield":
+            LocalizedStrings.text(
+                "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them.",
+                comment: "Default userscript description"
+            ),
         "adguard popup blocker":
             LocalizedStrings.text(
                 "Blocks pop-up ads on web pages.",
@@ -1013,8 +1018,7 @@ struct OnboardingView: View {
     }
 
     private func isBaselineUserscriptEnabledByDefault(_ script: UserScript) -> Bool {
-        return script.name.localizedCaseInsensitiveCompare("AdGuard Extra") == .orderedSame
-            || script.name.localizedCaseInsensitiveCompare("tinyShield") == .orderedSame
+        userScriptManager.isEnabledByDefault(script)
     }
     
     func applySettings() async {

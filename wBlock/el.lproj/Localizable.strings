@@ -770,6 +770,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will reset all filters, userscripts, and preferences." = "Αυτό θα επαναφέρει όλα τα φίλτρα, τον κώδικα χρήστη και τις προτιμήσεις.";
 "Timed out" = "Έληξε ο χρόνος";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "Το tinyShield βοηθά στον αποκλεισμό διαφημίσεων που επανεισάγονται από το Ad-Shield σε αντίστοιχους ιστότοπους.";
+"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Αποκλείει διαφημίσεις που το Ad-Shield επαναφέρει σε αντίστοιχους ιστότοπους αφού τις αποκρύψουν οι λίστες φίλτρων.";
 "Title" = "Τίτλος";
 "Title (optional)" = "Τίτλος (προαιρετικό)";
 "Title is required." = "Απαιτείται τίτλος.";
@@ -862,9 +863,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Contains filter lists that you added or imported yourself." = "Περιέχει λίστες φίλτρων που προσθέσατε ή εισαγάγατε.";
 "Get Started" = "Έναρξη";
 "No default filters" = "Δεν υπάρχουν προεπιλεγμένα φίλτρα";
+"No default scripts" = "Δεν υπάρχουν προεπιλεγμένα σενάρια";
 "Organizes userscripts and userstyles added to wBlock." = "Οργανώνει τα userscripts και userstyles που προσθέσατε στο wBlock.";
 "Provides newer rules and fixes that are still being tested." = "Παρέχει νεότερους κανόνες και διορθώσεις που δοκιμάζονται ακόμη.";
 "Recommended Filters" = "Προτεινόμενα φίλτρα";
+"Recommended Scripts" = "Προτεινόμενα σενάρια";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Αφαιρεί ειδοποιήσεις cookie, αναδυόμενα παράθυρα, banner και άλλα ενοχλητικά στοιχεία.";
 "Reset to Default" = "Επαναφορά στις προεπιλογές";
 "Shows all filter lists across every category." = "Εμφανίζει όλες τις λίστες φίλτρων από κάθε κατηγορία.";

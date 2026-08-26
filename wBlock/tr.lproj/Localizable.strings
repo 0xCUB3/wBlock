@@ -767,6 +767,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "This will reset all filters, userscripts, and preferences." = "Bu işlem tüm filtreleri, kullanıcı betiklerini ve tercihleri sıfırlayacaktır.";
 "Timed out" = "Zaman aşımı";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield, Ad-Shield tarafından eşleşen sitelerde yeniden eklenen reklamları engellemeye yardımcı olur.";
+"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Filtre listeleri gizledikten sonra Ad-Shield’in eşleşen sitelerde yeniden eklediği reklamları engeller.";
 "Title" = "Başlık";
 "Title (optional)" = "Başlık (isteğe bağlı)";
 "Title is required." = "Başlık gerekli.";
@@ -859,9 +860,11 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Contains filter lists that you added or imported yourself." = "Kendi eklediğiniz veya içe aktardığınız filtre listelerini içerir.";
 "Get Started" = "Başlarken";
 "No default filters" = "Varsayılan filtre yok";
+"No default scripts" = "Varsayılan betik yok";
 "Organizes userscripts and userstyles added to wBlock." = "wBlock'a eklenen kullanıcı betiklerini ve kullanıcı stillerini düzenler.";
 "Provides newer rules and fixes that are still being tested." = "Henüz test aşamasında olan yeni kuralları ve düzeltmeleri sunar.";
 "Recommended Filters" = "Önerilen Filtreler";
+"Recommended Scripts" = "Önerilen betikler";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Çerez bildirimlerini, açılır pencereleri, afişleri ve dikkat dağıtan diğer öğeleri kaldırır.";
 "Reset to Default" = "Varsayılana sıfırla";
 "Shows all filter lists across every category." = "Tüm kategorilerdeki bütün filtre listelerini gösterir.";

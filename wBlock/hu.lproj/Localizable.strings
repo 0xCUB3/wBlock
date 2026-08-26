@@ -770,6 +770,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "This will reset all filters, userscripts, and preferences." = "Ez visszaállít minden szűrőt, felhasználói szkriptet és beállítást.";
 "Timed out" = "Időtúllépés";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "A tinyShield segít blokkolni az Ad-Shield által a megfelelő oldalakra újra beillesztett hirdetéseket.";
+"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Blokkolja azokat a hirdetéseket, amelyeket az Ad-Shield a megfelelő oldalakra újra beilleszt, miután a szűrőlisták elrejtették őket.";
 "Title" = "Cím";
 "Title (optional)" = "Cím (opcionális)";
 "Title is required." = "A cím kötelező.";
@@ -862,9 +863,11 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Contains filter lists that you added or imported yourself." = "Az Ön által hozzáadott vagy importált szűrőlistákat tartalmazza.";
 "Get Started" = "Kezdés";
 "No default filters" = "Nincsenek alapértelmezett szűrők";
+"No default scripts" = "Nincsenek alapértelmezett szkriptek";
 "Organizes userscripts and userstyles added to wBlock." = "A wBlockhoz hozzáadott userscripteket és userstyle-okat rendezi.";
 "Provides newer rules and fixes that are still being tested." = "Még tesztelés alatt álló újabb szabályokat és javításokat biztosít.";
 "Recommended Filters" = "Ajánlott szűrők";
+"Recommended Scripts" = "Ajánlott szkriptek";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Eltávolítja a cookie-értesítéseket, felugró ablakokat, bannereket és más zavaró elemeket.";
 "Reset to Default" = "Alapértékek visszaállítása";
 "Shows all filter lists across every category." = "Minden kategória összes szűrőlistáját megjeleníti.";

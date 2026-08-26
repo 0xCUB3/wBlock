@@ -767,6 +767,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "This will reset all filters, userscripts, and preferences." = "Acest lucru va reseta toate filtrele, scripturile utilizator și preferințele.";
 "Timed out" = "Timp expirat";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield ajută la blocarea reclamelor reintroduse de Ad-Shield pe site-urile corespunzătoare.";
+"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Blochează reclamele pe care Ad-Shield le reintroduce pe site-urile corespunzătoare după ce listele de filtre le-au ascuns.";
 "Title" = "Titlu";
 "Title (optional)" = "Titlu (opțional)";
 "Title is required." = "Titlul este obligatoriu.";
@@ -859,9 +860,11 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Contains filter lists that you added or imported yourself." = "Conține listele de filtre adăugate sau importate de tine.";
 "Get Started" = "Începe";
 "No default filters" = "Nu există filtre implicite";
+"No default scripts" = "Nu există scripturi implicite";
 "Organizes userscripts and userstyles added to wBlock." = "Organizează userscripturile și userstyle-urile adăugate în wBlock.";
 "Provides newer rules and fixes that are still being tested." = "Oferă reguli și remedieri mai noi, aflate încă în testare.";
 "Recommended Filters" = "Filtre recomandate";
+"Recommended Scripts" = "Scripturi recomandate";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Elimină notificările despre cookie-uri, ferestrele pop-up, bannerele și alte elemente deranjante.";
 "Reset to Default" = "Resetează la valorile implicite";
 "Shows all filter lists across every category." = "Afișează toate listele de filtre din fiecare categorie.";

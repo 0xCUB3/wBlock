@@ -770,6 +770,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will reset all filters, userscripts, and preferences." = "سيؤدي هذا إلى إعادة تعيين جميع الفلاتر وسكريبتات المستخدم والتفضيلات.";
 "Timed out" = "انتهت المهلة";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "يساعد tinyShield في حظر الإعلانات التي يعيد Ad-Shield إدراجها في المواقع المطابقة.";
+"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "يحظر الإعلانات التي يعيد Ad-Shield إدراجها في المواقع المطابقة بعد أن تخفيها قوائم التصفية.";
 "Title" = "العنوان";
 "Title (optional)" = "العنوان (اختياري)";
 "Title is required." = "العنوان مطلوب.";
@@ -862,9 +863,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Contains filter lists that you added or imported yourself." = "يحتوي على قوائم المرشحات التي أضفتها أو استوردتها بنفسك";
 "Get Started" = "البدء";
 "No default filters" = "لا توجد مرشحات افتراضية";
+"No default scripts" = "لا توجد نصوص افتراضية";
 "Organizes userscripts and userstyles added to wBlock." = "ينظم البرامج النصية والأنماط التي أضفتها إلى wBlock";
 "Provides newer rules and fixes that are still being tested." = "يوفر قواعد وإصلاحات أحدث لا تزال قيد الاختبار";
 "Recommended Filters" = "المرشحات الموصى بها";
+"Recommended Scripts" = "النصوص الموصى بها";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "يزيل إشعارات ملفات تعريف الارتباط والنوافذ المنبثقة واللافتات والعناصر المشتتة الأخرى";
 "Reset to Default" = "إعادة التعيين إلى الإعدادات الافتراضية";
 "Shows all filter lists across every category." = "يعرض جميع قوائم المرشحات في كل الفئات";

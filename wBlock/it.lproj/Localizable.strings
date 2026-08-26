@@ -767,6 +767,7 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "This will reset all filters, userscripts, and preferences." = "Questo reimposterà tutti i filtri, gli userscript e le preferenze.";
 "Timed out" = "Tempo scaduto";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield aiuta a bloccare gli annunci reinseriti da Ad-Shield sui siti corrispondenti.";
+"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Blocca gli annunci che Ad-Shield reinserisce sui siti corrispondenti dopo che le liste di filtri li hanno nascosti.";
 "Title" = "Titolo";
 "Title (optional)" = "Titolo (facoltativo)";
 "Title is required." = "Il titolo è obbligatorio.";
@@ -859,9 +860,11 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Contains filter lists that you added or imported yourself." = "Contiene gli elenchi di filtri aggiunti o importati da te.";
 "Get Started" = "Inizia";
 "No default filters" = "Nessun filtro predefinito";
+"No default scripts" = "Nessuno script predefinito";
 "Organizes userscripts and userstyles added to wBlock." = "Organizza gli userscript e gli userstyle aggiunti a wBlock.";
 "Provides newer rules and fixes that are still being tested." = "Fornisce regole e correzioni più recenti ancora in fase di test.";
 "Recommended Filters" = "Filtri consigliati";
+"Recommended Scripts" = "Script consigliati";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Rimuove avvisi sui cookie, popup, banner e altri elementi distraenti.";
 "Reset to Default" = "Ripristina impostazioni predefinite";
 "Shows all filter lists across every category." = "Mostra tutti gli elenchi di filtri di ogni categoria.";

@@ -767,6 +767,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will reset all filters, userscripts, and preferences." = "这将重置所有过滤器、用户脚本和偏好设置。";
 "Timed out" = "超时";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield 可帮助拦截 Ad-Shield 在匹配站点上重新插入的广告。";
+"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "拦截 Ad-Shield 在匹配网站上、于过滤列表隐藏广告之后重新插入的广告。";
 "Title" = "标题";
 "Title (optional)" = "标题（可选）";
 "Title is required." = "标题为必填项。";
@@ -859,9 +860,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Contains filter lists that you added or imported yourself." = "包含你添加或导入的过滤器列表。";
 "Get Started" = "开始使用";
 "No default filters" = "没有默认过滤器";
+"No default scripts" = "没有默认脚本";
 "Organizes userscripts and userstyles added to wBlock." = "整理添加到 wBlock 的用户脚本和用户样式。";
 "Provides newer rules and fixes that are still being tested." = "提供仍在测试中的新规则和修复。";
 "Recommended Filters" = "推荐过滤器";
+"Recommended Scripts" = "推荐脚本";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "移除 Cookie 提示、弹窗、横幅及其他干扰元素。";
 "Reset to Default" = "恢复默认设置";
 "Shows all filter lists across every category." = "显示所有类别中的过滤器列表。";
