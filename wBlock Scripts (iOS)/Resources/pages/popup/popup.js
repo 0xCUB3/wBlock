@@ -278,6 +278,24 @@ async function getAuthoritativeZapperRules(host) {
     return (await getAuthoritativeZapperState(host)).rules;
 }
 
+function syncPopupViewportHeight() {
+    if (!CSS.supports('-webkit-touch-callout', 'none')) {
+        return;
+    }
+    const height = window.innerHeight;
+    if (!Number.isFinite(height) || height <= 0) {
+        return;
+    }
+    const px = `${height}px`;
+    document.documentElement.style.height = px;
+    if (document.body) {
+        document.body.style.height = px;
+    }
+}
+
+window.addEventListener('resize', syncPopupViewportHeight);
+syncPopupViewportHeight();
+
 function setError(message) {
     const el = document.getElementById('error');
     if (!el) return;
@@ -1830,6 +1848,7 @@ async function refreshUi() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    syncPopupViewportHeight();
     localizeStaticPopupText();
     setupListeners();
     refreshUi().catch((error) => {
