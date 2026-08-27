@@ -123,6 +123,15 @@ extension View {
     }
 
     @ViewBuilder
+    func scrollBounceBasedOnSizeCompat() -> some View {
+        if #available(iOS 16.4, macOS 13.3, *) {
+            scrollBounceBehavior(.basedOnSize)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
     func largeSheetPresentationCompat() -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {
             presentationDetents([.large])

@@ -498,9 +498,15 @@ struct ContentView: View {
                 #endif
             }
             .buttonStyle(.plain)
+            #if os(macOS)
             .popover(isPresented: $showingCapacityPopover, arrowEdge: .top) {
                 RuleCapacityPopoverView(filterManager: filterManager)
             }
+            #else
+            .sheet(isPresented: $showingCapacityPopover) {
+                RuleCapacityPopoverView(filterManager: filterManager)
+            }
+            #endif
 
             StatCard(
                 title: "Enabled",
@@ -2277,6 +2283,23 @@ struct RuleCapacityPopoverView: View {
     }
 
     var body: some View {
+        #if os(macOS)
+        capacityContent
+            .padding(16)
+            .frame(width: 340)
+        #else
+        ScrollView(.vertical) {
+            capacityContent
+                .padding(20)
+                .frame(maxWidth: 380, alignment: .leading)
+                .frame(maxWidth: .infinity)
+        }
+        .scrollBounceBasedOnSizeCompat()
+        .largeSheetPresentationCompat()
+        #endif
+    }
+
+    private var capacityContent: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Label("Safari Rule Capacity", systemImage: "shield.lefthalf.filled")
@@ -2353,12 +2376,7 @@ struct RuleCapacityPopoverView: View {
             Text("Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(16)
-        #if os(macOS)
-        .frame(width: 340)
-        #else
-        .frame(maxWidth: 380, maxHeight: .infinity, alignment: .top)
-        #endif
     }
 }
