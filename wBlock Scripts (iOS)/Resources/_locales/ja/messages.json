@@ -16,7 +16,7 @@
     "description": "Label for the site-specific enable toggle in the popup."
   },
   "popup_element_zapper": {
-    "message": "要素ザッパー",
+    "message": "要素ブロック",
     "description": "Section title for the element zapper controls in the popup."
   },
   "popup_button_activate": {
@@ -28,7 +28,7 @@
     "description": "Button label to clear all zapper rules for the current site."
   },
   "popup_hint_tap_to_hide": {
-    "message": "ページ上の要素をタップすると非表示にできます。手動セレクタはザッパーの「ルール追加」を使用してください。",
+    "message": "ページ上の要素をタップすると非表示にできます。手動セレクタは要素ブロックの「ルール追加」を使用してください。",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
   "popup_rules": {
@@ -92,7 +92,7 @@
     "description": "Warning shown when the site toggle persisted but a full filter apply is still required."
   },
   "popup_error_zapper_unavailable": {
-    "message": "このページでは要素ザッパーを利用できません。",
+    "message": "このページでは要素ブロックを利用できません。",
     "description": "Error shown when zapper cannot be activated on the current tab."
   },
   "popup_error_open_app": {
@@ -100,7 +100,7 @@
     "description": "Error shown when popup fails to open the containing app."
   },
   "popup_error_clear_rules": {
-    "message": "ザッパールールのクリアに失敗しました。",
+    "message": "要素ブロックルールのクリアに失敗しました。",
     "description": "Error shown when popup fails to clear zapper rules for the current site."
   },
   "popup_status_unsupported": {
@@ -120,11 +120,11 @@
     "description": "Error shown if popup initialization fails."
   },
   "zapper_aria_label": {
-    "message": "wBlock 要素ザッパー",
+    "message": "wBlock 要素ブロック",
     "description": "Accessible label for the in-page element zapper toolbar."
   },
   "zapper_status_tap_to_hide": {
-    "message": "要素ザッパー: 要素をタップして非表示にします。",
+    "message": "要素ブロック: 要素をタップして非表示にします。",
     "description": "Default status text in the in-page element zapper toolbar."
   },
   "zapper_button_undo": {
@@ -212,27 +212,27 @@
     "description": "Toast shown when selector generation fails for selected element."
   },
   "zapper_toast_enabled": {
-    "message": "要素ザッパーを有効化しました。",
+    "message": "要素ブロックを有効化しました。",
     "description": "Toast shown when zapper mode is enabled."
   },
   "zapper_toast_disabled": {
-    "message": "要素ザッパーを無効化しました。",
+    "message": "要素ブロックを無効化しました。",
     "description": "Toast shown when zapper mode is disabled."
   },
   "zapper_status_off": {
-    "message": "要素ザッパー: オフ",
+    "message": "要素ブロック: オフ",
     "description": "Status text shown after disabling zapper while keeping toolbar visible."
   },
   "popup_userscripts": {
-    "message": "Userscripts",
+    "message": "ユーザースクリプト",
     "description": "Section title for userscripts that match the current page in the popup."
   },
   "popup_userscripts_empty": {
-    "message": "No userscripts are running on this page.",
+    "message": "このページで実行されているユーザースクリプトはありません。",
     "description": "Empty state shown when no userscripts match or run on the current page."
   },
   "popup_error_update_userscript": {
-    "message": "Failed to update userscript setting.",
+    "message": "ユーザースクリプトの設定更新に失敗しました。",
     "description": "Error shown when popup fails to update a per-site userscript setting."
   },
   "popup_paused_prompt_title": {
