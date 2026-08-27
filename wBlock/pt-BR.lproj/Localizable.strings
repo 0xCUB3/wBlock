@@ -903,9 +903,11 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
 "Adblock Warning Removal List" = "Adblock Warning Removal List";
 "Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
+"Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
 "AdGuard Allowlist" = "AdGuard Allowlist";
 "Blocks tracking pixels and other mail tracking techniques." = "Bloqueia pixels de rastreamento e outras técnicas de rastreamento de e-mail.";
+"Blocks public websites from reaching local network addresses and router admin pages. Can break some local apps." = "Impede que sites públicos acessem endereços da rede local e páginas de administração do roteador. Pode quebrar alguns apps locais.";
 "Allows sites and resources that should not be blocked." = "Permite sites e recursos que não devem ser bloqueados.";
 
 

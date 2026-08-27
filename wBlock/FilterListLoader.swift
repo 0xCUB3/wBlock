@@ -283,6 +283,15 @@ class FilterListLoader {
                 )!, category: FilterListCategory.privacy,
                 description: "Blocks tracking pixels and other mail tracking techniques."),
             FilterList(
+                id: UUID(), name: "Block Outsider Intrusion into LAN",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/258_optimized.txt"
+                )!, category: FilterListCategory.privacy,
+                description:
+                    "Blocks public websites from reaching local network addresses and router admin pages. Can break some local apps.",
+                trustLevel: "high"),
+            FilterList(
                 id: UUID(), name: "Peter Lowe's Blocklist",
                 url: URL(
                     string:

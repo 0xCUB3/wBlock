@@ -156,6 +156,7 @@ let baseline = tableFromGit(ref: "origin/main", path: "wBlock/en.lproj/Localizab
 let branchAddedKeys = Set(english.keys).subtracting(baseline.keys)
 let intentionalCanonicalNames: Set<String> = [
     "AdGuard Allowlist", "Adblock Warning Removal List",
+    "Block Outsider Intrusion into LAN",
     "HaGeZi Pro Mini", "Mail Tracking Protection Filter", "Online Malicious URL Blocklist",
     "Stevo's AI Blocklist"
 ]
