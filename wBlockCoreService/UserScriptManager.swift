@@ -233,6 +233,10 @@ public class UserScriptManager: ObservableObject {
         // macOS. Keep this single mutation hook in the manager so every supported
         // native path shares the same invalidation contract when connected.
         #if os(macOS)
+        guard SafariProcessAvailability.isSafariOrTechnologyPreviewRunning else {
+            os_log(.info, "Skipped Safari userscript cache invalidation: Safari is not running")
+            return
+        }
         SFSafariApplication.dispatchMessage(
             withName: "wblock:userscriptsChanged",
             toExtensionWithIdentifier: "skula.wBlock.wBlock-Scripts",

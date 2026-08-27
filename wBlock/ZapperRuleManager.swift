@@ -60,6 +60,10 @@ final class ZapperRuleManager: ObservableObject {
     private let logger = Logger(subsystem: "skula.wBlock", category: "ZapperRuleManager")
     static func notifySafariRulesChanged() {
         #if os(macOS)
+        guard SafariProcessAvailability.isSafariOrTechnologyPreviewRunning else {
+            Logger(subsystem: "skula.wBlock", category: "ZapperRuleManager").info("Skipped Safari zapper rules refresh: Safari is not running")
+            return
+        }
         SFSafariApplication.dispatchMessage(
             withName: "wblock:zapperRulesChanged",
             toExtensionWithIdentifier: "skula.wBlock.wBlock-Scripts",

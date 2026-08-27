@@ -931,6 +931,13 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
     ) async -> Result<Void, Error> {
         os_log(.info, "Start reloading the content blocker")
 
+        #if os(macOS)
+        guard SafariProcessAvailability.isSafariOrTechnologyPreviewRunning else {
+            os_log(.info, "Skipped content blocker reload: Safari is not running (rules are already on disk)")
+            return .success(())
+        }
+        #endif
+
         let error: Error? = await withCheckedContinuation { continuation in
             let gate = ResumeOnceGate()
             SFContentBlockerManager.reloadContentBlocker(withIdentifier: identifier) { error in
