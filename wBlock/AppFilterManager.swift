@@ -645,11 +645,7 @@ class AppFilterManager: ObservableObject {
     private func collapseDuplicateBuiltInURLs(_ filters: [FilterList]) -> [FilterList] {
         var result: [FilterList] = []
         for filter in filters {
-            guard !filter.isCustom else {
-                result.append(filter)
-                continue
-            }
-            if let index = result.firstIndex(where: { !$0.isCustom && $0.url == filter.url }) {
+            if let index = result.firstIndex(where: { $0.url == filter.url }) {
                 result[index].isSelected = result[index].isSelected || filter.isSelected
             } else {
                 result.append(filter)

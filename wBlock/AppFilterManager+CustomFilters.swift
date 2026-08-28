@@ -170,7 +170,7 @@ extension AppFilterManager {
     }
 
     func addCustomFilterList(_ filter: FilterList) {
-        if !customFilterLists.contains(where: { $0.url == filter.url }) {
+        if !filterLists.contains(where: { $0.url == filter.url }) {
             let newFilterToAdd = filter
 
             filterLists.append(newFilterToAdd)
@@ -206,7 +206,7 @@ extension AppFilterManager {
                         .filterUpdate, LocalizedStrings.text("Failed to download custom filter"),
                         metadata: ["filter": newFilterToAdd.name])
                     await MainActor.run {
-                        removeCustomFilterList(newFilterToAdd)
+                        removeCustomFilterList(newFilterToAdd, recordDeletion: false)
                         self.statusDescription = LocalizedStrings.text(
                             "Failed to add filter. The URL may be invalid or the content is not a valid filter list.",
                             comment: "Custom filter add failure"
@@ -225,7 +225,7 @@ extension AppFilterManager {
     }
 
     internal func addCustomFilterListWithoutFetch(_ filter: FilterList) {
-        guard !customFilterLists.contains(where: { $0.url == filter.url }) else { return }
+        guard !filterLists.contains(where: { $0.url == filter.url }) else { return }
 
         filterLists.append(filter)
         saveFilterListsCoalesced()
@@ -340,12 +340,12 @@ extension AppFilterManager {
         )
     }
 
-    func removeCustomFilterList(_ filter: FilterList) {
-        if filter.isCustom {
+    func removeCustomFilterList(_ filter: FilterList, recordDeletion: Bool = true) {
+        if filter.isCustom && recordDeletion {
             CloudSyncManager.shared.recordDeletedCustomListURL(filter.url.absoluteString)
         }
 
-        filterLists.removeAll { $0.id == filter.id }
+        filterLists.removeAll { $0.id == filter.id || ($0.isCustom && $0.url == filter.url) }
         saveFilterListsCoalesced()
         refreshPendingChanges()
 
