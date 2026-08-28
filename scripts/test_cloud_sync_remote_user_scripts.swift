@@ -16,11 +16,40 @@ struct CloudSyncRemoteUserScriptTests {
             CloudSyncRemoteUserScriptReconciler.normalizedURL("  \(retiredTinyShield)  ").isEmpty,
             "retired regional tinyShield variants must not be restored from stale cloud payloads"
         )
+        let retiredYouTubeURLs = [
+            "https://raw.githubusercontent.com/SysAdminDoc/YoutubeAdblock/main/YoutubeAdblock.user.js",
+            "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/greasemonkey/youtube-classic.user.js",
+        ]
+        for retiredURL in retiredYouTubeURLs {
+            expect(
+                CloudSyncRemoteUserScriptReconciler.normalizedURL("  \(retiredURL)  ").isEmpty,
+                "retired YouTube userscripts must not be restored from stale cloud payloads"
+            )
+            expect(
+                CloudSyncRemoteUserScriptReconciler.canonicalURL(retiredURL) == nil,
+                "retired YouTube userscripts must not produce a restorable URL"
+            )
+        }
+        let retiredYouTubeClassicVariant =
+            "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/dist/youtube-classic.user.js"
         expect(
-            !CloudSyncRemoteUserScriptReconciler.normalizedURL(
-                "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
-            ).isEmpty,
+            CloudSyncRemoteUserScriptReconciler.normalizedURL(retiredYouTubeClassicVariant).isEmpty,
+            "YouTube Classic path variants must not be restored from stale cloud payloads"
+        )
+        expect(
+            CloudSyncRemoteUserScriptReconciler.canonicalURL(retiredYouTubeClassicVariant) == nil,
+            "YouTube Classic path variants must not produce a restorable URL"
+        )
+        let globalTinyShield =
+            "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
+        expect(
+            CloudSyncRemoteUserScriptReconciler.normalizedURL(globalTinyShield) == globalTinyShield,
             "the supported global tinyShield userscript must remain syncable"
+        )
+        let liveScript = "https://example.com/live.user.js"
+        expect(
+            CloudSyncRemoteUserScriptReconciler.normalizedURL("  \(liveScript)  ") == liveScript,
+            "live non-retired userscripts must still normalize"
         )
         let migratedURLs = [
             "https://bundled.wblock.invalid/tube-cleaner.user.js":
