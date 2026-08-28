@@ -458,6 +458,143 @@ try {
   console.error(error);
 }
 
+// --- Tracking URL cleanup non-reload verification ---
+// Removing tracking parameters in-place must use history.replaceState and must
+// never invoke location.replace / location.reload to avoid infinite reload loops.
+const runTrackingCleanupScenario = async ({ href, cleanUrlResponse, runtimeError = false }) => {
+  let replaceStateCalls = [];
+  let locationReplaceCalls = [];
+  let locationReloadCalls = [];
+  const url = new URL(href);
+  const locationScenario = {
+    href,
+    hostname: url.hostname,
+    pathname: url.pathname,
+    search: url.search,
+    replace: target => { locationReplaceCalls.push(target); },
+    reload: () => { locationReloadCalls.push(true); }
+  };
+  const historyScenario = {
+    state: { key: "initial" },
+    replaceState: (state, title, url) => {
+      replaceStateCalls.push({ state, title, url });
+    }
+  };
+  const documentScenario = {
+    readyState: "loading",
+    title: "Example Page",
+    documentElement: {
+      appendChild() {},
+      removeChild() {}
+    },
+    addEventListener() {},
+    removeEventListener() {},
+    createElement: () => ({
+      setAttribute() {},
+      appendChild() {},
+      remove() {},
+      parentNode: null,
+      style: {}
+    }),
+    createTextNode: text => ({ text }),
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    getElementsByTagName: () => [],
+    head: null
+  };
+  const windowScenario = {
+    location: locationScenario,
+    history: historyScenario,
+    frameElement: null,
+    addEventListener() {},
+    removeEventListener() {},
+    dispatchEvent: () => true
+  };
+  windowScenario.top = windowScenario;
+
+  const saved = {};
+  const globals = {
+    document: documentScenario,
+    window: windowScenario,
+    location: locationScenario,
+    history: historyScenario,
+    Node: class Node {},
+    Element: class Element {},
+    HTMLElement: class HTMLElement {},
+    MutationObserver: class { observe() {} disconnect() {} },
+    getComputedStyle: () => ({}),
+    navigator: { userAgent: "test" },
+    Event: class Event { constructor(name) { this.name = name; } },
+    CustomEvent: class CustomEvent { constructor(name) { this.name = name; } },
+    CSS: { supports: () => false },
+    requestAnimationFrame: cb => setTimeout(cb, 0)
+  };
+  for (const [key, value] of Object.entries(globals)) {
+    saved[key] = Object.getOwnPropertyDescriptor(globalThis, key);
+    Object.defineProperty(globalThis, key, { value, configurable: true, writable: true });
+  }
+
+  try {
+    const browserScenario = {
+      runtime: {
+        sendMessage(message) {
+          if (message && message.type === "InitContentScript") {
+            return Promise.resolve({ type: "InitContentScript", disabled: false, paused: false, payload: { css: [], extendedCss: [], scriptlets: [], js: [] } });
+          }
+          if (message && message.action === "wblock:getCleanURL") {
+            if (runtimeError) {
+              return Promise.reject(new Error("runtime disconnected"));
+            }
+            return Promise.resolve({ ok: true, cleanUrl: cleanUrlResponse });
+          }
+          return Promise.resolve({});
+        },
+        onMessage: { addListener() {} }
+      }
+    };
+    const run = new Function("browser", "window", "self", source);
+    run(browserScenario, windowScenario, windowScenario);
+    await sleep(20);
+    return { replaceStateCalls, locationReplaceCalls, locationReloadCalls };
+  } finally {
+    for (const [key, descriptor] of Object.entries(saved)) {
+      if (descriptor === undefined) delete globalThis[key];
+      else Object.defineProperty(globalThis, key, descriptor);
+    }
+  }
+};
+
+try {
+  const cleanUrlResult = await runTrackingCleanupScenario({
+    href: "https://example.com/page?utm_source=newsletter&utm_medium=email",
+    cleanUrlResponse: "https://example.com/page"
+  });
+  check(
+    "URL tracking cleanup uses history.replaceState",
+    cleanUrlResult.replaceStateCalls.length === 1 && cleanUrlResult.replaceStateCalls[0].url === "https://example.com/page"
+  );
+  check(
+    "URL tracking cleanup never triggers location.replace or reload",
+    cleanUrlResult.locationReplaceCalls.length === 0 && cleanUrlResult.locationReloadCalls.length === 0
+  );
+
+  const fallbackResult = await runTrackingCleanupScenario({
+    href: "https://example.com/landing?fbclid=IwAR123456&gclid=789",
+    runtimeError: true
+  });
+  check(
+    "URL tracking fallback cleanup uses history.replaceState",
+    fallbackResult.replaceStateCalls.length === 1 && fallbackResult.replaceStateCalls[0].url === "https://example.com/landing"
+  );
+  check(
+    "URL tracking fallback cleanup never triggers location.replace or reload",
+    fallbackResult.locationReplaceCalls.length === 0 && fallbackResult.locationReloadCalls.length === 0
+  );
+} catch (error) {
+  check("tracking cleanup non-reload checks ran without throwing", false);
+  console.error(error);
+}
+
 if (failures > 0) {
   console.error(`\n${failures} content scriptlet injection check(s) failed`);
   process.exit(1);

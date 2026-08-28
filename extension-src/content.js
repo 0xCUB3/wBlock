@@ -6250,10 +6250,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   // Best-effort top-frame URL cleanup fallback for Safari builds where
   // declarativeNetRequest redirect/queryTransform does not run for main_frame
   // requests. The background page uses the same generated $removeparam rules as
-  // the DNR installer, then this content script performs a same-page replace as
-  // early as Safari allows content scripts to run.
+  // the DNR installer, then this content script strips tracking parameters in-place
+  // via history.replaceState as early as Safari allows content scripts to run
+  // without triggering a document reload or navigation loop.
   //
-  // Skipped on whitelisted sites: the URL replace is detectable by anti-adblock
+  // Skipped on whitelisted sites: URL modification is detectable by anti-adblock
   // walls even when content blockers are off (issue #445).
   (async () => {
     try {
@@ -6286,7 +6287,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (cleanUrl && cleanUrl !== window.location.href) {
         if (cloudflareChallengeContext) return;
         console.info("[wBlock] Removing tracking parameters:", window.location.href, "→", cleanUrl);
-        window.location.replace(cleanUrl);
+        if (typeof history !== "undefined" && typeof history.replaceState === "function") {
+          history.replaceState(history.state, "", cleanUrl);
+        }
       }
     } catch (error) {
       try {
@@ -6301,7 +6304,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (changed && fallbackUrl.href !== window.location.href) {
           if (cloudflareChallengeContext) return;
           console.info("[wBlock] Removing common tracking parameters:", window.location.href, "→", fallbackUrl.href);
-          window.location.replace(fallbackUrl.href);
+          if (typeof history !== "undefined" && typeof history.replaceState === "function") {
+            history.replaceState(history.state, "", fallbackUrl.href);
+          }
         }
       } catch (_fallbackError) {
         console.warn("[wBlock] URL cleanup fallback failed:", error);
