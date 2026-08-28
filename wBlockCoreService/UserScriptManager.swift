@@ -2364,6 +2364,11 @@ public class UserScriptManager: ObservableObject {
         var mergedScripts = userScripts
 
         for restoredScript in restoredScripts {
+            guard restoredScript.url?.absoluteString != BuiltInUserScripts.retiredYouTubeAdBlockURL,
+                  !isRetiredYouTubeClassicScript(restoredScript) else {
+                continue
+            }
+
             let existingIndex = UserScriptRestoreMatcher.matchingIndex(
                 for: restoredScript,
                 in: mergedScripts
@@ -2386,6 +2391,7 @@ public class UserScriptManager: ObservableObject {
         }
 
         userScripts = mergedScripts
+        await removeRetiredYouTubeAdBlockIfNeeded()
         await persistUserScriptsNow(authoritative: true)
         // Flush the restored scripts to disk right away instead of relying on the
         // debounced save. The steps that run next (setUserScriptDisabledHosts) and

@@ -8,6 +8,23 @@ let onboardingSource = try String(contentsOfFile: "wBlock/OnboardingView.swift",
 let tinyShieldURL = "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
 let tinyShieldDescription = "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them."
 
+guard let restoreStart = source.range(of: "public func restoreUserScriptsFromBackup"),
+      let restoreEnd = source.range(
+        of: "// MARK: - Public Methods",
+        range: restoreStart.upperBound..<source.endIndex
+      ) else {
+    fputs("FAIL: restoreUserScriptsFromBackup source not found\n", stderr)
+    exit(1)
+}
+let restoreBlock = String(source[restoreStart.lowerBound..<restoreEnd.lowerBound])
+
+guard restoreBlock.contains("removeRetiredYouTubeAdBlockIfNeeded()")
+    && restoreBlock.contains("isRetiredYouTubeClassicScript")
+    && restoreBlock.contains("BuiltInUserScripts.retiredYouTubeAdBlockURL") else {
+    fputs("FAIL: backup restore must filter and remove retired YouTube userscripts\n", stderr)
+    exit(1)
+}
+
 guard !source.contains("name: \"YouTube Ad Blocking\"")
     && source.contains("removeRetiredYouTubeAdBlockIfNeeded()") else {
     fputs("FAIL: unverified YouTube ad blocking userscript should be retired\n", stderr)
