@@ -30,7 +30,7 @@
 "2." = "2.";
 "7d" = "7g";
 "Takes effect when No Autoplay is on." = "Otomatik Oynatma Kapalı olduğunda geçerli olur.";
-"Autoplay on" = "Otomatik Oynatma açık";
+"Autoplay on" = "Otomatik oynatma açık";
 "Allow autoplay on this site" = "Bu sitede otomatik oynatmaya izin ver";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) girdi";
 "\\(index + 1)." = "\\(index + 1).";
@@ -338,7 +338,7 @@
 "Failed saving user list" = "Kullanıcı listesi kaydedilemedi";
 "Failed saving user list edits" = "Kullanıcı listesi düzenlemeleri kaydedilemedi";
 "Failed to access shared storage." = "Paylaşılan depolama alanına erişilemedi.";
-"Couldn't download this filter list. It was kept as not downloaded." = "Bu filtre listesi indirilemedi. İndirilmedi olarak tutuldu.";
+"Couldn't download this filter list. It was kept as not downloaded." = "Bu filtre listesi indirilemediği için indirilenler arasına eklenmedi.";
 "Failed to add userscript from URL" = "Kullanıcı betiği, URL'den eklenemedi";
 "Failed to clear extensions and advanced engine" = "Genişletmeler ve gelişmiş motor temizlenemedi";
 "Failed to clear filter engine during onboarding reset" = "Kurulum sıfırlaması sırasında filtreleme motoru temizlenemedi";
@@ -460,7 +460,7 @@
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "Tümünü tut";
 "Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "wBlock çalışmadığında da filtrelerin güncellenmeye devam etmesini sağlar. Kalıcı bir başlangıç öğesi oluşmasını istemiyorsanız bu seçeneği kapatın; bu durumda güncellemeler yalnızca wBlock açıkken çalışır.";
-"Keeps the app in portrait even if the device is rotated." = "Cihaz döndürülse bile uygulamayı dikey tutar.";
+"Keeps the app in portrait even if the device is rotated." = "Cihaz döndürülse de uygulamanın dikey kalmasını sağlar.";
 "Languages: %@" = "Dil: %@";
 "Languages: \\(languageSummary)" = "Dil: \\(languageSummary)";
 "Large file - scrolling may be slow" = "Büyük dosya - kaydırma işlemi yavaş olabilir";
@@ -478,7 +478,7 @@
 "Loading script metadata…" = "Betik meta verileri yükleniyor…";
 "Loading userscripts…" = "Kullanıcı betikleri güncelleniyor…";
 "Local Import" = "Yerel içe aktarma";
-"Lock Portrait Orientation" = "Dikey yönü kilitle";
+"Lock Portrait Orientation" = "Ekran Döndürmeyi Kilitle";
 "Logs" = "Günlükler";
 "Logs cleared" = "Günlükler temizlendi";
 "Logs will appear here as the app runs" = "Uygulama çalıştıkça günlük kayıtları burada görünecektir";
@@ -767,7 +767,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "This will reset all filters, userscripts, and preferences." = "Bu işlem tüm filtreleri, kullanıcı betiklerini ve tercihleri sıfırlayacaktır.";
 "Timed out" = "Zaman aşımı";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield, Ad-Shield tarafından eşleşen sitelerde yeniden eklenen reklamları engellemeye yardımcı olur.";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Filtre listeleri gizledikten sonra Ad-Shield’in eşleşen sitelerde yeniden eklediği reklamları engeller.";
+"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Filtrelerin gizlediği ancak Ad-Shield'ın sitelere geri getirdiği reklamları engeller.";
 "Title" = "Başlık";
 "Title (optional)" = "Başlık (isteğe bağlı)";
 "Title is required." = "Başlık gerekli.";
@@ -865,7 +865,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Organizes userscripts and userstyles added to wBlock." = "wBlock'a eklenen kullanıcı betiklerini ve kullanıcı stillerini düzenler.";
 "Provides newer rules and fixes that are still being tested." = "Henüz test aşamasında olan yeni kuralları ve düzeltmeleri sunar.";
 "Recommended Filters" = "Önerilen Filtreler";
-"Recommended Scripts" = "Önerilen betikler";
+"Recommended Scripts" = "Önerilen Betikler";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Çerez bildirimlerini, açılır pencereleri, afişleri ve dikkat dağıtan diğer öğeleri kaldırır.";
 "Reset to Default" = "Varsayılana sıfırla";
 "Shows all filter lists across every category." = "Tüm kategorilerdeki bütün filtre listelerini gösterir.";
@@ -908,7 +908,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
 "AdGuard Allowlist" = "AdGuard İzin Listesi";
 "Blocks tracking pixels and other mail tracking techniques." = "İzleme öğelerini ve diğer e-posta izleme yöntemlerini engeller.";
-"Blocks public websites from reaching local network addresses and router admin pages. Can break some local apps." = "Herkese açık sitelerin yerel ağ adreslerine ve yönlendirici yönetim sayfalarına erişmesini engeller. Bazı yerel uygulamaları bozabilir.";
+"Blocks public websites from reaching local network addresses and router admin pages. Can break some local apps." = "Sitelerin yerel ağ adreslerine ve yönlendirici yönetici sayfalarına erişmesini engeller. Bazı yerel uygulamaların çalışmasını bozabilir.";
 "Allows sites and resources that should not be blocked." = "Engellenmemesi gereken sitelere ve kaynaklara izin verir.";
 
 
