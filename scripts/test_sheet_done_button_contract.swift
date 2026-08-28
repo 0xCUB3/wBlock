@@ -47,4 +47,6 @@ require(occurrenceCount("SheetDoneButton", in: userscripts) == 7, "all userscrip
 require(occurrenceCount("SheetDoneButton", in: userscriptCategoryInfo) == 1, "userscript category detail popover must use the shared button")
 require(occurrenceCount("usesAutomaticStyle: true", in: userscripts) == 3, "iOS toolbar Done buttons must use native styling exactly once")
 require(!content.contains("Image(systemName: \"xmark.circle.fill\")"), "capacity popover must not use a custom xmark close control")
+require(content.contains("ViewThatFits(in: .vertical)"), "capacity sheet must only scroll when its content overflows")
+require(!content.contains("ScrollView(.vertical) {"), "capacity sheet must not show an indicator detached from its 380pt column")
 print("PASS")

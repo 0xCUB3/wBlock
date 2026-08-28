@@ -2288,16 +2288,41 @@ struct RuleCapacityPopoverView: View {
             .padding(16)
             .frame(width: 340)
         #else
-        ScrollView(.vertical) {
-            capacityContent
-                .padding(20)
-                .frame(maxWidth: 380, alignment: .leading)
-                .frame(maxWidth: .infinity)
-        }
-        .scrollBounceBasedOnSizeCompat()
-        .largeSheetPresentationCompat()
+        capacitySheetContent
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .largeSheetPresentationCompat()
         #endif
     }
+
+    #if !os(macOS)
+    private var capacityColumn: some View {
+        capacityContent
+            .padding(20)
+            .frame(maxWidth: 380, alignment: .leading)
+            .frame(maxWidth: .infinity)
+    }
+
+    /// A landscape sheet is far wider than the 380pt column, so an indicator
+    /// would sit detached from the content: scroll only when it cannot fit.
+    @ViewBuilder
+    private var capacitySheetContent: some View {
+        if #available(iOS 16.0, *) {
+            ViewThatFits(in: .vertical) {
+                capacityColumn
+                capacityScrollView
+            }
+        } else {
+            capacityScrollView
+        }
+    }
+
+    private var capacityScrollView: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            capacityColumn
+        }
+        .scrollBounceBasedOnSizeCompat()
+    }
+    #endif
 
     private var capacityContent: some View {
         VStack(alignment: .leading, spacing: 14) {
