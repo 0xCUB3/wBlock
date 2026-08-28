@@ -338,7 +338,7 @@
 "Failed saving user list" = "Kullanıcı listesi kaydedilemedi";
 "Failed saving user list edits" = "Kullanıcı listesi düzenlemeleri kaydedilemedi";
 "Failed to access shared storage." = "Paylaşılan depolama alanına erişilemedi.";
-"Failed to add filter. The URL may be invalid or the content is not a valid filter list." = "Filtre eklenemedi. URL geçersiz olabilir veya içerik geçerli bir filtre listesi değildir.";
+"Couldn't download this filter list. It was kept as not downloaded." = "Bu filtre listesi indirilemedi. İndirilmedi olarak tutuldu.";
 "Failed to add userscript from URL" = "Kullanıcı betiği, URL'den eklenemedi";
 "Failed to clear extensions and advanced engine" = "Genişletmeler ve gelişmiş motor temizlenemedi";
 "Failed to clear filter engine during onboarding reset" = "Kurulum sıfırlaması sırasında filtreleme motoru temizlenemedi";

@@ -133,6 +133,15 @@ struct FilterListValidationTests {
             """,
             "expected AdGuard scriptlet and CSS injection rules to be accepted"
         )
+        expectValidContent(
+            """
+            ! Title: YouTube
+            www.youtube.com##yt-tab-shape:has-text(/^(Shorts|ショート)$/i)
+            www.youtube.com##ytd-guide-entry-renderer:has(a[href*="/shorts"])
+            m.youtube.com##ytm-pivot-bar-item-renderer:has(a[href*="/shorts"])
+            """,
+            "expected cosmetic-only YouTube gist lists to be accepted"
+        )
         expectInvalidContent(
             """
             // ==UserScript==

@@ -26,6 +26,18 @@ enum CloudSyncCustomFilterReconciler {
         )
     }
 
+    /// A tombstone must not delete a custom list that appeared after the
+    /// snapshot used to merge that tombstone. That is a local add in flight.
+    static func tombstonedURLsToDelete(
+        tombstonedURLs: Set<String>,
+        snapshotCustomURLs: Set<String>,
+        liveCustomURLs: Set<String>
+    ) -> Set<String> {
+        let addedSinceSnapshot = normalizedURLs(liveCustomURLs)
+            .subtracting(normalizedURLs(snapshotCustomURLs))
+        return normalizedURLs(tombstonedURLs).subtracting(addedSinceSnapshot)
+    }
+
     static func deletedURLsToClearDuringReconciliation(
         existingDeletedURLMarkers: [String: TimeInterval],
         remoteCustomURLs: Set<String>,

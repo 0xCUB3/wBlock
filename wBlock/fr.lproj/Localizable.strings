@@ -338,7 +338,7 @@
 "Failed saving user list" = "Échec de l'enregistrement de la liste utilisateur";
 "Failed saving user list edits" = "Échec de l'enregistrement des modifications de la liste utilisateur";
 "Failed to access shared storage." = "Échec de l'accès au stockage partagé.";
-"Failed to add filter. The URL may be invalid or the content is not a valid filter list." = "Échec de l'ajout du filtre. L'URL n'est peut-être pas valide ou le contenu n'est pas une liste de filtres valide.";
+"Couldn't download this filter list. It was kept as not downloaded." = "Impossible de télécharger cette liste de filtres. Elle a été conservée comme non téléchargée.";
 "Failed to add userscript from URL" = "Échec de l'ajout du script utilisateur depuis une URL";
 "Failed to clear extensions and advanced engine" = "Échec de l'effacement des extensions et du moteur avancé";
 "Failed to clear filter engine during onboarding reset" = "Échec de l'effacement du moteur de filtres lors de la réinitialisation de la configuration";

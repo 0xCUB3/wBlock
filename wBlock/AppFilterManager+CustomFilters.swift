@@ -205,11 +205,15 @@ extension AppFilterManager {
                     await ConcurrentLogManager.shared.error(
                         .filterUpdate, LocalizedStrings.text("Failed to download custom filter"),
                         metadata: ["filter": newFilterToAdd.name])
+                    // Keep the list. Auto-removing it made the add sheet say
+                    // "already added" while the row was still in memory, then
+                    // the list vanished. Apply retries selected lists that
+                    // have no local file.
                     await MainActor.run {
-                        removeCustomFilterList(newFilterToAdd, recordDeletion: false)
+                        self.refreshPendingChanges()
                         self.statusDescription = LocalizedStrings.text(
-                            "Failed to add filter. The URL may be invalid or the content is not a valid filter list.",
-                            comment: "Custom filter add failure"
+                            "Couldn't download this filter list. It was kept as not downloaded.",
+                            comment: "Custom filter download failure; list is retained"
                         )
                         self.hasError = true
                     }

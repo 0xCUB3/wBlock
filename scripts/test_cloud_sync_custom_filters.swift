@@ -93,6 +93,26 @@ struct CloudSyncCustomFilterTests {
             "a remote custom filter with no usable payload timestamp should not clear a delete marker"
         )
 
+        let addedDuringSync = CloudSyncCustomFilterReconciler.tombstonedURLsToDelete(
+            tombstonedURLs: ["https://example.com/filter.txt"],
+            snapshotCustomURLs: [],
+            liveCustomURLs: ["https://example.com/filter.txt"]
+        )
+        expect(
+            addedDuringSync.isEmpty,
+            "a custom filter added after the sync snapshot must not be deleted by a stale tombstone"
+        )
+
+        let presentAtSnapshot = CloudSyncCustomFilterReconciler.tombstonedURLsToDelete(
+            tombstonedURLs: ["https://example.com/filter.txt"],
+            snapshotCustomURLs: ["https://example.com/filter.txt"],
+            liveCustomURLs: ["https://example.com/filter.txt"]
+        )
+        expect(
+            presentAtSnapshot == ["https://example.com/filter.txt"],
+            "a tombstone still removes a custom filter that was already present at snapshot time"
+        )
+
         print("PASS")
     }
 }

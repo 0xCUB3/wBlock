@@ -338,7 +338,7 @@
 "Failed saving user list" = "ユーザーリストの保存に失敗しました";
 "Failed saving user list edits" = "ユーザーリストの編集内容の保存に失敗しました";
 "Failed to access shared storage." = "共有ストレージへのアクセスに失敗しました。";
-"Failed to add filter. The URL may be invalid or the content is not a valid filter list." = "フィルターの追加に失敗しました。 URL が無効であるか、コンテンツが有効なフィルタ リストではない可能性があります。";
+"Couldn't download this filter list. It was kept as not downloaded." = "このフィルターリストをダウンロードできませんでした。未ダウンロードのまま保存されています。";
 "Failed to add userscript from URL" = "URL からのユーザースクリプトの追加に失敗しました";
 "Failed to clear extensions and advanced engine" = "拡張機能と高度なエンジンのクリアに失敗しました";
 "Failed to clear filter engine during onboarding reset" = "オンボーディングリセット中にフィルターエンジンのクリアに失敗しました";

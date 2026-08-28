@@ -338,7 +338,7 @@
 "Failed saving user list" = "Αποτυχία αποθήκευσης λίστας χρήστη";
 "Failed saving user list edits" = "Αποτυχία αποθήκευσης επεξεργασιών λίστας χρήστη";
 "Failed to access shared storage." = "Αποτυχία πρόσβασης σε κοινόχρηστο χώρο αποθήκευσης.";
-"Failed to add filter. The URL may be invalid or the content is not a valid filter list." = "Αποτυχία προσθήκης φίλτρου. Η διεύθυνση URL μπορεί να μην είναι έγκυρη ή το περιεχόμενο δεν είναι έγκυρη λίστα φίλτρων.";
+"Couldn't download this filter list. It was kept as not downloaded." = "Δεν ήταν δυνατή η λήψη αυτής της λίστας φίλτρων. Διατηρήθηκε ως μη ληφθείσα.";
 "Failed to add userscript from URL" = "Αποτυχία προσθήκης σεναρίου χρήστη από URL";
 "Failed to clear extensions and advanced engine" = "Αποτυχία εκκαθάρισης επεκτάσεων και προηγμένης μηχανής";
 "Failed to clear filter engine during onboarding reset" = "Αποτυχία εκκαθάρισης μηχανής φίλτρων κατά την επαναφορά ρύθμισης";

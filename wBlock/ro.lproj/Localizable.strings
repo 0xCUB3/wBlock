@@ -338,7 +338,7 @@
 "Failed saving user list" = "Salvarea listei de utilizator a eșuat";
 "Failed saving user list edits" = "Salvarea modificărilor din lista de utilizator a eșuat";
 "Failed to access shared storage." = "Nu s-a putut accesa spațiul de stocare partajat.";
-"Failed to add filter. The URL may be invalid or the content is not a valid filter list." = "Nu s-a putut adăuga filtrul. Adresa URL poate fi nevalidă sau conținutul nu este o listă de filtre validă.";
+"Couldn't download this filter list. It was kept as not downloaded." = "Nu s-a putut descărca această listă de filtre. A fost păstrată ca nedescărcată.";
 "Failed to add userscript from URL" = "Adăugarea scriptului utilizator din URL a eșuat";
 "Failed to clear extensions and advanced engine" = "Ștergerea extensiilor și a motorului avansat a eșuat";
 "Failed to clear filter engine during onboarding reset" = "Ștergerea motorului de filtre la resetarea configurării inițiale a eșuat";

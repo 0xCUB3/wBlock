@@ -338,7 +338,7 @@
 "Failed saving user list" = "تعذّر حفظ قائمة المستخدم";
 "Failed saving user list edits" = "تعذّر حفظ تعديلات قائمة المستخدم";
 "Failed to access shared storage." = "فشل الوصول إلى مساحة التخزين المشتركة.";
-"Failed to add filter. The URL may be invalid or the content is not a valid filter list." = "فشلت إضافة عامل التصفية. قد يكون عنوان URL غير صالح أو أن المحتوى ليس قائمة عوامل تصفية صالحة.";
+"Couldn't download this filter list. It was kept as not downloaded." = "تعذر تنزيل قائمة التصفية هذه. تم الإبقاء عليها كغير مُنزَّلة.";
 "Failed to add userscript from URL" = "تعذّرت إضافة البرنامج النصي للمستخدم من الرابط";
 "Failed to clear extensions and advanced engine" = "تعذّر مسح الإضافات والمحرك المتقدم";
 "Failed to clear filter engine during onboarding reset" = "تعذّر مسح محرك الفلاتر أثناء إعادة ضبط الإعداد";

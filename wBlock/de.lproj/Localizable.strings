@@ -338,7 +338,7 @@
 "Failed saving user list" = "Speichern der Benutzerliste fehlgeschlagen";
 "Failed saving user list edits" = "Speichern der Benutzerlisten-Bearbeitungen fehlgeschlagen";
 "Failed to access shared storage." = "Zugriff auf den freigegebenen Speicher fehlgeschlagen.";
-"Failed to add filter. The URL may be invalid or the content is not a valid filter list." = "Filter konnte nicht hinzugefügt werden. Die URL ist möglicherweise ungültig oder der Inhalt ist keine gültige Filterliste.";
+"Couldn't download this filter list. It was kept as not downloaded." = "Diese Filterliste konnte nicht heruntergeladen werden. Sie wurde als nicht heruntergeladen behalten.";
 "Failed to add userscript from URL" = "Hinzufügen des Userskripts aus URL fehlgeschlagen";
 "Failed to clear extensions and advanced engine" = "Löschen der Erweiterungen und der erweiterten Engine fehlgeschlagen";
 "Failed to clear filter engine during onboarding reset" = "Löschen der Filter-Engine beim Zurücksetzen der Einrichtung fehlgeschlagen";

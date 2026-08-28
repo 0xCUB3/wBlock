@@ -11,12 +11,23 @@ func require(_ text: String, _ needle: String, _ message: String) {
         exit(1)
     }
 }
+func forbid(_ text: String, _ needle: String, _ message: String) {
+    guard !text.contains(needle) else {
+        fputs("FAIL: \(message)\nPresent: \(needle)\n", stderr)
+        exit(1)
+    }
+}
 
 let customFiltersSource = try source("wBlock/AppFilterManager+CustomFilters.swift")
+forbid(
+    customFiltersSource,
+    "removeCustomFilterList(newFilterToAdd",
+    "Failed custom filter download must keep the list so it cannot vanish after the add sheet reports it as already added"
+)
 require(
     customFiltersSource,
-    "removeCustomFilterList(newFilterToAdd, recordDeletion: false)",
-    "Failed custom filter download must remove without poisoning CloudSync deletion tombstones"
+    "Couldn't download this filter list. It was kept as not downloaded.",
+    "Failed custom filter download must tell the user the list was kept"
 )
 require(
     customFiltersSource,

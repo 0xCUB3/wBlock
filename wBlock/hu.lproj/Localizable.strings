@@ -338,7 +338,7 @@
 "Failed saving user list" = "A felhasználói lista mentése sikertelen";
 "Failed saving user list edits" = "A felhasználólista szerkesztéseinek mentése sikertelen";
 "Failed to access shared storage." = "Nem sikerült elérni a megosztott tárhelyet.";
-"Failed to add filter. The URL may be invalid or the content is not a valid filter list." = "Nem sikerült hozzáadni a szűrőt. Lehetséges, hogy az URL érvénytelen, vagy a tartalom nem érvényes szűrőlista.";
+"Couldn't download this filter list. It was kept as not downloaded." = "Nem sikerült letölteni ezt a szűrőlistát. Letöltetlenként megmaradt.";
 "Failed to add userscript from URL" = "A felhasználói szkript URL-ből való hozzáadása sikertelen";
 "Failed to clear extensions and advanced engine" = "A kiterjesztések és a speciális motor törlése sikertelen";
 "Failed to clear filter engine during onboarding reset" = "A szűrőmotor törlése sikertelen a bevezetés visszaállításakor";

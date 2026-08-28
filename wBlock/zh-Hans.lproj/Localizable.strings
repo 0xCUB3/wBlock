@@ -338,7 +338,7 @@
 "Failed saving user list" = "保存用户列表失败";
 "Failed saving user list edits" = "保存用户列表编辑失败";
 "Failed to access shared storage." = "无法访问共享存储。";
-"Failed to add filter. The URL may be invalid or the content is not a valid filter list." = "添加过滤器失败。 URL 可能无效或内容不是有效的过滤器列表。";
+"Couldn't download this filter list. It was kept as not downloaded." = "无法下载此过滤器列表。已保留为未下载。";
 "Failed to add userscript from URL" = "从 URL 添加用户脚本失败";
 "Failed to clear extensions and advanced engine" = "清除扩展和高级引擎失败";
 "Failed to clear filter engine during onboarding reset" = "引导重置期间清除过滤器引擎失败";

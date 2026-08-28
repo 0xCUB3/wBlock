@@ -338,7 +338,7 @@
 "Failed saving user list" = "Failed saving user list";
 "Failed saving user list edits" = "Failed saving user list edits";
 "Failed to access shared storage." = "Failed to access shared storage.";
-"Failed to add filter. The URL may be invalid or the content is not a valid filter list." = "Failed to add filter. The URL may be invalid or the content is not a valid filter list.";
+"Couldn't download this filter list. It was kept as not downloaded." = "Couldn't download this filter list. It was kept as not downloaded.";
 "Failed to add userscript from URL" = "Failed to add userscript from URL";
 "Failed to clear extensions and advanced engine" = "Failed to clear extensions and advanced engine";
 "Failed to clear filter engine during onboarding reset" = "Failed to clear filter engine during onboarding reset";

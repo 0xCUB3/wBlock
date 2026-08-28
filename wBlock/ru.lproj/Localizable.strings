@@ -338,7 +338,7 @@
 "Failed saving user list" = "Не удалось сохранить список пользователя";
 "Failed saving user list edits" = "Не удалось сохранить изменения списка пользователя";
 "Failed to access shared storage." = "Не удалось получить доступ к общему хранилищу.";
-"Failed to add filter. The URL may be invalid or the content is not a valid filter list." = "Не удалось добавить фильтр. Возможно, URL-адрес недействителен или содержимое не входит в список допустимых фильтров.";
+"Couldn't download this filter list. It was kept as not downloaded." = "Не удалось скачать этот список фильтров. Он сохранён как не скачанный.";
 "Failed to add userscript from URL" = "Не удалось добавить пользовательский скрипт из URL";
 "Failed to clear extensions and advanced engine" = "Не удалось очистить расширения и продвинутый движок";
 "Failed to clear filter engine during onboarding reset" = "Не удалось очистить движок фильтров при сбросе онбординга";

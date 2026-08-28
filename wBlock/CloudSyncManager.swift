@@ -977,7 +977,14 @@ final class CloudSyncManager: ObservableObject {
 
             // Remove remotely deleted custom lists only when that URL was unchanged locally.
             if !deletedCustomURLs.isEmpty {
-                let urlsToDelete = deletedCustomURLs.subtracting(locallyChangedCustomURLs)
+                let liveCustomURLs = Set(
+                    filterManager.filterLists.filter(\.isCustom).map(\.url.absoluteString)
+                )
+                let urlsToDelete = CloudSyncCustomFilterReconciler.tombstonedURLsToDelete(
+                    tombstonedURLs: deletedCustomURLs.subtracting(locallyChangedCustomURLs),
+                    snapshotCustomURLs: Set(currentCustomByURL.keys),
+                    liveCustomURLs: liveCustomURLs
+                )
                 let removed = filterManager.filterLists.filter { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
                 if !removed.isEmpty {
                     for list in removed {
@@ -1590,7 +1597,11 @@ final class CloudSyncManager: ObservableObject {
         let deletedCustomURLs = deletedCustomURLSet()
         if !deletedCustomURLs.isEmpty {
             if let filterManager {
-                let urlsToDelete = deletedCustomURLs
+                let urlsToDelete = CloudSyncCustomFilterReconciler.tombstonedURLsToDelete(
+                    tombstonedURLs: deletedCustomURLs,
+                    snapshotCustomURLs: localCustomURLs,
+                    liveCustomURLs: currentLocalCustomURLs()
+                )
                 let removed = filterManager.filterLists.filter { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
                 if !removed.isEmpty {
                     for list in removed {
@@ -1602,10 +1613,16 @@ final class CloudSyncManager: ObservableObject {
                 }
             } else {
                 var storedLists = dataManager.getFilterLists()
+                let liveCustomURLs = Set(storedLists.filter(\.isCustom).map(\.url.absoluteString))
+                let urlsToDelete = CloudSyncCustomFilterReconciler.tombstonedURLsToDelete(
+                    tombstonedURLs: deletedCustomURLs,
+                    snapshotCustomURLs: localCustomURLs,
+                    liveCustomURLs: liveCustomURLs
+                )
                 let beforeCount = storedLists.count
-                storedLists.removeAll { $0.isCustom && deletedCustomURLs.contains($0.url.absoluteString) }
+                storedLists.removeAll { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
                 if storedLists.count != beforeCount {
-                    for url in deletedCustomURLs {
+                    for url in urlsToDelete {
                         Self.deleteInlineUserListContentIfNeeded(urlString: url)
                     }
                     await dataManager.updateFilterLists(storedLists)

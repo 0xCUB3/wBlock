@@ -338,7 +338,7 @@
 "Failed saving user list" = "Falha ao salvar a lista de usuário";
 "Failed saving user list edits" = "Falha ao salvar as edições da lista de usuário";
 "Failed to access shared storage." = "Falha ao acessar o armazenamento compartilhado.";
-"Failed to add filter. The URL may be invalid or the content is not a valid filter list." = "Falha ao adicionar filtro. O URL pode ser inválido ou o conteúdo não é uma lista de filtros válida.";
+"Couldn't download this filter list. It was kept as not downloaded." = "Não foi possível baixar esta lista de filtros. Ela foi mantida como não baixada.";
 "Failed to add userscript from URL" = "Falha ao adicionar o script de usuário da URL";
 "Failed to clear extensions and advanced engine" = "Falha ao limpar as extensões e o motor avançado";
 "Failed to clear filter engine during onboarding reset" = "Falha ao limpar o motor de filtros durante a redefinição da configuração inicial";

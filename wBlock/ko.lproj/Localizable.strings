@@ -338,7 +338,7 @@
 "Failed saving user list" = "사용자 목록 저장에 실패했습니다";
 "Failed saving user list edits" = "사용자 목록 편집 내용 저장에 실패했습니다";
 "Failed to access shared storage." = "공유 저장장치에 액세스하지 못했습니다.";
-"Failed to add filter. The URL may be invalid or the content is not a valid filter list." = "필터를 추가하지 못했습니다. URL이 유효하지 않거나 콘텐츠가 유효한 필터 목록이 아닙니다.";
+"Couldn't download this filter list. It was kept as not downloaded." = "이 필터 목록을 다운로드하지 못했습니다. 다운로드되지 않은 상태로 유지됩니다.";
 "Failed to add userscript from URL" = "URL에서 유저스크립트를 추가하지 못했습니다";
 "Failed to clear extensions and advanced engine" = "확장과 고급 엔진을 지우지 못했습니다";
 "Failed to clear filter engine during onboarding reset" = "온보딩 재설정 중 필터 엔진을 지우지 못했습니다";
