@@ -809,6 +809,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "URL Patterns (\\(script.matches.count))" = "URL kalıpları (\\(script.matches.count))";
 "URL requirements" = "URL gereksinimleri";
 "URLs" = "URL'ler";
+"Use existing iCloud setup?" = "Mevcut iCloud kurulumu kullanılsın mı?";
 "Use iCloud Setup" = "iCloud kurulumunu kullan";
 "User List" = "Kullanıcı listesi";
 "User list added. Apply changes to enable it." = "Kullanıcı listesi eklendi. Etkinleştirmek için değişiklikleri uygulayın.";

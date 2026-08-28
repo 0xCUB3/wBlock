@@ -809,6 +809,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "URL Patterns (\\(script.matches.count))" = "Modèles d'URL (\\(script.matches.count))";
 "URL requirements" = "Exigences d'URL";
 "URLs" = "URL";
+"Use existing iCloud setup?" = "Utiliser la configuration iCloud existante ?";
 "Use iCloud Setup" = "Utiliser la configuration iCloud";
 "User List" = "Liste utilisateur";
 "User list added. Apply changes to enable it." = "Liste d'utilisateurs ajoutée. Appliquez les modifications pour l’activer.";

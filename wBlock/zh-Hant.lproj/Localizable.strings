@@ -812,6 +812,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "URL Patterns (\\(script.matches.count))" = "URL 模式 (\\(script.matches.count))";
 "URL requirements" = "URL 要求";
 "URLs" = "URL";
+"Use existing iCloud setup?" = "使用現有的 iCloud 設定？";
 "Use iCloud Setup" = "使用 iCloud 設定";
 "User List" = "使用者清單";
 "User list added. Apply changes to enable it." = "新增了用戶列表。應用更改以啟用它。";

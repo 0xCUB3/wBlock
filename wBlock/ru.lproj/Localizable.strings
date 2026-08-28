@@ -812,6 +812,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "URL Patterns (\\(script.matches.count))" = "Шаблоны URL (\\(script.matches.count))";
 "URL requirements" = "Требования к URL";
 "URLs" = "URL-адреса";
+"Use existing iCloud setup?" = "Использовать существующую настройку iCloud?";
 "Use iCloud Setup" = "Использовать настройку iCloud";
 "User List" = "Пользовательский список";
 "User list added. Apply changes to enable it." = "Добавлен список пользователей. Примените изменения, чтобы включить его.";

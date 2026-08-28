@@ -812,6 +812,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "URL Patterns (\\(script.matches.count))" = "URLパターン (\\(script.matches.count))";
 "URL requirements" = "URLの要件";
 "URLs" = "URL";
+"Use existing iCloud setup?" = "既存のiCloud設定を使用しますか？";
 "Use iCloud Setup" = "iCloud設定を使用";
 "User List" = "ユーザーリスト";
 "User list added. Apply changes to enable it." = "ユーザーリストを追加しました。変更を適用して有効にします。";

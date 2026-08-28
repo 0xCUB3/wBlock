@@ -812,6 +812,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "URL Patterns (\\(script.matches.count))" = "URL-Muster (\\(script.matches.count))";
 "URL requirements" = "URL-Anforderungen";
 "URLs" = "URLs";
+"Use existing iCloud setup?" = "Vorhandene iCloud-Einrichtung verwenden?";
 "Use iCloud Setup" = "iCloud-Einrichtung verwenden";
 "User List" = "Benutzerliste";
 "User list added. Apply changes to enable it." = "Benutzerliste hinzugefügt. Wenden Sie die Änderungen an, um es zu aktivieren.";

@@ -812,6 +812,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "URL Patterns (\\(script.matches.count))" = "أنماط الرابط (\\(script.matches.count))";
 "URL requirements" = "متطلبات الرابط";
 "URLs" = "عناوين URL";
+"Use existing iCloud setup?" = "استخدام إعداد iCloud الحالي؟";
 "Use iCloud Setup" = "استخدام إعداد iCloud";
 "User List" = "قائمة المستخدم";
 "User list added. Apply changes to enable it." = "تمت إضافة قائمة المستخدمين. تطبيق التغييرات لتمكينه.";

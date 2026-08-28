@@ -809,6 +809,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "URL Patterns (\\(script.matches.count))" = "URL Patterns (\\(script.matches.count))";
 "URL requirements" = "URL requirements";
 "URLs" = "URLs";
+"Use existing iCloud setup?" = "Use existing iCloud setup?";
 "Use iCloud Setup" = "Use iCloud Setup";
 "User List" = "User List";
 "User list added. Apply changes to enable it." = "User list added. Apply changes to enable it.";

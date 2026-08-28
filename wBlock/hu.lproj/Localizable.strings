@@ -812,6 +812,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "URL Patterns (\\(script.matches.count))" = "URL minták (\\(script.matches.count))";
 "URL requirements" = "URL követelmények";
 "URLs" = "URL-ek";
+"Use existing iCloud setup?" = "Meglévő iCloud-beállítás használata?";
 "Use iCloud Setup" = "iCloud beállítás használata";
 "User List" = "Felhasználói lista";
 "User list added. Apply changes to enable it." = "Felhasználói lista hozzáadva. Alkalmazza a módosításokat az engedélyezéséhez.";

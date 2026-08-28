@@ -809,6 +809,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "URL Patterns (\\(script.matches.count))" = "Modele URL (\\(script.matches.count))";
 "URL requirements" = "Cerințe URL";
 "URLs" = "URL-uri";
+"Use existing iCloud setup?" = "Folosești configurarea iCloud existentă?";
 "Use iCloud Setup" = "Folosește configurarea iCloud";
 "User List" = "Listă utilizator";
 "User list added. Apply changes to enable it." = "A fost adăugată lista de utilizatori. Aplicați modificări pentru a-l activa.";
