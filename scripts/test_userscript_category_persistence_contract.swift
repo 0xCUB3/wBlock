@@ -22,7 +22,13 @@ expect(cloud.contains("let category: String?"), "CloudSync category must be opti
 expect(cloud.contains("category: script.category.rawValue"), "CloudSync payload must include category")
 expect(cloud.contains("if let category = local.category")
     && cloud.contains("setUserScript(existing, category: resolvedCategory, origin: .remoteSync)"), "CloudSync apply must restore local category")
-expect(cloud.contains("remote.resolvedCategory"), "CloudSync apply must restore remote category")
+let remoteCategoryGuardPattern = #"if let category = remote\.category,\s+let resolvedCategory = FilterListCategory\(rawValue: category\) \{"#
+let remoteCategoryGuardCount = try! NSRegularExpression(pattern: remoteCategoryGuardPattern).numberOfMatches(
+    in: cloud,
+    range: NSRange(cloud.startIndex..., in: cloud)
+)
+expect(remoteCategoryGuardCount == 3, "all remote URL category applies must guard and validate remote.category")
+expect(!cloud.contains("category: remote.resolvedCategory"), "remote URL category applies must not use resolvedCategory")
 expect(cloud.contains("existing.content == local.content"), "CloudSync must compare content before skipping")
 expect(cloud.contains("setUserScript(existing, category:"), "CloudSync category changes must not be skipped")
 expect(manager.contains("updated.category = existing.category"), "remote updates must preserve category overrides")

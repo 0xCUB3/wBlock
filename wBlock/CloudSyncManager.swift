@@ -1326,7 +1326,10 @@ final class CloudSyncManager: ObservableObject {
                     localMutationRevisionAtStart: localMutationRevisionAtStart
                 )
                 await userScriptManager.setUserScript(existing, updatesAutomatically: remote.resolvedUpdatesAutomatically, origin: .remoteSync)
-                await userScriptManager.setUserScript(existing, category: remote.resolvedCategory, origin: .remoteSync)
+                if let category = remote.category,
+                   let resolvedCategory = FilterListCategory(rawValue: category) {
+                    await userScriptManager.setUserScript(existing, category: resolvedCategory, origin: .remoteSync)
+                }
             }
         }
 
@@ -1352,7 +1355,10 @@ final class CloudSyncManager: ObservableObject {
                         localMutationRevisionAtStart: localMutationRevisionAtStart
                     )
                     await userScriptManager.setUserScript(added, updatesAutomatically: remote.resolvedUpdatesAutomatically, origin: .remoteSync)
-                    await userScriptManager.setUserScript(added, category: remote.resolvedCategory, origin: .remoteSync)
+                    if let category = remote.category,
+                       let resolvedCategory = FilterListCategory(rawValue: category) {
+                        await userScriptManager.setUserScript(added, category: resolvedCategory, origin: .remoteSync)
+                    }
                 }
             }
         }
@@ -1803,7 +1809,10 @@ final class CloudSyncManager: ObservableObject {
                         origin: .remoteSync
                     )
                     await userScriptManager.setUserScript(added, updatesAutomatically: remote.resolvedUpdatesAutomatically, origin: .remoteSync)
-                    await userScriptManager.setUserScript(added, category: remote.resolvedCategory, origin: .remoteSync)
+                    if let category = remote.category,
+                       let resolvedCategory = FilterListCategory(rawValue: category) {
+                        await userScriptManager.setUserScript(added, category: resolvedCategory, origin: .remoteSync)
+                    }
                 }
             }
         }
