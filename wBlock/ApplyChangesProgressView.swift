@@ -109,6 +109,16 @@ struct ApplyChangesProgressView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     failureCard
                     progressField
+
+                    Button {
+                        filterManager.forceApplyChanges()
+                    } label: {
+                        Text(String(localized: "Try Again"))
+                            .frame(maxWidth: .infinity)
+                    }
+                    .primaryActionButtonStyle()
+                    .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
+                    .keyboardShortcut(.defaultAction)
                 }
                 .padding(20)
             }

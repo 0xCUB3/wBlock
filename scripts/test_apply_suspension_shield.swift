@@ -7,6 +7,7 @@ func require(_ condition: Bool, _ message: String) {
 }
 
 let pipeline = try String(contentsOfFile: "wBlock/AppFilterManager+ApplyPipeline.swift", encoding: .utf8)
+let progressView = try String(contentsOfFile: "wBlock/ApplyChangesProgressView.swift", encoding: .utf8)
 
 func slice(from startNeedle: String, to endNeedle: String?) -> String {
     guard let start = pipeline.range(of: startNeedle) else {
@@ -80,11 +81,32 @@ let conversionOperation = slice(
     from: "operation: { work in",
     to: "onResult: { completion in"
 )
+let cancellationCatch = slice(
+    from: "catch is CancellationError",
+    to: "} catch {"
+)
 require(
-    conversionOperation.contains("catch is CancellationError") &&
-        conversionOperation.contains("ApplyCancellation.cancel()") &&
-        conversionOperation.contains("failureDescription: nil"),
-    "cancelled target conversion must mark iOS cancellation without recording a conversion failure"
+    cancellationCatch.contains("failureDescription: nil") &&
+        !cancellationCatch.contains("ApplyCancellation.cancel()"),
+    "a target CancellationError must not invent a suspension cancellation"
+)
+let missingOutcomeHandling = slice(
+    from: "if let missingOutcomeTarget",
+    to: "if let failedTarget"
+)
+require(
+    missingOutcomeHandling.contains("failApplyIfCancelled()") &&
+        missingOutcomeHandling.contains("Failed to convert rules for blocker") &&
+        !missingOutcomeHandling.contains("Missing conversion result for blocker"),
+    "missing conversion outcomes must use suspension cancellation only when it was requested"
 )
 
-print("PASS: apply suspension shield contract")
+require(
+    progressView.contains("case .failed:") &&
+        progressView.contains("String(localized: \"Try Again\")") &&
+        progressView.contains("filterManager.forceApplyChanges()") &&
+        progressView.contains("filterManager.isLoading || filterManager.isApplyInFlight"),
+    "the failed apply sheet must offer a disabled-while-running force-apply retry"
+)
+
+print("PASS: apply suspension shield and retry contract")

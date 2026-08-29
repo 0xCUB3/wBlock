@@ -668,9 +668,6 @@ extension AppFilterManager {
                         durationMs: Int(Date().timeIntervalSince(conversionStart) * 1000)
                     )
                 } catch is CancellationError {
-                    #if os(iOS)
-                    ApplyCancellation.cancel()
-                    #endif
                     return TargetConversionCompletion(
                         work: work,
                         outcome: nil,
@@ -738,6 +735,21 @@ extension AppFilterManager {
                 }
             }
         )
+
+        if let missingOutcomeTarget = platformTargets.first(where: { targetInfo in
+            guard let completion = conversionCompletions[targetInfo] else { return true }
+            return completion.outcome == nil && completion.failureDescription == nil
+        }) {
+            if await failApplyIfCancelled() { return }
+            await failApplyRun(
+                logMessage: LocalizedStrings.text("Failed to convert rules for blocker"),
+                metadata: [
+                    "blocker": missingOutcomeTarget.displayName,
+                    "error": "Conversion returned no result.",
+                ]
+            )
+            return
+        }
 
         if await failApplyIfCancelled() { return }
 

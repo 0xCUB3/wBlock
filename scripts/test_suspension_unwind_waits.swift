@@ -152,11 +152,17 @@ let converter = section(
     to: "private static func publicSuffixListResourcesAreAvailable"
 )
 require(
-    converter.contains("Progress(totalUnitCount:") &&
+    converter.contains("Progress.discreteProgress(totalUnitCount:") &&
+        !converter.contains("= Progress(totalUnitCount:") &&
         converter.contains("progress.cancel()") &&
-        converter.contains("progress: progress") &&
-        converter.contains("if progress.isCancelled || cancellationRequested()"),
-    "SafariConverterLib conversion must be driven by a cancellable Progress and reject its empty cancel result"
+        converter.contains("progress: progress"),
+    "SafariConverterLib conversion must use a discrete cancellable Progress"
+)
+require(
+    converter.contains("if cancellationRequested()") &&
+        converter.contains("if progress.isCancelled") &&
+        !converter.contains("progress.isCancelled || cancellationRequested()"),
+    "converter cancellation must distinguish requested cancellation from an unexpected stopped Progress"
 )
 require(
     !service.contains("SHA256.hash(data: data)"),

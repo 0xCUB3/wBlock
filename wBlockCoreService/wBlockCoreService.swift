@@ -2265,6 +2265,14 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
 // MARK: - Safari Content Blocker functions
 
 extension ContentBlockerService {
+    private enum RuleConversionError: LocalizedError {
+        case stoppedUnexpectedly
+
+        var errorDescription: String? {
+            "Rule conversion stopped without a cancellation request."
+        }
+    }
+
     /// Converts AdGuard rules into the Safari content blocking rules syntax.
     ///
     /// - Parameters:
@@ -2303,7 +2311,7 @@ extension ContentBlockerService {
             throw CancellationError()
         }
 
-        let progress = Progress(totalUnitCount: Int64(lines.count))
+        let progress = Progress.discreteProgress(totalUnitCount: Int64(lines.count))
         let cancellationMonitor = DispatchSource.makeTimerSource(
             queue: DispatchQueue.global(qos: .utility)
         )
@@ -2328,8 +2336,11 @@ extension ContentBlockerService {
                 progress: progress
             )
         }
-        if progress.isCancelled || cancellationRequested() {
+        if cancellationRequested() {
             throw CancellationError()
+        }
+        if progress.isCancelled {
+            throw RuleConversionError.stoppedUnexpectedly
         }
         return result
     }
