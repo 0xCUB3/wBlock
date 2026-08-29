@@ -1801,15 +1801,18 @@ private struct AddUserScriptEditorSheet: View {
         Group {
             #if os(iOS)
             CompatibleNavigationStack {
-                editorBody
-                    .background(Color(.systemGray6))
-                    .navigationTitle("Editor")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            SheetDoneButton(action: finish, usesAutomaticStyle: true)
-                        }
-                    }
+                if #available(iOS 16.0, *) {
+                    editorBody
+                        .background(Color(.systemGray6))
+                        .navigationTitle("Editor")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbarBackground(.hidden, for: .navigationBar)
+                } else {
+                    editorBody
+                        .background(Color(.systemGray6))
+                        .navigationTitle("Editor")
+                        .navigationBarTitleDisplayMode(.inline)
+                }
             }
             #else
             editorBody
@@ -1850,9 +1853,7 @@ private struct AddUserScriptEditorSheet: View {
                     Label("Paste", systemImage: "doc.on.clipboard")
                 }
 
-                #if os(macOS)
                 SheetDoneButton(action: finish)
-                #endif
             }
             .padding(12)
             #if os(macOS)

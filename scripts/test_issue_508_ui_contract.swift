@@ -70,6 +70,11 @@ require(addContentShell, "protocol AddContentMode")
 require(addContentShell, "struct AddContentModePicker")
 require(addContentShell, "struct AddContentRequirementsPanel")
 require(addContentShell, ".frame(maxWidth: .infinity, alignment: .leading)")
+let requirementsPanelStart = addContentShell.range(of: "struct AddContentRequirementsPanel")!.lowerBound
+let requirementsPanel = String(addContentShell[requirementsPanelStart...])
+require(requirementsPanel, ".liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)")
+require(requirementsPanel, ".listRowBackground(Color.clear)")
+require(requirementsPanel, ".hiddenListRowSeparatorCompat()")
 for view in [content, scripts] {
     require(view, "AddContentModePicker(selection: $addMode)")
     require(view, "AddContentRequirementsPanel")

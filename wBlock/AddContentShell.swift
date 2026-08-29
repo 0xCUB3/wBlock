@@ -74,5 +74,8 @@ struct AddContentRequirementsPanel: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+        .listRowInsets(EdgeInsets())
+        .listRowBackground(Color.clear)
+        .hiddenListRowSeparatorCompat()
     }
 }

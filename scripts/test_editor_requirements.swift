@@ -37,12 +37,15 @@ let editorSheet = String(source[sheetStart..<sheetEnd])
 let iOSStart = editorSheet.range(of: "#if os(iOS)")!.lowerBound
 let iOSEnd = editorSheet.range(of: "#else", range: iOSStart..<editorSheet.endIndex)!.lowerBound
 let iOSBranch = String(editorSheet[iOSStart..<iOSEnd])
+require(!iOSBranch.contains(".toolbar {"), "iOS editor must not install a toolbar Done button")
+require(!iOSBranch.contains(".topBarTrailing"), "iOS editor must not use topBarTrailing")
+require(!iOSBranch.contains(".navigationBarTrailing"), "iOS editor must not use navigationBarTrailing")
+require(!iOSBranch.contains(".confirmationAction"), "iOS editor must not use confirmationAction")
 require(
-    iOSBranch.contains(".topBarTrailing") || iOSBranch.contains(".navigationBarTrailing"),
-    "iOS editor Done must use trailing navigation-bar placement"
+    iOSBranch.contains(".toolbarBackground(.hidden, for: .navigationBar)"),
+    "iOS 16+ editor must hide the navigation-bar background"
 )
-require(!iOSBranch.contains(".confirmationAction"), "iOS editor Done must not use confirmationAction")
-require(!iOSBranch.contains("liquidGlassCompat"), "iOS editor toolbar must not apply liquid glass")
+require(!iOSBranch.contains("liquidGlassCompat"), "iOS editor action bar must not apply liquid glass")
 
 let editorBodyStart = editorSheet.range(of: "private var editorBody")!.lowerBound
 let editorBodyEnd = editorSheet.range(of: "private func finish", range: editorBodyStart..<editorSheet.endIndex)!.lowerBound
@@ -52,8 +55,12 @@ require(
     "editor action bar liquid glass must be macOS-only"
 )
 require(
-    editorBody.contains("#if os(macOS)\n                SheetDoneButton(action: finish)\n                #endif"),
-    "macOS editor action bar must keep its Done button"
+    editorBody.contains("SheetDoneButton(action: finish)"),
+    "editor action bar must contain its Done button on every platform"
+)
+require(
+    !editorBody.contains("#if os(macOS)\n                SheetDoneButton(action: finish)"),
+    "editor action bar Done must not have a macOS-only guard"
 )
 
 let textStart = source.range(of: "private var textTab")!.lowerBound
