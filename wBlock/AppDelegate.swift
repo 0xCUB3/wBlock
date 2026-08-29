@@ -81,6 +81,7 @@ class AppDelegate: NSObject {
     private var periodicUpdateTimer: Timer?
     private var autoUpdateSaveObserver: AnyCancellable?
     private var lastObservedLaunchAgentDesiredState: Bool?
+    private var mainWindowFrameRestorer: MainWindowFrameRestorer?
     #endif
 
     #if os(iOS)
@@ -232,6 +233,10 @@ extension AppDelegate: NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let mainWindowFrameRestorer = MainWindowFrameRestorer()
+        mainWindowFrameRestorer.install(application: NSApp)
+        self.mainWindowFrameRestorer = mainWindowFrameRestorer
+
         UserScriptManager.invalidateDocumentStartExecutionCache()
         // Setup periodic auto-update system for macOS
         setupMacOSAutoUpdate()

@@ -70,6 +70,8 @@ compile_direct_test adguard-mobile scripts/test_adguard_mobile_filter_migration.
 compile_direct_test apply-progress-localization scripts/test_apply_progress_localization.swift
 compile_direct_test compiler-timeout scripts/test_issue_511_compiler_timeout.swift
 compile_direct_test language-selection-localization scripts/test_language_selection_localization.swift
+compile_direct_test main-window-frame-restore \
+  wBlock/MainWindowFrameRestorer.swift scripts/test_main_window_frame_restore.swift
 compile_direct_test site-settings-localization scripts/test_site_settings_localization.swift
 
 # Core-module API tests. Source-only wBlock tests add their production source
