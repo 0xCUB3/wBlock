@@ -208,10 +208,13 @@ splice_file \
   "${CONTENT_SRC}" \
   "@file Content script for the WebExtension"
 
+# Reapply the wBlock wrappers that live in the replaced upstream regions.
+echo ""
+info "--- Applying post-splice patches ---"
+node "${ROOT_DIR}/scripts/patch-background-execute-script.mjs" "${BACKGROUND_SRC}"
+
 # The upstream content build includes the generated scriptlet registry. Keep
 # that registry in background.js only, including after every future splice.
-echo ""
-info "--- Removing generated content scriptlet registry ---"
 node "${ROOT_DIR}/scripts/remove-content-scriptlet-registry.mjs" "${CONTENT_SRC}"
 
 # ---------------------------------------------------------------------------

@@ -2,7 +2,7 @@ function _defineProperty2(e, r, t) { return (r = _toPropertyKey(r)) in e ? Objec
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 /*
- * WebExtension v1.0.4 (build date: Thu, 25 Jun 2026 11:13:41 GMT)
+ * WebExtension v1.0.4 (build date: Sat, 29 Aug 2026 16:52:53 GMT)
  * (c) 2026 ameshkov
  * Released under the ISC license
  * https://github.com/ameshkov/safari-blocker
@@ -4951,15 +4951,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     } // enable dynamically added elements handling
 
     context.isDomObserved = true;
-    const eventTracker = new EventTracker();
-    context.eventTracker = eventTracker;
     context.domMutationObserver = new natives.MutationObserver(mutations => {
       if (!mutations || mutations.length === 0) {
         return;
       }
+      const eventTracker = new EventTracker();
       if (eventTracker.isIgnoredEventType() && shouldIgnoreMutations(mutations)) {
         return;
-      }
+      } // save instance of EventTracker to context
+      // for removing its event listeners on disconnectDocument() while mainDisconnect()
+
+      context.eventTracker = eventTracker;
       context.scheduler.run();
     });
     context.domMutationObserver.observe(document, {
@@ -5665,6 +5667,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
   }
+
+
   /*
    * SafariExtension v4.3.0 (build date: Thu, 04 Jun 2026 09:19:32 GMT)
    * (c) 2026 Adguard Software Ltd.

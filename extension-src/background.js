@@ -2,7 +2,7 @@ function _defineProperty2(e, r, t) { return (r = _toPropertyKey(r)) in e ? Objec
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 /*
- * WebExtension v1.0.4 (build date: Thu, 25 Jun 2026 11:13:41 GMT)
+ * WebExtension v1.0.4 (build date: Sat, 29 Aug 2026 16:52:53 GMT)
  * (c) 2026 ameshkov
  * Released under the ISC license
  * https://github.com/ameshkov/safari-blocker
@@ -3848,9 +3848,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var matchRegexp = toRegExp(matchCallback);
       var intervalWrapper = function intervalWrapper(callback, delay) {
         if (!isValidCallback(callback)) {
-          var message = `Scriptlet can't be applied because of invalid callback: '${String(callback)}'`;
+          var message = `Scriptlet can't be applied because of invalid callback: '${callbackToString(callback)}'`;
           logMessage(source, message);
-        } else if (matchRegexp.test(callback.toString()) && isDelayMatched(matchDelay, delay)) {
+        } else if (matchRegexp.test(callbackToString(callback)) && isDelayMatched(matchDelay, delay)) {
           delay *= getBoostMultiplier(boost);
           hit(source);
         }
@@ -3872,7 +3872,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function isValidCallback(n) {
-      return n instanceof Function || "string" == typeof n;
+      return "function" == typeof n || "string" == typeof n;
+    }
+    function callbackToString(t) {
+      if ("function" == typeof t) return Function.prototype.toString.call(t);
+      try {
+        return String(t);
+      } catch (n) {
+        return Object.prototype.toString.call(t);
+      }
     }
     function toRegExp(e) {
       var r = e || "",
@@ -3956,9 +3964,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var matchRegexp = toRegExp(matchCallback);
       var timeoutWrapper = function timeoutWrapper(callback, delay) {
         if (!isValidCallback(callback)) {
-          var message = `Scriptlet can't be applied because of invalid callback: '${String(callback)}'`;
+          var message = `Scriptlet can't be applied because of invalid callback: '${callbackToString(callback)}'`;
           logMessage(source, message);
-        } else if (matchRegexp.test(callback.toString()) && isDelayMatched(matchDelay, delay)) {
+        } else if (matchRegexp.test(callbackToString(callback)) && isDelayMatched(matchDelay, delay)) {
           delay *= getBoostMultiplier(boost);
           hit(source);
         }
@@ -3980,7 +3988,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
     function isValidCallback(n) {
-      return n instanceof Function || "string" == typeof n;
+      return "function" == typeof n || "string" == typeof n;
+    }
+    function callbackToString(t) {
+      if ("function" == typeof t) return Function.prototype.toString.call(t);
+      try {
+        return String(t);
+      } catch (n) {
+        return Object.prototype.toString.call(t);
+      }
     }
     function toRegExp(e) {
       var r = e || "",
@@ -6300,7 +6316,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       function buildAppendUpdater(e, r, t) {
         var a,
           n = e.trim();
-        if (n.startsWith("{") || n.startsWith(h)) a = r(n);else {
+        if (n.startsWith("{") || n.startsWith(h)) a = r(parseKeywordValue(n));else {
           var i = t(n);
           if (!i || i.shouldReplaceArgument) throw new Error(`Invalid append value: ${e}`);
           a = i.constantValue;
@@ -6314,9 +6330,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (a.startsWith("replace(") && a.endsWith(f)) return function (e, r) {
           var t = r(e.slice(8, -1));
           if ("string" != typeof t.regex || "string" != typeof t.replacement) throw new Error('Invalid replace payload: "regex" and "replacement" must be strings');
-          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p);
+          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p),
+            n = parseKeywordValue(t.replacement);
           return function (e) {
-            return "string" != typeof e ? e : e.replace(a, t.replacement);
+            return "string" != typeof e ? e : e.replace(a, n);
           };
         }(a, r);
         var n = t(a);
@@ -6584,8 +6601,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (s === e || s === o) return {
         mode: s
       };
-      var n = "string" == typeof t ? t.trim() : "";
-      return n.startsWith("$") || n.startsWith("[?") ? {
+      var a = "string" == typeof t ? t.trim() : "";
+      return a.startsWith("$") || a.startsWith("[?") || a.startsWith(".") ? {
         mode: o
       } : {
         mode: e
@@ -6594,34 +6611,57 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getJsonSetValue(e, t) {
       return t.shouldReplaceArgument ? "string" == typeof e ? e.replace(t.replaceRegexValue, t.constantValue) : e : t.shouldMergeJsonValue && null !== e && "object" == typeof e && !Array.isArray(e) && null !== t.constantValue && "object" == typeof t.constantValue && !Array.isArray(t.constantValue) ? Object.assign({}, e, t.constantValue) : t.constantValue;
     }
-    function parseJsonSetArgumentValue(e, l, n) {
-      var s,
-        a = "json:",
-        r = "replace:",
-        t = "",
-        o = false,
-        u = false;
-      if (l.startsWith(r)) {
-        var i = extractRegexAndReplacement(l);
-        if (!i) return logMessage(e, `Invalid argument value format: ${l}`), null;
-        t = i.regexPart, s = i.replacementPart, o = true;
-      } else if (l.startsWith(a)) try {
-        s = n(l.slice(a.length)), u = !0;
-      } catch (n) {
+    function parseJsonSetArgumentValue(e, l, a) {
+      var r,
+        n = "json:",
+        s = "replace:",
+        o = "",
+        t = false,
+        u = false,
+        i = false;
+      if (l.startsWith(s)) {
+        var c = extractRegexAndReplacement(l);
+        if (!c) return logMessage(e, `Invalid argument value format: ${l}`), null;
+        o = c.regexPart, i = (r = parseKeywordValue(c.replacementPart)) !== c.replacementPart, t = true;
+      } else if (l.startsWith(n)) try {
+        var f = l.slice(n.length),
+          p = parseKeywordValue(f);
+        i = p !== f, r = a(p), u = !0;
+      } catch (a) {
         return logMessage(e, `Invalid JSON argument value: ${l}`), null;
       } else {
-        var c = noopArray(),
-          f = noopObject();
-        if ("undefined" === l) s = void 0;else if ("false" === l) s = false;else if ("true" === l) s = true;else if ("null" === l) s = null;else if ("NaN" === l) s = NaN;else if ("emptyArr" === l || "[]" === l) s = c;else if ("emptyObj" === l || "{}" === l) s = f;else if ("noopFunc" === l) s = noopFunc;else if ("noopCallbackFunc" === l) s = noopCallbackFunc;else if ("trueFunc" === l) s = trueFunc;else if ("falseFunc" === l) s = falseFunc;else if ("throwFunc" === l) s = throwFunc;else if ("noopPromiseResolve" === l) s = noopPromiseResolve;else if ("noopPromiseReject" === l) s = noopPromiseReject;else if (/^-?\d+$/.test(l)) {
-          if (s = parseFloat(l), nativeIsNaN(s)) return null;
-        } else s = l;
+        var m = noopArray(),
+          d = noopObject(),
+          g = parseKeywordValue(l);
+        if (i = g !== l, "undefined" === g) r = void 0;else if ("false" === g) r = false;else if ("true" === g) r = true;else if ("null" === g) r = null;else if ("NaN" === g) r = NaN;else if ("emptyArr" === g || "[]" === g) r = m;else if ("emptyObj" === g || "{}" === g) r = d;else if ("noopFunc" === g) r = noopFunc;else if ("noopCallbackFunc" === g) r = noopCallbackFunc;else if ("trueFunc" === g) r = trueFunc;else if ("falseFunc" === g) r = falseFunc;else if ("throwFunc" === g) r = throwFunc;else if ("noopPromiseResolve" === g) r = noopPromiseResolve;else if ("noopPromiseReject" === g) r = noopPromiseReject;else if (/^-?\d+$/.test(g)) {
+          if (r = parseFloat(g), nativeIsNaN(r)) return null;
+        } else r = g;
       }
       return {
-        constantValue: s,
-        replaceRegexValue: t,
-        shouldReplaceArgument: o,
-        shouldMergeJsonValue: u
+        constantValue: r,
+        replaceRegexValue: o,
+        shouldReplaceArgument: t,
+        shouldMergeJsonValue: u,
+        hasTimeKeywords: i
       };
+    }
+    function parseKeywordValue(r) {
+      var e = /\$(?:currentISODate|currentDate|now)\$/g;
+      if ("string" != typeof r) return r;
+      if (-1 === r.search(e)) return r;
+      var t = new Date();
+      return r.replace(e, function (r) {
+        switch (r) {
+          case "$now$":
+            return t.getTime().toString();
+          case "$currentDate$":
+            return t.toString();
+          case "$currentISODate$":
+            return t.toISOString();
+          default:
+            return r;
+        }
+      });
     }
     function noopArray() {
       return [];
@@ -7103,7 +7143,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       function buildAppendUpdater(e, r, t) {
         var a,
           n = e.trim();
-        if (n.startsWith("{") || n.startsWith(h)) a = r(n);else {
+        if (n.startsWith("{") || n.startsWith(h)) a = r(parseKeywordValue(n));else {
           var i = t(n);
           if (!i || i.shouldReplaceArgument) throw new Error(`Invalid append value: ${e}`);
           a = i.constantValue;
@@ -7117,9 +7157,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (a.startsWith("replace(") && a.endsWith(f)) return function (e, r) {
           var t = r(e.slice(8, -1));
           if ("string" != typeof t.regex || "string" != typeof t.replacement) throw new Error('Invalid replace payload: "regex" and "replacement" must be strings');
-          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p);
+          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p),
+            n = parseKeywordValue(t.replacement);
           return function (e) {
-            return "string" != typeof e ? e : e.replace(a, t.replacement);
+            return "string" != typeof e ? e : e.replace(a, n);
           };
         }(a, r);
         var n = t(a);
@@ -7383,34 +7424,57 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getJsonSetValue(e, t) {
       return t.shouldReplaceArgument ? "string" == typeof e ? e.replace(t.replaceRegexValue, t.constantValue) : e : t.shouldMergeJsonValue && null !== e && "object" == typeof e && !Array.isArray(e) && null !== t.constantValue && "object" == typeof t.constantValue && !Array.isArray(t.constantValue) ? Object.assign({}, e, t.constantValue) : t.constantValue;
     }
-    function parseJsonSetArgumentValue(e, l, n) {
-      var s,
-        a = "json:",
-        r = "replace:",
-        t = "",
-        o = false,
-        u = false;
-      if (l.startsWith(r)) {
-        var i = extractRegexAndReplacement(l);
-        if (!i) return logMessage(e, `Invalid argument value format: ${l}`), null;
-        t = i.regexPart, s = i.replacementPart, o = true;
-      } else if (l.startsWith(a)) try {
-        s = n(l.slice(a.length)), u = !0;
-      } catch (n) {
+    function parseJsonSetArgumentValue(e, l, a) {
+      var r,
+        n = "json:",
+        s = "replace:",
+        o = "",
+        t = false,
+        u = false,
+        i = false;
+      if (l.startsWith(s)) {
+        var c = extractRegexAndReplacement(l);
+        if (!c) return logMessage(e, `Invalid argument value format: ${l}`), null;
+        o = c.regexPart, i = (r = parseKeywordValue(c.replacementPart)) !== c.replacementPart, t = true;
+      } else if (l.startsWith(n)) try {
+        var f = l.slice(n.length),
+          p = parseKeywordValue(f);
+        i = p !== f, r = a(p), u = !0;
+      } catch (a) {
         return logMessage(e, `Invalid JSON argument value: ${l}`), null;
       } else {
-        var c = noopArray(),
-          f = noopObject();
-        if ("undefined" === l) s = void 0;else if ("false" === l) s = false;else if ("true" === l) s = true;else if ("null" === l) s = null;else if ("NaN" === l) s = NaN;else if ("emptyArr" === l || "[]" === l) s = c;else if ("emptyObj" === l || "{}" === l) s = f;else if ("noopFunc" === l) s = noopFunc;else if ("noopCallbackFunc" === l) s = noopCallbackFunc;else if ("trueFunc" === l) s = trueFunc;else if ("falseFunc" === l) s = falseFunc;else if ("throwFunc" === l) s = throwFunc;else if ("noopPromiseResolve" === l) s = noopPromiseResolve;else if ("noopPromiseReject" === l) s = noopPromiseReject;else if (/^-?\d+$/.test(l)) {
-          if (s = parseFloat(l), nativeIsNaN(s)) return null;
-        } else s = l;
+        var m = noopArray(),
+          d = noopObject(),
+          g = parseKeywordValue(l);
+        if (i = g !== l, "undefined" === g) r = void 0;else if ("false" === g) r = false;else if ("true" === g) r = true;else if ("null" === g) r = null;else if ("NaN" === g) r = NaN;else if ("emptyArr" === g || "[]" === g) r = m;else if ("emptyObj" === g || "{}" === g) r = d;else if ("noopFunc" === g) r = noopFunc;else if ("noopCallbackFunc" === g) r = noopCallbackFunc;else if ("trueFunc" === g) r = trueFunc;else if ("falseFunc" === g) r = falseFunc;else if ("throwFunc" === g) r = throwFunc;else if ("noopPromiseResolve" === g) r = noopPromiseResolve;else if ("noopPromiseReject" === g) r = noopPromiseReject;else if (/^-?\d+$/.test(g)) {
+          if (r = parseFloat(g), nativeIsNaN(r)) return null;
+        } else r = g;
       }
       return {
-        constantValue: s,
-        replaceRegexValue: t,
-        shouldReplaceArgument: o,
-        shouldMergeJsonValue: u
+        constantValue: r,
+        replaceRegexValue: o,
+        shouldReplaceArgument: t,
+        shouldMergeJsonValue: u,
+        hasTimeKeywords: i
       };
+    }
+    function parseKeywordValue(r) {
+      var e = /\$(?:currentISODate|currentDate|now)\$/g;
+      if ("string" != typeof r) return r;
+      if (-1 === r.search(e)) return r;
+      var t = new Date();
+      return r.replace(e, function (r) {
+        switch (r) {
+          case "$now$":
+            return t.getTime().toString();
+          case "$currentDate$":
+            return t.toString();
+          case "$currentISODate$":
+            return t.toISOString();
+          default:
+            return r;
+        }
+      });
     }
     function noopArray() {
       return [];
@@ -7599,8 +7663,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (s === e || s === o) return {
         mode: s
       };
-      var n = "string" == typeof t ? t.trim() : "";
-      return n.startsWith("$") || n.startsWith("[?") ? {
+      var a = "string" == typeof t ? t.trim() : "";
+      return a.startsWith("$") || a.startsWith("[?") || a.startsWith(".") ? {
         mode: o
       } : {
         mode: e
@@ -8352,7 +8416,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       function buildAppendUpdater(e, r, t) {
         var a,
           n = e.trim();
-        if (n.startsWith("{") || n.startsWith(h)) a = r(n);else {
+        if (n.startsWith("{") || n.startsWith(h)) a = r(parseKeywordValue(n));else {
           var i = t(n);
           if (!i || i.shouldReplaceArgument) throw new Error(`Invalid append value: ${e}`);
           a = i.constantValue;
@@ -8366,9 +8430,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (a.startsWith("replace(") && a.endsWith(f)) return function (e, r) {
           var t = r(e.slice(8, -1));
           if ("string" != typeof t.regex || "string" != typeof t.replacement) throw new Error('Invalid replace payload: "regex" and "replacement" must be strings');
-          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p);
+          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p),
+            n = parseKeywordValue(t.replacement);
           return function (e) {
-            return "string" != typeof e ? e : e.replace(a, t.replacement);
+            return "string" != typeof e ? e : e.replace(a, n);
           };
         }(a, r);
         var n = t(a);
@@ -8632,34 +8697,57 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getJsonSetValue(e, t) {
       return t.shouldReplaceArgument ? "string" == typeof e ? e.replace(t.replaceRegexValue, t.constantValue) : e : t.shouldMergeJsonValue && null !== e && "object" == typeof e && !Array.isArray(e) && null !== t.constantValue && "object" == typeof t.constantValue && !Array.isArray(t.constantValue) ? Object.assign({}, e, t.constantValue) : t.constantValue;
     }
-    function parseJsonSetArgumentValue(e, l, n) {
-      var s,
-        a = "json:",
-        r = "replace:",
-        t = "",
-        o = false,
-        u = false;
-      if (l.startsWith(r)) {
-        var i = extractRegexAndReplacement(l);
-        if (!i) return logMessage(e, `Invalid argument value format: ${l}`), null;
-        t = i.regexPart, s = i.replacementPart, o = true;
-      } else if (l.startsWith(a)) try {
-        s = n(l.slice(a.length)), u = !0;
-      } catch (n) {
+    function parseJsonSetArgumentValue(e, l, a) {
+      var r,
+        n = "json:",
+        s = "replace:",
+        o = "",
+        t = false,
+        u = false,
+        i = false;
+      if (l.startsWith(s)) {
+        var c = extractRegexAndReplacement(l);
+        if (!c) return logMessage(e, `Invalid argument value format: ${l}`), null;
+        o = c.regexPart, i = (r = parseKeywordValue(c.replacementPart)) !== c.replacementPart, t = true;
+      } else if (l.startsWith(n)) try {
+        var f = l.slice(n.length),
+          p = parseKeywordValue(f);
+        i = p !== f, r = a(p), u = !0;
+      } catch (a) {
         return logMessage(e, `Invalid JSON argument value: ${l}`), null;
       } else {
-        var c = noopArray(),
-          f = noopObject();
-        if ("undefined" === l) s = void 0;else if ("false" === l) s = false;else if ("true" === l) s = true;else if ("null" === l) s = null;else if ("NaN" === l) s = NaN;else if ("emptyArr" === l || "[]" === l) s = c;else if ("emptyObj" === l || "{}" === l) s = f;else if ("noopFunc" === l) s = noopFunc;else if ("noopCallbackFunc" === l) s = noopCallbackFunc;else if ("trueFunc" === l) s = trueFunc;else if ("falseFunc" === l) s = falseFunc;else if ("throwFunc" === l) s = throwFunc;else if ("noopPromiseResolve" === l) s = noopPromiseResolve;else if ("noopPromiseReject" === l) s = noopPromiseReject;else if (/^-?\d+$/.test(l)) {
-          if (s = parseFloat(l), nativeIsNaN(s)) return null;
-        } else s = l;
+        var m = noopArray(),
+          d = noopObject(),
+          g = parseKeywordValue(l);
+        if (i = g !== l, "undefined" === g) r = void 0;else if ("false" === g) r = false;else if ("true" === g) r = true;else if ("null" === g) r = null;else if ("NaN" === g) r = NaN;else if ("emptyArr" === g || "[]" === g) r = m;else if ("emptyObj" === g || "{}" === g) r = d;else if ("noopFunc" === g) r = noopFunc;else if ("noopCallbackFunc" === g) r = noopCallbackFunc;else if ("trueFunc" === g) r = trueFunc;else if ("falseFunc" === g) r = falseFunc;else if ("throwFunc" === g) r = throwFunc;else if ("noopPromiseResolve" === g) r = noopPromiseResolve;else if ("noopPromiseReject" === g) r = noopPromiseReject;else if (/^-?\d+$/.test(g)) {
+          if (r = parseFloat(g), nativeIsNaN(r)) return null;
+        } else r = g;
       }
       return {
-        constantValue: s,
-        replaceRegexValue: t,
-        shouldReplaceArgument: o,
-        shouldMergeJsonValue: u
+        constantValue: r,
+        replaceRegexValue: o,
+        shouldReplaceArgument: t,
+        shouldMergeJsonValue: u,
+        hasTimeKeywords: i
       };
+    }
+    function parseKeywordValue(r) {
+      var e = /\$(?:currentISODate|currentDate|now)\$/g;
+      if ("string" != typeof r) return r;
+      if (-1 === r.search(e)) return r;
+      var t = new Date();
+      return r.replace(e, function (r) {
+        switch (r) {
+          case "$now$":
+            return t.getTime().toString();
+          case "$currentDate$":
+            return t.toString();
+          case "$currentISODate$":
+            return t.toISOString();
+          default:
+            return r;
+        }
+      });
     }
     function noopArray() {
       return [];
@@ -8836,8 +8924,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (s === e || s === o) return {
         mode: s
       };
-      var n = "string" == typeof t ? t.trim() : "";
-      return n.startsWith("$") || n.startsWith("[?") ? {
+      var a = "string" == typeof t ? t.trim() : "";
+      return a.startsWith("$") || a.startsWith("[?") || a.startsWith(".") ? {
         mode: o
       } : {
         mode: e
@@ -11531,7 +11619,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         strResponseBody = "[]";
       } else if (responseBody === "emptyStr") {
         strResponseBody = "";
-      } else if (responseBody === "true" || responseBody.match(/^length:\d+-\d+$/)) {
+      } else if (responseBody === "true" || responseBody.match(/^length:\d+(?:-\d+)?$/)) {
         strResponseBody = generateRandomResponse(responseBody);
       } else {
         logMessage(source, `Invalid responseBody parameter: '${responseBody}'`);
@@ -11900,20 +11988,35 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }), a;
     }
     function generateRandomResponse(e) {
-      var t = e;
-      if ("true" === t) return t = Math.random().toString(36).slice(-10);
-      t = t.replace("length:", "");
-      if (!/^\d+-\d+$/.test(t)) return null;
-      var n = getNumberFromString(t.split("-")[0]),
-        r = getNumberFromString(t.split("-")[1]);
-      if (!nativeIsFinite(n) || !nativeIsFinite(r)) return null;
-      if (n > r) {
-        var i = n;
-        n = r, r = i;
+      return generateResponseContent(e, false);
+    }
+    function generateResponseContent(r, t) {
+      if (!r) return "";
+      if ("true" === r) return Math.random().toString(36).slice(2).padEnd(10, "0").slice(0, 10);
+      if ("emptyObj" === r) return "{}";
+      if ("emptyArr" === r) return "[]";
+      if ("emptyStr" === r) return "";
+      if (r.startsWith("war:") || r.startsWith("join:")) return "";
+      for (var e, n = /length:(\d+)(?:-(\d+))?/g, i = null; null !== (e = n.exec(r));) i = e;
+      if (i) {
+        var u = getNumberFromString(i[1]),
+          l = i[2] ? getNumberFromString(i[2]) : u;
+        if (null === u || null === l || !nativeIsFinite(u) || !nativeIsFinite(l)) return null;
+        var a = u,
+          f = l;
+        if (a > f) {
+          var g = a;
+          a = f, f = g;
+        }
+        if (f > 5e5) return null;
+        var o = getRandomIntInclusive(a, f),
+          s = r.replace(/length:\d+(?:-\d+)?/g, "").trim();
+        if (s) {
+          return "";
+        }
+        return getRandomStrByLength(o);
       }
-      if (r > 5e5) return null;
-      var a = getRandomIntInclusive(n, r);
-      return t = getRandomStrByLength(a);
+      return t ? r : "";
     }
     function nativeIsFinite(i) {
       return (Number.isFinite || window.isFinite)(i);
@@ -11929,8 +12032,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return t = Math.ceil(t), n = Math.floor(n), Math.floor(Math.random() * (n - t + 1) + t);
     }
     function getRandomStrByLength(r) {
-      for (var t = "", a = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+=~", n = 0; n < r; n += 1) t += a.charAt(Math.floor(76 * Math.random()));
-      return t;
+      for (var t = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+=~", n = [], o = 0; o < r; o += 1) n.push(t.charAt(Math.floor(76 * Math.random())));
+      return n.join("");
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
@@ -12383,9 +12486,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         var shouldPrevent = false;
         if (shouldLog) {
           hit(source);
-          logMessage(source, `requestAnimationFrame(${String(callback)})`, true);
+          logMessage(source, `requestAnimationFrame(${callbackToString(callback)})`, true);
         } else if (isValidCallback(callback) && isValidStrPattern(match)) {
-          shouldPrevent = matchRegexp.test(callback.toString()) !== isInvertedMatch;
+          shouldPrevent = matchRegexp.test(callbackToString(callback)) !== isInvertedMatch;
         }
         if (shouldPrevent) {
           hit(source);
@@ -12430,7 +12533,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return t;
     }
     function isValidCallback(n) {
-      return n instanceof Function || "string" == typeof n;
+      return "function" == typeof n || "string" == typeof n;
+    }
+    function callbackToString(t) {
+      if ("function" == typeof t) return Function.prototype.toString.call(t);
+      try {
+        return String(t);
+      } catch (n) {
+        return Object.prototype.toString.call(t);
+      }
     }
     function logMessage(e, o) {
       var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
@@ -12499,7 +12610,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         var shouldPrevent = false;
         if (shouldLog) {
           hit(source);
-          logMessage(source, `setInterval(${String(callback)}, ${delay})`, true);
+          logMessage(source, `setInterval(${callbackToString(callback)}, ${delay})`, true);
         } else {
           shouldPrevent = isPreventionNeeded({
             callback: callback,
@@ -12551,7 +12662,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           isDelayRange: M
         } = parseDelayArg(r),
         y = parseRawDelay(t),
-        v = String(e);
+        v = callbackToString(e);
       return M || null !== s ? l ? i.test(v) !== c && isPreventDelayMatched(M, d, h, s, n, y) : isPreventDelayMatched(M, d, h, s, n, y) : i.test(v) !== c;
     }
     function logMessage(e, o) {
@@ -12637,7 +12748,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return l ? (null !== n || null !== u) && "number" == typeof r && ((null === n || r >= n) && (null === u || r <= u)) !== t : null === e || r === e !== t;
     }
     function isValidCallback(n) {
-      return n instanceof Function || "string" == typeof n;
+      return "function" == typeof n || "string" == typeof n;
+    }
+    function callbackToString(t) {
+      if ("function" == typeof t) return Function.prototype.toString.call(t);
+      try {
+        return String(t);
+      } catch (n) {
+        return Object.prototype.toString.call(t);
+      }
     }
     function isValidMatchStr(t) {
       var i = t;
@@ -12709,7 +12828,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         var shouldPrevent = false;
         if (shouldLog) {
           hit(source);
-          logMessage(source, `setTimeout(${String(callback)}, ${delay})`, true);
+          logMessage(source, `setTimeout(${callbackToString(callback)}, ${delay})`, true);
         } else {
           shouldPrevent = isPreventionNeeded({
             callback: callback,
@@ -12761,7 +12880,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           isDelayRange: M
         } = parseDelayArg(r),
         y = parseRawDelay(t),
-        v = String(e);
+        v = callbackToString(e);
       return M || null !== s ? l ? i.test(v) !== c && isPreventDelayMatched(M, d, h, s, n, y) : isPreventDelayMatched(M, d, h, s, n, y) : i.test(v) !== c;
     }
     function logMessage(e, o) {
@@ -12847,7 +12966,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return (Number.isNaN || window.isNaN)(N);
     }
     function isValidCallback(n) {
-      return n instanceof Function || "string" == typeof n;
+      return "function" == typeof n || "string" == typeof n;
+    }
+    function callbackToString(t) {
+      if ("function" == typeof t) return Function.prototype.toString.call(t);
+      try {
+        return String(t);
+      } catch (n) {
+        return Object.prototype.toString.call(t);
+      }
     }
     function isValidMatchStr(t) {
       var i = t;
@@ -13152,192 +13279,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return;
       }
     }
-    function preventXHR(source, propsToMatch, customResponseText) {
-      if (typeof Proxy === "undefined") {
-        return;
-      }
-      var nativeOpen = window.XMLHttpRequest.prototype.open;
-      var nativeGetResponseHeader = window.XMLHttpRequest.prototype.getResponseHeader;
-      var nativeGetAllResponseHeaders = window.XMLHttpRequest.prototype.getAllResponseHeaders;
-      var matchedXhrRequests = new Map();
-      var xhrRequestHeaders = new Map();
-      var xhrData;
-      var modifiedResponse = "";
-      var modifiedResponseText = "";
-      var openWrapper = function openWrapper(target, thisArg, args) {
-        xhrData = getXhrData.apply(null, args);
-        if (typeof propsToMatch === "undefined") {
-          logMessage(source, `xhr( ${objectToString(xhrData)} )`, true);
-          hit(source);
-        } else if (matchRequestProps(source, propsToMatch, xhrData)) {
-          if (typeof thisArg.onreadystatechange === "function") {
-            xhrData.shouldFireFirstStage = true;
-          }
-          matchedXhrRequests.set(thisArg, xhrData);
-        }
-        if (matchedXhrRequests.has(thisArg) && !xhrRequestHeaders.has(thisArg)) {
-          xhrRequestHeaders.set(thisArg, []);
-          var setRequestHeaderWrapper = function setRequestHeaderWrapper(target, thisArg, args) {
-            var headers = xhrRequestHeaders.get(thisArg);
-            if (headers) {
-              headers.push(args);
-            }
-            return Reflect.apply(target, thisArg, args);
-          };
-          var setRequestHeaderHandler = {
-            apply: setRequestHeaderWrapper
-          };
-          thisArg.setRequestHeader = new Proxy(thisArg.setRequestHeader, setRequestHeaderHandler);
-        }
-        return Reflect.apply(target, thisArg, args);
-      };
-      var sendWrapper = function sendWrapper(target, thisArg, args) {
-        if (!matchedXhrRequests.has(thisArg)) {
-          return Reflect.apply(target, thisArg, args);
-        }
-        var storedXhrData = matchedXhrRequests.get(thisArg);
-        if (thisArg.responseType === "blob") {
-          modifiedResponse = new Blob();
-        }
-        if (thisArg.responseType === "arraybuffer") {
-          modifiedResponse = new ArrayBuffer();
-        }
-        if (customResponseText) {
-          var randomText = generateRandomResponse(customResponseText);
-          if (randomText) {
-            modifiedResponse = randomText;
-            modifiedResponseText = randomText;
-          } else {
-            logMessage(source, `Invalid randomize parameter: '${customResponseText}'`);
-          }
-        }
-        var forgedRequest = new XMLHttpRequest();
-        var transitionReadyState = function transitionReadyState(state) {
-          if (state === 2) {
-            var {
-              responseURL: responseURL
-            } = forgedRequest;
-            Object.defineProperties(thisArg, {
-              responseURL: {
-                value: responseURL || storedXhrData.url,
-                writable: false
-              }
-            });
-          }
-          if (state === 4) {
-            var {
-              responseXML: responseXML
-            } = forgedRequest;
-            Object.defineProperties(thisArg, {
-              readyState: {
-                value: 4,
-                writable: false
-              },
-              statusText: {
-                value: "OK",
-                writable: false
-              },
-              responseXML: {
-                value: responseXML,
-                writable: false
-              },
-              status: {
-                value: 200,
-                writable: false
-              },
-              response: {
-                value: modifiedResponse,
-                writable: false
-              },
-              responseText: {
-                value: modifiedResponseText,
-                writable: false
-              }
-            });
-            hit(source);
-          } else {
-            Object.defineProperty(thisArg, "readyState", {
-              value: state,
-              writable: true,
-              configurable: true
-            });
-          }
-          var stateEvent = new Event("readystatechange");
-          thisArg.dispatchEvent(stateEvent);
-        };
-        forgedRequest.addEventListener("readystatechange", function () {
-          if (matchedXhrRequests.get(thisArg).shouldFireFirstStage) {
-            transitionReadyState(1);
-          }
-          var loadStartEvent = new ProgressEvent("loadstart");
-          thisArg.dispatchEvent(loadStartEvent);
-          transitionReadyState(2);
-          transitionReadyState(3);
-          var progressEvent = new ProgressEvent("progress");
-          thisArg.dispatchEvent(progressEvent);
-          transitionReadyState(4);
-        });
-        setTimeout(function () {
-          var loadEvent = new ProgressEvent("load");
-          thisArg.dispatchEvent(loadEvent);
-          var loadEndEvent = new ProgressEvent("loadend");
-          thisArg.dispatchEvent(loadEndEvent);
-        }, 1);
-        nativeOpen.apply(forgedRequest, [storedXhrData.method, storedXhrData.url]);
-        var collectedHeaders = xhrRequestHeaders.get(thisArg) || [];
-        collectedHeaders.forEach(function (header) {
-          var name = header[0];
-          var value = header[1];
-          forgedRequest.setRequestHeader(name, value);
-        });
-        return undefined;
-      };
-      var getHeaderWrapper = function getHeaderWrapper(target, thisArg, args) {
-        var collectedHeaders = xhrRequestHeaders.get(thisArg);
-        if (!collectedHeaders) {
-          return nativeGetResponseHeader.apply(thisArg, args);
-        }
-        if (!collectedHeaders.length) {
-          return null;
-        }
-        var searchHeaderName = args[0].toLowerCase();
-        var matchedHeader = collectedHeaders.find(function (header) {
-          var headerName = header[0].toLowerCase();
-          return headerName === searchHeaderName;
-        });
-        return matchedHeader ? matchedHeader[1] : null;
-      };
-      var getAllHeadersWrapper = function getAllHeadersWrapper(target, thisArg) {
-        var collectedHeaders = xhrRequestHeaders.get(thisArg);
-        if (!collectedHeaders) {
-          return nativeGetAllResponseHeaders.call(thisArg);
-        }
-        if (!collectedHeaders.length) {
-          return "";
-        }
-        var allHeadersStr = collectedHeaders.map(function (header) {
-          var headerName = header[0];
-          var headerValue = header[1];
-          return `${headerName.toLowerCase()}: ${headerValue}`;
-        }).join("\r\n");
-        return allHeadersStr;
-      };
-      var openHandler = {
-        apply: openWrapper
-      };
-      var sendHandler = {
-        apply: sendWrapper
-      };
-      var getHeaderHandler = {
-        apply: getHeaderWrapper
-      };
-      var getAllHeadersHandler = {
-        apply: getAllHeadersWrapper
-      };
-      XMLHttpRequest.prototype.open = new Proxy(XMLHttpRequest.prototype.open, openHandler);
-      XMLHttpRequest.prototype.send = new Proxy(XMLHttpRequest.prototype.send, sendHandler);
-      XMLHttpRequest.prototype.getResponseHeader = new Proxy(XMLHttpRequest.prototype.getResponseHeader, getHeaderHandler);
-      XMLHttpRequest.prototype.getAllResponseHeaders = new Proxy(XMLHttpRequest.prototype.getAllResponseHeaders, getAllHeadersHandler);
+    function preventXHR(source, propsToMatch, directive) {
+      createPreventXhrCore(source, propsToMatch, false, directive);
     }
     function hit(e) {
       if (e.verbose) {
@@ -13357,21 +13300,175 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return e instanceof Object && (o = `{ ${objectToString(e)} }`), `${n}:"${o}"`;
       }).join(" ") : String(t);
     }
-    function generateRandomResponse(e) {
-      var t = e;
-      if ("true" === t) return t = Math.random().toString(36).slice(-10);
-      t = t.replace("length:", "");
-      if (!/^\d+-\d+$/.test(t)) return null;
-      var n = getNumberFromString(t.split("-")[0]),
-        r = getNumberFromString(t.split("-")[1]);
-      if (!nativeIsFinite(n) || !nativeIsFinite(r)) return null;
-      if (n > r) {
-        var i = n;
-        n = r, r = i;
+    function createPreventXhrCore(e, t, r, n) {
+      if ("undefined" != typeof Proxy) {
+        var a = window.XMLHttpRequest.prototype.open,
+          s = window.XMLHttpRequest.prototype.getResponseHeader,
+          o = window.XMLHttpRequest.prototype.getAllResponseHeaders,
+          p = new Map(),
+          l = new Map(),
+          i = {
+            apply: function apply(r, n, a) {
+              var s = getXhrData.apply(null, a);
+              if (void 0 === t ? (logMessage(e, `xhr( ${objectToString(s)} )`, true), hit(e)) : matchRequestProps(e, t, s) && ("function" == typeof n.onreadystatechange && (s.shouldFireFirstStage = true), p.set(n, s)), p.has(n) && !l.has(n)) {
+                l.set(n, []);
+                var o = {
+                  apply: function apply(e, t, r) {
+                    var n = l.get(t);
+                    return n && n.push(r), Reflect.apply(e, t, r);
+                  }
+                };
+                n.setRequestHeader = new Proxy(n.setRequestHeader, o);
+              }
+              return Reflect.apply(r, n, a);
+            }
+          },
+          u = {
+            apply: function apply(t, s, o) {
+              if (!p.has(s)) return Reflect.apply(t, s, o);
+              var i,
+                u = p.get(s),
+                d = s.responseType,
+                v = "",
+                f = "",
+                y = true;
+              if ("blob" === d) v = new Blob(), y = false;else if ("arraybuffer" === d) v = new ArrayBuffer(0), y = false;else if ("document" === d) v = new DOMParser().parseFromString("", "text/html"), i = v, y = false;else if ("json" === d) {
+                var c = "{}";
+                if (n) {
+                  var g = generateResponseContent(n);
+                  null !== g ? c = g : logMessage(e, `Invalid randomize parameter: '${n}'`);
+                }
+                y = false;
+                try {
+                  v = JSON.parse(c);
+                } catch (e) {
+                  v = null;
+                }
+              } else if (n) {
+                var w = generateResponseContent(n);
+                null !== w ? (v = w, f = w) : logMessage(e, `Invalid randomize parameter: '${n}'`);
+              }
+              var R = new XMLHttpRequest(),
+                transitionReadyState = function transitionReadyState(t) {
+                  if (2 === t) {
+                    var {
+                      responseURL: r
+                    } = R;
+                    Object.defineProperties(s, {
+                      responseURL: {
+                        value: r || u.url,
+                        writable: false
+                      }
+                    });
+                  }
+                  if (4 === t) {
+                    var {
+                        responseXML: n
+                      } = R,
+                      a = {
+                        readyState: {
+                          value: 4,
+                          writable: false
+                        },
+                        statusText: {
+                          value: "OK",
+                          writable: false
+                        },
+                        responseXML: {
+                          value: void 0 !== i ? i : n,
+                          writable: false
+                        },
+                        status: {
+                          value: 200,
+                          writable: false
+                        },
+                        response: {
+                          value: v,
+                          writable: false
+                        }
+                      };
+                    y && (a.responseText = {
+                      value: f,
+                      writable: false
+                    }), Object.defineProperties(s, a), hit(e);
+                  } else Object.defineProperty(s, "readyState", {
+                    value: t,
+                    writable: true,
+                    configurable: true
+                  });
+                  var o = new Event("readystatechange");
+                  s.dispatchEvent(o);
+                };
+              R.addEventListener("readystatechange", function () {
+                p.get(s).shouldFireFirstStage && transitionReadyState(1);
+                var e = new ProgressEvent("loadstart");
+                s.dispatchEvent(e), transitionReadyState(2), transitionReadyState(3);
+                var t = new ProgressEvent("progress");
+                s.dispatchEvent(t), transitionReadyState(4);
+              }), setTimeout(function () {
+                var e = new ProgressEvent("load");
+                s.dispatchEvent(e);
+                var t = new ProgressEvent("loadend");
+                s.dispatchEvent(t);
+              }, 1), a.apply(R, [u.method, u.url]), (l.get(s) || []).forEach(function (e) {
+                var t = e[0],
+                  r = e[1];
+                R.setRequestHeader(t, r);
+              });
+            }
+          },
+          d = {
+            apply: function apply(e, t, r) {
+              var n = l.get(t);
+              if (!n) return s.apply(t, r);
+              if (!n.length) return null;
+              var a = r[0].toLowerCase(),
+                o = n.find(function (e) {
+                  return e[0].toLowerCase() === a;
+                });
+              return o ? o[1] : null;
+            }
+          },
+          v = {
+            apply: function apply(e, t) {
+              var r = l.get(t);
+              return r ? r.length ? r.map(function (e) {
+                var t = e[0],
+                  r = e[1];
+                return `${t.toLowerCase()}: ${r}`;
+              }).join("\r\n") : "" : o.call(t);
+            }
+          };
+        XMLHttpRequest.prototype.open = new Proxy(XMLHttpRequest.prototype.open, i), XMLHttpRequest.prototype.send = new Proxy(XMLHttpRequest.prototype.send, u), XMLHttpRequest.prototype.getResponseHeader = new Proxy(XMLHttpRequest.prototype.getResponseHeader, d), XMLHttpRequest.prototype.getAllResponseHeaders = new Proxy(XMLHttpRequest.prototype.getAllResponseHeaders, v);
       }
-      if (r > 5e5) return null;
-      var a = getRandomIntInclusive(n, r);
-      return t = getRandomStrByLength(a);
+    }
+    function generateResponseContent(r, t) {
+      if (!r) return "";
+      if ("true" === r) return Math.random().toString(36).slice(2).padEnd(10, "0").slice(0, 10);
+      if ("emptyObj" === r) return "{}";
+      if ("emptyArr" === r) return "[]";
+      if ("emptyStr" === r) return "";
+      if (r.startsWith("war:") || r.startsWith("join:")) return "";
+      for (var e, n = /length:(\d+)(?:-(\d+))?/g, i = null; null !== (e = n.exec(r));) i = e;
+      if (i) {
+        var u = getNumberFromString(i[1]),
+          l = i[2] ? getNumberFromString(i[2]) : u;
+        if (null === u || null === l || !nativeIsFinite(u) || !nativeIsFinite(l)) return null;
+        var a = u,
+          f = l;
+        if (a > f) {
+          var g = a;
+          a = f, f = g;
+        }
+        if (f > 5e5) return null;
+        var o = getRandomIntInclusive(a, f),
+          s = r.replace(/length:\d+(?:-\d+)?/g, "").trim();
+        if (s) {
+          return "";
+        }
+        return getRandomStrByLength(o);
+      }
+      return "";
     }
     function matchRequestProps(e, t, r) {
       if ("" === t || "*" === t) return true;
@@ -13487,8 +13584,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return t = Math.ceil(t), n = Math.floor(n), Math.floor(Math.random() * (n - t + 1) + t);
     }
     function getRandomStrByLength(r) {
-      for (var t = "", a = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+=~", n = 0; n < r; n += 1) t += a.charAt(Math.floor(76 * Math.random()));
-      return t;
+      for (var t = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+=~", n = [], o = 0; o < r; o += 1) n.push(t.charAt(Math.floor(76 * Math.random())));
+      return n.join("");
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
@@ -15285,18 +15382,43 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function nativeIsNaN(N) {
       return (Number.isNaN || window.isNaN)(N);
     }
-    function isCookieSetWithValue(e, t, r) {
+    function isCookieSetWithValue(e, r, t) {
+      var n = /\$(?:currentISODate|currentDate|now)\$/g,
+        u = "string" == typeof t ? t.match(n) : null,
+        i = null;
+      if (u) {
+        var a = t.split(n).map(function (e, r) {
+          var t = u[r];
+          return e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + (t ? function (e) {
+            switch (e) {
+              case "$now$":
+                return `(\\d{${`${Date.now()}`.length}})`;
+              case "$currentDate$":
+                return "(\\w{3} \\w{3} \\d{2} \\d{4} \\d{2}:\\d{2}:\\d{2} GMT[+-]\\d{4}(?: \\([^)]*\\))?)";
+              case "$currentISODate$":
+                return "(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z)";
+              default:
+                return "";
+            }
+          }(t) : "");
+        }).join("");
+        i = new RegExp(`^${a}$`);
+      }
       return e.split(";").some(function (e) {
         var n = e.indexOf("=");
         if (-1 === n) return false;
-        var i = e.slice(0, n).trim(),
+        var u = e.slice(0, n).trim(),
           a = e.slice(n + 1).trim();
-        if (new Set(["$now$", "$currentDate$", "$currentISODate$"]).has(r)) {
-          var u = Date.now(),
-            s = /^\d+$/.test(a) ? parseInt(a, 10) : new Date(a).getTime();
-          return t === i && s > u - 864e5;
+        if (r !== u) return false;
+        if (i) {
+          var c = i.exec(a);
+          if (null === c) return false;
+          var d = Date.now();
+          return c.slice(1).every(function (e) {
+            return (/^\d+$/.test(e) ? parseInt(e, 10) : new Date(e).getTime()) > d - 864e5;
+          });
         }
-        return t === i && r === a;
+        return t === a;
       });
     }
     function getLimitedCookieValue(e) {
@@ -16971,6 +17093,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         parsedArgumentValue = parsedLegacyArgumentValue;
       }
+      var resolvedArgumentValue = parsedArgumentValue;
       var getPathParts = getPropertyInChain;
       var {
         base: base,
@@ -17039,11 +17162,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return [];
       };
       var getValueToSet = function getValueToSet(currentValue) {
-        if (parsedArgumentValue === undefined) {
+        if (resolvedArgumentValue === undefined) {
           return currentValue;
         }
-        var nonNullParsedArgumentValue = parsedArgumentValue;
-        return getJsonSetValue(currentValue, nonNullParsedArgumentValue);
+        return getJsonSetValue(currentValue, resolvedArgumentValue);
       };
       var applyJsonMutation = function applyJsonMutation(jsonValue) {
         var changed = false;
@@ -17057,6 +17179,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             value: _value
           };
         }
+        resolvedArgumentValue = resolveJsonSetTimeKeywords(source, argumentValue, nativeObjects.nativeParse, parsedArgumentValue);
         var value = jsonSetter(source, jsonValue, (setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.path) || "", setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.value, getValueToSet, requiredPaths, stack, nativeObjects, function () {
           changed = true;
         });
@@ -17656,34 +17779,60 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     function getJsonSetValue(e, t) {
       return t.shouldReplaceArgument ? "string" == typeof e ? e.replace(t.replaceRegexValue, t.constantValue) : e : t.shouldMergeJsonValue && null !== e && "object" == typeof e && !Array.isArray(e) && null !== t.constantValue && "object" == typeof t.constantValue && !Array.isArray(t.constantValue) ? Object.assign({}, e, t.constantValue) : t.constantValue;
     }
-    function parseJsonSetArgumentValue(e, l, n) {
-      var s,
-        a = "json:",
-        r = "replace:",
-        t = "",
-        o = false,
-        u = false;
-      if (l.startsWith(r)) {
-        var i = extractRegexAndReplacement(l);
-        if (!i) return logMessage(e, `Invalid argument value format: ${l}`), null;
-        t = i.regexPart, s = i.replacementPart, o = true;
-      } else if (l.startsWith(a)) try {
-        s = n(l.slice(a.length)), u = !0;
-      } catch (n) {
+    function parseJsonSetArgumentValue(e, l, a) {
+      var r,
+        n = "json:",
+        s = "replace:",
+        o = "",
+        t = false,
+        u = false,
+        i = false;
+      if (l.startsWith(s)) {
+        var c = extractRegexAndReplacement(l);
+        if (!c) return logMessage(e, `Invalid argument value format: ${l}`), null;
+        o = c.regexPart, i = (r = parseKeywordValue(c.replacementPart)) !== c.replacementPart, t = true;
+      } else if (l.startsWith(n)) try {
+        var f = l.slice(n.length),
+          p = parseKeywordValue(f);
+        i = p !== f, r = a(p), u = !0;
+      } catch (a) {
         return logMessage(e, `Invalid JSON argument value: ${l}`), null;
       } else {
-        var c = noopArray(),
-          f = noopObject();
-        if ("undefined" === l) s = void 0;else if ("false" === l) s = false;else if ("true" === l) s = true;else if ("null" === l) s = null;else if ("NaN" === l) s = NaN;else if ("emptyArr" === l || "[]" === l) s = c;else if ("emptyObj" === l || "{}" === l) s = f;else if ("noopFunc" === l) s = noopFunc;else if ("noopCallbackFunc" === l) s = noopCallbackFunc;else if ("trueFunc" === l) s = trueFunc;else if ("falseFunc" === l) s = falseFunc;else if ("throwFunc" === l) s = throwFunc;else if ("noopPromiseResolve" === l) s = noopPromiseResolve;else if ("noopPromiseReject" === l) s = noopPromiseReject;else if (/^-?\d+$/.test(l)) {
-          if (s = parseFloat(l), nativeIsNaN(s)) return null;
-        } else s = l;
+        var m = noopArray(),
+          d = noopObject(),
+          g = parseKeywordValue(l);
+        if (i = g !== l, "undefined" === g) r = void 0;else if ("false" === g) r = false;else if ("true" === g) r = true;else if ("null" === g) r = null;else if ("NaN" === g) r = NaN;else if ("emptyArr" === g || "[]" === g) r = m;else if ("emptyObj" === g || "{}" === g) r = d;else if ("noopFunc" === g) r = noopFunc;else if ("noopCallbackFunc" === g) r = noopCallbackFunc;else if ("trueFunc" === g) r = trueFunc;else if ("falseFunc" === g) r = falseFunc;else if ("throwFunc" === g) r = throwFunc;else if ("noopPromiseResolve" === g) r = noopPromiseResolve;else if ("noopPromiseReject" === g) r = noopPromiseReject;else if (/^-?\d+$/.test(g)) {
+          if (r = parseFloat(g), nativeIsNaN(r)) return null;
+        } else r = g;
       }
       return {
-        constantValue: s,
-        replaceRegexValue: t,
-        shouldReplaceArgument: o,
-        shouldMergeJsonValue: u
+        constantValue: r,
+        replaceRegexValue: o,
+        shouldReplaceArgument: t,
+        shouldMergeJsonValue: u,
+        hasTimeKeywords: i
       };
+    }
+    function parseKeywordValue(r) {
+      var e = /\$(?:currentISODate|currentDate|now)\$/g;
+      if ("string" != typeof r) return r;
+      if (-1 === r.search(e)) return r;
+      var t = new Date();
+      return r.replace(e, function (r) {
+        switch (r) {
+          case "$now$":
+            return t.getTime().toString();
+          case "$currentDate$":
+            return t.toString();
+          case "$currentISODate$":
+            return t.toISOString();
+          default:
+            return r;
+        }
+      });
+    }
+    function resolveJsonSetTimeKeywords(e, r, s, n) {
+      return n && n.hasTimeKeywords && parseJsonSetArgumentValue(e, r, s) || n;
     }
     function jsonLineEdit(n, i) {
       for (var e = arguments.length > 2 && void 0 !== arguments[2] ? arguments[2] : "", t = e.includes("\r\n") ? "\r\n" : "\n", r = e.split(/\r?\n/), s = [], a = i.nativeParse || JSON.parse, o = i.nativeStringify || JSON.stringify, v = false, h = 0; h < r.length; h += 1) {
@@ -17961,7 +18110,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       function buildAppendUpdater(e, r, t) {
         var a,
           n = e.trim();
-        if (n.startsWith("{") || n.startsWith(h)) a = r(n);else {
+        if (n.startsWith("{") || n.startsWith(h)) a = r(parseKeywordValue(n));else {
           var i = t(n);
           if (!i || i.shouldReplaceArgument) throw new Error(`Invalid append value: ${e}`);
           a = i.constantValue;
@@ -17975,9 +18124,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (a.startsWith("replace(") && a.endsWith(f)) return function (e, r) {
           var t = r(e.slice(8, -1));
           if ("string" != typeof t.regex || "string" != typeof t.replacement) throw new Error('Invalid replace payload: "regex" and "replacement" must be strings');
-          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p);
+          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p),
+            n = parseKeywordValue(t.replacement);
           return function (e) {
-            return "string" != typeof e ? e : e.replace(a, t.replacement);
+            return "string" != typeof e ? e : e.replace(a, n);
           };
         }(a, r);
         var n = t(a);
@@ -18252,8 +18402,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (s === e || s === o) return {
         mode: s
       };
-      var n = "string" == typeof t ? t.trim() : "";
-      return n.startsWith("$") || n.startsWith("[?") ? {
+      var a = "string" == typeof t ? t.trim() : "";
+      return a.startsWith("$") || a.startsWith("[?") || a.startsWith(".") ? {
         mode: o
       } : {
         mode: e
@@ -18346,11 +18496,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var parsedSetPaths = syntaxModeDetails.mode === "legacy" ? getPrunePath(propsPath) : [];
       var setPathObj = parsedSetPaths[0];
       var requiredPaths = syntaxModeDetails.mode === "legacy" ? getPrunePath(requiredInitialProps) : [];
+      var resolvedArgumentValue = parsedArgumentValue;
       var getValueToSet = function getValueToSet(currentValue) {
-        if (!parsedArgumentValue) {
+        if (!resolvedArgumentValue) {
           return currentValue;
         }
-        return getJsonSetValue(currentValue, parsedArgumentValue);
+        return getJsonSetValue(currentValue, resolvedArgumentValue);
       };
       var applyJsonMutation = function applyJsonMutation(jsonValue) {
         if (syntaxModeDetails.mode === "jsonpath") {
@@ -18358,6 +18509,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             return hit(source);
           }, stack);
         }
+        resolvedArgumentValue = resolveJsonSetTimeKeywords(source, argumentValue, nativeObjects.nativeParse, parsedArgumentValue);
         return jsonSetter(source, jsonValue, (setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.path) || "", setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.value, getValueToSet, requiredPaths, stack, nativeObjects);
       };
       var fetchHandlerWrapper = async function fetchHandlerWrapper(target, thisArg, args) {
@@ -18762,7 +18914,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       function buildAppendUpdater(e, r, t) {
         var a,
           n = e.trim();
-        if (n.startsWith("{") || n.startsWith(h)) a = r(n);else {
+        if (n.startsWith("{") || n.startsWith(h)) a = r(parseKeywordValue(n));else {
           var i = t(n);
           if (!i || i.shouldReplaceArgument) throw new Error(`Invalid append value: ${e}`);
           a = i.constantValue;
@@ -18776,9 +18928,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (a.startsWith("replace(") && a.endsWith(f)) return function (e, r) {
           var t = r(e.slice(8, -1));
           if ("string" != typeof t.regex || "string" != typeof t.replacement) throw new Error('Invalid replace payload: "regex" and "replacement" must be strings');
-          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p);
+          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p),
+            n = parseKeywordValue(t.replacement);
           return function (e) {
-            return "string" != typeof e ? e : e.replace(a, t.replacement);
+            return "string" != typeof e ? e : e.replace(a, n);
           };
         }(a, r);
         var n = t(a);
@@ -19163,8 +19316,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (s === e || s === o) return {
         mode: s
       };
-      var n = "string" == typeof t ? t.trim() : "";
-      return n.startsWith("$") || n.startsWith("[?") ? {
+      var a = "string" == typeof t ? t.trim() : "";
+      return a.startsWith("$") || a.startsWith("[?") || a.startsWith(".") ? {
         mode: o
       } : {
         mode: e
@@ -19549,34 +19702,60 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         "function" == typeof window.__debug && window.__debug(e);
       }
     }
-    function parseJsonSetArgumentValue(e, l, n) {
-      var s,
-        a = "json:",
-        r = "replace:",
-        t = "",
-        o = false,
-        u = false;
-      if (l.startsWith(r)) {
-        var i = extractRegexAndReplacement(l);
-        if (!i) return logMessage(e, `Invalid argument value format: ${l}`), null;
-        t = i.regexPart, s = i.replacementPart, o = true;
-      } else if (l.startsWith(a)) try {
-        s = n(l.slice(a.length)), u = !0;
-      } catch (n) {
+    function parseJsonSetArgumentValue(e, l, a) {
+      var r,
+        n = "json:",
+        s = "replace:",
+        o = "",
+        t = false,
+        u = false,
+        i = false;
+      if (l.startsWith(s)) {
+        var c = extractRegexAndReplacement(l);
+        if (!c) return logMessage(e, `Invalid argument value format: ${l}`), null;
+        o = c.regexPart, i = (r = parseKeywordValue(c.replacementPart)) !== c.replacementPart, t = true;
+      } else if (l.startsWith(n)) try {
+        var f = l.slice(n.length),
+          p = parseKeywordValue(f);
+        i = p !== f, r = a(p), u = !0;
+      } catch (a) {
         return logMessage(e, `Invalid JSON argument value: ${l}`), null;
       } else {
-        var c = noopArray(),
-          f = noopObject();
-        if ("undefined" === l) s = void 0;else if ("false" === l) s = false;else if ("true" === l) s = true;else if ("null" === l) s = null;else if ("NaN" === l) s = NaN;else if ("emptyArr" === l || "[]" === l) s = c;else if ("emptyObj" === l || "{}" === l) s = f;else if ("noopFunc" === l) s = noopFunc;else if ("noopCallbackFunc" === l) s = noopCallbackFunc;else if ("trueFunc" === l) s = trueFunc;else if ("falseFunc" === l) s = falseFunc;else if ("throwFunc" === l) s = throwFunc;else if ("noopPromiseResolve" === l) s = noopPromiseResolve;else if ("noopPromiseReject" === l) s = noopPromiseReject;else if (/^-?\d+$/.test(l)) {
-          if (s = parseFloat(l), nativeIsNaN(s)) return null;
-        } else s = l;
+        var m = noopArray(),
+          d = noopObject(),
+          g = parseKeywordValue(l);
+        if (i = g !== l, "undefined" === g) r = void 0;else if ("false" === g) r = false;else if ("true" === g) r = true;else if ("null" === g) r = null;else if ("NaN" === g) r = NaN;else if ("emptyArr" === g || "[]" === g) r = m;else if ("emptyObj" === g || "{}" === g) r = d;else if ("noopFunc" === g) r = noopFunc;else if ("noopCallbackFunc" === g) r = noopCallbackFunc;else if ("trueFunc" === g) r = trueFunc;else if ("falseFunc" === g) r = falseFunc;else if ("throwFunc" === g) r = throwFunc;else if ("noopPromiseResolve" === g) r = noopPromiseResolve;else if ("noopPromiseReject" === g) r = noopPromiseReject;else if (/^-?\d+$/.test(g)) {
+          if (r = parseFloat(g), nativeIsNaN(r)) return null;
+        } else r = g;
       }
       return {
-        constantValue: s,
-        replaceRegexValue: t,
-        shouldReplaceArgument: o,
-        shouldMergeJsonValue: u
+        constantValue: r,
+        replaceRegexValue: o,
+        shouldReplaceArgument: t,
+        shouldMergeJsonValue: u,
+        hasTimeKeywords: i
       };
+    }
+    function parseKeywordValue(r) {
+      var e = /\$(?:currentISODate|currentDate|now)\$/g;
+      if ("string" != typeof r) return r;
+      if (-1 === r.search(e)) return r;
+      var t = new Date();
+      return r.replace(e, function (r) {
+        switch (r) {
+          case "$now$":
+            return t.getTime().toString();
+          case "$currentDate$":
+            return t.toString();
+          case "$currentISODate$":
+            return t.toISOString();
+          default:
+            return r;
+        }
+      });
+    }
+    function resolveJsonSetTimeKeywords(e, r, s, n) {
+      return n && n.hasTimeKeywords && parseJsonSetArgumentValue(e, r, s) || n;
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
@@ -19638,11 +19817,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       var nativeSend = window.XMLHttpRequest.prototype.send;
       var matchedXhrRequests = new Map();
       var xhrRequestHeaders = new Map();
+      var resolvedArgumentValue = parsedArgumentValue;
       var getValueToSet = function getValueToSet(currentValue) {
-        if (!parsedArgumentValue) {
+        if (!resolvedArgumentValue) {
           return currentValue;
         }
-        return getJsonSetValue(currentValue, parsedArgumentValue);
+        return getJsonSetValue(currentValue, resolvedArgumentValue);
       };
       var applyJsonMutation = function applyJsonMutation(jsonValue) {
         if (syntaxModeDetails.mode === "jsonpath") {
@@ -19650,6 +19830,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             return hit(source);
           }, "");
         }
+        resolvedArgumentValue = resolveJsonSetTimeKeywords(source, argumentValue, nativeObjects.nativeParse, parsedArgumentValue);
         return jsonSetter(source, jsonValue, (setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.path) || "", setPathObj === null || setPathObj === void 0 ? void 0 : setPathObj.value, getValueToSet, requiredPaths, "", nativeObjects);
       };
       var setRequestHeaderWrapper = function setRequestHeaderWrapper(setRequestHeader, thisArgument, argsList) {
@@ -20179,7 +20360,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       function buildAppendUpdater(e, r, t) {
         var a,
           n = e.trim();
-        if (n.startsWith("{") || n.startsWith(h)) a = r(n);else {
+        if (n.startsWith("{") || n.startsWith(h)) a = r(parseKeywordValue(n));else {
           var i = t(n);
           if (!i || i.shouldReplaceArgument) throw new Error(`Invalid append value: ${e}`);
           a = i.constantValue;
@@ -20193,9 +20374,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (a.startsWith("replace(") && a.endsWith(f)) return function (e, r) {
           var t = r(e.slice(8, -1));
           if ("string" != typeof t.regex || "string" != typeof t.replacement) throw new Error('Invalid replace payload: "regex" and "replacement" must be strings');
-          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p);
+          var a = t.regex.startsWith("/") ? toRegExp(t.regex) : new RegExp(t.regex, t.flags || p),
+            n = parseKeywordValue(t.replacement);
           return function (e) {
-            return "string" != typeof e ? e : e.replace(a, t.replacement);
+            return "string" != typeof e ? e : e.replace(a, n);
           };
         }(a, r);
         var n = t(a);
@@ -20505,8 +20687,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (s === e || s === o) return {
         mode: s
       };
-      var n = "string" == typeof t ? t.trim() : "";
-      return n.startsWith("$") || n.startsWith("[?") ? {
+      var a = "string" == typeof t ? t.trim() : "";
+      return a.startsWith("$") || a.startsWith("[?") || a.startsWith(".") ? {
         mode: o
       } : {
         mode: e
@@ -20895,34 +21077,60 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }, p = 0; p < f.length; p += 1) if (s = _loop()) return s.v;
       return o;
     }
-    function parseJsonSetArgumentValue(e, l, n) {
-      var s,
-        a = "json:",
-        r = "replace:",
-        t = "",
-        o = false,
-        u = false;
-      if (l.startsWith(r)) {
-        var i = extractRegexAndReplacement(l);
-        if (!i) return logMessage(e, `Invalid argument value format: ${l}`), null;
-        t = i.regexPart, s = i.replacementPart, o = true;
-      } else if (l.startsWith(a)) try {
-        s = n(l.slice(a.length)), u = !0;
-      } catch (n) {
+    function parseJsonSetArgumentValue(e, l, a) {
+      var r,
+        n = "json:",
+        s = "replace:",
+        o = "",
+        t = false,
+        u = false,
+        i = false;
+      if (l.startsWith(s)) {
+        var c = extractRegexAndReplacement(l);
+        if (!c) return logMessage(e, `Invalid argument value format: ${l}`), null;
+        o = c.regexPart, i = (r = parseKeywordValue(c.replacementPart)) !== c.replacementPart, t = true;
+      } else if (l.startsWith(n)) try {
+        var f = l.slice(n.length),
+          p = parseKeywordValue(f);
+        i = p !== f, r = a(p), u = !0;
+      } catch (a) {
         return logMessage(e, `Invalid JSON argument value: ${l}`), null;
       } else {
-        var c = noopArray(),
-          f = noopObject();
-        if ("undefined" === l) s = void 0;else if ("false" === l) s = false;else if ("true" === l) s = true;else if ("null" === l) s = null;else if ("NaN" === l) s = NaN;else if ("emptyArr" === l || "[]" === l) s = c;else if ("emptyObj" === l || "{}" === l) s = f;else if ("noopFunc" === l) s = noopFunc;else if ("noopCallbackFunc" === l) s = noopCallbackFunc;else if ("trueFunc" === l) s = trueFunc;else if ("falseFunc" === l) s = falseFunc;else if ("throwFunc" === l) s = throwFunc;else if ("noopPromiseResolve" === l) s = noopPromiseResolve;else if ("noopPromiseReject" === l) s = noopPromiseReject;else if (/^-?\d+$/.test(l)) {
-          if (s = parseFloat(l), nativeIsNaN(s)) return null;
-        } else s = l;
+        var m = noopArray(),
+          d = noopObject(),
+          g = parseKeywordValue(l);
+        if (i = g !== l, "undefined" === g) r = void 0;else if ("false" === g) r = false;else if ("true" === g) r = true;else if ("null" === g) r = null;else if ("NaN" === g) r = NaN;else if ("emptyArr" === g || "[]" === g) r = m;else if ("emptyObj" === g || "{}" === g) r = d;else if ("noopFunc" === g) r = noopFunc;else if ("noopCallbackFunc" === g) r = noopCallbackFunc;else if ("trueFunc" === g) r = trueFunc;else if ("falseFunc" === g) r = falseFunc;else if ("throwFunc" === g) r = throwFunc;else if ("noopPromiseResolve" === g) r = noopPromiseResolve;else if ("noopPromiseReject" === g) r = noopPromiseReject;else if (/^-?\d+$/.test(g)) {
+          if (r = parseFloat(g), nativeIsNaN(r)) return null;
+        } else r = g;
       }
       return {
-        constantValue: s,
-        replaceRegexValue: t,
-        shouldReplaceArgument: o,
-        shouldMergeJsonValue: u
+        constantValue: r,
+        replaceRegexValue: o,
+        shouldReplaceArgument: t,
+        shouldMergeJsonValue: u,
+        hasTimeKeywords: i
       };
+    }
+    function parseKeywordValue(r) {
+      var e = /\$(?:currentISODate|currentDate|now)\$/g;
+      if ("string" != typeof r) return r;
+      if (-1 === r.search(e)) return r;
+      var t = new Date();
+      return r.replace(e, function (r) {
+        switch (r) {
+          case "$now$":
+            return t.getTime().toString();
+          case "$currentDate$":
+            return t.toString();
+          case "$currentISODate$":
+            return t.toISOString();
+          default:
+            return r;
+        }
+      });
+    }
+    function resolveJsonSetTimeKeywords(e, r, s, n) {
+      return n && n.hasTimeKeywords && parseJsonSetArgumentValue(e, r, s) || n;
     }
     function toRegExp(e) {
       var r = e || "",
@@ -20948,6 +21156,341 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
       trustedJsonSetXhrResponse.apply(this, updatedArgs);
+      if (source.uniqueId) {
+        Object.defineProperty(Window.prototype.toString, uniqueIdentifier, {
+          value: flag,
+          enumerable: false,
+          writable: false,
+          configurable: false
+        });
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  }
+  function trustedPreventXhr(source, args) {
+    var flag = "done";
+    var uniqueIdentifier = source.uniqueId + source.name + "_" + (Array.isArray(args) ? args.join("_") : "");
+    if (source.uniqueId) {
+      if (Window.prototype.toString[uniqueIdentifier] === flag) {
+        return;
+      }
+    }
+    function trustedPreventXhr(source, propsToMatch, directive) {
+      createPreventXhrCore(source, propsToMatch, true, directive);
+    }
+    function createPreventXhrCore(e, t, r, n) {
+      if ("undefined" != typeof Proxy) {
+        var a = window.XMLHttpRequest.prototype.open,
+          s = window.XMLHttpRequest.prototype.getResponseHeader,
+          o = window.XMLHttpRequest.prototype.getAllResponseHeaders,
+          p = new Map(),
+          l = new Map(),
+          i = {
+            apply: function apply(r, n, a) {
+              var s = getXhrData.apply(null, a);
+              if (void 0 === t ? (logMessage(e, `xhr( ${objectToString(s)} )`, true), hit(e)) : matchRequestProps(e, t, s) && ("function" == typeof n.onreadystatechange && (s.shouldFireFirstStage = true), p.set(n, s)), p.has(n) && !l.has(n)) {
+                l.set(n, []);
+                var o = {
+                  apply: function apply(e, t, r) {
+                    var n = l.get(t);
+                    return n && n.push(r), Reflect.apply(e, t, r);
+                  }
+                };
+                n.setRequestHeader = new Proxy(n.setRequestHeader, o);
+              }
+              return Reflect.apply(r, n, a);
+            }
+          },
+          u = {
+            apply: function apply(t, s, o) {
+              if (!p.has(s)) return Reflect.apply(t, s, o);
+              var i,
+                u = p.get(s),
+                d = s.responseType,
+                v = "",
+                f = "",
+                y = true;
+              if ("blob" === d) v = new Blob(), y = false;else if ("arraybuffer" === d) v = new ArrayBuffer(0), y = false;else if ("document" === d) v = new DOMParser().parseFromString("", "text/html"), i = v, y = false;else if ("json" === d) {
+                var c = "{}";
+                if (n) {
+                  var g = generateResponseContent(n);
+                  null !== g ? c = g : logMessage(e, `Invalid randomize parameter: '${n}'`);
+                }
+                y = false;
+                try {
+                  v = JSON.parse(c);
+                } catch (e) {
+                  v = null;
+                }
+              } else if (n) {
+                var w = generateResponseContent(n);
+                null !== w ? (v = w, f = w) : logMessage(e, `Invalid randomize parameter: '${n}'`);
+              }
+              var R = new XMLHttpRequest(),
+                transitionReadyState = function transitionReadyState(t) {
+                  if (2 === t) {
+                    var {
+                      responseURL: r
+                    } = R;
+                    Object.defineProperties(s, {
+                      responseURL: {
+                        value: r || u.url,
+                        writable: false
+                      }
+                    });
+                  }
+                  if (4 === t) {
+                    var {
+                        responseXML: n
+                      } = R,
+                      a = {
+                        readyState: {
+                          value: 4,
+                          writable: false
+                        },
+                        statusText: {
+                          value: "OK",
+                          writable: false
+                        },
+                        responseXML: {
+                          value: void 0 !== i ? i : n,
+                          writable: false
+                        },
+                        status: {
+                          value: 200,
+                          writable: false
+                        },
+                        response: {
+                          value: v,
+                          writable: false
+                        }
+                      };
+                    y && (a.responseText = {
+                      value: f,
+                      writable: false
+                    }), Object.defineProperties(s, a), hit(e);
+                  } else Object.defineProperty(s, "readyState", {
+                    value: t,
+                    writable: true,
+                    configurable: true
+                  });
+                  var o = new Event("readystatechange");
+                  s.dispatchEvent(o);
+                };
+              R.addEventListener("readystatechange", function () {
+                p.get(s).shouldFireFirstStage && transitionReadyState(1);
+                var e = new ProgressEvent("loadstart");
+                s.dispatchEvent(e), transitionReadyState(2), transitionReadyState(3);
+                var t = new ProgressEvent("progress");
+                s.dispatchEvent(t), transitionReadyState(4);
+              }), setTimeout(function () {
+                var e = new ProgressEvent("load");
+                s.dispatchEvent(e);
+                var t = new ProgressEvent("loadend");
+                s.dispatchEvent(t);
+              }, 1), a.apply(R, [u.method, u.url]), (l.get(s) || []).forEach(function (e) {
+                var t = e[0],
+                  r = e[1];
+                R.setRequestHeader(t, r);
+              });
+            }
+          },
+          d = {
+            apply: function apply(e, t, r) {
+              var n = l.get(t);
+              if (!n) return s.apply(t, r);
+              if (!n.length) return null;
+              var a = r[0].toLowerCase(),
+                o = n.find(function (e) {
+                  return e[0].toLowerCase() === a;
+                });
+              return o ? o[1] : null;
+            }
+          },
+          v = {
+            apply: function apply(e, t) {
+              var r = l.get(t);
+              return r ? r.length ? r.map(function (e) {
+                var t = e[0],
+                  r = e[1];
+                return `${t.toLowerCase()}: ${r}`;
+              }).join("\r\n") : "" : o.call(t);
+            }
+          };
+        XMLHttpRequest.prototype.open = new Proxy(XMLHttpRequest.prototype.open, i), XMLHttpRequest.prototype.send = new Proxy(XMLHttpRequest.prototype.send, u), XMLHttpRequest.prototype.getResponseHeader = new Proxy(XMLHttpRequest.prototype.getResponseHeader, d), XMLHttpRequest.prototype.getAllResponseHeaders = new Proxy(XMLHttpRequest.prototype.getAllResponseHeaders, v);
+      }
+    }
+    function generateResponseContent(r, t) {
+      if (!r) return "";
+      if ("true" === r) return Math.random().toString(36).slice(2).padEnd(10, "0").slice(0, 10);
+      if ("emptyObj" === r) return "{}";
+      if ("emptyArr" === r) return "[]";
+      if ("emptyStr" === r) return "";
+      if (r.startsWith("war:") || r.startsWith("join:")) return "";
+      for (var e, n = /length:(\d+)(?:-(\d+))?/g, i = null; null !== (e = n.exec(r));) i = e;
+      if (i) {
+        var u = getNumberFromString(i[1]),
+          l = i[2] ? getNumberFromString(i[2]) : u;
+        if (null === u || null === l || !nativeIsFinite(u) || !nativeIsFinite(l)) return null;
+        var a = u,
+          f = l;
+        if (a > f) {
+          var g = a;
+          a = f, f = g;
+        }
+        if (f > 5e5) return null;
+        var o = getRandomIntInclusive(a, f),
+          s = r.replace(/length:\d+(?:-\d+)?/g, "").trim();
+        if (s) {
+          for (var m = [], h = o; h > 0;) {
+            var v = s.slice(0, Math.min(s.length, h));
+            m.push(v), h -= v.length;
+          }
+          return m.join("");
+        }
+        return getRandomStrByLength(o);
+      }
+      return r;
+    }
+    function hit(e) {
+      if (e.verbose) {
+        try {
+          var n = console.trace.bind(console),
+            i = "[AdGuard] ";
+          "corelibs" === e.engine ? i += e.ruleText : (e.domainName && (i += `${e.domainName}`), e.args ? i += `#%#//scriptlet('${e.name}', '${e.args.join("', '")}')` : i += `#%#//scriptlet('${e.name}')`), n && n(i);
+        } catch (e) {}
+        "function" == typeof window.__debug && window.__debug(e);
+      }
+    }
+    function objectToString(t) {
+      return t && "object" == typeof t ? isEmptyObject(t) ? "{}" : Object.entries(t).map(function (t) {
+        var n = t[0],
+          e = t[1],
+          o = e;
+        return e instanceof Object && (o = `{ ${objectToString(e)} }`), `${n}:"${o}"`;
+      }).join(" ") : String(t);
+    }
+    function matchRequestProps(e, t, r) {
+      if ("" === t || "*" === t) return true;
+      var a,
+        s = parseMatchProps(t);
+      if (isValidParsedData(s)) {
+        var n = getMatchPropsData(s);
+        a = Object.keys(n).every(function (e) {
+          var t = n[e],
+            a = r[e];
+          return Object.prototype.hasOwnProperty.call(r, e) && "string" == typeof a && (null == t ? void 0 : t.test(a));
+        });
+      } else logMessage(e, `Invalid parameter: ${t}`), a = false;
+      return a;
+    }
+    function getXhrData(r, t, a, e, n) {
+      return {
+        method: r,
+        url: t,
+        async: a,
+        user: e,
+        password: n
+      };
+    }
+    function logMessage(e, o) {
+      var r = arguments.length > 2 && void 0 !== arguments[2] && arguments[2],
+        a = !(arguments.length > 3 && void 0 !== arguments[3]) || arguments[3],
+        {
+          name: n,
+          verbose: g
+        } = e;
+      if (r || g) {
+        var i = console.log;
+        a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
+      }
+    }
+    function toRegExp(e) {
+      var r = e || "",
+        t = "/";
+      if ("" === r) return new RegExp(".?");
+      var n,
+        i,
+        s = r.lastIndexOf(t),
+        a = r.substring(s + 1),
+        g = r.substring(0, s + 1),
+        u = (i = a, (n = g).startsWith(t) && n.endsWith(t) && !n.endsWith("\\/") && function (e) {
+          if (!e) return false;
+          try {
+            return new RegExp("", e), !0;
+          } catch (e) {
+            return false;
+          }
+        }(i) ? i : "");
+      if (r.startsWith(t) && r.endsWith(t) || u) return new RegExp((u ? g : r).slice(1, -1), u);
+      var c = r.replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(c);
+    }
+    function isValidStrPattern(e) {
+      var t,
+        n = escapeRegExp(e);
+      "/" === e[0] && "/" === e[e.length - 1] && (n = e.slice(1, -1));
+      try {
+        t = new RegExp(n), t = !0;
+      } catch (e) {
+        t = false;
+      }
+      return t;
+    }
+    function escapeRegExp(e) {
+      return e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+    function isEmptyObject(t) {
+      return 0 === Object.keys(t).length && !t.prototype;
+    }
+    function getNumberFromString(n) {
+      var r = parseInt(n, 10);
+      return nativeIsNaN(r) ? null : r;
+    }
+    function nativeIsFinite(i) {
+      return (Number.isFinite || window.isFinite)(i);
+    }
+    function nativeIsNaN(N) {
+      return (Number.isNaN || window.isNaN)(N);
+    }
+    function parseMatchProps(e) {
+      var r = {};
+      return e.split(" ").forEach(function (e) {
+        var n = e.indexOf(":"),
+          i = e.slice(0, n);
+        if (function (e) {
+          return getRequestProps().includes(e);
+        }(i)) {
+          var s = e.slice(n + 1);
+          r[i] = s;
+        } else r.url = e;
+      }), r;
+    }
+    function isValidParsedData(t) {
+      return Object.values(t).every(function (t) {
+        return isValidStrPattern(t);
+      });
+    }
+    function getMatchPropsData(t) {
+      var a = {};
+      return Object.keys(t).forEach(function (c) {
+        a[c] = toRegExp(t[c]);
+      }), a;
+    }
+    function getRequestProps() {
+      return ["url", "method", "headers", "body", "credentials", "cache", "redirect", "referrer", "referrerPolicy", "integrity", "keepalive", "signal", "mode"];
+    }
+    function getRandomIntInclusive(t, n) {
+      return t = Math.ceil(t), n = Math.floor(n), Math.floor(Math.random() * (n - t + 1) + t);
+    }
+    function getRandomStrByLength(r) {
+      for (var t = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+=~", n = [], o = 0; o < r; o += 1) n.push(t.charAt(Math.floor(76 * Math.random())));
+      return n.join("");
+    }
+    var updatedArgs = args ? [].concat(source).concat(args) : [source];
+    try {
+      trustedPreventXhr.apply(this, updatedArgs);
       if (source.uniqueId) {
         Object.defineProperty(Window.prototype.toString, uniqueIdentifier, {
           value: flag,
@@ -21471,6 +22014,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         return true;
       };
+      var replaceTargetArgument = function replaceTargetArgument(argumentsList) {
+        var argumentToReplace = argumentsList[Number(argumentIndex)];
+        if (shouldReplaceArgument) {
+          var argumentString = String(argumentToReplace);
+          var replacedArgument = argumentString.replace(replaceRegexValue, constantValue);
+          if (replacedArgument !== argumentString) {
+            argumentsList[Number(argumentIndex)] = replacedArgument;
+          }
+        } else {
+          argumentsList[Number(argumentIndex)] = constantValue;
+        }
+      };
       var isMatchingSuspended = false;
       var applyWrapper = function applyWrapper(target, thisArg, argumentsList) {
         try {
@@ -21492,11 +22047,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             isMatchingSuspended = false;
             return Reflect.apply(target, thisArg, argumentsList);
           }
-          if (typeof argumentToReplace === "string" && shouldReplaceArgument) {
-            argumentsList[Number(argumentIndex)] = argumentToReplace.replace(replaceRegexValue, constantValue);
-          } else {
-            argumentsList[Number(argumentIndex)] = constantValue;
-          }
+          replaceTargetArgument(argumentsList);
           if (verbose === "true") {
             var _formattedMessage = createFormattedMessage(argumentsList, "modified");
             logMessage(source, _formattedMessage);
@@ -21530,11 +22081,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             isMatchingSuspended = false;
             return Reflect.construct(target, argumentsList, newTarget);
           }
-          if (typeof argumentToReplace === "string" && shouldReplaceArgument) {
-            argumentsList[Number(argumentIndex)] = argumentToReplace.replace(replaceRegexValue, constantValue);
-          } else {
-            argumentsList[Number(argumentIndex)] = constantValue;
-          }
+          replaceTargetArgument(argumentsList);
           if (verbose === "true") {
             var _formattedMessage2 = createFormattedMessage(argumentsList, "modified");
             logMessage(source, _formattedMessage2);
@@ -23480,9 +24027,23 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if ("1year" === e) r = 31536e3;else if ("1day" === e) r = 86400;else if (r = Number.parseInt(e, 10), Number.isNaN(r)) return null;
       return 1e3 * r;
     }
-    function parseKeywordValue(t) {
-      var e = t;
-      return "$now$" === t ? e = Date.now().toString() : "$currentDate$" === t ? e = Date() : "$currentISODate$" === t && (e = new Date().toISOString()), e;
+    function parseKeywordValue(r) {
+      var e = /\$(?:currentISODate|currentDate|now)\$/g;
+      if ("string" != typeof r) return r;
+      if (-1 === r.search(e)) return r;
+      var t = new Date();
+      return r.replace(e, function (r) {
+        switch (r) {
+          case "$now$":
+            return t.getTime().toString();
+          case "$currentDate$":
+            return t.toString();
+          case "$currentISODate$":
+            return t.toISOString();
+          default:
+            return r;
+        }
+      });
     }
     function getCookiePath(t) {
       return "/" === t ? "path=/" : "";
@@ -23577,18 +24138,43 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         a ? i(`${n}: ${o}`) : Array.isArray(o) ? i(`${n}:`, ...o) : i(`${n}:`, o);
       }
     }
-    function isCookieSetWithValue(e, t, r) {
+    function isCookieSetWithValue(e, r, t) {
+      var n = /\$(?:currentISODate|currentDate|now)\$/g,
+        u = "string" == typeof t ? t.match(n) : null,
+        i = null;
+      if (u) {
+        var a = t.split(n).map(function (e, r) {
+          var t = u[r];
+          return e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + (t ? function (e) {
+            switch (e) {
+              case "$now$":
+                return `(\\d{${`${Date.now()}`.length}})`;
+              case "$currentDate$":
+                return "(\\w{3} \\w{3} \\d{2} \\d{4} \\d{2}:\\d{2}:\\d{2} GMT[+-]\\d{4}(?: \\([^)]*\\))?)";
+              case "$currentISODate$":
+                return "(\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z)";
+              default:
+                return "";
+            }
+          }(t) : "");
+        }).join("");
+        i = new RegExp(`^${a}$`);
+      }
       return e.split(";").some(function (e) {
         var n = e.indexOf("=");
         if (-1 === n) return false;
-        var i = e.slice(0, n).trim(),
+        var u = e.slice(0, n).trim(),
           a = e.slice(n + 1).trim();
-        if (new Set(["$now$", "$currentDate$", "$currentISODate$"]).has(r)) {
-          var u = Date.now(),
-            s = /^\d+$/.test(a) ? parseInt(a, 10) : new Date(a).getTime();
-          return t === i && s > u - 864e5;
+        if (r !== u) return false;
+        if (i) {
+          var c = i.exec(a);
+          if (null === c) return false;
+          var d = Date.now();
+          return c.slice(1).every(function (e) {
+            return (/^\d+$/.test(e) ? parseInt(e, 10) : new Date(e).getTime()) > d - 864e5;
+          });
         }
-        return t === i && r === a;
+        return t === a;
       });
     }
     function serializeCookie(e, o, i) {
@@ -23608,9 +24194,23 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if ("1year" === e) r = 31536e3;else if ("1day" === e) r = 86400;else if (r = Number.parseInt(e, 10), Number.isNaN(r)) return null;
       return 1e3 * r;
     }
-    function parseKeywordValue(t) {
-      var e = t;
-      return "$now$" === t ? e = Date.now().toString() : "$currentDate$" === t ? e = Date() : "$currentISODate$" === t && (e = new Date().toISOString()), e;
+    function parseKeywordValue(r) {
+      var e = /\$(?:currentISODate|currentDate|now)\$/g;
+      if ("string" != typeof r) return r;
+      if (-1 === r.search(e)) return r;
+      var t = new Date();
+      return r.replace(e, function (r) {
+        switch (r) {
+          case "$now$":
+            return t.getTime().toString();
+          case "$currentDate$":
+            return t.toString();
+          case "$currentISODate$":
+            return t.toISOString();
+          default:
+            return r;
+        }
+      });
     }
     function parseCookieString(i) {
       var r = i.split(";"),
@@ -23694,9 +24294,23 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         logMessage(e, o);
       }
     }
-    function parseKeywordValue(t) {
-      var e = t;
-      return "$now$" === t ? e = Date.now().toString() : "$currentDate$" === t ? e = Date() : "$currentISODate$" === t && (e = new Date().toISOString()), e;
+    function parseKeywordValue(r) {
+      var e = /\$(?:currentISODate|currentDate|now)\$/g;
+      if ("string" != typeof r) return r;
+      if (-1 === r.search(e)) return r;
+      var t = new Date();
+      return r.replace(e, function (r) {
+        switch (r) {
+          case "$now$":
+            return t.getTime().toString();
+          case "$currentDate$":
+            return t.toString();
+          case "$currentISODate$":
+            return t.toISOString();
+          default:
+            return r;
+        }
+      });
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
@@ -23767,9 +24381,23 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         logMessage(e, o);
       }
     }
-    function parseKeywordValue(t) {
-      var e = t;
-      return "$now$" === t ? e = Date.now().toString() : "$currentDate$" === t ? e = Date() : "$currentISODate$" === t && (e = new Date().toISOString()), e;
+    function parseKeywordValue(r) {
+      var e = /\$(?:currentISODate|currentDate|now)\$/g;
+      if ("string" != typeof r) return r;
+      if (-1 === r.search(e)) return r;
+      var t = new Date();
+      return r.replace(e, function (r) {
+        switch (r) {
+          case "$now$":
+            return t.getTime().toString();
+          case "$currentDate$":
+            return t.toString();
+          case "$currentISODate$":
+            return t.toISOString();
+          default:
+            return r;
+        }
+      });
     }
     var updatedArgs = args ? [].concat(source).concat(args) : [source];
     try {
@@ -24649,15 +25277,27 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     "json-prune-fetch-response.js": jsonPruneFetchResponse,
     "ubo-json-prune-fetch-response.js": jsonPruneFetchResponse,
     "ubo-json-prune-fetch-response": jsonPruneFetchResponse,
+    "json-edit-fetch-response": jsonPruneFetchResponse,
+    "json-edit-fetch-response.js": jsonPruneFetchResponse,
+    "ubo-json-edit-fetch-response.js": jsonPruneFetchResponse,
+    "ubo-json-edit-fetch-response": jsonPruneFetchResponse,
     "json-prune": jsonPrune,
     "json-prune.js": jsonPrune,
     "ubo-json-prune.js": jsonPrune,
     "ubo-json-prune": jsonPrune,
     "abp-json-prune": jsonPrune,
+    "json-edit": jsonPrune,
+    "json-edit.js": jsonPrune,
+    "ubo-json-edit.js": jsonPrune,
+    "ubo-json-edit": jsonPrune,
     "json-prune-xhr-response": jsonPruneXhrResponse,
     "json-prune-xhr-response.js": jsonPruneXhrResponse,
     "ubo-json-prune-xhr-response.js": jsonPruneXhrResponse,
     "ubo-json-prune-xhr-response": jsonPruneXhrResponse,
+    "json-edit-xhr-response": jsonPruneXhrResponse,
+    "json-edit-xhr-response.js": jsonPruneXhrResponse,
+    "ubo-json-edit-xhr-response.js": jsonPruneXhrResponse,
+    "ubo-json-edit-xhr-response": jsonPruneXhrResponse,
     "log-addEventListener": logAddEventListener,
     "addEventListener-logger.js": logAddEventListener,
     "ubo-addEventListener-logger.js": logAddEventListener,
@@ -24698,12 +25338,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     "abp-prevent-listener": preventAddEventListener,
     "prevent-adfly": preventAdfly,
     "prevent-bab": preventBab,
-    "ubo-nobab": preventBab,
-    nobab: preventBab,
-    "bab-defuser": preventBab,
-    "nobab.js": preventBab,
-    "ubo-nobab.js": preventBab,
-    "bab-defuser.js": preventBab,
     "prevent-canvas": preventCanvas,
     "prevent-canvas.js": preventCanvas,
     "ubo-prevent-canvas.js": preventCanvas,
@@ -24865,6 +25499,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     "trusted-json-set-fetch-response": trustedJsonSetFetchResponse,
     "trusted-json-set": trustedJsonSet,
     "trusted-json-set-xhr-response": trustedJsonSetXhrResponse,
+    "trusted-prevent-xhr": trustedPreventXhr,
     "trusted-prune-inbound-object": trustedPruneInboundObject,
     "trusted-replace-argument": trustedReplaceArgument,
     "trusted-replace-fetch-response": trustedReplaceFetchResponse,
