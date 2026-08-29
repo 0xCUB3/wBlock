@@ -1806,7 +1806,7 @@ private struct AddUserScriptEditorSheet: View {
                     .navigationTitle("Editor")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
+                        ToolbarItem(placement: .topBarTrailing) {
                             SheetDoneButton(action: finish, usesAutomaticStyle: true)
                         }
                     }
@@ -1855,7 +1855,9 @@ private struct AddUserScriptEditorSheet: View {
                 #endif
             }
             .padding(12)
+            #if os(macOS)
             .liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)
+            #endif
             .padding(12)
 
             CodeMirrorTextEditor(

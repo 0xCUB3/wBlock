@@ -31,6 +31,31 @@ for required in [
     require(source.contains(required), "missing editor/text requirement evidence: \(required)")
 }
 
+let sheetStart = source.range(of: "private struct AddUserScriptEditorSheet")!.lowerBound
+let sheetEnd = source.range(of: "struct AddUserScriptView", range: sheetStart..<source.endIndex)!.lowerBound
+let editorSheet = String(source[sheetStart..<sheetEnd])
+let iOSStart = editorSheet.range(of: "#if os(iOS)")!.lowerBound
+let iOSEnd = editorSheet.range(of: "#else", range: iOSStart..<editorSheet.endIndex)!.lowerBound
+let iOSBranch = String(editorSheet[iOSStart..<iOSEnd])
+require(
+    iOSBranch.contains(".topBarTrailing") || iOSBranch.contains(".navigationBarTrailing"),
+    "iOS editor Done must use trailing navigation-bar placement"
+)
+require(!iOSBranch.contains(".confirmationAction"), "iOS editor Done must not use confirmationAction")
+require(!iOSBranch.contains("liquidGlassCompat"), "iOS editor toolbar must not apply liquid glass")
+
+let editorBodyStart = editorSheet.range(of: "private var editorBody")!.lowerBound
+let editorBodyEnd = editorSheet.range(of: "private func finish", range: editorBodyStart..<editorSheet.endIndex)!.lowerBound
+let editorBody = String(editorSheet[editorBodyStart..<editorBodyEnd])
+require(
+    editorBody.contains("#if os(macOS)\n            .liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)\n            #endif"),
+    "editor action bar liquid glass must be macOS-only"
+)
+require(
+    editorBody.contains("#if os(macOS)\n                SheetDoneButton(action: finish)\n                #endif"),
+    "macOS editor action bar must keep its Done button"
+)
+
 let textStart = source.range(of: "private var textTab")!.lowerBound
 let textEnd = source.range(of: "private var macosBody", range: textStart..<source.endIndex)!.lowerBound
 let textSurface = String(source[textStart..<textEnd])
