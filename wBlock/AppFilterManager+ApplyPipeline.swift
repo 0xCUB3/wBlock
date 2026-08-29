@@ -33,41 +33,68 @@ private enum ApplyCancellation {
 }
 
 /// Holds `performExpiringActivity` while apply owns shared-container locks.
-/// The non-expired callback blocks on a background thread; `release()` lets
-/// that assertion lapse. Never wait on that semaphore from the MainActor.
+/// The non-expired callback blocks on a background thread; `release()` wakes
+/// every callback waiting for the apply to unwind. When expiration starts, the
+/// callback waits briefly for the locks to drop before allowing suspension so
+/// iOS does not kill the process with 0xDEAD10CC.
 private final class ApplySuspensionShield: @unchecked Sendable {
-    private let completion = DispatchSemaphore(value: 0)
-    private let stateLock = NSLock()
+    private static let expirationUnwindTimeout: TimeInterval = 3
+
+    private let condition = NSCondition()
     private var expired = false
+    private var released = false
 
     init(reason: String, onExpiration: @escaping @Sendable () -> Void) {
-        let completion = completion
-        DispatchQueue.global(qos: .userInitiated).async {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             ProcessInfo.processInfo.performExpiringActivity(withReason: reason) { [weak self] isExpired in
                 if isExpired {
                     self?.markExpired()
                     onExpiration()
+                    self?.waitUntilReleased(
+                        timeout: ApplySuspensionShield.expirationUnwindTimeout
+                    )
                 } else {
-                    completion.wait()
+                    self?.waitUntilReleased()
                 }
             }
         }
     }
 
     var isExpired: Bool {
-        stateLock.lock()
-        defer { stateLock.unlock() }
+        condition.lock()
+        defer { condition.unlock() }
         return expired
     }
 
     private func markExpired() {
-        stateLock.lock()
+        condition.lock()
         expired = true
-        stateLock.unlock()
+        condition.unlock()
+    }
+
+    private func waitUntilReleased(timeout: TimeInterval? = nil) {
+        condition.lock()
+        defer { condition.unlock() }
+
+        if let timeout {
+            let deadline = Date().addingTimeInterval(timeout)
+            while !released && condition.wait(until: deadline) {}
+        } else {
+            while !released {
+                condition.wait()
+            }
+        }
     }
 
     func release() {
-        completion.signal()
+        condition.lock()
+        guard !released else {
+            condition.unlock()
+            return
+        }
+        released = true
+        condition.broadcast()
+        condition.unlock()
     }
 }
 
@@ -615,6 +642,13 @@ extension AppFilterManager {
                     )
                 }
                 #endif
+                #if os(iOS)
+                let isConversionCancelled = {
+                    ApplyCancellation.isCancelled || Task.isCancelled
+                }
+                #else
+                let isConversionCancelled = { Task.isCancelled }
+                #endif
                 do {
                     let outcome = try ContentBlockerService.compileTargetRules(
                         filters: work.filters,
@@ -624,11 +658,22 @@ extension AppFilterManager {
                         allTargets: platformTargets,
                         disabledSites: disabledSites,
                         extraRulesText: work.extraRulesText,
-                        groupIdentifier: groupIdentifier
+                        groupIdentifier: groupIdentifier,
+                        isCancelled: isConversionCancelled
                     )
                     return TargetConversionCompletion(
                         work: work,
                         outcome: outcome,
+                        failureDescription: nil,
+                        durationMs: Int(Date().timeIntervalSince(conversionStart) * 1000)
+                    )
+                } catch is CancellationError {
+                    #if os(iOS)
+                    ApplyCancellation.cancel()
+                    #endif
+                    return TargetConversionCompletion(
+                        work: work,
+                        outcome: nil,
                         failureDescription: nil,
                         durationMs: Int(Date().timeIntervalSince(conversionStart) * 1000)
                     )

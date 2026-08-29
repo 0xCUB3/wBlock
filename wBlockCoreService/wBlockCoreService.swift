@@ -102,39 +102,66 @@ public struct ContentBlockerSaveResult: Sendable {
     /// decides to suspend anyway, the expiration callback flips a flag that the
     /// publish checkpoints observe to unwind and release the locks first.
     private final class EnginePublishSuspensionShield: @unchecked Sendable {
-        private let completion = DispatchSemaphore(value: 0)
-        private let stateLock = NSLock()
+        private static let expirationUnwindTimeout: TimeInterval = 3
+
+        private let condition = NSCondition()
         private var expired = false
+        private var released = false
 
         init(reason: String) {
-            let completion = completion
             ProcessInfo.processInfo.performExpiringActivity(withReason: reason) { [weak self] isExpired in
                 if isExpired {
                     // Runs when suspension is imminent: immediately when no
                     // background time is available, otherwise concurrently
-                    // with the blocked non-expired invocation below.
+                    // with the blocked non-expired invocation below. Build
+                    // checkpoints unwind the publish; wait briefly for its
+                    // deferred release before allowing suspension.
                     self?.markExpired()
+                    self?.waitUntilReleased(
+                        timeout: EnginePublishSuspensionShield.expirationUnwindTimeout
+                    )
                 } else {
                     // The assertion holds for as long as this invocation blocks.
-                    completion.wait()
+                    self?.waitUntilReleased()
                 }
             }
         }
 
         var isExpired: Bool {
-            stateLock.lock()
-            defer { stateLock.unlock() }
+            condition.lock()
+            defer { condition.unlock() }
             return expired
         }
 
         private func markExpired() {
-            stateLock.lock()
+            condition.lock()
             expired = true
-            stateLock.unlock()
+            condition.unlock()
+        }
+
+        private func waitUntilReleased(timeout: TimeInterval? = nil) {
+            condition.lock()
+            defer { condition.unlock() }
+
+            if let timeout {
+                let deadline = Date().addingTimeInterval(timeout)
+                while !released && condition.wait(until: deadline) {}
+            } else {
+                while !released {
+                    condition.wait()
+                }
+            }
         }
 
         func release() {
-            completion.signal()
+            condition.lock()
+            guard !released else {
+                condition.unlock()
+                return
+            }
+            released = true
+            condition.broadcast()
+            condition.unlock()
         }
     }
     #endif
@@ -629,13 +656,16 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         return age >= 0 && age < disabledSitesApplyInProgressMaximumAge
     }
 
-    private static func validOutputDigest(_ data: Data?) -> String? {
+    private static func validOutputDigest(_ data: Data?) throws -> String? {
+        try Task.checkCancellation()
         guard let data,
               !data.isEmpty,
               (try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]) != nil
         else { return nil }
-        let digest = SHA256.hash(data: data)
-        return digest.map { String(format: "%02x", $0) }.joined()
+        return try ContentBlockerChunkedHasher.hexDigest(
+            for: data,
+            isCancelled: { Task.isCancelled }
+        )
     }
 
     private static func readReloadSnapshot(
@@ -649,7 +679,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             }
             return ReloadSnapshot(
                 marker: marker,
-                outputDigest: validOutputDigest(try? Data(contentsOf: outputURL)),
+                outputDigest: try validOutputDigest(try? Data(contentsOf: outputURL)),
                 context: currentReloadContext
             )
         }
@@ -671,7 +701,7 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
 
             let snapshot = ReloadSnapshot(
                 marker: nil,
-                outputDigest: validOutputDigest(try? Data(contentsOf: outputURL)),
+                outputDigest: try validOutputDigest(try? Data(contentsOf: outputURL)),
                 context: currentReloadContext
             )
             guard let outputDigest = snapshot.outputDigest else {
@@ -1164,14 +1194,16 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         rulesSHA256Hex: String,
         groupIdentifier: String,
         targetRulesFilename: String,
-        disabledSites: [String]
+        disabledSites: [String],
+        isCancelled: (() -> Bool)? = nil
     ) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
         let result = try convertFilterFromFileWithOutputChange(
             rulesFileURL: rulesFileURL,
             rulesSHA256Hex: rulesSHA256Hex,
             groupIdentifier: groupIdentifier,
             targetRulesFilename: targetRulesFilename,
-            disabledSites: disabledSites
+            disabledSites: disabledSites,
+            isCancelled: isCancelled
         )
         return (
             safariRulesCount: result.safariRulesCount,
@@ -1184,8 +1216,12 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         rulesSHA256Hex: String,
         groupIdentifier: String,
         targetRulesFilename: String,
-        disabledSites: [String]
+        disabledSites: [String],
+        isCancelled: (() -> Bool)? = nil
     ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
+        let cancellationRequested = {
+            Task.isCancelled || isCancelled?() == true
+        }
         let sitesToUse = disabledSites
         let effectiveRulesHash = effectiveRulesHashHex(baseRulesHashHex: rulesSHA256Hex)
 
@@ -1217,11 +1253,17 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
                 .flatMap({ Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) })
         {
+            if cancellationRequested() {
+                throw CancellationError()
+            }
             let finalized = finalizeContentBlockerJSON(
                 baseJSON: baseJSON,
                 disabledSites: sitesToUse,
                 knownBaseCount: baseCount
             )
+            if cancellationRequested() {
+                throw CancellationError()
+            }
             let output = try saveContentBlockerIfChanged(
                 jsonRules: finalized.json,
                 groupIdentifier: groupIdentifier,
@@ -1241,9 +1283,21 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         }
 
         // Cache miss: read rules file and run conversion.
+        if cancellationRequested() {
+            throw CancellationError()
+        }
         let combinedRules = try String(contentsOf: rulesFileURL, encoding: .utf8)
         let effectiveRules = combinedRulesWithEmbeddedCompatibility(combinedRules)
-        let result = try convertRules(rules: effectiveRules)
+        if cancellationRequested() {
+            throw CancellationError()
+        }
+        let result = try convertRules(
+            rules: effectiveRules,
+            isCancelled: cancellationRequested
+        )
+        if cancellationRequested() {
+            throw CancellationError()
+        }
 
         _ = try saveContentBlockerIfChanged(
             jsonRules: result.safariRulesJSON,
@@ -1281,8 +1335,12 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         allTargets: [ContentBlockerTargetInfo],
         disabledSites: [String],
         extraRulesText: String?,
-        groupIdentifier: String
+        groupIdentifier: String,
+        isCancelled: (() -> Bool)? = nil
     ) throws -> ContentBlockerTargetOutcome {
+        if Task.isCancelled || isCancelled?() == true {
+            throw CancellationError()
+        }
         let rulesFilename = targetInfo.rulesFilename
         let hasAffinityFilters = !affinitySnapshot.isEmpty
         let currentSignature = hasAffinityFilters
@@ -1338,7 +1396,8 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             allTargets: allTargets,
             disabledSites: disabledSites,
             extraRulesText: extraRulesText,
-            groupIdentifier: groupIdentifier
+            groupIdentifier: groupIdentifier,
+            isCancelled: isCancelled
         )
 
         if let currentSignature {
@@ -1366,7 +1425,8 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         allTargets: [ContentBlockerTargetInfo],
         disabledSites: [String],
         extraRulesText: String?,
-        groupIdentifier: String
+        groupIdentifier: String,
+        isCancelled: (() -> Bool)? = nil
     ) throws -> ContentBlockerTargetOutcome {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
@@ -1400,7 +1460,8 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             allTargets: allTargets,
             disabledSites: disabledSites,
             extraRulesText: extraRulesText,
-            groupIdentifier: groupIdentifier
+            groupIdentifier: groupIdentifier,
+            isCancelled: isCancelled
         )
     }
 
@@ -1412,7 +1473,8 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         allTargets: [ContentBlockerTargetInfo],
         disabledSites: [String],
         extraRulesText: String?,
-        groupIdentifier: String
+        groupIdentifier: String,
+        isCancelled: (() -> Bool)?
     ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
@@ -1432,8 +1494,14 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         var hasher = SHA256()
         let newlineData = Data("\n".utf8)
         let assignedFilterIDs = Set(filters.map(\.id))
+        let cancellationRequested = {
+            Task.isCancelled || isCancelled?() == true
+        }
 
         for filter in orderedSelectedFilters {
+            if cancellationRequested() {
+                throw CancellationError()
+            }
             let includeBaseRules = assignedFilterIDs.contains(filter.id)
             let hasAffinity = affinitySnapshot.content(for: filter.id) != nil
             guard includeBaseRules || hasAffinity else { continue }
@@ -1447,7 +1515,8 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                     affinitySnapshot: affinitySnapshot,
                     destinationHandle: fileHandle,
                     hasher: &hasher,
-                    newlineData: newlineData
+                    newlineData: newlineData,
+                    isCancelled: cancellationRequested
                 )
             } else if let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(
                 for: filter,
@@ -1458,7 +1527,8 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                     to: fileHandle,
                     hasher: &hasher,
                     newlineData: newlineData,
-                    policy: .strict
+                    policy: .strict,
+                    isCancelled: cancellationRequested
                 )
             }
         }
@@ -1468,7 +1538,8 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                 extraRulesText,
                 to: fileHandle,
                 hasher: &hasher,
-                newlineData: newlineData
+                newlineData: newlineData,
+                isCancelled: cancellationRequested
             )
         }
 
@@ -1480,7 +1551,8 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             rulesSHA256Hex: rulesSHA256Hex,
             groupIdentifier: groupIdentifier,
             targetRulesFilename: targetInfo.rulesFilename,
-            disabledSites: disabledSites
+            disabledSites: disabledSites,
+            isCancelled: cancellationRequested
         )
     }
 
@@ -1716,7 +1788,6 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         let requestToken = try recordCombinedEngineRequest(at: baseURL)
         let safariVersion = SafariVersion.autodetect()
         let rulesData = Data(combinedAdvancedRules.utf8)
-        let fingerprint = combinedEngineFingerprint(rulesData: rulesData, safariVersion: safariVersion)
 
         #if os(iOS)
         // The section below holds exclusive kernel flocks on app group files for
@@ -1730,9 +1801,19 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                 throw CombinedEnginePublishError.suspensionImminent
             }
         }
+        let isEnginePublishCancelled = {
+            shield.isExpired || Task.isCancelled
+        }
         #else
         let ensureNotSuspending: () throws -> Void = {}
+        let isEnginePublishCancelled = { Task.isCancelled }
         #endif
+
+        let fingerprint = try combinedEngineFingerprint(
+            rulesData: rulesData,
+            safariVersion: safariVersion,
+            isCancelled: isEnginePublishCancelled
+        )
 
         try measure(label: combinedAdvancedRules.isEmpty ? "Clearing filter engine" : "Building combined filter engine") {
             try withCombinedEngineBuildLock(at: baseURL) {
@@ -1740,7 +1821,11 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                 let skipped = try withEngineCriticalSection(at: baseURL) {
                     try withCombinedEngineRequestLock(at: baseURL) {
                         try ensureCombinedEngineRequestIsCurrent(at: baseURL, requestToken: requestToken)
-                        return canSkipCombinedEnginePublish(fingerprint: fingerprint, baseURL: baseURL)
+                        return try canSkipCombinedEnginePublish(
+                            fingerprint: fingerprint,
+                            baseURL: baseURL,
+                            isCancelled: isEnginePublishCancelled
+                        )
                     }
                 }
                 if skipped {
@@ -1752,7 +1837,9 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                 let temporaryBuild = try buildTemporaryEngine(
                     rulesData: rulesData,
                     safariVersion: safariVersion,
-                    baseURL: baseURL
+                    baseURL: baseURL,
+                    cancellationCheck: ensureNotSuspending,
+                    isCancelled: isEnginePublishCancelled
                 )
                 defer { try? FileManager.default.removeItem(at: temporaryBuild.directory) }
 
@@ -1760,14 +1847,19 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                     try withCombinedEngineRequestLock(at: baseURL) {
                         try ensureNotSuspending()
                         try ensureCombinedEngineRequestIsCurrent(at: baseURL, requestToken: requestToken)
-                        if canSkipCombinedEnginePublish(fingerprint: fingerprint, baseURL: baseURL) {
+                        if try canSkipCombinedEnginePublish(
+                            fingerprint: fingerprint,
+                            baseURL: baseURL,
+                            isCancelled: isEnginePublishCancelled
+                        ) {
                             return false
                         }
 
                         try publishEngineFiles(
                             from: temporaryBuild,
                             fingerprint: fingerprint,
-                            baseURL: baseURL
+                            baseURL: baseURL,
+                            isCancelled: isEnginePublishCancelled
                         )
                         return true
                     }
@@ -1823,14 +1915,16 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
 
     private static func combinedEngineFingerprint(
         rulesData: Data,
-        safariVersion: SafariVersion
-    ) -> CombinedEngineFingerprint {
-        let rulesHash = combinedRulesHash(rulesData)
+        safariVersion: SafariVersion,
+        isCancelled: (() -> Bool)? = nil
+    ) throws -> CombinedEngineFingerprint {
+        let rulesHash = try combinedRulesHash(rulesData, isCancelled: isCancelled)
         let safariBuildContext = "\(currentPlatform)-safari-\(safariVersion.doubleValue)"
         let markerFormatVersion = combinedEngineMarkerFormatVersion
         let schemaVersion = Schema.VERSION
-        let value = combinedRulesHash(
-            Data("\(markerFormatVersion)|\(schemaVersion)|\(safariBuildContext)|\(rulesHash)".utf8)
+        let value = try combinedRulesHash(
+            Data("\(markerFormatVersion)|\(schemaVersion)|\(safariBuildContext)|\(rulesHash)".utf8),
+            isCancelled: isCancelled
         )
         return CombinedEngineFingerprint(
             rulesHash: rulesHash,
@@ -1851,8 +1945,16 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
         #endif
     }
 
-    private static func combinedRulesHash(_ data: Data) -> String {
-        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    private static func combinedRulesHash(
+        _ data: Data,
+        isCancelled: (() -> Bool)? = nil
+    ) throws -> String {
+        try ContentBlockerChunkedHasher.hexDigest(
+            for: data,
+            isCancelled: {
+                Task.isCancelled || isCancelled?() == true
+            }
+        )
     }
 
     private static func expectedMarker(
@@ -1871,8 +1973,9 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
 
     private static func canSkipCombinedEnginePublish(
         fingerprint: CombinedEngineFingerprint,
-        baseURL: URL
-    ) -> Bool {
+        baseURL: URL,
+        isCancelled: (() -> Bool)? = nil
+    ) throws -> Bool {
         let migrationMarkerURL = baseURL.appendingPathComponent(Schema.MIGRATION_MARKER_FILE_NAME)
         guard !FileManager.default.fileExists(atPath: migrationMarkerURL.path) else { return false }
 
@@ -1887,30 +1990,48 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
               Set(marker.artifactDigests.keys) == Set(engineStorageFileNames)
         else { return false }
 
-        return validatePublishedEngineFiles(at: baseURL, artifactDigests: marker.artifactDigests)
+        return try validatePublishedEngineFiles(
+            at: baseURL,
+            artifactDigests: marker.artifactDigests,
+            isCancelled: isCancelled
+        )
     }
 
     private static func validatePublishedEngineFiles(
         at baseURL: URL,
-        artifactDigests: [String: String]
-    ) -> Bool {
+        artifactDigests: [String: String],
+        isCancelled: (() -> Bool)? = nil
+    ) throws -> Bool {
         guard Set(artifactDigests.keys) == Set(engineStorageFileNames) else { return false }
-        return (try? engineArtifactDigests(at: baseURL)) == artifactDigests
+        return try engineArtifactDigests(
+            at: baseURL,
+            isCancelled: isCancelled
+        ) == artifactDigests
     }
 
-    private static func engineArtifactDigests(at baseURL: URL) throws -> [String: String] {
+    private static func engineArtifactDigests(
+        at baseURL: URL,
+        isCancelled: (() -> Bool)? = nil
+    ) throws -> [String: String] {
         Dictionary(uniqueKeysWithValues: try engineStorageFileNames.map { fileName in
             let data = try Data(contentsOf: baseURL.appendingPathComponent(fileName))
-            return (fileName, combinedRulesHash(data))
+            return (
+                fileName,
+                try combinedRulesHash(data, isCancelled: isCancelled)
+            )
         })
     }
 
     private static func validateTemporaryEngine(
         at directory: URL,
-        fingerprint: CombinedEngineFingerprint
-    ) -> Bool {
-        guard let artifactDigests = try? engineArtifactDigests(at: directory),
-              artifactDigests[Schema.RULES_FILE_NAME] == fingerprint.rulesHash,
+        fingerprint: CombinedEngineFingerprint,
+        isCancelled: (() -> Bool)? = nil
+    ) throws -> Bool {
+        let artifactDigests = try engineArtifactDigests(
+            at: directory,
+            isCancelled: isCancelled
+        )
+        guard artifactDigests[Schema.RULES_FILE_NAME] == fingerprint.rulesHash,
               let metaData = try? Data(contentsOf: directory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)),
               let meta = EngineMeta.fromData(metaData),
               meta.schemaVersion == Int32(fingerprint.schemaVersion)
@@ -1931,6 +2052,8 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
                 decodedRuleCount += 1
             }
             return decodedRuleCount == storage.count
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
             return false
         }
@@ -2013,7 +2136,9 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
     private static func buildTemporaryEngine(
         rulesData: Data,
         safariVersion: SafariVersion,
-        baseURL: URL
+        baseURL: URL,
+        cancellationCheck: () throws -> Void,
+        isCancelled: (() -> Bool)? = nil
     ) throws -> TemporaryEngineBuild {
         let fileManager = FileManager.default
         let temporaryDirectory = baseURL.appendingPathComponent(
@@ -2028,30 +2153,45 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             let indexURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_ENGINE_INDEX_FILE_NAME)
             let metaURL = temporaryDirectory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
 
+            try cancellationCheck()
             let rules = String(decoding: rulesData, as: UTF8.self)
             let storage = try FilterRuleStorage(
                 from: rules.components(separatedBy: "\n"),
                 for: safariVersion,
                 fileURL: storageURL
             )
+            try cancellationCheck()
             let engine = try FilterEngine(storage: storage)
             try engine.write(to: indexURL)
+            try cancellationCheck()
             try rulesData.write(to: rulesURL, options: .atomic)
 
+            try cancellationCheck()
             let meta = EngineMeta(
                 timestamp: Date().timeIntervalSince1970,
                 schemaVersion: Int32(Schema.VERSION)
             )
             try meta.toData().write(to: metaURL, options: .atomic)
+            try cancellationCheck()
 
-            let fingerprint = combinedEngineFingerprint(rulesData: rulesData, safariVersion: safariVersion)
-            guard validateTemporaryEngine(at: temporaryDirectory, fingerprint: fingerprint),
-                  let artifactDigests = try? engineArtifactDigests(at: temporaryDirectory)
-            else {
+            let fingerprint = try combinedEngineFingerprint(
+                rulesData: rulesData,
+                safariVersion: safariVersion,
+                isCancelled: isCancelled
+            )
+            guard try validateTemporaryEngine(
+                at: temporaryDirectory,
+                fingerprint: fingerprint,
+                isCancelled: isCancelled
+            ) else {
                 throw WebExtension.WebExtensionError.buildEngineFailed(
                     underlyingError: CocoaError(.fileReadCorruptFile)
                 )
             }
+            let artifactDigests = try engineArtifactDigests(
+                at: temporaryDirectory,
+                isCancelled: isCancelled
+            )
             return TemporaryEngineBuild(directory: temporaryDirectory, artifactDigests: artifactDigests)
         } catch {
             try? fileManager.removeItem(at: temporaryDirectory)
@@ -2062,7 +2202,8 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
     private static func publishEngineFiles(
         from temporaryBuild: TemporaryEngineBuild,
         fingerprint: CombinedEngineFingerprint,
-        baseURL: URL
+        baseURL: URL,
+        isCancelled: (() -> Bool)? = nil
     ) throws {
         let migrationMarkerURL = baseURL.appendingPathComponent(Schema.MIGRATION_MARKER_FILE_NAME)
         try Data().write(to: migrationMarkerURL, options: .atomic)
@@ -2081,7 +2222,11 @@ www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefin
             named: Schema.ENGINE_META_FILE_NAME
         )
 
-        guard validatePublishedEngineFiles(at: baseURL, artifactDigests: temporaryBuild.artifactDigests) else {
+        guard try validatePublishedEngineFiles(
+            at: baseURL,
+            artifactDigests: temporaryBuild.artifactDigests,
+            isCancelled: isCancelled
+        ) else {
             throw WebExtension.WebExtensionError.buildEngineFailed(
                 underlyingError: CocoaError(.fileReadCorruptFile)
             )
@@ -2126,9 +2271,19 @@ extension ContentBlockerService {
     ///   - rules: AdGuard rules to convert.
     /// - Returns: A ConversionResult containing the converted Safari rules in JSON format
     ///           and advanced rules in text format, or nil when converter resources are unavailable.
-    private static func convertRules(rules: String) throws -> ConversionResult {
+    private static func convertRules(
+        rules: String,
+        isCancelled: (() -> Bool)? = nil
+    ) throws -> ConversionResult {
         guard publicSuffixListResourcesAreAvailable() else {
             throw CocoaError(.fileReadNoSuchFile)
+        }
+
+        let cancellationRequested = {
+            Task.isCancelled || isCancelled?() == true
+        }
+        if cancellationRequested() {
+            throw CancellationError()
         }
 
         var filterRules = rules
@@ -2144,16 +2299,39 @@ extension ContentBlockerService {
         // Important: many filter lists use CRLF, which Swift can treat as a single `Character`.
         // Splitting on "\n" alone may fail and yield a single giant line, resulting in 0 converted rules.
         let lines = filterRules.split(whereSeparator: \.isNewline).map(String.init)
+        if cancellationRequested() {
+            throw CancellationError()
+        }
 
-        return measure(label: "Conversion") {
+        let progress = Progress(totalUnitCount: Int64(lines.count))
+        let cancellationMonitor = DispatchSource.makeTimerSource(
+            queue: DispatchQueue.global(qos: .utility)
+        )
+        cancellationMonitor.schedule(deadline: .now(), repeating: .milliseconds(20))
+        cancellationMonitor.setEventHandler {
+            if cancellationRequested() {
+                progress.cancel()
+            }
+        }
+        cancellationMonitor.resume()
+        defer {
+            cancellationMonitor.setEventHandler {}
+            cancellationMonitor.cancel()
+        }
+
+        let result = measure(label: "Conversion") {
             ContentBlockerConverter().convertArray(
                 rules: lines,
                 safariVersion: .autodetect(),
                 advancedBlocking: true,
                 maxJsonSizeBytes: nil,
-                progress: nil
+                progress: progress
             )
         }
+        if progress.isCancelled || cancellationRequested() {
+            throw CancellationError()
+        }
+        return result
     }
 
     private static func publicSuffixListResourcesAreAvailable() -> Bool {
@@ -2283,6 +2461,51 @@ extension ContentBlockerService {
     }
 }
 
+public nonisolated enum ContentBlockerChunkedHasher {
+    public static let defaultChunkSize = 64 * 1024
+
+    public static func update(
+        with data: Data,
+        hasher: inout SHA256,
+        writingTo destinationHandle: FileHandle? = nil,
+        chunkSize: Int = defaultChunkSize,
+        isCancelled: (() -> Bool)? = nil
+    ) throws {
+        precondition(chunkSize > 0)
+        if isCancelled?() == true {
+            throw CancellationError()
+        }
+        var offset = data.startIndex
+        while offset < data.endIndex {
+            if isCancelled?() == true {
+                throw CancellationError()
+            }
+            let end = min(offset + chunkSize, data.endIndex)
+            let chunk = data[offset..<end]
+            hasher.update(data: chunk)
+            if let destinationHandle {
+                try destinationHandle.write(contentsOf: Data(chunk))
+            }
+            offset = end
+        }
+    }
+
+    public static func hexDigest(
+        for data: Data,
+        chunkSize: Int = defaultChunkSize,
+        isCancelled: (() -> Bool)? = nil
+    ) throws -> String {
+        var hasher = SHA256()
+        try update(
+            with: data,
+            hasher: &hasher,
+            chunkSize: chunkSize,
+            isCancelled: isCancelled
+        )
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+}
+
 public nonisolated enum ContentBlockerInputWriter {
     public enum AppendPolicy {
         case strict
@@ -2296,13 +2519,17 @@ public nonisolated enum ContentBlockerInputWriter {
         hasher: inout SHA256,
         newlineData: Data,
         policy: AppendPolicy,
-        chunkSize: Int = 64 * 1024
+        chunkSize: Int = 64 * 1024,
+        isCancelled: (() -> Bool)? = nil
     ) throws -> Bool {
         guard FileManager.default.fileExists(atPath: sourceURL.path) else { return false }
         do {
             let sourceHandle = try FileHandle(forReadingFrom: sourceURL)
             defer { try? sourceHandle.close() }
             while true {
+                if isCancelled?() == true {
+                    throw CancellationError()
+                }
                 let chunk = try sourceHandle.read(upToCount: chunkSize) ?? Data()
                 if chunk.isEmpty { break }
                 hasher.update(data: chunk)
@@ -2311,6 +2538,8 @@ public nonisolated enum ContentBlockerInputWriter {
             hasher.update(data: newlineData)
             try destinationHandle.write(contentsOf: newlineData)
             return true
+        } catch let error as CancellationError {
+            throw error
         } catch {
             switch policy {
             case .strict:
@@ -2326,12 +2555,21 @@ public nonisolated enum ContentBlockerInputWriter {
         _ rulesText: String,
         to destinationHandle: FileHandle,
         hasher: inout SHA256,
-        newlineData: Data
+        newlineData: Data,
+        isCancelled: (() -> Bool)? = nil
     ) throws {
         let rulesData = Data(rulesText.utf8)
-        hasher.update(data: rulesData)
-        try destinationHandle.write(contentsOf: rulesData)
-        hasher.update(data: newlineData)
-        try destinationHandle.write(contentsOf: newlineData)
+        try ContentBlockerChunkedHasher.update(
+            with: rulesData,
+            hasher: &hasher,
+            writingTo: destinationHandle,
+            isCancelled: isCancelled
+        )
+        try ContentBlockerChunkedHasher.update(
+            with: newlineData,
+            hasher: &hasher,
+            writingTo: destinationHandle,
+            isCancelled: isCancelled
+        )
     }
 }

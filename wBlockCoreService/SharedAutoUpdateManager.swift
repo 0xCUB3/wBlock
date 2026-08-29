@@ -33,27 +33,51 @@ import UIKit
 /// the run so the locks are released before suspension instead of the process
 /// being killed with 0xDEAD10CC.
 private final class SuspensionShield: @unchecked Sendable {
-    private let completion = DispatchSemaphore(value: 0)
+    private static let expirationUnwindTimeout: TimeInterval = 3
+
+    private let condition = NSCondition()
+    private var released = false
 
     init(reason: String, onExpiration: @escaping @Sendable () -> Void) {
-        let completion = completion
-        ProcessInfo.processInfo.performExpiringActivity(withReason: reason) { expired in
+        ProcessInfo.processInfo.performExpiringActivity(withReason: reason) { [weak self] expired in
             if expired {
                 // Runs when suspension is imminent: immediately when no
                 // background time is available, otherwise concurrently with
-                // the blocked non-expired invocation below. Cancelling the
-                // run unwinds it, release() is then called, and the blocked
-                // invocation returns, letting the assertion lapse.
+                // the blocked non-expired invocation below. Give cancellation
+                // a bounded window to unwind and release app-group locks before
+                // this callback returns and iOS suspends the process.
                 onExpiration()
+                self?.waitUntilReleased(timeout: SuspensionShield.expirationUnwindTimeout)
             } else {
                 // The assertion holds for as long as this invocation blocks.
-                completion.wait()
+                self?.waitUntilReleased()
+            }
+        }
+    }
+
+    private func waitUntilReleased(timeout: TimeInterval? = nil) {
+        condition.lock()
+        defer { condition.unlock() }
+
+        if let timeout {
+            let deadline = Date().addingTimeInterval(timeout)
+            while !released && condition.wait(until: deadline) {}
+        } else {
+            while !released {
+                condition.wait()
             }
         }
     }
 
     func release() {
-        completion.signal()
+        condition.lock()
+        guard !released else {
+            condition.unlock()
+            return
+        }
+        released = true
+        condition.broadcast()
+        condition.unlock()
     }
 }
 #endif
@@ -1818,7 +1842,8 @@ public actor SharedAutoUpdateManager {
                 allTargets: work.allTargets,
                 disabledSites: work.disabledSites,
                 extraRulesText: work.extraRulesText,
-                groupIdentifier: GroupIdentifier.shared.value
+                groupIdentifier: GroupIdentifier.shared.value,
+                isCancelled: { Task.isCancelled }
             )
 
             let conversion = (safariRulesCount: outcome.safariRulesCount, advancedRulesText: outcome.advancedRulesText)

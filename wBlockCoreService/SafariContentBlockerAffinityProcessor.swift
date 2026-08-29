@@ -156,24 +156,40 @@ public enum SafariContentBlockerAffinityProcessor {
         affinitySnapshot: SafariContentBlockerAffinitySnapshot,
         destinationHandle: FileHandle,
         hasher: inout SHA256,
-        newlineData: Data
+        newlineData: Data,
+        isCancelled: (() -> Bool)? = nil
     ) throws -> Bool {
+        if isCancelled?() == true {
+            throw CancellationError()
+        }
         guard let content = affinitySnapshot.content(for: filter.id) else {
             return false
         }
-        let filtered = filteredContent(
+        let filtered = try filteredContent(
             from: content,
             includeBaseRules: includeBaseRules,
             target: target,
-            allTargets: allTargets
+            allTargets: allTargets,
+            isCancelled: isCancelled
         )
         guard !filtered.isEmpty else { return false }
+        if isCancelled?() == true {
+            throw CancellationError()
+        }
 
         let filteredData = Data(filtered.utf8)
-        hasher.update(data: filteredData)
-        try destinationHandle.write(contentsOf: filteredData)
-        hasher.update(data: newlineData)
-        try destinationHandle.write(contentsOf: newlineData)
+        try ContentBlockerChunkedHasher.update(
+            with: filteredData,
+            hasher: &hasher,
+            writingTo: destinationHandle,
+            isCancelled: isCancelled
+        )
+        try ContentBlockerChunkedHasher.update(
+            with: newlineData,
+            hasher: &hasher,
+            writingTo: destinationHandle,
+            isCancelled: isCancelled
+        )
         return true
     }
 
@@ -187,8 +203,12 @@ public enum SafariContentBlockerAffinityProcessor {
         containerURL: URL,
         destinationHandle: FileHandle,
         hasher: inout SHA256,
-        newlineData: Data
+        newlineData: Data,
+        isCancelled: (() -> Bool)? = nil
     ) throws -> Bool {
+        if isCancelled?() == true {
+            throw CancellationError()
+        }
         guard let sourceURL = sourceURL(for: filter, containerURL: containerURL) else {
             return false
         }
@@ -204,7 +224,8 @@ public enum SafariContentBlockerAffinityProcessor {
             ),
             destinationHandle: destinationHandle,
             hasher: &hasher,
-            newlineData: newlineData
+            newlineData: newlineData,
+            isCancelled: isCancelled
         )
     }
 
@@ -214,6 +235,31 @@ public enum SafariContentBlockerAffinityProcessor {
         target: ContentBlockerTargetInfo,
         allTargets: [ContentBlockerTargetInfo]
     ) -> String {
+        do {
+            return try filteredContent(
+                from: content,
+                includeBaseRules: includeBaseRules,
+                target: target,
+                allTargets: allTargets,
+                isCancelled: nil
+            )
+        } catch is CancellationError {
+            preconditionFailure("Nil cancellation predicate unexpectedly cancelled affinity filtering")
+        } catch {
+            preconditionFailure("Affinity filtering threw an unexpected error: \(error)")
+        }
+    }
+
+    private static func filteredContent(
+        from content: String,
+        includeBaseRules: Bool,
+        target: ContentBlockerTargetInfo,
+        allTargets: [ContentBlockerTargetInfo],
+        isCancelled: (() -> Bool)?
+    ) throws -> String {
+        if isCancelled?() == true {
+            throw CancellationError()
+        }
         guard allTargets.contains(target),
               let targetTypes = contentBlockerTypes(for: target),
               !targetTypes.isEmpty
@@ -227,13 +273,21 @@ public enum SafariContentBlockerAffinityProcessor {
         let groupedRules = AffinityRulesGrouper.group(rules: [
             (defaultType, content.components(separatedBy: .newlines))
         ])
+        if isCancelled?() == true {
+            throw CancellationError()
+        }
 
         var includedLines: [String] = []
         var seenLines: Set<String> = []
         for contentType in targetTypes {
             guard let rules = groupedRules[contentType] else { continue }
-            for rule in rules where seenLines.insert(rule).inserted {
-                includedLines.append(rule)
+            for rule in rules {
+                if isCancelled?() == true {
+                    throw CancellationError()
+                }
+                if seenLines.insert(rule).inserted {
+                    includedLines.append(rule)
+                }
             }
         }
 

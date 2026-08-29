@@ -27,7 +27,7 @@ let markerCreation = position(of: "try Data().write(to: migrationMarkerURL, opti
 let metaInvalidation = position(of: "try invalidateExistingEngineMeta(at: baseURL)")
 let replacement = position(of: "for fileName in engineStorageFileNames where fileName != Schema.ENGINE_META_FILE_NAME")
 let metaReplacement = position(of: "temporaryBuild.directory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)")
-let publishedValidation = position(of: "guard validatePublishedEngineFiles(at: baseURL, artifactDigests: temporaryBuild.artifactDigests) else")
+let publishedValidation = position(of: "guard try validatePublishedEngineFiles(\n            at: baseURL,\n            artifactDigests: temporaryBuild.artifactDigests")
 let markerWrite = position(of: "to: baseURL.appendingPathComponent(combinedEngineMarkerFileName)")
 let markerRemoval = position(of: "try FileManager.default.removeItem(at: migrationMarkerURL)")
 let skipStart = position(of: "private static func canSkipCombinedEnginePublish")
@@ -83,8 +83,12 @@ require(markerWrite < markerRemoval,
         "the migration marker must be removed only after the combined marker is atomically written")
 require(source.contains("Set(marker.artifactDigests.keys) == Set(engineStorageFileNames)"),
         "the marker must name exactly the four published artifacts")
-require(source.contains("engineArtifactDigests(at: baseURL)) == artifactDigests"),
-        "skip validation must hash every published artifact")
+require(
+    source.contains("try engineArtifactDigests(") &&
+        source.contains("isCancelled: isCancelled") &&
+        source.contains(") == artifactDigests"),
+    "skip validation must hash every published artifact"
+)
 require(source.contains("Schema.FILTER_RULE_STORAGE_FILE_NAME,\n        Schema.FILTER_ENGINE_INDEX_FILE_NAME,\n        Schema.RULES_FILE_NAME,\n        Schema.ENGINE_META_FILE_NAME"),
         "the marker must cover the exact storage, index, rules, and meta files")
 let skipBody = source[skipStart..<skipEnd]

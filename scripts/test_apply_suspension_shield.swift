@@ -76,5 +76,15 @@ require(
     beforeCompile.contains("isCancelled"),
     "must cancel-check before compileTargetRules"
 )
+let conversionOperation = slice(
+    from: "operation: { work in",
+    to: "onResult: { completion in"
+)
+require(
+    conversionOperation.contains("catch is CancellationError") &&
+        conversionOperation.contains("ApplyCancellation.cancel()") &&
+        conversionOperation.contains("failureDescription: nil"),
+    "cancelled target conversion must mark iOS cancellation without recording a conversion failure"
+)
 
 print("PASS: apply suspension shield contract")
