@@ -26,6 +26,10 @@ check(iosToolbar.contains("Label(\"Clear\", systemImage: \"trash\")"),
       "iOS Clear must retain its accessible label")
 check(iosToolbar.contains(".accessibilityLabel(\"Export\")"), "iOS Export accessibility label is required")
 check(iosToolbar.contains(".accessibilityLabel(\"Clear\")"), "iOS Clear accessibility label is required")
+check(!iosToolbar.contains(".disabled(entries.isEmpty)"),
+      "iOS Clear must not be disabled before the initial log load finishes")
+check(iosToolbar.contains(".disabled(hasLoadedLogs && entries.isEmpty)"),
+      "iOS Clear must disable only after logs have loaded and are empty")
 
 let macToolbar = String(source[macOSBranch...])
 check(macToolbar.contains("ToolbarItem(placement: .primaryAction)"), "macOS toolbar placement must remain unchanged")

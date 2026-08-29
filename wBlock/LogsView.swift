@@ -23,6 +23,7 @@ struct LogsView: View {
     ]
 
     @State private var entries: [LogEntry] = []
+    @State private var hasLoadedLogs = false
     @State private var selectedLevel: LogLevel? = nil
     @State private var selectedCategory: LogCategory? = nil
     @State private var searchText = ""
@@ -109,7 +110,7 @@ struct LogsView: View {
                     } label: {
                         Label("Clear", systemImage: "trash")
                     }
-                    .disabled(entries.isEmpty)
+                    .disabled(hasLoadedLogs && entries.isEmpty)
                     .accessibilityLabel("Clear")
                 }
             }
@@ -141,6 +142,7 @@ struct LogsView: View {
         .searchable(text: $searchText, prompt: "Search logs")
         .task {
             await loadLogs()
+            hasLoadedLogs = true
             updateFilteredEntries()
         }
         .onChangeCompat(of: entries) { _, _ in
