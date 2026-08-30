@@ -1344,6 +1344,142 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
+    private func builtInDuplicateMetadataScore(_ script: UserScript) -> Int {
+        var score = 0
+        let scalarMetadata = [
+            script.name, script.description, script.version, script.runAt, script.injectInto,
+            script.updateURL ?? "", script.downloadURL ?? "",
+        ]
+        score += scalarMetadata.reduce(0) { $0 + ($1.isEmpty ? 0 : 1) }
+        score += script.matches.count + script.excludeMatches.count
+        score += script.includes.count + script.excludes.count + script.grant.count
+        score += script.require.count + script.resource.count + script.resourceContents.count
+        return score
+    }
+
+    private func preferredBuiltInDuplicate(
+        _ candidate: UserScript,
+        over current: UserScript
+    ) -> Bool {
+        if candidate.isDownloaded != current.isDownloaded {
+            return candidate.isDownloaded
+        }
+        if candidate.lastUpdated != current.lastUpdated {
+            return (candidate.lastUpdated ?? .distantPast) > (current.lastUpdated ?? .distantPast)
+        }
+        return builtInDuplicateMetadataScore(candidate) > builtInDuplicateMetadataScore(current)
+    }
+
+    private func replacingBuiltInDuplicateMetadata(
+        in retained: UserScript,
+        with donor: UserScript,
+        enabled: Bool
+    ) -> UserScript {
+        var repaired = retained
+        repaired.name = donor.name
+        repaired.url = donor.url
+        repaired.isEnabled = enabled
+        repaired.description = donor.description
+        repaired.version = donor.version
+        repaired.matches = donor.matches
+        repaired.excludeMatches = donor.excludeMatches
+        repaired.includes = donor.includes
+        repaired.excludes = donor.excludes
+        repaired.runAt = donor.runAt
+        repaired.injectInto = donor.injectInto
+        repaired.grant = donor.grant
+        repaired.require = donor.require
+        repaired.resource = donor.resource
+        repaired.resourceContents = donor.resourceContents
+        repaired.noframes = donor.noframes
+        repaired.isUserStyle = donor.isUserStyle
+        repaired.isLocal = false
+        repaired.updateURL = donor.updateURL
+        repaired.downloadURL = donor.downloadURL
+        repaired.content = donor.content
+        repaired.compiledStyleBody = donor.compiledStyleBody
+        repaired.lastUpdated = donor.lastUpdated
+        repaired.updatesAutomatically = donor.updatesAutomatically
+        repaired.category = donor.category
+        repaired.localImportIdentity = nil
+        return repaired
+    }
+
+    /// Repairs the narrowly scoped first-install race before onboarding can observe it.
+    /// Generic duplicate records continue through the existing confirmation flow.
+    private func repairDuplicateBuiltInUserScriptsIfNeeded() async {
+        let protectedIdentities = Set(BuiltInUserScripts.allProtectedURLs.compactMap {
+            UserScriptPersistence.canonicalRemoteURLIdentity($0, isLocal: false)
+        })
+        var scriptsByIdentity: [String: [UserScript]] = [:]
+        for script in userScripts where !script.isLocal {
+            guard let url = script.url?.absoluteString,
+                  let identity = UserScriptPersistence.canonicalRemoteURLIdentity(
+                    url, isLocal: false
+                  ),
+                  protectedIdentities.contains(identity)
+            else { continue }
+            scriptsByIdentity[identity, default: []].append(script)
+        }
+
+        let duplicateGroups = scriptsByIdentity.values.filter { $0.count > 1 }
+        guard !duplicateGroups.isEmpty else { return }
+
+        var replacementsByID: [UUID: UserScript] = [:]
+        var losersByID: [UUID: UserScript] = [:]
+        var repairedDisabledHosts = dataManager.getUserScriptDisabledHosts()
+
+        for group in duplicateGroups {
+            guard let retained = group.first else { continue }
+            let hydrated = await hydrateUserScriptsFromDisk(
+                group,
+                includeResources: true,
+                hydrateDisabled: true
+            )
+            let donor = hydrated.dropFirst().reduce(hydrated[0]) { current, candidate in
+                preferredBuiltInDuplicate(candidate, over: current) ? candidate : current
+            }
+            let repaired = replacingBuiltInDuplicateMetadata(
+                in: retained,
+                with: donor,
+                enabled: group.contains(where: \.isEnabled)
+            )
+
+            if donor.id != retained.id && (!repaired.content.isEmpty || !repaired.resourceContents.isEmpty),
+               !writeUserScriptFiles(repaired)
+            {
+                logger.error("Failed to preserve downloaded built-in userscript data during duplicate repair")
+                continue
+            }
+
+            let loserScripts = group.dropFirst()
+            var disabledHosts = Set(repairedDisabledHosts[retained.id.uuidString] ?? [])
+            for loser in loserScripts {
+                disabledHosts.formUnion(repairedDisabledHosts[loser.id.uuidString] ?? [])
+                repairedDisabledHosts.removeValue(forKey: loser.id.uuidString)
+                losersByID[loser.id] = loser
+            }
+            if disabledHosts.isEmpty {
+                repairedDisabledHosts.removeValue(forKey: retained.id.uuidString)
+            } else {
+                repairedDisabledHosts[retained.id.uuidString] = disabledHosts.sorted()
+            }
+            replacementsByID[retained.id] = repaired
+        }
+
+        guard !losersByID.isEmpty else { return }
+        await dataManager.setAllUserScriptDisabledHosts(repairedDisabledHosts)
+        for loser in losersByID.values {
+            removeUserScriptFile(loser)
+        }
+        userScripts = userScripts.compactMap { script in
+            if losersByID[script.id] != nil { return nil }
+            return replacementsByID[script.id] ?? script
+        }
+        await persistUserScriptsNow(authoritative: true)
+        logger.info("Repaired \(losersByID.count) duplicate built-in userscript record(s)")
+    }
+
     private func loadUserScripts() async {
         logger.info("📖 Loading userscripts from ProtobufDataManager...")
         _ = await dataManager.refreshFromDiskIfModified(forceRead: true)
@@ -1364,6 +1500,7 @@ public class UserScriptManager: ObservableObject {
             }
         }
 
+        await repairDuplicateBuiltInUserScriptsIfNeeded()
         await removeRetiredYouTubeAdBlockIfNeeded()
         await migrateLegacyBundledUserScriptsIfNeeded()
         await migrateLegacyPopupBlockerIfNeeded()

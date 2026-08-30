@@ -2,15 +2,57 @@
 //  UserScriptPersistence.swift
 //  wBlockCoreService
 //
-//  Pure ID-based userscript persistence helpers.
+//  Userscript persistence helpers.
 //
 
 import Foundation
 
-/// Pure ID-based merge used by ordinary userscript upserts. Persisted records that are
-/// not mentioned by the caller survive, while an explicit enabled-state intent may
-/// rebase the matching record's latest value.
+/// Merge used by ordinary userscript upserts. Persisted records that are not mentioned
+/// by the caller survive, while an explicit enabled-state intent may rebase the matching
+/// record's latest value. Concurrent inserts of the same remote URL retain the identity
+/// that reached disk first.
 enum UserScriptPersistence {
+    static func canonicalRemoteURLIdentity(_ rawURL: String, isLocal: Bool) -> String? {
+        guard !isLocal else { return nil }
+        let trimmedURL = rawURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedURL.isEmpty,
+              var components = URLComponents(string: trimmedURL),
+              let scheme = components.scheme?.lowercased(),
+              scheme == "http" || scheme == "https",
+              let host = components.host?.lowercased(),
+              !host.isEmpty
+        else { return nil }
+
+        components.scheme = scheme
+        components.host = host
+        components.fragment = nil
+        if (scheme == "http" && components.port == 80)
+            || (scheme == "https" && components.port == 443)
+        {
+            components.port = nil
+        }
+        return components.string
+    }
+
+    private static func canonicalRemoteURLIdentity(
+        _ record: Wblock_Data_UserScriptData
+    ) -> String? {
+        canonicalRemoteURLIdentity(record.url, isLocal: record.isLocal)
+    }
+
+    private static func indexByRemoteURL(
+        in records: [Wblock_Data_UserScriptData]
+    ) -> [String: Int] {
+        var result: [String: Int] = [:]
+        for (index, record) in records.enumerated() {
+            guard let identity = canonicalRemoteURLIdentity(record), result[identity] == nil else {
+                continue
+            }
+            result[identity] = index
+        }
+        return result
+    }
+
     static func merge(
         persisted: [Wblock_Data_UserScriptData],
         incoming: [Wblock_Data_UserScriptData],
@@ -24,6 +66,7 @@ enum UserScriptPersistence {
             },
             uniquingKeysWith: { _, latest in latest }
         )
+        var indexByRemoteURL = Self.indexByRemoteURL(in: merged)
 
         for incomingRecord in incoming where !incomingRecord.id.isEmpty {
             if let index = indexByID[incomingRecord.id] {
@@ -34,13 +77,39 @@ enum UserScriptPersistence {
                     record.isEnabled = merged[index].isEnabled
                 }
                 merged[index] = record
+                indexByRemoteURL = Self.indexByRemoteURL(in: merged)
             } else {
+                // An ID omitted from allowedInsertIDs was deleted concurrently. Do not
+                // let its URL update another record or resurrect the stale identity.
                 guard allowedInsertIDs?.contains(incomingRecord.id) ?? true else { continue }
+
+                if let identity = canonicalRemoteURLIdentity(incomingRecord),
+                   let index = indexByRemoteURL[identity]
+                {
+                    let persistedID = merged[index].id
+                    var record = incomingRecord
+                    record.id = persistedID
+                    if let explicitEnabled = explicitEnabledStates[incomingRecord.id]
+                        ?? explicitEnabledStates[persistedID]
+                    {
+                        record.isEnabled = explicitEnabled
+                    } else {
+                        record.isEnabled = merged[index].isEnabled
+                    }
+                    merged[index] = record
+                    indexByID[persistedID] = index
+                    indexByRemoteURL[identity] = index
+                    continue
+                }
+
                 var record = incomingRecord
                 if let explicitEnabled = explicitEnabledStates[incomingRecord.id] {
                     record.isEnabled = explicitEnabled
                 }
                 indexByID[incomingRecord.id] = merged.count
+                if let identity = canonicalRemoteURLIdentity(record) {
+                    indexByRemoteURL[identity] = merged.count
+                }
                 merged.append(record)
             }
         }

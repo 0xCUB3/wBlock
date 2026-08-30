@@ -4,11 +4,19 @@ internal import SwiftProtobuf
 @main
 struct UserScriptPersistenceRaceTests {
     static func main() throws {
-        func record(_ id: String, _ enabled: Bool, _ name: String) -> Wblock_Data_UserScriptData {
+        func record(
+            _ id: String,
+            _ enabled: Bool,
+            _ name: String,
+            url: String = "",
+            isLocal: Bool = false
+        ) -> Wblock_Data_UserScriptData {
             var value = Wblock_Data_UserScriptData()
             value.id = id
             value.isEnabled = enabled
             value.name = name
+            value.url = url
+            value.isLocal = isLocal
             return value
         }
 
@@ -51,6 +59,41 @@ struct UserScriptPersistenceRaceTests {
         )
         guard explicitInsertion.map(\.id) == ["B", "A"] else {
             fatalError("genuinely new ID was not inserted")
+        }
+
+        let remoteX = "https://example.com/scripts/x.user.js"
+        let persistedRemote = record(
+            "remote-A", false, "persisted X", url: "HTTPS://EXAMPLE.COM:443/scripts/x.user.js#old"
+        )
+        let concurrentRemote = record(
+            "remote-B", true, "incoming X", url: remoteX
+        )
+        let unrelatedRemote = record(
+            "remote-C", true, "incoming Y", url: "https://example.com/scripts/y.user.js"
+        )
+        let localWithSameURL = record(
+            "local-D", true, "local X", url: remoteX, isLocal: true
+        )
+        let emptyRemote = record("empty-E", true, "empty remote")
+        let raceMerged = UserScriptPersistence.merge(
+            persisted: [persistedRemote],
+            incoming: [concurrentRemote, unrelatedRemote, localWithSameURL, emptyRemote],
+            allowedInsertIDs: ["remote-B", "remote-C", "local-D", "empty-E"]
+        )
+        guard raceMerged.map(\.id) == ["remote-A", "remote-C", "local-D", "empty-E"],
+              raceMerged.filter({ !$0.isLocal && $0.url == remoteX }).count == 1,
+              raceMerged[0].id == "remote-A",
+              raceMerged[0].name == "incoming X",
+              raceMerged[0].isEnabled == false
+        else { fatalError("same-remote-URL race did not retain the persisted identity") }
+
+        let staleRemote = UserScriptPersistence.merge(
+            persisted: [persistedRemote],
+            incoming: [concurrentRemote],
+            allowedInsertIDs: []
+        )
+        guard staleRemote == [persistedRemote] else {
+            fatalError("stale remote insertion bypassed ID-based deletion protection")
         }
 
         let authoritative = UserScriptPersistence.replace(with: [a, b])

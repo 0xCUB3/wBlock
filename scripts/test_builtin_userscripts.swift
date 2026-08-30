@@ -124,6 +124,19 @@ guard source.contains("refreshDefaultUserScriptDescriptionsIfNeeded()") else {
     exit(1)
 }
 
+guard let repairCall = source.range(of: "await repairDuplicateBuiltInUserScriptsIfNeeded()"),
+      let missingDefaultsCall = source.range(of: "await checkAndAddMissingDefaultScripts()"),
+      repairCall.lowerBound < missingDefaultsCall.lowerBound,
+      source.contains("protectedIdentities.contains(identity)"),
+      source.contains("enabled: group.contains(where: \\.isEnabled)"),
+      source.contains("disabledHosts.formUnion"),
+      source.contains("await dataManager.setAllUserScriptDisabledHosts(repairedDisabledHosts)"),
+      source.contains("await persistUserScriptsNow(authoritative: true)")
+else {
+    fputs("FAIL: startup must authoritatively repair protected built-in URL duplicates before adding defaults\n", stderr)
+    exit(1)
+}
+
 
 guard viewSource.contains("downloadingScriptIDs")
     && viewSource.contains("setUserScript(managedScript, isEnabled: newValue)")
