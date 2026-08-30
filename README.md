@@ -401,9 +401,9 @@ Developed by [0xCUB3](https://github.com/0xCUB3)
 
 <a href="https://www.star-history.com/?repos=0xCUB3%2FwBlock&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=0xCUB3/wBlock&type=date&theme=dark&legend=top-left&sealed_token=hydrib30YBgUlJtwcs44Z07mfNGx1vckqpSj8pv-Emn7KxE5_VkKm30UqSh5heg8Exywqlnvluddhrev19za98t3LaTAfw3r-HRKoCEQXxWOau__ClFgyc7-fatyZrCg_SY_RkxP9viKeVLL8rOwmJ8Ihfi5EqV3urXIKtnrDVeDooGayP7uim27sLTY" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=0xCUB3/wBlock&type=date&legend=top-left&sealed_token=hydrib30YBgUlJtwcs44Z07mfNGx1vckqpSj8pv-Emn7KxE5_VkKm30UqSh5heg8Exywqlnvluddhrev19za98t3LaTAfw3r-HRKoCEQXxWOau__ClFgyc7-fatyZrCg_SY_RkxP9viKeVLL8rOwmJ8Ihfi5EqV3urXIKtnrDVeDooGayP7uim27sLTY" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=0xCUB3/wBlock&type=date&legend=top-left&sealed_token=hydrib30YBgUlJtwcs44Z07mfNGx1vckqpSj8pv-Emn7KxE5_VkKm30UqSh5heg8Exywqlnvluddhrev19za98t3LaTAfw3r-HRKoCEQXxWOau__ClFgyc7-fatyZrCg_SY_RkxP9viKeVLL8rOwmJ8Ihfi5EqV3urXIKtnrDVeDooGayP7uim27sLTY" />
+   <source media="(prefers-color-scheme: dark)" srcset="docs/media/img/star_history_dark.png" />
+   <source media="(prefers-color-scheme: light)" srcset="docs/media/img/star_history_light.png" />
+   <img alt="Star History Chart" src="docs/media/img/star_history_light.png" />
  </picture>
 </a>
 
