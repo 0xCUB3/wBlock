@@ -427,6 +427,7 @@
 "Hungarian filter" = "Filtre hongrois";
 "Icelandic ABP List" = "Icelandic ABP List";
 "iCloud Sync" = "Synchronisation iCloud";
+"This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can." = "Cette version GitHub/Homebrew ne peut pas utiliser la synchronisation iCloud. La version App Store/TestFlight le peut.";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "iCloud Sync n'a pas pu atteindre iCloud. Vérifiez votre connexion et réessayez.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "iCloud Sync n'a pas pu enregistrer car votre stockage iCloud est plein.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud Sync n'est pas autorisé à écrire sur votre compte iCloud.";

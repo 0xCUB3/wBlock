@@ -69,6 +69,8 @@ compile_direct_test() {
 compile_direct_test adguard-mobile scripts/test_adguard_mobile_filter_migration.swift
 compile_direct_test apply-progress-localization scripts/test_apply_progress_localization.swift
 compile_direct_test compiler-timeout scripts/test_issue_511_compiler_timeout.swift
+compile_direct_test issue-574-cloudkit-availability scripts/test_issue_574_cloudkit_availability.swift
+compile_direct_test issue-574-filters-scroll-reset scripts/test_issue_574_filters_scroll_reset.swift
 compile_direct_test language-selection-localization scripts/test_language_selection_localization.swift
 compile_direct_test main-window-frame-restore \
   wBlock/MainWindowFrameRestorer.swift scripts/test_main_window_frame_restore.swift

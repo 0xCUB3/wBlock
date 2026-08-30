@@ -382,6 +382,7 @@ struct ContentView: View {
             }
             .padding(.vertical)
         }
+        .id("\(showOnlyEnabledLists)-\(filterSearchText)")
         #endif
     }
 

@@ -6,15 +6,8 @@ import os.log
 import Security
 import wBlockCoreService
 
-private enum CloudSyncError: LocalizedError {
+private enum CloudSyncError: Error {
     case cloudKitUnavailable
-
-    var errorDescription: String? {
-        switch self {
-        case .cloudKitUnavailable:
-            return "iCloud is not available in this build"
-        }
-    }
 }
 
 @MainActor
@@ -65,6 +58,7 @@ final class CloudSyncManager: ObservableObject {
         #endif
     }()
 
+    @Published private(set) var isCloudKitAvailable: Bool
     @Published private(set) var isEnabled: Bool
     @Published private(set) var isSyncing: Bool = false
     @Published private(set) var status: SyncStatus = .off
@@ -80,7 +74,7 @@ final class CloudSyncManager: ObservableObject {
 
     private let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
     private lazy var database: CKDatabase? = {
-        guard Self.hasCloudKitEntitlement else {
+        guard isCloudKitAvailable else {
             logger.info("CloudKit unavailable (no iCloud entitlement)")
             return nil
         }
@@ -135,6 +129,7 @@ final class CloudSyncManager: ObservableObject {
     }()
 
     private init() {
+        isCloudKitAvailable = Self.hasCloudKitEntitlement
         isEnabled = defaults.bool(forKey: Keys.enabled)
         refreshStatusFromDefaults()
     }
@@ -150,7 +145,8 @@ final class CloudSyncManager: ObservableObject {
         observeLocalUserScriptChanges()
         observeiCloudAccountChanges()
 
-        let trigger = deferredSyncTrigger ?? ((isEnabled && !hasPendingExplicitRemoteDownload) ? "Launch" : nil)
+        let trigger = deferredSyncTrigger
+            ?? ((isCloudKitAvailable && isEnabled && !hasPendingExplicitRemoteDownload) ? "Launch" : nil)
         deferredSyncTrigger = nil
         guard let trigger else { return }
         Task { @MainActor [weak self] in
@@ -247,6 +243,7 @@ final class CloudSyncManager: ObservableObject {
     }
 
     func setEnabled(_ enabled: Bool, startSync: Bool = true) {
+        guard isCloudKitAvailable else { return }
         guard enabled != isEnabled else { return }
         isEnabled = enabled
         defaults.set(enabled, forKey: Keys.enabled)
@@ -267,6 +264,7 @@ final class CloudSyncManager: ObservableObject {
     }
 
     func syncNow(trigger: String) async {
+        guard isCloudKitAvailable else { return }
         guard isEnabled else { return }
         guard hasCompletedLaunchSetup else {
             deferredSyncTrigger = trigger
@@ -312,6 +310,9 @@ final class CloudSyncManager: ObservableObject {
     }
 
     func probeRemoteConfig() async -> RemoteConfigProbe {
+        guard isCloudKitAvailable else {
+            return RemoteConfigProbe(exists: false, updatedAt: nil, schemaVersion: nil)
+        }
         do {
             guard let record = try await fetchRecord() else {
                 return RemoteConfigProbe(exists: false, updatedAt: nil, schemaVersion: nil)
@@ -331,6 +332,7 @@ final class CloudSyncManager: ObservableObject {
     }
 
     func downloadAndApplyLatestRemoteConfig(trigger: String) async -> Bool {
+        guard isCloudKitAvailable else { return false }
         if !hasCompletedLaunchSetup {
             hasPendingExplicitRemoteDownload = true
             defer { hasPendingExplicitRemoteDownload = false }
@@ -438,7 +440,7 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func observeiCloudAccountChanges() {
-        guard Self.hasCloudKitEntitlement else { return }
+        guard isCloudKitAvailable else { return }
         NotificationCenter.default.publisher(for: .CKAccountChanged)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
@@ -455,6 +457,7 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func handleLocalSave() {
+        guard isCloudKitAvailable else { return }
         guard isEnabled else { return }
         guard !isApplyingRemoteChanges else { return }
 
@@ -566,6 +569,7 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func uploadLatestPayload(trigger: String, withinSyncSession: Bool = false) async {
+        guard isCloudKitAvailable else { return }
         guard isEnabled else { return }
 
         if !withinSyncSession {
@@ -635,6 +639,7 @@ final class CloudSyncManager: ObservableObject {
     // MARK: - Two-way sync
 
     private func performTwoWaySync(trigger: String) async {
+        guard isCloudKitAvailable else { return }
         guard isEnabled else { return }
         await dataManager.waitUntilLoaded()
         await userScriptManager.waitUntilReady()
@@ -2073,7 +2078,7 @@ final class CloudSyncManager: ObservableObject {
     // MARK: - CloudKit I/O
 
     private func fetchRecord() async throws -> CKRecord? {
-        guard let database else { throw CloudSyncError.cloudKitUnavailable }
+        guard isCloudKitAvailable, let database else { throw CloudSyncError.cloudKitUnavailable }
         do {
             return try await database.record(for: recordID)
         } catch let ckError as CKError where ckError.code == .unknownItem {
@@ -2085,7 +2090,7 @@ final class CloudSyncManager: ObservableObject {
     /// `.serverRecordChanged` is intentionally re-thrown so the caller can reconcile the
     /// server record's definitions before retrying, rather than silently overwriting it.
     private func saveRecord(_ record: CKRecord, retryCount: Int = 0) async throws -> CKRecord {
-        guard let database else { throw CloudSyncError.cloudKitUnavailable }
+        guard isCloudKitAvailable, let database else { throw CloudSyncError.cloudKitUnavailable }
         do {
             return try await database.save(record)
         } catch let ckError as CKError {
@@ -2166,6 +2171,13 @@ final class CloudSyncManager: ObservableObject {
     // MARK: - Status
 
     private func refreshStatusFromDefaults() {
+        if !isCloudKitAvailable {
+            lastErrorMessage = nil
+            setStatus(.off)
+            lastSyncLine = String(localized: "Not synced yet")
+            return
+        }
+
         if !isEnabled {
             setStatus(.off)
             lastSyncLine = String(localized: "Not synced yet")

@@ -427,6 +427,7 @@
 "Hungarian filter" = "Hungarian filter";
 "Icelandic ABP List" = "Icelandic ABP List";
 "iCloud Sync" = "iCloud Eşitlemesi";
+"This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can." = "Bu GitHub/Homebrew derlemesi iCloud eşitlemesini kullanamaz. App Store/TestFlight derlemesi kullanabilir.";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "iCloud Eşitlemesi, iCloud'a bağlanamadı. Bağlantınızı kontrol edin ve tekrar deneyin.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "iCloud saklama alanınız dolu olduğu için iCloud Eşitlemesi kaydedilemedi.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud Eşitlemesinin iCloud hesabınıza yazma izni yok.";

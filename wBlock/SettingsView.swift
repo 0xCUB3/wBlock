@@ -220,6 +220,7 @@ struct SettingsView: View {
         Binding(
             get: { syncManager.isEnabled },
             set: { newValue in
+                guard syncManager.isCloudKitAvailable else { return }
                 if newValue { probeAndEnableSync() } else { syncManager.setEnabled(false) }
             }
         )
@@ -510,11 +511,12 @@ struct SettingsView: View {
     private var syncSection: some View {
         Section {
             Toggle("iCloud Sync", isOn: syncEnabledBinding)
+                .disabled(!syncManager.isCloudKitAvailable)
                 #if os(macOS)
                 .toggleStyle(.switch)
                 #endif
 
-            if syncManager.isEnabled {
+            if syncManager.isCloudKitAvailable && syncManager.isEnabled {
                 Button {
                     Task { await syncManager.syncNow(trigger: "Manual") }
                 } label: {
@@ -532,7 +534,9 @@ struct SettingsView: View {
         } header: {
             Text("Sync")
         } footer: {
-            if syncManager.isEnabled {
+            if !syncManager.isCloudKitAvailable {
+                Text("This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can.")
+            } else if syncManager.isEnabled {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(syncFooterLine)
                     if let error = syncManager.lastErrorMessage {
@@ -678,6 +682,7 @@ struct SettingsView: View {
     }
 
     private func probeAndEnableSync() {
+        guard syncManager.isCloudKitAvailable else { return }
         Task {
             let probe = await CloudSyncManager.shared.probeRemoteConfig()
             guard probe.exists else {
