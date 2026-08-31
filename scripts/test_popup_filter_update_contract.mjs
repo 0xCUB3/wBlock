@@ -78,6 +78,15 @@ check(native.includes('FilterUpdatePopupStatus.consumeSnapshot()') &&
   'terminal status must be shown once, then clear before the popup reopens');
 
 const updateHandler = native.slice(native.indexOf('private static func handleStartFilterUpdate'), native.indexOf('private static func handleOpenContainingApp'));
+check(updateHandler.includes('FilterUpdateClient.shared.startFilterUpdate()') &&
+  updateHandler.includes('case .timedOut, .unavailable:') &&
+  updateHandler.includes('FilterUpdatePopupStatus.beginIfIdle()') &&
+  updateHandler.includes('SharedAutoUpdateManager.shared.maybeRunAutoUpdate(') &&
+  updateHandler.includes('trigger: "Popup"') && updateHandler.includes('force: true') &&
+  updateHandler.includes('FilterUpdatePopupStatus.finish(outcome)'),
+  'terminated-app XPC failure must fall back to an in-process forced update with shared lifecycle status');
+check(updateHandler.indexOf('FilterUpdateClient.shared.startFilterUpdate()') < updateHandler.indexOf('FilterUpdatePopupStatus.beginIfIdle()'),
+  'terminated-app update must try XPC before the in-process fallback');
 check(!updateHandler.includes('openContainingApp') && !updateHandler.includes('NSWorkspace') && !updateHandler.includes('openApplication'),
   'filter update action must not foreground or open the containing app');
 

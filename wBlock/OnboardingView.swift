@@ -330,14 +330,6 @@ struct OnboardingView: View {
                 .foregroundStyle(.secondary)
             }
 
-            if step == .protection {
-                Button(String(localized: "Restore from backup…")) {
-                    showingBackupImporter = true
-                }
-                .font(.subheadline)
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-            }
         }
     }
 
@@ -361,6 +353,12 @@ struct OnboardingView: View {
 
     private var onboardingFooter: some View {
         HStack(spacing: 12) {
+            if step == .welcome {
+                Button(String(localized: "Restore from backup…")) {
+                    showingBackupImporter = true
+                }
+                .buttonStyle(.bordered)
+            }
             if step != .welcome {
                 Button("Back") {
                     retreatToPreviousStep()
@@ -1265,6 +1263,8 @@ struct OnboardingView: View {
         guard let backup = pendingBackup else { return }
         pendingBackup = nil
         await BackupManager.restoreBackup(backup, filterManager: filterManager)
+        userScriptManager.markInitialSetupComplete()
+        guard await dataManager.setHasCompletedOnboarding(true) else { return }
         dismiss()
         filterManager.checkAndEnableFilters(forceReload: true)
     }

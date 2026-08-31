@@ -78,8 +78,8 @@ require(
     "onboarding completion must not use a fire-and-forget wrapper"
 )
 require(
-    onboarding.components(separatedBy: "guard await dataManager.setHasCompletedOnboarding(true) else { return }").count == 3,
-    "both onboarding completion paths must await a successful completion write"
+    onboarding.components(separatedBy: "guard await dataManager.setHasCompletedOnboarding(true) else { return }").count == 4,
+    "all three onboarding completion paths must await a successful completion write"
 )
 require(
     dataManager.contains("guard await saveDataImmediately() else { return false }\n        return await updateDataImmediately { $0.settings.hasCompletedOnboarding_p = value }"),

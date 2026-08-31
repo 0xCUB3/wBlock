@@ -638,13 +638,27 @@ public enum WebExtensionRequestHandler {
                 ])
                 context.completeRequest(returningItems: [response])
             case .timedOut, .unavailable:
+                guard FilterUpdatePopupStatus.beginIfIdle() else {
+                    let response = createResponse(with: [
+                        "ok": true,
+                        "accepted": false,
+                        "state": FilterUpdatePopupStatus.State.running.rawValue
+                    ])
+                    context.completeRequest(returningItems: [response])
+                    return
+                }
+
                 let response = createResponse(with: [
-                    "ok": false,
-                    "accepted": false,
-                    "state": FilterUpdatePopupStatus.State.failed.rawValue,
-                    "error": "The background update service is unavailable."
+                    "ok": true,
+                    "accepted": true,
+                    "state": FilterUpdatePopupStatus.State.running.rawValue
                 ])
                 context.completeRequest(returningItems: [response])
+                let outcome = await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
+                    trigger: "Popup",
+                    force: true
+                )
+                FilterUpdatePopupStatus.finish(outcome)
             }
         }
         #else

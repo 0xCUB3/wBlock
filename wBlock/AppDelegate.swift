@@ -218,6 +218,8 @@ extension AppDelegate: NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        mainWindowFrameRestorer?.saveAdoptedWindow()
+
         // Clean up periodic timer
         periodicUpdateTimer?.invalidate()
         periodicUpdateTimer = nil
