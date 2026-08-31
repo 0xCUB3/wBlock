@@ -97,17 +97,32 @@ if (supportsEnd === -1) {
 }
 const iosCss = css.slice(supportsOpen + 1, supportsEnd);
 
-const iosRoot = declarationsFor("body", iosCss);
+const iosRoot = declarationsFor("html.ios-phone-sheet", iosCss);
 if (iosRoot.get("height") !== "100%" || iosRoot.get("max-height") !== "100%") {
-  fail("iOS html/body must fill the Safari sheet instead of sizing only to content");
+  fail("iPhone html/body must fill the Safari sheet instead of sizing only to content");
 }
 if (iosRoot.get("overflow") !== "hidden") {
-  fail("iOS html/body must not become a second scroll container");
+  fail("iPhone html/body must not become a second scroll container");
 }
 
-const iosPopup = declarationsFor(".popup", iosCss);
+const iosPopup = declarationsFor("html.ios-phone-sheet .popup", iosCss);
 if (iosPopup.get("height") !== "100%" || iosPopup.get("max-height") !== "100%") {
-  fail("iOS .popup must fill the Safari sheet instead of stopping at 600px");
+  fail("iPhone .popup must fill the Safari sheet instead of stopping at 600px");
+}
+
+if (!js.includes("function isIpadDevice(") ||
+    !js.includes("navigator.platform === 'MacIntel'") ||
+    !js.includes("Number(navigator.maxTouchPoints) > 1") ||
+    !js.includes("function shouldFillIosPhoneSheet(") ||
+    !js.includes("!isIpadDevice()") ||
+    !js.includes("classList.add('ios-phone-sheet')")) {
+  fail("iPhone sheet fill must exclude iPad and iPadOS desktop user agents");
+}
+
+const syncHeight = js.match(/function syncPopupViewportHeight\(\) \{([\s\S]*?)\n\}/)?.[1] || "";
+if (!syncHeight.includes("if (!shouldFillIosPhoneSheet())") ||
+    !syncHeight.includes("return;")) {
+  fail("syncPopupViewportHeight must return early outside an iPhone Safari sheet");
 }
 
 if (!js.includes("function syncPopupViewportHeight(") ||
@@ -116,7 +131,7 @@ if (!js.includes("function syncPopupViewportHeight(") ||
     !js.includes("document.documentElement.style.height") ||
     !js.includes("document.body.style.height") ||
     !js.includes("window.addEventListener('resize', syncPopupViewportHeight)")) {
-  fail("iOS popup must size itself to the live sheet viewport, not a guessed px cap");
+  fail("iPhone popup must size itself to the live sheet viewport, not a guessed px cap");
 }
 
 console.log("PASS");

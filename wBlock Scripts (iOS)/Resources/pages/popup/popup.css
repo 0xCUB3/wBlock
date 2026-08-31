@@ -64,15 +64,16 @@ body {
   background: transparent;
 }
 
-/* iOS/iPadOS sheets are already as tall as the phone. Fill that instead of stopping at 600px. */
+/* iPhone sheets are already as tall as the phone. Fill that instead of stopping at 600px. */
 @supports (-webkit-touch-callout: none) {
-  html, body {
+  html.ios-phone-sheet,
+  html.ios-phone-sheet body {
     height: 100%;
     max-height: 100%;
     overflow: hidden;
   }
 
-  .popup {
+  html.ios-phone-sheet .popup {
     height: 100%;
     max-height: 100%;
   }

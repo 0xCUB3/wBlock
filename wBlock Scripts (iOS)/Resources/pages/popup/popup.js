@@ -278,8 +278,18 @@ async function getAuthoritativeZapperRules(host) {
     return (await getAuthoritativeZapperState(host)).rules;
 }
 
+function isIpadDevice() {
+    return /iPad/i.test(navigator.userAgent) || (
+        navigator.platform === 'MacIntel' && Number(navigator.maxTouchPoints) > 1
+    );
+}
+
+function shouldFillIosPhoneSheet() {
+    return CSS.supports('-webkit-touch-callout', 'none') && !isIpadDevice();
+}
+
 function syncPopupViewportHeight() {
-    if (!CSS.supports('-webkit-touch-callout', 'none')) {
+    if (!shouldFillIosPhoneSheet()) {
         return;
     }
     const height = window.innerHeight;
@@ -293,6 +303,9 @@ function syncPopupViewportHeight() {
     }
 }
 
+if (shouldFillIosPhoneSheet()) {
+    document.documentElement.classList.add('ios-phone-sheet');
+}
 window.addEventListener('resize', syncPopupViewportHeight);
 syncPopupViewportHeight();
 
@@ -431,15 +444,51 @@ async function startFilterUpdate() {
     }
 }
 
+function hasTabId(tab) {
+    return Boolean(tab && tab.id !== undefined && tab.id !== null);
+}
+
+function hasUsableHttpUrl(tab) {
+    if (!tab || typeof tab.url !== 'string' || tab.url.length === 0) return false;
+    try {
+        const url = new URL(tab.url);
+        return (url.protocol === 'http:' || url.protocol === 'https:') && Boolean(url.hostname);
+    } catch {
+        return false;
+    }
+}
+
 async function getActiveTab() {
-    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-    return tabs && tabs.length ? tabs[0] : null;
+    const queries = [
+        { active: true, currentWindow: true },
+        { active: true, lastFocusedWindow: true },
+        { active: true },
+    ];
+    let fallbackTab = null;
+
+    for (const query of queries) {
+        const tabs = await browser.tabs.query(query);
+        for (const candidate of tabs || []) {
+            if (!hasTabId(candidate)) continue;
+            if (!fallbackTab) fallbackTab = candidate;
+            if (hasUsableHttpUrl(candidate)) return candidate;
+        }
+    }
+
+    if (hasTabId(fallbackTab)) {
+        try {
+            return await browser.tabs.get(fallbackTab.id);
+        } catch {
+            return fallbackTab;
+        }
+    }
+    return null;
 }
 
 async function getActiveTabWithRetry() {
     for (let attempt = 0; attempt < SUPPORT_PROBE_ATTEMPTS; attempt += 1) {
         const activeTab = await getActiveTab();
-        if (activeTab && typeof activeTab.url === 'string' && activeTab.url.length > 0) {
+        if (hasUsableHttpUrl(activeTab)) {
             return activeTab;
         }
         if (attempt + 1 < SUPPORT_PROBE_ATTEMPTS) {
@@ -519,16 +568,20 @@ async function sendTabMessageWithRetry(tabId, message, { timeoutMs = null, valid
 }
 
 async function probeTabSupport(tabId) {
-    if (!tabId) return false;
+    if (!tabId) return null;
 
     try {
-        await sendTabMessageWithRetry(tabId, { type: 'wblock:pageSupportProbe' }, {
+        const response = await sendTabMessageWithRetry(tabId, { type: 'wblock:pageSupportProbe' }, {
             timeoutMs: SUPPORT_PROBE_TIMEOUT_MS,
             validateResponse: isSupportedProbeResponse,
         });
-        return true;
+        return {
+            ok: true,
+            host: response.host,
+            protocol: response.protocol,
+        };
     } catch {
-        return false;
+        return null;
     }
 }
 
@@ -1696,7 +1749,17 @@ async function refreshUi() {
         openAppButton.hidden = !isMac;
     }
     tab = await getActiveTabWithRetry();
-    const pageSupport = getPageSupport(tab);
+    let pageSupport = getPageSupport(tab);
+    let supportProbe = null;
+    const tabUrlMissing = hasTabId(tab) && (
+        typeof tab.url !== 'string' || tab.url.length === 0
+    );
+    if (!pageSupport.supported && tabUrlMissing) {
+        supportProbe = await probeTabSupport(tab.id);
+        if (supportProbe) {
+            pageSupport = { supported: true, host: supportProbe.host };
+        }
+    }
     host = pageSupport.host;
 
     if (hostEl) hostEl.textContent = host || '—';
@@ -1738,7 +1801,9 @@ async function refreshUi() {
         return scripts;
     });
     const disabledPromise = getSiteDisabledState(host);
-    const contentScriptReachablePromise = probeTabSupport(tab.id);
+    const contentScriptReachablePromise = supportProbe
+        ? Promise.resolve(supportProbe)
+        : probeTabSupport(tab.id);
     const zapperStatePromise = getAuthoritativeZapperState(host);
     const zapperCountPromise = updateZapperCount(host);
     const noAutoplayStatePromise = getNoAutoplayState(host);
