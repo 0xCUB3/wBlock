@@ -249,7 +249,7 @@ class AppFilterManager: ObservableObject {
     func scheduleAutoApplyDebounce() {
         autoApplyTask?.cancel()
         autoApplyTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            try? await Task.sleep(nanoseconds: 60_000_000_000)
             guard !Task.isCancelled else { return }
             guard let self,
                   self.hasUnappliedChanges,
