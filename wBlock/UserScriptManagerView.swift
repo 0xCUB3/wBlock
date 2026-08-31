@@ -817,11 +817,9 @@ struct UserScriptManagerView: View {
         .id(script.id)
         .contentShape(.interaction, Rectangle())
         .onTapGesture {
-            if script.isDownloaded {
-                // Defer to avoid race with context menu dismissal on iOS
-                DispatchQueue.main.async {
-                    selectedScript = SelectedUserScript(id: script.id, action: .info)
-                }
+            // Defer to avoid race with context menu dismissal on iOS
+            DispatchQueue.main.async {
+                selectedScript = SelectedUserScript(id: script.id, action: .info)
             }
         }
         .contextMenu {

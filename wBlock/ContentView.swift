@@ -800,6 +800,13 @@ struct FilterRowView: View {
             .toggleStyle(.switch)
             .frame(alignment: .center)
         }
+        .contentShape(.interaction, Rectangle())
+        .onTapGesture {
+            // Defer to avoid race with context menu dismissal on iOS
+            DispatchQueue.main.async {
+                onInfo()
+            }
+        }
         .contextMenu {
             contextMenuItems
         }
