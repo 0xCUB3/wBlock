@@ -158,6 +158,9 @@ extension AppFilterManager {
         let resolvedStatusMessage = statusMessage
             ?? LocalizedStrings.text("Failed", comment: "Generic failure status")
         await MainActor.run {
+            self.autoApplyTask?.cancel()
+            self.autoApplyTask = nil
+            self.persistFailedUpgradeRebuildSignature()
             self.lastApplySucceeded = false
             self.hasError = true
             self.statusDescription = resolvedStatusMessage
@@ -210,7 +213,9 @@ extension AppFilterManager {
         isApplyInFlight = true
         defer {
             isApplyInFlight = false
-            if hasUnappliedChanges && !BlockingPauseStore.isPaused(.filters) {
+            if lastApplySucceeded
+                && hasUnappliedChanges
+                && !BlockingPauseStore.isPaused(.filters) {
                 scheduleAutoApplyDebounce()
             }
         }
@@ -340,6 +345,7 @@ extension AppFilterManager {
                 if cleared && cleanupSucceeded {
                     self.lastApplySucceeded = true
                     self.persistUpgradeRebuildSignature()
+                    self.clearFailedUpgradeRebuildSignature()
                     self.commitApplySnapshot(runSnapshot)
                 }
             }
@@ -506,6 +512,7 @@ extension AppFilterManager {
                 if cleared && cleanupSucceeded {
                     self.lastApplySucceeded = true
                     self.persistUpgradeRebuildSignature()
+                    self.clearFailedUpgradeRebuildSignature()
                     self.commitApplySnapshot(runSnapshot)
                     self.lastRuleCount = 0
                     self.ruleCountsByExtension.removeAll()
@@ -999,6 +1006,7 @@ extension AppFilterManager {
                 await MainActor.run {
                     self.lastApplySucceeded = true
                     self.persistUpgradeRebuildSignature()
+                    self.clearFailedUpgradeRebuildSignature()
                     self.commitApplySnapshot(runSnapshot)
                 }
             }
@@ -1072,24 +1080,25 @@ extension AppFilterManager {
 
                 var reloadFailures: [String] = []
                 var skippedNames: [String] = []
-                let reloadResults = await withTaskGroup(of: (ContentBlockerTargetInfo, ContentBlockerService.ReloadAttemptResult).self) { group in
-                    for targetInfo in platformTargets {
-                        group.addTask {
-                            let reloadResult = await ContentBlockerService.reloadIfNeeded(
-                                identifier: targetInfo.bundleIdentifier,
-                                targetRulesFilename: targetInfo.rulesFilename,
-                                groupIdentifier: groupIdentifier
-                            )
-                            return (targetInfo, reloadResult)
-                        }
-                    }
-                    var collected: [(ContentBlockerTargetInfo, ContentBlockerService.ReloadAttemptResult)] = []
-                    collected.reserveCapacity(platformTargets.count)
-                    for await item in group {
-                        collected.append(item)
-                    }
-                    return collected
-                }
+                var reloadResults: [(ContentBlockerTargetInfo, ContentBlockerService.ReloadAttemptResult)] = []
+                reloadResults.reserveCapacity(platformTargets.count)
+                await boundedConcurrentForEach(platformTargets, maxConcurrent: {
+                    #if os(macOS)
+                    return 3
+                    #else
+                    return 1
+                    #endif
+                }(), operation: { targetInfo in
+                    let reloadResult = await ContentBlockerService.reloadIfNeeded(
+                        identifier: targetInfo.bundleIdentifier,
+                        targetRulesFilename: targetInfo.rulesFilename,
+                        groupIdentifier: groupIdentifier
+                    )
+                    return (targetInfo, reloadResult)
+                }, onResult: { item in
+                    reloadResults.append(item)
+                })
+                reloadResults.sort { $0.0.slot < $1.0.slot }
                 for (targetInfo, result) in reloadResults {
                     if result.skipped {
                         skippedNames.append(targetInfo.displayName)
@@ -1168,6 +1177,7 @@ extension AppFilterManager {
                     if cleared {
                         self.lastApplySucceeded = true
                         self.persistUpgradeRebuildSignature()
+                        self.clearFailedUpgradeRebuildSignature()
                         self.markCurrentStateApplied()
                         self.statusDescription = LocalizedStrings.text(
                             "Blocking paused", comment: "Apply pipeline pause status"
@@ -1334,43 +1344,38 @@ extension AppFilterManager {
         let totalCount = targets.count
         let reloadStartTime = Date()
 
-        // SFContentBlockerManager.reloadContentBlocker is safe to call concurrently across
-        // identifiers, so reload all targets in parallel rather than one-by-one.
         let groupIdentifier = GroupIdentifier.shared.value
         var collected: [(target: ContentBlockerTargetInfo, reload: ContentBlockerService.ReloadAttemptResult)] = []
         collected.reserveCapacity(targets.count)
+        var completed = 0
 
-        await withTaskGroup(of: (ContentBlockerTargetInfo, ContentBlockerService.ReloadAttemptResult).self) { group in
-            for target in targets {
-                group.addTask {
-                    let reload = await ContentBlockerService.reloadIfNeeded(
-                        identifier: target.bundleIdentifier,
-                        targetRulesFilename: target.rulesFilename,
-                        groupIdentifier: groupIdentifier
-                    )
-                    return (target, reload)
-                }
+        await boundedConcurrentForEach(targets, maxConcurrent: {
+            #if os(macOS)
+            return 3
+            #else
+            return 1
+            #endif
+        }(), operation: { target in
+            let reload = await ContentBlockerService.reloadIfNeeded(
+                identifier: target.bundleIdentifier,
+                targetRulesFilename: target.rulesFilename,
+                groupIdentifier: groupIdentifier
+            )
+            return (target, reload)
+        }, onResult: { item in
+            collected.append(item)
+            completed += 1
+            let name = item.0.displayName
+            await MainActor.run {
+                self.processedFiltersCount = completed
+                self.applyProgressViewModel.updateCurrentFilter(name)
+                self.applyProgressViewModel.updateReloadingDone(completed)
+                self.progress =
+                    0.7 + (Float(completed) / Float(max(1, totalCount)) * 0.2)
             }
-
-            var completed = 0
-            for await item in group {
-                collected.append(item)
-                completed += 1
-                let name = item.0.displayName
-                await MainActor.run {
-                    self.processedFiltersCount = completed
-                    self.applyProgressViewModel.updateCurrentFilter(name)
-                    self.applyProgressViewModel.updateReloadingDone(completed)
-                    self.progress =
-                        0.7 + (Float(completed) / Float(max(1, totalCount)) * 0.2)
-                }
-                await Self.allowProgressUIRefresh()
-                if await self.failApplyIfCancelled() {
-                    group.cancelAll()
-                    break
-                }
-            }
-        }
+            await Self.allowProgressUIRefresh()
+            _ = await self.failApplyIfCancelled()
+        })
 
         // Preserve slot order for stable logging/UI.
         let orderedResults = collected.sorted { $0.target.slot < $1.target.slot }

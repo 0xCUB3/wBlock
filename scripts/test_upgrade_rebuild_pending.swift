@@ -13,6 +13,10 @@ for needle in [
     "currentUpgradeSignature",
     "storedUpgradeSignature",
     "persistUpgradeRebuildSignature",
+    "lastFailedUpgradeSignatureKey",
+    "persistFailedUpgradeRebuildSignature",
+    "clearFailedUpgradeRebuildSignature",
+    "storedFailedUpgradeSignature",
     "needsRebuild",
 ] {
     check(manager.contains(needle), "AppFilterManager.swift is missing \(needle)")
@@ -50,6 +54,14 @@ if let setupStart {
     let setupBody = nextFunc.map { String(afterSetup[..<$0.lowerBound]) } ?? String(afterSetup)
     check(setupBody.contains("if needsRebuild"), "setup must contain if needsRebuild")
     check(setupBody.contains("markNonSelectionChangesPending"), "setup must contain markNonSelectionChangesPending")
+    check(
+        setupBody.contains("storedFailedUpgradeSignature() == currentSignature"),
+        "setup must suppress auto-apply after this upgrade signature has failed"
+    )
+    check(
+        setupBody.contains("autoApplyTask?.cancel()") && setupBody.contains("autoApplyTask = nil"),
+        "setup must cancel the scheduled rebuild auto-apply while leaving changes pending"
+    )
 }
 
 print("PASS: upgrade rebuild pending persistence")

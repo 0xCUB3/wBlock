@@ -51,6 +51,7 @@ struct ApplyRunSnapshot {
 @MainActor
 class AppFilterManager: ObservableObject {
     private static let lastAppliedUpgradeSignatureKey = "wBlock.lastAppliedUpgradeSignature"
+    private static let lastFailedUpgradeSignatureKey = "wBlock.lastFailedUpgradeSignature"
     @Published var filterLists: [FilterList] = []
     @Published var isLoading: Bool = false
     @Published var statusDescription: String = LocalizedStrings.text("Ready.", comment: "Filter manager idle status")
@@ -168,7 +169,7 @@ class AppFilterManager: ObservableObject {
         refreshHasUnappliedChanges()
     }
 
-    private var autoApplyTask: Task<Void, Never>?
+    var autoApplyTask: Task<Void, Never>?
 
     func markCurrentStateApplied() {
         appliedSelectedFilterIDs = selectedFilterIDs
@@ -194,6 +195,21 @@ class AppFilterManager: ObservableObject {
     func persistUpgradeRebuildSignature() {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
         defaults.set(currentUpgradeSignature(), forKey: Self.lastAppliedUpgradeSignatureKey)
+    }
+
+    func persistFailedUpgradeRebuildSignature() {
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+        defaults.set(currentUpgradeSignature(), forKey: Self.lastFailedUpgradeSignatureKey)
+    }
+
+    func clearFailedUpgradeRebuildSignature() {
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+        defaults.removeObject(forKey: Self.lastFailedUpgradeSignatureKey)
+    }
+
+    private func storedFailedUpgradeSignature() -> String? {
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+        return defaults.string(forKey: Self.lastFailedUpgradeSignatureKey)
     }
 
     func captureApplySnapshot() {
@@ -629,6 +645,10 @@ class AppFilterManager: ObservableObject {
             && (hasURLMigrations || selectedDeprecatedListWasRemoved || signatureMismatch)
         if needsRebuild {
             markNonSelectionChangesPending()
+            if storedFailedUpgradeSignature() == currentSignature {
+                autoApplyTask?.cancel()
+                autoApplyTask = nil
+            }
         } else {
             markCurrentStateApplied()
         }
@@ -851,6 +871,7 @@ class AppFilterManager: ObservableObject {
 
     func forceApplyChanges() {
         guard !isLoading, !isApplyInFlight else { return }
+        clearFailedUpgradeRebuildSignature()
         isLoading = true
         showingNoUpdatesAlert = false
         statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Apply pipeline status")
