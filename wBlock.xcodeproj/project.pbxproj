@@ -1988,7 +1988,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlock.FilterUpdateAgent;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -2008,7 +2008,7 @@
 				AUTOMATION_APPLE_EVENTS = NO;
 				CODE_SIGN_ENTITLEMENTS = "wBlock Scripts/wBlock Scripts.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -2034,7 +2034,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
@@ -2064,7 +2064,7 @@
 				AUTOMATION_APPLE_EVENTS = NO;
 				CODE_SIGN_ENTITLEMENTS = "wBlock Scripts/wBlock Scripts.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -2090,7 +2090,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
@@ -2143,7 +2143,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlock.FilterUpdateService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -2186,7 +2186,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlock.FilterUpdateService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -2208,7 +2208,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = wBlock/wBlock.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_APP_SANDBOX = YES;
@@ -2234,7 +2234,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlock;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -2257,7 +2257,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = wBlock/wBlock.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_APP_SANDBOX = YES;
@@ -2283,7 +2283,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlock;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -2447,7 +2447,7 @@
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
 				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlockCoreService;
@@ -2494,7 +2494,7 @@
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
 				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlockCoreService;
@@ -2519,7 +2519,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Ads/wBlock_Ads.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -2533,7 +2533,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Ads";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -2549,7 +2549,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Ads/wBlock_Ads.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -2563,7 +2563,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Ads";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -2579,7 +2579,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Ads (iOS)/wBlock_Ads_iOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Ads (iOS)/Info.plist";
@@ -2591,7 +2591,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Ads-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -2610,7 +2610,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Ads (iOS)/wBlock_Ads_iOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Ads (iOS)/Info.plist";
@@ -2622,7 +2622,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Ads-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -2643,7 +2643,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "wBlock Scripts (iOS)/wBlock Scripts (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Scripts (iOS)/Info.plist";
@@ -2655,7 +2655,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
@@ -2679,7 +2679,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = "wBlock Scripts (iOS)/wBlock Scripts (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Scripts (iOS)/Info.plist";
@@ -2691,7 +2691,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				OTHER_LDFLAGS = (
 					"-framework",
 					SafariServices,
@@ -2715,7 +2715,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Security/wBlock_Security.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_APP_SANDBOX = YES;
@@ -2731,7 +2731,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Security";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -2747,7 +2747,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Security/wBlock_Security.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_APP_SANDBOX = YES;
@@ -2763,7 +2763,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Security";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -2779,7 +2779,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Privacy/wBlock_Privacy.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_APP_SANDBOX = YES;
@@ -2795,7 +2795,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Privacy";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -2811,7 +2811,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Privacy/wBlock_Privacy.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_APP_SANDBOX = YES;
@@ -2827,7 +2827,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Privacy";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -2843,7 +2843,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Foreign/wBlock_Foreign.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_APP_SANDBOX = YES;
@@ -2859,7 +2859,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Foreign";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -2875,7 +2875,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Foreign/wBlock_Foreign.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_APP_SANDBOX = YES;
@@ -2891,7 +2891,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Foreign";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -2907,7 +2907,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Custom/wBlock_Custom.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_APP_SANDBOX = YES;
@@ -2923,7 +2923,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Custom";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -2939,7 +2939,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Custom/wBlock_Custom.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				ENABLE_APP_SANDBOX = YES;
@@ -2955,7 +2955,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Custom";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -2971,7 +2971,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Privacy (iOS)/wBlock Privacy (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Privacy (iOS)/Info.plist";
@@ -2983,7 +2983,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Privacy-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -3002,7 +3002,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Privacy (iOS)/wBlock Privacy (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Privacy (iOS)/Info.plist";
@@ -3014,7 +3014,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Privacy-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -3034,7 +3034,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Security (iOS)/wBlock Security (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Security (iOS)/Info.plist";
@@ -3046,7 +3046,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Security-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -3065,7 +3065,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Security (iOS)/wBlock Security (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Security (iOS)/Info.plist";
@@ -3077,7 +3077,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Security-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -3097,7 +3097,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Privacy (iOS)/wBlock Privacy (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Privacy (iOS)/Info.plist";
@@ -3109,7 +3109,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Privacy-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -3128,7 +3128,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Privacy (iOS)/wBlock Privacy (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Privacy (iOS)/Info.plist";
@@ -3140,7 +3140,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Privacy-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -3160,7 +3160,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Multipurpose (iOS)/wBlock Multipurpose (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Multipurpose (iOS)/Info.plist";
@@ -3172,7 +3172,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Multipurpose-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -3191,7 +3191,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Multipurpose (iOS)/wBlock Multipurpose (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Multipurpose (iOS)/Info.plist";
@@ -3203,7 +3203,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Multipurpose-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -3223,7 +3223,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Foreign (iOS)/wBlock Foreign (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Foreign (iOS)/Info.plist";
@@ -3235,7 +3235,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Foreign-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -3254,7 +3254,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Foreign (iOS)/wBlock Foreign (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Foreign (iOS)/Info.plist";
@@ -3266,7 +3266,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Foreign-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -3286,7 +3286,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Experimental (iOS)/wBlock Experimental (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Experimental (iOS)/Info.plist";
@@ -3298,7 +3298,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Experimental-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -3317,7 +3317,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Experimental (iOS)/wBlock Experimental (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Experimental (iOS)/Info.plist";
@@ -3329,7 +3329,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Experimental-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -3349,7 +3349,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Custom (iOS)/wBlock Custom (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Custom (iOS)/Info.plist";
@@ -3361,7 +3361,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Custom-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -3380,7 +3380,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "wBlock Custom (iOS)/wBlock Custom (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 109;
+				CURRENT_PROJECT_VERSION = 110;
 				DEVELOPMENT_TEAM = DNP7DGUB7B;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "wBlock Custom (iOS)/Info.plist";
@@ -3392,7 +3392,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Custom-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -3436,7 +3436,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlock.FilterUpdateAgent;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -3470,7 +3470,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlock.FilterUpdateLoginItem;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -3505,7 +3505,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 12.3;
-				MARKETING_VERSION = 3.0.0;
+				MARKETING_VERSION = 3.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = skula.wBlock.FilterUpdateLoginItem;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
