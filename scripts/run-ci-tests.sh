@@ -172,6 +172,7 @@ swiftc -parse-as-library -D DEBUG \
   wBlockCoreService/UserStyle.swift \
   wBlockCoreService/UserStyleCompiler.swift \
   wBlockCoreService/UserStyleCompilerExecutionHost.swift \
+  wBlockCoreService/UserStyleRemoteImportInliner.swift \
   scripts/test_userstyle_parsing_and_matching.swift -o "$TMP/userstyle-parsing-matching"
 WBLOCK_LESS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/less.min.js" \
 WBLOCK_SASS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/sass/wblock-sass-1.102.0.min.js" \

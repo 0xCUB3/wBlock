@@ -31,6 +31,7 @@ struct UserStyleParsingAndMatchingTests {
             testCompiledStyleCacheAndArtifactIdentity()
             testUserScriptIntegration()
             testURLSupport()
+            testRemoteImportInlining()
             finished.signal()
         }
         while finished.wait(timeout: .now()) == .timedOut {
@@ -732,6 +733,154 @@ struct UserStyleParsingAndMatchingTests {
             "display name should strip query-value .less"
         )
     }
+
+    static func testRemoteImportInlining() {
+        // Detection: only Less userstyles with unambiguous remote imports qualify.
+        let style = """
+        /* ==UserStyle==
+        @name Remote import
+        @preprocessor less
+        ==/UserStyle== */
+        @import (less) "https://example.com/lib/palette.less";
+        @-moz-document domain("example.com") {
+            body { color: @accent-from-lib; .lib-border(); }
+        }
+        """
+        expect(
+            UserStyleRemoteImportInliner.containsRemoteLessImports(in: style),
+            "remote (less) import in a Less userstyle should be detected"
+        )
+        expect(
+            UserStyleRemoteImportInliner.containsRemoteLessImports(
+                in: style.replacingOccurrences(of: "@preprocessor less", with: "@preprocessor Less")
+            ),
+            "capitalized @preprocessor Less must pass the normalized gate"
+        )
+        expect(
+            !UserStyleRemoteImportInliner.containsRemoteLessImports(
+                in: style.replacingOccurrences(of: "@preprocessor less", with: "@preprocessor uso")
+            ),
+            "non-Less userstyles must never inline"
+        )
+
+        let statements = UserStyleRemoteImportInliner.inlineableImports(in: style)
+        expectEqual(statements.count, 1, "exactly one inlineable import should be found")
+        expectEqual(
+            statements.first?.url ?? "",
+            "https://example.com/lib/palette.less",
+            "the import URL should be extracted"
+        )
+
+        // Disqualified statements are preserved untouched.
+        let skipped = """
+        @import "local/thing.less";
+        @import "https://example.com/screen.less" print;
+        @import (css) "https://example.com/forced-css.less";
+        @import "https://example.com/plain.css";
+        @import (reference) "https://example.com/ref.less";
+        /* @import (less) "https://example.com/comment.less"; */
+        // @import (less) "https://example.com/line-comment.less";
+        .rule { content: "@import (less) 'https://example.com/string.less';"; }
+        """
+        expect(
+            UserStyleRemoteImportInliner.inlineableImports(in: skipped).isEmpty,
+            "relative, media-query, css/reference-option, plain-css, commented, and quoted imports must be skipped"
+        )
+        expect(
+            !UserStyleRemoteImportInliner.inlineableImports(
+                in: "@import url( 'https://example.com/via-url.less' );"
+            ).isEmpty,
+            "url(...) form with a .less target should qualify"
+        )
+
+        let finished = DispatchSemaphore(value: 0)
+        var checksPassed = false
+        Task {
+            defer { finished.signal() }
+
+            // End-to-end regression for issue #578: the imported library defines
+            // symbols the style body references, so the compile only succeeds if
+            // inlining ran before compilation.
+            let library = "@accent-from-lib: #abcdef;\n.lib-border() { border-width: 2px; }\n"
+            var fetchCount = 0
+            let inlined: String
+            do {
+                inlined = try await UserStyleRemoteImportInliner.inliningRemoteImports(in: style) { url in
+                    fetchCount += 1
+                    expectEqual(url.absoluteString, "https://example.com/lib/palette.less", "fetch should receive the import URL")
+                    return library
+                }
+            } catch {
+                return fail("inlining should succeed: \(error)")
+            }
+            expectEqual(fetchCount, 1, "the import should be fetched exactly once")
+            expect(UserStyleRemoteImportInliner.inlineableImports(in: inlined).isEmpty, "no inlineable imports may remain after inlining")
+            expect(inlined.contains("@accent-from-lib: #abcdef;"), "the fetched library source should be spliced in")
+            guard let parsed = UserStyleSupport.parsed(from: inlined) else {
+                return fail("inlined style should parse")
+            }
+            if !parsed.isCompiled { fputs("inlined compile error: \(parsed.compilationError ?? "nil")\n", stderr) }
+            expect(parsed.isCompiled, "inlined style should compile offline")
+            let css = UserStyleSupport.effectiveCSS(forContent: inlined, url: "https://example.com/page")
+            expect(css?.contains("#abcdef") == true, "library variable should resolve in compiled CSS")
+            expect(css?.contains("border-width: 2px") == true, "library mixin should resolve in compiled CSS")
+
+            // Nested imports resolve recursively; repeated imports follow
+            // import-once semantics and are fetched a single time.
+            let nested = """
+            /* ==UserStyle==
+            @name Nested
+            @preprocessor less
+            ==/UserStyle== */
+            @import (less) "https://example.com/a.less";
+            @import (less) "https://example.com/a.less";
+            """
+            var fetches: [String] = []
+            let nestedResult = try? await UserStyleRemoteImportInliner.inliningRemoteImports(in: nested) { url in
+                fetches.append(url.absoluteString)
+                if url.absoluteString.hasSuffix("a.less") {
+                    return "@import (less) \"https://example.com/b.less\";\n.from-a() {}"
+                }
+                return ".from-b() {}"
+            }
+            expectEqual(fetches, ["https://example.com/a.less", "https://example.com/b.less"], "nested imports should fetch depth-first, once per URL")
+            expect(nestedResult?.contains(".from-a") == true && nestedResult?.contains(".from-b") == true, "nested sources should both be inlined")
+
+            // Chains deeper than the maximum depth are rejected.
+            var depthError: Error?
+            do {
+                var counter = 0
+                _ = try await UserStyleRemoteImportInliner.inliningRemoteImports(in: nested) { _ in
+                    counter += 1
+                    return "@import (less) \"https://example.com/deep-\(counter).less\";"
+                }
+            } catch { depthError = error }
+            expect(depthError is UserStyleRemoteImportInliner.InlineError, "over-deep import chains should throw InlineError")
+
+            // Fetch failures surface as a download error naming the URL.
+            struct StubError: Error {}
+            var fetchError: Error?
+            do {
+                _ = try await UserStyleRemoteImportInliner.inliningRemoteImports(in: style) { _ in throw StubError() }
+            } catch { fetchError = error }
+            expect(
+                (fetchError as? UserStyleRemoteImportInliner.InlineError)?.message.contains("palette.less") == true,
+                "fetch failure should name the import URL"
+            )
+
+            // Non-Less content passes through byte-identical without fetching.
+            let plainCSS = "/* ==UserStyle==\n@name Plain\n==/UserStyle== */\n@import \"https://example.com/x.less\";\nbody { color: red; }"
+            let untouched = try? await UserStyleRemoteImportInliner.inliningRemoteImports(in: plainCSS) { _ in
+                fail("plain CSS must not trigger fetches"); return ""
+            }
+            expectEqual(untouched ?? "", plainCSS, "plain CSS userstyles must pass through unchanged")
+
+            checksPassed = true
+        }
+        finished.wait()
+        expect(checksPassed, "remote import inlining checks should complete")
+    }
+
 
     private static func fail(_ message: String) {
         fputs("FAIL: \(message)\n", stderr)

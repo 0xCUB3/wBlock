@@ -726,7 +726,22 @@ public class UserScriptManager: ObservableObject {
         else {
             throw URLError(.cannotParseResponse)
         }
-        return content
+        return try await inlineRemoteStyleImports(in: content)
+    }
+
+    /// Resolves remote Less `@import`s when userstyle source enters the app
+    /// (URL add, download, update, editor save) so every later compile —
+    /// hydration, sidecar validation, and cloud-synced devices — works offline
+    /// from self-contained source. Non-Less content passes through unchanged.
+    private func inlineRemoteStyleImports(in content: String) async throws -> String {
+        guard UserStyleRemoteImportInliner.containsRemoteLessImports(in: content) else { return content }
+        return try await UserStyleRemoteImportInliner.inliningRemoteImports(in: content) { url in
+            let (data, _) = try await self.downloadData(from: url, maximumBytes: Self.maximumUserScriptBytes)
+            guard let imported = String(data: data, encoding: .utf8), !imported.isEmpty else {
+                throw URLError(.cannotParseResponse)
+            }
+            return imported
+        }
     }
 
     // MARK: - Singleton
@@ -2858,6 +2873,8 @@ public class UserScriptManager: ObservableObject {
             throw UserScriptImportError.missingMetadata
         }
 
+        let rawContent = try await inlineRemoteStyleImports(in: rawContent)
+
         var tempScript = UserScript(name: "", content: rawContent)
         tempScript.parseMetadata()
 
@@ -3362,8 +3379,14 @@ public class UserScriptManager: ObservableObject {
         )
     }
 
-    public func saveEditedContent(for scriptId: UUID, newContent: String) async -> String? {
+    public func saveEditedContent(for scriptId: UUID, newContent rawNewContent: String) async -> String? {
         guard let index = indexOfUserScript(withId: scriptId) else { return nil }
+        let newContent: String
+        do {
+            newContent = try await inlineRemoteStyleImports(in: rawNewContent)
+        } catch {
+            return (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
         let existing = userScripts[index]
         var candidate = existing
         candidate.replaceContentAndParseMetadata(newContent)
