@@ -113,7 +113,7 @@ final class MainWindowFrameRestorer: NSObject {
     }
 
     private func apply(_ frame: NSRect, to window: NSWindow) {
-        window.setFrame(frame, display: false)
+        window.setFrame(frame, display: true)
     }
 
     private func isMainWindowCandidate(_ window: NSWindow) -> Bool {
