@@ -620,9 +620,9 @@ struct SettingsView: View {
                     systemImage: isRestarting ? "hourglass" : "arrow.counterclockwise"
                 )
             }
+            .tint(.red)
             #if os(macOS)
             .buttonStyle(.bordered)
-            .tint(.red)
             .controlSize(.small)
             #endif
             .disabled(isRestarting)
