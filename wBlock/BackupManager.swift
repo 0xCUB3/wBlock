@@ -396,19 +396,22 @@ enum BackupManager {
         await filterManager.dataManager.setNoAutoplayAllowedSites(backup.noAutoplayAllowedSites)
 
         // 4. Restore zapper rules (to protobuf)
-        for (hostname, rules) in backup.zapperRules {
-            await ProtobufDataManager.shared.setZapperRules(forHost: hostname, rules: rules)
-        }
-
-        for domain in backup.disabledZapperDomains {
-            await ProtobufDataManager.shared.setZapperRulesDisabled(true, forHost: domain)
-        }
+        await ProtobufDataManager.shared.applyZapperRulesBatch(
+            rulesByHost: backup.zapperRules,
+            disabledByHost: Dictionary(
+                backup.disabledZapperDomains.map { ($0, true) },
+                uniquingKeysWith: { first, _ in first }
+            )
+        )
 
         // 5. Restore userscripts, including custom script content and enabled/update state
         let userScripts = backup.userScripts.map(\.userScript)
         await UserScriptManager.shared.restoreUserScriptsFromBackup(userScripts)
         let restoredUserScripts = await MainActor.run {
             UserScriptManager.shared.userScripts
+        }
+        var disabledHostsByScriptID = await MainActor.run {
+            ProtobufDataManager.shared.getUserScriptDisabledHosts()
         }
         for entry in backup.userScripts {
             guard let disabledHosts = entry.disabledHosts, !disabledHosts.isEmpty else { continue }
@@ -420,11 +423,9 @@ enum BackupManager {
                 continue
             }
             let matchedScript = restoredUserScripts[matchingIndex]
-            await ProtobufDataManager.shared.setUserScriptDisabledHosts(
-                disabledHosts,
-                forScriptID: matchedScript.id.uuidString
-            )
+            disabledHostsByScriptID[matchedScript.id.uuidString] = disabledHosts
         }
+        await ProtobufDataManager.shared.setAllUserScriptDisabledHosts(disabledHostsByScriptID)
 
         // 6. Mark unapplied changes so user can apply
         filterManager.markNonSelectionChangesPending()

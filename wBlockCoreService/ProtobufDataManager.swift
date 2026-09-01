@@ -995,6 +995,66 @@ public class ProtobufDataManager: ObservableObject {
         }
     }
 
+    /// Batched form of setZapperRules / deleteAllZapperRules / setZapperRulesDisabled
+    /// for restore and sync paths. Performs one atomic disk write instead of one per host.
+    /// - hostsToDelete: hosts whose selectors are moved to pendingDeletions (same as deleteAllZapperRules)
+    /// - rulesByHost: hosts whose selectors are replaced (same as setZapperRules)
+    /// - disabledByHost: per-host kill-switch values applied after the replacements (nil leaves untouched)
+    @MainActor
+    public func applyZapperRulesBatch(
+        hostsToDelete: [String] = [],
+        rulesByHost: [String: [String]],
+        disabledByHost: [String: Bool]? = nil
+    ) async {
+        let filteredRules = rulesByHost.mapValues { rules in
+            rules.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        }
+        await updateDataImmediately { data in
+            var changed = false
+            for host in hostsToDelete {
+                guard var ruleList = data.extensionData.zapperRulesByHost[host] else { continue }
+                ruleList.pendingDeletions.append(contentsOf: ruleList.selectors)
+                ruleList.selectors.removeAll()
+                if ruleList.pendingDeletions.isEmpty {
+                    data.extensionData.zapperRulesByHost.removeValue(forKey: host)
+                } else {
+                    data.extensionData.zapperRulesByHost[host] = ruleList
+                }
+                changed = true
+            }
+            for (host, filtered) in filteredRules {
+                let existing = data.extensionData.zapperRulesByHost[host]
+                if filtered.isEmpty {
+                    guard existing != nil else { continue }
+                    data.extensionData.zapperRulesByHost.removeValue(forKey: host)
+                } else {
+                    if let existing,
+                       existing.selectors == filtered,
+                       existing.pendingDeletions.isEmpty {
+                        continue
+                    }
+                    var ruleList = Wblock_Data_ZapperRuleList()
+                    ruleList.selectors = filtered
+                    ruleList.disabled = existing?.disabled ?? false
+                    data.extensionData.zapperRulesByHost[host] = ruleList
+                }
+                changed = true
+            }
+            if let disabledByHost {
+                for (host, disabled) in disabledByHost {
+                    guard var ruleList = data.extensionData.zapperRulesByHost[host],
+                          ruleList.disabled != disabled else { continue }
+                    ruleList.disabled = disabled
+                    data.extensionData.zapperRulesByHost[host] = ruleList
+                    changed = true
+                }
+            }
+            if changed {
+                data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+            }
+        }
+    }
+
     /// Adds a single selector to the host's list if not already present.
     /// Also clears any matching pending deletion (the user re-created a previously deleted rule).
     @MainActor
