@@ -70,6 +70,23 @@ struct ApplyChangesProgressView: View {
             syncSelectionFromAvailableUpdates()
         }
         #if os(macOS)
+        .background {
+            // Sheets normally close with Escape; Cmd+W is the reflex users
+            // reach for, so let it dismiss the sheet too unless an apply is
+            // in flight.
+            Button {
+                isPresented = false
+            } label: {
+                Color.clear
+            }
+            .keyboardShortcut("w", modifiers: .command)
+            .disabled(isDismissDisabled)
+            .opacity(0)
+            .frame(width: 0, height: 0)
+            .accessibilityHidden(true)
+        }
+        #endif
+        #if os(macOS)
         .frame(
             minWidth: 460,
             idealWidth: 500,
