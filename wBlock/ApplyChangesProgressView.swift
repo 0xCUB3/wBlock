@@ -55,17 +55,14 @@ struct ApplyChangesProgressView: View {
             }
 
             content
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: mode == .review ? .top : .center)
 
             if mode == .review {
                 reviewToolbar
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .applySheetPresentationCompat(
-            prefersLarge: mode == .review,
-            prefersTall: mode == .progress || mode == .failed
-        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: mode == .review ? .top : .center)
+        .applySheetPresentationCompat(prefersLarge: mode == .review)
         .interactiveDismissDisabled(isDismissDisabled)
         .onAppear {
             syncSelectionFromAvailableUpdates()
@@ -75,8 +72,8 @@ struct ApplyChangesProgressView: View {
             minWidth: 460,
             idealWidth: 500,
             maxWidth: 560,
-            minHeight: mode == .result ? 260 : 420,
-            idealHeight: mode == .result ? 320 : 500,
+            minHeight: 320,
+            idealHeight: 360,
             maxHeight: 640
         )
         #endif
@@ -93,7 +90,7 @@ struct ApplyChangesProgressView: View {
                     progressField
                 }
                 .padding(20)
-                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .frame(maxWidth: .infinity, alignment: .center)
             }
         case .result:
             ScrollView {

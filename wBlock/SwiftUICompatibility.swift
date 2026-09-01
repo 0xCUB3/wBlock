@@ -7,14 +7,7 @@ import UIKit
 struct ApplySheetGlassBackgroundModifier: ViewModifier {
     @ViewBuilder
     func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            content.presentationBackground {
-                Rectangle()
-                    .fill(.clear)
-                    .glassEffect(.regular, in: Rectangle())
-                    .ignoresSafeArea()
-            }
-        } else if #available(iOS 16.4, *) {
+        if #available(iOS 16.4, *) {
             content.presentationBackground(.regularMaterial)
         } else {
             content
@@ -142,13 +135,13 @@ extension View {
     }
 
     @ViewBuilder
-    func applySheetPresentationCompat(prefersLarge: Bool, prefersTall: Bool = false) -> some View {
+    func applySheetPresentationCompat(prefersLarge: Bool) -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {
             #if os(iOS)
-            applySheetDetentsCompat(prefersLarge: prefersLarge, prefersTall: prefersTall)
+            applySheetDetentsCompat(prefersLarge: prefersLarge)
                 .modifier(ApplySheetGlassBackgroundModifier())
             #else
-            applySheetDetentsCompat(prefersLarge: prefersLarge, prefersTall: prefersTall)
+            applySheetDetentsCompat(prefersLarge: prefersLarge)
             #endif
         } else {
             self
@@ -157,15 +150,12 @@ extension View {
 
     @available(iOS 16.0, macOS 13.0, *)
     @ViewBuilder
-    private func applySheetDetentsCompat(prefersLarge: Bool, prefersTall: Bool) -> some View {
+    private func applySheetDetentsCompat(prefersLarge: Bool) -> some View {
         if prefersLarge {
             presentationDetents([.large])
                 .presentationDragIndicator(.visible)
-        } else if prefersTall {
-            presentationDetents([.height(560), .large])
-                .presentationDragIndicator(.visible)
         } else {
-            presentationDetents([.medium, .large])
+            presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
         }
     }
