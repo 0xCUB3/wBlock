@@ -524,6 +524,8 @@ struct ContentView: View {
     private func categoryHeader(_ category: FilterListCategory) -> some View {
         HStack(spacing: 6) {
             Text(category.localizedName)
+                .foregroundStyle(.primary)
+                .textCase(.none)
             Button {
                 selectedCategoryInfo = category
             } label: {

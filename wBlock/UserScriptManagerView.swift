@@ -554,6 +554,8 @@ struct UserScriptManagerView: View {
     private func displaySectionHeader(_ section: UserScriptDisplaySection) -> some View {
         HStack(spacing: 6) {
             Text(section.title)
+                .foregroundStyle(.primary)
+                .textCase(.none)
             Button {
                 selectedCategoryInfo = section.id
             } label: {
