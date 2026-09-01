@@ -875,7 +875,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "The end of Safari ad-blocking B.S." = "告别 Safari 广告拦截的糟心事";
 "Welcome to wBlock!" = "欢迎使用 wBlock！";
 "Whitelist" = "白名单";
-"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "在这里将网站列入白名单，或从 Safari 中的 wBlock 弹出窗口按网站调整用户脚本和元素清除器规则。";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "在这里将网站列入白名单，或从 Safari 中的 wBlock 弹出窗口按网站调整用户脚本。";
 "Whitelisted" = "已列入白名单";
 "Wrap Lines" = "自动换行";
 "On" = "开";

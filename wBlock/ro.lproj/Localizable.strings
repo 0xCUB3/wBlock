@@ -875,7 +875,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "The end of Safari ad-blocking B.S." = "Sfârșitul prostiilor blocării reclamelor în Safari";
 "Welcome to wBlock!" = "Bine ai venit în wBlock!";
 "Whitelist" = "Listă albă";
-"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Adaugă un site în lista albă aici sau ajustează scripturile utilizator și regulile eliminatorului de elemente pe site din popup-ul wBlock din Safari.";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Adaugă un site în lista albă aici sau ajustează scripturile utilizator pe site din popup-ul wBlock din Safari.";
 "Whitelisted" = "În lista albă";
 "Wrap Lines" = "Încadrare linii";
 "On" = "Activat";

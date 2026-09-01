@@ -30,7 +30,7 @@ struct SiteSettingsLocalizationTests {
             "%d script off",
             "%d scripts off",
             "No Site Settings",
-            "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari.",
+            "Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari.",
             "Reset Site Settings",
             "This removes all settings for %@.",
             "Whitelist",  // log category; shared with the hub's terminology

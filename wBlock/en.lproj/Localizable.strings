@@ -875,7 +875,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "The end of Safari ad-blocking B.S." = "The end of Safari ad-blocking B.S.";
 "Welcome to wBlock!" = "Welcome to wBlock!";
 "Whitelist" = "Whitelist";
-"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari.";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari.";
 "Whitelisted" = "Whitelisted";
 "Wrap Lines" = "Wrap Lines";
 "On" = "On";

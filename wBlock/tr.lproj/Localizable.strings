@@ -875,7 +875,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "The end of Safari ad-blocking B.S." = "Safari'deki reklam engelleme dertlerine son.";
 "Welcome to wBlock!" = "wBlock'a hoş geldiniz!";
 "Whitelist" = "İzin listesi";
-"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Bir siteyi buradan izin listesine ekleyebilir veya Safari'deki wBlock açılır penceresinden siteye özel kullanıcı betiği ve öğe gizleme kurallarını ayarlayabilirsiniz.";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Bir siteyi buradan izin listesine ekleyebilir veya Safari'deki wBlock açılır penceresinden siteye özel kullanıcı betiğini ayarlayabilirsiniz.";
 "Whitelisted" = "İzin listesinde";
 "Wrap Lines" = "Satırı kaydır";
 "On" = "Açık";

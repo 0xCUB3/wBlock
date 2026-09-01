@@ -878,7 +878,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "The end of Safari ad-blocking B.S." = "Το τέλος της ανοησίας με τον αποκλεισμό διαφημίσεων στο Safari";
 "Welcome to wBlock!" = "Καλώς ορίσατε στο wBlock!";
 "Whitelist" = "Λίστα επιτρεπόμενων";
-"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Βάλτε έναν ιστότοπο στη λευκή λίστα εδώ ή προσαρμόστε τον κώδικα χρήστη και τους κανόνες αποκλεισμού στοιχείων ανά ιστότοπο από το αναδυόμενο παράθυρο του wBlock στο Safari.";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Βάλτε έναν ιστότοπο στη λευκή λίστα εδώ ή προσαρμόστε τον κώδικα χρήστη ανά ιστότοπο από το αναδυόμενο παράθυρο του wBlock στο Safari.";
 "Whitelisted" = "Στη λευκή λίστα";
 "Wrap Lines" = "Αναδίπλωση γραμμών";
 "On" = "Ενεργό";

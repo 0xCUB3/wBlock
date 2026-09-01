@@ -875,7 +875,7 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "The end of Safari ad-blocking B.S." = "Chega de bobagens no bloqueio de anúncios do Safari";
 "Welcome to wBlock!" = "Bem-vindo ao wBlock!";
 "Whitelist" = "Lista de permissões";
-"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Adicione um site à lista de permissões aqui ou ajuste scripts de usuário e regras do ocultador de elementos por site no popup do wBlock no Safari.";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Adicione um site à lista de permissões aqui ou ajuste scripts de usuário por site no popup do wBlock no Safari.";
 "Whitelisted" = "Na lista de permissões";
 "Wrap Lines" = "Quebrar linhas";
 "On" = "Ativado";

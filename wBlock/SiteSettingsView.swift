@@ -398,7 +398,7 @@ struct SiteSettingsView: View {
                 .font(.headline)
                 .foregroundStyle(.secondary)
 
-            Text("Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari.")
+            Text("Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari.")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

@@ -878,7 +878,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "The end of Safari ad-blocking B.S." = "Vége a Safari reklámblokkolási ostobaságainak";
 "Welcome to wBlock!" = "Üdvözli a wBlock!";
 "Whitelist" = "Engedélyezőlista";
-"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "Tegyél itt engedélyezőlistára egy webhelyet, vagy állítsd be webhelyenként a felhasználói szkripteket és az elemeltávolító szabályokat a wBlock Safari felugró ablakában.";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Tegyél itt engedélyezőlistára egy webhelyet, vagy állítsd be webhelyenként a felhasználói szkripteket a wBlock Safari felugró ablakában.";
 "Whitelisted" = "Engedélyezőlistán";
 "Wrap Lines" = "Sortördelés";
 "On" = "Be";

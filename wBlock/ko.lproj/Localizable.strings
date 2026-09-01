@@ -878,7 +878,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "The end of Safari ad-blocking B.S." = "Safari 광고 차단의 말도 안 되는 문제를 끝내세요";
 "Welcome to wBlock!" = "wBlock에 오신 것을 환영합니다!";
 "Whitelist" = "허용 목록";
-"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "여기에서 사이트를 예외로 등록하거나, Safari의 wBlock 팝업에서 사이트별 유저스크립트와 요소 제거기 규칙을 조정하세요.";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "여기에서 사이트를 예외로 등록하거나, Safari의 wBlock 팝업에서 사이트별 유저스크립트를 조정하세요.";
 "Whitelisted" = "예외 등록됨";
 "Wrap Lines" = "줄 바꿈";
 "On" = "켬";

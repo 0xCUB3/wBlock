@@ -878,7 +878,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "The end of Safari ad-blocking B.S." = "Safariの広告ブロックのくだらない問題に終止符を";
 "Welcome to wBlock!" = "wBlockへようこそ！";
 "Whitelist" = "ホワイトリスト";
-"Whitelist a site here, or adjust userscripts and element zapper rules per site from the wBlock popup in Safari." = "ここでサイトを例外に登録するか、Safari の wBlock ポップアップからサイトごとにユーザースクリプトと要素ブロックのルールを調整します。";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "ここでサイトを例外に登録するか、Safari の wBlock ポップアップからサイトごとにユーザースクリプトを調整します。";
 "Whitelisted" = "例外に登録済み";
 "Wrap Lines" = "行を折り返す";
 "On" = "オン";
