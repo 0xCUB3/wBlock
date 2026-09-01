@@ -1515,6 +1515,11 @@ public class UserScriptManager: ObservableObject {
             }
         }
 
+        // Each migration step persists on its own when it changes something. During
+        // startup they are coalesced into a single write after the whole chain so a
+        // launch that trips several one-shot migrations does not serialize the
+        // protobuf store once per step.
+        startupPersistDeferral = StartupPersistDeferral()
         await repairDuplicateBuiltInUserScriptsIfNeeded()
         await removeRetiredYouTubeAdBlockIfNeeded()
         await migrateLegacyBundledUserScriptsIfNeeded()
@@ -1524,6 +1529,7 @@ public class UserScriptManager: ObservableObject {
         // Always check for missing default scripts first
         await checkAndAddMissingDefaultScripts()
         await refreshDefaultUserScriptDescriptionsIfNeeded()
+        await flushStartupPersistDeferral()
 
         // Always check for duplicates - simplified approach
         checkForDuplicatesAndAskForConfirmation()
@@ -2298,11 +2304,39 @@ public class UserScriptManager: ObservableObject {
     /// Persists the current in-memory userscripts and waits for completion. Use this in async flows
     /// where the caller needs stronger ordering guarantees.
     @MainActor
+    private struct StartupPersistDeferral {
+        var pending = false
+        var authoritative = false
+        var invalidateExecutionCache = false
+        var explicitEnabledStates: [UUID: Bool] = [:]
+    }
+
+    private var startupPersistDeferral: StartupPersistDeferral?
+
+    private func flushStartupPersistDeferral() async {
+        guard let deferral = startupPersistDeferral else { return }
+        startupPersistDeferral = nil
+        guard deferral.pending else { return }
+        await persistUserScriptsNow(
+            invalidateExecutionCache: deferral.invalidateExecutionCache,
+            explicitEnabledStates: deferral.explicitEnabledStates,
+            authoritative: deferral.authoritative
+        )
+    }
+
     private func persistUserScriptsNow(
         invalidateExecutionCache: Bool = true,
         explicitEnabledStates: [UUID: Bool] = [:],
         authoritative: Bool = false
     ) async {
+        if var deferral = startupPersistDeferral {
+            deferral.pending = true
+            deferral.authoritative = deferral.authoritative || authoritative
+            deferral.invalidateExecutionCache = deferral.invalidateExecutionCache || invalidateExecutionCache
+            deferral.explicitEnabledStates.merge(explicitEnabledStates) { _, new in new }
+            startupPersistDeferral = deferral
+            return
+        }
         logger.info("💾 Saving \(self.userScripts.count) userscripts to ProtobufDataManager")
         if authoritative {
             await dataManager.replaceUserScripts(userScripts)
