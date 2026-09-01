@@ -16,10 +16,10 @@ enum PortraitOrientationLock {
 
     #if os(iOS)
     static var mask: UIInterfaceOrientationMask {
-        guard isEnabled else {
-            return UIDevice.current.userInterfaceIdiom == .pad ? .all : .allButUpsideDown
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            return .all
         }
-        return .portrait
+        return isEnabled ? .portrait : .allButUpsideDown
     }
 
     @MainActor

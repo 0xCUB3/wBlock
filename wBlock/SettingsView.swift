@@ -253,13 +253,15 @@ struct SettingsView: View {
     #if os(iOS)
     @ViewBuilder
     private var displaySection: some View {
-        Section {
-            Toggle("Lock Portrait Orientation", isOn: $lockPortraitOrientation)
-                .onChangeCompat(of: lockPortraitOrientation) { _ in
-                    PortraitOrientationLock.apply()
-                }
-        } footer: {
-            Text("Keeps the app in portrait even if the device is rotated.")
+        if UIDevice.current.userInterfaceIdiom != .pad {
+            Section {
+                Toggle("Lock Portrait Orientation", isOn: $lockPortraitOrientation)
+                    .onChangeCompat(of: lockPortraitOrientation) { _ in
+                        PortraitOrientationLock.apply()
+                    }
+            } footer: {
+                Text("Keeps the app in portrait even if the device is rotated.")
+            }
         }
     }
     #endif
