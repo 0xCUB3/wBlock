@@ -106,6 +106,48 @@ struct ContentView: View {
         return result
     }
 
+    /// Invisible zero-size buttons that surface hardware-keyboard shortcuts.
+    /// SwiftUI keeps delivering key events to them even though they render
+    /// nothing, so the same shortcuts work on macOS and on iOS with an
+    /// attached hardware keyboard.
+    private var keyboardShortcutHandlers: some View {
+        Group {
+            Button {
+                guard !filterManager.isLoading,
+                    !filterManager.showingApplyProgressSheet
+                else { return }
+                applyPendingChanges()
+            } label: {
+                Color.clear
+            }
+            .keyboardShortcut("r", modifiers: .command)
+
+            Button {
+                selectedTab = 0
+            } label: {
+                Color.clear
+            }
+            .keyboardShortcut("1", modifiers: .command)
+
+            Button {
+                selectedTab = 1
+            } label: {
+                Color.clear
+            }
+            .keyboardShortcut("2", modifiers: .command)
+
+            Button {
+                selectedTab = 2
+            } label: {
+                Color.clear
+            }
+            .keyboardShortcut("3", modifiers: .command)
+        }
+        .opacity(0)
+        .frame(width: 0, height: 0)
+        .accessibilityHidden(true)
+    }
+
     var body: some View {
         Group {
             #if os(macOS)
@@ -118,6 +160,7 @@ struct ContentView: View {
             nativeTabView
             #endif
         }
+        .background(keyboardShortcutHandlers)
         .modifier(
             ContentModifiers(
                 filterManager: filterManager,
