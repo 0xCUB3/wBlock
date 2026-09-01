@@ -143,6 +143,8 @@ struct ContentView: View {
             FilterCategoryInfoView(
                 category: category,
                 defaultFilterNames: defaultFilterNames(for: category),
+                filterLists: filterManager.filterLists,
+                onLanguagesChange: applyRegionalRecommendations,
                 onReset: { resetCategory(category) }
             )
         }
@@ -544,7 +546,34 @@ struct ContentView: View {
         )
     }
 
+    private func regionalRecommendations(for languages: Set<String>) -> [FilterList] {
+        let selected = Set(languages.map { $0.lowercased() })
+        let matching = filterManager.filterLists.filter {
+            $0.category == .foreign
+                && !Set($0.languages.map { $0.lowercased() }).isDisjoint(with: selected)
+        }
+        return ForeignFilterOrganizer.recommendationBuckets(from: matching).recommended
+    }
+
+    private func applyRegionalRecommendations(_ languages: Set<String>) {
+        let selected = Set(languages.map { $0.lowercased() })
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+        defaults.set(Array(selected).sorted(), forKey: "onboardingSelectedLanguages")
+        let recommendedIDs = Set(regionalRecommendations(for: selected).map(\.id))
+        for filter in filterManager.filterLists where filter.category == .foreign {
+            guard recommendedIDs.contains(filter.id) || !filter.isCustom else { continue }
+            filterManager.setFilterListSelection(id: filter.id, selected: recommendedIDs.contains(filter.id))
+        }
+        filterManager.flushPendingSave()
+    }
+
     private func resetCategory(_ category: FilterListCategory) {
+        if category == .foreign {
+            let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+            applyRegionalRecommendations(Set(defaults.stringArray(forKey: "onboardingSelectedLanguages") ?? []))
+            return
+        }
+
         let defaultNames = Set(defaultFilterNames(for: category))
         for filter in filterManager.filterLists {
             guard let selection = FilterCategorySupport.resetSelection(
