@@ -84,7 +84,6 @@ private typealias UserScriptSectionKind = UserScriptDisplayCategory
 private struct UserScriptDisplaySection: Identifiable {
     let id: UserScriptSectionKind
     let title: LocalizedStringKey
-    let description: LocalizedStringKey?
     let scripts: [UserScriptListItem]
 }
 
@@ -225,7 +224,6 @@ struct UserScriptManagerView: View {
             UserScriptDisplaySection(
                 id: group.category,
                 title: LocalizedStringKey(group.category.rawValue),
-                description: LocalizedStringKey(group.category.descriptionKey),
                 scripts: group.items
             )
         }
@@ -554,23 +552,16 @@ struct UserScriptManagerView: View {
     }
 
     private func displaySectionHeader(_ section: UserScriptDisplaySection) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 6) {
-                Text(section.title)
-                Button {
-                    selectedCategoryInfo = section.id
-                } label: {
-                    Image(systemName: "info.circle")
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .accessibilityLabel("Info")
+        HStack(spacing: 6) {
+            Text(section.title)
+            Button {
+                selectedCategoryInfo = section.id
+            } label: {
+                Image(systemName: "info.circle")
             }
-            if let description = section.description {
-                Text(description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .accessibilityLabel("Info")
         }
     }
 
@@ -646,11 +637,6 @@ struct UserScriptManagerView: View {
                         .buttonStyle(.plain)
                         .foregroundStyle(.secondary)
                         .accessibilityLabel("Info")
-                    }
-                    if let description = section.description {
-                        Text(description)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
                 }
                 Spacer()
