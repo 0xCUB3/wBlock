@@ -91,6 +91,7 @@ class AppFilterManager: ObservableObject {
 
     /// Ensures only one apply/update pipeline runs at a time across entry points.
     var isApplyInFlight = false
+    var exclusiveApplyTask: Task<Void, Never>?
     /// Set only after the current apply has reached a successful terminal state.
     var lastApplySucceeded = false
 

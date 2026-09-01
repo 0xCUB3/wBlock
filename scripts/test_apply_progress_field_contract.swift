@@ -49,6 +49,14 @@ require(compat.contains("presentationDetents([.medium])"), "progress and result 
 let progressCase = view.components(separatedBy: "case .progress:").dropFirst().first?
     .components(separatedBy: "case .").first ?? ""
 require(progressCase.contains("ScrollView"), "progress content must scroll if the phase list is taller than the sheet")
+require(
+    view.contains("else if mode == .progress") && view.contains("progressToolbar"),
+    "progress mode must show a bottom toolbar under the phase list"
+)
+let progressToolbarSection = view.components(separatedBy: "private var progressToolbar").dropFirst().first?
+    .components(separatedBy: "private var reviewToolbar").first ?? ""
+require(progressToolbarSection.contains("String(localized: \"Cancel\")"), "progress mode must offer Cancel")
+require(progressToolbarSection.contains("cancelInFlightApply()"), "progress Cancel must stop the in-flight apply")
 require(!field.contains(".accessibilityLabel(presentation.title)"), "the field must not announce the active phase on top of the rows")
 require(field.contains(".accessibilityValue(node.accessibilityValue)"), "rows must announce their own status")
 require(model.contains("return String(localized: \"Failed\")"), "failed rows must stay distinguishable to VoiceOver")

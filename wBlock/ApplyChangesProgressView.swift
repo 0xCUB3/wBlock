@@ -59,6 +59,8 @@ struct ApplyChangesProgressView: View {
 
             if mode == .review {
                 reviewToolbar
+            } else if mode == .progress {
+                progressToolbar
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: mode == .review ? .top : .center)
@@ -196,6 +198,18 @@ struct ApplyChangesProgressView: View {
                 }
             }
             .liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)
+        }
+    }
+
+    private var progressToolbar: some View {
+        SheetBottomToolbar {
+            Button {
+                filterManager.cancelInFlightApply()
+            } label: {
+                Text(String(localized: "Cancel"))
+                    .frame(maxWidth: .infinity)
+            }
+            .keyboardShortcut(.cancelAction)
         }
     }
 

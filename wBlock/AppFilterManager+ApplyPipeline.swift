@@ -5,23 +5,28 @@ import wBlockCoreService
 import UIKit
 #endif
 
-#if os(iOS)
 /// Cooperative cancel flag for the in-flight apply. Expiration callbacks set
 /// this off the MainActor so checkpoints can unwind and drop app-group file
-/// locks before iOS suspends (0xDEAD10CC).
+/// locks before iOS suspends (0xDEAD10CC). User-initiated cancel uses the same
+/// checkpoints but dismisses the sheet instead of the failure UI.
 private enum ApplyCancellation {
     private static let lock = NSLock()
     private static var cancelled = false
+    private static var userInitiated = false
 
     static func reset() {
         lock.lock()
         cancelled = false
+        userInitiated = false
         lock.unlock()
     }
 
-    static func cancel() {
+    static func cancel(userInitiated: Bool = false) {
         lock.lock()
         cancelled = true
+        if userInitiated {
+            self.userInitiated = true
+        }
         lock.unlock()
     }
 
@@ -30,8 +35,15 @@ private enum ApplyCancellation {
         defer { lock.unlock() }
         return cancelled
     }
+
+    static var isUserInitiated: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return userInitiated
+    }
 }
 
+#if os(iOS)
 /// Holds `performExpiringActivity` while apply owns shared-container locks.
 /// The non-expired callback blocks on a background thread; `release()` wakes
 /// every callback waiting for the apply to unwind. When expiration starts, the
@@ -172,13 +184,39 @@ extension AppFilterManager {
         }
     }
 
-    /// Fails the in-flight apply when iOS is about to suspend so file locks
-    /// unwind instead of killing the process with 0xDEAD10CC.
+    /// Stops an in-flight apply started from the progress sheet (idempotent).
+    func cancelInFlightApply() {
+        guard isApplyInFlight else { return }
+        ApplyCancellation.cancel(userInitiated: true)
+        exclusiveApplyTask?.cancel()
+    }
+
+    private func unwindApplyAfterUserCancel() async {
+        await ConcurrentLogManager.shared.info(
+            .filterApply,
+            LocalizedStrings.text(
+                "Apply cancelled by user",
+                comment: "Apply pipeline user cancel"
+            ),
+            metadata: [:]
+        )
+        await MainActor.run {
+            self.isLoading = false
+            self.showingApplyProgressSheet = false
+            self.applyProgressViewModel.updateIsLoading(false)
+        }
+    }
+
+    /// Fails the in-flight apply when cancelled (user dismiss vs iOS suspension).
     private func failApplyIfCancelled() async -> Bool {
-        #if os(iOS)
         guard ApplyCancellation.isCancelled || Task.isCancelled else {
             return false
         }
+        if ApplyCancellation.isUserInitiated {
+            await unwindApplyAfterUserCancel()
+            return true
+        }
+        #if os(iOS)
         await failApplyRun(
             logMessage: LocalizedStrings.text(
                 "Apply cancelled to release file locks before suspension",
@@ -187,7 +225,8 @@ extension AppFilterManager {
         )
         return true
         #else
-        return false
+        await unwindApplyAfterUserCancel()
+        return true
         #endif
     }
 
@@ -220,11 +259,13 @@ extension AppFilterManager {
             }
         }
 
-        #if os(iOS)
         ApplyCancellation.reset()
         let applyTask = Task {
             await work()
         }
+        exclusiveApplyTask = applyTask
+        defer { exclusiveApplyTask = nil }
+        #if os(iOS)
         let shield = ApplySuspensionShield(reason: "wBlock apply") {
             ApplyCancellation.cancel()
             applyTask.cancel()
@@ -238,7 +279,7 @@ extension AppFilterManager {
         defer { backgroundTask.end() }
         await applyTask.value
         #else
-        await work()
+        await applyTask.value
         #endif
         return true
     }
