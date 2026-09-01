@@ -243,7 +243,7 @@ extension AppFilterManager {
         }
     }
 
-    /// Drops downloaded state only after a remote custom filter is deselected and applied.
+    /// Drops downloaded state only after a remote filter is deselected and applied.
     /// The definition metadata remains so re-enabling can fetch the same source again.
     @discardableResult
     func clearDownloadedStateForDeselectedRemoteFilters(
@@ -252,7 +252,7 @@ extension AppFilterManager {
         let appliedIDs = previouslyAppliedFilterIDs ?? appliedSelectedFilterIDs
         let filtersToClear = filterLists.filter { filter in
             guard appliedIDs.contains(filter.id), !filter.isSelected,
-                  filter.isCustom, !filter.isInlineUserList
+                  !filter.isInlineUserList
             else { return false }
             let scheme = filter.url.scheme?.lowercased()
             return scheme == "http" || scheme == "https"
@@ -268,37 +268,14 @@ extension AppFilterManager {
         }
 
         var failures: [String] = []
-        let fileManager = FileManager.default
         for filter in filtersToClear {
-            let filename = ContentBlockerIncrementalCache.localFilename(for: filter)
-            var urls = [
-                containerURL.appendingPathComponent(filename),
-                containerURL.appendingPathComponent("diff-baseline-\(filename)")
-            ]
-            if let legacyURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
-                name: filter.name,
-                containerURL: containerURL
-            ) {
-                urls.append(legacyURL)
-            }
-            if let legacyBaselineURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
-                name: filter.name,
-                containerURL: containerURL,
-                prefix: "diff-baseline-"
-            ) {
-                urls.append(legacyBaselineURL)
-            }
-
-            for url in urls where fileManager.fileExists(atPath: url.path) {
-                do {
-                    try fileManager.removeItem(at: url)
-                } catch {
-                    // A concurrent cleanup may have removed the file; every other
-                    // deletion failure must keep metadata and the retry marker intact.
-                    if (error as NSError).code != NSFileNoSuchFileError {
-                        failures.append("\(url.lastPathComponent): \(error.localizedDescription)")
-                    }
-                }
+            do {
+                try ContentBlockerIncrementalCache.removeFilterCacheFiles(
+                    for: filter,
+                    containerURL: containerURL
+                )
+            } catch {
+                failures.append("\(filter.name): \(error.localizedDescription)")
             }
         }
 
@@ -354,23 +331,12 @@ extension AppFilterManager {
         refreshPendingChanges()
 
         if let containerURL = loader.getSharedContainerURL() {
-            let idFileURL = containerURL.appendingPathComponent(
-                ContentBlockerIncrementalCache.localFilename(for: filter)
-            )
-            try? FileManager.default.removeItem(at: idFileURL)
-            if let legacyFileURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
-                name: filter.name,
+            // The shared helper also removes safeLegacyFileURL paths with
+            // prefix: "diff-baseline-" so custom removal cannot drift from apply cleanup.
+            _ = try? ContentBlockerIncrementalCache.removeFilterCacheFiles(
+                for: filter,
                 containerURL: containerURL
-            ) {
-                try? FileManager.default.removeItem(at: legacyFileURL)
-            }
-            if let legacyBaselineURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
-                name: filter.name,
-                containerURL: containerURL,
-                prefix: "diff-baseline-"
-            ) {
-                try? FileManager.default.removeItem(at: legacyBaselineURL)
-            }
+            )
         }
         Task {
             await ConcurrentLogManager.shared.info(

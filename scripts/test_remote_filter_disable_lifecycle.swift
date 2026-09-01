@@ -14,6 +14,7 @@ let pipeline = try String(contentsOfFile: "wBlock/AppFilterManager+ApplyPipeline
 let row = try String(contentsOfFile: "wBlock/ContentView.swift", encoding: .utf8)
 let filter = try String(contentsOfFile: "wBlockCoreService/FilterList.swift", encoding: .utf8)
 let managerCore = try String(contentsOfFile: "wBlock/AppFilterManager.swift", encoding: .utf8)
+let cache = try String(contentsOfFile: "wBlockCoreService/Utils.swift", encoding: .utf8)
 
 check(manager.contains("previouslyAppliedFilterIDs: Set<UUID>? = nil"), "cleanup must accept the last completed selection snapshot")
 check(manager.contains(") async -> Bool"), "cleanup must report file cleanup failures to the apply pipeline")
@@ -21,10 +22,15 @@ check(manager.contains("recordDownloadedStateCleanupFailure"), "cleanup failures
 check(manager.contains("applyProgressViewModel.markFailed(message: message)"), "cleanup failures must terminate the progress state as failed")
 check(manager.contains("markNonSelectionChangesPending()"), "cleanup failures must leave the retry marker pending")
 check(manager.contains("appliedIDs = previouslyAppliedFilterIDs ?? appliedSelectedFilterIDs"), "cleanup must use the captured applied selection")
-check(manager.contains("filter.isCustom, !filter.isInlineUserList"), "cleanup must target custom remote lists, not inline imports")
+check(manager.contains("appliedIDs.contains(filter.id), !filter.isSelected"), "cleanup must require previous apply and current deselection")
+check(manager.contains("!filter.isInlineUserList"), "cleanup must skip inline imports")
+check(!manager.contains("filter.isCustom, !filter.isInlineUserList"), "cleanup must include built-in remote lists")
 check(manager.contains("scheme == \"http\" || scheme == \"https\""), "cleanup must target URL-imported filters only")
-check(manager.contains("diff-baseline-\\(filename)"), "cleanup must remove the downloaded diff baseline")
-check(manager.contains("prefix: \"diff-baseline-\""), "cleanup must remove the safe legacy diff baseline")
+check(manager.contains("ContentBlockerIncrementalCache.removeFilterCacheFiles"), "disable cleanup must use the shared cache removal helper")
+check(cache.contains("public static func removeFilterCacheFiles("), "cache ownership must have one shared removal helper")
+check(cache.contains("diff-baseline-\\(filename)"), "shared cleanup must remove the downloaded diff baseline")
+check(cache.contains("prefix: \"diff-baseline-\""), "shared cleanup must remove the safe legacy diff baseline")
+check(cache.contains("NSFileNoSuchFileError"), "missing cache files must count as successful cleanup")
 check(manager.contains("filterLists[index].version = \"\""), "cleanup must clear the persisted version")
 check(manager.contains("filterLists[index].sourceRuleCount = nil"), "cleanup must clear the persisted rule count")
 check(manager.contains("filterLists[index].lastUpdated = nil"), "cleanup must clear the persisted last-download time")
@@ -52,6 +58,56 @@ check(row.contains("Text(\"Not Downloaded\")"), "filter UI must expose the exist
 check(row.contains("!filter.isInlineUserList"), "Not Downloaded must not affect inline local imports")
 check(filter.contains("public var sourceRuleCount: Int?"), "lifecycle must use existing filter metadata, without schema changes")
 check(managerCore.contains("for filter in filterLists where filter.isSelected && !loader.filterFileExists(filter)"), "re-enabling a cleared URL filter must redownload its missing cache")
+
+struct DownloadedState: Equatable {
+    var downloaded: Bool
+    var sourceRuleCount: Int?
+}
+
+func clearDeselectedRemote(
+    _ state: DownloadedState,
+    previouslyApplied: Bool,
+    selected: Bool,
+    inline: Bool,
+    scheme: String
+) -> DownloadedState {
+    guard previouslyApplied, !selected, !inline, scheme == "http" || scheme == "https" else {
+        return state
+    }
+    return DownloadedState(downloaded: false, sourceRuleCount: nil)
+}
+
+let leftover = DownloadedState(downloaded: true, sourceRuleCount: 42)
+check(
+    clearDeselectedRemote(
+        leftover,
+        previouslyApplied: true,
+        selected: false,
+        inline: false,
+        scheme: "https"
+    ) == DownloadedState(downloaded: false, sourceRuleCount: nil),
+    "built-in remote cleanup must clear downloaded state and source rule count"
+)
+check(
+    clearDeselectedRemote(
+        leftover,
+        previouslyApplied: true,
+        selected: false,
+        inline: true,
+        scheme: "https"
+    ) == leftover,
+    "inline imports must retain their local state"
+)
+check(
+    clearDeselectedRemote(
+        leftover,
+        previouslyApplied: false,
+        selected: false,
+        inline: false,
+        scheme: "file"
+    ) == leftover,
+    "cleanup must require a previous apply and an HTTP(S) source"
+)
 
 // Behavioral probe: generation follows the captured run snapshot, while cleanup
 // follows the selection that was applied before the run and only commits on success.
@@ -111,4 +167,4 @@ check(
     "selected remote filters must not be cleaned up"
 )
 
-print("PASS: remote custom filter disable success/failure lifecycle")
+print("PASS: remote filter disable success/failure lifecycle")

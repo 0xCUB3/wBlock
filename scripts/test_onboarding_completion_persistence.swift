@@ -18,6 +18,9 @@ let filterManager = try read("wBlock/AppFilterManager.swift")
 let dataManager = try read("wBlockCoreService/ProtobufDataManager.swift")
 let settings = try read("wBlock/SettingsView.swift")
 let app = try read("wBlock/wBlockApp.swift")
+let updater = try read("wBlock/FilterListUpdater.swift")
+let sharedUpdater = try read("wBlockCoreService/SharedAutoUpdateManager.swift")
+let cache = try read("wBlockCoreService/Utils.swift")
 
 require(
     onboarding.contains("@State private var selectedBlockingLevel: String"),
@@ -70,6 +73,37 @@ require(
     "onboarding reset must publish the synchronous engine off the main actor"
 )
 require(
+    filterManager.contains("removeDownloadedFilterCachesForOnboarding(")
+        && filterManager.contains("defaultLists: defaultLists")
+        && filterManager.contains("ContentBlockerIncrementalCache.removeFilterCacheFiles("),
+    "onboarding reset must remove every rebuilt default-list cache through the shared helper"
+)
+for prefix in ["custom-", "diff-baseline-custom-", "filter-", "diff-baseline-filter-"] {
+    require(
+        filterManager.contains("\"\(prefix)\""),
+        "onboarding reset must remove orphaned \(prefix) cache files"
+    )
+}
+require(
+    filterManager.contains("filename.hasSuffix(\".txt\")")
+        && filterManager.contains("orphanPrefixes.contains(where: filename.hasPrefix)"),
+    "orphan cleanup must be constrained to named filter text caches"
+)
+require(
+    cache.contains("public static func removeFilterCacheFiles(")
+        && cache.contains("NSFileNoSuchFileError"),
+    "shared cache cleanup must own current, baseline, safe legacy, and missing-file behavior"
+)
+require(
+    updater.contains("guard filter.isSelected else { continue }"),
+    "foreground hydration must skip unselected filters"
+)
+require(
+    sharedUpdater.contains("$0.isSelected && $0.sourceRuleCount == nil")
+        && sharedUpdater.contains("hydratedFilters[index].isSelected && hydratedFilters[index].sourceRuleCount == nil"),
+    "shared auto-update hydration must skip unselected filters"
+)
+require(
     !filterManager.contains("groupIdentifier: GroupIdentifier.shared.value"),
     "the detached onboarding publish must capture the Sendable group identifier first"
 )
@@ -86,4 +120,19 @@ require(
     "pending setup state and the completion marker must be persisted before dismissal"
 )
 
-print("PASS: onboarding completion persistence")
+struct DownloadedState: Equatable {
+    var downloaded: Bool
+    var sourceRuleCount: Int?
+}
+
+func resetDownloadedState(_ state: DownloadedState) -> DownloadedState {
+    DownloadedState(downloaded: false, sourceRuleCount: nil)
+}
+
+require(
+    resetDownloadedState(DownloadedState(downloaded: true, sourceRuleCount: 586))
+        == DownloadedState(downloaded: false, sourceRuleCount: nil),
+    "onboarding reset model must clear leftover cache and rule-count state"
+)
+
+print("PASS: onboarding completion persistence and filter cache reset")

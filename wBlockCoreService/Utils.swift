@@ -318,6 +318,46 @@ public enum ContentBlockerIncrementalCache {
         return "\(filter.name).txt"
     }
 
+    /// Removes every downloaded source artifact owned by a filter. Missing files
+    /// are already a successful cleanup, including files removed concurrently.
+    @discardableResult
+    public static func removeFilterCacheFiles(
+        for filter: FilterList,
+        containerURL: URL,
+        fileManager: FileManager = .default
+    ) throws -> [URL] {
+        let filename = localFilename(for: filter)
+        var urls = [
+            containerURL.appendingPathComponent(filename),
+            containerURL.appendingPathComponent("diff-baseline-\(filename)")
+        ]
+        if let legacyURL = safeLegacyFileURL(name: filter.name, containerURL: containerURL) {
+            urls.append(legacyURL)
+        }
+        if let legacyBaselineURL = safeLegacyFileURL(
+            name: filter.name,
+            containerURL: containerURL,
+            prefix: "diff-baseline-"
+        ) {
+            urls.append(legacyBaselineURL)
+        }
+
+        var firstError: Error?
+        for url in urls {
+            do {
+                try fileManager.removeItem(at: url)
+            } catch {
+                if (error as NSError).code != NSFileNoSuchFileError && firstError == nil {
+                    firstError = error
+                }
+            }
+        }
+        if let firstError {
+            throw firstError
+        }
+        return urls
+    }
+
     private static func isSafeFilenameComponent(_ name: String) -> Bool {
         !name.isEmpty
             && name != "."

@@ -480,6 +480,20 @@ class AppFilterManager: ObservableObject {
         markCurrentStateApplied()
         saveFilterListsCoalesced()
 
+        var cacheCleanupError: Error?
+        if let containerURL = loader.getSharedContainerURL() {
+            do {
+                try Self.removeDownloadedFilterCachesForOnboarding(
+                    defaultLists: defaultLists,
+                    containerURL: containerURL
+                )
+            } catch {
+                cacheCleanupError = error
+            }
+        } else {
+            cacheCleanupError = CocoaError(.fileNoSuchFile)
+        }
+
         await dataManager.updateRuleCounts(
             lastRuleCount: 0,
             ruleCountsByIdentifier: [:],
@@ -494,7 +508,9 @@ class AppFilterManager: ObservableObject {
                     groupIdentifier: groupIdentifier
                 )
             }.value
-            statusDescription = LocalizedStrings.text("Ready.", comment: "Filter manager idle status")
+            if cacheCleanupError == nil {
+                statusDescription = LocalizedStrings.text("Ready.", comment: "Filter manager idle status")
+            }
         } catch {
             await ConcurrentLogManager.shared.error(
                 .filterApply,
@@ -504,7 +520,63 @@ class AppFilterManager: ObservableObject {
             hasError = true
             statusDescription = LocalizedStrings.text("Failed", comment: "Generic failure status")
         }
+        if let cacheCleanupError {
+            await ConcurrentLogManager.shared.error(
+                .filterApply,
+                "Failed to clear downloaded filter caches during onboarding reset",
+                metadata: ["error": cacheCleanupError.localizedDescription]
+            )
+            hasError = true
+            statusDescription = LocalizedStrings.text("Failed", comment: "Generic failure status")
+        }
         isLoading = false
+    }
+
+    nonisolated private static func removeDownloadedFilterCachesForOnboarding(
+        defaultLists: [FilterList],
+        containerURL: URL
+    ) throws {
+        let fileManager = FileManager.default
+        var firstError: Error?
+
+        for filter in defaultLists {
+            do {
+                try ContentBlockerIncrementalCache.removeFilterCacheFiles(
+                    for: filter,
+                    containerURL: containerURL,
+                    fileManager: fileManager
+                )
+            } catch {
+                if firstError == nil {
+                    firstError = error
+                }
+            }
+        }
+
+        let orphanPrefixes = [
+            "custom-", "diff-baseline-custom-", "filter-", "diff-baseline-filter-"
+        ]
+        let contents = try fileManager.contentsOfDirectory(
+            at: containerURL,
+            includingPropertiesForKeys: nil
+        )
+        for url in contents {
+            let filename = url.lastPathComponent
+            guard filename.hasSuffix(".txt"),
+                  orphanPrefixes.contains(where: filename.hasPrefix)
+            else { continue }
+            do {
+                try fileManager.removeItem(at: url)
+            } catch {
+                if (error as NSError).code != NSFileNoSuchFileError && firstError == nil {
+                    firstError = error
+                }
+            }
+        }
+
+        if let firstError {
+            throw firstError
+        }
     }
 
     func waitUntilReady() async {

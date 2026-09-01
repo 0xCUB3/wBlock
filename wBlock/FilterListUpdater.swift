@@ -106,6 +106,7 @@ final class FilterListUpdater: @unchecked Sendable {
         var updatedLists = filterLists  // Create a mutable copy to return
 
         for (index, filter) in filterLists.enumerated() {
+            guard filter.isSelected else { continue }
             var modifiedFilter = filter  // Work with a mutable copy of the current filter
             var filterWasModifiedThisIteration = false
 

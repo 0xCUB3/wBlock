@@ -1193,7 +1193,7 @@ public actor SharedAutoUpdateManager {
     }
 
     private func hydrateMissingSourceRuleCountsIfNeeded(_ filters: [FilterList]) async -> [FilterList] {
-        guard filters.contains(where: { $0.sourceRuleCount == nil }) else {
+        guard filters.contains(where: { $0.isSelected && $0.sourceRuleCount == nil }) else {
             return filters
         }
 
@@ -1206,7 +1206,8 @@ public actor SharedAutoUpdateManager {
         var hydratedFilters = filters
         var didHydrate = false
 
-        for index in hydratedFilters.indices where hydratedFilters[index].sourceRuleCount == nil {
+        for index in hydratedFilters.indices
+        where hydratedFilters[index].isSelected && hydratedFilters[index].sourceRuleCount == nil {
             guard let localData = localDataForComparison(
                 filter: hydratedFilters[index],
                 containerURL: containerURL
