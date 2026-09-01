@@ -92,7 +92,7 @@ struct ToolbarSearchField: View {
 struct SearchMinimizeBehavior: ViewModifier {
     func body(content: Content) -> some View {
         #if os(iOS)
-        if #available(iOS 26.0, *) {
+        if #available(iOS 26.0, *), UIDevice.current.userInterfaceIdiom != .pad {
             applyMinimize(content)
         } else {
             content
