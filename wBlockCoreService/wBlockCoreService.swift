@@ -73,7 +73,7 @@ public struct ContentBlockerSaveResult: Sendable {
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
-    public static let embeddedCompatibilityRulesVersion = "5"
+    public static let embeddedCompatibilityRulesVersion = "6"
     private static let combinedEngineMarkerFileName = "combined-rules.sha256"
     private static let combinedEngineMarkerFormatVersion = 2
     private static let combinedEngineBuildLockFileName = "combined-engine-build.lock"
@@ -171,7 +171,10 @@ public struct ContentBlockerSaveResult: Sendable {
     ///
     /// YouTube rules use trusted response replacement for pre-parse string
     /// replacement (faster than json-prune-fetch-response which works post-parse).
-    /// Sourced from uAssets, translated to AdGuard syntax.
+    /// Sourced from uAssets, translated to AdGuard syntax. Host lists follow
+    /// uAssets where it publishes them; music.youtube.com is also applied to the
+    /// shared player-endpoint rules because it loads ads through the same
+    /// youtubei/v1/player responses.
     ///
     /// Diagnostic-site rules are scoped to their hostnames so they do not affect
     /// normal browsing.
@@ -356,20 +359,20 @@ adblock.turtlecute.org##.textads
 ||notes-analytics-events.apple.com^$domain=adblock.turtlecute.org
 
 ! YouTube compatibility
-www.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adPlacements"', '"no_ads"', 'player?')
-www.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adSlots"', '"no_ads"', 'player?')
-www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adPlacements"', '"no_ads"', 'player?')
-www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adSlots"', '"no_ads"', 'player?')
-www.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adPlacements"', '"no_ads"', 'get_watch?')
-www.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adSlots"', '"no_ads"', 'get_watch?')
-www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adPlacements"', '"no_ads"', 'get_watch?')
-www.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adSlots"', '"no_ads"', 'get_watch?')
-www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.playerAds', 'undefined')
-www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.adPlacements', 'undefined')
-www.youtube.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.adSlots', 'undefined')
-www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.playerAds', 'undefined')
-www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'undefined')
-www.youtube.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefined')
+www.youtube.com,music.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adPlacements"', '"no_ads"', 'player?')
+www.youtube.com,music.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adSlots"', '"no_ads"', 'player?')
+www.youtube.com,music.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adPlacements"', '"no_ads"', 'player?')
+www.youtube.com,music.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adSlots"', '"no_ads"', 'player?')
+www.youtube.com,music.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adPlacements"', '"no_ads"', 'get_watch?')
+www.youtube.com,music.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adSlots"', '"no_ads"', 'get_watch?')
+www.youtube.com,music.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adPlacements"', '"no_ads"', 'get_watch?')
+www.youtube.com,music.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adSlots"', '"no_ads"', 'get_watch?')
+m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.playerAds', 'undefined')
+m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.adPlacements', 'undefined')
+m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.adSlots', 'undefined')
+m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'playerResponse.playerAds', 'undefined')
+m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'undefined')
+m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefined')
 """
 
     private static func combinedRulesWithEmbeddedCompatibility(_ rawRules: String) -> String {
