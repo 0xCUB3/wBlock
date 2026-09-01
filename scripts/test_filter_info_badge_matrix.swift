@@ -18,19 +18,20 @@ let filterMatrix = [
     ("custom remote", "badges.append(.custom)"),
     ("built-in", "badges.append(.builtIn)"),
     ("enabled", "filter.isSelected ? .enabled : .disabled"),
-    ("disabled uncached remote custom", "isRemote(filter.url), filter.isCustom, !filter.isSelected, filter.sourceRuleCount == nil")
+    ("downloaded", "if filter.sourceRuleCount != nil"),
+    ("disabled uncached remote custom", "else if isRemote(filter.url), filter.isCustom, !filter.isSelected")
 ]
 for (name, token) in filterMatrix {
     expect(support.contains(token), "filter badge matrix is missing \(name): \(token)")
 }
 
-for token in ["script.isUserStyle ? .userstyle : .userscript", "badges.append(.builtIn)", "badges.append(.localImport)", "badges.append(.custom)", "script.isEnabled ? .enabled : .disabled", "!isDownloaded, !script.isLocal"] {
+for token in ["if isIntegrated {", "badges[0] = .integrated", "script.isUserStyle ? .userstyle : .userscript", "badges.append(.builtIn)", "badges.append(.localImport)", "badges.append(.custom)", "script.isEnabled ? .enabled : .disabled", "!isDownloaded, !script.isLocal"] {
     expect(support.contains(token), "userscript badge matrix is missing \(token)")
 }
 expect(filterInfo.contains("InfoBadgeSupport.filterBadges(filter)"), "filter Info must consume the shared badge matrix")
 expect(scriptInfo.contains("InfoBadgeSupport.userScriptBadges"), "userscript Info must consume the shared badge matrix")
 expect(filterInfo.contains("Copy URL"), "filter Info must retain Copy URL")
 expect(scriptInfo.contains("Copy URL"), "userscript Info must retain Copy URL")
-expect(!filterInfo.contains("if filter.sourceRuleCount == nil"), "filter Info must not mark every uncached built-in as Not Downloaded")
+expect(!support.contains("filter.sourceRuleCount == nil {\n            badges.append(.notDownloaded)"), "filter Info must not mark every uncached built-in as Not Downloaded")
 
 print("PASS: filter and userscript Info badge matrix")

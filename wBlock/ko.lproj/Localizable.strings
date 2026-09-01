@@ -263,6 +263,7 @@
 "Display" = "디스플레이";
 "Done" = "완료";
 "Download Script" = "스크립트 다운로드";
+"Downloaded" = "다운로드됨";
 "Downloaded %d update" = "업데이트 %d개 다운로드됨";
 "Downloaded %d updates" = "업데이트 %d개 다운로드됨";
 "Downloaded content does not appear to be a valid filter list" = "다운로드한 내용이 올바른 필터 목록이 아닌 것 같습니다";

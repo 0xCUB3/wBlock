@@ -263,6 +263,7 @@
 "Display" = "Afișare";
 "Done" = "Gata";
 "Download Script" = "Descarcă scriptul";
+"Downloaded" = "Descărcat";
 "Downloaded %d update" = "S-a descărcat %d actualizare";
 "Downloaded %d updates" = "S-au descărcat %d actualizări";
 "Downloaded content does not appear to be a valid filter list" = "Conținutul descărcat nu pare a fi o listă de filtre validă";

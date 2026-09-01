@@ -263,6 +263,7 @@
 "Display" = "العرض";
 "Done" = "تم";
 "Download Script" = "تنزيل النص البرمجي";
+"Downloaded" = "تم التنزيل";
 "Downloaded %d update" = "تم تنزيل %d تحديث";
 "Downloaded %d updates" = "تم تنزيل %d تحديثات";
 "Downloaded content does not appear to be a valid filter list" = "المحتوى المنزّل لا يبدو قائمة فلاتر صالحة";

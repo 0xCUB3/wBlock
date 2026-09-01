@@ -263,6 +263,7 @@
 "Display" = "Visualizzazione";
 "Done" = "Fatto";
 "Download Script" = "Scarica script";
+"Downloaded" = "Scaricato";
 "Downloaded %d update" = "Scaricato %d aggiornamento";
 "Downloaded %d updates" = "Scaricati %d aggiornamenti";
 "Downloaded content does not appear to be a valid filter list" = "Il contenuto scaricato non sembra un elenco filtri valido";

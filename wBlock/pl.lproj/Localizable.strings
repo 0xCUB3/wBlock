@@ -263,6 +263,7 @@
 "Display" = "Wyświetlanie";
 "Done" = "Gotowe";
 "Download Script" = "Pobierz skrypt";
+"Downloaded" = "Pobrano";
 "Downloaded %d update" = "Pobrano %d aktualizację";
 "Downloaded %d updates" = "Pobrano %d aktualizacji";
 "Downloaded content does not appear to be a valid filter list" = "Pobrana zawartość nie jest prawidłową listą filtrów";

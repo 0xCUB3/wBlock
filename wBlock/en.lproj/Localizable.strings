@@ -263,6 +263,7 @@
 "Display" = "Display";
 "Done" = "Done";
 "Download Script" = "Download Script";
+"Downloaded" = "Downloaded";
 "Downloaded %d update" = "Downloaded %d update";
 "Downloaded %d updates" = "Downloaded %d updates";
 "Downloaded content does not appear to be a valid filter list" = "Downloaded content does not appear to be a valid filter list";

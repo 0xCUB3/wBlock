@@ -21,6 +21,15 @@ import UIKit
 import AppKit
 #endif
 
+private func isIntegratedUserScript(
+    _ script: UserScript,
+    isBuiltIn: Bool,
+    builtInDisplayRole: BuiltInUserScriptDisplayRole?
+) -> Bool {
+    isBuiltIn && builtInDisplayRole == .functionality
+        && (script.name == "Dark Reader" || script.name == "Tube Cleaner" || script.name == "Player Cleaner")
+}
+
 private struct UserScriptListItem: Identifiable, Hashable {
     let id: UUID
     let name: String
@@ -71,8 +80,11 @@ private struct UserScriptListItem: Identifiable, Hashable {
             persistedCategory: script.category
         )
         self.isBuiltIn = isBuiltIn
-        isIntegrated = isBuiltIn && builtInDisplayRole == .functionality
-            && (script.name == "Tube Cleaner" || script.name == "Player Cleaner")
+        isIntegrated = isIntegratedUserScript(
+            script,
+            isBuiltIn: isBuiltIn,
+            builtInDisplayRole: builtInDisplayRole
+        )
         isCustom = !isBuiltIn
         self.isBeta = isBeta
         self.isDarkReader = isDarkReader
@@ -927,13 +939,15 @@ private struct ScriptStatusBadgesView: View {
     let script: UserScript
     let isDownloaded: Bool
     let isBuiltIn: Bool
+    let isIntegrated: Bool
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 ForEach(Array(InfoBadgeSupport.userScriptBadges(
                     script,
                     isDownloaded: isDownloaded,
-                    isBuiltIn: isBuiltIn
+                    isBuiltIn: isBuiltIn,
+                    isIntegrated: isIntegrated
                 ).enumerated()), id: \.offset) { _, badge in
                     InfoBadgeView(kind: badge)
                 }
@@ -1112,6 +1126,7 @@ struct UserScriptInfoSidebar: View {
     @Binding var isPatternsExpanded: Bool
     let formatFileSize: (Int) -> String
     let isBuiltIn: Bool
+    let builtInDisplayRole: BuiltInUserScriptDisplayRole?
     let isBeta: Bool
     let onUpdatesAutomaticallyChanged: (Bool) -> Void
     var fillsAvailableSpace = true
@@ -1122,7 +1137,12 @@ struct UserScriptInfoSidebar: View {
             ScriptStatusBadgesView(
                 script: script,
                 isDownloaded: contentLength > 0,
-                isBuiltIn: isBuiltIn
+                isBuiltIn: isBuiltIn,
+                isIntegrated: isIntegratedUserScript(
+                    script,
+                    isBuiltIn: isBuiltIn,
+                    builtInDisplayRole: builtInDisplayRole
+                )
             )
             if script.url != nil || script.updateURL != nil || script.downloadURL != nil {
                 ScriptUpdateSettingsView(
@@ -1226,6 +1246,7 @@ struct UserScriptInfoView: View {
                             isPatternsExpanded: $isPatternsExpanded,
                             formatFileSize: formatFileSize,
                             isBuiltIn: userScriptManager.isDefaultUserScript(script),
+                            builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
                             isBeta: userScriptManager.isBeta(for: script),
                             onUpdatesAutomaticallyChanged: setUpdatesAutomatically
                         )
@@ -1246,6 +1267,7 @@ struct UserScriptInfoView: View {
                     isPatternsExpanded: $isPatternsExpanded,
                     formatFileSize: formatFileSize,
                     isBuiltIn: userScriptManager.isDefaultUserScript(script),
+                    builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
                     isBeta: userScriptManager.isBeta(for: script),
                     onUpdatesAutomaticallyChanged: setUpdatesAutomatically,
                     fillsAvailableSpace: false
@@ -1323,6 +1345,7 @@ struct UserScriptContentView: View {
                                 isPatternsExpanded: $isPatternsExpanded,
                                 formatFileSize: formatFileSize,
                                 isBuiltIn: userScriptManager.isDefaultUserScript(script),
+                                builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
                                 isBeta: userScriptManager.isBeta(for: script),
                                 onUpdatesAutomaticallyChanged: setUpdatesAutomatically
                             )
@@ -1415,6 +1438,7 @@ struct UserScriptContentView: View {
                         isPatternsExpanded: $isPatternsExpanded,
                         formatFileSize: formatFileSize,
                         isBuiltIn: userScriptManager.isDefaultUserScript(script),
+                        builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
                         isBeta: userScriptManager.isBeta(for: script),
                         onUpdatesAutomaticallyChanged: setUpdatesAutomatically
                     )

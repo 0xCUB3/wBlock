@@ -263,6 +263,7 @@
 "Display" = "Görüntüleme";
 "Done" = "Bitti";
 "Download Script" = "Betiği indir";
+"Downloaded" = "İndirildi";
 "Downloaded %d update" = "%d güncellemesi indirildi";
 "Downloaded %d updates" = "%d güncellemesi indirildi";
 "Downloaded content does not appear to be a valid filter list" = "İndirilen içerik geçerli bir filtre listesi gibi görünmüyor";

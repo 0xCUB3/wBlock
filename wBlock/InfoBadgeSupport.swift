@@ -7,9 +7,11 @@ enum InfoBadgeKind: Equatable {
     case filters
     case userscript
     case userstyle
+    case integrated
     case builtIn
     case custom
     case localImport
+    case downloaded
     case notDownloaded
     case enabled
     case disabled
@@ -27,12 +29,16 @@ struct InfoBadgeView: View {
             Badge(text: "Userscript", color: .red)
         case .userstyle:
             Badge(text: "Userstyle", color: .purple)
+        case .integrated:
+            Badge(text: "Integrated", color: .red)
         case .builtIn:
             Badge(text: "Built-in", color: .orange)
         case .custom:
             Badge(text: "Custom", color: .blue)
         case .localImport:
             Badge(text: "Local Import", color: .blue)
+        case .downloaded:
+            Badge(text: "Downloaded", color: .green)
         case .notDownloaded:
             Badge(text: "Not Downloaded", color: .red)
         case .enabled:
@@ -63,7 +69,9 @@ enum InfoBadgeSupport {
             badges.append(.builtIn)
         }
         badges.append(filter.isSelected ? .enabled : .disabled)
-        if isRemote(filter.url), filter.isCustom, !filter.isSelected, filter.sourceRuleCount == nil {
+        if filter.sourceRuleCount != nil {
+            badges.append(.downloaded)
+        } else if isRemote(filter.url), filter.isCustom, !filter.isSelected {
             badges.append(.notDownloaded)
         }
         return badges
@@ -72,9 +80,13 @@ enum InfoBadgeSupport {
     static func userScriptBadges(
         _ script: UserScript,
         isDownloaded: Bool,
-        isBuiltIn: Bool
+        isBuiltIn: Bool,
+        isIntegrated: Bool
     ) -> [InfoBadgeKind] {
         var badges: [InfoBadgeKind] = [script.isUserStyle ? .userstyle : .userscript]
+        if isIntegrated {
+            badges[0] = .integrated
+        }
         if isBuiltIn {
             badges.append(.builtIn)
         } else if script.isLocal {

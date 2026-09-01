@@ -263,6 +263,7 @@
 "Display" = "Megjelenítés";
 "Done" = "Kész";
 "Download Script" = "Szkript letöltése";
+"Downloaded" = "Letöltve";
 "Downloaded %d update" = "%d frissítés letöltve";
 "Downloaded %d updates" = "%d frissítés letöltve";
 "Downloaded content does not appear to be a valid filter list" = "A letöltött tartalom nem tűnik érvényes szűrőlistának";

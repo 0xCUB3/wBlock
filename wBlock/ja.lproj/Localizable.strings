@@ -263,6 +263,7 @@
 "Display" = "表示";
 "Done" = "完了";
 "Download Script" = "スクリプトをダウンロード";
+"Downloaded" = "ダウンロード済み";
 "Downloaded %d update" = "%d件の更新をダウンロード";
 "Downloaded %d updates" = "%d件の更新をダウンロード";
 "Downloaded content does not appear to be a valid filter list" = "ダウンロードした内容は有効なフィルターリストではないようです";

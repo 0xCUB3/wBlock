@@ -263,6 +263,7 @@
 "Display" = "Εμφάνιση";
 "Done" = "Ολοκληρώθηκε";
 "Download Script" = "Λήψη Κώδικα";
+"Downloaded" = "Λήφθηκε";
 "Downloaded %d update" = "Λήψη %d ενημέρωσης";
 "Downloaded %d updates" = "Λήψεις %d ενημερώσεων";
 "Downloaded content does not appear to be a valid filter list" = "Το ληφθέν περιεχόμενο δεν φαίνεται να είναι έγκυρη λίστα φίλτρων";

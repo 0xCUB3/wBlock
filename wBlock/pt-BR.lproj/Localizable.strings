@@ -263,6 +263,7 @@
 "Display" = "Exibição";
 "Done" = "Concluído";
 "Download Script" = "Baixar script";
+"Downloaded" = "Baixado";
 "Downloaded %d update" = "Baixada %d atualização";
 "Downloaded %d updates" = "Baixadas %d atualizações";
 "Downloaded content does not appear to be a valid filter list" = "O conteúdo baixado não parece ser uma lista de filtros válida";

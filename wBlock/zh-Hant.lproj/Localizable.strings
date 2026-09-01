@@ -263,6 +263,7 @@
 "Display" = "顯示";
 "Done" = "完成";
 "Download Script" = "下載腳本";
+"Downloaded" = "已下載";
 "Downloaded %d update" = "已下載 %d 項更新";
 "Downloaded %d updates" = "已下載 %d 項更新";
 "Downloaded content does not appear to be a valid filter list" = "下載的內容似乎不是有效的過濾器列表";
