@@ -139,6 +139,103 @@ public enum FilterDirectivePolicy {
     }
 }
 
+public enum FilterListContentProcessing {
+    public static func parseMetadata(
+        from content: String,
+        maxLines: Int = 120,
+        sanitize: Bool = false
+    ) -> (title: String?, description: String?, version: String?) {
+        let rawMetadata = FilterListMetadataParser.parse(from: content, maxLines: maxLines)
+
+        let title = rawMetadata.title.map { value in
+            let rewritten = value.replacingOccurrences(of: "/", with: " & ")
+            return sanitize ? Self.sanitizeMetadata(rewritten) : rewritten
+        }
+        let description = rawMetadata.description.map { value in
+            let rewritten = value.replacingOccurrences(of: "/", with: " & ")
+            return sanitize ? Self.sanitizeMetadata(rewritten) : rewritten
+        }
+        let normalizedVersion = sanitize
+            ? rawMetadata.version.map { Self.sanitizeMetadata($0) }
+            : rawMetadata.version
+
+        let version: String?
+        if let normalizedVersion,
+            normalizedVersion.contains("%"),
+            (normalizedVersion.lowercased().contains("timestamp")
+                || normalizedVersion.lowercased().contains("date"))
+        {
+            version = nil
+        } else {
+            version = normalizedVersion
+        }
+
+        return (title: title, description: description, version: version)
+    }
+
+    public static func stripUnknownDirectives(
+        from content: String,
+        onStrip: ((String) -> Void)? = nil
+    ) -> String {
+        var result: [String] = []
+        for line in content.split(omittingEmptySubsequences: false, whereSeparator: { $0.isNewline }) {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            let originalLine = String(line)
+            guard FilterDirectivePolicy.shouldStripUnsupportedDirective(trimmed) else {
+                result.append(originalLine)
+                continue
+            }
+            onStrip?(String(trimmed.prefix(60)))
+        }
+        return result.joined(separator: "\n")
+    }
+
+    public static func localDataForComparison(filter: FilterList, containerURL: URL) -> Data? {
+        guard let localURL = ContentBlockerIncrementalCache.existingLocalFileURL(
+            for: filter,
+            containerURL: containerURL
+        ) else {
+            return nil
+        }
+        return try? Data(contentsOf: localURL)
+    }
+
+    public static func sanitizeMetadata(_ text: String) -> String {
+        guard !text.isEmpty else { return text }
+
+        var sanitized = text
+        for (regex, replacement) in sanitizationRegexes {
+            let range = NSRange(sanitized.startIndex..<sanitized.endIndex, in: sanitized)
+            sanitized = regex.stringByReplacingMatches(
+                in: sanitized,
+                options: [],
+                range: range,
+                withTemplate: replacement
+            )
+        }
+        return sanitized
+    }
+
+    private static let sanitizationRegexes: [(regex: NSRegularExpression, replacement: String)] = {
+        let patterns: [(pattern: String, replacement: String)] = [
+            ("malicious", "suspicious"),
+            ("malware", "unwanted software"),
+            ("spyware", "tracking software"),
+            ("harmful", "unwanted"),
+            ("dangerous", "risky"),
+        ]
+        return patterns.compactMap { pattern, replacement in
+            guard
+                let regex = try? NSRegularExpression(
+                    pattern: "\\b\(pattern)\\b",
+                    options: [.caseInsensitive]
+                )
+            else { return nil }
+            return (regex, replacement)
+        }
+    }()
+}
+
 public enum ContentBlockerIncrementalCache {
     // Bump when signature inputs/schema change so stale per-target signatures
     // do not suppress needed rebuilds.

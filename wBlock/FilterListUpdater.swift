@@ -146,73 +146,11 @@ final class FilterListUpdater: @unchecked Sendable {
         return updatedLists
     }
 
-    // Pre-compiled regex patterns for efficiency (compiled once, reused many times)
-    private static let sanitizationRegexes: [(regex: NSRegularExpression, replacement: String)] = {
-        let patterns: [(pattern: String, replacement: String)] = [
-            ("malicious", "suspicious"),
-            ("malware", "unwanted software"),
-            ("spyware", "tracking software"),
-            ("harmful", "unwanted"),
-            ("dangerous", "risky"),
-        ]
-
-        return patterns.compactMap { pattern, replacement in
-            guard
-                let regex = try? NSRegularExpression(
-                    pattern: "\\b\(pattern)\\b",
-                    options: [.caseInsensitive]
-                )
-            else { return nil }
-            return (regex, replacement)
-        }
-    }()
-
-    /// Sanitizes filter list metadata to remove Apple App Store flagged terminology
-    private func sanitizeMetadata(_ text: String) -> String {
-        guard !text.isEmpty else { return text }
-
-        var sanitized = text
-        for (regex, replacement) in Self.sanitizationRegexes {
-            let range = NSRange(sanitized.startIndex..<sanitized.endIndex, in: sanitized)
-            sanitized = regex.stringByReplacingMatches(
-                in: sanitized,
-                options: [],
-                range: range,
-                withTemplate: replacement
-            )
-        }
-
-        return sanitized
-    }
-
     /// Parses metadata from filter list content
     func parseMetadata(from content: String) -> (
         title: String?, description: String?, version: String?
     ) {
-        let rawMetadata = FilterListMetadataParser.parse(from: content, maxLines: 120)
-
-        let title =
-            rawMetadata.title
-            .map { sanitizeMetadata($0.replacingOccurrences(of: "/", with: " & ")) }
-        let description =
-            rawMetadata.description
-            .map { sanitizeMetadata($0.replacingOccurrences(of: "/", with: " & ")) }
-        let normalizedVersion =
-            rawMetadata.version
-            .map { sanitizeMetadata($0) }
-
-        let version: String?
-        if let normalizedVersion,
-            normalizedVersion.contains("%")
-                && (normalizedVersion.contains("timestamp")
-                    || normalizedVersion.contains("date"))
-        {
-            version = nil
-        } else {
-            version = normalizedVersion
-        }
-
-        return (title: title, description: description, version: version)
+        FilterListContentProcessing.parseMetadata(from: content, sanitize: true)
     }
 
     func checkForUpdates(filterLists: [FilterList]) async -> [FilterList] {
@@ -332,12 +270,11 @@ final class FilterListUpdater: @unchecked Sendable {
     }
 
     private func localDataForComparison(filter: FilterList) -> Data? {
-        guard let containerURL = loader.getSharedContainerURL(),
-              let localURL = ContentBlockerIncrementalCache.existingLocalFileURL(
-                  for: filter,
-                  containerURL: containerURL
-              ) else { return nil }
-        return try? Data(contentsOf: localURL)
+        guard let containerURL = loader.getSharedContainerURL() else { return nil }
+        return FilterListContentProcessing.localDataForComparison(
+            filter: filter,
+            containerURL: containerURL
+        )
     }
 
     /// Validates if content appears to be a valid filter list.
@@ -350,26 +287,18 @@ final class FilterListUpdater: @unchecked Sendable {
     /// Unknown directives (for example `!#diff-path`) are removed and logged.
     /// Comment lines such as `!##example` are preserved.
     private func stripUnknownDirectives(from content: String) async -> String {
-        var result: [String] = []
-
-        for line in content.split(omittingEmptySubsequences: false, whereSeparator: { $0.isNewline }) {
-            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            let originalLine = String(line)
-
-            guard FilterDirectivePolicy.shouldStripUnsupportedDirective(trimmed) else {
-                result.append(originalLine)
-                continue
-            }
-
+        var stripped: [String] = []
+        let processed = FilterListContentProcessing.stripUnknownDirectives(from: content) { directive in
+            stripped.append(directive)
+        }
+        for directive in stripped {
             await ConcurrentLogManager.shared.debug(
                 .filterUpdate,
                 LocalizedStrings.text("Stripped unknown directive"),
-                metadata: ["directive": String(trimmed.prefix(60))]
+                metadata: ["directive": directive]
             )
-            // Do NOT append — line is stripped from output
         }
-
-        return result.joined(separator: "\n")
+        return processed
     }
 
     /// Fetches, processes, and saves a filter list.
