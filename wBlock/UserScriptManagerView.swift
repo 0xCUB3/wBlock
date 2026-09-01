@@ -1949,6 +1949,10 @@ struct AddUserScriptView: View {
         }
     }
 
+    private var parsedURLs: [URL] {
+        UserScriptURLSupport.parseRemoteURLs(from: urlInput)
+    }
+
     var body: some View {
         Group {
             #if os(iOS)
@@ -2070,37 +2074,23 @@ struct AddUserScriptView: View {
     private var urlTab: some View {
         Form {
             Section {
-                HStack(spacing: 10) {
-                    TextField(
-                        text: $urlInput,
-                        prompt: Text(verbatim: "https://example.com/script.user.js")
-                            .foregroundColor(.secondary)
-                    ) {
-                        Text("Script or Style URL")
-                    }
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .keyboardType(.URL)
-                    .submitLabel(.done)
-                    .focused($urlFieldFocused)
-                    .onSubmit {
-                        if canSubmit {
-                            submit()
-                        } else {
-                            urlFieldFocused = false
-                        }
-                    }
+                urlInputEditor
 
-                    compactPasteButton
+                if parsedURLs.count > 1 {
+                    Text("Titles will be created from each URL.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else {
+                    TextField("Name", text: $stagedName)
+                        .textInputAutocapitalization(.words)
+                        .autocorrectionDisabled()
+                    TextField("Description", text: $stagedDescription)
+                        .textInputAutocapitalization(.sentences)
+                        .autocorrectionDisabled()
                 }
+                userScriptCategoryPicker
             } footer: {
                 validationMessage
-            }
-
-            Section {
-                Button(action: openEditorSheet) {
-                    Label("Use Editor", systemImage: "curlybraces")
-                }
             }
 
             Section {
@@ -2164,6 +2154,8 @@ struct AddUserScriptView: View {
 
     private var simpleTextContent: some View {
         VStack(alignment: .leading, spacing: 12) {
+            userScriptMetaFields
+
             TextEditor(text: $textInput)
                 .font(.body)
                 .autocorrectionDisabled()
@@ -2193,7 +2185,6 @@ struct AddUserScriptView: View {
             .buttonStyle(.bordered)
 
             editorRequirementsPanel
-            userScriptMetaFields
         }
     }
 
@@ -2244,40 +2235,21 @@ struct AddUserScriptView: View {
 
     private var macosURLCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Script or Style URL")
-                    .font(.caption)
+            urlInputEditor
+
+            if parsedURLs.count > 1 {
+                Text("Titles will be created from each URL.")
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
+                userScriptCategoryPicker
+            } else {
+                userScriptMetaFields
             }
 
-            VStack(spacing: 8) {
-                HStack(spacing: 10) {
-                    TextField("https://example.com/script.user.js", text: $urlInput)
-                        .textFieldStyle(.roundedBorder)
-                        .autocorrectionDisabled()
-                        .submitLabel(.done)
-                        .focused($urlFieldFocused)
-                        .onSubmit {
-                            if canSubmit {
-                                submit()
-                            } else {
-                                urlFieldFocused = false
-                            }
-                        }
-
-                    compactPasteButton
-                }
-
-                HStack {
-                    Spacer()
-                    validationBadge
-                }
+            HStack {
+                Spacer()
+                validationBadge
             }
-
-            Button(action: openEditorSheet) {
-                Label("Use Editor", systemImage: "curlybraces")
-            }
-            .buttonStyle(.bordered)
         }
         .padding(16)
         .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
@@ -2408,6 +2380,45 @@ struct AddUserScriptView: View {
         ])
     }
 
+    private var urlInputEditor: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("URLs")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: $urlInput)
+                    .font(.body)
+                    .autocorrectionDisabled()
+                    .focused($urlFieldFocused)
+                    #if os(iOS)
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.URL)
+                    #endif
+
+                if urlInput.isEmpty {
+                    Text(verbatim: "https://example.com/script.user.js")
+                        .foregroundStyle(.tertiary)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 8)
+                        .allowsHitTesting(false)
+                }
+            }
+            .frame(minHeight: 64, maxHeight: 96)
+            .background(.background, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(.quaternary, lineWidth: 1)
+            )
+            .accessibilityLabel("URLs")
+
+            HStack {
+                compactPasteButton
+                Spacer()
+            }
+        }
+    }
+
     private var compactPasteButton: some View {
         Button {
             pasteFromClipboard()
@@ -2504,31 +2515,33 @@ struct AddUserScriptView: View {
     private func submit() {
         switch addMode {
         case .url:
-            guard case .valid(let url) = validationState else { return }
+            guard case .valid(let urls) = validationState else { return }
 
             isAdding = true
             urlImportError = nil
 
             Task(priority: .userInitiated) {
-                await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Adding new userscript from URL"), metadata: ["url": url.absoluteString])
-                let error = await userScriptManager.addUserScript(from: url)
-
-                if let error {
-                    let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-                    await ConcurrentLogManager.shared.error(.userScript, LocalizedStrings.text("Failed to add userscript from URL"), metadata: ["url": url.absoluteString, "error": message])
-
-                    await MainActor.run {
-                        urlImportError = message
-                        isAdding = false
+                for url in urls {
+                    await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Adding new userscript from URL"), metadata: ["url": url.absoluteString])
+                    if let error = await userScriptManager.addUserScript(from: url) {
+                        let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                        await ConcurrentLogManager.shared.error(.userScript, LocalizedStrings.text("Failed to add userscript from URL"), metadata: ["url": url.absoluteString, "error": message])
+                        await MainActor.run {
+                            urlImportError = message
+                            isAdding = false
+                        }
+                        return
                     }
-                } else {
+                    if let script = userScriptManager.userScripts.first(where: { $0.url == url }) {
+                        await userScriptManager.setUserScript(script, category: selectedCategory)
+                    }
                     await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Successfully added userscript from URL"), metadata: ["url": url.absoluteString])
+                }
 
-                    await MainActor.run {
-                        isAdding = false
-                        onScriptAdded()
-                        dismiss()
-                    }
+                await MainActor.run {
+                    isAdding = false
+                    onScriptAdded()
+                    dismiss()
                 }
             }
         case .text:
@@ -2730,12 +2743,13 @@ struct AddUserScriptView: View {
             return
         }
 
-        guard let url = UserScriptURLSupport.validatedRemoteURL(from: trimmed) else {
+        let urls = UserScriptURLSupport.parseRemoteURLs(from: trimmed)
+        guard !urls.isEmpty else {
             validationState = .invalid(String(localized: "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss"))
             return
         }
 
-        validationState = .valid(url)
+        validationState = .valid(urls)
     }
 
     private func pasteFromClipboard() {
@@ -2807,6 +2821,6 @@ struct AddUserScriptView: View {
     private enum ValidationState: Equatable {
         case idle
         case invalid(String)
-        case valid(URL)
+        case valid([URL])
     }
 }

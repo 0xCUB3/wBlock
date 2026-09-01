@@ -1320,6 +1320,7 @@ struct AddFilterListView: View {
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
                                 .stroke(.quaternary, lineWidth: 1)
                         )
+                    pasteRulesButton
 	                }
                 filterTextRequirementsPanel
 	            }
@@ -1451,6 +1452,7 @@ struct AddFilterListView: View {
             Section("Rules") {
                 SyntaxHighlightingTextView(text: $pastedRules)
                     .frame(minHeight: 220)
+                pasteRulesButton
             }
             Section {
                 filterTextRequirementsPanel
@@ -1485,6 +1487,14 @@ struct AddFilterListView: View {
                     }
                 }
             }
+
+    private var pasteRulesButton: some View {
+        Button(action: pasteRulesFromClipboard) {
+            Label("Paste", systemImage: "doc.on.clipboard")
+        }
+        .buttonStyle(.bordered)
+        .disabled(isSaving)
+    }
 
     private var filterTextRequirementsPanel: some View {
         AddContentRequirementsPanel(requirements: [
@@ -1721,6 +1731,14 @@ struct AddFilterListView: View {
     }
 
     // MARK: - Helpers
+
+    private func pasteRulesFromClipboard() {
+        #if os(iOS)
+        if let string = UIPasteboard.general.string { pastedRules = string }
+        #elseif os(macOS)
+        if let string = NSPasteboard.general.string(forType: .string) { pastedRules = string }
+        #endif
+    }
 
     private func stageFile(at url: URL) {
         stagingGeneration += 1

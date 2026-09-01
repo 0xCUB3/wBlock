@@ -77,8 +77,15 @@ let textEditor = content.range(of: "TextEditor(text: $textInput)")
 let requirements = content.range(of: "editorRequirementsPanel")
 let metadata = content.range(of: "userScriptMetaFields")
 require(textEditor != nil && requirements != nil && metadata != nil, "Text mode needs its static editor requirements and metadata fields")
+require(metadata!.lowerBound < textEditor!.lowerBound, "metadata fields must precede the text editor")
 require(textEditor!.lowerBound < requirements!.lowerBound, "requirements must follow the text editor")
-require(requirements!.lowerBound < metadata!.lowerBound, "requirements must precede metadata fields")
+
+let urlStart = source.range(of: "private var urlTab")!.lowerBound
+let urlEnd = source.range(of: "private var textTab", range: urlStart..<source.endIndex)!.lowerBound
+let urlSurface = String(source[urlStart..<urlEnd])
+require(!urlSurface.contains("Use Editor"), "URL mode must not expose Use Editor")
+require(textSurface.contains("Use Editor"), "Text mode must retain Use Editor")
+require(textSurface.contains("Label(\"Paste\""), "Text mode must retain Paste")
 
 var simpleText = "initial"
 var editorText = simpleText

@@ -26,14 +26,42 @@ public enum UserScriptImportIdentity {
 }
 
 public enum UserScriptURLSupport {
-    /// Collapses a pasted script URL onto one line so extra newlines cannot
-    /// hide the link in the single-line URL field.
+    /// Collapses a wrapped script URL onto one line while preserving multiple
+    /// complete http(s) URLs as separate lines for bulk import.
     public static func normalizePastedURL(_ rawValue: String) -> String {
-        rawValue
+        let lines = rawValue
             .components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
-            .joined()
+        let hasMultipleURLs = lines.count > 1 && lines.dropFirst().allSatisfy {
+            let value = $0.lowercased()
+            return value.hasPrefix("http://") || value.hasPrefix("https://")
+        }
+        return lines.joined(separator: hasMultipleURLs ? "\n" : "")
+    }
+
+    /// Parses one wrapped URL or multiple complete URLs, one per line.
+    public static func parseRemoteURLs(from rawValue: String) -> [URL] {
+        let lines = rawValue.components(separatedBy: .newlines).compactMap { line -> String? in
+            var candidate = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !candidate.isEmpty else { return nil }
+            if let first = candidate.first, let last = candidate.last,
+               (first == "<" && last == ">")
+                || (first == "\"" && last == "\"")
+                || (first == "'" && last == "'") {
+                candidate = String(candidate.dropFirst().dropLast())
+            }
+            return candidate
+        }
+
+        if lines.count > 1 {
+            let urls = lines.compactMap(validatedRemoteURL)
+            if urls.count == lines.count {
+                var seen = Set<URL>()
+                return urls.filter { seen.insert($0).inserted }
+            }
+        }
+        return validatedRemoteURL(from: rawValue).map { [$0] } ?? []
     }
 
     public static func validatedRemoteURL(from rawValue: String) -> URL? {
