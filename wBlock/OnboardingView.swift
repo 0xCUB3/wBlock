@@ -36,6 +36,7 @@ struct OnboardingView: View {
     @State private var selectedUserscripts: Set<String> = []
     @State private var step: OnboardingStep = .welcome
     @State private var selectedLanguages: Set<String>
+    @State private var languageSearchQuery = ""
     @State private var selectedRegionalFilters: Set<UUID> = []
     @State private var recommendedRegionalFilters: [FilterList] = []
     @State private var hasManuallyEditedRegionalSelection = false
@@ -477,13 +478,33 @@ struct OnboardingView: View {
     }
 
     private struct LanguageOption: Identifiable {
+        private static let aliasesByCode: [String: [String]] = [
+            "de": ["Deutsch", "German"],
+            "es": ["español", "Spanish", "espanol"],
+            "fr": ["français", "French", "francais"],
+            "ja": ["日本語", "Japanese"],
+            "zh": ["中文", "Chinese", "zh"],
+            "pt": ["português", "Portuguese", "portugues"],
+            "ru": ["русский", "Russian"],
+            "ar": ["العربية", "Arabic"]
+        ]
+
         let code: String
         let name: String
         let flag: String
         var nativeName: String {
             Locale(identifier: code).localizedString(forLanguageCode: code) ?? name
         }
+        var aliases: [String] { Self.aliasesByCode[code] ?? [] }
         var id: String { code }
+
+        func matches(_ query: String) -> Bool {
+            let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !query.isEmpty else { return false }
+            return ([nativeName, name, code] + aliases).contains {
+                $0.localizedCaseInsensitiveContains(query)
+            }
+        }
     }
 
     private var displayLocale: Locale {
@@ -550,6 +571,10 @@ struct OnboardingView: View {
         languagePickerOptions.filter { !selectedLanguages.contains($0.code) }
     }
 
+    private var matchingLanguagePickerOptions: [LanguageOption] {
+        unselectedLanguagePickerOptions.filter { $0.matches(languageSearchQuery) }
+    }
+
     private var languagePicker: some View {
         VStack(spacing: 0) {
             ForEach(Array(selectedLanguagePickerOptions.enumerated()), id: \.element.id) { index, lang in
@@ -579,30 +604,35 @@ struct OnboardingView: View {
                 Divider().padding(.leading, 42)
             }
 
-            Menu {
-                ForEach(unselectedLanguagePickerOptions) { lang in
-                    Button {
-                        selectedLanguages.insert(lang.code)
-                    } label: {
-                        Text(lang.nativeName)
-                    }
-                }
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: "plus")
-                        .frame(width: 20)
-                    Text("Add")
-                    Spacer()
-                    Image(systemName: "chevron.down")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 9)
-                .contentShape(Rectangle())
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(.secondary)
+                    .frame(width: 20)
+                TextField("Search languages", text: $languageSearchQuery)
+                    .textFieldStyle(.plain)
             }
-            .buttonStyle(.plain)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 9)
+
+            ForEach(matchingLanguagePickerOptions) { lang in
+                Divider().padding(.leading, 42)
+                Button {
+                    selectedLanguages.insert(lang.code)
+                    languageSearchQuery = ""
+                } label: {
+                    HStack(spacing: 10) {
+                        Text(lang.flag.isEmpty ? String(lang.nativeName.prefix(1)) : lang.flag)
+                            .fontWeight(lang.flag.isEmpty ? .semibold : .regular)
+                            .frame(width: 20)
+                        Text(lang.nativeName)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
         }
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }

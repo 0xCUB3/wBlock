@@ -24,12 +24,8 @@ require(onboarding, ".interactiveDismissDisabled(!hasCompletedOnboarding)")
 require(onboarding, "case userscripts")
 require(onboarding, "[.welcome, .protection, .regional, .userscripts, .sync, .setup]")
 require(onboarding, "case .userscripts:\n            userscriptsStep")
-requireCondition(!onboarding.contains("TextField(\"Search languages\""), "onboarding must not show the old language search field")
 requireCondition(!onboarding.contains("languageSearchText"), "onboarding must not retain obsolete language search state")
-require(onboarding, "Menu {")
-require(onboarding, "Image(systemName: \"plus\")")
-require(onboarding, "Text(\"Add\")")
-require(onboarding, ".frame(maxWidth: .infinity)")
+require(onboarding, "TextField(\"Search languages\"")
 require(onboarding, "selectedLanguages.remove(lang.code)")
 let regionalStart = onboarding.range(of: "private var regionalStep")!.lowerBound
 let userscriptsStart = onboarding.range(of: "private var userscriptsStep", range: regionalStart..<onboarding.endIndex)!.lowerBound

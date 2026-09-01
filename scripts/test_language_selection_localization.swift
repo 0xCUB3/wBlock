@@ -18,6 +18,7 @@ struct LanguageSelectionLocalizationTests {
             "No regional filters needed. The default filter lists already cover English and international sites.",
             "No regional filters available. However, the default filter lists already cover English and international sites.",
             "Other",
+            "Search languages",
             "Adblock List for Albania and Kosovo",
             "Global Filters",
             "Raajje AdList",
