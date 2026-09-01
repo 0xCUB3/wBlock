@@ -46,6 +46,7 @@ if let displayStart {
 check(settings.contains("@AppStorage(PortraitOrientationLock.storageKey)"), "Settings must bind the portrait lock")
 check(settings.contains("userInterfaceIdiom != .pad"), "portrait lock must be hidden on iPad")
 check(settings.contains("Toggle(\"Lock Portrait Orientation\""), "Settings must expose the portrait lock toggle on iPhone")
+check(settings.contains("Text(\"Display\")"), "portrait lock must sit under a Display header")
 check(settings.contains("Keeps the app in portrait even if the device is rotated."), "Settings must explain the portrait lock")
 check(settings.contains("PortraitOrientationLock.apply()"), "toggling must apply the lock immediately")
 check(settings.contains("displaySection"), "iOS settings list must include the display section")

@@ -259,6 +259,8 @@ struct SettingsView: View {
                     .onChangeCompat(of: lockPortraitOrientation) { _ in
                         PortraitOrientationLock.apply()
                     }
+            } header: {
+                Text("Display")
             } footer: {
                 Text("Keeps the app in portrait even if the device is rotated.")
             }
