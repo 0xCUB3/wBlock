@@ -295,8 +295,7 @@ public enum UserStyleSupport {
     }
 
     private static func cacheKey(for content: String) -> NSString {
-        let digest = SHA256.hash(data: Data(content.utf8))
-        return digest.map { String(format: "%02x", $0) }.joined() as NSString
+        UserStylePreprocessorService.digest(content) as NSString
     }
 
     // MARK: - Effective CSS

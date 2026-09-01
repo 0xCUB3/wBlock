@@ -76,8 +76,12 @@ enum UserScriptPersistence {
                 } else {
                     record.isEnabled = merged[index].isEnabled
                 }
+                let previousIdentity = canonicalRemoteURLIdentity(merged[index])
                 merged[index] = record
-                indexByRemoteURL = Self.indexByRemoteURL(in: merged)
+                if previousIdentity != canonicalRemoteURLIdentity(record) {
+                    // The URL identity moved; rebuild rather than track every alias.
+                    indexByRemoteURL = Self.indexByRemoteURL(in: merged)
+                }
             } else {
                 // An ID omitted from allowedInsertIDs was deleted concurrently. Do not
                 // let its URL update another record or resurrect the stale identity.
