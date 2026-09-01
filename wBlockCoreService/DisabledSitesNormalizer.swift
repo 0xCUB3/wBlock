@@ -20,14 +20,19 @@ public enum DisabledSitesNormalizer {
             candidate = String(candidate[..<portStart])
         }
 
-        let domainRegex =
-            #"^(?:[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$"#
-        guard candidate.range(of: domainRegex, options: .regularExpression) != nil else {
+        let range = NSRange(candidate.startIndex..., in: candidate)
+        guard domainRegex.firstMatch(in: candidate, options: [], range: range) != nil else {
             return nil
         }
 
         return candidate
     }
+
+    /// Compiled once; normalizedDomain runs for every entry whenever site lists are
+    /// normalized, and compiling the pattern per call dominated that loop.
+    private static let domainRegex = try! NSRegularExpression(
+        pattern: #"^(?:[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$"#
+    )
 
     public static func normalizedDomains(from rawDomains: [String]) -> [String] {
         Array(Set(rawDomains.compactMap(normalizedDomain))).sorted()

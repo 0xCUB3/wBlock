@@ -8,6 +8,7 @@
 import Dispatch
 import Foundation
 import CryptoKit
+import os.log
 
 public enum FilterListMetadataParser {
     private static let titleRegex = try! NSRegularExpression(
@@ -541,7 +542,7 @@ func measure<T>(label: String, block: () throws -> T) rethrows -> T {
     let elapsedNanoseconds = end.uptimeNanoseconds - start.uptimeNanoseconds
     let elapsedMilliseconds = Double(elapsedNanoseconds) / 1_000_000
     let formattedTime = String(format: "%.3f", elapsedMilliseconds)
-    NSLog("[\(label)] Elapsed Time: \(formattedTime) ms")
+    os_log(.debug, "[%{public}@] Elapsed Time: %{public}@ ms", label, formattedTime)
 
     return result
 }
