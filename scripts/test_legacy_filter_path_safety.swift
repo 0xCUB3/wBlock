@@ -42,10 +42,10 @@ check(FileManager.default.fileExists(atPath: newURL.path), "normal legacy migrat
 check(!FileManager.default.fileExists(atPath: oldURL.path), "normal legacy migration must remove the old path")
 
 let loader = try String(contentsOfFile: "wBlock/FilterListLoader.swift", encoding: .utf8)
-let updater = try String(contentsOfFile: "wBlock/FilterListUpdater.swift", encoding: .utf8)
+let processing = try String(contentsOfFile: "wBlockCoreService/Utils.swift", encoding: .utf8)
 let affinity = try String(contentsOfFile: "wBlockCoreService/SafariContentBlockerAffinityProcessor.swift", encoding: .utf8)
 let manager = try String(contentsOfFile: "wBlock/AppFilterManager+CustomFilters.swift", encoding: .utf8)
-for source in [loader, updater, affinity, manager] {
+for source in [loader, processing, affinity, manager] {
     check(
         source.contains("safeLegacyFileURL") || source.contains("existingLocalFileURL"),
         "legacy path use must go through the containment-safe helper"
