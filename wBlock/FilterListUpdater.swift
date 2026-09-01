@@ -331,18 +331,6 @@ final class FilterListUpdater: @unchecked Sendable {
         }
     }
 
-    /// Original hasUpdate kept for non-concurrent callers (e.g. auto-update).
-    func hasUpdate(for filter: FilterList) async -> Bool {
-        let validators = await storedValidators(for: filter)
-        let updates = PendingValidatorUpdates()
-        let result = await hasUpdateNoMainActor(for: filter, validators: validators, pendingValidatorUpdates: updates)
-        let pending = await updates.drain()
-        if !pending.isEmpty {
-            await ProtobufDataManager.shared.setFilterValidators(pending)
-        }
-        return result
-    }
-
     private func localDataForComparison(filter: FilterList) -> Data? {
         guard let containerURL = loader.getSharedContainerURL(),
               let localURL = ContentBlockerIncrementalCache.existingLocalFileURL(

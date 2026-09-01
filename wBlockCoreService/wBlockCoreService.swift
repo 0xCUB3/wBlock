@@ -10,7 +10,6 @@ internal import FilterEngine
 import CryptoKit
 import Foundation
 import SafariServices
-internal import ZIPFoundation
 import os.log
 
 private final class ContentBlockerServiceBundleMarker {}
@@ -414,38 +413,6 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         } catch {
             return "Failed to read the filter file: \(error)"
         }
-    }
-
-    /// Converts AdGuard rules and exports them as a ZIP archive.
-    ///
-    /// - Parameters:
-    ///   - rules: AdGuard syntax rules to be converted.
-    /// - Returns: Data object containing a ZIP archive with Safari content blocker JSON and advanced rules,
-    ///           or nil if the archive creation fails.
-    public static func exportConversionResult(rules: String) -> Data? {
-        guard let result = try? convertRules(rules: rules) else { return nil }
-
-        // We'll use a variable so we can modify the JSON string
-        var safariRulesJSON = result.safariRulesJSON
-        let advancedRulesText = result.advancedRulesText
-
-        // Attempt to pretty-print the JSON
-        if let data = safariRulesJSON.data(using: .utf8),
-            let jsonObject = try? JSONSerialization.jsonObject(with: data),
-            let prettyData = try? JSONSerialization.data(
-                withJSONObject: jsonObject,
-                options: [.prettyPrinted]
-            ),
-            let prettyString = String(data: prettyData, encoding: .utf8)
-        {
-            safariRulesJSON = prettyString
-        }
-
-        // Pass the newly formatted JSON string to the ZIP creation
-        return createZipArchive(
-            safariRulesJSON: safariRulesJSON,
-            advancedRulesText: advancedRulesText
-        )
     }
 
     public struct ReloadAttemptResult: Sendable {
@@ -1886,14 +1853,6 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         )
     }
 
-    /// Clears the filter engine by building it with empty rules.
-    ///
-    /// - Parameters:
-    ///   - groupIdentifier: Group ID to use for the shared container.
-    public static func clearFilterEngine(groupIdentifier: String) throws {
-        try publishCombinedFilterEngine(combinedAdvancedRules: "", groupIdentifier: groupIdentifier)
-    }
-
     private struct CombinedEngineFingerprint: Equatable {
         let rulesHash: String
         let schemaVersion: Int
@@ -2410,69 +2369,6 @@ extension ContentBlockerService {
         os_log(.info, "Successfully saved rules to %@", sharedFileURL.path)
     }
 
-    /// Creates a ZIP archive containing Safari content blocker rules and advanced rules.
-    ///
-    /// The archive will always include "content-blocker.json" and optionally "advanced-rules.txt"
-    /// if advanced rules are provided.
-    ///
-    /// - Parameters:
-    ///   - safariRulesJSON: JSON string containing Safari content blocker rules.
-    ///   - advancedRulesText: Optional text string containing advanced blocking rules.
-    /// - Returns: Data object representing the ZIP archive, or nil if archive creation fails.
-    private static func createZipArchive(
-        safariRulesJSON: String,
-        advancedRulesText: String?
-    ) -> Data? {
-        // 1. Prepare data from strings
-        guard let contentBlockerData = safariRulesJSON.data(using: .utf8) else {
-            return nil
-        }
-        let advancedData = advancedRulesText?.data(using: .utf8)
-
-        do {
-            // 3. Create the Archive object with ZipFoundation
-            let archive = try Archive(accessMode: .create)
-
-            // 4. Add content-blocker.json entry
-            try archive.addEntry(
-                with: "content-blocker.json",
-                type: .file,
-                uncompressedSize: Int64(contentBlockerData.count),
-                bufferSize: 65536
-            ) { position, size -> Data in
-                // Called repeatedly with chunks of at most `bufferSize` bytes
-                // until the whole entry has been provided.
-                return contentBlockerData.subdata(
-                    in: Data.Index(position)..<Int(position) + size
-                )
-            }
-
-            // 5. Add advanced-rules.txt if present
-            if let advancedData = advancedData {
-                try archive.addEntry(
-                    with: "advanced-rules.txt",
-                    type: .file,
-                    uncompressedSize: Int64(advancedData.count),
-                    bufferSize: 65536
-                ) { position, size -> Data in
-                    // Called repeatedly with chunks of at most `bufferSize` bytes
-                    // until the whole entry has been provided.
-                    return advancedData.subdata(in: Data.Index(position)..<Int(position) + size)
-                }
-            }
-
-            // 6. Zip creation complete
-            return archive.data
-        } catch {
-            os_log(
-                .error,
-                "Error while creating a ZIP archive with rules: %@",
-                error.localizedDescription
-            )
-
-            return nil
-        }
-    }
 }
 
 public nonisolated enum ContentBlockerChunkedHasher {
