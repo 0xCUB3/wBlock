@@ -25,6 +25,7 @@ swiftc -D DEBUG -framework WebKit -framework CryptoKit \
   wBlockCoreService/UserStyleCompilerExecutionHost.swift \
   wBlockCoreService/UserStyleCompiler.swift \
   wBlockCoreService/UserStyle.swift \
+  wBlockCoreService/UserStyleRemoteImportInliner.swift \
   wBlockCoreService/UserScript.swift \
   wBlockCoreService/FilterListCategory.swift \
   -o "${TMPDIR:-/tmp}/wblock-userstyle-preprocessor-tests"

@@ -1,55 +1,122 @@
-#!/usr/bin/env swift
 import Foundation
 
-let source = try String(contentsOfFile: "wBlockCoreService/UserScript.swift", encoding: .utf8)
-let start = source.range(of: "public enum UserScriptURLSupport {")!.lowerBound
-let end = source.range(of: "public enum UserScriptImportLimits", range: start..<source.endIndex)!.lowerBound
-let support = String(source[start..<end])
-let testProgram = #"""
-import Foundation
+@main
+struct UserScriptURLSupportTests {
+    static func main() {
+        expectValid(
+            "https://example.com/script.js",
+            expectedPath: "/script.js",
+            "expected plain .js remote userscript URLs to be accepted"
+        )
+        expectValid(
+            "https://example.com/script.user.js",
+            expectedPath: "/script.user.js",
+            "expected .user.js remote userscript URLs to still be accepted"
+        )
+        expectInvalid(
+            "https://example.com/script.txt",
+            "expected non-JavaScript remote URLs to be rejected"
+        )
+        expectInvalid(
+            "ftp://example.com/script.js",
+            "expected non-http(s) remote URLs to be rejected"
+        )
+        expectValid(
+            "https://example.com/raw?file=script.user.js",
+            expectedPath: "/raw",
+            "expected userscript URLs with the filename in a query parameter to be accepted"
+        )
+        expectValid(
+            "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=userscript/bpc.en.user.js",
+            expectedPath: "/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw",
+            "expected the gitflic BPC userscript URL (#455) to be accepted"
+        )
+        expectInvalid(
+            "https://example.com/raw?file=script.txt",
+            "expected query-parameter URLs without a supported extension to be rejected"
+        )
 
-__SUPPORT__
+        let plainName = UserScriptURLSupport.displayName(forRemoteURL: URL(string: "https://example.com/foo.js")!)
+        expectEqual(plainName, "foo", "expected .js suffix to be stripped from remote display names")
 
-func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
-    guard condition() else { fputs("FAIL: \(message)\n", stderr); exit(1) }
-}
-func expectEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
-    expect(actual == expected, "\(message)\nactual: \(actual)\nexpected: \(expected)")
-}
-func expectValid(_ rawURL: String, expectedPath: String, _ message: String) {
-    guard let url = UserScriptURLSupport.validatedRemoteURL(from: rawURL) else {
-        fputs("FAIL: \(message)\n", stderr); exit(1)
+        expectEqual(
+            UserScriptURLSupport.normalizePastedURL("\nhttps://example.com/script.user.js\n\n"),
+            "https://example.com/script.user.js",
+            "expected extra blank lines around a pasted script URL to be stripped"
+        )
+        expectEqual(
+            UserScriptURLSupport.normalizePastedURL("""
+            https://greasyfork.org/scripts/123-very-long-name/
+            script.user.js
+            """),
+            "https://greasyfork.org/scripts/123-very-long-name/script.user.js",
+            "expected a wrapped pasted script URL to be rejoined"
+        )
+
+        let bulkURLs = "https://example.com/one.user.js\nhttps://example.com/two.user.js"
+        expectEqual(
+            UserScriptURLSupport.normalizePastedURL(bulkURLs),
+            bulkURLs,
+            "expected complete bulk URLs to remain on separate lines"
+        )
+        expectEqual(
+            UserScriptURLSupport.parseRemoteURLs(from: bulkURLs).map(\.lastPathComponent),
+            ["one.user.js", "two.user.js"],
+            "expected both complete bulk URLs to be parsed"
+        )
+        expectEqual(
+            UserScriptURLSupport.parseRemoteURLs(
+                from: "https://example.com/wrapped/\nscript.user.js"
+            ).map(\.lastPathComponent),
+            ["script.user.js"],
+            "expected a wrapped single URL to be rejoined and parsed"
+        )
+        expectEqual(
+            UserScriptURLSupport.parseRemoteURLs(
+                from: "https://example.com/one.user.js\nnot a URL"
+            ),
+            [],
+            "expected mixed valid and invalid lines to be rejected"
+        )
+
+        expectValid(
+            "\nhttps://example.com/script.user.js\n",
+            expectedPath: "/script.user.js",
+            "expected script URL validation to accept a pasted URL with surrounding newlines"
+        )
+
+        let userScriptName = UserScriptURLSupport.displayName(
+            forRemoteURL: URL(string: "https://example.com/foo.user.js")!
+        )
+        expectEqual(
+            userScriptName,
+            "foo",
+            "expected .user.js suffix to be stripped from remote display names"
+        )
+
+        print("PASS")
     }
-    expectEqual(url.path, expectedPath, message)
+
+    private static func expectValid(_ rawURL: String, expectedPath: String, _ message: String) {
+        guard let url = UserScriptURLSupport.validatedRemoteURL(from: rawURL) else {
+            fputs("FAIL: \(message)\n", stderr)
+            exit(1)
+        }
+
+        expectEqual(url.path, expectedPath, message)
+    }
+
+    private static func expectInvalid(_ rawURL: String, _ message: String) {
+        guard UserScriptURLSupport.validatedRemoteURL(from: rawURL) == nil else {
+            fputs("FAIL: \(message)\n", stderr)
+            exit(1)
+        }
+    }
+
+    private static func expectEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
+        guard actual == expected else {
+            fputs("FAIL: \(message)\nactual: \(actual)\nexpected: \(expected)\n", stderr)
+            exit(1)
+        }
+    }
 }
-
-expectValid("https://example.com/script.js", expectedPath: "/script.js", "plain .js URL")
-expectValid("https://example.com/script.user.js", expectedPath: "/script.user.js", ".user.js URL")
-expect(UserScriptURLSupport.validatedRemoteURL(from: "https://example.com/script.txt") == nil, "reject non-script extension")
-expect(UserScriptURLSupport.validatedRemoteURL(from: "ftp://example.com/script.js") == nil, "reject non-http(s) URL")
-expectValid("https://example.com/raw?file=script.user.js", expectedPath: "/raw", "filename in query")
-expectValid("https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=userscript/bpc.en.user.js", expectedPath: "/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw", "gitflic URL")
-expect(UserScriptURLSupport.validatedRemoteURL(from: "https://example.com/raw?file=script.txt") == nil, "reject unsupported query filename")
-expectEqual(UserScriptURLSupport.displayName(forRemoteURL: URL(string: "https://example.com/foo.js")!), "foo", "strip .js")
-expectEqual(UserScriptURLSupport.displayName(forRemoteURL: URL(string: "https://example.com/foo.user.js")!), "foo", "strip .user.js")
-expectEqual(UserScriptURLSupport.normalizePastedURL("\nhttps://example.com/script.user.js\n\n"), "https://example.com/script.user.js", "strip blank lines")
-expectEqual(UserScriptURLSupport.normalizePastedURL("https://greasyfork.org/scripts/123-very-long-name/\nscript.user.js"), "https://greasyfork.org/scripts/123-very-long-name/script.user.js", "rejoin wrapped URL")
-let bulk = "https://example.com/one.user.js\nhttps://example.com/two.user.js"
-expectEqual(UserScriptURLSupport.normalizePastedURL(bulk), bulk, "preserve complete bulk URLs")
-expectEqual(UserScriptURLSupport.parseRemoteURLs(from: bulk).map(\.lastPathComponent), ["one.user.js", "two.user.js"], "parse bulk URLs")
-expectEqual(UserScriptURLSupport.parseRemoteURLs(from: "https://example.com/wrapped/\nscript.user.js").map(\.lastPathComponent), ["script.user.js"], "parse wrapped single URL")
-expect(UserScriptURLSupport.parseRemoteURLs(from: "https://example.com/one.user.js\nnot a URL").isEmpty, "reject mixed valid and invalid lines")
-print("PASS")
-"""#.replacingOccurrences(of: "__SUPPORT__", with: support)
-
-let temporaryURL = FileManager.default.temporaryDirectory
-    .appendingPathComponent("wblock-userscript-url-\(UUID().uuidString).swift")
-try testProgram.write(to: temporaryURL, atomically: true, encoding: .utf8)
-defer { try? FileManager.default.removeItem(at: temporaryURL) }
-
-let process = Process()
-process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-process.arguments = ["swift", temporaryURL.path]
-try process.run()
-process.waitUntilExit()
-exit(process.terminationStatus)
