@@ -242,15 +242,42 @@ public enum ContentBlockerIncrementalCache {
         let baseURL = containerURL.appendingPathComponent(baseRulesFilename(for: targetRulesFilename))
         let countURL = containerURL.appendingPathComponent("\(baseURL.lastPathComponent).count")
         let advancedURL = containerURL.appendingPathComponent(baseAdvancedRulesFilename(for: targetRulesFilename))
-        guard let data = try? Data(contentsOf: baseURL),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
-              let countText = try? String(contentsOf: countURL, encoding: .utf8),
+        // The base JSON is validated by a single full parse at the call site
+        // (isValidContentBlockerJSON). Here we only check the sidecars and the
+        // outer array shape so a multi-megabyte file is not deserialized twice.
+        guard let countText = try? String(contentsOf: countURL, encoding: .utf8),
               let count = Int(countText.trimmingCharacters(in: .whitespacesAndNewlines)),
-              count == json.count,
+              count >= 0,
+              looksLikeJSONArrayFile(at: baseURL),
               FileManager.default.fileExists(atPath: advancedURL.path),
               (try? String(contentsOf: advancedURL, encoding: .utf8)) != nil
         else { return false }
         return true
+    }
+
+    /// Cheap structural check: a non-empty file whose first non-whitespace byte is
+    /// "[" and last non-whitespace byte is "]". Catches truncated or empty caches
+    /// without parsing the whole array.
+    private static func looksLikeJSONArrayFile(at url: URL) -> Bool {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return false }
+        defer { try? handle.close() }
+        guard let size = try? handle.seekToEnd(), size > 0 else { return false }
+        let window: UInt64 = 64
+        try? handle.seek(toOffset: 0)
+        guard let head = try? handle.read(upToCount: Int(min(window, size))),
+              let first = head.first(where: { !isJSONWhitespace($0) }),
+              first == UInt8(ascii: "[")
+        else { return false }
+        let tailStart = size > window ? size - window : 0
+        try? handle.seek(toOffset: tailStart)
+        guard let tail = try? handle.readToEnd(),
+              let last = tail.last(where: { !isJSONWhitespace($0) })
+        else { return false }
+        return last == UInt8(ascii: "]")
+    }
+
+    private static func isJSONWhitespace(_ byte: UInt8) -> Bool {
+        byte == 0x20 || byte == 0x0A || byte == 0x0D || byte == 0x09
     }
 
     public static func loadCachedAdvancedRules(
