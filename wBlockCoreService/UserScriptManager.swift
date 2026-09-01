@@ -1263,6 +1263,7 @@ public class UserScriptManager: ObservableObject {
 
     /// Remove the file associated with a userscript from ALL possible locations to prevent resurrection
     private func removeUserScriptFile(_ userScript: UserScript) {
+        invalidateUserScriptFileExistsCache(for: userScript.id)
         let fileName = "\(userScript.id.uuidString).user.js"
         var totalRemoved = 0
 
@@ -2358,6 +2359,7 @@ public class UserScriptManager: ObservableObject {
     }
 
     private func writeUserScriptContent(_ userScript: UserScript) -> Bool {
+        invalidateUserScriptFileExistsCache(for: userScript.id)
         var success = false
         let fileName = "\(userScript.id.uuidString).user.js"
         [groupScriptsDirectoryURL, fallbackScriptsDirectoryURL].compactMap { $0 }.forEach {
@@ -2480,13 +2482,29 @@ public class UserScriptManager: ObservableObject {
         userScript.isDownloaded || userScriptFileExists(userScript)
     }
 
+    /// The scripts list re-evaluates every row on each refresh, on the main actor.
+    /// File existence only changes through this manager's own write/remove paths,
+    /// so it is memoized here and invalidated at those points.
+    private var userScriptFileExistsCache: [UUID: Bool] = [:]
+
+    private func invalidateUserScriptFileExistsCache(for id: UUID? = nil) {
+        if let id {
+            userScriptFileExistsCache.removeValue(forKey: id)
+        } else {
+            userScriptFileExistsCache.removeAll()
+        }
+    }
+
     private func userScriptFileExists(_ userScript: UserScript) -> Bool {
+        if let cached = userScriptFileExistsCache[userScript.id] { return cached }
         let fileName = "\(userScript.id.uuidString).user.js"
-        return [groupScriptsDirectoryURL, fallbackScriptsDirectoryURL].compactMap { $0 }.contains {
+        let exists = [groupScriptsDirectoryURL, fallbackScriptsDirectoryURL].compactMap { $0 }.contains {
             dirURL in
             let filePath = dirURL.appendingPathComponent(fileName).path
             return FileManager.default.fileExists(atPath: filePath)
         }
+        userScriptFileExistsCache[userScript.id] = exists
+        return exists
     }
 
     nonisolated private static func hasMetadataBlock(in content: String) -> Bool {
