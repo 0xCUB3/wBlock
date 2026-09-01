@@ -353,7 +353,7 @@ extension AppFilterManager {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
 
-        guard let index = filterListIndexByID[id], filterLists[index].isCustom else {
+        guard let index = filterListIndex(for: id), filterLists[index].isCustom else {
             statusDescription = LocalizedStrings.text(
                 "Filter list not found.",
                 comment: "Custom filter lookup error"
@@ -426,7 +426,7 @@ extension AppFilterManager {
             return
         }
 
-        guard let index = filterListIndexByID[id], filterLists[index].isCustom else {
+        guard let index = filterListIndex(for: id), filterLists[index].isCustom else {
             statusDescription = LocalizedStrings.text("User list not found.", comment: "User list lookup error")
             hasError = true
             return
