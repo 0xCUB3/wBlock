@@ -27,3 +27,6 @@ docs/superpowers/
 .dolt/
 *.db
 .beads-credential-key
+
+# Xcode clang scan cache
+*.xcodeproj/-Xcc/
