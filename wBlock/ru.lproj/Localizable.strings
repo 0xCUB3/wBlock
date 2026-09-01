@@ -922,7 +922,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Auto-Update" = "Автообновление";
 "Auto-Update Filters & Userscripts" = "Автообновление фильтров и пользовательских скриптов";
 "Update Now" = "Обновить сейчас";
-"Automatically updating %@" = "Автоматическое обновление %@";
 
 /* Add mode controls */
 "Text" = "Текст";

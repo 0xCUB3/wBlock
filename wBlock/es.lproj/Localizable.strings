@@ -919,7 +919,6 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Auto-Update" = "Actualización automática";
 "Auto-Update Filters & Userscripts" = "Actualizar filtros y scripts automáticamente";
 "Update Now" = "Actualizar ahora";
-"Automatically updating %@" = "Actualizando automáticamente %@";
 
 /* Add mode controls */
 "Text" = "Texto";

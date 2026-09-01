@@ -919,7 +919,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Auto-Update" = "Actualizare automată";
 "Auto-Update Filters & Userscripts" = "Actualizează automat filtrele și scripturile utilizatorilor";
 "Update Now" = "Actualizează acum";
-"Automatically updating %@" = "Actualizare automată %@";
 
 /* Add mode controls */
 "Text" = "Text";

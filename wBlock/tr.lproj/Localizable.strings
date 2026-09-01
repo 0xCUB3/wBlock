@@ -919,7 +919,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Auto-Update" = "Otomatik Güncelleme";
 "Auto-Update Filters & Userscripts" = "Filtreleri ve Kullanıcı Betiklerini Otomatik Güncelle";
 "Update Now" = "Güncelle";
-"Automatically updating %@" = "%@ otomatik güncelleniyor";
 
 /* Add mode controls */
 "Text" = "Metin";

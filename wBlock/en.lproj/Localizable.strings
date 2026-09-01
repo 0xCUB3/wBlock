@@ -919,7 +919,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Auto-Update" = "Auto-Update";
 "Auto-Update Filters & Userscripts" = "Auto-Update Filters & Userscripts";
 "Update Now" = "Update Now";
-"Automatically updating %@" = "Automatically updating %@";
 
 /* Add mode controls */
 "Text" = "Text";

@@ -922,7 +922,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Auto-Update" = "التحديث التلقائي";
 "Auto-Update Filters & Userscripts" = "التحديث التلقائي للفلاتر والبرامج النصية للمستخدم";
 "Update Now" = "تحديث الآن";
-"Automatically updating %@" = "التحديث التلقائي %@";
 
 /* Add mode controls */
 "Text" = "نص";

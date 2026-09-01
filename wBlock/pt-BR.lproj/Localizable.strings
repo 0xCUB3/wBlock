@@ -919,7 +919,6 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Auto-Update" = "Atualização automática";
 "Auto-Update Filters & Userscripts" = "Atualizar filtros e scripts de usuário automaticamente";
 "Update Now" = "Atualizar agora";
-"Automatically updating %@" = "Atualizando automaticamente %@";
 
 /* Add mode controls */
 "Text" = "Texto";

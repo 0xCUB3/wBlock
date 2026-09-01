@@ -922,7 +922,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Auto-Update" = "自動更新";
 "Auto-Update Filters & Userscripts" = "自動更新過濾器與使用者腳本";
 "Update Now" = "立即更新";
-"Automatically updating %@" = "正在自動更新 %@";
 
 /* Add mode controls */
 "Text" = "文字";

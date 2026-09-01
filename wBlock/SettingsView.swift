@@ -56,18 +56,6 @@ struct SettingsView: View {
     }
     #endif
 
-    private var compactStatusLine: String {
-        return nextScheduleLine
-    }
-
-    private var footerStatusLine: String {
-        let schedule = String.localizedStringWithFormat(
-            NSLocalizedString("Automatically updating %@", comment: "Auto-update schedule prefix"),
-            compactStatusLine
-        )
-        return schedule
-    }
-
     var body: some View {
         settingsContent
         .task {
@@ -416,7 +404,7 @@ struct SettingsView: View {
         } footer: {
             VStack(alignment: .leading, spacing: 2) {
                 if autoUpdateEnabled {
-                    Text(footerStatusLine)
+                    Text(nextScheduleLine)
                 }
                 #if os(macOS)
                 macOSAutoUpdateDiagnosticsView
