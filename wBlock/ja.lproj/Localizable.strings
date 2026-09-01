@@ -792,6 +792,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Redo" = "やり直す";
 "Element Zapper" = "要素ブロック";
 "No Element Zapper Rules" = "要素ブロックのルールはありません";
+"Use the element zapper in the wBlock popup in Safari to hide page elements." = "Safari の wBlock ポップアップの要素ブロックで、ページ上の要素を非表示にできます。";
 "Update" = "更新";
 "Update & Apply" = "更新して適用";
 "Update Filters" = "Update Filters";

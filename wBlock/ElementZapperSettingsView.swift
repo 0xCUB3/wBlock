@@ -213,6 +213,10 @@ struct ElementZapperSettingsView: View {
             Text("No Element Zapper Rules")
                 .font(.headline)
                 .foregroundStyle(.secondary)
+            Text("Use the element zapper in the wBlock popup in Safari to hide page elements.")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 48)

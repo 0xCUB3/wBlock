@@ -792,6 +792,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Redo" = "Επανάληψη";
 "Element Zapper" = "Zapper στοιχείων";
 "No Element Zapper Rules" = "Δεν υπάρχουν κανόνες Zapper στοιχείων";
+"Use the element zapper in the wBlock popup in Safari to hide page elements." = "Χρησιμοποίησε το Zapper στοιχείων στο αναδυόμενο παράθυρο του wBlock στο Safari για να αποκρύψεις στοιχεία σελίδας.";
 "Update" = "Ενημέρωση";
 "Update & Apply" = "Ενημέρωση & εφαρμογή";
 "Update Filters" = "Update Filters";

@@ -52,6 +52,7 @@ struct SiteSettingsLocalizationTests {
             "Redo",
             "Element Zapper",
             "No Element Zapper Rules",
+            "Use the element zapper in the wBlock popup in Safari to hide page elements.",
             "Cancel",
             "Remove"
         ]

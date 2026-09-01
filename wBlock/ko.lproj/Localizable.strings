@@ -792,6 +792,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Redo" = "다시 실행";
 "Element Zapper" = "요소 제거기";
 "No Element Zapper Rules" = "요소 제거 규칙 없음";
+"Use the element zapper in the wBlock popup in Safari to hide page elements." = "Safari의 wBlock 팝업에서 요소 제거기를 사용해 페이지 요소를 숨기세요.";
 "Update" = "업데이트";
 "Update & Apply" = "업데이트 및 적용";
 "Update Filters" = "Update Filters";

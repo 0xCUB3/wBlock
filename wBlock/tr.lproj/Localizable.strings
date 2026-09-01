@@ -789,6 +789,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Redo" = "Yinele";
 "Element Zapper" = "Öğe Gizleyici";
 "No Element Zapper Rules" = "Öğe gizleme kuralı yok";
+"Use the element zapper in the wBlock popup in Safari to hide page elements." = "Safari'deki wBlock açılır penceresindeki öğe gizleme ile sayfa öğelerini gizleyebilirsiniz.";
 "Update" = "Güncelle";
 "Update & Apply" = "Uygula ve bitir";
 "Update Filters" = "Filtreleri Güncelle";

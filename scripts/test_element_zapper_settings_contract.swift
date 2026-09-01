@@ -35,6 +35,7 @@ require(zapper, "setZapperRulesDisabled(!enabled, forHost: domain)")
 require(zapper, "pendingConfirmation = .clearAll")
 require(zapper, "Element Zapper changes take full effect after the next apply.")
 require(zapper, "Text(\"No Element Zapper Rules\")")
+require(zapper, "Use the element zapper in the wBlock popup in Safari to hide page elements.")
 
 require(dataManager, "public func restoreZapperRule(_ selector: String, forHost host: String, at index: Int) async")
 require(dataManager, "ruleList.pendingDeletions.removeAll { $0 == selector }")

@@ -789,6 +789,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Redo" = "Rétablir";
 "Element Zapper" = "Zappeur d’éléments";
 "No Element Zapper Rules" = "Aucune règle de zappeur d’éléments";
+"Use the element zapper in the wBlock popup in Safari to hide page elements." = "Utilisez le zappeur d’éléments dans la fenêtre wBlock de Safari pour masquer des éléments de page.";
 "Update" = "Mettre à jour";
 "Update & Apply" = "Mettre à jour et appliquer";
 "Update Filters" = "Update Filters";

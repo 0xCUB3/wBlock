@@ -789,6 +789,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Redo" = "Refă";
 "Element Zapper" = "Zapper de elemente";
 "No Element Zapper Rules" = "Nu există reguli pentru Zapper de elemente";
+"Use the element zapper in the wBlock popup in Safari to hide page elements." = "Folosește eliminatorul de elemente din popup-ul wBlock din Safari pentru a ascunde elemente de pe pagină.";
 "Update" = "Actualizează";
 "Update & Apply" = "Actualizează și aplică";
 "Update Filters" = "Update Filters";

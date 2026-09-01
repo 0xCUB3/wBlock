@@ -789,6 +789,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Redo" = "Ponów";
 "Element Zapper" = "Zapper elementów";
 "No Element Zapper Rules" = "Brak reguł zappera elementów";
+"Use the element zapper in the wBlock popup in Safari to hide page elements." = "Użyj zappera elementów w oknie wBlock w Safari, aby ukryć elementy strony.";
 "Update" = "Aktualizuj";
 "Update & Apply" = "Aktualizuj i zastosuj";
 "Update Filters" = "Update Filters";

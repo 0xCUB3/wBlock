@@ -792,6 +792,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Redo" = "Újra";
 "Element Zapper" = "Elemzapper";
 "No Element Zapper Rules" = "Nincsenek elemzapper-szabályok";
+"Use the element zapper in the wBlock popup in Safari to hide page elements." = "A Safari wBlock felugró ablakában az elemzapperrel elrejtheted az oldal elemeit.";
 "Update" = "Frissítés";
 "Update & Apply" = "Frissítés és alkalmazás";
 "Update Filters" = "Update Filters";
