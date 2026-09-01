@@ -869,7 +869,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Provides newer rules and fixes that are still being tested." = "Fournit des règles et correctifs récents encore en cours de test.";
 "Recommended Filters" = "Filtres recommandés";
 "Recommended Scripts" = "Scripts recommandés";
-"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Supprime les avis de cookies, fenêtres pop-up, bannières et autres éléments distrayants.";
+"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Supprime les avis de cookies, fenêtres pop-up, bannières et autres éléments distrayants. Activez les cinq listes AdGuard Annoyances pour l’ensemble complet.";
 "Reset to Default" = "Réinitialiser par défaut";
 "Shows all filter lists across every category." = "Affiche toutes les listes de filtres de chaque catégorie.";
 "Adds rules tailored to websites and languages from specific regions." = "Ajoute des règles adaptées aux sites web et aux langues de régions spécifiques.";

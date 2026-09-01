@@ -872,7 +872,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Provides newer rules and fixes that are still being tested." = "提供仍在測試中的較新規則和修正。";
 "Recommended Filters" = "推薦過濾器";
 "Recommended Scripts" = "推薦腳本";
-"Removes cookie notices, pop-ups, banners, and other distracting elements." = "移除 Cookie 通知、彈出式視窗、橫幅和其他干擾元素。";
+"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "移除 Cookie 通知、彈出式視窗、橫幅和其他干擾元素。若要完整套件，請啟用全部五個 AdGuard Annoyances 列表。";
 "Reset to Default" = "重設為預設值";
 "Shows all filter lists across every category." = "顯示所有類別中的過濾器清單。";
 "Adds rules tailored to websites and languages from specific regions." = "為特定地區的網站和語言新增適用規則。";

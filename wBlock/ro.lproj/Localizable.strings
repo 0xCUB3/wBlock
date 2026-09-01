@@ -869,7 +869,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Provides newer rules and fixes that are still being tested." = "Oferă reguli și remedieri mai noi, aflate încă în testare.";
 "Recommended Filters" = "Filtre recomandate";
 "Recommended Scripts" = "Scripturi recomandate";
-"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Elimină notificările despre cookie-uri, ferestrele pop-up, bannerele și alte elemente deranjante.";
+"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Elimină notificările despre cookie-uri, ferestrele pop-up, bannerele și alte elemente deranjante. Activează toate cele cinci liste AdGuard Annoyances pentru setul complet.";
 "Reset to Default" = "Resetează la valorile implicite";
 "Shows all filter lists across every category." = "Afișează toate listele de filtre din fiecare categorie.";
 "Adds rules tailored to websites and languages from specific regions." = "Adaugă reguli adaptate site-urilor și limbilor din anumite regiuni.";

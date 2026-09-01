@@ -872,7 +872,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Provides newer rules and fixes that are still being tested." = "Предоставляет новые правила и исправления, которые ещё тестируются.";
 "Recommended Filters" = "Рекомендуемые фильтры";
 "Recommended Scripts" = "Рекомендуемые скрипты";
-"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Удаляет уведомления о cookie, всплывающие окна, баннеры и другие отвлекающие элементы.";
+"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Удаляет уведомления о cookie, всплывающие окна, баннеры и другие отвлекающие элементы. Включите все пять списков AdGuard Annoyances для полного набора.";
 "Reset to Default" = "Сбросить по умолчанию";
 "Shows all filter lists across every category." = "Показывает все списки фильтров во всех категориях.";
 "Adds rules tailored to websites and languages from specific regions." = "Добавляет правила для сайтов и языков определённых регионов.";

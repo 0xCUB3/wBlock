@@ -869,7 +869,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Provides newer rules and fixes that are still being tested." = "提供仍在测试中的新规则和修复。";
 "Recommended Filters" = "推荐过滤器";
 "Recommended Scripts" = "推荐脚本";
-"Removes cookie notices, pop-ups, banners, and other distracting elements." = "移除 Cookie 提示、弹窗、横幅及其他干扰元素。";
+"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "移除 Cookie 提示、弹窗、横幅及其他干扰元素。要使用完整套装，请启用全部五个 AdGuard Annoyances 列表。";
 "Reset to Default" = "恢复默认设置";
 "Shows all filter lists across every category." = "显示所有类别中的过滤器列表。";
 "Adds rules tailored to websites and languages from specific regions." = "为特定地区的网站和语言添加定制规则。";

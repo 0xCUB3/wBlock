@@ -872,7 +872,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Provides newer rules and fixes that are still being tested." = "아직 테스트 중인 최신 규칙과 수정 사항을 제공합니다.";
 "Recommended Filters" = "추천 필터";
 "Recommended Scripts" = "추천 스크립트";
-"Removes cookie notices, pop-ups, banners, and other distracting elements." = "쿠키 알림, 팝업, 배너 및 기타 방해 요소를 제거합니다.";
+"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "쿠키 알림, 팝업, 배너 및 기타 방해 요소를 제거합니다. 전체 세트를 쓰려면 AdGuard Annoyances 목록 5개를 모두 켜세요.";
 "Reset to Default" = "기본값으로 재설정";
 "Shows all filter lists across every category." = "모든 카테고리의 필터 목록을 표시합니다.";
 "Adds rules tailored to websites and languages from specific regions." = "특정 지역의 웹사이트와 언어에 맞춘 규칙을 추가합니다.";

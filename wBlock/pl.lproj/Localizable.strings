@@ -869,7 +869,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Provides newer rules and fixes that are still being tested." = "Udostępnia nowsze reguły i poprawki, które są jeszcze testowane.";
 "Recommended Filters" = "Zalecane filtry";
 "Recommended Scripts" = "Zalecane skrypty";
-"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Usuwa komunikaty o plikach cookie, wyskakujące okna, banery i inne rozpraszające elementy.";
+"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Usuwa komunikaty o plikach cookie, wyskakujące okna, banery i inne rozpraszające elementy. Włącz wszystkie pięć list AdGuard Annoyances, aby uzyskać pełny zestaw.";
 "Reset to Default" = "Przywróć domyślne";
 "Shows all filter lists across every category." = "Pokazuje wszystkie listy filtrów ze wszystkich kategorii.";
 "Adds rules tailored to websites and languages from specific regions." = "Dodaje reguły dopasowane do stron i języków określonych regionów.";

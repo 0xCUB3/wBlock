@@ -872,7 +872,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Provides newer rules and fixes that are still being tested." = "يوفر قواعد وإصلاحات أحدث لا تزال قيد الاختبار";
 "Recommended Filters" = "المرشحات الموصى بها";
 "Recommended Scripts" = "النصوص الموصى بها";
-"Removes cookie notices, pop-ups, banners, and other distracting elements." = "يزيل إشعارات ملفات تعريف الارتباط والنوافذ المنبثقة واللافتات والعناصر المشتتة الأخرى";
+"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "يزيل إشعارات ملفات تعريف الارتباط والنوافذ المنبثقة واللافتات والعناصر المشتتة الأخرى. فعّل قوائم AdGuard Annoyances الخمس كلها للمجموعة الكاملة.";
 "Reset to Default" = "إعادة التعيين إلى الإعدادات الافتراضية";
 "Shows all filter lists across every category." = "يعرض جميع قوائم المرشحات في كل الفئات";
 "Adds rules tailored to websites and languages from specific regions." = "يضيف قواعد مخصصة لمواقع ولغات مناطق محددة";

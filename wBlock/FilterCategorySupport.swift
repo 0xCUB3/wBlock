@@ -13,7 +13,7 @@ enum FilterCategorySupport {
         case .multipurpose:
             "Combines broad ad-blocking and tracking protection in one list."
         case .annoyances:
-            "Removes cookie notices, pop-ups, banners, and other distracting elements."
+            "Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set."
         case .experimental:
             "Provides newer rules and fixes that are still being tested."
         case .allowlists:

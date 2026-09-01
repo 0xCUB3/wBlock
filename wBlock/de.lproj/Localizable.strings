@@ -872,7 +872,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Provides newer rules and fixes that are still being tested." = "Bietet neuere Regeln und Fehlerbehebungen, die noch getestet werden.";
 "Recommended Filters" = "Empfohlene Filter";
 "Recommended Scripts" = "Empfohlene Skripte";
-"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Entfernt Cookie-Hinweise, Pop-ups, Banner und andere störende Elemente.";
+"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Entfernt Cookie-Hinweise, Pop-ups, Banner und andere störende Elemente. Aktiviere alle fünf AdGuard-Annoyances-Listen für den vollständigen Satz.";
 "Reset to Default" = "Auf Standard zurücksetzen";
 "Shows all filter lists across every category." = "Zeigt alle Filterlisten aus allen Kategorien.";
 "Adds rules tailored to websites and languages from specific regions." = "Fügt Regeln für Websites und Sprachen bestimmter Regionen hinzu";

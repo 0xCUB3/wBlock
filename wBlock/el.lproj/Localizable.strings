@@ -872,7 +872,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Provides newer rules and fixes that are still being tested." = "Παρέχει νεότερους κανόνες και διορθώσεις που δοκιμάζονται ακόμη.";
 "Recommended Filters" = "Προτεινόμενα φίλτρα";
 "Recommended Scripts" = "Προτεινόμενα σενάρια";
-"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Αφαιρεί ειδοποιήσεις cookie, αναδυόμενα παράθυρα, banner και άλλα ενοχλητικά στοιχεία.";
+"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Αφαιρεί ειδοποιήσεις cookie, αναδυόμενα παράθυρα, banner και άλλα ενοχλητικά στοιχεία. Ενεργοποίησε και τις πέντε λίστες AdGuard Annoyances για το πλήρες σύνολο.";
 "Reset to Default" = "Επαναφορά στις προεπιλογές";
 "Shows all filter lists across every category." = "Εμφανίζει όλες τις λίστες φίλτρων από κάθε κατηγορία.";
 "Adds rules tailored to websites and languages from specific regions." = "Προσθέτει κανόνες για ιστοτόπους και γλώσσες συγκεκριμένων περιοχών.";

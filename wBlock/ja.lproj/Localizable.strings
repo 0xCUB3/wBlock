@@ -872,7 +872,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Provides newer rules and fixes that are still being tested." = "まだテスト中の新しいルールや修正を提供します。";
 "Recommended Filters" = "おすすめのフィルター";
 "Recommended Scripts" = "おすすめのスクリプト";
-"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Cookie通知、ポップアップ、バナーなどの気を散らす要素を削除します。";
+"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Cookie通知、ポップアップ、バナーなどの気を散らす要素を削除します。フルセットには 5 つの AdGuard Annoyances リストをすべて有効にしてください。";
 "Reset to Default" = "デフォルトに戻す";
 "Shows all filter lists across every category." = "すべてのカテゴリのフィルターリストを表示します。";
 "Adds rules tailored to websites and languages from specific regions." = "特定の地域のウェブサイトや言語に合わせたルールを追加します。";

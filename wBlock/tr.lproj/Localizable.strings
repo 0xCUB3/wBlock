@@ -869,7 +869,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Provides newer rules and fixes that are still being tested." = "Henüz test aşamasında olan yeni kuralları ve düzeltmeleri sunar.";
 "Recommended Filters" = "Önerilen Filtreler";
 "Recommended Scripts" = "Önerilen Betikler";
-"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Çerez bildirimlerini, açılır pencereleri, afişleri ve dikkat dağıtan diğer öğeleri kaldırır.";
+"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Çerez bildirimlerini, açılır pencereleri, afişleri ve dikkat dağıtan diğer öğeleri kaldırır. Tam set için beş AdGuard Annoyances listesinin tümünü açın.";
 "Reset to Default" = "Varsayılana sıfırla";
 "Shows all filter lists across every category." = "Tüm kategorilerdeki bütün filtre listelerini gösterir.";
 "Adds rules tailored to websites and languages from specific regions." = "Belirli bölgelere ait sitelere ve dillere özel kurallar ekler.";
