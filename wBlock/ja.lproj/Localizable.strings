@@ -1007,3 +1007,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Always Dark" = "常にダーク";
 "Dark" = "ダーク";
 "Light" = "ライト";
+"%@ → %@ Safari rules" = "%@ → Safariルール%@件";

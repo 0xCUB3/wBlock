@@ -2427,6 +2427,15 @@ struct RuleCapacityPopoverView: View {
         targets.count * ContentBlockerService.safariContentBlockerRuleLimit
     }
 
+    /// Rules in the enabled source lists before Safari conversion. Conversion
+    /// merges and drops rules Safari cannot express, so this is usually larger
+    /// than the Safari total (#624).
+    private var sourceRules: Int {
+        filterManager.filterLists
+            .filter(\.isSelected)
+            .reduce(0) { $0 + ($1.sourceRuleCount ?? 0) }
+    }
+
     private var overallFraction: Double {
         totalCapacity > 0 ? min(Double(totalUsed) / Double(totalCapacity), 1.0) : 0.0
     }
@@ -2502,6 +2511,26 @@ struct RuleCapacityPopoverView: View {
                         .scaleEffect(x: max(0, overallFraction), y: 1, anchor: .leading)
                 }
                 .frame(height: 8)
+
+                if sourceRules > 0 {
+                    HStack {
+                        Text("Source Rules")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(
+                            LocalizedStrings.format(
+                                "%@ → %@ Safari rules",
+                                comment: "Rule capacity popover: source rule count converted to Safari rule count",
+                                sourceRules.formatted(),
+                                totalUsed.formatted()
+                            )
+                        )
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                    }
+                }
             }
             .padding(12)
             .liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)

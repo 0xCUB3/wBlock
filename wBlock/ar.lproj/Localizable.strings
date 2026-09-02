@@ -1007,3 +1007,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Always Dark" = "داكن دائماً";
 "Dark" = "داكن";
 "Light" = "فاتح";
+"%@ → %@ Safari rules" = "%@ → %@ قاعدة Safari";

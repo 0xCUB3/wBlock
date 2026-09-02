@@ -1006,3 +1006,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Always Dark" = "Always Dark";
 "Dark" = "Dark";
 "Light" = "Light";
+"%@ → %@ Safari rules" = "%@ → %@ Safari rules";
