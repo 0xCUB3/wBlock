@@ -1005,3 +1005,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "When off, Dark Reader keeps websites dark in Light Mode." = "عند إيقافه، يُبقي Dark Reader مواقع الويب داكنة في الوضع الفاتح.";
 "Follow System" = "اتباع النظام";
 "Always Dark" = "داكن دائماً";
+"Dark" = "داكن";
+"Light" = "فاتح";

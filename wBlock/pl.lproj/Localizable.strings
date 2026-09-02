@@ -1005,3 +1005,5 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "When off, Dark Reader keeps websites dark in Light Mode." = "Po wyłączeniu Dark Reader utrzymuje ciemny wygląd witryn w trybie jasnym.";
 "Follow System" = "Jak w systemie";
 "Always Dark" = "Zawsze ciemny";
+"Dark" = "Ciemny";
+"Light" = "Jasny";

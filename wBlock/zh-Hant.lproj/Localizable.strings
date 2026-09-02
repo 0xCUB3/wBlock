@@ -1005,3 +1005,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "When off, Dark Reader keeps websites dark in Light Mode." = "關閉後，Dark Reader 會在淺色模式下仍保持網站為深色。";
 "Follow System" = "跟隨系統";
 "Always Dark" = "始終深色";
+"Dark" = "深色";
+"Light" = "淺色";

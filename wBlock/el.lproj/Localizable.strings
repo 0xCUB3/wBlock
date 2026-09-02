@@ -1005,3 +1005,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "When off, Dark Reader keeps websites dark in Light Mode." = "Όταν είναι απενεργοποιημένο, το Dark Reader διατηρεί τους ιστοτόπους σκοτεινούς στη φωτεινή λειτουργία.";
 "Follow System" = "Ακολούθηση συστήματος";
 "Always Dark" = "Πάντα σκοτεινό";
+"Dark" = "Σκούρο";
+"Light" = "Φωτεινό";

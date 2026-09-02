@@ -58,9 +58,12 @@ struct wBlockApp: App {
         }
     }
 
+    @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system
+
     var body: some Scene {
         WindowGroup {
             ContentView(filterManager: filterManager)
+                .preferredColorScheme(appearance.colorScheme)
                 .onAppear {
                     appDelegate.filterManager = filterManager
                     CloudSyncManager.shared.attach(filterManager: filterManager)

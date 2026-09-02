@@ -1005,3 +1005,5 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "When off, Dark Reader keeps websites dark in Light Mode." = "Wenn deaktiviert, hält Dark Reader Websites auch im hellen Modus dunkel.";
 "Follow System" = "System folgen";
 "Always Dark" = "Immer dunkel";
+"Dark" = "Dunkel";
+"Light" = "Hell";

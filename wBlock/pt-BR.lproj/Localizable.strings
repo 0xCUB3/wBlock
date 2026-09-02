@@ -1005,3 +1005,5 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "When off, Dark Reader keeps websites dark in Light Mode." = "Quando desativado, o Dark Reader mantém os sites escuros no modo claro.";
 "Follow System" = "Seguir o sistema";
 "Always Dark" = "Sempre escuro";
+"Dark" = "Escuro";
+"Light" = "Claro";

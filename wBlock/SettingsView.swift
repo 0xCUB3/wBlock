@@ -32,6 +32,7 @@ struct SettingsView: View {
     @State private var showingBackupStatus = false
     @State private var showingSyncAdoptPrompt = false
     @State private var syncAdoptTimestamp: String?
+    @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system
     #if os(iOS)
         @State private var backupDocument: BackupDocument? = nil
         @State private var showingExportSheet = false
@@ -242,20 +243,38 @@ struct SettingsView: View {
     #if os(iOS)
     @ViewBuilder
     private var displaySection: some View {
-        if UIDevice.current.userInterfaceIdiom != .pad {
-            Section {
+        Section {
+            appearancePicker
+            if UIDevice.current.userInterfaceIdiom != .pad {
                 Toggle("Lock Portrait Orientation", isOn: $lockPortraitOrientation)
                     .onChangeCompat(of: lockPortraitOrientation) { _ in
                         PortraitOrientationLock.apply()
                     }
-            } header: {
-                Text("Display")
-            } footer: {
+            }
+        } header: {
+            Text("Display")
+        } footer: {
+            if UIDevice.current.userInterfaceIdiom != .pad {
                 Text("Keeps the app in portrait even if the device is rotated.")
             }
         }
     }
+    #else
+    @ViewBuilder
+    private var displaySection: some View {
+        Section("Display") {
+            appearancePicker
+        }
+    }
     #endif
+
+    private var appearancePicker: some View {
+        Picker("Appearance", selection: $appearance) {
+            ForEach(AppAppearance.allCases) { option in
+                Text(option.title).tag(option)
+            }
+        }
+    }
 
     @ViewBuilder
     private var advancedSection: some View {
@@ -676,7 +695,7 @@ struct SettingsView: View {
         CompatibleNavigationStack {
             Form {
                 pauseBlockingSection
-
+                displaySection
                 autoUpdateSection
                 syncSection
                 advancedSection

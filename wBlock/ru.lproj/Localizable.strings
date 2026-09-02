@@ -1005,3 +1005,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "When off, Dark Reader keeps websites dark in Light Mode." = "Если выключено, Dark Reader сохраняет тёмный вид сайтов в светлом режиме.";
 "Follow System" = "Как в системе";
 "Always Dark" = "Всегда тёмный";
+"Dark" = "Тёмная";
+"Light" = "Светлая";

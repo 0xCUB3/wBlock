@@ -1005,3 +1005,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "When off, Dark Reader keeps websites dark in Light Mode." = "끄면 라이트 모드에서도 Dark Reader가 웹사이트를 어둡게 유지합니다.";
 "Follow System" = "시스템 따르기";
 "Always Dark" = "항상 어둡게";
+"Dark" = "다크";
+"Light" = "라이트";

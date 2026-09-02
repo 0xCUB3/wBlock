@@ -1004,3 +1004,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "When off, Dark Reader keeps websites dark in Light Mode." = "When off, Dark Reader keeps websites dark in Light Mode.";
 "Follow System" = "Follow System";
 "Always Dark" = "Always Dark";
+"Dark" = "Dark";
+"Light" = "Light";

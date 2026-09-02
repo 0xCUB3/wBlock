@@ -1004,3 +1004,5 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "When off, Dark Reader keeps websites dark in Light Mode." = "Kapatıldığında, Dark Reader, açık modda bile siteleri koyu tutar.";
 "Follow System" = "Sistemi takip et";
 "Always Dark" = "Her zaman koyu";
+"Dark" = "Koyu";
+"Light" = "Açık";
