@@ -409,10 +409,14 @@ struct ContentView: View {
         }
         #else
         ScrollView {
-            LazyVStack(spacing: 20) {
+            // Containers stay eager: a LazyVStack nested inside another LazyVStack
+            // reports estimated heights that shift as rows realize, which made the
+            // scrollbar jump and left blank regional rows (#601, #602). Only the
+            // per-section row stacks below are lazy.
+            VStack(spacing: 20) {
                 statsCardsView
 
-                LazyVStack(spacing: 16) {
+                VStack(spacing: 16) {
                     ForEach(categorizedFilters, id: \.category) { item in
                         if item.category == .foreign {
                             macOSForeignFiltersView(filters: item.filters)
