@@ -28,7 +28,7 @@ require(updater.contains("pendingDownloads.removeAll()"), "a new check must drop
 require(updater.contains("pendingDownloads.store"), "detected updates must keep the checked payload")
 require(updater.contains("pendingDownloads.take"), "apply must reuse the checked payload instead of downloading again")
 
-let check = section(updater, "func checkForUpdates(filterLists:", "return filtersWithUpdates")
+let check = section(updater, "func checkForUpdates(\n        filterLists:", "return filtersWithUpdates")
 require(check.contains("await pendingDownloads.removeAll()"), "checkForUpdates clears leftover payloads first")
 
 let hasUpdate = section(updater, "private func hasUpdateNoMainActor(", "case .unchangedContent:")
