@@ -62,22 +62,17 @@ guard let reloadStart = contentBlockerService.range(of: "public static func relo
     exit(1)
 }
 let reloadFn = String(contentBlockerService[reloadStart.lowerBound..<retryStart.lowerBound])
+// Safari only recompiles a content blocker when it is asked to reload; it does
+// not re-read the rules file on launch. SFContentBlockerManager queues the
+// request without opening Safari, so the reload must never be skipped because
+// Safari is closed (3.0.0 did, and Safari kept serving stale rules).
 require(
-    reloadFn.contains("SafariProcessAvailability.isSafariOrTechnologyPreviewRunning"),
-    "content blocker reload must gate on Safari running"
+    !reloadFn.contains("SafariProcessAvailability.isSafariOrTechnologyPreviewRunning"),
+    "content blocker reload must not gate on Safari running"
 )
 require(
-    reloadFn.contains("return .success(())"),
-    "skipped reload must succeed because rules are already persisted"
-)
-guard let guardRange = reloadFn.range(of: "guard SafariProcessAvailability"),
-      let sfRange = reloadFn.range(of: "SFContentBlockerManager.reloadContentBlocker") else {
-    require(false, "reload gating markers")
-    exit(1)
-}
-require(
-    guardRange.lowerBound < sfRange.lowerBound,
-    "Safari running guard must run before SFContentBlockerManager.reloadContentBlocker"
+    reloadFn.contains("SFContentBlockerManager.reloadContentBlocker"),
+    "content blocker reload must call SFContentBlockerManager.reloadContentBlocker"
 )
 
 let appDelegate = try read("wBlock/AppDelegate.swift")
