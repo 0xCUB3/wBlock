@@ -35,6 +35,41 @@ extension View {
 }
 
 #if os(macOS)
+/// The Filters and Userscripts tabs share one macOS toolbar shape: Add and
+/// Apply together, the enabled-only filter on its own, then search. On macOS 26
+/// fixed `ToolbarSpacer`s split those into separate glass islands (#608); older
+/// releases render the same buttons as one flat group.
+struct MacActionsToolbar<Primary: View, Filter: View, Search: View>: ViewModifier {
+    let isSearchExpanded: Bool
+    @ViewBuilder let primary: () -> Primary
+    @ViewBuilder let filter: () -> Filter
+    @ViewBuilder let search: () -> Search
+
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *) {
+            content.toolbar {
+                if !isSearchExpanded {
+                    ToolbarItemGroup(placement: .automatic) { primary() }
+                    ToolbarSpacer(.fixed, placement: .automatic)
+                    ToolbarItem(placement: .automatic) { filter() }
+                    ToolbarSpacer(.fixed, placement: .automatic)
+                }
+                ToolbarItem(placement: .automatic) { search() }
+            }
+        } else {
+            content.toolbar {
+                ToolbarItemGroup(placement: .automatic) {
+                    if !isSearchExpanded {
+                        primary()
+                        filter()
+                    }
+                }
+                ToolbarItem(placement: .automatic) { search() }
+            }
+        }
+    }
+}
+
 struct ToolbarSearchField: View {
     @Binding var text: String
     @Binding var isExpanded: Bool

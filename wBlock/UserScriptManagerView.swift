@@ -423,40 +423,39 @@ struct UserScriptManagerView: View {
                 }
             }
         }
-        .toolbar {
-            ToolbarItemGroup(placement: .automatic) {
-                if !showSearch {
-                    Button {
-                        showingAddScriptSheet = true
-                    } label: {
-                        Label("Add Userscript or Userstyle", systemImage: "plus")
-                    }
-
-                    applyChangesToolbarButton
-
-                    Button {
-                        showOnlyEnabled.toggle()
-                        ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
-                    } label: {
-                        Label(
-                            "Show Enabled Only",
-                            systemImage: showOnlyEnabled
-                                ? "line.3.horizontal.decrease.circle.fill"
-                                : "line.3.horizontal.decrease.circle")
-                    }
-                }
-            }
-
-            ToolbarItem(placement: .automatic) {
-                ToolbarSearchField(
-                    text: $searchText,
-                    isExpanded: $showSearch,
-                    prompt: "Search scripts"
-                )
-            }
-        }
+        .modifier(macScriptsToolbar)
         #endif
     }
+
+    #if os(macOS)
+    private var macScriptsToolbar: some ViewModifier {
+        MacActionsToolbar(isSearchExpanded: showSearch) {
+            Button {
+                showingAddScriptSheet = true
+            } label: {
+                Label("Add Userscript or Userstyle", systemImage: "plus")
+            }
+            applyChangesToolbarButton
+        } filter: {
+            Button {
+                showOnlyEnabled.toggle()
+                ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
+            } label: {
+                Label(
+                    "Show Enabled Only",
+                    systemImage: showOnlyEnabled
+                        ? "line.3.horizontal.decrease.circle.fill"
+                        : "line.3.horizontal.decrease.circle")
+            }
+        } search: {
+            ToolbarSearchField(
+                text: $searchText,
+                isExpanded: $showSearch,
+                prompt: "Search scripts"
+            )
+        }
+    }
+    #endif
 
     private func refreshScripts() {
         refreshScripts(userScriptManager.userScripts)

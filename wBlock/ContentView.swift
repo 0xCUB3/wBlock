@@ -335,39 +335,38 @@ struct ContentView: View {
                 minWidth: 480, idealWidth: 540, maxWidth: .infinity,
                 minHeight: 550, idealHeight: 720, maxHeight: .infinity
             )
-            .toolbar {
-                ToolbarItemGroup(placement: .automatic) {
-                    if !showFilterSearch {
-                        Button {
-                            showingAddFilterSheet = true
-                        } label: {
-                            Label("Add Filter", systemImage: "plus")
-                        }
-
-                        applyChangesToolbarButton
-
-                        Button {
-                            showOnlyEnabledLists.toggle()
-                        } label: {
-                            Label(
-                                "Show Enabled Only",
-                                systemImage: showOnlyEnabledLists
-                                    ? "line.3.horizontal.decrease.circle.fill"
-                                    : "line.3.horizontal.decrease.circle")
-                        }
-                    }
-                }
-
-                ToolbarItem(placement: .automatic) {
-                    ToolbarSearchField(
-                        text: $filterSearchText,
-                        isExpanded: $showFilterSearch,
-                        prompt: "Search filters"
-                    )
-                }
-            }
+            .modifier(macFiltersToolbar)
         #endif
     }
+
+    #if os(macOS)
+    private var macFiltersToolbar: some ViewModifier {
+        MacActionsToolbar(isSearchExpanded: showFilterSearch) {
+            Button {
+                showingAddFilterSheet = true
+            } label: {
+                Label("Add Filter", systemImage: "plus")
+            }
+            applyChangesToolbarButton
+        } filter: {
+            Button {
+                showOnlyEnabledLists.toggle()
+            } label: {
+                Label(
+                    "Show Enabled Only",
+                    systemImage: showOnlyEnabledLists
+                        ? "line.3.horizontal.decrease.circle.fill"
+                        : "line.3.horizontal.decrease.circle")
+            }
+        } search: {
+            ToolbarSearchField(
+                text: $filterSearchText,
+                isExpanded: $showFilterSearch,
+                prompt: "Search filters"
+            )
+        }
+    }
+    #endif
 
     private var nativeFiltersListView: some View {
         #if os(iOS)
