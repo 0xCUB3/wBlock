@@ -91,8 +91,8 @@ struct ApplyChangesProgressView: View {
             minWidth: 460,
             idealWidth: 500,
             maxWidth: 560,
-            minHeight: 320,
-            idealHeight: 360,
+            minHeight: mode == .result ? nil : 320,
+            idealHeight: mode == .result ? nil : 360,
             maxHeight: 640
         )
         #endif
@@ -112,14 +112,15 @@ struct ApplyChangesProgressView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
             }
         case .result:
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    if let summary = viewModel.state.summary {
-                        summaryCard(summary)
-                    }
+            // The summary is four stat cards and at most two captions; it never
+            // needs to scroll, and a scrolling container here stretches the sheet
+            // to the fixed macOS ideal height and leaves a blank band underneath.
+            VStack(alignment: .leading, spacing: 16) {
+                if let summary = viewModel.state.summary {
+                    summaryCard(summary)
                 }
-                .padding(20)
             }
+            .padding(20)
         case .failed:
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {

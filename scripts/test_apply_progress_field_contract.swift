@@ -42,7 +42,10 @@ require(!view.contains("progressOverviewCard"), "mid-run StatCards must be gone"
 require(!view.contains("private struct PhaseRow"), "legacy phase rows must be removed")
 require(view.contains("prefersLarge: mode == .review"), "only the update review list should request a large sheet")
 require(!view.contains("prefersTall"), "progress and result must share one medium sheet")
-require(view.contains("minHeight: 320"), "macOS apply sheets must use one height")
+require(view.contains("minHeight: mode == .result ? nil : 320"), "macOS progress sheets keep one height; the result sizes to its summary (#603)")
+let resultCase = view.components(separatedBy: "case .result:").dropFirst().first?
+    .components(separatedBy: "case .").first ?? ""
+require(!resultCase.contains("ScrollView"), "the result summary must not scroll or it stretches to the sheet height")
 require(!view.contains("mode == .review || mode == .progress"), "progress should not force a large sheet")
 require(!compat.contains(".height(560)"), "the extra tall detent must be gone")
 require(compat.contains("presentationDetents([.medium])"), "progress and result must stay on one medium detent")
