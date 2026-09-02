@@ -1008,3 +1008,4 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Dark" = "Sombre";
 "Light" = "Clair";
 "%@ → %@ Safari rules" = "%@ → %@ règles Safari";
+"Installed" = "Installés";

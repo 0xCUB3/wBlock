@@ -528,15 +528,35 @@ struct UserScriptManagerView: View {
 
     private var statsCardsView: some View {
         HStack(spacing: 12) {
-            StatCard(
-                title: "Scripts",
-                value: "\(totalScriptsCount)",
-                icon: "doc.text",
-                valueColor: .primary
-            )
             #if os(iOS)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            #endif
+            // Three cards overflow an iPhone-width row (#626), so scripts and
+            // styles share one card with two metrics once a style exists.
+            if totalStylesCount > 0 {
+                StatCard(
+                    title: "Installed",
+                    value: "\(totalScriptsCount + totalStylesCount)",
+                    icon: "doc.text",
+                    valueColor: .primary,
+                    metrics: [
+                        StatCardMetric(
+                            value: "\(totalScriptsCount)",
+                            icon: "doc.text",
+                            accessibilityLabel: String(localized: "Scripts")
+                        ),
+                        StatCardMetric(
+                            value: "\(totalStylesCount)",
+                            icon: "paintbrush",
+                            accessibilityLabel: String(localized: "Styles")
+                        ),
+                    ]
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                scriptsStatCard
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            #else
+            scriptsStatCard
 
             if totalStylesCount > 0 {
                 StatCard(
@@ -545,10 +565,8 @@ struct UserScriptManagerView: View {
                     icon: "paintbrush",
                     valueColor: .primary
                 )
-                #if os(iOS)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                #endif
             }
+            #endif
 
             StatCard(
                 title: "Enabled",
@@ -561,6 +579,15 @@ struct UserScriptManagerView: View {
             #endif
         }
         .padding(.horizontal)
+    }
+
+    private var scriptsStatCard: some View {
+        StatCard(
+            title: "Scripts",
+            value: "\(totalScriptsCount)",
+            icon: "doc.text",
+            valueColor: .primary
+        )
     }
 
     private func displaySectionHeader(_ section: UserScriptDisplaySection) -> some View {
@@ -1195,7 +1222,8 @@ struct UserScriptInfoView: View {
                         )
                         .padding()
                     }
-                    .navigationTitle(script.localizedDisplayName)
+                    // The sidebar already shows the name as its heading; a nav
+                    // title on top of it read as a duplicate (#628).
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .navigationBarTrailing) {

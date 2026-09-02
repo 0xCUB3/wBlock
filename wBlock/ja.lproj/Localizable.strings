@@ -1008,3 +1008,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark" = "ダーク";
 "Light" = "ライト";
 "%@ → %@ Safari rules" = "%@ → Safariルール%@件";
+"Installed" = "インストール済み";

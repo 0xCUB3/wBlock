@@ -1008,3 +1008,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark" = "Σκούρο";
 "Light" = "Φωτεινό";
 "%@ → %@ Safari rules" = "%@ → %@ κανόνες Safari";
+"Installed" = "Εγκατεστημένα";

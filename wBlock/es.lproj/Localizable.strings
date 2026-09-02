@@ -1008,3 +1008,4 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Dark" = "Oscuro";
 "Light" = "Claro";
 "%@ → %@ Safari rules" = "%@ → %@ reglas de Safari";
+"Installed" = "Instalados";
