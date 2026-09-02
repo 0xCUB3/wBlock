@@ -1009,3 +1009,11 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Settings restored. Applying now." = "Ayarlar geri yüklendi. Şimdi uygulanıyor.";
 "Cosmetic Filtering" = "Kozmetik Filtreleme";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Reklam yer tutucularını ve diğer sayfa öğelerini CSS ile gizler. Kapatıldığında yalnızca ağ engelleme kalır; bu daha az kural ve daha az CPU kullanır.";
+"Enable DeArrow" = "DeArrow’u etkinleştir";
+"Replace Titles" = "Başlıkları değiştir";
+"Replace Thumbnails" = "Küçük resimleri değiştir";
+"Random Frame When No Thumbnail" = "Küçük resim yoksa rastgele kare";
+"Show Original on Hover" = "Üzerine gelince orijinali göster";
+"About DeArrow" = "DeArrow hakkında";
+"DeArrow: On" = "DeArrow: açık";
+"DeArrow: Off" = "DeArrow: kapalı";

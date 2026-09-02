@@ -1010,3 +1010,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Settings restored. Applying now." = "Настройки восстановлены. Применяются.";
 "Cosmetic Filtering" = "Косметическая фильтрация";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Скрывает места под рекламу и другие элементы страницы с помощью CSS. Если выключить, останется только сетевая блокировка, которая использует меньше правил и меньше нагружает процессор.";
+"Enable DeArrow" = "Включить DeArrow";
+"Replace Titles" = "Заменять названия";
+"Replace Thumbnails" = "Заменять значки";
+"Random Frame When No Thumbnail" = "Случайный кадр, если нет миниатюры";
+"Show Original on Hover" = "Показывать оригинал при наведении";
+"About DeArrow" = "О DeArrow";
+"DeArrow: On" = "DeArrow: вкл.";
+"DeArrow: Off" = "DeArrow: выкл.";

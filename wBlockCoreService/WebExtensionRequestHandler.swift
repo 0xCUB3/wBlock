@@ -1034,15 +1034,27 @@ public enum WebExtensionRequestHandler {
         return response
     }
 
-    private static func configuredExecutableContent(for script: UserScript) -> String {
-        let executableContent = script.executableContent
-        guard DarkReaderAppearancePreference.matches(scriptURL: script.url) else {
-            return executableContent
+    /// Built-ins whose behaviour is configured from the app (Dark Reader's
+    /// appearance, Tube Cleaner's DeArrow settings) get the preference
+    /// prepended as a constant. Returns nil for every other script.
+    private static func runtimeConfiguredExecutableContent(for script: UserScript) -> String? {
+        if DarkReaderAppearancePreference.matches(scriptURL: script.url) {
+            return DarkReaderAppearancePreference.configuredExecutableContent(
+                script.executableContent,
+                followsSystemAppearance: DarkReaderAppearancePreference.followsSystemAppearance()
+            )
         }
-        return DarkReaderAppearancePreference.configuredExecutableContent(
-            executableContent,
-            followsSystemAppearance: DarkReaderAppearancePreference.followsSystemAppearance()
-        )
+        if TubeCleanerDeArrowPreference.matches(scriptURL: script.url) {
+            return TubeCleanerDeArrowPreference.configuredExecutableContent(
+                script.executableContent,
+                settings: TubeCleanerDeArrowPreference.settings()
+            )
+        }
+        return nil
+    }
+
+    private static func configuredExecutableContent(for script: UserScript) -> String {
+        runtimeConfiguredExecutableContent(for: script) ?? script.executableContent
     }
 
     private static func userScriptDescriptor(_ script: UserScript) -> [String: Any] {
@@ -1079,10 +1091,8 @@ public enum WebExtensionRequestHandler {
             "downloadURL": script.downloadURL ?? "",
             "resourceNames": resourceNames
         ]
-        if DarkReaderAppearancePreference.matches(scriptURL: script.url) {
-            descriptor["contentDigest"] = UserStylePreprocessorService.digest(
-                configuredExecutableContent(for: script)
-            )
+        if let configured = runtimeConfiguredExecutableContent(for: script) {
+            descriptor["contentDigest"] = UserStylePreprocessorService.digest(configured)
         }
         return descriptor
     }
@@ -1598,12 +1608,10 @@ public enum WebExtensionRequestHandler {
                 return
             }
             if hasContentDigest {
-                guard DarkReaderAppearancePreference.matches(scriptURL: script.url),
+                guard let configured = runtimeConfiguredExecutableContent(for: script),
                       let requestedContentDigest,
                       requestedContentDigest.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil,
-                      requestedContentDigest == UserStylePreprocessorService.digest(
-                          configuredExecutableContent(for: script)
-                      )
+                      requestedContentDigest == UserStylePreprocessorService.digest(configured)
                 else {
                     context.completeRequest(returningItems: [createResponse(with: [
                         "ok": false, "error": "userscript-integrity-mismatch",
@@ -1692,16 +1700,12 @@ public enum WebExtensionRequestHandler {
                     return "\(revision):\(UserStylePreprocessorService.digest(body))"
                 }()
                 let cacheKey = "content:\(scriptId.uuidString):\(pageURL ?? ""):\(artifactIdentity)"
-                if DarkReaderAppearancePreference.matches(scriptURL: script.url) {
-                    let followsSystemAppearance = DarkReaderAppearancePreference.followsSystemAppearance()
-                    let executableContent = DarkReaderAppearancePreference.configuredExecutableContent(
-                        script.executableContent,
-                        followsSystemAppearance: followsSystemAppearance
-                    )
-                    let mode = followsSystemAppearance ? "system" : "dark"
+                if let configured = runtimeConfiguredExecutableContent(for: script) {
+                    // Key on the configured body so a preference change is
+                    // served fresh instead of from the previous payload.
                     data = userScriptPayloadDataCache.data(
-                        for: "\(cacheKey):dark-reader-\(mode)",
-                        source: executableContent
+                        for: "\(cacheKey):configured-\(UserStylePreprocessorService.digest(configured))",
+                        source: configured
                     )
                 } else {
                     data = userScriptPayloadDataCache.data(for: cacheKey, source: script.content) { source in

@@ -57,7 +57,7 @@ guard view.contains("DarkReaderAppearancePicker")
     && view.contains("if script.isDarkReader")
 else { fail("Dark Reader appearance setting must use a compact list-row menu") }
 guard handler.contains("configuredExecutableContent(for: script)")
-    && handler.contains("dark-reader-\\(mode)")
+    && handler.contains("configured-\\(UserStylePreprocessorService.digest(configured))")
     && handler.contains("DarkReaderAppearancePreference.followsSystemAppearance()")
 else { fail("Dark Reader preference does not cover inline and chunked payloads") }
 guard handler.contains("let injectInto = script.injectInto == \"auto\" && hasUnsafeWindowGrant")
@@ -66,7 +66,7 @@ guard handler.contains("let injectInto = script.injectInto == \"auto\" && hasUns
 else { fail("canonical Dark Reader descriptor must retain content injection and its digest") }
 guard handler.contains("requestedContentDigest")
     && handler.contains("userscript-integrity-mismatch")
-    && handler.contains("DarkReaderAppearancePreference.matches(scriptURL: script.url)")
+    && handler.contains("runtimeConfiguredExecutableContent(for: script)")
     && background.contains("message.contentDigest")
 else { fail("Dark Reader digest validation contract is missing") }
 guard preference.contains("__wblockDarkReaderFollowsSystemAppearance")

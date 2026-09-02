@@ -1010,3 +1010,11 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Settings restored. Applying now." = "Ajustes restaurados. Aplicando ahora.";
 "Cosmetic Filtering" = "Filtrado cosmético";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Oculta los espacios de anuncios y otros elementos de la página con CSS. Si se desactiva, solo queda el bloqueo de red, que usa menos reglas y menos CPU.";
+"Enable DeArrow" = "Activar DeArrow";
+"Replace Titles" = "Sustituir títulos";
+"Replace Thumbnails" = "Sustituir miniaturas";
+"Random Frame When No Thumbnail" = "Fotograma aleatorio si no hay miniatura";
+"Show Original on Hover" = "Mostrar original al pasar el cursor";
+"About DeArrow" = "Acerca de DeArrow";
+"DeArrow: On" = "DeArrow: activado";
+"DeArrow: Off" = "DeArrow: desactivado";

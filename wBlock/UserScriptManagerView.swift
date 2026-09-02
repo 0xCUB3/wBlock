@@ -51,6 +51,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let isCustom: Bool
     let isBeta: Bool
     let isDarkReader: Bool
+    let isTubeCleaner: Bool
 
     init(
         script: UserScript,
@@ -58,7 +59,8 @@ private struct UserScriptListItem: Identifiable, Hashable {
         isBuiltIn: Bool,
         builtInDisplayRole: BuiltInUserScriptDisplayRole?,
         isBeta: Bool = false,
-        isDarkReader: Bool = false
+        isDarkReader: Bool = false,
+        isTubeCleaner: Bool = false
     ) {
         id = script.id
         name = script.name
@@ -88,6 +90,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
         isCustom = !isBuiltIn
         self.isBeta = isBeta
         self.isDarkReader = isDarkReader
+        self.isTubeCleaner = isTubeCleaner
     }
 }
 
@@ -470,7 +473,8 @@ struct UserScriptManagerView: View {
                 isBuiltIn: userScriptManager.isDefaultUserScript(script),
                 builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
                 isBeta: userScriptManager.isBeta(for: script),
-                isDarkReader: userScriptManager.isDarkReader(script)
+                isDarkReader: userScriptManager.isDarkReader(script),
+                isTubeCleaner: userScriptManager.isTubeCleaner(script)
             )
         }
     }
@@ -786,6 +790,15 @@ struct UserScriptManagerView: View {
                         followsSystemAppearance: Binding(
                             get: { userScriptManager.darkReaderFollowsSystemAppearance },
                             set: { userScriptManager.setDarkReaderFollowsSystemAppearance($0) }
+                        )
+                    )
+                }
+
+                if script.isTubeCleaner {
+                    TubeCleanerDeArrowPicker(
+                        settings: Binding(
+                            get: { userScriptManager.tubeCleanerDeArrow },
+                            set: { userScriptManager.setTubeCleanerDeArrow($0) }
                         )
                     )
                 }
@@ -1580,6 +1593,52 @@ private struct DarkReaderAppearancePicker: View {
         } else {
             Text(title)
         }
+    }
+}
+
+/// DeArrow settings for the built-in Tube Cleaner, shown as a compact menu on
+/// its list row (#611). The pill reads On/Off; the menu holds the toggles the
+/// script's own "DA" panel used to offer.
+private struct TubeCleanerDeArrowPicker: View {
+    @Binding var settings: TubeCleanerDeArrowPreference.Settings
+
+    var body: some View {
+        Menu {
+            Toggle("Enable DeArrow", isOn: $settings.enabled)
+            Divider()
+            Toggle("Replace Titles", isOn: $settings.replaceTitles)
+                .disabled(!settings.enabled)
+            Toggle("Replace Thumbnails", isOn: $settings.replaceThumbnails)
+                .disabled(!settings.enabled)
+            Toggle("Random Frame When No Thumbnail", isOn: $settings.randomThumbnails)
+                .disabled(!settings.enabled || !settings.replaceThumbnails)
+            Toggle("Show Original on Hover", isOn: $settings.showOriginalOnHover)
+                .disabled(!settings.enabled)
+            Divider()
+            Link("About DeArrow", destination: URL(string: "https://dearrow.ajay.app/")!)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: settings.enabled ? "arrow.uturn.down.circle.fill" : "arrow.uturn.down.circle")
+                    .imageScale(.small)
+                Text(settings.enabled ? "DeArrow: On" : "DeArrow: Off")
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.primary.opacity(0.06))
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(settings.enabled ? "DeArrow: On" : "DeArrow: Off")
+        .padding(.top, 2)
     }
 }
 

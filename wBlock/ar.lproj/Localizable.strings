@@ -1010,3 +1010,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Settings restored. Applying now." = "تمت استعادة الإعدادات. يتم التطبيق الآن.";
 "Cosmetic Filtering" = "التصفية التجميلية";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "يخفي مواضع الإعلانات وعناصر الصفحة الأخرى باستخدام CSS. عند إيقافه يبقى حجب الشبكة فقط، وهو يستخدم قواعد أقل ومعالجًا أقل.";
+"Enable DeArrow" = "تفعيل DeArrow";
+"Replace Titles" = "استبدال العناوين";
+"Replace Thumbnails" = "استبدال الصور المصغّرة";
+"Random Frame When No Thumbnail" = "إطار عشوائي عند عدم وجود صورة مصغّرة";
+"Show Original on Hover" = "إظهار الأصل عند التمرير";
+"About DeArrow" = "حول DeArrow";
+"DeArrow: On" = "DeArrow: مفعّل";
+"DeArrow: Off" = "DeArrow: معطّل";

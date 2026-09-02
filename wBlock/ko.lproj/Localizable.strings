@@ -1010,3 +1010,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Settings restored. Applying now." = "설정을 복원했습니다. 지금 적용 중입니다.";
 "Cosmetic Filtering" = "코스메틱 필터링";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "광고 자리 표시자와 기타 페이지 요소를 CSS로 숨깁니다. 끄면 네트워크 차단만 남아 규칙 수와 CPU 사용량이 줄어듭니다.";
+"Enable DeArrow" = "DeArrow 활성화";
+"Replace Titles" = "제목 바꾸기";
+"Replace Thumbnails" = "미리보기 이미지 바꾸기";
+"Random Frame When No Thumbnail" = "미리보기가 없으면 임의의 프레임";
+"Show Original on Hover" = "마우스를 올리면 원본 표시";
+"About DeArrow" = "DeArrow 정보";
+"DeArrow: On" = "DeArrow: 켜짐";
+"DeArrow: Off" = "DeArrow: 꺼짐";

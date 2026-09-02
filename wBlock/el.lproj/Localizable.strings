@@ -1010,3 +1010,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Settings restored. Applying now." = "Οι ρυθμίσεις επαναφέρθηκαν. Εφαρμόζονται τώρα.";
 "Cosmetic Filtering" = "Αισθητικό φιλτράρισμα";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Κρύβει θέσεις διαφημίσεων και άλλα στοιχεία σελίδας με CSS. Αν απενεργοποιηθεί, μένει μόνο ο αποκλεισμός δικτύου, που χρησιμοποιεί λιγότερους κανόνες και λιγότερη CPU.";
+"Enable DeArrow" = "Ενεργοποίηση DeArrow";
+"Replace Titles" = "Αντικατάσταση τίτλων";
+"Replace Thumbnails" = "Αντικατάσταση μικρογραφιών";
+"Random Frame When No Thumbnail" = "Τυχαίο καρέ χωρίς μικρογραφία";
+"Show Original on Hover" = "Εμφάνιση πρωτότυπου με το ποντίκι";
+"About DeArrow" = "Σχετικά με το DeArrow";
+"DeArrow: On" = "DeArrow: ενεργό";
+"DeArrow: Off" = "DeArrow: ανενεργό";

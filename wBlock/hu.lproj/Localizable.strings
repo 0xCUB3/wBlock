@@ -1010,3 +1010,11 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Settings restored. Applying now." = "Beállítások visszaállítva. Alkalmazás folyamatban.";
 "Cosmetic Filtering" = "Kozmetikai szűrés";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "CSS-sel elrejti a hirdetéshelyeket és más oldalelemeket. Kikapcsolva csak a hálózati blokkolás marad, amely kevesebb szabályt és kevesebb CPU-t használ.";
+"Enable DeArrow" = "DeArrow bekapcsolása";
+"Replace Titles" = "Címek cseréje";
+"Replace Thumbnails" = "Bélyegképek cseréje";
+"Random Frame When No Thumbnail" = "Véletlen képkocka bélyegkép nélkül";
+"Show Original on Hover" = "Eredeti mutatása rámutatáskor";
+"About DeArrow" = "A DeArrow névjegye";
+"DeArrow: On" = "DeArrow: be";
+"DeArrow: Off" = "DeArrow: ki";

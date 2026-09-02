@@ -1010,3 +1010,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Settings restored. Applying now." = "設定を復元しました。適用しています。";
 "Cosmetic Filtering" = "コスメティックフィルタリング";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "広告の枠やその他のページ要素を CSS で非表示にします。オフにするとネットワークブロックのみになり、ルール数と CPU 使用量が減ります。";
+"Enable DeArrow" = "DeArrowを有効にする";
+"Replace Titles" = "タイトルを置き換える";
+"Replace Thumbnails" = "サムネイルを置き換える";
+"Random Frame When No Thumbnail" = "サムネイルがない場合はランダムなフレーム";
+"Show Original on Hover" = "ホバー時に元を表示";
+"About DeArrow" = "DeArrowについて";
+"DeArrow: On" = "DeArrow: オン";
+"DeArrow: Off" = "DeArrow: オフ";

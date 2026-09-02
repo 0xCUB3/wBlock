@@ -270,6 +270,7 @@ public class UserScriptManager: ObservableObject {
     @Published public private(set) var isPrefetchingDefaultMetadata = false
     @Published public private(set) var darkReaderFollowsSystemAppearance =
         DarkReaderAppearancePreference.followsSystemAppearance()
+    @Published public private(set) var tubeCleanerDeArrow = TubeCleanerDeArrowPreference.settings()
 
     private let userScriptSiteDisabledDefaultsKey = "userScriptDisabledHostsByID"
     private let legacyPopupBlockerMigrationDefaultsKey = "didCompleteLegacyPopupBlockerMigration"
@@ -776,6 +777,17 @@ public class UserScriptManager: ObservableObject {
 
     public func isDarkReader(_ userScript: UserScript) -> Bool {
         DarkReaderAppearancePreference.matches(scriptURL: userScript.url)
+    }
+
+    public func isTubeCleaner(_ userScript: UserScript) -> Bool {
+        TubeCleanerDeArrowPreference.matches(scriptURL: userScript.url)
+    }
+
+    public func setTubeCleanerDeArrow(_ settings: TubeCleanerDeArrowPreference.Settings) {
+        guard tubeCleanerDeArrow != settings else { return }
+        TubeCleanerDeArrowPreference.setSettings(settings)
+        tubeCleanerDeArrow = settings
+        Self.invalidateDocumentStartExecutionCache()
     }
 
     public func setDarkReaderFollowsSystemAppearance(_ followsSystemAppearance: Bool) {

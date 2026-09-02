@@ -1010,3 +1010,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Settings restored. Applying now." = "设置已恢复。正在应用。";
 "Cosmetic Filtering" = "外观过滤";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "使用 CSS 隐藏广告占位符和其他页面元素。关闭后仅保留网络拦截，规则更少，占用 CPU 也更少。";
+"Enable DeArrow" = "启用 DeArrow";
+"Replace Titles" = "替换标题";
+"Replace Thumbnails" = "替换缩略图";
+"Random Frame When No Thumbnail" = "无缩略图时使用随机画面";
+"Show Original on Hover" = "悬停时显示原始内容";
+"About DeArrow" = "关于 DeArrow";
+"DeArrow: On" = "DeArrow：开";
+"DeArrow: Off" = "DeArrow：关";

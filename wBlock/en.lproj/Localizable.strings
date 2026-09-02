@@ -1009,3 +1009,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Settings restored. Applying now." = "Settings restored. Applying now.";
 "Cosmetic Filtering" = "Cosmetic Filtering";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU.";
+"Enable DeArrow" = "Enable DeArrow";
+"Replace Titles" = "Replace Titles";
+"Replace Thumbnails" = "Replace Thumbnails";
+"Random Frame When No Thumbnail" = "Random Frame When No Thumbnail";
+"Show Original on Hover" = "Show Original on Hover";
+"About DeArrow" = "About DeArrow";
+"DeArrow: On" = "DeArrow: On";
+"DeArrow: Off" = "DeArrow: Off";
