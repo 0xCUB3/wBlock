@@ -49,6 +49,31 @@ struct FilterRefreshPlannerTests {
         )
         check(recentDownload.map { $0.id } == [missing.id], "a just-downloaded list must not be fetched again")
 
+        // A run that verified some lists and then failed must resume with only
+        // the unverified ones, even though the global check never succeeded.
+        let verified = list("https://example.com/verified.txt")
+        let unverified = list("https://example.com/unverified.txt")
+        let bothExist: (FilterList) -> Bool = { $0.id == verified.id || $0.id == unverified.id }
+        let resumed = FilterRefreshPlanner.filtersRequiringNetworkRefresh(
+            [verified, unverified, missing],
+            fileExists: bothExist,
+            lastSuccessfulCheck: stale,
+            lastChecked: { $0.id == verified.id ? recent : nil },
+            interval: 6 * 3600,
+            now: now
+        )
+        check(resumed.map { $0.id } == [unverified.id, missing.id], "a partly failed run must resume from the unverified lists")
+
+        let expired = FilterRefreshPlanner.filtersRequiringNetworkRefresh(
+            [verified],
+            fileExists: bothExist,
+            lastSuccessfulCheck: nil,
+            lastChecked: { _ in stale },
+            interval: 6 * 3600,
+            now: now
+        )
+        check(expired.map { $0.id } == [verified.id], "a per-list check older than the interval must refresh again")
+
         let updater = try! String(
             contentsOf: URL(fileURLWithPath: "wBlock/FilterListUpdater.swift"),
             encoding: .utf8
@@ -65,6 +90,14 @@ struct FilterRefreshPlannerTests {
         check(
             updater.contains("if checkedAllExisting && allSucceeded"),
             "a failed or unavailable fetch must not mark the interval as successful"
+        )
+        check(
+            updater.contains("lastChecked: { lastCheckedByID[$0.id] }"),
+            "apply refresh must feed per-list check times into the planner"
+        )
+        check(
+            updater.contains("ProtobufDataManager.shared.setFilterLastChecked(verifiedTimes)"),
+            "verified lists must persist their check time even when other lists fail"
         )
         print("PASS")
     }

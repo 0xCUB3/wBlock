@@ -539,15 +539,20 @@ final class FilterListUpdater: @unchecked Sendable {
     }
 
     /// Refreshes filters that need updates and continues even if some downloads fail.
+    /// Every list that is verified gets its own check time, so when a run fails
+    /// partway a retry resumes with only the lists that were not verified
+    /// instead of starting over from the first list.
     func refreshFiltersIfNeeded(
         _ filters: [FilterList],
         progressCallback: @escaping (Float) async -> Void
     ) async -> RefreshFiltersResult {
         let (lastSuccessfulCheck, interval) = await refreshFreshnessWindow()
+        let lastCheckedByID = await perFilterLastChecked(for: filters)
         let filtersToRefresh = FilterRefreshPlanner.filtersRequiringNetworkRefresh(
             filters,
             fileExists: { loader.filterFileExists($0) },
             lastSuccessfulCheck: lastSuccessfulCheck,
+            lastChecked: { lastCheckedByID[$0.id] },
             interval: interval
         )
         guard !filtersToRefresh.isEmpty else {
@@ -558,12 +563,15 @@ final class FilterListUpdater: @unchecked Sendable {
         var updated: [FilterList] = []
         var failedCount = 0
         var allSucceeded = true
+        var verifiedTimes: [String: Int64] = [:]
+        let now = Int64(Date().timeIntervalSince1970)
         for (filter, result) in await refreshFilters(filtersToRefresh, progressCallback: progressCallback) {
             switch result {
             case .updated:
                 updated.append(filter)
+                verifiedTimes[filter.id.uuidString] = now
             case .unchanged:
-                break
+                verifiedTimes[filter.id.uuidString] = now
             case .failed:
                 failedCount += 1
                 allSucceeded = false
@@ -571,11 +579,25 @@ final class FilterListUpdater: @unchecked Sendable {
                 allSucceeded = false
             }
         }
+        await ProtobufDataManager.shared.setFilterLastChecked(verifiedTimes)
         let checkedAllExisting = lastSuccessfulCheck.map { Date().timeIntervalSince($0) >= interval } ?? true
         if checkedAllExisting && allSucceeded {
             await markRefreshCheckSuccessful()
         }
         return RefreshFiltersResult(updated: updated, failedCount: failedCount)
+    }
+
+    private func perFilterLastChecked(for filters: [FilterList]) async -> [UUID: Date] {
+        await ProtobufDataManager.shared.waitUntilLoaded()
+        return await MainActor.run {
+            var result: [UUID: Date] = [:]
+            for filter in filters {
+                if let time = ProtobufDataManager.shared.getFilterLastChecked(filter.id.uuidString) {
+                    result[filter.id] = Date(timeIntervalSince1970: TimeInterval(time))
+                }
+            }
+            return result
+        }
     }
 
     private func refreshFreshnessWindow() async -> (Date?, TimeInterval) {

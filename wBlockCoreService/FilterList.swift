@@ -189,10 +189,13 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
 public enum FilterRefreshPlanner {
     /// Apply should not re-download lists that already exist when a successful
     /// check happened inside the auto-update interval. Missing files still fetch.
+    /// `lastChecked` is the per-list time of the last successful check, so a run
+    /// that partly failed resumes with only the lists that were not verified.
     public static func filtersRequiringNetworkRefresh(
         _ filters: [FilterList],
         fileExists: (FilterList) -> Bool,
         lastSuccessfulCheck: Date?,
+        lastChecked: (FilterList) -> Date? = { _ in nil },
         interval: TimeInterval,
         now: Date = Date()
     ) -> [FilterList] {
@@ -207,6 +210,11 @@ public enum FilterRefreshPlanner {
             if let lastUpdated = filter.lastUpdated,
                interval > 0,
                now.timeIntervalSince(lastUpdated) < interval {
+                return false
+            }
+            if let checked = lastChecked(filter),
+               interval > 0,
+               now.timeIntervalSince(checked) < interval {
                 return false
             }
             return true

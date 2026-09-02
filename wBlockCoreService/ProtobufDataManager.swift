@@ -209,6 +209,7 @@ private func mergePersistedChanges(
     mergeField(&autoUpdate.runningSinceTimestamp, baseline: base.runningSinceTimestamp, persisted: theirs.runningSinceTimestamp)
     mergeMap(&autoUpdate.filterEtags, baseline: base.filterEtags, persisted: theirs.filterEtags)
     mergeMap(&autoUpdate.filterLastModified, baseline: base.filterLastModified, persisted: theirs.filterLastModified)
+    mergeMap(&autoUpdate.filterLastChecked, baseline: base.filterLastChecked, persisted: theirs.filterLastChecked)
     mergeField(&autoUpdate.bgAppRefresh, baseline: base.bgAppRefresh, persisted: theirs.bgAppRefresh)
     mergeField(&autoUpdate.bgProcessing, baseline: base.bgProcessing, persisted: theirs.bgProcessing)
     mergeField(&autoUpdate.silentPush, baseline: base.silentPush, persisted: theirs.silentPush)
@@ -747,6 +748,24 @@ public class ProtobufDataManager: ObservableObject {
     @MainActor
     public func setFilterValidators(_ uuid: String, etag: String?, lastModified: String?) async {
         await setFilterValidators(uuid, etag: etag, lastModified: lastModified, updateETag: true, updateLastModified: true)
+    }
+
+    /// Unix time of the last successful conditional check for a filter UUID.
+    public func getFilterLastChecked(_ uuid: String) -> Int64? {
+        guard let value = appData.autoUpdate.filterLastChecked[uuid], value > 0 else { return nil }
+        return value
+    }
+
+    /// Records successful per-filter checks with one write so a retried apply
+    /// can resume from the lists that actually failed.
+    @MainActor
+    public func setFilterLastChecked(_ times: [String: Int64]) async {
+        guard !times.isEmpty else { return }
+        await updateData { data in
+            for (uuid, time) in times {
+                data.autoUpdate.filterLastChecked[uuid] = time
+            }
+        }
     }
 
     /// Batch-updates validators for multiple filters with one persisted write.

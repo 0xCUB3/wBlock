@@ -210,4 +210,8 @@ message AutoUpdateMetadata {
   // proto3 default (false) preserves the historical behavior of running the
   // agent whenever auto-update is enabled.
   bool background_agent_disabled = 17;
+  // UUID -> Unix time of the last successful conditional check for that list.
+  // Lets a retried apply skip lists that were already verified inside the
+  // auto-update interval instead of re-checking every enabled list.
+  map<string, int64> filter_last_checked = 18;
 }
