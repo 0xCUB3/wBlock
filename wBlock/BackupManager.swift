@@ -25,6 +25,7 @@ struct WBlockBackup: Codable, Sendable {
     var autoUpdateIntervalHours: Double?
     var lockPortraitOrientation: Bool?
     var appearance: String?
+    var cosmeticFilteringEnabled: Bool?
     struct FilterSelection: Codable, Sendable {
         var url: String
         var isSelected: Bool
@@ -181,7 +182,8 @@ struct WBlockBackup: Codable, Sendable {
         autoUpdateEnabled: Bool? = nil,
         autoUpdateIntervalHours: Double? = nil,
         lockPortraitOrientation: Bool? = nil,
-        appearance: String? = nil
+        appearance: String? = nil,
+        cosmeticFilteringEnabled: Bool? = nil
     ) {
         self.version = version
         self.createdAt = createdAt
@@ -199,6 +201,7 @@ struct WBlockBackup: Codable, Sendable {
         self.autoUpdateIntervalHours = autoUpdateIntervalHours
         self.lockPortraitOrientation = lockPortraitOrientation
         self.appearance = appearance
+        self.cosmeticFilteringEnabled = cosmeticFilteringEnabled
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -218,6 +221,7 @@ struct WBlockBackup: Codable, Sendable {
         case autoUpdateIntervalHours
         case lockPortraitOrientation
         case appearance
+        case cosmeticFilteringEnabled
     }
 
     init(from decoder: Decoder) throws {
@@ -238,6 +242,7 @@ struct WBlockBackup: Codable, Sendable {
         autoUpdateIntervalHours = try container.decodeIfPresent(Double.self, forKey: .autoUpdateIntervalHours)
         lockPortraitOrientation = try container.decodeIfPresent(Bool.self, forKey: .lockPortraitOrientation)
         appearance = try container.decodeIfPresent(String.self, forKey: .appearance)
+        cosmeticFilteringEnabled = try container.decodeIfPresent(Bool.self, forKey: .cosmeticFilteringEnabled)
     }
 }
 
@@ -342,7 +347,8 @@ enum BackupManager {
             autoUpdateEnabled: filterManager.dataManager.autoUpdateEnabled,
             autoUpdateIntervalHours: filterManager.dataManager.autoUpdateIntervalHours,
             lockPortraitOrientation: PortraitOrientationLock.isEnabled,
-            appearance: UserDefaults.standard.string(forKey: AppAppearance.storageKey)
+            appearance: UserDefaults.standard.string(forKey: AppAppearance.storageKey),
+            cosmeticFilteringEnabled: CosmeticFilteringPreference.isEnabled()
         )
     }
 
@@ -465,6 +471,9 @@ enum BackupManager {
         }
         if let appearance = backup.appearance, AppAppearance(rawValue: appearance) != nil {
             UserDefaults.standard.set(appearance, forKey: AppAppearance.storageKey)
+        }
+        if let cosmetic = backup.cosmeticFilteringEnabled {
+            CosmeticFilteringPreference.setEnabled(cosmetic)
         }
 
         // 7. Mark unapplied changes so user can apply

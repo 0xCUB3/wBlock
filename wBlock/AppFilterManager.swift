@@ -46,6 +46,7 @@ struct ApplyRunSnapshot {
     let disabledSites: [String]
     let activeZapperRules: [String: [String]]
     let disabledZapperDomains: Set<String>
+    let cosmeticFilteringEnabled: Bool
 }
 
 @MainActor
@@ -223,7 +224,8 @@ class AppFilterManager: ObservableObject {
             customFilterKeys: customFilterKeys,
             disabledSites: effectiveFilterDisabledSites(),
             activeZapperRules: dataManager.getActiveZapperRulesByHost(),
-            disabledZapperDomains: Set(dataManager.getDisabledZapperDomains())
+            disabledZapperDomains: Set(dataManager.getDisabledZapperDomains()),
+            cosmeticFilteringEnabled: CosmeticFilteringPreference.isEnabled()
         )
     }
 
@@ -236,6 +238,7 @@ class AppFilterManager: ObservableObject {
             || effectiveFilterDisabledSites() != snapshot.disabledSites
             || dataManager.getActiveZapperRulesByHost() != snapshot.activeZapperRules
             || Set(dataManager.getDisabledZapperDomains()) != snapshot.disabledZapperDomains
+            || CosmeticFilteringPreference.isEnabled() != snapshot.cosmeticFilteringEnabled
         refreshHasUnappliedChanges()
     }
 

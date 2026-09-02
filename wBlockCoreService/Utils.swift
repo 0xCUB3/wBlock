@@ -249,7 +249,8 @@ public enum ContentBlockerIncrementalCache {
     public static func computeInputSignature(
         filters: [FilterList],
         groupIdentifier: String,
-        extraRulesText: String? = nil
+        extraRulesText: String? = nil,
+        cosmeticFilteringEnabled: Bool = true
     ) -> String? {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
@@ -271,6 +272,10 @@ public enum ContentBlockerIncrementalCache {
             canonical.append("extra=\(extraFingerprint)\n")
         } else {
             canonical.append("extra=\n")
+        }
+        // Only the disabled state is recorded so existing signatures stay valid.
+        if !cosmeticFilteringEnabled {
+            canonical.append("cosmetic=off\n")
         }
 
         let digest = SHA256.hash(data: Data(canonical.utf8))

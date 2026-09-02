@@ -297,10 +297,32 @@ struct SettingsView: View {
                 Label("View Logs", systemImage: "doc.text.magnifyingglass")
             }
 
+            cosmeticFilteringControls
+
             logTimestampControls
 
             backupButtons
         }
+    }
+
+    private var cosmeticFilteringControls: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Toggle("Cosmetic Filtering", isOn: cosmeticFilteringBinding)
+                .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
+            Text("Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var cosmeticFilteringBinding: Binding<Bool> {
+        Binding(
+            get: { CosmeticFilteringPreference.isEnabled() },
+            set: { newValue in
+                CosmeticFilteringPreference.setEnabled(newValue)
+                filterManager.markNonSelectionChangesPending()
+            }
+        )
     }
 
     private var logTimestampControls: some View {

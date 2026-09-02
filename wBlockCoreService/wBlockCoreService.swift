@@ -393,9 +393,15 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     /// Derives an effective conversion hash from the caller-provided rules hash
     /// plus built-in compatibility-rules fingerprint so cache keys are invalidated
     /// when embedded compatibility rules change.
-    private static func effectiveRulesHashHex(baseRulesHashHex: String) -> String {
+    private static func effectiveRulesHashHex(
+        baseRulesHashHex: String,
+        cosmeticFilteringEnabled: Bool = true
+    ) -> String {
         let fingerprint = compatibilityRulesFingerprintHex()
-        let material = "\(baseRulesHashHex)|\(fingerprint)"
+        // Only the disabled state is folded in so existing caches stay valid.
+        let material = cosmeticFilteringEnabled
+            ? "\(baseRulesHashHex)|\(fingerprint)"
+            : "\(baseRulesHashHex)|\(fingerprint)|nocosmetic"
         let digest = SHA256.hash(data: Data(material.utf8))
         return digest.map { String(format: "%02x", $0) }.joined()
     }
@@ -1253,13 +1259,17 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         groupIdentifier: String,
         targetRulesFilename: String,
         disabledSites: [String],
+        cosmeticFilteringEnabled: Bool = true,
         isCancelled: (() -> Bool)? = nil
     ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
         let cancellationRequested = {
             Task.isCancelled || isCancelled?() == true
         }
         let sitesToUse = disabledSites
-        let effectiveRulesHash = effectiveRulesHashHex(baseRulesHashHex: rulesSHA256Hex)
+        let effectiveRulesHash = effectiveRulesHashHex(
+            baseRulesHashHex: rulesSHA256Hex,
+            cosmeticFilteringEnabled: cosmeticFilteringEnabled
+        )
 
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
             throw CocoaError(.fileNoSuchFile)
@@ -1324,7 +1334,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             throw CancellationError()
         }
         let combinedRules = try String(contentsOf: rulesFileURL, encoding: .utf8)
-        let effectiveRules = combinedRulesWithEmbeddedCompatibility(combinedRules)
+        var effectiveRules = combinedRulesWithEmbeddedCompatibility(combinedRules)
+        if !cosmeticFilteringEnabled {
+            effectiveRules = CosmeticFilteringPreference.strippingCosmeticRules(from: effectiveRules)
+        }
         if cancellationRequested() {
             throw CancellationError()
         }
@@ -1380,12 +1393,14 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         }
         let rulesFilename = targetInfo.rulesFilename
         let hasAffinityFilters = !affinitySnapshot.isEmpty
+        let cosmeticFilteringEnabled = CosmeticFilteringPreference.isEnabled(groupIdentifier: groupIdentifier)
         let currentSignature = hasAffinityFilters
             ? nil
             : ContentBlockerIncrementalCache.computeInputSignature(
                 filters: filters,
                 groupIdentifier: groupIdentifier,
-                extraRulesText: extraRulesText
+                extraRulesText: extraRulesText,
+                cosmeticFilteringEnabled: cosmeticFilteringEnabled
             )
         let storedSignature = ContentBlockerIncrementalCache.loadInputSignature(
             targetRulesFilename: rulesFilename,
@@ -1433,6 +1448,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             allTargets: allTargets,
             disabledSites: disabledSites,
             extraRulesText: extraRulesText,
+            cosmeticFilteringEnabled: cosmeticFilteringEnabled,
             groupIdentifier: groupIdentifier,
             isCancelled: isCancelled
         )
@@ -1510,6 +1526,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         allTargets: [ContentBlockerTargetInfo],
         disabledSites: [String],
         extraRulesText: String?,
+        cosmeticFilteringEnabled: Bool,
         groupIdentifier: String,
         isCancelled: (() -> Bool)?
     ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
@@ -1589,6 +1606,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             groupIdentifier: groupIdentifier,
             targetRulesFilename: targetInfo.rulesFilename,
             disabledSites: disabledSites,
+            cosmeticFilteringEnabled: cosmeticFilteringEnabled,
             isCancelled: cancellationRequested
         )
     }

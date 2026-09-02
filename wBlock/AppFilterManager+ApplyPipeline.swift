@@ -343,7 +343,8 @@ extension AppFilterManager {
             customFilterKeys: customFilterKeys,
             disabledSites: effectiveFilterDisabledSites(),
             activeZapperRules: dataManager.getActiveZapperRulesByHost(),
-            disabledZapperDomains: Set(dataManager.getDisabledZapperDomains())
+            disabledZapperDomains: Set(dataManager.getDisabledZapperDomains()),
+            cosmeticFilteringEnabled: CosmeticFilteringPreference.isEnabled()
         )
 
         // When both output-producing components are paused, keep the content blockers and
