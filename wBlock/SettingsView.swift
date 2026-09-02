@@ -734,10 +734,13 @@ extension SettingsView {
             }
 
             #if os(macOS)
+            // Attach the save panel to the window as a sheet. A free-floating
+            // panel let every extra click on Export stack another dialog (#625).
+            guard let window = NSApp.keyWindow ?? NSApp.mainWindow, window.attachedSheet == nil else { return }
             let panel = NSSavePanel()
             panel.allowedContentTypes = [.json]
             panel.nameFieldStringValue = exportFilename()
-            panel.begin { response in
+            panel.beginSheetModal(for: window) { response in
                 guard response == .OK, let url = panel.url else { return }
                 do {
                     try url.withSecurityScopedAccess { accessibleURL in
