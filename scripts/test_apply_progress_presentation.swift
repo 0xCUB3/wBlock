@@ -21,6 +21,7 @@ struct ApplyProgressPresentationTests {
         testCompletedNodesKeepDetails()
         testBarTracksVisibleStatus()
         testUpdatingShowsCurrentFilter()
+        testUpdatingShowsCheckedCount()
         print("PASS")
     }
 
@@ -331,6 +332,28 @@ struct ApplyProgressPresentationTests {
         check(presentation.accessibilityValue == presentation.progressLabel, "the bar VoiceOver value must only be overall progress")
         check(node(presentation, .converting)?.accessibilityValue.contains("Ads") == true, "the live row VoiceOver value must include the current target")
         check(node(presentation, .converting)?.accessibilityValue.contains("1/5") == true, "the live row VoiceOver value must include the fraction")
+    }
+
+    @MainActor
+    private static func testUpdatingShowsCheckedCount() {
+        let viewModel = ApplyChangesViewModel()
+        viewModel.beginProgressRun()
+        viewModel.updateFiltersChecked(12, total: 87)
+        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
+        check(presentation.fractionLabel == "12/87", "updating must show checked/total once counts exist")
+        checkAlmostEqual(presentation.progress, (12.0 / 87.0) / 6.0, "checked counts drive the phase fill")
+
+        viewModel.updateFiltersChecked(90, total: 87)
+        let clamped = ApplyProgressPresentation.make(from: viewModel.state)
+        check(clamped.fractionLabel == "87/87", "checked count clamps to the total")
+
+        viewModel.updateFiltersChecked(0, total: 0)
+        viewModel.updatePhaseProgress(0.5)
+        let fallback = ApplyProgressPresentation.make(from: viewModel.state)
+        check(
+            fallback.fractionLabel == ApplyProgressPresentation.percentString(0.5),
+            "a zero total falls back to the percent label"
+        )
     }
 
     @MainActor

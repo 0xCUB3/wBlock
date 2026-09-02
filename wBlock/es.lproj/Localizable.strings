@@ -204,6 +204,7 @@
 "Checking background agent…" = "Comprobando el agente en segundo plano…";
 "Checking for Updates" = "Buscando actualizaciones de filtros";
 "Checking for updates..." = "Buscando actualizaciones...";
+"Checking for updates... (%d/%d)" = "Buscando actualizaciones (%d/%d)...";
 "Checks for wBlock filter updates and applies them when available." = "Busca actualizaciones de filtros de wBlock y las aplica cuando están disponibles.";
 "Choose File…" = "Elegir archivo…";
 "Choose optional userscripts. These are disabled by default." = "Elige scripts de usuario opcionales. Están desactivados por defecto.";

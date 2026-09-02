@@ -439,8 +439,10 @@ extension AppFilterManager {
                 let refreshResult = await filterUpdater.refreshFiltersIfNeeded(
                     enabledFilters, progressCallback: { prog in
                         await MainActor.run {
-                            self.progress = prog * 0.1
-                            self.applyProgressViewModel.updatePhaseProgress(Double(prog))
+                            self.progress = prog.fraction * 0.1
+                            self.applyProgressViewModel.updateFiltersChecked(
+                                prog.completed, total: prog.total
+                            )
                         }
                         await Self.allowProgressUIRefresh()
                     }

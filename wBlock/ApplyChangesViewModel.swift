@@ -79,6 +79,9 @@ struct ApplyChangesState: Equatable {
     var convertingDone: Int = 0
     var reloadingDone: Int = 0
     var phaseProgress: Double = 0
+    /// Lists checked so far during the updating phase, shown as "12/87".
+    var filtersCheckedDone: Int = 0
+    var filtersCheckedTotal: Int = 0
     var filterUpdatesFound: Int = 0
     var phases: [ApplyChangesPhaseProgress] = ApplyChangesPhase.allCases.map {
         ApplyChangesPhaseProgress(phase: $0, status: .pending)
@@ -170,6 +173,18 @@ class ApplyChangesViewModel: ObservableObject {
 
     func updatePhaseProgress(_ progress: Double) {
         state.phaseProgress = (0...1).clamp(progress)
+    }
+
+    /// Records how many lists have been checked out of the total for this pass.
+    /// A zero total clears the counter so the phase falls back to a percent.
+    func updateFiltersChecked(_ done: Int, total: Int) {
+        let clampedTotal = max(0, total)
+        let clampedDone = min(max(0, done), clampedTotal)
+        state.filtersCheckedDone = clampedDone
+        state.filtersCheckedTotal = clampedTotal
+        if clampedTotal > 0 {
+            state.phaseProgress = Double(clampedDone) / Double(clampedTotal)
+        }
     }
 
     func updateStageDescription(_ description: String) {
@@ -423,7 +438,13 @@ struct ApplyProgressPresentation: Equatable {
     private static func fractionLabel(for step: ApplyChangesPhaseProgress, state: ApplyChangesState) -> String? {
         guard step.status == .active else { return nil }
         switch step.phase {
-        case .updating, .scripts:
+        case .updating:
+            if state.filtersCheckedTotal > 0 {
+                return "\(state.filtersCheckedDone)/\(state.filtersCheckedTotal)"
+            }
+            let value = (0...1).clamp(state.phaseProgress)
+            return value > 0 ? percentString(value) : nil
+        case .scripts:
             let value = (0...1).clamp(state.phaseProgress)
             return value > 0 ? percentString(value) : nil
         case .converting:

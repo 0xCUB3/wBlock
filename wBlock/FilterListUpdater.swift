@@ -153,7 +153,22 @@ final class FilterListUpdater: @unchecked Sendable {
         FilterListContentProcessing.parseMetadata(from: content, sanitize: true)
     }
 
-    func checkForUpdates(filterLists: [FilterList]) async -> [FilterList] {
+    /// Progress of a filter check or download pass, reported per finished list so
+    /// the UI can show "12/87" instead of a bare percentage.
+    struct FilterRefreshProgress: Sendable, Equatable {
+        let completed: Int
+        let total: Int
+
+        var fraction: Float {
+            guard total > 0 else { return 1 }
+            return min(1, Float(min(completed, total)) / Float(total))
+        }
+    }
+
+    func checkForUpdates(
+        filterLists: [FilterList],
+        progressCallback: (@Sendable (FilterRefreshProgress) async -> Void)? = nil
+    ) async -> [FilterList] {
         await pendingDownloads.removeAll()
         // Pre-fetch all validators on MainActor BEFORE entering the task group
         // to avoid deadlock (MainActor suspends waiting for group, child tasks
@@ -172,7 +187,11 @@ final class FilterListUpdater: @unchecked Sendable {
         let pendingValidatorUpdates = PendingValidatorUpdates()
         // Keep preflight update checks bounded so Apply Changes doesn't burst
         // one URLSession task per selected filter on iOS.
-        let filtersWithUpdates = await boundedConcurrentCompactMap(eligibleFilters) { filter in
+        var filtersWithUpdates: [FilterList] = []
+        var checkedCount = 0
+        let totalCount = eligibleFilters.count
+        await progressCallback?(FilterRefreshProgress(completed: 0, total: totalCount))
+        await boundedConcurrentForEach(eligibleFilters, operation: { filter in
             let validators = validatorsByID[filter.id] ?? (nil, nil)
             let hasUpdate = await self.hasUpdateNoMainActor(
                 for: filter,
@@ -180,7 +199,11 @@ final class FilterListUpdater: @unchecked Sendable {
                 pendingValidatorUpdates: pendingValidatorUpdates
             )
             return hasUpdate ? filter : nil
-        }
+        }, onResult: { (filter: FilterList?) in
+            if let filter { filtersWithUpdates.append(filter) }
+            checkedCount += 1
+            await progressCallback?(FilterRefreshProgress(completed: checkedCount, total: totalCount))
+        })
 
         // Apply deferred validator updates now that we're back on the caller's context
         let updates = await pendingValidatorUpdates.drain()
@@ -499,25 +522,27 @@ final class FilterListUpdater: @unchecked Sendable {
 
     private func refreshFilters(
         _ filters: [FilterList],
-        progressCallback: @escaping (Float) async -> Void
+        progressCallback: @escaping (FilterRefreshProgress) async -> Void
     ) async -> [(FilterList, FilterFetchResult)] {
         guard !filters.isEmpty else {
-            await progressCallback(1)
+            await progressCallback(FilterRefreshProgress(completed: 0, total: 0))
             return []
         }
 
-        let totalSteps = Float(filters.count)
+        let total = filters.count
         var resultsByID: [UUID: (FilterList, FilterFetchResult)] = [:]
-        var completed = 0
+        // Counts distinct lists that have a result, so the retry pass does not
+        // push the counter past the total.
+        await progressCallback(FilterRefreshProgress(completed: 0, total: total))
 
         func runDownloadPass(_ passFilters: [FilterList]) async {
             await boundedConcurrentForEach(passFilters, operation: { filter in
                 (filter, await self.fetchAndProcessFilterResult(filter))
             }, onResult: { result in
                 resultsByID[result.0.id] = result
-                completed += 1
-                let fraction = min(1, Float(min(completed, filters.count)) / totalSteps)
-                await progressCallback(fraction)
+                await progressCallback(
+                    FilterRefreshProgress(completed: min(resultsByID.count, total), total: total)
+                )
             })
         }
 
@@ -526,7 +551,7 @@ final class FilterListUpdater: @unchecked Sendable {
         if !filtersToRetry.isEmpty, !Task.isCancelled {
             await runDownloadPass(filtersToRetry)
         }
-        await progressCallback(1)
+        await progressCallback(FilterRefreshProgress(completed: total, total: total))
 
         return filters.map { filter in
             resultsByID[filter.id] ?? (filter, .unavailable)
@@ -544,7 +569,7 @@ final class FilterListUpdater: @unchecked Sendable {
     /// instead of starting over from the first list.
     func refreshFiltersIfNeeded(
         _ filters: [FilterList],
-        progressCallback: @escaping (Float) async -> Void
+        progressCallback: @escaping (FilterRefreshProgress) async -> Void
     ) async -> RefreshFiltersResult {
         let (lastSuccessfulCheck, interval) = await refreshFreshnessWindow()
         let lastCheckedByID = await perFilterLastChecked(for: filters)
@@ -556,7 +581,7 @@ final class FilterListUpdater: @unchecked Sendable {
             interval: interval
         )
         guard !filtersToRefresh.isEmpty else {
-            await progressCallback(1)
+            await progressCallback(FilterRefreshProgress(completed: 0, total: 0))
             return RefreshFiltersResult(updated: [], failedCount: 0)
         }
 
@@ -618,7 +643,8 @@ final class FilterListUpdater: @unchecked Sendable {
 
     /// Updates selected filters and returns the list of successfully updated filters
     func updateSelectedFilters(
-        _ selectedFilters: [FilterList], progressCallback: @escaping (Float) async -> Void
+        _ selectedFilters: [FilterList],
+        progressCallback: @escaping (FilterRefreshProgress) async -> Void
     ) async -> [FilterList] {
         await refreshFilters(selectedFilters, progressCallback: progressCallback).compactMap {
             $0.1.succeeded ? $0.0 : nil

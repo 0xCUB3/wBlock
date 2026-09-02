@@ -57,6 +57,7 @@ extension AppFilterManager {
         }
 
         statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Update check status")
+        progress = 0
 
         switch scope {
         case .filters:
@@ -94,7 +95,28 @@ extension AppFilterManager {
     private func checkEnabledFilterUpdates() async {
         await updateVersionsAndCounts()
         let enabledFilters = filterLists.filter { $0.isSelected }
-        availableUpdates = await filterUpdater.checkForUpdates(filterLists: enabledFilters)
+        availableUpdates = await filterUpdater.checkForUpdates(
+            filterLists: enabledFilters,
+            progressCallback: { checkProgress in
+                await MainActor.run {
+                    self.progress = checkProgress.fraction
+                    self.statusDescription = Self.checkingStatus(for: checkProgress)
+                }
+            }
+        )
+    }
+
+    /// "Checking for updates... (12/87)" while a manual check walks the lists.
+    static func checkingStatus(for checkProgress: FilterListUpdater.FilterRefreshProgress) -> String {
+        guard checkProgress.total > 0 else {
+            return LocalizedStrings.text("Checking for updates...", comment: "Update check status")
+        }
+        return LocalizedStrings.format(
+            "Checking for updates... (%d/%d)",
+            comment: "Update check status with checked/total list counts",
+            checkProgress.completed,
+            checkProgress.total
+        )
     }
 
     private func checkUserScriptUpdates() async {
@@ -128,8 +150,10 @@ extension AppFilterManager {
                     selectedFilters,
                     progressCallback: { newProgress in
                         await MainActor.run {
-                            self.progress = newProgress * 0.2
-                            self.applyProgressViewModel.updatePhaseProgress(Double(newProgress))
+                            self.progress = newProgress.fraction * 0.2
+                            self.applyProgressViewModel.updateFiltersChecked(
+                                newProgress.completed, total: newProgress.total
+                            )
                             self.applyProgressViewModel.updateStageDescription(downloadingStatus)
                         }
                         await Self.allowProgressUIRefresh()

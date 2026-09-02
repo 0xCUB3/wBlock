@@ -204,6 +204,7 @@
 "Checking background agent…" = "正在检查后台代理…";
 "Checking for Updates" = "正在检查过滤器更新";
 "Checking for updates..." = "正在检查更新...";
+"Checking for updates... (%d/%d)" = "正在检查更新 (%d/%d)...";
 "Checks for wBlock filter updates and applies them when available." = "检查 wBlock 过滤器更新，并在有可用更新时应用。";
 "Choose File…" = "选择文件…";
 "Choose optional userscripts. These are disabled by default." = "选择可选用户脚本。它们默认关闭。";
