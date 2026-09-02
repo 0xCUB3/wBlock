@@ -258,6 +258,7 @@ struct UserScriptManagerView: View {
                     scriptId: selection.id,
                     userScriptManager: userScriptManager
                 )
+                .infoSheetPresentationCompat()
             } else {
                 UserScriptContentView(
                     scriptId: selection.id,

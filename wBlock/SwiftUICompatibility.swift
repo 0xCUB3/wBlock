@@ -124,6 +124,18 @@ extension View {
         }
     }
 
+    /// Info popups hold a handful of rows, so on iPhone they open at half height
+    /// and can be pulled up when a long description needs it (#619).
+    @ViewBuilder
+    func infoSheetPresentationCompat() -> some View {
+        if #available(iOS 16.0, macOS 13.0, *) {
+            presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        } else {
+            self
+        }
+    }
+
     @ViewBuilder
     func largeSheetPresentationCompat() -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {
