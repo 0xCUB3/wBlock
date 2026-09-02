@@ -8,6 +8,7 @@
 import Dispatch
 import Foundation
 import CryptoKit
+import os.log
 
 public enum FilterListMetadataParser {
     private static let titleRegex = try! NSRegularExpression(
@@ -138,6 +139,103 @@ public enum FilterDirectivePolicy {
     }
 }
 
+public enum FilterListContentProcessing {
+    public static func parseMetadata(
+        from content: String,
+        maxLines: Int = 120,
+        sanitize: Bool = false
+    ) -> (title: String?, description: String?, version: String?) {
+        let rawMetadata = FilterListMetadataParser.parse(from: content, maxLines: maxLines)
+
+        let title = rawMetadata.title.map { value in
+            let rewritten = value.replacingOccurrences(of: "/", with: " & ")
+            return sanitize ? Self.sanitizeMetadata(rewritten) : rewritten
+        }
+        let description = rawMetadata.description.map { value in
+            let rewritten = value.replacingOccurrences(of: "/", with: " & ")
+            return sanitize ? Self.sanitizeMetadata(rewritten) : rewritten
+        }
+        let normalizedVersion = sanitize
+            ? rawMetadata.version.map { Self.sanitizeMetadata($0) }
+            : rawMetadata.version
+
+        let version: String?
+        if let normalizedVersion,
+            normalizedVersion.contains("%"),
+            (normalizedVersion.lowercased().contains("timestamp")
+                || normalizedVersion.lowercased().contains("date"))
+        {
+            version = nil
+        } else {
+            version = normalizedVersion
+        }
+
+        return (title: title, description: description, version: version)
+    }
+
+    public static func stripUnknownDirectives(
+        from content: String,
+        onStrip: ((String) -> Void)? = nil
+    ) -> String {
+        var result: [String] = []
+        for line in content.split(omittingEmptySubsequences: false, whereSeparator: { $0.isNewline }) {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            let originalLine = String(line)
+            guard FilterDirectivePolicy.shouldStripUnsupportedDirective(trimmed) else {
+                result.append(originalLine)
+                continue
+            }
+            onStrip?(String(trimmed.prefix(60)))
+        }
+        return result.joined(separator: "\n")
+    }
+
+    public static func localDataForComparison(filter: FilterList, containerURL: URL) -> Data? {
+        guard let localURL = ContentBlockerIncrementalCache.existingLocalFileURL(
+            for: filter,
+            containerURL: containerURL
+        ) else {
+            return nil
+        }
+        return try? Data(contentsOf: localURL)
+    }
+
+    public static func sanitizeMetadata(_ text: String) -> String {
+        guard !text.isEmpty else { return text }
+
+        var sanitized = text
+        for (regex, replacement) in sanitizationRegexes {
+            let range = NSRange(sanitized.startIndex..<sanitized.endIndex, in: sanitized)
+            sanitized = regex.stringByReplacingMatches(
+                in: sanitized,
+                options: [],
+                range: range,
+                withTemplate: replacement
+            )
+        }
+        return sanitized
+    }
+
+    private static let sanitizationRegexes: [(regex: NSRegularExpression, replacement: String)] = {
+        let patterns: [(pattern: String, replacement: String)] = [
+            ("malicious", "suspicious"),
+            ("malware", "unwanted software"),
+            ("spyware", "tracking software"),
+            ("harmful", "unwanted"),
+            ("dangerous", "risky"),
+        ]
+        return patterns.compactMap { pattern, replacement in
+            guard
+                let regex = try? NSRegularExpression(
+                    pattern: "\\b\(pattern)\\b",
+                    options: [.caseInsensitive]
+                )
+            else { return nil }
+            return (regex, replacement)
+        }
+    }()
+}
+
 public enum ContentBlockerIncrementalCache {
     // Bump when signature inputs/schema change so stale per-target signatures
     // do not suppress needed rebuilds.
@@ -242,15 +340,43 @@ public enum ContentBlockerIncrementalCache {
         let baseURL = containerURL.appendingPathComponent(baseRulesFilename(for: targetRulesFilename))
         let countURL = containerURL.appendingPathComponent("\(baseURL.lastPathComponent).count")
         let advancedURL = containerURL.appendingPathComponent(baseAdvancedRulesFilename(for: targetRulesFilename))
-        guard let data = try? Data(contentsOf: baseURL),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
-              let countText = try? String(contentsOf: countURL, encoding: .utf8),
+        // The base JSON is parsed once at the call site, which also compares
+        // the parsed rule count against the .count sidecar. Here we only check
+        // the sidecars and the outer array shape so a multi-megabyte file is
+        // not deserialized twice.
+        guard let countText = try? String(contentsOf: countURL, encoding: .utf8),
               let count = Int(countText.trimmingCharacters(in: .whitespacesAndNewlines)),
-              count == json.count,
+              count >= 0,
+              looksLikeJSONArrayFile(at: baseURL),
               FileManager.default.fileExists(atPath: advancedURL.path),
               (try? String(contentsOf: advancedURL, encoding: .utf8)) != nil
         else { return false }
         return true
+    }
+
+    /// Cheap structural check: a non-empty file whose first non-whitespace byte is
+    /// "[" and last non-whitespace byte is "]". Catches truncated or empty caches
+    /// without parsing the whole array.
+    private static func looksLikeJSONArrayFile(at url: URL) -> Bool {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return false }
+        defer { try? handle.close() }
+        guard let size = try? handle.seekToEnd(), size > 0 else { return false }
+        let window: UInt64 = 64
+        try? handle.seek(toOffset: 0)
+        guard let head = try? handle.read(upToCount: Int(min(window, size))),
+              let first = head.first(where: { !isJSONWhitespace($0) }),
+              first == UInt8(ascii: "[")
+        else { return false }
+        let tailStart = size > window ? size - window : 0
+        try? handle.seek(toOffset: tailStart)
+        guard let tail = try? handle.readToEnd(),
+              let last = tail.last(where: { !isJSONWhitespace($0) })
+        else { return false }
+        return last == UInt8(ascii: "]")
+    }
+
+    private static func isJSONWhitespace(_ byte: UInt8) -> Bool {
+        byte == 0x20 || byte == 0x0A || byte == 0x0D || byte == 0x09
     }
 
     public static func loadCachedAdvancedRules(
@@ -514,7 +640,7 @@ func measure<T>(label: String, block: () throws -> T) rethrows -> T {
     let elapsedNanoseconds = end.uptimeNanoseconds - start.uptimeNanoseconds
     let elapsedMilliseconds = Double(elapsedNanoseconds) / 1_000_000
     let formattedTime = String(format: "%.3f", elapsedMilliseconds)
-    NSLog("[\(label)] Elapsed Time: \(formattedTime) ms")
+    os_log(.debug, "[%{public}@] Elapsed Time: %{public}@ ms", label, formattedTime)
 
     return result
 }

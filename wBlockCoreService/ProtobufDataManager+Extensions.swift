@@ -196,65 +196,10 @@ extension ProtobufDataManager {
         }
     }
     
-    public func updateFilterList(_ filterList: FilterList) async {
-        var updatedData = await latestAppDataSnapshot()
-        
-        if let index = updatedData.filterLists.firstIndex(where: { $0.id == filterList.id.uuidString }) {
-            var protoFilterList = updatedData.filterLists[index]
-            protoFilterList.name = filterList.name
-            protoFilterList.url = filterList.url.absoluteString
-            protoFilterList.category = mapFilterListCategoryToProto(filterList.category)
-            protoFilterList.isSelected = filterList.isSelected
-            protoFilterList.description_p = filterList.description
-            protoFilterList.version = filterList.version
-            if let sourceRuleCount = filterList.sourceRuleCount {
-                protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
-            }
-            protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
-            protoFilterList.isCustom = shouldPersistCustomFlag(for: filterList)
-            
-            updatedData.filterLists[index] = protoFilterList
-        } else {
-            // Add new filter list
-            var protoFilterList = Wblock_Data_FilterListData()
-            protoFilterList.id = filterList.id.uuidString
-            protoFilterList.name = filterList.name
-            protoFilterList.url = filterList.url.absoluteString
-            protoFilterList.category = mapFilterListCategoryToProto(filterList.category)
-            protoFilterList.isSelected = filterList.isSelected
-            protoFilterList.description_p = filterList.description
-            protoFilterList.version = filterList.version
-            if let sourceRuleCount = filterList.sourceRuleCount {
-                protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
-            }
-            protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
-            protoFilterList.isCustom = shouldPersistCustomFlag(for: filterList)
-            
-            updatedData.filterLists.append(protoFilterList)
-        }
-        
-        appData = updatedData
-        saveData()
-    }
-    
     public func removeFilterList(withId id: UUID) async {
         _ = await updateDataImmediately(explicitlyDeletedFilterIDs: [id.uuidString]) { data in
             data.filterLists.removeAll { $0.id == id.uuidString }
         }
-    }
-    
-    public func updateFilterListSelection(_ filterLists: [FilterList]) async {
-        var updatedData = await latestAppDataSnapshot()
-        
-        for filterList in filterLists {
-            if let index = updatedData.filterLists.firstIndex(where: { $0.id == filterList.id.uuidString }) {
-                updatedData.filterLists[index].isSelected = filterList.isSelected
-                updatedData.filterLists[index].lastUpdated = Int64(Date().timeIntervalSince1970)
-            }
-        }
-        
-        appData = updatedData
-        saveData()
     }
     
     // MARK: - Userscripts
@@ -464,60 +409,6 @@ extension ProtobufDataManager {
         saveData()
     }
     
-    // MARK: - Performance Data
-    public func updatePerformanceData(
-        lastConversionTime: String? = nil,
-        lastReloadTime: String? = nil,
-        lastFastUpdateTime: String? = nil,
-        fastUpdateCount: Int? = nil,
-        sourceRulesCount: Int? = nil,
-        conversionStageDescription: String? = nil,
-        currentFilterName: String? = nil,
-        processedFiltersCount: Int? = nil,
-        totalFiltersCount: Int? = nil
-    ) async {
-        var updatedData = appData
-        
-        if let lastConversionTime = lastConversionTime {
-            updatedData.performance.lastConversionTime = lastConversionTime
-        }
-        
-        if let lastReloadTime = lastReloadTime {
-            updatedData.performance.lastReloadTime = lastReloadTime
-        }
-        
-        if let lastFastUpdateTime = lastFastUpdateTime {
-            updatedData.performance.lastFastUpdateTime = lastFastUpdateTime
-        }
-        
-        if let fastUpdateCount = fastUpdateCount {
-            updatedData.performance.fastUpdateCount = Int32(fastUpdateCount)
-        }
-        
-        if let sourceRulesCount = sourceRulesCount {
-            updatedData.performance.sourceRulesCount = Int32(sourceRulesCount)
-        }
-        
-        if let conversionStageDescription = conversionStageDescription {
-            updatedData.performance.conversionStageDescription = conversionStageDescription
-        }
-        
-        if let currentFilterName = currentFilterName {
-            updatedData.performance.currentFilterName = currentFilterName
-        }
-        
-        if let processedFiltersCount = processedFiltersCount {
-            updatedData.performance.processedFiltersCount = Int32(processedFiltersCount)
-        }
-        
-        if let totalFiltersCount = totalFiltersCount {
-            updatedData.performance.totalFiltersCount = Int32(totalFiltersCount)
-        }
-        
-        appData = updatedData
-        saveData()
-    }
-    
     // MARK: - Helper Methods
     private func normalizedCustomStatus(
         for protoData: Wblock_Data_FilterListData,
@@ -596,57 +487,6 @@ extension ProtobufDataManager {
         case .scripts: return .scripts
         case .allowlists: return .allowlists
         }
-    }
-    
-    public func getCustomFilterLists() -> [FilterList] {
-        return appData.filterLists.compactMap { protoData in
-            let category = mapProtoToFilterListCategory(protoData.category)
-            let isCustom = normalizedCustomStatus(for: protoData, category: category)
-            guard isCustom else { return nil }
-
-            return FilterList(
-                id: UUID(uuidString: protoData.id) ?? UUID(),
-                name: protoData.name,
-                url: URL(string: protoData.url) ?? URL(string: "https://example.com")!,
-                category: category,
-                isCustom: isCustom,
-                isSelected: protoData.isSelected,
-                description: protoData.description_p,
-                version: protoData.version,
-                sourceRuleCount: protoData.hasSourceRuleCount ? Int(protoData.sourceRuleCount) : nil
-            )
-        }
-    }
-    
-    public func updateCustomFilterLists(_ customFilterLists: [FilterList]) async {
-        var updatedData = await latestAppDataSnapshot()
-        
-        // Remove existing custom filter lists
-        updatedData.filterLists.removeAll { protoData in
-            normalizedCustomStatus(for: protoData)
-        }
-        
-        // Add updated custom filter lists
-        for filterList in customFilterLists {
-            var protoFilterList = Wblock_Data_FilterListData()
-            protoFilterList.id = filterList.id.uuidString
-            protoFilterList.name = filterList.name
-            protoFilterList.url = filterList.url.absoluteString
-            protoFilterList.category = mapFilterListCategoryToProto(filterList.category)
-            protoFilterList.isSelected = filterList.isSelected
-            protoFilterList.description_p = filterList.description
-            protoFilterList.version = filterList.version
-            if let sourceRuleCount = filterList.sourceRuleCount {
-                protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
-            }
-            protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
-            protoFilterList.isCustom = shouldPersistCustomFlag(for: filterList)
-            
-            updatedData.filterLists.append(protoFilterList)
-        }
-        
-        appData = updatedData
-        saveData()
     }
     
     public func updateUserScripts(

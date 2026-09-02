@@ -1263,6 +1263,7 @@ public class UserScriptManager: ObservableObject {
 
     /// Remove the file associated with a userscript from ALL possible locations to prevent resurrection
     private func removeUserScriptFile(_ userScript: UserScript) {
+        invalidateUserScriptFileExistsCache(for: userScript.id)
         let fileName = "\(userScript.id.uuidString).user.js"
         var totalRemoved = 0
 
@@ -1515,6 +1516,11 @@ public class UserScriptManager: ObservableObject {
             }
         }
 
+        // Each migration step persists on its own when it changes something. During
+        // startup they are coalesced into a single write after the whole chain so a
+        // launch that trips several one-shot migrations does not serialize the
+        // protobuf store once per step.
+        startupPersistDeferral = StartupPersistDeferral()
         await repairDuplicateBuiltInUserScriptsIfNeeded()
         await removeRetiredYouTubeAdBlockIfNeeded()
         await migrateLegacyBundledUserScriptsIfNeeded()
@@ -1524,6 +1530,7 @@ public class UserScriptManager: ObservableObject {
         // Always check for missing default scripts first
         await checkAndAddMissingDefaultScripts()
         await refreshDefaultUserScriptDescriptionsIfNeeded()
+        await flushStartupPersistDeferral()
 
         // Always check for duplicates - simplified approach
         checkForDuplicatesAndAskForConfirmation()
@@ -1950,6 +1957,15 @@ public class UserScriptManager: ObservableObject {
         await persistUserScriptsNow(authoritative: true)
 
         if needsStableDownload {
+            // The one-shot migration flag is already set. Write the migrated
+            // records now, even during startup deferral, so a kill during the
+            // download below cannot leave the flag set with the beta URL still
+            // stored, which would skip this migration forever.
+            let wasDeferring = startupPersistDeferral != nil
+            await flushStartupPersistDeferral()
+            if wasDeferring {
+                startupPersistDeferral = StartupPersistDeferral()
+            }
             await downloadMissingDefaultScripts()
         }
     }
@@ -2298,11 +2314,39 @@ public class UserScriptManager: ObservableObject {
     /// Persists the current in-memory userscripts and waits for completion. Use this in async flows
     /// where the caller needs stronger ordering guarantees.
     @MainActor
+    private struct StartupPersistDeferral {
+        var pending = false
+        var authoritative = false
+        var invalidateExecutionCache = false
+        var explicitEnabledStates: [UUID: Bool] = [:]
+    }
+
+    private var startupPersistDeferral: StartupPersistDeferral?
+
+    private func flushStartupPersistDeferral() async {
+        guard let deferral = startupPersistDeferral else { return }
+        startupPersistDeferral = nil
+        guard deferral.pending else { return }
+        await persistUserScriptsNow(
+            invalidateExecutionCache: deferral.invalidateExecutionCache,
+            explicitEnabledStates: deferral.explicitEnabledStates,
+            authoritative: deferral.authoritative
+        )
+    }
+
     private func persistUserScriptsNow(
         invalidateExecutionCache: Bool = true,
         explicitEnabledStates: [UUID: Bool] = [:],
         authoritative: Bool = false
     ) async {
+        if var deferral = startupPersistDeferral {
+            deferral.pending = true
+            deferral.authoritative = deferral.authoritative || authoritative
+            deferral.invalidateExecutionCache = deferral.invalidateExecutionCache || invalidateExecutionCache
+            deferral.explicitEnabledStates.merge(explicitEnabledStates) { _, new in new }
+            startupPersistDeferral = deferral
+            return
+        }
         logger.info("💾 Saving \(self.userScripts.count) userscripts to ProtobufDataManager")
         if authoritative {
             await dataManager.replaceUserScripts(userScripts)
@@ -2324,6 +2368,7 @@ public class UserScriptManager: ObservableObject {
     }
 
     private func writeUserScriptContent(_ userScript: UserScript) -> Bool {
+        invalidateUserScriptFileExistsCache(for: userScript.id)
         var success = false
         let fileName = "\(userScript.id.uuidString).user.js"
         [groupScriptsDirectoryURL, fallbackScriptsDirectoryURL].compactMap { $0 }.forEach {
@@ -2446,13 +2491,29 @@ public class UserScriptManager: ObservableObject {
         userScript.isDownloaded || userScriptFileExists(userScript)
     }
 
+    /// The scripts list re-evaluates every row on each refresh, on the main actor.
+    /// File existence only changes through this manager's own write/remove paths,
+    /// so it is memoized here and invalidated at those points.
+    private var userScriptFileExistsCache: [UUID: Bool] = [:]
+
+    private func invalidateUserScriptFileExistsCache(for id: UUID? = nil) {
+        if let id {
+            userScriptFileExistsCache.removeValue(forKey: id)
+        } else {
+            userScriptFileExistsCache.removeAll()
+        }
+    }
+
     private func userScriptFileExists(_ userScript: UserScript) -> Bool {
+        if let cached = userScriptFileExistsCache[userScript.id] { return cached }
         let fileName = "\(userScript.id.uuidString).user.js"
-        return [groupScriptsDirectoryURL, fallbackScriptsDirectoryURL].compactMap { $0 }.contains {
+        let exists = [groupScriptsDirectoryURL, fallbackScriptsDirectoryURL].compactMap { $0 }.contains {
             dirURL in
             let filePath = dirURL.appendingPathComponent(fileName).path
             return FileManager.default.fileExists(atPath: filePath)
         }
+        userScriptFileExistsCache[userScript.id] = exists
+        return exists
     }
 
     nonisolated private static func hasMetadataBlock(in content: String) -> Bool {

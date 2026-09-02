@@ -12,7 +12,6 @@ scripts/codemirror-build/1/
 *.xcuserstate
 **/xcuserdata/
 DerivedData/
-scripts/.mock_filter_server.log
 
 # CodeMirror bundle build dependencies (source is committed, deps are not)
 scripts/codemirror-build/node_modules/

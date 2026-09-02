@@ -116,6 +116,12 @@ public actor ConcurrentLogManager {
     private let deduplicationWindow: TimeInterval = 60 // 1 minute
 
     private var logEntries: [LogEntry] = []
+    private let iso8601Formatter = ISO8601DateFormatter()
+    private let iso8601FractionalFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
 
     public static let shared = ConcurrentLogManager()
 
@@ -367,10 +373,8 @@ public actor ConcurrentLogManager {
         guard line.first == "[", let bracketEnd = line.firstIndex(of: "]") else { return (nil, line) }
         let timestampText = String(line[line.index(after: line.startIndex)..<bracketEnd])
         let bodyStart = line.index(after: bracketEnd)
-        let fractionalFormatter = ISO8601DateFormatter()
-        fractionalFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let timestamp = ISO8601DateFormatter().date(from: timestampText)
-            ?? fractionalFormatter.date(from: timestampText)
+        let timestamp = iso8601Formatter.date(from: timestampText)
+            ?? iso8601FractionalFormatter.date(from: timestampText)
         return (
             timestamp,
             String(line[bodyStart...]).trimmingCharacters(in: .whitespaces)

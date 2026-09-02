@@ -149,8 +149,10 @@ class AppFilterManager: ObservableObject {
         filterLists.map(ApplyFilterConfiguration.init)
     }
 
-    var filterListIndexByID: [UUID: Int] {
-        Dictionary(uniqueKeysWithValues: filterLists.enumerated().map { ($1.id, $0) })
+    /// Single-ID lookup helper. Callers only ever look up one ID at a time, so a
+    /// linear scan is cheaper than materializing a dictionary of every filter.
+    func filterListIndex(for id: UUID) -> Int? {
+        filterLists.firstIndex { $0.id == id }
     }
 
     func refreshPendingSelectionChanges() {
@@ -968,14 +970,14 @@ class AppFilterManager: ObservableObject {
     }
 
     func toggleFilterListSelection(id: UUID) {
-        guard let index = filterListIndexByID[id] else { return }
+        guard let index = filterListIndex(for: id) else { return }
         setFilterListSelection(id: id, selected: !filterLists[index].isSelected)
     }
 
     /// Sets a filter's selection state without depending on the caller's stale toggle state.
     @discardableResult
     func setFilterListSelection(id: UUID, selected: Bool) -> Bool {
-        guard let index = filterListIndexByID[id], filterLists[index].isSelected != selected else {
+        guard let index = filterListIndex(for: id), filterLists[index].isSelected != selected else {
             return false
         }
 
@@ -1022,10 +1024,8 @@ class AppFilterManager: ObservableObject {
             comment: "Rule limit warning footer note about extra lists"
         )
 
-        let isAtTotalLimit = totalRules >= totalCapacity
-        ruleLimitWarningTitle = isAtTotalLimit
-            ? LocalizedStrings.text("Rule Limit Warning", comment: "Rule limit warning title")
-            : LocalizedStrings.text("Rule Capacity", comment: "Rule capacity title")
+        // The guard above already ensures we are at or over the total capacity.
+        ruleLimitWarningTitle = LocalizedStrings.text("Rule Limit Warning", comment: "Rule limit warning title")
         ruleLimitWarningMessage = message
         showingRuleLimitWarningAlert = true
     }

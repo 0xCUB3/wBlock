@@ -72,9 +72,36 @@ public enum UserStylePreprocessorService {
         digest(options.keys.sorted().map { "\($0)=\(options[$0] ?? "")" }.joined(separator: "\n"))
     }
 
+    /// SHA256 hex digest of `source`. Memoized: cache keys derived from userstyle
+    /// content are recomputed on every `compiledStyleBody` access and every
+    /// parse-cache lookup, so hashing a large stylesheet each time was defeating
+    /// the caches it was meant to serve. A dictionary lookup compares the string
+    /// bytes once instead of hashing them. The cache is bounded both by entry
+    /// count and by retained key bytes, since a single key may be a multi-megabyte
+    /// stylesheet or compiled body.
     public static func digest(_ source: String) -> String {
-        SHA256.hash(data: Data(source.utf8)).map { String(format: "%02x", $0) }.joined()
+        digestCacheLock.lock()
+        defer { digestCacheLock.unlock() }
+        if let cached = digestCache[source] {
+            return cached
+        }
+        let digest = SHA256.hash(data: Data(source.utf8)).map { String(format: "%02x", $0) }.joined()
+        let sourceBytes = source.utf8.count
+        if digestCache.count >= digestCacheLimit
+            || digestCacheBytes + sourceBytes > digestCacheByteLimit {
+            digestCache.removeAll(keepingCapacity: true)
+            digestCacheBytes = 0
+        }
+        digestCache[source] = digest
+        digestCacheBytes += sourceBytes
+        return digest
     }
+
+    private static let digestCacheLock = NSLock()
+    private static let digestCacheLimit = 512
+    private static let digestCacheByteLimit = 32 * 1024 * 1024
+    nonisolated(unsafe) private static var digestCache: [String: String] = [:]
+    nonisolated(unsafe) private static var digestCacheBytes = 0
 
     public static func backend(for preprocessor: String) -> (any UserStylePreprocessorBackend)? {
         switch normalize(preprocessor) {
@@ -384,10 +411,24 @@ enum UserStyleCompiler {
         return error
     }
 
+    private static let compilerBundleCacheLock = NSLock()
+    nonisolated(unsafe) private static var compilerBundleCache: [String: String] = [:]
+
+    /// Compiler bundles are immutable app resources of a few hundred KB each;
+    /// cache them so repeated compilations do not re-read them from disk.
     private static func loadCompilerBundle(_ name: String, extension: String) -> String? {
+        let cacheKey = "\(name).\(`extension`)"
+        compilerBundleCacheLock.lock()
+        defer { compilerBundleCacheLock.unlock() }
+        if let cached = compilerBundleCache[cacheKey] {
+            return cached
+        }
         let bundle = Bundle(for: BundleMarker.self)
-        guard let url = bundle.url(forResource: name, withExtension: `extension`, subdirectory: "UserStyleCompiler") ?? bundle.url(forResource: name, withExtension: `extension`) else { return nil }
-        return try? String(contentsOf: url, encoding: .utf8)
+        guard let url = bundle.url(forResource: name, withExtension: `extension`, subdirectory: "UserStyleCompiler") ?? bundle.url(forResource: name, withExtension: `extension`),
+              let source = try? String(contentsOf: url, encoding: .utf8)
+        else { return nil }
+        compilerBundleCache[cacheKey] = source
+        return source
     }
 
     private final class BundleMarker: NSObject {}

@@ -169,23 +169,10 @@ public enum RemoveParamDNRRuleGenerator {
             throw CocoaError(.fileNoSuchFile)
         }
 
-        var removeParamRules = ""
-        for filter in filters {
-            guard let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(
-                for: filter,
-                containerURL: containerURL
-            ), let contents = try? String(contentsOf: sourceURL, encoding: .utf8) else {
-                continue
-            }
-
-            for rawLine in contents.split(whereSeparator: \.isNewline) {
-                guard rawLine.range(of: "removeparam", options: .caseInsensitive) != nil else {
-                    continue
-                }
-                removeParamRules.append(contentsOf: rawLine)
-                removeParamRules.append("\n")
-            }
-        }
+        let removeParamRules = extractedRemoveParamRules(
+            for: filters,
+            containerURL: containerURL
+        )
 
         let generated = generateRules(from: removeParamRules, disabledSites: disabledSites)
         try saveRules(generated.rules, groupIdentifier: groupIdentifier)
@@ -199,6 +186,85 @@ public enum RemoveParamDNRRuleGenerator {
             generated.summary.disabledSiteAllowRules
         )
         return generated.summary
+    }
+
+    // MARK: - Extraction cache
+
+    /// Sidecar that remembers the removeparam lines extracted from each filter
+    /// source, keyed by the source file's size and modification time. Site
+    /// toggles regenerate DNR rules often, and re-scanning every filter list from
+    /// disk each time was the dominant cost; with the sidecar only lists whose
+    /// file actually changed are rescanned.
+    private struct ExtractionEntry: Codable {
+        var fingerprint: String
+        var lines: String
+    }
+
+    private static let extractionCacheFilename = "removeparam-extraction-cache.json"
+
+    static func extractedRemoveParamRules(
+        for filters: [FilterList],
+        containerURL: URL
+    ) -> String {
+        let cacheURL = containerURL.appendingPathComponent(extractionCacheFilename)
+        var cache: [String: ExtractionEntry] = [:]
+        if let data = try? Data(contentsOf: cacheURL),
+           let decoded = try? JSONDecoder().decode([String: ExtractionEntry].self, from: data) {
+            cache = decoded
+        }
+
+        var combined = ""
+        var updated: [String: ExtractionEntry] = [:]
+        var cacheChanged = false
+
+        for filter in filters {
+            guard let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(
+                for: filter,
+                containerURL: containerURL
+            ) else { continue }
+            let key = sourceURL.lastPathComponent
+            let fingerprint = fileFingerprint(at: sourceURL) ?? "missing"
+
+            if let cached = cache[key], cached.fingerprint == fingerprint {
+                updated[key] = cached
+                combined.append(cached.lines)
+                continue
+            }
+
+            guard let contents = try? String(contentsOf: sourceURL, encoding: .utf8) else { continue }
+            let lines = extractRemoveParamLines(from: contents)
+            updated[key] = ExtractionEntry(fingerprint: fingerprint, lines: lines)
+            cacheChanged = true
+            combined.append(lines)
+        }
+
+        if cacheChanged || updated.count != cache.count {
+            if let data = try? JSONEncoder().encode(updated) {
+                try? data.write(to: cacheURL, options: .atomic)
+            }
+        }
+        return combined
+    }
+
+    static func extractRemoveParamLines(from contents: String) -> String {
+        var result = ""
+        for rawLine in contents.split(whereSeparator: \.isNewline) {
+            guard rawLine.range(of: "removeparam", options: .caseInsensitive) != nil else {
+                continue
+            }
+            result.append(contentsOf: rawLine)
+            result.append("\n")
+        }
+        return result
+    }
+
+    private static func fileFingerprint(at url: URL) -> String? {
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: url.path) else {
+            return nil
+        }
+        let size = (attrs[.size] as? NSNumber)?.int64Value ?? 0
+        let modDate = (attrs[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
+        return "\(size)|\(Int64(modDate * 1_000_000))"
     }
 
     public static func clearSavedRules(groupIdentifier: String) throws -> Summary {

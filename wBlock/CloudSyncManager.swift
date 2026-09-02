@@ -1473,11 +1473,12 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
+        var disabledHostsByScriptID = dataManager.getUserScriptDisabledHosts()
         for remote in scripts.remote {
             guard let disabledHosts = remote.disabledHosts else { continue }
             guard let url = CloudSyncRemoteUserScriptReconciler.canonicalURL(remote.url) else { continue }
             guard let script = userScriptManager.userScripts.first(where: { $0.url == url }) else { continue }
-            await dataManager.setUserScriptDisabledHosts(disabledHosts, forScriptID: script.id.uuidString)
+            disabledHostsByScriptID[script.id.uuidString] = disabledHosts
         }
 
         for local in scripts.local {
@@ -1499,8 +1500,9 @@ final class CloudSyncManager: ObservableObject {
             }) else {
                 continue
             }
-            await dataManager.setUserScriptDisabledHosts(disabledHosts, forScriptID: script.id.uuidString)
+            disabledHostsByScriptID[script.id.uuidString] = disabledHosts
         }
+        await dataManager.setAllUserScriptDisabledHosts(disabledHostsByScriptID)
 
         // Report whether any never-synced local scripts were kept so the caller can schedule an
         // upload to propagate them to the cloud (#437).
@@ -1512,20 +1514,18 @@ final class CloudSyncManager: ObservableObject {
         let currentDomains = Set(dataManager.getZapperDomains())
         let remoteDomains = Set(normalizedRemoteRules.keys)
 
-        for domain in currentDomains.subtracting(remoteDomains) {
-            await dataManager.deleteAllZapperRules(forHost: domain)
-        }
-
-        for domain in normalizedRemoteRules.keys.sorted() {
-            await dataManager.setZapperRules(forHost: domain, rules: normalizedRemoteRules[domain] ?? [])
-        }
-
+        var disabledByHost: [String: Bool]? = nil
         if let disabledDomains {
             let disabledDomainSet = Set(Self.normalizedDisabledHosts(disabledDomains))
-            for domain in normalizedRemoteRules.keys.sorted() {
-                await dataManager.setZapperRulesDisabled(disabledDomainSet.contains(domain), forHost: domain)
-            }
+            disabledByHost = Dictionary(
+                uniqueKeysWithValues: normalizedRemoteRules.keys.map { ($0, disabledDomainSet.contains($0)) }
+            )
         }
+        await dataManager.applyZapperRulesBatch(
+            hostsToDelete: currentDomains.subtracting(remoteDomains).sorted(),
+            rulesByHost: normalizedRemoteRules,
+            disabledByHost: disabledByHost
+        )
 
         await ZapperRuleManager.shared.refreshNow()
     }

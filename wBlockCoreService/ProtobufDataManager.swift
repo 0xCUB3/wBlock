@@ -889,71 +889,6 @@ public class ProtobufDataManager: ObservableObject {
         }
     }
 
-
-    // MARK: - Extension Data (Tab Tracking)
-
-    /// Get blocked count for a specific tab ID
-    public func getTabBlockedCount(_ tabId: String) -> Int {
-        Int(appData.extensionData.tabBlockedRequests[tabId]?.blockedCount ?? 0)
-    }
-
-    /// Get host for a specific tab ID
-    public func getTabHost(_ tabId: String) -> String {
-        appData.extensionData.tabBlockedRequests[tabId]?.host ?? ""
-    }
-
-    /// Check if a tab is disabled
-    public func isTabDisabled(_ tabId: String) -> Bool {
-        appData.extensionData.tabBlockedRequests[tabId]?.isDisabled ?? false
-    }
-
-    @MainActor
-    public func setTabDisabled(_ tabId: String, isDisabled: Bool) async {
-        await updateDataImmediately { data in
-            var tabData = data.extensionData.tabBlockedRequests[tabId] ?? Wblock_Data_TabData()
-            tabData.isDisabled = isDisabled
-            tabData.lastUpdated = Int64(Date().timeIntervalSince1970)
-            data.extensionData.tabBlockedRequests[tabId] = tabData
-            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
-        }
-    }
-
-    @MainActor
-    public func removeTabData(_ tabId: String) async {
-        await updateDataImmediately { data in
-            data.extensionData.tabBlockedRequests.removeValue(forKey: tabId)
-            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
-        }
-    }
-
-    @MainActor
-    public func updateTabBlockedCount(_ tabId: String, host: String, increment: Int = 1) async {
-        await updateDataImmediately { data in
-            var tabData = data.extensionData.tabBlockedRequests[tabId] ?? Wblock_Data_TabData()
-            tabData.blockedCount += Int32(increment)
-            tabData.host = host
-            tabData.lastUpdated = Int64(Date().timeIntervalSince1970)
-            data.extensionData.tabBlockedRequests[tabId] = tabData
-            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
-        }
-    }
-
-    @MainActor
-    public func clearOldTabData(olderThan: TimeInterval) async {
-        let cutoffTime = Int64(Date().timeIntervalSince1970 - olderThan)
-        await updateDataImmediately { data in
-            data.extensionData.tabBlockedRequests = data.extensionData.tabBlockedRequests.filter { _, tabData in
-                tabData.lastUpdated >= cutoffTime
-            }
-            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
-        }
-    }
-
-    /// Get all tab IDs that have data
-    public var allTabIds: [String] {
-        Array(appData.extensionData.tabBlockedRequests.keys)
-    }
-
     // MARK: - Zapper Rules
 
     /// Returns sorted array of all hostnames that have at least one zapper rule.
@@ -992,6 +927,66 @@ public class ProtobufDataManager: ObservableObject {
                 data.extensionData.zapperRulesByHost[host] = ruleList
             }
             data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
+    /// Batched form of setZapperRules / deleteAllZapperRules / setZapperRulesDisabled
+    /// for restore and sync paths. Performs one atomic disk write instead of one per host.
+    /// - hostsToDelete: hosts whose selectors are moved to pendingDeletions (same as deleteAllZapperRules)
+    /// - rulesByHost: hosts whose selectors are replaced (same as setZapperRules)
+    /// - disabledByHost: per-host kill-switch values applied after the replacements (nil leaves untouched)
+    @MainActor
+    public func applyZapperRulesBatch(
+        hostsToDelete: [String] = [],
+        rulesByHost: [String: [String]],
+        disabledByHost: [String: Bool]? = nil
+    ) async {
+        let filteredRules = rulesByHost.mapValues { rules in
+            rules.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        }
+        await updateDataImmediately { data in
+            var changed = false
+            for host in hostsToDelete {
+                guard var ruleList = data.extensionData.zapperRulesByHost[host] else { continue }
+                ruleList.pendingDeletions.append(contentsOf: ruleList.selectors)
+                ruleList.selectors.removeAll()
+                if ruleList.pendingDeletions.isEmpty {
+                    data.extensionData.zapperRulesByHost.removeValue(forKey: host)
+                } else {
+                    data.extensionData.zapperRulesByHost[host] = ruleList
+                }
+                changed = true
+            }
+            for (host, filtered) in filteredRules {
+                let existing = data.extensionData.zapperRulesByHost[host]
+                if filtered.isEmpty {
+                    guard existing != nil else { continue }
+                    data.extensionData.zapperRulesByHost.removeValue(forKey: host)
+                } else {
+                    if let existing,
+                       existing.selectors == filtered,
+                       existing.pendingDeletions.isEmpty {
+                        continue
+                    }
+                    var ruleList = Wblock_Data_ZapperRuleList()
+                    ruleList.selectors = filtered
+                    ruleList.disabled = existing?.disabled ?? false
+                    data.extensionData.zapperRulesByHost[host] = ruleList
+                }
+                changed = true
+            }
+            if let disabledByHost {
+                for (host, disabled) in disabledByHost {
+                    guard var ruleList = data.extensionData.zapperRulesByHost[host],
+                          ruleList.disabled != disabled else { continue }
+                    ruleList.disabled = disabled
+                    data.extensionData.zapperRulesByHost[host] = ruleList
+                    changed = true
+                }
+            }
+            if changed {
+                data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+            }
         }
     }
 

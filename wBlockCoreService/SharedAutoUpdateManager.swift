@@ -1594,20 +1594,10 @@ public actor SharedAutoUpdateManager {
     }
 
     private func localDataForComparison(filter: FilterList, containerURL: URL) -> Data? {
-        let localURL = containerURL.appendingPathComponent(
-            ContentBlockerIncrementalCache.localFilename(for: filter)
+        FilterListContentProcessing.localDataForComparison(
+            filter: filter,
+            containerURL: containerURL
         )
-        if let localData = try? Data(contentsOf: localURL) {
-            return localData
-        }
-
-        guard filter.isCustom,
-              let legacyURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
-                  name: filter.name,
-                  containerURL: containerURL
-              )
-        else { return nil }
-        return try? Data(contentsOf: legacyURL)
     }
 
 
@@ -2082,38 +2072,13 @@ public actor SharedAutoUpdateManager {
 
 
     private func parseMetadata(from content: String) -> (title: String?, description: String?, version: String?) {
-        let rawMetadata = FilterListMetadataParser.parse(from: content, maxLines: 80)
-        let title = rawMetadata.title?.replacingOccurrences(of: "/", with: " & ")
-        let description = rawMetadata.description?.replacingOccurrences(of: "/", with: " & ")
-
-        let normalizedVersion = rawMetadata.version
-        let version: String?
-        if let normalizedVersion,
-           normalizedVersion.contains("%"),
-           (normalizedVersion.lowercased().contains("timestamp")
-                || normalizedVersion.lowercased().contains("date")) {
-            version = nil
-        } else {
-            version = normalizedVersion
-        }
-
-        return (title: title, description: description, version: version)
+        FilterListContentProcessing.parseMetadata(from: content)
     }
 
     // MARK: - Directive Stripping (PREP-07)
 
     private func stripUnknownDirectives(from content: String) -> String {
-        var result: [String] = []
-        for line in content.split(omittingEmptySubsequences: false, whereSeparator: { $0.isNewline }) {
-            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            let originalLine = String(line)
-            guard FilterDirectivePolicy.shouldStripUnsupportedDirective(trimmed) else {
-                result.append(originalLine)
-                continue
-            }
-            // Unknown directive: silently omitted (PREP-07)
-        }
-        return result.joined(separator: "\n")
+        FilterListContentProcessing.stripUnknownDirectives(from: content)
     }
 
     private func loadCachedAdvancedRules(for target: ContentBlockerTargetInfo, containerURL: URL) -> String? {
