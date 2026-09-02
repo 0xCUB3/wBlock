@@ -74,7 +74,7 @@ A Safari content blocker for macOS, iOS, iPadOS, and visionOS.<br>
 - **No Autoplay** (macOS, iOS, iPadOS, visionOS) — keeps videos and audio paused until you tap or click them, stopping muted feed/scroll autoplay; enable it globally from the Safari toolbar popup and allow autoplay per site when a page needs it
 - **Tube Cleaner & Player Cleaner** — optional remote userscript defaults downloaded from the wBlock-userscripts repository; they turn existing media elements into native Safari players before first paint, restoring Picture-in-Picture and background playback. They update independently of the app version; wBlock's content-blocking rules handle ads separately
 - **Userscript engine** with Greasemonkey API (GM_getValue, GM_setValue, GM_xmlhttpRequest)
-- **Userstyle support** — install UserCSS themes (.user.css) applied natively as CSS, no JS wrapper needed
+- **Userstyle support** — install UserCSS themes (.user.css) applied natively as CSS, no JS wrapper needed. See [docs/USERSTYLES.md](docs/USERSTYLES.md)
 - **Custom filter lists** via URL, paste, or file import — supports any AdGuard-syntax blocklist
 - **Toolbar search** for quickly finding filters and userscripts
 - **Automatic rule distribution** across all 5 content blocker slots for maximum coverage
