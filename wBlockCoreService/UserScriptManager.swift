@@ -1957,6 +1957,15 @@ public class UserScriptManager: ObservableObject {
         await persistUserScriptsNow(authoritative: true)
 
         if needsStableDownload {
+            // The one-shot migration flag is already set. Write the migrated
+            // records now, even during startup deferral, so a kill during the
+            // download below cannot leave the flag set with the beta URL still
+            // stored, which would skip this migration forever.
+            let wasDeferring = startupPersistDeferral != nil
+            await flushStartupPersistDeferral()
+            if wasDeferring {
+                startupPersistDeferral = StartupPersistDeferral()
+            }
             await downloadMissingDefaultScripts()
         }
     }

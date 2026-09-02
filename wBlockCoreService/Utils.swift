@@ -340,9 +340,10 @@ public enum ContentBlockerIncrementalCache {
         let baseURL = containerURL.appendingPathComponent(baseRulesFilename(for: targetRulesFilename))
         let countURL = containerURL.appendingPathComponent("\(baseURL.lastPathComponent).count")
         let advancedURL = containerURL.appendingPathComponent(baseAdvancedRulesFilename(for: targetRulesFilename))
-        // The base JSON is validated by a single full parse at the call site
-        // (isValidContentBlockerJSON). Here we only check the sidecars and the
-        // outer array shape so a multi-megabyte file is not deserialized twice.
+        // The base JSON is parsed once at the call site, which also compares
+        // the parsed rule count against the .count sidecar. Here we only check
+        // the sidecars and the outer array shape so a multi-megabyte file is
+        // not deserialized twice.
         guard let countText = try? String(contentsOf: countURL, encoding: .utf8),
               let count = Int(countText.trimmingCharacters(in: .whitespacesAndNewlines)),
               count >= 0,

@@ -1219,9 +1219,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 groupIdentifier: groupIdentifier
             ),
             let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8),
-            isValidContentBlockerJSON(baseJSON),
+            let parsedBaseCount = parsedContentBlockerRuleCount(baseJSON),
             let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
-                .flatMap({ Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) })
+                .flatMap({ Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }),
+            baseCount == parsedBaseCount
         {
             if cancellationRequested() {
                 throw CancellationError()
@@ -1572,9 +1573,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             groupIdentifier: groupIdentifier
         ),
            let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8),
-           isValidContentBlockerJSON(baseJSON),
+           let parsedBaseCount = parsedContentBlockerRuleCount(baseJSON),
            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
-                .flatMap({ Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }) {
+                .flatMap({ Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }),
+           baseCount == parsedBaseCount {
             let finalized = finalizeContentBlockerJSON(
                 baseJSON: baseJSON,
                 disabledSites: sitesToUse,
@@ -1717,9 +1719,14 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         return String(trimmed[..<closeBracket]) + "," + ignoreRules + "]"
     }
     
-    private static func isValidContentBlockerJSON(_ json: String) -> Bool {
-        guard let jsonData = json.data(using: .utf8) else { return false }
-        return (try? JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]]) != nil
+    /// Parses `json` once and returns its rule count, or nil when it is not a
+    /// content blocker rule array. Cache hits compare this against the `.count`
+    /// sidecar so a stale sidecar can never skip rule-limit truncation.
+    private static func parsedContentBlockerRuleCount(_ json: String) -> Int? {
+        guard let jsonData = json.data(using: .utf8),
+              let rules = try? JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]]
+        else { return nil }
+        return rules.count
     }
 
     /// Counts the number of rules in a Safari content blocker JSON string.

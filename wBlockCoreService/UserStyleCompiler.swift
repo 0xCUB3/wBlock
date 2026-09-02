@@ -75,8 +75,10 @@ public enum UserStylePreprocessorService {
     /// SHA256 hex digest of `source`. Memoized: cache keys derived from userstyle
     /// content are recomputed on every `compiledStyleBody` access and every
     /// parse-cache lookup, so hashing a large stylesheet each time was defeating
-    /// the caches it was meant to serve. An NSCache lookup compares the string
-    /// bytes once instead of hashing them.
+    /// the caches it was meant to serve. A dictionary lookup compares the string
+    /// bytes once instead of hashing them. The cache is bounded both by entry
+    /// count and by retained key bytes, since a single key may be a multi-megabyte
+    /// stylesheet or compiled body.
     public static func digest(_ source: String) -> String {
         digestCacheLock.lock()
         defer { digestCacheLock.unlock() }
@@ -84,16 +86,22 @@ public enum UserStylePreprocessorService {
             return cached
         }
         let digest = SHA256.hash(data: Data(source.utf8)).map { String(format: "%02x", $0) }.joined()
-        if digestCache.count >= digestCacheLimit {
+        let sourceBytes = source.utf8.count
+        if digestCache.count >= digestCacheLimit
+            || digestCacheBytes + sourceBytes > digestCacheByteLimit {
             digestCache.removeAll(keepingCapacity: true)
+            digestCacheBytes = 0
         }
         digestCache[source] = digest
+        digestCacheBytes += sourceBytes
         return digest
     }
 
     private static let digestCacheLock = NSLock()
     private static let digestCacheLimit = 512
+    private static let digestCacheByteLimit = 32 * 1024 * 1024
     nonisolated(unsafe) private static var digestCache: [String: String] = [:]
+    nonisolated(unsafe) private static var digestCacheBytes = 0
 
     public static func backend(for preprocessor: String) -> (any UserStylePreprocessorBackend)? {
         switch normalize(preprocessor) {
