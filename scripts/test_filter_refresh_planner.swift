@@ -29,7 +29,7 @@ struct FilterRefreshPlannerTests {
             interval: 6 * 3600,
             now: now
         )
-        check(overdue.map { $0.id } == [existing.id, missing.id], "an overdue check must refresh every remote list")
+        check(overdue.map { $0.id } == [missing.id, existing.id], "an overdue check must refresh every remote list, never-downloaded lists first (#622)")
 
         let never = FilterRefreshPlanner.filtersRequiringNetworkRefresh(
             [existing, local],
@@ -62,7 +62,7 @@ struct FilterRefreshPlannerTests {
             interval: 6 * 3600,
             now: now
         )
-        check(resumed.map { $0.id } == [unverified.id, missing.id], "a partly failed run must resume from the unverified lists")
+        check(resumed.map { $0.id } == [missing.id, unverified.id], "a partly failed run must resume from the unverified lists, missing ones first")
 
         let expired = FilterRefreshPlanner.filtersRequiringNetworkRefresh(
             [verified],

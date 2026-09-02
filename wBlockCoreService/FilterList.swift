@@ -203,9 +203,21 @@ public enum FilterRefreshPlanner {
             interval > 0 && now.timeIntervalSince(last) < interval
         } ?? false
 
-        return filters.filter { filter in
-            guard filter.isRemoteURL else { return false }
-            if !fileExists(filter) { return true }
+        // Lists that have never been downloaded block the user entirely, so
+        // they go first; refreshes of lists that already work follow (#622).
+        var missing: [FilterList] = []
+        var refreshes: [FilterList] = []
+        for filter in filters {
+            guard filter.isRemoteURL else { continue }
+            if !fileExists(filter) {
+                missing.append(filter)
+            } else if needsRefresh(filter) {
+                refreshes.append(filter)
+            }
+        }
+        return missing + refreshes
+
+        func needsRefresh(_ filter: FilterList) -> Bool {
             if skipExisting { return false }
             if let lastUpdated = filter.lastUpdated,
                interval > 0,
