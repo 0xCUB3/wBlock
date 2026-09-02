@@ -1007,5 +1007,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Dark" = "Întunecat";
 "Light" = "Luminos";
 "%@ → %@ Safari rules" = "%@ → %@ reguli Safari";
-"Installed" = "Instalate";
 "Settings restored. Applying now." = "Setări restaurate. Se aplică acum.";
+"Cosmetic Filtering" = "Filtrare cosmetică";
+"Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Ascunde spațiile pentru reclame și alte elemente ale paginii prin CSS. Dezactivat, rămâne doar blocarea de rețea, care folosește mai puține reguli și mai puțin procesor.";

@@ -1007,5 +1007,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark" = "Тёмная";
 "Light" = "Светлая";
 "%@ → %@ Safari rules" = "%@ → %@ правил Safari";
-"Installed" = "Установлено";
 "Settings restored. Applying now." = "Настройки восстановлены. Применяются.";
+"Cosmetic Filtering" = "Косметическая фильтрация";
+"Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Скрывает места под рекламу и другие элементы страницы с помощью CSS. Если выключить, останется только сетевая блокировка, которая использует меньше правил и меньше нагружает процессор.";

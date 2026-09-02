@@ -1007,5 +1007,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Dark" = "Dunkel";
 "Light" = "Hell";
 "%@ → %@ Safari rules" = "%@ → %@ Safari-Regeln";
-"Installed" = "Installiert";
 "Settings restored. Applying now." = "Einstellungen wiederhergestellt. Wird jetzt angewendet.";
+"Cosmetic Filtering" = "Kosmetisches Filtern";
+"Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Blendet Anzeigenplatzhalter und andere Seitenelemente per CSS aus. Ist dies deaktiviert, bleibt nur das Netzwerk-Blockieren, das weniger Regeln und weniger CPU benötigt.";

@@ -1007,5 +1007,6 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Dark" = "Ciemny";
 "Light" = "Jasny";
 "%@ → %@ Safari rules" = "%@ → %@ reguł Safari";
-"Installed" = "Zainstalowane";
 "Settings restored. Applying now." = "Ustawienia przywrócone. Trwa stosowanie.";
+"Cosmetic Filtering" = "Filtrowanie kosmetyczne";
+"Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Ukrywa miejsca na reklamy i inne elementy strony za pomocą CSS. Po wyłączeniu pozostaje tylko blokowanie sieciowe, które używa mniej reguł i mniej CPU.";

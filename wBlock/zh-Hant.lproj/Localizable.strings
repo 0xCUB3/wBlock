@@ -1007,5 +1007,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark" = "深色";
 "Light" = "淺色";
 "%@ → %@ Safari rules" = "%@ → %@ 條 Safari 規則";
-"Installed" = "已安裝";
 "Settings restored. Applying now." = "設定已還原。正在套用。";
+"Cosmetic Filtering" = "外觀過濾";
+"Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "使用 CSS 隱藏廣告佔位符和其他頁面元素。關閉後僅保留網路攔截，規則較少，佔用 CPU 也較少。";

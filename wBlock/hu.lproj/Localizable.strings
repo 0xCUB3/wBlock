@@ -1007,5 +1007,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Dark" = "Sötét";
 "Light" = "Világos";
 "%@ → %@ Safari rules" = "%@ → %@ Safari-szabály";
-"Installed" = "Telepítve";
 "Settings restored. Applying now." = "Beállítások visszaállítva. Alkalmazás folyamatban.";
+"Cosmetic Filtering" = "Kozmetikai szűrés";
+"Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "CSS-sel elrejti a hirdetéshelyeket és más oldalelemeket. Kikapcsolva csak a hálózati blokkolás marad, amely kevesebb szabályt és kevesebb CPU-t használ.";

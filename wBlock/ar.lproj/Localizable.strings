@@ -1007,5 +1007,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark" = "داكن";
 "Light" = "فاتح";
 "%@ → %@ Safari rules" = "%@ → %@ قاعدة Safari";
-"Installed" = "المثبّتة";
 "Settings restored. Applying now." = "تمت استعادة الإعدادات. يتم التطبيق الآن.";
+"Cosmetic Filtering" = "التصفية التجميلية";
+"Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "يخفي مواضع الإعلانات وعناصر الصفحة الأخرى باستخدام CSS. عند إيقافه يبقى حجب الشبكة فقط، وهو يستخدم قواعد أقل ومعالجًا أقل.";

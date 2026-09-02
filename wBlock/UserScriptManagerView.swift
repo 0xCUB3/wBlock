@@ -527,67 +527,40 @@ struct UserScriptManagerView: View {
     #endif
 
     private var statsCardsView: some View {
-        HStack(spacing: 12) {
+        // Three full cards overflow an iPhone row (#626). With a style installed
+        // the cards drop to the compact layout, which keeps one row of three.
+        let compact: Bool = {
             #if os(iOS)
-            // Three cards overflow an iPhone-width row (#626), so scripts and
-            // styles share one card with two metrics once a style exists.
-            if totalStylesCount > 0 {
-                StatCard(
-                    title: "Installed",
-                    value: "\(totalScriptsCount + totalStylesCount)",
-                    icon: "doc.text",
-                    valueColor: .primary,
-                    metrics: [
-                        StatCardMetric(
-                            value: "\(totalScriptsCount)",
-                            icon: "doc.text",
-                            accessibilityLabel: String(localized: "Scripts")
-                        ),
-                        StatCardMetric(
-                            value: "\(totalStylesCount)",
-                            icon: "paintbrush",
-                            accessibilityLabel: String(localized: "Styles")
-                        ),
-                    ]
-                )
-                .frame(maxWidth: .infinity, alignment: .leading)
-            } else {
-                scriptsStatCard
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            totalStylesCount > 0
             #else
-            scriptsStatCard
+            false
+            #endif
+        }()
+        return HStack(spacing: compact ? 8 : 12) {
+            StatCard(
+                title: "Scripts",
+                value: "\(totalScriptsCount)",
+                icon: "doc.text",
+                compact: compact
+            )
 
             if totalStylesCount > 0 {
                 StatCard(
                     title: "Styles",
                     value: "\(totalStylesCount)",
                     icon: "paintbrush",
-                    valueColor: .primary
+                    compact: compact
                 )
             }
-            #endif
 
             StatCard(
                 title: "Enabled",
                 value: "\(enabledScriptsCount)",
                 icon: "checkmark.circle",
-                valueColor: .primary
+                compact: compact
             )
-            #if os(iOS)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            #endif
         }
         .padding(.horizontal)
-    }
-
-    private var scriptsStatCard: some View {
-        StatCard(
-            title: "Scripts",
-            value: "\(totalScriptsCount)",
-            icon: "doc.text",
-            valueColor: .primary
-        )
     }
 
     private func displaySectionHeader(_ section: UserScriptDisplaySection) -> some View {
