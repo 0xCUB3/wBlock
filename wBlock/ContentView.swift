@@ -1127,6 +1127,8 @@ struct AddFilterListView: View {
     @State private var showingFileImporter = false
     @State private var importErrorMessage: String?
     @State private var pastedRules: String = ""
+    @State private var isShowingRulesEditor = false
+    @StateObject private var rulesEditorController = CodeMirrorEditorController(text: "")
     @State private var userListTitle: String = ""
     @State private var userListDescription: String = ""
     @State private var selectedCategory: FilterListCategory = .custom
@@ -1219,6 +1221,16 @@ struct AddFilterListView: View {
             urlFieldIsFocused = newValue == .url
         }
         #endif
+        .sheet(isPresented: $isShowingRulesEditor) {
+            CodeEditorSheet(
+                editorController: rulesEditorController,
+                onTextChanged: { pastedRules = $0 },
+                onPaste: {
+                    pasteRulesFromClipboard()
+                    rulesEditorController.replaceText(pastedRules, markClean: true)
+                }
+            )
+        }
         .fileImporter(
             isPresented: $showingFileImporter,
             allowedContentTypes: filterImportTypes,
@@ -1494,7 +1506,17 @@ struct AddFilterListView: View {
             Section("Rules") {
                 SyntaxHighlightingTextView(text: $pastedRules)
                     .frame(minHeight: 220)
-                pasteRulesButton
+                HStack(spacing: 10) {
+                    pasteRulesButton
+                    Button {
+                        rulesEditorController.replaceText(pastedRules, markClean: true)
+                        isShowingRulesEditor = true
+                    } label: {
+                        Label("Use Editor", systemImage: "curlybraces")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isSaving)
+                }
             }
             Section {
                 filterTextRequirementsPanel
@@ -2116,6 +2138,8 @@ struct EditUserListView: View {
     @State private var rules: String = ""
     @State private var isLoadingContent: Bool = true
     @State private var errorMessage: String?
+    @State private var isShowingEditor = false
+    @StateObject private var editorController = CodeMirrorEditorController(text: "")
 
     init(filterManager: AppFilterManager, filter: FilterList) {
         self.filterManager = filterManager
@@ -2151,6 +2175,7 @@ struct EditUserListView: View {
                         Section("Rules") {
                             SyntaxHighlightingTextView(text: $rules)
                                 .frame(minHeight: 260)
+                            useEditorButton
                         }
                     }
                     .navigationTitle("Edit User List")
@@ -2240,9 +2265,14 @@ struct EditUserListView: View {
                             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
 
                             VStack(alignment: .leading, spacing: 6) {
-                                Text("Rules")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                HStack {
+                                    Text("Rules")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Spacer()
+                                    useEditorButton
+                                        .controlSize(.small)
+                                }
 
                                 SyntaxHighlightingTextView(text: $rules)
                                     .frame(minHeight: 260)
@@ -2287,9 +2317,33 @@ struct EditUserListView: View {
                 }
             #endif
         }
+        .sheet(isPresented: $isShowingEditor) {
+            CodeEditorSheet(
+                editorController: editorController,
+                onTextChanged: { rules = $0 },
+                onPaste: pasteRulesIntoEditor
+            )
+        }
     }
 
+    private var useEditorButton: some View {
+        Button {
+            editorController.replaceText(rules, markClean: true)
+            isShowingEditor = true
+        } label: {
+            Label("Use Editor", systemImage: "curlybraces")
+        }
+        .disabled(isLoadingContent)
+    }
 
+    private func pasteRulesIntoEditor() {
+        #if os(iOS)
+        guard let string = UIPasteboard.general.string else { return }
+        #else
+        guard let string = NSPasteboard.general.string(forType: .string) else { return }
+        #endif
+        editorController.replaceText(string, markClean: true)
+    }
 
     private var trimmedTitle: String {
         title.trimmingCharacters(in: .whitespacesAndNewlines)
