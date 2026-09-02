@@ -3076,10 +3076,18 @@ public class UserScriptManager: ObservableObject {
             let isReady = await ensureScriptReadyForEnabling(scriptID: userScript.id, origin: origin)
             guard isCurrentUserScriptIntent(userScript.id, revision: revision) else { return }
             guard isReady else {
+                // The enable did not happen, so the recorded intent must not be
+                // replayed by a later data-manager sync as if it had succeeded.
+                latestUserScriptIntentValues[userScript.id] = current.isEnabled
                 finishUserScriptIntent(userScript.id, revision: revision)
                 hasError = true
-                errorMessage = "Failed to download \(userScript.name). Please try again."
-                statusDescription = "Download failed"
+                if current.isLocal {
+                    errorMessage = "Failed to load \(userScript.name). Please re-import it."
+                    statusDescription = "Load failed"
+                } else {
+                    errorMessage = "Failed to download \(userScript.name). Please try again."
+                    statusDescription = "Download failed"
+                }
                 return
             }
         }
@@ -3150,8 +3158,24 @@ public class UserScriptManager: ObservableObject {
               userScripts.indices.contains(index)
         else { return false }
         let script = userScripts[index]
-        guard !script.isLocal else { return !script.content.isEmpty }
         guard script.content.isEmpty else { return true }
+
+        if script.isLocal {
+            // Disabled local scripts keep only their disk copy in memory. Rehydrate the
+            // source (and any compiled userstyle artifact) before reporting readiness.
+            let hydrated = await Task.detached { [script] in
+                Self.hydrateUserScriptFromDisk(script)
+            }.value
+            guard !hydrated.content.isEmpty,
+                  let currentIndex = indexOfUserScript(withId: scriptID),
+                  userScripts.indices.contains(currentIndex)
+            else { return false }
+            userScripts[currentIndex] = hydrated
+            if let resources = readUserScriptResources(hydrated) {
+                userScripts[currentIndex].resourceContents = resources
+            }
+            return true
+        }
 
         if let diskContent = readUserScriptContent(script), !diskContent.isEmpty {
             userScripts[index].replaceContentAndParseMetadata(diskContent)
