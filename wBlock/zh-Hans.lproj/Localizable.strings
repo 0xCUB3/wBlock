@@ -1015,6 +1015,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replace Thumbnails" = "替换缩略图";
 "Random Frame When No Thumbnail" = "无缩略图时使用随机画面";
 "Show Original on Hover" = "悬停时显示原始内容";
-"About DeArrow" = "关于 DeArrow";
+"Using DeArrow" = "使用 DeArrow";
+"Donate to DeArrow" = "向 DeArrow 捐款";
 "DeArrow: On" = "DeArrow：开";
 "DeArrow: Off" = "DeArrow：关";

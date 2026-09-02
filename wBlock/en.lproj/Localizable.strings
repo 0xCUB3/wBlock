@@ -1014,6 +1014,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replace Thumbnails" = "Replace Thumbnails";
 "Random Frame When No Thumbnail" = "Random Frame When No Thumbnail";
 "Show Original on Hover" = "Show Original on Hover";
-"About DeArrow" = "About DeArrow";
+"Using DeArrow" = "Using DeArrow";
+"Donate to DeArrow" = "Donate to DeArrow";
 "DeArrow: On" = "DeArrow: On";
 "DeArrow: Off" = "DeArrow: Off";

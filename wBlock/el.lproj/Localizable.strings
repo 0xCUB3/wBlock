@@ -1015,6 +1015,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replace Thumbnails" = "Αντικατάσταση μικρογραφιών";
 "Random Frame When No Thumbnail" = "Τυχαίο καρέ χωρίς μικρογραφία";
 "Show Original on Hover" = "Εμφάνιση πρωτότυπου με το ποντίκι";
-"About DeArrow" = "Σχετικά με το DeArrow";
+"Using DeArrow" = "Χρησιμοποιεί το DeArrow";
+"Donate to DeArrow" = "Δωρεά στο DeArrow";
 "DeArrow: On" = "DeArrow: ενεργό";
 "DeArrow: Off" = "DeArrow: ανενεργό";

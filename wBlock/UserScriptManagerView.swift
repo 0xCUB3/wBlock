@@ -1615,7 +1615,9 @@ private struct TubeCleanerDeArrowPicker: View {
             Toggle("Show Original on Hover", isOn: $settings.showOriginalOnHover)
                 .disabled(!settings.enabled)
             Divider()
-            Link("About DeArrow", destination: URL(string: "https://dearrow.ajay.app/")!)
+            // DeArrow data is CC BY-NC-SA 4.0; the credit link is a license term.
+            Link("Using DeArrow", destination: URL(string: "https://dearrow.ajay.app/")!)
+            Link("Donate to DeArrow", destination: URL(string: "https://dearrow.ajay.app/donate/")!)
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: settings.enabled ? "arrow.uturn.down.circle.fill" : "arrow.uturn.down.circle")

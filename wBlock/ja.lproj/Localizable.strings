@@ -1015,6 +1015,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replace Thumbnails" = "サムネイルを置き換える";
 "Random Frame When No Thumbnail" = "サムネイルがない場合はランダムなフレーム";
 "Show Original on Hover" = "ホバー時に元を表示";
-"About DeArrow" = "DeArrowについて";
+"Using DeArrow" = "DeArrowを使用";
+"Donate to DeArrow" = "DeArrowに寄付";
 "DeArrow: On" = "DeArrow: オン";
 "DeArrow: Off" = "DeArrow: オフ";

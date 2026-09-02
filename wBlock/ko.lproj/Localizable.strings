@@ -1015,6 +1015,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replace Thumbnails" = "미리보기 이미지 바꾸기";
 "Random Frame When No Thumbnail" = "미리보기가 없으면 임의의 프레임";
 "Show Original on Hover" = "마우스를 올리면 원본 표시";
-"About DeArrow" = "DeArrow 정보";
+"Using DeArrow" = "DeArrow 사용";
+"Donate to DeArrow" = "DeArrow에 기부";
 "DeArrow: On" = "DeArrow: 켜짐";
 "DeArrow: Off" = "DeArrow: 꺼짐";

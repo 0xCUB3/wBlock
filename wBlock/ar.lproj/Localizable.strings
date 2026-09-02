@@ -1015,6 +1015,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replace Thumbnails" = "استبدال الصور المصغّرة";
 "Random Frame When No Thumbnail" = "إطار عشوائي عند عدم وجود صورة مصغّرة";
 "Show Original on Hover" = "إظهار الأصل عند التمرير";
-"About DeArrow" = "حول DeArrow";
+"Using DeArrow" = "يستخدم DeArrow";
+"Donate to DeArrow" = "تبرّع لـ DeArrow";
 "DeArrow: On" = "DeArrow: مفعّل";
 "DeArrow: Off" = "DeArrow: معطّل";
