@@ -1621,10 +1621,15 @@ private struct UserScriptSourceSheet: View {
                 } label: {
                     Image(systemName: isLineWrappingEnabled ? "text.justify.left" : "text.alignleft")
                         .frame(width: 28, height: 28)
-                        .foregroundStyle(isLineWrappingEnabled ? Color.accentColor : Color.primary)
+                        .foregroundStyle(isLineWrappingEnabled ? Color.accentColor : Color.secondary)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Wrap Lines")
+                .accessibilityValue(
+                    isLineWrappingEnabled
+                        ? String(localized: "On")
+                        : String(localized: "Off")
+                )
 
                 Spacer()
 
@@ -1856,6 +1861,7 @@ private struct AddUserScriptEditorSheet: View {
                 } label: {
                     Label("Wrap Lines", systemImage: isLineWrappingEnabled ? "text.justify.left" : "text.alignleft")
                 }
+                .foregroundStyle(isLineWrappingEnabled ? Color.accentColor : Color.secondary)
                 .accessibilityValue(
                     isLineWrappingEnabled
                         ? String(localized: "On")
@@ -2403,9 +2409,15 @@ struct AddUserScriptView: View {
 
                 if urlInput.isEmpty {
                     Text(verbatim: "https://example.com/script.user.js")
+                        .font(.body)
                         .foregroundStyle(.tertiary)
+                        #if os(macOS)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        #else
                         .padding(.horizontal, 5)
                         .padding(.vertical, 8)
+                        #endif
                         .allowsHitTesting(false)
                 }
             }
