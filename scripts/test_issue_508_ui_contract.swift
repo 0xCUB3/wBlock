@@ -121,7 +121,7 @@ let settingsContentStart = settings.range(of: "private var settingsContent", ran
 let dangerZone = String(settings[dangerStart..<settingsContentStart])
 require(dangerZone, ".buttonStyle(.bordered)")
 require(dangerZone, ".tint(.red)")
-require(dangerZone, ".controlSize(.small)")
+requireCondition(!dangerZone.contains(".controlSize(.small)"), "Restart Onboarding must match the size of the other Settings buttons (#607)")
 requireCondition(!dangerZone.contains(".frame(maxWidth: .infinity)"), "Restart Onboarding must not fill the settings row")
 let manager = try source("wBlock/AppFilterManager.swift")
 require(manager, "func setFilterListSelection(id: UUID, selected: Bool)")

@@ -645,7 +645,6 @@ struct SettingsView: View {
             .tint(.red)
             #if os(macOS)
             .buttonStyle(.bordered)
-            .controlSize(.small)
             #endif
             .disabled(isRestarting)
         } header: {
