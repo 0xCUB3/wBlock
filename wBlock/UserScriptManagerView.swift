@@ -1167,69 +1167,6 @@ struct UserScriptInfoSidebar: View {
     }
 }
 
-#if os(macOS)
-struct ScriptContentMainView: View {
-    let previewContent: String
-    let contentLength: Int
-    let isUserStyle: Bool
-    let formatFileSize: (Int) -> String
-    let onShowSource: () -> Void
-
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    (isUserStyle ? Text("Style Content") : Text("Script Content")).font(.headline).fontWeight(.medium)
-                    if contentLength > 0 {
-                        HStack(spacing: 4) {
-                            Image(systemName: "info.circle").font(.caption2).foregroundStyle(.orange)
-                            Text(
-                                LocalizedStrings.format(
-                                    "Showing preview (%@ of %@)",
-                                    comment: "Userscript content preview status",
-                                    formatFileSize(previewContent.count),
-                                    formatFileSize(contentLength)
-                                )
-                            )
-                                .font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                }
-                Spacer()
-                HStack(spacing: 12) {
-                    if contentLength > 0 {
-                        Button {
-                            onShowSource()
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "eye")
-                                Text("Show All")
-                            }
-                        }
-                        .buttonStyle(.borderless)
-                    }
-                }
-            }.padding(.horizontal, 20).padding(.vertical, 12)
-            Divider()
-            if contentLength == 0 {
-                VStack(spacing: 16) {
-                    Image(systemName: "doc.text").font(.system(size: 48)).foregroundStyle(.secondary.opacity(0.6))
-                    Text("No Content Available").font(.headline).foregroundStyle(.secondary)
-                    Text("This script hasn't been downloaded yet.").font(.body).foregroundStyle(.secondary)
-                }.frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                MonospacedTextView(
-                    text: Binding(
-                        get: { previewContent },
-                        set: { _ in }
-                    )
-                )
-            }
-        }
-    }
-}
-#endif
-
 struct UserScriptInfoView: View {
     let scriptId: UUID
     var userScriptManager: UserScriptManager
@@ -1318,154 +1255,42 @@ struct UserScriptInfoView: View {
     }
 }
 
+/// View Content and Edit Content both open the CodeMirror source sheet directly,
+/// matching the filter list viewer (#616). Metadata lives in UserScriptInfoView.
 struct UserScriptContentView: View {
     let scriptId: UUID
     var userScriptManager: UserScriptManager
     var startsEditing: Bool = false
-    @Environment(\.dismiss) private var dismiss
     @State private var script: UserScript?
     @State private var loadedContent = ""
-    @State private var previewContent = ""
-    @State private var isLoadingContent = false
-    @State private var sidebarWidth: CGFloat = 280
-    @State private var isPatternsExpanded = false
-    @State private var isShowingSourceSheet = false
-
-    private let previewLength = 10000
-    #if os(macOS)
-    private let minSidebarWidth: CGFloat = 250
-    private let maxSidebarWidth: CGFloat = 500
-    #endif
+    @State private var isLoadingContent = true
 
     var body: some View {
         Group {
             if let script {
-                #if os(iOS)
-                NavigationView {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 20) {
-                            UserScriptInfoSidebar(
-                                script: script,
-                                contentLength: loadedContent.count,
-                                isPatternsExpanded: $isPatternsExpanded,
-                                formatFileSize: formatFileSize,
-                                isBuiltIn: userScriptManager.isDefaultUserScript(script),
-                                builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
-                                isBeta: userScriptManager.isBeta(for: script),
-                                onUpdatesAutomaticallyChanged: setUpdatesAutomatically
-                            )
-                            .padding(.horizontal)
-
-                            Divider()
-
-                            VStack(alignment: .leading, spacing: 12) {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    HStack(alignment: .center, spacing: 12) {
-                                        (script.isUserStyle ? Text("Style Content") : Text("Script Content"))
-                                            .font(.headline)
-                                            .fontWeight(.medium)
-                                        Spacer()
-                                        if !loadedContent.isEmpty {
-                                            Button {
-                                                isShowingSourceSheet = true
-                                            } label: {
-                                                Label("Show All", systemImage: "eye")
-                                            }
-                                            .buttonStyle(.plain)
-                                            .font(.body)
-                                            .foregroundStyle(Color.accentColor)
-                                        }
-                                    }
-
-                                    if !loadedContent.isEmpty {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "info.circle")
-                                                .font(.caption2)
-                                                .foregroundStyle(.orange)
-                                            Text(
-                                                LocalizedStrings.format(
-                                                    "Showing preview (%@ of %@)",
-                                                    comment: "Userscript content preview status",
-                                                    formatFileSize(previewContent.count),
-                                                    formatFileSize(loadedContent.count)
-                                                )
-                                            )
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                        }
-                                    }
-                                }
-
-                                if loadedContent.isEmpty {
-                                    VStack(spacing: 16) {
-                                        Image(systemName: "doc.text")
-                                            .font(.system(size: 48))
-                                            .foregroundStyle(.secondary.opacity(0.6))
-                                        Text("No Content Available")
-                                            .font(.headline)
-                                            .foregroundStyle(.secondary)
-                                        Text("This script hasn't been downloaded yet.")
-                                            .font(.body)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 40)
-                                } else {
-                                    MonospacedTextView(
-                                        text: Binding(
-                                            get: { previewContent },
-                                            set: { _ in }
-                                        )
-                                    )
-                                        .frame(minHeight: 300)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .background(Color(.systemGray6))
-                                        .cornerRadius(8)
-                                }
-                            }
-                            .padding(.horizontal)
+                UserScriptSourceSheet(
+                    script: script,
+                    initialContent: loadedContent,
+                    canEdit: script.isLocal && !userScriptManager.isDefaultUserScript(script),
+                    startsEditing: startsEditing,
+                    onSave: { newContent, name, description in
+                        if let error = await userScriptManager.saveEditedContent(for: script.id, newContent: newContent) {
+                            return error
                         }
-                        .padding(.vertical)
+                        await userScriptManager.setUserScriptMetadataOverrides(
+                            for: script.id,
+                            name: name,
+                            description: description
+                        )
+                        return nil
                     }
-                    .navigationTitle(script.localizedDisplayName)
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            SheetDoneButton(action: { dismiss() }, usesAutomaticStyle: true)
-                        }
-                    }
-                }
-                #else
-                HSplitView {
-                    UserScriptInfoSidebar(
-                        script: script,
-                        contentLength: loadedContent.count,
-                        isPatternsExpanded: $isPatternsExpanded,
-                        formatFileSize: formatFileSize,
-                        isBuiltIn: userScriptManager.isDefaultUserScript(script),
-                        builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
-                        isBeta: userScriptManager.isBeta(for: script),
-                        onUpdatesAutomaticallyChanged: setUpdatesAutomatically
-                    )
-                    .frame(minWidth: minSidebarWidth, idealWidth: sidebarWidth, maxWidth: maxSidebarWidth)
-                    .padding(20)
-
-                    ScriptContentMainView(
-                        previewContent: previewContent,
-                        contentLength: loadedContent.count,
-                        isUserStyle: script.isUserStyle,
-                        formatFileSize: formatFileSize,
-                        onShowSource: { isShowingSourceSheet = true }
-                    )
-                    .frame(minWidth: 400)
-                }
-                .navigationTitle("")
-                .toolbar { ToolbarItem(placement: .cancellationAction) { SheetDoneButton { dismiss() } } }
-                .frame(width: 1000, height: 700)
-                #endif
+                )
             } else if isLoadingContent {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    #if os(macOS)
+                    .frame(width: 1000, height: 700)
+                    #endif
             } else {
                 VStack(spacing: 12) {
                     Image(systemName: "doc.text")
@@ -1479,73 +1304,19 @@ struct UserScriptContentView: View {
             }
         }
         .task(id: scriptId) {
-            await loadScript()
-        }
-        .sheet(isPresented: $isShowingSourceSheet) {
-            if let script {
-                UserScriptSourceSheet(
-                    script: script,
-                    initialContent: loadedContent,
-                    canEdit: script.isLocal && !userScriptManager.isDefaultUserScript(script),
-                    onSave: { newContent, name, description in
-                        if let error = await userScriptManager.saveEditedContent(for: script.id, newContent: newContent) {
-                            return error
-                        }
-                        await userScriptManager.setUserScriptMetadataOverrides(
-                            for: script.id,
-                            name: name,
-                            description: description
-                        )
-                        await MainActor.run {
-                            loadedContent = newContent
-                            updatePreview()
-                        }
-                        return nil
-                    }
-                )
+            isLoadingContent = true
+            guard let loadedScript = await userScriptManager.userScriptEditorSnapshot(withId: scriptId) else {
+                script = nil
+                loadedContent = ""
+                isLoadingContent = false
+                return
             }
-        }
-    }
-
-    @MainActor
-    private func loadScript() async {
-        isLoadingContent = true
-        guard let loadedScript = await userScriptManager.userScriptEditorSnapshot(withId: scriptId) else {
-            script = nil
-            loadedContent = ""
-            previewContent = ""
+            var metadata = loadedScript
+            loadedContent = loadedScript.content
+            metadata.content = ""
+            script = metadata
             isLoadingContent = false
-            return
         }
-
-        var metadata = loadedScript
-        loadedContent = loadedScript.content
-        metadata.content = ""
-        script = metadata
-        updatePreview()
-        isLoadingContent = false
-        if startsEditing && metadata.isLocal && !userScriptManager.isDefaultUserScript(metadata) {
-            isShowingSourceSheet = true
-        }
-    }
-
-    private func setUpdatesAutomatically(_ updatesAutomatically: Bool) {
-        guard var currentScript = script else { return }
-        currentScript.updatesAutomatically = updatesAutomatically
-        script = currentScript
-
-        Task {
-            await userScriptManager.setUserScript(currentScript, updatesAutomatically: updatesAutomatically)
-        }
-    }
-
-    private func updatePreview() {
-        previewContent = String(loadedContent.prefix(previewLength))
-    }
-
-    private func formatFileSize(_ bytes: Int) -> String {
-        let formatter = ByteCountFormatter(); formatter.allowedUnits = [.useKB, .useMB]; formatter.countStyle = .file
-        return formatter.string(fromByteCount: Int64(bytes))
     }
 }
 
@@ -1568,6 +1339,7 @@ private struct UserScriptSourceSheet: View {
         script: UserScript,
         initialContent: String,
         canEdit: Bool,
+        startsEditing: Bool = false,
         onSave: @escaping (String, String, String) async -> String?
     ) {
         self.script = script
@@ -1575,7 +1347,7 @@ private struct UserScriptSourceSheet: View {
         self.canEdit = canEdit
         self.onSave = onSave
         _editorController = StateObject(wrappedValue: CodeMirrorEditorController(text: initialContent, isUserStyle: script.isUserStyle))
-        _isEditing = State(initialValue: false)
+        _isEditing = State(initialValue: startsEditing && canEdit)
         _editedName = State(initialValue: script.name)
         _editedDescription = State(initialValue: script.description)
     }
@@ -1809,7 +1581,10 @@ private struct DarkReaderAppearancePicker: View {
     }
 }
 
-private struct AddUserScriptEditorSheet: View {
+/// Full-size CodeMirror sheet used by the Add flows and the user list editor.
+/// The caller owns the controller; text flows back through `onTextChanged`
+/// when the sheet closes.
+struct CodeEditorSheet: View {
     @ObservedObject var editorController: CodeMirrorEditorController
     let onTextChanged: (String) -> Void
     let onPaste: () -> Void
@@ -2022,7 +1797,7 @@ struct AddUserScriptView: View {
             Text("Pasting will replace the existing content.")
         }
         .sheet(isPresented: $isShowingEditor) {
-            AddUserScriptEditorSheet(
+            CodeEditorSheet(
                 editorController: editorController,
                 onTextChanged: applyEditorText,
                 onPaste: pasteScriptFromClipboard

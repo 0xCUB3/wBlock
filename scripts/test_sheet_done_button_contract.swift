@@ -31,9 +31,8 @@ for (name, text) in [
     ("FilterCategoryInfoView", categoryInfo),
     ("RuleCapacityPopoverView", content),
     ("UserScriptInfoView", userscripts),
-    ("UserScriptContentView", userscripts),
     ("UserScriptSourceSheet", userscripts),
-    ("AddUserScriptEditorSheet", userscripts),
+    ("CodeEditorSheet", userscripts),
     ("UserScriptCategoryInfoView", userscriptCategoryInfo)
 ] {
     require(text.contains("SheetDoneButton"), "\(name) must use SheetDoneButton")
@@ -43,9 +42,9 @@ for (name, text) in [
 require(occurrenceCount("SheetDoneButton", in: filterInfo) == 2, "both filter detail popovers must use the shared button")
 require(occurrenceCount("SheetDoneButton", in: categoryInfo) == 1, "category detail popover must use the shared button")
 require(occurrenceCount("SheetDoneButton", in: content) == 1, "capacity popover must use the shared button")
-require(occurrenceCount("SheetDoneButton", in: userscripts) == 6, "all userscript detail and editor overlays must use the shared button")
+require(occurrenceCount("SheetDoneButton", in: userscripts) == 4, "all userscript detail and editor overlays must use the shared button")
 require(occurrenceCount("SheetDoneButton", in: userscriptCategoryInfo) == 1, "userscript category detail popover must use the shared button")
-require(occurrenceCount("usesAutomaticStyle: true", in: userscripts) == 2, "only the iOS Info and Content toolbar Done buttons may use native styling")
+require(occurrenceCount("usesAutomaticStyle: true", in: userscripts) == 1, "only the iOS Info toolbar Done button may use native styling")
 require(!content.contains("Image(systemName: \"xmark.circle.fill\")"), "capacity popover must not use a custom xmark close control")
 require(content.contains("ViewThatFits(in: .vertical)"), "capacity sheet must only scroll when its content overflows")
 require(!content.contains("ScrollView(.vertical) {"), "capacity sheet must not show an indicator detached from its 380pt column")

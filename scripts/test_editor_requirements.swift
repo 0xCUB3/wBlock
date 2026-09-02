@@ -15,7 +15,7 @@ for required in [
     "TextEditor(text: $textInput)",
     "Button(action: openEditorSheet)",
     ".sheet(isPresented: $isShowingEditor)",
-    "AddUserScriptEditorSheet(",
+    "CodeEditorSheet(",
     "onTextChanged: applyEditorText",
     "private var editorRequirementsPanel",
     "if let editorImportError",
@@ -31,7 +31,7 @@ for required in [
     require(source.contains(required), "missing editor/text requirement evidence: \(required)")
 }
 
-let sheetStart = source.range(of: "private struct AddUserScriptEditorSheet")!.lowerBound
+let sheetStart = source.range(of: "struct CodeEditorSheet")!.lowerBound
 let sheetEnd = source.range(of: "struct AddUserScriptView", range: sheetStart..<source.endIndex)!.lowerBound
 let editorSheet = String(source[sheetStart..<sheetEnd])
 let iOSStart = editorSheet.range(of: "#if os(iOS)")!.lowerBound
