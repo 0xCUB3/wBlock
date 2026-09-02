@@ -818,8 +818,8 @@ extension SettingsView {
             PortraitOrientationLock.apply()
             #endif
             await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
-            // Apply straight away, the same way the onboarding restore does (#630).
-            filterManager.checkAndEnableFilters(forceReload: true)
+            // Apply straight away instead of asking for a manual Apply tap (#630).
+            filterManager.forceApplyChanges()
             backupStatusMessage = String(localized: "Settings restored. Applying now.")
             showingBackupStatus = true
         }
