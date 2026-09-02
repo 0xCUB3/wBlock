@@ -1001,10 +1001,13 @@ private struct ScriptURLView: View {
 
 private struct ScriptMatchPatternRowView: View {
     let index: Int
+    let total: Int
     let pattern: String
 
     var body: some View {
         HStack(alignment: .top, spacing: 6) {
+            // Size the number column from the largest index so "1000." never
+            // wraps onto two lines (#614); the monospaced digits keep it aligned.
             Text(
                 LocalizedStrings.format(
                     "%d.",
@@ -1012,9 +1015,11 @@ private struct ScriptMatchPatternRowView: View {
                     index + 1
                 )
             )
-                .font(.caption2)
+                .font(.caption2.monospacedDigit())
                 .foregroundStyle(.secondary)
-                .frame(width: 18, alignment: .trailing)
+                .lineLimit(1)
+                .fixedSize()
+                .frame(minWidth: CGFloat(6 * (String(total).count + 1)), alignment: .trailing)
 
             Text(pattern)
                 .font(.caption)
@@ -1080,6 +1085,7 @@ private struct ScriptMatchPatternsView: View {
                         ForEach(script.matches.indices, id: \.self) { indexInForEach in
                             ScriptMatchPatternRowView(
                                 index: indexInForEach,
+                                total: script.matches.count,
                                 pattern: displayPattern(script.matches[indexInForEach])
                             )
                         }
