@@ -105,6 +105,9 @@ public enum UserStyleSupport {
         case urlPrefix(String)
         case domain(String)
         case regexp(String)
+        /// `@match` / `@include` from the metadata block (Userscripts app convention).
+        case match(String)
+        case include(String)
 
         /// Compact `kind:value` form stored in `UserScript.matches` for persistence.
         public var serialized: String {
@@ -113,6 +116,8 @@ public enum UserStyleSupport {
             case .urlPrefix(let value): return "url-prefix:\(value)"
             case .domain(let value): return "domain:\(value)"
             case .regexp(let value): return "regexp:\(value)"
+            case .match(let value): return "match:\(value)"
+            case .include(let value): return "include:\(value)"
             }
         }
 
@@ -125,6 +130,10 @@ public enum UserStyleSupport {
                 self = .domain(String(serialized.dropFirst("domain:".count)))
             } else if serialized.hasPrefix("regexp:") {
                 self = .regexp(String(serialized.dropFirst("regexp:".count)))
+            } else if serialized.hasPrefix("match:") {
+                self = .match(String(serialized.dropFirst("match:".count)))
+            } else if serialized.hasPrefix("include:") {
+                self = .include(String(serialized.dropFirst("include:".count)))
             } else {
                 return nil
             }
@@ -132,6 +141,10 @@ public enum UserStyleSupport {
 
         public func matches(url: String) -> Bool {
             switch self {
+            case .match(let pattern):
+                return UserScript.matchesMatchPattern(pattern, url: url)
+            case .include(let pattern):
+                return UserScript.matchesIncludePattern(pattern, url: url)
             case .url(let value):
                 return url == value
             case .urlPrefix(let value):
@@ -184,6 +197,11 @@ public enum UserStyleSupport {
         public let variables: [Variable]
         public let globalCSS: String
         public let sections: [Section]
+        /// `@match` / `@include` metadata conditions. When present they gate the
+        /// whole style, mirroring how the Userscripts app scopes `.css` files.
+        public let urlConditions: [Condition]
+        public let excludeMatches: [String]
+        public let excludes: [String]
         /// False when preprocessing failed. Metadata remains available so callers
         /// can classify the source and surface the compiler diagnostic.
         public let isCompiled: Bool
@@ -201,6 +219,9 @@ public enum UserStyleSupport {
         /// Conditions persisted into `UserScript.matches` so per-URL filtering works
         /// without re-reading style content from disk.
         public var serializedConditions: [String] {
+            if !urlConditions.isEmpty {
+                return urlConditions.map(\.serialized)
+            }
             var seen = Set<String>()
             var result: [String] = []
             if hasGlobalCSS {
@@ -318,6 +339,9 @@ public enum UserStyleSupport {
 
     private static func effectiveCSS(forParsed parsed: ParsedStyle, url: String) -> String? {
         guard parsed.isPreprocessorSupported && parsed.isCompiled else { return nil }
+        if !parsed.urlConditions.isEmpty, !parsed.urlConditions.contains(where: { $0.matches(url: url) }) {
+            return nil
+        }
 
         var sectionPieces: [String] = []
         for section in parsed.sections where section.matches(url: url) {
@@ -498,6 +522,9 @@ public enum UserStyleSupport {
             variables: metadata.variables,
             globalCSS: globalCSS,
             sections: sections,
+            urlConditions: metadata.urlConditions,
+            excludeMatches: metadata.excludeMatches,
+            excludes: metadata.excludes,
             isCompiled: isCompiled,
             compilationError: compilationError,
             compiledArtifact: compiledArtifact
@@ -542,6 +569,9 @@ public enum UserStyleSupport {
         var updateURL: String?
         var preprocessor: String?
         var variables: [Variable] = []
+        var urlConditions: [Condition] = []
+        var excludeMatches: [String] = []
+        var excludes: [String] = []
     }
 
     private static func parseMetadataDirectives(_ text: String) -> MetadataAccumulator {
@@ -575,6 +605,14 @@ public enum UserStyleSupport {
                 if !value.isEmpty { accumulator.updateURL = value }
             case "@preprocessor":
                 if !value.isEmpty { accumulator.preprocessor = value.lowercased() }
+            case "@match":
+                if !value.isEmpty { accumulator.urlConditions.append(.match(value)) }
+            case "@include":
+                if !value.isEmpty { accumulator.urlConditions.append(.include(value)) }
+            case "@exclude-match":
+                if !value.isEmpty { accumulator.excludeMatches.append(value) }
+            case "@exclude":
+                if !value.isEmpty { accumulator.excludes.append(value) }
             case "@var":
                 if let variable = parseVarDirective(value, lines: lines, index: &index) {
                     accumulator.variables.append(variable)

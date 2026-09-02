@@ -33,7 +33,7 @@ wBlock only accepts a file as a userstyle when it carries a complete metadata bl
 }
 ```
 
-The `@-moz-document` sections decide which pages get the CSS. `domain()`, `url()`, `url-prefix()`, and `regexp()` all work, and CSS written outside any `@-moz-document` block is applied to every page. The file extension only tells wBlock to look for a userstyle; the metadata block is what actually gets parsed, so a `.css` file without the block is rejected.
+The `@-moz-document` sections decide which pages get the CSS. `domain()`, `url()`, `url-prefix()`, and `regexp()` all work, and CSS written outside any `@-moz-document` block is applied to every page. If the metadata block carries `@match` or `@include` lines (the Userscripts app convention for plain `.css` files), those scope the whole style instead, and `@exclude-match` / `@exclude` are honored too. The file extension only tells wBlock to look for a userstyle; the metadata block is what actually gets parsed, so a `.css` file without the block is rejected.
 
 ## Preprocessors and variables
 

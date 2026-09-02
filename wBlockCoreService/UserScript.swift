@@ -691,6 +691,8 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         }
         version = style.version ?? ""
         matches = style.serializedConditions
+        excludeMatches = style.excludeMatches
+        excludes = style.excludes
         // Styles must be present before first paint; the injector inserts them as
         // <style> elements, so script-context concepts do not apply.
         runAt = "document-start"
@@ -700,34 +702,46 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     
     /// Check if userscript or userstyle matches a given URL
     public func matches(url: String) -> Bool {
-        if isUserStyle {
-            return UserStyleSupport.matches(serializedConditions: matches, url: url)
-        }
-
         guard let parsedURL = Self.parsedMatchURL(from: url) else { return false }
         let urlRange = NSRange(location: 0, length: url.utf16.count)
 
-        let isIncludedByMatch = matches.contains {
-            matchesPattern(pattern: $0, url: url, parsedURL: parsedURL, urlRange: urlRange)
+        let isIncluded: Bool
+        if isUserStyle {
+            isIncluded = UserStyleSupport.matches(serializedConditions: matches, url: url)
+        } else {
+            isIncluded = matches.contains {
+                Self.matchesPattern(pattern: $0, url: url, parsedURL: parsedURL, urlRange: urlRange)
+            } || includes.contains {
+                Self.matchesIncludePattern(pattern: $0, url: url, urlRange: urlRange)
+            }
         }
-        let isIncludedByInclude = includes.contains {
-            matchesIncludePattern(pattern: $0, url: url, urlRange: urlRange)
-        }
-        let isIncluded = isIncludedByMatch || isIncludedByInclude
 
         guard isIncluded else { return false }
 
         if excludeMatches.contains(where: {
-            matchesPattern(pattern: $0, url: url, parsedURL: parsedURL, urlRange: urlRange)
+            Self.matchesPattern(pattern: $0, url: url, parsedURL: parsedURL, urlRange: urlRange)
         }) {
             return false
         }
 
-        if excludes.contains(where: { matchesIncludePattern(pattern: $0, url: url, urlRange: urlRange) }) {
+        if excludes.contains(where: { Self.matchesIncludePattern(pattern: $0, url: url, urlRange: urlRange) }) {
             return false
         }
 
         return true
+    }
+
+    /// Greasemonkey-style `@match` evaluation for a single pattern.
+    static func matchesMatchPattern(_ pattern: String, url: String) -> Bool {
+        guard let parsedURL = parsedMatchURL(from: url) else { return false }
+        return matchesPattern(
+            pattern: pattern, url: url, parsedURL: parsedURL,
+            urlRange: NSRange(location: 0, length: url.utf16.count))
+    }
+
+    /// Greasemonkey-style `@include` glob evaluation for a single pattern.
+    static func matchesIncludePattern(_ pattern: String, url: String) -> Bool {
+        matchesIncludePattern(pattern: pattern, url: url, urlRange: NSRange(location: 0, length: url.utf16.count))
     }
 
     private struct ParsedMatchURL {
@@ -771,7 +785,7 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         )
     }
 
-    private func matchesPattern(
+    private static func matchesPattern(
         pattern: String,
         url: String,
         parsedURL: ParsedMatchURL,
@@ -780,13 +794,13 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         // Fast path for normal @match patterns. Large userscripts such as tinyShield
         // carry tens of thousands of matches, and compiling regexes for each candidate
         // adds enough document-start latency to lose races against page scripts.
-        if let result = Self.matchesStructuredPattern(pattern: pattern, parsedURL: parsedURL) {
+        if let result = matchesStructuredPattern(pattern: pattern, parsedURL: parsedURL) {
             return result
         }
 
-        guard let regex = Self.cachedRegex(
+        guard let regex = cachedRegex(
             for: pattern,
-            cache: Self.matchRegexCache,
+            cache: matchRegexCache,
             buildRegexPattern: { sourcePattern in
                 var regexPattern = NSRegularExpression.escapedPattern(for: sourcePattern)
                 regexPattern = regexPattern.replacingOccurrences(of: "\\*:\\/\\/", with: "(https?|ftp)://")
@@ -875,10 +889,10 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         return pattern.last == "*" || searchStart == value.endIndex
     }
     
-    private func matchesIncludePattern(pattern: String, url: String, urlRange: NSRange) -> Bool {
-        guard let regex = Self.cachedRegex(
+    private static func matchesIncludePattern(pattern: String, url: String, urlRange: NSRange) -> Bool {
+        guard let regex = cachedRegex(
             for: pattern,
-            cache: Self.includeRegexCache,
+            cache: includeRegexCache,
             buildRegexPattern: { sourcePattern in
                 // Escape first, then restore wildcard semantics.
                 var regexPattern = NSRegularExpression.escapedPattern(for: sourcePattern)

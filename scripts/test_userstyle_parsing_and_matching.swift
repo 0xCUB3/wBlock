@@ -652,6 +652,34 @@ struct UserStyleParsingAndMatchingTests {
         expect(sectionOnly.matches(url: "https://example.com/a"), "scoped style should match its domain")
         expect(!sectionOnly.matches(url: "https://other.invalid/"), "scoped style must not match elsewhere")
 
+        // Userscripts-app convention: @match in the metadata block scopes global CSS (#599).
+        var matchScoped = UserScript(
+            name: "m",
+            content: """
+            /* ==UserStyle==
+            @name        DuckDuckGo CSS Style
+            @match       *://*.duckduckgo.com/*
+            @exclude-match *://*.duckduckgo.com/settings*
+            ==/UserStyle== */
+            div.js-notification-text { visibility: hidden; }
+            """
+        )
+        matchScoped.parseMetadata()
+        expect(matchScoped.isUserStyle, "@match style should be detected")
+        expect(matchScoped.matches(url: "https://duckduckgo.com/?q=x"), "@match style should match its host")
+        expect(matchScoped.matches(url: "https://html.duckduckgo.com/html"), "@match wildcard subdomain should match")
+        expect(!matchScoped.matches(url: "https://duckduckgo.com/settings?x"), "@exclude-match should exclude")
+        expect(!matchScoped.matches(url: "https://example.com/"), "@match style must not apply elsewhere")
+        expect(!matchScoped.matches.contains("global"), "@match style must not be serialized as global")
+        expect(
+            UserStyleSupport.effectiveCSS(forContent: matchScoped.content, url: "https://duckduckgo.com/") != nil,
+            "@match style should produce CSS on a matching page"
+        )
+        expect(
+            UserStyleSupport.effectiveCSS(forContent: matchScoped.content, url: "https://example.com/") == nil,
+            "@match style must produce no CSS elsewhere"
+        )
+
         // Re-parsing as a script must clear the style flag (idempotent parseMetadata).
         var script = UserScript(
             name: "s",
