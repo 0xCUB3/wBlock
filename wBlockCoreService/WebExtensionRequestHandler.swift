@@ -216,6 +216,14 @@ public enum WebExtensionRequestHandler {
                                     topUrl = URL(string: topUrlString)
                                 }
 
+                                #if os(iOS)
+                                // Reading the engine holds a kernel flock on the app
+                                // group; if Safari backgrounds mid-read the extension
+                                // is killed with 0xDEAD10CC. Defer suspension until
+                                // the lookup returns.
+                                let shield = SuspensionShield(reason: "wBlock engine lookup") {}
+                                defer { shield.release() }
+                                #endif
                                 let configuration: WebExtension.Configuration? = try WebExtensionGate.shared.withLock {
                                     let webExtension = try WebExtension.shared(
                                         groupID: GroupIdentifier.shared.value

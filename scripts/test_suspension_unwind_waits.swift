@@ -35,7 +35,7 @@ let applyShield = section(
 )
 let autoUpdateShield = section(
     autoUpdate,
-    from: "private final class SuspensionShield",
+    from: "final class SuspensionShield",
     to: "/// Actor to ensure"
 )
 let engineShield = section(

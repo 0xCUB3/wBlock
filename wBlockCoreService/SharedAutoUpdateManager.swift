@@ -31,8 +31,9 @@ import UIKit
 /// auto-update run holds kernel file locks in the app group container. If the
 /// system decides to suspend the app anyway, the expiration callback aborts
 /// the run so the locks are released before suspension instead of the process
-/// being killed with 0xDEAD10CC.
-private final class SuspensionShield: @unchecked Sendable {
+/// being killed with 0xDEAD10CC. Also used by the Scripts extension around the
+/// engine read, which holds the engine flock and cannot be cancelled.
+final class SuspensionShield: @unchecked Sendable {
     private static let expirationUnwindTimeout: TimeInterval = 3
 
     private let condition = NSCondition()
@@ -695,8 +696,14 @@ public actor SharedAutoUpdateManager {
             return .skipped(reason: "auto_update_disabled")
         }
 
-        // The persisted flag is only informational. The kernel lease is the
-        // cross-process ownership check and is released automatically on crash.
+        // The persisted flag is only informational. On macOS the kernel lease is
+        // the cross-process ownership check against FilterUpdateAgent and is
+        // released automatically on crash. iOS has one process that can run
+        // updates (extensions bail out above) and `runInProgress` already owns
+        // the run there; a flock held on the app group for the whole run is the
+        // lock iOS kills the app over (0xDEAD10CC) when it suspends mid-run and
+        // the unwind cannot finish in time.
+        #if !os(iOS)
         guard let lease = SharedAutoUpdateLease.acquire(
             groupIdentifier: GroupIdentifier.shared.value
         ) else {
@@ -706,6 +713,7 @@ public actor SharedAutoUpdateManager {
         }
         // Keep the descriptor alive across every early return as well as a started run.
         defer { withExtendedLifetime(lease) {} }
+        #endif
         let isRunning = await getAutoUpdateIsRunning()
         if isRunning {
             await clearPersistedRunningFlag(
