@@ -2386,6 +2386,7 @@ struct RuleCapacityPopoverView: View {
         capacitySheetContent
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .largeSheetPresentationCompat()
+            .fittedFormSheetSizingCompat()
         #endif
     }
 

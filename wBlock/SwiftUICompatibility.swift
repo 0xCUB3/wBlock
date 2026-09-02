@@ -134,6 +134,23 @@ extension View {
         }
     }
 
+    /// iPad form sheets are a fixed size no matter how little they hold, which
+    /// left the rule capacity sheet mostly empty (#612). On iOS 18 the sheet
+    /// keeps the form width and hugs its content vertically; iPhone ignores
+    /// sizing and keeps its detents.
+    @ViewBuilder
+    func fittedFormSheetSizingCompat() -> some View {
+        #if os(iOS)
+        if #available(iOS 18.0, *) {
+            presentationSizing(.form.fitted(horizontal: false, vertical: true))
+        } else {
+            self
+        }
+        #else
+        self
+        #endif
+    }
+
     @ViewBuilder
     func applySheetPresentationCompat(prefersLarge: Bool) -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {
