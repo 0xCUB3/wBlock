@@ -409,10 +409,9 @@ struct ContentView: View {
         }
         #else
         ScrollView {
-            // Containers stay eager: a LazyVStack nested inside another LazyVStack
-            // reports estimated heights that shift as rows realize, which made the
-            // scrollbar jump and left blank regional rows (#601, #602). Only the
-            // per-section row stacks below are lazy.
+            // Everything here is eager. LazyVStack hung the window on scroll (#172,
+            // #632) and, when nested, reported shifting estimated heights that made
+            // the scrollbar jump and left blank regional rows (#601, #602).
             VStack(spacing: 20) {
                 statsCardsView
 
@@ -670,7 +669,7 @@ struct ContentView: View {
             }
             .padding(.horizontal, 4)
 
-            LazyVStack(spacing: 0) {
+            VStack(spacing: 0) {
                 ForEach(filters) { filter in
                     filterRowView(for: filter)
                     if filter.id != filters.last?.id {
@@ -686,7 +685,7 @@ struct ContentView: View {
     private func macOSForeignFiltersView(filters: [FilterList]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
-                LazyVStack(spacing: 0) {
+                VStack(spacing: 0) {
                     ForEach(ForeignFilterOrganizer.groups(for: filters)) { group in
                         HStack {
                             Text(group.title)

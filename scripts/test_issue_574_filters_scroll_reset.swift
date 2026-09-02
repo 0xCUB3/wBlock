@@ -20,7 +20,6 @@ struct Issue574FiltersScrollResetContract {
         let macOSList = String(content[macOSStart.lowerBound..<macOSEnd.lowerBound])
 
         expect(macOSList.contains("ScrollView {"), "macOS filters must remain in a ScrollView")
-        expect(macOSList.contains("LazyVStack"), "macOS filters must remain lazily rendered")
         expect(macOSList.contains(".id("), "macOS filters must reset view identity when filtering changes")
         expect(macOSList.contains("showOnlyEnabledLists"), "view identity must include the enabled-only preference")
         expect(macOSList.contains("filterSearchText"), "view identity must include the search query")

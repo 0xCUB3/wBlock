@@ -23,12 +23,8 @@ func require(_ condition: @autoclosure () -> Bool, _ message: String) {
 }
 
 require(
-    contentView.components(separatedBy: "LazyVStack").count >= 3,
-    "macOS filter rows should be rendered lazily"
-)
-require(
-    !contentView.contains("LazyVStack(spacing: 20) {\n                statsCardsView"),
-    "macOS filter section containers must not be lazy; nested lazy stacks jump and drop rows"
+    !contentView.contains("LazyVStack("),
+    "macOS Filters page must not use LazyVStack; it hung on scroll (#172, #632) and dropped rows (#601, #602)"
 )
 require(
     manager.components(separatedBy: "hydrateDisabled: false").count >= 2,
