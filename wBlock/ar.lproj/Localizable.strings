@@ -103,7 +103,6 @@
 "AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
 "AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "الإعلانات";
-"Ads & Trackers" = "الإعلانات والمترقبين";
 "Advanced engine publish failed" = "تعذّر نشر المحرك المتقدم";
 "After downloading, filter lists will be applied automatically." = "بعد التنزيل، سيتم تطبيق قوائم التصفية تلقائيًا.";
 "All" = "الكل";
@@ -241,7 +240,6 @@
 "Current Safari rules: %@" = "قواعد Safari الحالية: %@";
 "Current Safari rules: %@ (near limit)" = "قواعد Safari الحالية: %@ (الحد القريب)";
 "Custom" = "مخصص";
-"Custom & User Rules" = "القواعد المخصصة";
 "Custom Filter" = "مرشح مخصص";
 "Custom filter with URL already exists" = "يوجد فلتر مخصّص بهذا الرابط بالفعل";
 "Dandelion Sprout's Nordic Filters" = "Dandelion Sprout's Nordic Filters";
@@ -583,7 +581,6 @@
 "Preparing %d extensions" = "جارٍ تجهيز %d امتدادات";
 "previous" = "السابق";
 "Privacy" = "الخصوصية";
-"Privacy & Anti-Tracking" = "الخصوصية ومكافحة التتبع";
 "Process completed successfully" = "اكتملت العملية بنجاح";
 "Process completed with errors" = "اكتملت العملية مع وجود أخطاء";
 "Process completed with reload issues" = "اكتملت العملية مع وجود مشكلات إعادة التحميل";
@@ -676,7 +673,6 @@
 "Search logs" = "البحث في السجلات";
 "Search scripts" = "البحث في السكريبتات";
 "Security" = "الأمان";
-"Security & Annoyances" = "الأمان والإزعاجات";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "حدّد أي سكريبتات مستخدم تريد تفعيلها. تضيف هذه ميزات إضافية أو إصلاحات. يمكنك دائمًا إضافة المزيد لاحقًا في الإعدادات.";
 "Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "اختر اللغات (واحدة أو أكثر) التي تتصفح بها مواقع الويب. يستخدم wBlock هذا فقط لاقتراح فلاتر إعلانات إقليمية.";
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "حدد اللغات التي تتصفح بها. سيوصي wBlock تلقائيًا بعوامل تصفية وميزات إقليمية مطابقة.";

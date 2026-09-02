@@ -2367,17 +2367,6 @@ struct RuleCapacityPopoverView: View {
         totalCapacity > 0 ? min(Double(totalUsed) / Double(totalCapacity), 1.0) : 0.0
     }
 
-    private func categorySubtitle(for slot: Int) -> String {
-        switch slot {
-        case 1: return String(localized: "Ads & Trackers")
-        case 2: return String(localized: "Privacy & Anti-Tracking")
-        case 3: return String(localized: "Security & Annoyances")
-        case 4: return String(localized: "Regional & Language")
-        case 5: return String(localized: "Custom & User Rules")
-        default: return ""
-        }
-    }
-
     var body: some View {
         #if os(macOS)
         capacityContent
@@ -2462,19 +2451,11 @@ struct RuleCapacityPopoverView: View {
                     ForEach(targets, id: \.slot) { target in
                         let count = filterManager.ruleCountsByExtension[target.bundleIdentifier] ?? 0
                         let slotFraction = min(Double(count) / Double(ContentBlockerService.safariContentBlockerRuleLimit), 1.0)
-                        let subtitle = categorySubtitle(for: target.slot)
 
                         VStack(alignment: .leading, spacing: 3) {
                             HStack {
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(target.displayName)
-                                        .font(.subheadline.weight(.medium))
-                                    if !subtitle.isEmpty {
-                                        Text(subtitle)
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
+                                Text(target.displayName)
+                                    .font(.subheadline.weight(.medium))
                                 Spacer()
                                 Text("\(count.formatted()) / \(ContentBlockerService.safariContentBlockerRuleLimit.formatted())")
                                     .font(.caption.monospacedDigit())

@@ -103,7 +103,6 @@
 "AdGuard URL Tracking Protection Filter" = "AdGuard URL İzleme Koruması Filtresi";
 "AdGuard Widgets" = "AdGuard Araçlar";
 "Ads" = "Reklam";
-"Ads & Trackers" = "Reklamlar & İzleyiciler";
 "Advanced engine publish failed" = "Gelişmiş motor yayınlanamadı";
 "After downloading, filter lists will be applied automatically." = "İndirme işleminden sonra, filtre listeleri otomatik olarak uygulanacaktır.";
 "All" = "Tümü";
@@ -241,7 +240,6 @@
 "Current Safari rules: %@" = "Mevcut Safari kuralı: %@";
 "Current Safari rules: %@ (near limit)" = "Mevcut Safari kuralı: %@ (sınıra yakın)";
 "Custom" = "Özel";
-"Custom & User Rules" = "Özel & Kullanıcı Kuralları";
 "Custom Filter" = "Özel filtre";
 "Custom filter with URL already exists" = "Bu URL'ye sahip özel filtre listesi zaten var";
 "Dandelion Sprout's Nordic Filters" = "Dandelion Sprout's Nordic Filters";
@@ -580,7 +578,6 @@
 "Preparing %d extensions" = "%d genişletme hazırlanıyor";
 "previous" = "önceki";
 "Privacy" = "Gizlilik";
-"Privacy & Anti-Tracking" = "Gizlilik & İzleme Koruması";
 "Process completed successfully" = "İşlem başarıyla tamamlandı";
 "Process completed with errors" = "İşlem hatalarla tamamlandı";
 "Process completed with reload issues" = "İşlem, yeniden yükleme sorunlarıyla tamamlandı";
@@ -673,7 +670,6 @@
 "Search logs" = "Günlüklerde ara";
 "Search scripts" = "Betiklerde ara";
 "Security" = "Güvenlik";
-"Security & Annoyances" = "Güvenlik & Can Sıkıcı";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Etkinleştirmek istediğiniz kullanıcı betiklerini seçin. Bunlar ekstra özellikler ve düzeltmeler ekler. Daha sonra ayarlardan daha fazlasını ekleyebilirsiniz.";
 "Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "Sitelerde gezindiğiniz dilleri (bir veya daha fazlasını) seçin. wBlock bunu yalnızca bölgesel reklam filtreleri önermek için kullanır.";
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Gezindiğiniz dilleri seçin. wBlock, eşleşen bölgesel filtreleri ve özellikleri otomatik olarak önerecektir.";

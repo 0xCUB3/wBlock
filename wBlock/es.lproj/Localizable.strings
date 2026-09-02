@@ -103,7 +103,6 @@
 "AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
 "AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "Anuncios";
-"Ads & Trackers" = "Anuncios y rastreadores";
 "Advanced engine publish failed" = "Error al publicar el motor avanzado";
 "After downloading, filter lists will be applied automatically." = "Después de la descarga, las listas de filtros se aplicarán automáticamente.";
 "All" = "Todos";
@@ -241,7 +240,6 @@
 "Current Safari rules: %@" = "Reglas actuales de Safari: %@";
 "Current Safari rules: %@ (near limit)" = "Reglas actuales de Safari: %@ (cerca del límite)";
 "Custom" = "Personalizado";
-"Custom & User Rules" = "Reglas personalizadas";
 "Custom Filter" = "Filtro personalizado";
 "Custom filter with URL already exists" = "Ya existe un filtro personalizado con esa URL";
 "Dandelion Sprout's Nordic Filters" = "Dandelion Sprout's Nordic Filters";
@@ -580,7 +578,6 @@
 "Preparing %d extensions" = "Preparando %d extensiones";
 "previous" = "anterior";
 "Privacy" = "Privacidad";
-"Privacy & Anti-Tracking" = "Privacidad y antirrastreo";
 "Process completed successfully" = "Proceso completado con éxito";
 "Process completed with errors" = "Proceso completado con errores";
 "Process completed with reload issues" = "Proceso completado con problemas de recarga";
@@ -673,7 +670,6 @@
 "Search logs" = "Buscar registros";
 "Search scripts" = "Buscar scripts";
 "Security" = "Seguridad";
-"Security & Annoyances" = "Seguridad y molestias";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Selecciona los scripts de usuario que quieras activar. Añaden funciones o correcciones extra. Siempre puedes agregar más después en la configuración.";
 "Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "Selecciona los idiomas (uno o más) en los que navegas por sitios web. wBlock solo usa esto para recomendar filtros regionales de anuncios.";
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Selecciona los idiomas en los que navegas. wBlock recomendará automáticamente los filtros regionales y funciones correspondientes.";

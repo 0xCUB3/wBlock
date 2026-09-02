@@ -103,7 +103,6 @@
 "AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
 "AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "Ads";
-"Ads & Trackers" = "Ads & Trackers";
 "Advanced engine publish failed" = "Advanced engine publish failed";
 "After downloading, filter lists will be applied automatically." = "After downloading, filter lists will be applied automatically.";
 "All" = "All";
@@ -241,7 +240,6 @@
 "Current Safari rules: %@" = "Current Safari rules: %@";
 "Current Safari rules: %@ (near limit)" = "Current Safari rules: %@ (near limit)";
 "Custom" = "Custom";
-"Custom & User Rules" = "Custom & User Rules";
 "Custom Filter" = "Custom Filter";
 "Custom filter with URL already exists" = "Custom filter with URL already exists";
 "Dandelion Sprout's Nordic Filters" = "Dandelion Sprout's Nordic Filters";
@@ -580,7 +578,6 @@
 "Preparing %d extensions" = "Preparing %d extensions";
 "previous" = "previous";
 "Privacy" = "Privacy";
-"Privacy & Anti-Tracking" = "Privacy & Anti-Tracking";
 "Process completed successfully" = "Process completed successfully";
 "Process completed with errors" = "Process completed with errors";
 "Process completed with reload issues" = "Process completed with reload issues";
@@ -673,7 +670,6 @@
 "Search logs" = "Search logs";
 "Search scripts" = "Search scripts";
 "Security" = "Security";
-"Security & Annoyances" = "Security & Annoyances";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later.";
 "Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters.";
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features.";

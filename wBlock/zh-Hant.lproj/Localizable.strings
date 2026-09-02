@@ -103,7 +103,6 @@
 "AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
 "AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "廣告";
-"Ads & Trackers" = "廣告與追蹤器";
 "Advanced engine publish failed" = "發佈進階引擎失敗";
 "After downloading, filter lists will be applied automatically." = "下載後，將自動套用過濾器清單。";
 "All" = "全部";
@@ -241,7 +240,6 @@
 "Current Safari rules: %@" = "目前 Safari 規則：%@";
 "Current Safari rules: %@ (near limit)" = "目前 Safari 規則：%@（接近限制）";
 "Custom" = "自訂";
-"Custom & User Rules" = "自訂與使用者規則";
 "Custom Filter" = "自訂過濾器";
 "Custom filter with URL already exists" = "具有該 URL 的自訂過濾器已存在";
 "Dandelion Sprout's Nordic Filters" = "Dandelion Sprout's Nordic Filters";
@@ -583,7 +581,6 @@
 "Preparing %d extensions" = "正在準備 %d 個延伸功能";
 "previous" = "上一個";
 "Privacy" = "隱私";
-"Privacy & Anti-Tracking" = "隱私與反追蹤";
 "Process completed successfully" = "流程已完成";
 "Process completed with errors" = "流程已完成，但存在錯誤";
 "Process completed with reload issues" = "流程已完成，但存在重新載入問題";
@@ -676,7 +673,6 @@
 "Search logs" = "搜尋日誌";
 "Search scripts" = "搜尋腳本";
 "Security" = "安全性";
-"Security & Annoyances" = "安全與干擾元素";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "選取你想啟用的使用者腳本。這些會新增額外功能或修正。你之後也可在設定中再新增。";
 "Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "選擇你瀏覽網站時使用的一種或多種語言。wBlock 只會用它來推薦地區性廣告過濾器。";
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "選擇您瀏覽網頁所用的語言。wBlock 將自動推薦符合的地區篩選器和功能。";

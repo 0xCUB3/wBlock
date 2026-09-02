@@ -103,7 +103,6 @@
 "AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
 "AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "Реклама";
-"Ads & Trackers" = "Реклама и трекеры";
 "Advanced engine publish failed" = "Не удалось опубликовать продвинутый движок";
 "After downloading, filter lists will be applied automatically." = "После загрузки списки фильтров будут применены автоматически.";
 "All" = "Все";
@@ -241,7 +240,6 @@
 "Current Safari rules: %@" = "Текущие правила Safari: %@.";
 "Current Safari rules: %@ (near limit)" = "Текущие правила Safari: %@ (близко к пределу)";
 "Custom" = "Пользовательский";
-"Custom & User Rules" = "Собственные правила";
 "Custom Filter" = "Пользовательский фильтр";
 "Custom filter with URL already exists" = "Пользовательский фильтр с таким URL уже существует";
 "Dandelion Sprout's Nordic Filters" = "Dandelion Sprout's Nordic Filters";
@@ -583,7 +581,6 @@
 "Preparing %d extensions" = "Подготовка %d расширений";
 "previous" = "предыдущее";
 "Privacy" = "Конфиденциальность";
-"Privacy & Anti-Tracking" = "Конфиденциальность и антитрекинг";
 "Process completed successfully" = "Процесс успешно завершён";
 "Process completed with errors" = "Процесс завершён с ошибками";
 "Process completed with reload issues" = "Процесс завершён с проблемами перезагрузки";
@@ -676,7 +673,6 @@
 "Search logs" = "Поиск по журналам";
 "Search scripts" = "Поиск скриптов";
 "Security" = "Безопасность";
-"Security & Annoyances" = "Безопасность и раздражители";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Выберите пользовательские скрипты, которые хотите включить. Они добавляют дополнительные функции или исправления. Позже в настройках можно добавить еще.";
 "Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "Выберите один или несколько языков, на которых вы просматриваете сайты. wBlock использует это только для рекомендации региональных фильтров рекламы.";
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Выберите языки, на которых вы просматриваете сайты. wBlock автоматически порекомендует подходящие региональные фильтры и функции.";

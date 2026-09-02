@@ -103,7 +103,6 @@
 "AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
 "AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "Hirdetések";
-"Ads & Trackers" = "Hirdetések és nyomkövetők";
 "Advanced engine publish failed" = "A speciális motor közzététele sikertelen";
 "After downloading, filter lists will be applied automatically." = "A letöltés után a szűrőlisták automatikusan alkalmazásra kerülnek.";
 "All" = "Összes";
@@ -241,7 +240,6 @@
 "Current Safari rules: %@" = "A jelenlegi Safari szabályok: %@";
 "Current Safari rules: %@ (near limit)" = "A Safari jelenlegi szabályai: %@ (közel a határértékhez)";
 "Custom" = "Egyéni";
-"Custom & User Rules" = "Egyéni szabályok";
 "Custom Filter" = "Egyéni szűrő";
 "Custom filter with URL already exists" = "Már létezik egyéni szűrő ezzel az URL-lel";
 "Dandelion Sprout's Nordic Filters" = "Dandelion Sprout's Nordic Filters";
@@ -583,7 +581,6 @@
 "Preparing %d extensions" = "%d bővítmény előkészítése";
 "previous" = "előző";
 "Privacy" = "Adatvédelem";
-"Privacy & Anti-Tracking" = "Adatvédelem és nyomkövetés-gátlás";
 "Process completed successfully" = "A folyamat sikeresen befejeződött";
 "Process completed with errors" = "A folyamat hibákkal fejeződött be";
 "Process completed with reload issues" = "A folyamat befejeződött, de újratöltési problémák vannak";
@@ -676,7 +673,6 @@
 "Search logs" = "Naplók keresése";
 "Search scripts" = "Szkriptek keresése";
 "Security" = "Biztonság";
-"Security & Annoyances" = "Biztonság és zavaró elemek";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Válaszd ki az engedélyezni kívánt felhasználói szkripteket. Ezek extra funkciókat vagy javításokat adnak. Később bármikor hozzáadhatsz többet a beállításokban.";
 "Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "Válaszd ki, milyen nyelveken (egy vagy több) böngészel webhelyeket. A wBlock ezt csak regionális hirdetésszűrők ajánlásához használja.";
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Válassza ki a böngészési nyelveket. A wBlock automatikusan ajánlja a megfelelő regionális szűrőket és funkciókat.";
