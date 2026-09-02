@@ -8,6 +8,7 @@ import {
   EditorView,
   keymap,
   drawSelection,
+  lineNumbers,
   highlightActiveLine,
   highlightActiveLineGutter,
   highlightSpecialChars,
@@ -136,6 +137,7 @@ function streamHighlight(language) {
 function baseExtensions() {
   return [
     history(),
+    lineNumbers(),
     drawSelection(),
     highlightActiveLine(),
     highlightActiveLineGutter(),
