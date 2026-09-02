@@ -681,7 +681,6 @@
 "Set up wBlock" = "إعداد wBlock";
 "Setting userscript enabled state" = "ضبط حالة تفعيل البرنامج النصي للمستخدم";
 "Settings" = "الإعدادات";
-"Settings restored. Tap Apply Changes to activate." = "تمت استعادة الإعدادات. اضغط على تطبيق التغييرات للتفعيل.";
 "Settings → Apps → Safari → Extensions" = "الإعدادات → التطبيقات → Safari → الإضافات";
 "Setup Instructions" = "تعليمات الإعداد";
 "Ships with the app" = "يأتي مع التطبيق";
@@ -1009,3 +1008,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Light" = "فاتح";
 "%@ → %@ Safari rules" = "%@ → %@ قاعدة Safari";
 "Installed" = "المثبّتة";
+"Settings restored. Applying now." = "تمت استعادة الإعدادات. يتم التطبيق الآن.";

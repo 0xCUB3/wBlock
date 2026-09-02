@@ -678,7 +678,6 @@
 "Set up wBlock" = "wBlock'u ayarlayın";
 "Setting userscript enabled state" = "Kullanıcı betiği etkinleştirme durumu ayarlanıyor";
 "Settings" = "Ayarlar";
-"Settings restored. Tap Apply Changes to activate." = "Ayarlar geri yüklendi. Etkinleştirmek için \"Değişiklikleri uygula\" öğesine dokunun.";
 "Settings → Apps → Safari → Extensions" = "Ayarlar → Uygulamalar → Safari → Genişletmeler";
 "Setup Instructions" = "Kurulum Talimatları";
 "Ships with the app" = "Uygulamayla birlikte gelir";
@@ -1008,3 +1007,4 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Light" = "Açık";
 "%@ → %@ Safari rules" = "%@ → %@ Safari kuralı";
 "Installed" = "Yüklü";
+"Settings restored. Applying now." = "Ayarlar geri yüklendi. Şimdi uygulanıyor.";

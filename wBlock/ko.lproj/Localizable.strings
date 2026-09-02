@@ -681,7 +681,6 @@
 "Set up wBlock" = "wBlock 설정";
 "Setting userscript enabled state" = "유저스크립트 활성화 상태를 설정합니다";
 "Settings" = "설정";
-"Settings restored. Tap Apply Changes to activate." = "설정이 복원되었습니다. 활성화하려면 변경 사항 적용을 탭하세요.";
 "Settings → Apps → Safari → Extensions" = "설정 → 앱 → Safari → 확장 프로그램";
 "Setup Instructions" = "설정 지침";
 "Ships with the app" = "앱에 포함됨";
@@ -1009,3 +1008,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Light" = "라이트";
 "%@ → %@ Safari rules" = "%@ → Safari 규칙 %@개";
 "Installed" = "설치됨";
+"Settings restored. Applying now." = "설정을 복원했습니다. 지금 적용 중입니다.";

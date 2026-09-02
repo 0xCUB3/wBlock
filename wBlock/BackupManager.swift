@@ -19,6 +19,12 @@ struct WBlockBackup: Codable, Sendable {
     var disabledZapperDomains: [String]
 
     var userScripts: [UserScriptEntry]
+
+    /// App preferences (#629). Optional so backups from older builds still decode.
+    var autoUpdateEnabled: Bool?
+    var autoUpdateIntervalHours: Double?
+    var lockPortraitOrientation: Bool?
+    var appearance: String?
     struct FilterSelection: Codable, Sendable {
         var url: String
         var isSelected: Bool
@@ -171,7 +177,11 @@ struct WBlockBackup: Codable, Sendable {
         noAutoplayAllowedSites: [String] = [],
         zapperRules: [String: [String]],
         disabledZapperDomains: [String],
-        userScripts: [UserScriptEntry]
+        userScripts: [UserScriptEntry],
+        autoUpdateEnabled: Bool? = nil,
+        autoUpdateIntervalHours: Double? = nil,
+        lockPortraitOrientation: Bool? = nil,
+        appearance: String? = nil
     ) {
         self.version = version
         self.createdAt = createdAt
@@ -185,6 +195,10 @@ struct WBlockBackup: Codable, Sendable {
         self.zapperRules = zapperRules
         self.disabledZapperDomains = disabledZapperDomains
         self.userScripts = userScripts
+        self.autoUpdateEnabled = autoUpdateEnabled
+        self.autoUpdateIntervalHours = autoUpdateIntervalHours
+        self.lockPortraitOrientation = lockPortraitOrientation
+        self.appearance = appearance
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -200,6 +214,10 @@ struct WBlockBackup: Codable, Sendable {
         case zapperRules
         case disabledZapperDomains
         case userScripts
+        case autoUpdateEnabled
+        case autoUpdateIntervalHours
+        case lockPortraitOrientation
+        case appearance
     }
 
     init(from decoder: Decoder) throws {
@@ -216,6 +234,10 @@ struct WBlockBackup: Codable, Sendable {
         zapperRules = try container.decode([String: [String]].self, forKey: .zapperRules)
         disabledZapperDomains = try container.decodeIfPresent([String].self, forKey: .disabledZapperDomains) ?? []
         userScripts = try container.decodeIfPresent([UserScriptEntry].self, forKey: .userScripts) ?? []
+        autoUpdateEnabled = try container.decodeIfPresent(Bool.self, forKey: .autoUpdateEnabled)
+        autoUpdateIntervalHours = try container.decodeIfPresent(Double.self, forKey: .autoUpdateIntervalHours)
+        lockPortraitOrientation = try container.decodeIfPresent(Bool.self, forKey: .lockPortraitOrientation)
+        appearance = try container.decodeIfPresent(String.self, forKey: .appearance)
     }
 }
 
@@ -316,7 +338,11 @@ enum BackupManager {
             noAutoplayAllowedSites: noAutoplayAllowedSites,
             zapperRules: zapperRules,
             disabledZapperDomains: disabledZapperDomains,
-            userScripts: userScriptEntries
+            userScripts: userScriptEntries,
+            autoUpdateEnabled: filterManager.dataManager.autoUpdateEnabled,
+            autoUpdateIntervalHours: filterManager.dataManager.autoUpdateIntervalHours,
+            lockPortraitOrientation: PortraitOrientationLock.isEnabled,
+            appearance: UserDefaults.standard.string(forKey: AppAppearance.storageKey)
         )
     }
 
@@ -427,13 +453,27 @@ enum BackupManager {
         }
         await ProtobufDataManager.shared.setAllUserScriptDisabledHosts(disabledHostsByScriptID)
 
-        // 6. Mark unapplied changes so user can apply
+        // 6. Restore app preferences when the backup carries them
+        if let autoUpdateEnabled = backup.autoUpdateEnabled {
+            await filterManager.dataManager.setAutoUpdateEnabled(autoUpdateEnabled)
+        }
+        if let hours = backup.autoUpdateIntervalHours {
+            await filterManager.dataManager.setAutoUpdateIntervalHours(hours)
+        }
+        if let lockPortrait = backup.lockPortraitOrientation {
+            UserDefaults.standard.set(lockPortrait, forKey: PortraitOrientationLock.storageKey)
+        }
+        if let appearance = backup.appearance, AppAppearance(rawValue: appearance) != nil {
+            UserDefaults.standard.set(appearance, forKey: AppAppearance.storageKey)
+        }
+
+        // 7. Mark unapplied changes so user can apply
         filterManager.markNonSelectionChangesPending()
 
-        // 7. Refresh ZapperRuleManager
+        // 8. Refresh ZapperRuleManager
         ZapperRuleManager.shared.refresh()
 
-        // 8. Restored backups represent an existing configuration — skip the setup wizard.
+        // 9. Restored backups represent an existing configuration — skip the setup wizard.
         await ProtobufDataManager.shared.setHasCompletedOnboarding(true)
         UserScriptManager.shared.markInitialSetupComplete()
     }

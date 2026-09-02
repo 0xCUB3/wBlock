@@ -681,7 +681,6 @@
 "Set up wBlock" = "Настройка wBlock";
 "Setting userscript enabled state" = "Установка состояния включения пользовательского скрипта";
 "Settings" = "Настройки";
-"Settings restored. Tap Apply Changes to activate." = "Настройки восстановлены. Нажмите «Применить изменения», чтобы активировать их.";
 "Settings → Apps → Safari → Extensions" = "Настройки → Приложения → Safari → Расширения";
 "Setup Instructions" = "Инструкции по настройке";
 "Ships with the app" = "Входит в приложение";
@@ -1009,3 +1008,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Light" = "Светлая";
 "%@ → %@ Safari rules" = "%@ → %@ правил Safari";
 "Installed" = "Установлено";
+"Settings restored. Applying now." = "Настройки восстановлены. Применяются.";

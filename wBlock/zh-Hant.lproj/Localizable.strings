@@ -681,7 +681,6 @@
 "Set up wBlock" = "設定 wBlock";
 "Setting userscript enabled state" = "正在設定使用者腳本的啟用狀態";
 "Settings" = "設定";
-"Settings restored. Tap Apply Changes to activate." = "設定已還原。點一下「套用變更」即可啟用。";
 "Settings → Apps → Safari → Extensions" = "設定 → App → Safari → 延伸功能";
 "Setup Instructions" = "設定說明";
 "Ships with the app" = "隨應用提供";
@@ -1009,3 +1008,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Light" = "淺色";
 "%@ → %@ Safari rules" = "%@ → %@ 條 Safari 規則";
 "Installed" = "已安裝";
+"Settings restored. Applying now." = "設定已還原。正在套用。";

@@ -678,7 +678,6 @@
 "Set up wBlock" = "Configurer wBlock";
 "Setting userscript enabled state" = "Définition de l'état d'activation du script utilisateur";
 "Settings" = "Réglages";
-"Settings restored. Tap Apply Changes to activate." = "Réglages restaurés. Touchez Appliquer les changements pour les activer.";
 "Settings → Apps → Safari → Extensions" = "Réglages → Applications → Safari → Extensions";
 "Setup Instructions" = "Instructions de configuration";
 "Ships with the app" = "Fourni avec l'app";
@@ -1009,3 +1008,4 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Light" = "Clair";
 "%@ → %@ Safari rules" = "%@ → %@ règles Safari";
 "Installed" = "Installés";
+"Settings restored. Applying now." = "Réglages restaurés. Application en cours.";

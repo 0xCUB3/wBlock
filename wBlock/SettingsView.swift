@@ -814,7 +814,13 @@ extension SettingsView {
         pendingBackup = nil
         Task {
             await BackupManager.restoreBackup(backup, filterManager: filterManager)
-            backupStatusMessage = String(localized: "Settings restored. Tap Apply Changes to activate.")
+            #if os(iOS)
+            PortraitOrientationLock.apply()
+            #endif
+            await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
+            // Apply straight away, the same way the onboarding restore does (#630).
+            filterManager.checkAndEnableFilters(forceReload: true)
+            backupStatusMessage = String(localized: "Settings restored. Applying now.")
             showingBackupStatus = true
         }
     }

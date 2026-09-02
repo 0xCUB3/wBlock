@@ -681,7 +681,6 @@
 "Set up wBlock" = "Ρύθμιση wBlock";
 "Setting userscript enabled state" = "Ορισμός κατάστασης ενεργοποίησης σεναρίου χρήστη";
 "Settings" = "Ρυθμίσεις";
-"Settings restored. Tap Apply Changes to activate." = "Οι ρυθμίσεις επαναφέρθηκαν. Πάτησε Εφαρμογή αλλαγών για ενεργοποίηση.";
 "Settings → Apps → Safari → Extensions" = "Ρυθμίσεις → Εφαρμογές → Safari → Επεκτάσεις";
 "Setup Instructions" = "Οδηγίες εγκατάστασης";
 "Ships with the app" = "Παρέχεται με την εφαρμογή";
@@ -1009,3 +1008,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Light" = "Φωτεινό";
 "%@ → %@ Safari rules" = "%@ → %@ κανόνες Safari";
 "Installed" = "Εγκατεστημένα";
+"Settings restored. Applying now." = "Οι ρυθμίσεις επαναφέρθηκαν. Εφαρμόζονται τώρα.";

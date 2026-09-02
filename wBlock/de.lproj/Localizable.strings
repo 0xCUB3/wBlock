@@ -681,7 +681,6 @@
 "Set up wBlock" = "wBlock einrichten";
 "Setting userscript enabled state" = "Aktivierungsstatus des Userskripts wird gesetzt";
 "Settings" = "Einstellungen";
-"Settings restored. Tap Apply Changes to activate." = "Einstellungen wiederhergestellt. Tippe auf Änderungen anwenden, um sie zu aktivieren.";
 "Settings → Apps → Safari → Extensions" = "Einstellungen → Apps → Safari → Erweiterungen";
 "Setup Instructions" = "Einrichtungsanweisungen";
 "Ships with the app" = "Wird mit der App geliefert";
@@ -1009,3 +1008,4 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Light" = "Hell";
 "%@ → %@ Safari rules" = "%@ → %@ Safari-Regeln";
 "Installed" = "Installiert";
+"Settings restored. Applying now." = "Einstellungen wiederhergestellt. Wird jetzt angewendet.";

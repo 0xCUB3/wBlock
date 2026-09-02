@@ -678,7 +678,6 @@
 "Set up wBlock" = "Set up wBlock";
 "Setting userscript enabled state" = "Setting userscript enabled state";
 "Settings" = "Settings";
-"Settings restored. Tap Apply Changes to activate." = "Settings restored. Tap Apply Changes to activate.";
 "Settings → Apps → Safari → Extensions" = "Settings → Apps → Safari → Extensions";
 "Setup Instructions" = "Setup Instructions";
 "Ships with the app" = "Ships with the app";
@@ -1008,3 +1007,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Light" = "Light";
 "%@ → %@ Safari rules" = "%@ → %@ Safari rules";
 "Installed" = "Installed";
+"Settings restored. Applying now." = "Settings restored. Applying now.";

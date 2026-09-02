@@ -678,7 +678,6 @@
 "Set up wBlock" = "Configurează wBlock";
 "Setting userscript enabled state" = "Setare stare activare script utilizator";
 "Settings" = "Setări";
-"Settings restored. Tap Apply Changes to activate." = "Setările au fost restaurate. Atinge Aplică modificările pentru a le activa.";
 "Settings → Apps → Safari → Extensions" = "Configurări → Aplicații → Safari → Extensii";
 "Setup Instructions" = "Instrucțiuni de configurare";
 "Ships with the app" = "Livrat odată cu aplicația";
@@ -1009,3 +1008,4 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Light" = "Luminos";
 "%@ → %@ Safari rules" = "%@ → %@ reguli Safari";
 "Installed" = "Instalate";
+"Settings restored. Applying now." = "Setări restaurate. Se aplică acum.";

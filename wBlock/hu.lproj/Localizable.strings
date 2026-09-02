@@ -681,7 +681,6 @@
 "Set up wBlock" = "wBlock beállítása";
 "Setting userscript enabled state" = "A felhasználói szkript engedélyezési állapotának beállítása";
 "Settings" = "Beállítások";
-"Settings restored. Tap Apply Changes to activate." = "A beállítások visszaállítva. Koppints a Módosítások alkalmazására az aktiváláshoz.";
 "Settings → Apps → Safari → Extensions" = "Beállítások → Alkalmazások → Safari → Bővítmények";
 "Setup Instructions" = "Beállítási útmutató";
 "Ships with the app" = "Az appal együtt érkezik";
@@ -1009,3 +1008,4 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Light" = "Világos";
 "%@ → %@ Safari rules" = "%@ → %@ Safari-szabály";
 "Installed" = "Telepítve";
+"Settings restored. Applying now." = "Beállítások visszaállítva. Alkalmazás folyamatban.";
