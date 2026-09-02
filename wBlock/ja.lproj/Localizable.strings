@@ -562,6 +562,7 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "直接の .user.js リンクを貼り付けてください。wBlockがダウンロードしてインストールします。";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "直接の .user.js、.js、.user.css、.less、.sass、.scss、.styl、または .pcss リンクを貼り付けてください。wBlock がダウンロードしてインストールします。";
 "Pause Blocking" = "ブロックを一時停止";
+"Paused Components" = "一時停止中のコンポーネント";
 "Enabled Userscripts & Userstyles" = "有効なユーザースクリプトとユーザースタイル";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "選択した機能が一時停止している間は、「ブロックを一時停止」が有効になります。再開すると、すべての機能の一時停止が解除されます。";
 "Temporarily pause selected components without changing their enabled settings." = "フィルター、ユーザースクリプト・スタイル、要素ブロックの有効/無効の設定は変えずに、一時的に選択した機能を停止します。";
@@ -702,6 +703,7 @@
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
 "Something went wrong while applying changes." = "Something went wrong while applying changes.";
 "soon" = "まもなく";
+"Source Code" = "ソースコード";
 "Source Rules" = "ソースルール";
 "Source URL" = "ソースURL";
 "Start Fresh" = "最初から始める";

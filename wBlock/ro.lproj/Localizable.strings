@@ -562,6 +562,7 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Lipește linkul direct .user.js. wBlock îl va descărca și instala pentru tine.";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Lipește linkul direct .user.js, .js, .user.css, .less, .sass, .scss, .styl sau .pcss. wBlock îl va descărca și instala.";
 "Pause Blocking" = "Pauză blocare";
+"Paused Components" = "Componente în pauză";
 "Pausing blocking..." = "Se pun în pauză blocarea…";
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
@@ -699,6 +700,7 @@
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
 "Something went wrong while applying changes." = "Something went wrong while applying changes.";
 "soon" = "în curând";
+"Source Code" = "Cod sursă";
 "Source Rules" = "Reguli sursă";
 "Source URL" = "URL sursă";
 "Start Fresh" = "Pornește de la zero";

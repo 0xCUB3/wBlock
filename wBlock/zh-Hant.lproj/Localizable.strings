@@ -562,6 +562,7 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "貼上直接的 .user.js 連結。wBlock 會為你下載並安裝。";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "貼上直接的 .user.js、.js、.user.css、.less、.sass、.scss、.styl 或 .pcss 連結。wBlock 會為你下載並安裝。";
 "Pause Blocking" = "暫停封鎖";
+"Paused Components" = "已暫停的元件";
 "Enabled Userscripts & Userstyles" = "已啟用的使用者腳本與樣式";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "只要有選取的元件處於暫停狀態，暫停封鎖就會開啟。恢復後會還原所有元件。";
 "Temporarily pause selected components without changing their enabled settings." = "暫時暫停選取的元件，但不變更其啟用設定。";
@@ -702,6 +703,7 @@
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
 "Something went wrong while applying changes." = "Something went wrong while applying changes.";
 "soon" = "即將";
+"Source Code" = "原始碼";
 "Source Rules" = "來源規則";
 "Source URL" = "來源 URL";
 "Start Fresh" = "重新開始";

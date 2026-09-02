@@ -10,6 +10,7 @@ struct SettingsView: View {
     private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
     private static let reportIssueURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new/choose")!
     private static let developerURL = URL(string: "https://github.com/0xCUB3")!
+    private static let sourceCodeURL = URL(string: "https://github.com/0xCUB3/wBlock")!
     private static let licenseURL = URL(string: "https://www.gnu.org/licenses/gpl-3.0.html")!
     private static let privacyPolicyURL = URL(string: "https://github.com/0xCUB3/wBlock/blob/main/PRIVACY_POLICY.md")!
     private static let faqURL = URL(string: "https://github.com/0xCUB3/wBlock#faq")!
@@ -297,7 +298,7 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var helpSection: some View {
-        Section("Help") {
+        Section {
             Link(destination: Self.faqURL) {
                 Label("FAQ", systemImage: "questionmark.circle")
             }
@@ -307,11 +308,29 @@ struct SettingsView: View {
             Link(destination: Self.contactURL) {
                 Label("Contact Us", systemImage: "bubble.left")
             }
-            Button {
-                SafariExtensionSetupSupport.openScriptsExtensionSettings()
-            } label: {
-                Label("Open Safari Settings", systemImage: "gear")
+            #if os(iOS)
+            openSafariSettingsButton
+            #endif
+        } header: {
+            #if os(macOS)
+            HStack {
+                Text("Help")
+                Spacer()
+                openSafariSettingsButton
+                    .buttonStyle(.borderless)
+                    .controlSize(.small)
             }
+            #else
+            Text("Help")
+            #endif
+        }
+    }
+
+    private var openSafariSettingsButton: some View {
+        Button {
+            SafariExtensionSetupSupport.openScriptsExtensionSettings()
+        } label: {
+            Label("Open Safari Settings", systemImage: "gear")
         }
     }
 
@@ -548,21 +567,6 @@ struct SettingsView: View {
                 #if os(macOS)
                 .toggleStyle(.switch)
                 #endif
-
-            Group {
-                Toggle("Filters", isOn: pauseComponentBinding(.filters))
-                Toggle("Enabled Userscripts & Userstyles", isOn: pauseComponentBinding(.userScripts))
-                Toggle("Element Zapper", isOn: pauseComponentBinding(.elementZapper))
-            }
-            #if os(macOS)
-            .padding(.leading, 16)
-            .controlSize(.mini)
-            #endif
-            .disabled(
-                !filterManager.isBlockingPaused
-                    || filterManager.isLoading
-                    || filterManager.isApplyInFlight
-            )
         } header: {
             Text("Blocking")
         } footer: {
@@ -572,6 +576,21 @@ struct SettingsView: View {
                     : "Temporarily pause selected components without changing their enabled settings."
             )
         }
+
+        // The component options live in their own section so they read as
+        // options of the pause toggle above rather than as more toggles (#604).
+        Section {
+            Toggle("Filters", isOn: pauseComponentBinding(.filters))
+            Toggle("Enabled Userscripts & Userstyles", isOn: pauseComponentBinding(.userScripts))
+            Toggle("Element Zapper", isOn: pauseComponentBinding(.elementZapper))
+        } header: {
+            Text("Paused Components")
+        }
+        .disabled(
+            !filterManager.isBlockingPaused
+                || filterManager.isLoading
+                || filterManager.isApplyInFlight
+        )
     }
 
     @ViewBuilder
@@ -585,6 +604,9 @@ struct SettingsView: View {
             }
             Link(destination: Self.developerURL) {
                 Label("Developer", systemImage: "person")
+            }
+            Link(destination: Self.sourceCodeURL) {
+                Label("Source Code", systemImage: "chevron.left.forwardslash.chevron.right")
             }
             Link(destination: Self.licenseURL) {
                 Label("GPL-3.0 License", systemImage: "doc.text")

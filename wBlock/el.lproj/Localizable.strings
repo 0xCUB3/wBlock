@@ -562,6 +562,7 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Επικολλήστε τον άμεσο σύνδεσμο .user.js. Το wBlock θα τον κατεβάσει και θα τον εγκαταστήσει για εσάς.";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Επικολλήστε τον άμεσο σύνδεσμο .user.js, .js, .user.css, .less, .sass, .scss, .styl ή .pcss. Το wBlock θα τον κατεβάσει και θα τον εγκαταστήσει.";
 "Pause Blocking" = "Παύση αποκλεισμού";
+"Paused Components" = "Σε παύση στοιχεία";
 "Enabled Userscripts & Userstyles" = "Ενεργά σενάρια και στυλ χρήστη";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Η παύση αποκλεισμού είναι ενεργή όσο οποιοδήποτε επιλεγμένο στοιχείο βρίσκεται σε παύση. Η συνέχιση επαναφέρει όλα τα στοιχεία.";
 "Temporarily pause selected components without changing their enabled settings." = "Παύση των επιλεγμένων στοιχείων προσωρινά χωρίς αλλαγή των ρυθμίσεων ενεργοποίησής τους.";
@@ -702,6 +703,7 @@
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
 "Something went wrong while applying changes." = "Something went wrong while applying changes.";
 "soon" = "σύντομα";
+"Source Code" = "Πηγαίος κώδικας";
 "Source Rules" = "Κανόνες Πηγής";
 "Source URL" = "Διεύθυνση URL Πηγής";
 "Start Fresh" = "Νέα αρχή";

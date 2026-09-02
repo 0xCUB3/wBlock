@@ -562,6 +562,7 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Incolla il link diretto .user.js. wBlock lo scaricherà e lo installerà per te.";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Incolla il link diretto .user.js, .js, .user.css, .less, .sass, .scss, .styl o .pcss. wBlock lo scaricherà e installerà per te.";
 "Pause Blocking" = "Sospendi blocco";
+"Paused Components" = "Componenti in pausa";
 "Pausing blocking..." = "Sospensione del blocco…";
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
@@ -699,6 +700,7 @@
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
 "Something went wrong while applying changes." = "Something went wrong while applying changes.";
 "soon" = "presto";
+"Source Code" = "Codice sorgente";
 "Source Rules" = "Regole sorgente";
 "Source URL" = "URL sorgente";
 "Start Fresh" = "Ricomincia da zero";

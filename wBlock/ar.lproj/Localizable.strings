@@ -562,6 +562,7 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "الصق رابط .user.js المباشر. سيقوم wBlock بتنزيله وتثبيته لك.";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "الصق رابط .user.js أو .js أو .user.css أو .less أو .sass أو .scss أو .styl أو .pcss المباشر. سيقوم wBlock بتنزيله وتثبيته لك.";
 "Pause Blocking" = "إيقاف الحظر مؤقتًا";
+"Paused Components" = "المكونات المتوقفة مؤقتًا";
 "Enabled Userscripts & Userstyles" = "النصوص والأنماط المفعّلة للمستخدم";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "إيقاف الحظر مؤقتًا مفعّل عند إيقاف أي مكوّن محدد مؤقتًا. الاستئناف يعيد جميع المكونات.";
 "Temporarily pause selected components without changing their enabled settings." = "أوقف المكونات المحددة مؤقتًا دون تغيير إعدادات تفعيلها.";
@@ -702,6 +703,7 @@
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
 "Something went wrong while applying changes." = "Something went wrong while applying changes.";
 "soon" = "قريبًا";
+"Source Code" = "الكود المصدري";
 "Source Rules" = "قواعد المصدر";
 "Source URL" = "رابط المصدر";
 "Start Fresh" = "البدء من جديد";

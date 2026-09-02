@@ -562,6 +562,7 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "粘贴直接的 .user.js 链接。wBlock 会为你下载并安装。";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "粘贴直接的 .user.js、.js、.user.css、.less、.sass、.scss、.styl 或 .pcss 链接。wBlock 会为你下载并安装。";
 "Pause Blocking" = "暂停拦截";
+"Paused Components" = "已暂停的组件";
 "Pausing blocking..." = "正在暂停拦截…";
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
@@ -699,6 +700,7 @@
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
 "Something went wrong while applying changes." = "Something went wrong while applying changes.";
 "soon" = "即将";
+"Source Code" = "源代码";
 "Source Rules" = "源规则";
 "Source URL" = "来源 URL";
 "Start Fresh" = "重新开始";

@@ -562,6 +562,7 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Вставьте прямую ссылку на .user.js. wBlock загрузит и установит его автоматически.";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Вставьте прямую ссылку на .user.js, .js, .user.css, .less, .sass, .scss, .styl или .pcss. wBlock скачает и установит файл.";
 "Pause Blocking" = "Приостановить блокировку";
+"Paused Components" = "Приостановленные компоненты";
 "Enabled Userscripts & Userstyles" = "Включённые пользовательские скрипты и стили";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Пауза блокировки включена, пока выбранный компонент находится на паузе. Возобновление восстанавливает все компоненты.";
 "Temporarily pause selected components without changing their enabled settings." = "Временно приостановите выбранные компоненты, не изменяя их настройки включения.";
@@ -702,6 +703,7 @@
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
 "Something went wrong while applying changes." = "Something went wrong while applying changes.";
 "soon" = "скоро";
+"Source Code" = "Исходный код";
 "Source Rules" = "Исходные правила";
 "Source URL" = "URL источника";
 "Start Fresh" = "Начать заново";

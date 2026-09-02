@@ -562,6 +562,7 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Illeszd be a közvetlen .user.js linket. A wBlock letölti és telepíti neked.";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Illeszd be a közvetlen .user.js-, .js-, .user.css-, .less-, .sass-, .scss-, .styl- vagy .pcss-hivatkozást. A wBlock letölti és telepíti.";
 "Pause Blocking" = "Blokkolás szüneteltetése";
+"Paused Components" = "Szüneteltetett összetevők";
 "Enabled Userscripts & Userstyles" = "Engedélyezett felhasználói szkriptek és stílusok";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "A blokkolás szünetel, amíg legalább egy kiválasztott összetevő szüneteltetve van. A folytatás minden összetevőt visszaállít.";
 "Temporarily pause selected components without changing their enabled settings." = "A kiválasztott összetevők ideiglenes szüneteltetése az engedélyezési beállításaik módosítása nélkül.";
@@ -702,6 +703,7 @@
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
 "Something went wrong while applying changes." = "Something went wrong while applying changes.";
 "soon" = "hamarosan";
+"Source Code" = "Forráskód";
 "Source Rules" = "Forrásszabályok";
 "Source URL" = "Forrás URL";
 "Start Fresh" = "Tiszta indulás";
