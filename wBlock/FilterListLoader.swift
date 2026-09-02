@@ -96,7 +96,7 @@ class FilterListLoader {
             Task {
                 await ConcurrentLogManager.shared.error(
                     .system, LocalizedStrings.text("Failed migrating custom filter filename"),
-                    metadata: ["filter": filter.name, "error": "\(error)"]
+                    metadata: ["filter": filter.name, "error": LogErrorDescriber.describe(error)]
                 )
             }
         }
@@ -835,7 +835,7 @@ class FilterListLoader {
             Task {
                 await ConcurrentLogManager.shared.error(
                     .filterUpdate, LocalizedStrings.text("Failed to read filter content"),
-                    metadata: ["filter": filter.name, "error": "\(error)"])
+                    metadata: ["filter": filter.name, "error": LogErrorDescriber.describe(error)])
             }
             return nil
         }

@@ -264,7 +264,7 @@ final class FilterListUpdater: @unchecked Sendable {
         } catch {
             await ConcurrentLogManager.shared.debug(
                 .filterUpdate, LocalizedStrings.text("Conditional check failed"),
-                metadata: ["filter": filter.name, "error": error.localizedDescription])
+                metadata: ["filter": filter.name, "error": LogErrorDescriber.describe(error)])
             return false
         }
     }
@@ -341,7 +341,7 @@ final class FilterListUpdater: @unchecked Sendable {
         } catch {
             await ConcurrentLogManager.shared.error(
                 .network, LocalizedStrings.text("Error fetching filter"),
-                metadata: ["filter": filter.name, "error": "\(error)"])
+                metadata: ["filter": filter.name, "error": LogErrorDescriber.describe(error)])
             return .unavailable
         }
     }
@@ -456,7 +456,7 @@ final class FilterListUpdater: @unchecked Sendable {
             await ConcurrentLogManager.shared.error(
                 .system,
                 LocalizedStrings.text("Failed to save downloaded filter"),
-                metadata: ["filter": filter.name, "error": error.localizedDescription]
+                metadata: ["filter": filter.name, "error": LogErrorDescriber.describe(error)]
             )
             return .failed
         }
@@ -645,7 +645,7 @@ final class FilterListUpdater: @unchecked Sendable {
             } catch {
                 await ConcurrentLogManager.shared.error(
                     .userScript, LocalizedStrings.text("Error checking update for script"),
-                    metadata: ["script": script.name, "error": error.localizedDescription])
+                    metadata: ["script": script.name, "error": LogErrorDescriber.describe(error)])
             }
         }
 
@@ -674,7 +674,7 @@ final class FilterListUpdater: @unchecked Sendable {
         } catch {
             await ConcurrentLogManager.shared.error(
                 .userScript, LocalizedStrings.text("Error checking update for script"),
-                metadata: ["script": script.name, "error": error.localizedDescription])
+                metadata: ["script": script.name, "error": LogErrorDescriber.describe(error)])
             return false
         }
     }
@@ -709,7 +709,7 @@ final class FilterListUpdater: @unchecked Sendable {
         } catch {
             await ConcurrentLogManager.shared.error(
                 .network, LocalizedStrings.text("Error fetching script"),
-                metadata: ["script": script.name, "error": "\(error)"])
+                metadata: ["script": script.name, "error": LogErrorDescriber.describe(error)])
             return (nil, false)
         }
     }

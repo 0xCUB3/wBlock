@@ -362,6 +362,9 @@
 "Failed to reload %@." = "无法重新加载 %@。";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ 已在 Safari 中关闭。请在 Safari 设置中启用它们以加载已应用的规则。";
 "Skipped reload for extensions turned off in Safari" = "已跳过在 Safari 中关闭的扩展的重新加载";
+"wBlock launched" = "wBlock 已启动";
+"Failed to reload content blocker" = "重新加载内容拦截器失败";
+"Failed to update disabled sites for blocker" = "更新拦截器的已停用网站失败";
 "Failed to save downloaded filter" = "保存已下载的过滤器失败";
 "Failed to save user list." = "保存用户列表失败。";
 "Failed to start disabled sites monitor" = "无法启动停用网站监视器";

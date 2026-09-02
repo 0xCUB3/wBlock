@@ -362,6 +362,9 @@
 "Failed to reload %@." = "Nu s-a reîncărcat %@.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ dezactivat(e) în Safari. Activează-le în setările Safari pentru a încărca regulile aplicate.";
 "Skipped reload for extensions turned off in Safari" = "Reîncărcare omisă pentru extensiile dezactivate în Safari";
+"wBlock launched" = "wBlock a pornit";
+"Failed to reload content blocker" = "Reîncărcarea blocatorului de conținut a eșuat";
+"Failed to update disabled sites for blocker" = "Actualizarea site-urilor dezactivate pentru blocator a eșuat";
 "Failed to save downloaded filter" = "Salvarea filtrului descărcat a eșuat";
 "Failed to save user list." = "Nu s-a putut salva lista de utilizatori.";
 "Failed to start disabled sites monitor" = "Pornirea monitorului site-urilor dezactivate a eșuat";

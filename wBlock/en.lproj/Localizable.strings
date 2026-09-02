@@ -362,6 +362,9 @@
 "Failed to reload %@." = "Failed to reload %@.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ turned off in Safari. Enable them in Safari settings to load the applied rules.";
 "Skipped reload for extensions turned off in Safari" = "Skipped reload for extensions turned off in Safari";
+"wBlock launched" = "wBlock launched";
+"Failed to reload content blocker" = "Failed to reload content blocker";
+"Failed to update disabled sites for blocker" = "Failed to update disabled sites for blocker";
 "Failed to save downloaded filter" = "Failed to save downloaded filter";
 "Failed to save user list." = "Failed to save user list.";
 "Failed to start disabled sites monitor" = "Failed to start disabled sites monitor";

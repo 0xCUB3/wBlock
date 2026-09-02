@@ -484,7 +484,7 @@ struct UserScriptManagerView: View {
         provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, error in
             if let error {
                 Task {
-                    await ConcurrentLogManager.shared.error(.userScript, LocalizedStrings.text("Failed to load dropped item"), metadata: ["error": error.localizedDescription])
+                    await ConcurrentLogManager.shared.error(.userScript, LocalizedStrings.text("Failed to load dropped item"), metadata: ["error": LogErrorDescriber.describe(error)])
                 }
                 return
             }
@@ -508,7 +508,7 @@ struct UserScriptManagerView: View {
 
                 let error = await userScriptManager.addUserScript(fromLocalFile: resolvedURL)
                 if let error {
-                    await ConcurrentLogManager.shared.error(.userScript, LocalizedStrings.text("Failed to import dropped userscript"), metadata: ["error": error.localizedDescription])
+                    await ConcurrentLogManager.shared.error(.userScript, LocalizedStrings.text("Failed to import dropped userscript"), metadata: ["error": LogErrorDescriber.describe(error)])
                     await MainActor.run {
                         dropErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
                     }

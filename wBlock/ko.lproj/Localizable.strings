@@ -362,6 +362,9 @@
 "Failed to reload %@." = "%@를 다시 로드하지 못했습니다.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@이(가) Safari에서 꺼져 있습니다. 적용된 규칙을 불러오려면 Safari 설정에서 켜세요.";
 "Skipped reload for extensions turned off in Safari" = "Safari에서 꺼진 확장 프로그램의 새로고침을 건너뛰었습니다";
+"wBlock launched" = "wBlock 실행됨";
+"Failed to reload content blocker" = "콘텐츠 차단기 다시 로드 실패";
+"Failed to update disabled sites for blocker" = "차단기의 비활성화된 사이트 업데이트 실패";
 "Failed to save downloaded filter" = "다운로드한 필터 저장에 실패했습니다";
 "Failed to save user list." = "사용자 목록을 저장하지 못했습니다.";
 "Failed to start disabled sites monitor" = "비활성화된 사이트 모니터를 시작하지 못했습니다";

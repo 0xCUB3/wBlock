@@ -138,12 +138,19 @@ public actor ConcurrentLogManager {
         function: String = #function,
         line: Int = #line
     ) {
+        var resolvedMetadata = metadata ?? [:]
+        // Warnings and errors record where they came from so a report can be
+        // traced back to code without guessing. Info rows stay quiet.
+        if level >= .warning, resolvedMetadata["source"] == nil {
+            let fileName = file.split(separator: "/").last.map(String.init) ?? file
+            resolvedMetadata["source"] = "\(fileName):\(line)"
+        }
         let entry = LogEntry(
             timestamp: timestamp,
             level: level,
             category: category,
             message: message,
-            metadata: metadata
+            metadata: resolvedMetadata.isEmpty ? nil : resolvedMetadata
         )
 
         // Try to deduplicate with recent entries
@@ -167,31 +174,171 @@ public actor ConcurrentLogManager {
         #if DEBUG
         print(entry.compactFormat)
         #endif
+
+        schedulePersist()
     }
 
     /// Convenience methods for each log level
-    public func trace(_ category: LogCategory, _ message: String, metadata: [String: String]? = nil) {
-        log(.trace, category, message, metadata: metadata)
+    public func trace(_ category: LogCategory, _ message: String, metadata: [String: String]? = nil,
+                      file: String = #file, function: String = #function, line: Int = #line) {
+        log(.trace, category, message, metadata: metadata, file: file, function: function, line: line)
     }
 
-    public func debug(_ category: LogCategory, _ message: String, metadata: [String: String]? = nil) {
-        log(.debug, category, message, metadata: metadata)
+    public func debug(_ category: LogCategory, _ message: String, metadata: [String: String]? = nil,
+                      file: String = #file, function: String = #function, line: Int = #line) {
+        log(.debug, category, message, metadata: metadata, file: file, function: function, line: line)
     }
 
-    public func info(_ category: LogCategory, _ message: String, metadata: [String: String]? = nil) {
-        log(.info, category, message, metadata: metadata)
+    public func info(_ category: LogCategory, _ message: String, metadata: [String: String]? = nil,
+                     file: String = #file, function: String = #function, line: Int = #line) {
+        log(.info, category, message, metadata: metadata, file: file, function: function, line: line)
     }
 
-    public func warning(_ category: LogCategory, _ message: String, metadata: [String: String]? = nil) {
-        log(.warning, category, message, metadata: metadata)
+    public func warning(_ category: LogCategory, _ message: String, metadata: [String: String]? = nil,
+                        file: String = #file, function: String = #function, line: Int = #line) {
+        log(.warning, category, message, metadata: metadata, file: file, function: function, line: line)
     }
 
-    public func error(_ category: LogCategory, _ message: String, metadata: [String: String]? = nil) {
-        log(.error, category, message, metadata: metadata)
+    public func error(_ category: LogCategory, _ message: String, metadata: [String: String]? = nil,
+                      file: String = #file, function: String = #function, line: Int = #line) {
+        log(.error, category, message, metadata: metadata, file: file, function: function, line: line)
+    }
+
+    /// Logs an error together with a full description of the thrown value
+    /// (domain, code, underlying errors) under the `error` metadata key.
+    public func error(_ category: LogCategory, _ message: String, error: Error,
+                      metadata: [String: String] = [:],
+                      file: String = #file, function: String = #function, line: Int = #line) {
+        var merged = metadata
+        merged["error"] = LogErrorDescriber.describe(error)
+        log(.error, category, message, metadata: merged, file: file, function: function, line: line)
+    }
+
+    public func warning(_ category: LogCategory, _ message: String, error: Error,
+                        metadata: [String: String] = [:],
+                        file: String = #file, function: String = #function, line: Int = #line) {
+        var merged = metadata
+        merged["error"] = LogErrorDescriber.describe(error)
+        log(.warning, category, message, metadata: merged, file: file, function: function, line: line)
+    }
+
+    // MARK: - Environment
+
+    /// App and OS details that every bug report needs. Written once per launch
+    /// as the first Startup entry and repeated in the export header.
+    public nonisolated static var environmentDetails: [String: String] {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info?["CFBundleVersion"] as? String ?? "?"
+        let os = ProcessInfo.processInfo.operatingSystemVersion
+        #if os(macOS)
+        let platform = "macOS"
+        #else
+        let platform = "iOS"
+        #endif
+        var details: [String: String] = [
+            "app": "\(version) (\(build))",
+            "os": "\(platform) \(os.majorVersion).\(os.minorVersion).\(os.patchVersion)",
+            "device": deviceModelIdentifier,
+            "locale": Locale.current.identifier,
+        ]
+        #if DEBUG
+        details["configuration"] = "debug"
+        #endif
+        return details
+    }
+
+    private nonisolated static var deviceModelIdentifier: String {
+        #if os(macOS)
+        // On macOS utsname.machine is the CPU architecture; hw.model holds the Mac model.
+        var size = 0
+        sysctlbyname("hw.model", nil, &size, nil, 0)
+        if size > 0 {
+            var buffer = [CChar](repeating: 0, count: size)
+            if sysctlbyname("hw.model", &buffer, &size, nil, 0) == 0 {
+                let model = String(cString: buffer)
+                if !model.isEmpty { return model }
+            }
+        }
+        #endif
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        let machine = withUnsafeBytes(of: &systemInfo.machine) { raw -> String in
+            let bytes = raw.prefix { $0 != 0 }
+            return String(decoding: bytes, as: UTF8.self)
+        }
+        return machine.isEmpty ? "unknown" : machine
+    }
+
+    /// Records the app launch with version and OS details. Call once at startup.
+    public func logLaunch() {
+        loadPersistedEntriesIfNeeded()
+        log(.info, .startup, LocalizedStrings.text("wBlock launched"), metadata: Self.environmentDetails)
+    }
+
+    // MARK: - Persistence
+
+    private var hasLoadedPersistedEntries = false
+    private var persistTask: Task<Void, Never>?
+    private let persistDebounceSeconds: UInt64 = 2
+
+    private nonisolated static var persistedLogURL: URL? {
+        guard let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        let directory = base.appendingPathComponent("wBlock", isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory.appendingPathComponent("logs.json")
+    }
+
+    /// Loads entries saved by a previous launch. Safe to call repeatedly.
+    public func loadPersistedEntriesIfNeeded() {
+        guard !hasLoadedPersistedEntries else { return }
+        hasLoadedPersistedEntries = true
+        guard let url = Self.persistedLogURL,
+              let data = try? Data(contentsOf: url),
+              let saved = try? JSONDecoder().decode([LogEntry].self, from: data),
+              !saved.isEmpty else { return }
+        let existingIDs = Set(logEntries.map(\.id))
+        let merged = saved.filter { !existingIDs.contains($0.id) } + logEntries
+        logEntries = Array(merged.sorted { $0.timestamp < $1.timestamp }.suffix(maxLogEntries))
+    }
+
+    private func schedulePersist() {
+        guard persistTask == nil else { return }
+        let delay = persistDebounceSeconds
+        persistTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: delay * 1_000_000_000)
+            guard !Task.isCancelled else { return }
+            await self?.persistNow()
+        }
+    }
+
+    /// Writes the in-memory entries to disk. Runs on a debounce after each
+    /// log and on demand before the app goes away.
+    public func persistNow() {
+        persistTask?.cancel()
+        persistTask = nil
+        guard let url = Self.persistedLogURL else { return }
+        let snapshot = Array(logEntries.suffix(maxLogEntries))
+        do {
+            let data = try JSONEncoder().encode(snapshot)
+            try data.write(to: url, options: .atomic)
+        } catch {
+            #if DEBUG
+            print("Failed to persist logs: \(error)")
+            #endif
+        }
+    }
+
+    private func removePersistedEntries() {
+        guard let url = Self.persistedLogURL else { return }
+        try? FileManager.default.removeItem(at: url)
     }
 
     /// Get all log entries (for the UI)
     public func getEntries() -> [LogEntry] {
+        loadPersistedEntriesIfNeeded()
         return logEntries.sorted { $0.timestamp < $1.timestamp }
     }
 
@@ -212,10 +359,14 @@ public actor ConcurrentLogManager {
         let timeZoneLabel = LogTimeZonePreference.usesCustomTimeZone
             ? LogTimeZonePreference.storedIdentifier
             : NSLocalizedString("Device timezone", comment: "Log export time zone label")
+        let environment = Self.environmentDetails
         let header = """
         wBlock Logs Export
         Generated: \(generated)
         Time Zone: \(timeZoneLabel)
+        App: \(environment["app"] ?? "?")
+        OS: \(environment["os"] ?? "?")
+        Device: \(environment["device"] ?? "?")
         Total Entries: \(entries.count)
         ════════════════════════════════════════
 
@@ -227,6 +378,9 @@ public actor ConcurrentLogManager {
     /// Clear all log entries
     public func clearLogs() {
         logEntries.removeAll()
+        persistTask?.cancel()
+        persistTask = nil
+        removePersistedEntries()
         _ = drainSharedLog(at: sharedAutoUpdateLogURL())
         _ = drainSharedLog(at: sharedWebExtensionLogURL())
     }

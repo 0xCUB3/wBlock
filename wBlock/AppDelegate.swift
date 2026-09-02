@@ -219,6 +219,7 @@ extension AppDelegate: NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         mainWindowFrameRestorer?.saveAdoptedWindow()
+        Task { await ConcurrentLogManager.shared.persistNow() }
 
         // Clean up periodic timer
         periodicUpdateTimer?.invalidate()
@@ -235,6 +236,7 @@ extension AppDelegate: NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        Task { await ConcurrentLogManager.shared.logLaunch() }
         let mainWindowFrameRestorer = MainWindowFrameRestorer()
         mainWindowFrameRestorer.install(application: NSApp)
         self.mainWindowFrameRestorer = mainWindowFrameRestorer
@@ -375,6 +377,7 @@ extension AppDelegate: NSApplicationDelegate {
 extension AppDelegate: UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        Task { await ConcurrentLogManager.shared.logLaunch() }
 
         // Register background tasks for filter updates (refresh + processing)
         registerBackgroundTasks()
@@ -426,6 +429,7 @@ extension AppDelegate: UIApplicationDelegate {
 
         // Flush any pending coalesced filter list saves
         filterManager?.flushPendingSave()
+        Task { await ConcurrentLogManager.shared.persistNow() }
 
         // Flush pending protobuf saves with background time instead of leaving a
         // debounced disk write to race app suspension.
@@ -435,6 +439,7 @@ extension AppDelegate: UIApplicationDelegate {
     func applicationWillTerminate(_ application: UIApplication) {
         // Flush any pending coalesced filter list saves
         filterManager?.flushPendingSave()
+        Task { await ConcurrentLogManager.shared.persistNow() }
 
         flushProtobufDataForBackgroundTransition(reason: "Terminate")
     }

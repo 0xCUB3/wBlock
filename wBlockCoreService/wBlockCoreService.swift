@@ -425,20 +425,37 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         public let disabledInSafari: Bool
         public let attempts: Int
         public let durationMs: Int
+        /// Why the reload failed, in a form that can be shown in the app log.
+        /// nil on success or when the reload was skipped.
+        public let failureReason: String?
 
         public init(
             success: Bool,
             skipped: Bool = false,
             disabledInSafari: Bool = false,
             attempts: Int,
-            durationMs: Int
+            durationMs: Int,
+            failureReason: String? = nil
         ) {
             self.success = success
             self.skipped = skipped
             self.disabledInSafari = disabledInSafari
             self.attempts = attempts
             self.durationMs = durationMs
+            self.failureReason = failureReason
         }
+    }
+
+    /// Stable reasons for reload failures that do not come from Safari itself.
+    public enum ReloadFailureReason {
+        public static let noAppGroupContainer = "App Group container is unavailable"
+        public static let outputUnreadable = "Content blocker rules file could not be read"
+        public static let outputChangedDuringReload = "Rules file kept changing while reloading"
+        public static let markerWriteFailed = "Could not record the reload result"
+        public static let anotherReloadInProgress = "Another reload for this extension was already running"
+        public static let cancelled = "Reload was cancelled"
+        public static let invalidArguments = "Invalid reload request"
+        public static let disabledInSafari = "Extension is turned off in Safari"
     }
 
     private actor ReloadCoordinator {
@@ -740,7 +757,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             )
         }
         guard let result = gatedResult else {
-            return ReloadAttemptResult(success: false, attempts: 0, durationMs: 0)
+            return ReloadAttemptResult(
+                success: false, attempts: 0, durationMs: 0,
+                failureReason: ReloadFailureReason.anotherReloadInProgress
+            )
         }
         return result
     }
@@ -756,7 +776,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else {
-            return ReloadAttemptResult(success: false, attempts: 0, durationMs: elapsedMs())
+            return ReloadAttemptResult(
+                success: false, attempts: 0, durationMs: elapsedMs(),
+                failureReason: ReloadFailureReason.noAppGroupContainer
+            )
         }
 
         let markerURL = reloadMarkerURL(
@@ -776,7 +799,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             appGroupURL: containerURL
         ), snapshot.outputDigest != nil else {
             invalidateMarker()
-            return ReloadAttemptResult(success: false, attempts: 0, durationMs: elapsedMs())
+            return ReloadAttemptResult(
+                success: false, attempts: 0, durationMs: elapsedMs(),
+                failureReason: ReloadFailureReason.outputUnreadable
+            )
         }
 
         var totalAttempts = 0
@@ -796,7 +822,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     return ReloadAttemptResult(
                         success: false,
                         attempts: totalAttempts,
-                        durationMs: elapsedMs()
+                        durationMs: elapsedMs(),
+                        failureReason: ReloadFailureReason.outputUnreadable
                     )
                 }
                 guard verifiedDigest == snapshot.outputDigest,
@@ -818,7 +845,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 return ReloadAttemptResult(
                     success: false,
                     attempts: totalAttempts,
-                    durationMs: elapsedMs()
+                    durationMs: elapsedMs(),
+                    failureReason: ReloadFailureReason.outputUnreadable
                 )
             }
 
@@ -840,7 +868,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     success: false,
                     disabledInSafari: !enabledInSafari,
                     attempts: totalAttempts,
-                    durationMs: elapsedMs()
+                    durationMs: elapsedMs(),
+                    failureReason: enabledInSafari
+                        ? reload.failureReason
+                        : ReloadFailureReason.disabledInSafari
                 )
             }
 
@@ -853,7 +884,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 return ReloadAttemptResult(
                     success: false,
                     attempts: totalAttempts,
-                    durationMs: elapsedMs()
+                    durationMs: elapsedMs(),
+                    failureReason: ReloadFailureReason.outputUnreadable
                 )
             }
             guard verifiedDigest == expectedDigest,
@@ -882,7 +914,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     return ReloadAttemptResult(
                         success: false,
                         attempts: totalAttempts,
-                        durationMs: elapsedMs()
+                        durationMs: elapsedMs(),
+                        failureReason: ReloadFailureReason.outputUnreadable
                     )
                 }
                 snapshot = changed
@@ -892,7 +925,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 return ReloadAttemptResult(
                     success: false,
                     attempts: totalAttempts,
-                    durationMs: elapsedMs()
+                    durationMs: elapsedMs(),
+                    failureReason: ReloadFailureReason.markerWriteFailed
                 )
             }
         }
@@ -900,7 +934,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         return ReloadAttemptResult(
             success: false,
             attempts: totalAttempts,
-            durationMs: elapsedMs()
+            durationMs: elapsedMs(),
+            failureReason: ReloadFailureReason.outputChangedDuringReload
         )
     }
 
@@ -1011,7 +1046,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         targetRulesFilename: String? = nil
     ) async -> ReloadAttemptResult {
         guard (groupIdentifier == nil) == (targetRulesFilename == nil) else {
-            return ReloadAttemptResult(success: false, attempts: 0, durationMs: 0)
+            return ReloadAttemptResult(
+                success: false, attempts: 0, durationMs: 0,
+                failureReason: ReloadFailureReason.invalidArguments
+            )
         }
         let gatedResult = await reloadCoordinator.withGate(key: identifier) {
             if let groupIdentifier, let targetRulesFilename {
@@ -1023,7 +1061,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             return await reloadWithRetryRaw(identifier: identifier, maxRetries: maxRetries)
         }
         guard let result = gatedResult else {
-            return ReloadAttemptResult(success: false, attempts: 0, durationMs: 0)
+            return ReloadAttemptResult(
+                success: false, attempts: 0, durationMs: 0,
+                failureReason: ReloadFailureReason.anotherReloadInProgress
+            )
         }
         return result
     }
@@ -1036,15 +1077,20 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         let elapsedMs = { Int(Date().timeIntervalSince(startTime) * 1000) }
 
         guard maxRetries > 0 else {
-            return ReloadAttemptResult(success: false, attempts: 0, durationMs: elapsedMs())
+            return ReloadAttemptResult(
+                success: false, attempts: 0, durationMs: elapsedMs(),
+                failureReason: ReloadFailureReason.invalidArguments
+            )
         }
 
+        var lastFailureReason: String?
         for attempt in 1...maxRetries {
             if Task.isCancelled {
                 return ReloadAttemptResult(
                     success: false,
                     attempts: max(0, attempt - 1),
-                    durationMs: elapsedMs()
+                    durationMs: elapsedMs(),
+                    failureReason: lastFailureReason ?? ReloadFailureReason.cancelled
                 )
             }
 
@@ -1056,6 +1102,9 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     durationMs: elapsedMs()
                 )
             }
+            if case .failure(let error) = result {
+                lastFailureReason = LogErrorDescriber.describe(error)
+            }
 
             // A timed-out attempt means Safari is not answering reload requests at
             // all; immediate retries only stack more long waits, so fail fast and
@@ -1064,7 +1113,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 return ReloadAttemptResult(
                     success: false,
                     attempts: attempt,
-                    durationMs: elapsedMs()
+                    durationMs: elapsedMs(),
+                    failureReason: lastFailureReason
                 )
             }
 
@@ -1079,7 +1129,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 return ReloadAttemptResult(
                     success: false,
                     attempts: attempt,
-                    durationMs: elapsedMs()
+                    durationMs: elapsedMs(),
+                    failureReason: lastFailureReason ?? ReloadFailureReason.cancelled
                 )
             }
         }
@@ -1087,7 +1138,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         return ReloadAttemptResult(
             success: false,
             attempts: maxRetries,
-            durationMs: elapsedMs()
+            durationMs: elapsedMs(),
+            failureReason: lastFailureReason
         )
     }
 

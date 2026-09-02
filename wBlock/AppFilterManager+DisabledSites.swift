@@ -130,9 +130,9 @@ extension AppFilterManager {
         }.value
 
 
-        let updateResult = await Task.detached { () -> ([ContentBlockerTargetInfo], Int) in
+        let updateResult = await Task.detached { () -> ([ContentBlockerTargetInfo], [(name: String, error: Error)]) in
             var nonEmptyTargets: [ContentBlockerTargetInfo] = []
-            var failureCount = 0
+            var failures: [(name: String, error: Error)] = []
             for targetInfo in platformTargets {
                 do {
                     _ = try ContentBlockerService.fastUpdateDisabledSites(
@@ -142,13 +142,21 @@ extension AppFilterManager {
                     )
                     nonEmptyTargets.append(targetInfo)
                 } catch {
-                    failureCount += 1
+                    failures.append((targetInfo.displayName, error))
                 }
             }
-            return (nonEmptyTargets, failureCount)
+            return (nonEmptyTargets, failures)
         }.value
         let targetsToReload = updateResult.0
-        let updateFailureCount = updateResult.1
+        let updateFailureCount = updateResult.1.count
+        for failure in updateResult.1 {
+            await ConcurrentLogManager.shared.error(
+                .whitelist,
+                LocalizedStrings.text("Failed to update disabled sites for blocker"),
+                error: failure.error,
+                metadata: ["blocker": failure.name]
+            )
+        }
 
         let reloadSummary = await Self.reloadDisabledSitesTargetsInParallel(targetsToReload)
         let skippedCount = reloadSummary.skippedTargets
@@ -247,6 +255,16 @@ extension AppFilterManager {
                 reloadedTargets += 1
             } else {
                 failedTargets += 1
+                await ConcurrentLogManager.shared.error(
+                    .whitelist,
+                    LocalizedStrings.text("Failed to reload content blocker"),
+                    metadata: [
+                        "blocker": target.displayName,
+                        "bundleId": target.bundleIdentifier,
+                        "attempts": "\(result.attempts)",
+                        "error": result.failureReason ?? "unknown",
+                    ]
+                )
             }
         })
 

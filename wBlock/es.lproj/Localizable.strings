@@ -362,6 +362,9 @@
 "Failed to reload %@." = "No se pudo recargar %@.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ desactivado(s) en Safari. Actívalos en los ajustes de Safari para cargar las reglas aplicadas.";
 "Skipped reload for extensions turned off in Safari" = "Recarga omitida para extensiones desactivadas en Safari";
+"wBlock launched" = "wBlock iniciado";
+"Failed to reload content blocker" = "Error al recargar el bloqueador de contenido";
+"Failed to update disabled sites for blocker" = "Error al actualizar los sitios desactivados para el bloqueador";
 "Failed to save downloaded filter" = "Error al guardar el filtro descargado";
 "Failed to save user list." = "No se pudo guardar la lista de usuarios.";
 "Failed to start disabled sites monitor" = "No se pudo iniciar el monitor de sitios desactivados";

@@ -362,6 +362,9 @@
 "Failed to reload %@." = "%@ のリロードに失敗しました。";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ は Safari でオフになっています。適用したルールを読み込むには、Safari の設定で有効にしてください。";
 "Skipped reload for extensions turned off in Safari" = "Safari でオフになっている拡張機能の再読み込みをスキップしました";
+"wBlock launched" = "wBlock を起動しました";
+"Failed to reload content blocker" = "コンテンツブロッカーの再読み込みに失敗しました";
+"Failed to update disabled sites for blocker" = "ブロッカーの無効化サイトの更新に失敗しました";
 "Failed to save downloaded filter" = "ダウンロードしたフィルターの保存に失敗しました";
 "Failed to save user list." = "ユーザーリストの保存に失敗しました。";
 "Failed to start disabled sites monitor" = "無効化サイトの監視を開始できませんでした";

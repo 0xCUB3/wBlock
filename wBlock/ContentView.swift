@@ -1001,10 +1001,6 @@ struct ContentModifiers: ViewModifier {
                 }
             }
             .onAppear {
-                Task {
-                    await ConcurrentLogManager.shared.info(
-                        .startup, LocalizedStrings.text("wBlock application appeared"), metadata: [:])
-                }
                 filterManager.setUserScriptManager(userScriptManager)
             }
             // Show onboarding/setup sheets only on initial load

@@ -619,14 +619,16 @@ extension AppFilterManager {
 
         let disabledSites = runSnapshot.disabledSites
         if await failApplyIfCancelled() { return }
-        let removeParamDNRSummary = await Task.detached(priority: .utility) {
-            try? RemoveParamDNRRuleGenerator.saveRules(
-                for: allSelectedFilters,
-                disabledSites: disabledSites,
-                groupIdentifier: GroupIdentifier.shared.value
-            )
+        let removeParamDNRResult = await Task.detached(priority: .utility) {
+            Result {
+                try RemoveParamDNRRuleGenerator.saveRules(
+                    for: allSelectedFilters,
+                    disabledSites: disabledSites,
+                    groupIdentifier: GroupIdentifier.shared.value
+                )
+            }
         }.value
-        if let removeParamDNRSummary {
+        if case .success(let removeParamDNRSummary) = removeParamDNRResult {
             await ConcurrentLogManager.shared.info(
                 .filterApply,
                 LocalizedStrings.text("Prepared removeparam DNR rules"),
@@ -638,11 +640,12 @@ extension AppFilterManager {
                     "disabledAllow": "\(removeParamDNRSummary.disabledSiteAllowRules)",
                 ]
             )
-        } else {
+        } else if case .failure(let error) = removeParamDNRResult {
             await ConcurrentLogManager.shared.warning(
                 .filterApply,
                 LocalizedStrings.text("Failed to prepare removeparam DNR rules"),
-                metadata: [:]
+                error: error,
+                metadata: ["filters": "\(allSelectedFilters.count)"]
             )
         }
         if await failApplyIfCancelled() { return }
@@ -726,7 +729,7 @@ extension AppFilterManager {
                     return TargetConversionCompletion(
                         work: work,
                         outcome: nil,
-                        failureDescription: error.localizedDescription,
+                        failureDescription: LogErrorDescriber.describe(error),
                         durationMs: Int(Date().timeIntervalSince(conversionStart) * 1000)
                     )
                 }
@@ -986,7 +989,7 @@ extension AppFilterManager {
             advancedEngineSucceeded = false
             await failApplyRun(
                 logMessage: LocalizedStrings.text("Advanced engine publish failed"),
-                metadata: ["error": error.localizedDescription],
+                metadata: ["error": LogErrorDescriber.describe(error)],
                 dismissProgressSheet: false
             )
         }
@@ -1175,7 +1178,7 @@ extension AppFilterManager {
         } catch {
             await failApplyRun(
                 logMessage: LocalizedStrings.text("Failed to clear extensions and advanced engine"),
-                metadata: ["error": error.localizedDescription]
+                metadata: ["error": LogErrorDescriber.describe(error)]
             )
             return false
         }
@@ -1380,6 +1383,7 @@ extension AppFilterManager {
         let disabledInSafari: Bool
         let attempts: Int
         let durationMs: Int
+        let failureReason: String?
     }
 
     struct ReloadPhaseSummary {
@@ -1455,7 +1459,8 @@ extension AppFilterManager {
                     skipped: result.reload.skipped,
                     disabledInSafari: result.reload.disabledInSafari,
                     attempts: result.reload.attempts,
-                    durationMs: result.reload.durationMs
+                    durationMs: result.reload.durationMs,
+                    failureReason: result.reload.failureReason
                 )
             )
             // An extension turned off in Safari cannot be reloaded, but its rules
@@ -1469,6 +1474,22 @@ extension AppFilterManager {
                 .filterApply,
                 LocalizedStrings.text("Skipped reload for extensions turned off in Safari"),
                 metadata: ["disabledNames": disabledInSafariNames.joined(separator: ",")]
+            )
+        }
+
+        // One entry per failed blocker with the actual Safari error, so the
+        // summary's failedNames is never the only clue left in the log.
+        for result in orderedResults where !result.reload.success && !result.reload.disabledInSafari {
+            await ConcurrentLogManager.shared.error(
+                .filterApply,
+                LocalizedStrings.text("Failed to reload content blocker"),
+                metadata: [
+                    "blocker": result.target.displayName,
+                    "bundleId": result.target.bundleIdentifier,
+                    "attempts": "\(result.reload.attempts)",
+                    "durationMs": "\(result.reload.durationMs)",
+                    "error": result.reload.failureReason ?? "unknown",
+                ]
             )
         }
 

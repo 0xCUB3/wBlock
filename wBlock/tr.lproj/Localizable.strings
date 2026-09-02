@@ -362,6 +362,9 @@
 "Failed to reload %@." = "%@ yeniden yüklenemedi.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ Safari'de kapalı. Uygulanan kuralları yüklemek için Safari ayarlarından etkinleştirin.";
 "Skipped reload for extensions turned off in Safari" = "Safari'de kapalı olan uzantılar için yeniden yükleme atlandı";
+"wBlock launched" = "wBlock başlatıldı";
+"Failed to reload content blocker" = "İçerik engelleyici yeniden yüklenemedi";
+"Failed to update disabled sites for blocker" = "Engelleyici için devre dışı siteler güncellenemedi";
 "Failed to save downloaded filter" = "İndirilen filtre kaydedilemedi";
 "Failed to save user list." = "Kullanıcı listesi kaydedilemedi.";
 "Failed to start disabled sites monitor" = "Devre dışı bırakılan sitelerde izleme başlatılamadı";

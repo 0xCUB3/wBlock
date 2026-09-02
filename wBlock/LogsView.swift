@@ -277,7 +277,7 @@ struct LogsView: View {
                         try logsText.write(to: accessibleURL, atomically: true, encoding: .utf8)
                     }
                 } catch {
-                    await ConcurrentLogManager.shared.error(.system, LocalizedStrings.text("Failed to export logs"), metadata: ["error": "\(error)"])
+                    await ConcurrentLogManager.shared.error(.system, LocalizedStrings.text("Failed to export logs"), error: error)
                 }
             }
         }

@@ -518,7 +518,7 @@ class AppFilterManager: ObservableObject {
             await ConcurrentLogManager.shared.error(
                 .filterApply,
                 LocalizedStrings.text("Failed to clear filter engine during onboarding reset"),
-                metadata: ["error": error.localizedDescription]
+                metadata: ["error": LogErrorDescriber.describe(error)]
             )
             hasError = true
             statusDescription = LocalizedStrings.text("Failed", comment: "Generic failure status")
@@ -527,7 +527,7 @@ class AppFilterManager: ObservableObject {
             await ConcurrentLogManager.shared.error(
                 .filterApply,
                 "Failed to clear downloaded filter caches during onboarding reset",
-                metadata: ["error": cacheCleanupError.localizedDescription]
+                metadata: ["error": LogErrorDescriber.describe(cacheCleanupError)]
             )
             hasError = true
             statusDescription = LocalizedStrings.text("Failed", comment: "Generic failure status")

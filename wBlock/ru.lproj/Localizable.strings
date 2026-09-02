@@ -362,6 +362,9 @@
 "Failed to reload %@." = "Не удалось перезагрузить %@.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ отключено в Safari. Включите их в настройках Safari, чтобы загрузить применённые правила.";
 "Skipped reload for extensions turned off in Safari" = "Перезагрузка пропущена для расширений, отключённых в Safari";
+"wBlock launched" = "wBlock запущен";
+"Failed to reload content blocker" = "Не удалось перезагрузить блокировщик контента";
+"Failed to update disabled sites for blocker" = "Не удалось обновить отключённые сайты для блокировщика";
 "Failed to save downloaded filter" = "Не удалось сохранить загруженный фильтр";
 "Failed to save user list." = "Не удалось сохранить список пользователей.";
 "Failed to start disabled sites monitor" = "Не удалось запустить монитор отключённых сайтов";

@@ -362,6 +362,9 @@
 "Failed to reload %@." = "فشل في إعادة تحميل %@.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ متوقف في Safari. فعّلها من إعدادات Safari لتحميل القواعد المطبّقة.";
 "Skipped reload for extensions turned off in Safari" = "تم تخطي إعادة التحميل للإضافات المتوقفة في Safari";
+"wBlock launched" = "تم تشغيل wBlock";
+"Failed to reload content blocker" = "فشل إعادة تحميل مانع المحتوى";
+"Failed to update disabled sites for blocker" = "فشل تحديث المواقع المعطّلة لهذا المانع";
 "Failed to save downloaded filter" = "تعذّر حفظ الفلتر المنزّل";
 "Failed to save user list." = "فشل حفظ قائمة المستخدمين.";
 "Failed to start disabled sites monitor" = "تعذّر بدء مراقب المواقع المعطّلة";

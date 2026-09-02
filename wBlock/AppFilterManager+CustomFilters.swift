@@ -116,7 +116,7 @@ extension AppFilterManager {
                 await ConcurrentLogManager.shared.error(
                     .system,
                     LocalizedStrings.text("Failed saving user list"),
-                    metadata: ["error": error.localizedDescription]
+                    metadata: ["error": LogErrorDescriber.describe(error)]
                 )
             }
             return
@@ -155,7 +155,7 @@ extension AppFilterManager {
                 await ConcurrentLogManager.shared.error(
                     .system,
                     LocalizedStrings.text("Failed reading user list file"),
-                    metadata: ["error": error.localizedDescription]
+                    metadata: ["error": LogErrorDescriber.describe(error)]
                 )
             }
         }
@@ -275,7 +275,7 @@ extension AppFilterManager {
                     containerURL: containerURL
                 )
             } catch {
-                failures.append("\(filter.name): \(error.localizedDescription)")
+                failures.append("\(filter.name): \(LogErrorDescriber.describe(error))")
             }
         }
 
@@ -472,7 +472,7 @@ extension AppFilterManager {
                 await ConcurrentLogManager.shared.error(
                     .system,
                     LocalizedStrings.text("Failed saving user list edits"),
-                    metadata: ["error": error.localizedDescription]
+                    metadata: ["error": LogErrorDescriber.describe(error)]
                 )
             }
             return

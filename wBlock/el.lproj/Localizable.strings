@@ -362,6 +362,9 @@
 "Failed to reload %@." = "Αποτυχία επαναφόρτωσης του %@.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ απενεργοποιημένο στο Safari. Ενεργοποιήστε το στις ρυθμίσεις του Safari για να φορτωθούν οι εφαρμοσμένοι κανόνες.";
 "Skipped reload for extensions turned off in Safari" = "Παραλείφθηκε η επαναφόρτωση για επεκτάσεις απενεργοποιημένες στο Safari";
+"wBlock launched" = "Το wBlock εκκινήθηκε";
+"Failed to reload content blocker" = "Αποτυχία επαναφόρτωσης του αποκλειστή περιεχομένου";
+"Failed to update disabled sites for blocker" = "Αποτυχία ενημέρωσης απενεργοποιημένων ιστότοπων για τον αποκλειστή";
 "Failed to save downloaded filter" = "Αποτυχία αποθήκευσης ληφθέντος φίλτρου";
 "Failed to save user list." = "Αποτυχία αποθήκευσης λίστας χρηστών.";
 "Failed to start disabled sites monitor" = "Αποτυχία εκκίνησης παρακολούθησης απενεργοποιημένων τοποθεσιών";
