@@ -1576,11 +1576,18 @@ struct AddFilterListView: View {
                 #endif
 
             if urlInput.isEmpty {
+                // Match TextEditor's own text container insets so the placeholder
+                // sits on the same line as the caret and typed text (#609).
                 Text("Paste one or more filter URLs, one per line.")
                     .font(.body)
                     .foregroundStyle(.tertiary)
+                    #if os(macOS)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1)
+                    #else
                     .padding(.horizontal, 5)
                     .padding(.vertical, 8)
+                    #endif
                     .allowsHitTesting(false)
             }
         }
