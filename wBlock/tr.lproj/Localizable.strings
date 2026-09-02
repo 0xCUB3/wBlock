@@ -360,6 +360,8 @@
 "Failed to read filter content" = "Filtre içeriği okunamadı";
 "Failed to read local content for rule counting" = "Kural sayımı için yerel içerik okunamadı";
 "Failed to reload %@." = "%@ yeniden yüklenemedi.";
+"%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ Safari'de kapalı. Uygulanan kuralları yüklemek için Safari ayarlarından etkinleştirin.";
+"Skipped reload for extensions turned off in Safari" = "Safari'de kapalı olan uzantılar için yeniden yükleme atlandı";
 "Failed to save downloaded filter" = "İndirilen filtre kaydedilemedi";
 "Failed to save user list." = "Kullanıcı listesi kaydedilemedi.";
 "Failed to start disabled sites monitor" = "Devre dışı bırakılan sitelerde izleme başlatılamadı";

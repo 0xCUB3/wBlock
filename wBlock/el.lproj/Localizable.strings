@@ -360,6 +360,8 @@
 "Failed to read filter content" = "Αποτυχία ανάγνωσης περιεχομένου φίλτρου";
 "Failed to read local content for rule counting" = "Αποτυχία ανάγνωσης τοπικού περιεχομένου για μέτρηση κανόνων";
 "Failed to reload %@." = "Αποτυχία επαναφόρτωσης του %@.";
+"%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ απενεργοποιημένο στο Safari. Ενεργοποιήστε το στις ρυθμίσεις του Safari για να φορτωθούν οι εφαρμοσμένοι κανόνες.";
+"Skipped reload for extensions turned off in Safari" = "Παραλείφθηκε η επαναφόρτωση για επεκτάσεις απενεργοποιημένες στο Safari";
 "Failed to save downloaded filter" = "Αποτυχία αποθήκευσης ληφθέντος φίλτρου";
 "Failed to save user list." = "Αποτυχία αποθήκευσης λίστας χρηστών.";
 "Failed to start disabled sites monitor" = "Αποτυχία εκκίνησης παρακολούθησης απενεργοποιημένων τοποθεσιών";

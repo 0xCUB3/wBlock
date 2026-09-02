@@ -899,7 +899,7 @@ extension AppFilterManager {
             self.lastReloadTime = String(format: "%.2fs", Double(reloadDurationMs) / 1000)
         }
 
-        let failedReloads = activeReloads.filter { !$0.success }
+        let failedReloads = activeReloads.filter { !$0.success && !$0.disabledInSafari }
         let skippedReloads = reloadSummary.metrics.filter(\.skipped)
         let retriedReloads = activeReloads.filter { $0.attempts > 1 }
         let totalReloadAttempts = activeReloads.reduce(0) { $0 + $1.attempts }
@@ -920,6 +920,8 @@ extension AppFilterManager {
             "failedNames": failedReloads.prefix(3).map(\.blockerName).joined(separator: ","),
             "skippedTargets": "\(skippedReloads.count)",
             "skippedNames": skippedReloads.map(\.blockerName).joined(separator: ","),
+            "disabledTargets": "\(reloadSummary.disabledInSafariNames.count)",
+            "disabledNames": reloadSummary.disabledInSafariNames.joined(separator: ","),
         ]
 
         if allReloadsSuccessful {
@@ -1008,6 +1010,13 @@ extension AppFilterManager {
             if allReloadsSuccessful && advancedEngineAvailable {
                 self.statusDescription =
                     "Applied rules to \(filtersByTargetInfo.keys.count) blocker(s). Total: \(overallSafariRulesApplied) Safari rules. Advanced engine: \(advancedEngineStatus)."
+                if !reloadSummary.disabledInSafariNames.isEmpty {
+                    resultWarning = LocalizedStrings.format(
+                        "%@ turned off in Safari. Enable them in Safari settings to load the applied rules.",
+                        comment: "Apply pipeline warning for extensions disabled in Safari settings",
+                        reloadSummary.disabledInSafariNames.joined(separator: ", ")
+                    )
+                }
             } else if !allReloadsSuccessful {
                 // Prefer the concrete reload failure names when available.
                 if self.statusDescription.lowercased().contains("failed to reload") {
@@ -1368,13 +1377,16 @@ extension AppFilterManager {
         let blockerName: String
         let success: Bool
         let skipped: Bool
+        let disabledInSafari: Bool
         let attempts: Int
         let durationMs: Int
     }
 
     struct ReloadPhaseSummary {
+        /// True when every target either reloaded or is turned off in Safari.
         let allSuccessful: Bool
         let metrics: [TargetReloadMetrics]
+        let disabledInSafariNames: [String]
         let durationMs: Int
     }
 
@@ -1427,10 +1439,13 @@ extension AppFilterManager {
         var allSuccessful = true
         var metrics: [TargetReloadMetrics] = []
         var failedNames: [String] = []
+        var disabledInSafariNames: [String] = []
 
         for result in orderedResults {
             let name = result.target.displayName
-            if !result.reload.success {
+            if result.reload.disabledInSafari {
+                disabledInSafariNames.append(name)
+            } else if !result.reload.success {
                 failedNames.append(name)
             }
             metrics.append(
@@ -1438,11 +1453,23 @@ extension AppFilterManager {
                     blockerName: name,
                     success: result.reload.success,
                     skipped: result.reload.skipped,
+                    disabledInSafari: result.reload.disabledInSafari,
                     attempts: result.reload.attempts,
                     durationMs: result.reload.durationMs
                 )
             )
-            allSuccessful = allSuccessful && result.reload.success
+            // An extension turned off in Safari cannot be reloaded, but its rules
+            // are on disk. Treating that as a failure would leave every apply
+            // failed and keep the Apply button pending forever.
+            allSuccessful = allSuccessful && (result.reload.success || result.reload.disabledInSafari)
+        }
+
+        if !disabledInSafariNames.isEmpty {
+            await ConcurrentLogManager.shared.warning(
+                .filterApply,
+                LocalizedStrings.text("Skipped reload for extensions turned off in Safari"),
+                metadata: ["disabledNames": disabledInSafariNames.joined(separator: ",")]
+            )
         }
 
         await MainActor.run {
@@ -1460,6 +1487,7 @@ extension AppFilterManager {
         return ReloadPhaseSummary(
             allSuccessful: allSuccessful,
             metrics: metrics,
+            disabledInSafariNames: disabledInSafariNames,
             durationMs: reloadDurationMs
         )
     }

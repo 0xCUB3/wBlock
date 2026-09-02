@@ -360,6 +360,8 @@
 "Failed to read filter content" = "Citirea conținutului filtrului a eșuat";
 "Failed to read local content for rule counting" = "Citirea conținutului local pentru numărarea regulilor a eșuat";
 "Failed to reload %@." = "Nu s-a reîncărcat %@.";
+"%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ dezactivat(e) în Safari. Activează-le în setările Safari pentru a încărca regulile aplicate.";
+"Skipped reload for extensions turned off in Safari" = "Reîncărcare omisă pentru extensiile dezactivate în Safari";
 "Failed to save downloaded filter" = "Salvarea filtrului descărcat a eșuat";
 "Failed to save user list." = "Nu s-a putut salva lista de utilizatori.";
 "Failed to start disabled sites monitor" = "Pornirea monitorului site-urilor dezactivate a eșuat";

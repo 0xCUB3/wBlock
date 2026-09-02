@@ -418,12 +418,24 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     public struct ReloadAttemptResult: Sendable {
         public let success: Bool
         public let skipped: Bool
+        /// Safari refused the reload because the user has turned this extension
+        /// off in Safari settings. The rules are already on disk and Safari loads
+        /// them when the extension is enabled again, so callers must not treat
+        /// this as an apply failure.
+        public let disabledInSafari: Bool
         public let attempts: Int
         public let durationMs: Int
 
-        public init(success: Bool, skipped: Bool = false, attempts: Int, durationMs: Int) {
+        public init(
+            success: Bool,
+            skipped: Bool = false,
+            disabledInSafari: Bool = false,
+            attempts: Int,
+            durationMs: Int
+        ) {
             self.success = success
             self.skipped = skipped
+            self.disabledInSafari = disabledInSafari
             self.attempts = attempts
             self.durationMs = durationMs
         }
@@ -813,11 +825,20 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             // Do not let another caller observe a stale certification while this reload is in flight.
             invalidateMarker()
 
-            let reload = await reloadWithRetryRaw(identifier: identifier, maxRetries: maxRetries)
+            // Safari can refuse to reload an extension the user has turned off in
+            // Safari settings. Its rules are already on disk and load once the
+            // extension is enabled again, so try once and report the outcome
+            // distinctly instead of retrying and failing the whole apply.
+            let enabledInSafari = await contentBlockerIsEnabled(identifier: identifier)
+            let reload = await reloadWithRetryRaw(
+                identifier: identifier,
+                maxRetries: enabledInSafari ? maxRetries : 1
+            )
             totalAttempts += reload.attempts
             guard reload.success else {
                 return ReloadAttemptResult(
                     success: false,
+                    disabledInSafari: !enabledInSafari,
                     attempts: totalAttempts,
                     durationMs: elapsedMs()
                 )

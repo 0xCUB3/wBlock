@@ -360,6 +360,8 @@
 "Failed to read filter content" = "Error al leer el contenido del filtro";
 "Failed to read local content for rule counting" = "Error al leer el contenido local para el recuento de reglas";
 "Failed to reload %@." = "No se pudo recargar %@.";
+"%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ desactivado(s) en Safari. Actívalos en los ajustes de Safari para cargar las reglas aplicadas.";
+"Skipped reload for extensions turned off in Safari" = "Recarga omitida para extensiones desactivadas en Safari";
 "Failed to save downloaded filter" = "Error al guardar el filtro descargado";
 "Failed to save user list." = "No se pudo guardar la lista de usuarios.";
 "Failed to start disabled sites monitor" = "No se pudo iniciar el monitor de sitios desactivados";

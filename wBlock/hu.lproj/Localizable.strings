@@ -360,6 +360,8 @@
 "Failed to read filter content" = "A szűrőtartalom olvasása sikertelen";
 "Failed to read local content for rule counting" = "A helyi tartalom olvasása a szabályok számlálásához sikertelen";
 "Failed to reload %@." = "A %@ újratöltése sikertelen.";
+"%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ ki van kapcsolva a Safariban. Kapcsold be a Safari beállításaiban az alkalmazott szabályok betöltéséhez.";
+"Skipped reload for extensions turned off in Safari" = "Újratöltés kihagyva a Safariban kikapcsolt bővítményeknél";
 "Failed to save downloaded filter" = "A letöltött szűrő mentése sikertelen";
 "Failed to save user list." = "Nem sikerült menteni a felhasználói listát.";
 "Failed to start disabled sites monitor" = "Nem sikerült elindítani a letiltott webhelyek figyelését";
