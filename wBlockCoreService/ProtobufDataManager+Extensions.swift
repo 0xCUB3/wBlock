@@ -12,7 +12,7 @@ internal import SwiftProtobuf
 extension ProtobufDataManager {
     private static let adGuardMobileFilterName = "AdGuard Mobile Filter"
     private static let adGuardMobileLegacyURLFragment = "filter_11_Mobile"
-    private static let adGuardMobileCurrentURL = "https://filters.adtidy.org/ios/filters/11.txt"
+    private static let adGuardMobileCurrentURL = "https://filters.adtidy.org/ios/filters/11_optimized.txt"
 
     // Filter lists that unblock/whitelist content rather than block it. These belong in the
     // dedicated "Allowlists" category so they are not mistaken for blocklists.

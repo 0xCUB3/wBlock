@@ -9,8 +9,12 @@ struct AdGuardMobileFilterMigrationTests {
 
         let appFilterManagerSource = try read("wBlock/AppFilterManager.swift")
         expect(
-            loaderSource.contains("https://filters.adtidy.org/ios/filters/11.txt"),
-            "expected AdGuard Mobile Filter to use the iOS metadata endpoint"
+            loaderSource.contains("\"https://filters.adtidy.org/ios/filters/11_optimized.txt\"\n                    )!, category: FilterListCategory.ads"),
+            "expected AdGuard Mobile Filter to use the optimized iOS endpoint"
+        )
+        expect(
+            loaderSource.contains("\"https://filters.adtidy.org/ios/filters/11.txt\":\n            URL(string: \"https://filters.adtidy.org/ios/filters/11_optimized.txt\")!"),
+            "expected the unoptimized iOS mobile filter URL to be migrated (#638)"
         )
         expect(
             loaderSource.contains("\"https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt\":"),
