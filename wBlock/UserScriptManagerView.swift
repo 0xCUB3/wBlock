@@ -165,6 +165,9 @@ struct UserScriptManagerView: View {
     let onApplyChanges: () -> Void
     let onForceApplyChanges: () -> Void
     let tabSelection: Int
+    /// Incremented by ContentView for ⌘⇧N / ⌘L; see `handledAddRequest`.
+    let addRequest: Int
+    let searchRequest: Int
     let onRefresh: () async -> Void
 
     @State private var scripts: [UserScriptListItem] = []
@@ -179,6 +182,8 @@ struct UserScriptManagerView: View {
     @State private var dropErrorMessage: String?
     @State private var pendingBetaEnableScript: UserScriptListItem?
     @State private var selectedCategoryInfo: UserScriptDisplayCategory?
+    @State private var handledAddRequest = 0
+    @State private var handledSearchRequest = 0
 
     private var totalScriptsCount: Int {
         scripts.filter { !$0.isUserStyle }.count
@@ -289,6 +294,18 @@ struct UserScriptManagerView: View {
         .onChangeCompat(of: tabSelection) { _, _ in
             searchText = ""
             showSearch = false
+        }
+        // task(id:) runs on appear too, so a request sent while this tab was
+        // not yet built is still honored once it is.
+        .task(id: addRequest) {
+            guard addRequest > 0, addRequest != handledAddRequest else { return }
+            handledAddRequest = addRequest
+            showingAddScriptSheet = true
+        }
+        .task(id: searchRequest) {
+            guard searchRequest > 0, searchRequest != handledSearchRequest else { return }
+            handledSearchRequest = searchRequest
+            showSearch = true
         }
         .alert("Import Failed", isPresented: Binding(
             get: { dropErrorMessage != nil },

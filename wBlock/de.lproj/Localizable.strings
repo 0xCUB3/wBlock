@@ -53,9 +53,11 @@
 "Add" = "Add";
 "Add Filter" = "Filter hinzufügen";
 "Add Filter List" = "Filterliste hinzufügen";
+"Add Filter List…" = "Filterliste hinzufügen…";
 "Add Mode" = "Hinzufügen-Modus";
 "Add URLs" = "URLs hinzufügen";
 "Add Userscript or Userstyle" = "Userskript oder Userstyle hinzufügen";
+"Add Userscript or Userstyle…" = "Userskript oder Userstyle hinzufügen…";
 "Add userscripts and userstyles to customize your browsing experience" = "Füge Userskripte und Userstyles hinzu, um dein Surferlebnis anzupassen";
 "Added custom filter" = "Benutzerdefinierten Filter hinzugefügt";
 "Added sites are whitelisted: wBlock is completely turned off on them." = "Hinzugefügte Websites sind Ausnahmen: wBlock ist dort vollständig deaktiviert.";

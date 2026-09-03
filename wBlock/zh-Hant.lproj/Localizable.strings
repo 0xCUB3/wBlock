@@ -53,9 +53,11 @@
 "Add" = "Add";
 "Add Filter" = "新增過濾器";
 "Add Filter List" = "新增過濾清單";
+"Add Filter List…" = "新增過濾清單…";
 "Add Mode" = "新增模式";
 "Add URLs" = "新增 URL";
 "Add Userscript or Userstyle" = "新增使用者腳本或使用者樣式";
+"Add Userscript or Userstyle…" = "新增使用者腳本或使用者樣式…";
 "Add userscripts and userstyles to customize your browsing experience" = "新增使用者腳本和使用者樣式以自訂你的瀏覽體驗";
 "Added custom filter" = "已新增自訂過濾器";
 "Added sites are whitelisted: wBlock is completely turned off on them." = "新增的網站會列入白名單：wBlock 會在這些網站上完全關閉。";

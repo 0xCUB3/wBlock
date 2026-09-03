@@ -53,9 +53,11 @@
 "Add" = "Add";
 "Add Filter" = "필터 추가";
 "Add Filter List" = "필터 목록 추가";
+"Add Filter List…" = "필터 목록 추가…";
 "Add Mode" = "추가 모드";
 "Add URLs" = "URL 추가";
 "Add Userscript or Userstyle" = "유저스크립트 또는 유저스타일 추가";
+"Add Userscript or Userstyle…" = "유저스크립트 또는 유저스타일 추가…";
 "Add userscripts and userstyles to customize your browsing experience" = "유저스크립트와 유저스타일을 추가하여 브라우징 경험을 맞춤 설정하세요";
 "Added custom filter" = "맞춤 필터를 추가했습니다";
 "Added sites are whitelisted: wBlock is completely turned off on them." = "추가한 사이트는 예외로 등록되어 wBlock이 완전히 꺼집니다.";

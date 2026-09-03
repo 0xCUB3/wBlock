@@ -21,6 +21,11 @@ import wBlockCoreService
 // Define the notification name globally or in a shared place
 extension Notification.Name {
     static let applyWBlockChangesNotification = Notification.Name("applyWBlockChangesNotification_unique_identifier")
+    /// Menu commands and hardware-keyboard shortcuts post these; ContentView
+    /// routes them to whichever tab owns the sheet or search field.
+    static let wBlockAddFilterListRequest = Notification.Name("wBlockAddFilterListRequest")
+    static let wBlockAddUserScriptRequest = Notification.Name("wBlockAddUserScriptRequest")
+    static let wBlockSearchRequest = Notification.Name("wBlockSearchRequest")
 }
 #if os(iOS)
 @MainActor

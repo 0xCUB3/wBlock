@@ -53,9 +53,11 @@
 "Add" = "Add";
 "Add Filter" = "Szűrő hozzáadása";
 "Add Filter List" = "Szűrőlista hozzáadása";
+"Add Filter List…" = "Szűrőlista hozzáadása…";
 "Add Mode" = "Hozzáadási mód";
 "Add URLs" = "URL-ek hozzáadása";
 "Add Userscript or Userstyle" = "Felhasználói szkript vagy felhasználói stílus hozzáadása";
+"Add Userscript or Userstyle…" = "Felhasználói szkript vagy felhasználói stílus hozzáadása…";
 "Add userscripts and userstyles to customize your browsing experience" = "Adj hozzá felhasználói szkripteket és stílusokat a böngészési élmény testreszabásához";
 "Added custom filter" = "Egyéni szűrő hozzáadva";
 "Added sites are whitelisted: wBlock is completely turned off on them." = "A hozzáadott webhelyek engedélyezőlistára kerülnek: a wBlock teljesen kikapcsol rajtuk.";

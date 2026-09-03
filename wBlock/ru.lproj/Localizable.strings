@@ -53,9 +53,11 @@
 "Add" = "Add";
 "Add Filter" = "Добавить фильтр";
 "Add Filter List" = "Добавить список фильтров";
+"Add Filter List…" = "Добавить список фильтров…";
 "Add Mode" = "Режим добавления";
 "Add URLs" = "Добавить URL-адреса";
 "Add Userscript or Userstyle" = "Добавить пользовательский скрипт или пользовательский стиль";
+"Add Userscript or Userstyle…" = "Добавить пользовательский скрипт или пользовательский стиль…";
 "Add userscripts and userstyles to customize your browsing experience" = "Добавляйте пользовательские скрипты и стили, чтобы настроить работу в интернете";
 "Added custom filter" = "Пользовательский фильтр добавлен";
 "Added sites are whitelisted: wBlock is completely turned off on them." = "Добавленные сайты находятся в белом списке: wBlock полностью отключается на них.";

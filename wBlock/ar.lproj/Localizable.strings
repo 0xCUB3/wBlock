@@ -53,9 +53,11 @@
 "Add" = "Add";
 "Add Filter" = "إضافة فلتر";
 "Add Filter List" = "إضافة قائمة فلترة";
+"Add Filter List…" = "إضافة قائمة فلترة…";
 "Add Mode" = "وضع الإضافة";
 "Add URLs" = "إضافة عناوين URL";
 "Add Userscript or Userstyle" = "إضافة سكريبت مستخدم أو نمط مستخدم";
+"Add Userscript or Userstyle…" = "إضافة سكريبت مستخدم أو نمط مستخدم…";
 "Add userscripts and userstyles to customize your browsing experience" = "أضف سكريبتات وأنماط مستخدم لتخصيص تجربة التصفح";
 "Added custom filter" = "تمت إضافة فلتر مخصّص";
 "Added sites are whitelisted: wBlock is completely turned off on them." = "المواقع المضافة مستثناة: يتم إيقاف wBlock تمامًا عليها.";

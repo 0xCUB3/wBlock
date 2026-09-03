@@ -53,9 +53,11 @@
 "Add" = "Add";
 "Add Filter" = "Προσθήκη φίλτρου";
 "Add Filter List" = "Προσθήκη Λίστας Φίλτρων";
+"Add Filter List…" = "Προσθήκη Λίστας Φίλτρων…";
 "Add Mode" = "Προσθήκη λειτουργίας";
 "Add URLs" = "Προσθήκη διευθύνσεων URL";
 "Add Userscript or Userstyle" = "Προσθήκη κώδικα χρήστη ή στυλ χρήστη";
+"Add Userscript or Userstyle…" = "Προσθήκη κώδικα χρήστη ή στυλ χρήστη…";
 "Add userscripts and userstyles to customize your browsing experience" = "Προσθήκη κώδικα χρήστη και στυλ χρήστη για να προσαρμόσετε την εμπειρία περιήγησής σας";
 "Added custom filter" = "Προστέθηκε προσαρμοσμένο φίλτρο";
 "Added sites are whitelisted: wBlock is completely turned off on them." = "Οι ιστότοποι που προστίθενται μπαίνουν στη λευκή λίστα: το wBlock απενεργοποιείται πλήρως σε αυτούς.";

@@ -32,6 +32,7 @@ struct SettingsView: View {
     @State private var showingBackupStatus = false
     @State private var showingSyncAdoptPrompt = false
     @State private var syncAdoptTimestamp: String?
+    @State private var showingRuleCapacity = false
     @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system
     #if os(iOS)
         @State private var backupDocument: BackupDocument? = nil
@@ -297,6 +298,8 @@ struct SettingsView: View {
                 Label("View Logs", systemImage: "doc.text.magnifyingglass")
             }
 
+            ruleCapacityRow
+
             cosmeticFilteringControls
 
             logTimestampControls
@@ -373,6 +376,26 @@ struct SettingsView: View {
         } label: {
             Label("Open Safari Settings", systemImage: "gear")
         }
+    }
+
+    /// The Safari Rules stat card on the Filters tab opens the same view, but
+    /// nothing marks it as tappable, so give it a plain Settings entry too.
+    private var ruleCapacityRow: some View {
+        Button {
+            showingRuleCapacity = true
+        } label: {
+            Label("Safari Rule Capacity", systemImage: "shield.lefthalf.filled")
+        }
+        #if os(macOS)
+        .buttonStyle(.link)
+        .popover(isPresented: $showingRuleCapacity, arrowEdge: .leading) {
+            RuleCapacityPopoverView(filterManager: filterManager)
+        }
+        #else
+        .sheet(isPresented: $showingRuleCapacity) {
+            RuleCapacityPopoverView(filterManager: filterManager)
+        }
+        #endif
     }
 
     @ViewBuilder

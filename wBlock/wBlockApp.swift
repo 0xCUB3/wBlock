@@ -106,6 +106,24 @@ struct wBlockApp: App {
                     showingRestartConfirmation = true
                 }
             }
+            // ⌘N used to open a second copy of the main window, which looked
+            // like nothing happened. Repurpose it for the Add sheets.
+            CommandGroup(replacing: .newItem) {
+                Button("Add Filter List…") {
+                    NotificationCenter.default.post(name: .wBlockAddFilterListRequest, object: nil)
+                }
+                .keyboardShortcut("n", modifiers: .command)
+                Button("Add Userscript or Userstyle…") {
+                    NotificationCenter.default.post(name: .wBlockAddUserScriptRequest, object: nil)
+                }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
+            }
+            CommandGroup(after: .textEditing) {
+                Button("Search") {
+                    NotificationCenter.default.post(name: .wBlockSearchRequest, object: nil)
+                }
+                .keyboardShortcut("l", modifiers: .command)
+            }
         }
         #endif
     }

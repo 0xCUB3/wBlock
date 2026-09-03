@@ -53,9 +53,11 @@
 "Add" = "Ekle";
 "Add Filter" = "Filtre ekle";
 "Add Filter List" = "Filtre listesi ekle";
+"Add Filter List…" = "Filtre listesi ekle…";
 "Add Mode" = "Ekleme modu";
 "Add URLs" = "URL'leri ekle";
 "Add Userscript or Userstyle" = "Kullanıcı betiği veya kullanıcı stili ekle";
+"Add Userscript or Userstyle…" = "Kullanıcı betiği veya kullanıcı stili ekle…";
 "Add userscripts and userstyles to customize your browsing experience" = "Gezinme deneyiminizi kişiselleştirmek için kullanıcı betikleri ve kullanıcı stilleri ekleyin";
 "Added custom filter" = "Özel filtre eklendi";
 "Added sites are whitelisted: wBlock is completely turned off on them." = "Eklenen siteler izin listesine alınır: wBlock bu sitelerde tamamen devre dışı kalır.";

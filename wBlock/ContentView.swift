@@ -33,6 +33,10 @@ struct ContentView: View {
     @State private var showingCapacityPopover = false
     @State private var selectedTab: Int = 0
     @State private var pendingEssentialFilter: FilterList?
+    /// Monotonic tokens handed to the Userscripts tab so a ⌘⇧N or ⌘L that
+    /// arrives before that tab has been built is still honored on appear.
+    @State private var addUserScriptRequest = 0
+    @State private var userScriptSearchRequest = 0
     @Environment(\.scenePhase) var scenePhase
 
     private var hasCompletedOnboarding: Bool {
@@ -142,6 +146,31 @@ struct ContentView: View {
                 Color.clear
             }
             .keyboardShortcut("3", modifiers: .command)
+
+            // macOS gets these from the menu bar (wBlockApp.commands), so the
+            // hidden buttons only exist for iPad/iPhone hardware keyboards.
+            #if os(iOS)
+            Button {
+                NotificationCenter.default.post(name: .wBlockAddFilterListRequest, object: nil)
+            } label: {
+                Color.clear
+            }
+            .keyboardShortcut("n", modifiers: .command)
+
+            Button {
+                NotificationCenter.default.post(name: .wBlockAddUserScriptRequest, object: nil)
+            } label: {
+                Color.clear
+            }
+            .keyboardShortcut("n", modifiers: [.command, .shift])
+
+            Button {
+                NotificationCenter.default.post(name: .wBlockSearchRequest, object: nil)
+            } label: {
+                Color.clear
+            }
+            .keyboardShortcut("l", modifiers: .command)
+            #endif
         }
         .opacity(0)
         .frame(width: 0, height: 0)
@@ -195,6 +224,22 @@ struct ContentView: View {
         .onChangeCompat(of: selectedTab) { _, _ in
             filterSearchText = ""
             showFilterSearch = false
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .wBlockAddFilterListRequest)) { _ in
+            selectedTab = 0
+            showingAddFilterSheet = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .wBlockAddUserScriptRequest)) { _ in
+            selectedTab = 1
+            addUserScriptRequest += 1
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .wBlockSearchRequest)) { _ in
+            if selectedTab == 1 {
+                userScriptSearchRequest += 1
+            } else {
+                selectedTab = 0
+                showFilterSearch = true
+            }
         }
         .alert("Disable Essential Filter?", isPresented: Binding(
             get: { pendingEssentialFilter != nil },
@@ -443,6 +488,8 @@ struct ContentView: View {
                 onApplyChanges: applyPendingChanges,
                 onForceApplyChanges: { filterManager.forceApplyChanges() },
                 tabSelection: selectedTab,
+                addRequest: addUserScriptRequest,
+                searchRequest: userScriptSearchRequest,
                 onRefresh: {
                     guard !filterManager.isLoading else { return }
                     await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
@@ -937,11 +984,31 @@ struct ContentModifiers: ViewModifier {
                     isPresented: $filterManager.showingApplyProgressSheet
                 )
             }
+            #if os(iOS)
+            // A modal alert for "nothing to do" is one tap too many on a phone;
+            // show a toast that any touch (or three seconds) clears.
+            .overlay(alignment: .top) {
+                if filterManager.showingNoUpdatesAlert {
+                    NoUpdatesToast { filterManager.showingNoUpdatesAlert = false }
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .animation(.easeInOut(duration: 0.25), value: filterManager.showingNoUpdatesAlert)
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    if filterManager.showingNoUpdatesAlert {
+                        filterManager.showingNoUpdatesAlert = false
+                    }
+                },
+                including: filterManager.showingNoUpdatesAlert ? .all : .subviews
+            )
+            #else
             .alert("No Updates Found", isPresented: $filterManager.showingNoUpdatesAlert) {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text("You're already using the latest filters.")
             }
+            #endif
             .alert(
                 filterManager.ruleLimitWarningTitle,
                 isPresented: $filterManager.showingRuleLimitWarningAlert
@@ -2410,6 +2477,43 @@ struct EditUserListView: View {
         }
     }
 }
+
+#if os(iOS)
+/// Non-blocking replacement for the "No Updates Found" alert on iOS.
+struct NoUpdatesToast: View {
+    let dismiss: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.title3)
+                .foregroundStyle(.green)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("No Updates Found")
+                    .font(.subheadline.weight(.semibold))
+                Text("You're already using the latest filters.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: dismiss)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .task {
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            dismiss()
+        }
+    }
+}
+#endif
 
 struct RuleCapacityPopoverView: View {
     @ObservedObject var filterManager: AppFilterManager
