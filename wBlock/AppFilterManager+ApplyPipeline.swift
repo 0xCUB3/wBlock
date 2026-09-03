@@ -494,8 +494,17 @@ extension AppFilterManager {
             // Auto-update enabled userscripts as part of Apply Changes (helps YouTube, etc.).
             if !pausedComponents.contains(.userScripts),
                let userScriptManager = filterUpdater.userScriptManager {
-                let scriptsResult = await userScriptManager.autoUpdateEnabledUserScripts()
+                let scriptsResult = await userScriptManager.autoUpdateEnabledUserScripts(
+                    progressCallback: { prog in
+                        let fraction: Float = prog.total > 0 ? Float(prog.completed) / Float(prog.total) : 1
+                        self.progress = 0.1 + fraction * 0.05
+                        self.applyProgressViewModel.updateScriptsChecked(prog.completed, total: prog.total)
+                        self.applyProgressViewModel.updateCurrentScript(prog.currentScriptName)
+                        await Self.allowProgressUIRefresh()
+                    }
+                )
                 await MainActor.run {
+                    self.applyProgressViewModel.updateCurrentScript("")
                     self.applyProgressViewModel.updateScriptsUpdateResult(
                         updated: scriptsResult.updated,
                         failed: scriptsResult.failed

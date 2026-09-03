@@ -206,6 +206,8 @@
 "Checking for Updates" = "Suche nach Filter-Updates";
 "Checking for updates..." = "Suche nach Updates...";
 "Checking for updates... (%d/%d)" = "Suche nach Updates (%d/%d)...";
+"Checking for script updates..." = "Suche nach Skript-Updates...";
+"Checking for script updates... (%d/%d)" = "Suche nach Skript-Updates (%d/%d)...";
 "Checks for wBlock filter updates and applies them when available." = "Prüft auf wBlock-Filter-Updates und wendet sie an, wenn sie verfügbar sind.";
 "Choose File…" = "Datei auswählen…";
 "Choose optional userscripts. These are disabled by default." = "Wähle optionale Userscripts. Diese sind standardmäßig deaktiviert.";

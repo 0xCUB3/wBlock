@@ -26,7 +26,7 @@ let updater = try read("wBlock/FilterListUpdater.swift")
 let userScript = try read("wBlockCoreService/UserScript.swift")
 
 // 1. Eligibility does not require updateURL when url exists
-let checkFunc = section(updater, "func checkForScriptUpdates(scripts: [UserScript])", "return await boundedConcurrentCompactMap")
+let checkFunc = section(updater, "func checkForScriptUpdates(", "await boundedConcurrentForEach(eligibleScripts")
 require(!checkFunc.contains("$0.updateURL != nil"), "checkForScriptUpdates must not require updateURL != nil")
 require(checkFunc.contains("isEligibleForUpdateCheck"), "checkForScriptUpdates uses isEligibleForUpdateCheck")
 

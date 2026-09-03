@@ -125,7 +125,28 @@ extension AppFilterManager {
         if filterUpdater.userScriptManager == nil {
             setUserScriptManager(userScriptManager)
         }
-        availableScriptUpdates = await filterUpdater.checkForScriptUpdates(scripts: userScriptManager.userScripts)
+        availableScriptUpdates = await filterUpdater.checkForScriptUpdates(
+            scripts: userScriptManager.userScripts,
+            progressCallback: { checkProgress in
+                await MainActor.run {
+                    self.progress = checkProgress.fraction
+                    self.statusDescription = Self.checkingScriptsStatus(for: checkProgress)
+                }
+            }
+        )
+    }
+
+    /// "Checking for script updates... (3/12)" while a manual check walks the scripts.
+    static func checkingScriptsStatus(for checkProgress: FilterListUpdater.FilterRefreshProgress) -> String {
+        guard checkProgress.total > 0 else {
+            return LocalizedStrings.text("Checking for script updates...", comment: "Script update check status")
+        }
+        return LocalizedStrings.format(
+            "Checking for script updates... (%d/%d)",
+            comment: "Script update check status with checked/total script counts",
+            checkProgress.completed,
+            checkProgress.total
+        )
     }
 
     /// Downloads the selected filter/script updates, then runs the shared apply pipeline.
@@ -182,9 +203,10 @@ extension AppFilterManager {
                     newProgress in
                     await MainActor.run {
                         // Keep some headroom for the shared apply pipeline after downloads.
-                        let mapped = 0.2 + (newProgress * 0.1)
-                        self.progress = mapped
-                        self.applyProgressViewModel.updatePhaseProgress(Double(newProgress))
+                        self.progress = 0.2 + (newProgress.fraction * 0.1)
+                        self.applyProgressViewModel.updateScriptsChecked(
+                            newProgress.completed, total: newProgress.total
+                        )
                         self.applyProgressViewModel.updateStageDescription(scriptsStatus)
                     }
                     await Self.allowProgressUIRefresh()

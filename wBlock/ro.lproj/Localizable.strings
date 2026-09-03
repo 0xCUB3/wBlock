@@ -206,6 +206,8 @@
 "Checking for Updates" = "Se verifică actualizările filtrelor";
 "Checking for updates..." = "Se verifică actualizări...";
 "Checking for updates... (%d/%d)" = "Se verifică actualizări (%d/%d)...";
+"Checking for script updates..." = "Se verifică actualizările scripturilor...";
+"Checking for script updates... (%d/%d)" = "Se verifică actualizările scripturilor (%d/%d)...";
 "Checks for wBlock filter updates and applies them when available." = "Verifică actualizările filtrelor wBlock și le aplică atunci când sunt disponibile.";
 "Choose File…" = "Alege fișier…";
 "Choose optional userscripts. These are disabled by default." = "Alege scripturi de utilizator opționale. Sunt dezactivate implicit.";

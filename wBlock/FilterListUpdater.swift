@@ -651,15 +651,28 @@ final class FilterListUpdater: @unchecked Sendable {
         }
     }
 
-    /// Checks for updates to userscripts and returns those with available updates
-    func checkForScriptUpdates(scripts: [UserScript]) async -> [UserScript] {
+    /// Checks for updates to userscripts and returns those with available updates.
+    /// Reports "checked/total" the same way `checkForUpdates` does for filter lists.
+    func checkForScriptUpdates(
+        scripts: [UserScript],
+        progressCallback: (@Sendable (FilterRefreshProgress) async -> Void)? = nil
+    ) async -> [UserScript] {
         let eligibleScripts = scripts.filter {
             !$0.isLocal && $0.isDownloaded && $0.isEligibleForUpdateCheck
         }
-        return await boundedConcurrentCompactMap(eligibleScripts) { script in
+        var scriptsWithUpdates: [UserScript] = []
+        var checkedCount = 0
+        let totalCount = eligibleScripts.count
+        await progressCallback?(FilterRefreshProgress(completed: 0, total: totalCount))
+        await boundedConcurrentForEach(eligibleScripts, operation: { script in
             let hasUpdate = await self.hasScriptUpdate(for: script)
             return hasUpdate ? script : nil
-        }
+        }, onResult: { (script: UserScript?) in
+            if let script { scriptsWithUpdates.append(script) }
+            checkedCount += 1
+            await progressCallback?(FilterRefreshProgress(completed: checkedCount, total: totalCount))
+        })
+        return scriptsWithUpdates
     }
 
     /// Checks if a specific userscript has an update available
@@ -762,31 +775,38 @@ final class FilterListUpdater: @unchecked Sendable {
         }
     }
 
-    /// Updates selected scripts and returns the list of successfully updated scripts
+    /// Updates selected scripts and returns the list of successfully updated scripts.
+    /// Progress is reported as "downloaded/total" and the script being fetched is
+    /// published to the apply sheet, mirroring the filter download pass.
     func updateSelectedScripts(
-        _ selectedScripts: [UserScript], progressCallback: @escaping (Float) async -> Void
+        _ selectedScripts: [UserScript],
+        progressCallback: @escaping (FilterRefreshProgress) async -> Void
     ) async -> [UserScript] {
         guard !selectedScripts.isEmpty else {
-            await progressCallback(1.0)
+            await progressCallback(FilterRefreshProgress(completed: 0, total: 0))
             return []
         }
 
         let scriptsToUpdate = selectedScripts.filter { !$0.isLocal && $0.updatesAutomatically }
         guard !scriptsToUpdate.isEmpty else {
-            await progressCallback(1.0)
+            await progressCallback(FilterRefreshProgress(completed: 0, total: 0))
             return []
         }
-        let totalSteps = Float(scriptsToUpdate.count)
+        let total = scriptsToUpdate.count
         #if os(macOS)
         let maxConcurrent = 4
         #else
         let maxConcurrent = 3
         #endif
 
-        var completedSteps: Float = 0
+        var completedSteps = 0
         var updatedScripts: [UserScript] = []
+        await progressCallback(FilterRefreshProgress(completed: 0, total: total))
 
         await boundedConcurrentForEach(scriptsToUpdate, maxConcurrent: maxConcurrent, operation: { script in
+            await MainActor.run {
+                self.filterListManager?.applyProgressViewModel.updateCurrentScript(script.name)
+            }
             let (updatedScript, success) = await self.fetchAndProcessScript(script)
             return (script, updatedScript, success)
         }, onResult: { (script, updatedScript, success) in
@@ -804,8 +824,11 @@ final class FilterListUpdater: @unchecked Sendable {
             }
 
             completedSteps += 1
-            await progressCallback(completedSteps / totalSteps)
+            await progressCallback(FilterRefreshProgress(completed: completedSteps, total: total))
         })
+        await MainActor.run {
+            self.filterListManager?.applyProgressViewModel.updateCurrentScript("")
+        }
 
         return updatedScripts
     }

@@ -3583,7 +3583,23 @@ public class UserScriptManager: ObservableObject {
 
     /// Auto-updates enabled remote userscripts using a two-phase flow:
     /// first check .meta.js for version changes, then download full script only if needed.
-    public func autoUpdateEnabledUserScripts() async -> AutoUpdateResult {
+    /// Progress of the auto-update pass, reported per script so the apply sheet can
+    /// show "3/12" and the script being checked, like the filter update phase.
+    public struct AutoUpdateProgress: Sendable, Equatable {
+        public let completed: Int
+        public let total: Int
+        public let currentScriptName: String
+
+        public init(completed: Int, total: Int, currentScriptName: String) {
+            self.completed = completed
+            self.total = total
+            self.currentScriptName = currentScriptName
+        }
+    }
+
+    public func autoUpdateEnabledUserScripts(
+        progressCallback: (@MainActor (AutoUpdateProgress) async -> Void)? = nil
+    ) async -> AutoUpdateResult {
         await waitUntilReady()
 
         let candidates = userScripts.filter { script in
@@ -3598,8 +3614,13 @@ public class UserScriptManager: ObservableObject {
         var updatedCount = 0
         var failedCount = 0
         var didChange = false
+        let total = candidates.count
+        var completed = 0
 
         for candidate in candidates {
+            await progressCallback?(
+                AutoUpdateProgress(completed: completed, total: total, currentScriptName: candidate.name)
+            )
             do {
                 let updated = try await updateSingleScript(candidate)
                 if updated {
@@ -3610,7 +3631,10 @@ public class UserScriptManager: ObservableObject {
                 failedCount += 1
                 logger.error("❌ Auto-update userscript failed: \(candidate.name) – \(error.localizedDescription)")
             }
+            completed += 1
         }
+
+        await progressCallback?(AutoUpdateProgress(completed: total, total: total, currentScriptName: ""))
 
         if didChange {
             await persistUserScriptsNow()

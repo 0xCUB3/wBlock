@@ -206,6 +206,8 @@
 "Checking for Updates" = "جارٍ التحقق من تحديثات عوامل التصفية";
 "Checking for updates..." = "جارٍ التحقق من وجود تحديثات...";
 "Checking for updates... (%d/%d)" = "جارٍ التحقق من وجود تحديثات (%d/%d)...";
+"Checking for script updates..." = "جارٍ التحقق من تحديثات النصوص البرمجية...";
+"Checking for script updates... (%d/%d)" = "جارٍ التحقق من تحديثات النصوص البرمجية (%d/%d)...";
 "Checks for wBlock filter updates and applies them when available." = "يتحقق من تحديثات فلاتر wBlock ويطبّقها عند توفرها.";
 "Choose File…" = "اختر ملفًا…";
 "Choose optional userscripts. These are disabled by default." = "اختر سكربتات مستخدم اختيارية. تكون معطلة افتراضيًا.";

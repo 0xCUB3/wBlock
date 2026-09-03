@@ -22,6 +22,7 @@ struct ApplyProgressPresentationTests {
         testBarTracksVisibleStatus()
         testUpdatingShowsCurrentFilter()
         testUpdatingShowsCheckedCount()
+        testScriptsShowCheckedCountAndName()
         print("PASS")
     }
 
@@ -353,6 +354,35 @@ struct ApplyProgressPresentationTests {
         check(
             fallback.fractionLabel == ApplyProgressPresentation.percentString(0.5),
             "a zero total falls back to the percent label"
+        )
+    }
+
+    @MainActor
+    private static func testScriptsShowCheckedCountAndName() {
+        let viewModel = ApplyChangesViewModel()
+        viewModel.beginProgressRun()
+        viewModel.updatePhaseCompletion(updating: true, scripts: false)
+        viewModel.updateScriptsChecked(3, total: 12)
+        viewModel.updateCurrentScript("Return YouTube Dislike")
+        var presentation = ApplyProgressPresentation.make(from: viewModel.state)
+        check(presentation.fractionLabel == "3/12", "scripts phase must show checked/total like filters")
+        check(presentation.detail == "Return YouTube Dislike", "scripts phase must show the script being fetched")
+        checkAlmostEqual(presentation.progress, (1 + 3.0 / 12.0) / 6.0, "script counts drive the phase fill")
+
+        viewModel.updateCurrentScript("")
+        viewModel.updateStageDescription("Downloading selected scripts...")
+        presentation = ApplyProgressPresentation.make(from: viewModel.state)
+        check(presentation.detail == "Downloading selected scripts...", "an empty script name falls back to the script status")
+
+        viewModel.updateScriptsChecked(20, total: 12)
+        check(ApplyProgressPresentation.make(from: viewModel.state).fractionLabel == "12/12", "script count clamps to the total")
+
+        viewModel.updateScriptsChecked(0, total: 0)
+        viewModel.updatePhaseProgress(0.25)
+        presentation = ApplyProgressPresentation.make(from: viewModel.state)
+        check(
+            presentation.fractionLabel == ApplyProgressPresentation.percentString(0.25),
+            "a zero script total falls back to the percent label"
         )
     }
 

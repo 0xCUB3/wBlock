@@ -206,6 +206,8 @@
 "Checking for Updates" = "Проверка обновлений фильтров";
 "Checking for updates..." = "Проверяем наличие обновлений...";
 "Checking for updates... (%d/%d)" = "Проверяем наличие обновлений (%d/%d)...";
+"Checking for script updates..." = "Проверяем обновления скриптов...";
+"Checking for script updates... (%d/%d)" = "Проверяем обновления скриптов (%d/%d)...";
 "Checks for wBlock filter updates and applies them when available." = "Проверяет обновления фильтров wBlock и применяет их при наличии.";
 "Choose File…" = "Выбрать файл…";
 "Choose optional userscripts. These are disabled by default." = "Выберите дополнительные пользовательские скрипты. По умолчанию они отключены.";

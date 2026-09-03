@@ -71,6 +71,8 @@ struct ApplyChangesState: Equatable {
     /// Non-fatal issues shown on the result screen (reload failures, etc.).
     var resultWarning: String = ""
     var currentFilterName: String = ""
+    /// Script being downloaded during the scripts phase, shown like the filter name.
+    var currentScriptName: String = ""
     var scriptsUpdatedCount: Int = 0
     var scriptsFailedCount: Int = 0
     /// Total number of blocker targets for the current platform (typically 5).
@@ -82,6 +84,9 @@ struct ApplyChangesState: Equatable {
     /// Lists checked so far during the updating phase, shown as "12/87".
     var filtersCheckedDone: Int = 0
     var filtersCheckedTotal: Int = 0
+    /// Scripts checked or downloaded so far during the scripts phase, shown as "3/12".
+    var scriptsCheckedDone: Int = 0
+    var scriptsCheckedTotal: Int = 0
     var filterUpdatesFound: Int = 0
     var phases: [ApplyChangesPhaseProgress] = ApplyChangesPhase.allCases.map {
         ApplyChangesPhaseProgress(phase: $0, status: .pending)
@@ -153,6 +158,11 @@ class ApplyChangesViewModel: ObservableObject {
         state.currentFilterName = name
     }
 
+    func updateCurrentScript(_ name: String) {
+        guard name != state.currentScriptName else { return }
+        state.currentScriptName = name
+    }
+
     func updateProcessedCount(_ processed: Int, total: Int) {
         let clampedTotal = max(0, total)
         guard clampedTotal != state.totalCount else { return }
@@ -182,6 +192,18 @@ class ApplyChangesViewModel: ObservableObject {
         let clampedDone = min(max(0, done), clampedTotal)
         state.filtersCheckedDone = clampedDone
         state.filtersCheckedTotal = clampedTotal
+        if clampedTotal > 0 {
+            state.phaseProgress = Double(clampedDone) / Double(clampedTotal)
+        }
+    }
+
+    /// Records how many scripts have been checked or downloaded out of the total.
+    /// A zero total clears the counter so the phase falls back to a percent.
+    func updateScriptsChecked(_ done: Int, total: Int) {
+        let clampedTotal = max(0, total)
+        let clampedDone = min(max(0, done), clampedTotal)
+        state.scriptsCheckedDone = clampedDone
+        state.scriptsCheckedTotal = clampedTotal
         if clampedTotal > 0 {
             state.phaseProgress = Double(clampedDone) / Double(clampedTotal)
         }
@@ -445,6 +467,9 @@ struct ApplyProgressPresentation: Equatable {
             let value = (0...1).clamp(state.phaseProgress)
             return value > 0 ? percentString(value) : nil
         case .scripts:
+            if state.scriptsCheckedTotal > 0 {
+                return "\(state.scriptsCheckedDone)/\(state.scriptsCheckedTotal)"
+            }
             let value = (0...1).clamp(state.phaseProgress)
             return value > 0 ? percentString(value) : nil
         case .converting:
@@ -484,6 +509,9 @@ struct ApplyProgressPresentation: Equatable {
             return nil
         case .scripts:
             if step.status == .active {
+                if !state.currentScriptName.isEmpty {
+                    return state.currentScriptName
+                }
                 let message = state.statusMessage
                 if message.localizedCaseInsensitiveContains("script") {
                     return message
