@@ -237,6 +237,7 @@ struct UserStyleParsingAndMatchingTests {
             "Light": "light",
             "Dark*": "dark"
         }
+        @var select flavor "Flavor" ["latte:Latte", "frappe:Frappé", "mocha:Mocha*"]
         ==/UserStyle== */
         body { color: var(--accent); }
         """
@@ -248,6 +249,7 @@ struct UserStyleParsingAndMatchingTests {
         expect(css.contains("--brand: wBlock;"), "text var should be unquoted")
         expect(css.contains("--fontSize: 14px;"), "range var should fold units")
         expect(css.contains("--theme: dark;"), "select var should pick starred default")
+        expect(css.contains("--flavor: mocha;"), "value:Label array select should emit only the value (#578)")
         expect(css.hasPrefix(":root {"), "default preprocessor should emit :root prelude first")
 
         let uso = """

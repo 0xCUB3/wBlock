@@ -783,11 +783,13 @@ public enum UserStyleSupport {
         if type == "dropdown" || remainder.contains("<<<EOT") {
             options = scanEOTOptions(remainder)
         }
-        if options.isEmpty {
-            options = scanPairOptions(remainder)
+        // A JSON array must not reach the pair scanner, which would pair its
+        // consecutive strings as image-style "Label" "value" entries.
+        if options.isEmpty, remainder.trimmingCharacters(in: .whitespaces).hasPrefix("[") {
+            options = scanArrayOptions(remainder)
         }
         if options.isEmpty {
-            options = scanArrayOptions(remainder)
+            options = scanPairOptions(remainder)
         }
         guard !options.isEmpty else { return nil }
 
@@ -872,7 +874,8 @@ public enum UserStyleSupport {
         return options
     }
 
-    /// Plain JSON array form: `["a", "b*"]` — values double as labels.
+    /// Plain JSON array form: `["a", "b*"]` — values double as labels. Stylus
+    /// also accepts `"value:Label"` entries, where only the value is emitted.
     private static func scanArrayOptions(_ block: String) -> [(label: String, value: String)] {
         let trimmed = block.trimmingCharacters(in: .whitespaces)
         guard trimmed.hasPrefix("["),
@@ -882,7 +885,8 @@ public enum UserStyleSupport {
 
         return array.compactMap { element in
             guard let text = element as? String else { return nil }
-            let value = text.hasSuffix("*") ? String(text.dropLast()) : text
+            let entry = text.hasSuffix("*") ? String(text.dropLast()) : text
+            let value = entry.split(separator: ":", maxSplits: 1).first.map(String.init) ?? entry
             return (label: text, value: value)
         }
     }
