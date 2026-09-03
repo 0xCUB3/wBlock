@@ -92,7 +92,9 @@ struct ApplyChangesProgressView: View {
             idealWidth: 500,
             maxWidth: 560,
             minHeight: mode == .result ? nil : 320,
-            idealHeight: mode == .result ? nil : 360,
+            // Six phase rows with a detail line each, the bar, header, and
+            // toolbar need ~540pt; at 360 the last two rows were clipped.
+            idealHeight: mode == .result ? nil : 560,
             maxHeight: 640
         )
         #endif
