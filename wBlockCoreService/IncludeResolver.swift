@@ -2,7 +2,7 @@
 //  IncludeResolver.swift
 //  wBlockCoreService
 //
-//  Fetches and recursively expands !#include directives in filter list content.
+//  Fetches and recursively expands !#include and %include directives in filter list content.
 //
 //  Algorithm derived from AdGuard FiltersDownloader resolveInclude + validateUrl
 //  (https://github.com/AdguardTeam/FiltersDownloader).
@@ -19,7 +19,9 @@
 
 import Foundation
 
-/// Fetches sub-list content for `!#include` directives and recursively expands them.
+/// Fetches sub-list content for `!#include` and `%include path%` directives and
+/// recursively expands them. The second form is the EasyList template syntax
+/// (e.g. RuAdList's `advblock.txt`); it takes the same path rules as `!#include`.
 ///
 /// Each include line is resolved relative to the base URL of the containing file.
 /// Safety guards:
@@ -155,7 +157,7 @@ public actor IncludeResolver {
         for line in lines {
             guard result.count < maximumLines, resultBytes < maximumBytes else { break }
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.hasPrefix("!#include") {
+            if Self.includePath(from: trimmed) != nil {
                 let expanded = await resolve(
                     includeLine: trimmed,
                     baseURL: baseURL,
@@ -188,10 +190,9 @@ public actor IncludeResolver {
             return ExpansionResult(lines: [], bytes: 0)
         }
 
-        let rawPath = String(includeLine.dropFirst("!#include".count))
-            .trimmingCharacters(in: .whitespaces)
-        guard let subURL = Self.resolveSublistURL(path: rawPath, relativeTo: baseURL),
-              isSameOrigin(subURL, as: baseURL) else {
+        guard let rawPath = Self.includePath(from: includeLine),
+              let subURL = Self.resolveSublistURL(path: rawPath, relativeTo: baseURL),
+              Self.isSameOrigin(subURL, as: baseURL) else {
             return ExpansionResult(lines: [], bytes: 0)
         }
 
@@ -241,6 +242,21 @@ public actor IncludeResolver {
 
     // MARK: - Path resolution
 
+    /// Returns the include path from an `!#include path` or `%include path%` line,
+    /// or `nil` when the line is not an include directive.
+    ///
+    /// EasyList template aliases such as `%include easylist:foo.txt%` name a
+    /// repository the list does not point at, so they are not includes we can fetch.
+    public static func includePath(from line: String) -> String? {
+        if line.hasPrefix("!#include") {
+            return String(line.dropFirst("!#include".count)).trimmingCharacters(in: .whitespaces)
+        }
+        guard line.hasPrefix("%include "), line.hasSuffix("%") else { return nil }
+        let path = line.dropFirst("%include ".count).dropLast().trimmingCharacters(in: .whitespaces)
+        guard !path.contains(":") || path.hasPrefix("https://") else { return nil }
+        return path
+    }
+
     /// Resolves an `!#include` path against the parent list's directory URL.
     ///
     /// Filter authors often ship pre-percent-encoded relative paths
@@ -262,11 +278,16 @@ public actor IncludeResolver {
 
     // MARK: - Private helpers
 
-    /// Returns `true` when `url` and `base` share the same origin (scheme + host + port).
+    /// Hosts that serve the same GitHub content; wBlock itself falls back between
+    /// them, so a list served from one may include files addressed on the other.
+    private static let githubContentHosts: Set<String> = ["raw.githubusercontent.com", "cdn.jsdelivr.net"]
+
+    /// Returns `true` when `url` and `base` share the same origin (scheme + host + port),
+    /// or when both are GitHub content hosts.
     ///
     /// Nil host == nil host is treated as same-origin (covers the `file://` edge case).
     /// Port optionals are compared directly: a nil port (scheme default) equals another nil port.
-    private func isSameOrigin(_ url: URL, as base: URL) -> Bool {
+    static func isSameOrigin(_ url: URL, as base: URL) -> Bool {
         // Scheme must be present and equal (case-insensitive)
         guard let urlScheme = url.scheme?.lowercased(),
               let baseScheme = base.scheme?.lowercased(),
@@ -277,6 +298,10 @@ public actor IncludeResolver {
         // Host comparison (lowercased); nil == nil is same-origin
         let urlHost = url.host?.lowercased()
         let baseHost = base.host?.lowercased()
+        if let urlHost, let baseHost, urlHost != baseHost,
+           Self.githubContentHosts.contains(urlHost), Self.githubContentHosts.contains(baseHost) {
+            return urlScheme == "https"
+        }
         guard urlHost == baseHost else {
             return false
         }

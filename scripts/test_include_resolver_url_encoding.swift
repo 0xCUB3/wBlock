@@ -1,8 +1,9 @@
 //
 // scripts/test_include_resolver_url_encoding.swift
 //
-// Regression coverage for !#include path resolution: pre-percent-encoded
-// relative paths must not be double-encoded by Foundation.
+// Regression coverage for include path resolution: pre-percent-encoded
+// relative paths must not be double-encoded by Foundation, and the EasyList
+// template form `%include path%` is recognized alongside `!#include`.
 //
 // Run via:
 //   swiftc -parse-as-library \
@@ -77,7 +78,39 @@ struct IncludeResolverURLEncodingTests {
             fail("resolved include must not contain double-encoded %2520: \(liveURL.absoluteString)")
         }
 
+        // Directive forms: !#include, %include path%, and the unfetchable easylist: alias.
+        expectIncludePath("!#include subdir/file.txt", equals: "subdir/file.txt")
+        expectIncludePath("!#include  ../other.txt ", equals: "../other.txt")
+        expectIncludePath("%include advblock/popup.txt%", equals: "advblock/popup.txt")
+        expectIncludePath("%include https://example.com/a/b.txt%", equals: "https://example.com/a/b.txt")
+        expectIncludePath("%include easylist:easylist/easylist_general_block.txt%", equals: nil)
+        expectIncludePath("%include advblock/popup.txt", equals: nil)
+        expectIncludePath("! %include comment%", equals: nil)
+        expectIncludePath("||example.com^", equals: nil)
+
+        // Origin policy: GitHub raw and jsDelivr serve the same repositories.
+        let raw = URL(string: "https://raw.githubusercontent.com/easylist/ruadlist/master/advblock/popup.txt")!
+        let jsd = URL(string: "https://cdn.jsdelivr.net/gh/easylist/ruadlist@master/advblock.txt")!
+        let other = URL(string: "https://example.com/advblock/popup.txt")!
+        expectOrigin(raw, jsd, true, "raw.githubusercontent include from a jsDelivr-served list")
+        expectOrigin(jsd, raw, true, "jsDelivr include from a raw.githubusercontent-served list")
+        expectOrigin(other, raw, false, "unrelated host stays cross-origin")
+        expectOrigin(URL(string: "http://cdn.jsdelivr.net/gh/a/b@c/d.txt")!, raw, false, "scheme must still match")
+
         print("PASS")
+    }
+
+    private static func expectOrigin(_ url: URL, _ base: URL, _ expected: Bool, _ message: String) {
+        guard IncludeResolver.isSameOrigin(url, as: base) == expected else {
+            fail("\(message): expected \(expected)")
+        }
+    }
+
+    private static func expectIncludePath(_ line: String, equals expected: String?) {
+        let actual = IncludeResolver.includePath(from: line)
+        guard actual == expected else {
+            fail("includePath(\(line.debugDescription)) got \(String(describing: actual)), expected \(String(describing: expected))")
+        }
     }
 
     private static func expectResolved(
