@@ -732,6 +732,10 @@ struct UserScriptManagerView: View {
         let isToggleInFlight = toggleState?.isInFlight ?? false
 
         return HStack(alignment: .center, spacing: 10) {
+            // The info tap lives on the text column only. A row-wide tap gesture
+            // competes with the switch on iOS 17, where the gesture wins and a tap
+            // on the switch opens the info sheet instead of toggling the script.
+            HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(script.localizedDisplayName)
@@ -821,7 +825,15 @@ struct UserScriptManagerView: View {
                 }
             }
 
-            Spacer()
+            Spacer(minLength: 0)
+            }
+            .contentShape(.interaction, Rectangle())
+            .onTapGesture {
+                // Defer to avoid race with context menu dismissal on iOS
+                DispatchQueue.main.async {
+                    selectedScript = SelectedUserScript(id: script.id, action: .info)
+                }
+            }
 
             HStack(spacing: 8) {
                 Toggle("", isOn: Binding(
@@ -845,13 +857,6 @@ struct UserScriptManagerView: View {
             }
         }
         .id(script.id)
-        .contentShape(.interaction, Rectangle())
-        .onTapGesture {
-            // Defer to avoid race with context menu dismissal on iOS
-            DispatchQueue.main.async {
-                selectedScript = SelectedUserScript(id: script.id, action: .info)
-            }
-        }
         .contextMenu {
             let actions = ContextMenuActionAvailability.userScriptActions(
                 isBuiltIn: script.isBuiltIn,

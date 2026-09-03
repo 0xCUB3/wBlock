@@ -809,6 +809,44 @@ struct FilterRowView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
+            // The info tap lives on the text column only. A row-wide tap gesture
+            // competes with the switch on iOS 17, where the gesture wins and a tap
+            // on the switch opens the info sheet instead of toggling the filter.
+            filterDetails
+                .contentShape(.interaction, Rectangle())
+                .onTapGesture {
+                    // Defer to avoid race with context menu dismissal on iOS
+                    DispatchQueue.main.async {
+                        onInfo()
+                    }
+                }
+            Toggle(
+                "",
+                isOn: Binding(
+                    get: { filter.isSelected },
+                    set: { newValue in
+                        // Keep the explicit Toggle value across the deferred callback. The row's
+                        // captured filter can be stale after another state update.
+                        DispatchQueue.main.async {
+                            onToggle(newValue)
+                        }
+                    }
+                )
+            )
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .frame(alignment: .center)
+        }
+        .contextMenu {
+            contextMenuItems
+        }
+        #if os(macOS)
+        .padding(16)
+        #endif
+    }
+
+    private var filterDetails: some View {
+        HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     if showsFlags, let flags = filter.flagEmojis {
@@ -906,37 +944,8 @@ struct FilterRowView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            Spacer()
-            Toggle(
-                "",
-                isOn: Binding(
-                    get: { filter.isSelected },
-                    set: { newValue in
-                        // Keep the explicit Toggle value across the deferred callback. The row's
-                        // captured filter can be stale after another state update.
-                        DispatchQueue.main.async {
-                            onToggle(newValue)
-                        }
-                    }
-                )
-            )
-            .labelsHidden()
-            .toggleStyle(.switch)
-            .frame(alignment: .center)
+            Spacer(minLength: 0)
         }
-        .contentShape(.interaction, Rectangle())
-        .onTapGesture {
-            // Defer to avoid race with context menu dismissal on iOS
-            DispatchQueue.main.async {
-                onInfo()
-            }
-        }
-        .contextMenu {
-            contextMenuItems
-        }
-        #if os(macOS)
-        .padding(16)
-        #endif
     }
 }
 
