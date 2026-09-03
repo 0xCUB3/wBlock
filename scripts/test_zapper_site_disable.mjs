@@ -188,9 +188,10 @@ check(
     && source.includes("state.ui.ancestorRow = ancestorRow")
 );
 check(
-  "done only reloads the page when zapper rules changed",
+  "done never reloads the page (hides persist via the injected stylesheet)",
   source.includes("async function finalizeSession()")
-    && source.includes("rulesSignature(state.rules) !== state.sessionRulesSignature")
+    && !source.includes("window.location.reload()")
+    && !source.includes("sessionRulesSignature")
 );
 check(
   "global element-zapper pause is authoritative in native rule responses",

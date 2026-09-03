@@ -77,7 +77,6 @@
       ancestorRow: null,
     },
     rulesDisabled: false,
-    sessionRulesSignature: '',
   };
 
   let ruleSyncIntervalId = null;
@@ -111,14 +110,12 @@
 
     try {
       await waitForPendingSaves();
-      const shouldReload = rulesSignature(state.rules) !== state.sessionRulesSignature;
       // Delay teardown until after the current input/click sequence completes
       // so we don't accidentally retarget the synthetic click to the page.
       await new Promise((resolve) => setTimeout(resolve, 0));
+      // The hide stylesheet stays in place, so no page reload is needed;
+      // the native content blocker rules take over on the next navigation.
       deactivateZapper({ removeUi: true });
-      if (shouldReload) {
-        window.location.reload();
-      }
     } catch {
       deactivateZapper({ removeUi: true });
     } finally {
@@ -1223,7 +1220,6 @@
     state.lastPointerX = -1;
     state.lastPointerY = -1;
     state.isScrolling = false;
-    state.sessionRulesSignature = rulesSignature(state.rules);
     if (state.ui.undoButton) state.ui.undoButton.disabled = true;
     if (state.ui.navGroup) state.ui.navGroup.classList.remove('wblock-active');
     if (state.ui.defaultGroup) state.ui.defaultGroup.style.display = 'flex';
