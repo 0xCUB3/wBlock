@@ -263,6 +263,7 @@
 "Disabled sites updated successfully in %@ (fast update #%d)" = "Sitios deshabilitados actualizados exitosamente en %@ (actualización rápida #%d)";
 "Display" = "Visualización";
 "Done" = "Listo";
+"Close" = "Cerrar";
 "Download Script" = "Descargar script";
 "Downloaded" = "Descargado";
 "Downloaded %d update" = "Se descargó %d actualización";

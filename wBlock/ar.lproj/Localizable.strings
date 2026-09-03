@@ -263,6 +263,7 @@
 "Disabled sites updated successfully in %@ (fast update #%d)" = "تم تحديث المواقع المعطلة بنجاح في %@ (تحديث سريع #%d)";
 "Display" = "العرض";
 "Done" = "تم";
+"Close" = "إغلاق";
 "Download Script" = "تنزيل النص البرمجي";
 "Downloaded" = "تم التنزيل";
 "Downloaded %d update" = "تم تنزيل %d تحديث";

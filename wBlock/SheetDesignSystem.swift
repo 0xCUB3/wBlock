@@ -13,25 +13,56 @@ enum SheetDesign {
     static let contentHorizontalPadding: CGFloat = 20
 }
 
-// MARK: - Reusable Sheet Done Button
+// MARK: - Reusable Sheet Close Button
 
+/// The shared dismiss control for every sheet and popover. It renders as an X
+/// rather than a "Done" label (#619): the sheets it closes are read-only or
+/// autosave, so there is nothing to confirm. The `action` may still flush
+/// pending work (the code editor hands its text back before dismissing).
 struct SheetDoneButton: View {
     let action: () -> Void
+    /// Let the surrounding toolbar style the control. Used for the iOS Info
+    /// navigation bar, where the system draws its own glass capsule.
     var usesAutomaticStyle = false
 
     @ViewBuilder
     var body: some View {
         if usesAutomaticStyle {
-            doneButton
+            Button(action: action) {
+                Label("Close", systemImage: "xmark")
+            }
+            .keyboardShortcut(.cancelAction)
         } else {
-            doneButton.glassButtonStyleCompat()
+            styledCloseButton
         }
     }
 
-    private var doneButton: some View {
-        Button("Done") {
-            action()
+    @ViewBuilder
+    private var styledCloseButton: some View {
+        #if os(iOS)
+        if #available(iOS 26.0, *) {
+            Button(action: action) {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(.glass)
+            .accessibilityLabel("Close")
+            .keyboardShortcut(.cancelAction)
+        } else {
+            filledCloseButton
         }
+        #else
+        filledCloseButton
+        #endif
+    }
+
+    private var filledCloseButton: some View {
+        Button(action: action) {
+            Image(systemName: "xmark.circle.fill")
+                .foregroundStyle(.gray)
+                .font(.title2)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Close")
         .keyboardShortcut(.cancelAction)
     }
 }
@@ -65,37 +96,8 @@ struct SheetHeader: View {
         .background(Color.clear)
     }
 
-    @ViewBuilder
     private var dismissControl: some View {
-        #if os(iOS)
-        if #available(iOS 26.0, *) {
-            Button(action: onDismiss) {
-                Image(systemName: "xmark")
-            }
-            .buttonStyle(.glass)
-            .keyboardShortcut(.cancelAction)
-        } else {
-            Button {
-                onDismiss()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .foregroundStyle(.gray)
-                    .font(.title2)
-            }
-            .buttonStyle(.plain)
-            .keyboardShortcut(.cancelAction)
-        }
-        #else
-        Button {
-            onDismiss()
-        } label: {
-            Image(systemName: "xmark.circle.fill")
-                .foregroundStyle(.gray)
-                .font(.title2)
-        }
-        .buttonStyle(.plain)
-        .keyboardShortcut(.cancelAction)
-        #endif
+        SheetDoneButton(action: onDismiss)
     }
 }
 

@@ -263,6 +263,7 @@
 "Disabled sites updated successfully in %@ (fast update #%d)" = "비활성화된 사이트가 %@에서 성공적으로 업데이트되었습니다(빠른 업데이트 #%d).";
 "Display" = "디스플레이";
 "Done" = "완료";
+"Close" = "닫기";
 "Download Script" = "스크립트 다운로드";
 "Downloaded" = "다운로드됨";
 "Downloaded %d update" = "업데이트 %d개 다운로드됨";

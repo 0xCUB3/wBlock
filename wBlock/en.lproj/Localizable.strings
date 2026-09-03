@@ -263,6 +263,7 @@
 "Disabled sites updated successfully in %@ (fast update #%d)" = "Disabled sites updated successfully in %@ (fast update #%d)";
 "Display" = "Display";
 "Done" = "Done";
+"Close" = "Close";
 "Download Script" = "Download Script";
 "Downloaded" = "Downloaded";
 "Downloaded %d update" = "Downloaded %d update";

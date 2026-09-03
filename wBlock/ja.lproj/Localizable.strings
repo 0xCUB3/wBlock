@@ -263,6 +263,7 @@
 "Disabled sites updated successfully in %@ (fast update #%d)" = "無効化されたサイトが %@ で正常に更新されました (高速更新 #%d)";
 "Display" = "表示";
 "Done" = "完了";
+"Close" = "閉じる";
 "Download Script" = "スクリプトをダウンロード";
 "Downloaded" = "ダウンロード済み";
 "Downloaded %d update" = "%d件の更新をダウンロード";

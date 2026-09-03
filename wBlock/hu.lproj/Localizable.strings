@@ -263,6 +263,7 @@
 "Disabled sites updated successfully in %@ (fast update #%d)" = "A letiltott webhelyek sikeresen frissítve a %@-ben (gyors frissítés #%d)";
 "Display" = "Megjelenítés";
 "Done" = "Kész";
+"Close" = "Bezárás";
 "Download Script" = "Szkript letöltése";
 "Downloaded" = "Letöltve";
 "Downloaded %d update" = "%d frissítés letöltve";

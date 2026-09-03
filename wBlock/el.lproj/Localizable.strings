@@ -263,6 +263,7 @@
 "Disabled sites updated successfully in %@ (fast update #%d)" = "Οι απενεργοποιημένοι ιστότοποι ενημερώθηκαν με επιτυχία στο %@ (γρήγορη ενημέρωση #%d)";
 "Display" = "Εμφάνιση";
 "Done" = "Ολοκληρώθηκε";
+"Close" = "Κλείσιμο";
 "Download Script" = "Λήψη Κώδικα";
 "Downloaded" = "Λήφθηκε";
 "Downloaded %d update" = "Λήψη %d ενημέρωσης";

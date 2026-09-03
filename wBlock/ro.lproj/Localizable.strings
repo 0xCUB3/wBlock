@@ -263,6 +263,7 @@
 "Disabled sites updated successfully in %@ (fast update #%d)" = "Site-uri dezactivate actualizate cu succes în %@ (actualizare rapidă #%d)";
 "Display" = "Afișare";
 "Done" = "Gata";
+"Close" = "Închide";
 "Download Script" = "Descarcă scriptul";
 "Downloaded" = "Descărcat";
 "Downloaded %d update" = "S-a descărcat %d actualizare";

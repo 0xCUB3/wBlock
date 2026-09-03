@@ -263,6 +263,7 @@
 "Disabled sites updated successfully in %@ (fast update #%d)" = "Отключенные сайты успешно обновлены в %@ (быстрое обновление #%d)";
 "Display" = "Отображение";
 "Done" = "Готово";
+"Close" = "Закрыть";
 "Download Script" = "Скачать скрипт";
 "Downloaded" = "Загружено";
 "Downloaded %d update" = "Загружено %d обновление";

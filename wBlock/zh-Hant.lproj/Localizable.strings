@@ -263,6 +263,7 @@
 "Disabled sites updated successfully in %@ (fast update #%d)" = "%@ 中已停用的網站已成功更新（快速更新#%d）";
 "Display" = "顯示";
 "Done" = "完成";
+"Close" = "關閉";
 "Download Script" = "下載腳本";
 "Downloaded" = "已下載";
 "Downloaded %d update" = "已下載 %d 項更新";

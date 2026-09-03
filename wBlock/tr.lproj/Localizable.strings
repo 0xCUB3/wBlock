@@ -263,6 +263,7 @@
 "Disabled sites updated successfully in %@ (fast update #%d)" = "Devre dışı bırakılan siteler %@ içinde başarıyla güncellendi (hızlı güncelleme #%d)";
 "Display" = "Görüntüleme";
 "Done" = "Bitti";
+"Close" = "Kapat";
 "Download Script" = "Betiği indir";
 "Downloaded" = "İndirildi";
 "Downloaded %d update" = "%d güncellemesi indirildi";
