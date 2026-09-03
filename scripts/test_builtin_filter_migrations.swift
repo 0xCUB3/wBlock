@@ -26,6 +26,11 @@ for (oldName, newName) in migrations {
 expect(loader.contains("migrateBuiltInFilterFilesIfNeeded"), "built-in cache migration is not defined")
 expect(loader.contains("prefix: \"diff-baseline-\""), "built-in delta baselines are not migrated")
 expect(loader.contains("name: oldName"), "offline filter cache is not migrated safely")
+// Fanboy's Anti-AI content came from a different source than Stevo's AI Blocklist
+// (#637); the legacy cache must be dropped rather than renamed into the new entry.
+expect(loader.contains("\"Fanboy's Anti-AI Suggestions\": \"! Title: Fanboy's Anti-AI\""), "replaced-source legacy cache is still carried over")
+expect(loader.contains("if header.contains(legacyTitle)"), "already carried-over replaced-source cache is not dropped")
+expect(loader.contains("replacedSource ? nil : newLocalURL"), "replaced-source legacy cache is not deleted")
 expect(manager.contains("loader.migrateBuiltInFilterFilesIfNeeded(defaultFilter)"), "built-in cache migration is not run during setup")
 expect(loader.contains("static func canonicalFilterURLString"), "filter URL canonicalization is not exposed")
 expect(sync.contains("FilterListLoader.canonicalFilterURLString"), "CloudSync does not canonicalize filter URLs")

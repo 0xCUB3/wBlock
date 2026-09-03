@@ -51,6 +51,14 @@ class FilterListLoader {
             URL(string: "https://filters.adtidy.org/ios/filters/11.txt")!,
     ]
 
+    /// Legacy names whose list came from a different source than the current
+    /// entry, with the header title that identifies that old content. Their
+    /// cache must not be carried over under the new name, and a cache already
+    /// carried over by an earlier release is dropped so the new source is fetched.
+    private static let replacedSourceLegacyTitles: [String: String] = [
+        "Fanboy's Anti-AI Suggestions": "! Title: Fanboy's Anti-AI"
+    ]
+
     /// New built-in names and the names used by the previous catalog release.
     private static let filterNameMigrations: [String: [String]] = [
         "Online Malicious URL Blocklist": ["Online Security Filter"],
@@ -113,26 +121,40 @@ class FilterListLoader {
         let newLocalURL = containerURL.appendingPathComponent(localFilename)
         let newBaselineURL = containerURL.appendingPathComponent("diff-baseline-\(localFilename)")
         for oldName in oldNames {
+            let replacedSource = Self.replacedSourceLegacyTitles[oldName] != nil
+            if let legacyTitle = Self.replacedSourceLegacyTitles[oldName],
+               let handle = try? FileHandle(forReadingFrom: newLocalURL) {
+                let header = String(decoding: handle.readData(ofLength: 1024), as: UTF8.self)
+                try? handle.close()
+                if header.contains(legacyTitle) {
+                    try? FileManager.default.removeItem(at: newLocalURL)
+                    try? FileManager.default.removeItem(at: newBaselineURL)
+                }
+            }
             if let oldURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
                 name: oldName,
                 containerURL: containerURL
             ) {
-                Self.migrateFileIfNeeded(from: oldURL, to: newLocalURL)
+                Self.migrateFileIfNeeded(from: oldURL, to: replacedSource ? nil : newLocalURL)
             }
             if let oldBaselineURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
                 name: oldName,
                 containerURL: containerURL,
                 prefix: "diff-baseline-"
             ) {
-                Self.migrateFileIfNeeded(from: oldBaselineURL, to: newBaselineURL)
+                Self.migrateFileIfNeeded(from: oldBaselineURL, to: replacedSource ? nil : newBaselineURL)
             }
         }
     }
 
-    static func migrateFileIfNeeded(from oldURL: URL, to newURL: URL) {
-        guard !FileManager.default.fileExists(atPath: newURL.path),
-              FileManager.default.fileExists(atPath: oldURL.path)
-        else { return }
+    /// Moves a legacy cache file into place, or deletes it when `newURL` is nil.
+    static func migrateFileIfNeeded(from oldURL: URL, to newURL: URL?) {
+        guard FileManager.default.fileExists(atPath: oldURL.path) else { return }
+        guard let newURL else {
+            try? FileManager.default.removeItem(at: oldURL)
+            return
+        }
+        guard !FileManager.default.fileExists(atPath: newURL.path) else { return }
         try? FileManager.default.moveItem(at: oldURL, to: newURL)
     }
 
