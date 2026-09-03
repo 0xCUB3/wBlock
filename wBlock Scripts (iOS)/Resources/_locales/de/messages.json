@@ -35,13 +35,9 @@
     "message": "Regeln",
     "description": "Label for the disclosure button that expands saved zapper rules."
   },
-  "popup_button_open_app": {
-    "message": "wBlock-App öffnen",
-    "description": "Button label to open the containing native app from the popup."
-  },
   "popup_button_open_short": {
-    "message": "Öffnen",
-    "description": "Short button label to open the containing native app from the popup header."
+    "message": "wBlock öffnen",
+    "description": "Button label in the popup header that opens the wBlock app. Keep the product name wBlock."
   },
   "popup_rules_empty": {
     "message": "Keine Regeln",
