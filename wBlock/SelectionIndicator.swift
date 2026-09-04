@@ -87,6 +87,7 @@ struct SelectableRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .noFocusRingCompat()
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .modifier(SelectableRowBackground(style: style, isSelected: isSelected))
     }

@@ -113,6 +113,7 @@ struct FilterInfoView: View {
                         .foregroundStyle(addableSite == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.accentColor))
                 }
                 .buttonStyle(.plain)
+                .noFocusRingCompat()
                 .disabled(addableSite == nil)
             }
 
@@ -129,6 +130,7 @@ struct FilterInfoView: View {
                             .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
+                    .noFocusRingCompat()
                     .accessibilityLabel(LocalizedStrings.text("Remove", comment: "Remove excluded site"))
                 }
             }

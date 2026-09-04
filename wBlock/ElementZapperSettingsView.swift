@@ -139,6 +139,7 @@ struct ElementZapperSettingsView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .noFocusRingCompat()
     }
 
     @ViewBuilder
@@ -163,6 +164,7 @@ struct ElementZapperSettingsView: View {
                             .font(.system(size: 18))
                     }
                     .buttonStyle(.plain)
+                    .noFocusRingCompat()
                 }
                 .padding(.vertical, 10)
                 .padding(.leading, 32)

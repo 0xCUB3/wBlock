@@ -1193,7 +1193,7 @@ private struct ScriptMatchPatternsView: View {
                         .font(.caption2).foregroundStyle(.secondary)
                 }
             }
-            .buttonStyle(.plain).padding(.horizontal, 8).padding(.vertical, 6).cornerRadius(6).onHover { _ in }
+            .buttonStyle(.plain).noFocusRingCompat().padding(.horizontal, 8).padding(.vertical, 6).cornerRadius(6).onHover { _ in }
 
             if isPatternsExpanded {
                 ScrollView {

@@ -62,6 +62,7 @@ struct SheetDoneButton: View {
                 .font(.title2)
         }
         .buttonStyle(.plain)
+        .noFocusRingCompat()
         .accessibilityLabel("Close")
         .keyboardShortcut(.cancelAction)
     }

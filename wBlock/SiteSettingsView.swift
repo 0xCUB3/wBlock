@@ -147,6 +147,7 @@ struct SiteSettingsView: View {
                         .foregroundStyle(addableDomain == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.accentColor))
                 }
                 .buttonStyle(.plain)
+                .noFocusRingCompat()
                 .disabled(addableDomain == nil || isAddingDomain)
             }
 
@@ -261,6 +262,7 @@ struct SiteSettingsView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .noFocusRingCompat()
         .contextMenu {
             Button(role: .destructive) {
                 pendingConfirmation = .reset(domain: site.domain)
@@ -360,6 +362,7 @@ struct SiteSettingsView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .noFocusRingCompat()
         }
     }
 

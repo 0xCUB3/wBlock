@@ -91,6 +91,7 @@ struct ToolbarSearchField: View {
                             .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
+                    .noFocusRingCompat()
                     .help(String(localized: "Close search"))
                 }
                 .padding(.horizontal, 8)

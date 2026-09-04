@@ -591,6 +591,7 @@ struct OnboardingView: View {
                             .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
+                    .noFocusRingCompat()
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
@@ -632,6 +633,7 @@ struct OnboardingView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .noFocusRingCompat()
             }
         }
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
