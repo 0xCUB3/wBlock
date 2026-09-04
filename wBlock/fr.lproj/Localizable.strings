@@ -780,7 +780,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Bloque les publicités qu’Ad-Shield réinsère sur les sites correspondants après que les listes de filtres les ont masquées.";
 "Title" = "Titre";
 "Title (optional)" = "Titre (facultatif)";
-"Title is required." = "Le titre est requis.";
+"Title is required." = "Le nom est obligatoire.";
 "Titles will be created from each URL." = "Les titres seront créés à partir de chaque URL.";
 "Too many pending tasks" = "Trop de tâches en attente";
 "Total Capacity" = "Capacité totale";

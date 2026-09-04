@@ -1539,14 +1539,20 @@ struct AddFilterListView: View {
 	                    filterRequirementsPanel
 	                }
 	            case .paste:
-	                macosPasteCard
-	            case .file:
-	                macosFileCard
+                        VStack(alignment: .leading, spacing: 16) {
+                            macosPasteCard
+                            filterTextRequirementsPanel
+                        }
+                    case .file:
+                        VStack(alignment: .leading, spacing: 16) {
+                            macosFileCard
+                            filterFileRequirementsPanel
+                        }
 	            }
 	        }
 
 	        private var macosURLCard: some View {
-            VStack(alignment: .leading, spacing: 12) {
+            AddContentCard {
                 AddContentField(title: "URLs") { urlInputEditor }
                 if newURLs.count <= 1 {
                     AddContentField(title: "Name") {
@@ -1560,12 +1566,10 @@ struct AddFilterListView: View {
                 }
                 urlFooterMessage
             }
-            .padding(16)
-            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
         }
 
         private var macosPasteCard: some View {
-	            VStack(alignment: .leading, spacing: 12) {
+	            AddContentCard {
 	                userListMetaFields
 
 	                VStack(alignment: .leading, spacing: 6) {
@@ -1582,22 +1586,16 @@ struct AddFilterListView: View {
                         )
                     pasteRulesButton
 	                }
-                filterTextRequirementsPanel
 	            }
-	            .padding(16)
-	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
 	        }
 
 	        private var macosFileCard: some View {
-	            VStack(alignment: .leading, spacing: 12) {
+	            AddContentCard {
                     fileSelectionButton
                     if stagedFile != nil {
                         userListMetaFields
                     }
-                    filterFileRequirementsPanel
 	            }
-	            .padding(16)
-	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
 	        }
 
         private var fileSelectionButton: some View {

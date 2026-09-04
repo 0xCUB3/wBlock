@@ -783,7 +783,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Блокирует рекламу, которую Ad-Shield снова вставляет на подходящих сайтах после того, как списки фильтров её скрыли.";
 "Title" = "Название";
 "Title (optional)" = "Название (необязательно)";
-"Title is required." = "Необходимо указать название.";
+"Title is required." = "Необходимо указать имя.";
 "Titles will be created from each URL." = "Заголовки будут созданы для каждого URL-адреса.";
 "Too many pending tasks" = "Слишком много ожидающих задач";
 "Total Capacity" = "Общая емкость";

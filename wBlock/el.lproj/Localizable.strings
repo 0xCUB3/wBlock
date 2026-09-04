@@ -783,7 +783,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Αποκλείει διαφημίσεις που το Ad-Shield επαναφέρει σε αντίστοιχους ιστότοπους αφού τις αποκρύψουν οι λίστες φίλτρων.";
 "Title" = "Τίτλος";
 "Title (optional)" = "Τίτλος (προαιρετικό)";
-"Title is required." = "Απαιτείται τίτλος.";
+"Title is required." = "Απαιτείται όνομα.";
 "Titles will be created from each URL." = "Οι τίτλοι θα δημιουργηθούν από κάθε διεύθυνση URL.";
 "Too many pending tasks" = "Πάρα πολλές εκκρεμείς εργασίες";
 "Total Capacity" = "Συνολική χωρητικότητα";

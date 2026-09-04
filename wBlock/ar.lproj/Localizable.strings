@@ -783,7 +783,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "يحظر الإعلانات التي يعيد Ad-Shield إدراجها في المواقع المطابقة بعد أن تخفيها قوائم التصفية.";
 "Title" = "العنوان";
 "Title (optional)" = "العنوان (اختياري)";
-"Title is required." = "العنوان مطلوب.";
+"Title is required." = "الاسم مطلوب.";
 "Titles will be created from each URL." = "سيتم إنشاء العناوين من كل عنوان URL.";
 "Too many pending tasks" = "هناك عدد كبير جدًا من المهام المعلّقة";
 "Total Capacity" = "السعة الإجمالية";

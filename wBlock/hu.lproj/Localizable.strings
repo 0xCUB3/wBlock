@@ -783,7 +783,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Blokkolja azokat a hirdetéseket, amelyeket az Ad-Shield a megfelelő oldalakra újra beilleszt, miután a szűrőlisták elrejtették őket.";
 "Title" = "Cím";
 "Title (optional)" = "Cím (opcionális)";
-"Title is required." = "A cím kötelező.";
+"Title is required." = "A név megadása kötelező.";
 "Titles will be created from each URL." = "A címek minden URL-ből létrejönnek.";
 "Too many pending tasks" = "Túl sok függő feladat";
 "Total Capacity" = "Teljes kapacitás";

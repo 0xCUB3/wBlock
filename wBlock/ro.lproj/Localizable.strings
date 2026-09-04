@@ -780,7 +780,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Blochează reclamele pe care Ad-Shield le reintroduce pe site-urile corespunzătoare după ce listele de filtre le-au ascuns.";
 "Title" = "Titlu";
 "Title (optional)" = "Titlu (opțional)";
-"Title is required." = "Titlul este obligatoriu.";
+"Title is required." = "Numele este obligatoriu.";
 "Titles will be created from each URL." = "Titlurile vor fi create din fiecare URL.";
 "Too many pending tasks" = "Prea multe sarcini în așteptare";
 "Total Capacity" = "Capacitate totală";

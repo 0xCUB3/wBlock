@@ -780,7 +780,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Blokuje reklamy, które Ad-Shield ponownie wstawia na pasujących stronach po ukryciu ich przez listy filtrów.";
 "Title" = "Tytuł";
 "Title (optional)" = "Tytuł (opcjonalnie)";
-"Title is required." = "Tytuł jest wymagany.";
+"Title is required." = "Nazwa jest wymagana.";
 "Titles will be created from each URL." = "Tytuły zostaną utworzone na podstawie każdego adresu URL.";
 "Too many pending tasks" = "Zbyt wiele oczekujących zadań";
 "Total Capacity" = "Całkowita pojemność";

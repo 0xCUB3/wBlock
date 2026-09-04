@@ -780,7 +780,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them.";
 "Title" = "Title";
 "Title (optional)" = "Title (optional)";
-"Title is required." = "Title is required.";
+"Title is required." = "Name is required.";
 "Titles will be created from each URL." = "Titles will be created from each URL.";
 "Too many pending tasks" = "Too many pending tasks";
 "Total Capacity" = "Total Capacity";

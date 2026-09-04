@@ -780,7 +780,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Filtrelerin gizlediği ancak Ad-Shield'ın sitelere geri getirdiği reklamları engeller.";
 "Title" = "Başlık";
 "Title (optional)" = "Başlık (isteğe bağlı)";
-"Title is required." = "Başlık gerekli.";
+"Title is required." = "Ad gereklidir.";
 "Titles will be created from each URL." = "Her bir URL'den başlıklar oluşturulacaktır.";
 "Too many pending tasks" = "Bekleyen çok fazla görev var";
 "Total Capacity" = "Toplam Kapasite";

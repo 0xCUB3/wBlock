@@ -783,7 +783,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "フィルターリストで非表示にした広告を、該当サイトで Ad-Shield が再挿入するのをブロックします。";
 "Title" = "タイトル";
 "Title (optional)" = "タイトル（任意）";
-"Title is required." = "タイトルは必須です。";
+"Title is required." = "名前が必要です。";
 "Titles will be created from each URL." = "各URLからタイトルが作成されます。";
 "Too many pending tasks" = "保留中のタスクが多すぎます";
 "Total Capacity" = "合計容量";

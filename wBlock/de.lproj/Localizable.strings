@@ -783,7 +783,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Blockiert Anzeigen, die Ad-Shield auf passenden Seiten wieder einfügt, nachdem Filterlisten sie ausgeblendet haben.";
 "Title" = "Titel";
 "Title (optional)" = "Titel (optional)";
-"Title is required." = "Titel ist erforderlich.";
+"Title is required." = "Ein Name ist erforderlich.";
 "Titles will be created from each URL." = "Titel werden aus jeder URL erstellt.";
 "Too many pending tasks" = "Zu viele ausstehende Aufgaben";
 "Total Capacity" = "Gesamtkapazität";

@@ -783,7 +783,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "필터 목록이 숨긴 광고를 해당 사이트에서 Ad-Shield가 다시 넣지 못하게 차단합니다.";
 "Title" = "제목";
 "Title (optional)" = "제목 (선택 사항)";
-"Title is required." = "제목이 필요합니다.";
+"Title is required." = "이름이 필요합니다.";
 "Titles will be created from each URL." = "각 URL에서 제목이 생성됩니다.";
 "Too many pending tasks" = "보류 중인 작업이 너무 많습니다";
 "Total Capacity" = "총 용량";

@@ -2092,9 +2092,12 @@ struct AddUserScriptView: View {
 
     private var textTab: some View {
         ScrollView {
-            simpleTextContent
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
+            VStack(alignment: .leading, spacing: 16) {
+                AddContentCard { simpleTextContent }
+                editorRequirementsPanel
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
         }
         .task {
             scheduleEditorMetadataRefresh()
@@ -2169,7 +2172,6 @@ struct AddUserScriptView: View {
             }
             .buttonStyle(.bordered)
 
-            editorRequirementsPanel
         }
     }
 
@@ -2206,27 +2208,32 @@ struct AddUserScriptView: View {
     private var macosModeContent: some View {
         switch addMode {
         case .url:
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 16) {
                 macosURLCard
-                validationMessage
                 requirementsPanel
             }
         case .text:
-            macosTextCard
+            VStack(alignment: .leading, spacing: 16) {
+                macosTextCard
+                editorRequirementsPanel
+            }
         case .file:
-            macosFileCard
+            VStack(alignment: .leading, spacing: 16) {
+                macosFileCard
+                fileRequirementsPanel
+            }
         }
     }
 
     private var macosURLCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        AddContentCard {
             urlInputEditor
 
             if parsedURLs.count > 1 {
                 Text("Titles will be created from each URL.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                userScriptCategoryPicker
+                AddContentField(title: "Category") { userScriptCategoryPicker.labelsHidden() }
             } else {
                 userScriptMetaFields
             }
@@ -2235,19 +2242,16 @@ struct AddUserScriptView: View {
                 Spacer()
                 validationBadge
             }
+            validationMessage
         }
-        .padding(16)
-        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
     }
 
     private var macosTextCard: some View {
-        simpleTextContent
-            .padding(16)
-            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+        AddContentCard { simpleTextContent }
     }
 
     private var macosFileCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        AddContentCard {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Import File")
                     .font(.caption)
@@ -2261,15 +2265,12 @@ struct AddUserScriptView: View {
             if stagedFile != nil {
                 userScriptMetaFields
             }
-            fileRequirementsPanel
             if let fileImportError {
                 Text(fileImportError)
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
         }
-        .padding(16)
-        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
     }
 
     private var fileSelectionButton: some View {

@@ -783,7 +783,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "攔截 Ad-Shield 在相符網站上、於過濾清單隱藏廣告之後重新插入的廣告。";
 "Title" = "標題";
 "Title (optional)" = "標題（選填）";
-"Title is required." = "標題為必填項。";
+"Title is required." = "必須填寫名稱。";
 "Titles will be created from each URL." = "將為每個 URL 建立標題。";
 "Too many pending tasks" = "待處理工作太多";
 "Total Capacity" = "總容量";

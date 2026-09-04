@@ -780,7 +780,7 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Blocca gli annunci che Ad-Shield reinserisce sui siti corrispondenti dopo che le liste di filtri li hanno nascosti.";
 "Title" = "Titolo";
 "Title (optional)" = "Titolo (facoltativo)";
-"Title is required." = "Il titolo è obbligatorio.";
+"Title is required." = "Il nome è obbligatorio.";
 "Titles will be created from each URL." = "I titoli verranno creati da ciascun URL.";
 "Too many pending tasks" = "Troppi task in sospeso";
 "Total Capacity" = "Capacità totale";
