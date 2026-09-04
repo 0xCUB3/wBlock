@@ -1393,11 +1393,22 @@ function setupListeners() {
         rulesToggle.addEventListener('click', async () => {
             try {
                 setError('');
-                setRulesExpanded(!zapperRulesExpanded);
+                const expanding = !zapperRulesExpanded;
+                if (!expanding) {
+                    setRulesExpanded(false);
+                    return;
+                }
+                // Lay the rows out before the panel starts growing so the
+                // height animation has its final size from the first frame.
+                renderZapperRules(currentZapperRules);
+                setRulesExpanded(true);
+                const fetched = await getAuthoritativeZapperRules(host);
+                const authoritative = Array.isArray(fetched) ? fetched : [];
                 if (!zapperRulesExpanded) return;
-                renderZapperRules(currentZapperRules);
-                currentZapperRules = await getAuthoritativeZapperRules(host);
-                renderZapperRules(currentZapperRules);
+                const changed = authoritative.length !== currentZapperRules.length
+                    || authoritative.some((rule, index) => rule !== currentZapperRules[index]);
+                currentZapperRules = authoritative;
+                if (changed) renderZapperRules(currentZapperRules);
             } catch (error) {
                 console.error('[wBlock] Failed to toggle rules:', error);
                 setError(t('popup_error_load_rules', undefined, 'Failed to load rules.'));

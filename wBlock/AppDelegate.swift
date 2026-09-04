@@ -373,7 +373,11 @@ extension AppDelegate: NSApplicationDelegate {
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        guard urls.contains(where: { $0.scheme == "wblockapp" }) else { return }
+        guard let url = urls.first(where: { $0.scheme == "wblockapp" }) else { return }
+        // The popup's Update Filters button wakes the app only so it can run
+        // the queued update; pulling focus away from Safari for that is what
+        // users complain about. Everything else still brings the app forward.
+        if url.host == "update-filters" { return }
         NSApp.activate(ignoringOtherApps: true)
     }
 

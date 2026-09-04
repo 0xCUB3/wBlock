@@ -621,6 +621,7 @@ struct UserScriptManagerView: View {
                 Image(systemName: "info.circle")
             }
             .buttonStyle(.plain)
+            .noFocusRingCompat()
             .foregroundStyle(.secondary)
             .accessibilityLabel("Info")
         }
@@ -696,6 +697,7 @@ struct UserScriptManagerView: View {
                             Image(systemName: "info.circle")
                         }
                         .buttonStyle(.plain)
+                        .noFocusRingCompat()
                         .foregroundStyle(.secondary)
                         .accessibilityLabel("Info")
                     }
@@ -855,6 +857,7 @@ struct UserScriptManagerView: View {
                         .cornerRadius(4)
                     }
                     .buttonStyle(.plain)
+                    .noFocusRingCompat()
                     .disabled(downloadingScriptIDs.contains(script.id))
                     .accessibilityLabel(LocalizedStrings.format("Download %@", comment: "Accessibility label for the per-script download button", script.name))
                 } else if displayedEnabled && !script.isDownloaded {
@@ -1500,6 +1503,7 @@ private struct UserScriptSourceSheet: View {
                         .frame(width: 28, height: 28)
                 }
                 .buttonStyle(.plain)
+                .noFocusRingCompat()
                 .accessibilityLabel("Search")
 
                 Button {
@@ -1510,6 +1514,7 @@ private struct UserScriptSourceSheet: View {
                         .foregroundStyle(isLineWrappingEnabled ? Color.accentColor : Color.secondary)
                 }
                 .buttonStyle(.plain)
+                .noFocusRingCompat()
                 .accessibilityLabel("Wrap Lines")
                 .accessibilityValue(
                     isLineWrappingEnabled
@@ -1680,6 +1685,7 @@ private struct DarkReaderAppearancePicker: View {
             )
         }
         .buttonStyle(.plain)
+        .noFocusRingCompat()
         .accessibilityLabel("Appearance")
         .accessibilityValue(followsSystemAppearance ? "Follow System" : "Always Dark")
         .padding(.top, 2)
@@ -1745,6 +1751,7 @@ private struct TubeCleanerFeaturesPicker: View {
             )
         }
         .buttonStyle(.plain)
+        .noFocusRingCompat()
         .accessibilityLabel(summary)
     }
 }
@@ -1789,6 +1796,7 @@ private struct TubeCleanerDeArrowPicker: View {
             )
         }
         .buttonStyle(.plain)
+        .noFocusRingCompat()
         .accessibilityLabel(settings.enabled ? "DeArrow: On" : "DeArrow: Off")
         .padding(.top, 2)
     }
@@ -2308,6 +2316,7 @@ struct AddUserScriptView: View {
             )
         }
         .buttonStyle(.plain)
+        .noFocusRingCompat()
         .disabled(isAdding)
     }
     #endif
@@ -2433,6 +2442,7 @@ struct AddUserScriptView: View {
                 .background(Color.secondary.opacity(0.14), in: Circle())
         }
         .buttonStyle(.plain)
+        .noFocusRingCompat()
         .disabled(isAdding)
         .accessibilityLabel("Paste")
     }

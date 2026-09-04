@@ -84,10 +84,11 @@ const updateHandler = native.slice(native.indexOf('private static func handleSta
 check(updateHandler.includes('FilterUpdateClient.shared.startFilterUpdate()') &&
   updateHandler.includes('case .timedOut, .unavailable:') &&
   updateHandler.includes('FilterUpdatePopupStatus.requestUpdate()') &&
-  updateHandler.includes('wblockapp://open') &&
+  updateHandler.includes('wblockapp://update-filters') &&
+  updateHandler.includes('wakeContainingAppInBackground') &&
   !updateHandler.includes('SharedAutoUpdateManager.shared.maybeRunAutoUpdate('),
   'terminated-app XPC failure must queue the request and wake the app instead of running in-process');
-check(updateHandler.indexOf('FilterUpdateClient.shared.startFilterUpdate()') < updateHandler.indexOf('wblockapp://open'),
+check(updateHandler.indexOf('FilterUpdateClient.shared.startFilterUpdate()') < updateHandler.indexOf('wblockapp://update-filters'),
   'terminated-app update must try XPC before waking the app');
 check(updateHandler.includes('FilterUpdatePopupStatus.finish(.failed('),
   'a failed app wake must publish a failure status so the popup does not spin');

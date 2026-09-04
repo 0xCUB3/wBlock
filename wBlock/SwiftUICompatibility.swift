@@ -215,6 +215,21 @@ extension View {
         #endif
     }
 
+    /// Plain-styled card and icon buttons on macOS otherwise keep a blue focus
+    /// ring after a click, which reads as a stray highlight.
+    @ViewBuilder
+    func noFocusRingCompat() -> some View {
+        #if os(macOS)
+        if #available(macOS 14.0, *) {
+            focusEffectDisabled()
+        } else {
+            focusable(false)
+        }
+        #else
+        self
+        #endif
+    }
+
     @ViewBuilder
     func groupedFormStyleCompat() -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {

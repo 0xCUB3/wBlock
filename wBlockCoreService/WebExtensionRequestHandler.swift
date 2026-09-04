@@ -602,6 +602,26 @@ public enum WebExtensionRequestHandler {
         context.completeRequest(returningItems: [response])
     }
 
+    #if os(macOS)
+    /// Launches the containing app without activating it, so Safari keeps
+    /// focus while the app runs the queued filter update.
+    private static func wakeContainingAppInBackground(_ url: URL) -> Bool {
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = false
+        configuration.promptsUserIfNeeded = false
+        let semaphore = DispatchSemaphore(value: 0)
+        var opened = false
+        NSWorkspace.shared.open(url, configuration: configuration) { app, error in
+            opened = app != nil && error == nil
+            semaphore.signal()
+        }
+        if semaphore.wait(timeout: .now() + 5) == .timedOut {
+            return NSWorkspace.shared.open(url)
+        }
+        return opened
+    }
+    #endif
+
     private static func requestContainingAppWake() -> (supported: Bool, attempted: Bool, opened: Bool, error: String?) {
         #if os(macOS)
         let opened = NSWorkspace.shared.open(URL(string: "wblockapp://open")!)
@@ -661,7 +681,7 @@ public enum WebExtensionRequestHandler {
                 // and wake the app; it consumes the request on launch and
                 // reports back through the popup status (#676).
                 let accepted = FilterUpdatePopupStatus.requestUpdate()
-                let opened = accepted && NSWorkspace.shared.open(URL(string: "wblockapp://open")!)
+                let opened = accepted && Self.wakeContainingAppInBackground(URL(string: "wblockapp://update-filters")!)
                 if accepted && !opened {
                     FilterUpdatePopupStatus.finish(.failed(message: "Open wBlock to update filters."))
                 }

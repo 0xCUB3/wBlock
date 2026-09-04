@@ -657,6 +657,7 @@ struct ContentView: View {
                 #endif
             }
             .buttonStyle(.plain)
+            .noFocusRingCompat()
             #if os(macOS)
             .popover(isPresented: $showingCapacityPopover, arrowEdge: .top) {
                 RuleCapacityPopoverView(filterManager: filterManager)
@@ -690,6 +691,7 @@ struct ContentView: View {
                 Image(systemName: "info.circle")
             }
             .buttonStyle(.plain)
+            .noFocusRingCompat()
             .foregroundStyle(.secondary)
             .accessibilityLabel("Info")
         }
@@ -1089,7 +1091,7 @@ struct ContentModifiers: ViewModifier {
             )
             #else
             .alert("No Updates Found", isPresented: $filterManager.showingNoUpdatesAlert) {
-                Button("OK", role: .cancel) {}
+                Button("OK") {}
             } message: {
                 Text("You're already using the latest filters.")
             }
@@ -1098,12 +1100,12 @@ struct ContentModifiers: ViewModifier {
                 filterManager.ruleLimitWarningTitle,
                 isPresented: $filterManager.showingRuleLimitWarningAlert
             ) {
-                Button("OK", role: .cancel) {}
+                Button("OK") {}
             } message: {
                 Text(filterManager.ruleLimitWarningMessage)
             }
             .alert("Filters Auto-Disabled", isPresented: $filterManager.showingAutoDisabledAlert) {
-                Button("OK", role: .cancel) {}
+                Button("OK") {}
             } message: {
                 if filterManager.autoDisabledFilters.isEmpty {
                     Text("Some filters were automatically disabled because Safari's rule limits were exceeded.")
@@ -1571,6 +1573,7 @@ struct AddFilterListView: View {
                 )
             }
             .buttonStyle(.plain)
+            .noFocusRingCompat()
             .disabled(isSaving)
         }
 	    #endif
