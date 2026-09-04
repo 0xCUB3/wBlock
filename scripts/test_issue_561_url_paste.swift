@@ -17,8 +17,9 @@ require(content, "FilterListURLSupport.normalizeURLInput(from:")
 require(content, ".onChangeCompat(of: urlInput)")
 
 let scripts = try source("wBlock/UserScriptManagerView.swift")
-require(scripts, "UserScriptURLSupport.normalizePastedURL")
-require(scripts, "urlInput = UserScriptURLSupport.normalizePastedURL(string)")
+require(scripts, "urlInput = UserScriptURLSupport.appendingPastedURLs(string, to: urlInput)")
+let urlSupport = try source("wBlockCoreService/UserScript.swift")
+require(urlSupport, "let incoming = normalizePastedURL(pasted)")
 
 let validation = try source("wBlockCoreService/FilterListValidation.swift")
 require(validation, "rejoinWrappedLines")
