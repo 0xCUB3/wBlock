@@ -4,20 +4,6 @@ import wBlockCoreService
 @main
 struct FilterListSiteExclusionTests {
     static func main() {
-        let json = #"[{"action":{"type":"block"},"trigger":{"url-filter":".*"}}]"#
-        let applied = FilterListSiteExclusion.applyingUnlessDomain(
-            toJSON: json,
-            domains: [" Example.com ", "www.example.com"]
-        )
-        guard applied.contains("unless-domain") else {
-            fputs("FAIL: Safari JSON must gain unless-domain\n", stderr)
-            exit(1)
-        }
-        guard applied.contains("*example.com") && applied.contains("*www.example.com") else {
-            fputs("FAIL: unless-domain must include wildcard hosts\n\(applied)\n", stderr)
-            exit(1)
-        }
-
         let cosmetic = FilterListSiteExclusion.restrictingAdvancedRules(
             "##.ad",
             excluding: ["nytimes.com"]
@@ -40,17 +26,71 @@ struct FilterListSiteExclusionTests {
             "||ads.example^$domain=cnn.com",
             excluding: ["nytimes.com"]
         )
-        guard scoped.contains("domain=cnn.com|~nytimes.com") || scoped.contains("domain=~nytimes.com|cnn.com") else {
-            fputs("FAIL: existing domain= options must append exclusions\n\(scoped)\n", stderr)
+        guard scoped == "||ads.example^$domain=cnn.com" else {
+            fputs("FAIL: rules scoped to other sites must stay unmixed (Safari rejects mixed domains)\n\(scoped)\n", stderr)
             exit(1)
         }
 
-        let concat = FilterListSiteExclusion.concatenateContentBlockerJSON([
-            #"[{"a":1}]"#,
-            #"[{"b":2}]"#,
-        ])
-        guard concat == #"[{"a":1},{"b":2}]"# else {
-            fputs("FAIL: JSON chunks must concatenate\n\(concat)\n", stderr)
+        let scopedToExcluded = FilterListSiteExclusion.restrictingAdvancedRules(
+            "||ads.example^$third-party,domain=www.nytimes.com|nytimes.com",
+            excluding: ["nytimes.com"]
+        )
+        guard scopedToExcluded == "" else {
+            fputs("FAIL: rules scoped only to excluded sites must be dropped\n\(scopedToExcluded)\n", stderr)
+            exit(1)
+        }
+
+        let partiallyScoped = FilterListSiteExclusion.restrictingAdvancedRules(
+            "||ads.example^$third-party,domain=nytimes.com|cnn.com,important",
+            excluding: ["nytimes.com"]
+        )
+        guard partiallyScoped == "||ads.example^$third-party,domain=cnn.com,important" else {
+            fputs("FAIL: excluded sites must be removed from positive domain lists\n\(partiallyScoped)\n", stderr)
+            exit(1)
+        }
+
+        let negatedOnly = FilterListSiteExclusion.restrictingAdvancedRules(
+            "~foo.com##.ad",
+            excluding: ["nytimes.com"]
+        )
+        guard negatedOnly == "~foo.com,~nytimes.com##.ad" else {
+            fputs("FAIL: negation-only cosmetic rules must gain the exclusion\n\(negatedOnly)\n", stderr)
+            exit(1)
+        }
+
+        let cosmeticScoped = FilterListSiteExclusion.restrictingAdvancedRules(
+            "nytimes.com,cnn.com##.ad",
+            excluding: ["nytimes.com"]
+        )
+        guard cosmeticScoped == "cnn.com##.ad" else {
+            fputs("FAIL: excluded sites must be removed from cosmetic domain lists\n\(cosmeticScoped)\n", stderr)
+            exit(1)
+        }
+
+        let untouched = FilterListSiteExclusion.restrictingAdvancedRules(
+            "! comment",
+            excluding: ["nytimes.com"]
+        )
+        guard untouched == "! comment" else {
+            fputs("FAIL: comments must pass through\n\(untouched)\n", stderr)
+            exit(1)
+        }
+
+        let exception = FilterListSiteExclusion.restrictingAdvancedRules(
+            "@@||ads.example^",
+            excluding: ["nytimes.com"]
+        )
+        guard exception == "@@||ads.example^$domain=~nytimes.com" else {
+            fputs("FAIL: unscoped exceptions must not apply on excluded sites\n\(exception)\n", stderr)
+            exit(1)
+        }
+
+        let documentException = FilterListSiteExclusion.restrictingAdvancedRules(
+            "@@||nytimes.com^$document",
+            excluding: ["nytimes.com"]
+        )
+        guard documentException == "@@||nytimes.com^$document,domain=~nytimes.com" else {
+            fputs("FAIL: document exceptions must stop applying on excluded sites without dropping the URL pattern\n\(documentException)\n", stderr)
             exit(1)
         }
 
