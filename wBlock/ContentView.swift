@@ -481,15 +481,37 @@ struct ContentView: View {
             ForEach(categorizedFilters, id: \.category) { item in
                 if item.category == .foreign {
                     Section {
-                        DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
+                        HStack(spacing: 0) {
+                            Button {
+                                withAnimation { isForeignFiltersExpanded.toggle() }
+                            } label: {
+                                HStack {
+                                    Text(item.category.localizedName)
+                                    Spacer()
+                                    Image(systemName: isForeignFiltersExpanded ? "chevron.down" : "chevron.right")
+                                        .font(.caption.weight(.semibold))
+                                }
+                                .frame(minHeight: 44)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            Button {
+                                selectedCategoryInfo = item.category
+                            } label: {
+                                Image(systemName: "info.circle")
+                                    .frame(width: 44, height: 44)
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel("Info")
+                        }
+                        if isForeignFiltersExpanded {
                             ForEach(ForeignFilterOrganizer.groups(for: item.filters)) { group in
                                 foreignFilterGroupHeader(group.title)
                                 ForEach(group.filters) { filter in
                                     filterRowView(for: filter, showsFlags: false)
                                 }
                             }
-                        } label: {
-                            categoryHeader(item.category)
                         }
                     }
                 } else {
