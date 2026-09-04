@@ -108,10 +108,16 @@ extension View {
         isPresented: Binding<Bool>,
         prompt: LocalizedStringKey
     ) -> some View {
+        #if os(iOS)
+        let placement: SearchFieldPlacement = UIDevice.current.userInterfaceIdiom == .pad
+            ? .navigationBarDrawer(displayMode: .always) : .automatic
+        #else
+        let placement: SearchFieldPlacement = .automatic
+        #endif
         if #available(iOS 17.0, macOS 14.0, *) {
-            searchable(text: text, isPresented: isPresented, prompt: prompt)
+            searchable(text: text, isPresented: isPresented, placement: placement, prompt: prompt)
         } else {
-            searchable(text: text, prompt: prompt)
+            searchable(text: text, placement: placement, prompt: prompt)
         }
     }
 

@@ -393,7 +393,7 @@ struct UserScriptManagerView: View {
             await onRefresh()
         }
         .toolbar {
-            ToolbarItemGroup(placement: .primaryAction) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
                 if #unavailable(iOS 26.0) {
                     Button {
                         showSearch = true

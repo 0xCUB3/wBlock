@@ -406,7 +406,7 @@ struct ContentView: View {
                     ToolbarItem(placement: .topBarLeading) {
                         applyChangesToolbarButton
                     }
-                    ToolbarItemGroup(placement: .primaryAction) {
+                    ToolbarItemGroup(placement: .topBarTrailing) {
                         if #unavailable(iOS 26.0) {
                             Button {
                                 showFilterSearch = true
