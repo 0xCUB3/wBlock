@@ -234,6 +234,7 @@ struct ContentView: View {
                 onLanguagesChange: applyRegionalRecommendations,
                 onReset: { resetCategory(category) }
             )
+            .infoSheetPresentationCompat()
         }
         .onChangeCompat(of: selectedTab) { _, _ in
             filterSearchText = ""

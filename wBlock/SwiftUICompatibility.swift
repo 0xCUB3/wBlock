@@ -136,6 +136,19 @@ extension View {
         }
     }
 
+    /// Userscript info holds more rows than filter info (badges, auto-update
+    /// toggle, file size, source URL, patterns), so the half-height detent
+    /// clipped it on iPhone. It opens taller and can still be pulled to full.
+    @ViewBuilder
+    func tallInfoSheetPresentationCompat() -> some View {
+        if #available(iOS 16.0, macOS 13.0, *) {
+            presentationDetents([.fraction(0.78), .large])
+                .presentationDragIndicator(.visible)
+        } else {
+            self
+        }
+    }
+
     @ViewBuilder
     func largeSheetPresentationCompat() -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {

@@ -291,7 +291,7 @@ struct UserScriptManagerView: View {
                     scriptId: selection.id,
                     userScriptManager: userScriptManager
                 )
-                .infoSheetPresentationCompat()
+                .tallInfoSheetPresentationCompat()
             } else {
                 UserScriptContentView(
                     scriptId: selection.id,
@@ -306,6 +306,7 @@ struct UserScriptManagerView: View {
                 defaultScriptNames: defaultScriptNames(for: category),
                 onReset: { resetCategory(category) }
             )
+            .infoSheetPresentationCompat()
         }
         .onAppear {
             refreshScripts()
