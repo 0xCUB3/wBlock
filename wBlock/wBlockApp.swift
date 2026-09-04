@@ -65,6 +65,12 @@ struct wBlockApp: App {
             ContentView(filterManager: filterManager)
                 .preferredColorScheme(appearance.colorScheme)
                 .onAppear {
+                    #if os(macOS)
+                    if HeadlessLaunch.isHeadlessProcess {
+                        for window in NSApp.windows { window.orderOut(nil) }
+                        return
+                    }
+                    #endif
                     appDelegate.filterManager = filterManager
                     CloudSyncManager.shared.attach(filterManager: filterManager)
                     if appDelegate.hasPendingApplyNotification {

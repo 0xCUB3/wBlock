@@ -404,6 +404,10 @@ class AppFilterManager: ObservableObject {
     }()
 
     private func registerFilterUpdateRequestObserver() {
+        #if os(macOS)
+        // In a headless launch the AppDelegate consumes the request itself.
+        if HeadlessLaunch.isHeadlessProcess { return }
+        #endif
         _ = Self.filterUpdateRequestRelay
         filterUpdateRequestObserver = NotificationCenter.default.addObserver(
             forName: .wBlockFilterUpdateRequest,

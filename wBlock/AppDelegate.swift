@@ -243,7 +243,20 @@ extension AppDelegate: NSApplicationDelegate {
         ProtobufDataManager.shared.saveData()
     }
 
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // A headless launch from the Safari extension (#528) must never show
+        // a Dock icon or a window. Accessory policy has to be set before the
+        // scene machinery creates the window.
+        if HeadlessLaunch.isHeadlessProcess {
+            NSApp.setActivationPolicy(.accessory)
+        }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if let reason = HeadlessLaunch.reason() {
+            runHeadlessUpdateAndQuit(reason: reason)
+            return
+        }
         Task { await ConcurrentLogManager.shared.logLaunch() }
         let mainWindowFrameRestorer = MainWindowFrameRestorer()
         mainWindowFrameRestorer.install(application: NSApp)
@@ -369,6 +382,36 @@ extension AppDelegate: NSApplicationDelegate {
             await runForcedAutoUpdate(trigger: trigger)
         } else {
             await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger)
+        }
+    }
+
+    /// Headless mode: rebuild whatever is queued or staged, then terminate.
+    /// The popup status is written by the shared manager's finish call so the
+    /// Safari popup can report the result after this process is gone.
+    private func runHeadlessUpdateAndQuit(reason: HeadlessLaunch.Reason) {
+        for window in NSApp.windows {
+            window.orderOut(nil)
+        }
+        Task { @MainActor in
+            await ConcurrentLogManager.shared.info(
+                .autoUpdate,
+                "Headless launch from Safari extension",
+                metadata: ["reason": reason.rawValue]
+            )
+            let requested = FilterUpdatePopupStatus.consumeUpdateRequest()
+            if requested || reason == .stagedDownloads {
+                await SharedAutoUpdateManager.shared.forceNextUpdate()
+                let outcome = await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
+                    trigger: "Headless-\(reason.rawValue)",
+                    force: true
+                )
+                if requested {
+                    FilterUpdatePopupStatus.finish(outcome)
+                }
+            }
+            await ConcurrentLogManager.shared.persistNow()
+            ProtobufDataManager.shared.saveData()
+            NSApp.terminate(nil)
         }
     }
 

@@ -603,20 +603,26 @@ public enum WebExtensionRequestHandler {
     }
 
     #if os(macOS)
-    /// Launches the containing app without activating it, so Safari keeps
-    /// focus while the app runs the queued filter update.
-    private static func wakeContainingAppInBackground(_ url: URL) -> Bool {
+    /// Launches the containing app as a headless helper: no Dock icon, no
+    /// window, no activation. The app runs the queued rebuild and quits
+    /// itself (#528). Falls back to a plain URL open if the launch API stalls.
+    private static func launchContainingAppHeadless(reason: HeadlessLaunch.Reason) -> Bool {
+        guard let appURL = HeadlessLaunch.containingAppURL() else {
+            return NSWorkspace.shared.open(URL(string: "wblockapp://update-filters")!)
+        }
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = false
         configuration.promptsUserIfNeeded = false
+        configuration.createsNewApplicationInstance = false
+        configuration.arguments = HeadlessLaunch.arguments(for: reason)
         let semaphore = DispatchSemaphore(value: 0)
         var opened = false
-        NSWorkspace.shared.open(url, configuration: configuration) { app, error in
+        NSWorkspace.shared.openApplication(at: appURL, configuration: configuration) { app, error in
             opened = app != nil && error == nil
             semaphore.signal()
         }
         if semaphore.wait(timeout: .now() + 5) == .timedOut {
-            return NSWorkspace.shared.open(url)
+            return NSWorkspace.shared.open(URL(string: "wblockapp://update-filters")!)
         }
         return opened
     }
@@ -681,7 +687,7 @@ public enum WebExtensionRequestHandler {
                 // and wake the app; it consumes the request on launch and
                 // reports back through the popup status (#676).
                 let accepted = FilterUpdatePopupStatus.requestUpdate()
-                let opened = accepted && Self.wakeContainingAppInBackground(URL(string: "wblockapp://update-filters")!)
+                let opened = accepted && Self.launchContainingAppHeadless(reason: .popupUpdate)
                 if accepted && !opened {
                     FilterUpdatePopupStatus.finish(.failed(message: "Open wBlock to update filters."))
                 }
@@ -752,6 +758,13 @@ public enum WebExtensionRequestHandler {
                 payload["staged"] = updated
                 payload["checked"] = checked
                 payload["errors"] = hadErrors
+                #if os(macOS)
+                // With the agent off nothing else would rebuild until the user
+                // opens the app, so finish the job with a headless launch.
+                if updated > 0, await HeadlessLaunch.shouldAutoRebuildAfterStaging() {
+                    payload["rebuildLaunched"] = launchContainingAppHeadless(reason: .stagedDownloads)
+                }
+                #endif
             case let .noUpdates(checked, hadErrors):
                 payload["staged"] = 0
                 payload["checked"] = checked
