@@ -998,6 +998,10 @@ public enum WebExtensionRequestHandler {
                         if cssBytes <= documentStartInlineCap, cssBytes <= remainingInlineBudget {
                             descriptor["content"] = css
                             remainingInlineBudget -= cssBytes
+                            // Lets the injector warm-start this CSS from its page cache
+                            // before first paint (#670); validation recomputes the digest
+                            // for the page URL and rejects a stale copy.
+                            descriptor["contentDigest"] = UserStylePreprocessorService.digest(css)
                         }
                     }
                     descriptor["payloadRevision"] = payloadMutationRevision
@@ -1651,10 +1655,13 @@ public enum WebExtensionRequestHandler {
                 return
             }
             if hasContentDigest {
-                guard let configured = runtimeConfiguredExecutableContent(for: script),
+                let expectedContent: String? = script.isUserStyle
+                    ? UserStyleSupport.effectiveCSS(forContent: script.content, compiledBody: script.compiledStyleBody, url: pageURL)
+                    : runtimeConfiguredExecutableContent(for: script)
+                guard let expectedContent,
                       let requestedContentDigest,
                       requestedContentDigest.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil,
-                      requestedContentDigest == UserStylePreprocessorService.digest(configured)
+                      requestedContentDigest == UserStylePreprocessorService.digest(expectedContent)
                 else {
                     context.completeRequest(returningItems: [createResponse(with: [
                         "ok": false, "error": "userscript-integrity-mismatch",

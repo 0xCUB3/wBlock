@@ -832,9 +832,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         isWarmStartEligible(script) {
-            if (!script || script.isEnabled !== true || script.kind === 'style') return false;
+            if (!script || script.isEnabled !== true) return false;
             if (script.runAt !== 'document-start'
                 || script.noframes === true && window !== window.top) return false;
+            if (script.kind === 'style') return this.isStyleWarmStartEligible(script);
             const isRemote = script.isLocal === false && /^https:\/\//i.test(script.sourceURL || '');
             // Local page-world scripts may warm start too: the cache lives in
             // page-writable storage either way, cached page payloads execute with
@@ -858,6 +859,18 @@ if (window.wBlockUserscriptInjectorHasRun) {
             const safeGrants = new Set(['none', 'unsafewindow', 'gm_info', 'gm.info', 'gm_xmlhttprequest', 'gm.xmlhttprequest']);
             const grants = Array.isArray(script.grant) ? script.grant : [];
             return grants.every(grant => safeGrants.has(String(grant).toLowerCase()));
+        }
+
+        // Userstyles are plain CSS with no bridge privilege, so a cached copy can
+        // be applied before first paint and confirmed afterwards (#670). The
+        // native validator compares the SHA-256 of the configured CSS; a
+        // mismatch removes the provisional <style> element.
+        isStyleWarmStartEligible(style) {
+            if (typeof style.content !== 'string' || !style.content) return false;
+            if (typeof style.contentDigest !== 'string' || !/^[0-9a-f]{64}$/.test(style.contentDigest)) return false;
+            if (!this.scriptMatchesCurrentURL(style)) return false;
+            if ((style.includes || []).length || (style.excludes || []).length || (style.excludeMatches || []).length) return false;
+            return true;
         }
 
         loadWarmStartScripts() {
@@ -908,7 +921,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
         prepareWarmStartValidations(scripts) {
             const validationDispatches = [];
             for (const script of scripts) {
-                if (!this.isWarmStartEligible(script) || script.injectInto !== 'content') continue;
+                if (!this.isWarmStartEligible(script)) continue;
+                if (script.injectInto !== 'content' && script.kind !== 'style') continue;
                 const key = this.scriptExecutionKey(script);
                 let markDispatched;
                 const dispatched = new Promise(resolve => { markDispatched = resolve; });
@@ -1297,8 +1311,19 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     if (css.length > 0) {
                         await this.waitForDocumentRoot();
                         if (generation !== this.documentStartRequestGeneration) return;
-                        if (!await this.validateScriptForExecution(fullStyle)) return;
-                        this.injectStyleElement(fullStyle, css);
+                        const warmStart = fullStyle.__wblockWarmStart === true;
+                        let provisionalElement = null;
+                        if (warmStart) {
+                            // Apply before validation so the page never paints unstyled;
+                            // the digest check below removes it if the cache is stale.
+                            provisionalElement = this.injectStyleElement(fullStyle, css);
+                        }
+                        const validated = await this.validateScriptForExecution(fullStyle);
+                        if (generation !== this.documentStartRequestGeneration || !validated) {
+                            if (provisionalElement && provisionalElement.parentNode) provisionalElement.remove();
+                            return;
+                        }
+                        if (!provisionalElement) this.injectStyleElement(fullStyle, css);
                         if (generation === this.documentStartRequestGeneration) {
                             this.injectedScripts.add(executionKey);
                         }
@@ -1495,6 +1520,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             styleElement.setAttribute('data-wblock-userstyle', style.name || '');
             (document.head || document.documentElement).appendChild(styleElement);
             wBlockLog(`[wBlock] Injected userstyle ${style.name} (${css.length} chars)`);
+            return styleElement;
         }
 
         shouldRunScript(script) {

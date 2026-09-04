@@ -820,5 +820,58 @@ check(
   !localWarmSandbox.__sentMessages.some((message) => message.action === "validateUserScriptExecution"),
 );
 
+// #670: userstyles warm-start from the page cache so dark CSS lands before
+// first paint, then native digest validation confirms or removes it.
+const styleCSS = "html { background: #000 !important; color: #eee !important; }";
+const styleDigest = Buffer.from(await webcrypto.subtle.digest("SHA-256", new TextEncoder().encode(styleCSS))).toString("hex");
+const cachedStyle = {
+  id: "user-style-1", name: "Dark Example", kind: "style", content: styleCSS,
+  sourceURL: "https://styles.test/dark.user.css", isLocal: false, matches: ["https://example.com/*"],
+  injectInto: "content", runAt: "document-start", isEnabled: true, payloadRevision: 0,
+  contentDigest: styleDigest, cacheCategory: "bundled", cacheRevision,
+};
+const styleElementsIn = (sandbox) => sandbox.document.head.children.filter((c) => c.tagName === "STYLE" && c.parentNode);
+
+let resolveStyleValidation;
+const styleValidation = new Promise((resolve) => { resolveStyleValidation = resolve; });
+const styleSandbox = buildContentScriptSandbox(
+  JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [cachedStyle] }),
+  [], "https://example.com/page", [], false,
+  (msg) => msg.action === "validateUserScriptExecution" ? styleValidation : new Promise(() => {}),
+);
+vm.createContext(styleSandbox);
+vm.runInContext(source, styleSandbox, { filename: "userscript-injector-style-warm.js" });
+for (let i = 0; i < 6; i++) await tick();
+check("cached userstyle is applied before native validation resolves", styleElementsIn(styleSandbox).length === 1 && styleElementsIn(styleSandbox)[0].textContent === styleCSS);
+check("userstyle warm start validates with its content digest", styleSandbox.__sentMessages.some((m) => m.action === "validateUserScriptExecution" && m.contentDigest === styleDigest));
+resolveStyleValidation({ ok: true });
+for (let i = 0; i < 10; i++) await tick();
+check("validated userstyle stays applied exactly once", styleElementsIn(styleSandbox).length === 1);
+
+let resolveStyleRejection;
+const styleRejection = new Promise((resolve) => { resolveStyleRejection = resolve; });
+const rejectedStyleSandbox = buildContentScriptSandbox(
+  JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [cachedStyle] }),
+  [], "https://example.com/page", [], false,
+  (msg) => msg.action === "validateUserScriptExecution" ? styleRejection : new Promise(() => {}),
+);
+vm.createContext(rejectedStyleSandbox);
+vm.runInContext(source, rejectedStyleSandbox, { filename: "userscript-injector-style-rejected.js" });
+for (let i = 0; i < 6; i++) await tick();
+check("rejected userstyle was applied provisionally", styleElementsIn(rejectedStyleSandbox).length === 1);
+resolveStyleRejection({ ok: false, error: "userscript-integrity-mismatch" });
+for (let i = 0; i < 10; i++) await tick();
+check("rejected userstyle is removed after native validation fails", styleElementsIn(rejectedStyleSandbox).length === 0);
+
+const noDigestStyleSandbox = buildContentScriptSandbox(
+  JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [{ ...cachedStyle, contentDigest: undefined }] }),
+  [], "https://example.com/page", [], false,
+  () => new Promise(() => {}),
+);
+vm.createContext(noDigestStyleSandbox);
+vm.runInContext(source, noDigestStyleSandbox, { filename: "userscript-injector-style-nodigest.js" });
+for (let i = 0; i < 6; i++) await tick();
+check("userstyle without a digest never warm-starts", styleElementsIn(noDigestStyleSandbox).length === 0);
+
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);
