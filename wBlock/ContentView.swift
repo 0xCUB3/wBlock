@@ -531,6 +531,7 @@ struct ContentView: View {
             }
             .padding(.vertical)
         }
+        .keyboardScrollable()
         .id("\(showOnlyEnabledLists)-\(filterSearchText)")
         #endif
     }
@@ -1763,8 +1764,11 @@ struct AddFilterListView: View {
                     .font(.body)
                     .foregroundStyle(.tertiary)
                     #if os(macOS)
+                    // NSTextView in TextEditor draws its first line at the top of
+                    // the container, so no vertical offset here. Any extra inset
+                    // leaves the caret above the placeholder text.
                     .padding(.horizontal, 5)
-                    .padding(.vertical, 1)
+                    .padding(.vertical, 0)
                     #else
                     .padding(.horizontal, 5)
                     .padding(.vertical, 8)

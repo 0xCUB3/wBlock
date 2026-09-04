@@ -442,6 +442,7 @@ struct UserScriptManagerView: View {
             }
             .padding(.vertical)
         }
+        .keyboardScrollable()
         .onDrop(of: [.fileURL], isTargeted: $isDropTarget, perform: handleDrop(providers:))
         .overlay(alignment: .topTrailing) {
             ZStack(alignment: .topTrailing) {
