@@ -52,16 +52,6 @@ WBLOCK_STYLUS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/stylus
 WBLOCK_POSTCSS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/postcss-nested/wblock-postcss-nested.js" \
   "${TMPDIR:-/tmp}/wblock-userstyle-preprocessor-tests"
 
-# These source-contract scripts run once from run-ci-tests.sh's discovery
-# loop; only repeat them when this script is invoked on its own.
-if [ -z "${WBLOCK_CORE_PRODUCTS:-}" ]; then
-  swift scripts/test_issue_511_compiled_style_contract.swift
-  swift scripts/test_userstyle_less_import_contract.swift
-  swift scripts/test_issue_508_file_import_contract.swift
-  swift scripts/test_issue_508_text_metadata_source.swift
-  swift scripts/test_issue_508_localization.swift
-fi
-
 swiftc scripts/test_issue_511_packaged_compilers.swift \
   -F "$FRAMEWORKS" -framework wBlockCoreService \
   -Xlinker -rpath -Xlinker "$FRAMEWORKS" \

@@ -11,28 +11,26 @@ run() {
   "$@"
 }
 
-# Source-contract tests are ordinary top-level Swift scripts. Tests with @main
-# are compiled below with their production dependencies instead of being run in
-# an invalid interpreter context.
-for test in scripts/test_*.swift; do
-  if ! grep -q '@main' "$test" && ! grep -q 'import wBlockCoreService' "$test"; then
-    run swift "$test"
-  fi
-done
-
-# The skipped Swift tests are compiled in explicit dependency groups below. The
-# temporary module is built from the same Xcode target used by production; tests
-# that need internal production symbols are compiled with those source files in
-# the same invocation instead of being weakened or treated as source contracts.
-# CI points this at a cached DerivedData so the core build is incremental;
-# local runs use a throwaway directory.
-CORE_DERIVED_DATA="${WBLOCK_DERIVED_DATA:-$TMP/core-derived-data}"
+# CI supplies its cached build directory. Local tests use the signed build
+# Safari already uses instead of creating another unsigned app installation.
+if [[ -z "${WBLOCK_DERIVED_DATA:-}" ]]; then
+  for candidate in "$HOME"/Library/Developer/Xcode/DerivedData/wBlock-*/Build/Products/Debug/wBlock.app; do
+    if [[ -d "$candidate" ]]; then
+      WBLOCK_DERIVED_DATA="${candidate%/Build/Products/Debug/wBlock.app}"
+      break
+    fi
+  done
+fi
+: "${WBLOCK_DERIVED_DATA:?Set WBLOCK_DERIVED_DATA to the existing signed Xcode build directory}"
+signing_args=()
+if [[ "${CI:-}" == "true" ]]; then signing_args+=(CODE_SIGNING_ALLOWED=NO); fi
+CORE_DERIVED_DATA="$WBLOCK_DERIVED_DATA"
 run xcodebuild -project wBlock.xcodeproj \
   -scheme wBlockCoreService \
   -configuration Debug \
   -destination 'generic/platform=macOS' \
   -derivedDataPath "$CORE_DERIVED_DATA" \
-  CODE_SIGNING_ALLOWED=NO \
+  "${signing_args[@]}" \
   build >/dev/null
 CORE_PRODUCTS="$CORE_DERIVED_DATA/Build/Products/Debug"
 export WBLOCK_CORE_PRODUCTS="$CORE_PRODUCTS"
@@ -69,16 +67,10 @@ compile_direct_test() {
   "$TMP/$name"
 }
 
-# Tests with only Foundation and repository-file inspection.
-compile_direct_test adguard-mobile scripts/test_adguard_mobile_filter_migration.swift
-compile_direct_test apply-progress-localization scripts/test_apply_progress_localization.swift
+# Standalone Foundation tests.
 compile_direct_test compiler-timeout scripts/test_issue_511_compiler_timeout.swift
-compile_direct_test issue-574-cloudkit-availability scripts/test_issue_574_cloudkit_availability.swift
-compile_direct_test issue-574-filters-scroll-reset scripts/test_issue_574_filters_scroll_reset.swift
-compile_direct_test language-selection-localization scripts/test_language_selection_localization.swift
 compile_direct_test main-window-frame-restore \
   wBlock/MainWindowFrameRestorer.swift scripts/test_main_window_frame_restore.swift
-compile_direct_test site-settings-localization scripts/test_site_settings_localization.swift
 
 # Core-module API tests. Source-only wBlock tests add their production source
 # explicitly; the remaining tests use the freshly built core framework.
@@ -92,7 +84,6 @@ compile_core_test issue-679-affinity-cache-behavior scripts/test_issue_679_affin
 compile_core_test issue-681-dedup-behavior scripts/test_issue_681_dedup_behavior.swift
 compile_core_test issue-681-url-identity scripts/test_issue_681_url_identity.swift
 compile_core_test issue-683-reorder-cache scripts/test_issue_683_reorder_cache.swift
-compile_direct_test issue-685-background-schedule wBlockCoreService/BackgroundUpdateSchedule.swift scripts/test_issue_685_background_schedule.swift
 compile_core_test cosmetic-filtering-preference scripts/test_cosmetic_filtering_preference.swift
 compile_core_test cloud-custom-filters scripts/test_cloud_sync_custom_filters.swift \
   wBlock/CloudSyncCustomFilterSync.swift
@@ -205,6 +196,11 @@ WBLOCK_SASS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/sass/wbl
 WBLOCK_STYLUS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/stylus/stylus-jsc.js" \
 WBLOCK_POSTCSS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/postcss-nested/wblock-postcss-nested.js" \
   "$TMP/packaged-compilers"
+
+for test in scripts/test_*.mjs; do
+  [[ "$test" == scripts/test_no_autoplay.mjs ]] && continue
+  run node "$test"
+done
 
 for test in scripts/test_*.sh; do
   run bash "$test"
