@@ -24,7 +24,9 @@ done
 # temporary module is built from the same Xcode target used by production; tests
 # that need internal production symbols are compiled with those source files in
 # the same invocation instead of being weakened or treated as source contracts.
-CORE_DERIVED_DATA="$TMP/core-derived-data"
+# CI points this at a cached DerivedData so the core build is incremental;
+# local runs use a throwaway directory.
+CORE_DERIVED_DATA="${WBLOCK_DERIVED_DATA:-$TMP/core-derived-data}"
 run xcodebuild -project wBlock.xcodeproj \
   -scheme wBlockCoreService \
   -configuration Debug \
@@ -33,6 +35,7 @@ run xcodebuild -project wBlock.xcodeproj \
   CODE_SIGNING_ALLOWED=NO \
   build >/dev/null
 CORE_PRODUCTS="$CORE_DERIVED_DATA/Build/Products/Debug"
+export WBLOCK_CORE_PRODUCTS="$CORE_PRODUCTS"
 
 compile_core_test() {
   local name="$1"

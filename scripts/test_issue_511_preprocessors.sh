@@ -15,10 +15,16 @@ cd "$ROOT"
   (cd postcss-nested && shasum -a 256 -c SHA256SUMS-postcss-nested)
   (cd stylus && shasum -a 256 -c SHA256SUMS-stylus)
 )
-rm -rf "$DERIVED"
-xcodebuild -project wBlock.xcodeproj -scheme wBlockCoreService \
-  -destination 'platform=macOS' -derivedDataPath "$DERIVED" \
-  CODE_SIGNING_ALLOWED=NO build >"$LOG" 2>&1
+# run-ci-tests.sh already built the core framework; reuse it instead of a
+# second three-minute xcodebuild.
+if [ -n "${WBLOCK_CORE_PRODUCTS:-}" ] && [ -d "${WBLOCK_CORE_PRODUCTS}/wBlockCoreService.framework" ]; then
+  FRAMEWORKS="$WBLOCK_CORE_PRODUCTS"
+else
+  rm -rf "$DERIVED"
+  xcodebuild -project wBlock.xcodeproj -scheme wBlockCoreService \
+    -destination 'platform=macOS' -derivedDataPath "$DERIVED" \
+    CODE_SIGNING_ALLOWED=NO build >"$LOG" 2>&1
+fi
 
 swiftc -D DEBUG -framework WebKit -framework CryptoKit \
   scripts/test_userstyle_parsing_and_matching.swift \
@@ -46,11 +52,15 @@ WBLOCK_STYLUS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/stylus
 WBLOCK_POSTCSS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/postcss-nested/wblock-postcss-nested.js" \
   "${TMPDIR:-/tmp}/wblock-userstyle-preprocessor-tests"
 
-swift scripts/test_issue_511_compiled_style_contract.swift
-swift scripts/test_userstyle_less_import_contract.swift
-swift scripts/test_issue_508_file_import_contract.swift
-swift scripts/test_issue_508_text_metadata_source.swift
-swift scripts/test_issue_508_localization.swift
+# These source-contract scripts run once from run-ci-tests.sh's discovery
+# loop; only repeat them when this script is invoked on its own.
+if [ -z "${WBLOCK_CORE_PRODUCTS:-}" ]; then
+  swift scripts/test_issue_511_compiled_style_contract.swift
+  swift scripts/test_userstyle_less_import_contract.swift
+  swift scripts/test_issue_508_file_import_contract.swift
+  swift scripts/test_issue_508_text_metadata_source.swift
+  swift scripts/test_issue_508_localization.swift
+fi
 
 swiftc scripts/test_issue_511_packaged_compilers.swift \
   -F "$FRAMEWORKS" -framework wBlockCoreService \

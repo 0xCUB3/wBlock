@@ -58,14 +58,19 @@ func sourceKeyOccurrences(for locale: String) -> [String: [Int]] {
 
     var occurrences: [String: [Int]] = [:]
     let range = NSRange(contents.startIndex..<contents.endIndex, in: contents)
+    // Count newlines in one forward pass; rescanning the prefix for every key
+    // made this quadratic and cost tens of seconds in CI.
+    var line = 1
+    var scanned = contents.startIndex
     for match in regex.matches(in: contents, range: range) {
         guard let keyRange = Range(match.range(at: 1), in: contents),
               let declarationRange = Range(match.range, in: contents)
         else { continue }
         let key = unescapeSourceLiteral(String(contents[keyRange]))
-        let line = contents[..<declarationRange.lowerBound].reduce(into: 1) { count, character in
-            if character == "\n" { count += 1 }
+        for character in contents[scanned..<declarationRange.lowerBound] where character == "\n" {
+            line += 1
         }
+        scanned = declarationRange.lowerBound
         occurrences[key, default: []].append(line)
     }
     return occurrences
