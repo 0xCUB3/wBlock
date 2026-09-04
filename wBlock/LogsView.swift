@@ -27,8 +27,9 @@ struct LogsView: View {
     @State private var selectedLevel: LogLevel? = nil
     @State private var selectedCategory: LogCategory? = nil
     @State private var searchText = ""
-    @State private var showingShareSheet = false
-    @State private var exportText = ""
+    /// The export is written to a file first and the sheet is keyed on the
+    /// URL, so the share never presents before the text exists (#682).
+    @State private var exportFile: LogExportFile?
     @Environment(\.dismiss) private var dismiss
 
     // Cached filtered entries to avoid repeated filtering on scroll
@@ -92,10 +93,10 @@ struct LogsView: View {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {
                         Task {
-                            exportText = await ConcurrentLogManager.shared.exportAsText(
+                            let text = await ConcurrentLogManager.shared.exportAsText(
                                 entries: Array(filteredEntries.reversed())
                             )
-                            showingShareSheet = true
+                            exportFile = LogExportFile.write(text)
                         }
                     } label: {
                         Label("Export", systemImage: "square.and.arrow.up")
@@ -158,8 +159,8 @@ struct LogsView: View {
             updateFilteredEntries()
         }
         #if os(iOS)
-        .sheet(isPresented: $showingShareSheet) {
-            ShareSheet(items: [exportText])
+        .sheet(item: $exportFile) { file in
+            ShareSheet(items: [file.url])
         }
         #endif
     }
@@ -379,6 +380,23 @@ struct LogEntryRow: View {
 }
 
 #if os(iOS)
+struct LogExportFile: Identifiable {
+    let url: URL
+    var id: String { url.path }
+
+    static func write(_ text: String) -> LogExportFile? {
+        let stamp = Date().formatted(date: .numeric, time: .omitted).replacingOccurrences(of: "/", with: "-")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("wBlock_logs_\(stamp).txt")
+        do {
+            try text.write(to: url, atomically: true, encoding: .utf8)
+            return LogExportFile(url: url)
+        } catch {
+            Task { await ConcurrentLogManager.shared.error(.system, LocalizedStrings.text("Failed to export logs"), error: error) }
+            return nil
+        }
+    }
+}
+
 struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
 
