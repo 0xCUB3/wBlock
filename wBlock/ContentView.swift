@@ -206,7 +206,7 @@ struct ContentView: View {
             }
         }
         .sheet(item: $selectedFilterInfo) { filter in
-            FilterInfoView(filter: filter)
+            FilterInfoView(filter: filter, filterManager: filterManager)
                 .infoSheetPresentationCompat()
         }
         .sheet(item: $selectedFilterRules) { filter in

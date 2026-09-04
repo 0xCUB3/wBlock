@@ -48,6 +48,7 @@ extension ProtobufDataManager {
             }
             protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
             protoFilterList.isCustom = shouldPersistCustomFlag(for: filter)
+            protoFilterList.excludedSites = filter.excludedSites
             return protoFilterList
         }
         appData = updatedData
@@ -191,7 +192,8 @@ extension ProtobufDataManager {
                 isSelected: protoData.isSelected,
                 description: protoData.description_p,
                 version: protoData.version,
-                sourceRuleCount: protoData.hasSourceRuleCount ? Int(protoData.sourceRuleCount) : nil
+                sourceRuleCount: protoData.hasSourceRuleCount ? Int(protoData.sourceRuleCount) : nil,
+                excludedSites: Array(protoData.excludedSites)
             )
         }
     }

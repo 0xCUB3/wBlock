@@ -10,12 +10,16 @@ struct FilterSelectionRebaseTests {
             FilterList(id: otherID, name: "New", url: URL(string: "https://example.com/new")!, category: .privacy, isSelected: true)
         ]
         let persisted = [
-            FilterList(id: id, name: "Persisted", url: URL(string: "https://example.com")!, category: .ads, isSelected: false)
+            FilterList(id: id, name: "Persisted", url: URL(string: "https://example.com")!, category: .ads, isSelected: false, excludedSites: ["nytimes.com"])
         ]
         let rebased = FilterSelectionRebaser.rebaseSelection(snapshot: snapshot, latestPersisted: persisted)
 
         guard rebased.first?.isSelected == false else {
             fputs("FAIL: latest persisted selection must win\n", stderr)
+            exit(1)
+        }
+        guard rebased.first?.excludedSites == ["nytimes.com"] else {
+            fputs("FAIL: latest persisted per-list exclusions must win\n", stderr)
             exit(1)
         }
         guard rebased.last?.isSelected == true else {

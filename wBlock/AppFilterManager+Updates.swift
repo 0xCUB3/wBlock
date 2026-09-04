@@ -23,6 +23,7 @@ extension AppFilterManager {
                 merged.isSelected = current.isSelected
                 merged.hasUserProvidedName = current.hasUserProvidedName
                 merged.description = current.description
+                merged.excludedSites = current.excludedSites
                 newFilterLists[index] = merged
             }
         }

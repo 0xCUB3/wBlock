@@ -27,6 +27,7 @@ struct ApplyFilterConfiguration: Equatable {
     let category: FilterListCategory
     let isCustom: Bool
     let hasUserProvidedName: Bool
+    let excludedSites: [String]
 
     init(_ filter: FilterList) {
         id = filter.id
@@ -35,6 +36,7 @@ struct ApplyFilterConfiguration: Equatable {
         category = filter.category
         isCustom = filter.isCustom
         hasUserProvidedName = filter.hasUserProvidedName
+        excludedSites = filter.excludedSites
     }
 }
 
@@ -991,6 +993,17 @@ class AppFilterManager: ObservableObject {
             autoDisabledFilters.removeAll { $0.id == id }
         }
 
+        saveFilterListsCoalesced()
+        refreshPendingChanges()
+        return true
+    }
+
+    @discardableResult
+    func setExcludedSites(_ sites: [String], for id: UUID) -> Bool {
+        guard let index = filterListIndex(for: id) else { return false }
+        let normalized = FilterListSiteExclusion.normalizedDomains(from: sites)
+        guard filterLists[index].excludedSites != normalized else { return false }
+        filterLists[index].excludedSites = normalized
         saveFilterListsCoalesced()
         refreshPendingChanges()
         return true

@@ -61,6 +61,7 @@ message FilterListData {
   int64 last_updated = 9;
   bool is_custom = 10;
   string local_file_path = 11;
+  repeated string excluded_sites = 12;
 }
 
 // Filter list categories

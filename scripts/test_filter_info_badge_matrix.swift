@@ -28,7 +28,7 @@ for (name, token) in filterMatrix {
 for token in ["if isIntegrated {", "badges[0] = .integrated", "script.isUserStyle ? .userstyle : .userscript", "badges.append(.builtIn)", "badges.append(.localImport)", "badges.append(.custom)", "script.isEnabled ? .enabled : .disabled", "!isDownloaded, !script.isLocal"] {
     expect(support.contains(token), "userscript badge matrix is missing \(token)")
 }
-expect(filterInfo.contains("InfoBadgeSupport.filterBadges(filter)"), "filter Info must consume the shared badge matrix")
+expect(filterInfo.contains("InfoBadgeSupport.filterBadges(liveFilter)"), "filter Info must consume the shared badge matrix")
 expect(scriptInfo.contains("InfoBadgeSupport.userScriptBadges"), "userscript Info must consume the shared badge matrix")
 expect(filterInfo.contains("Copy URL"), "filter Info must retain Copy URL")
 expect(scriptInfo.contains("Copy URL"), "userscript Info must retain Copy URL")

@@ -307,6 +307,8 @@ nonisolated struct Wblock_Data_FilterListData: Sendable {
 
   var localFilePath: String = String()
 
+  var excludedSites: [String] = []
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -1010,7 +1012,7 @@ nonisolated extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProto
 
 nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".FilterListData"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{1}category\0\u{3}is_selected\0\u{1}description\0\u{1}version\0\u{3}source_rule_count\0\u{3}last_updated\0\u{3}is_custom\0\u{3}local_file_path\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{1}category\0\u{3}is_selected\0\u{1}description\0\u{1}version\0\u{3}source_rule_count\0\u{3}last_updated\0\u{3}is_custom\0\u{3}local_file_path\0\u{3}excluded_sites\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1029,6 +1031,7 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
       case 9: try { try decoder.decodeSingularInt64Field(value: &self.lastUpdated) }()
       case 10: try { try decoder.decodeSingularBoolField(value: &self.isCustom) }()
       case 11: try { try decoder.decodeSingularStringField(value: &self.localFilePath) }()
+      case 12: try { try decoder.decodeRepeatedStringField(value: &self.excludedSites) }()
       default: break
       }
     }
@@ -1072,6 +1075,9 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
     if !self.localFilePath.isEmpty {
       try visitor.visitSingularStringField(value: self.localFilePath, fieldNumber: 11)
     }
+    if !self.excludedSites.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.excludedSites, fieldNumber: 12)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1087,6 +1093,7 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
     if lhs.lastUpdated != rhs.lastUpdated {return false}
     if lhs.isCustom != rhs.isCustom {return false}
     if lhs.localFilePath != rhs.localFilePath {return false}
+    if lhs.excludedSites != rhs.excludedSites {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

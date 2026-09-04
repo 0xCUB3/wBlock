@@ -95,6 +95,7 @@ private func mergeFilterLists(
         mergeField(&merged.lastUpdated, baseline: base.lastUpdated, persisted: theirs.lastUpdated)
         mergeField(&merged.isCustom, baseline: base.isCustom, persisted: theirs.isCustom)
         mergeField(&merged.localFilePath, baseline: base.localFilePath, persisted: theirs.localFilePath)
+        mergeField(&merged.excludedSites, baseline: base.excludedSites, persisted: theirs.excludedSites)
         mergeField(&merged.unknownFields, baseline: base.unknownFields, persisted: theirs.unknownFields)
         return merged
     }

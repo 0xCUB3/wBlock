@@ -8,16 +8,18 @@
 import Foundation
 
 public enum FilterSelectionRebaser {
-    /// Keeps the update snapshot's metadata while taking selection from the latest persisted state.
+    /// Keeps the update snapshot's metadata while taking selection and per-list
+    /// site exclusions from the latest persisted state.
     public static func rebaseSelection(
         snapshot: [FilterList],
         latestPersisted: [FilterList]
     ) -> [FilterList] {
-        let latestByID = Dictionary(uniqueKeysWithValues: latestPersisted.map { ($0.id, $0.isSelected) })
+        let latestByID = Dictionary(uniqueKeysWithValues: latestPersisted.map { ($0.id, $0) })
         return snapshot.map { filter in
-            guard let isSelected = latestByID[filter.id] else { return filter }
+            guard let latest = latestByID[filter.id] else { return filter }
             var rebased = filter
-            rebased.isSelected = isSelected
+            rebased.isSelected = latest.isSelected
+            rebased.excludedSites = latest.excludedSites
             return rebased
         }
     }
@@ -41,11 +43,14 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     public var serverLastModified: String? = nil
     public var limitExceededReason: String? = nil // Reason why filter was auto-disabled due to rule limits
     public var hasUserProvidedName: Bool = false
+    /// Hosts this list should not apply to (issue #653). Independent of Site Settings.
+    public var excludedSites: [String] = []
 
     private enum CodingKeys: String, CodingKey {
         case id, name, url, category, isCustom, isSelected, description,
              version, sourceRuleCount, lastUpdated, languages, trustLevel,
-             etag, serverLastModified, limitExceededReason, hasUserProvidedName
+             etag, serverLastModified, limitExceededReason, hasUserProvidedName,
+             excludedSites
         // rawSourceRuleCount intentionally excluded — in-memory only, not persisted
     }
 
@@ -65,7 +70,8 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
                 etag: String? = nil,
                 serverLastModified: String? = nil,
                 limitExceededReason: String? = nil,
-                hasUserProvidedName: Bool = false) {
+                hasUserProvidedName: Bool = false,
+                excludedSites: [String] = []) {
         self.id = id
         self.name = name
         self.url = url
@@ -83,6 +89,51 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         self.serverLastModified = serverLastModified
         self.limitExceededReason = limitExceededReason
         self.hasUserProvidedName = hasUserProvidedName
+        self.excludedSites = FilterListSiteExclusion.normalizedDomains(from: excludedSites)
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        url = try container.decode(URL.self, forKey: .url)
+        category = try container.decode(FilterListCategory.self, forKey: .category)
+        isCustom = try container.decodeIfPresent(Bool.self, forKey: .isCustom) ?? false
+        isSelected = try container.decodeIfPresent(Bool.self, forKey: .isSelected) ?? false
+        description = try container.decodeIfPresent(String.self, forKey: .description) ?? ""
+        version = try container.decodeIfPresent(String.self, forKey: .version) ?? ""
+        sourceRuleCount = try container.decodeIfPresent(Int.self, forKey: .sourceRuleCount)
+        lastUpdated = try container.decodeIfPresent(Date.self, forKey: .lastUpdated)
+        languages = try container.decodeIfPresent([String].self, forKey: .languages) ?? []
+        trustLevel = try container.decodeIfPresent(String.self, forKey: .trustLevel)
+        etag = try container.decodeIfPresent(String.self, forKey: .etag)
+        serverLastModified = try container.decodeIfPresent(String.self, forKey: .serverLastModified)
+        limitExceededReason = try container.decodeIfPresent(String.self, forKey: .limitExceededReason)
+        hasUserProvidedName = try container.decodeIfPresent(Bool.self, forKey: .hasUserProvidedName) ?? false
+        excludedSites = FilterListSiteExclusion.normalizedDomains(
+            from: try container.decodeIfPresent([String].self, forKey: .excludedSites) ?? []
+        )
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(url, forKey: .url)
+        try container.encode(category, forKey: .category)
+        try container.encode(isCustom, forKey: .isCustom)
+        try container.encode(isSelected, forKey: .isSelected)
+        try container.encode(description, forKey: .description)
+        try container.encode(version, forKey: .version)
+        try container.encodeIfPresent(sourceRuleCount, forKey: .sourceRuleCount)
+        try container.encodeIfPresent(lastUpdated, forKey: .lastUpdated)
+        try container.encode(languages, forKey: .languages)
+        try container.encodeIfPresent(trustLevel, forKey: .trustLevel)
+        try container.encodeIfPresent(etag, forKey: .etag)
+        try container.encodeIfPresent(serverLastModified, forKey: .serverLastModified)
+        try container.encodeIfPresent(limitExceededReason, forKey: .limitExceededReason)
+        try container.encode(hasUserProvidedName, forKey: .hasUserProvidedName)
+        try container.encode(excludedSites, forKey: .excludedSites)
     }
     
     /// Maps ISO 639 language codes to their primary region's flag emoji

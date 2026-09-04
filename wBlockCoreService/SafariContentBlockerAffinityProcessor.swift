@@ -172,12 +172,16 @@ public enum SafariContentBlockerAffinityProcessor {
             allTargets: allTargets,
             isCancelled: isCancelled
         )
-        guard !filtered.isEmpty else { return false }
+        let restricted = FilterListSiteExclusion.restrictingAdvancedRules(
+            filtered,
+            excluding: filter.excludedSites
+        )
+        guard !restricted.isEmpty else { return false }
         if isCancelled?() == true {
             throw CancellationError()
         }
 
-        let filteredData = Data(filtered.utf8)
+        let filteredData = Data(restricted.utf8)
         try ContentBlockerChunkedHasher.update(
             with: filteredData,
             hasher: &hasher,

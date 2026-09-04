@@ -1576,14 +1576,28 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 for: filter,
                 containerURL: containerURL
             ) {
-                try ContentBlockerInputWriter.appendFile(
-                    from: sourceURL,
-                    to: fileHandle,
-                    hasher: &hasher,
-                    newlineData: newlineData,
-                    policy: .strict,
-                    isCancelled: cancellationRequested
-                )
+                if filter.excludedSites.isEmpty {
+                    try ContentBlockerInputWriter.appendFile(
+                        from: sourceURL,
+                        to: fileHandle,
+                        hasher: &hasher,
+                        newlineData: newlineData,
+                        policy: .strict,
+                        isCancelled: cancellationRequested
+                    )
+                } else {
+                    let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
+                    try ContentBlockerInputWriter.appendInline(
+                        FilterListSiteExclusion.restrictingAdvancedRules(
+                            rawContent,
+                            excluding: filter.excludedSites
+                        ),
+                        to: fileHandle,
+                        hasher: &hasher,
+                        newlineData: newlineData,
+                        isCancelled: cancellationRequested
+                    )
+                }
             }
         }
 
