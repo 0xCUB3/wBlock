@@ -68,7 +68,7 @@ check(native.includes('NSRunningApplication.runningApplications') &&
   'native start must signal a running app without activating or foregrounding it');
 check(service.includes('FilterUpdatePopupStatus.beginIfIdle()') &&
   service.includes('FilterUpdatePopupStatus.finish(outcome)'),
-  'XPC fallback must retain lifecycle status for a terminated app');
+  'XPC service must retain lifecycle status for a terminated app');
 check(xpc.includes('public func startFilterUpdate') && xpc.includes('filterProxy.startFilterUpdate'),
   'XPC bridge must expose an acknowledged background start request');
 check(popupStatus.includes('.noFilterUpdates') && popupStatus.includes('case .failed(let message)'),
@@ -78,17 +78,19 @@ check(native.includes('FilterUpdatePopupStatus.consumeSnapshot()') &&
   'terminal status must be shown once, then clear before the popup reopens');
 
 const updateHandler = native.slice(native.indexOf('private static func handleStartFilterUpdate'), native.indexOf('private static func handleOpenContainingApp'));
+// The shared manager refuses to run inside an extension process (safe mode),
+// so an in-process fallback can never update. When neither the app nor the
+// agent is available the handler queues the request and wakes the app (#676).
 check(updateHandler.includes('FilterUpdateClient.shared.startFilterUpdate()') &&
   updateHandler.includes('case .timedOut, .unavailable:') &&
-  updateHandler.includes('FilterUpdatePopupStatus.beginIfIdle()') &&
-  updateHandler.includes('SharedAutoUpdateManager.shared.maybeRunAutoUpdate(') &&
-  updateHandler.includes('trigger: "Popup"') && updateHandler.includes('force: true') &&
-  updateHandler.includes('FilterUpdatePopupStatus.finish(outcome)'),
-  'terminated-app XPC failure must fall back to an in-process forced update with shared lifecycle status');
-check(updateHandler.indexOf('FilterUpdateClient.shared.startFilterUpdate()') < updateHandler.indexOf('FilterUpdatePopupStatus.beginIfIdle()'),
-  'terminated-app update must try XPC before the in-process fallback');
-check(!updateHandler.includes('openContainingApp') && !updateHandler.includes('NSWorkspace') && !updateHandler.includes('openApplication'),
-  'filter update action must not foreground or open the containing app');
+  updateHandler.includes('FilterUpdatePopupStatus.requestUpdate()') &&
+  updateHandler.includes('wblockapp://open') &&
+  !updateHandler.includes('SharedAutoUpdateManager.shared.maybeRunAutoUpdate('),
+  'terminated-app XPC failure must queue the request and wake the app instead of running in-process');
+check(updateHandler.indexOf('FilterUpdateClient.shared.startFilterUpdate()') < updateHandler.indexOf('wblockapp://open'),
+  'terminated-app update must try XPC before waking the app');
+check(updateHandler.includes('FilterUpdatePopupStatus.finish(.failed('),
+  'a failed app wake must publish a failure status so the popup does not spin');
 
 const localeRoot = path.join(root, 'wBlock Scripts (iOS)/Resources/_locales');
 const locales = fs.readdirSync(localeRoot).filter((name) => fs.statSync(path.join(localeRoot, name)).isDirectory());
