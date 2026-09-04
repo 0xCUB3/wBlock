@@ -17,8 +17,10 @@ struct ElementZapperSettingsView: View {
     #endif
 
     private enum PendingConfirmation: Identifiable {
-        case clearAll
-        var id: String { "clear-all" }
+        case clear(domain: String)
+        var id: String {
+            switch self { case .clear(let domain): return domain }
+        }
     }
 
     private struct UndoEntry {
@@ -40,16 +42,6 @@ struct ElementZapperSettingsView: View {
         ZStack(alignment: .bottom) {
             ScrollView {
                 VStack(spacing: 16) {
-                    if !ruleManager.domains.isEmpty {
-                        Button(role: .destructive) {
-                            pendingConfirmation = .clearAll
-                        } label: {
-                            Label("Clear Element Zapper Rules", systemImage: "trash")
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .buttonStyle(.bordered)
-                    }
-
                     if filteredDomains.isEmpty {
                         emptyState
                     } else {
@@ -75,12 +67,12 @@ struct ElementZapperSettingsView: View {
         .task { await ruleManager.refreshNow() }
         .alert(item: $pendingConfirmation) { confirmation in
             switch confirmation {
-            case .clearAll:
+            case .clear(let domain):
                 return Alert(
                     title: Text("Clear Element Zapper Rules?"),
-                    message: Text("This removes all saved element zapper rules from every site."),
-                    primaryButton: .destructive(Text("Clear All")) {
-                        clearAllRules()
+                    message: Text(domain),
+                    primaryButton: .destructive(Text("Remove")) {
+                        clearRules(for: domain)
                     },
                     secondaryButton: .cancel(Text("Cancel"))
                 )
@@ -171,6 +163,22 @@ struct ElementZapperSettingsView: View {
                 .padding(.trailing, 16)
             }
         }
+        Divider().padding(.leading, 16)
+        Button {
+            pendingConfirmation = .clear(domain: domain)
+        } label: {
+            HStack {
+                Text("Clear Element Zapper Rules")
+                    .foregroundStyle(.red)
+                Spacer()
+            }
+            .padding(.vertical, 10)
+            .padding(.leading, 32)
+            .padding(.trailing, 16)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .noFocusRingCompat()
         Text("Element Zapper changes take full effect after the next apply.")
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -295,14 +303,13 @@ struct ElementZapperSettingsView: View {
         }
     }
 
-    private func clearAllRules() {
+    private func clearRules(for domain: String) {
         guard !isMutating else { return }
         _ = beginMutation(invalidateUndo: true)
         Task { @MainActor in
             await ruleManager.performMutation {
-                for domain in dataManager.getZapperDomains() {
-                    await dataManager.deleteAllZapperRules(forHost: domain)
-                }
+                await dataManager.deleteAllZapperRules(forHost: domain)
+                expandedDomains.remove(domain)
                 await ruleManager.refreshNow()
                 filterManager.markNonSelectionChangesPending()
             }
