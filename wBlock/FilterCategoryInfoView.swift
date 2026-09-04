@@ -14,9 +14,8 @@ struct FilterCategoryInfoView: View {
     )
     @Environment(\.dismiss) private var dismiss
 
-    private var availableLanguages: [String] {
-        Set(filterLists.filter { $0.category == .foreign }.flatMap(\.languages).map { $0.lowercased() })
-            .sorted { languageName($0).localizedCaseInsensitiveCompare(languageName($1)) == .orderedAscending }
+    private var languageOptions: [RegionalLanguageOption] {
+        RegionalLanguageOption.fromForeignFilters(filterLists)
     }
 
     private var recommendedFilterNames: [String] {
@@ -44,23 +43,17 @@ struct FilterCategoryInfoView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             if category == .foreign {
-                Menu {
-                    ForEach(availableLanguages, id: \.self) { language in
-                        Button {
-                            if selectedLanguages.contains(language) {
-                                selectedLanguages.remove(language)
-                            } else {
-                                selectedLanguages.insert(language)
-                            }
-                            onLanguagesChange(selectedLanguages)
-                        } label: {
-                            Label(languageName(language), systemImage: selectedLanguages.contains(language) ? "checkmark.circle.fill" : "circle")
-                        }
-                    }
-                } label: {
+                VStack(alignment: .leading, spacing: 8) {
                     Label("Regional & Language", systemImage: "globe")
+                        .font(.headline)
+                    RegionalLanguagePickerView(
+                        selectedLanguages: $selectedLanguages,
+                        options: languageOptions
+                    )
+                    .onChangeCompat(of: selectedLanguages) { _, newValue in
+                        onLanguagesChange(newValue)
+                    }
                 }
-                .buttonStyle(.bordered)
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -91,7 +84,4 @@ struct FilterCategoryInfoView: View {
         .infoSheetChromeCompat { dismiss() }
     }
 
-    private func languageName(_ code: String) -> String {
-        Locale.current.localizedString(forLanguageCode: code) ?? code.uppercased()
-    }
 }

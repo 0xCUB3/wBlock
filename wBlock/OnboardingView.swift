@@ -36,7 +36,6 @@ struct OnboardingView: View {
     @State private var selectedUserscripts: Set<String> = []
     @State private var step: OnboardingStep = .welcome
     @State private var selectedLanguages: Set<String>
-    @State private var languageSearchQuery = ""
     @State private var selectedRegionalFilters: Set<UUID> = []
     @State private var recommendedRegionalFilters: [FilterList] = []
     @State private var hasManuallyEditedRegionalSelection = false
@@ -477,66 +476,21 @@ struct OnboardingView: View {
         }
     }
 
-    private struct LanguageOption: Identifiable {
-        private static let aliasesByCode: [String: [String]] = [
-            "de": ["Deutsch", "German"],
-            "es": ["español", "Spanish", "espanol"],
-            "fr": ["français", "French", "francais"],
-            "ja": ["日本語", "Japanese"],
-            "zh": ["中文", "Chinese", "zh"],
-            "pt": ["português", "Portuguese", "portugues"],
-            "ru": ["русский", "Russian"],
-            "ar": ["العربية", "Arabic"]
-        ]
-
-        let code: String
-        let name: String
-        let flag: String
-        var nativeName: String {
-            Locale(identifier: code).localizedString(forLanguageCode: code) ?? name
-        }
-        var aliases: [String] { Self.aliasesByCode[code] ?? [] }
-        var id: String { code }
-
-        func matches(_ query: String) -> Bool {
-            let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !query.isEmpty else { return false }
-            return ([nativeName, name, code] + aliases).contains {
-                $0.localizedCaseInsensitiveContains(query)
-            }
-        }
+    private var availableFilterLanguages: [RegionalLanguageOption] {
+        RegionalLanguageOption.fromForeignFilters(filterManager.filterLists)
     }
 
-    private var displayLocale: Locale {
-        Locale(identifier: Bundle.main.preferredLocalizations.first ?? Locale.current.identifier)
-    }
-
-    private var availableFilterLanguages: [LanguageOption] {
-        var seen = Set<String>()
-        var result: [LanguageOption] = []
-        for filter in filterManager.filterLists where filter.category == .foreign {
-            for lang in filter.languages {
-                let lc = lang.lowercased()
-                guard seen.insert(lc).inserted else { continue }
-                let name = displayLocale.localizedString(forLanguageCode: lc) ?? lc
-                let flag = FilterList.languageToFlag[lc] ?? ""
-                result.append(LanguageOption(code: lc, name: name, flag: flag))
-            }
-        }
-        return result.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
-
-    private var pinnedLanguagePickerOptions: [LanguageOption] {
-        var options: [LanguageOption] = []
+    private var pinnedLanguagePickerOptions: [RegionalLanguageOption] {
+        var options: [RegionalLanguageOption] = []
         if !availableFilterLanguages.contains(where: { $0.code == Self.englishLanguageCode }) {
             let englishName =
-                displayLocale.localizedString(forLanguageCode: Self.englishLanguageCode) ?? "English"
+                RegionalLanguageOption.displayLocale.localizedString(forLanguageCode: Self.englishLanguageCode) ?? "English"
             options.append(
-                LanguageOption(code: Self.englishLanguageCode, name: englishName, flag: "")
+                RegionalLanguageOption(code: Self.englishLanguageCode, name: englishName, flag: "")
             )
         }
         options.append(
-            LanguageOption(
+            RegionalLanguageOption(
                 code: Self.otherLanguagesCode,
                 name: String(localized: "Other"),
                 flag: "\u{1F310}"
@@ -545,7 +499,7 @@ struct OnboardingView: View {
         return options
     }
 
-    private var languagePickerOptions: [LanguageOption] {
+    private var languagePickerOptions: [RegionalLanguageOption] {
         pinnedLanguagePickerOptions + availableFilterLanguages
     }
 
@@ -553,7 +507,7 @@ struct OnboardingView: View {
         languagePickerOptions.contains { selectedLanguages.contains($0.code) }
     }
 
-    private var languagesWithoutRegionalFilters: [LanguageOption] {
+    private var languagesWithoutRegionalFilters: [RegionalLanguageOption] {
         let matchedCodes = Set(
             recommendedRegionalFilters
                 .flatMap { filter in filter.languages.map { $0.lowercased() } }
@@ -563,80 +517,15 @@ struct OnboardingView: View {
         }
     }
 
-    private var selectedLanguagePickerOptions: [LanguageOption] {
+    private var selectedLanguagePickerOptions: [RegionalLanguageOption] {
         languagePickerOptions.filter { selectedLanguages.contains($0.code) }
     }
 
-    private var unselectedLanguagePickerOptions: [LanguageOption] {
-        languagePickerOptions.filter { !selectedLanguages.contains($0.code) }
-    }
-
-    private var matchingLanguagePickerOptions: [LanguageOption] {
-        unselectedLanguagePickerOptions.filter { $0.matches(languageSearchQuery) }
-    }
-
     private var languagePicker: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(selectedLanguagePickerOptions.enumerated()), id: \.element.id) { index, lang in
-                HStack(spacing: 10) {
-                    Text(lang.flag.isEmpty ? String(lang.nativeName.prefix(1)) : lang.flag)
-                        .fontWeight(lang.flag.isEmpty ? .semibold : .regular)
-                        .frame(width: 20)
-                    Text(lang.nativeName)
-                    Spacer()
-                    Button {
-                        selectedLanguages.remove(lang.code)
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .noFocusRingCompat()
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 9)
-
-                if index < selectedLanguagePickerOptions.count - 1 {
-                    Divider().padding(.leading, 42)
-                }
-            }
-
-            if !selectedLanguagePickerOptions.isEmpty {
-                Divider().padding(.leading, 42)
-            }
-
-            HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.secondary)
-                    .frame(width: 20)
-                TextField("Search languages", text: $languageSearchQuery)
-                    .textFieldStyle(.plain)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
-
-            ForEach(matchingLanguagePickerOptions) { lang in
-                Divider().padding(.leading, 42)
-                Button {
-                    selectedLanguages.insert(lang.code)
-                    languageSearchQuery = ""
-                } label: {
-                    HStack(spacing: 10) {
-                        Text(lang.flag.isEmpty ? String(lang.nativeName.prefix(1)) : lang.flag)
-                            .fontWeight(lang.flag.isEmpty ? .semibold : .regular)
-                            .frame(width: 20)
-                        Text(lang.nativeName)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 9)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .noFocusRingCompat()
-            }
-        }
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        RegionalLanguagePickerView(
+            selectedLanguages: $selectedLanguages,
+            options: languagePickerOptions
+        )
     }
 
     private var regionalStep: some View {
@@ -700,7 +589,7 @@ struct OnboardingView: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 
-    private func emptyRegionalFilterGroup(for lang: LanguageOption) -> some View {
+    private func emptyRegionalFilterGroup(for lang: RegionalLanguageOption) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(lang.name)
                 .font(.caption.weight(.semibold))
