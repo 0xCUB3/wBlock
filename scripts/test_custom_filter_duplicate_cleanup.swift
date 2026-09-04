@@ -36,6 +36,17 @@ require(
 )
 require(
     customFiltersSource,
+    "await self.dataManager.removeFilterList(withId: id)",
+    "Removing a custom filter must persist an authoritative protobuf tombstone"
+)
+let extensions = try source("wBlockCoreService/ProtobufDataManager+Extensions.swift")
+require(
+    extensions,
+    "explicitlyDeletedFilterIDs: deletedIDs",
+    "updateFilterLists must tombstone IDs dropped from the incoming snapshot"
+)
+require(
+    customFiltersSource,
     "if !filterLists.contains(where: { $0.url == filter.url })",
     "addCustomFilterList must check for duplicate URLs across all filter lists"
 )

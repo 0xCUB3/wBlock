@@ -33,8 +33,10 @@ extension ProtobufDataManager {
     }
 
     public func updateFilterLists(_ filterLists: [FilterList]) async {
-        var updatedData = await latestAppDataSnapshot()
-        updatedData.filterLists = filterLists.map { filter in
+        let incomingIDs = Set(filterLists.map { $0.id.uuidString })
+        let snapshot = await latestAppDataSnapshot()
+        let deletedIDs = Set(snapshot.filterLists.map(\.id)).subtracting(incomingIDs)
+        let protoFilterLists = filterLists.map { filter -> Wblock_Data_FilterListData in
             var protoFilterList = Wblock_Data_FilterListData()
             protoFilterList.id = filter.id.uuidString
             protoFilterList.name = filter.name
@@ -51,8 +53,9 @@ extension ProtobufDataManager {
             protoFilterList.excludedSites = filter.excludedSites
             return protoFilterList
         }
-        appData = updatedData
-        saveData()
+        _ = await updateDataImmediately(explicitlyDeletedFilterIDs: deletedIDs) { data in
+            data.filterLists = protoFilterLists
+        }
     }
 
     // MARK: - Data Migration

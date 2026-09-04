@@ -326,9 +326,21 @@ extension AppFilterManager {
             CloudSyncManager.shared.recordDeletedCustomListURL(filter.url.absoluteString)
         }
 
+        let removedIDs = filterLists.compactMap { existing -> UUID? in
+            guard existing.id == filter.id || (existing.isCustom && existing.url == filter.url) else {
+                return nil
+            }
+            return existing.id
+        }
         filterLists.removeAll { $0.id == filter.id || ($0.isCustom && $0.url == filter.url) }
-        saveFilterListsCoalesced()
         refreshPendingChanges()
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            for id in removedIDs {
+                await self.dataManager.removeFilterList(withId: id)
+            }
+            await self.saveFilterLists()
+        }
 
         if let containerURL = loader.getSharedContainerURL() {
             // The shared helper also removes safeLegacyFileURL paths with
