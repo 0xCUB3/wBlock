@@ -1034,3 +1034,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "All extensions reloaded." = "Все расширения перезагружены.";
 "%@ still failed to reload. Safari may need a restart." = "%@ по-прежнему не перезагружается. Возможно, нужно перезапустить Safari.";
 "Apply Without Checking for Updates" = "Применить без проверки обновлений";
+"(%@ rules, %@ unique)" = "(%@ правил, %@ уникальных)";

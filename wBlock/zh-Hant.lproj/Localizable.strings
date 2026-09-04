@@ -1034,3 +1034,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "All extensions reloaded." = "所有延伸功能已重新載入。";
 "%@ still failed to reload. Safari may need a restart." = "%@ 仍然無法重新載入。可能需要重新啟動 Safari。";
 "Apply Without Checking for Updates" = "不檢查更新直接套用";
+"(%@ rules, %@ unique)" = "（%@ 條規則，%@ 條獨有）";

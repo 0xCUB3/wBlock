@@ -1034,3 +1034,4 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "All extensions reloaded." = "Toutes les extensions ont été rechargées.";
 "%@ still failed to reload. Safari may need a restart." = "%@ ne se recharge toujours pas. Safari doit peut-être être redémarré.";
 "Apply Without Checking for Updates" = "Appliquer sans rechercher de mises à jour";
+"(%@ rules, %@ unique)" = "(%@ règles, %@ uniques)";

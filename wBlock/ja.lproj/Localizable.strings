@@ -1034,3 +1034,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "All extensions reloaded." = "すべての機能拡張を再読み込みしました。";
 "%@ still failed to reload. Safari may need a restart." = "%@ の再読み込みに引き続き失敗しています。Safariの再起動が必要かもしれません。";
 "Apply Without Checking for Updates" = "アップデートを確認せずに適用";
+"(%@ rules, %@ unique)" = "（%@ 件のルール、%@ 件が固有）";

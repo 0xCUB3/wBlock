@@ -62,6 +62,9 @@ message FilterListData {
   bool is_custom = 10;
   string local_file_path = 11;
   repeated string excluded_sites = 12;
+  // Rules this list contributes that no earlier list in compile order already
+  // supplies (#644). Recomputed after each successful apply.
+  optional int32 unique_rule_count = 13;
 }
 
 // Filter list categories

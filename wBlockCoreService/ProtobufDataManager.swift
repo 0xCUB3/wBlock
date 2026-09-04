@@ -96,6 +96,12 @@ private func mergeFilterLists(
         mergeField(&merged.isCustom, baseline: base.isCustom, persisted: theirs.isCustom)
         mergeField(&merged.localFilePath, baseline: base.localFilePath, persisted: theirs.localFilePath)
         mergeField(&merged.excludedSites, baseline: base.excludedSites, persisted: theirs.excludedSites)
+        if merged.hasUniqueRuleCount == base.hasUniqueRuleCount
+            && (!merged.hasUniqueRuleCount || merged.uniqueRuleCount == base.uniqueRuleCount)
+        {
+            if theirs.hasUniqueRuleCount { merged.uniqueRuleCount = theirs.uniqueRuleCount }
+            else { merged.clearUniqueRuleCount() }
+        }
         mergeField(&merged.unknownFields, baseline: base.unknownFields, persisted: theirs.unknownFields)
         return merged
     }

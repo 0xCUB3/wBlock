@@ -957,6 +957,19 @@ struct FilterRowView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
+                } else if let count = filter.sourceRuleCount, count > 0,
+                          filter.isSelected, let unique = filter.uniqueRuleCount, unique < count {
+                    // Some rules are already supplied by lists compiled earlier (#644).
+                    Text(
+                        String.localizedStringWithFormat(
+                            NSLocalizedString("(%@ rules, %@ unique)", comment: "Filter rule count with the share not duplicated by other enabled lists"),
+                            count.formatted(),
+                            unique.formatted()
+                        )
+                    )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 } else if let count = filter.sourceRuleCount, count > 0 {
                     // Single count (no expansion, counts match, or rawSourceRuleCount is nil after restart)
                     Text(

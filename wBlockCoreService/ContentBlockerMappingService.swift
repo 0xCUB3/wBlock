@@ -10,6 +10,43 @@ import Foundation
 /// Shared slot-mapping logic used by the app and background auto-update flows.
 /// This keeps target distribution behavior identical across processes.
 public enum ContentBlockerMappingService {
+    /// Order in which a target's lists are fed to the converter (#645). Safari's
+    /// converter keeps the first rules and drops the rest when a target overflows,
+    /// so the most recently updated lists go first and stale content is what gets
+    /// cut. Ties fall back to the distribution order for determinism.
+    public static func orderedForCompilation(_ selectedFilters: [FilterList]) -> [FilterList] {
+        let distribution = orderedForDistribution(selectedFilters)
+        let rank = Dictionary(uniqueKeysWithValues: distribution.enumerated().map { ($1.id, $0) })
+        return distribution.sorted { lhs, rhs in
+            let lhsDate = lhs.lastUpdated ?? .distantPast
+            let rhsDate = rhs.lastUpdated ?? .distantPast
+            if lhsDate != rhsDate { return lhsDate > rhsDate }
+            return (rank[lhs.id] ?? 0) < (rank[rhs.id] ?? 0)
+        }
+    }
+
+    /// Counts, per list, the rules that no earlier list in compile order already
+    /// supplied (#644). Lines are compared after trimming; comments and headers
+    /// are ignored the same way `FilterList.countRules` does.
+    public static func uniqueRuleCounts(
+        for selectedFilters: [FilterList],
+        content: (FilterList) -> String?
+    ) -> [UUID: Int] {
+        var seen = Set<String>()
+        var counts: [UUID: Int] = [:]
+        for filter in orderedForCompilation(selectedFilters) {
+            guard let text = content(filter) else { continue }
+            var unique = 0
+            text.enumerateLines { line, _ in
+                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.isEmpty || trimmed.hasPrefix("!") || trimmed.hasPrefix("[") { return }
+                if seen.insert(trimmed).inserted { unique += 1 }
+            }
+            counts[filter.id] = unique
+        }
+        return counts
+    }
+
     public static func orderedForDistribution(_ selectedFilters: [FilterList]) -> [FilterList] {
         selectedFilters.sorted { lhs, rhs in
             let lhsCount = lhs.sourceRuleCount ?? 0

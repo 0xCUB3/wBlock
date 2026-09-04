@@ -578,7 +578,7 @@ extension AppFilterManager {
         }
 
         let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: self.currentPlatform)
-        let orderedSelectedFilters = ContentBlockerMappingService.orderedForDistribution(allSelectedFilters)
+        let orderedSelectedFilters = ContentBlockerMappingService.orderedForCompilation(allSelectedFilters)
 
         let filtersByTargetInfo = ContentBlockerMappingService.distribute(
             selectedFilters: allSelectedFilters,
@@ -1080,6 +1080,7 @@ extension AppFilterManager {
                     self.commitApplySnapshot(runSnapshot)
                 }
             }
+            await refreshUniqueRuleCounts(for: allSelectedFilters)
         }
 
         // Keep showingApplyProgressSheet = true until user dismisses it if it was successful or had errors.
@@ -1401,6 +1402,31 @@ extension AppFilterManager {
         let attempts: Int
         let durationMs: Int
         let failureReason: String?
+    }
+
+    /// Recomputes how many rules each enabled list contributes beyond the lists
+    /// compiled before it (#644). Runs off the main actor after a successful
+    /// apply; the row shows it next to the raw count when the two differ.
+    private func refreshUniqueRuleCounts(for selectedFilters: [FilterList]) async {
+        guard let containerURL = loader.getSharedContainerURL() else { return }
+        let counts = await Task.detached(priority: .utility) {
+            ContentBlockerMappingService.uniqueRuleCounts(for: selectedFilters) { filter in
+                guard let url = ContentBlockerIncrementalCache.existingLocalFileURL(for: filter, containerURL: containerURL) else {
+                    return nil
+                }
+                return try? String(contentsOf: url, encoding: .utf8)
+            }
+        }.value
+        guard !counts.isEmpty else { return }
+        await MainActor.run {
+            for index in self.filterLists.indices {
+                if let count = counts[self.filterLists[index].id] {
+                    self.filterLists[index].uniqueRuleCount = count
+                } else if !self.filterLists[index].isSelected {
+                    self.filterLists[index].uniqueRuleCount = nil
+                }
+            }
+        }
     }
 
     /// Reloads only the blockers that failed on the last apply (#648). Rules on

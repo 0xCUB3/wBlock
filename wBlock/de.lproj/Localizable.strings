@@ -1034,3 +1034,4 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "All extensions reloaded." = "Alle Erweiterungen neu geladen.";
 "%@ still failed to reload. Safari may need a restart." = "%@ konnte weiterhin nicht neu geladen werden. Safari muss eventuell neu gestartet werden.";
 "Apply Without Checking for Updates" = "Ohne Update-Prüfung anwenden";
+"(%@ rules, %@ unique)" = "(%@ Regeln, %@ eindeutig)";

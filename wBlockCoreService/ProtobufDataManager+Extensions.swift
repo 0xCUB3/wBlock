@@ -51,6 +51,9 @@ extension ProtobufDataManager {
             protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
             protoFilterList.isCustom = shouldPersistCustomFlag(for: filter)
             protoFilterList.excludedSites = filter.excludedSites
+            if let uniqueRuleCount = filter.uniqueRuleCount {
+                protoFilterList.uniqueRuleCount = Int32(uniqueRuleCount)
+            }
             return protoFilterList
         }
         _ = await updateDataImmediately(explicitlyDeletedFilterIDs: deletedIDs) { data in
@@ -196,7 +199,8 @@ extension ProtobufDataManager {
                 description: protoData.description_p,
                 version: protoData.version,
                 sourceRuleCount: protoData.hasSourceRuleCount ? Int(protoData.sourceRuleCount) : nil,
-                excludedSites: Array(protoData.excludedSites)
+                excludedSites: Array(protoData.excludedSites),
+                uniqueRuleCount: protoData.hasUniqueRuleCount ? Int(protoData.uniqueRuleCount) : nil
             )
         }
     }

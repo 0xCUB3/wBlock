@@ -1034,3 +1034,4 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "All extensions reloaded." = "Minden bővítmény újratöltve.";
 "%@ still failed to reload. Safari may need a restart." = "%@ továbbra sem töltődik újra. A Safarit talán újra kell indítani.";
 "Apply Without Checking for Updates" = "Alkalmazás frissítések keresése nélkül";
+"(%@ rules, %@ unique)" = "(%@ szabály, %@ egyedi)";

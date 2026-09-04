@@ -130,6 +130,7 @@ compile_direct_test filter-update-popup-status \
   scripts/test_filter_update_popup_status.swift
 compile_core_test filter-selection-rebase scripts/test_filter_selection_rebase.swift
 compile_core_test filter-list-site-exclusion scripts/test_filter_list_site_exclusion.swift
+compile_core_test issue-645-compile-order scripts/test_issue_645_compile_order.swift
 compile_core_test filter-catalog-remote scripts/test_filter_catalog_remote.swift
 compile_core_test filter-list-fetch-chain scripts/test_filter_list_fetch_chain.swift
 compile_core_test issue-508-backup scripts/test_issue_508_backup_userscript.swift

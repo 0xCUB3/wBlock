@@ -1034,3 +1034,4 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "All extensions reloaded." = "Wszystkie rozszerzenia przeładowano.";
 "%@ still failed to reload. Safari may need a restart." = "%@ nadal nie można przeładować. Safari może wymagać ponownego uruchomienia.";
 "Apply Without Checking for Updates" = "Zastosuj bez sprawdzania aktualizacji";
+"(%@ rules, %@ unique)" = "(%@ reguł, %@ unikalnych)";

@@ -1034,3 +1034,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "All extensions reloaded." = "Όλες οι επεκτάσεις φορτώθηκαν ξανά.";
 "%@ still failed to reload. Safari may need a restart." = "%@ εξακολουθεί να αποτυγχάνει. Ίσως χρειάζεται επανεκκίνηση του Safari.";
 "Apply Without Checking for Updates" = "Εφαρμογή χωρίς έλεγχο ενημερώσεων";
+"(%@ rules, %@ unique)" = "(%@ κανόνες, %@ μοναδικοί)";

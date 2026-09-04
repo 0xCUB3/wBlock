@@ -45,12 +45,15 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     public var hasUserProvidedName: Bool = false
     /// Hosts this list should not apply to (issue #653). Independent of Site Settings.
     public var excludedSites: [String] = []
+    /// Rules this list adds beyond earlier lists in compile order (issue #644).
+    /// Nil until the first successful apply computes it.
+    public var uniqueRuleCount: Int?
 
     private enum CodingKeys: String, CodingKey {
         case id, name, url, category, isCustom, isSelected, description,
              version, sourceRuleCount, lastUpdated, languages, trustLevel,
              etag, serverLastModified, limitExceededReason, hasUserProvidedName,
-             excludedSites
+             excludedSites, uniqueRuleCount
         // rawSourceRuleCount intentionally excluded — in-memory only, not persisted
     }
 
@@ -71,7 +74,8 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
                 serverLastModified: String? = nil,
                 limitExceededReason: String? = nil,
                 hasUserProvidedName: Bool = false,
-                excludedSites: [String] = []) {
+                excludedSites: [String] = [],
+                uniqueRuleCount: Int? = nil) {
         self.id = id
         self.name = name
         self.url = url
@@ -90,6 +94,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         self.limitExceededReason = limitExceededReason
         self.hasUserProvidedName = hasUserProvidedName
         self.excludedSites = FilterListSiteExclusion.normalizedDomains(from: excludedSites)
+        self.uniqueRuleCount = uniqueRuleCount
     }
 
     public init(from decoder: Decoder) throws {
@@ -113,6 +118,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         excludedSites = FilterListSiteExclusion.normalizedDomains(
             from: try container.decodeIfPresent([String].self, forKey: .excludedSites) ?? []
         )
+        uniqueRuleCount = try container.decodeIfPresent(Int.self, forKey: .uniqueRuleCount)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -134,6 +140,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         try container.encodeIfPresent(limitExceededReason, forKey: .limitExceededReason)
         try container.encode(hasUserProvidedName, forKey: .hasUserProvidedName)
         try container.encode(excludedSites, forKey: .excludedSites)
+        try container.encodeIfPresent(uniqueRuleCount, forKey: .uniqueRuleCount)
     }
     
     /// Maps ISO 639 language codes to their primary region's flag emoji

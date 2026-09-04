@@ -1905,7 +1905,7 @@ public actor SharedAutoUpdateManager {
             let summary = try RemoveParamDNRRuleGenerator.saveRules(for: selectedFilters, disabledSites: disabledSites, groupIdentifier: GroupIdentifier.shared.value)
             appendSharedLog("Prepared removeparam DNR rules: generated=\(summary.generatedRules) source=\(summary.removeParamRules) exceptions=\(summary.exceptionRules) skipped=\(summary.skippedRules)")
         } catch { appendSharedLog("Failed to prepare removeparam DNR rules: \(error.localizedDescription)") }
-        let ordered = ContentBlockerMappingService.orderedForDistribution(selectedFilters)
+        let ordered = ContentBlockerMappingService.orderedForCompilation(selectedFilters)
         let byTarget = ContentBlockerMappingService.distribute(selectedFilters: selectedFilters, across: targets)
         let affinitySnapshot = SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: containerURL)
         let zapper = await MainActor.run {

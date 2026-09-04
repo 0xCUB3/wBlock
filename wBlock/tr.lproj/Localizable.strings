@@ -1033,3 +1033,4 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "All extensions reloaded." = "Tüm uzantılar yeniden yüklendi.";
 "%@ still failed to reload. Safari may need a restart." = "%@ hâlâ yeniden yüklenemiyor. Safari'nin yeniden başlatılması gerekebilir.";
 "Apply Without Checking for Updates" = "Güncellemeleri denetlemeden uygula";
+"(%@ rules, %@ unique)" = "(%@ kural, %@ benzersiz)";
