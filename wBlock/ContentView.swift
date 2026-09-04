@@ -1546,47 +1546,25 @@ struct AddFilterListView: View {
 	        }
 
 	        private var macosURLCard: some View {
-	            VStack(alignment: .leading, spacing: 12) {
-	                VStack(alignment: .leading, spacing: 6) {
-	                    Text("URLs")
-	                        .font(.caption)
-	                        .foregroundStyle(.secondary)
-
-	                    urlInputEditor
-	                }
-
-                    if newURLs.count <= 1 {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Title (optional)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-
-                            TextField("Title", text: $customName)
-                                .textFieldStyle(.roundedBorder)
-                                .autocorrectionDisabled()
-                        }
-                    } else {
-                        Text("Titles will be created from each URL.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 12) {
+                AddContentField(title: "URLs") { urlInputEditor }
+                if newURLs.count <= 1 {
+                    AddContentField(title: "Name") {
+                        TextField("Name", text: $customName).textFieldStyle(.roundedBorder)
                     }
+                } else {
+                    Text("Titles will be created from each URL.").font(.footnote).foregroundStyle(.secondary)
+                }
+                AddContentField(title: "Category") {
+                    userListCategoryPicker(selection: $selectedCategory).labelsHidden()
+                }
+                urlFooterMessage
+            }
+            .padding(16)
+            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+        }
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Category")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        userListCategoryPicker(selection: $selectedCategory)
-                            .labelsHidden()
-                    }
-
-	                urlFooterMessage
-	            }
-	            .padding(16)
-	            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
-	        }
-
-	        private var macosPasteCard: some View {
+        private var macosPasteCard: some View {
 	            VStack(alignment: .leading, spacing: 12) {
 	                userListMetaFields
 
@@ -1689,97 +1667,54 @@ struct AddFilterListView: View {
 	    }
 
 		    private var urlTab: some View {
-		        Form {
-		            Section {
-		                VStack(alignment: .leading, spacing: 6) {
-                        Text("URLs")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        urlInputEditor
+        Form {
+            Section {
+                AddContentField(title: "URLs") { urlInputEditor }
+                if newURLs.count <= 1 {
+                    AddContentField(title: "Name") {
+                        TextField("Name", text: $customName).textFieldStyle(.roundedBorder)
                     }
+                } else {
+                    Text("Titles will be created from each URL.").font(.footnote).foregroundStyle(.secondary)
+                }
+                AddContentField(title: "Category") {
+                    userListCategoryPicker(selection: $selectedCategory).labelsHidden()
+                }
+            } footer: { urlFooterMessage }
+            Section { filterRequirementsPanel }
+        }
+    }
 
-                    if newURLs.count <= 1 {
-                        TextField("Title (optional)", text: $customName)
-                            #if os(iOS)
-                                .textInputAutocapitalization(.words)
-                            #endif
-                    } else {
-                        Text("Titles will be created from each URL.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    userListCategoryPicker(selection: $selectedCategory)
-		            } footer: {
-		                urlFooterMessage
-		            }
-		        }
-		    }
-
-		    private var pasteTab: some View {
-		        Form {
-		            Section {
-		            TextField("Title", text: $userListTitle)
-		                    #if os(iOS)
-		                .textInputAutocapitalization(.words)
-		            #endif
-		                    .autocorrectionDisabled()
-	                TextField("Description", text: $userListDescription)
-	                    #if os(iOS)
-	                        .textInputAutocapitalization(.sentences)
-	                    #endif
-	                    .autocorrectionDisabled()
-                userListCategoryPicker(selection: $selectedCategory)
-	            }
-
+    private var pasteTab: some View {
+        Form {
+            Section { userListMetaFields }
             Section("Rules") {
-                SyntaxHighlightingTextView(text: $pastedRules)
-                    .frame(minHeight: 220)
+                SyntaxHighlightingTextView(text: $pastedRules).frame(minHeight: 220)
                 HStack(spacing: 10) {
                     pasteRulesButton
                     Button {
                         rulesEditorController.replaceText(pastedRules, markClean: true)
                         isShowingRulesEditor = true
-                    } label: {
-                        Label("Use Editor", systemImage: "curlybraces")
-                    }
+                    } label: { Label("Use Editor", systemImage: "curlybraces") }
                     .buttonStyle(.bordered)
                     .disabled(isSaving)
                 }
             }
-            Section {
-                filterTextRequirementsPanel
-            }
+            Section { filterTextRequirementsPanel }
         }
     }
 
-		    private var fileTab: some View {
-                Form {
-                    Section {
-                        fileSelectionButton
-                        if stagedFile != nil {
-                            TextField("Name", text: $userListTitle)
-                                #if os(iOS)
-                                .textInputAutocapitalization(.words)
-                                #endif
-                                .autocorrectionDisabled()
-                            TextField("Description", text: $userListDescription)
-                                #if os(iOS)
-                                .textInputAutocapitalization(.sentences)
-                                #endif
-                                .autocorrectionDisabled()
-                            userListCategoryPicker(selection: $selectedCategory)
-                        }
-                    }
-                    Section {
-                        filterFileRequirementsPanel
-                    } footer: {
-                        if let importErrorMessage {
-                            Text(importErrorMessage).foregroundStyle(.orange)
-                        }
-                    }
-                }
+    private var fileTab: some View {
+        Form {
+            Section {
+                fileSelectionButton
+                if stagedFile != nil { userListMetaFields }
             }
+            Section { filterFileRequirementsPanel } footer: {
+                if let importErrorMessage { Text(importErrorMessage).foregroundStyle(.orange) }
+            }
+        }
+    }
 
     private var pasteRulesButton: some View {
         Button(action: pasteRulesFromClipboard) {
@@ -1800,14 +1735,14 @@ struct AddFilterListView: View {
         AddContentRequirementsPanel(requirements: [
             AddContentRequirement(systemImage: "doc", text: "Choose File"),
             AddContentRequirement(systemImage: "character.cursor.ibeam", text: "Title is required."),
-            AddContentRequirement(systemImage: "checkmark.circle", text: "That doesn't look like a filter list.")
+            AddContentRequirement(systemImage: "checkmark.circle", text: "Rules")
         ])
     }
 
 	    private var filterRequirementsPanel: some View {
         AddContentRequirementsPanel(
             requirements: [
-                AddContentRequirement(systemImage: "link", text: "Use a valid http:// or https:// URL"),
+                AddContentRequirement(systemImage: "link", text: "Starts with http:// or https://"),
                 AddContentRequirement(systemImage: "globe", text: "Include a host name"),
                 AddContentRequirement(systemImage: "checkmark.circle", text: "Do not use a userscript URL ending in .js, .mjs, or .cjs")
             ],
@@ -1816,6 +1751,7 @@ struct AddFilterListView: View {
     }
 
 	    private var urlInputEditor: some View {
+        VStack(alignment: .leading, spacing: 6) {
         ZStack(alignment: .topLeading) {
             TextEditor(text: $urlInput)
                 .font(.body)
@@ -1852,6 +1788,16 @@ struct AddFilterListView: View {
                 .stroke(.quaternary, lineWidth: 1)
         )
         .accessibilityLabel("URLs")
+        AddContentPasteButton {
+            #if os(iOS)
+            let pasted = UIPasteboard.general.string
+            #else
+            let pasted = NSPasteboard.general.string(forType: .string)
+            #endif
+            if let pasted { urlInput = UserScriptURLSupport.appendingPastedURLs(pasted, to: urlInput) }
+        }
+        .disabled(isSaving)
+        }
     }
 
     // MARK: - Footer
@@ -1989,42 +1935,8 @@ struct AddFilterListView: View {
     }
 
     private var userListMetaFields: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Name")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                TextField("Name", text: $userListTitle)
-                    .textFieldStyle(.roundedBorder)
-                    .autocorrectionDisabled()
-                    #if os(iOS)
-                        .textInputAutocapitalization(.words)
-                    #endif
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Description (optional)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                TextField("Description", text: $userListDescription)
-                    .textFieldStyle(.roundedBorder)
-                    .autocorrectionDisabled()
-                    #if os(iOS)
-                        .textInputAutocapitalization(.sentences)
-                    #endif
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Category")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                userListCategoryPicker(selection: $selectedCategory)
-                    .labelsHidden()
-            }
-    }
+        AddContentMetadataFields(name: $userListTitle, description: $userListDescription,
+                                 category: $selectedCategory, categories: FilterListCategory.userListCategories)
     }
 
     private var filterImportTypes: [UTType] {

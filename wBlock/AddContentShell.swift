@@ -1,4 +1,5 @@
 import SwiftUI
+import wBlockCoreService
 
 protocol AddContentMode: CaseIterable, Identifiable, Hashable {
     var localizedTitle: LocalizedStringKey { get }
@@ -77,5 +78,72 @@ struct AddContentRequirementsPanel: View {
         .listRowInsets(EdgeInsets())
         .listRowBackground(Color.clear)
         .hiddenListRowSeparatorCompat()
+    }
+}
+
+struct AddContentField<Content: View>: View {
+    let title: LocalizedStringKey
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct AddContentMetadataFields: View {
+    @Binding var name: String
+    @Binding var description: String
+    @Binding var category: FilterListCategory
+    let categories: [FilterListCategory]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            AddContentField(title: "Name") {
+                TextField("Name", text: $name)
+                    .textFieldStyle(.roundedBorder)
+                    .disableAutocorrection(true)
+                    #if os(iOS)
+                    .textInputAutocapitalization(.words)
+                    #endif
+            }
+            AddContentField(title: "Description (optional)") {
+                TextField("Description", text: $description)
+                    .textFieldStyle(.roundedBorder)
+                    .disableAutocorrection(true)
+                    #if os(iOS)
+                    .textInputAutocapitalization(.sentences)
+                    #endif
+            }
+            AddContentField(title: "Category") {
+                Picker("Category", selection: $category) {
+                    ForEach(categories) { category in
+                        Text(category.localizedName).tag(category)
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+            }
+        }
+    }
+}
+
+struct AddContentPasteButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "doc.on.clipboard")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 28, height: 28)
+                .background(Color.secondary.opacity(0.14), in: Circle())
+        }
+        .buttonStyle(.plain)
+        .noFocusRingCompat()
+        .accessibilityLabel("Paste")
     }
 }

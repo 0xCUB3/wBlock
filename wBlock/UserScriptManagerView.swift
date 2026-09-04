@@ -2075,14 +2075,11 @@ struct AddUserScriptView: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 } else {
-                    TextField("Name", text: $stagedName)
-                        .textInputAutocapitalization(.words)
-                        .autocorrectionDisabled()
-                    TextField("Description", text: $stagedDescription)
-                        .textInputAutocapitalization(.sentences)
-                        .autocorrectionDisabled()
+                    userScriptMetaFields
                 }
-                userScriptCategoryPicker
+                if parsedURLs.count > 1 {
+                    AddContentField(title: "Category") { userScriptCategoryPicker.labelsHidden() }
+                }
             } footer: {
                 validationMessage
             }
@@ -2109,13 +2106,7 @@ struct AddUserScriptView: View {
             Section {
                 fileSelectionButton
                 if stagedFile != nil {
-                    TextField("Name", text: $stagedName)
-                        .textInputAutocapitalization(.words)
-                        .autocorrectionDisabled()
-                    TextField("Description", text: $stagedDescription)
-                        .textInputAutocapitalization(.sentences)
-                        .autocorrectionDisabled()
-                    userScriptCategoryPicker
+                    userScriptMetaFields
                 }
             } footer: {
                 fileImportMessage
@@ -2318,7 +2309,7 @@ struct AddUserScriptView: View {
         AddContentRequirementsPanel(requirements: [
             AddContentRequirement(systemImage: "link", text: "Starts with http:// or https://"),
             AddContentRequirement(systemImage: "doc.text", text: "Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss"),
-            AddContentRequirement(systemImage: "checkmark.shield", text: "Hosted on a trusted source"),
+            AddContentRequirement(systemImage: "globe", text: "Include a host name"),
             AddContentRequirement(systemImage: "doc.badge.gearshape", text: metadataRequirementText)
         ])
     }
@@ -2346,15 +2337,8 @@ struct AddUserScriptView: View {
     }
 
     private var userScriptMetaFields: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            TextField("Name", text: $stagedName)
-                .textFieldStyle(.roundedBorder)
-                .autocorrectionDisabled()
-            TextField("Description", text: $stagedDescription)
-                .textFieldStyle(.roundedBorder)
-                .autocorrectionDisabled()
-            userScriptCategoryPicker
-        }
+        AddContentMetadataFields(name: $stagedName, description: $stagedDescription,
+                                 category: $selectedCategory, categories: FilterListCategory.userScriptCategories)
     }
 
     private var fileImportMessage: some View {
@@ -2376,10 +2360,7 @@ struct AddUserScriptView: View {
     }
 
     private var urlInputEditor: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("URLs")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        AddContentField(title: "URLs") {
 
             ZStack(alignment: .topLeading) {
                 TextEditor(text: $urlInput)
@@ -2421,19 +2402,7 @@ struct AddUserScriptView: View {
     }
 
     private var compactPasteButton: some View {
-        Button {
-            pasteFromClipboard()
-        } label: {
-            Image(systemName: "doc.on.clipboard")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 28, height: 28)
-                .background(Color.secondary.opacity(0.14), in: Circle())
-        }
-        .buttonStyle(.plain)
-        .noFocusRingCompat()
-        .disabled(isAdding)
-        .accessibilityLabel("Paste")
+        AddContentPasteButton(action: pasteFromClipboard).disabled(isAdding)
     }
 
     private var validationBadge: some View {
