@@ -294,6 +294,7 @@ extension AppDelegate: NSApplicationDelegate {
     }
     
     func applicationWillBecomeActive(_ notification: Notification) {
+        guard !HeadlessLaunch.isHeadlessProcess else { return }
         guard !BlockingPauseStore.isPaused(.filters) else { return }
 
         // Check if update is overdue when app becomes active
@@ -404,6 +405,11 @@ extension AppDelegate: NSApplicationDelegate {
                 let outcome = await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
                     trigger: "Headless-\(reason.rawValue)",
                     force: true
+                )
+                await ConcurrentLogManager.shared.info(
+                    .autoUpdate,
+                    "Headless update finished",
+                    metadata: ["reason": reason.rawValue, "outcome": "\(outcome)"]
                 )
                 if requested {
                     FilterUpdatePopupStatus.finish(outcome)

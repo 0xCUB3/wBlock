@@ -1392,16 +1392,22 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             throw CancellationError()
         }
         let rulesFilename = targetInfo.rulesFilename
-        let hasAffinityFilters = !affinitySnapshot.isEmpty
         let cosmeticFilteringEnabled = CosmeticFilteringPreference.isEnabled(groupIdentifier: groupIdentifier)
-        let currentSignature = hasAffinityFilters
-            ? nil
-            : ContentBlockerIncrementalCache.computeInputSignature(
-                filters: filters,
-                groupIdentifier: groupIdentifier,
-                extraRulesText: extraRulesText,
-                cosmeticFilteringEnabled: cosmeticFilteringEnabled
-            )
+        // Affinity blocks from lists assigned to other targets are replicated
+        // into this one, so they are inputs too. Fingerprinting them keeps the
+        // cache usable instead of forcing a miss whenever any list uses
+        // affinity or a custom list has an exception rule (#679).
+        let assignedIDs = Set(filters.map(\.id))
+        let affinityContributors = orderedSelectedFilters.filter {
+            !assignedIDs.contains($0.id) && affinitySnapshot.content(for: $0.id) != nil
+        }
+        let currentSignature = ContentBlockerIncrementalCache.computeInputSignature(
+            filters: filters,
+            affinityContributors: affinityContributors,
+            groupIdentifier: groupIdentifier,
+            extraRulesText: extraRulesText,
+            cosmeticFilteringEnabled: cosmeticFilteringEnabled
+        )
         let storedSignature = ContentBlockerIncrementalCache.loadInputSignature(
             targetRulesFilename: rulesFilename,
             groupIdentifier: groupIdentifier
@@ -1430,13 +1436,6 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 advancedRulesText: (trimmedAdvanced?.isEmpty == false) ? trimmedAdvanced : nil,
                 reusedCachedBase: true,
                 outputChanged: fastUpdate.outputChanged
-            )
-        }
-
-        if hasAffinityFilters {
-            ContentBlockerIncrementalCache.invalidateInputSignature(
-                targetRulesFilename: rulesFilename,
-                groupIdentifier: groupIdentifier
             )
         }
 

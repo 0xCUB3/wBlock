@@ -239,15 +239,21 @@ public enum FilterListContentProcessing {
 public enum ContentBlockerIncrementalCache {
     // Bump when signature inputs/schema change so stale per-target signatures
     // do not suppress needed rebuilds.
-    private static let inputSignatureSchemaVersion = "3"
+    private static let inputSignatureSchemaVersion = "4"
 
     private struct State: Codable {
         var inputSignature: String
         var updatedAt: Int64
     }
 
+    /// - Parameters:
+    ///   - filters: Lists assigned to this target.
+    ///   - affinityContributors: Lists assigned elsewhere whose
+    ///     `!#safari_cb_affinity` blocks are replicated into this target. They
+    ///     are part of the input, so they are part of the signature (#679).
     public static func computeInputSignature(
         filters: [FilterList],
+        affinityContributors: [FilterList] = [],
         groupIdentifier: String,
         extraRulesText: String? = nil,
         cosmeticFilteringEnabled: Bool = true
@@ -259,11 +265,18 @@ public enum ContentBlockerIncrementalCache {
         }
 
         var canonical = "schema=\(inputSignatureSchemaVersion)\ncount=\(filters.count)\n"
-        canonical.reserveCapacity(filters.count * 64)
+        canonical.reserveCapacity((filters.count + affinityContributors.count) * 64)
 
         for filter in filters {
             let fileMarker = localFileFingerprint(for: filter, containerURL: containerURL)
-            canonical.append("\(filter.id.uuidString)|\(fileMarker)\n")
+            canonical.append("\(filter.id.uuidString)|\(fileMarker)|\(excludedSitesMarker(for: filter))\n")
+        }
+        if !affinityContributors.isEmpty {
+            canonical.append("affinity=\(affinityContributors.count)\n")
+            for filter in affinityContributors {
+                let fileMarker = localFileFingerprint(for: filter, containerURL: containerURL)
+                canonical.append("a|\(filter.id.uuidString)|\(fileMarker)|\(excludedSitesMarker(for: filter))\n")
+            }
         }
 
         if let extraRulesText, !extraRulesText.isEmpty {
@@ -396,6 +409,13 @@ public enum ContentBlockerIncrementalCache {
         let advancedURL = containerURL.appendingPathComponent(baseAdvancedRulesFilename(for: targetRulesFilename))
         guard FileManager.default.fileExists(atPath: advancedURL.path) else { return nil }
         return try? String(contentsOf: advancedURL, encoding: .utf8)
+    }
+
+    /// Per-list excluded sites change the compiled output without touching
+    /// the list file, so they must be part of the signature.
+    private static func excludedSitesMarker(for filter: FilterList) -> String {
+        guard !filter.excludedSites.isEmpty else { return "" }
+        return filter.excludedSites.sorted().joined(separator: ",")
     }
 
     private static func localFileFingerprint(for filter: FilterList, containerURL: URL) -> String {
