@@ -96,17 +96,6 @@ class AppDelegate: NSObject {
     private let backgroundTaskIdentifier = "com.alexanderskula.wblock.filter-update"
     private let backgroundProcessingIdentifier = "com.alexanderskula.wblock.filter-processing"
 
-    /// Factor to multiply interval by for app refresh scheduling (accounts for iOS discretion)
-    private let appRefreshScheduleDelayFactor: Double = 0.75
-    /// Minimum schedule delay for app refresh (in hours)
-    private let minAppRefreshDelayHours: Double = 1.0
-    /// Maximum schedule delay for app refresh (in hours)
-    private let maxAppRefreshDelayHours: Double = 12.0
-
-    /// Minimum schedule delay for background processing (in hours)
-    private let minProcessingDelayHours: Double = 1.0
-    /// Maximum schedule delay for background processing (in hours)
-    private let maxProcessingDelayHours: Double = 24.0
     #endif
 }
 
@@ -443,9 +432,7 @@ extension AppDelegate: UIApplicationDelegate {
         // Register background tasks for filter updates (refresh + processing)
         registerBackgroundTasks()
 
-        // Schedule initial background refresh + processing tasks (also re-schedules after protobuf loads)
-        scheduleBackgroundFilterUpdate()
-        scheduleBackgroundProcessingUpdate()
+        // Schedule only after the persisted interval and due date have loaded.
         Task { @MainActor in
             await rescheduleBackgroundTasks(reason: "Launch")
         }
@@ -481,9 +468,7 @@ extension AppDelegate: UIApplicationDelegate {
     }
     
     func applicationDidEnterBackground(_ application: UIApplication) {
-        // Schedule next background tasks when entering background
-        scheduleBackgroundFilterUpdate()
-        scheduleBackgroundProcessingUpdate()
+        // Reuse the persisted due date rather than restarting the interval.
         Task { @MainActor in
             await rescheduleBackgroundTasks(reason: "EnterBackground")
         }
@@ -567,11 +552,20 @@ extension AppDelegate: UIApplicationDelegate {
     @MainActor
     private func scheduleBackgroundFilterUpdate() {
         let request = BGAppRefreshTaskRequest(identifier: backgroundTaskIdentifier)
-        // Use protobuf-backed interval (legacy UserDefaults may be stale). Fall back to 6h if unset.
-        let intervalHours = configuredAutoUpdateIntervalHours()
-        // Schedule for 75% of interval to account for iOS's discretionary nature
-        let delaySeconds = min(max(intervalHours * appRefreshScheduleDelayFactor, minAppRefreshDelayHours), maxAppRefreshDelayHours) * 60 * 60
-        request.earliestBeginDate = Date(timeIntervalSinceNow: delaySeconds)
+        let data = ProtobufDataManager.shared
+        guard data.autoUpdateEnabled else {
+            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: request.identifier)
+            return
+        }
+        let now = Date()
+        let dueDate = BackgroundUpdateSchedule.earliestBeginDate(
+            now: now,
+            intervalHours: configuredAutoUpdateIntervalHours(),
+            nextEligibleTime: data.autoUpdateNextEligibleTime,
+            lastCheckTime: data.autoUpdateLastCheckTime
+        )
+        let delaySeconds = dueDate.timeIntervalSince(now)
+        request.earliestBeginDate = dueDate
 
         do {
             // Cancel and resubmit atomically
@@ -611,10 +605,20 @@ extension AppDelegate: UIApplicationDelegate {
         let request = BGProcessingTaskRequest(identifier: backgroundProcessingIdentifier)
         request.requiresNetworkConnectivity = true
         request.requiresExternalPower = false // Don't require power - be more aggressive
-        // Schedule processing task for full interval (less critical than app refresh)
-        let intervalHours = configuredAutoUpdateIntervalHours()
-        let delaySeconds = min(max(intervalHours, minProcessingDelayHours), maxProcessingDelayHours) * 60 * 60
-        request.earliestBeginDate = Date(timeIntervalSinceNow: delaySeconds)
+        let data = ProtobufDataManager.shared
+        guard data.autoUpdateEnabled else {
+            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: request.identifier)
+            return
+        }
+        let now = Date()
+        let dueDate = BackgroundUpdateSchedule.earliestBeginDate(
+            now: now,
+            intervalHours: configuredAutoUpdateIntervalHours(),
+            nextEligibleTime: data.autoUpdateNextEligibleTime,
+            lastCheckTime: data.autoUpdateLastCheckTime
+        )
+        let delaySeconds = dueDate.timeIntervalSince(now)
+        request.earliestBeginDate = dueDate
         do {
             // Cancel and resubmit atomically
             BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: backgroundProcessingIdentifier)
