@@ -1889,6 +1889,10 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func buildPayloadContent() async -> SyncPayload.Content {
+        // A popup can persist site choices while the app is suspended. Flush
+        // local edits through the atomic disk merge before reading the snapshot.
+        await dataManager.saveDataImmediately()
+        await dataManager.refreshFromDiskIfModified()
         let settings = SyncPayload.Settings(
             selectedBlockingLevel: dataManager.selectedBlockingLevel,
             isBadgeCounterEnabled: dataManager.isBadgeCounterEnabled,

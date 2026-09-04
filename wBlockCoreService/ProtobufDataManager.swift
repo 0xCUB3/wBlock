@@ -1309,12 +1309,23 @@ public class ProtobufDataManager: ObservableObject {
             let loaded = try await diskStore.readAppData(from: dataFileURL)
             let didChange = lastSavedData != loaded.rawData
             if didChange {
-                appData = loaded.appData
+                if let previousData = lastSavedData,
+                   let previous = try? Wblock_Data_AppData(serializedBytes: previousData) {
+                    // Keep unsaved app edits while importing extension writes.
+                    mergePersistedChanges(in: &appData, comparedTo: previous, from: loaded.appData)
+                } else {
+                    appData = loaded.appData
+                }
             }
             lastSavedData = loaded.rawData
             lastLoadedDataFileModificationDate = loaded.modificationDate ?? currentModDate
             lastLoadedDataVersion = currentVersion
             lastError = nil
+            if didChange {
+                // Saves made by Safari extensions must reach the app's cloud
+                // observer just like in-process saves (#684).
+                didSaveDataSubject.send()
+            }
             return didChange
         } catch {
             lastError = error

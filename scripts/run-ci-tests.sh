@@ -36,6 +36,7 @@ run xcodebuild -project wBlock.xcodeproj \
   build >/dev/null
 CORE_PRODUCTS="$CORE_DERIVED_DATA/Build/Products/Debug"
 export WBLOCK_CORE_PRODUCTS="$CORE_PRODUCTS"
+run python3 scripts/test_issue_684_external_refresh.py
 
 compile_core_test() {
   local name="$1"
