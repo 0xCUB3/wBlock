@@ -204,10 +204,10 @@
 "Checked just now" = "Checked just now";
 "Checking background agent…" = "Checking background agent…";
 "Checking for Updates" = "Checking for Filter Updates";
-"Checking for updates..." = "Checking for updates...";
-"Checking for updates... (%d/%d)" = "Checking for updates (%d/%d)...";
-"Checking for script updates..." = "Checking for script updates...";
-"Checking for script updates... (%d/%d)" = "Checking for script updates (%d/%d)...";
+"Checking for updates..." = "Checking for updates";
+"Checking for updates... (%d/%d)" = "Checking for updates (%d/%d)";
+"Checking for script updates..." = "Checking for script updates";
+"Checking for script updates... (%d/%d)" = "Checking for script updates (%d/%d)";
 "Checks for wBlock filter updates and applies them when available." = "Checks for wBlock filter updates and applies them when available.";
 "Choose File…" = "Choose File…";
 "Choose optional userscripts. These are disabled by default." = "Choose optional userscripts. These are disabled by default.";

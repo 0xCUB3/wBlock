@@ -204,10 +204,10 @@
 "Checked just now" = "たった今確認";
 "Checking background agent…" = "バックグラウンドエージェントを確認中…";
 "Checking for Updates" = "フィルターを更新中";
-"Checking for updates..." = "アップデートをチェックしています...";
-"Checking for updates... (%d/%d)" = "アップデートをチェックしています (%d/%d)...";
-"Checking for script updates..." = "スクリプトのアップデートをチェックしています...";
-"Checking for script updates... (%d/%d)" = "スクリプトのアップデートをチェックしています (%d/%d)...";
+"Checking for updates..." = "アップデートをチェックしています";
+"Checking for updates... (%d/%d)" = "アップデートをチェックしています (%d/%d)";
+"Checking for script updates..." = "スクリプトのアップデートをチェックしています";
+"Checking for script updates... (%d/%d)" = "スクリプトのアップデートをチェックしています (%d/%d)";
 "Checks for wBlock filter updates and applies them when available." = "wBlock のフィルターのアップデートを確認し、利用可能な場合は適用します。";
 "Choose File…" = "ファイルを選択…";
 "Choose optional userscripts. These are disabled by default." = "任意のユーザースクリプトを選択してください。初期状態では無効です。";

@@ -204,10 +204,10 @@
 "Checked just now" = "剛剛檢查過";
 "Checking background agent…" = "正在檢查背景代理程式…";
 "Checking for Updates" = "正在檢查過濾器更新";
-"Checking for updates..." = "正在檢查更新...";
-"Checking for updates... (%d/%d)" = "正在檢查更新 (%d/%d)...";
-"Checking for script updates..." = "正在檢查腳本更新...";
-"Checking for script updates... (%d/%d)" = "正在檢查腳本更新 (%d/%d)...";
+"Checking for updates..." = "正在檢查更新";
+"Checking for updates... (%d/%d)" = "正在檢查更新 (%d/%d)";
+"Checking for script updates..." = "正在檢查腳本更新";
+"Checking for script updates... (%d/%d)" = "正在檢查腳本更新 (%d/%d)";
 "Checks for wBlock filter updates and applies them when available." = "檢查 wBlock 過濾器更新，並在有可用更新時套用。";
 "Choose File…" = "選擇檔案…";
 "Choose optional userscripts. These are disabled by default." = "選擇可選的使用者腳本。它們預設為停用。";

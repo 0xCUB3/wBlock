@@ -1082,17 +1082,53 @@ struct ContentModifiers: ViewModifier {
     // Track if initial presentation check has been done to avoid re-showing after dismiss
     @State private var hasPerformedInitialCheck = false
 
+    private var isShowingNoUpdatesSheet: Bool {
+        #if os(macOS)
+        filterManager.showingNoUpdatesAlert
+        #else
+        false
+        #endif
+    }
+
     func body(content: Content) -> some View {
         content
             .sheet(isPresented: $showingAddFilterSheet) {
                 AddFilterListView(filterManager: filterManager)
             }
-            .sheet(isPresented: $filterManager.showingApplyProgressSheet) {
-                ApplyChangesProgressView(
-                    filterManager: filterManager,
-                    viewModel: filterManager.applyProgressViewModel,
-                    isPresented: $filterManager.showingApplyProgressSheet
-                )
+            .sheet(isPresented: Binding(
+                get: {
+                    filterManager.showingApplyProgressSheet || isShowingNoUpdatesSheet
+                        || (filterManager.isLoading && !filterManager.suppressBlockingOverlay)
+                },
+                set: { presented in
+                    if !presented && !filterManager.isLoading {
+                        filterManager.showingApplyProgressSheet = false
+                        filterManager.showingNoUpdatesAlert = false
+                    }
+                }
+            )) {
+                if filterManager.showingApplyProgressSheet {
+                    ApplyChangesProgressView(
+                        filterManager: filterManager,
+                        viewModel: filterManager.applyProgressViewModel,
+                        isPresented: $filterManager.showingApplyProgressSheet
+                    )
+                } else if isShowingNoUpdatesSheet {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("No Updates Found").font(.headline)
+                        Text("You're already using the latest filters.")
+                        HStack {
+                            Spacer()
+                            Button("OK") { filterManager.showingNoUpdatesAlert = false }
+                                .keyboardShortcut(.defaultAction)
+                        }
+                    }
+                    .padding(24)
+                    .frame(idealWidth: 380, maxWidth: 440)
+                } else {
+                    UpdateCheckProgressView(filterManager: filterManager)
+                        .interactiveDismissDisabled()
+                }
             }
             #if os(iOS)
             // A modal alert for "nothing to do" is one tap too many on a phone;
@@ -1112,12 +1148,6 @@ struct ContentModifiers: ViewModifier {
                 },
                 including: filterManager.showingNoUpdatesAlert ? .all : .subviews
             )
-            #else
-            .alert("No Updates Found", isPresented: $filterManager.showingNoUpdatesAlert) {
-                Button("OK") {}
-            } message: {
-                Text("You're already using the latest filters.")
-            }
             #endif
             .alert(
                 filterManager.ruleLimitWarningTitle,
@@ -1159,26 +1189,6 @@ struct ContentModifiers: ViewModifier {
                 }
             } message: {
                 Text(userScriptManager.duplicatesMessage)
-            }
-            .overlay {
-                if filterManager.isLoading && !filterManager.showingApplyProgressSheet
-                    && !filterManager.suppressBlockingOverlay
-                {
-                    ZStack {
-                        Color.black.opacity(0.1).ignoresSafeArea()
-                        VStack {
-                            ProgressView()
-                                .scaleEffect(1.5)
-                            Text(filterManager.statusDescription)
-                                .padding(.top, 10)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding(20)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-                        .shadow(radius: 10)
-                    }
-                }
             }
             .onAppear {
                 filterManager.setUserScriptManager(userScriptManager)

@@ -49,9 +49,11 @@ extension AppFilterManager {
         if presentation == .refresh {
             suppressBlockingOverlay = true
         }
+        updateCheckProgress = nil
         isLoading = true
         defer {
             isLoading = false
+            updateCheckProgress = nil
             if presentation == .refresh {
                 suppressBlockingOverlay = false
             }
@@ -100,6 +102,7 @@ extension AppFilterManager {
             filterLists: enabledFilters,
             progressCallback: { checkProgress in
                 await MainActor.run {
+                    self.updateCheckProgress = checkProgress
                     self.progress = checkProgress.fraction
                     self.statusDescription = Self.checkingStatus(for: checkProgress)
                 }
@@ -107,17 +110,9 @@ extension AppFilterManager {
         )
     }
 
-    /// "Checking for updates... (12/87)" while a manual check walks the lists.
+    /// Counts are rendered by the progress view rather than embedded in the title.
     static func checkingStatus(for checkProgress: FilterListUpdater.FilterRefreshProgress) -> String {
-        guard checkProgress.total > 0 else {
-            return LocalizedStrings.text("Checking for updates...", comment: "Update check status")
-        }
-        return LocalizedStrings.format(
-            "Checking for updates... (%d/%d)",
-            comment: "Update check status with checked/total list counts",
-            checkProgress.completed,
-            checkProgress.total
-        )
+        LocalizedStrings.text("Checking for updates...", comment: "Update check status")
     }
 
     private func checkUserScriptUpdates() async {
@@ -130,6 +125,7 @@ extension AppFilterManager {
             scripts: userScriptManager.userScripts,
             progressCallback: { checkProgress in
                 await MainActor.run {
+                    self.updateCheckProgress = checkProgress
                     self.progress = checkProgress.fraction
                     self.statusDescription = Self.checkingScriptsStatus(for: checkProgress)
                 }
@@ -137,17 +133,9 @@ extension AppFilterManager {
         )
     }
 
-    /// "Checking for script updates... (3/12)" while a manual check walks the scripts.
+    /// Script checks use the same progress view with a separate title.
     static func checkingScriptsStatus(for checkProgress: FilterListUpdater.FilterRefreshProgress) -> String {
-        guard checkProgress.total > 0 else {
-            return LocalizedStrings.text("Checking for script updates...", comment: "Script update check status")
-        }
-        return LocalizedStrings.format(
-            "Checking for script updates... (%d/%d)",
-            comment: "Script update check status with checked/total script counts",
-            checkProgress.completed,
-            checkProgress.total
-        )
+        LocalizedStrings.text("Checking for script updates...", comment: "Script update check status")
     }
 
     /// Downloads the selected filter/script updates, then runs the shared apply pipeline.

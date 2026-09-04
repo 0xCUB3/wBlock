@@ -66,6 +66,7 @@ class AppFilterManager: ObservableObject {
     /// the next apply and once a targeted retry succeeds.
     @Published var failedReloadTargets: [ContentBlockerTargetInfo] = []
     @Published var progress: Float = 0
+    @Published var updateCheckProgress: FilterListUpdater.FilterRefreshProgress?
     var missingFilters: [FilterList] = []
     var missingUserScripts: [UserScript] = []
     @Published var availableUpdates: [FilterList] = []

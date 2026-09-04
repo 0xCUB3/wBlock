@@ -204,10 +204,10 @@
 "Checked just now" = "Ellenőrizve épp most";
 "Checking background agent…" = "Háttérügynök ellenőrzése…";
 "Checking for Updates" = "Szűrőfrissítések keresése";
-"Checking for updates..." = "Frissítések keresése...";
-"Checking for updates... (%d/%d)" = "Frissítések keresése (%d/%d)...";
-"Checking for script updates..." = "Szkriptfrissítések keresése...";
-"Checking for script updates... (%d/%d)" = "Szkriptfrissítések keresése (%d/%d)...";
+"Checking for updates..." = "Frissítések keresése";
+"Checking for updates... (%d/%d)" = "Frissítések keresése (%d/%d)";
+"Checking for script updates..." = "Szkriptfrissítések keresése";
+"Checking for script updates... (%d/%d)" = "Szkriptfrissítések keresése (%d/%d)";
 "Checks for wBlock filter updates and applies them when available." = "Ellenőrzi a wBlock szűrőfrissítéseit, és ha elérhetők, alkalmazza őket.";
 "Choose File…" = "Fájl kiválasztása…";
 "Choose optional userscripts. These are disabled by default." = "Válassz opcionális felhasználói szkripteket. Ezek alapértelmezetten le vannak tiltva.";

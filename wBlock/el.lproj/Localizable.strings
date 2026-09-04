@@ -204,10 +204,10 @@
 "Checked just now" = "Ελέγχθηκε μόλις τώρα";
 "Checking background agent…" = "Έλεγχος πράκτορα παρασκηνίου…";
 "Checking for Updates" = "Έλεγχος για ενημερώσεις φίλτρων";
-"Checking for updates..." = "Έλεγχος για ενημερώσεις...";
-"Checking for updates... (%d/%d)" = "Έλεγχος για ενημερώσεις (%d/%d)...";
-"Checking for script updates..." = "Έλεγχος για ενημερώσεις σεναρίων...";
-"Checking for script updates... (%d/%d)" = "Έλεγχος για ενημερώσεις σεναρίων (%d/%d)...";
+"Checking for updates..." = "Έλεγχος για ενημερώσεις";
+"Checking for updates... (%d/%d)" = "Έλεγχος για ενημερώσεις (%d/%d)";
+"Checking for script updates..." = "Έλεγχος για ενημερώσεις σεναρίων";
+"Checking for script updates... (%d/%d)" = "Έλεγχος για ενημερώσεις σεναρίων (%d/%d)";
 "Checks for wBlock filter updates and applies them when available." = "Ελέγχει για ενημερώσεις φίλτρων του wBlock και τις εφαρμόζει όταν είναι διαθέσιμες.";
 "Choose File…" = "Επιλογή Αρχείου…";
 "Choose optional userscripts. These are disabled by default." = "Επιλέξτε προαιρετικά σενάρια χρήστη. Αυτά είναι απενεργοποιημένα από προεπιλογή.";

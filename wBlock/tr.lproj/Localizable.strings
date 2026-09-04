@@ -204,10 +204,10 @@
 "Checked just now" = "Az önce denetlendi";
 "Checking background agent…" = "Arka plan görevi kontrol ediliyor…";
 "Checking for Updates" = "Filtre güncellemeleri denetleniyor";
-"Checking for updates..." = "Güncellemeler denetleniyor...";
-"Checking for updates... (%d/%d)" = "Güncellemeler denetleniyor (%d/%d)...";
-"Checking for script updates..." = "Betik güncellemeleri denetleniyor...";
-"Checking for script updates... (%d/%d)" = "Betik güncellemeleri denetleniyor (%d/%d)...";
+"Checking for updates..." = "Güncellemeler denetleniyor";
+"Checking for updates... (%d/%d)" = "Güncellemeler denetleniyor (%d/%d)";
+"Checking for script updates..." = "Betik güncellemeleri denetleniyor";
+"Checking for script updates... (%d/%d)" = "Betik güncellemeleri denetleniyor (%d/%d)";
 "Checks for wBlock filter updates and applies them when available." = "wBlock filtre güncellemelerini kontrol eder ve mevcutsa uygular.";
 "Choose File…" = "Dosya seç…";
 "Choose optional userscripts. These are disabled by default." = "İsteğe bağlı kullanıcı betiklerini seçin. Bunlar varsayılan olarak devre dışıdır.";

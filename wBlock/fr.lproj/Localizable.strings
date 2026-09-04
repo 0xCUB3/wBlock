@@ -204,10 +204,10 @@
 "Checked just now" = "Vérifié à l'instant";
 "Checking background agent…" = "Vérification de l’agent en arrière-plan…";
 "Checking for Updates" = "Recherche de mises à jour des filtres";
-"Checking for updates..." = "Vérification des mises à jour...";
-"Checking for updates... (%d/%d)" = "Vérification des mises à jour (%d/%d)...";
-"Checking for script updates..." = "Vérification des mises à jour des scripts...";
-"Checking for script updates... (%d/%d)" = "Vérification des mises à jour des scripts (%d/%d)...";
+"Checking for updates..." = "Vérification des mises à jour";
+"Checking for updates... (%d/%d)" = "Vérification des mises à jour (%d/%d)";
+"Checking for script updates..." = "Vérification des mises à jour des scripts";
+"Checking for script updates... (%d/%d)" = "Vérification des mises à jour des scripts (%d/%d)";
 "Checks for wBlock filter updates and applies them when available." = "Recherche les mises à jour des filtres wBlock et les applique lorsqu’elles sont disponibles.";
 "Choose File…" = "Choisir un fichier…";
 "Choose optional userscripts. These are disabled by default." = "Choisissez des userscripts optionnels. Ils sont désactivés par défaut.";
