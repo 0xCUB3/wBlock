@@ -189,9 +189,16 @@ private extension CodeMirrorTextEditor {
         coordinator.messageHandlerProxy = messageProxy
         coordinator.attach(webView)
 
+        // WebKit paints its own white page background before codemirror.html
+        // renders, which flashes on first open in dark mode (#672). Make the
+        // view transparent and keep it invisible until the editor is ready.
         #if os(macOS)
         webView.setValue(false, forKey: "drawsBackground")
+        webView.alphaValue = 0
         #elseif os(iOS)
+        webView.isOpaque = false
+        webView.backgroundColor = .clear
+        webView.alpha = 0
         let scrollView = webView.scrollView
         scrollView.contentInsetAdjustmentBehavior = .never
         scrollView.backgroundColor = .clear
@@ -278,6 +285,17 @@ extension CodeMirrorTextEditor {
             }
         }
 
+        private func revealWebView() {
+            guard let webView else { return }
+            #if os(macOS)
+            guard webView.alphaValue < 1 else { return }
+            webView.alphaValue = 1
+            #else
+            guard webView.alpha < 1 else { return }
+            UIView.animate(withDuration: 0.12) { webView.alpha = 1 }
+            #endif
+        }
+
         func openSearch() {
             guard hasBootedEditor else { return }
             runScript("window.wblockEditor.openSearch()")
@@ -307,6 +325,14 @@ extension CodeMirrorTextEditor {
             bootEditorIfNeeded()
         }
 
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            revealWebView()
+        }
+
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            revealWebView()
+        }
+
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
             guard message.name == CodeMirrorResources.handlerName else { return }
             guard let payload = message.body as? [String: Any], let type = payload["type"] as? String else { return }
@@ -314,6 +340,7 @@ extension CodeMirrorTextEditor {
             switch type {
             case "ready":
                 hasBootedEditor = true
+                revealWebView()
                 lastAppliedEditable = pendingEditable
                 lastAppliedLineWrapping = pendingLineWrapping
                 controller.updateDirtyState(!controller.isDocumentClean)
