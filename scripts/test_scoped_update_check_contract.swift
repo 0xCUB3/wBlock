@@ -82,3 +82,16 @@ let applyOrCheck = section(filterManager, "func applyOrCheckForUpdates()", "awai
 require(applyOrCheck.contains("await self.checkForUpdates()"), "applyOrCheckForUpdates calls checkForUpdates() default all")
 
 print("PASS: scoped update check contract")
+
+// 6) #657: explicit scoped checks reachable outside pull-to-refresh
+let appEntry = try read("wBlock/wBlockApp.swift")
+let appDelegate = try read("wBlock/AppDelegate.swift")
+require(appDelegate.contains("wBlockCheckFilterUpdatesRequest") && appDelegate.contains("wBlockCheckScriptUpdatesRequest"), "scoped update notification names")
+let updatesMenu = section(appEntry, "CommandMenu(\"Updates\")", "[.command, .option, .shift])")
+require(updatesMenu.contains(".wBlockCheckFilterUpdatesRequest") && updatesMenu.contains(".wBlockCheckScriptUpdatesRequest"), "macOS Updates menu posts both scoped requests")
+require(content.contains("publisher(for: .wBlockCheckFilterUpdatesRequest)) { _ in\n            checkForUpdates(scope: .filters)"), "filter request routes to .filters scope")
+require(content.contains("publisher(for: .wBlockCheckScriptUpdatesRequest)) { _ in\n            checkForUpdates(scope: .scripts)"), "script request routes to .scripts scope")
+require(content.contains("await filterManager.checkForUpdates(scope: scope, presentation: .blocking)"), "explicit scoped checks use blocking presentation so 'no updates' is reported")
+require(occurrences(content, "Button(\"Check for Filter Updates\")") == 1 && occurrences(content, "Button(\"Check for Userscript Updates\")") == 1, "filters tab context menu offers both scoped checks")
+require(userScriptView.contains("Button(\"Check for Filter Updates\", action: onCheckFilterUpdates)") && userScriptView.contains("Button(\"Check for Userscript Updates\", action: onCheckScriptUpdates)"), "userscripts tab context menu offers both scoped checks")
+print("PASS scoped update check contract (#657)")

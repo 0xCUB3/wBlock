@@ -1024,3 +1024,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Donate to DeArrow" = "DeArrow에 기부";
 "DeArrow: On" = "DeArrow: 켜짐";
 "DeArrow: Off" = "DeArrow: 꺼짐";
+"Check for Filter Updates" = "필터 업데이트 확인";
+"Check for Userscript Updates" = "유저스크립트 업데이트 확인";

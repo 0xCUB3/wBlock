@@ -1024,3 +1024,5 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Donate to DeArrow" = "Faire un don à DeArrow";
 "DeArrow: On" = "DeArrow : activé";
 "DeArrow: Off" = "DeArrow : désactivé";
+"Check for Filter Updates" = "Rechercher des mises à jour des filtres";
+"Check for Userscript Updates" = "Rechercher des mises à jour des scripts utilisateur";

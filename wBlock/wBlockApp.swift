@@ -124,6 +124,16 @@ struct wBlockApp: App {
                 }
                 .keyboardShortcut("l", modifiers: .command)
             }
+            CommandMenu("Updates") {
+                Button("Check for Filter Updates") {
+                    NotificationCenter.default.post(name: .wBlockCheckFilterUpdatesRequest, object: nil)
+                }
+                .keyboardShortcut("r", modifiers: [.command, .option])
+                Button("Check for Userscript Updates") {
+                    NotificationCenter.default.post(name: .wBlockCheckScriptUpdatesRequest, object: nil)
+                }
+                .keyboardShortcut("r", modifiers: [.command, .option, .shift])
+            }
         }
         #endif
     }

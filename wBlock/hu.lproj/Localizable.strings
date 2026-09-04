@@ -1024,3 +1024,5 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Donate to DeArrow" = "Támogasd a DeArrow-t";
 "DeArrow: On" = "DeArrow: be";
 "DeArrow: Off" = "DeArrow: ki";
+"Check for Filter Updates" = "Szűrőfrissítések keresése";
+"Check for Userscript Updates" = "Felhasználói szkript frissítések keresése";

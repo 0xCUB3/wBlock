@@ -1024,3 +1024,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Donate to DeArrow" = "Δωρεά στο DeArrow";
 "DeArrow: On" = "DeArrow: ενεργό";
 "DeArrow: Off" = "DeArrow: ανενεργό";
+"Check for Filter Updates" = "Έλεγχος για ενημερώσεις φίλτρων";
+"Check for Userscript Updates" = "Έλεγχος για ενημερώσεις κώδικα χρήστη";

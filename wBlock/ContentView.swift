@@ -170,6 +170,20 @@ struct ContentView: View {
                 Color.clear
             }
             .keyboardShortcut("l", modifiers: .command)
+
+            Button {
+                NotificationCenter.default.post(name: .wBlockCheckFilterUpdatesRequest, object: nil)
+            } label: {
+                Color.clear
+            }
+            .keyboardShortcut("r", modifiers: [.command, .option])
+
+            Button {
+                NotificationCenter.default.post(name: .wBlockCheckScriptUpdatesRequest, object: nil)
+            } label: {
+                Color.clear
+            }
+            .keyboardShortcut("r", modifiers: [.command, .option, .shift])
             #endif
         }
         .opacity(0)
@@ -240,6 +254,12 @@ struct ContentView: View {
                 selectedTab = 0
                 showFilterSearch = true
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .wBlockCheckFilterUpdatesRequest)) { _ in
+            checkForUpdates(scope: .filters)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .wBlockCheckScriptUpdatesRequest)) { _ in
+            checkForUpdates(scope: .scripts)
         }
         .alert("Disable Essential Filter?", isPresented: Binding(
             get: { pendingEssentialFilter != nil },
@@ -313,6 +333,13 @@ struct ContentView: View {
         filterManager.applyOrCheckForUpdates()
     }
 
+    /// Scoped manual check (#657): only filters or only userscripts, so one
+    /// side can be refreshed without touching the other.
+    private func checkForUpdates(scope: AppFilterManager.UpdateCheckScope) {
+        guard !filterManager.isLoading, !filterManager.showingApplyProgressSheet else { return }
+        Task { await filterManager.checkForUpdates(scope: scope, presentation: .blocking) }
+    }
+
     private var applyChangesToolbarButton: some View {
         ApplyChangesHoldButton(
             isDisabled: filterManager.isLoading,
@@ -327,6 +354,17 @@ struct ContentView: View {
                 Image(systemName: applyChangesSymbolName)
             }
         }
+        #if os(macOS)
+        // Right-click exposes the scoped checks; iOS uses pull-to-refresh on
+        // each tab and the long-press stays reserved for force apply.
+        .contextMenu { scopedUpdateMenuItems }
+        #endif
+    }
+
+    @ViewBuilder
+    private var scopedUpdateMenuItems: some View {
+        Button("Check for Filter Updates") { checkForUpdates(scope: .filters) }
+        Button("Check for Userscript Updates") { checkForUpdates(scope: .scripts) }
     }
 
     private var filtersView: some View {
@@ -493,7 +531,9 @@ struct ContentView: View {
                 onRefresh: {
                     guard !filterManager.isLoading else { return }
                     await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
-                }
+                },
+                onCheckFilterUpdates: { checkForUpdates(scope: .filters) },
+                onCheckScriptUpdates: { checkForUpdates(scope: .scripts) }
             )
                 .safeAreaInset(edge: .top) {
                     if filterManager.isBlockingPaused {

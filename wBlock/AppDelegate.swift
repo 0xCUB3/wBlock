@@ -26,6 +26,9 @@ extension Notification.Name {
     static let wBlockAddFilterListRequest = Notification.Name("wBlockAddFilterListRequest")
     static let wBlockAddUserScriptRequest = Notification.Name("wBlockAddUserScriptRequest")
     static let wBlockSearchRequest = Notification.Name("wBlockSearchRequest")
+    /// Scoped update checks (#657): filters only or userscripts only.
+    static let wBlockCheckFilterUpdatesRequest = Notification.Name("wBlockCheckFilterUpdatesRequest")
+    static let wBlockCheckScriptUpdatesRequest = Notification.Name("wBlockCheckScriptUpdatesRequest")
 }
 #if os(iOS)
 @MainActor

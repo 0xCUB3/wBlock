@@ -1024,3 +1024,5 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Donate to DeArrow" = "An DeArrow spenden";
 "DeArrow: On" = "DeArrow: Ein";
 "DeArrow: Off" = "DeArrow: Aus";
+"Check for Filter Updates" = "Auf Filter-Updates prüfen";
+"Check for Userscript Updates" = "Auf Userskript-Updates prüfen";

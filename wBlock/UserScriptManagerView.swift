@@ -169,6 +169,9 @@ struct UserScriptManagerView: View {
     let addRequest: Int
     let searchRequest: Int
     let onRefresh: () async -> Void
+    /// Scoped manual checks (#657) exposed from the Apply button's context menu.
+    var onCheckFilterUpdates: () -> Void = {}
+    var onCheckScriptUpdates: () -> Void = {}
 
     @State private var scripts: [UserScriptListItem] = []
     @State private var showingAddScriptSheet = false
@@ -211,6 +214,12 @@ struct UserScriptManagerView: View {
                 Image(systemName: "arrow.triangle.2.circlepath")
             }
         }
+        #if os(macOS)
+        .contextMenu {
+            Button("Check for Filter Updates", action: onCheckFilterUpdates)
+            Button("Check for Userscript Updates", action: onCheckScriptUpdates)
+        }
+        #endif
     }
 
     private var trimmedSearchText: String {

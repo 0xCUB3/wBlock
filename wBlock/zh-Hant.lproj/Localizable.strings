@@ -1024,3 +1024,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Donate to DeArrow" = "向 DeArrow 捐款";
 "DeArrow: On" = "DeArrow：開";
 "DeArrow: Off" = "DeArrow：關";
+"Check for Filter Updates" = "檢查過濾器更新";
+"Check for Userscript Updates" = "檢查使用者腳本更新";

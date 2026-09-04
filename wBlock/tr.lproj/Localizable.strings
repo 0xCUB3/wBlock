@@ -1023,3 +1023,5 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Donate to DeArrow" = "DeArrow’a bağış yap";
 "DeArrow: On" = "DeArrow: açık";
 "DeArrow: Off" = "DeArrow: kapalı";
+"Check for Filter Updates" = "Filtre güncellemelerini denetle";
+"Check for Userscript Updates" = "Kullanıcı betiği güncellemelerini denetle";
