@@ -22,6 +22,8 @@ struct ContentView: View {
     @StateObject private var userScriptManager = UserScriptManager.shared
     @StateObject private var dataManager = ProtobufDataManager.shared
     @State private var showingAddFilterSheet = false
+    @State private var downloadingFilterIDs: Set<UUID> = []
+    @State private var showingFilterDownloadError = false
     @AppStorage("filtersShowEnabledOnly") private var showOnlyEnabledLists = false
     @State private var filterSearchText = ""
     @State private var showFilterSearch = false
@@ -261,6 +263,11 @@ struct ContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .wBlockCheckScriptUpdatesRequest)) { _ in
             checkForUpdates(scope: .scripts)
+        }
+        .alert("Error", isPresented: $showingFilterDownloadError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Couldn't download this filter list. It was kept as not downloaded.")
         }
         .alert("Disable Essential Filter?", isPresented: Binding(
             get: { pendingEssentialFilter != nil },
@@ -775,10 +782,31 @@ struct ContentView: View {
             .padding(.top, 6)
     }
 
+    private func downloadFilter(_ filter: FilterList) {
+        guard filter.isRemoteURL, !filterManager.isLoading,
+              !downloadingFilterIDs.contains(filter.id),
+              !filterManager.loader.filterFileExists(filter) else { return }
+        downloadingFilterIDs.insert(filter.id)
+        Task {
+            let succeeded = await filterManager.filterUpdater.fetchAndProcessFilter(filter)
+            downloadingFilterIDs.remove(filter.id)
+            guard let current = filterManager.filterLists.first(where: { $0.id == filter.id }) else { return }
+            if succeeded {
+                filterManager.saveFilterListsCoalesced()
+                if current.isSelected { filterManager.markNonSelectionChangesPending() }
+            } else {
+                showingFilterDownloadError = true
+            }
+        }
+    }
+
     private func filterRowView(for filter: FilterList, showsFlags: Bool = true) -> some View {
         FilterRowView(
             filter: filter,
             showsFlags: showsFlags,
+            isDownloaded: filterManager.loader.filterFileExists(filter),
+            isDownloading: downloadingFilterIDs.contains(filter.id),
+            onDownload: { downloadFilter(filter) },
             onInfo: { selectedFilterInfo = filter },
             onViewRules: { selectedFilterRules = filter },
             onEdit: { editingCustomFilter = filter },
@@ -856,6 +884,9 @@ struct ContentView: View {
 struct FilterRowView: View {
     let filter: FilterList
     let showsFlags: Bool
+    let isDownloaded: Bool
+    let isDownloading: Bool
+    var onDownload: () -> Void
     var onInfo: () -> Void
     var onViewRules: () -> Void
     var onEdit: () -> Void
@@ -908,6 +939,12 @@ struct FilterRowView: View {
                         onInfo()
                     }
                 }
+            if filter.isRemoteURL || isDownloaded {
+                ContentDownloadControl(
+                    isDownloaded: isDownloaded, isDownloading: isDownloading,
+                    name: filter.localizedDisplayName, action: onDownload
+                )
+            }
             Toggle(
                 "",
                 isOn: Binding(

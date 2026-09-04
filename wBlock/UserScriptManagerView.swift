@@ -842,26 +842,7 @@ struct UserScriptManagerView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                if !script.isDownloaded && !script.isLocal {
-                    Button {
-                        downloadScript(script)
-                    } label: {
-                        Label(
-                            downloadingScriptIDs.contains(script.id) ? "Downloading…" : "Download",
-                            systemImage: "arrow.down.circle"
-                        )
-                        .font(.caption2.weight(.medium))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.accentColor.opacity(0.15))
-                        .foregroundStyle(Color.accentColor)
-                        .cornerRadius(4)
-                    }
-                    .buttonStyle(.plain)
-                    .noFocusRingCompat()
-                    .disabled(downloadingScriptIDs.contains(script.id))
-                    .accessibilityLabel(LocalizedStrings.format("Download %@", comment: "Accessibility label for the per-script download button", script.name))
-                } else if displayedEnabled && !script.isDownloaded {
+                if displayedEnabled && !script.isDownloaded && script.isLocal {
                     Text("Not Downloaded")
                         .font(.caption2)
                         .fontWeight(.medium)
@@ -908,6 +889,13 @@ struct UserScriptManagerView: View {
             }
 
             HStack(spacing: 8) {
+                if !script.isLocal || script.isDownloaded {
+                    ContentDownloadControl(
+                        isDownloaded: script.isDownloaded,
+                        isDownloading: downloadingScriptIDs.contains(script.id),
+                        name: script.name, action: { downloadScript(script) }
+                    )
+                }
                 Toggle("", isOn: Binding(
                     get: { displayedEnabled || downloadingScriptIDs.contains(script.id) },
                     set: { newValue in
