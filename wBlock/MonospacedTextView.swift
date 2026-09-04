@@ -1,21 +1,35 @@
 import SwiftUI
 
+/// Read-only monospaced text. When `lineTints` is set, the visible lines are
+/// syntax coloured and tinted on scroll instead of building one attributed
+/// string for the whole document, which froze the phone on multi-megabyte
+/// lists (cameren, Discord).
 #if os(macOS)
 import AppKit
 
 struct MonospacedTextView: NSViewRepresentable {
     @Binding var text: String
-    /// When set, replaces `text` for display (read-only views such as the
-    /// rules viewer use this for per-line highlighting).
-    var attributedText: NSAttributedString?
+    /// Background tint per line index; presence turns on viewport highlighting.
+    var lineTints: HighlightLineTints?
     var softTopEdge = false
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = makeDocumentScrollView()
 
         guard let textView = scrollView.documentView as? NSTextView else { return scrollView }
-        apply(to: textView)
+        context.coordinator.textView = textView
+        apply(to: textView, coordinator: context.coordinator)
         expandDocumentToFit(textView, in: scrollView)
+
+        scrollView.contentView.postsBoundsChangedNotifications = true
+        NotificationCenter.default.addObserver(
+            context.coordinator,
+            selector: #selector(Coordinator.boundsDidChange(_:)),
+            name: NSView.boundsDidChangeNotification,
+            object: scrollView.contentView
+        )
         return scrollView
     }
 
@@ -23,7 +37,7 @@ struct MonospacedTextView: NSViewRepresentable {
         applyTrailingScrollerInset(to: scrollView)
         guard let textView = scrollView.documentView as? NSTextView else { return }
         let selectedRanges = textView.selectedRanges
-        if apply(to: textView) {
+        if apply(to: textView, coordinator: context.coordinator) {
             textView.selectedRanges = selectedRanges.filter {
                 NSMaxRange($0.rangeValue) <= (textView.string as NSString).length
             }
@@ -33,15 +47,44 @@ struct MonospacedTextView: NSViewRepresentable {
 
     /// Returns true when the document changed.
     @discardableResult
-    private func apply(to textView: NSTextView) -> Bool {
-        if let attributedText {
-            guard textView.textStorage?.isEqual(to: attributedText) != true else { return false }
-            textView.textStorage?.setAttributedString(attributedText)
-            return true
+    private func apply(to textView: NSTextView, coordinator: Coordinator) -> Bool {
+        var changed = false
+        if textView.string != text {
+            textView.textStorage?.setAttributedString(
+                NSAttributedString(string: text, attributes: coordinator.highlighter.baseAttributes)
+            )
+            coordinator.highlighter.reset()
+            changed = true
         }
-        guard textView.string != text else { return false }
-        textView.string = text
-        return true
+        if let lineTints {
+            if changed || coordinator.appliedTintsIdentity != lineTints.count || coordinator.tintsDirty {
+                coordinator.highlighter.lineTints = lineTints
+                coordinator.appliedTintsIdentity = lineTints.count
+                coordinator.tintsDirty = false
+                coordinator.highlighter.scheduleHighlight(of: textView, delayNanoseconds: 0)
+            }
+            coordinator.highlightingEnabled = true
+        } else {
+            coordinator.highlightingEnabled = false
+        }
+        return changed
+    }
+
+    @MainActor
+    final class Coordinator: NSObject {
+        let highlighter = ViewportSyntaxHighlighter(baseAttributes: [
+            .foregroundColor: NSColor.labelColor,
+            .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular),
+        ])
+        weak var textView: NSTextView?
+        var highlightingEnabled = false
+        var appliedTintsIdentity = -1
+        var tintsDirty = true
+
+        @objc func boundsDidChange(_ notification: Notification) {
+            guard highlightingEnabled, let textView else { return }
+            highlighter.scheduleHighlight(of: textView)
+        }
     }
 
     private func makeDocumentScrollView() -> NSScrollView {
@@ -132,34 +175,68 @@ import UIKit
 
 struct MonospacedTextView: UIViewRepresentable {
     @Binding var text: String
-    /// When set, replaces `text` for display (read-only views such as the
-    /// rules viewer use this for per-line highlighting).
-    var attributedText: NSAttributedString?
+    /// Background tint per line index; presence turns on viewport highlighting.
+    var lineTints: HighlightLineTints?
     var softTopEdge = false
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeUIView(context: Context) -> UITextView {
         let textView = UITextView(frame: .zero, textContainer: nil)
         configure(textView: textView)
-        if let attributedText {
-            textView.attributedText = attributedText
-        } else {
-            textView.text = text
-        }
+        textView.delegate = context.coordinator
+        context.coordinator.textView = textView
+        apply(to: textView, coordinator: context.coordinator)
         return textView
     }
 
     func updateUIView(_ textView: UITextView, context: Context) {
         configure(textView: textView)
-        if let attributedText {
-            guard !textView.attributedText.isEqual(to: attributedText) else { return }
-            textView.attributedText = attributedText
-            return
-        }
-        guard textView.text != text else { return }
-
         let selectedRange = textView.selectedRange
-        textView.text = text
-        textView.selectedRange = selectedRange
+        if apply(to: textView, coordinator: context.coordinator) {
+            let length = (textView.text as NSString?)?.length ?? 0
+            if NSMaxRange(selectedRange) <= length { textView.selectedRange = selectedRange }
+        }
+    }
+
+    /// Returns true when the document changed.
+    @discardableResult
+    private func apply(to textView: UITextView, coordinator: Coordinator) -> Bool {
+        var changed = false
+        if (textView.text ?? "") != text {
+            textView.attributedText = NSAttributedString(string: text, attributes: coordinator.highlighter.baseAttributes)
+            coordinator.highlighter.reset()
+            changed = true
+        }
+        if let lineTints {
+            if changed || coordinator.appliedTintsIdentity != lineTints.count || coordinator.tintsDirty {
+                coordinator.highlighter.lineTints = lineTints
+                coordinator.appliedTintsIdentity = lineTints.count
+                coordinator.tintsDirty = false
+                coordinator.highlighter.scheduleHighlight(of: textView, delayNanoseconds: 0)
+            }
+            coordinator.highlightingEnabled = true
+        } else {
+            coordinator.highlightingEnabled = false
+        }
+        return changed
+    }
+
+    @MainActor
+    final class Coordinator: NSObject, UITextViewDelegate {
+        let highlighter = ViewportSyntaxHighlighter(baseAttributes: [
+            .foregroundColor: UIColor.label,
+            .font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular),
+        ])
+        weak var textView: UITextView?
+        var highlightingEnabled = false
+        var appliedTintsIdentity = -1
+        var tintsDirty = true
+
+        func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            guard highlightingEnabled, let textView else { return }
+            highlighter.scheduleHighlight(of: textView)
+        }
     }
 
     private func configure(textView: UITextView) {

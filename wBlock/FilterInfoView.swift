@@ -156,7 +156,10 @@ struct FilterRulesView: View {
     @State private var analysis: FilterRuleAnalysis?
     @State private var isLoading = true
     @State private var shownKinds: Set<FilterRuleKind> = Set(FilterRuleKind.allCases)
-    @State private var displayedText: NSAttributedString?
+    /// The lines that pass the View filter, joined, plus a tint per line.
+    @State private var displayedRules = ""
+    @State private var displayedTints: HighlightLineTints?
+    @State private var rebuildTask: Task<Void, Never>?
     @Environment(\.dismiss) private var dismiss
 
     private static let highlightedKinds: [FilterRuleKind] = [.supported, .advanced, .unsupported, .duplicate]
@@ -184,8 +187,8 @@ struct FilterRulesView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 MonospacedTextView(
-                    text: Binding(get: { rules }, set: { _ in }),
-                    attributedText: displayedText,
+                    text: Binding(get: { displayedRules }, set: { _ in }),
+                    lineTints: displayedTints,
                     softTopEdge: true
                 )
                 if let analysis {
@@ -197,6 +200,7 @@ struct FilterRulesView: View {
         .frame(minWidth: 420, idealWidth: 760, minHeight: 360, idealHeight: 620)
         .task {
             rules = FilterListLoader().readLocalFilterContent(filter) ?? ""
+            displayedRules = rules
             isLoading = false
             guard !rules.isEmpty else { return }
             let content = rules
@@ -276,28 +280,45 @@ struct FilterRulesView: View {
         .padding(.vertical, 8)
     }
 
-    /// Syntax colouring from the shared highlighter, with a tinted background
-    /// on lines that need Scripts, do not parse, or repeat an earlier rule.
+    /// Joins the lines that pass the View filter and records which of them
+    /// need a tint. The string join runs off the main thread; syntax colour is
+    /// applied per viewport by MonospacedTextView, so a multi-megabyte list
+    /// never builds one huge attributed string (that froze iPhones).
     private func rebuildDisplayedText() {
-        guard let analysis else { displayedText = nil; return }
-        let highlighter = AdGuardSyntaxHighlighter()
-        let result = NSMutableAttributedString()
-        let newline = NSAttributedString(string: "\n")
-        var first = true
-        for line in analysis.lines where shownKinds.contains(line.kind) {
-            if !first { result.append(newline) }
-            first = false
-            let highlighted = NSMutableAttributedString(attributedString: highlighter.highlight(line.text))
-            if let tint = Self.tint(for: line.kind) {
-                highlighted.addAttribute(
-                    .backgroundColor,
-                    value: tint,
-                    range: NSRange(location: 0, length: highlighted.length)
-                )
-            }
-            result.append(highlighted)
+        rebuildTask?.cancel()
+        guard let analysis else {
+            displayedRules = rules
+            displayedTints = nil
+            return
         }
-        displayedText = result
+        let kinds = shownKinds
+        let lines = analysis.lines
+        rebuildTask = Task {
+            let built = await Task.detached(priority: .userInitiated) { () -> (String, [Int: FilterRuleKind]) in
+                var text = ""
+                text.reserveCapacity(lines.reduce(0) { $0 + $1.text.utf8.count + 1 })
+                var tinted: [Int: FilterRuleKind] = [:]
+                var index = 0
+                for line in lines where kinds.contains(line.kind) {
+                    if Task.isCancelled { return ("", [:]) }
+                    if index > 0 { text.append("\n") }
+                    text.append(line.text)
+                    if line.kind == .advanced || line.kind == .unsupported || line.kind == .duplicate {
+                        tinted[index] = line.kind
+                    }
+                    index += 1
+                }
+                return (text, tinted)
+            }.value
+            guard !Task.isCancelled else { return }
+            var tints: HighlightLineTints = [:]
+            tints.reserveCapacity(built.1.count)
+            for (index, kind) in built.1 {
+                if let tint = Self.tint(for: kind) { tints[index] = tint }
+            }
+            displayedRules = built.0
+            displayedTints = tints
+        }
     }
 
     static func title(for kind: FilterRuleKind) -> String {

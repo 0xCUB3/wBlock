@@ -2,46 +2,12 @@
 //  SyntaxHighlightingTextView.swift
 //  wBlock
 //
+//  Editable rules text with viewport syntax colouring. The text storage holds
+//  the document with one base attribute run; ViewportSyntaxHighlighter colours
+//  the visible lines on scroll and after edits. There is no length cap (#680).
+//
 
 import SwiftUI
-
-private let syntaxHighlightingDelayNanoseconds: UInt64 = 150_000_000
-private let syntaxHighlightingCharacterLimit = 60_000
-
-@MainActor
-fileprivate final class SyntaxHighlightingCoordinatorCore {
-    private let highlighter = AdGuardSyntaxHighlighter()
-    private var highlightTask: Task<Void, Never>?
-    let plainTextAttributes: [NSAttributedString.Key: Any]
-
-    init(plainTextAttributes: [NSAttributedString.Key: Any]) {
-        self.plainTextAttributes = plainTextAttributes
-    }
-
-    func attributedText(for text: String) -> NSAttributedString {
-        guard text.count <= syntaxHighlightingCharacterLimit else {
-            return NSAttributedString(string: text, attributes: plainTextAttributes)
-        }
-        return highlighter.highlight(text)
-    }
-
-    func scheduleHighlight(
-        for text: String,
-        currentText: @escaping @MainActor () -> String?,
-        apply: @escaping @MainActor (NSAttributedString) -> Void
-    ) {
-        highlightTask?.cancel()
-        highlightTask = Task { [weak self] in
-            try? await Task.sleep(nanoseconds: syntaxHighlightingDelayNanoseconds)
-            guard !Task.isCancelled, let self, currentText() == text else { return }
-            apply(self.attributedText(for: text))
-        }
-    }
-
-    deinit {
-        highlightTask?.cancel()
-    }
-}
 
 #if os(macOS)
 import AppKit
@@ -84,66 +50,67 @@ struct SyntaxHighlightingTextView: NSViewRepresentable {
             textContainer.heightTracksTextView = false
         }
         textView.delegate = context.coordinator
-        textView.typingAttributes = context.coordinator.core.plainTextAttributes
+        textView.typingAttributes = context.coordinator.highlighter.baseAttributes
 
         context.coordinator.textView = textView
-
-        let attributed = context.coordinator.core.attributedText(for: text)
-        textView.textStorage?.setAttributedString(attributed)
+        context.coordinator.setDocument(text, on: textView)
         scrollView.documentView = textView
+
+        scrollView.contentView.postsBoundsChangedNotifications = true
+        NotificationCenter.default.addObserver(
+            context.coordinator,
+            selector: #selector(Coordinator.boundsDidChange(_:)),
+            name: NSView.boundsDidChangeNotification,
+            object: scrollView.contentView
+        )
 
         return scrollView
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
-        let currentText = textView.string
-        guard currentText != text else { return }
-        context.coordinator.applyAttributedText(for: text, to: textView)
+        guard textView.string != text else { return }
+        context.coordinator.setDocument(text, on: textView)
     }
 
     @MainActor
     class Coordinator: NSObject, NSTextViewDelegate {
         var parent: SyntaxHighlightingTextView
-        fileprivate let core: SyntaxHighlightingCoordinatorCore
+        let highlighter: ViewportSyntaxHighlighter
         var isUpdating = false
         weak var textView: NSTextView?
 
         init(_ parent: SyntaxHighlightingTextView) {
             self.parent = parent
-            core = SyntaxHighlightingCoordinatorCore(plainTextAttributes: [
+            highlighter = ViewportSyntaxHighlighter(baseAttributes: [
                 .foregroundColor: NSColor.labelColor,
                 .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular),
             ])
         }
 
-        private func apply(attributed: NSAttributedString, to textView: NSTextView) {
+        func setDocument(_ text: String, on textView: NSTextView) {
             isUpdating = true
             let selectedRanges = textView.selectedRanges
-            textView.textStorage?.setAttributedString(attributed)
-            textView.typingAttributes = core.plainTextAttributes
+            textView.textStorage?.setAttributedString(NSAttributedString(string: text, attributes: highlighter.baseAttributes))
+            textView.typingAttributes = highlighter.baseAttributes
             let length = textView.string.utf16.count
             let validRanges = selectedRanges.filter { $0.rangeValue.location + $0.rangeValue.length <= length }
             if !validRanges.isEmpty { textView.selectedRanges = validRanges }
             isUpdating = false
+            highlighter.reset()
+            highlighter.scheduleHighlight(of: textView, delayNanoseconds: 0)
         }
 
-        func applyAttributedText(for text: String, to textView: NSTextView) {
-            apply(attributed: core.attributedText(for: text), to: textView)
+        @objc func boundsDidChange(_ notification: Notification) {
+            guard let textView else { return }
+            highlighter.scheduleHighlight(of: textView)
         }
 
         func textDidChange(_ notification: Notification) {
             guard !isUpdating, let textView = notification.object as? NSTextView else { return }
-            let newText = textView.string
-            parent.text = newText
-            core.scheduleHighlight(
-                for: newText,
-                currentText: { [weak self] in self?.textView?.string },
-                apply: { [weak self] attributed in
-                    guard let self, let textView = self.textView else { return }
-                    self.apply(attributed: attributed, to: textView)
-                }
-            )
+            parent.text = textView.string
+            highlighter.reset()
+            highlighter.scheduleHighlight(of: textView, delayNanoseconds: 150_000_000)
         }
     }
 }
@@ -171,62 +138,55 @@ struct SyntaxHighlightingTextView: UIViewRepresentable {
         textView.smartQuotesType = .no
         textView.backgroundColor = .clear
         textView.delegate = context.coordinator
-        textView.typingAttributes = context.coordinator.core.plainTextAttributes
+        textView.typingAttributes = context.coordinator.highlighter.baseAttributes
 
         context.coordinator.textView = textView
-
-        let attributed = context.coordinator.core.attributedText(for: text)
-        textView.attributedText = attributed
-
+        context.coordinator.setDocument(text, on: textView)
         return textView
     }
 
     func updateUIView(_ textView: UITextView, context: Context) {
-        let currentText = textView.text ?? ""
-        guard currentText != text else { return }
-        context.coordinator.applyAttributedText(for: text, to: textView)
+        guard (textView.text ?? "") != text else { return }
+        context.coordinator.setDocument(text, on: textView)
     }
+
     @MainActor
     class Coordinator: NSObject, UITextViewDelegate {
         var parent: SyntaxHighlightingTextView
-        fileprivate let core: SyntaxHighlightingCoordinatorCore
+        let highlighter: ViewportSyntaxHighlighter
         var isUpdating = false
         weak var textView: UITextView?
 
         init(_ parent: SyntaxHighlightingTextView) {
             self.parent = parent
-            core = SyntaxHighlightingCoordinatorCore(plainTextAttributes: [
+            highlighter = ViewportSyntaxHighlighter(baseAttributes: [
                 .foregroundColor: UIColor.label,
                 .font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular),
             ])
         }
 
-        private func apply(attributed: NSAttributedString, to textView: UITextView) {
+        func setDocument(_ text: String, on textView: UITextView) {
             isUpdating = true
             let selectedRange = textView.selectedRange
-            textView.attributedText = attributed
-            textView.typingAttributes = core.plainTextAttributes
+            textView.attributedText = NSAttributedString(string: text, attributes: highlighter.baseAttributes)
+            textView.typingAttributes = highlighter.baseAttributes
             let length = (textView.text as NSString?)?.length ?? 0
             if selectedRange.location + selectedRange.length <= length { textView.selectedRange = selectedRange }
             isUpdating = false
+            highlighter.reset()
+            highlighter.scheduleHighlight(of: textView, delayNanoseconds: 0)
         }
 
-        func applyAttributedText(for text: String, to textView: UITextView) {
-            apply(attributed: core.attributedText(for: text), to: textView)
+        func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            guard let textView else { return }
+            highlighter.scheduleHighlight(of: textView)
         }
 
         func textViewDidChange(_ textView: UITextView) {
             guard !isUpdating else { return }
-            let newText = textView.text ?? ""
-            parent.text = newText
-            core.scheduleHighlight(
-                for: newText,
-                currentText: { [weak self] in self?.textView?.text },
-                apply: { [weak self] attributed in
-                    guard let self, let textView = self.textView else { return }
-                    self.apply(attributed: attributed, to: textView)
-                }
-            )
+            parent.text = textView.text ?? ""
+            highlighter.reset()
+            highlighter.scheduleHighlight(of: textView, delayNanoseconds: 150_000_000)
         }
     }
 }
