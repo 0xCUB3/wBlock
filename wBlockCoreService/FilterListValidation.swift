@@ -16,6 +16,29 @@ public struct FilterListURLParseResult: Equatable {
 }
 
 public enum FilterListURLSupport {
+    /// Key under which two list URLs count as the same list. Scheme, host
+    /// case, a default port and a trailing slash do not make a different list,
+    /// so http and https variants of one address are duplicates (#681).
+    public static func identityKey(for url: URL) -> String {
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            return url.absoluteString.lowercased()
+        }
+        components.scheme = nil
+        components.host = components.host?.lowercased()
+        if components.port == 80 || components.port == 443 {
+            components.port = nil
+        }
+        components.fragment = nil
+        var path = components.percentEncodedPath
+        while path.hasSuffix("/") { path.removeLast() }
+        components.percentEncodedPath = path
+        return components.string ?? url.absoluteString.lowercased()
+    }
+
+    public static func isSameList(_ lhs: URL, _ rhs: URL) -> Bool {
+        lhs == rhs || identityKey(for: lhs) == identityKey(for: rhs)
+    }
+
     public static func validatedRemoteURL(from rawValue: String) -> URL? {
         let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }

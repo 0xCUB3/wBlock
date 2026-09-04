@@ -22,7 +22,7 @@ for rule in requiredRules {
     }
 }
 
-guard serviceSource.contains("embeddedCompatibilityRulesVersion = \"6\"") else {
+guard serviceSource.contains("embeddedCompatibilityRulesVersion = \"7\"") else {
     fputs("FAIL: compatibility rule version should be bumped when embedded rules change\n", stderr)
     exit(1)
 }

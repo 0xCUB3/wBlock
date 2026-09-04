@@ -26,7 +26,7 @@ extension AppFilterManager {
             return
         }
 
-        if filterLists.contains(where: { $0.url == url }) {
+        if filterLists.contains(where: { FilterListURLSupport.isSameList($0.url, url) }) {
             statusDescription = LocalizedStrings.format(
                 "Filter list with this URL already exists: %@",
                 comment: "Custom filter duplicate URL error",
@@ -170,7 +170,7 @@ extension AppFilterManager {
     }
 
     func addCustomFilterList(_ filter: FilterList) {
-        if !filterLists.contains(where: { $0.url == filter.url }) {
+        if !filterLists.contains(where: { FilterListURLSupport.isSameList($0.url, filter.url) }) {
             let newFilterToAdd = filter
 
             filterLists.append(newFilterToAdd)
@@ -229,7 +229,7 @@ extension AppFilterManager {
     }
 
     internal func addCustomFilterListWithoutFetch(_ filter: FilterList) {
-        guard !filterLists.contains(where: { $0.url == filter.url }) else { return }
+        guard !filterLists.contains(where: { FilterListURLSupport.isSameList($0.url, filter.url) }) else { return }
 
         filterLists.append(filter)
         saveFilterListsCoalesced()

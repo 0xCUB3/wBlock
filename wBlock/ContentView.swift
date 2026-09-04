@@ -1319,8 +1319,12 @@ struct AddFilterListView: View {
     }
 
     private var newURLs: [URL] {
-        let existingURLs = Set(filterManager.filterLists.map(\.url))
-        return parsedURLInput.urls.filter { !existingURLs.contains($0) }
+        let existingKeys = Set(filterManager.filterLists.map { FilterListURLSupport.identityKey(for: $0.url) })
+        var seen = Set<String>()
+        return parsedURLInput.urls.filter { url in
+            let key = FilterListURLSupport.identityKey(for: url)
+            return !existingKeys.contains(key) && seen.insert(key).inserted
+        }
     }
 
     private var existingURLCount: Int {

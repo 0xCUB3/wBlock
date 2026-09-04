@@ -40,7 +40,7 @@ for path in setConstantPaths {
 }
 
 let requiredSnippets = [
-    "embeddedCompatibilityRulesVersion = \"6\"",
+    "embeddedCompatibilityRulesVersion = \"7\"",
 ]
 for snippet in requiredSnippets {
     guard serviceSource.contains(snippet) else {

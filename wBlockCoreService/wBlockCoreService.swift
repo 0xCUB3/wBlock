@@ -72,7 +72,8 @@ public struct ContentBlockerSaveResult: Sendable {
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
-    public static let embeddedCompatibilityRulesVersion = "6"
+    // 7: duplicate rule lines are dropped before conversion (#681).
+    public static let embeddedCompatibilityRulesVersion = "7"
     private static let combinedEngineMarkerFileName = "combined-rules.sha256"
     private static let combinedEngineMarkerFormatVersion = 2
     private static let combinedEngineBuildLockFileName = "combined-engine-build.lock"
@@ -373,6 +374,28 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
 m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'undefined')
 m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefined')
 """
+
+    /// Drops rule lines that repeat an earlier line byte for byte. Two lists
+    /// that share rules (a fork of a list, or overlapping upstreams) otherwise
+    /// send every shared rule to the converter twice, and each copy counts
+    /// against Safari's per-extension limit (#681). Comments, section headers
+    /// and `!#` preprocessor directives are kept, since their position matters.
+    public static func deduplicatedRuleLines(_ lines: [String]) -> [String] {
+        var seen = Set<String>(minimumCapacity: lines.count)
+        var result: [String] = []
+        result.reserveCapacity(lines.count)
+        for line in lines {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard FilterRuleAnalysis.isRuleLine(trimmed), !trimmed.hasPrefix("!#") else {
+                result.append(line)
+                continue
+            }
+            if seen.insert(trimmed).inserted {
+                result.append(line)
+            }
+        }
+        return result
+    }
 
     private static func combinedRulesWithEmbeddedCompatibility(_ rawRules: String) -> String {
         let trimmedExtraRules = embeddedCompatibilityRules.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2372,7 +2395,9 @@ extension ContentBlockerService {
 
         // Important: many filter lists use CRLF, which Swift can treat as a single `Character`.
         // Splitting on "\n" alone may fail and yield a single giant line, resulting in 0 converted rules.
-        let lines = filterRules.split(whereSeparator: \.isNewline).map(String.init)
+        let lines = deduplicatedRuleLines(
+            filterRules.split(whereSeparator: \.isNewline).map(String.init)
+        )
         if cancellationRequested() {
             throw CancellationError()
         }

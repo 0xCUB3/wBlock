@@ -47,7 +47,7 @@ require(
 )
 require(
     customFiltersSource,
-    "if !filterLists.contains(where: { $0.url == filter.url })",
+    "if !filterLists.contains(where: { FilterListURLSupport.isSameList($0.url, filter.url) })",
     "addCustomFilterList must check for duplicate URLs across all filter lists"
 )
 
