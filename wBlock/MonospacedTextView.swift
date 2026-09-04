@@ -5,13 +5,16 @@ import AppKit
 
 struct MonospacedTextView: NSViewRepresentable {
     @Binding var text: String
+    /// When set, replaces `text` for display (read-only views such as the
+    /// rules viewer use this for per-line highlighting).
+    var attributedText: NSAttributedString?
     var softTopEdge = false
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = makeDocumentScrollView()
 
         guard let textView = scrollView.documentView as? NSTextView else { return scrollView }
-        textView.string = text
+        apply(to: textView)
         expandDocumentToFit(textView, in: scrollView)
         return scrollView
     }
@@ -19,12 +22,26 @@ struct MonospacedTextView: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         applyTrailingScrollerInset(to: scrollView)
         guard let textView = scrollView.documentView as? NSTextView else { return }
-        if textView.string != text {
-            let selectedRanges = textView.selectedRanges
-            textView.string = text
-            textView.selectedRanges = selectedRanges
+        let selectedRanges = textView.selectedRanges
+        if apply(to: textView) {
+            textView.selectedRanges = selectedRanges.filter {
+                NSMaxRange($0.rangeValue) <= (textView.string as NSString).length
+            }
         }
         expandDocumentToFit(textView, in: scrollView)
+    }
+
+    /// Returns true when the document changed.
+    @discardableResult
+    private func apply(to textView: NSTextView) -> Bool {
+        if let attributedText {
+            guard textView.textStorage?.isEqual(to: attributedText) != true else { return false }
+            textView.textStorage?.setAttributedString(attributedText)
+            return true
+        }
+        guard textView.string != text else { return false }
+        textView.string = text
+        return true
     }
 
     private func makeDocumentScrollView() -> NSScrollView {
@@ -115,17 +132,29 @@ import UIKit
 
 struct MonospacedTextView: UIViewRepresentable {
     @Binding var text: String
+    /// When set, replaces `text` for display (read-only views such as the
+    /// rules viewer use this for per-line highlighting).
+    var attributedText: NSAttributedString?
     var softTopEdge = false
 
     func makeUIView(context: Context) -> UITextView {
         let textView = UITextView(frame: .zero, textContainer: nil)
         configure(textView: textView)
-        textView.text = text
+        if let attributedText {
+            textView.attributedText = attributedText
+        } else {
+            textView.text = text
+        }
         return textView
     }
 
     func updateUIView(_ textView: UITextView, context: Context) {
         configure(textView: textView)
+        if let attributedText {
+            guard !textView.attributedText.isEqual(to: attributedText) else { return }
+            textView.attributedText = attributedText
+            return
+        }
         guard textView.text != text else { return }
 
         let selectedRange = textView.selectedRange

@@ -1045,3 +1045,11 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Resume Where You Left Off" = "Reanudar donde lo dejaste";
 "Quality and Audio Toolbar" = "Barra de calidad y audio";
 "Enable All" = "Activar todo";
+
+
+"Supported" = "Compatibles";
+"Unsupported" = "No compatibles";
+"Duplicates" = "Duplicadas";
+"Comments" = "Comentarios";
+"Needs wBlock Scripts" = "Requiere wBlock Scripts";
+"View" = "Ver";

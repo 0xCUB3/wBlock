@@ -1045,3 +1045,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Resume Where You Left Off" = "Συνέχεια από εκεί που σταμάτησες";
 "Quality and Audio Toolbar" = "Γραμμή ποιότητας και ήχου";
 "Enable All" = "Ενεργοποίηση όλων";
+
+
+"Supported" = "Υποστηρίζονται";
+"Unsupported" = "Δεν υποστηρίζονται";
+"Duplicates" = "Διπλότυπα";
+"Comments" = "Σχόλια";
+"Needs wBlock Scripts" = "Απαιτεί wBlock Scripts";
+"View" = "Προβολή";

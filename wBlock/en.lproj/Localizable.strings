@@ -1044,3 +1044,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Resume Where You Left Off" = "Resume Where You Left Off";
 "Quality and Audio Toolbar" = "Quality and Audio Toolbar";
 "Enable All" = "Enable All";
+
+
+"Supported" = "Supported";
+"Unsupported" = "Unsupported";
+"Duplicates" = "Duplicates";
+"Comments" = "Comments";
+"Needs wBlock Scripts" = "Needs wBlock Scripts";
+"View" = "View";

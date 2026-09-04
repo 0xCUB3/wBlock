@@ -1045,3 +1045,11 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Resume Where You Left Off" = "Reia de unde ai rămas";
 "Quality and Audio Toolbar" = "Bară calitate și audio";
 "Enable All" = "Activează toate";
+
+
+"Supported" = "Acceptate";
+"Unsupported" = "Neacceptate";
+"Duplicates" = "Duplicate";
+"Comments" = "Comentarii";
+"Needs wBlock Scripts" = "Necesită wBlock Scripts";
+"View" = "Vizualizare";

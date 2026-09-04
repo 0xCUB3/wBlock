@@ -1045,3 +1045,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Resume Where You Left Off" = "从上次位置继续";
 "Quality and Audio Toolbar" = "画质与音频工具栏";
 "Enable All" = "全部启用";
+
+
+"Supported" = "支持";
+"Unsupported" = "不支持";
+"Duplicates" = "重复";
+"Comments" = "注释";
+"Needs wBlock Scripts" = "需要 wBlock Scripts";
+"View" = "视图";

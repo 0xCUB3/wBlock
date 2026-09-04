@@ -1045,3 +1045,11 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Resume Where You Left Off" = "Continuar de onde parou";
 "Quality and Audio Toolbar" = "Barra de qualidade e áudio";
 "Enable All" = "Ativar tudo";
+
+
+"Supported" = "Compatíveis";
+"Unsupported" = "Incompatíveis";
+"Duplicates" = "Duplicadas";
+"Comments" = "Comentários";
+"Needs wBlock Scripts" = "Requer wBlock Scripts";
+"View" = "Exibir";

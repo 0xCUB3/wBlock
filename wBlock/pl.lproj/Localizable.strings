@@ -1045,3 +1045,11 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Resume Where You Left Off" = "Wznów od miejsca zakończenia";
 "Quality and Audio Toolbar" = "Pasek jakości i dźwięku";
 "Enable All" = "Włącz wszystko";
+
+
+"Supported" = "Obsługiwane";
+"Unsupported" = "Nieobsługiwane";
+"Duplicates" = "Duplikaty";
+"Comments" = "Komentarze";
+"Needs wBlock Scripts" = "Wymaga wBlock Scripts";
+"View" = "Widok";

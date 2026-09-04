@@ -1045,3 +1045,11 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Resume Where You Left Off" = "Dort fortsetzen, wo du aufgehört hast";
 "Quality and Audio Toolbar" = "Qualitäts- und Audio-Leiste";
 "Enable All" = "Alle aktivieren";
+
+
+"Supported" = "Unterstützt";
+"Unsupported" = "Nicht unterstützt";
+"Duplicates" = "Duplikate";
+"Comments" = "Kommentare";
+"Needs wBlock Scripts" = "Benötigt wBlock Scripts";
+"View" = "Ansicht";

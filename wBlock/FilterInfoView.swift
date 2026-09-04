@@ -146,9 +146,15 @@ struct FilterInfoView: View {
 
 struct FilterRulesView: View {
     let filter: FilterList
+    @ObservedObject var filterManager: AppFilterManager
     @State private var rules = ""
+    @State private var analysis: FilterRuleAnalysis?
     @State private var isLoading = true
+    @State private var shownKinds: Set<FilterRuleKind> = Set(FilterRuleKind.allCases)
+    @State private var displayedText: NSAttributedString?
     @Environment(\.dismiss) private var dismiss
+
+    private static let highlightedKinds: [FilterRuleKind] = [.supported, .advanced, .unsupported, .duplicate]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -156,6 +162,9 @@ struct FilterRulesView: View {
                 Text(filter.localizedDisplayName)
                     .font(.headline)
                 Spacer()
+                if analysis != nil {
+                    filterMenu
+                }
                 SheetDoneButton { dismiss() }
             }
             .padding(16)
@@ -171,14 +180,168 @@ struct FilterRulesView: View {
             } else {
                 MonospacedTextView(
                     text: Binding(get: { rules }, set: { _ in }),
+                    attributedText: displayedText,
                     softTopEdge: true
                 )
+                if let analysis {
+                    Divider()
+                    legend(analysis)
+                }
             }
         }
         .frame(minWidth: 420, idealWidth: 760, minHeight: 360, idealHeight: 620)
         .task {
             rules = FilterListLoader().readLocalFilterContent(filter) ?? ""
             isLoading = false
+            guard !rules.isEmpty else { return }
+            let content = rules
+            let earlier = earlierListContents()
+            let result = await Task.detached(priority: .userInitiated) { () -> FilterRuleAnalysis in
+                var seen = Set<String>()
+                for text in earlier { seen.formUnion(FilterRuleAnalysis.ruleSet(from: text)) }
+                return FilterRuleAnalysis.analyze(
+                    content: content,
+                    seenInEarlierLists: seen,
+                    isCancelled: { Task.isCancelled }
+                )
+            }.value
+            if !result.lines.isEmpty {
+                analysis = result
+                rebuildDisplayedText()
+            }
+        }
+        .onChangeCompat(of: shownKinds) { _ in rebuildDisplayedText() }
+    }
+
+    /// Contents of enabled lists that compile before this one, so a rule the
+    /// engine already has from another list shows as a duplicate here.
+    private func earlierListContents() -> [String] {
+        let selected = filterManager.filterLists.filter { $0.isSelected }
+        let ordered = ContentBlockerMappingService.orderedForCompilation(selected)
+        guard let index = ordered.firstIndex(where: { $0.id == filter.id }) else { return [] }
+        let loader = FilterListLoader()
+        return ordered[..<index].compactMap { loader.readLocalFilterContent($0) }
+    }
+
+    private var filterMenu: some View {
+        Menu {
+            ForEach(Self.highlightedKinds, id: \.self) { kind in
+                Toggle(isOn: Binding(
+                    get: { shownKinds.contains(kind) },
+                    set: { on in
+                        if on { shownKinds.insert(kind) } else { shownKinds.remove(kind) }
+                    }
+                )) {
+                    Label(Self.title(for: kind), systemImage: Self.symbol(for: kind))
+                }
+            }
+            Divider()
+            Toggle(isOn: Binding(
+                get: { shownKinds.contains(.comment) },
+                set: { on in
+                    if on { shownKinds.insert(.comment) } else { shownKinds.remove(.comment) }
+                }
+            )) {
+                Label("Comments", systemImage: "text.quote")
+            }
+        } label: {
+            Label("View", systemImage: shownKinds.count == FilterRuleKind.allCases.count
+                ? "line.3.horizontal.decrease.circle"
+                : "line.3.horizontal.decrease.circle.fill")
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+    }
+
+    private func legend(_ analysis: FilterRuleAnalysis) -> some View {
+        HStack(spacing: 14) {
+            ForEach(Self.highlightedKinds, id: \.self) { kind in
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(Self.color(for: kind))
+                        .frame(width: 8, height: 8)
+                    Text("\(Self.title(for: kind)): \(analysis.count(of: kind))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
+    /// Syntax colouring from the shared highlighter, with a tinted background
+    /// on lines that need Scripts, do not parse, or repeat an earlier rule.
+    private func rebuildDisplayedText() {
+        guard let analysis else { displayedText = nil; return }
+        let highlighter = AdGuardSyntaxHighlighter()
+        let result = NSMutableAttributedString()
+        let newline = NSAttributedString(string: "\n")
+        var first = true
+        for line in analysis.lines where shownKinds.contains(line.kind) {
+            if !first { result.append(newline) }
+            first = false
+            let highlighted = NSMutableAttributedString(attributedString: highlighter.highlight(line.text))
+            if let tint = Self.tint(for: line.kind) {
+                highlighted.addAttribute(
+                    .backgroundColor,
+                    value: tint,
+                    range: NSRange(location: 0, length: highlighted.length)
+                )
+            }
+            result.append(highlighted)
+        }
+        displayedText = result
+    }
+
+    static func title(for kind: FilterRuleKind) -> String {
+        switch kind {
+        case .comment: return String(localized: "Comments")
+        case .supported: return String(localized: "Supported")
+        case .advanced: return String(localized: "Needs wBlock Scripts")
+        case .unsupported: return String(localized: "Unsupported")
+        case .duplicate: return String(localized: "Duplicates")
         }
     }
+
+    private static func symbol(for kind: FilterRuleKind) -> String {
+        switch kind {
+        case .comment: return "text.quote"
+        case .supported: return "checkmark.circle"
+        case .advanced: return "curlybraces"
+        case .unsupported: return "xmark.circle"
+        case .duplicate: return "doc.on.doc"
+        }
+    }
+
+    static func color(for kind: FilterRuleKind) -> Color {
+        switch kind {
+        case .comment: return .secondary
+        case .supported: return .green
+        case .advanced: return .blue
+        case .unsupported: return .red
+        case .duplicate: return .orange
+        }
+    }
+
+    #if os(macOS)
+    private static func tint(for kind: FilterRuleKind) -> NSColor? {
+        switch kind {
+        case .advanced: return NSColor.systemBlue.withAlphaComponent(0.18)
+        case .unsupported: return NSColor.systemRed.withAlphaComponent(0.22)
+        case .duplicate: return NSColor.systemOrange.withAlphaComponent(0.22)
+        case .comment, .supported: return nil
+        }
+    }
+    #else
+    private static func tint(for kind: FilterRuleKind) -> UIColor? {
+        switch kind {
+        case .advanced: return UIColor.systemBlue.withAlphaComponent(0.18)
+        case .unsupported: return UIColor.systemRed.withAlphaComponent(0.22)
+        case .duplicate: return UIColor.systemOrange.withAlphaComponent(0.22)
+        case .comment, .supported: return nil
+        }
+    }
+    #endif
 }

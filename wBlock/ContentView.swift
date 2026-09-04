@@ -224,7 +224,7 @@ struct ContentView: View {
                 .infoSheetPresentationCompat()
         }
         .sheet(item: $selectedFilterRules) { filter in
-            FilterRulesView(filter: filter)
+            FilterRulesView(filter: filter, filterManager: filterManager)
         }
         .sheet(item: $selectedCategoryInfo) { category in
             FilterCategoryInfoView(

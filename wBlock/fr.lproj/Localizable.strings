@@ -1045,3 +1045,11 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Resume Where You Left Off" = "Reprendre là où vous en étiez";
 "Quality and Audio Toolbar" = "Barre qualité et audio";
 "Enable All" = "Tout activer";
+
+
+"Supported" = "Prises en charge";
+"Unsupported" = "Non prises en charge";
+"Duplicates" = "Doublons";
+"Comments" = "Commentaires";
+"Needs wBlock Scripts" = "Nécessite wBlock Scripts";
+"View" = "Affichage";

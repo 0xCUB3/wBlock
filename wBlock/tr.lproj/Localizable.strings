@@ -1044,3 +1044,11 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Resume Where You Left Off" = "Kaldığın yerden devam et";
 "Quality and Audio Toolbar" = "Kalite ve ses araç çubuğu";
 "Enable All" = "Tümünü aç";
+
+
+"Supported" = "Destekleniyor";
+"Unsupported" = "Desteklenmiyor";
+"Duplicates" = "Yinelenenler";
+"Comments" = "Yorumlar";
+"Needs wBlock Scripts" = "wBlock Scripts gerektirir";
+"View" = "Görünüm";

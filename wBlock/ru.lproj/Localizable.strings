@@ -1045,3 +1045,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Resume Where You Left Off" = "Продолжить с места остановки";
 "Quality and Audio Toolbar" = "Панель качества и звука";
 "Enable All" = "Включить все";
+
+
+"Supported" = "Поддерживаются";
+"Unsupported" = "Не поддерживаются";
+"Duplicates" = "Дубликаты";
+"Comments" = "Комментарии";
+"Needs wBlock Scripts" = "Требуется wBlock Scripts";
+"View" = "Вид";

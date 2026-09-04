@@ -1045,3 +1045,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Resume Where You Left Off" = "前回の位置から再開";
 "Quality and Audio Toolbar" = "画質と音声のツールバー";
 "Enable All" = "すべて有効にする";
+
+
+"Supported" = "対応";
+"Unsupported" = "非対応";
+"Duplicates" = "重複";
+"Comments" = "コメント";
+"Needs wBlock Scripts" = "wBlock Scripts が必要";
+"View" = "表示";
