@@ -205,7 +205,9 @@ public enum WebExtensionRequestHandler {
                     if paused {
                         message?["payload"] = emptyRulesPayload(disabled: false, paused: true)
                     } else {
-                        let disabledSites = await currentDisabledSites()
+                        // Advanced rules are a filtering component, so a filter-only
+                        // exception must silence them too (issue #652).
+                        let disabledSites = await currentFilterDisabledSites()
                         let disabled = HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites)
                         if disabled {
                             message?["payload"] = emptyRulesPayload(disabled: true, paused: false)
@@ -568,7 +570,9 @@ public enum WebExtensionRequestHandler {
         let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         Task { @MainActor in
             let paused = BlockingPauseStore.isPaused(.filters)
-            let disabledSites = await currentDisabledSites()
+            // Mirrors the advanced-rules gate above: filter-only sites report disabled
+            // here so cached configurations are not replayed on them.
+            let disabledSites = await currentFilterDisabledSites()
             let disabled = !host.isEmpty && HostMatcher.isHostDisabled(host: host, disabledSites: disabledSites)
             let response = createResponse(with: ["disabled": disabled, "paused": paused])
             context.completeRequest(returningItems: [response])
@@ -893,6 +897,7 @@ public enum WebExtensionRequestHandler {
         let includeContent = message["includeContent"] as? Bool == true
         let maxInlineContentBytes = message["maxInlineContentBytes"] as? Int ?? Int.max
         Task { @MainActor in
+            // Master disable only. Filter-only exceptions must still receive userscripts (issue #652).
             let disabledSites = await currentDisabledSites()
             if let url = URL(string: urlString) {
                 if HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites) {
@@ -1123,6 +1128,8 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
+            // Same master-only gate as getUserScripts so Site Settings "Content filtering"
+            // off does not hide running scripts (issue #652).
             let disabledSites = await currentDisabledSites()
             if let url = URL(string: urlString),
                HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites)

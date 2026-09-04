@@ -483,9 +483,16 @@ public actor SharedAutoUpdateManager {
         return await MainActor.run { manager.getFilterLastModified(uuid) }
     }
 
+    /// Filtering exceptions for background rebuilds. Includes filter-only sites so an
+    /// auto-update does not silently re-enable filtering on them (issue #652).
     private func getDisabledSites() async -> [String] {
         let manager = await getDataManager()
-        return await MainActor.run { manager.disabledSites }
+        return await MainActor.run {
+            DisabledSitesNormalizer.effectiveFilterDisabledDomains(
+                master: manager.disabledSites,
+                filterOnly: manager.filterDisabledSites
+            )
+        }
     }
 
     private func autoUpdateUserScriptsIfNeeded() async -> (updated: Int, failed: Int) {
