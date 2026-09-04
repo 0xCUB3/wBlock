@@ -239,7 +239,7 @@ public enum FilterListContentProcessing {
 public enum ContentBlockerIncrementalCache {
     // Bump when signature inputs/schema change so stale per-target signatures
     // do not suppress needed rebuilds.
-    private static let inputSignatureSchemaVersion = "4"
+    private static let inputSignatureSchemaVersion = "5"
 
     private struct State: Codable {
         var inputSignature: String
@@ -251,6 +251,12 @@ public enum ContentBlockerIncrementalCache {
     ///   - affinityContributors: Lists assigned elsewhere whose
     ///     `!#safari_cb_affinity` blocks are replicated into this target. They
     ///     are part of the input, so they are part of the signature (#679).
+    /// UI ordering does not change compilation. Keep rule order within each
+    /// list intact, but use a stable list order for both hashing and conversion.
+    public static func canonicalFilterOrder(_ filters: [FilterList]) -> [FilterList] {
+        filters.sorted { $0.id.uuidString < $1.id.uuidString }
+    }
+
     public static func computeInputSignature(
         filters: [FilterList],
         affinityContributors: [FilterList] = [],
@@ -267,13 +273,13 @@ public enum ContentBlockerIncrementalCache {
         var canonical = "schema=\(inputSignatureSchemaVersion)\ncount=\(filters.count)\n"
         canonical.reserveCapacity((filters.count + affinityContributors.count) * 64)
 
-        for filter in filters {
+        for filter in canonicalFilterOrder(filters) {
             let fileMarker = localFileFingerprint(for: filter, containerURL: containerURL)
             canonical.append("\(filter.id.uuidString)|\(fileMarker)|\(excludedSitesMarker(for: filter))\n")
         }
         if !affinityContributors.isEmpty {
             canonical.append("affinity=\(affinityContributors.count)\n")
-            for filter in affinityContributors {
+            for filter in canonicalFilterOrder(affinityContributors) {
                 let fileMarker = localFileFingerprint(for: filter, containerURL: containerURL)
                 canonical.append("a|\(filter.id.uuidString)|\(fileMarker)|\(excludedSitesMarker(for: filter))\n")
             }

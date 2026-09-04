@@ -91,6 +91,7 @@ compile_core_test issue-675-rule-analysis scripts/test_issue_675_rule_analysis.s
 compile_core_test issue-679-affinity-cache-behavior scripts/test_issue_679_affinity_cache_behavior.swift
 compile_core_test issue-681-dedup-behavior scripts/test_issue_681_dedup_behavior.swift
 compile_core_test issue-681-url-identity scripts/test_issue_681_url_identity.swift
+compile_core_test issue-683-reorder-cache scripts/test_issue_683_reorder_cache.swift
 compile_core_test cosmetic-filtering-preference scripts/test_cosmetic_filtering_preference.swift
 compile_core_test cloud-custom-filters scripts/test_cloud_sync_custom_filters.swift \
   wBlock/CloudSyncCustomFilterSync.swift

@@ -1414,6 +1414,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         if Task.isCancelled || isCancelled?() == true {
             throw CancellationError()
         }
+        // Use the same stable list order for cache identity and fresh output.
+        // Sorting only the hash would reuse output from a different ordering.
+        let filters = ContentBlockerIncrementalCache.canonicalFilterOrder(filters)
+        let orderedSelectedFilters = ContentBlockerIncrementalCache.canonicalFilterOrder(orderedSelectedFilters)
         let rulesFilename = targetInfo.rulesFilename
         let cosmeticFilteringEnabled = CosmeticFilteringPreference.isEnabled(groupIdentifier: groupIdentifier)
         // Affinity blocks from lists assigned to other targets are replicated

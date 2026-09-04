@@ -37,6 +37,6 @@ require(body.contains("affinitySnapshot.content(for: $0.id) != nil"), "contribut
 
 require(utils.contains("affinityContributors: [FilterList] = []"), "computeInputSignature must accept affinity contributors")
 require(utils.contains("excludedSitesMarker(for: filter)"), "signature must include per-list excluded sites")
-require(utils.contains("inputSignatureSchemaVersion = \"4\""), "schema version must bump so stale signatures do not suppress a needed rebuild")
+require(utils.contains("inputSignatureSchemaVersion = \"5\""), "schema version must bump so stale signatures do not suppress a needed rebuild")
 
 print("PASS")
