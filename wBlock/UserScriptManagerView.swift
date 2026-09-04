@@ -1334,10 +1334,10 @@ struct UserScriptInfoView: View {
                 )
                 .padding(20)
                 .frame(width: 460)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        SheetDoneButton { dismiss() }
-                    }
+                .safeAreaInset(edge: .top, alignment: .trailing, spacing: 0) {
+                    SheetDoneButton { dismiss() }
+                        .padding(.top, 16)
+                        .padding(.trailing, 20)
                 }
                 #endif
             } else if isLoading {
