@@ -1401,6 +1401,10 @@ function setupListeners() {
 
     if (updateFiltersButton) {
         updateFiltersButton.addEventListener('click', () => {
+            if (updateFiltersButton.dataset.openInApp === 'true') {
+                window.location.href = 'wblockapp://update-filters';
+                return;
+            }
             startFilterUpdate().catch((error) => {
                 console.error('[wBlock] Filter update action failed:', error);
             });
@@ -1758,7 +1762,11 @@ async function refreshUi() {
     }
     const isMac = await isMacPlatform();
     const updateFiltersButton = document.getElementById('update-filters');
-    if (updateFiltersButton) updateFiltersButton.hidden = !isMac;
+    if (updateFiltersButton) {
+        updateFiltersButton.hidden = false;
+        updateFiltersButton.dataset.openInApp = String(!isMac);
+        updateFiltersButton.title = isMac ? '' : t('popup_button_open_short', undefined, 'Open wBlock');
+    }
     if (isMac) {
         refreshFilterUpdateStatus().catch((error) => {
             console.warn('[wBlock] Failed to restore filter update status:', error);

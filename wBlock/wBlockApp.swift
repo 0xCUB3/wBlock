@@ -58,6 +58,17 @@ struct wBlockApp: App {
         }
     }
 
+    #if os(iOS)
+    @State private var pendingFilterUpdateRequest = false
+
+    private func runPendingFilterUpdate() {
+        guard pendingFilterUpdateRequest, hasCompletedLaunchSetup,
+              !filterManager.isLoading, !filterManager.showingApplyProgressSheet else { return }
+        pendingFilterUpdateRequest = false
+        Task { await filterManager.checkForUpdates(scope: .filters, presentation: .blocking) }
+    }
+    #endif
+
     @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system
 
     var body: some Scene {
@@ -84,6 +95,16 @@ struct wBlockApp: App {
                     guard newPhase == .active, hasCompletedLaunchSetup else { return }
                     Task { await CloudSyncManager.shared.syncNow(trigger: "AppActive") }
                 }
+                #if os(iOS)
+                .onOpenURL { url in
+                    guard url.scheme == "wblockapp", url.host == "update-filters" else { return }
+                    pendingFilterUpdateRequest = true
+                    runPendingFilterUpdate()
+                }
+                .onChangeCompat(of: hasCompletedLaunchSetup) { _, _ in runPendingFilterUpdate() }
+                .onChangeCompat(of: filterManager.isLoading) { _, _ in runPendingFilterUpdate() }
+                .onChangeCompat(of: filterManager.showingApplyProgressSheet) { _, _ in runPendingFilterUpdate() }
+                #endif
                 #if os(macOS)
                 .handlesExternalEvents(preferring: Set(["open"]), allowing: Set(["*"]))
                 .confirmationDialog(
