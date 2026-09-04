@@ -696,7 +696,7 @@ struct ContentView: View {
             onEdit: { editingCustomFilter = filter },
             onDelete: { filterManager.removeFilterList(filter) },
             onToggle: { newValue in
-                if !newValue && FilterListLoader.recommendedFilterNames.contains(filter.name) {
+                if !newValue && FilterListLoader.essentialFilterNames.contains(filter.name) {
                     pendingEssentialFilter = filter
                 } else {
                     filterManager.setFilterListSelection(id: filter.id, selected: newValue)

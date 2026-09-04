@@ -19,6 +19,7 @@ class FilterListLoader {
             "Online Malicious URL Blocklist",
             "Peter Lowe's Blocklist",
             "Adblock Warning Removal List",
+            "AdGuard Cookie Notices",
         ]
     #else
         static let recommendedFilterNames: Set<String> = [
@@ -30,9 +31,14 @@ class FilterListLoader {
             "Online Malicious URL Blocklist",
             "Peter Lowe's Blocklist",
             "Adblock Warning Removal List",
+            "AdGuard Cookie Notices",
             "AdGuard Mobile Filter",
         ]
     #endif
+
+    // Lists that prompt an "essential protection" warning before they are disabled.
+    // Cookie Notices is on by default (#655) but is a convenience, not protection.
+    static let essentialFilterNames: Set<String> = recommendedFilterNames.subtracting(["AdGuard Cookie Notices"])
 
     private static let filterURLMigrations: [String: URL] = [
         "https://raw.githubusercontent.com/List-KR/List-KR/refs/heads/master/filter-AdGuard-forward.txt":
@@ -231,7 +237,7 @@ class FilterListLoader {
                 url: URL(
                     string:
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/18_optimized.txt"
-                )!, category: FilterListCategory.annoyances,
+                )!, category: FilterListCategory.annoyances, isSelected: true,
                 description: "Blocks cookie consent notices on web pages."),
             FilterList(
                 id: UUID(), name: "AdGuard Popups",
