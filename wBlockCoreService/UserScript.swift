@@ -40,6 +40,23 @@ public enum UserScriptURLSupport {
         return lines.joined(separator: hasMultipleURLs ? "\n" : "")
     }
 
+    /// Merges pasted text into an existing URL list (#642): keeps what was
+    /// already typed, drops duplicates, and leaves one URL per line.
+    public static func appendingPastedURLs(_ pasted: String, to existing: String) -> String {
+        let incoming = normalizePastedURL(pasted)
+        let current = existing
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        guard !current.isEmpty else { return incoming }
+        var seen = Set(current)
+        var lines = current
+        for line in incoming.components(separatedBy: .newlines) where !line.isEmpty && seen.insert(line).inserted {
+            lines.append(line)
+        }
+        return lines.joined(separator: "\n")
+    }
+
     /// Parses one wrapped URL or multiple complete URLs, one per line.
     public static func parseRemoteURLs(from rawValue: String) -> [URL] {
         let lines = rawValue.components(separatedBy: .newlines).compactMap { line -> String? in

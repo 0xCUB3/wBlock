@@ -1899,11 +1899,9 @@ struct AddUserScriptView: View {
         }
         #endif
         .onChangeCompat(of: urlInput) { _, newValue in
-            let normalized = UserScriptURLSupport.normalizePastedURL(newValue)
-            if normalized != newValue {
-                urlInput = normalized
-                return
-            }
+            // Do not rewrite the field while typing: collapsing lines here ate the
+            // Return key, which made bulk entry impossible (#642). Paste and
+            // submit normalize explicitly; validation tolerates blank lines.
             validateInput(newValue)
         }
         .onChangeCompat(of: textInput) { _, _ in
@@ -2685,14 +2683,12 @@ struct AddUserScriptView: View {
 
     private func pasteFromClipboard() {
         #if os(iOS)
-        if let string = UIPasteboard.general.string {
-            urlInput = UserScriptURLSupport.normalizePastedURL(string)
-        }
+        let string = UIPasteboard.general.string
         #elseif os(macOS)
-        if let string = NSPasteboard.general.string(forType: .string) {
-            urlInput = UserScriptURLSupport.normalizePastedURL(string)
-        }
+        let string = NSPasteboard.general.string(forType: .string)
         #endif
+        guard let string else { return }
+        urlInput = UserScriptURLSupport.appendingPastedURLs(string, to: urlInput)
     }
 
     private func pasteScriptFromClipboard() {

@@ -94,6 +94,23 @@ struct UserScriptURLSupportTests {
             "expected .user.js suffix to be stripped from remote display names"
         )
 
+        // #642: Paste appends to what is already in the URL box.
+        expectEqual(
+            UserScriptURLSupport.appendingPastedURLs("https://example.com/two.user.js", to: "https://example.com/one.user.js\n"),
+            "https://example.com/one.user.js\nhttps://example.com/two.user.js",
+            "expected a pasted URL to be appended on its own line"
+        )
+        expectEqual(
+            UserScriptURLSupport.appendingPastedURLs("https://example.com/one.user.js", to: "https://example.com/one.user.js"),
+            "https://example.com/one.user.js",
+            "expected a duplicate pasted URL to be dropped"
+        )
+        expectEqual(
+            UserScriptURLSupport.appendingPastedURLs("https://example.com/wrapped/\nscript.user.js", to: ""),
+            "https://example.com/wrapped/script.user.js",
+            "expected paste into an empty box to rejoin a wrapped URL"
+        )
+
         print("PASS")
     }
 
