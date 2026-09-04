@@ -188,6 +188,9 @@ public enum WebExtensionRequestHandler {
             case "maybeUpdateUserScripts":
                 handleMaybeUpdateUserScripts(context: context)
                 return
+            case "maybeStageFilterUpdates":
+                handleMaybeStageFilterUpdates(context: context)
+                return
             case "openContainingApp":
                 handleOpenContainingApp(context: context)
                 return
@@ -653,27 +656,23 @@ public enum WebExtensionRequestHandler {
                 ])
                 context.completeRequest(returningItems: [response])
             case .timedOut, .unavailable:
-                guard FilterUpdatePopupStatus.beginIfIdle() else {
-                    let response = createResponse(with: [
-                        "ok": true,
-                        "accepted": false,
-                        "state": FilterUpdatePopupStatus.State.running.rawValue
-                    ])
-                    context.completeRequest(returningItems: [response])
-                    return
+                // No agent and no running app. The shared manager refuses to
+                // run inside an extension (safe mode), so queue the request
+                // and wake the app; it consumes the request on launch and
+                // reports back through the popup status (#676).
+                let accepted = FilterUpdatePopupStatus.requestUpdate()
+                let opened = accepted && NSWorkspace.shared.open(URL(string: "wblockapp://open")!)
+                if accepted && !opened {
+                    FilterUpdatePopupStatus.finish(.failed(message: "Open wBlock to update filters."))
                 }
-
                 let response = createResponse(with: [
                     "ok": true,
-                    "accepted": true,
-                    "state": FilterUpdatePopupStatus.State.running.rawValue
+                    "accepted": accepted && opened,
+                    "state": (accepted && opened
+                        ? FilterUpdatePopupStatus.State.running
+                        : FilterUpdatePopupStatus.State.failed).rawValue
                 ])
                 context.completeRequest(returningItems: [response])
-                let outcome = await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
-                    trigger: "Popup",
-                    force: true
-                )
-                FilterUpdatePopupStatus.finish(outcome)
             }
         }
         #else
@@ -717,6 +716,30 @@ public enum WebExtensionRequestHandler {
                 "updated": result.updated,
                 "failed": result.failed
             ])])
+        }
+    }
+
+    /// Opportunistic filter download while Safari is in use (#528). Only the
+    /// conditional GETs and per-list file writes run here; the rebuild waits
+    /// for the app, which the shared manager flags through `forceNext` and a
+    /// staged-downloads marker.
+    private static func handleMaybeStageFilterUpdates(context: NSExtensionContext) {
+        Task {
+            let outcome = await SharedAutoUpdateManager.shared.stageFilterDownloadsFromExtension(trigger: "SafariBrowsing")
+            var payload: [String: Any] = ["ok": true]
+            switch outcome {
+            case let .staged(updated, checked, hadErrors):
+                payload["staged"] = updated
+                payload["checked"] = checked
+                payload["errors"] = hadErrors
+            case let .noUpdates(checked, hadErrors):
+                payload["staged"] = 0
+                payload["checked"] = checked
+                payload["errors"] = hadErrors
+            case let .skipped(reason):
+                payload["skipped"] = reason
+            }
+            context.completeRequest(returningItems: [createResponse(with: payload)])
         }
     }
 

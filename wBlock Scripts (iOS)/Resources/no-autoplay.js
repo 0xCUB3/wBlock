@@ -370,6 +370,16 @@
         }
     }
 
+    function requestPageWorldGate(gateToken) {
+        try {
+            browser.runtime.sendMessage({
+                action: 'wblock:noAutoplay:injectGate',
+                source: noAutoplayGate.toString(),
+                token: gateToken
+            }).catch(function () { /* background unavailable; isolated gate stays */ });
+        } catch (e) { /* ignore */ }
+    }
+
     function armNow() {
         if (armed) {
             dispatchControl('enable');
@@ -382,6 +392,12 @@
             // stripping, pause-on-play, and unlock tracking act on the shared
             // DOM, so autoplay is still suppressed.
             noAutoplayGate(token);
+            // Sites such as YouTube enforce Trusted Types and drive playback
+            // from script, so DOM-level enforcement alone is not enough (#676).
+            // Ask the background to run the same gate in the page world via
+            // scripting.executeScript, which CSP does not govern. The gate's
+            // window guard and shared DOM attributes keep both copies agreeing.
+            requestPageWorldGate(token);
         }
         armed = true;
     }

@@ -238,6 +238,7 @@ public actor SharedAutoUpdateManager {
         return mainBundle.object(forInfoDictionaryKey: "NSExtension") != nil
     }()
     private var hasLoggedExtensionSafeModeNotice = false
+    private var stagingInProgress = false
 
     // Configured URLSession for better resource management
     private lazy var urlSession: URLSession = {
@@ -955,8 +956,21 @@ public actor SharedAutoUpdateManager {
             try throwIfCancelled()
             let updateResult = try await checkAndFetchUpdates(filters: selectedFilters)
             try throwIfCancelled()
-            let updatedFilterSet = updateResult.updatedFilters
+            var updatedFilterSet = updateResult.updatedFilters
             let hadErrors = updateResult.hadErrors
+
+            // Filter files the Safari extension downloaded while browsing (#528)
+            // are already on disk, so the servers report nothing new here. The
+            // marker tells this run to rebuild from them anyway.
+            if !isExternalHelperTrigger(trigger), let staged = StagedFilterDownloads.load() {
+                let stagedIDs = Set(staged.filterIDs)
+                let alreadyIncluded = Set(updatedFilterSet.map { $0.id.uuidString })
+                let fromMarker = stagedIDs.isEmpty
+                    ? selectedFilters
+                    : selectedFilters.filter { stagedIDs.contains($0.id.uuidString) }
+                updatedFilterSet.append(contentsOf: fromMarker.filter { !alreadyIncluded.contains($0.id.uuidString) })
+                appendSharedLog("Applying \(fromMarker.count) filter update(s) staged by the Safari extension.")
+            }
 
             guard !updatedFilterSet.isEmpty else {
                 var reloadStatus = "skipped"
@@ -1066,6 +1080,7 @@ public actor SharedAutoUpdateManager {
                 reloadContentBlockers: !helperStagedUpdates
             )
             try throwIfCancelled()
+            if !helperStagedUpdates { StagedFilterDownloads.clear() }
 
             try requireUserScriptsBudget()
             let scriptsResult = await autoUpdateUserScriptsIfNeeded()
@@ -1190,6 +1205,119 @@ public actor SharedAutoUpdateManager {
             )
             return await finishStartedRun(.failed(message: error.localizedDescription))
         }
+    }
+
+    // MARK: - Extension staging (#528)
+
+    public enum StagingOutcome: Sendable, Equatable {
+        case staged(updatedFilters: Int, checkedFilters: Int, hadErrors: Bool)
+        case noUpdates(checkedFilters: Int, hadErrors: Bool)
+        case skipped(reason: String)
+    }
+
+    /// Downloads changed filter lists from the Safari extension without
+    /// touching the engine (#528). The run above takes an exclusive lock for
+    /// its whole duration and rebuilds under the engine lock, both of which
+    /// iOS kills a suspended extension for. This path only performs the
+    /// conditional GETs, writes the per-list files atomically, saves the
+    /// list metadata, and leaves a marker plus `forceNext` so the next app
+    /// run rebuilds from the staged files even though the servers then
+    /// report nothing new. It follows the same interval as the app.
+    public func stageFilterDownloadsFromExtension(trigger: String) async -> StagingOutcome {
+        guard Self.isAppExtensionProcess else { return .skipped(reason: "not_extension") }
+        guard !stagingInProgress else { return .skipped(reason: "already_running") }
+        stagingInProgress = true
+        defer { stagingInProgress = false }
+
+        await ProtobufDataManager.shared.waitUntilLoaded()
+        guard await getAutoUpdateEnabled() else { return .skipped(reason: "auto_update_disabled") }
+        guard !BlockingPauseStore.isPaused(.filters) else { return .skipped(reason: "filters_paused") }
+        guard await !getAutoUpdateIsRunning() else { return .skipped(reason: "app_run_in_progress") }
+
+        #if !os(iOS)
+        // On macOS the app or its agent may be updating right now; the lease
+        // is the cross-process check. The extension is never suspended there.
+        guard let lease = SharedAutoUpdateLease.acquire(groupIdentifier: GroupIdentifier.shared.value) else {
+            return .skipped(reason: "already_running")
+        }
+        defer { withExtendedLifetime(lease) {} }
+        #endif
+
+        let now = Date().timeIntervalSince1970
+        let interval = await getAutoUpdateIntervalHours()
+        let nextEligible = await getAutoUpdateNextEligibleTime()
+        if nextEligible > 0, now < TimeInterval(nextEligible) {
+            return .skipped(reason: "throttled_not_eligible")
+        }
+        if nextEligible <= 0 {
+            let lastCheck = await getAutoUpdateLastCheckTime()
+            if lastCheck > 0, now - TimeInterval(lastCheck) < interval * 3600 {
+                return .skipped(reason: "throttled_legacy_interval")
+            }
+        }
+
+        let (allFilters, selectedFilters) = await loadFilterListsFromProtobuf()
+        guard !selectedFilters.isEmpty else { return .skipped(reason: "no_selected_filters") }
+
+        // Marker first: if this process dies between writing a list file and
+        // saving metadata, the app still rebuilds from whatever landed.
+        StagedFilterDownloads.save(filterIDs: [])
+        await ProtobufDataManager.shared.setAutoUpdateLastCheckTime(Int64(now))
+        appendSharedLog("Extension staging started: trigger=\(trigger), intervalHours=\(String(format: "%.1f", interval))")
+
+        let updateResult: UpdateFetchResult
+        do {
+            updateResult = try await checkAndFetchUpdates(filters: selectedFilters)
+        } catch {
+            StagedFilterDownloads.clear()
+            appendSharedLog("Extension staging failed: \(error.localizedDescription)")
+            return .skipped(reason: "fetch_failed")
+        }
+
+        let retryDelay = min(3600.0, max(900.0, interval * 3600 * 0.25))
+        let completion = Date().timeIntervalSince1970
+        let nextCheck = completion + (updateResult.hadErrors ? retryDelay : interval * 3600)
+
+        guard !updateResult.updatedFilters.isEmpty else {
+            StagedFilterDownloads.clear()
+            await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextCheck))
+            _ = await ProtobufDataManager.shared.saveDataImmediately()
+            invalidateStatusCache()
+            appendSharedLog("Extension staging: no filter updates, checkErrors=\(updateResult.hadErrors), nextCheckIn=\(formatDurationSeconds(Int(nextCheck - completion)))")
+            appendTelemetry("run_result", fields: [
+                "trigger": trigger, "result": "staged_no_updates",
+                "checked_filters": "\(updateResult.checkedCount)", "updated_filters": "0",
+                "error_count": "\(updateResult.errorCount)"
+            ])
+            return .noUpdates(checkedFilters: updateResult.checkedCount, hadErrors: updateResult.hadErrors)
+        }
+
+        var merged = allFilters
+        for updated in updateResult.updatedFilters {
+            if let idx = merged.firstIndex(where: { $0.id == updated.id }) { merged[idx] = updated }
+        }
+        let latestPersisted = await ProtobufDataManager.shared.getFilterLists()
+        merged = FilterSelectionRebaser.rebaseSelection(snapshot: merged, latestPersisted: latestPersisted)
+        await saveFilterListsToProtobuf(merged)
+        StagedFilterDownloads.save(filterIDs: updateResult.updatedFilters.map { $0.id.uuidString })
+        await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
+        await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextCheck))
+        _ = await ProtobufDataManager.shared.saveDataImmediately()
+        invalidateStatusCache()
+
+        let preview = updateResult.updatedFilters.prefix(3).map(\.name).joined(separator: ", ")
+        appendSharedLog("Extension staged \(updateResult.updatedFilters.count) filter update(s): \(preview)\(updateResult.updatedFilters.count > 3 ? ", ..." : ""). They apply when the app next opens.")
+        appendTelemetry("run_result", fields: [
+            "trigger": trigger, "result": "staged_updates",
+            "checked_filters": "\(updateResult.checkedCount)",
+            "updated_filters": "\(updateResult.updatedFilters.count)",
+            "error_count": "\(updateResult.errorCount)"
+        ])
+        return .staged(
+            updatedFilters: updateResult.updatedFilters.count,
+            checkedFilters: updateResult.checkedCount,
+            hadErrors: updateResult.hadErrors
+        )
     }
 
     // MARK: - Loading / Saving

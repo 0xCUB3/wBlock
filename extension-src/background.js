@@ -26172,7 +26172,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (action === "startFilterUpdate" || action === "getFilterUpdateStatus") return 10000;
     // A script pass can download several files; give it room before the
     // queue moves on. The native gate refuses overlapping runs anyway.
-    if (action === "maybeUpdateUserScripts") return 120000;
+    if (action === "maybeUpdateUserScripts" || action === "maybeStageFilterUpdates") return 120000;
     if (action === "getBlockingState") return 1000;
     return 30000;
   };
@@ -26579,6 +26579,29 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     var _sender$tab, _sender$tab2;
     // Cast the incoming request to `Message`.
     const message = request;
+    if (message && message.action === "wblock:noAutoplay:injectGate") {
+      // Page-world fallback for the No Autoplay gate when the page's CSP
+      // blocks inline scripts (#676). The source is the gate function the
+      // content script already carries; nothing page-controlled is executed.
+      const tabId = sender && sender.tab ? sender.tab.id : undefined;
+      if (typeof tabId !== "number" || !browser.scripting || typeof message.source !== "string" || typeof message.token !== "string") {
+        return { ok: false };
+      }
+      try {
+        await browser.scripting.executeScript({
+          target: { tabId, frameIds: [sender.frameId ?? 0] },
+          func: (gateSource, gateToken) => {
+            try { (0, eval)("(" + gateSource + ")")(gateToken); } catch (e) { /* ignore */ }
+          },
+          args: [message.source, message.token],
+          world: "MAIN",
+          injectImmediately: true
+        });
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: String(error && error.message ? error.message : error) };
+      }
+    }
     if (message && message.action === "wblock:filterUpdate:start") {
       try {
         return await sendPriorityNativeMessage({ action: "startFilterUpdate" });
@@ -27391,6 +27414,26 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       });
     return userScriptRefreshPingInFlight;
   };
+  // Filter lists download the same way (#528); the native side throttles to
+  // the auto-update interval and the app rebuilds from the staged files.
+  const FILTER_STAGE_PING_INTERVAL_MS = 15 * 60 * 1000;
+  let lastFilterStagePingAt = 0;
+  let filterStagePingInFlight = null;
+  const maybeStageFilterUpdates = () => {
+    const now = Date.now();
+    if (filterStagePingInFlight || now - lastFilterStagePingAt < FILTER_STAGE_PING_INTERVAL_MS) {
+      return filterStagePingInFlight || Promise.resolve();
+    }
+    lastFilterStagePingAt = now;
+    filterStagePingInFlight = sendQueuedNativeMessage({ action: "maybeStageFilterUpdates" })
+      .catch(error => {
+        console.warn("[wBlock] Filter staging ping failed:", error);
+      })
+      .finally(() => {
+        filterStagePingInFlight = null;
+      });
+    return filterStagePingInFlight;
+  };
   if (canObserveTabs) {
     if (browser.tabs.onUpdated) {
       browser.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
@@ -27405,7 +27448,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         syncActionStateForTab(tab);
         if (changeInfo && changeInfo.status === "complete") {
-          maybeRefreshUserScripts();
+          maybeRefreshUserScripts().then(maybeStageFilterUpdates);
         }
       });
     }

@@ -41,6 +41,7 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 25));
 function createEnvironment(options = {}) {
   const env = {
     inlineExecutions: 0,
+    runtimeMessages: [],
     observers: [],
     storageListeners: [],
     documentListeners: new Map(),
@@ -189,6 +190,10 @@ function createEnvironment(options = {}) {
     },
     browser: {
       runtime: {
+        sendMessage(message) {
+          env.runtimeMessages.push(message);
+          return Promise.resolve({ ok: true });
+        },
         sendNativeMessage(_id, message) {
           env.nativeCalls.push(message);
           if (message && message.action === "getSiteDisabledState") {
@@ -495,6 +500,10 @@ async function playResult(media) {
   env.run();
   check("CSP fallback does not execute inline scripts", env.inlineExecutions === 0);
   check("CSP fallback still activates the gate", env.gateMarker());
+  const gateRequests = env.runtimeMessages.filter(m => m && m.action === "wblock:noAutoplay:injectGate");
+  check("CSP fallback asks the background for a page-world gate (#676)",
+    gateRequests.length === 1 && typeof gateRequests[0].source === "string"
+      && gateRequests[0].source.includes("__wblockNoAutoplayGateActive") && typeof gateRequests[0].token === "string");
 
   const video = env.makeMedia("video");
   video.paused = false;
