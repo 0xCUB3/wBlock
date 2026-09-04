@@ -33,8 +33,10 @@ struct FilterCategoryInfoView: View {
             HStack {
                 Text(category.localizedName)
                     .font(.title2.weight(.semibold))
+                #if os(macOS)
                 Spacer()
                 SheetDoneButton { dismiss() }
+                #endif
             }
 
             Text(LocalizedStringKey(FilterCategorySupport.descriptionKey(for: category)))
@@ -86,6 +88,7 @@ struct FilterCategoryInfoView: View {
         }
         .padding(20)
         .frame(minWidth: 320, idealWidth: 420, minHeight: 260)
+        .infoSheetChromeCompat { dismiss() }
     }
 
     private func languageName(_ code: String) -> String {

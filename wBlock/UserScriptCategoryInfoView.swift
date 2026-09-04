@@ -13,8 +13,10 @@ struct UserScriptCategoryInfoView: View {
             HStack {
                 Text(LocalizedStringKey(category.rawValue))
                     .font(.title2.weight(.semibold))
+                #if os(macOS)
                 Spacer()
                 SheetDoneButton { dismiss() }
+                #endif
             }
 
             Text(LocalizedStringKey(category.descriptionKey))
@@ -46,5 +48,6 @@ struct UserScriptCategoryInfoView: View {
         }
         .padding(20)
         .frame(minWidth: 320, idealWidth: 420, minHeight: 260)
+        .infoSheetChromeCompat { dismiss() }
     }
 }

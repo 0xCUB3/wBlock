@@ -29,8 +29,10 @@ struct FilterInfoView: View {
                 Text(liveFilter.localizedDisplayName)
                     .font(.title2.weight(.semibold))
                     .textSelection(.enabled)
+                #if os(macOS)
                 Spacer()
                 SheetDoneButton { dismiss() }
+                #endif
             }
 
             HStack(spacing: 8) {
@@ -78,6 +80,7 @@ struct FilterInfoView: View {
         }
         .padding(20)
         .frame(minWidth: 320, idealWidth: 460, minHeight: 320)
+        .infoSheetChromeCompat { dismiss() }
     }
 
     private var excludedSitesSection: some View {

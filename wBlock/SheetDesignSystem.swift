@@ -67,6 +67,34 @@ struct SheetDoneButton: View {
     }
 }
 
+// MARK: - Info sheet chrome
+
+extension View {
+    /// iPhone info sheets put the close button in the navigation bar, the way
+    /// the userscript info sheet already does, so a long title never squeezes
+    /// the X (cameren, Discord). macOS keeps the inline header the callers draw
+    /// themselves, so the close button here is iOS-only.
+    @ViewBuilder
+    func infoSheetChromeCompat(onDismiss: @escaping () -> Void) -> some View {
+        #if os(iOS)
+        NavigationView {
+            ScrollView {
+                self.frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    SheetDoneButton(action: onDismiss, usesAutomaticStyle: true)
+                }
+            }
+        }
+        .navigationViewStyle(.stack)
+        #else
+        self
+        #endif
+    }
+}
+
 // MARK: - Reusable Sheet Header
 
 struct SheetHeader: View {
