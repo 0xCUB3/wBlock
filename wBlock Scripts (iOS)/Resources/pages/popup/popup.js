@@ -13,6 +13,30 @@ const FILTER_UPDATE_POLL_INTERVAL_MS = 500;
 const FILTER_UPDATE_POLL_ATTEMPTS = 120;
 let resumeInFlight = false;
 
+function installPopupAppearanceTracking() {
+    const root = document.documentElement;
+    const preference = window.matchMedia('(prefers-color-scheme: dark)');
+    const sync = () => {
+        const scheme = preference.matches ? 'dark' : 'light';
+        root.dataset.colorScheme = scheme;
+        root.style.colorScheme = scheme;
+    };
+    const resume = () => {
+        sync();
+        // Safari can restore its appearance after the initial lifecycle event.
+        window.requestAnimationFrame(sync);
+    };
+    preference.addEventListener('change', sync);
+    window.addEventListener('pageshow', resume);
+    window.addEventListener('focus', resume);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) resume();
+    });
+    sync();
+}
+
+installPopupAppearanceTracking();
+
 function t(key, substitutions, fallback = '') {
     const message = browser.i18n.getMessage(key, substitutions);
     if (typeof message === 'string' && message.length > 0) {

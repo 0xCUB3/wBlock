@@ -1,5 +1,6 @@
-:root {
+:root, :root[data-color-scheme="light"] {
   color-scheme: light dark;
+  --background: #ffffff;
   --group: #ffffff;
   --separator: rgba(60, 60, 67, 0.12);
   --text: #000000;
@@ -13,7 +14,8 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-color-scheme="light"]) {
+    --background: #1c1c1e;
     --group: #2c2c2e;
     --separator: rgba(84, 84, 88, 0.65);
     --text: rgba(255, 255, 255, 0.92);
@@ -26,16 +28,38 @@
     --danger-soft: rgba(255, 69, 58, 0.18);
   }
 
-  .app-icon {
+  :root:not([data-color-scheme="light"]) .app-icon {
     filter: invert(1);
   }
+}
+
+:root[data-color-scheme="dark"] {
+  --background: #1c1c1e;
+  --group: #2c2c2e;
+  --separator: rgba(84, 84, 88, 0.65);
+  --text: rgba(255, 255, 255, 0.92);
+  --subtext: rgba(235, 235, 245, 0.6);
+  --accent: #0a84ff;
+  --accent-soft: rgba(10, 132, 255, 0.18);
+  --fill: rgba(120, 120, 128, 0.32);
+  --switch-off: rgba(120, 120, 128, 0.32);
+  --danger: #ff453a;
+  --danger-soft: rgba(255, 69, 58, 0.18);
+}
+
+:root[data-color-scheme="dark"] .app-icon {
+  filter: invert(1);
+}
+
+:root[data-color-scheme="light"] .app-icon {
+  filter: none;
 }
 
 html, body {
   margin: 0;
   padding: 0;
   font-family: -apple-system, system-ui, "SF Pro Text", sans-serif;
-  background: Canvas;
+  background: var(--background);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
