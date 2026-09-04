@@ -185,6 +185,9 @@ public enum WebExtensionRequestHandler {
             case "getFilterUpdateStatus":
                 handleGetFilterUpdateStatus(context: context)
                 return
+            case "maybeUpdateUserScripts":
+                handleMaybeUpdateUserScripts(context: context)
+                return
             case "openContainingApp":
                 handleOpenContainingApp(context: context)
                 return
@@ -682,6 +685,39 @@ public enum WebExtensionRequestHandler {
         ])
         context.completeRequest(returningItems: [response])
         #endif
+    }
+
+    /// Opportunistic userscript refresh while Safari is in use (#611). Filters
+    /// stay in extension safe mode because rebuilding them takes shared file
+    /// locks that iOS kills a suspended process for; a script update is a
+    /// small download plus one protobuf write, the same as the toggles the
+    /// popup already performs from this process. Scripts checked inside the
+    /// auto-update interval are skipped, so pages that call this often cost
+    /// nothing beyond a store read.
+    private static let userScriptRefreshQueue = ExtensionUserScriptRefreshGate()
+
+    private static func handleMaybeUpdateUserScripts(context: NSExtensionContext) {
+        Task { @MainActor in
+            guard ProtobufDataManager.shared.autoUpdateEnabled,
+                  !BlockingPauseStore.isPaused(.userScripts)
+            else {
+                context.completeRequest(returningItems: [createResponse(with: ["ok": true, "skipped": "disabled"])])
+                return
+            }
+            guard await userScriptRefreshQueue.begin() else {
+                context.completeRequest(returningItems: [createResponse(with: ["ok": true, "skipped": "running"])])
+                return
+            }
+            let manager = UserScriptManager.shared
+            await manager.waitUntilReady()
+            let result = await manager.autoUpdateEnabledUserScripts(skipFresh: true)
+            await userScriptRefreshQueue.finish()
+            context.completeRequest(returningItems: [createResponse(with: [
+                "ok": true,
+                "updated": result.updated,
+                "failed": result.failed
+            ])])
+        }
     }
 
     private static func handleGetFilterUpdateStatus(context: NSExtensionContext) {

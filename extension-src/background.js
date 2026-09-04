@@ -26170,6 +26170,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const action = request && typeof request.action === "string" ? request.action : "";
     if (action === "syncZapperRules" || action === "getZapperRules") return 3500;
     if (action === "startFilterUpdate" || action === "getFilterUpdateStatus") return 10000;
+    // A script pass can download several files; give it room before the
+    // queue moves on. The native gate refuses overlapping runs anyway.
+    if (action === "maybeUpdateUserScripts") return 120000;
     if (action === "getBlockingState") return 1000;
     return 30000;
   };
@@ -27359,6 +27362,35 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       console.warn("[wBlock] Failed to refresh action state for tabs:", error);
     }
   };
+  /**
+   * Opportunistic userscript refresh while Safari is in use (#611). The native
+   * side skips scripts already checked inside the auto-update interval, so the
+   * only cost here is one native round-trip per throttle window. Filters are
+   * not touched from the extension; see handleMaybeUpdateUserScripts.
+   */
+  const USERSCRIPT_REFRESH_PING_INTERVAL_MS = 15 * 60 * 1000;
+  let lastUserScriptRefreshPingAt = 0;
+  let userScriptRefreshPingInFlight = null;
+  const maybeRefreshUserScripts = () => {
+    const now = Date.now();
+    if (userScriptRefreshPingInFlight || now - lastUserScriptRefreshPingAt < USERSCRIPT_REFRESH_PING_INTERVAL_MS) {
+      return userScriptRefreshPingInFlight || Promise.resolve();
+    }
+    lastUserScriptRefreshPingAt = now;
+    userScriptRefreshPingInFlight = sendQueuedNativeMessage({ action: "maybeUpdateUserScripts" })
+      .then(response => {
+        if (response && response.updated > 0) {
+          clearDocumentStartSessionCache();
+        }
+      })
+      .catch(error => {
+        console.warn("[wBlock] Userscript refresh ping failed:", error);
+      })
+      .finally(() => {
+        userScriptRefreshPingInFlight = null;
+      });
+    return userScriptRefreshPingInFlight;
+  };
   if (canObserveTabs) {
     if (browser.tabs.onUpdated) {
       browser.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
@@ -27372,6 +27404,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return;
         }
         syncActionStateForTab(tab);
+        if (changeInfo && changeInfo.status === "complete") {
+          maybeRefreshUserScripts();
+        }
       });
     }
     if (browser.tabs.onActivated && browser.tabs.get) {
