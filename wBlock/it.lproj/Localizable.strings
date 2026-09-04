@@ -1026,3 +1026,7 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "DeArrow: Off" = "DeArrow: disattivo";
 "Check for Filter Updates" = "Controlla aggiornamenti dei filtri";
 "Check for Userscript Updates" = "Controlla aggiornamenti degli userscript";
+"Download" = "Scarica";
+"Downloading…" = "Download in corso…";
+"Download %@" = "Scarica %@";
+"Downloading userscript" = "Download dello userscript";

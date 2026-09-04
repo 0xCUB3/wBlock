@@ -1025,3 +1025,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "DeArrow: Off" = "DeArrow: kapalı";
 "Check for Filter Updates" = "Filtre güncellemelerini denetle";
 "Check for Userscript Updates" = "Kullanıcı betiği güncellemelerini denetle";
+"Download" = "İndir";
+"Downloading…" = "İndiriliyor…";
+"Download %@" = "%@ indir";
+"Downloading userscript" = "Kullanıcı betiği indiriliyor";

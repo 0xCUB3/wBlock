@@ -1026,3 +1026,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "DeArrow: Off" = "DeArrow: wył.";
 "Check for Filter Updates" = "Sprawdź aktualizacje filtrów";
 "Check for Userscript Updates" = "Sprawdź aktualizacje skryptów użytkownika";
+"Download" = "Pobierz";
+"Downloading…" = "Pobieranie…";
+"Download %@" = "Pobierz %@";
+"Downloading userscript" = "Pobieranie skryptu użytkownika";

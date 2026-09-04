@@ -1026,3 +1026,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "DeArrow: Off" = "DeArrow : désactivé";
 "Check for Filter Updates" = "Rechercher des mises à jour des filtres";
 "Check for Userscript Updates" = "Rechercher des mises à jour des scripts utilisateur";
+"Download" = "Télécharger";
+"Downloading…" = "Téléchargement…";
+"Download %@" = "Télécharger %@";
+"Downloading userscript" = "Téléchargement du script utilisateur";

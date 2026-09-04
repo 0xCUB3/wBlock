@@ -1026,3 +1026,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "DeArrow: Off" = "DeArrow: معطّل";
 "Check for Filter Updates" = "التحقق من تحديثات الفلاتر";
 "Check for Userscript Updates" = "التحقق من تحديثات سكريبتات المستخدم";
+"Download" = "تنزيل";
+"Downloading…" = "جارٍ التنزيل…";
+"Download %@" = "تنزيل %@";
+"Downloading userscript" = "جارٍ تنزيل سكريبت المستخدم";

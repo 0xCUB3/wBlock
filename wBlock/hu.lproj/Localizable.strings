@@ -1026,3 +1026,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "DeArrow: Off" = "DeArrow: ki";
 "Check for Filter Updates" = "Szűrőfrissítések keresése";
 "Check for Userscript Updates" = "Felhasználói szkript frissítések keresése";
+"Download" = "Letöltés";
+"Downloading…" = "Letöltés folyamatban…";
+"Download %@" = "%@ letöltése";
+"Downloading userscript" = "Felhasználói szkript letöltése";

@@ -1026,3 +1026,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "DeArrow: Off" = "DeArrow: выкл.";
 "Check for Filter Updates" = "Проверить обновления фильтров";
 "Check for Userscript Updates" = "Проверить обновления пользовательских скриптов";
+"Download" = "Загрузить";
+"Downloading…" = "Загрузка…";
+"Download %@" = "Загрузить %@";
+"Downloading userscript" = "Загрузка пользовательского скрипта";

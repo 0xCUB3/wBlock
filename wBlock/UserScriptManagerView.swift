@@ -703,6 +703,24 @@ struct UserScriptManagerView: View {
 
     #endif
 
+    /// Fetches a remote script's content without changing its enabled state (#665).
+    private func downloadScript(_ script: UserScriptListItem) {
+        guard !script.isLocal, !script.isDownloaded,
+              !downloadingScriptIDs.contains(script.id),
+              let managedScript = userScriptManager.userScript(withId: script.id)
+        else { return }
+        downloadingScriptIDs.insert(script.id)
+        Task {
+            await ConcurrentLogManager.shared.info(
+                .userScript, LocalizedStrings.text("Downloading userscript"), metadata: ["script": script.name])
+            _ = await userScriptManager.downloadUserScript(managedScript)
+            await MainActor.run {
+                downloadingScriptIDs.remove(script.id)
+                refreshScripts()
+            }
+        }
+    }
+
     private func applyEnabledState(for script: UserScriptListItem, newValue: Bool) {
         guard let latestState = userScriptManager.userScriptToggleState(for: script.id),
               latestState.desired != newValue
@@ -804,7 +822,25 @@ struct UserScriptManagerView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                if displayedEnabled && !script.isDownloaded {
+                if !script.isDownloaded && !script.isLocal {
+                    Button {
+                        downloadScript(script)
+                    } label: {
+                        Label(
+                            downloadingScriptIDs.contains(script.id) ? "Downloading…" : "Download",
+                            systemImage: "arrow.down.circle"
+                        )
+                        .font(.caption2.weight(.medium))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.accentColor.opacity(0.15))
+                        .foregroundStyle(Color.accentColor)
+                        .cornerRadius(4)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(downloadingScriptIDs.contains(script.id))
+                    .accessibilityLabel(LocalizedStrings.format("Download %@", comment: "Accessibility label for the per-script download button", script.name))
+                } else if displayedEnabled && !script.isDownloaded {
                     Text("Not Downloaded")
                         .font(.caption2)
                         .fontWeight(.medium)
@@ -869,7 +905,8 @@ struct UserScriptManagerView: View {
         .contextMenu {
             let actions = ContextMenuActionAvailability.userScriptActions(
                 isBuiltIn: script.isBuiltIn,
-                isLocal: script.isLocal
+                isLocal: script.isLocal,
+                isDownloaded: script.isDownloaded
             )
             if actions.contains(.info) {
                 Button {
@@ -891,6 +928,14 @@ struct UserScriptManagerView: View {
                 } label: {
                     Label("Edit Content", systemImage: "pencil")
                 }
+            }
+            if actions.contains(.download) {
+                Button {
+                    downloadScript(script)
+                } label: {
+                    Label("Download", systemImage: "arrow.down.circle")
+                }
+                .disabled(downloadingScriptIDs.contains(script.id))
             }
             if actions.contains(.deleteScript),
                let managedScript = userScriptManager.userScript(withId: script.id) {

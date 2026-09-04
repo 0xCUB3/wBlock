@@ -1026,3 +1026,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "DeArrow: Off" = "DeArrow：关";
 "Check for Filter Updates" = "检查过滤器更新";
 "Check for Userscript Updates" = "检查用户脚本更新";
+"Download" = "下载";
+"Downloading…" = "正在下载…";
+"Download %@" = "下载 %@";
+"Downloading userscript" = "正在下载用户脚本";

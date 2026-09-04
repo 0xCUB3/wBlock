@@ -1026,3 +1026,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "DeArrow: Off" = "DeArrow: Aus";
 "Check for Filter Updates" = "Auf Filter-Updates prüfen";
 "Check for Userscript Updates" = "Auf Userskript-Updates prüfen";
+"Download" = "Herunterladen";
+"Downloading…" = "Wird geladen…";
+"Download %@" = "%@ herunterladen";
+"Downloading userscript" = "Userskript wird heruntergeladen";

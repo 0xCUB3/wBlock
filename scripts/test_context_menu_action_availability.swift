@@ -15,7 +15,11 @@ require(helper.contains("return [.info, .editRules, .deleteList]"), "local custo
 require(helper.contains("return [.info, .viewRules, .deleteList]"), "remote custom filters must remain view-only")
 require(helper.contains("return [.info, .viewContent]"), "default scripts must offer Info and View Content")
 require(helper.contains("return [.info, .editContent, .deleteScript]"), "local custom scripts must offer edit and delete")
-require(helper.contains("return [.info, .viewContent, .deleteScript]"), "remote custom scripts must not offer edit")
+require(helper.contains("return [.info, .viewContent] + download + [.deleteScript]"), "remote custom scripts must not offer edit")
+// #665: remote scripts without content get a Download action; local ones never do.
+require(helper.contains("let download: [UserScriptContextMenuAction] = (!isLocal && !isDownloaded) ? [.download] : []"), "download action gated on remote + not downloaded")
+require(scripts.contains("isDownloaded: script.isDownloaded") && scripts.contains("if actions.contains(.download)"), "script rows must surface the Download action")
+require(scripts.contains("private func downloadScript(_ script: UserScriptListItem)") && scripts.contains("userScriptManager.downloadUserScript(managedScript)"), "Download must fetch without toggling enabled state")
 require(filters.contains("ContextMenuActionAvailability.filterActions(for: filter)"), "filter rows must use pure action availability")
 require(scripts.contains("ContextMenuActionAvailability.userScriptActions"), "script rows must use pure action availability")
 require(scripts.contains("setUserScriptMetadataOverrides"), "editable script metadata must use persisted overrides")

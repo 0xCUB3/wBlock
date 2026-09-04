@@ -1026,3 +1026,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "DeArrow: Off" = "DeArrow: オフ";
 "Check for Filter Updates" = "フィルターのアップデートを確認";
 "Check for Userscript Updates" = "ユーザースクリプトのアップデートを確認";
+"Download" = "ダウンロード";
+"Downloading…" = "ダウンロード中…";
+"Download %@" = "%@をダウンロード";
+"Downloading userscript" = "ユーザースクリプトをダウンロード中";

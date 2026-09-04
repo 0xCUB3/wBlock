@@ -1026,3 +1026,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "DeArrow: Off" = "DeArrow: ανενεργό";
 "Check for Filter Updates" = "Έλεγχος για ενημερώσεις φίλτρων";
 "Check for Userscript Updates" = "Έλεγχος για ενημερώσεις κώδικα χρήστη";
+"Download" = "Λήψη";
+"Downloading…" = "Γίνεται λήψη…";
+"Download %@" = "Λήψη %@";
+"Downloading userscript" = "Λήψη κώδικα χρήστη";
