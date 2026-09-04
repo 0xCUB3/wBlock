@@ -246,17 +246,17 @@ public enum ContentBlockerIncrementalCache {
         var updatedAt: Int64
     }
 
-    /// - Parameters:
-    ///   - filters: Lists assigned to this target.
-    ///   - affinityContributors: Lists assigned elsewhere whose
-    ///     `!#safari_cb_affinity` blocks are replicated into this target. They
-    ///     are part of the input, so they are part of the signature (#679).
     /// UI ordering does not change compilation. Keep rule order within each
     /// list intact, but use a stable list order for both hashing and conversion.
     public static func canonicalFilterOrder(_ filters: [FilterList]) -> [FilterList] {
         filters.sorted { $0.id.uuidString < $1.id.uuidString }
     }
 
+    /// - Parameters:
+    ///   - filters: Lists assigned to this target.
+    ///   - affinityContributors: Lists assigned elsewhere whose
+    ///     `!#safari_cb_affinity` blocks are replicated into this target. They
+    ///     are part of the input, so they are part of the signature (#679).
     public static func computeInputSignature(
         filters: [FilterList],
         affinityContributors: [FilterList] = [],
