@@ -27,9 +27,11 @@ struct LogsView: View {
     @State private var selectedLevel: LogLevel? = nil
     @State private var selectedCategory: LogCategory? = nil
     @State private var searchText = ""
+    #if os(iOS)
     /// The export is written to a file first and the sheet is keyed on the
     /// URL, so the share never presents before the text exists (#682).
     @State private var exportFile: LogExportFile?
+    #endif
     @Environment(\.dismiss) private var dismiss
 
     // Cached filtered entries to avoid repeated filtering on scroll
