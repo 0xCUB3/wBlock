@@ -877,6 +877,12 @@ struct UserScriptManagerView: View {
                 }
 
                 if script.isTubeCleaner {
+                    TubeCleanerFeaturesPicker(
+                        features: Binding(
+                            get: { userScriptManager.tubeCleanerFeatures },
+                            set: { userScriptManager.setTubeCleanerFeatures($0) }
+                        )
+                    )
                     TubeCleanerDeArrowPicker(
                         settings: Binding(
                             get: { userScriptManager.tubeCleanerDeArrow },
@@ -1691,6 +1697,57 @@ private struct DarkReaderAppearancePicker: View {
 /// DeArrow settings for the built-in Tube Cleaner, shown as a compact menu on
 /// its list row (#611). The pill reads On/Off; the menu holds the toggles the
 /// script's own "DA" panel used to offer.
+/// Per-feature switches for Tube Cleaner (#671). Ad handling and native
+/// controls are the script's purpose, so they are not listed.
+private struct TubeCleanerFeaturesPicker: View {
+    @Binding var features: TubeCleanerDeArrowPreference.Features
+
+    private var summary: String {
+        features.allEnabled
+            ? String(localized: "Features: All")
+            : String.localizedStringWithFormat(
+                NSLocalizedString("Features: %d off", comment: "Tube Cleaner feature picker label with the number of disabled features"),
+                features.disabledCount
+            )
+    }
+
+    var body: some View {
+        Menu {
+            Toggle("Chapters", isOn: $features.chapters)
+            Toggle("Captions in Native Player", isOn: $features.captions)
+            Toggle("Picture in Picture", isOn: $features.pictureInPicture)
+            Toggle("Background Playback", isOn: $features.backgroundPlayback)
+            Toggle("SponsorBlock", isOn: $features.sponsorBlock)
+            Toggle("Resume Where You Left Off", isOn: $features.resumePosition)
+            Toggle("Quality and Audio Toolbar", isOn: $features.toolbar)
+            Divider()
+            Button("Enable All") { features = TubeCleanerDeArrowPreference.Features() }
+                .disabled(features.allEnabled)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "slider.horizontal.3")
+                    .imageScale(.small)
+                Text(summary)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.primary.opacity(0.06))
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(summary)
+    }
+}
+
 private struct TubeCleanerDeArrowPicker: View {
     @Binding var settings: TubeCleanerDeArrowPreference.Settings
 

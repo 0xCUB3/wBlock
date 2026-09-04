@@ -158,9 +158,9 @@ let intentionalCanonicalNames: Set<String> = [
     "AdGuard Allowlist", "Adblock Warning Removal List",
     "Block Outsider Intrusion into LAN",
     "HaGeZi Pro Mini", "Mail Tracking Protection Filter", "Online Malicious URL Blocklist",
-    "Stevo's AI Blocklist"
+    "Stevo's AI Blocklist", "SponsorBlock"
 ]
-let idiomaticSameValue: [String: Set<String>] = ["Text": ["de", "ro"]]
+let idiomaticSameValue: [String: Set<String>] = ["Text": ["de", "ro"], "Picture in Picture": ["it", "pt-BR"]]
 for key in branchAddedKeys.subtracting(intentionalCanonicalNames) {
     for locale in nonEnglishLocales {
         let value = tables[locale]![key]!

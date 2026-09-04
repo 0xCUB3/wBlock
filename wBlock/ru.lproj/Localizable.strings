@@ -1035,3 +1035,13 @@ To re-enable these filters, disable other large filters and apply changes again.
 "%@ still failed to reload. Safari may need a restart." = "%@ по-прежнему не перезагружается. Возможно, нужно перезапустить Safari.";
 "Apply Without Checking for Updates" = "Применить без проверки обновлений";
 "(%@ rules, %@ unique)" = "(%@ правил, %@ уникальных)";
+"Features: All" = "Функции: Все";
+"Features: %d off" = "Функции: %d откл.";
+"Chapters" = "Главы";
+"Captions in Native Player" = "Субтитры в системном плеере";
+"Picture in Picture" = "Картинка в картинке";
+"Background Playback" = "Фоновое воспроизведение";
+"SponsorBlock" = "SponsorBlock";
+"Resume Where You Left Off" = "Продолжить с места остановки";
+"Quality and Audio Toolbar" = "Панель качества и звука";
+"Enable All" = "Включить все";

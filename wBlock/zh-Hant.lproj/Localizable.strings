@@ -1035,3 +1035,13 @@ To re-enable these filters, disable other large filters and apply changes again.
 "%@ still failed to reload. Safari may need a restart." = "%@ 仍然無法重新載入。可能需要重新啟動 Safari。";
 "Apply Without Checking for Updates" = "不檢查更新直接套用";
 "(%@ rules, %@ unique)" = "（%@ 條規則，%@ 條獨有）";
+"Features: All" = "功能：全部";
+"Features: %d off" = "功能：%d 項已關閉";
+"Chapters" = "章節";
+"Captions in Native Player" = "原生播放器字幕";
+"Picture in Picture" = "子母畫面";
+"Background Playback" = "背景播放";
+"SponsorBlock" = "SponsorBlock";
+"Resume Where You Left Off" = "從上次位置繼續";
+"Quality and Audio Toolbar" = "畫質與音訊工具列";
+"Enable All" = "全部啟用";

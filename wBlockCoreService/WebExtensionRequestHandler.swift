@@ -1092,7 +1092,8 @@ public enum WebExtensionRequestHandler {
         if TubeCleanerDeArrowPreference.matches(scriptURL: script.url) {
             return TubeCleanerDeArrowPreference.configuredExecutableContent(
                 script.executableContent,
-                settings: TubeCleanerDeArrowPreference.settings()
+                settings: TubeCleanerDeArrowPreference.settings(),
+                features: TubeCleanerDeArrowPreference.features()
             )
         }
         return nil

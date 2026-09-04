@@ -1035,3 +1035,13 @@ To re-enable these filters, disable other large filters and apply changes again.
 "%@ still failed to reload. Safari may need a restart." = "%@ 다시 불러오기에 계속 실패합니다. Safari를 재시작해야 할 수 있습니다.";
 "Apply Without Checking for Updates" = "업데이트 확인 없이 적용";
 "(%@ rules, %@ unique)" = "(규칙 %@개, 고유 %@개)";
+"Features: All" = "기능: 모두";
+"Features: %d off" = "기능: %d개 꺼짐";
+"Chapters" = "챕터";
+"Captions in Native Player" = "기본 플레이어 자막";
+"Picture in Picture" = "화면 속 화면";
+"Background Playback" = "백그라운드 재생";
+"SponsorBlock" = "SponsorBlock";
+"Resume Where You Left Off" = "이어서 보기";
+"Quality and Audio Toolbar" = "화질 및 오디오 툴바";
+"Enable All" = "모두 켜기";

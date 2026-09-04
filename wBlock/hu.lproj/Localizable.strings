@@ -1035,3 +1035,13 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "%@ still failed to reload. Safari may need a restart." = "%@ továbbra sem töltődik újra. A Safarit talán újra kell indítani.";
 "Apply Without Checking for Updates" = "Alkalmazás frissítések keresése nélkül";
 "(%@ rules, %@ unique)" = "(%@ szabály, %@ egyedi)";
+"Features: All" = "Funkciók: Mind";
+"Features: %d off" = "Funkciók: %d kikapcsolva";
+"Chapters" = "Fejezetek";
+"Captions in Native Player" = "Feliratok a natív lejátszóban";
+"Picture in Picture" = "Kép a képben";
+"Background Playback" = "Háttérben lejátszás";
+"SponsorBlock" = "SponsorBlock";
+"Resume Where You Left Off" = "Folytatás ott, ahol abbahagytad";
+"Quality and Audio Toolbar" = "Minőség- és hangsáv";
+"Enable All" = "Összes bekapcsolása";

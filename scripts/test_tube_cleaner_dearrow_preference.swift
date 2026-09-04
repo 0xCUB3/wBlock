@@ -38,6 +38,18 @@ struct TubeCleanerDeArrowPreferenceTests {
             "the prepended constant must carry sorted JSON the script can read: \(configured.prefix(160))"
         )
         expect(configured.hasSuffix("window.__probe = true;"), "script content was not preserved")
+        expect(
+            configured.contains("\nconst __wblockTubeCleanerFeatures = {\"backgroundPlayback\":true,\"captions\":true,\"chapters\":true,\"pictureInPicture\":true,\"resumePosition\":true,\"sponsorBlock\":true,\"toolbar\":true};\n"),
+            "default features constant must be prepended (#671): \(configured.prefix(400))"
+        )
+        var features = TubeCleanerDeArrowPreference.Features()
+        features.sponsorBlock = false
+        features.backgroundPlayback = false
+        TubeCleanerDeArrowPreference.setFeatures(features, groupIdentifier: suite)
+        expect(TubeCleanerDeArrowPreference.features(groupIdentifier: suite) == features, "features must round-trip through the app group")
+        expect(features.disabledCount == 2 && !features.allEnabled, "disabled count reflects switched-off features")
+        let withFeatures = TubeCleanerDeArrowPreference.configuredExecutableContent("x", settings: settings, features: features)
+        expect(withFeatures.contains("\"backgroundPlayback\":false") && withFeatures.contains("\"sponsorBlock\":false"), "disabled features reach the script")
         print("PASS: Tube Cleaner DeArrow preference")
     }
 

@@ -1034,3 +1034,13 @@ To re-enable these filters, disable other large filters and apply changes again.
 "%@ still failed to reload. Safari may need a restart." = "%@ still failed to reload. Safari may need a restart.";
 "Apply Without Checking for Updates" = "Apply Without Checking for Updates";
 "(%@ rules, %@ unique)" = "(%@ rules, %@ unique)";
+"Features: All" = "Features: All";
+"Features: %d off" = "Features: %d off";
+"Chapters" = "Chapters";
+"Captions in Native Player" = "Captions in Native Player";
+"Picture in Picture" = "Picture in Picture";
+"Background Playback" = "Background Playback";
+"SponsorBlock" = "SponsorBlock";
+"Resume Where You Left Off" = "Resume Where You Left Off";
+"Quality and Audio Toolbar" = "Quality and Audio Toolbar";
+"Enable All" = "Enable All";

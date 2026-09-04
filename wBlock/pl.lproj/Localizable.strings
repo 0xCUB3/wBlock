@@ -1035,3 +1035,13 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "%@ still failed to reload. Safari may need a restart." = "%@ nadal nie można przeładować. Safari może wymagać ponownego uruchomienia.";
 "Apply Without Checking for Updates" = "Zastosuj bez sprawdzania aktualizacji";
 "(%@ rules, %@ unique)" = "(%@ reguł, %@ unikalnych)";
+"Features: All" = "Funkcje: Wszystkie";
+"Features: %d off" = "Funkcje: %d wył.";
+"Chapters" = "Rozdziały";
+"Captions in Native Player" = "Napisy w natywnym odtwarzaczu";
+"Picture in Picture" = "Obraz w obrazie";
+"Background Playback" = "Odtwarzanie w tle";
+"SponsorBlock" = "SponsorBlock";
+"Resume Where You Left Off" = "Wznów od miejsca zakończenia";
+"Quality and Audio Toolbar" = "Pasek jakości i dźwięku";
+"Enable All" = "Włącz wszystko";

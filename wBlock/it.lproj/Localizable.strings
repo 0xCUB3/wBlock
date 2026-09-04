@@ -1035,3 +1035,13 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "%@ still failed to reload. Safari may need a restart." = "%@ non si ricarica ancora. Potrebbe servire un riavvio di Safari.";
 "Apply Without Checking for Updates" = "Applica senza controllare gli aggiornamenti";
 "(%@ rules, %@ unique)" = "(%@ regole, %@ uniche)";
+"Features: All" = "Funzioni: Tutte";
+"Features: %d off" = "Funzioni: %d disattivate";
+"Chapters" = "Capitoli";
+"Captions in Native Player" = "Sottotitoli nel lettore nativo";
+"Picture in Picture" = "Picture in Picture";
+"Background Playback" = "Riproduzione in background";
+"SponsorBlock" = "SponsorBlock";
+"Resume Where You Left Off" = "Riprendi da dove eri rimasto";
+"Quality and Audio Toolbar" = "Barra qualità e audio";
+"Enable All" = "Attiva tutto";

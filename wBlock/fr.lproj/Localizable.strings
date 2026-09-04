@@ -1035,3 +1035,13 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "%@ still failed to reload. Safari may need a restart." = "%@ ne se recharge toujours pas. Safari doit peut-être être redémarré.";
 "Apply Without Checking for Updates" = "Appliquer sans rechercher de mises à jour";
 "(%@ rules, %@ unique)" = "(%@ règles, %@ uniques)";
+"Features: All" = "Fonctions : Toutes";
+"Features: %d off" = "Fonctions : %d désactivées";
+"Chapters" = "Chapitres";
+"Captions in Native Player" = "Sous-titres dans le lecteur natif";
+"Picture in Picture" = "Image dans l'image";
+"Background Playback" = "Lecture en arrière-plan";
+"SponsorBlock" = "SponsorBlock";
+"Resume Where You Left Off" = "Reprendre là où vous en étiez";
+"Quality and Audio Toolbar" = "Barre qualité et audio";
+"Enable All" = "Tout activer";

@@ -1035,3 +1035,13 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "%@ still failed to reload. Safari may need a restart." = "%@ tot nu se reîncarcă. Safari poate necesita o repornire.";
 "Apply Without Checking for Updates" = "Aplică fără a verifica actualizările";
 "(%@ rules, %@ unique)" = "(%@ reguli, %@ unice)";
+"Features: All" = "Funcții: Toate";
+"Features: %d off" = "Funcții: %d oprite";
+"Chapters" = "Capitole";
+"Captions in Native Player" = "Subtitrări în playerul nativ";
+"Picture in Picture" = "Imagine în imagine";
+"Background Playback" = "Redare în fundal";
+"SponsorBlock" = "SponsorBlock";
+"Resume Where You Left Off" = "Reia de unde ai rămas";
+"Quality and Audio Toolbar" = "Bară calitate și audio";
+"Enable All" = "Activează toate";

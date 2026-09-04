@@ -1035,3 +1035,13 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "%@ still failed to reload. Safari may need a restart." = "%@ sigue sin recargarse. Puede que Safari necesite reiniciarse.";
 "Apply Without Checking for Updates" = "Aplicar sin buscar actualizaciones";
 "(%@ rules, %@ unique)" = "(%@ reglas, %@ únicas)";
+"Features: All" = "Funciones: Todas";
+"Features: %d off" = "Funciones: %d desactivadas";
+"Chapters" = "Capítulos";
+"Captions in Native Player" = "Subtítulos en el reproductor nativo";
+"Picture in Picture" = "Imagen dentro de imagen";
+"Background Playback" = "Reproducción en segundo plano";
+"SponsorBlock" = "SponsorBlock";
+"Resume Where You Left Off" = "Reanudar donde lo dejaste";
+"Quality and Audio Toolbar" = "Barra de calidad y audio";
+"Enable All" = "Activar todo";

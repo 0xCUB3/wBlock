@@ -1034,3 +1034,13 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "%@ still failed to reload. Safari may need a restart." = "%@ hâlâ yeniden yüklenemiyor. Safari'nin yeniden başlatılması gerekebilir.";
 "Apply Without Checking for Updates" = "Güncellemeleri denetlemeden uygula";
 "(%@ rules, %@ unique)" = "(%@ kural, %@ benzersiz)";
+"Features: All" = "Özellikler: Tümü";
+"Features: %d off" = "Özellikler: %d kapalı";
+"Chapters" = "Bölümler";
+"Captions in Native Player" = "Yerel oynatıcıda altyazılar";
+"Picture in Picture" = "Resim içinde resim";
+"Background Playback" = "Arka planda oynatma";
+"SponsorBlock" = "SponsorBlock";
+"Resume Where You Left Off" = "Kaldığın yerden devam et";
+"Quality and Audio Toolbar" = "Kalite ve ses araç çubuğu";
+"Enable All" = "Tümünü aç";
