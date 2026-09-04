@@ -198,6 +198,11 @@ private extension CodeMirrorTextEditor {
         #elseif os(iOS)
         webView.isOpaque = false
         webView.backgroundColor = .clear
+        if #available(iOS 15.0, *) {
+            // The under-page layer is what WebKit paints white before the
+            // document loads; clearing backgroundColor alone leaves it.
+            webView.underPageBackgroundColor = .clear
+        }
         webView.alpha = 0
         let scrollView = webView.scrollView
         scrollView.contentInsetAdjustmentBehavior = .never
