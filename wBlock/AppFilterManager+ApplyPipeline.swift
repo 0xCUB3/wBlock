@@ -495,6 +495,7 @@ extension AppFilterManager {
             if !pausedComponents.contains(.userScripts),
                let userScriptManager = filterUpdater.userScriptManager {
                 let scriptsResult = await userScriptManager.autoUpdateEnabledUserScripts(
+                    skipFresh: true,
                     progressCallback: { prog in
                         let fraction: Float = prog.total > 0 ? Float(prog.completed) / Float(prog.total) : 1
                         self.progress = 0.1 + fraction * 0.05

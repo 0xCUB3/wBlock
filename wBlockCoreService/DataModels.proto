@@ -215,4 +215,8 @@ message AutoUpdateMetadata {
   // Lets a retried apply skip lists that were already verified inside the
   // auto-update interval instead of re-checking every enabled list.
   map<string, int64> filter_last_checked = 18;
+  // UUID -> Unix time of the last successful update check for that userscript.
+  // Apply skips scripts verified inside the auto-update interval so filters
+  // being up to date does not still trigger a full userscript pass (#646).
+  map<string, int64> script_last_checked = 19;
 }

@@ -211,6 +211,7 @@ private func mergePersistedChanges(
     mergeMap(&autoUpdate.filterEtags, baseline: base.filterEtags, persisted: theirs.filterEtags)
     mergeMap(&autoUpdate.filterLastModified, baseline: base.filterLastModified, persisted: theirs.filterLastModified)
     mergeMap(&autoUpdate.filterLastChecked, baseline: base.filterLastChecked, persisted: theirs.filterLastChecked)
+    mergeMap(&autoUpdate.scriptLastChecked, baseline: base.scriptLastChecked, persisted: theirs.scriptLastChecked)
     mergeField(&autoUpdate.bgAppRefresh, baseline: base.bgAppRefresh, persisted: theirs.bgAppRefresh)
     mergeField(&autoUpdate.bgProcessing, baseline: base.bgProcessing, persisted: theirs.bgProcessing)
     mergeField(&autoUpdate.silentPush, baseline: base.silentPush, persisted: theirs.silentPush)
@@ -765,6 +766,24 @@ public class ProtobufDataManager: ObservableObject {
         await updateData { data in
             for (uuid, time) in times {
                 data.autoUpdate.filterLastChecked[uuid] = time
+            }
+        }
+    }
+
+    /// Unix time of the last successful update check for a userscript UUID.
+    public func getScriptLastChecked(_ uuid: String) -> Int64? {
+        guard let value = appData.autoUpdate.scriptLastChecked[uuid], value > 0 else { return nil }
+        return value
+    }
+
+    /// Records successful per-script checks with one write so Apply can skip
+    /// scripts already verified inside the auto-update interval (#646).
+    @MainActor
+    public func setScriptLastChecked(_ times: [String: Int64]) async {
+        guard !times.isEmpty else { return }
+        await updateData { data in
+            for (uuid, time) in times {
+                data.autoUpdate.scriptLastChecked[uuid] = time
             }
         }
     }

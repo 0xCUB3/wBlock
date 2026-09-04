@@ -3597,25 +3597,66 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
+    /// Scripts whose last successful check is older than the auto-update
+    /// interval, or that were never checked. Mirrors the filter freshness
+    /// window so an Apply with up-to-date filters does not still walk every
+    /// script (#646). `skipFresh: false` checks every candidate.
+    static func scriptsRequiringNetworkCheck(
+        _ candidates: [UserScript],
+        lastChecked: (UUID) -> Date?,
+        interval: TimeInterval,
+        now: Date = Date()
+    ) -> [UserScript] {
+        candidates.filter { script in
+            guard let checked = lastChecked(script.id) else { return true }
+            return now.timeIntervalSince(checked) >= interval
+        }
+    }
+
+    private func scriptFreshnessInterval() async -> TimeInterval {
+        await ProtobufDataManager.shared.waitUntilLoaded()
+        let hours = ProtobufDataManager.shared.autoUpdateIntervalHours
+        let intervalHours = hours.isFinite && hours > 0 ? min(max(hours, 1), 24 * 7) : 6
+        return intervalHours * 3600
+    }
+
     public func autoUpdateEnabledUserScripts(
+        skipFresh: Bool = false,
         progressCallback: (@MainActor (AutoUpdateProgress) async -> Void)? = nil
     ) async -> AutoUpdateResult {
         await waitUntilReady()
 
-        let candidates = userScripts.filter { script in
+        var candidates = userScripts.filter { script in
             guard script.isEnabled && !script.isLocal && script.url != nil && script.updatesAutomatically else {
                 return false
             }
             return true
         }
 
-        guard !candidates.isEmpty else { return AutoUpdateResult(updated: 0, failed: 0) }
+        if skipFresh {
+            let interval = await scriptFreshnessInterval()
+            candidates = Self.scriptsRequiringNetworkCheck(
+                candidates,
+                lastChecked: { id in
+                    ProtobufDataManager.shared.getScriptLastChecked(id.uuidString)
+                        .map { Date(timeIntervalSince1970: TimeInterval($0)) }
+                },
+                interval: interval
+            )
+        }
+
+        guard !candidates.isEmpty else {
+            await progressCallback?(AutoUpdateProgress(completed: 0, total: 0, currentScriptName: ""))
+            return AutoUpdateResult(updated: 0, failed: 0)
+        }
 
         var updatedCount = 0
         var failedCount = 0
         var didChange = false
         let total = candidates.count
         var completed = 0
+        var verifiedTimes: [String: Int64] = [:]
+        let now = Int64(Date().timeIntervalSince1970)
 
         for candidate in candidates {
             await progressCallback?(
@@ -3623,6 +3664,7 @@ public class UserScriptManager: ObservableObject {
             )
             do {
                 let updated = try await updateSingleScript(candidate)
+                verifiedTimes[candidate.id.uuidString] = now
                 if updated {
                     updatedCount += 1
                     didChange = true
@@ -3635,6 +3677,8 @@ public class UserScriptManager: ObservableObject {
         }
 
         await progressCallback?(AutoUpdateProgress(completed: total, total: total, currentScriptName: ""))
+
+        await ProtobufDataManager.shared.setScriptLastChecked(verifiedTimes)
 
         if didChange {
             await persistUserScriptsNow()

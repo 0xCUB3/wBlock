@@ -745,6 +745,14 @@ nonisolated struct Wblock_Data_AutoUpdateMetadata: @unchecked Sendable {
     set {_uniqueStorage()._filterLastChecked = newValue}
   }
 
+  /// UUID -> Unix time of the last successful update check for that userscript.
+  /// Apply skips scripts verified inside the auto-update interval so filters
+  /// being up to date does not still trigger a full userscript pass (#646).
+  var scriptLastChecked: Dictionary<String,Int64> {
+    get {_storage._scriptLastChecked}
+    set {_uniqueStorage()._scriptLastChecked = newValue}
+  }
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -1733,7 +1741,7 @@ nonisolated extension Wblock_Data_SilentPushDiagnostics: SwiftProtobuf.Message, 
 
 nonisolated extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".AutoUpdateMetadata"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}enabled\0\u{3}interval_hours\0\u{3}last_check_time\0\u{3}last_successful_time\0\u{3}next_eligible_time\0\u{3}force_next\0\u{3}is_running\0\u{3}running_since_timestamp\0\u{3}filter_etags\0\u{3}filter_last_modified\0\u{4}\u{2}bg_app_refresh\0\u{3}bg_processing\0\u{3}silent_push\0\u{3}last_foreground_catch_up_time\0\u{3}last_foreground_catch_up_reason\0\u{3}background_agent_disabled\0\u{3}filter_last_checked\0\u{c}\u{b}\u{1}")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}enabled\0\u{3}interval_hours\0\u{3}last_check_time\0\u{3}last_successful_time\0\u{3}next_eligible_time\0\u{3}force_next\0\u{3}is_running\0\u{3}running_since_timestamp\0\u{3}filter_etags\0\u{3}filter_last_modified\0\u{4}\u{2}bg_app_refresh\0\u{3}bg_processing\0\u{3}silent_push\0\u{3}last_foreground_catch_up_time\0\u{3}last_foreground_catch_up_reason\0\u{3}background_agent_disabled\0\u{3}filter_last_checked\0\u{3}script_last_checked\0\u{c}\u{b}\u{1}")
 
   fileprivate class _StorageClass {
     var _enabled: Bool = false
@@ -1753,6 +1761,7 @@ nonisolated extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, Swi
     var _lastForegroundCatchUpReason: String = String()
     var _backgroundAgentDisabled: Bool = false
     var _filterLastChecked: Dictionary<String,Int64> = [:]
+    var _scriptLastChecked: Dictionary<String,Int64> = [:]
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -1780,6 +1789,7 @@ nonisolated extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, Swi
       _lastForegroundCatchUpReason = source._lastForegroundCatchUpReason
       _backgroundAgentDisabled = source._backgroundAgentDisabled
       _filterLastChecked = source._filterLastChecked
+      _scriptLastChecked = source._scriptLastChecked
     }
   }
 
@@ -1815,6 +1825,7 @@ nonisolated extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, Swi
         case 16: try { try decoder.decodeSingularStringField(value: &_storage._lastForegroundCatchUpReason) }()
         case 17: try { try decoder.decodeSingularBoolField(value: &_storage._backgroundAgentDisabled) }()
         case 18: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufInt64>.self, value: &_storage._filterLastChecked) }()
+        case 19: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufInt64>.self, value: &_storage._scriptLastChecked) }()
         default: break
         }
       }
@@ -1878,6 +1889,9 @@ nonisolated extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, Swi
       if !_storage._filterLastChecked.isEmpty {
         try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufInt64>.self, value: _storage._filterLastChecked, fieldNumber: 18)
       }
+      if !_storage._scriptLastChecked.isEmpty {
+        try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufInt64>.self, value: _storage._scriptLastChecked, fieldNumber: 19)
+      }
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1904,6 +1918,7 @@ nonisolated extension Wblock_Data_AutoUpdateMetadata: SwiftProtobuf.Message, Swi
         if _storage._lastForegroundCatchUpReason != rhs_storage._lastForegroundCatchUpReason {return false}
         if _storage._backgroundAgentDisabled != rhs_storage._backgroundAgentDisabled {return false}
         if _storage._filterLastChecked != rhs_storage._filterLastChecked {return false}
+        if _storage._scriptLastChecked != rhs_storage._scriptLastChecked {return false}
         return true
       }
       if !storagesAreEqual {return false}
