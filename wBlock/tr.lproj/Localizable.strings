@@ -1029,3 +1029,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Downloading…" = "İndiriliyor…";
 "Download %@" = "%@ indir";
 "Downloading userscript" = "Kullanıcı betiği indiriliyor";
+"Retry %d failed extension(s)" = "Başarısız %d uzantıyı yeniden dene";
+"All extensions reloaded." = "Tüm uzantılar yeniden yüklendi.";
+"%@ still failed to reload. Safari may need a restart." = "%@ hâlâ yeniden yüklenemiyor. Safari'nin yeniden başlatılması gerekebilir.";
+"Apply Without Checking for Updates" = "Güncellemeleri denetlemeden uygula";

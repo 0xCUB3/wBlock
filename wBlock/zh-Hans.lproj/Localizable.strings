@@ -1030,3 +1030,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Downloading…" = "正在下载…";
 "Download %@" = "下载 %@";
 "Downloading userscript" = "正在下载用户脚本";
+"Retry %d failed extension(s)" = "重试 %d 个失败的扩展";
+"All extensions reloaded." = "所有扩展已重新加载。";
+"%@ still failed to reload. Safari may need a restart." = "%@ 仍然无法重新加载。可能需要重启 Safari。";
+"Apply Without Checking for Updates" = "不检查更新直接应用";

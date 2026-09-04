@@ -1030,3 +1030,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Downloading…" = "Pobieranie…";
 "Download %@" = "Pobierz %@";
 "Downloading userscript" = "Pobieranie skryptu użytkownika";
+"Retry %d failed extension(s)" = "Ponów %d nieudane rozszerzenia";
+"All extensions reloaded." = "Wszystkie rozszerzenia przeładowano.";
+"%@ still failed to reload. Safari may need a restart." = "%@ nadal nie można przeładować. Safari może wymagać ponownego uruchomienia.";
+"Apply Without Checking for Updates" = "Zastosuj bez sprawdzania aktualizacji";

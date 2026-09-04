@@ -1030,3 +1030,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Downloading…" = "جارٍ التنزيل…";
 "Download %@" = "تنزيل %@";
 "Downloading userscript" = "جارٍ تنزيل سكريبت المستخدم";
+"Retry %d failed extension(s)" = "إعادة محاولة %d ملحق فشل";
+"All extensions reloaded." = "أعيد تحميل كل الملحقات.";
+"%@ still failed to reload. Safari may need a restart." = "%@ لا يزال يفشل في إعادة التحميل. قد يحتاج Safari إلى إعادة التشغيل.";
+"Apply Without Checking for Updates" = "التطبيق دون التحقق من التحديثات";

@@ -1029,3 +1029,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Downloading…" = "Downloading…";
 "Download %@" = "Download %@";
 "Downloading userscript" = "Downloading userscript";
+"Retry %d failed extension(s)" = "Retry %d failed extension(s)";
+"All extensions reloaded." = "All extensions reloaded.";
+"%@ still failed to reload. Safari may need a restart." = "%@ still failed to reload. Safari may need a restart.";
+"Apply Without Checking for Updates" = "Apply Without Checking for Updates";

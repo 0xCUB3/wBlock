@@ -1030,3 +1030,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Downloading…" = "Загрузка…";
 "Download %@" = "Загрузить %@";
 "Downloading userscript" = "Загрузка пользовательского скрипта";
+"Retry %d failed extension(s)" = "Повторить для %d расширений с ошибкой";
+"All extensions reloaded." = "Все расширения перезагружены.";
+"%@ still failed to reload. Safari may need a restart." = "%@ по-прежнему не перезагружается. Возможно, нужно перезапустить Safari.";
+"Apply Without Checking for Updates" = "Применить без проверки обновлений";

@@ -1030,3 +1030,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Downloading…" = "ダウンロード中…";
 "Download %@" = "%@をダウンロード";
 "Downloading userscript" = "ユーザースクリプトをダウンロード中";
+"Retry %d failed extension(s)" = "失敗した%d件の機能拡張を再試行";
+"All extensions reloaded." = "すべての機能拡張を再読み込みしました。";
+"%@ still failed to reload. Safari may need a restart." = "%@ の再読み込みに引き続き失敗しています。Safariの再起動が必要かもしれません。";
+"Apply Without Checking for Updates" = "アップデートを確認せずに適用";

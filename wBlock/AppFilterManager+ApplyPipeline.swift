@@ -916,6 +916,10 @@ extension AppFilterManager {
         }
 
         let failedReloads = activeReloads.filter { !$0.success && !$0.disabledInSafari }
+        let failedReloadNames = Set(failedReloads.map(\.blockerName))
+        await MainActor.run {
+            self.failedReloadTargets = platformTargets.filter { failedReloadNames.contains($0.displayName) }
+        }
         let skippedReloads = reloadSummary.metrics.filter(\.skipped)
         let retriedReloads = activeReloads.filter { $0.attempts > 1 }
         let totalReloadAttempts = activeReloads.reduce(0) { $0 + $1.attempts }
@@ -1397,6 +1401,50 @@ extension AppFilterManager {
         let attempts: Int
         let durationMs: Int
         let failureReason: String?
+    }
+
+    /// Reloads only the blockers that failed on the last apply (#648). Rules on
+    /// disk are already current, so this skips conversion and just asks Safari
+    /// again, with the full attempt budget for each remaining target.
+    func retryFailedReloads() {
+        let targets = failedReloadTargets
+        guard !targets.isEmpty, !isLoading, !isApplyInFlight else { return }
+        isLoading = true
+        applyProgressViewModel.updateIsLoading(true)
+        applyProgressViewModel.updateStageDescription(
+            LocalizedStrings.text("Reloading Safari extensions...", comment: "Apply pipeline stage")
+        )
+        Task {
+            let summary = await reloadContentBlockers(targets)
+            let stillFailing = Set(summary.metrics.filter { !$0.success && !$0.disabledInSafari }.map(\.blockerName))
+            await MainActor.run {
+                self.failedReloadTargets = targets.filter { stillFailing.contains($0.displayName) }
+                self.lastReloadTime = String(format: "%.2fs", Double(summary.durationMs) / 1000)
+                let warning: String?
+                if self.failedReloadTargets.isEmpty {
+                    warning = nil
+                    self.hasError = false
+                    self.statusDescription = LocalizedStrings.text(
+                        "All extensions reloaded.", comment: "Targeted reload retry succeeded")
+                } else {
+                    warning = LocalizedStrings.format(
+                        "%@ still failed to reload. Safari may need a restart.",
+                        comment: "Targeted reload retry still failing",
+                        self.failedReloadTargets.map(\.displayName).joined(separator: ", ")
+                    )
+                    self.statusDescription = warning ?? self.statusDescription
+                }
+                self.applyProgressViewModel.updateStatistics(
+                    sourceRules: self.sourceRulesCount,
+                    safariRules: self.lastRuleCount,
+                    conversionTime: self.lastConversionTime,
+                    reloadTime: self.lastReloadTime,
+                    statusMessage: self.statusDescription,
+                    resultWarning: warning
+                )
+                self.isLoading = false
+            }
+        }
     }
 
     struct ReloadPhaseSummary {

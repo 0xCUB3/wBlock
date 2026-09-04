@@ -1030,3 +1030,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Downloading…" = "다운로드 중…";
 "Download %@" = "%@ 다운로드";
 "Downloading userscript" = "유저스크립트 다운로드 중";
+"Retry %d failed extension(s)" = "실패한 확장 프로그램 %d개 다시 시도";
+"All extensions reloaded." = "모든 확장 프로그램을 다시 불러왔습니다.";
+"%@ still failed to reload. Safari may need a restart." = "%@ 다시 불러오기에 계속 실패합니다. Safari를 재시작해야 할 수 있습니다.";
+"Apply Without Checking for Updates" = "업데이트 확인 없이 적용";

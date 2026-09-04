@@ -1030,3 +1030,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Downloading…" = "Se descarcă…";
 "Download %@" = "Descarcă %@";
 "Downloading userscript" = "Se descarcă scriptul utilizator";
+"Retry %d failed extension(s)" = "Reîncearcă %d extensii eșuate";
+"All extensions reloaded." = "Toate extensiile au fost reîncărcate.";
+"%@ still failed to reload. Safari may need a restart." = "%@ tot nu se reîncarcă. Safari poate necesita o repornire.";
+"Apply Without Checking for Updates" = "Aplică fără a verifica actualizările";

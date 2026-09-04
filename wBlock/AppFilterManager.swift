@@ -62,6 +62,9 @@ class AppFilterManager: ObservableObject {
     @Published var lastReloadTime: String = LocalizedStrings.text("N/A", comment: "Unavailable metric placeholder")
     @Published var lastRuleCount: Int = 0
     @Published var hasError: Bool = false
+    /// Content blockers that did not reload on the last apply (#648). Cleared on
+    /// the next apply and once a targeted retry succeeds.
+    @Published var failedReloadTargets: [ContentBlockerTargetInfo] = []
     @Published var progress: Float = 0
     var missingFilters: [FilterList] = []
     var missingUserScripts: [UserScript] = []
@@ -880,6 +883,7 @@ class AppFilterManager: ObservableObject {
 
         let started = await performExclusiveApply {
             self.prepareApplyRunState()
+            self.failedReloadTargets = []
             self.showingApplyProgressSheet = showProgress
 
             if !self.missingFilters.isEmpty || !self.missingUserScripts.isEmpty {

@@ -355,8 +355,8 @@ struct ContentView: View {
             }
         }
         #if os(macOS)
-        // Right-click exposes the scoped checks; iOS uses pull-to-refresh on
-        // each tab and the long-press stays reserved for force apply.
+        // Right-click exposes the apply variants (#651); iOS uses pull-to-refresh
+        // on each tab and the long-press stays reserved for force apply.
         .contextMenu { scopedUpdateMenuItems }
         #endif
     }
@@ -365,6 +365,23 @@ struct ContentView: View {
     private var scopedUpdateMenuItems: some View {
         Button("Check for Filter Updates") { checkForUpdates(scope: .filters) }
         Button("Check for Userscript Updates") { checkForUpdates(scope: .scripts) }
+        Divider()
+        Button("Apply Without Checking for Updates") { filterManager.forceApplyChanges() }
+            .disabled(filterManager.isLoading)
+        if !filterManager.failedReloadTargets.isEmpty {
+            Button {
+                filterManager.showingApplyProgressSheet = true
+                filterManager.retryFailedReloads()
+            } label: {
+                Text(
+                    String.localizedStringWithFormat(
+                        NSLocalizedString("Retry %d failed extension(s)", comment: "Summary button that reloads only the blockers that failed"),
+                        filterManager.failedReloadTargets.count
+                    )
+                )
+            }
+            .disabled(filterManager.isLoading)
+        }
     }
 
     private var filtersView: some View {
@@ -533,7 +550,12 @@ struct ContentView: View {
                     await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
                 },
                 onCheckFilterUpdates: { checkForUpdates(scope: .filters) },
-                onCheckScriptUpdates: { checkForUpdates(scope: .scripts) }
+                onCheckScriptUpdates: { checkForUpdates(scope: .scripts) },
+                failedReloadCount: filterManager.failedReloadTargets.count,
+                onRetryFailedReloads: {
+                    filterManager.showingApplyProgressSheet = true
+                    filterManager.retryFailedReloads()
+                }
             )
                 .safeAreaInset(edge: .top) {
                     if filterManager.isBlockingPaused {

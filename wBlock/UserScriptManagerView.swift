@@ -172,6 +172,8 @@ struct UserScriptManagerView: View {
     /// Scoped manual checks (#657) exposed from the Apply button's context menu.
     var onCheckFilterUpdates: () -> Void = {}
     var onCheckScriptUpdates: () -> Void = {}
+    var failedReloadCount: Int = 0
+    var onRetryFailedReloads: () -> Void = {}
 
     @State private var scripts: [UserScriptListItem] = []
     @State private var showingAddScriptSheet = false
@@ -218,6 +220,20 @@ struct UserScriptManagerView: View {
         .contextMenu {
             Button("Check for Filter Updates", action: onCheckFilterUpdates)
             Button("Check for Userscript Updates", action: onCheckScriptUpdates)
+            Divider()
+            Button("Apply Without Checking for Updates", action: onForceApplyChanges)
+                .disabled(isApplyingChanges)
+            if failedReloadCount > 0 {
+                Button(action: onRetryFailedReloads) {
+                    Text(
+                        String.localizedStringWithFormat(
+                            NSLocalizedString("Retry %d failed extension(s)", comment: "Summary button that reloads only the blockers that failed"),
+                            failedReloadCount
+                        )
+                    )
+                }
+                .disabled(isApplyingChanges)
+            }
         }
         #endif
     }

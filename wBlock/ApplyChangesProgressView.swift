@@ -313,6 +313,25 @@ struct ApplyChangesProgressView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            if !filterManager.failedReloadTargets.isEmpty {
+                Button {
+                    filterManager.retryFailedReloads()
+                } label: {
+                    Label(
+                        String.localizedStringWithFormat(
+                            NSLocalizedString(
+                                "Retry %d failed extension(s)",
+                                comment: "Summary button that reloads only the blockers that failed"
+                            ),
+                            filterManager.failedReloadTargets.count
+                        ),
+                        systemImage: "arrow.clockwise"
+                    )
+                }
+                .buttonStyle(.bordered)
+                .disabled(filterManager.isLoading)
+            }
+
             if viewModel.state.scriptsFailedCount > 0 {
                 Label(
                     String.localizedStringWithFormat(
