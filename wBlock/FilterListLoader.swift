@@ -815,18 +815,17 @@ class FilterListLoader {
                     description: "Optimized for mobile ad blocking. Recommended for iOS/iPadOS."))
         #endif
 
-        #if os(macOS)
-            // macOS-only filters too large for iOS
-            filterLists.append(
-                FilterList(
-                    id: UUID(), name: "HaGeZi Pro Mini",
-                    url: URL(
-                        string:
-                            "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt"
-                    )!, category: FilterListCategory.multipurpose, isSelected: true,
-                    description:
-                        "Extensive blocklist targeting ads, trackers, and other unwanted content."))
-        #endif
+        // Pro Mini is the size-optimized browser/mobile list. Keep its catalog
+        // identity on every platform; it remains opt-in like other extras.
+        filterLists.append(
+            FilterList(
+                id: UUID(), name: "HaGeZi Pro Mini",
+                url: URL(
+                    string:
+                        "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt"
+                )!, category: FilterListCategory.multipurpose,
+                description:
+                    "Extensive blocklist targeting ads, trackers, and other unwanted content."))
 
         for index in filterLists.indices {
             filterLists[index].isSelected = Self.recommendedFilterNames.contains(filterLists[index].name)
