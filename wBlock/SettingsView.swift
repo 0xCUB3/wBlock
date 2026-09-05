@@ -279,8 +279,8 @@ struct SettingsView: View {
     }
 
     @ViewBuilder
-    private var advancedSection: some View {
-        Section("Advanced") {
+    private var siteActionsSection: some View {
+        Section("Site Actions") {
             NavigationLink {
                 SiteSettingsView()
             } label: {
@@ -292,7 +292,12 @@ struct SettingsView: View {
             } label: {
                 Label("Element Zapper", systemImage: "wand.and.stars")
             }
+        }
+    }
 
+    @ViewBuilder
+    private var advancedSection: some View {
+        Section("Advanced") {
             NavigationLink {
                 LogsView()
             } label: {
@@ -738,6 +743,7 @@ struct SettingsView: View {
         CompatibleNavigationStack {
             List {
                 pauseBlockingSection
+                siteActionsSection
                 displaySection
                 autoUpdateSection
                 syncSection
@@ -754,6 +760,7 @@ struct SettingsView: View {
         CompatibleNavigationStack {
             Form {
                 pauseBlockingSection
+                siteActionsSection
                 displaySection
                 autoUpdateSection
                 syncSection
