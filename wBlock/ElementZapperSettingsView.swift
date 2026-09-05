@@ -10,6 +10,7 @@ struct ElementZapperSettingsView: View {
     @State private var expandedDomains: Set<String> = []
     @State private var pendingConfirmation: PendingConfirmation?
     @State private var pendingUndo: UndoEntry?
+    @State private var pendingRedo: UndoEntry?
     @State private var isMutating = false
     @State private var mutationVersion = 0
     #if os(macOS)
@@ -39,30 +40,28 @@ struct ElementZapperSettingsView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            ScrollView {
-                VStack(spacing: 16) {
-                    if filteredDomains.isEmpty {
-                        emptyState
-                    } else {
-                        rulesCard
-                    }
-
-                    Spacer(minLength: pendingUndo == nil ? 20 : 72)
+        ScrollView {
+            VStack(spacing: 16) {
+                if filteredDomains.isEmpty {
+                    emptyState
+                } else {
+                    rulesCard
                 }
-                .padding(.vertical)
-                .padding(.horizontal)
-            }
 
-            if pendingUndo != nil {
-                undoBanner
-                    .padding(.horizontal)
-                    .padding(.bottom, 16)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                Spacer(minLength: 20)
             }
+            .padding(.vertical)
+            .padding(.horizontal)
         }
-        .animation(.easeInOut(duration: 0.25), value: pendingUndo?.rule)
         .disabled(isMutating || ruleManager.isMutationInFlight)
+        .toolbar {
+            UndoRedoToolbar(
+                canUndo: pendingUndo != nil && !(isMutating || ruleManager.isMutationInFlight),
+                canRedo: pendingRedo != nil && !(isMutating || ruleManager.isMutationInFlight),
+                undo: restoreDeletedRule,
+                redo: redoDeletedRule
+            )
+        }
         .navigationTitle("Element Zapper")
         .task { await ruleManager.refreshNow() }
         .alert(item: $pendingConfirmation) { confirmation in
@@ -232,24 +231,6 @@ struct ElementZapperSettingsView: View {
         .padding(.vertical, 48)
     }
 
-    private var undoBanner: some View {
-        HStack {
-            Text("Rule deleted")
-            Spacer()
-            Button("Undo") { restoreDeletedRule() }
-            .font(.subheadline.bold())
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
-        .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
-        .task(id: pendingUndo?.rule) {
-            guard pendingUndo != nil else { return }
-            try? await TaskSleep.sleep(for: .seconds(5))
-            pendingUndo = nil
-        }
-    }
-
     private func deleteRule(_ rule: String, from domain: String, at index: Int) {
         guard !isMutating else { return }
         let currentRules = ruleManager.rules(for: domain)
@@ -299,8 +280,21 @@ struct ElementZapperSettingsView: View {
             }
             guard mutationVersion == version else { return }
             pendingUndo = nil
+            pendingRedo = UndoEntry(
+                rule: undo.rule, domain: undo.domain, originalIndex: insertIndex,
+                previousRule: undo.previousRule, nextRule: undo.nextRule, version: version
+            )
             isMutating = false
         }
+    }
+
+    private func redoDeletedRule() {
+        guard !isMutating, let redo = pendingRedo, redo.version == mutationVersion else { return }
+        guard let index = ruleManager.rules(for: redo.domain).firstIndex(of: redo.rule) else {
+            pendingRedo = nil
+            return
+        }
+        deleteRule(redo.rule, from: redo.domain, at: index)
     }
 
     private func clearRules(for domain: String) {
@@ -320,7 +314,7 @@ struct ElementZapperSettingsView: View {
     @discardableResult
     private func beginMutation(invalidateUndo: Bool) -> Int {
         mutationVersion += 1
-        if invalidateUndo { pendingUndo = nil }
+        if invalidateUndo { pendingUndo = nil; pendingRedo = nil }
         isMutating = true
         return mutationVersion
     }

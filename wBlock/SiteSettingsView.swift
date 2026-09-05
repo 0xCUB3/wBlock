@@ -54,35 +54,32 @@ struct SiteSettingsView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            ScrollView {
-                VStack(spacing: 20) {
-                    addSiteSection
+        ScrollView {
+            VStack(spacing: 20) {
+                addSiteSection
+                    .disabled(isMutationInFlight)
+
+                let sites = filteredSites
+                if !sites.isEmpty {
+                    sitesCard(sites)
                         .disabled(isMutationInFlight)
-
-                    let sites = filteredSites
-                    if !sites.isEmpty {
-                        sitesCard(sites)
-                            .disabled(isMutationInFlight)
-                    } else if allSites.isEmpty {
-                        emptyStateView
-                    }
-
-                    Spacer(minLength: pendingUndo != nil || pendingRedo != nil ? 72 : 20)
+                } else if allSites.isEmpty {
+                    emptyStateView
                 }
-                .padding(.vertical)
-                .padding(.horizontal)
-            }
 
-            if pendingUndo != nil || pendingRedo != nil {
-                undoBanner
-                    .padding(.horizontal)
-                    .padding(.bottom, 16)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                Spacer(minLength: 20)
             }
+            .padding(.vertical)
+            .padding(.horizontal)
         }
-        .animation(.easeInOut(duration: 0.25), value: pendingUndo?.id)
-        .animation(.easeInOut(duration: 0.25), value: pendingRedo?.id)
+        .toolbar {
+            UndoRedoToolbar(
+                canUndo: pendingUndo != nil && !isMutationInFlight,
+                canRedo: pendingRedo != nil && !isMutationInFlight,
+                undo: undoSiteMutation,
+                redo: redoSiteMutation
+            )
+        }
         .navigationTitle("Site Settings")
         #if os(iOS)
         .searchable(text: $searchText, prompt: "Search")
@@ -411,29 +408,6 @@ struct SiteSettingsView: View {
     }
 
     // MARK: - Undo and redo
-
-    private var undoBanner: some View {
-        HStack {
-            Text("Site Settings")
-                .font(.subheadline)
-                .foregroundStyle(.primary)
-            Spacer()
-            if pendingUndo != nil {
-                Button("Undo") { undoSiteMutation() }
-                    .font(.subheadline.bold())
-                    .disabled(isMutationInFlight)
-            }
-            if pendingRedo != nil {
-                Button("Redo") { redoSiteMutation() }
-                    .font(.subheadline.bold())
-                    .disabled(isMutationInFlight)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
-        .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
-    }
 
     private func undoSiteMutation() {
         guard let state = pendingUndo, let generation = beginMutation() else { return }
