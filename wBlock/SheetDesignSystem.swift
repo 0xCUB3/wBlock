@@ -115,10 +115,11 @@ struct SheetHeader: View {
                 .font(.title2)
                 .fontWeight(.semibold)
             Spacer()
-            if !isLoading {
-                dismissControl
-                    .transition(.scale.combined(with: .opacity))
-            }
+            dismissControl
+                .disabled(isLoading)
+                .opacity(isLoading ? 0 : 1)
+                .accessibilityHidden(isLoading)
+                .transaction { $0.animation = nil }
         }
         .padding(.horizontal, 20)
         .padding(.top, 20)
