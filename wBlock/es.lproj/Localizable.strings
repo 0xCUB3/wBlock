@@ -1087,3 +1087,5 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Automatic" = "Automático";
 
 "This script will not run on these sites. Other scripts still run." = "Este script no se ejecutará en estos sitios. Los demás scripts seguirán ejecutándose.";
+
+"Operation details" = "Detalles de la operación";

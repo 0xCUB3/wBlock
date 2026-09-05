@@ -780,6 +780,16 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         maxRetries: Int = 5
     ) async -> ReloadAttemptResult {
         let gatedResult = await reloadCoordinator.withGate(key: identifier) {
+            let streak = ContentBlockerReloadPolicy.failureStreak(identifier: identifier, groupIdentifier: groupIdentifier)
+            let output = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier)?
+                .appendingPathComponent(targetRulesFilename)
+            let bytes = output.flatMap { try? $0.resourceValues(forKeys: [.fileSizeKey]).fileSize }
+            await SharedAutoUpdateManager.shared.recordOperation("reload-start", fields: [
+                "target": identifier, "outputBytes": bytes.map(String.init) ?? "unknown",
+                "failureStreak": String(streak),
+                "recovery": String(streak >= ContentBlockerReloadPolicy.recoveryThreshold),
+                "timeoutSeconds": String(streak >= ContentBlockerReloadPolicy.recoveryThreshold ? ContentBlockerReloadPolicy.recoveryTimeout : 30)
+            ])
             let result = await reloadIfNeededSerially(
                 identifier: identifier,
                 targetRulesFilename: targetRulesFilename,
@@ -790,6 +800,12 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 identifier: identifier, groupIdentifier: groupIdentifier, success: result.success,
                 attempts: result.attempts, disabledInSafari: result.disabledInSafari
             )
+            await SharedAutoUpdateManager.shared.recordOperation("reload-result", fields: [
+                "target": identifier, "result": result.disabledInSafari ? "disabled" : result.skipped ? "skipped" : result.success ? "succeeded" : "failed",
+                "attempts": String(result.attempts), "durationMs": String(result.durationMs),
+                "skipped": String(result.skipped), "disabledInSafari": String(result.disabledInSafari),
+                "failureStreak": String(ContentBlockerReloadPolicy.failureStreak(identifier: identifier, groupIdentifier: groupIdentifier))
+            ])
             return result
         }
         guard let result = gatedResult else {
@@ -833,12 +849,16 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         if recovering {
             // Read and republish under the same output lock. Never rewrite an
             // earlier snapshot over a concurrent pause or disabled-site update.
-            try? withContentBlockerOutputLock(at: containerURL, targetRulesFilename: targetRulesFilename) {
+            let rewritten = (try? withContentBlockerOutputLock(at: containerURL, targetRulesFilename: targetRulesFilename) {
                 let data = try Data(contentsOf: outputURL, options: .mappedIfSafe)
-                guard try validOutputDigest(data) != nil else { return }
+                guard try validOutputDigest(data) != nil else { return false }
                 try data.write(to: outputURL, options: .atomic)
                 try? FileManager.default.removeItem(at: markerURL)
-            }
+                return true
+            }) ?? false
+            await SharedAutoUpdateManager.shared.recordOperation("reload-recovery", fields: [
+                "target": identifier, "result": rewritten ? "rewritten" : "failed"
+            ])
         }
         guard var snapshot = try? readReloadSnapshot(
             markerURL: markerURL,
@@ -855,7 +875,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         var totalAttempts = 0
         var mustReloadNewestOutput = false
         for _ in 0..<maxReloadVerificationPasses {
-            if !mustReloadNewestOutput,
+            if !recovering, !mustReloadNewestOutput,
                reloadMarkerMatches(snapshot),
                !BlockingPauseStore.isContentBlockingPaused(groupIdentifier: groupIdentifier)
             {

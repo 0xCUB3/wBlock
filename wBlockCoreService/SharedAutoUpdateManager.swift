@@ -2307,6 +2307,10 @@ public actor SharedAutoUpdateManager {
         }
     }
 
+    public func recordOperation(_ operation: String, fields: [String: String] = [:]) {
+        appendTelemetry("operation", fields: fields.merging(["operation": operation]) { _, new in new })
+    }
+
     private func appendTelemetry(_ event: String, fields: [String: String]) {
         let merged = fields.merging(["event": event]) { current, _ in current }
         let payload = merged

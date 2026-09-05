@@ -1087,3 +1087,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Automatic" = "自動";
 
 "This script will not run on these sites. Other scripts still run." = "此指令碼不會在這些網站上執行。其他指令碼仍會執行。";
+
+"Operation details" = "操作詳情";

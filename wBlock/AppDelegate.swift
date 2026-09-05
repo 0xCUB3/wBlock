@@ -555,6 +555,7 @@ extension AppDelegate: UIApplicationDelegate {
         let data = ProtobufDataManager.shared
         guard data.autoUpdateEnabled else {
             BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: request.identifier)
+            Task { await ConcurrentLogManager.shared.operation("background-cancel", fields: ["task": request.identifier, "reason": "auto-update-disabled"]) }
             return
         }
         let now = Date()
@@ -566,11 +567,15 @@ extension AppDelegate: UIApplicationDelegate {
         )
         let delaySeconds = dueDate.timeIntervalSince(now)
         request.earliestBeginDate = dueDate
+        let scheduleFields = ["task": request.identifier, "dueUnix": String(dueDate.timeIntervalSince1970),
+                              "delaySeconds": String(max(0, delaySeconds)), "intervalHours": String(configuredAutoUpdateIntervalHours())]
+        Task { await ConcurrentLogManager.shared.operation("background-schedule", fields: scheduleFields) }
 
         do {
             // Cancel and resubmit atomically
             BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: backgroundTaskIdentifier)
             try BGTaskScheduler.shared.submit(request)
+            Task { await ConcurrentLogManager.shared.operation("background-submit", fields: ["task": request.identifier, "result": "submitted"]) }
             os_log("Background filter update task scheduled successfully (delay: %.1f hrs)", type: .info, delaySeconds / 3600)
             Task { @MainActor in
                 await ProtobufDataManager.shared.recordAutoUpdateTaskScheduleAttempt(
@@ -580,6 +585,7 @@ extension AppDelegate: UIApplicationDelegate {
             }
         } catch let error as NSError {
             let details = taskScheduleFailureDetails(for: error)
+            Task { await ConcurrentLogManager.shared.operation("background-submit", fields: ["task": request.identifier, "result": "failed", "domain": error.domain, "code": String(error.code)], level: .error) }
             if error.domain == "BGTaskSchedulerErrorDomain" {
                 switch error.code {
                 case 1: os_log("BGTaskScheduler: Identifier not in Info.plist", type: .error)
@@ -608,6 +614,7 @@ extension AppDelegate: UIApplicationDelegate {
         let data = ProtobufDataManager.shared
         guard data.autoUpdateEnabled else {
             BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: request.identifier)
+            Task { await ConcurrentLogManager.shared.operation("background-cancel", fields: ["task": request.identifier, "reason": "auto-update-disabled"]) }
             return
         }
         let now = Date()
@@ -619,10 +626,14 @@ extension AppDelegate: UIApplicationDelegate {
         )
         let delaySeconds = dueDate.timeIntervalSince(now)
         request.earliestBeginDate = dueDate
+        let scheduleFields = ["task": request.identifier, "dueUnix": String(dueDate.timeIntervalSince1970),
+                              "delaySeconds": String(max(0, delaySeconds)), "intervalHours": String(configuredAutoUpdateIntervalHours())]
+        Task { await ConcurrentLogManager.shared.operation("background-schedule", fields: scheduleFields) }
         do {
             // Cancel and resubmit atomically
             BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: backgroundProcessingIdentifier)
             try BGTaskScheduler.shared.submit(request)
+            Task { await ConcurrentLogManager.shared.operation("background-submit", fields: ["task": request.identifier, "result": "submitted"]) }
             os_log("Background processing task scheduled successfully (delay: %.1f hrs)", type: .info, delaySeconds / 3600)
             Task { @MainActor in
                 await ProtobufDataManager.shared.recordAutoUpdateTaskScheduleAttempt(
@@ -632,6 +643,7 @@ extension AppDelegate: UIApplicationDelegate {
             }
         } catch let error as NSError {
             let details = taskScheduleFailureDetails(for: error)
+            Task { await ConcurrentLogManager.shared.operation("background-submit", fields: ["task": request.identifier, "result": "failed", "domain": error.domain, "code": String(error.code)], level: .error) }
             if error.domain == "BGTaskSchedulerErrorDomain" {
                 switch error.code {
                 case 1: os_log("BGTaskScheduler: Processing identifier not in Info.plist", type: .error)

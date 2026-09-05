@@ -1087,3 +1087,5 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Automatic" = "Automatico";
 
 "This script will not run on these sites. Other scripts still run." = "Questo script non verrà eseguito su questi siti. Gli altri script continueranno a essere eseguiti.";
+
+"Operation details" = "Dettagli dell’operazione";

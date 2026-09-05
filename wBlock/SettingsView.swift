@@ -115,6 +115,13 @@ struct SettingsView: View {
             contentType: .json,
             defaultFilename: exportFilename()
         ) { result in
+            switch result {
+            case .success:
+                Task { await ConcurrentLogManager.shared.operation("settings-export", fields: ["result": "saved"]) }
+            case .failure(let error):
+                let failure = error as NSError
+                Task { await ConcurrentLogManager.shared.operation("settings-export", fields: ["result": "failed", "domain": failure.domain, "code": String(failure.code)], level: .error) }
+            }
             if case .failure(let error) = result {
                 backupStatusMessage = String.localizedStringWithFormat(
                     NSLocalizedString("Export failed: %@", comment: "Backup export failure"),
@@ -812,6 +819,7 @@ extension SettingsView {
         Task { @MainActor in
             let backup = await BackupManager.createBackup(filterManager: filterManager)
             guard let data = try? BackupManager.exportData(backup: backup) else {
+                await ConcurrentLogManager.shared.operation("settings-export", fields: ["result": "encoding-failed"], level: .error)
                 backupStatusMessage = String(localized: "Failed to create backup.")
                 showingBackupStatus = true
                 return
@@ -825,12 +833,18 @@ extension SettingsView {
             panel.allowedContentTypes = [.json]
             panel.nameFieldStringValue = exportFilename()
             panel.beginSheetModal(for: window) { response in
-                guard response == .OK, let url = panel.url else { return }
+                guard response == .OK, let url = panel.url else {
+                    Task { await ConcurrentLogManager.shared.operation("settings-export", fields: ["result": "cancelled"]) }
+                    return
+                }
                 do {
                     try url.withSecurityScopedAccess { accessibleURL in
                         try data.write(to: accessibleURL, options: .atomic)
                     }
+                    Task { await ConcurrentLogManager.shared.operation("settings-export", fields: ["result": "saved", "bytes": String(data.count)]) }
                 } catch {
+                    let failure = error as NSError
+                    Task { await ConcurrentLogManager.shared.operation("settings-export", fields: ["result": "failed", "domain": failure.domain, "code": String(failure.code)], level: .error) }
                     backupStatusMessage = String.localizedStringWithFormat(
                         NSLocalizedString("Export failed: %@", comment: "Backup export failure"),
                         error.localizedDescription

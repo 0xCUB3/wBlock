@@ -1087,3 +1087,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Automatic" = "自動";
 
 "This script will not run on these sites. Other scripts still run." = "このスクリプトはこれらのサイトでは実行されません。他のスクリプトは引き続き実行されます。";
+
+"Operation details" = "操作の詳細";

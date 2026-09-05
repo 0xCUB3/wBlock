@@ -501,6 +501,8 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func setLastSyncError(_ error: Error) {
+        let failure = error as NSError
+        Task { await ConcurrentLogManager.shared.operation("icloud-error", fields: ["domain": failure.domain, "code": String(failure.code)], level: .error) }
         lastErrorMessage = userFacingErrorMessage(for: error)
     }
 
@@ -634,6 +636,7 @@ final class CloudSyncManager: ObservableObject {
             lastErrorMessage = nil
             refreshStatusFromDefaults()
 
+            await ConcurrentLogManager.shared.operation("icloud-upload", fields: ["result": "succeeded", "trigger": trigger])
             logger.info("✅ Uploaded sync payload (\(trigger, privacy: .public))")
         } catch {
             setLastSyncError(error)
@@ -872,6 +875,8 @@ final class CloudSyncManager: ObservableObject {
         {
             await filterManager.saveFilterLists()
         }
+
+        await ConcurrentLogManager.shared.operation("icloud-download", fields: ["result": "received", "trigger": trigger])
 
         // Rebuild blockers so the synced config takes effect. A local toggle can happen
         // during this await, so hash finalization is deliberately after the rebuild.
@@ -2218,6 +2223,10 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func setStatus(_ status: SyncStatus) {
+        if self.status != status {
+            let state = String(describing: status)
+            Task { await ConcurrentLogManager.shared.operation("icloud-state", fields: ["state": state]) }
+        }
         self.status = status
         statusLine = status.localizedTitle
     }

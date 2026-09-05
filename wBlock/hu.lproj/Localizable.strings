@@ -1087,3 +1087,5 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Automatic" = "Automatikus";
 
 "This script will not run on these sites. Other scripts still run." = "Ez a szkript nem fut ezeken a webhelyeken. A többi szkript továbbra is fut.";
+
+"Operation details" = "Művelet részletei";

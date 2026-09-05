@@ -1087,3 +1087,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Automatic" = "Автоматически";
 
 "This script will not run on these sites. Other scripts still run." = "Этот скрипт не будет выполняться на этих сайтах. Остальные скрипты продолжат работу.";
+
+"Operation details" = "Сведения об операции";

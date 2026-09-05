@@ -1087,3 +1087,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Automatic" = "Αυτόματα";
 
 "This script will not run on these sites. Other scripts still run." = "Αυτό το σενάριο δεν θα εκτελείται σε αυτούς τους ιστοτόπους. Τα άλλα σενάρια θα συνεχίσουν να εκτελούνται.";
+
+"Operation details" = "Λεπτομέρειες λειτουργίας";

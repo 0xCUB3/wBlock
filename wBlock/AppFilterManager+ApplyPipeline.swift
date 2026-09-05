@@ -1209,8 +1209,11 @@ extension AppFilterManager {
     @discardableResult
     func setPausedComponents(_ components: BlockingPauseComponents) async -> Bool {
         let normalized = components.intersection(.all)
+        await ConcurrentLogManager.shared.operation("pause-request", fields: ["components": String(normalized.rawValue), "exceptionCount": String(BlockingPauseStore.exceptionDomains().count)])
         if normalized.isEmpty {
-            return await resumeBlocking()
+            let result = await resumeBlocking()
+            await ConcurrentLogManager.shared.operation("resume-result", fields: ["result": result ? "succeeded" : "failed"], level: result ? .info : .error)
+            return result
         }
 
         let started = await performExclusiveApply { [self] in
@@ -1271,6 +1274,7 @@ extension AppFilterManager {
         if started && !succeeded {
             await failClosedAfterStartedPauseTransition()
         }
+        await ConcurrentLogManager.shared.operation("pause-result", fields: ["result": succeeded ? "succeeded" : "failed", "started": String(started), "components": String(BlockingPauseStore.pausedComponents().rawValue)], level: succeeded ? .info : .error)
         return succeeded
     }
 

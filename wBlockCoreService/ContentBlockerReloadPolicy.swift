@@ -33,7 +33,7 @@ public enum ContentBlockerReloadPolicy {
         let recovering = Set(targets.filter {
             needsRecovery(identifier: $0.bundleIdentifier, groupIdentifier: groupIdentifier)
         }.map(\.bundleIdentifier))
-        return targets.sorted {
+        let ordered = targets.sorted {
             let left = recovering.contains($0.bundleIdentifier)
             let right = recovering.contains($1.bundleIdentifier)
             if left != right { return left }
@@ -42,5 +42,10 @@ public enum ContentBlockerReloadPolicy {
             if leftCount != rightCount { return leftCount > rightCount }
             return $0.slot < $1.slot
         }
+        let fields = ["order": ordered.map { $0.bundleIdentifier }.joined(separator: ","),
+                      "ruleCounts": ordered.map { String(ruleCounts[$0.bundleIdentifier] ?? 0) }.joined(separator: ","),
+                      "recoveryTargets": recovering.sorted().joined(separator: ",")]
+        Task { await SharedAutoUpdateManager.shared.recordOperation("reload-order", fields: fields) }
+        return ordered
     }
 }

@@ -178,6 +178,11 @@ public actor ConcurrentLogManager {
         schedulePersist()
     }
 
+    public func operation(_ event: String, fields: [String: String] = [:], level: LogLevel = .info) {
+        log(level, .system, LocalizedStrings.text("Operation details"),
+            metadata: fields.merging(["operation": event]) { _, new in new })
+    }
+
     /// Convenience methods for each log level
     public func trace(_ category: LogCategory, _ message: String, metadata: [String: String]? = nil,
                       file: String = #file, function: String = #function, line: Int = #line) {
@@ -401,6 +406,15 @@ public actor ConcurrentLogManager {
         guard let content = drainSharedLog(at: sharedAutoUpdateLogURL()) else { return }
 
         let lines = content.split(separator: "\n").map(String.init)
+        for line in lines {
+            guard let parsed = parseSharedFieldsLine(line, prefix: "telemetry "),
+                  parsed.fields["event"] == "operation" else { continue }
+            var fields = parsed.fields
+            fields.removeValue(forKey: "event")
+            log(fields["result"] == "failed" ? .error : .info, .system,
+                LocalizedStrings.text("Operation details"), metadata: fields,
+                timestamp: parsed.timestamp ?? Date())
+        }
         let parsedResults = lines.compactMap { parseSharedFieldsLine($0, prefix: "telemetry ") }
             .filter { $0.fields["event"] == "run result" }
         let results = parsedResults.filter {

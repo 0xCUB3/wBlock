@@ -336,6 +336,7 @@ enum BackupManager {
             return (zapperRules, ProtobufDataManager.shared.getDisabledZapperDomains())
         }
 
+        await ConcurrentLogManager.shared.operation("backup-created", fields: ["filters": String(filterSelections.count + customEntries.count), "scripts": String(userScriptEntries.count), "zapperHosts": String(zapperRules.count)])
         return WBlockBackup(
             version: 1,
             createdAt: Date(),

@@ -1086,3 +1086,5 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Automatic" = "Otomatik";
 
 "This script will not run on these sites. Other scripts still run." = "Bu betik bu sitelerde çalışmaz. Diğer betikler çalışmaya devam eder.";
+
+"Operation details" = "İşlem ayrıntıları";

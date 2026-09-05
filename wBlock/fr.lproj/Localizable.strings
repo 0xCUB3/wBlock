@@ -1087,3 +1087,5 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Automatic" = "Automatique";
 
 "This script will not run on these sites. Other scripts still run." = "Ce script ne sera pas exécuté sur ces sites. Les autres scripts continueront de fonctionner.";
+
+"Operation details" = "Détails de l’opération";

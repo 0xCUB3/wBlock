@@ -1087,3 +1087,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Automatic" = "자동";
 
 "This script will not run on these sites. Other scripts still run." = "이 스크립트는 해당 사이트에서 실행되지 않습니다. 다른 스크립트는 계속 실행됩니다.";
+
+"Operation details" = "작업 세부 정보";
