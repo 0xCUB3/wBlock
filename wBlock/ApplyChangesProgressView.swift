@@ -16,6 +16,7 @@ struct ApplyChangesProgressView: View {
     @State private var selectedFilters: Set<UUID> = []
     @State private var selectedScripts: Set<UUID> = []
     @State private var isStartingSelectedUpdates = false
+    @State private var measuredHeights: [ApplySheetPart: CGFloat] = [:]
 
     private var mode: ApplyChangesSheetMode {
         viewModel.state.mode
@@ -49,11 +50,15 @@ struct ApplyChangesProgressView: View {
     }
 
     private var fillsAvailableHeight: Bool {
-        #if os(macOS)
         mode == .review || mode == .failed
-        #else
-        true
-        #endif
+    }
+
+    private var fittedHeight: CGFloat? {
+        guard !fillsAvailableHeight else { return nil }
+        let part: ApplySheetPart = mode == .progress ? .progress : .result
+        let contentHeight = measuredHeights[part] ?? (mode == .progress ? 480 : 240)
+        let toolbarHeight = mode == .progress ? (measuredHeights[.toolbar] ?? 48) : 0
+        return ceil((measuredHeights[.header] ?? 52) + contentHeight + toolbarHeight)
     }
 
     var body: some View {
@@ -61,6 +66,7 @@ struct ApplyChangesProgressView: View {
             SheetHeader(title: headerTitle, isLoading: isDismissDisabled) {
                 isPresented = false
             }
+            .measureApplySheetPart(.header)
 
             content
                 .frame(maxWidth: .infinity, maxHeight: fillsAvailableHeight ? .infinity : nil, alignment: .top)
@@ -68,11 +74,12 @@ struct ApplyChangesProgressView: View {
             if mode == .review {
                 reviewToolbar
             } else if mode == .progress {
-                progressToolbar
+                progressToolbar.measureApplySheetPart(.toolbar)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: fillsAvailableHeight ? .infinity : nil, alignment: .top)
-        .applySheetPresentationCompat(prefersLarge: mode == .review)
+        .applySheetPresentationCompat(prefersLarge: fillsAvailableHeight, contentHeight: fittedHeight)
+        .onPreferenceChange(ApplySheetHeightsKey.self) { measuredHeights = $0 }
         .interactiveDismissDisabled(isDismissDisabled)
         .onAppear {
             syncSelectionFromAvailableUpdates()
@@ -112,30 +119,15 @@ struct ApplyChangesProgressView: View {
         case .review:
             reviewContent
         case .progress:
-            #if os(macOS)
-            if #available(macOS 13.0, *) {
-                ViewThatFits(in: .vertical) {
-                    progressField.padding(20).fixedSize(horizontal: false, vertical: true)
-                    ScrollView { progressField.padding(20) }
-                }
-            } else {
-                ScrollView { progressField.padding(20) }.frame(height: 480)
-            }
-            #else
-            ScrollView {
-                progressField.padding(20)
-            }
-            #endif
+            fittedContent { progressField }
         case .result:
-            // The summary is four stat cards and at most two captions; it never
-            // needs to scroll, and a scrolling container here stretches the sheet
-            // to the fixed macOS ideal height and leaves a blank band underneath.
-            VStack(alignment: .leading, spacing: 16) {
-                if let summary = viewModel.state.summary {
-                    summaryCard(summary)
+            fittedContent {
+                VStack(alignment: .leading, spacing: 16) {
+                    if let summary = viewModel.state.summary {
+                        summaryCard(summary)
+                    }
                 }
             }
-            .padding(20)
         case .failed:
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
@@ -154,6 +146,22 @@ struct ApplyChangesProgressView: View {
                 }
                 .padding(20)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func fittedContent<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        let measured = content().padding(20)
+            .measureApplySheetPart(mode == .progress ? .progress : .result)
+        if #available(iOS 16.0, macOS 13.0, *) {
+            ViewThatFits(in: .vertical) {
+                measured.fixedSize(horizontal: false, vertical: true)
+                ScrollView { measured }
+            }
+        } else if mode == .result {
+            measured
+        } else {
+            ScrollView { measured }.frame(height: 480)
         }
     }
 
@@ -471,5 +479,26 @@ private extension View {
         #else
         self.primaryActionButtonStyle()
         #endif
+    }
+}
+
+private enum ApplySheetPart: Hashable {
+    case header, progress, result, toolbar
+}
+
+private struct ApplySheetHeightsKey: PreferenceKey {
+    static var defaultValue: [ApplySheetPart: CGFloat] { [:] }
+    static func reduce(value: inout [ApplySheetPart: CGFloat], nextValue: () -> [ApplySheetPart: CGFloat]) {
+        value.merge(nextValue(), uniquingKeysWith: max)
+    }
+}
+
+private extension View {
+    func measureApplySheetPart(_ part: ApplySheetPart) -> some View {
+        background {
+            GeometryReader { proxy in
+                Color.clear.preference(key: ApplySheetHeightsKey.self, value: [part: ceil(proxy.size.height)])
+            }
+        }
     }
 }

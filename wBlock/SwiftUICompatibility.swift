@@ -183,10 +183,10 @@ extension View {
     }
 
     @ViewBuilder
-    func applySheetPresentationCompat(prefersLarge: Bool) -> some View {
+    func applySheetPresentationCompat(prefersLarge: Bool, contentHeight: CGFloat? = nil) -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {
             #if os(iOS)
-            applySheetDetentsCompat(prefersLarge: prefersLarge)
+            applySheetDetentsCompat(prefersLarge: prefersLarge, contentHeight: contentHeight)
                 .modifier(ApplySheetGlassBackgroundModifier())
             #else
             applySheetDetentsCompat(prefersLarge: prefersLarge)
@@ -198,10 +198,14 @@ extension View {
 
     @available(iOS 16.0, macOS 13.0, *)
     @ViewBuilder
-    private func applySheetDetentsCompat(prefersLarge: Bool) -> some View {
+    private func applySheetDetentsCompat(prefersLarge: Bool, contentHeight: CGFloat? = nil) -> some View {
         if prefersLarge {
             presentationDetents([.large])
                 .presentationDragIndicator(.visible)
+        } else if let contentHeight {
+            presentationDetents([.height(max(1, contentHeight))])
+                .presentationDragIndicator(.visible)
+                .fittedFormSheetSizingCompat()
         } else {
             presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
