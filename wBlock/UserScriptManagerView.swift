@@ -2046,8 +2046,8 @@ struct AddUserScriptView: View {
     }
 
     private var urlTab: some View {
-        Form {
-            Section {
+        AddContentPanelLayout {
+            AddContentCard {
                 urlInputEditor
 
                 if parsedURLs.count > 1 {
@@ -2060,24 +2060,16 @@ struct AddUserScriptView: View {
                 if parsedURLs.count > 1 {
                     AddContentField(title: "Category") { userScriptCategoryPicker.labelsHidden() }
                 }
-            } footer: {
                 validationMessage
             }
-
-            Section {
-                requirementsPanel
-            }
+            requirementsPanel
         }
     }
 
     private var textTab: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                AddContentCard { simpleTextContent }
-                editorRequirementsPanel
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+        AddContentPanelLayout {
+            AddContentCard { simpleTextContent }
+            editorRequirementsPanel
         }
         .task {
             scheduleEditorMetadataRefresh()
@@ -2085,19 +2077,15 @@ struct AddUserScriptView: View {
     }
 
     private var fileTab: some View {
-        Form {
-            Section {
+        AddContentPanelLayout {
+            AddContentCard {
                 fileSelectionButton
                 if stagedFile != nil {
                     userScriptMetaFields
                 }
-            } footer: {
                 fileImportMessage
             }
-
-            Section {
-                fileRequirementsPanel
-            }
+            fileRequirementsPanel
         }
     }
 

@@ -149,6 +149,19 @@ struct AddContentPasteButton: View {
     }
 }
 
+/// All add modes share the Text tab's glass cards and space for their shadows.
+struct AddContentPanelLayout<Content: View>: View {
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) { content() }
+                .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                .padding(.vertical, 16)
+        }
+    }
+}
+
 struct AddContentCard<Content: View>: View {
     @ViewBuilder var content: () -> Content
 

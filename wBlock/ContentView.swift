@@ -1664,8 +1664,8 @@ struct AddFilterListView: View {
 	    }
 
 		    private var urlTab: some View {
-        Form {
-            Section {
+        AddContentPanelLayout {
+            AddContentCard {
                 AddContentField(title: "URLs") { urlInputEditor }
                 if newURLs.count <= 1 {
                     AddContentField(title: "Name") {
@@ -1677,15 +1677,17 @@ struct AddFilterListView: View {
                 AddContentField(title: "Category") {
                     userListCategoryPicker(selection: $selectedCategory).labelsHidden()
                 }
-            } footer: { urlFooterMessage }
-            Section { filterRequirementsPanel }
+                urlFooterMessage
+            }
+            filterRequirementsPanel
         }
     }
 
     private var pasteTab: some View {
-        Form {
-            Section { userListMetaFields }
-            Section("Rules") {
+        AddContentPanelLayout {
+            AddContentCard { userListMetaFields }
+            AddContentCard {
+                Text("Rules").font(.caption).foregroundStyle(.secondary)
                 SyntaxHighlightingTextView(text: $pastedRules).frame(minHeight: 220)
                 HStack(spacing: 10) {
                     pasteRulesButton
@@ -1697,19 +1699,18 @@ struct AddFilterListView: View {
                     .disabled(isSaving)
                 }
             }
-            Section { filterTextRequirementsPanel }
+            filterTextRequirementsPanel
         }
     }
 
     private var fileTab: some View {
-        Form {
-            Section {
+        AddContentPanelLayout {
+            AddContentCard {
                 fileSelectionButton
                 if stagedFile != nil { userListMetaFields }
             }
-            Section { filterFileRequirementsPanel } footer: {
-                if let importErrorMessage { Text(importErrorMessage).foregroundStyle(.orange) }
-            }
+            filterFileRequirementsPanel
+            if let importErrorMessage { Text(importErrorMessage).foregroundStyle(.orange) }
         }
     }
 
