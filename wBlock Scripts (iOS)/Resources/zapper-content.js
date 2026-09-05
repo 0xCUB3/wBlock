@@ -54,6 +54,7 @@
     active: false,
     host: '',
     rules: [],
+    inheritedRules: [],
     undoStack: [],
     lastPickAt: 0,
     candidateElement: null,
@@ -248,6 +249,7 @@
     }
     return {
       rules: normalizeRules(response.rules),
+      inheritedRules: normalizeRules(response.inheritedRules),
       disabled: response.disabled === true
     };
   }
@@ -339,11 +341,11 @@
         const rules = Array.isArray(reconciled) ? reconciled : localRules;
         const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, rules);
         await setSyncMeta(host, { disabled });
-        return { rules, disabled };
+        return { rules, disabled, inheritedRules: nativeState.inheritedRules };
       }
       const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, nativeState.rules.length === 0 ? localRules : null);
       await cacheZapperState(host, nativeState.rules, disabled);
-      return { rules: nativeState.rules, disabled };
+      return { rules: nativeState.rules, disabled, inheritedRules: nativeState.inheritedRules };
     } catch {
       try {
         const response = await sendNativeMessageWithTimeout({
@@ -363,11 +365,11 @@
           const rules = Array.isArray(reconciled) ? reconciled : localRules;
           const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, rules);
           await setSyncMeta(host, { disabled });
-          return { rules, disabled };
+          return { rules, disabled, inheritedRules: nativeState.inheritedRules };
         }
         const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, nativeState.rules.length === 0 ? localRules : null);
         await cacheZapperState(host, nativeState.rules, disabled);
-        return { rules: nativeState.rules, disabled };
+        return { rules: nativeState.rules, disabled, inheritedRules: nativeState.inheritedRules };
       } catch {
         return null;
       }
@@ -409,7 +411,7 @@
       style.textContent = '';
       return;
     }
-    style.textContent = buildHideCss(rules);
+    style.textContent = buildHideCss(normalizeRules([...rules, ...state.inheritedRules]));
   }
 
   function cssEscape(value) {
@@ -1397,9 +1399,11 @@
     const nativeState = await fetchRulesFromNative(state.host);
     if (!nativeState || !Array.isArray(nativeState.rules)) return;
 
+    const inheritedChanged = rulesSignature(state.inheritedRules) !== rulesSignature(nativeState.inheritedRules);
+    state.inheritedRules = nativeState.inheritedRules;
     const wasDisabled = state.rulesDisabled;
     state.rulesDisabled = nativeState.disabled === true;
-    if (state.rulesDisabled !== wasDisabled || rulesSignature(nativeState.rules) !== rulesSignature(state.rules)) {
+    if (inheritedChanged || state.rulesDisabled !== wasDisabled || rulesSignature(nativeState.rules) !== rulesSignature(state.rules)) {
       state.rules = nativeState.rules;
       await applyRulesToPage(state.rules);
     }
@@ -1426,6 +1430,7 @@
   }
 
   async function reloadRulesAndApply() {
+    state.inheritedRules = [];
     state.host = safeHostname();
     state.rules = await loadRulesForHost(state.host);
     state.rulesDisabled = await loadCachedRulesDisabled(state.host);
@@ -1437,6 +1442,7 @@
 
     const nativeState = await fetchRulesFromNative(state.host);
     if (nativeState && Array.isArray(nativeState.rules)) {
+      state.inheritedRules = nativeState.inheritedRules;
       state.rulesDisabled = nativeState.disabled === true;
       if (rulesSignature(nativeState.rules) !== rulesSignature(state.rules)) {
         state.rules = nativeState.rules;

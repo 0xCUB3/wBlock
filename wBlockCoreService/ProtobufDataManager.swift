@@ -950,6 +950,19 @@ public class ProtobufDataManager: ObservableObject {
         return ruleList.selectors.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
+    /// Applicable parent/www rules are read-only here; never merge them into stored selectors.
+    public func getInheritedZapperRules(forHost host: String) -> [String] {
+        let selectors = appData.extensionData.zapperRulesByHost
+            .filter { key, value in
+                key != host && !value.disabled
+                    && ZapperContentBlockerRuleGenerator.applies(storedHost: key, toHost: host)
+            }
+            .values.flatMap { $0.selectors }
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        return Array(Set(selectors)).sorted()
+    }
+
     /// Sets/replaces rules for a host. If rules are empty, removes the key.
     /// Preserves the host's `disabled` flag so content-script syncs cannot reset it.
     @MainActor
