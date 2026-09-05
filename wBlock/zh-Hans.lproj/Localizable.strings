@@ -1075,3 +1075,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Keep original thumbnails for these YouTube channels." = "为这些 YouTube 频道保留原始缩略图。";
 
 "Channel URL, @handle, or channel ID" = "频道网址、@标识名或频道 ID";
+
+"Type" = "类型";
+
+"Author" = "作者";
+
+"Homepage" = "主页";
+
+"Size" = "大小";
+
+"Automatic" = "自动";
+
+"This script will not run on these sites. Other scripts still run." = "此脚本不会在这些网站上运行。其他脚本仍会运行。";

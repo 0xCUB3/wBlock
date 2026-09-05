@@ -99,6 +99,7 @@ struct AddContentMetadataFields: View {
     @Binding var description: String
     @Binding var category: FilterListCategory
     let categories: [FilterListCategory]
+    var categoryName: (FilterListCategory) -> String = { $0.localizedName }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -121,7 +122,7 @@ struct AddContentMetadataFields: View {
             AddContentField(title: "Category") {
                 Picker("Category", selection: $category) {
                     ForEach(categories) { category in
-                        Text(category.localizedName).tag(category)
+                        Text(categoryName(category)).tag(category)
                     }
                 }
                 .pickerStyle(.menu)

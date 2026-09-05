@@ -11,7 +11,11 @@ import UniformTypeIdentifiers
 
 private extension FilterListCategory {
     static var userScriptCategories: [FilterListCategory] {
-        [.scripts, .custom]
+        [.scripts, .scriptBlocking, .scriptFunctionality, .scriptAppearance, .scriptOther]
+    }
+
+    var userScriptCategoryName: String {
+        self == .scripts ? NSLocalizedString("Automatic", comment: "Automatic script category") : localizedName
     }
 }
 
@@ -1048,34 +1052,17 @@ private struct ScriptStatusBadgesView: View {
     let script: UserScript
     let isDownloaded: Bool
     let isBuiltIn: Bool
-    let isIntegrated: Bool
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 ForEach(Array(InfoBadgeSupport.userScriptBadges(
                     script,
                     isDownloaded: isDownloaded,
-                    isBuiltIn: isBuiltIn,
-                    isIntegrated: isIntegrated
+                    isBuiltIn: isBuiltIn
                 ).enumerated()), id: \.offset) { _, badge in
                     InfoBadgeView(kind: badge)
                 }
             }
-        }
-    }
-}
-
-private struct ScriptFileInfoView: View {
-    let contentLength: Int
-    let formatFileSize: (Int) -> String
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("File Information").font(.caption).fontWeight(.medium).foregroundStyle(.secondary)
-            HStack {
-                Text("Size:").font(.caption2).foregroundStyle(.secondary)
-                Text(formatFileSize(contentLength)).font(.caption).fontWeight(.medium).foregroundStyle(.primary)
-                Spacer()
-            }.padding(.horizontal, 8).padding(.vertical, 6).cornerRadius(6)
         }
     }
 }
@@ -1085,14 +1072,8 @@ private struct ScriptURLView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Source URL").font(.caption).fontWeight(.medium).foregroundStyle(.secondary)
             if let url = script.url {
-                Text(url.absoluteString)
-                    .font(.caption)
-                    .foregroundStyle(.blue)
-                    .textSelection(.enabled)
-                    .lineLimit(nil)
-                    .fixedSize(horizontal: false, vertical: true)
+                InfoMetadataRow(title: "Source URL", value: url.absoluteString, url: url)
                 Button {
                     #if os(iOS)
                     UIPasteboard.general.string = url.absoluteString
@@ -1215,19 +1196,16 @@ private struct ScriptUpdateSettingsView: View {
     let onChange: (Bool) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Toggle("Automatic Updates", isOn: Binding(
-                get: { updatesAutomatically },
-                set: onChange
-            ))
-            .toggleStyle(.switch)
-
-            Text("Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+        Toggle(isOn: Binding(get: { updatesAutomatically }, set: onChange)) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Automatic Updates")
+                Text("Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
-        .padding(.horizontal, 8)
+        .toggleStyle(.switch)
         .padding(.vertical, 6)
         .background(Color.orange.opacity(updatesAutomatically ? 0 : 0.08))
         .cornerRadius(8)
@@ -1244,35 +1222,44 @@ struct UserScriptInfoSidebar: View {
     let builtInDisplayRole: BuiltInUserScriptDisplayRole?
     let isBeta: Bool
     let onUpdatesAutomaticallyChanged: (Bool) -> Void
-    var fillsAvailableSpace = true
+    let onCategoryChanged: (FilterListCategory) -> Void
+    let userScriptManager: UserScriptManager
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            let metadata = ContentInfoMetadata.userscript(script.content)
             ScriptNameAndDescriptionView(script: script, isBeta: isBeta)
-            ScriptStatusBadgesView(
-                script: script,
-                isDownloaded: contentLength > 0,
-                isBuiltIn: isBuiltIn,
-                isIntegrated: isIntegratedUserScript(
-                    script,
-                    isBuiltIn: isBuiltIn,
-                    builtInDisplayRole: builtInDisplayRole
-                )
-            )
+            ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0, isBuiltIn: isBuiltIn)
             if script.url != nil || script.updateURL != nil || script.downloadURL != nil {
                 ScriptUpdateSettingsView(
                     updatesAutomatically: script.updatesAutomatically,
                     onChange: onUpdatesAutomaticallyChanged
                 )
             }
-            if contentLength > 0 {
-                ScriptFileInfoView(contentLength: contentLength, formatFileSize: formatFileSize)
+            VStack(alignment: .leading, spacing: 6) {
+                InfoMetadataRow(title: "Type", value: NSLocalizedString(
+                    script.isUserStyle ? "Userstyle" : (isIntegratedUserScript(script, isBuiltIn: isBuiltIn, builtInDisplayRole: builtInDisplayRole) ? "Integrated" : "Userscript"),
+                    comment: "Content type"
+                ), color: script.isUserStyle ? .purple : .red)
+                Picker("Category", selection: Binding(
+                    get: { script.category == .scripts || script.category.isUserScriptOnly ? script.category : .scriptOther },
+                    set: onCategoryChanged
+                )) {
+                    ForEach(FilterListCategory.userScriptCategories) { category in
+                        Text(category.userScriptCategoryName).tag(category)
+                    }
+                }
+                .pickerStyle(.menu)
+                if let author = metadata.author { InfoMetadataRow(title: "Author", value: author) }
+                if let homepage = metadata.homepage {
+                    InfoMetadataRow(title: "Homepage", value: homepage.absoluteString, url: homepage)
+                }
+                if !script.version.isEmpty { InfoMetadataRow(title: "Version", value: script.version) }
+                if script.url != nil { ScriptURLView(script: script) }
+                if contentLength > 0 { InfoMetadataRow(title: "Size", value: formatFileSize(contentLength)) }
             }
-            if script.url != nil { ScriptURLView(script: script) }
             if !script.matches.isEmpty { ScriptMatchPatternsView(script: script, isPatternsExpanded: $isPatternsExpanded) }
-            if fillsAvailableSpace {
-                Spacer()
-            }
+            UserScriptWebsiteExceptionsView(scriptID: script.id, userScriptManager: userScriptManager)
         }
     }
 }
@@ -1294,13 +1281,15 @@ struct UserScriptInfoView: View {
                     ScrollView {
                         UserScriptInfoSidebar(
                             script: script,
-                            contentLength: script.content.count,
+                            contentLength: script.content.utf8.count,
                             isPatternsExpanded: $isPatternsExpanded,
                             formatFileSize: formatFileSize,
                             isBuiltIn: userScriptManager.isDefaultUserScript(script),
                             builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
                             isBeta: userScriptManager.isBeta(for: script),
-                            onUpdatesAutomaticallyChanged: setUpdatesAutomatically
+                            onUpdatesAutomaticallyChanged: setUpdatesAutomatically,
+                            onCategoryChanged: setCategory,
+                            userScriptManager: userScriptManager
                         )
                         .padding()
                     }
@@ -1314,18 +1303,21 @@ struct UserScriptInfoView: View {
                     }
                 }
                 #else
-                UserScriptInfoSidebar(
-                    script: script,
-                    contentLength: script.content.count,
-                    isPatternsExpanded: $isPatternsExpanded,
-                    formatFileSize: formatFileSize,
-                    isBuiltIn: userScriptManager.isDefaultUserScript(script),
-                    builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
-                    isBeta: userScriptManager.isBeta(for: script),
-                    onUpdatesAutomaticallyChanged: setUpdatesAutomatically,
-                    fillsAvailableSpace: false
-                )
-                .padding(20)
+                InfoContentScrollView {
+                    UserScriptInfoSidebar(
+                        script: script,
+                        contentLength: script.content.utf8.count,
+                        isPatternsExpanded: $isPatternsExpanded,
+                        formatFileSize: formatFileSize,
+                        isBuiltIn: userScriptManager.isDefaultUserScript(script),
+                        builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
+                        isBeta: userScriptManager.isBeta(for: script),
+                        onUpdatesAutomaticallyChanged: setUpdatesAutomatically,
+                        onCategoryChanged: setCategory,
+                        userScriptManager: userScriptManager
+                    )
+                    .padding(20)
+                }
                 .frame(width: 460)
                 .safeAreaInset(edge: .top, alignment: .trailing, spacing: 0) {
                     SheetDoneButton { dismiss() }
@@ -1347,6 +1339,13 @@ struct UserScriptInfoView: View {
             script = await userScriptManager.userScriptEditorSnapshot(withId: scriptId)
             isLoading = false
         }
+    }
+
+    private func setCategory(_ category: FilterListCategory) {
+        guard var currentScript = script else { return }
+        currentScript.category = category
+        script = currentScript
+        Task { await userScriptManager.setUserScript(currentScript, category: category) }
     }
 
     private func setUpdatesAutomatically(_ updatesAutomatically: Bool) {
@@ -2312,7 +2311,7 @@ struct AddUserScriptView: View {
     private var userScriptCategoryPicker: some View {
         Picker("Category", selection: $selectedCategory) {
             ForEach(FilterListCategory.userScriptCategories) { category in
-                Text(category.localizedName).tag(category)
+                Text(category.userScriptCategoryName).tag(category)
             }
         }
         .pickerStyle(.menu)
@@ -2320,7 +2319,8 @@ struct AddUserScriptView: View {
 
     private var userScriptMetaFields: some View {
         AddContentMetadataFields(name: $stagedName, description: $stagedDescription,
-                                 category: $selectedCategory, categories: FilterListCategory.userScriptCategories)
+                                 category: $selectedCategory, categories: FilterListCategory.userScriptCategories,
+                                  categoryName: { $0.userScriptCategoryName })
     }
 
     private var fileImportMessage: some View {

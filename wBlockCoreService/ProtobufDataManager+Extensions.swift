@@ -478,6 +478,10 @@ extension ProtobufDataManager {
         case .foreign: return .foreign
         case .scripts: return .scripts
         case .allowlists: return .allowlists
+        case .scriptBlocking: return .scriptBlocking
+        case .scriptFunctionality: return .scriptFunctionality
+        case .scriptAppearance: return .scriptAppearance
+        case .scriptOther: return .scriptOther
         case .UNRECOGNIZED(_), .unspecified: return .all
         }
     }
@@ -495,6 +499,10 @@ extension ProtobufDataManager {
         case .foreign: return .foreign
         case .scripts: return .scripts
         case .allowlists: return .allowlists
+        case .scriptBlocking: return .scriptBlocking
+        case .scriptFunctionality: return .scriptFunctionality
+        case .scriptAppearance: return .scriptAppearance
+        case .scriptOther: return .scriptOther
         }
     }
     

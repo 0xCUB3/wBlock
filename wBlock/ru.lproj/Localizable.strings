@@ -1075,3 +1075,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Keep original thumbnails for these YouTube channels." = "Сохранять оригинальные миниатюры для этих каналов YouTube.";
 
 "Channel URL, @handle, or channel ID" = "URL канала, @псевдоним или ID канала";
+
+"Type" = "Тип";
+
+"Author" = "Автор";
+
+"Homepage" = "Домашняя страница";
+
+"Size" = "Размер";
+
+"Automatic" = "Автоматически";
+
+"This script will not run on these sites. Other scripts still run." = "Этот скрипт не будет выполняться на этих сайтах. Остальные скрипты продолжат работу.";

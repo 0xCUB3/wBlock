@@ -12,6 +12,9 @@ struct FilterInfoView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var newSite = ""
+    @State private var cachedMetadata = ContentInfoMetadata()
+    @State private var cachedByteCount: Int?
+    @State private var hasLoadedMetadata = false
     @FocusState private var isSiteFieldFocused: Bool
 
     private var liveFilter: FilterList {
@@ -24,43 +27,60 @@ struct FilterInfoView: View {
     }
 
     var body: some View {
+        Group {
+            #if os(macOS)
+            InfoContentScrollView { infoContent.padding(20) }
+                .frame(width: 460)
+                .safeAreaInset(edge: .top, alignment: .trailing, spacing: 0) {
+                    SheetDoneButton { dismiss() }
+                        .padding(.top, 16)
+                        .padding(.trailing, 20)
+                }
+            #else
+            infoContent.padding(20).infoSheetChromeCompat { dismiss() }
+            #endif
+        }
+        .task(id: liveFilter.lastUpdated) {
+            let snapshot = liveFilter
+            let cached = await Task.detached(priority: .userInitiated) { () -> (Int, String)? in
+                guard let content = FilterListLoader().readLocalFilterContent(snapshot) else { return nil }
+                return (content.utf8.count, String(content.prefix(8192)))
+            }.value
+            guard !Task.isCancelled else { return }
+            cachedByteCount = cached?.0
+            cachedMetadata = ContentInfoMetadata.filterHeader(cached?.1 ?? "")
+            hasLoadedMetadata = true
+        }
+    }
+
+    private var infoContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text(liveFilter.localizedDisplayName)
                     .font(.title2.weight(.semibold))
                     .textSelection(.enabled)
-                #if os(macOS)
-                Spacer()
-                SheetDoneButton { dismiss() }
-                #endif
+
             }
-
-            HStack(spacing: 8) {
-                ForEach(Array(InfoBadgeSupport.filterBadges(liveFilter).enumerated()), id: \.offset) { _, badge in
-                    InfoBadgeView(kind: badge)
-                }
-            }
-
-            Text(liveFilter.category.localizedName)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
-
             if !liveFilter.localizedDisplayDescription.isEmpty {
                 Text(liveFilter.localizedDisplayDescription)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-
-            if liveFilter.url.scheme?.lowercased() == "http" || liveFilter.url.scheme?.lowercased() == "https" {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Source URL")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.secondary)
-                    Text(liveFilter.url.absoluteString)
-                        .font(.caption)
-                        .foregroundStyle(.blue)
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 8) {
+                ForEach(Array(InfoBadgeSupport.filterBadges(liveFilter, isDownloaded: hasLoadedMetadata ? cachedByteCount != nil : nil).enumerated()), id: \.offset) { _, badge in
+                    InfoBadgeView(kind: badge)
+                }
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                InfoMetadataRow(title: "Type", value: NSLocalizedString("Filters", comment: "Content type"), color: .red)
+                InfoMetadataRow(title: "Category", value: liveFilter.category.localizedName)
+                if let author = cachedMetadata.author { InfoMetadataRow(title: "Author", value: author) }
+                if let homepage = cachedMetadata.homepage {
+                    InfoMetadataRow(title: "Homepage", value: homepage.absoluteString, url: homepage)
+                }
+                if !liveFilter.version.isEmpty { InfoMetadataRow(title: "Version", value: liveFilter.version) }
+                if liveFilter.url.scheme?.lowercased() == "http" || liveFilter.url.scheme?.lowercased() == "https" {
+                    InfoMetadataRow(title: "Source URL", value: liveFilter.url.absoluteString, url: liveFilter.url)
                     Button {
                         #if os(iOS)
                         UIPasteboard.general.string = liveFilter.url.absoluteString
@@ -68,19 +88,15 @@ struct FilterInfoView: View {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(liveFilter.url.absoluteString, forType: .string)
                         #endif
-                    } label: {
-                        Label("Copy URL", systemImage: "doc.on.doc")
-                    }
+                    } label: { Label("Copy URL", systemImage: "doc.on.doc") }
+                    .buttonStyle(.borderless)
+                }
+                if let size = cachedByteCount {
+                    InfoMetadataRow(title: "Size", value: ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
                 }
             }
-
             excludedSitesSection
-
-            Spacer()
         }
-        .padding(20)
-        .frame(minWidth: 320, idealWidth: 460, minHeight: 320)
-        .infoSheetChromeCompat { dismiss() }
     }
 
     private var excludedSitesSection: some View {

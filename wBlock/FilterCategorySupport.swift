@@ -22,7 +22,7 @@ enum FilterCategorySupport {
             "Contains filter lists that you added or imported yourself."
         case .foreign:
             "Adds rules tailored to websites and languages from specific regions."
-        case .scripts:
+        case .scripts, .scriptBlocking, .scriptFunctionality, .scriptAppearance, .scriptOther:
             "Organizes userscripts and userstyles added to wBlock."
         case .all:
             "Shows all filter lists across every category."

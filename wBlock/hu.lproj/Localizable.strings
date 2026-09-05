@@ -1075,3 +1075,15 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Keep original thumbnails for these YouTube channels." = "Az eredeti bélyegképek megtartása ezeknél a YouTube-csatornáknál.";
 
 "Channel URL, @handle, or channel ID" = "Csatorna-URL, @név vagy csatornaazonosító";
+
+"Type" = "Típus";
+
+"Author" = "Szerző";
+
+"Homepage" = "Honlap";
+
+"Size" = "Méret";
+
+"Automatic" = "Automatikus";
+
+"This script will not run on these sites. Other scripts still run." = "Ez a szkript nem fut ezeken a webhelyeken. A többi szkript továbbra is fut.";

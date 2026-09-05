@@ -33,6 +33,13 @@ public struct UserScriptDisplayCategorySupport {
         builtInRole: BuiltInUserScriptDisplayRole?,
         persistedCategory: FilterListCategory
     ) -> UserScriptDisplayCategory {
+        switch persistedCategory {
+        case .scriptBlocking: return .blocking
+        case .scriptFunctionality: return .functionality
+        case .scriptAppearance: return .appearance
+        case .scriptOther: return .other
+        default: break
+        }
         if isUserStyle { return .appearance }
         switch builtInRole {
         case .blocking:

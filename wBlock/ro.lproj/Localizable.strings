@@ -1075,3 +1075,15 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Keep original thumbnails for these YouTube channels." = "Păstrează miniaturile originale pentru aceste canale YouTube.";
 
 "Channel URL, @handle, or channel ID" = "URL-ul canalului, @nume sau ID-ul canalului";
+
+"Type" = "Tip";
+
+"Author" = "Autor";
+
+"Homepage" = "Pagină principală";
+
+"Size" = "Dimensiune";
+
+"Automatic" = "Automat";
+
+"This script will not run on these sites. Other scripts still run." = "Acest script nu va rula pe aceste site-uri. Celelalte scripturi vor continua să ruleze.";

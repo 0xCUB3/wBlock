@@ -80,7 +80,7 @@ struct ContentView: View {
     }
 
     private var displayableCategories: [FilterListCategory] {
-        FilterListCategory.allCases.filter { $0 != .all }
+        FilterListCategory.allCases.filter { $0 != .all && !$0.isUserScriptOnly }
     }
 
     private var applyChangesSymbolName: String {
@@ -1301,7 +1301,7 @@ struct ContentModifiers: ViewModifier {
 
 private extension FilterListCategory {
     static var userListCategories: [FilterListCategory] {
-        [.custom] + allCases.filter { $0 != .all && $0 != .custom && $0 != .scripts }
+        [.custom] + allCases.filter { $0 != .all && $0 != .custom && $0 != .scripts && !$0.isUserScriptOnly }
     }
 }
 

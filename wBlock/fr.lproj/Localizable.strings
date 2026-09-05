@@ -1075,3 +1075,15 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Keep original thumbnails for these YouTube channels." = "Conserver les miniatures originales de ces chaînes YouTube.";
 
 "Channel URL, @handle, or channel ID" = "URL de la chaîne, @identifiant ou ID de chaîne";
+
+"Type" = "Type";
+
+"Author" = "Auteur";
+
+"Homepage" = "Page d’accueil";
+
+"Size" = "Taille";
+
+"Automatic" = "Automatique";
+
+"This script will not run on these sites. Other scripts still run." = "Ce script ne sera pas exécuté sur ces sites. Les autres scripts continueront de fonctionner.";

@@ -1075,3 +1075,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Keep original thumbnails for these YouTube channels." = "احتفظ بالصور المصغرة الأصلية لقنوات YouTube هذه.";
 
 "Channel URL, @handle, or channel ID" = "رابط القناة أو ‎@المعرّف أو معرّف القناة";
+
+"Type" = "النوع";
+
+"Author" = "المؤلف";
+
+"Homepage" = "الصفحة الرئيسية";
+
+"Size" = "الحجم";
+
+"Automatic" = "تلقائي";
+
+"This script will not run on these sites. Other scripts still run." = "لن يعمل هذا السكربت على هذه المواقع. ستستمر السكربتات الأخرى في العمل.";

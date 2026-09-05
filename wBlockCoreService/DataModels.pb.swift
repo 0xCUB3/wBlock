@@ -35,6 +35,10 @@ nonisolated enum Wblock_Data_FilterListCategory: SwiftProtobuf.Enum, Swift.CaseI
   case foreign // = 9
   case scripts // = 10
   case allowlists // = 11
+  case scriptBlocking // = 12
+  case scriptFunctionality // = 13
+  case scriptAppearance // = 14
+  case scriptOther // = 15
   case UNRECOGNIZED(Int)
 
   init() {
@@ -55,6 +59,10 @@ nonisolated enum Wblock_Data_FilterListCategory: SwiftProtobuf.Enum, Swift.CaseI
     case 9: self = .foreign
     case 10: self = .scripts
     case 11: self = .allowlists
+    case 12: self = .scriptBlocking
+    case 13: self = .scriptFunctionality
+    case 14: self = .scriptAppearance
+    case 15: self = .scriptOther
     default: self = .UNRECOGNIZED(rawValue)
     }
   }
@@ -73,6 +81,10 @@ nonisolated enum Wblock_Data_FilterListCategory: SwiftProtobuf.Enum, Swift.CaseI
     case .foreign: return 9
     case .scripts: return 10
     case .allowlists: return 11
+    case .scriptBlocking: return 12
+    case .scriptFunctionality: return 13
+    case .scriptAppearance: return 14
+    case .scriptOther: return 15
     case .UNRECOGNIZED(let i): return i
     }
   }
@@ -91,6 +103,10 @@ nonisolated enum Wblock_Data_FilterListCategory: SwiftProtobuf.Enum, Swift.CaseI
     .foreign,
     .scripts,
     .allowlists,
+    .scriptBlocking,
+    .scriptFunctionality,
+    .scriptAppearance,
+    .scriptOther,
   ]
 
 }
@@ -777,7 +793,7 @@ nonisolated struct Wblock_Data_AutoUpdateMetadata: @unchecked Sendable {
 fileprivate nonisolated let _protobuf_package = "wblock.data"
 
 nonisolated extension Wblock_Data_FilterListCategory: SwiftProtobuf._ProtoNameProviding {
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0FILTER_LIST_CATEGORY_UNSPECIFIED\0\u{1}FILTER_LIST_CATEGORY_ALL\0\u{1}FILTER_LIST_CATEGORY_ADS\0\u{1}FILTER_LIST_CATEGORY_PRIVACY\0\u{1}FILTER_LIST_CATEGORY_SECURITY\0\u{1}FILTER_LIST_CATEGORY_MULTIPURPOSE\0\u{1}FILTER_LIST_CATEGORY_ANNOYANCES\0\u{1}FILTER_LIST_CATEGORY_EXPERIMENTAL\0\u{1}FILTER_LIST_CATEGORY_CUSTOM\0\u{1}FILTER_LIST_CATEGORY_FOREIGN\0\u{1}FILTER_LIST_CATEGORY_SCRIPTS\0\u{1}FILTER_LIST_CATEGORY_ALLOWLISTS\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{2}\0FILTER_LIST_CATEGORY_UNSPECIFIED\0\u{1}FILTER_LIST_CATEGORY_ALL\0\u{1}FILTER_LIST_CATEGORY_ADS\0\u{1}FILTER_LIST_CATEGORY_PRIVACY\0\u{1}FILTER_LIST_CATEGORY_SECURITY\0\u{1}FILTER_LIST_CATEGORY_MULTIPURPOSE\0\u{1}FILTER_LIST_CATEGORY_ANNOYANCES\0\u{1}FILTER_LIST_CATEGORY_EXPERIMENTAL\0\u{1}FILTER_LIST_CATEGORY_CUSTOM\0\u{1}FILTER_LIST_CATEGORY_FOREIGN\0\u{1}FILTER_LIST_CATEGORY_SCRIPTS\0\u{1}FILTER_LIST_CATEGORY_ALLOWLISTS\0\u{1}FILTER_LIST_CATEGORY_SCRIPT_BLOCKING\0\u{1}FILTER_LIST_CATEGORY_SCRIPT_FUNCTIONALITY\0\u{1}FILTER_LIST_CATEGORY_SCRIPT_APPEARANCE\0\u{1}FILTER_LIST_CATEGORY_SCRIPT_OTHER\0")
 }
 
 nonisolated extension Wblock_Data_Platform: SwiftProtobuf._ProtoNameProviding {

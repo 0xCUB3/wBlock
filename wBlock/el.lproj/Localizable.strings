@@ -1075,3 +1075,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Keep original thumbnails for these YouTube channels." = "Διατήρηση των αρχικών μικρογραφιών για αυτά τα κανάλια YouTube.";
 
 "Channel URL, @handle, or channel ID" = "URL καναλιού, @όνομα ή ID καναλιού";
+
+"Type" = "Τύπος";
+
+"Author" = "Συντάκτης";
+
+"Homepage" = "Αρχική σελίδα";
+
+"Size" = "Μέγεθος";
+
+"Automatic" = "Αυτόματα";
+
+"This script will not run on these sites. Other scripts still run." = "Αυτό το σενάριο δεν θα εκτελείται σε αυτούς τους ιστοτόπους. Τα άλλα σενάρια θα συνεχίσουν να εκτελούνται.";

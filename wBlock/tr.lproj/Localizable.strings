@@ -1074,3 +1074,15 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Keep original thumbnails for these YouTube channels." = "Bu YouTube kanalları için orijinal küçük resimleri koru.";
 
 "Channel URL, @handle, or channel ID" = "Kanal URL'si, @tanıtıcı veya kanal kimliği";
+
+"Type" = "Tür";
+
+"Author" = "Yazar";
+
+"Homepage" = "Ana sayfa";
+
+"Size" = "Boyut";
+
+"Automatic" = "Otomatik";
+
+"This script will not run on these sites. Other scripts still run." = "Bu betik bu sitelerde çalışmaz. Diğer betikler çalışmaya devam eder.";

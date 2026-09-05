@@ -20,5 +20,14 @@ public enum FilterListCategory: String, CaseIterable, Identifiable, Codable, Sen
     case custom = "Custom"
     case foreign = "Foreign"
     case scripts = "Scripts"
+    case scriptBlocking = "Blocking"
+    case scriptFunctionality = "Functionality"
+    case scriptAppearance = "Appearance"
+    case scriptOther = "Other"
+
+    public var isUserScriptOnly: Bool {
+        [.scriptBlocking, .scriptFunctionality, .scriptAppearance, .scriptOther].contains(self)
+    }
+
     public var id: String { self.rawValue }
 }

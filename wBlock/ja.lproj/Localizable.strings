@@ -1075,3 +1075,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Keep original thumbnails for these YouTube channels." = "これらのYouTubeチャンネルでは元のサムネイルを使用します。";
 
 "Channel URL, @handle, or channel ID" = "チャンネルURL、@ハンドル、チャンネルID";
+
+"Type" = "種類";
+
+"Author" = "作者";
+
+"Homepage" = "ホームページ";
+
+"Size" = "サイズ";
+
+"Automatic" = "自動";
+
+"This script will not run on these sites. Other scripts still run." = "このスクリプトはこれらのサイトでは実行されません。他のスクリプトは引き続き実行されます。";

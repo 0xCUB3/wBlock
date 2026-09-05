@@ -1075,3 +1075,15 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Keep original thumbnails for these YouTube channels." = "Mantieni le miniature originali per questi canali YouTube.";
 
 "Channel URL, @handle, or channel ID" = "URL del canale, @handle o ID del canale";
+
+"Type" = "Tipo";
+
+"Author" = "Autore";
+
+"Homepage" = "Pagina principale";
+
+"Size" = "Dimensione";
+
+"Automatic" = "Automatico";
+
+"This script will not run on these sites. Other scripts still run." = "Questo script non verrà eseguito su questi siti. Gli altri script continueranno a essere eseguiti.";
