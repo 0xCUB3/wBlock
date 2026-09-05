@@ -161,24 +161,3 @@ private struct ToolbarFieldFocuser: NSViewRepresentable {
     }
 }
 #endif
-
-struct SearchMinimizeBehavior: ViewModifier {
-    func body(content: Content) -> some View {
-        #if os(iOS)
-        if #available(iOS 26.0, *), UIDevice.current.userInterfaceIdiom != .pad {
-            applyMinimize(content)
-        } else {
-            content
-        }
-        #else
-        content
-        #endif
-    }
-
-    #if os(iOS)
-    @available(iOS 26.0, *)
-    private func applyMinimize(_ content: Content) -> some View {
-        content.searchToolbarBehavior(.minimize)
-    }
-    #endif
-}

@@ -437,7 +437,6 @@ struct ContentView: View {
                 isPresented: $showFilterSearch,
                 prompt: "Search filters"
             )
-            .modifier(SearchMinimizeBehavior())
         #endif
         #if os(macOS)
             .frame(

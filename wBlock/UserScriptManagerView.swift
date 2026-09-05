@@ -422,7 +422,6 @@ struct UserScriptManagerView: View {
             isPresented: $showSearch,
             prompt: "Search scripts"
         )
-        .modifier(SearchMinimizeBehavior())
         #else
         ScrollView {
             VStack(spacing: 20) {
