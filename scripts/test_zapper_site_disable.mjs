@@ -195,7 +195,7 @@ check(
 );
 check(
   "global element-zapper pause is authoritative in native rule responses",
-  nativeSource.includes("BlockingPauseStore.isPaused(.elementZapper)")
+  nativeSource.includes("BlockingPauseStore.isPaused(.elementZapper, onHost: hostname)")
 );
 
 check(
