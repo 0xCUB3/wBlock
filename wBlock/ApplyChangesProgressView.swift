@@ -48,6 +48,14 @@ struct ApplyChangesProgressView: View {
         mode == .progress || isStartingSelectedUpdates
     }
 
+    private var fillsAvailableHeight: Bool {
+        #if os(macOS)
+        mode == .review || mode == .failed
+        #else
+        true
+        #endif
+    }
+
     var body: some View {
         SheetContainer(fill: .clear) {
             SheetHeader(title: headerTitle, isLoading: isDismissDisabled) {
@@ -55,7 +63,7 @@ struct ApplyChangesProgressView: View {
             }
 
             content
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: mode == .review ? .top : .center)
+                .frame(maxWidth: .infinity, maxHeight: fillsAvailableHeight ? .infinity : nil, alignment: .top)
 
             if mode == .review {
                 reviewToolbar
@@ -63,7 +71,7 @@ struct ApplyChangesProgressView: View {
                 progressToolbar
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: mode == .review ? .top : .center)
+        .frame(maxWidth: .infinity, maxHeight: fillsAvailableHeight ? .infinity : nil, alignment: .top)
         .applySheetPresentationCompat(prefersLarge: mode == .review)
         .interactiveDismissDisabled(isDismissDisabled)
         .onAppear {
@@ -91,10 +99,8 @@ struct ApplyChangesProgressView: View {
             minWidth: 460,
             idealWidth: 500,
             maxWidth: 560,
-            minHeight: mode == .result ? nil : 320,
-            // Six phase rows with a detail line each, the bar, header, and
-            // toolbar need ~540pt; at 360 the last two rows were clipped.
-            idealHeight: mode == .result ? nil : 560,
+            minHeight: fillsAvailableHeight ? 320 : nil,
+            idealHeight: fillsAvailableHeight ? 560 : nil,
             maxHeight: 640
         )
         #endif
@@ -106,13 +112,20 @@ struct ApplyChangesProgressView: View {
         case .review:
             reviewContent
         case .progress:
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    progressField
+            #if os(macOS)
+            if #available(macOS 13.0, *) {
+                ViewThatFits(in: .vertical) {
+                    progressField.padding(20).fixedSize(horizontal: false, vertical: true)
+                    ScrollView { progressField.padding(20) }
                 }
-                .padding(20)
-                .frame(maxWidth: .infinity, alignment: .center)
+            } else {
+                ScrollView { progressField.padding(20) }.frame(height: 480)
             }
+            #else
+            ScrollView {
+                progressField.padding(20)
+            }
+            #endif
         case .result:
             // The summary is four stat cards and at most two captions; it never
             // needs to scroll, and a scrolling container here stretches the sheet
