@@ -4,7 +4,7 @@ internal import ContentBlockerConverter
 /// Per-line classification of a filter list for the rules viewer (#675).
 ///
 /// Every line gets one kind. Comments and headers are never rules. A rule is
-/// a duplicate when the same trimmed text appeared earlier, either in a list
+/// a duplicate when the same rule identity appeared earlier, either in a list
 /// that compiles before this one or earlier in the same list; the first copy
 /// keeps its own kind. Remaining rules are parsed with the converter: a parse
 /// failure is unsupported, an advanced rule needs wBlock Scripts, and the rest
@@ -41,9 +41,29 @@ public struct FilterRuleAnalysis: Sendable {
         var seen = Set<String>()
         earlier.enumerateLines { line, _ in
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            if isRuleLine(trimmed) { seen.insert(trimmed) }
+            if isRuleLine(trimmed) { seen.insert(ruleIdentity(trimmed)) }
         }
         return seen
+    }
+
+    /// Fold only case-insensitive syntax. Selector bodies, option values,
+    /// regular expressions and match-case URL patterns keep their spelling.
+    public static func ruleIdentity(_ raw: String) -> String {
+        let rule = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cosmeticMarkers = ["##", "#@#", "#?#", "#@?#", "#$#", "#@$#", "#%#", "#@%#", "#$?#", "#@$?#"]
+        if let marker = rule.firstIndex(of: "#"),
+           cosmeticMarkers.contains(where: { rule[marker...].hasPrefix($0) }) {
+            return rule[..<marker].contains("/") ? rule : rule[..<marker].lowercased() + rule[marker...]
+        }
+        let exception = rule.hasPrefix("@@") ? "@@" : ""
+        let body = exception.isEmpty ? rule : String(rule.dropFirst(2))
+        let pieces = body.split(separator: "$", maxSplits: 1, omittingEmptySubsequences: false)
+        let pattern = String(pieces[0])
+        let options = pieces.count > 1 ? String(pieces[1]) : nil
+        // Regex escapes such as \\D and \\d have different meanings.
+        guard !pattern.hasPrefix("/"),
+              !(options?.split(separator: ",").contains("match-case") ?? false) else { return rule }
+        return exception + pattern.lowercased() + (options.map { "$" + $0 } ?? "")
     }
 
     public static func isRuleLine(_ trimmed: String) -> Bool {
@@ -61,7 +81,7 @@ public struct FilterRuleAnalysis: Sendable {
         isCancelled: @escaping () -> Bool = { false }
     ) -> FilterRuleAnalysis {
         let safariVersion = SafariVersion.autodetect()
-        var seen = seenInEarlierLists
+        var seen = Set(seenInEarlierLists.map(ruleIdentity))
         var lines: [Line] = []
         var stop = false
         content.enumerateLines { raw, shouldStop in
@@ -71,7 +91,7 @@ public struct FilterRuleAnalysis: Sendable {
                 lines.append(Line(text: raw, kind: .comment))
                 return
             }
-            guard seen.insert(trimmed).inserted else {
+            guard seen.insert(ruleIdentity(trimmed)).inserted else {
                 lines.append(Line(text: raw, kind: .duplicate))
                 return
             }
@@ -82,6 +102,9 @@ public struct FilterRuleAnalysis: Sendable {
     }
 
     static func classify(_ rule: String, safariVersion: SafariVersion) -> FilterRuleKind {
+        if let supported = RemoveParamDNRRuleGenerator.supportsRule(rule) {
+            return supported ? .advanced : .unsupported
+        }
         do {
             guard let parsed = try RuleFactory.createRule(ruleText: rule, for: safariVersion) else {
                 return .comment

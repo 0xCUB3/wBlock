@@ -375,7 +375,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
 m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefined')
 """
 
-    /// Drops rule lines that repeat an earlier line byte for byte. Two lists
+    /// Drops rule lines that repeat an earlier rule identity. Two lists
     /// that share rules (a fork of a list, or overlapping upstreams) otherwise
     /// send every shared rule to the converter twice, and each copy counts
     /// against Safari's per-extension limit (#681). Comments, section headers
@@ -390,7 +390,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 result.append(line)
                 continue
             }
-            if seen.insert(trimmed).inserted {
+            if seen.insert(FilterRuleAnalysis.ruleIdentity(trimmed)).inserted {
                 result.append(line)
             }
         }
@@ -422,7 +422,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         baseRulesHashHex: String,
         cosmeticFilteringEnabled: Bool = true
     ) -> String {
-        let fingerprint = compatibilityRulesFingerprintHex()
+        let fingerprint = compatibilityRulesFingerprintHex() + "|identity-v2"
         // Only the disabled state is folded in so existing caches stay valid.
         let material = cosmeticFilteringEnabled
             ? "\(baseRulesHashHex)|\(fingerprint)"
@@ -1475,13 +1475,11 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         let orderedSelectedFilters = ContentBlockerIncrementalCache.canonicalFilterOrder(orderedSelectedFilters)
         let rulesFilename = targetInfo.rulesFilename
         let cosmeticFilteringEnabled = CosmeticFilteringPreference.isEnabled(groupIdentifier: groupIdentifier)
-        // Affinity blocks from lists assigned to other targets are replicated
-        // into this one, so they are inputs too. Fingerprinting them keeps the
-        // cache usable instead of forcing a miss whenever any list uses
-        // affinity or a custom list has an exception rule (#679).
+        // Every selected list can change cross-slot ownership or exception
+        // context, even without affinity. Include all of them in cache identity.
         let assignedIDs = Set(filters.map(\.id))
         let affinityContributors = orderedSelectedFilters.filter {
-            !assignedIDs.contains($0.id) && affinitySnapshot.content(for: $0.id) != nil
+            !assignedIDs.contains($0.id)
         }
         let currentSignature = ContentBlockerIncrementalCache.computeInputSignature(
             filters: filters,
@@ -1600,6 +1598,76 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         )
     }
 
+    /// Choose one owner across slots with equal exception contexts. Safari
+    /// exceptions are local to a slot; affinity copies must remain in place.
+    private static func crossTargetDuplicateRules(
+        filters: [FilterList], orderedFilters: [FilterList],
+        snapshot: SafariContentBlockerAffinitySnapshot,
+        target: ContentBlockerTargetInfo, targets: [ContentBlockerTargetInfo],
+        containerURL: URL, isCancelled: () -> Bool
+    ) throws -> [UUID: Set<String>] {
+        let distribution = ContentBlockerMappingService.distribute(selectedFilters: orderedFilters, across: targets)
+        guard Set((distribution[target] ?? []).map(\.id)) == Set(filters.map(\.id)) else {
+            // Compatibility callers may supply a custom mapping we cannot infer.
+            return [:]
+        }
+        var sources: [UUID: String] = [:]
+        for filter in orderedFilters {
+            if isCancelled() { throw CancellationError() }
+            guard let url = SafariContentBlockerAffinityProcessor.sourceURL(for: filter, containerURL: containerURL) else { continue }
+            sources[filter.id] = try String(contentsOf: url, encoding: .utf8)
+        }
+        var contexts: [ContentBlockerTargetInfo: String] = [:]
+        var owners: [UUID: ContentBlockerTargetInfo] = [:]
+        for slot in targets {
+            let assigned = Set((distribution[slot] ?? []).map(\.id))
+            for id in assigned { owners[id] = slot }
+            var exceptions = Set<String>()
+            for filter in orderedFilters {
+                if isCancelled() { throw CancellationError() }
+                var text: String
+                if let affinity = snapshot.content(for: filter.id) {
+                    text = SafariContentBlockerAffinityProcessor.filteredContent(
+                        from: affinity, includeBaseRules: assigned.contains(filter.id), target: slot, allTargets: targets
+                    )
+                } else {
+                    guard assigned.contains(filter.id), let source = sources[filter.id] else { continue }
+                    text = source
+                }
+                text = FilterListSiteExclusion.applyingSiteRestrictions(text, for: filter)
+                for line in text.components(separatedBy: .newlines) {
+                    let trimmed = line.trimmingCharacters(in: .whitespaces)
+                    if trimmed.hasPrefix("@@") || trimmed.contains("#@") || trimmed.contains("$badfilter") || trimmed.contains(",badfilter") || trimmed.hasPrefix("!#") {
+                        exceptions.insert(FilterRuleAnalysis.ruleIdentity(trimmed))
+                    }
+                }
+            }
+            let digest = SHA256.hash(data: Data(exceptions.sorted().joined(separator: "\n").utf8))
+            contexts[slot] = digest.map { String(format: "%02x", $0) }.joined()
+        }
+        var seen: [String: ContentBlockerTargetInfo] = [:]
+        var excluded: [UUID: Set<String>] = [:]
+        for filter in orderedFilters {
+            if isCancelled() { throw CancellationError() }
+            guard snapshot.content(for: filter.id) == nil,
+                  let raw = sources[filter.id], !raw.contains("!#"),
+                  let slot = owners[filter.id], let context = contexts[slot] else { continue }
+            let text = FilterListSiteExclusion.applyingSiteRestrictions(raw, for: filter)
+            for line in text.components(separatedBy: .newlines) {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                guard FilterRuleAnalysis.isRuleLine(trimmed), !trimmed.hasPrefix("@@"), !trimmed.contains("#@") else { continue }
+                let identity = FilterRuleAnalysis.ruleIdentity(trimmed)
+                let key = context + "\n" + identity
+                if let owner = seen[key], owner != slot {
+                    excluded[filter.id, default: []].insert(identity)
+                } else {
+                    seen[key] = slot
+                }
+            }
+        }
+        return excluded
+    }
+
     private static func convertFiltersMemoryEfficient(
         filters: [FilterList],
         orderedSelectedFilters: [FilterList],
@@ -1634,6 +1702,12 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             Task.isCancelled || isCancelled?() == true
         }
 
+        let exclusions = try crossTargetDuplicateRules(
+            filters: filters, orderedFilters: orderedSelectedFilters,
+            snapshot: affinitySnapshot, target: targetInfo, targets: allTargets,
+            containerURL: containerURL, isCancelled: cancellationRequested
+        )
+
         for filter in orderedSelectedFilters {
             if cancellationRequested() {
                 throw CancellationError()
@@ -1658,7 +1732,17 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 for: filter,
                 containerURL: containerURL
             ) {
-                if filter.excludedSites.isEmpty && filter.activeSiteRestriction == nil {
+                if let duplicates = exclusions[filter.id], !duplicates.isEmpty {
+                    let raw = try String(contentsOf: sourceURL, encoding: .utf8)
+                    let restricted = FilterListSiteExclusion.applyingSiteRestrictions(raw, for: filter)
+                    let kept = restricted.components(separatedBy: .newlines).filter {
+                        !duplicates.contains(FilterRuleAnalysis.ruleIdentity($0))
+                    }
+                    try ContentBlockerInputWriter.appendInline(
+                        kept.joined(separator: "\n"), to: fileHandle, hasher: &hasher,
+                        newlineData: newlineData, isCancelled: cancellationRequested
+                    )
+                } else if filter.excludedSites.isEmpty && filter.activeSiteRestriction == nil {
                     try ContentBlockerInputWriter.appendFile(
                         from: sourceURL,
                         to: fileHandle,

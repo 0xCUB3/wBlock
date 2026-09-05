@@ -39,8 +39,8 @@ public enum ContentBlockerMappingService {
             var unique = 0
             text.enumerateLines { line, _ in
                 let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                if trimmed.isEmpty || trimmed.hasPrefix("!") || trimmed.hasPrefix("[") { return }
-                if seen.insert(trimmed).inserted { unique += 1 }
+                guard FilterRuleAnalysis.isRuleLine(trimmed) else { return }
+                if seen.insert(FilterRuleAnalysis.ruleIdentity(trimmed)).inserted { unique += 1 }
             }
             counts[filter.id] = unique
         }

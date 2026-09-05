@@ -360,6 +360,12 @@ public enum RemoveParamDNRRuleGenerator {
         return try? Data(contentsOf: url)
     }
 
+    /// Nil means this is not a removeparam rule; otherwise use the actual DNR builder.
+    static func supportsRule(_ line: String) -> Bool? {
+        let result = buildRule(from: line, nextID: 1)
+        return result.wasRemoveParamRule ? result.rule != nil : nil
+    }
+
     private static func buildRule(from rawLine: String, nextID: Int) -> BuildResult {
         guard let parsed = parseRule(rawLine) else {
             return BuildResult(rule: nil, wasRemoveParamRule: false, wasExceptionRule: false, skipped: false)

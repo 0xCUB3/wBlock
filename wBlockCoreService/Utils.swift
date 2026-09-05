@@ -239,7 +239,7 @@ public enum FilterListContentProcessing {
 public enum ContentBlockerIncrementalCache {
     // Bump when signature inputs/schema change so stale per-target signatures
     // do not suppress needed rebuilds.
-    private static let inputSignatureSchemaVersion = "5"
+    private static let inputSignatureSchemaVersion = "6"
 
     private struct State: Codable {
         var inputSignature: String
@@ -294,6 +294,7 @@ public enum ContentBlockerIncrementalCache {
             canonical.append("extra=\n")
         }
         for filter in canonicalFilterOrder(filters + affinityContributors) {
+            canonical.append("distribution=\(filter.id.uuidString)|\(filter.sourceRuleCount ?? 0)\n")
             if let sites = filter.activeSiteRestriction {
                 canonical.append("scope=\(filter.id.uuidString)|\(sites.sorted().joined(separator: ","))\n")
             }

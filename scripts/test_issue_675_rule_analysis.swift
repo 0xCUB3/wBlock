@@ -35,6 +35,33 @@ struct Test {
         let earlier = FilterRuleAnalysis.ruleSet(from: "! c\n  ||a.com^  \n\n||b.com^")
         require(earlier == ["||a.com^", "||b.com^"], "ruleSet trims and drops comments: \(earlier)")
 
+        let cleaning = FilterRuleAnalysis.analyze(content: """
+        $removeparam=gclid
+        $removeparam=utm_source
+        @@||example.com^$removeparam
+        $removeparam=/^utm_/
+        $removeparam=~keep
+        $removeparam=x,unsupported-option
+        """)
+        require(cleaning.lines.map(\.kind) == [.advanced, .advanced, .advanced, .unsupported, .unsupported, .unsupported], "removeparam uses actual DNR support")
+
+        let identities = FilterRuleAnalysis.analyze(content: """
+        ||EXAMPLE.com^
+        ||example.com^
+        EXAMPLE.com##.Ad
+        example.com##.Ad
+        example.com##.ad
+        ||example.com/Ad$match-case
+        ||example.com/ad$match-case
+        /\\D/
+        /\\d/
+        $removeparam=Name
+        $removeparam=name
+        """)
+        require(identities.count(of: .duplicate) == 2, "fold domains, not CSS, regex escapes, match-case paths or parameter names")
+        let mixedEarlier = FilterRuleAnalysis.analyze(content: "||example.com^", seenInEarlierLists: ["||EXAMPLE.COM^"])
+        require(mixedEarlier.count(of: .duplicate) == 1, "normalize earlier-list identities")
+
         let cancelled = FilterRuleAnalysis.analyze(content: content, isCancelled: { true })
         require(cancelled.lines.isEmpty, "cancellation yields an empty analysis")
 
