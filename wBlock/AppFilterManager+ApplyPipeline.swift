@@ -331,7 +331,10 @@ extension AppFilterManager {
         let previouslyAppliedFilterIDs = appliedSelectedFilterIDs
 
         if prepareState {
-            await MainActor.run { self.prepareApplyRunState() }
+            await MainActor.run {
+                self.prepareApplyRunState()
+                if !allowUserInteraction { self.showingApplyProgressSheet = true }
+            }
         }
         let pausedComponents: BlockingPauseComponents = allowPausedResume
             ? []
