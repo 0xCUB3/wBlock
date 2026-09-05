@@ -12,6 +12,7 @@ struct MonospacedTextView: NSViewRepresentable {
     /// Background tint per line index; presence turns on viewport highlighting.
     var lineTints: HighlightLineTints?
     var softTopEdge = false
+    var isLineWrappingEnabled = false
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -151,11 +152,19 @@ struct MonospacedTextView: NSViewRepresentable {
 
     private func expandDocumentToFit(_ textView: NSTextView, in scrollView: NSScrollView) {
         guard let layoutManager = textView.layoutManager, let textContainer = textView.textContainer else { return }
+        let availableWidth = max(0, scrollView.contentSize.width - scrollView.contentView.contentInsets.right)
+        textView.isHorizontallyResizable = !isLineWrappingEnabled
+        scrollView.hasHorizontalScroller = !isLineWrappingEnabled
+        textContainer.widthTracksTextView = isLineWrappingEnabled
+        textContainer.containerSize.width = isLineWrappingEnabled
+            ? max(0, availableWidth - textView.textContainerInset.width * 2)
+            : CGFloat.greatestFiniteMagnitude
+        if isLineWrappingEnabled { textView.setFrameSize(NSSize(width: availableWidth, height: textView.frame.height)) }
         layoutManager.ensureLayout(for: textContainer)
         let used = layoutManager.usedRect(for: textContainer)
         let inset = textView.textContainerInset
         let trailingInset = scrollView.contentView.contentInsets.right
-        let width = max(
+        let width = isLineWrappingEnabled ? availableWidth : max(
             ceil(used.width + inset.width * 2),
             scrollView.contentSize.width - trailingInset
         )
@@ -178,6 +187,7 @@ struct MonospacedTextView: UIViewRepresentable {
     /// Background tint per line index; presence turns on viewport highlighting.
     var lineTints: HighlightLineTints?
     var softTopEdge = false
+    var isLineWrappingEnabled = true
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -250,18 +260,21 @@ struct MonospacedTextView: UIViewRepresentable {
         textView.smartDashesType = .no
         textView.isScrollEnabled = true
         textView.alwaysBounceVertical = true
-        textView.alwaysBounceHorizontal = false
+        textView.alwaysBounceHorizontal = !isLineWrappingEnabled
         if #available(iOS 26.0, *), softTopEdge {
             textView.topEdgeEffect.style = .soft
         }
         textView.showsVerticalScrollIndicator = true
-        textView.showsHorizontalScrollIndicator = false
+        textView.showsHorizontalScrollIndicator = !isLineWrappingEnabled
         textView.contentInsetAdjustmentBehavior = .always
         textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         textView.layoutManager.allowsNonContiguousLayout = true
         textView.textContainerInset = UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 20)
         textView.textContainer.lineFragmentPadding = 0
-        textView.textContainer.widthTracksTextView = true
+        textView.textContainer.widthTracksTextView = isLineWrappingEnabled
+        textView.textContainer.size.width = isLineWrappingEnabled
+            ? max(0, textView.bounds.width - textView.textContainerInset.left - textView.textContainerInset.right)
+            : CGFloat.greatestFiniteMagnitude
         textView.textContainer.heightTracksTextView = false
         textView.textContainer.lineBreakMode = .byWordWrapping
     }

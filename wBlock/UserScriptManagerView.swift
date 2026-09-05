@@ -1485,31 +1485,9 @@ private struct UserScriptSourceSheet: View {
                 }
                 #endif
 
-                Button {
+                SourceViewerControls(wrapsLines: $isLineWrappingEnabled) {
                     editorController.openSearch()
-                } label: {
-                    Image(systemName: "magnifyingglass")
-                        .frame(width: 28, height: 28)
                 }
-                .buttonStyle(.plain)
-                .noFocusRingCompat()
-                .accessibilityLabel("Search")
-
-                Button {
-                    isLineWrappingEnabled.toggle()
-                } label: {
-                    Image(systemName: isLineWrappingEnabled ? "text.justify.left" : "text.alignleft")
-                        .frame(width: 28, height: 28)
-                        .foregroundStyle(isLineWrappingEnabled ? Color.accentColor : Color.secondary)
-                }
-                .buttonStyle(.plain)
-                .noFocusRingCompat()
-                .accessibilityLabel("Wrap Lines")
-                .accessibilityValue(
-                    isLineWrappingEnabled
-                        ? String(localized: "On")
-                        : String(localized: "Off")
-                )
 
                 Spacer()
 

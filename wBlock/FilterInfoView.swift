@@ -153,6 +153,9 @@ struct FilterRulesView: View {
     let filter: FilterList
     @ObservedObject var filterManager: AppFilterManager
     @State private var rules = ""
+    @State private var searchQuery = ""
+    @State private var showsSearch = false
+    @State private var wrapsLines = false
     @State private var analysis: FilterRuleAnalysis?
     @State private var isLoading = true
     @State private var shownKinds: Set<FilterRuleKind> = Set(FilterRuleKind.allCases)
@@ -170,6 +173,8 @@ struct FilterRulesView: View {
                 Text(filter.localizedDisplayName)
                     .font(.headline)
                 Spacer()
+                SourceViewerControls(wrapsLines: $wrapsLines) { showsSearch.toggle() }
+                    .disabled(isLoading)
                 if analysis != nil {
                     filterMenu
                 }
@@ -178,6 +183,19 @@ struct FilterRulesView: View {
             .padding(16)
             Divider()
 
+            if showsSearch {
+                HStack {
+                    TextField("Search", text: $searchQuery).textFieldStyle(.roundedBorder)
+                    Button {
+                        searchQuery = ""
+                        showsSearch = false
+                    } label: { Image(systemName: "xmark.circle.fill") }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Close search")
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+            }
             if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -189,7 +207,8 @@ struct FilterRulesView: View {
                 MonospacedTextView(
                     text: Binding(get: { displayedRules }, set: { _ in }),
                     lineTints: displayedTints,
-                    softTopEdge: true
+                    softTopEdge: true,
+                    isLineWrappingEnabled: wrapsLines
                 )
                 if let analysis {
                     Divider()
@@ -197,7 +216,11 @@ struct FilterRulesView: View {
                 }
             }
         }
-        .frame(minWidth: 420, idealWidth: 760, minHeight: 360, idealHeight: 620)
+        #if os(macOS)
+        .frame(width: 1000, height: 700)
+        #else
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        #endif
         .task {
             rules = FilterListLoader().readLocalFilterContent(filter) ?? ""
             displayedRules = rules
@@ -220,6 +243,8 @@ struct FilterRulesView: View {
             }
         }
         .onChangeCompat(of: shownKinds) { _ in rebuildDisplayedText() }
+        .onChangeCompat(of: searchQuery) { _ in rebuildDisplayedText() }
+        .onDisappear { rebuildTask?.cancel() }
     }
 
     /// Contents of enabled lists that compile before this one, so a rule the
@@ -292,15 +317,19 @@ struct FilterRulesView: View {
             return
         }
         let kinds = shownKinds
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         let lines = analysis.lines
         rebuildTask = Task {
-            let built = await Task.detached(priority: .userInitiated) { () -> (String, [Int: FilterRuleKind]) in
+            try? await Task.sleep(nanoseconds: 150_000_000)
+            guard !Task.isCancelled else { return }
+            let worker = Task.detached(priority: .userInitiated) { () -> (String, [Int: FilterRuleKind]) in
                 var text = ""
                 text.reserveCapacity(lines.reduce(0) { $0 + $1.text.utf8.count + 1 })
                 var tinted: [Int: FilterRuleKind] = [:]
                 var index = 0
                 for line in lines where kinds.contains(line.kind) {
                     if Task.isCancelled { return ("", [:]) }
+                    if !query.isEmpty && !line.text.localizedCaseInsensitiveContains(query) { continue }
                     if index > 0 { text.append("\n") }
                     text.append(line.text)
                     if line.kind == .advanced || line.kind == .unsupported || line.kind == .duplicate {
@@ -309,7 +338,12 @@ struct FilterRulesView: View {
                     index += 1
                 }
                 return (text, tinted)
-            }.value
+            }
+            let built = await withTaskCancellationHandler {
+                await worker.value
+            } onCancel: {
+                worker.cancel()
+            }
             guard !Task.isCancelled else { return }
             var tints: HighlightLineTints = [:]
             tints.reserveCapacity(built.1.count)
