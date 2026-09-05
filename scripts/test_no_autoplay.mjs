@@ -23,7 +23,7 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const scriptPath = process.argv[2]
   ?? path.join(repoRoot, "wBlock Scripts (iOS)", "Resources", "no-autoplay.js");
-const source = readFileSync(scriptPath, "utf8");
+const source = readFileSync(path.join(repoRoot, "wBlock Scripts (iOS)", "Resources", "no-autoplay-gate.js"), "utf8") + "\n" + readFileSync(scriptPath, "utf8");
 
 const ENABLED_KEY = "wblock.noAutoplay.enabled.v1";
 const ALLOW_PREFIX = "wblock.noAutoplayAllow.v1:";
@@ -134,6 +134,7 @@ function createEnvironment(options = {}) {
 
   env.dispatch = (type, event) => {
     event.type = type;
+    if (event.isTrusted === undefined) event.isTrusted = true;
     documentStub.dispatchEvent(event);
   };
   env.body = bodyElement;
@@ -297,6 +298,10 @@ async function playResult(media) {
   const video = env.makeMedia("video");
   const player = { querySelectorAll: (sel) => (sel === "video, audio" ? [video] : []) };
   const button = { querySelectorAll: () => [], parentElement: player };
+  for (const type of ["pointerdown", "touchstart", "click", "keydown"]) {
+    env.dispatch(type, { isTrusted: false, key: "k", target: button, composedPath: () => [button, player] });
+  }
+  check("script-generated player gestures cannot unlock playback", (await playResult(video)) === "NotAllowedError");
   env.dispatch("click", { target: button, composedPath: () => [button, player] });
   check("sibling play button unlocks the only video in the player", (await playResult(video)) === "ok");
 
@@ -502,8 +507,7 @@ async function playResult(media) {
   check("CSP fallback still activates the gate", env.gateMarker());
   const gateRequests = env.runtimeMessages.filter(m => m && m.action === "wblock:noAutoplay:injectGate");
   check("CSP fallback asks the background for a page-world gate (#676)",
-    gateRequests.length === 1 && typeof gateRequests[0].source === "string"
-      && gateRequests[0].source.includes("__wblockNoAutoplayGateActive") && typeof gateRequests[0].token === "string");
+    gateRequests.length === 1 && gateRequests[0].source === undefined && typeof gateRequests[0].token === "string");
 
   const video = env.makeMedia("video");
   video.paused = false;

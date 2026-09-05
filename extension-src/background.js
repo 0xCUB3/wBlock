@@ -26581,19 +26581,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const message = request;
     if (message && message.action === "wblock:noAutoplay:injectGate") {
       // Page-world fallback for the No Autoplay gate when the page's CSP
-      // blocks inline scripts (#676). The source is the gate function the
-      // content script already carries; nothing page-controlled is executed.
+      // blocks inline scripts. Inject the bundled function directly so a
+      // strict CSP cannot block an eval inside the injected callback.
       const tabId = sender && sender.tab ? sender.tab.id : undefined;
-      if (typeof tabId !== "number" || !browser.scripting || typeof message.source !== "string" || typeof message.token !== "string") {
+      if (typeof tabId !== "number" || !browser.scripting || typeof globalThis.__wblockNoAutoplayGate !== "function" || typeof message.token !== "string") {
         return { ok: false };
       }
       try {
         await browser.scripting.executeScript({
           target: { tabId, frameIds: [sender.frameId ?? 0] },
-          func: (gateSource, gateToken) => {
-            try { (0, eval)("(" + gateSource + ")")(gateToken); } catch (e) { /* ignore */ }
-          },
-          args: [message.source, message.token],
+          func: globalThis.__wblockNoAutoplayGate,
+          args: [message.token],
           world: "MAIN",
           injectImmediately: true
         });

@@ -62,8 +62,12 @@ minify_one() {
   # Banner: keeps the version greppable in the artifact and tells editors
   # where the real source lives. GPL-3.0 notice carried over from upstream.
   {
-    printf '/*! %s%s. Upstream (c) Adguard Software Ltd., GPL-3.0, https://github.com/AdguardTeam/SafariConverterLib/tree/master/Extension */\n' \
+    if [[ "${name}" == "no-autoplay-gate" ]]; then
+      printf '/*! wBlock No Autoplay gate. */\n'
+    else
+      printf '/*! %s%s. Upstream (c) Adguard Software Ltd., GPL-3.0, https://github.com/AdguardTeam/SafariConverterLib/tree/master/Extension */\n' \
       "${ext_version:-SafariExtension}" "${scriptlets_version:+ (${scriptlets_version})}"
+    fi
     printf '/*! Generated artifact — do not edit. Edit extension-src/%s.js and run scripts/minify-extension-js.sh */\n' "${name}"
     cat "${tmp}"
   } > "${out}"
@@ -115,6 +119,7 @@ check_absent() {
 
 minify_one "background"
 minify_one "content"
+minify_one "no-autoplay-gate"
 
 # Symbols the runtime depends on must survive minification.
 check_grep "engineTimestamp" "engineTimestamp" "${RES_DIR}/background.js"

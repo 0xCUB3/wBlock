@@ -13,6 +13,7 @@
     },
     "background": {
         "scripts": [
+            "no-autoplay-gate.js",
             "background.js"
         ],
         "type": "module",
@@ -21,6 +22,7 @@
     "content_scripts": [
         {
             "js": [
+                "no-autoplay-gate.js",
                 "no-autoplay.js",
                 "zapper-content.js",
                 "content.js"
