@@ -714,10 +714,12 @@ struct SettingsView: View {
             Button(role: .destructive) {
                 showingRestartConfirmation = true
             } label: {
-                Label(
-                    isRestarting ? "Restarting…" : "Restart Onboarding",
-                    systemImage: isRestarting ? "hourglass" : "arrow.counterclockwise"
-                )
+                Label {
+                    Text(isRestarting ? "Restarting…" : "Restart Onboarding")
+                } icon: {
+                    Image(systemName: isRestarting ? "hourglass" : "arrow.counterclockwise")
+                        .foregroundStyle(.red)
+                }
             }
             .tint(.red)
             #if os(macOS)
