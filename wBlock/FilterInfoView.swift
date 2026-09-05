@@ -188,6 +188,8 @@ struct FilterRulesView: View {
     @State private var displayedTints: HighlightLineTints?
     @State private var rebuildTask: Task<Void, Never>?
     @Environment(\.dismiss) private var dismiss
+    @ScaledMetric(relativeTo: .caption) private var legendColumnWidth = 160
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private static let highlightedKinds: [FilterRuleKind] = [.supported, .advanced, .unsupported, .duplicate]
 
@@ -312,21 +314,51 @@ struct FilterRulesView: View {
     }
 
     private func legend(_ analysis: FilterRuleAnalysis) -> some View {
-        HStack(spacing: 14) {
-            ForEach(Self.highlightedKinds, id: \.self) { kind in
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(Self.color(for: kind))
-                        .frame(width: 8, height: 8)
-                    Text("\(Self.title(for: kind)): \(analysis.count(of: kind))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+        Group {
+            if #available(macOS 13.0, iOS 16.0, *) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 14) {
+                        ForEach(Self.highlightedKinds, id: \.self) { kind in
+                            legendItem(kind, analysis: analysis)
+                                .fixedSize()
+                        }
+                    }
+                    legendGrid(analysis)
                 }
+            } else {
+                legendGrid(analysis)
             }
-            Spacer()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
+    }
+
+    private func legendGrid(_ analysis: FilterRuleAnalysis) -> some View {
+        LazyVGrid(
+            columns: [GridItem(
+                dynamicTypeSize.isAccessibilitySize ? .flexible() : .adaptive(minimum: legendColumnWidth),
+                alignment: .leading
+            )],
+            alignment: .leading,
+            spacing: 8
+        ) {
+            ForEach(Self.highlightedKinds, id: \.self) { kind in
+                legendItem(kind, analysis: analysis)
+            }
+        }
+    }
+
+    private func legendItem(_ kind: FilterRuleKind, analysis: FilterRuleAnalysis) -> some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(Self.color(for: kind))
+                .frame(width: 8, height: 8)
+            Text("\(Self.title(for: kind)): \(analysis.count(of: kind))")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     /// Joins the lines that pass the View filter and records which of them
