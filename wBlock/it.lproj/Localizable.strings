@@ -1053,3 +1053,7 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Comments" = "Commenti";
 "Needs wBlock Scripts" = "Richiede wBlock Scripts";
 "View" = "Vista";
+
+"Keep Blocking on These Sites" = "Continua a bloccare su questi siti";
+
+"Paused components continue working on these sites and their subdomains." = "I componenti in pausa continuano a funzionare su questi siti e sui loro sottodomini.";

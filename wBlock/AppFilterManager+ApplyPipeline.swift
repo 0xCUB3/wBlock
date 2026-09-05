@@ -351,6 +351,7 @@ extension AppFilterManager {
         // advanced engine inert. A userscript-only pause must still apply filter rules.
         if pausedComponents.contains(.filters)
             && pausedComponents.contains(.elementZapper)
+            && BlockingPauseStore.exceptionDomains().isEmpty
             && !allowPausedResume {
             await MainActor.run {
                 self.statusDescription = LocalizedStrings.text(
@@ -433,7 +434,7 @@ extension AppFilterManager {
 
             await updateVersionsAndCounts()
 
-            let enabledFilters = pausedComponents.contains(.filters)
+            let enabledFilters = pausedComponents.contains(.filters) && BlockingPauseStore.exceptionDomains().isEmpty
                 ? []
                 : runSnapshot.filters.filter { $0.isSelected }
             if !enabledFilters.isEmpty {
@@ -522,9 +523,14 @@ extension AppFilterManager {
 
         if await failApplyIfCancelled() { return }
 
-        let allSelectedFilters = pausedComponents.contains(.filters)
+        let pauseSites = BlockingPauseStore.exceptionDomains()
+        let allSelectedFilters: [FilterList] = pausedComponents.contains(.filters) && pauseSites.isEmpty
             ? []
-            : runSnapshot.filters.filter { $0.isSelected }
+            : runSnapshot.filters.filter { $0.isSelected }.map { filter in
+                var scoped = filter
+                if pausedComponents.contains(.filters) { scoped.activeSiteRestriction = pauseSites }
+                return scoped
+            }
         // The snapshot preserves the user's selection, but its counts can predate the
         // metadata hydration/download above on the first apply.
         let refreshedSourceRuleCounts = Dictionary(
@@ -532,11 +538,10 @@ extension AppFilterManager {
                 filter.sourceRuleCount.map { (filter.id, $0) }
             }
         )
-        let generatedZapperRules = pausedComponents.contains(.elementZapper)
-            ? []
-            : ZapperContentBlockerRuleGenerator.generatedRules(
-                from: runSnapshot.activeZapperRules
-            )
+        let allZapperText = ZapperContentBlockerRuleGenerator.generatedRules(from: runSnapshot.activeZapperRules).joined(separator: "\n")
+        let scopedZapperText = pausedComponents.contains(.elementZapper)
+            ? FilterListSiteExclusion.restrictingRules(allZapperText, to: pauseSites) : allZapperText
+        let generatedZapperRules = scopedZapperText.split(whereSeparator: \.isNewline).map(String.init)
         let generatedZapperRulesText = generatedZapperRules.isEmpty
             ? nil
             : generatedZapperRules.joined(separator: "\n")
@@ -1230,7 +1235,7 @@ extension AppFilterManager {
                 self.applyProgressViewModel.updatePhaseCompletion(updating: true, scripts: true)
             }
 
-            if normalized == .all {
+            if normalized == .all && BlockingPauseStore.exceptionDomains().isEmpty {
                 let cleared = await self.clearAllExtensionsAndEngine()
                 await MainActor.run {
                     self.lastRuleCount = 0
@@ -1278,6 +1283,20 @@ extension AppFilterManager {
                     comment: "Apply pipeline pause failure status"
                 )
             }
+        }
+    }
+
+    func setPauseExceptionDomains(_ domains: [String]) async {
+        guard !isLoading, !isApplyInFlight else { return }
+        let normalized = DisabledSitesNormalizer.normalizedDomains(from: domains)
+        guard normalized != BlockingPauseStore.exceptionDomains() else { return }
+        BlockingPauseStore.setExceptionDomains(normalized)
+        UserScriptManager.invalidateDocumentStartExecutionCache()
+        ZapperRuleManager.notifySafariRulesChanged()
+        let components = BlockingPauseStore.pausedComponents()
+        if !components.isEmpty {
+            markNonSelectionChangesPending()
+            _ = await setPausedComponents(components)
         }
     }
 

@@ -262,7 +262,8 @@ public enum ContentBlockerIncrementalCache {
         affinityContributors: [FilterList] = [],
         groupIdentifier: String,
         extraRulesText: String? = nil,
-        cosmeticFilteringEnabled: Bool = true
+        cosmeticFilteringEnabled: Bool = true,
+        compatibilitySiteRestriction: [String]? = nil
     ) -> String? {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
@@ -291,6 +292,14 @@ public enum ContentBlockerIncrementalCache {
             canonical.append("extra=\(extraFingerprint)\n")
         } else {
             canonical.append("extra=\n")
+        }
+        for filter in canonicalFilterOrder(filters + affinityContributors) {
+            if let sites = filter.activeSiteRestriction {
+                canonical.append("scope=\(filter.id.uuidString)|\(sites.sorted().joined(separator: ","))\n")
+            }
+        }
+        if let sites = compatibilitySiteRestriction {
+            canonical.append("compatibilityScope=\(sites.sorted().joined(separator: ","))\n")
         }
         // Only the disabled state is recorded so existing signatures stay valid.
         if !cosmeticFilteringEnabled {

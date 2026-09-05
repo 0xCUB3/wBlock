@@ -172,10 +172,7 @@ public enum SafariContentBlockerAffinityProcessor {
             allTargets: allTargets,
             isCancelled: isCancelled
         )
-        let restricted = FilterListSiteExclusion.restrictingAdvancedRules(
-            filtered,
-            excluding: filter.excludedSites
-        )
+        let restricted = FilterListSiteExclusion.applyingSiteRestrictions(filtered, for: filter)
         guard !restricted.isEmpty else { return false }
         if isCancelled?() == true {
             throw CancellationError()

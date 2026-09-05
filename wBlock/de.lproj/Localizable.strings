@@ -1053,3 +1053,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Comments" = "Kommentare";
 "Needs wBlock Scripts" = "Benötigt wBlock Scripts";
 "View" = "Ansicht";
+
+"Keep Blocking on These Sites" = "Auf diesen Websites weiter blockieren";
+
+"Paused components continue working on these sites and their subdomains." = "Pausierte Komponenten bleiben auf diesen Websites und ihren Subdomains aktiv.";

@@ -1,7 +1,7 @@
 import Foundation
 
 // Run from the repository root:
-// swiftc wBlockCoreService/GroupIdentifier.swift wBlockCoreService/BlockingPauseStore.swift scripts/test_issue_508_pause_store.swift -o /tmp/test_issue_508_pause_store && /tmp/test_issue_508_pause_store
+// swiftc wBlockCoreService/GroupIdentifier.swift wBlockCoreService/DisabledSitesNormalizer.swift wBlockCoreService/BlockingPauseStore.swift scripts/test_issue_508_pause_store.swift -o /tmp/test_issue_508_pause_store && /tmp/test_issue_508_pause_store
 
 @main
 struct Issue508PauseStoreTest {

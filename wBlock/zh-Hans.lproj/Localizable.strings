@@ -1053,3 +1053,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Comments" = "注释";
 "Needs wBlock Scripts" = "需要 wBlock Scripts";
 "View" = "视图";
+
+"Keep Blocking on These Sites" = "在这些网站上继续拦截";
+
+"Paused components continue working on these sites and their subdomains." = "已暂停的组件仍会在这些网站及其子域名上运行。";

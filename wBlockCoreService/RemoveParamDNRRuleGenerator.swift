@@ -227,7 +227,7 @@ public enum RemoveParamDNRRuleGenerator {
 
             if let cached = cache[key], cached.fingerprint == fingerprint {
                 updated[key] = cached
-                combined.append(cached.lines)
+                combined.append(FilterListSiteExclusion.applyingSiteRestrictions(cached.lines, for: filter))
                 continue
             }
 
@@ -235,7 +235,7 @@ public enum RemoveParamDNRRuleGenerator {
             let lines = extractRemoveParamLines(from: contents)
             updated[key] = ExtractionEntry(fingerprint: fingerprint, lines: lines)
             cacheChanged = true
-            combined.append(lines)
+            combined.append(FilterListSiteExclusion.applyingSiteRestrictions(lines, for: filter))
         }
 
         if cacheChanged || updated.count != cache.count {

@@ -1053,3 +1053,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Comments" = "Commentaires";
 "Needs wBlock Scripts" = "Nécessite wBlock Scripts";
 "View" = "Affichage";
+
+"Keep Blocking on These Sites" = "Continuer le blocage sur ces sites";
+
+"Paused components continue working on these sites and their subdomains." = "Les composants en pause restent actifs sur ces sites et leurs sous-domaines.";

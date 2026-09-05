@@ -1053,3 +1053,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Comments" = "コメント";
 "Needs wBlock Scripts" = "wBlock Scripts が必要";
 "View" = "表示";
+
+"Keep Blocking on These Sites" = "これらのサイトではブロックを継続";
+
+"Paused components continue working on these sites and their subdomains." = "一時停止中の機能は、これらのサイトとサブドメインでは引き続き動作します。";

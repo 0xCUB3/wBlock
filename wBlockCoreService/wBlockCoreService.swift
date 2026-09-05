@@ -397,8 +397,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         return result
     }
 
-    private static func combinedRulesWithEmbeddedCompatibility(_ rawRules: String) -> String {
-        let trimmedExtraRules = embeddedCompatibilityRules.trimmingCharacters(in: .whitespacesAndNewlines)
+    private static func combinedRulesWithEmbeddedCompatibility(_ rawRules: String, siteRestriction: [String]?) -> String {
+        let extraRules = siteRestriction.map { FilterListSiteExclusion.restrictingRules(embeddedCompatibilityRules, to: $0) }
+            ?? embeddedCompatibilityRules
+        let trimmedExtraRules = extraRules.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedExtraRules.isEmpty else { return rawRules }
 
         let trimmedBaseRules = rawRules.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1315,6 +1317,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         targetRulesFilename: String,
         disabledSites: [String],
         cosmeticFilteringEnabled: Bool = true,
+        compatibilitySiteRestriction: [String]? = nil,
         isCancelled: (() -> Bool)? = nil
     ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
         let cancellationRequested = {
@@ -1322,7 +1325,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         }
         let sitesToUse = disabledSites
         let effectiveRulesHash = effectiveRulesHashHex(
-            baseRulesHashHex: rulesSHA256Hex,
+            baseRulesHashHex: rulesSHA256Hex + (compatibilitySiteRestriction.map { "|compatibilitySites=" + $0.sorted().joined(separator: ",") } ?? ""),
             cosmeticFilteringEnabled: cosmeticFilteringEnabled
         )
 
@@ -1389,7 +1392,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             throw CancellationError()
         }
         let combinedRules = try String(contentsOf: rulesFileURL, encoding: .utf8)
-        var effectiveRules = combinedRulesWithEmbeddedCompatibility(combinedRules)
+        var effectiveRules = combinedRulesWithEmbeddedCompatibility(combinedRules, siteRestriction: compatibilitySiteRestriction)
         if !cosmeticFilteringEnabled {
             effectiveRules = CosmeticFilteringPreference.strippingCosmeticRules(from: effectiveRules)
         }
@@ -1465,7 +1468,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             affinityContributors: affinityContributors,
             groupIdentifier: groupIdentifier,
             extraRulesText: extraRulesText,
-            cosmeticFilteringEnabled: cosmeticFilteringEnabled
+            cosmeticFilteringEnabled: cosmeticFilteringEnabled,
+            compatibilitySiteRestriction: orderedSelectedFilters.isEmpty ? [] : orderedSelectedFilters.first?.activeSiteRestriction
         )
         let storedSignature = ContentBlockerIncrementalCache.loadInputSignature(
             targetRulesFilename: rulesFilename,
@@ -1634,7 +1638,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 for: filter,
                 containerURL: containerURL
             ) {
-                if filter.excludedSites.isEmpty {
+                if filter.excludedSites.isEmpty && filter.activeSiteRestriction == nil {
                     try ContentBlockerInputWriter.appendFile(
                         from: sourceURL,
                         to: fileHandle,
@@ -1646,10 +1650,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 } else {
                     let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
                     try ContentBlockerInputWriter.appendInline(
-                        FilterListSiteExclusion.restrictingAdvancedRules(
-                            rawContent,
-                            excluding: filter.excludedSites
-                        ),
+                        FilterListSiteExclusion.applyingSiteRestrictions(rawContent, for: filter),
                         to: fileHandle,
                         hasher: &hasher,
                         newlineData: newlineData,
@@ -1679,6 +1680,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             targetRulesFilename: targetInfo.rulesFilename,
             disabledSites: disabledSites,
             cosmeticFilteringEnabled: cosmeticFilteringEnabled,
+            compatibilitySiteRestriction: orderedSelectedFilters.isEmpty ? [] : orderedSelectedFilters.first?.activeSiteRestriction,
             isCancelled: cancellationRequested
         )
     }

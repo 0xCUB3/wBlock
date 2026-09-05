@@ -1053,3 +1053,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Comments" = "Комментарии";
 "Needs wBlock Scripts" = "Требуется wBlock Scripts";
 "View" = "Вид";
+
+"Keep Blocking on These Sites" = "Продолжать блокировку на этих сайтах";
+
+"Paused components continue working on these sites and their subdomains." = "Приостановленные компоненты продолжают работать на этих сайтах и их поддоменах.";

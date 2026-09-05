@@ -207,7 +207,7 @@ public enum WebExtensionRequestHandler {
             if let url = URL(string: urlString) {
                 // Respect the filter pause and per-site disable immediately for advanced rules.
                 Task { @MainActor in
-                    let paused = BlockingPauseStore.isPaused(.filters)
+                    let paused = BlockingPauseStore.isPaused(.filters, onHost: URL(string: payload["topUrl"] as? String ?? urlString)?.host ?? "")
                     if paused {
                         message?["payload"] = emptyRulesPayload(disabled: false, paused: true)
                     } else {
@@ -575,7 +575,7 @@ public enum WebExtensionRequestHandler {
     private static func handleGetBlockingState(message: [String: Any?], context: NSExtensionContext) {
         let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         Task { @MainActor in
-            let paused = BlockingPauseStore.isPaused(.filters)
+            let paused = BlockingPauseStore.isPaused(.filters, onHost: host)
             // Mirrors the advanced-rules gate above: filter-only sites report disabled
             // here so cached configurations are not replayed on them.
             let disabledSites = await currentFilterDisabledSites()
@@ -589,7 +589,7 @@ public enum WebExtensionRequestHandler {
         let offset = message["offset"] as? Int ?? 0
         let limit = message["limit"] as? Int ?? 250
         let payload: [String: Any]
-        if BlockingPauseStore.isPaused(.filters) {
+        if BlockingPauseStore.isFullyPaused(.filters) {
             payload = RemoveParamDNRRuleGenerator.emptyRulesPayload(offset: offset, limit: limit)
         } else {
             payload = RemoveParamDNRRuleGenerator.loadRulesPayload(
@@ -724,7 +724,7 @@ public enum WebExtensionRequestHandler {
     private static func handleMaybeUpdateUserScripts(context: NSExtensionContext) {
         Task { @MainActor in
             guard ProtobufDataManager.shared.autoUpdateEnabled,
-                  !BlockingPauseStore.isPaused(.userScripts)
+                  !BlockingPauseStore.isFullyPaused(.userScripts)
             else {
                 context.completeRequest(returningItems: [createResponse(with: ["ok": true, "skipped": "disabled"])])
                 return
@@ -974,7 +974,7 @@ public enum WebExtensionRequestHandler {
         retryCount: Int = 0
     ) {
         // While the userscript component is paused, serve no userscripts or userstyles.
-        if BlockingPauseStore.isPaused(.userScripts) {
+        if BlockingPauseStore.isPaused(.userScripts, onHost: URL(string: message["url"] as? String ?? "")?.host ?? "") {
             let response = createResponse(with: userScriptsResponse(userScripts: []))
             context.completeRequest(returningItems: [response])
             return
@@ -1212,7 +1212,7 @@ public enum WebExtensionRequestHandler {
 
     private static func handleGetPageUserScriptsRequest(message: [String: Any?], context: NSExtensionContext) {
         // Mirrors the pause check above so the page‑level userscript listing also reports none.
-        if BlockingPauseStore.isPaused(.userScripts) {
+        if BlockingPauseStore.isPaused(.userScripts, onHost: URL(string: message["url"] as? String ?? "")?.host ?? "") {
             let response = createResponse(with: ["userScripts": []])
             context.completeRequest(returningItems: [response])
             return
@@ -1580,7 +1580,7 @@ public enum WebExtensionRequestHandler {
             await ProtobufDataManager.shared.waitUntilLoaded()
             _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
             let rules = ProtobufDataManager.shared.getZapperRules(forHost: hostname)
-            let disabled = BlockingPauseStore.isPaused(.elementZapper)
+            let disabled = BlockingPauseStore.isPaused(.elementZapper, onHost: hostname)
                 || ProtobufDataManager.shared.isZapperDisabled(forHost: hostname)
             let response = createResponse(with: ["ok": true, "rules": rules, "disabled": disabled])
             context.completeRequest(returningItems: [response])
@@ -1693,7 +1693,7 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
-            guard !BlockingPauseStore.isPaused(.userScripts) else {
+            guard !BlockingPauseStore.isPaused(.userScripts, onHost: URL(string: pageURL)?.host ?? "") else {
                 context.completeRequest(returningItems: [createResponse(with: ["ok": false])])
                 return
             }
@@ -1768,7 +1768,7 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
-            guard !BlockingPauseStore.isPaused(.userScripts) else {
+            guard !BlockingPauseStore.isFullyPaused(.userScripts) else {
                 let response = createResponse(with: ["error": "Requested content not available"])
                 context.completeRequest(returningItems: [response])
                 return

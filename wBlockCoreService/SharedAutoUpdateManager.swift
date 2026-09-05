@@ -498,7 +498,7 @@ public actor SharedAutoUpdateManager {
 
     private func autoUpdateUserScriptsIfNeeded() async -> (updated: Int, failed: Int) {
         let manager = await MainActor.run { UserScriptManager.shared }
-        guard !BlockingPauseStore.isPaused(.userScripts) else { return (0, 0) }
+        guard !BlockingPauseStore.isFullyPaused(.userScripts) else { return (0, 0) }
         let result = await manager.autoUpdateEnabledUserScripts()
         return (result.updated, result.failed)
     }
@@ -731,7 +731,7 @@ public actor SharedAutoUpdateManager {
             invalidateStatusCache()
         }
 
-        if BlockingPauseStore.isPaused(.filters) {
+        if BlockingPauseStore.isFullyPaused(.filters) {
             // A filter-only pause must preserve generated zapper rules; the full inert
             // output repair is reserved for the legacy/all-content-blocking pause.
             guard BlockingPauseStore.isContentBlockingPaused() else {
@@ -1231,7 +1231,7 @@ public actor SharedAutoUpdateManager {
 
         await ProtobufDataManager.shared.waitUntilLoaded()
         guard await getAutoUpdateEnabled() else { return .skipped(reason: "auto_update_disabled") }
-        guard !BlockingPauseStore.isPaused(.filters) else { return .skipped(reason: "filters_paused") }
+        guard !BlockingPauseStore.isFullyPaused(.filters) else { return .skipped(reason: "filters_paused") }
         guard await !getAutoUpdateIsRunning() else { return .skipped(reason: "app_run_in_progress") }
 
         #if !os(iOS)
@@ -2030,6 +2030,11 @@ public actor SharedAutoUpdateManager {
         #else
         let detectedPlatform: Platform = .macOS
         #endif
+        let selectedFilters = selectedFilters.map { filter in
+            var scoped = filter
+            if BlockingPauseStore.isPaused(.filters) { scoped.activeSiteRestriction = BlockingPauseStore.exceptionDomains() }
+            return scoped
+        }
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: detectedPlatform)
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
             throw AutoUpdateError.sharedContainerUnavailable
@@ -2043,11 +2048,9 @@ public actor SharedAutoUpdateManager {
         let byTarget = ContentBlockerMappingService.distribute(selectedFilters: selectedFilters, across: targets)
         let affinitySnapshot = SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: containerURL)
         let zapper = await MainActor.run {
-            BlockingPauseStore.isPaused(.elementZapper)
-                ? nil
-                : ZapperContentBlockerRuleGenerator.generatedRulesText(
-                    from: ProtobufDataManager.shared.getActiveZapperRulesByHost()
-                )
+            let text = ZapperContentBlockerRuleGenerator.generatedRulesText(from: ProtobufDataManager.shared.getActiveZapperRulesByHost()) ?? ""
+            return BlockingPauseStore.isPaused(.elementZapper)
+                ? FilterListSiteExclusion.restrictingRules(text, to: BlockingPauseStore.exceptionDomains()) : text
         }
         var results: [String: ConversionTargetResult] = [:]
         let works = targets.map { target in

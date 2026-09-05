@@ -1053,3 +1053,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Comments" = "주석";
 "Needs wBlock Scripts" = "wBlock Scripts 필요";
 "View" = "보기";
+
+"Keep Blocking on These Sites" = "이 사이트에서는 차단 유지";
+
+"Paused components continue working on these sites and their subdomains." = "일시 중지된 구성 요소가 이 사이트와 하위 도메인에서는 계속 작동합니다.";

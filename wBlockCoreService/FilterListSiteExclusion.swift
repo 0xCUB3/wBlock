@@ -28,7 +28,7 @@ public enum FilterListSiteExclusion {
             .joined(separator: "\n")
     }
 
-    private static let cosmeticSeparators = ["#@?#", "#@$#", "#?#", "#$#", "#@#", "##"]
+    private static let cosmeticSeparators = ["#@$?#", "#$?#", "#@%#", "#%#", "#@?#", "#@$#", "#?#", "#$#", "#@#", "##"]
 
     private static func restrictAdvancedLine(_ line: String, excluding sites: [String]) -> String {
         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -113,4 +113,64 @@ public enum FilterListSiteExclusion {
         parts[domainIndex] = "domain=" + restricted.joined(separator: "|")
         return "\(body)$\(parts.joined(separator: ","))"
     }
+    /// Intersects a rule's existing domain scope with the pause exception sites.
+    public static func restrictingRules(_ text: String, to domains: [String]) -> String {
+        let allowed = normalizedDomains(from: domains)
+        guard !allowed.isEmpty else { return "" }
+        func intersect(_ original: [String]) -> [String]? {
+            let positives = original.filter { !$0.hasPrefix("~") }
+            let negatives = original.filter { $0.hasPrefix("~") }
+            var candidates = positives.isEmpty ? allowed : positives.flatMap { original in
+                allowed.compactMap { site -> String? in
+                    if original == site || original.hasSuffix("." + site) { return original }
+                    if site.hasSuffix("." + original) { return site }
+                    return nil
+                }
+            }
+            candidates.removeAll { candidate in
+                negatives.contains { excluded in
+                    let site = String(excluded.dropFirst())
+                    return candidate == site || candidate.hasSuffix("." + site)
+                }
+            }
+            guard !candidates.isEmpty else { return nil }
+            let relevantNegatives = negatives.filter { excluded in
+                let domain = String(excluded.dropFirst())
+                return candidates.contains { domain.hasSuffix("." + $0) }
+            }
+            return Array(Set(candidates)).sorted() + relevantNegatives
+        }
+        return text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).map { raw in
+            let line = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            if line.isEmpty || line.hasPrefix("!") || line.hasPrefix("[Adblock") { return line }
+            if let cosmetic = splitCosmetic(line) {
+                let domains = cosmetic.domains.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
+                guard let scope = intersect(domains) else { return "" }
+                return scope.joined(separator: ",") + cosmetic.separator + cosmetic.body
+            }
+            let optionStart: String.Index?
+            let pattern = line.hasPrefix("@@") ? line.dropFirst(2) : line[...]
+            if pattern.hasPrefix("/"), let closing = pattern.dropFirst().lastIndex(of: "/") {
+                let next = line.index(after: closing)
+                optionStart = next < line.endIndex && line[next] == "$" ? next : nil
+            } else {
+                optionStart = line.lastIndex(of: "$")
+            }
+            let body = optionStart.map { String(line[..<$0]) } ?? line
+            var options = optionStart.map { line[line.index(after: $0)...].split(separator: ",").map(String.init) } ?? []
+            let index = options.firstIndex { $0.hasPrefix("domain=") }
+            let original = index.map { options[$0].dropFirst(7).split(separator: "|").map(String.init) } ?? []
+            guard let scope = intersect(original) else { return "" }
+            let option = "domain=" + scope.joined(separator: "|")
+            if let index { options[index] = option } else { options.append(option) }
+            return body + "$" + options.joined(separator: ",")
+        }.joined(separator: "\n")
+    }
+
+    public static func applyingSiteRestrictions(_ text: String, for filter: FilterList) -> String {
+        let excluded = restrictingAdvancedRules(text, excluding: filter.excludedSites)
+        guard let sites = filter.activeSiteRestriction else { return excluded }
+        return restrictingRules(excluded, to: sites)
+    }
+
 }
