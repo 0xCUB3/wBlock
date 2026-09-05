@@ -138,6 +138,7 @@ body {
 
 .title-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
@@ -146,7 +147,9 @@ body {
 .title-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex: 1 1 180px;
+  flex-wrap: wrap;
+  gap: 6px 8px;
   min-width: 0;
 }
 
@@ -155,12 +158,16 @@ body {
   font-size: 15px;
   letter-spacing: -0.23px;
   line-height: 1.2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 1 1 120px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .top-open {
+  flex: 0 0 auto;
+  white-space: nowrap;
   appearance: none;
   border: 0;
   border-radius: 999px;
