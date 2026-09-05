@@ -1876,12 +1876,16 @@ public actor SharedAutoUpdateManager {
 
         let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)
 
-        for target in targets {
+        let counts = await MainActor.run { ProtobufDataManager.shared.ruleCountsByCategory.mapValues { Int($0) } }
+        for target in ContentBlockerReloadPolicy.orderedTargets(targets, ruleCounts: counts) {
             try Task.checkCancellation()
             try checkBudget(
                 policy,
                 phase: AutoUpdateBudgetPhase.reloadRetry,
-                requiredTime: policy.minimumTimeForReloadRetry
+                requiredTime: ContentBlockerReloadPolicy.needsRecovery(
+                    identifier: target.bundleIdentifier, groupIdentifier: GroupIdentifier.shared.value
+                ) ? max(policy.minimumTimeForReloadRetry, ContentBlockerReloadPolicy.recoveryTimeout)
+                  : policy.minimumTimeForReloadRetry
             )
 
             let reloadResult = await ContentBlockerService.reloadWithRetry(
@@ -1893,6 +1897,8 @@ public actor SharedAutoUpdateManager {
             if !reloadResult.success {
                 failedTargets.append(target.displayName)
             }
+        }
+        for target in targets {
             if let containerURL,
                let adv = loadCachedAdvancedRules(for: target, containerURL: containerURL),
                !adv.isEmpty {
@@ -2090,17 +2096,30 @@ public actor SharedAutoUpdateManager {
             }
         }
 
+        var reloadResults: [String: ContentBlockerService.ReloadAttemptResult] = [:]
+        if reloadContentBlockers {
+            let counts = results.mapValues { $0.conversion?.safariRulesCount ?? 0 }
+            for target in ContentBlockerReloadPolicy.orderedTargets(targets, ruleCounts: counts) {
+                try Task.checkCancellation()
+                try checkBudget(
+                    policy, phase: AutoUpdateBudgetPhase.reloadRetry,
+                    requiredTime: ContentBlockerReloadPolicy.needsRecovery(
+                        identifier: target.bundleIdentifier, groupIdentifier: GroupIdentifier.shared.value
+                    ) ? max(policy.minimumTimeForReloadRetry, ContentBlockerReloadPolicy.recoveryTimeout)
+                      : policy.minimumTimeForReloadRetry
+                )
+                reloadResults[target.bundleIdentifier] = await ContentBlockerService.reloadWithRetry(
+                    identifier: target.bundleIdentifier, maxRetries: 6,
+                    groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: target.rulesFilename
+                )
+            }
+        }
         var metrics: [RebuildTargetMetrics] = []
         var advanced: [String] = []
         var failedIDs: [String] = []
         var failedNames: [String] = []
         for target in targets {
             try Task.checkCancellation()
-            try checkBudget(
-                policy,
-                phase: AutoUpdateBudgetPhase.reloadRetry,
-                requiredTime: policy.minimumTimeForReloadRetry
-            )
             guard let result = results[target.bundleIdentifier],
                   let conversion = result.conversion else {
                 throw CancellationError()
@@ -2116,13 +2135,7 @@ public actor SharedAutoUpdateManager {
 
             var reloadMs = 0
             var reloadAttempts = 0
-            if reloadContentBlockers {
-                let reload = await ContentBlockerService.reloadWithRetry(
-                    identifier: target.bundleIdentifier,
-                    maxRetries: 6,
-                    groupIdentifier: GroupIdentifier.shared.value,
-                    targetRulesFilename: target.rulesFilename
-                )
+            if let reload = reloadResults[target.bundleIdentifier] {
                 reloadMs = reload.durationMs
                 reloadAttempts = reload.attempts
                 if !reload.success {

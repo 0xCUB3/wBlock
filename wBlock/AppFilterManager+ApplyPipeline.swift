@@ -1153,13 +1153,7 @@ extension AppFilterManager {
                 var skippedNames: [String] = []
                 var reloadResults: [(ContentBlockerTargetInfo, ContentBlockerService.ReloadAttemptResult)] = []
                 reloadResults.reserveCapacity(platformTargets.count)
-                await boundedConcurrentForEach(platformTargets, maxConcurrent: {
-                    #if os(macOS)
-                    return 3
-                    #else
-                    return 1
-                    #endif
-                }(), operation: { targetInfo in
+                await boundedConcurrentForEach(ContentBlockerReloadPolicy.orderedTargets(platformTargets, ruleCounts: self.ruleCountsByExtension, groupIdentifier: groupIdentifier), maxConcurrent: 1, operation: { targetInfo in
                     let reloadResult = await ContentBlockerService.reloadIfNeeded(
                         identifier: targetInfo.bundleIdentifier,
                         targetRulesFilename: targetInfo.rulesFilename,
@@ -1493,13 +1487,7 @@ extension AppFilterManager {
         collected.reserveCapacity(targets.count)
         var completed = 0
 
-        await boundedConcurrentForEach(targets, maxConcurrent: {
-            #if os(macOS)
-            return 3
-            #else
-            return 1
-            #endif
-        }(), operation: { target in
+        await boundedConcurrentForEach(ContentBlockerReloadPolicy.orderedTargets(targets, ruleCounts: self.ruleCountsByExtension, groupIdentifier: groupIdentifier), maxConcurrent: 1, operation: { target in
             let reload = await ContentBlockerService.reloadIfNeeded(
                 identifier: target.bundleIdentifier,
                 targetRulesFilename: target.rulesFilename,

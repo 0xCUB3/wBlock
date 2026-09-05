@@ -778,12 +778,17 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         maxRetries: Int = 5
     ) async -> ReloadAttemptResult {
         let gatedResult = await reloadCoordinator.withGate(key: identifier) {
-            await reloadIfNeededSerially(
+            let result = await reloadIfNeededSerially(
                 identifier: identifier,
                 targetRulesFilename: targetRulesFilename,
                 groupIdentifier: groupIdentifier,
                 maxRetries: maxRetries
             )
+            ContentBlockerReloadPolicy.record(
+                identifier: identifier, groupIdentifier: groupIdentifier, success: result.success,
+                attempts: result.attempts, disabledInSafari: result.disabledInSafari
+            )
+            return result
         }
         guard let result = gatedResult else {
             return ReloadAttemptResult(
@@ -821,6 +826,17 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 groupIdentifier: groupIdentifier,
                 targetRulesFilename: targetRulesFilename
             )
+        }
+        let recovering = ContentBlockerReloadPolicy.needsRecovery(identifier: identifier, groupIdentifier: groupIdentifier)
+        if recovering {
+            // Read and republish under the same output lock. Never rewrite an
+            // earlier snapshot over a concurrent pause or disabled-site update.
+            try? withContentBlockerOutputLock(at: containerURL, targetRulesFilename: targetRulesFilename) {
+                let data = try Data(contentsOf: outputURL, options: .mappedIfSafe)
+                guard try validOutputDigest(data) != nil else { return }
+                try data.write(to: outputURL, options: .atomic)
+                try? FileManager.default.removeItem(at: markerURL)
+            }
         }
         guard var snapshot = try? readReloadSnapshot(
             markerURL: markerURL,
@@ -889,7 +905,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             let enabledInSafari = await contentBlockerIsEnabled(identifier: identifier)
             let reload = await reloadWithRetryRaw(
                 identifier: identifier,
-                maxRetries: enabledInSafari ? maxRetries : 1
+                maxRetries: enabledInSafari ? maxRetries : 1,
+                timeout: recovering ? ContentBlockerReloadPolicy.recoveryTimeout : reloadCompletionTimeout
             )
             totalAttempts += reload.attempts
             guard reload.success else {
@@ -979,10 +996,16 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     /// reloadCompletionTimeout.
     public struct ReloadTimedOutError: LocalizedError, Sendable {
         public let identifier: String
+        public let timeout: TimeInterval
+
+        public init(identifier: String, timeout: TimeInterval = ContentBlockerService.reloadCompletionTimeout) {
+            self.identifier = identifier
+            self.timeout = timeout
+        }
 
         public var errorDescription: String? {
             "Safari did not respond to the reload request for \(identifier) "
-                + "within \(Int(ContentBlockerService.reloadCompletionTimeout)) seconds."
+                + "within \(Int(timeout)) seconds."
         }
     }
 
@@ -1012,8 +1035,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     /// - Returns: A Result indicating success or containing an error if the reload failed.
     @MainActor
     public static func reloadContentBlocker(
-        withIdentifier identifier: String
+        withIdentifier identifier: String,
+        timeout: TimeInterval = reloadCompletionTimeout
     ) async -> Result<Void, Error> {
+        let timeout = timeout.isFinite ? max(1, min(timeout, 60)) : reloadCompletionTimeout
         os_log(.info, "Start reloading the content blocker")
 
         let error: Error? = await withCheckedContinuation { continuation in
@@ -1023,9 +1048,9 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 continuation.resume(returning: error)
             }
             Task.detached {
-                try? await TaskSleep.sleep(for: .seconds(reloadCompletionTimeout))
+                try? await TaskSleep.sleep(for: .seconds(timeout))
                 guard gate.claim() else { return }
-                continuation.resume(returning: ReloadTimedOutError(identifier: identifier))
+                continuation.resume(returning: ReloadTimedOutError(identifier: identifier, timeout: timeout))
             }
         }
 
@@ -1075,10 +1100,16 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         }
         let gatedResult = await reloadCoordinator.withGate(key: identifier) {
             if let groupIdentifier, let targetRulesFilename {
-                invalidateReloadMarker(
-                    groupIdentifier: groupIdentifier,
-                    targetRulesFilename: targetRulesFilename
+                invalidateReloadMarker(groupIdentifier: groupIdentifier, targetRulesFilename: targetRulesFilename)
+                let result = await reloadIfNeededSerially(
+                    identifier: identifier, targetRulesFilename: targetRulesFilename,
+                    groupIdentifier: groupIdentifier, maxRetries: maxRetries
                 )
+                ContentBlockerReloadPolicy.record(
+                    identifier: identifier, groupIdentifier: groupIdentifier, success: result.success,
+                    attempts: result.attempts, disabledInSafari: result.disabledInSafari
+                )
+                return result
             }
             return await reloadWithRetryRaw(identifier: identifier, maxRetries: maxRetries)
         }
@@ -1093,7 +1124,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
 
     private static func reloadWithRetryRaw(
         identifier: String,
-        maxRetries: Int
+        maxRetries: Int,
+        timeout: TimeInterval = reloadCompletionTimeout
     ) async -> ReloadAttemptResult {
         let startTime = Date()
         let elapsedMs = { Int(Date().timeIntervalSince(startTime) * 1000) }
@@ -1116,7 +1148,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 )
             }
 
-            let result = await reloadContentBlocker(withIdentifier: identifier)
+            let result = await reloadContentBlocker(withIdentifier: identifier, timeout: timeout)
             if case .success = result {
                 return ReloadAttemptResult(
                     success: true,
