@@ -1136,7 +1136,7 @@ public enum WebExtensionRequestHandler {
     }
 
     /// Built-ins whose behaviour is configured from the app (Dark Reader's
-    /// appearance, Tube Cleaner's DeArrow settings) get the preference
+    /// appearance, DeArrow options and Tube Cleaner features) get the preference
     /// prepended as a constant. Returns nil for every other script.
     private static func runtimeConfiguredExecutableContent(for script: UserScript) -> String? {
         if DarkReaderAppearancePreference.matches(scriptURL: script.url) {
@@ -1145,10 +1145,19 @@ public enum WebExtensionRequestHandler {
                 followsSystemAppearance: DarkReaderAppearancePreference.followsSystemAppearance()
             )
         }
+        if DeArrowPreference.matches(scriptURL: script.url) {
+            return DeArrowPreference.configuredExecutableContent(
+                script.executableContent,
+                settings: TubeCleanerDeArrowPreference.settings()
+            )
+        }
         if TubeCleanerDeArrowPreference.matches(scriptURL: script.url) {
+            // Older downloaded Tube Cleaner versions must not run a second branding engine.
+            var legacySettings = TubeCleanerDeArrowPreference.settings()
+            legacySettings.enabled = false
             return TubeCleanerDeArrowPreference.configuredExecutableContent(
                 script.executableContent,
-                settings: TubeCleanerDeArrowPreference.settings(),
+                settings: legacySettings,
                 features: TubeCleanerDeArrowPreference.features()
             )
         }

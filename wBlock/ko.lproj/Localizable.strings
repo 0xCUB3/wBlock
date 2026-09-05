@@ -1065,3 +1065,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Site Actions" = "사이트 작업";
 
 "Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "모든 구성 요소가 일시 중지되면 차단 일시 중지가 켜집니다. 각 구성 요소를 따로 일시 중지할 수도 있습니다.";
+
+"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "YouTube 제목과 썸네일을 DeArrow 커뮤니티가 제안한 대안으로 바꿉니다.";
+
+"DeArrow" = "DeArrow";

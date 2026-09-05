@@ -1065,3 +1065,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Site Actions" = "Действия для сайтов";
 
 "Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "Пауза блокировки включается, когда приостановлены все компоненты. Каждый компонент также можно приостановить отдельно.";
+
+"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "Заменяет заголовки и миниатюры YouTube вариантами, предложенными сообществом DeArrow.";
+
+"DeArrow" = "DeArrow";

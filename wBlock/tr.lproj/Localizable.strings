@@ -1064,3 +1064,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Site Actions" = "Site işlemleri";
 
 "Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "Tüm bileşenler duraklatıldığında engelleme duraklatılır. Her bileşen ayrı ayrı da duraklatılabilir.";
+
+"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "YouTube başlıklarını ve küçük resimlerini DeArrow topluluğunun sunduğu alternatiflerle değiştirir.";
+
+"DeArrow" = "DeArrow";

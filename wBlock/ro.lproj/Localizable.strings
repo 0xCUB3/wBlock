@@ -1065,3 +1065,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Site Actions" = "Acțiuni pentru site-uri";
 
 "Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "Pauza blocării se activează când toate componentele sunt întrerupte. Fiecare componentă poate fi întreruptă și separat.";
+
+"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "Înlocuiește titlurile și miniaturile YouTube cu alternative propuse de comunitatea DeArrow.";
+
+"DeArrow" = "DeArrow";

@@ -5,10 +5,7 @@
 
 import Foundation
 
-/// App-managed DeArrow settings for the built-in Tube Cleaner script. The
-/// script used to keep these in page localStorage behind a "DA" pill on the
-/// player; they now live in the app group and are prepended to the script as
-/// a constant, the same way Dark Reader receives its appearance preference.
+/// Legacy storage keys are retained for standalone DeArrow options and Tube Cleaner features.
 public enum TubeCleanerDeArrowPreference {
     public struct Settings: Codable, Equatable, Sendable {
         public var enabled = false

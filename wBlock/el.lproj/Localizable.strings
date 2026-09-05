@@ -1065,3 +1065,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Site Actions" = "Ενέργειες ιστοτόπων";
 
 "Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "Η παύση αποκλεισμού ενεργοποιείται όταν όλα τα στοιχεία είναι σε παύση. Κάθε στοιχείο μπορεί επίσης να τεθεί σε παύση ξεχωριστά.";
+
+"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "Αντικαθιστά τίτλους και μικρογραφίες του YouTube με εναλλακτικές από την κοινότητα DeArrow.";
+
+"DeArrow" = "DeArrow";

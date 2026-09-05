@@ -52,6 +52,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let isBeta: Bool
     let isDarkReader: Bool
     let isTubeCleaner: Bool
+    let isDeArrow: Bool
 
     init(
         script: UserScript,
@@ -60,7 +61,8 @@ private struct UserScriptListItem: Identifiable, Hashable {
         builtInDisplayRole: BuiltInUserScriptDisplayRole?,
         isBeta: Bool = false,
         isDarkReader: Bool = false,
-        isTubeCleaner: Bool = false
+        isTubeCleaner: Bool = false,
+        isDeArrow: Bool = false
     ) {
         id = script.id
         name = script.name
@@ -91,6 +93,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
         self.isBeta = isBeta
         self.isDarkReader = isDarkReader
         self.isTubeCleaner = isTubeCleaner
+        self.isDeArrow = isDeArrow
     }
 }
 
@@ -517,7 +520,8 @@ struct UserScriptManagerView: View {
                 builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
                 isBeta: userScriptManager.isBeta(for: script),
                 isDarkReader: userScriptManager.isDarkReader(script),
-                isTubeCleaner: userScriptManager.isTubeCleaner(script)
+                isTubeCleaner: userScriptManager.isTubeCleaner(script),
+                isDeArrow: userScriptManager.isDeArrow(script)
             )
         }
     }
@@ -868,7 +872,9 @@ struct UserScriptManagerView: View {
                             set: { userScriptManager.setTubeCleanerFeatures($0) }
                         )
                     )
-                    TubeCleanerDeArrowPicker(
+                }
+                if script.isDeArrow {
+                    DeArrowSettingsPicker(
                         settings: Binding(
                             get: { userScriptManager.tubeCleanerDeArrow },
                             set: { userScriptManager.setTubeCleanerDeArrow($0) }
@@ -1667,9 +1673,6 @@ private struct DarkReaderAppearancePicker: View {
     }
 }
 
-/// DeArrow settings for the built-in Tube Cleaner, shown as a compact menu on
-/// its list row (#611). The pill reads On/Off; the menu holds the toggles the
-/// script's own "DA" panel used to offer.
 /// Per-feature switches for Tube Cleaner (#671). Ad handling and native
 /// controls are the script's purpose, so they are not listed.
 private struct TubeCleanerFeaturesPicker: View {
@@ -1722,30 +1725,25 @@ private struct TubeCleanerFeaturesPicker: View {
     }
 }
 
-private struct TubeCleanerDeArrowPicker: View {
+private struct DeArrowSettingsPicker: View {
     @Binding var settings: TubeCleanerDeArrowPreference.Settings
 
     var body: some View {
         Menu {
-            Toggle("Enable DeArrow", isOn: $settings.enabled)
-            Divider()
             Toggle("Replace Titles", isOn: $settings.replaceTitles)
-                .disabled(!settings.enabled)
             Toggle("Replace Thumbnails", isOn: $settings.replaceThumbnails)
-                .disabled(!settings.enabled)
             Toggle("Random Frame When No Thumbnail", isOn: $settings.randomThumbnails)
-                .disabled(!settings.enabled || !settings.replaceThumbnails)
+                .disabled(!settings.replaceThumbnails)
             Toggle("Show Original on Hover", isOn: $settings.showOriginalOnHover)
-                .disabled(!settings.enabled)
             Divider()
             // DeArrow data is CC BY-NC-SA 4.0; the credit link is a license term.
             Link("Using DeArrow", destination: URL(string: "https://dearrow.ajay.app/")!)
             Link("Donate to DeArrow", destination: URL(string: "https://dearrow.ajay.app/donate/")!)
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: settings.enabled ? "arrow.uturn.down.circle.fill" : "arrow.uturn.down.circle")
+                Image(systemName: "gearshape")
                     .imageScale(.small)
-                Text(settings.enabled ? "DeArrow: On" : "DeArrow: Off")
+                Text("Settings")
                     .fontWeight(.medium)
                     .lineLimit(1)
                 Image(systemName: "chevron.up.chevron.down")
@@ -1763,7 +1761,7 @@ private struct TubeCleanerDeArrowPicker: View {
         }
         .buttonStyle(.plain)
         .noFocusRingCompat()
-        .accessibilityLabel(settings.enabled ? "DeArrow: On" : "DeArrow: Off")
+        .accessibilityLabel("Settings")
         .padding(.top, 2)
     }
 }

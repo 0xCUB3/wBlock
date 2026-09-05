@@ -1065,3 +1065,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Site Actions" = "网站操作";
 
 "Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "所有组件暂停后，暂停拦截开关会开启。也可以单独暂停每个组件。";
+
+"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "使用 DeArrow 社区提交的替代内容更换 YouTube 标题和缩略图。";
+
+"DeArrow" = "DeArrow";

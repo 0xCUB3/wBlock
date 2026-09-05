@@ -117,6 +117,8 @@ enum BuiltInUserScripts {
         "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/greasemonkey/youtube-classic.user.js"
 
     static let tubeCleanerURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js"
+    static let deArrowURL = DeArrowPreference.scriptURL
+    static let deArrowDescription = "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives."
     static let playerCleanerURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/player-cleaner/dist/player-cleaner.user.js"
     static let darkReaderURL = DarkReaderAppearancePreference.scriptURL
     static let darkReaderDescription =
@@ -137,6 +139,14 @@ enum BuiltInUserScripts {
             url: tubeCleanerURL,
             isEnabledByDefault: false,
             description: tubeCleanerDescription,
+            displayRole: .functionality,
+            isBeta: true
+        ),
+        BuiltInUserScriptDefinition(
+            name: "DeArrow",
+            url: deArrowURL,
+            isEnabledByDefault: false,
+            description: deArrowDescription,
             displayRole: .functionality,
             isBeta: true
         ),
@@ -782,6 +792,10 @@ public class UserScriptManager: ObservableObject {
 
     public func isTubeCleaner(_ userScript: UserScript) -> Bool {
         TubeCleanerDeArrowPreference.matches(scriptURL: userScript.url)
+    }
+
+    public func isDeArrow(_ userScript: UserScript) -> Bool {
+        DeArrowPreference.matches(scriptURL: userScript.url)
     }
 
     public func setTubeCleanerDeArrow(_ settings: TubeCleanerDeArrowPreference.Settings) {
@@ -1659,7 +1673,10 @@ public class UserScriptManager: ObservableObject {
                 }
 
                 var newUserScript = UserScript(name: defaultScript.name, url: url, content: "")
-                newUserScript.isEnabled = defaultScript.isEnabledByDefault
+                let migrateDeArrow = defaultScript.url == DeArrowPreference.scriptURL
+                    && tubeCleanerDeArrow.enabled
+                    && userScripts.contains { isTubeCleaner($0) && $0.isEnabled }
+                newUserScript.isEnabled = defaultScript.isEnabledByDefault || migrateDeArrow
                 newUserScript.isLocal = false
                 newUserScript.description = defaultScript.description
                 newUserScript.version = ""
