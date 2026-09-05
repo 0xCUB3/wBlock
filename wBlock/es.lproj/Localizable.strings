@@ -1057,3 +1057,7 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Keep Blocking on These Sites" = "Seguir bloqueando en estos sitios";
 
 "Paused components continue working on these sites and their subdomains." = "Los componentes pausados siguen funcionando en estos sitios y sus subdominios.";
+
+"Last Update Check" = "Última búsqueda de actualizaciones";
+
+"Last Successful Update" = "Última actualización correcta";

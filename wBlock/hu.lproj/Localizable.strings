@@ -1057,3 +1057,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Keep Blocking on These Sites" = "Blokkolás folytatása ezeken a webhelyeken";
 
 "Paused components continue working on these sites and their subdomains." = "A szüneteltetett összetevők ezeken a webhelyeken és aldomainjeiken tovább működnek.";
+
+"Last Update Check" = "Utolsó frissítéskeresés";
+
+"Last Successful Update" = "Utolsó sikeres frissítés";

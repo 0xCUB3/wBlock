@@ -1057,3 +1057,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Keep Blocking on These Sites" = "Continuă blocarea pe aceste site-uri";
 
 "Paused components continue working on these sites and their subdomains." = "Componentele întrerupte continuă să funcționeze pe aceste site-uri și subdomeniile lor.";
+
+"Last Update Check" = "Ultima verificare a actualizărilor";
+
+"Last Successful Update" = "Ultima actualizare reușită";

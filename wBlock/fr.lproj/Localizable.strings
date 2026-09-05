@@ -1057,3 +1057,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Keep Blocking on These Sites" = "Continuer le blocage sur ces sites";
 
 "Paused components continue working on these sites and their subdomains." = "Les composants en pause restent actifs sur ces sites et leurs sous-domaines.";
+
+"Last Update Check" = "Dernière recherche de mises à jour";
+
+"Last Successful Update" = "Dernière mise à jour réussie";

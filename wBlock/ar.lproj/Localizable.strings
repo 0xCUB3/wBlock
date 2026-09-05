@@ -1057,3 +1057,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Keep Blocking on These Sites" = "متابعة الحظر على هذه المواقع";
 
 "Paused components continue working on these sites and their subdomains." = "تستمر المكونات المتوقفة مؤقتًا في العمل على هذه المواقع ونطاقاتها الفرعية.";
+
+"Last Update Check" = "آخر تحقق من التحديثات";
+
+"Last Successful Update" = "آخر تحديث ناجح";

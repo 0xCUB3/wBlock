@@ -460,14 +460,12 @@ struct SettingsView: View {
             }
             .disabled(filterManager.isLoading)
 
-            if autoUpdateEnabled {
-                NavigationLink {
-                    autoUpdateDiagnosticsDetail
-                } label: {
-                    Label("Background Diagnostics", systemImage: "stethoscope")
-                }
-            }
             #endif
+            NavigationLink {
+                autoUpdateDiagnosticsDetail
+            } label: {
+                Label("Background Diagnostics", systemImage: "stethoscope")
+            }
         } header: {
             #if os(macOS)
             HStack {
@@ -490,39 +488,31 @@ struct SettingsView: View {
                 if autoUpdateEnabled {
                     Text(nextScheduleLine)
                 }
-                #if os(macOS)
-                macOSAutoUpdateDiagnosticsView
-                #endif
             }
         }
     }
 
-    #if os(macOS)
-    @ViewBuilder
-    private var macOSAutoUpdateDiagnosticsView: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 4) {
-            Text("Background Diagnostics")
-                .fontWeight(.medium)
-            Text("·")
-            Text(launchAgentStatusLine)
-            if launchAgentNeedsApproval {
-                Button("Open Login Items") {
-                    AutoUpdateLaunchAgentManager.shared.openLoginItemsSettings()
-                }
-                .buttonStyle(.link)
-                .controlSize(.small)
-            }
-        }
-        .font(.caption)
-        .foregroundStyle(.secondary)
-    }
-    #endif
-
-    #if os(iOS)
     @ViewBuilder
     private var autoUpdateDiagnosticsDetail: some View {
         List {
             Section {
+                #if os(macOS)
+                diagnosticDetailView(title: "Background Update Agent", detail: launchAgentStatusLine)
+                if launchAgentNeedsApproval {
+                    Button("Open Login Items") {
+                        AutoUpdateLaunchAgentManager.shared.openLoginItemsSettings()
+                    }
+                }
+                diagnosticDetailView(
+                    title: "Auto-Update",
+                    detail: dataManager.autoUpdateIsRunning ? String(localized: "Updating…")
+                        : (autoUpdateEnabled ? String(localized: "Enabled") : String(localized: "Disabled"))
+                )
+                diagnosticDetailView(title: "Update Interval", detail: intervalDescription(hours: autoUpdateIntervalHours))
+                diagnosticDetailView(title: "Next", detail: nextScheduleLine)
+                diagnosticDetailView(title: "Last Update Check", detail: formatDiagnosticTime(dataManager.autoUpdateLastCheckTime))
+                diagnosticDetailView(title: "Last Successful Update", detail: formatDiagnosticTime(dataManager.autoUpdateLastSuccessfulTime))
+                #else
                 backgroundTaskDiagnosticsView(
                     title: "App Refresh Task",
                     diagnostics: autoUpdateDiagnostics.bgAppRefresh
@@ -531,15 +521,23 @@ struct SettingsView: View {
                     title: "Processing Task",
                     diagnostics: autoUpdateDiagnostics.bgProcessing
                 )
+                #endif
                 diagnosticDetailView(title: "Foreground Catch-up", detail: foregroundCatchUpDiagnosticsLine)
             } footer: {
+                #if os(iOS)
                 Text("Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app.")
+                #endif
             }
         }
         .navigationTitle("Background Diagnostics")
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .task {
+            _ = await dataManager.refreshFromDiskIfModified(forceRead: true)
+            await updateScheduleLine(shouldTriggerOverdue: false)
+        }
     }
-    #endif
 
     @ViewBuilder
     private func backgroundTaskDiagnosticsView(

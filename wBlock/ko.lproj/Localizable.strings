@@ -1057,3 +1057,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Keep Blocking on These Sites" = "이 사이트에서는 차단 유지";
 
 "Paused components continue working on these sites and their subdomains." = "일시 중지된 구성 요소가 이 사이트와 하위 도메인에서는 계속 작동합니다.";
+
+"Last Update Check" = "마지막 업데이트 확인";
+
+"Last Successful Update" = "마지막으로 성공한 업데이트";

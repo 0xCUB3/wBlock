@@ -1057,3 +1057,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Keep Blocking on These Sites" = "在這些網站上繼續封鎖";
 
 "Paused components continue working on these sites and their subdomains." = "已暫停的元件仍會在這些網站及其子網域上運作。";
+
+"Last Update Check" = "上次檢查更新";
+
+"Last Successful Update" = "上次成功更新";

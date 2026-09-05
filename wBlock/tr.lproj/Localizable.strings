@@ -1056,3 +1056,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Keep Blocking on These Sites" = "Bu sitelerde engellemeye devam et";
 
 "Paused components continue working on these sites and their subdomains." = "Duraklatılan bileşenler bu sitelerde ve alt alan adlarında çalışmaya devam eder.";
+
+"Last Update Check" = "Son güncelleme kontrolü";
+
+"Last Successful Update" = "Son başarılı güncelleme";

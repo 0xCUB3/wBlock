@@ -1057,3 +1057,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Keep Blocking on These Sites" = "Συνέχιση αποκλεισμού σε αυτούς τους ιστοτόπους";
 
 "Paused components continue working on these sites and their subdomains." = "Τα στοιχεία σε παύση συνεχίζουν να λειτουργούν σε αυτούς τους ιστοτόπους και τους υποτομείς τους.";
+
+"Last Update Check" = "Τελευταίος έλεγχος ενημερώσεων";
+
+"Last Successful Update" = "Τελευταία επιτυχής ενημέρωση";
