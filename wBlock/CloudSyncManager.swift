@@ -926,6 +926,25 @@ final class CloudSyncManager: ObservableObject {
         return left == right
     }
 
+    private static func customFilterEqualForSync(
+        _ lhs: SyncPayload.CustomFilterList?,
+        _ rhs: SyncPayload.CustomFilterList?
+    ) -> Bool {
+        switch (lhs, rhs) {
+        case (nil, nil): return true
+        case let (left?, right?):
+            return left.url == right.url
+                && left.name == right.name
+                && left.description == right.description
+                && left.category == right.category
+                && left.isSelected == right.isSelected
+                && left.content == right.content
+                && left.resolvedUserProvidedName == right.resolvedUserProvidedName
+                && left.resolvedUserProvidedDescription == right.resolvedUserProvidedDescription
+        default: return false
+        }
+    }
+
     private static func mergeStringSet(
         local: [String],
         baseline: [String],
@@ -968,7 +987,7 @@ final class CloudSyncManager: ObservableObject {
         )
         let customURLs = Set(baselineCustomByURL.keys).union(currentCustomByURL.keys)
         let locallyChangedCustomURLs = Set(customURLs.filter { url in
-            !encodedSectionEqual(currentCustomByURL[url], baselineCustomByURL[url])
+            !Self.customFilterEqualForSync(currentCustomByURL[url], baselineCustomByURL[url])
         })
 
         // Tombstones are a set-valued field: merge local and remote deltas instead of
@@ -1072,10 +1091,20 @@ final class CloudSyncManager: ObservableObject {
                             changed = true
                             nonSelectionChanged = true
                         }
+                        if filterManager.filterLists[existingIndex].hasUserProvidedName != remoteCustom.resolvedUserProvidedName {
+                            filterManager.filterLists[existingIndex].hasUserProvidedName = remoteCustom.resolvedUserProvidedName
+                            changed = true
+                            nonSelectionChanged = true
+                        }
                         if let desc = remoteCustom.description,
                            filterManager.filterLists[existingIndex].description != desc
                         {
                             filterManager.filterLists[existingIndex].description = desc
+                            changed = true
+                            nonSelectionChanged = true
+                        }
+                        if filterManager.filterLists[existingIndex].hasUserProvidedDescription != remoteCustom.resolvedUserProvidedDescription {
+                            filterManager.filterLists[existingIndex].hasUserProvidedDescription = remoteCustom.resolvedUserProvidedDescription
                             changed = true
                             nonSelectionChanged = true
                         }
@@ -1100,7 +1129,9 @@ final class CloudSyncManager: ObservableObject {
                             isCustom: true,
                             isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
                             description: remoteCustom.description ?? "User-added filter list.",
-                            sourceRuleCount: nil
+                            sourceRuleCount: nil,
+                            hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
+                            hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
                         )
                         filterManager.filterLists.append(newFilter)
                         changed = true
@@ -1115,7 +1146,9 @@ final class CloudSyncManager: ObservableObject {
                         isCustom: true,
                         isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
                         description: remoteCustom.description ?? "User-added filter list.",
-                        sourceRuleCount: nil
+                        sourceRuleCount: nil,
+                        hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
+                        hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
                     )
                     filterManager.filterLists.append(newFilter)
                     changed = true
@@ -1179,9 +1212,11 @@ final class CloudSyncManager: ObservableObject {
                 if updated.name != remoteCustom.name {
                     updated.name = remoteCustom.name
                 }
+                updated.hasUserProvidedName = remoteCustom.resolvedUserProvidedName
                 if let desc = remoteCustom.description, updated.description != desc {
                     updated.description = desc
                 }
+                updated.hasUserProvidedDescription = remoteCustom.resolvedUserProvidedDescription
                 if updated.category != remoteCategory {
                     updated.category = remoteCategory
                 }
@@ -1198,7 +1233,9 @@ final class CloudSyncManager: ObservableObject {
                     isCustom: true,
                     isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
                     description: remoteCustom.description ?? "User-added filter list.",
-                    sourceRuleCount: nil
+                    sourceRuleCount: nil,
+                    hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
+                    hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
                 )
                 storedLists.append(newFilter)
             }
@@ -1784,7 +1821,9 @@ final class CloudSyncManager: ObservableObject {
                         isCustom: true,
                         isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
                         description: remoteCustom.description ?? "User-added filter list.",
-                        sourceRuleCount: nil
+                        sourceRuleCount: nil,
+                        hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
+                        hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
                     )
                     filterManager.filterLists.append(newFilter)
                     changed = true
@@ -1810,7 +1849,9 @@ final class CloudSyncManager: ObservableObject {
                         isCustom: true,
                         isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
                         description: remoteCustom.description ?? "User-added filter list.",
-                        sourceRuleCount: nil
+                        sourceRuleCount: nil,
+                        hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
+                        hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
                     )
                     storedLists.append(newFilter)
                 }
@@ -1954,6 +1995,8 @@ final class CloudSyncManager: ObservableObject {
                     description: list.description.isEmpty ? nil : list.description,
                     category: list.category.rawValue,
                     isSelected: list.isSelected,
+                    userProvidedName: list.hasUserProvidedName,
+                    userProvidedDescription: list.hasUserProvidedDescription,
                     content: inlineContents[list.url.absoluteString]
                 )
             }
@@ -2545,8 +2588,20 @@ private struct SyncPayload: Codable {
         let description: String?
         let category: String?
         let isSelected: Bool
+        let userProvidedName: Bool?
+        let userProvidedDescription: Bool?
         /// Inline user list content (for wblock://userlist/<uuid> lists). Nil for URL-hosted lists.
         let content: String?
+
+        var resolvedUserProvidedName: Bool {
+            userProvidedName ?? true
+        }
+
+        var resolvedUserProvidedDescription: Bool {
+            if let userProvidedDescription { return userProvidedDescription }
+            let trimmed = description?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return !trimmed.isEmpty && trimmed != "User-added filter list."
+        }
     }
 
     struct Filters: Codable {

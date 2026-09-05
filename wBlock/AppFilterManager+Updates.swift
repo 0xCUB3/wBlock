@@ -23,6 +23,7 @@ extension AppFilterManager {
                 merged.isSelected = current.isSelected
                 merged.hasUserProvidedName = current.hasUserProvidedName
                 merged.description = current.description
+                merged.hasUserProvidedDescription = current.hasUserProvidedDescription
                 merged.excludedSites = current.excludedSites
                 newFilterLists[index] = merged
             }
@@ -171,10 +172,6 @@ extension AppFilterManager {
                 )
 
                 self.saveFilterListsCoalesced()
-
-                for filter in successfullyUpdatedFilters {
-                    self.availableUpdates.removeAll { $0.id == filter.id }
-                }
             }
 
             var successfullyUpdatedScripts: [UserScript] = []
@@ -201,9 +198,6 @@ extension AppFilterManager {
                     await Self.allowProgressUIRefresh()
                 }
 
-                let updatedIDs = Set(successfullyUpdatedScripts.map(\.id))
-                self.availableScriptUpdates.removeAll { updatedIDs.contains($0.id) }
-
                 let failedCount = selectedScripts.count - successfullyUpdatedScripts.count
                 self.applyProgressViewModel.updateScriptsUpdateResult(
                     updated: successfullyUpdatedScripts.count,
@@ -217,6 +211,14 @@ extension AppFilterManager {
             // Keep the existing progress sheet state so review → progress feels continuous,
             // and skip the automatic pre-apply update pass so the user's selection is respected.
             await self.applyChanges(prepareState: false, skipPreApplyUpdates: true)
+
+            if self.lastApplySucceeded && !self.hasError {
+                let updatedFilterIDs = Set(successfullyUpdatedFilters.map(\.id))
+                self.availableUpdates.removeAll { updatedFilterIDs.contains($0.id) }
+
+                let updatedScriptIDs = Set(successfullyUpdatedScripts.map(\.id))
+                self.availableScriptUpdates.removeAll { updatedScriptIDs.contains($0.id) }
+            }
         }
 
         if !started {

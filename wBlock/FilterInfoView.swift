@@ -74,10 +74,18 @@ struct FilterInfoView: View {
             VStack(alignment: .leading, spacing: 6) {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString("Filters", comment: "Content type"), color: .red)
                 InfoMetadataRow(title: "Category", value: liveFilter.category.localizedName)
-                if let author = cachedMetadata.author { InfoMetadataRow(title: "Author", value: author) }
-                if let homepage = cachedMetadata.homepage {
-                    InfoMetadataRow(title: "Homepage", value: homepage.absoluteString, url: homepage)
+                if liveFilter.isSelected, let submitted = liveFilter.uniqueRuleCount {
+                    InfoMetadataRow(title: "Submitted at last apply", value: submitted.formatted())
+                    Text("Submitted counts track source rules sent to the converter, not Safari’s final rule count.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
+                InfoMetadataRow(title: "Author", value: cachedMetadata.author ?? String(localized: "Not provided"))
+                InfoMetadataRow(
+                    title: "Homepage",
+                    value: cachedMetadata.homepage?.absoluteString ?? String(localized: "Not provided"),
+                    url: cachedMetadata.homepage
+                )
                 if !liveFilter.version.isEmpty { InfoMetadataRow(title: "Version", value: liveFilter.version) }
                 if liveFilter.url.scheme?.lowercased() == "http" || liveFilter.url.scheme?.lowercased() == "https" {
                     InfoMetadataRow(title: "Source URL", value: liveFilter.url.absoluteString, url: liveFilter.url)

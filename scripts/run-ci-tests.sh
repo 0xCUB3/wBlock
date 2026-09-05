@@ -132,6 +132,8 @@ compile_direct_test filter-update-popup-status \
 compile_core_test filter-selection-rebase scripts/test_filter_selection_rebase.swift
 compile_core_test filter-list-site-exclusion scripts/test_filter_list_site_exclusion.swift
 compile_core_test issue-645-compile-order scripts/test_issue_645_compile_order.swift
+compile_core_test compilation-provenance scripts/test_compilation_provenance.swift
+compile_core_test issue-729-headless-rebuild-gate scripts/test_issue_729_headless_rebuild_gate.swift
 compile_core_test filter-catalog-remote scripts/test_filter_catalog_remote.swift
 compile_core_test filter-list-fetch-chain scripts/test_filter_list_fetch_chain.swift
 compile_core_test issue-508-backup scripts/test_issue_508_backup_userscript.swift
@@ -151,6 +153,14 @@ compile_core_test zapper-native-rules scripts/test_zapper_native_rule_generator.
 compile_direct_test issue-508-protobuf-roundtrip \
   -I "$CORE_PRODUCTS" "$CORE_PRODUCTS/SwiftProtobuf.o" \
   wBlockCoreService/DataModels.pb.swift scripts/test_issue_508_protobuf_roundtrip.swift
+compile_direct_test issue-742-provenance-migration \
+  -I "$CORE_PRODUCTS" "$CORE_PRODUCTS/SwiftProtobuf.o" \
+  wBlockCoreService/DataModels.pb.swift \
+  wBlockCoreService/DisabledSitesNormalizer.swift \
+  wBlockCoreService/FilterListCategory.swift \
+  wBlockCoreService/FilterListSiteExclusion.swift \
+  wBlockCoreService/FilterList.swift \
+  scripts/test_issue_742_provenance_migration.swift
 compile_direct_test userscript-persistence-race \
   -I "$CORE_PRODUCTS" "$CORE_PRODUCTS/SwiftProtobuf.o" \
   wBlockCoreService/DataModels.pb.swift \
@@ -234,6 +244,11 @@ compile_and_run pause-store \
   wBlockCoreService/BlockingPauseStore.swift \
   scripts/test_issue_508_pause_store.swift
 
+compile_and_run pending-filter-update-revisions \
+  wBlockCoreService/GroupIdentifier.swift \
+  wBlockCoreService/PendingFilterUpdateRevisions.swift \
+  scripts/test_pending_filter_update_revisions.swift
+
 compile_and_run bounded-concurrency \
   wBlockCoreService/AsyncConcurrency.swift \
   scripts/test_bounded_concurrent_compact_map.swift
@@ -241,5 +256,21 @@ compile_and_run bounded-concurrency \
 compile_and_run filter-validation \
   wBlockCoreService/FilterListValidation.swift \
   scripts/test_filter_list_validation.swift
+
+compile_and_run filter-remote-metadata-policy \
+  wBlockCoreService/DisabledSitesNormalizer.swift \
+  wBlockCoreService/FilterListCategory.swift \
+  wBlockCoreService/FilterListSiteExclusion.swift \
+  wBlockCoreService/FilterList.swift \
+  scripts/test_filter_list_remote_metadata_policy.swift
+
+compile_and_run remote-filter-metadata \
+  wBlockCoreService/DisabledSitesNormalizer.swift \
+  wBlockCoreService/FilterListCategory.swift \
+  wBlockCoreService/FilterListSiteExclusion.swift \
+  wBlockCoreService/FilterList.swift \
+  wBlockCoreService/Utils.swift \
+  wBlockCoreService/RemoteFilterListMetadataLoader.swift \
+  scripts/test_remote_filter_list_metadata_loader.swift
 
 echo "All CI tests passed"

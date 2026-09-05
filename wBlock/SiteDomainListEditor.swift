@@ -23,6 +23,7 @@ struct SiteDomainListEditor: View {
                     .keyboardType(.URL)
                     #endif
                     .onSubmit { add() }
+                #if os(macOS)
                 if !knownSites.isEmpty {
                     Menu {
                         ForEach(knownSites.filter { !sites.contains($0) }, id: \.self) { site in
@@ -31,6 +32,7 @@ struct SiteDomainListEditor: View {
                     } label: { Image(systemName: "list.bullet") }
                     .accessibilityLabel("Site Settings")
                 }
+                #endif
                 Button(action: add) { Image(systemName: "plus.circle.fill") }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Add")

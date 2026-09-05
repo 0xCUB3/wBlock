@@ -176,7 +176,9 @@ final class FilterListUpdater: @unchecked Sendable {
         let eligibleFilters = filterLists
         var validatorsMap: [UUID: (etag: String?, lastModified: String?)] = [:]
         for filter in eligibleFilters {
-            validatorsMap[filter.id] = await storedValidators(for: filter)
+            validatorsMap[filter.id] = loader.filterFileExists(filter)
+                ? await storedValidators(for: filter)
+                : (etag: nil, lastModified: nil)
         }
 
         // Freeze the preflight map before capturing it in concurrent child tasks.
@@ -209,6 +211,17 @@ final class FilterListUpdater: @unchecked Sendable {
         let updates = await pendingValidatorUpdates.drain()
         if !updates.isEmpty {
             await ProtobufDataManager.shared.setFilterValidators(updates)
+        }
+
+        let pendingAppliedIDs = PendingFilterUpdateRevisions.pendingFilterIDs(
+            selectedFilterIDs: Set(eligibleFilters.map { $0.id.uuidString })
+        )
+        if !pendingAppliedIDs.isEmpty {
+            let existingUpdateIDs = Set(filtersWithUpdates.map(\.id))
+            for filter in eligibleFilters where pendingAppliedIDs.contains(filter.id.uuidString)
+                && !existingUpdateIDs.contains(filter.id) {
+                filtersWithUpdates.append(filter)
+            }
         }
 
         return filtersWithUpdates
@@ -336,8 +349,14 @@ final class FilterListUpdater: @unchecked Sendable {
         if let cached = await pendingDownloads.take(filter.id) {
             return await processDownloadedFilter(filter, download: cached)
         }
+        if PendingFilterUpdateRevisions.contains(filterID: filter.id.uuidString),
+           loader.filterFileExists(filter) {
+            return .unchanged
+        }
         do {
-            let validators = await storedValidators(for: filter)
+            let validators = loader.filterFileExists(filter)
+                ? await storedValidators(for: filter)
+                : (etag: nil, lastModified: nil)
             
             let result = try await FilterListFetchChain.fetch(
                 session: urlSession, primaryURL: filter.url,
@@ -449,14 +468,12 @@ final class FilterListUpdater: @unchecked Sendable {
         }
 
         let metadata = parseMetadata(from: preprocessed)
-        var updatedFilter = filter
-        if filter.isCustom, !filter.hasUserProvidedName, let title = metadata.title, !title.isEmpty {
-            updatedFilter.name = title
-        }
-        updatedFilter.version = metadata.version ?? "Unknown"
-        if let description = metadata.description, !description.isEmpty {
-            updatedFilter.description = description
-        }
+        var updatedFilter = FilterListRemoteMetadataPolicy.applying(
+            title: metadata.title,
+            description: metadata.description,
+            version: metadata.version,
+            to: filter
+        )
         updatedFilter.sourceRuleCount = countRulesInContent(content: preprocessed)
         updatedFilter.rawSourceRuleCount = rawCount
         updatedFilter.lastUpdated = Date()
@@ -473,13 +490,39 @@ final class FilterListUpdater: @unchecked Sendable {
         let fileURL = containerURL.appendingPathComponent(
             ContentBlockerIncrementalCache.localFilename(for: filter)
         )
+        let stagedFileURL = containerURL.appendingPathComponent(
+            ".pending-filter-\(uuid)-\(UUID().uuidString).txt",
+            isDirectory: false
+        )
         do {
-            try preprocessed.write(to: fileURL, atomically: true, encoding: .utf8)
+            try preprocessed.write(to: stagedFileURL, atomically: true, encoding: .utf8)
         } catch {
             await ConcurrentLogManager.shared.error(
                 .system,
                 LocalizedStrings.text("Failed to save downloaded filter"),
                 metadata: ["filter": filter.name, "error": LogErrorDescriber.describe(error)]
+            )
+            return .failed
+        }
+
+        guard PendingFilterUpdateRevisions.markDownloaded(
+            filterID: uuid,
+            etag: responseEtag,
+            lastModified: responseLastModified,
+            version: updatedFilter.version.isEmpty ? nil : updatedFilter.version,
+            publish: {
+                if FileManager.default.fileExists(atPath: fileURL.path) {
+                    _ = try FileManager.default.replaceItemAt(fileURL, withItemAt: stagedFileURL)
+                } else {
+                    try FileManager.default.moveItem(at: stagedFileURL, to: fileURL)
+                }
+            }
+        ) != nil else {
+            try? FileManager.default.removeItem(at: stagedFileURL)
+            await ConcurrentLogManager.shared.error(
+                .system,
+                LocalizedStrings.text("Failed to persist pending filter update revision"),
+                metadata: ["filter": filter.name]
             )
             return .failed
         }
@@ -501,13 +544,18 @@ final class FilterListUpdater: @unchecked Sendable {
                 // configuration changed while the download was in flight.
                 var merged = finalFilter
                 let current = filterListManager!.filterLists[index]
-                merged.name = current.name
                 merged.url = current.url
                 merged.category = current.category
                 merged.isCustom = current.isCustom
                 merged.isSelected = current.isSelected
+                if current.hasUserProvidedName {
+                    merged.name = current.name
+                }
                 merged.hasUserProvidedName = current.hasUserProvidedName
-                merged.description = current.description
+                if current.hasUserProvidedDescription {
+                    merged.description = current.description
+                }
+                merged.hasUserProvidedDescription = current.hasUserProvidedDescription
                 merged.excludedSites = current.excludedSites
                 filterListManager?.filterLists[index] = merged
                 filterListManager?.objectWillChange.send()

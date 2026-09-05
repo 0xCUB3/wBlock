@@ -1089,3 +1089,26 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This script will not run on these sites. Other scripts still run." = "此指令碼不會在這些網站上執行。其他指令碼仍會執行。";
 
 "Operation details" = "操作詳情";
+
+/* Native name; keep in Montenegrin in every display language. */
+"crnogorski" = "crnogorski";
+
+"URL entry mode" = "URL 輸入模式";
+"Single URL" = "單一 URL";
+"Bulk URLs" = "批次 URL";
+"Enter URLs to edit each list’s name and description." = "輸入 URL 以編輯每個列表的名稱和描述。";
+"Names and descriptions" = "名稱和描述";
+"Paste URL" = "貼上 URL";
+"Paste URLs" = "貼上 URL";
+"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "已加入的網站會略過過濾列表和 scriptlet。使用者腳本有獨立的開關。";
+"Enable on this site" = "在此網站啟用";
+"Unavailable while this site is disabled." = "此網站停用時無法使用。";
+"Applies filter lists and scriptlets. Userscripts have separate switches." = "套用過濾列表和 scriptlet。使用者腳本有獨立的開關。";
+"Not provided" = "未提供";
+
+"(%@ submitted at last apply)" = "（上次套用時提交了 %@ 條）";
+
+"Submitted at last apply" = "上次套用時提交";
+
+"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "提交數量統計的是傳送給轉換器的來源規則，而非 Safari 的最終規則數量。";
+"Failed to persist pending filter update revision" = "無法儲存待套用的過濾器更新";

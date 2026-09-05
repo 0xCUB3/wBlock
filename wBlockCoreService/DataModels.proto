@@ -62,9 +62,17 @@ message FilterListData {
   bool is_custom = 10;
   string local_file_path = 11;
   repeated string excluded_sites = 12;
-  // Rules this list contributes that no earlier list in compile order already
-  // supplies (#644). Recomputed after each successful apply.
+  // Field 13 held legacy pre-provenance unique-count estimates. It is no
+  // longer read as admitted provenance so old saves do not become mislabeled
+  // as submitted/admitted counts after upgrade.
   optional int32 unique_rule_count = 13;
+  // Whether custom URL import metadata was supplied by the user and should
+  // survive future remote header refreshes.
+  optional bool user_provided_name = 14;
+  optional bool user_provided_description = 15;
+  // Source rule lines admitted for this list by the last confirmed apply.
+  // Converter output is still only known exactly per target.
+  optional int32 admitted_source_rule_count = 16;
 }
 
 // Filter list categories

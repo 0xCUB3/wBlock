@@ -183,6 +183,7 @@ struct OnboardingView: View {
         .interactiveDismissDisabled(!hasCompletedOnboarding)
     #if os(macOS)
         .frame(minWidth: 440, maxWidth: 540, minHeight: 620, maxHeight: 820)
+        .environment(\.controlActiveState, .active)
     #endif
     #if os(iOS)
         .background(
@@ -308,7 +309,7 @@ struct OnboardingView: View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "shield.lefthalf.filled")
                     .font(.title2)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.accentColor)
                     .symbolRenderingMode(.hierarchical)
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -378,7 +379,7 @@ struct OnboardingView: View {
                 }
             }
             .buttonStyle(.borderedProminent)
-            .tint(step == .welcome ? .blue : nil)
+            .tint(step == .welcome ? .accentColor : nil)
             .disabled(footerButtonDisabled)
             .keyboardShortcut(.defaultAction)
         }
@@ -1106,7 +1107,7 @@ struct OnboardingView: View {
                     .font(.headline)
             } icon: {
                 Image(systemName: "icloud")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.accentColor)
             }
 
             Toggle("Sync across devices", isOn: $wantsCloudSync)

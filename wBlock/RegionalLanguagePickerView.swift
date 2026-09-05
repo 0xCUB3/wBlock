@@ -12,7 +12,9 @@ struct RegionalLanguageOption: Identifiable, Hashable {
         "zh": ["中文", "Chinese", "zh"],
         "pt": ["português", "Portuguese", "portugues"],
         "ru": ["русский", "Russian"],
-        "ar": ["العربية", "Arabic"]
+        "ar": ["العربية", "Arabic"],
+        "fa": ["Persian", "Farsi", "Dari", "فارسی", "پارسی", "دری", "فارسي", "پارسي"],
+        "cnr": ["Montenegrin", "crnogorski", "црногорски"]
     ]
 
     let code: String
@@ -24,7 +26,9 @@ struct RegionalLanguageOption: Identifiable, Hashable {
 
     /// The language's own name, which is what the rows show.
     var nativeName: String {
-        Locale(identifier: code).localizedString(forLanguageCode: code) ?? name
+        // ICU does not provide a native display name for Montenegrin.
+        if code == "cnr" { return String(localized: "crnogorski") }
+        return Locale(identifier: code).localizedString(forLanguageCode: code) ?? name
     }
 
     var aliases: [String] { Self.aliasesByCode[code] ?? [] }

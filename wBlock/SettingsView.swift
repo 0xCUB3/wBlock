@@ -62,6 +62,9 @@ struct SettingsView: View {
 
     var body: some View {
         settingsContent
+        #if os(macOS)
+        .environment(\.controlActiveState, .active)
+        #endif
         .task {
             await updateScheduleLine()
             await MainActor.run { startTimer() }

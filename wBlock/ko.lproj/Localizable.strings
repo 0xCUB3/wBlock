@@ -1089,3 +1089,26 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This script will not run on these sites. Other scripts still run." = "이 스크립트는 해당 사이트에서 실행되지 않습니다. 다른 스크립트는 계속 실행됩니다.";
 
 "Operation details" = "작업 세부 정보";
+
+/* Native name; keep in Montenegrin in every display language. */
+"crnogorski" = "crnogorski";
+
+"URL entry mode" = "URL 입력 모드";
+"Single URL" = "단일 URL";
+"Bulk URLs" = "여러 URL";
+"Enter URLs to edit each list’s name and description." = "각 목록의 이름과 설명을 편집하려면 URL을 입력하세요.";
+"Names and descriptions" = "이름 및 설명";
+"Paste URL" = "URL 붙여넣기";
+"Paste URLs" = "URL 붙여넣기";
+"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "추가한 사이트는 필터 목록과 스크립틀릿을 건너뜁니다. 유저스크립트에는 별도의 스위치가 있습니다.";
+"Enable on this site" = "이 사이트에서 활성화";
+"Unavailable while this site is disabled." = "이 사이트가 비활성화되어 있는 동안에는 사용할 수 없습니다.";
+"Applies filter lists and scriptlets. Userscripts have separate switches." = "필터 목록과 스크립틀릿을 적용합니다. 유저스크립트에는 별도의 스위치가 있습니다.";
+"Not provided" = "제공되지 않음";
+
+"(%@ submitted at last apply)" = "(마지막 적용 시 %@개 전달)";
+
+"Submitted at last apply" = "마지막 적용 시 전달";
+
+"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "전달 수는 변환기에 보낸 원본 규칙 수이며, Safari의 최종 규칙 수가 아닙니다.";
+"Failed to persist pending filter update revision" = "대기 중인 필터 업데이트를 저장하지 못했습니다";

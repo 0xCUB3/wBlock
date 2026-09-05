@@ -238,7 +238,7 @@ struct ApplyChangesProgressView: View {
                     }
                 }
             }
-            .liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)
+            .updateReviewSectionBackgroundCompat(cornerRadius: 12)
         }
     }
 
@@ -467,6 +467,19 @@ struct ApplyChangesProgressView: View {
 }
 
 private extension View {
+    @ViewBuilder
+    func updateReviewSectionBackgroundCompat(cornerRadius: CGFloat) -> some View {
+        #if os(iOS)
+        self.background(.regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            }
+        #else
+        self.liquidGlassCompat(cornerRadius: cornerRadius, material: .regularMaterial)
+        #endif
+    }
+
     @ViewBuilder
     func updateAndApplyButtonStyle() -> some View {
         #if os(iOS)

@@ -1089,3 +1089,26 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This script will not run on these sites. Other scripts still run." = "Αυτό το σενάριο δεν θα εκτελείται σε αυτούς τους ιστοτόπους. Τα άλλα σενάρια θα συνεχίσουν να εκτελούνται.";
 
 "Operation details" = "Λεπτομέρειες λειτουργίας";
+
+/* Native name; keep in Montenegrin in every display language. */
+"crnogorski" = "crnogorski";
+
+"URL entry mode" = "Λειτουργία εισαγωγής URL";
+"Single URL" = "Μεμονωμένο URL";
+"Bulk URLs" = "Πολλαπλά URL";
+"Enter URLs to edit each list’s name and description." = "Εισαγάγετε URL για να επεξεργαστείτε το όνομα και την περιγραφή κάθε λίστας.";
+"Names and descriptions" = "Ονόματα και περιγραφές";
+"Paste URL" = "Επικόλληση URL";
+"Paste URLs" = "Επικόλληση URL";
+"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "Οι ιστότοποι που προστίθενται παραλείπουν τις λίστες φίλτρων και τα scriptlet. Τα userscript έχουν ξεχωριστούς διακόπτες.";
+"Enable on this site" = "Ενεργοποίηση σε αυτόν τον ιστότοπο";
+"Unavailable while this site is disabled." = "Δεν είναι διαθέσιμο όσο αυτός ο ιστότοπος είναι απενεργοποιημένος.";
+"Applies filter lists and scriptlets. Userscripts have separate switches." = "Εφαρμόζει λίστες φίλτρων και scriptlet. Τα userscript έχουν ξεχωριστούς διακόπτες.";
+"Not provided" = "Δεν παρέχεται";
+
+"(%@ submitted at last apply)" = "(%@ υποβλήθηκαν στην τελευταία εφαρμογή)";
+
+"Submitted at last apply" = "Υποβλήθηκαν στην τελευταία εφαρμογή";
+
+"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Η καταμέτρηση αφορά τους αρχικούς κανόνες που στάλθηκαν στον μετατροπέα, όχι το τελικό πλήθος κανόνων του Safari.";
+"Failed to persist pending filter update revision" = "Δεν ήταν δυνατή η αποθήκευση της εκκρεμούς ενημέρωσης φίλτρου";

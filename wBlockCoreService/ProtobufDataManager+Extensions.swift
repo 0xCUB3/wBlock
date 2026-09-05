@@ -50,9 +50,11 @@ extension ProtobufDataManager {
             }
             protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
             protoFilterList.isCustom = shouldPersistCustomFlag(for: filter)
+            protoFilterList.userProvidedName = filter.hasUserProvidedName
+            protoFilterList.userProvidedDescription = filter.hasUserProvidedDescription
             protoFilterList.excludedSites = filter.excludedSites
             if let uniqueRuleCount = filter.uniqueRuleCount {
-                protoFilterList.uniqueRuleCount = Int32(uniqueRuleCount)
+                protoFilterList.admittedSourceRuleCount = Int32(uniqueRuleCount)
             }
             return protoFilterList
         }
@@ -199,12 +201,33 @@ extension ProtobufDataManager {
                 description: protoData.description_p,
                 version: protoData.version,
                 sourceRuleCount: protoData.hasSourceRuleCount ? Int(protoData.sourceRuleCount) : nil,
+                hasUserProvidedName: protoData.hasUserProvidedName
+                    ? protoData.userProvidedName
+                    : Self.inferLegacyUserProvidedName(protoData, isCustom: isCustom),
+                hasUserProvidedDescription: protoData.hasUserProvidedDescription
+                    ? protoData.userProvidedDescription
+                    : Self.inferLegacyUserProvidedDescription(protoData, isCustom: isCustom),
                 excludedSites: Array(protoData.excludedSites),
-                uniqueRuleCount: protoData.hasUniqueRuleCount ? Int(protoData.uniqueRuleCount) : nil
+                uniqueRuleCount: protoData.hasAdmittedSourceRuleCount ? Int(protoData.admittedSourceRuleCount) : nil
             )
         }
     }
     
+    private static func inferLegacyUserProvidedName(_ protoData: Wblock_Data_FilterListData, isCustom: Bool) -> Bool {
+        isCustom && isRemoteFilterURL(protoData.url)
+    }
+
+    private static func inferLegacyUserProvidedDescription(_ protoData: Wblock_Data_FilterListData, isCustom: Bool) -> Bool {
+        guard isCustom, isRemoteFilterURL(protoData.url) else { return false }
+        let description = protoData.description_p.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !description.isEmpty && description != "User-added filter list."
+    }
+
+    private static func isRemoteFilterURL(_ rawValue: String) -> Bool {
+        guard let scheme = URL(string: rawValue)?.scheme?.lowercased() else { return false }
+        return scheme == "http" || scheme == "https"
+    }
+
     public func removeFilterList(withId id: UUID) async {
         _ = await updateDataImmediately(explicitlyDeletedFilterIDs: [id.uuidString]) { data in
             data.filterLists.removeAll { $0.id == id.uuidString }

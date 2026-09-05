@@ -130,29 +130,23 @@ extension View {
         }
     }
 
-    /// Info popups hold a handful of rows, so on iPhone they open at half height
-    /// and can be pulled up when a long description needs it (#619).
+    /// Info popups open fully expanded so filters and userscripts use the same
+    /// starting height and do not hide metadata behind a collapsed detent (#739).
     @ViewBuilder
     func infoSheetPresentationCompat() -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {
-            presentationDetents([.medium, .large])
+            presentationDetents([.large])
                 .presentationDragIndicator(.visible)
         } else {
             self
         }
     }
 
-    /// Userscript info holds more rows than filter info (badges, auto-update
-    /// toggle, file size, source URL, patterns), so the half-height detent
-    /// clipped it on iPhone. It opens taller and can still be pulled to full.
+    /// Backward-compatible name for callers that used the old userscript-only
+    /// height. It now matches every other info sheet.
     @ViewBuilder
     func tallInfoSheetPresentationCompat() -> some View {
-        if #available(iOS 16.0, macOS 13.0, *) {
-            presentationDetents([.fraction(0.78), .large])
-                .presentationDragIndicator(.visible)
-        } else {
-            self
-        }
+        infoSheetPresentationCompat()
     }
 
     @ViewBuilder

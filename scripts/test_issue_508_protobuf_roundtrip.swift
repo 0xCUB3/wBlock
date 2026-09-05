@@ -24,6 +24,35 @@ struct Issue508ProtobufRoundTripTests {
             fatalError("protobuf round trip did not preserve local import identity and category")
         }
 
+        var filter = Wblock_Data_FilterListData()
+        filter.id = UUID().uuidString
+        filter.name = "Manual Filter"
+        filter.url = "https://example.com/filter.txt"
+        filter.category = .custom
+        filter.userProvidedName = true
+        filter.userProvidedDescription = true
+
+        let decodedFilter = try Wblock_Data_FilterListData(serializedBytes: filter.serializedData())
+        guard decodedFilter.userProvidedName,
+              decodedFilter.userProvidedDescription,
+              decodedFilter.hasUserProvidedName,
+              decodedFilter.hasUserProvidedDescription
+        else {
+            fatalError("protobuf round trip did not preserve custom filter user metadata flags")
+        }
+
+        var legacyFilter = Wblock_Data_FilterListData()
+        legacyFilter.id = UUID().uuidString
+        legacyFilter.name = "Legacy Filter"
+        legacyFilter.url = "https://example.com/legacy.txt"
+        legacyFilter.category = .custom
+        let decodedLegacyFilter = try Wblock_Data_FilterListData(serializedBytes: legacyFilter.serializedData())
+        guard !decodedLegacyFilter.hasUserProvidedName,
+              !decodedLegacyFilter.hasUserProvidedDescription
+        else {
+            fatalError("legacy filter protobuf payload unexpectedly gained additive user metadata flags")
+        }
+
         var legacy = Wblock_Data_UserScriptData()
         legacy.id = UUID().uuidString
         legacy.name = "Legacy"

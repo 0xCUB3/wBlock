@@ -38,6 +38,9 @@ struct WBlockBackup: Codable, Sendable {
         var category: String
         var isSelected: Bool
         var description: String
+        var userProvidedName: Bool?
+        var userProvidedDescription: Bool?
+        var admittedSourceRuleCount: Int?
         var content: String?
     }
 
@@ -300,6 +303,9 @@ enum BackupManager {
                     category: filter.category.rawValue,
                     isSelected: filter.isSelected,
                     description: filter.description,
+                    userProvidedName: filter.hasUserProvidedName,
+                    userProvidedDescription: filter.hasUserProvidedDescription,
+                    admittedSourceRuleCount: filter.uniqueRuleCount,
                     content: content
                 )
             }
@@ -384,6 +390,7 @@ enum BackupManager {
         for selection in backup.filterSelections {
             if let index = lists.firstIndex(where: { $0.url.absoluteString == selection.url }) {
                 lists[index].isSelected = selection.isSelected
+                lists[index].uniqueRuleCount = nil
             }
         }
         filterManager.filterLists = lists
@@ -398,9 +405,14 @@ enum BackupManager {
                     && filterManager.filterLists[index].url.absoluteString == entry.url
             }
             if !matchingIndices.isEmpty {
-                for index in matchingIndices where filterManager.filterLists[index].isSelected != entry.isSelected {
-                    filterManager.filterLists[index].isSelected = entry.isSelected
-                    existingCustomSelectionChanged = true
+                for index in matchingIndices {
+                    let restoredCount = entry.admittedSourceRuleCount
+                    if filterManager.filterLists[index].isSelected != entry.isSelected
+                        || filterManager.filterLists[index].uniqueRuleCount != restoredCount {
+                        filterManager.filterLists[index].isSelected = entry.isSelected
+                        filterManager.filterLists[index].uniqueRuleCount = restoredCount
+                        existingCustomSelectionChanged = true
+                    }
                 }
                 continue
             }
@@ -420,8 +432,18 @@ enum BackupManager {
                     name: entry.name,
                     urlString: entry.url,
                     category: category,
-                    isSelected: entry.isSelected
+                    hasUserProvidedName: entry.userProvidedName ?? true,
+                    hasUserProvidedDescription: entry.userProvidedDescription ?? !entry.description.isEmpty,
+                    isSelected: entry.isSelected,
+                    description: entry.description.isEmpty ? nil : entry.description
                 )
+            }
+
+            if let index = filterManager.filterLists.firstIndex(where: { filter in
+                filter.isCustom && filter.url.absoluteString == entry.url
+            }) {
+                filterManager.filterLists[index].uniqueRuleCount = entry.admittedSourceRuleCount
+                existingCustomSelectionChanged = true
             }
         }
         if existingCustomSelectionChanged {

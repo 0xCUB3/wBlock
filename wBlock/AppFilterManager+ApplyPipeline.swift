@@ -393,6 +393,10 @@ extension AppFilterManager {
                     self.persistUpgradeRebuildSignature()
                     self.clearFailedUpgradeRebuildSignature()
                     self.commitApplySnapshot(runSnapshot)
+                    let deselectedAppliedIDs = Set(self.filterLists.filter {
+                        previouslyAppliedFilterIDs.contains($0.id) && !$0.isSelected
+                    }.map { $0.id.uuidString })
+                    PendingFilterUpdateRevisions.remove(filterIDs: deselectedAppliedIDs)
                 }
             }
             return
@@ -548,6 +552,9 @@ extension AppFilterManager {
         let generatedZapperRulesText = generatedZapperRules.isEmpty
             ? nil
             : generatedZapperRules.joined(separator: "\n")
+        let pendingRevisionSnapshot = PendingFilterUpdateRevisions.snapshot(
+            filterIDs: Set(allSelectedFilters.map { $0.id.uuidString })
+        )
 
         if allSelectedFilters.isEmpty && generatedZapperRules.isEmpty {
             await MainActor.run {
@@ -576,11 +583,21 @@ extension AppFilterManager {
                     self.persistUpgradeRebuildSignature()
                     self.clearFailedUpgradeRebuildSignature()
                     self.commitApplySnapshot(runSnapshot)
+                    let deselectedAppliedIDs = Set(self.filterLists.filter {
+                        previouslyAppliedFilterIDs.contains($0.id) && !$0.isSelected
+                    }.map { $0.id.uuidString })
+                    PendingFilterUpdateRevisions.remove(filterIDs: deselectedAppliedIDs)
                     self.lastRuleCount = 0
                     self.ruleCountsByExtension.removeAll()
                     self.extensionsApproachingLimit.removeAll()
+                    for index in self.filterLists.indices {
+                        self.filterLists[index].uniqueRuleCount = nil
+                    }
                     self.saveRuleCounts()
                 }
+            }
+            if cleared && cleanupSucceeded {
+                await saveFilterLists()
             }
             return
         }
@@ -696,6 +713,7 @@ extension AppFilterManager {
         }
         let groupIdentifier = GroupIdentifier.shared.value
         var conversionCompletions: [ContentBlockerTargetInfo: TargetConversionCompletion] = [:]
+        var appliedSourceRuleCountsByFilterID: [UUID: Int] = [:]
 
         await boundedConcurrentForEach(
             conversionWork,
@@ -874,6 +892,10 @@ extension AppFilterManager {
                 )
             )
 
+
+            for (filterID, count) in conversionResult.admittedSourceRuleCountsByFilterID {
+                appliedSourceRuleCountsByFilterID[filterID, default: 0] += count
+            }
 
             overallSafariRulesApplied += ruleCountForThisTarget
         }
@@ -1075,6 +1097,7 @@ extension AppFilterManager {
             allReloadsSuccessful && advancedEngineSucceeded && !self.hasError
         }
         if applySucceeded {
+            PendingFilterUpdateRevisions.acknowledge(pendingRevisionSnapshot)
             // Cleanup is deliberately post-success: a failed conversion/reload/engine publish
             // must leave the previous downloadable baseline and validators intact.
             let cleanupSucceeded = await clearDownloadedStateForDeselectedRemoteFilters(
@@ -1088,7 +1111,10 @@ extension AppFilterManager {
                     self.commitApplySnapshot(runSnapshot)
                 }
             }
-            await refreshUniqueRuleCounts(for: allSelectedFilters)
+            await refreshAppliedSourceRuleCounts(
+                for: allSelectedFilters,
+                admittedCountsByFilterID: appliedSourceRuleCountsByFilterID
+            )
         }
 
         // Keep showingApplyProgressSheet = true until user dismisses it if it was successful or had errors.
@@ -1424,25 +1450,20 @@ extension AppFilterManager {
         let failureReason: String?
     }
 
-    /// Recomputes how many rules each enabled list contributes beyond the lists
-    /// compiled before it (#644). Runs off the main actor after a successful
-    /// apply; the row shows it next to the raw count when the two differ.
-    private func refreshUniqueRuleCounts(for selectedFilters: [FilterList]) async {
-        guard let containerURL = loader.getSharedContainerURL() else { return }
-        let counts = await Task.detached(priority: .utility) {
-            ContentBlockerMappingService.uniqueRuleCounts(for: selectedFilters) { filter in
-                guard let url = ContentBlockerIncrementalCache.existingLocalFileURL(for: filter, containerURL: containerURL) else {
-                    return nil
-                }
-                return try? String(contentsOf: url, encoding: .utf8)
-            }
-        }.value
-        guard !counts.isEmpty else { return }
+    /// Stores per-list source rule counts only when they came from the compile
+    /// pipeline's target outcomes. Missing counts are cleared instead of
+    /// carrying forward stale estimates.
+    private func refreshAppliedSourceRuleCounts(
+        for selectedFilters: [FilterList],
+        admittedCountsByFilterID: [UUID: Int]
+    ) async {
+        let selectedIDs = Set(selectedFilters.map(\.id))
         await MainActor.run {
             for index in self.filterLists.indices {
-                if let count = counts[self.filterLists[index].id] {
+                let filterID = self.filterLists[index].id
+                if let count = admittedCountsByFilterID[filterID] {
                     self.filterLists[index].uniqueRuleCount = count
-                } else if !self.filterLists[index].isSelected {
+                } else if selectedIDs.contains(filterID) || !self.filterLists[index].isSelected {
                     self.filterLists[index].uniqueRuleCount = nil
                 }
             }

@@ -1089,3 +1089,26 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This script will not run on these sites. Other scripts still run." = "Этот скрипт не будет выполняться на этих сайтах. Остальные скрипты продолжат работу.";
 
 "Operation details" = "Сведения об операции";
+
+/* Native name; keep in Montenegrin in every display language. */
+"crnogorski" = "crnogorski";
+
+"URL entry mode" = "Режим ввода URL";
+"Single URL" = "Один URL";
+"Bulk URLs" = "Несколько URL";
+"Enter URLs to edit each list’s name and description." = "Введите URL-адреса, чтобы изменить имя и описание каждого списка.";
+"Names and descriptions" = "Имена и описания";
+"Paste URL" = "Вставить URL";
+"Paste URLs" = "Вставить URL-адреса";
+"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "Добавленные сайты пропускают списки фильтров и скриптлеты. Для пользовательских скриптов есть отдельные переключатели.";
+"Enable on this site" = "Включить на этом сайте";
+"Unavailable while this site is disabled." = "Недоступно, пока этот сайт отключен.";
+"Applies filter lists and scriptlets. Userscripts have separate switches." = "Применяет списки фильтров и скриптлеты. Для пользовательских скриптов есть отдельные переключатели.";
+"Not provided" = "Не указано";
+
+"(%@ submitted at last apply)" = "(%@ передано при последнем применении)";
+
+"Submitted at last apply" = "Передано при последнем применении";
+
+"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Счётчик показывает исходные правила, переданные конвертеру, а не итоговое число правил Safari.";
+"Failed to persist pending filter update revision" = "Не удалось сохранить ожидающее обновление фильтра";

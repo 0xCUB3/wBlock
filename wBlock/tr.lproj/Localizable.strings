@@ -129,7 +129,7 @@
 "Apply changes" = "Değişiklikleri uygula";
 "Apply Changes and Quit" = "Değişiklikleri uygula ve çık";
 "Apply Failed" = "Uygulanamadı";
-"Try Again" = "Try Again";
+"Try Again" = "Tekrar dene";
 "Apply rules on this site" = "Kuralları bu sitede uygula";
 "Apply your pending changes" = "Bekleyen değişikliklerinizi uygulayın";
 "Applying filters..." = "Filtreler uygulanıyor...";
@@ -364,11 +364,11 @@
 "Failed to read filter content" = "Filtre içeriği okunamadı";
 "Failed to read local content for rule counting" = "Kural sayımı için yerel içerik okunamadı";
 "Failed to reload %@." = "%@ yeniden yüklenemedi.";
-"%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ Safari'de kapalı. Uygulanan kuralları yüklemek için Safari ayarlarından etkinleştirin.";
-"Skipped reload for extensions turned off in Safari" = "Safari'de kapalı olan uzantılar için yeniden yükleme atlandı";
+"%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "Safari'de %@ kapatıldı. Uygulanan kuralları yüklemek için Safari ayarlarından etkinleştirin.";
+"Skipped reload for extensions turned off in Safari" = "Safari'de kapatılan genişletmeler için yeniden yükleme atlandı";
 "wBlock launched" = "wBlock başlatıldı";
 "Failed to reload content blocker" = "İçerik engelleyici yeniden yüklenemedi";
-"Failed to update disabled sites for blocker" = "Engelleyici için devre dışı siteler güncellenemedi";
+"Failed to update disabled sites for blocker" = "Engelleyici için devre dışı bırakılan siteler güncellenemedi";
 "Failed to save downloaded filter" = "İndirilen filtre kaydedilemedi";
 "Failed to save user list." = "Kullanıcı listesi kaydedilemedi.";
 "Failed to start disabled sites monitor" = "Devre dışı bırakılan sitelerde izleme başlatılamadı";
@@ -437,7 +437,7 @@
 "Hungarian filter" = "Hungarian filter";
 "Icelandic ABP List" = "Icelandic ABP List";
 "iCloud Sync" = "iCloud Eşitlemesi";
-"This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can." = "Bu GitHub/Homebrew derlemesi iCloud eşitlemesini kullanamaz. App Store/TestFlight derlemesi kullanabilir.";
+"This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can." = "iCloud eşitlemesi yalnızca App Store ve TestFlight sürümlerinde geçerlidir. GitHub/Homebrew sürümlerinde kullanılamaz.";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "iCloud Eşitlemesi, iCloud'a bağlanamadı. Bağlantınızı kontrol edin ve tekrar deneyin.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "iCloud saklama alanınız dolu olduğu için iCloud Eşitlemesi kaydedilemedi.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud Eşitlemesinin iCloud hesabınıza yazma izni yok.";
@@ -472,7 +472,7 @@
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "Tümünü tut";
 "Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "wBlock çalışmadığında da filtrelerin güncellenmeye devam etmesini sağlar. Kalıcı bir başlangıç öğesi oluşmasını istemiyorsanız bu seçeneği kapatın; bu durumda güncellemeler yalnızca wBlock açıkken çalışır.";
-"Keeps the app in portrait even if the device is rotated." = "Cihaz döndürülse de uygulamanın dikey kalmasını sağlar.";
+"Keeps the app in portrait even if the device is rotated." = "Cihaz döndürülse bile uygulamanın dikey kalmasını sağlar.";
 "Languages: %@" = "Dil: %@";
 "Languages: \\(languageSummary)" = "Dil: \\(languageSummary)";
 "Large file - scrolling may be slow" = "Büyük dosya - kaydırma işlemi yavaş olabilir";
@@ -490,7 +490,7 @@
 "Loading script metadata…" = "Betik meta verileri yükleniyor…";
 "Loading userscripts…" = "Kullanıcı betikleri güncelleniyor…";
 "Local Import" = "Yerel içe aktarma";
-"Lock Portrait Orientation" = "Ekran Döndürmeyi Kilitle";
+"Lock Portrait Orientation" = "Ekran döndürmeyi kilitle";
 "Logs" = "Günlükler";
 "Logs cleared" = "Günlükler temizlendi";
 "Logs will appear here as the app runs" = "Uygulama çalıştıkça günlük kayıtları burada görünecektir";
@@ -522,7 +522,7 @@
 "No download URL for script" = "Betiğin indirme URL'si yok";
 "No filter lists selected. Clearing rules from all extensions." = "Hiçbir filtre listesi seçilmedi. Tüm genişletmelerdeki kurallar temizleniyor.";
 "No filters selected - clearing all extensions" = "Seçili filtre yok - tüm genişletmeler temizleniyor";
-"No foreground catch-up recorded" = "Ön planda kayıtlı görev yok";
+"No foreground catch-up recorded" = "Kayıtlı ön plan görevi yok";
 "No logs found" = "Günlük bulunamadı";
 "No matching extensions for selected filters." = "Seçilen filtrelere uygun bir genişletme yok.";
 "No matching userscripts" = "Eşleşen kullanıcı betiği yok";
@@ -567,7 +567,7 @@
 "Paste the direct .user.js link. wBlock will download and install it for you." = ".user.js bağlantısını doğrudan buraya yapıştırın. wBlock sizin için indirip yükleyecektir.";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Doğrudan .user.js, .js, .user.css, .less, .sass, .scss, .styl veya .pcss bağlantısını yapıştırın. wBlock sizin için indirip kuracaktır.";
 "Pause Blocking" = "Engellemeyi duraklat";
-"Paused Components" = "Duraklatılan Bileşenler";
+"Paused Components" = "Duraklatılan bileşenler";
 "Pausing blocking..." = "Engelleme duraklatılıyor...";
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
@@ -704,7 +704,7 @@
 "Some pre-apply filter updates failed; continuing with available lists" = "Uygulama öncesi bazı filtre güncellemeleri başarısız oldu; mevcut listelerle devam ediliyor";
 "Something went wrong while applying changes." = "Değişiklikler uygulanırken bir sorun oluştu.";
 "soon" = "yakında";
-"Source Code" = "Kaynak Kodu";
+"Source Code" = "Kaynak kodu";
 "Source Rules" = "Kaynak kural";
 "Source URL" = "Kaynak URL'si";
 "Start Fresh" = "Sıfırdan başla";
@@ -795,9 +795,9 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "E-postalarda, arama sonuçlarında ve yönlendirmelerdeki satış ortaklığı ve izleme referans bağlantılarının engelini kaldırır.";
 "Undo" = "Geri al";
 "Redo" = "Yinele";
-"Element Zapper" = "Öğe Gizleyici";
+"Element Zapper" = "Öğe gizleyici";
 "No Element Zapper Rules" = "Öğe gizleme kuralı yok";
-"Use the element zapper in the wBlock popup in Safari to hide page elements." = "Safari'deki wBlock açılır penceresindeki öğe gizleme ile sayfa öğelerini gizleyebilirsiniz.";
+"Use the element zapper in the wBlock popup in Safari to hide page elements." = "Sayfa öğelerini gizlemek için Safari'deki wBlock açılır penceresinden öğe gizleyiciyi kullanın.";
 "Update" = "Güncelle";
 "Update & Apply" = "Uygula ve bitir";
 "Update Filters" = "Filtreleri Güncelle";
@@ -870,21 +870,21 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Blocks malicious URLs, phishing pages, and unwanted software." = "Kötü amaçlı bağlantıları, oltalama sayfalarını ve istenmeyen yazılımları engeller.";
 "Combines broad ad-blocking and tracking protection in one list." = "Kapsamlı reklam engelleme ve izleme korumasını tek bir listede birleştirir.";
 "Contains filter lists that you added or imported yourself." = "Kendi eklediğiniz veya içe aktardığınız filtre listelerini içerir.";
-"Get Started" = "Başlarken";
+"Get Started" = "Başla";
 "No default filters" = "Varsayılan filtre yok";
 "No default scripts" = "Varsayılan betik yok";
 "Organizes userscripts and userstyles added to wBlock." = "wBlock'a eklenen kullanıcı betiklerini ve kullanıcı stillerini düzenler.";
 "Provides newer rules and fixes that are still being tested." = "Henüz test aşamasında olan yeni kuralları ve düzeltmeleri sunar.";
 "Recommended Filters" = "Önerilen Filtreler";
 "Recommended Scripts" = "Önerilen Betikler";
-"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Çerez bildirimlerini, açılır pencereleri, afişleri ve dikkat dağıtan diğer öğeleri kaldırır. Tam set için beş AdGuard Annoyances listesinin tümünü açın.";
+"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Çerez bildirimlerini, açılır pencereleri, afişleri ve dikkat dağıtan diğer öğeleri kaldırır. Eksiksiz koruma için tüm AdGuard Can Sıkıcı Öğeler listesini etkinleştirin.";
 "Reset to Default" = "Varsayılana sıfırla";
 "Shows all filter lists across every category." = "Tüm kategorilerdeki bütün filtre listelerini gösterir.";
 "Adds rules tailored to websites and languages from specific regions." = "Belirli bölgelere ait sitelere ve dillere özel kurallar ekler.";
 "The end of Safari ad-blocking B.S." = "Safari'deki reklam engelleme dertlerine son.";
 "Welcome to wBlock!" = "wBlock'a hoş geldiniz!";
 "Whitelist" = "İzin listesi";
-"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Bir siteyi buradan izin listesine ekleyebilir veya Safari'deki wBlock açılır penceresinden siteye özel kullanıcı betiğini ayarlayabilirsiniz.";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Buradan izin listesine site ekleyebilir veya Safari'deki wBlock açılır penceresinden siteye özel kullanıcı betiği ayarlarını düzenleyebilirsiniz.";
 "Whitelisted" = "İzin listesinde";
 "Wrap Lines" = "Satırı kaydır";
 "On" = "Açık";
@@ -896,7 +896,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "wBlock'ta uygulanmamış filtre değişiklikleriniz var. Uygulamak için şimdi dokunun!";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Uygulanmamış filtre değişiklikleriniz var. Çıkmadan önce bunları uygulamak istiyor musunuz?";
 "YousList" = "YousList";
-"Zapper rules (%d)" = "Öğe gizleyici kuralı (%d)";
+"Zapper rules (%d)" = "Gizleyici kuralı (%d)";
 "·" = "·";
 "×%d" = "×%d";
 "⚠️ Auto-update: overdue (will run on next trigger)" = "⚠️ Otomatik güncelleme: Gecikti (bir sonraki işlemde çalışacak)";
@@ -914,7 +914,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 /* Filter catalog additions */
 "Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
 "Adblock Warning Removal List" = "Adblock Warning Removal List";
-"Mail Tracking Protection Filter" = "Mail Tracking Protection Filter";
+"Mail Tracking Protection Filter" = "E-Posta İzleme Koruması Filtresi";
 "Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
 "AdGuard Allowlist" = "AdGuard İzin Listesi";
@@ -925,7 +925,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 /* Auto-update controls */
 "Auto-Update" = "Otomatik Güncelleme";
-"Auto-Update Filters & Userscripts" = "Filtreleri ve Kullanıcı Betiklerini Otomatik Güncelle";
+"Auto-Update Filters & Userscripts" = "Filtreleri ve kullanıcı betiklerini otomatik güncelle";
 "Update Now" = "Güncelle";
 
 /* Add mode controls */
@@ -1011,27 +1011,27 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Dark" = "Koyu";
 "Light" = "Açık";
 "%@ → %@ Safari rules" = "%@ → %@ Safari kuralı";
-"Settings restored. Applying now." = "Ayarlar geri yüklendi. Şimdi uygulanıyor.";
-"Cosmetic Filtering" = "Kozmetik Filtreleme";
-"Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Reklam yer tutucularını ve diğer sayfa öğelerini CSS ile gizler. Kapatıldığında yalnızca ağ engelleme kalır; bu daha az kural ve daha az CPU kullanır.";
-"Enable DeArrow" = "DeArrow’u etkinleştir";
+"Settings restored. Applying now." = "Ayarlar geri yüklendi. Değişiklikler uygulanıyor.";
+"Cosmetic Filtering" = "Kozmetik filtreleme";
+"Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "CSS kullanarak reklam alanlarını ve diğer sayfa öğelerini gizler. Kapatılırsa yalnızca daha az kural ve CPU kullanan ağ engellemesi çalışır.";
+"Enable DeArrow" = "DeArrow'u etkinleştir";
 "Replace Titles" = "Başlıkları değiştir";
-"Replace Thumbnails" = "Küçük resimleri değiştir";
-"Random Frame When No Thumbnail" = "Küçük resim yoksa rastgele kare";
+"Replace Thumbnails" = "Kapakları değiştir";
+"Random Frame When No Thumbnail" = "Kapak resmi yoksa rastgele kare";
 "Show Original on Hover" = "Üzerine gelince orijinali göster";
-"Using DeArrow" = "DeArrow kullanır";
-"Donate to DeArrow" = "DeArrow’a bağış yap";
-"DeArrow: On" = "DeArrow: açık";
-"DeArrow: Off" = "DeArrow: kapalı";
+"Using DeArrow" = "DeArrow kullanılıyor";
+"Donate to DeArrow" = "DeArrow'a bağış yap";
+"DeArrow: On" = "DeArrow: Açık";
+"DeArrow: Off" = "DeArrow: Kapalı";
 "Check for Filter Updates" = "Filtre güncellemelerini denetle";
 "Check for Userscript Updates" = "Kullanıcı betiği güncellemelerini denetle";
 "Download" = "İndir";
 "Downloading…" = "İndiriliyor…";
 "Download %@" = "%@ indir";
 "Downloading userscript" = "Kullanıcı betiği indiriliyor";
-"Retry %d failed extension(s)" = "Başarısız %d uzantıyı yeniden dene";
-"All extensions reloaded." = "Tüm uzantılar yeniden yüklendi.";
-"%@ still failed to reload. Safari may need a restart." = "%@ hâlâ yeniden yüklenemiyor. Safari'nin yeniden başlatılması gerekebilir.";
+"Retry %d failed extension(s)" = "%d başarısız genişletmeyi tekrar dene";
+"All extensions reloaded." = "Tüm genişletmeler yeniden yüklendi.";
+"%@ still failed to reload. Safari may need a restart." = "%@ yeniden yüklenemedi. Safari'yi kapatıp açmanız gerekebilir.";
 "Apply Without Checking for Updates" = "Güncellemeleri denetlemeden uygula";
 "(%@ rules, %@ unique)" = "(%@ kural, %@ benzersiz)";
 "Features: All" = "Özellikler: Tümü";
@@ -1039,45 +1039,45 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Chapters" = "Bölümler";
 "Captions in Native Player" = "Yerel oynatıcıda altyazılar";
 "Picture in Picture" = "Resim içinde resim";
-"Background Playback" = "Arka planda oynatma";
+"Background Playback" = "Arkaplanda oynatma";
 "SponsorBlock" = "SponsorBlock";
-"Resume Where You Left Off" = "Kaldığın yerden devam et";
+"Resume Where You Left Off" = "Kaldığın yerden sürdür";
 "Quality and Audio Toolbar" = "Kalite ve ses araç çubuğu";
-"Enable All" = "Tümünü aç";
+"Enable All" = "Tümünü etkinleştir";
 
 
 "Supported" = "Destekleniyor";
 "Unsupported" = "Desteklenmiyor";
-"Duplicates" = "Yinelenenler";
+"Duplicates" = "Tekrarlar";
 "Comments" = "Yorumlar";
-"Needs wBlock Scripts" = "wBlock Scripts gerektirir";
-"View" = "Görünüm";
+"Needs wBlock Scripts" = "wBlock betiklerini gerektirir";
+"View" = "Görüntüle";
 
-"Keep Blocking on These Sites" = "Bu sitelerde engellemeye devam et";
+"Keep Blocking on These Sites" = "Bu sitelerde engellemeyi sürdür";
 
-"Paused components continue working on these sites and their subdomains." = "Duraklatılan bileşenler bu sitelerde ve alt alan adlarında çalışmaya devam eder.";
+"Paused components continue working on these sites and their subdomains." = "Duraklatılmış bileşenler bu sitelerde ve alt alan adlarında çalışmaya devam eder.";
 
-"Last Update Check" = "Son güncelleme kontrolü";
+"Last Update Check" = "Son güncelleme denetimi";
 
 "Last Successful Update" = "Son başarılı güncelleme";
 
-"Site Actions" = "Site işlemleri";
+"Site Actions" = "Site eylemleri";
 
-"Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "Tüm bileşenler duraklatıldığında engelleme duraklatılır. Her bileşen ayrı ayrı da duraklatılabilir.";
+"Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "Tüm bileşenler duraklatıldığında Engellemeyi Duraklat özelliği açılır. Her bileşen ayrı ayrı da duraklatılabilir.";
 
-"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "YouTube başlıklarını ve küçük resimlerini DeArrow topluluğunun sunduğu alternatiflerle değiştirir.";
+"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "YouTube başlıklarını ve kapak resimlerini topluluk tarafından gönderilen DeArrow alternatifleriyle değiştirir.";
 
 "DeArrow" = "DeArrow";
 
-"Original Thumbnail Channels" = "Orijinal Küçük Resim Kanalları";
+"Original Thumbnail Channels" = "Orijinal kapak resmi kullanılacak kanallar";
 
-"Keep original thumbnails for these YouTube channels." = "Bu YouTube kanalları için orijinal küçük resimleri koru.";
+"Keep original thumbnails for these YouTube channels." = "Bu YouTube kanalları için orijinal kapak resimleri korunsun.";
 
-"Channel URL, @handle, or channel ID" = "Kanal URL'si, @tanıtıcı veya kanal kimliği";
+"Channel URL, @handle, or channel ID" = "Kanal URL'si, @kullanıcıadı veya kanal kimliği";
 
 "Type" = "Tür";
 
-"Author" = "Yazar";
+"Author" = "Sahibi";
 
 "Homepage" = "Ana sayfa";
 
@@ -1085,6 +1085,29 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 "Automatic" = "Otomatik";
 
-"This script will not run on these sites. Other scripts still run." = "Bu betik bu sitelerde çalışmaz. Diğer betikler çalışmaya devam eder.";
+"This script will not run on these sites. Other scripts still run." = "Bu betik dosyası bu sitelerde çalışmayacaktır. Diğer betik dosyaları çalışmaya devam eder.";
 
-"Operation details" = "İşlem ayrıntıları";
+"Operation details" = "İşlem detayları";
+
+/* Native name; keep in Montenegrin in every display language. */
+"crnogorski" = "crnogorski";
+
+"URL entry mode" = "URL giriş modu";
+"Single URL" = "Tek URL";
+"Bulk URLs" = "Toplu URL";
+"Enter URLs to edit each list’s name and description." = "Her listenin adını ve açıklamasını düzenlemek için URL girin.";
+"Names and descriptions" = "Adlar ve açıklamalar";
+"Paste URL" = "URL yapıştır";
+"Paste URLs" = "URL'leri yapıştır";
+"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "Eklenen siteler filtre listelerini ve scriptletleri atlar. Kullanıcı betiklerinin ayrı anahtarları vardır.";
+"Enable on this site" = "Bu sitede etkinleştir";
+"Unavailable while this site is disabled." = "Bu site devre dışıyken kullanılamaz.";
+"Applies filter lists and scriptlets. Userscripts have separate switches." = "Filtre listelerini ve scriptletleri uygular. Kullanıcı betiklerinin ayrı anahtarları vardır.";
+"Not provided" = "Sağlanmadı";
+
+"(%@ submitted at last apply)" = "(son uygulamada %@ gönderildi)";
+
+"Submitted at last apply" = "Son uygulamada gönderilen";
+
+"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Bu sayı, Safari’nin son kural sayısını değil, dönüştürücüye gönderilen kaynak kuralları gösterir.";
+"Failed to persist pending filter update revision" = "Bekleyen filtre güncellemesi kaydedilemedi";

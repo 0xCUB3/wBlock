@@ -251,7 +251,7 @@ public enum SafariContentBlockerAffinityProcessor {
         }
     }
 
-    private static func filteredContent(
+    static func filteredContent(
         from content: String,
         includeBaseRules: Bool,
         target: ContentBlockerTargetInfo,

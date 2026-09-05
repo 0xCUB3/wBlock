@@ -1089,3 +1089,26 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "This script will not run on these sites. Other scripts still run." = "Acest script nu va rula pe aceste site-uri. Celelalte scripturi vor continua să ruleze.";
 
 "Operation details" = "Detaliile operațiunii";
+
+/* Native name; keep in Montenegrin in every display language. */
+"crnogorski" = "crnogorski";
+
+"URL entry mode" = "Mod de introducere URL";
+"Single URL" = "URL unic";
+"Bulk URLs" = "URL-uri în bloc";
+"Enter URLs to edit each list’s name and description." = "Introduceți URL-uri pentru a edita numele și descrierea fiecărei liste.";
+"Names and descriptions" = "Nume și descrieri";
+"Paste URL" = "Lipește URL";
+"Paste URLs" = "Lipește URL-uri";
+"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "Site-urile adăugate omit listele de filtre și scriptleturile. Userscripturile au comutatoare separate.";
+"Enable on this site" = "Activează pe acest site";
+"Unavailable while this site is disabled." = "Indisponibil cât timp acest site este dezactivat.";
+"Applies filter lists and scriptlets. Userscripts have separate switches." = "Aplică liste de filtre și scriptleturi. Userscripturile au comutatoare separate.";
+"Not provided" = "Nefurnizat";
+
+"(%@ submitted at last apply)" = "(%@ trimise la ultima aplicare)";
+
+"Submitted at last apply" = "Trimise la ultima aplicare";
+
+"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Numărul indică regulile sursă trimise convertorului, nu numărul final de reguli Safari.";
+"Failed to persist pending filter update revision" = "Actualizarea în așteptare a filtrului nu a putut fi salvată";

@@ -423,6 +423,7 @@ public actor SharedAutoUpdateManager {
         let totalReloadAttempts: Int
         let slowestWriteTarget: String
         let slowestTarget: String
+        let admittedSourceRuleCountsByFilterID: [UUID: Int]
     }
 
     // MARK: - Protobuf Data Access Helpers
@@ -1074,19 +1075,35 @@ public actor SharedAutoUpdateManager {
             try await saveAutoUpdateStateImmediately(context: AutoUpdateBudgetPhase.finalStateSave)
             try throwIfCancelled()
             let helperStagedUpdates = isExternalHelperTrigger(trigger)
+            let pendingRevisionSnapshot = PendingFilterUpdateRevisions.snapshot(
+                filterIDs: Set(merged.filter { $0.isSelected }.map { $0.id.uuidString })
+            )
             let rebuildSummary = try await rebuildAndReload(
                 selectedFilters: merged.filter { $0.isSelected },
                 policy: policy,
                 reloadContentBlockers: !helperStagedUpdates
             )
+            merged = merged.map { filter in
+                var updated = filter
+                if filter.isSelected {
+                    updated.uniqueRuleCount = rebuildSummary.admittedSourceRuleCountsByFilterID[filter.id]
+                } else {
+                    updated.uniqueRuleCount = nil
+                }
+                return updated
+            }
             try throwIfCancelled()
-            if !helperStagedUpdates { StagedFilterDownloads.clear() }
+            if !helperStagedUpdates {
+                PendingFilterUpdateRevisions.acknowledge(pendingRevisionSnapshot)
+                StagedFilterDownloads.clear()
+            }
 
             try requireUserScriptsBudget()
             let scriptsResult = await autoUpdateUserScriptsIfNeeded()
 
             let successTime = Date().timeIntervalSince1970
             try requireFinalSaveBudget()
+            await saveFilterListsToProtobuf(merged)
             let nextCheckInSeconds: Int
             if helperStagedUpdates {
                 await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
@@ -1948,6 +1965,7 @@ public actor SharedAutoUpdateManager {
         let target: ContentBlockerTargetInfo
         let conversion: (safariRulesCount: Int, advancedRulesText: String?)?
         let usedCache: Bool
+        let admittedSourceRuleCountsByFilterID: [UUID: Int]
         let inputWriteMs: Int
         let inputBytes: Int64
         let conversionMs: Int
@@ -1964,6 +1982,7 @@ public actor SharedAutoUpdateManager {
                 target: target,
                 conversion: nil,
                 usedCache: false,
+                admittedSourceRuleCountsByFilterID: [:],
                 inputWriteMs: 0,
                 inputBytes: 0,
                 conversionMs: 0,
@@ -1991,6 +2010,7 @@ public actor SharedAutoUpdateManager {
                 target: target,
                 conversion: conversion,
                 usedCache: outcome.reusedCachedBase,
+                admittedSourceRuleCountsByFilterID: outcome.admittedSourceRuleCountsByFilterID,
                 inputWriteMs: 0,
                 inputBytes: 0,
                 conversionMs: Int(Date().timeIntervalSince(start) * 1000),
@@ -2001,6 +2021,7 @@ public actor SharedAutoUpdateManager {
                 target: target,
                 conversion: nil,
                 usedCache: false,
+                admittedSourceRuleCountsByFilterID: [:],
                 inputWriteMs: 0,
                 inputBytes: 0,
                 conversionMs: Int(Date().timeIntervalSince(start) * 1000),
@@ -2011,6 +2032,7 @@ public actor SharedAutoUpdateManager {
                 target: target,
                 conversion: nil,
                 usedCache: false,
+                admittedSourceRuleCountsByFilterID: [:],
                 inputWriteMs: 0,
                 inputBytes: 0,
                 conversionMs: Int(Date().timeIntervalSince(start) * 1000),
@@ -2118,6 +2140,7 @@ public actor SharedAutoUpdateManager {
             }
         }
         var metrics: [RebuildTargetMetrics] = []
+        var appliedSourceRuleCountsByFilterID: [UUID: Int] = [:]
         var advanced: [String] = []
         var failedIDs: [String] = []
         var failedNames: [String] = []
@@ -2146,6 +2169,9 @@ public actor SharedAutoUpdateManager {
                     failedNames.append(target.displayName)
                 }
             }
+            for (filterID, count) in result.admittedSourceRuleCountsByFilterID {
+                appliedSourceRuleCountsByFilterID[filterID, default: 0] += count
+            }
             metrics.append(
                 RebuildTargetMetrics(
                     targetName: target.displayName,
@@ -2173,7 +2199,20 @@ public actor SharedAutoUpdateManager {
         let safari = metrics.reduce(0) { $0 + $1.safariRules }
         let slowWrite = metrics.filter { $0.inputWriteMs > 0 }.max(by: { $0.inputWriteMs < $1.inputWriteMs }).map { "\($0.targetName)@\(formatDurationMs($0.inputWriteMs))" } ?? "n/a"
         let slow = metrics.max(by: { ($0.conversionMs + $0.reloadMs) < ($1.conversionMs + $1.reloadMs) }).map { "\($0.targetName)@\(formatDurationMs($0.conversionMs + $0.reloadMs))" } ?? "n/a"
-        return RebuildAndReloadSummary(targetCount: metrics.count, cacheHits: hits, cacheMisses: max(0, metrics.count - hits), safariRulesTotal: safari, inputWriteDurationMs: writes, inputBytesTotal: bytes, conversionDurationMs: conversions, reloadDurationMs: reloads, totalReloadAttempts: attempts, slowestWriteTarget: slowWrite, slowestTarget: slow)
+        return RebuildAndReloadSummary(
+            targetCount: metrics.count,
+            cacheHits: hits,
+            cacheMisses: max(0, metrics.count - hits),
+            safariRulesTotal: safari,
+            inputWriteDurationMs: writes,
+            inputBytesTotal: bytes,
+            conversionDurationMs: conversions,
+            reloadDurationMs: reloads,
+            totalReloadAttempts: attempts,
+            slowestWriteTarget: slowWrite,
+            slowestTarget: slow,
+            admittedSourceRuleCountsByFilterID: appliedSourceRuleCountsByFilterID
+        )
     }
 
     // MARK: - Helpers

@@ -1089,3 +1089,26 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This script will not run on these sites. Other scripts still run." = "このスクリプトはこれらのサイトでは実行されません。他のスクリプトは引き続き実行されます。";
 
 "Operation details" = "操作の詳細";
+
+/* Native name; keep in Montenegrin in every display language. */
+"crnogorski" = "crnogorski";
+
+"URL entry mode" = "URL入力モード";
+"Single URL" = "単一のURL";
+"Bulk URLs" = "複数のURL";
+"Enter URLs to edit each list’s name and description." = "各リストの名前と説明を編集するにはURLを入力してください。";
+"Names and descriptions" = "名前と説明";
+"Paste URL" = "URLをペースト";
+"Paste URLs" = "URLをペースト";
+"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "追加したサイトではフィルターリストとスクリプトレットを適用しません。ユーザースクリプトには別のスイッチがあります。";
+"Enable on this site" = "このサイトで有効にする";
+"Unavailable while this site is disabled." = "このサイトが無効の間は利用できません。";
+"Applies filter lists and scriptlets. Userscripts have separate switches." = "フィルターリストとスクリプトレットを適用します。ユーザースクリプトには別のスイッチがあります。";
+"Not provided" = "未指定";
+
+"(%@ submitted at last apply)" = "（前回の適用時に%@件送信）";
+
+"Submitted at last apply" = "前回の適用時に送信";
+
+"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "送信数は変換処理に渡された元のルール数です。Safariの最終的なルール数とは異なります。";
+"Failed to persist pending filter update revision" = "保留中のフィルタ更新を保存できませんでした";

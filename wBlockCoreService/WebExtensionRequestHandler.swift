@@ -762,7 +762,11 @@ public enum WebExtensionRequestHandler {
                 // With the agent off nothing else would rebuild until the user
                 // opens the app, so finish the job with a headless launch.
                 if updated > 0, await HeadlessLaunch.shouldAutoRebuildAfterStaging() {
-                    payload["rebuildLaunched"] = launchContainingAppHeadless(reason: .stagedDownloads)
+                    let launched = launchContainingAppHeadless(reason: .stagedDownloads)
+                    payload["rebuildLaunched"] = launched
+                    if !launched {
+                        HeadlessLaunch.recordAutoRebuildLaunchOutcome(.launchFailed)
+                    }
                 }
                 #endif
             case let .noUpdates(checked, hadErrors):
@@ -989,16 +993,9 @@ public enum WebExtensionRequestHandler {
         let includeContent = message["includeContent"] as? Bool == true
         let maxInlineContentBytes = message["maxInlineContentBytes"] as? Int ?? Int.max
         Task { @MainActor in
-            // Master disable only. Filter-only exceptions must still receive userscripts (issue #652).
-            let disabledSites = await currentDisabledSites()
-            if let url = URL(string: urlString) {
-                if HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites) {
-                    let response = createResponse(with: userScriptsResponse(userScripts: []))
-                    context.completeRequest(returningItems: [response])
-                    return
-                }
-            }
-
+            // Site disable affects content filtering and scriptlets. Userscripts keep
+            // running unless the global userscript pause or per-script site toggle says
+            // otherwise, so the popup controls stay available on disabled sites.
             let userScriptManager = UserScriptManager.shared
             await userScriptManager.waitUntilReady()
             let payloadMutationRevision = userScriptManager.payloadMutationRevision
@@ -1234,17 +1231,8 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
-            // Same master-only gate as getUserScripts so Site Settings "Content filtering"
-            // off does not hide running scripts (issue #652).
-            let disabledSites = await currentDisabledSites()
-            if let url = URL(string: urlString),
-               HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites)
-            {
-                let response = createResponse(with: ["userScripts": []])
-                context.completeRequest(returningItems: [response])
-                return
-            }
-
+            // Keep the settings list visible when the site is disabled. Per-script
+            // disabled-host settings are the only site-specific userscript gate.
             let manager = UserScriptManager.shared
             // The extension process can outlive an app-side userscript update.
             // Reload shared-container records before listing versions/names.

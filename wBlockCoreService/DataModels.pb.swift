@@ -325,8 +325,9 @@ nonisolated struct Wblock_Data_FilterListData: Sendable {
 
   var excludedSites: [String] = []
 
-  /// Rules this list contributes that no earlier list in compile order already
-  /// supplies (#644). Recomputed after each successful apply.
+  /// Field 13 held legacy pre-provenance unique-count estimates. It is no
+  /// longer read as admitted provenance so old saves do not become mislabeled
+  /// as submitted/admitted counts after upgrade.
   var uniqueRuleCount: Int32 {
     get {_uniqueRuleCount ?? 0}
     set {_uniqueRuleCount = newValue}
@@ -336,12 +337,46 @@ nonisolated struct Wblock_Data_FilterListData: Sendable {
   /// Clears the value of `uniqueRuleCount`. Subsequent reads from it will return its default value.
   mutating func clearUniqueRuleCount() {self._uniqueRuleCount = nil}
 
+  /// Whether custom URL import metadata was supplied by the user and should
+  /// survive future remote header refreshes.
+  var userProvidedName: Bool {
+    get {_userProvidedName ?? false}
+    set {_userProvidedName = newValue}
+  }
+  /// Returns true if `userProvidedName` has been explicitly set.
+  var hasUserProvidedName: Bool {self._userProvidedName != nil}
+  /// Clears the value of `userProvidedName`. Subsequent reads from it will return its default value.
+  mutating func clearUserProvidedName() {self._userProvidedName = nil}
+
+  var userProvidedDescription: Bool {
+    get {_userProvidedDescription ?? false}
+    set {_userProvidedDescription = newValue}
+  }
+  /// Returns true if `userProvidedDescription` has been explicitly set.
+  var hasUserProvidedDescription: Bool {self._userProvidedDescription != nil}
+  /// Clears the value of `userProvidedDescription`. Subsequent reads from it will return its default value.
+  mutating func clearUserProvidedDescription() {self._userProvidedDescription = nil}
+
+  /// Source rule lines admitted for this list by the last confirmed apply.
+  /// Converter output is still only known exactly per target.
+  var admittedSourceRuleCount: Int32 {
+    get {_admittedSourceRuleCount ?? 0}
+    set {_admittedSourceRuleCount = newValue}
+  }
+  /// Returns true if `admittedSourceRuleCount` has been explicitly set.
+  var hasAdmittedSourceRuleCount: Bool {self._admittedSourceRuleCount != nil}
+  /// Clears the value of `admittedSourceRuleCount`. Subsequent reads from it will return its default value.
+  mutating func clearAdmittedSourceRuleCount() {self._admittedSourceRuleCount = nil}
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
 
   fileprivate var _sourceRuleCount: Int32? = nil
   fileprivate var _uniqueRuleCount: Int32? = nil
+  fileprivate var _userProvidedName: Bool? = nil
+  fileprivate var _userProvidedDescription: Bool? = nil
+  fileprivate var _admittedSourceRuleCount: Int32? = nil
 }
 
 /// Userscript data structure
@@ -1048,7 +1083,7 @@ nonisolated extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProto
 
 nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".FilterListData"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{1}category\0\u{3}is_selected\0\u{1}description\0\u{1}version\0\u{3}source_rule_count\0\u{3}last_updated\0\u{3}is_custom\0\u{3}local_file_path\0\u{3}excluded_sites\0\u{3}unique_rule_count\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{1}category\0\u{3}is_selected\0\u{1}description\0\u{1}version\0\u{3}source_rule_count\0\u{3}last_updated\0\u{3}is_custom\0\u{3}local_file_path\0\u{3}excluded_sites\0\u{3}unique_rule_count\0\u{3}user_provided_name\0\u{3}user_provided_description\0\u{3}admitted_source_rule_count\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1069,6 +1104,9 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
       case 11: try { try decoder.decodeSingularStringField(value: &self.localFilePath) }()
       case 12: try { try decoder.decodeRepeatedStringField(value: &self.excludedSites) }()
       case 13: try { try decoder.decodeSingularInt32Field(value: &self._uniqueRuleCount) }()
+      case 14: try { try decoder.decodeSingularBoolField(value: &self._userProvidedName) }()
+      case 15: try { try decoder.decodeSingularBoolField(value: &self._userProvidedDescription) }()
+      case 16: try { try decoder.decodeSingularInt32Field(value: &self._admittedSourceRuleCount) }()
       default: break
       }
     }
@@ -1118,6 +1156,15 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
     try { if let v = self._uniqueRuleCount {
       try visitor.visitSingularInt32Field(value: v, fieldNumber: 13)
     } }()
+    try { if let v = self._userProvidedName {
+      try visitor.visitSingularBoolField(value: v, fieldNumber: 14)
+    } }()
+    try { if let v = self._userProvidedDescription {
+      try visitor.visitSingularBoolField(value: v, fieldNumber: 15)
+    } }()
+    try { if let v = self._admittedSourceRuleCount {
+      try visitor.visitSingularInt32Field(value: v, fieldNumber: 16)
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1135,6 +1182,9 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
     if lhs.localFilePath != rhs.localFilePath {return false}
     if lhs.excludedSites != rhs.excludedSites {return false}
     if lhs._uniqueRuleCount != rhs._uniqueRuleCount {return false}
+    if lhs._userProvidedName != rhs._userProvidedName {return false}
+    if lhs._userProvidedDescription != rhs._userProvidedDescription {return false}
+    if lhs._admittedSourceRuleCount != rhs._admittedSourceRuleCount {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

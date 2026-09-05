@@ -25,28 +25,6 @@ public enum ContentBlockerMappingService {
         }
     }
 
-    /// Counts, per list, the rules that no earlier list in compile order already
-    /// supplied (#644). Lines are compared after trimming; comments and headers
-    /// are ignored the same way `FilterList.countRules` does.
-    public static func uniqueRuleCounts(
-        for selectedFilters: [FilterList],
-        content: (FilterList) -> String?
-    ) -> [UUID: Int] {
-        var seen = Set<String>()
-        var counts: [UUID: Int] = [:]
-        for filter in orderedForCompilation(selectedFilters) {
-            guard let text = content(filter) else { continue }
-            var unique = 0
-            text.enumerateLines { line, _ in
-                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard FilterRuleAnalysis.isRuleLine(trimmed) else { return }
-                if seen.insert(FilterRuleAnalysis.ruleIdentity(trimmed)).inserted { unique += 1 }
-            }
-            counts[filter.id] = unique
-        }
-        return counts
-    }
-
     public static func orderedForDistribution(_ selectedFilters: [FilterList]) -> [FilterList] {
         selectedFilters.sorted { lhs, rhs in
             let lhsCount = lhs.sourceRuleCount ?? 0

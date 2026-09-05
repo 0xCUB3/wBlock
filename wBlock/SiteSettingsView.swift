@@ -148,7 +148,7 @@ struct SiteSettingsView: View {
                 .disabled(addableDomain == nil || isAddingDomain)
             }
 
-            Text("Added sites are whitelisted: wBlock is completely turned off on them.")
+            Text("Added sites skip filter lists and scriptlets. Userscripts have separate switches.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
@@ -283,19 +283,24 @@ struct SiteSettingsView: View {
     @ViewBuilder
     private func expansionRows(_ site: SiteSummary) -> some View {
         toggleRow(isOn: Binding(
-            get: { isWhitelisted(site.domain) },
-            set: { setWhitelisted($0, domain: site.domain) }
+            get: { !isWhitelisted(site.domain) },
+            set: { setWhitelisted(!$0, domain: site.domain) }
         )) {
-            Text("Disable on this site")
+            Text("Enable on this site")
                 .font(.body)
         }
 
         toggleRow(isOn: Binding(
-            get: { !isFilterDisabled(site.domain) },
+            get: { contentFilteringRuns(on: site) },
             set: { setFilterDisabled(!$0, domain: site.domain) }
         )) {
-            Text("Content filtering")
-                .font(.body)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Content filtering")
+                    .font(.body)
+                Text(site.isWhitelisted ? "Unavailable while this site is disabled." : "Applies filter lists and scriptlets. Userscripts have separate switches.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .disabled(site.isWhitelisted)
 
@@ -492,6 +497,10 @@ struct SiteSettingsView: View {
 
     private func isFilterDisabled(_ domain: String) -> Bool {
         DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites).contains(domain)
+    }
+
+    private func contentFilteringRuns(on site: SiteSummary) -> Bool {
+        !site.isWhitelisted && !site.isFilterDisabled
     }
 
     private func isAutoplayAllowed(_ domain: String) -> Bool {

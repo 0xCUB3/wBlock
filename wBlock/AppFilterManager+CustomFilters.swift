@@ -8,7 +8,9 @@ extension AppFilterManager {
         urlString: String,
         category: FilterListCategory = .custom,
         hasUserProvidedName: Bool = false,
-        isSelected: Bool = true
+        hasUserProvidedDescription: Bool = false,
+        isSelected: Bool = true,
+        description: String? = nil
     ) {
         guard let url = FilterListURLSupport.validatedRemoteURL(from: urlString)
         else {
@@ -43,7 +45,8 @@ extension AppFilterManager {
 
         CloudSyncManager.shared.clearDeletedCustomListURL(url.absoluteString)
 
-        let newName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let newName = Self.singleLineUserMetadata(name)
+        let trimmedDescription = description.map(Self.singleLineUserMetadata)
         let newFilter = FilterList(
             id: UUID(),
             name: newName.isEmpty ? (url.host ?? LocalizedStrings.text("Custom Filter", comment: "Default custom filter name")) : newName,
@@ -51,13 +54,30 @@ extension AppFilterManager {
             category: category,
             isCustom: true,
             isSelected: isSelected,
-            description: LocalizedStrings.text("User-added filter list.", comment: "Default custom filter description"),
+            description: trimmedDescription?.isEmpty == false
+                ? trimmedDescription!
+                : LocalizedStrings.text("User-added filter list.", comment: "Default custom filter description"),
             sourceRuleCount: nil,
-            hasUserProvidedName: hasUserProvidedName)
+            hasUserProvidedName: hasUserProvidedName,
+            hasUserProvidedDescription: hasUserProvidedDescription && trimmedDescription?.isEmpty == false)
         addCustomFilterList(newFilter)
     }
 
-    func addUserList(name: String, description: String? = nil, content: String, category: FilterListCategory = .custom, isSelected: Bool = true) {
+    private static func singleLineUserMetadata(_ value: String) -> String {
+        value.replacingOccurrences(of: "\r\n", with: " ")
+            .replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\r", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    func addUserList(
+        name: String,
+        description: String? = nil,
+        content: String,
+        category: FilterListCategory = .custom,
+        isSelected: Bool = true,
+        lastUpdated: Date = Date()
+    ) {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedDescription = description?.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -95,7 +115,8 @@ extension AppFilterManager {
             isCustom: true,
             isSelected: isSelected,
             description: trimmedDescription?.isEmpty == false ? trimmedDescription! : "",
-            sourceRuleCount: Self.countRulesInUserListContent(trimmedContent)
+            sourceRuleCount: Self.countRulesInUserListContent(trimmedContent),
+            lastUpdated: lastUpdated
         )
 
         guard let destinationURL = loader.localFileURL(for: newFilter) else {
@@ -141,12 +162,14 @@ extension AppFilterManager {
         do {
             let content = try String(contentsOf: fileURL, encoding: .utf8)
             let name = nameOverride?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let importedAt = (try? fileURL.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? Date()
             addUserList(
                 name: name,
                 description: description,
                 content: content,
                 category: category,
-                isSelected: isSelected
+                isSelected: isSelected,
+                lastUpdated: importedAt
             )
         } catch {
             statusDescription = LocalizedStrings.text("Failed to read file.", comment: "File read error")
@@ -333,6 +356,7 @@ extension AppFilterManager {
             return existing.id
         }
         filterLists.removeAll { $0.id == filter.id || ($0.isCustom && $0.url == filter.url) }
+        PendingFilterUpdateRevisions.remove(filterIDs: Set(removedIDs.map { $0.uuidString }))
         refreshPendingChanges()
         Task { @MainActor [weak self] in
             guard let self else { return }
@@ -494,6 +518,7 @@ extension AppFilterManager {
         filterLists[index].description = trimmedDescription
         filterLists[index].category = category
         filterLists[index].sourceRuleCount = Self.countRulesInUserListContent(trimmedContent)
+        filterLists[index].lastUpdated = Date()
 
         saveFilterListsCoalesced()
         markNonSelectionChangesPending()

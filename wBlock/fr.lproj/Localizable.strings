@@ -1089,3 +1089,26 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "This script will not run on these sites. Other scripts still run." = "Ce script ne sera pas exécuté sur ces sites. Les autres scripts continueront de fonctionner.";
 
 "Operation details" = "Détails de l’opération";
+
+/* Native name; keep in Montenegrin in every display language. */
+"crnogorski" = "crnogorski";
+
+"URL entry mode" = "Mode de saisie des URL";
+"Single URL" = "URL unique";
+"Bulk URLs" = "URL en lot";
+"Enter URLs to edit each list’s name and description." = "Saisissez des URL pour modifier le nom et la description de chaque liste.";
+"Names and descriptions" = "Noms et descriptions";
+"Paste URL" = "Coller l’URL";
+"Paste URLs" = "Coller les URL";
+"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "Les sites ajoutés ignorent les listes de filtres et les scriptlets. Les userscripts ont des interrupteurs séparés.";
+"Enable on this site" = "Activer sur ce site";
+"Unavailable while this site is disabled." = "Indisponible tant que ce site est désactivé.";
+"Applies filter lists and scriptlets. Userscripts have separate switches." = "Applique les listes de filtres et les scriptlets. Les userscripts ont des interrupteurs séparés.";
+"Not provided" = "Non fourni";
+
+"(%@ submitted at last apply)" = "(%@ transmises lors de la dernière application)";
+
+"Submitted at last apply" = "Transmises lors de la dernière application";
+
+"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Ce nombre correspond aux règles sources transmises au convertisseur, pas au nombre final de règles de Safari.";
+"Failed to persist pending filter update revision" = "Impossible d’enregistrer la mise à jour du filtre en attente";

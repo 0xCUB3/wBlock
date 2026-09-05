@@ -18,8 +18,8 @@ struct TestZapperNativeRuleGenerator {
         )
 
         let expected = [
-            "www.clubic.com##div.sc-1mdokif-0.fwJpDj",
-            "www.clubic.com##form.sc-179azgf-0.boJzlO"
+            "clubic.com##div.sc-1mdokif-0.fwJpDj",
+            "clubic.com##form.sc-179azgf-0.boJzlO"
         ]
 
         guard generated == expected else {

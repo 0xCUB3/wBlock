@@ -39,6 +39,7 @@ struct UserScriptWebsiteExceptionsView: View {
                     .textInputAutocapitalization(.never)
                     #endif
                 Button("Add", action: addSite).disabled(candidate == nil)
+                #if os(macOS)
                 if !knownSites.isEmpty {
                     Menu {
                         ForEach(knownSites, id: \.self) { site in
@@ -49,6 +50,7 @@ struct UserScriptWebsiteExceptionsView: View {
                     }
                     .help("Site Settings")
                 }
+                #endif
             }
             ForEach(domains, id: \.self) { site in
                 HStack {

@@ -16,7 +16,10 @@ nonisolated struct ContentInfoMetadata: Sendable {
                 let parts = clean.dropFirst().split(maxSplits: 1, whereSeparator: \.isWhitespace)
                 if parts.count == 2 { fields[String(parts[0]).lowercased()] = String(parts[1]) }
             }
-            return Self(author: fields["author"], homepage: webURL(fields["homepageurl"] ?? fields["homepage"]))
+            return Self(
+                author: fields["author"],
+                homepage: webURL(firstValue(in: fields, keys: ["homepageurl", "homepage", "website", "source", "supporturl"]))
+            )
         }
         return Self()
     }
@@ -31,7 +34,18 @@ nonisolated struct ContentInfoMetadata: Sendable {
                 fields[parts[0].trimmingCharacters(in: .whitespaces).lowercased()] = parts[1].trimmingCharacters(in: .whitespaces)
             }
         }
-        return Self(author: fields["author"] ?? fields["maintainer"], homepage: webURL(fields["homepage"]))
+        return Self(
+            author: firstValue(in: fields, keys: ["author", "maintainer"]),
+            homepage: webURL(firstValue(in: fields, keys: ["homepage", "website", "source", "supporturl"]))
+        )
+    }
+
+    private static func firstValue(in fields: [String: String], keys: [String]) -> String? {
+        for key in keys {
+            guard let value = fields[key]?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else { continue }
+            return value
+        }
+        return nil
     }
 
     private static func webURL(_ value: String?) -> URL? {

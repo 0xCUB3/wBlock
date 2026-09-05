@@ -60,6 +60,15 @@ struct FilterListValidationTests {
             expected: "https://example.com/one.txt\nhttps://example.com/two.list",
             "expected multiple pasted URLs to stay one per line"
         )
+        expectSingleNormalizedURLInput(
+            from: "",
+            to: """
+            https://example.com/one.txt
+            https://example.com/two.list
+            """,
+            expected: "https://example.com/one.txt",
+            "expected single URL mode to keep only the first pasted URL"
+        )
         expectNormalizedURLInput(
             from: "https://example.com/one.txt",
             to: "https://example.com/one.txt\n",
@@ -212,6 +221,19 @@ struct FilterListValidationTests {
     ) {
         expectEqual(
             FilterListURLSupport.normalizeURLInput(from: oldValue, to: newValue),
+            expected,
+            message
+        )
+    }
+
+    private static func expectSingleNormalizedURLInput(
+        from oldValue: String,
+        to newValue: String,
+        expected: String,
+        _ message: String
+    ) {
+        expectEqual(
+            FilterListURLSupport.normalizeSingleURLInput(from: oldValue, to: newValue),
             expected,
             message
         )

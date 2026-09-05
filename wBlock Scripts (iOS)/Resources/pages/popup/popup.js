@@ -1089,7 +1089,7 @@ async function setUserscriptSiteDisabled(scriptId, disabled) {
     }
 }
 
-function renderPageUserScripts(scripts, disabled = false) {
+function renderPageUserScripts(scripts, controlsDisabled = false) {
     const section = document.getElementById('userscripts-section');
     const list = document.getElementById('userscripts-list');
     const empty = document.getElementById('userscripts-empty');
@@ -1139,7 +1139,7 @@ function renderPageUserScripts(scripts, disabled = false) {
         input.setAttribute('aria-labelledby', nameId);
         input.setAttribute('aria-label', script.name);
         input.checked = !script.disabledForSite;
-        input.disabled = disabled;
+        input.disabled = controlsDisabled;
 
         const slider = document.createElement('span');
         slider.className = 'slider';
@@ -1837,10 +1837,8 @@ async function refreshUi() {
 
     const blockingPausedPromise = getBlockingPausedState();
     const pageUserScriptsPromise = fetchPageUserScripts(tab.url);
-    let pageUserScriptsRenderedDisabled = null;
     const renderPageUserScriptsPromise = pageUserScriptsPromise.then((scripts) => {
-        pageUserScriptsRenderedDisabled = disableToggle ? !disableToggle.checked : false;
-        renderPageUserScripts(scripts, pageUserScriptsRenderedDisabled);
+        renderPageUserScripts(scripts, false);
         return scripts;
     });
     const disabledPromise = getSiteDisabledState(host);
@@ -1942,9 +1940,6 @@ async function refreshUi() {
         rulesToggle.disabled = zapperPaused;
     }
     await renderPageUserScriptsPromise;
-    if (pageUserScriptsRenderedDisabled !== disabled) {
-        renderPageUserScripts(await pageUserScriptsPromise, disabled);
-    }
     currentZapperRules = zapperState.rules;
     const zapperCount = await zapperCountPromise;
     const zapperClear = document.getElementById('zapper-clear');

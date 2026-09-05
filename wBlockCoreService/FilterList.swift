@@ -25,6 +25,30 @@ public enum FilterSelectionRebaser {
     }
 }
 
+public enum FilterListRemoteMetadataPolicy {
+    public static func applying(
+        title: String?,
+        description: String?,
+        version: String?,
+        to filter: FilterList
+    ) -> FilterList {
+        var updatedFilter = filter
+        if filter.isCustom, !filter.hasUserProvidedName, let title = sanitized(title) {
+            updatedFilter.name = title
+        }
+        updatedFilter.version = version ?? "Unknown"
+        if !filter.hasUserProvidedDescription, let description = sanitized(description) {
+            updatedFilter.description = description
+        }
+        return updatedFilter
+    }
+
+    private static func sanitized(_ value: String?) -> String? {
+        let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
+    }
+}
+
 public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public var name: String
@@ -43,19 +67,22 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     public var serverLastModified: String? = nil
     public var limitExceededReason: String? = nil // Reason why filter was auto-disabled due to rule limits
     public var hasUserProvidedName: Bool = false
+    public var hasUserProvidedDescription: Bool = false
     /// Hosts this list should not apply to (issue #653). Independent of Site Settings.
     public var excludedSites: [String] = []
     /// Transient positive scope for a paused apply; never persisted as list metadata.
     public var activeSiteRestriction: [String]? = nil
-    /// Rules this list adds beyond earlier lists in compile order (issue #644).
-    /// Nil until the first successful apply computes it.
+    /// Source rule lines admitted for this list by the last confirmed apply.
+    /// Nil when no compile-time provenance is available.
     public var uniqueRuleCount: Int?
 
     private enum CodingKeys: String, CodingKey {
         case id, name, url, category, isCustom, isSelected, description,
              version, sourceRuleCount, lastUpdated, languages, trustLevel,
              etag, serverLastModified, limitExceededReason, hasUserProvidedName,
-             excludedSites, uniqueRuleCount
+             hasUserProvidedDescription, excludedSites, admittedSourceRuleCount,
+             uniqueRuleCount
+        // uniqueRuleCount is decode-only legacy storage for pre-provenance estimates.
         // rawSourceRuleCount intentionally excluded — in-memory only, not persisted
     }
 
@@ -76,6 +103,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
                 serverLastModified: String? = nil,
                 limitExceededReason: String? = nil,
                 hasUserProvidedName: Bool = false,
+                hasUserProvidedDescription: Bool = false,
                 excludedSites: [String] = [],
                 uniqueRuleCount: Int? = nil) {
         self.id = id
@@ -95,6 +123,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         self.serverLastModified = serverLastModified
         self.limitExceededReason = limitExceededReason
         self.hasUserProvidedName = hasUserProvidedName
+        self.hasUserProvidedDescription = hasUserProvidedDescription
         self.excludedSites = FilterListSiteExclusion.normalizedDomains(from: excludedSites)
         self.uniqueRuleCount = uniqueRuleCount
     }
@@ -117,10 +146,11 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         serverLastModified = try container.decodeIfPresent(String.self, forKey: .serverLastModified)
         limitExceededReason = try container.decodeIfPresent(String.self, forKey: .limitExceededReason)
         hasUserProvidedName = try container.decodeIfPresent(Bool.self, forKey: .hasUserProvidedName) ?? false
+        hasUserProvidedDescription = try container.decodeIfPresent(Bool.self, forKey: .hasUserProvidedDescription) ?? false
         excludedSites = FilterListSiteExclusion.normalizedDomains(
             from: try container.decodeIfPresent([String].self, forKey: .excludedSites) ?? []
         )
-        uniqueRuleCount = try container.decodeIfPresent(Int.self, forKey: .uniqueRuleCount)
+        uniqueRuleCount = try container.decodeIfPresent(Int.self, forKey: .admittedSourceRuleCount)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -141,8 +171,9 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         try container.encodeIfPresent(serverLastModified, forKey: .serverLastModified)
         try container.encodeIfPresent(limitExceededReason, forKey: .limitExceededReason)
         try container.encode(hasUserProvidedName, forKey: .hasUserProvidedName)
+        try container.encode(hasUserProvidedDescription, forKey: .hasUserProvidedDescription)
         try container.encode(excludedSites, forKey: .excludedSites)
-        try container.encodeIfPresent(uniqueRuleCount, forKey: .uniqueRuleCount)
+        try container.encodeIfPresent(uniqueRuleCount, forKey: .admittedSourceRuleCount)
     }
     
     /// Maps ISO 639 language codes to their primary region's flag emoji

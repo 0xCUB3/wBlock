@@ -129,7 +129,7 @@ private struct EditorMetadataAutofillState: Equatable {
         let name = metadataName.trimmingCharacters(in: .whitespacesAndNewlines)
         let description = metadataDescription.trimmingCharacters(in: .whitespacesAndNewlines)
         if !nameWasManuallyEdited {
-            lastAutofilledName = name.isEmpty ? "Pasted Userscript" : name
+            lastAutofilledName = name
         }
         if !descriptionWasManuallyEdited {
             lastAutofilledDescription = description
@@ -1250,10 +1250,12 @@ struct UserScriptInfoSidebar: View {
                     }
                 }
                 .pickerStyle(.menu)
-                if let author = metadata.author { InfoMetadataRow(title: "Author", value: author) }
-                if let homepage = metadata.homepage {
-                    InfoMetadataRow(title: "Homepage", value: homepage.absoluteString, url: homepage)
-                }
+                InfoMetadataRow(title: "Author", value: metadata.author ?? String(localized: "Not provided"))
+                InfoMetadataRow(
+                    title: "Homepage",
+                    value: metadata.homepage?.absoluteString ?? String(localized: "Not provided"),
+                    url: metadata.homepage
+                )
                 if !script.version.isEmpty { InfoMetadataRow(title: "Version", value: script.version) }
                 if script.url != nil { ScriptURLView(script: script) }
                 if contentLength > 0 { InfoMetadataRow(title: "Size", value: formatFileSize(contentLength)) }
@@ -2659,7 +2661,7 @@ struct AddUserScriptView: View {
             .joined(separator: "\n")
             .prefix(16_000)
         var parsed = UserScript(
-            name: UserScriptURLSupport.displayName(forFilename: "Pasted Userscript"),
+            name: "",
             content: String(boundedContent)
         )
         parsed.parseMetadata()

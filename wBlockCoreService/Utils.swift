@@ -239,15 +239,16 @@ public enum FilterListContentProcessing {
 public enum ContentBlockerIncrementalCache {
     // Bump when signature inputs/schema change so stale per-target signatures
     // do not suppress needed rebuilds.
-    private static let inputSignatureSchemaVersion = "6"
+    private static let inputSignatureSchemaVersion = "7"
 
     private struct State: Codable {
         var inputSignature: String
         var updatedAt: Int64
     }
 
-    /// UI ordering does not change compilation. Keep rule order within each
-    /// list intact, but use a stable list order for both hashing and conversion.
+    /// Keep rule order within each list intact. Target assignment and file
+    /// fingerprints are stable, while callers pass the explicit compile order
+    /// when output order matters.
     public static func canonicalFilterOrder(_ filters: [FilterList]) -> [FilterList] {
         filters.sorted { $0.id.uuidString < $1.id.uuidString }
     }
@@ -263,7 +264,8 @@ public enum ContentBlockerIncrementalCache {
         groupIdentifier: String,
         extraRulesText: String? = nil,
         cosmeticFilteringEnabled: Bool = true,
-        compatibilitySiteRestriction: [String]? = nil
+        compatibilitySiteRestriction: [String]? = nil,
+        compileOrder: [FilterList] = []
     ) -> String? {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
@@ -301,6 +303,9 @@ public enum ContentBlockerIncrementalCache {
         }
         if let sites = compatibilitySiteRestriction {
             canonical.append("compatibilityScope=\(sites.sorted().joined(separator: ","))\n")
+        }
+        if !compileOrder.isEmpty {
+            canonical.append("compileOrder=\(compileOrder.map(\.id.uuidString).joined(separator: ","))\n")
         }
         // Only the disabled state is recorded so existing signatures stay valid.
         if !cosmeticFilteringEnabled {

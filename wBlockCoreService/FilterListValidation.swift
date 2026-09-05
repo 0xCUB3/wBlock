@@ -85,6 +85,15 @@ public enum FilterListURLSupport {
         normalizeURLInput(newValue, rejoinWrappedLines: looksLikePaste(from: oldValue, to: newValue))
     }
 
+    public static func normalizeSingleURLInput(from oldValue: String, to newValue: String) -> String {
+        normalizeSingleURLInput(newValue, rejoinWrappedLines: looksLikePaste(from: oldValue, to: newValue))
+    }
+
+    public static func normalizeSingleURLInput(_ rawValue: String, rejoinWrappedLines: Bool = true) -> String {
+        let normalized = normalizeURLInput(rawValue, rejoinWrappedLines: rejoinWrappedLines)
+        return normalized.components(separatedBy: .newlines).first ?? ""
+    }
+
     public static func normalizeURLInput(_ rawValue: String, rejoinWrappedLines: Bool) -> String {
         let hadTrailingNewline = rawValue.last?.isNewline ?? false
         var lines: [String] = []

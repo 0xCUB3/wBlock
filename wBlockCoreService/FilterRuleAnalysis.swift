@@ -35,8 +35,8 @@ public struct FilterRuleAnalysis: Sendable {
 
     public func count(of kind: FilterRuleKind) -> Int { counts[kind] ?? 0 }
 
-    /// Trimmed rule lines from `earlier`, matching the normalisation that
-    /// `ContentBlockerMappingService.uniqueRuleCounts` uses.
+    /// Trimmed rule lines from `earlier`, matching the rule-identity
+    /// normalisation used by conversion-time deduplication.
     public static func ruleSet(from earlier: String) -> Set<String> {
         var seen = Set<String>()
         earlier.enumerateLines { line, _ in

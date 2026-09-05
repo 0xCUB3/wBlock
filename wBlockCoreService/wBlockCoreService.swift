@@ -23,13 +23,24 @@ public struct ContentBlockerTargetOutcome: Sendable {
     public let advancedRulesText: String?
     public let reusedCachedBase: Bool
     public let outputChanged: Bool
+    /// Per-filter source rule lines admitted by the target's real input path
+    /// after site scoping, affinity filtering, cosmetic filtering, and the same
+    /// identity deduplication used before conversion. This is not a per-filter
+    /// Safari JSON output count; the converter only reports target totals.
+    public let admittedSourceRuleCountsByFilterID: [UUID: Int]
 
-    public init(safariRulesCount: Int, advancedRulesText: String?, reusedCachedBase: Bool) {
+    public init(
+        safariRulesCount: Int,
+        advancedRulesText: String?,
+        reusedCachedBase: Bool,
+        admittedSourceRuleCountsByFilterID: [UUID: Int] = [:]
+    ) {
         self.init(
             safariRulesCount: safariRulesCount,
             advancedRulesText: advancedRulesText,
             reusedCachedBase: reusedCachedBase,
-            outputChanged: true
+            outputChanged: true,
+            admittedSourceRuleCountsByFilterID: admittedSourceRuleCountsByFilterID
         )
     }
 
@@ -37,18 +48,69 @@ public struct ContentBlockerTargetOutcome: Sendable {
         safariRulesCount: Int,
         advancedRulesText: String?,
         reusedCachedBase: Bool,
-        outputChanged: Bool
+        outputChanged: Bool,
+        admittedSourceRuleCountsByFilterID: [UUID: Int] = [:]
     ) {
         self.safariRulesCount = safariRulesCount
         self.advancedRulesText = advancedRulesText
         self.reusedCachedBase = reusedCachedBase
         self.outputChanged = outputChanged
+        self.admittedSourceRuleCountsByFilterID = admittedSourceRuleCountsByFilterID
     }
 }
 
 public struct ContentBlockerSaveResult: Sendable {
     public let ruleCount: Int
     public let outputChanged: Bool
+}
+
+private struct StoredTargetSourceRuleProvenance: Codable {
+    let schemaVersion: Int
+    let inputSignature: String
+    let admittedSourceRuleCountsByFilterID: [String: Int]
+
+    init(admittedSourceRuleCountsByFilterID: [UUID: Int], inputSignature: String) {
+        self.schemaVersion = 1
+        self.inputSignature = inputSignature
+        self.admittedSourceRuleCountsByFilterID = Dictionary(
+            uniqueKeysWithValues: admittedSourceRuleCountsByFilterID.map { ($0.key.uuidString, $0.value) }
+        )
+    }
+
+    var decodedCounts: [UUID: Int] {
+        Dictionary(
+            uniqueKeysWithValues: admittedSourceRuleCountsByFilterID.compactMap { key, value in
+                guard let id = UUID(uuidString: key) else { return nil }
+                return (id, value)
+            }
+        )
+    }
+}
+
+private struct SourceRuleAdmissionCounter {
+    private var seen = Set<String>()
+    private(set) var countsByFilterID: [UUID: Int] = [:]
+
+    mutating func record(
+        filterID: UUID,
+        rulesText: String,
+        cosmeticFilteringEnabled: Bool,
+        isCancelled: () -> Bool
+    ) throws {
+        if isCancelled() { throw CancellationError() }
+        countsByFilterID[filterID, default: 0] += 0
+        let effectiveRules = cosmeticFilteringEnabled
+            ? rulesText
+            : CosmeticFilteringPreference.strippingCosmeticRules(from: rulesText)
+        for raw in effectiveRules.split(whereSeparator: \.isNewline).map(String.init) {
+            if isCancelled() { throw CancellationError() }
+            let trimmed = raw.trimmingCharacters(in: .whitespaces)
+            guard FilterRuleAnalysis.isRuleLine(trimmed) else { continue }
+            if seen.insert(FilterRuleAnalysis.ruleIdentity(trimmed)).inserted {
+                countsByFilterID[filterID, default: 0] += 1
+            }
+        }
+    }
 }
     /// A valid Safari content blocker list that performs no blocking.
     ///
@@ -1306,6 +1368,43 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         ).ruleCount
     }
 
+    private static func targetSourceRuleProvenanceFilename(for targetRulesFilename: String) -> String {
+        "\(targetRulesFilename).source-rule-provenance.json"
+    }
+
+    private static func loadTargetSourceRuleProvenance(
+        targetRulesFilename: String,
+        inputSignature: String,
+        groupIdentifier: String
+    ) -> [UUID: Int] {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else { return [:] }
+        let url = containerURL.appendingPathComponent(
+            targetSourceRuleProvenanceFilename(for: targetRulesFilename)
+        )
+        guard let data = try? Data(contentsOf: url),
+              let stored = try? JSONDecoder().decode(StoredTargetSourceRuleProvenance.self, from: data),
+              stored.schemaVersion == 1, stored.inputSignature == inputSignature
+        else { return [:] }
+        return stored.decodedCounts
+    }
+
+    private static func saveTargetSourceRuleProvenance(
+        _ counts: [UUID: Int],
+        targetRulesFilename: String,
+        inputSignature: String,
+        groupIdentifier: String
+    ) {
+        let stored = StoredTargetSourceRuleProvenance(admittedSourceRuleCountsByFilterID: counts, inputSignature: inputSignature)
+        guard let data = try? JSONEncoder().encode(stored) else { return }
+        try? saveBlockerListFile(
+            contents: String(decoding: data, as: UTF8.self),
+            groupIdentifier: groupIdentifier,
+            filename: targetSourceRuleProvenanceFilename(for: targetRulesFilename)
+        )
+    }
+
     /// Converts rules from a file, with a persistent on-disk cache keyed by the caller-provided SHA256.
     /// This avoids re-running SafariConverterLib when the combined rules for a target haven't changed.
     public static func convertFilterFromFile(
@@ -1469,10 +1568,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         if Task.isCancelled || isCancelled?() == true {
             throw CancellationError()
         }
-        // Use the same stable list order for cache identity and fresh output.
-        // Sorting only the hash would reuse output from a different ordering.
+        // Normalize display ordering without losing newest-first overflow
+        // priority. Both cache identity and conversion use this same order.
+        let orderedSelectedFilters = ContentBlockerMappingService.orderedForCompilation(orderedSelectedFilters)
         let filters = ContentBlockerIncrementalCache.canonicalFilterOrder(filters)
-        let orderedSelectedFilters = ContentBlockerIncrementalCache.canonicalFilterOrder(orderedSelectedFilters)
         let rulesFilename = targetInfo.rulesFilename
         let cosmeticFilteringEnabled = CosmeticFilteringPreference.isEnabled(groupIdentifier: groupIdentifier)
         // Every selected list can change cross-slot ownership or exception
@@ -1487,7 +1586,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             groupIdentifier: groupIdentifier,
             extraRulesText: extraRulesText,
             cosmeticFilteringEnabled: cosmeticFilteringEnabled,
-            compatibilitySiteRestriction: orderedSelectedFilters.isEmpty ? [] : orderedSelectedFilters.first?.activeSiteRestriction
+            compatibilitySiteRestriction: orderedSelectedFilters.isEmpty ? [] : orderedSelectedFilters.first?.activeSiteRestriction,
+            compileOrder: orderedSelectedFilters
         )
         let storedSignature = ContentBlockerIncrementalCache.loadInputSignature(
             targetRulesFilename: rulesFilename,
@@ -1516,7 +1616,12 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 safariRulesCount: fastUpdate.safariRulesCount,
                 advancedRulesText: (trimmedAdvanced?.isEmpty == false) ? trimmedAdvanced : nil,
                 reusedCachedBase: true,
-                outputChanged: fastUpdate.outputChanged
+                outputChanged: fastUpdate.outputChanged,
+                admittedSourceRuleCountsByFilterID: loadTargetSourceRuleProvenance(
+                    targetRulesFilename: rulesFilename,
+                    inputSignature: currentSignature,
+                    groupIdentifier: groupIdentifier
+                )
             )
         }
 
@@ -1539,13 +1644,20 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 targetRulesFilename: rulesFilename,
                 groupIdentifier: groupIdentifier
             )
+            saveTargetSourceRuleProvenance(
+                conversion.admittedSourceRuleCountsByFilterID,
+                targetRulesFilename: rulesFilename,
+                inputSignature: currentSignature,
+                groupIdentifier: groupIdentifier
+            )
         }
 
         return ContentBlockerTargetOutcome(
             safariRulesCount: conversion.safariRulesCount,
             advancedRulesText: conversion.advancedRulesText,
             reusedCachedBase: false,
-            outputChanged: conversion.outputChanged
+            outputChanged: conversion.outputChanged,
+            admittedSourceRuleCountsByFilterID: conversion.admittedSourceRuleCountsByFilterID
         )
     }
 
@@ -1679,7 +1791,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         cosmeticFilteringEnabled: Bool,
         groupIdentifier: String,
         isCancelled: (() -> Bool)?
-    ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
+    ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool, admittedSourceRuleCountsByFilterID: [UUID: Int]) {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else {
@@ -1696,6 +1808,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         defer { try? fileHandle.close() }
 
         var hasher = SHA256()
+        var sourceRuleAdmissions = SourceRuleAdmissionCounter()
         let newlineData = Data("\n".utf8)
         let assignedFilterIDs = Set(filters.map(\.id))
         let cancellationRequested = {
@@ -1717,13 +1830,24 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             guard includeBaseRules || hasAffinity else { continue }
 
             if hasAffinity {
-                try SafariContentBlockerAffinityProcessor.appendAffinityFilteredContribution(
-                    for: filter,
+                let filtered = try SafariContentBlockerAffinityProcessor.filteredContent(
+                    from: affinitySnapshot.content(for: filter.id) ?? "",
                     includeBaseRules: includeBaseRules,
                     target: targetInfo,
                     allTargets: allTargets,
-                    affinitySnapshot: affinitySnapshot,
-                    destinationHandle: fileHandle,
+                    isCancelled: cancellationRequested
+                )
+                let restricted = FilterListSiteExclusion.applyingSiteRestrictions(filtered, for: filter)
+                try sourceRuleAdmissions.record(
+                    filterID: filter.id,
+                    rulesText: restricted,
+                    cosmeticFilteringEnabled: cosmeticFilteringEnabled,
+                    isCancelled: cancellationRequested
+                )
+                guard !restricted.isEmpty else { continue }
+                try ContentBlockerInputWriter.appendInline(
+                    restricted,
+                    to: fileHandle,
                     hasher: &hasher,
                     newlineData: newlineData,
                     isCancelled: cancellationRequested
@@ -1738,11 +1862,25 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     let kept = restricted.components(separatedBy: .newlines).filter {
                         !duplicates.contains(FilterRuleAnalysis.ruleIdentity($0))
                     }
+                    let keptText = kept.joined(separator: "\n")
+                    try sourceRuleAdmissions.record(
+                        filterID: filter.id,
+                        rulesText: keptText,
+                        cosmeticFilteringEnabled: cosmeticFilteringEnabled,
+                        isCancelled: cancellationRequested
+                    )
                     try ContentBlockerInputWriter.appendInline(
-                        kept.joined(separator: "\n"), to: fileHandle, hasher: &hasher,
+                        keptText, to: fileHandle, hasher: &hasher,
                         newlineData: newlineData, isCancelled: cancellationRequested
                     )
                 } else if filter.excludedSites.isEmpty && filter.activeSiteRestriction == nil {
+                    let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
+                    try sourceRuleAdmissions.record(
+                        filterID: filter.id,
+                        rulesText: rawContent,
+                        cosmeticFilteringEnabled: cosmeticFilteringEnabled,
+                        isCancelled: cancellationRequested
+                    )
                     try ContentBlockerInputWriter.appendFile(
                         from: sourceURL,
                         to: fileHandle,
@@ -1753,8 +1891,15 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     )
                 } else {
                     let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
+                    let restricted = FilterListSiteExclusion.applyingSiteRestrictions(rawContent, for: filter)
+                    try sourceRuleAdmissions.record(
+                        filterID: filter.id,
+                        rulesText: restricted,
+                        cosmeticFilteringEnabled: cosmeticFilteringEnabled,
+                        isCancelled: cancellationRequested
+                    )
                     try ContentBlockerInputWriter.appendInline(
-                        FilterListSiteExclusion.applyingSiteRestrictions(rawContent, for: filter),
+                        restricted,
                         to: fileHandle,
                         hasher: &hasher,
                         newlineData: newlineData,
@@ -1777,7 +1922,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         let digest = hasher.finalize()
         let rulesSHA256Hex = digest.map { String(format: "%02x", $0) }.joined()
 
-        return try ContentBlockerService.convertFilterFromFileWithOutputChange(
+        let conversion = try ContentBlockerService.convertFilterFromFileWithOutputChange(
             rulesFileURL: tempURL,
             rulesSHA256Hex: rulesSHA256Hex,
             groupIdentifier: groupIdentifier,
@@ -1786,6 +1931,12 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             cosmeticFilteringEnabled: cosmeticFilteringEnabled,
             compatibilitySiteRestriction: orderedSelectedFilters.isEmpty ? [] : orderedSelectedFilters.first?.activeSiteRestriction,
             isCancelled: cancellationRequested
+        )
+        return (
+            safariRulesCount: conversion.safariRulesCount,
+            advancedRulesText: conversion.advancedRulesText,
+            outputChanged: conversion.outputChanged,
+            admittedSourceRuleCountsByFilterID: sourceRuleAdmissions.countsByFilterID
         )
     }
 

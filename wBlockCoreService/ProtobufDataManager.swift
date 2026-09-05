@@ -96,11 +96,26 @@ private func mergeFilterLists(
         mergeField(&merged.isCustom, baseline: base.isCustom, persisted: theirs.isCustom)
         mergeField(&merged.localFilePath, baseline: base.localFilePath, persisted: theirs.localFilePath)
         mergeField(&merged.excludedSites, baseline: base.excludedSites, persisted: theirs.excludedSites)
-        if merged.hasUniqueRuleCount == base.hasUniqueRuleCount
-            && (!merged.hasUniqueRuleCount || merged.uniqueRuleCount == base.uniqueRuleCount)
+        if merged.hasAdmittedSourceRuleCount == base.hasAdmittedSourceRuleCount
+            && (!merged.hasAdmittedSourceRuleCount || merged.admittedSourceRuleCount == base.admittedSourceRuleCount)
         {
-            if theirs.hasUniqueRuleCount { merged.uniqueRuleCount = theirs.uniqueRuleCount }
-            else { merged.clearUniqueRuleCount() }
+            if theirs.hasAdmittedSourceRuleCount { merged.admittedSourceRuleCount = theirs.admittedSourceRuleCount }
+            else { merged.clearAdmittedSourceRuleCount() }
+        }
+        if merged.hasUserProvidedName == base.hasUserProvidedName
+            && (!merged.hasUserProvidedName || merged.userProvidedName == base.userProvidedName)
+        {
+            if theirs.hasUserProvidedName { merged.userProvidedName = theirs.userProvidedName }
+            else { merged.clearUserProvidedName() }
+        }
+        if merged.hasUserProvidedDescription == base.hasUserProvidedDescription
+            && (!merged.hasUserProvidedDescription || merged.userProvidedDescription == base.userProvidedDescription)
+        {
+            if theirs.hasUserProvidedDescription {
+                merged.userProvidedDescription = theirs.userProvidedDescription
+            } else {
+                merged.clearUserProvidedDescription()
+            }
         }
         mergeField(&merged.unknownFields, baseline: base.unknownFields, persisted: theirs.unknownFields)
         return merged
@@ -2034,6 +2049,10 @@ public class ProtobufDataManager: ObservableObject {
                 }
                 protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
                 protoFilterList.isCustom = inferredIsCustom
+                protoFilterList.userProvidedName = inferredIsCustom && isRemoteLegacyURL(filterList.url)
+                protoFilterList.userProvidedDescription = inferredIsCustom
+                    && isRemoteLegacyURL(filterList.url)
+                    && isLegacyUserProvidedDescription(filterList.description)
 
                 appendOrMergeMigratedFilterList(protoFilterList, to: &appData)
             }
@@ -2057,6 +2076,9 @@ public class ProtobufDataManager: ObservableObject {
                 }
                 protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
                 protoFilterList.isCustom = true
+                protoFilterList.userProvidedName = isRemoteLegacyURL(filterList.url)
+                protoFilterList.userProvidedDescription = isRemoteLegacyURL(filterList.url)
+                    && isLegacyUserProvidedDescription(filterList.description)
 
                 appendOrMergeMigratedFilterList(protoFilterList, to: &appData)
             }
@@ -2075,6 +2097,16 @@ public class ProtobufDataManager: ObservableObject {
         }
 
         appData.filterLists.append(protoFilterList)
+    }
+
+    private func isRemoteLegacyURL(_ url: URL) -> Bool {
+        guard let scheme = url.scheme?.lowercased() else { return false }
+        return scheme == "http" || scheme == "https"
+    }
+
+    private func isLegacyUserProvidedDescription(_ description: String) -> Bool {
+        let trimmed = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmed.isEmpty && trimmed != "User-added filter list."
     }
 
     private func inferLegacyCustomStatus(for filterList: LegacyFilterList) -> Bool {

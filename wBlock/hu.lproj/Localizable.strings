@@ -1089,3 +1089,26 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "This script will not run on these sites. Other scripts still run." = "Ez a szkript nem fut ezeken a webhelyeken. A többi szkript továbbra is fut.";
 
 "Operation details" = "Művelet részletei";
+
+/* Native name; keep in Montenegrin in every display language. */
+"crnogorski" = "crnogorski";
+
+"URL entry mode" = "URL-beviteli mód";
+"Single URL" = "Egy URL";
+"Bulk URLs" = "Több URL";
+"Enter URLs to edit each list’s name and description." = "Adjon meg URL-eket az egyes listák nevének és leírásának szerkesztéséhez.";
+"Names and descriptions" = "Nevek és leírások";
+"Paste URL" = "URL beillesztése";
+"Paste URLs" = "URL-ek beillesztése";
+"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "A hozzáadott webhelyeken a szűrőlisták és a scriptletek kimaradnak. A userscripteknek külön kapcsolóik vannak.";
+"Enable on this site" = "Engedélyezés ezen a webhelyen";
+"Unavailable while this site is disabled." = "Nem érhető el, amíg ez a webhely le van tiltva.";
+"Applies filter lists and scriptlets. Userscripts have separate switches." = "Alkalmazza a szűrőlistákat és a scriptleteket. A userscripteknek külön kapcsolóik vannak.";
+"Not provided" = "Nincs megadva";
+
+"(%@ submitted at last apply)" = "(%@ elküldve a legutóbbi alkalmazáskor)";
+
+"Submitted at last apply" = "Elküldve a legutóbbi alkalmazáskor";
+
+"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Ez a szám az átalakítónak elküldött forrásszabályokat jelzi, nem a Safari végleges szabályszámát.";
+"Failed to persist pending filter update revision" = "Nem sikerült menteni a függőben lévő szűrőfrissítést";

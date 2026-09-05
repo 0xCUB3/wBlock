@@ -400,6 +400,14 @@ extension AppDelegate: NSApplicationDelegate {
                     "Headless update finished",
                     metadata: ["reason": reason.rawValue, "outcome": "\(outcome)"]
                 )
+                if reason == .stagedDownloads {
+                    switch outcome {
+                    case .completed:
+                        HeadlessLaunch.recordAutoRebuildLaunchOutcome(.rebuildSucceeded)
+                    default:
+                        HeadlessLaunch.recordAutoRebuildLaunchOutcome(.rebuildFailed)
+                    }
+                }
                 if requested {
                     FilterUpdatePopupStatus.finish(outcome)
                 }
