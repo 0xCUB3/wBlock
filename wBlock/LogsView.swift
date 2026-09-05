@@ -119,25 +119,23 @@ struct LogsView: View {
             }
             #else
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    HStack {
-                        Button {
-                            exportLogsToFile()
-                        } label: {
-                            Label("Export", systemImage: "square.and.arrow.up")
-                        }
-                        .disabled(entries.isEmpty)
-
-                        Button {
-                            Task {
-                                await ConcurrentLogManager.shared.clearLogs()
-                                await loadLogs()
-                            }
-                        } label: {
-                            Label("Clear", systemImage: "trash")
-                        }
-                        .disabled(entries.isEmpty)
+                ToolbarItemGroup(placement: .automatic) {
+                    Button {
+                        exportLogsToFile()
+                    } label: {
+                        Label("Export", systemImage: "square.and.arrow.up")
                     }
+                    .disabled(entries.isEmpty)
+
+                    Button {
+                        Task {
+                            await ConcurrentLogManager.shared.clearLogs()
+                            await loadLogs()
+                        }
+                    } label: {
+                        Label("Clear", systemImage: "trash")
+                    }
+                    .disabled(entries.isEmpty)
                 }
             }
             #endif
