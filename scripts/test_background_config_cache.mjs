@@ -93,7 +93,7 @@ const loadBackground = ({ storage = {}, nativeHandler, executeScript = async () 
       query: async () => { state.tabQueries += 1; return [{ id: 7 }]; },
       get: async () => ({}),
       sendMessage: async (tabId, message) => { state.tabMessages.push({ tabId, message }); return {}; },
-      onUpdated: listenerStub,
+      onUpdated: { addListener: fn => { state.onTabUpdated = fn; } },
       onActivated: listenerStub,
       onCreated: listenerStub,
       onRemoved: listenerStub
@@ -694,6 +694,59 @@ for (const [label, inertState, activeCSS] of [
   await sleep(20);
   check("userscriptsChanged broadcasts live session invalidation", state.tabMessages.some(({ message }) => message && message.type === "wblock:clearDocumentStartSessionCache"));
   check("userscriptsChanged does not request a catalog", !state.nativeMessages.some(message => message && message.action === "getDocumentStartUserScriptCatalog"));
+}
+
+
+// Page rules must stay responsive while either maintenance download is pending.
+for (const maintenanceAction of ["maybeUpdateUserScripts", "maybeStageFilterUpdates"]) {
+  let releaseMaintenance;
+  let markMaintenanceStarted;
+  let releasePage;
+  const heldMaintenance = new Promise(resolve => { releaseMaintenance = resolve; });
+  const maintenanceStarted = new Promise(resolve => { markMaintenanceStarted = resolve; });
+  const heldPage = new Promise(resolve => { releasePage = resolve; });
+  const pageUrl = "https://fresh-page.example/";
+  const state = loadBackground({ nativeHandler: message => {
+    if (message.action === maintenanceAction) {
+      markMaintenanceStarted();
+      return heldMaintenance;
+    }
+    if (message.action === "maybeUpdateUserScripts" || message.action === "maybeStageFilterUpdates") {
+      return { updated: 0, staged: 0 };
+    }
+    if (message.action === "getBlockingState") return { disabled: false, paused: false };
+    if (message.payload?.url === pageUrl) return heldPage;
+    return { payload: makeConfig([], 1) };
+  }});
+
+  await sleep(20);
+  state.onTabUpdated(7, { status: "complete" }, { id: 7, url: "https://previous-page.example/" });
+  let maintenanceRunning = false;
+  await Promise.race([
+    maintenanceStarted.then(() => { maintenanceRunning = true; }),
+    sleep(500)
+  ]);
+  check(`${maintenanceAction} starts through tab completion`, maintenanceRunning);
+
+  let completed = false;
+  const requests = Promise.all([
+    state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl)),
+    state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl))
+  ]).then(() => { completed = true; });
+  await sleep(50);
+  check(`page lookup bypasses ${maintenanceAction} and still coalesces`,
+    state.nativeMessages.filter(message => message.payload?.url === pageUrl).length === 1);
+  if (maintenanceAction === "maybeUpdateUserScripts") {
+    check("filter staging still waits behind userscript maintenance",
+      !state.nativeMessages.some(message => message.action === "maybeStageFilterUpdates"));
+  }
+  releasePage({ payload: makeConfig(["#fresh-page-ad"], 1) });
+  await Promise.race([requests, sleep(500)]);
+  check(`page rules apply before ${maintenanceAction} finishes`, completed &&
+    state.cssInserted.some(injection => injection.css.includes("#fresh-page-ad")));
+
+  releaseMaintenance({ updated: 0, staged: 0 });
+  await requests;
 }
 
 

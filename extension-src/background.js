@@ -26264,8 +26264,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       url,
       topUrl
     };
-    // Send the request to the native messaging host and wait for the response.
-    const response = await sendQueuedNativeMessage(request);
+    // Page rules must not wait behind maintenance downloads. Same-page
+    // requests are still coalesced by requestConfigurationCoalesced.
+    const response = await sendPriorityNativeMessage(request);
     const message = response;
     if (message && message.state === "error") {
       throw new Error(message.error || "Native configuration unavailable");
