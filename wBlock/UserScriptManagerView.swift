@@ -1727,6 +1727,7 @@ private struct TubeCleanerFeaturesPicker: View {
 
 private struct DeArrowSettingsPicker: View {
     @Binding var settings: TubeCleanerDeArrowPreference.Settings
+    @State private var showingChannels = false
 
     var body: some View {
         Menu {
@@ -1735,6 +1736,8 @@ private struct DeArrowSettingsPicker: View {
             Toggle("Random Frame When No Thumbnail", isOn: $settings.randomThumbnails)
                 .disabled(!settings.replaceThumbnails)
             Toggle("Show Original on Hover", isOn: $settings.showOriginalOnHover)
+            Divider()
+            Button("Original Thumbnail Channels") { showingChannels = true }
             Divider()
             // DeArrow data is CC BY-NC-SA 4.0; the credit link is a license term.
             Link("Using DeArrow", destination: URL(string: "https://dearrow.ajay.app/")!)
@@ -1763,6 +1766,9 @@ private struct DeArrowSettingsPicker: View {
         .noFocusRingCompat()
         .accessibilityLabel("Settings")
         .padding(.top, 2)
+        .sheet(isPresented: $showingChannels) {
+            DeArrowChannelSettingsView(settings: $settings)
+        }
     }
 }
 

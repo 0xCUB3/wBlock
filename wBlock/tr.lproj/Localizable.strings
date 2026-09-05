@@ -1068,3 +1068,9 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "YouTube başlıklarını ve küçük resimlerini DeArrow topluluğunun sunduğu alternatiflerle değiştirir.";
 
 "DeArrow" = "DeArrow";
+
+"Original Thumbnail Channels" = "Orijinal Küçük Resim Kanalları";
+
+"Keep original thumbnails for these YouTube channels." = "Bu YouTube kanalları için orijinal küçük resimleri koru.";
+
+"Channel URL, @handle, or channel ID" = "Kanal URL'si, @tanıtıcı veya kanal kimliği";

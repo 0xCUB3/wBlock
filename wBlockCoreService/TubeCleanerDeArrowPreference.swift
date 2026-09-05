@@ -13,6 +13,7 @@ public enum TubeCleanerDeArrowPreference {
         public var replaceThumbnails = true
         public var randomThumbnails = false
         public var showOriginalOnHover = true
+        public var originalThumbnailChannels: [String]? = nil
 
         public init() {}
     }

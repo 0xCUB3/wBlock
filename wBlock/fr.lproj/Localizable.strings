@@ -1069,3 +1069,9 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "Remplace les titres et miniatures YouTube par des alternatives proposées par la communauté DeArrow.";
 
 "DeArrow" = "DeArrow";
+
+"Original Thumbnail Channels" = "Chaînes avec miniatures originales";
+
+"Keep original thumbnails for these YouTube channels." = "Conserver les miniatures originales de ces chaînes YouTube.";
+
+"Channel URL, @handle, or channel ID" = "URL de la chaîne, @identifiant ou ID de chaîne";

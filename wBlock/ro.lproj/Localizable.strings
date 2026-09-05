@@ -1069,3 +1069,9 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "Înlocuiește titlurile și miniaturile YouTube cu alternative propuse de comunitatea DeArrow.";
 
 "DeArrow" = "DeArrow";
+
+"Original Thumbnail Channels" = "Canale cu miniaturi originale";
+
+"Keep original thumbnails for these YouTube channels." = "Păstrează miniaturile originale pentru aceste canale YouTube.";
+
+"Channel URL, @handle, or channel ID" = "URL-ul canalului, @nume sau ID-ul canalului";

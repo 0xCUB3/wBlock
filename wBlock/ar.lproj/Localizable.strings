@@ -1069,3 +1069,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "يستبدل عناوين YouTube وصوره المصغرة ببدائل يقدمها مجتمع DeArrow.";
 
 "DeArrow" = "DeArrow";
+
+"Original Thumbnail Channels" = "قنوات الصور المصغرة الأصلية";
+
+"Keep original thumbnails for these YouTube channels." = "احتفظ بالصور المصغرة الأصلية لقنوات YouTube هذه.";
+
+"Channel URL, @handle, or channel ID" = "رابط القناة أو ‎@المعرّف أو معرّف القناة";

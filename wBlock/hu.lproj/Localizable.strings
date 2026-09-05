@@ -1069,3 +1069,9 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "A YouTube-címeket és bélyegképeket a DeArrow közössége által beküldött alternatívákra cseréli.";
 
 "DeArrow" = "DeArrow";
+
+"Original Thumbnail Channels" = "Eredeti bélyegképes csatornák";
+
+"Keep original thumbnails for these YouTube channels." = "Az eredeti bélyegképek megtartása ezeknél a YouTube-csatornáknál.";
+
+"Channel URL, @handle, or channel ID" = "Csatorna-URL, @név vagy csatornaazonosító";

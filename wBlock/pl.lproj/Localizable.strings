@@ -1069,3 +1069,9 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "Zastępuje tytuły i miniatury YouTube alternatywami zaproponowanymi przez społeczność DeArrow.";
 
 "DeArrow" = "DeArrow";
+
+"Original Thumbnail Channels" = "Kanały z oryginalnymi miniaturami";
+
+"Keep original thumbnails for these YouTube channels." = "Zachowaj oryginalne miniatury dla tych kanałów YouTube.";
+
+"Channel URL, @handle, or channel ID" = "URL kanału, @nazwa lub identyfikator kanału";

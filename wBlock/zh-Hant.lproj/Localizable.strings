@@ -1069,3 +1069,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "使用 DeArrow 社群提交的替代內容更換 YouTube 標題和縮圖。";
 
 "DeArrow" = "DeArrow";
+
+"Original Thumbnail Channels" = "使用原始縮圖的頻道";
+
+"Keep original thumbnails for these YouTube channels." = "為這些 YouTube 頻道保留原始縮圖。";
+
+"Channel URL, @handle, or channel ID" = "頻道網址、@帳號代碼或頻道 ID";

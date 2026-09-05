@@ -1069,3 +1069,9 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "Ersetzt YouTube-Titel und Vorschaubilder durch Alternativen aus der DeArrow-Community.";
 
 "DeArrow" = "DeArrow";
+
+"Original Thumbnail Channels" = "Kanäle mit Original-Vorschaubildern";
+
+"Keep original thumbnails for these YouTube channels." = "Original-Vorschaubilder für diese YouTube-Kanäle beibehalten.";
+
+"Channel URL, @handle, or channel ID" = "Kanal-URL, @Handle oder Kanal-ID";

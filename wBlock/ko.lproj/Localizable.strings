@@ -1069,3 +1069,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "YouTube 제목과 썸네일을 DeArrow 커뮤니티가 제안한 대안으로 바꿉니다.";
 
 "DeArrow" = "DeArrow";
+
+"Original Thumbnail Channels" = "원본 썸네일을 사용할 채널";
+
+"Keep original thumbnails for these YouTube channels." = "이 YouTube 채널의 원본 썸네일을 유지합니다.";
+
+"Channel URL, @handle, or channel ID" = "채널 URL, @핸들 또는 채널 ID";
