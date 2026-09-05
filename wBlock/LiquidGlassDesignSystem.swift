@@ -37,8 +37,8 @@ extension View {
 #if os(macOS)
 /// The Filters and Userscripts tabs share one macOS toolbar shape: Add and
 /// Apply together, the enabled-only filter on its own, then search. On macOS 26
-/// fixed `ToolbarSpacer`s split those into separate glass islands (#608); older
-/// releases render the same buttons as one flat group.
+/// compact glass groups keep an eight-point gap; older releases render the
+/// same buttons as one flat group.
 struct MacActionsToolbar<Primary: View, Filter: View, Search: View>: ViewModifier {
     let isSearchExpanded: Bool
     @ViewBuilder let primary: () -> Primary
@@ -48,13 +48,12 @@ struct MacActionsToolbar<Primary: View, Filter: View, Search: View>: ViewModifie
     func body(content: Content) -> some View {
         if #available(macOS 26.0, *) {
             content.toolbar {
-                if !isSearchExpanded {
-                    ToolbarItemGroup(placement: .automatic) { primary() }
-                    ToolbarSpacer(.fixed, placement: .automatic)
-                    ToolbarItem(placement: .automatic) { filter() }
-                    ToolbarSpacer(.fixed, placement: .automatic)
+                if isSearchExpanded {
+                    ToolbarItem(placement: .automatic) { search() }
+                } else {
+                    ToolbarItem(placement: .automatic) { compactActions }
+                        .sharedBackgroundVisibility(.hidden)
                 }
-                ToolbarItem(placement: .automatic) { search() }
             }
         } else {
             content.toolbar {
@@ -67,6 +66,36 @@ struct MacActionsToolbar<Primary: View, Filter: View, Search: View>: ViewModifie
                 ToolbarItem(placement: .automatic) { search() }
             }
         }
+    }
+
+    @available(macOS 26.0, *)
+    private var compactActions: some View {
+        GlassEffectContainer(spacing: 4) {
+            HStack(spacing: 8) {
+                HStack(spacing: 0) { primary() }
+                    .glassEffect(.regular.interactive(), in: .capsule)
+                filter()
+                    .glassEffect(.regular.interactive(), in: .capsule)
+                search()
+                    .glassEffect(.regular.interactive(), in: .capsule)
+            }
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(CompactToolbarButtonStyle())
+    }
+}
+
+@available(macOS 26.0, *)
+private struct CompactToolbarButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 17))
+            .frame(width: 36, height: 36)
+            .contentShape(Rectangle())
+            .foregroundStyle(.primary)
+            .opacity(isEnabled ? (configuration.isPressed ? 0.6 : 1) : 0.35)
     }
 }
 
