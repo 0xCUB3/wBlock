@@ -663,6 +663,9 @@ struct SettingsView: View {
             }
             .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
             .onAppear { pauseExceptionSites = BlockingPauseStore.exceptionDomains() }
+            .onReceive(NotificationCenter.default.publisher(for: BlockingPauseStore.exceptionDomainsDidChange)) { _ in
+                pauseExceptionSites = BlockingPauseStore.exceptionDomains()
+            }
         } header: {
             Text("Keep Blocking on These Sites")
         } footer: {

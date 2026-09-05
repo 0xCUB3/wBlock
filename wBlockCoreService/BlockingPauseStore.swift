@@ -74,6 +74,8 @@ public enum BlockingPauseStore {
             && isFullyPaused(.elementZapper, groupIdentifier: groupIdentifier)
     }
 
+    public static let exceptionDomainsDidChange = Notification.Name("wBlock.pauseExceptionDomainsDidChange")
+
     public static let exceptionDomainsKey = "blockingPauseExceptionDomains"
 
     public static func exceptionDomains(groupIdentifier: String = GroupIdentifier.shared.value) -> [String] {
@@ -81,7 +83,10 @@ public enum BlockingPauseStore {
     }
 
     public static func setExceptionDomains(_ domains: [String], groupIdentifier: String = GroupIdentifier.shared.value) {
-        UserDefaults(suiteName: groupIdentifier)?.set(DisabledSitesNormalizer.normalizedDomains(from: domains), forKey: exceptionDomainsKey)
+        let normalized = DisabledSitesNormalizer.normalizedDomains(from: domains)
+        guard normalized != exceptionDomains(groupIdentifier: groupIdentifier) else { return }
+        UserDefaults(suiteName: groupIdentifier)?.set(normalized, forKey: exceptionDomainsKey)
+        NotificationCenter.default.post(name: exceptionDomainsDidChange, object: nil)
     }
 
     public static func isFullyPaused(_ component: BlockingPauseComponents, groupIdentifier: String = GroupIdentifier.shared.value) -> Bool {

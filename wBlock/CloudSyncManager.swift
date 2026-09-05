@@ -375,6 +375,12 @@ final class CloudSyncManager: ObservableObject {
     // MARK: - Local change tracking / upload
 
     private func observeLocalSaves() {
+        NotificationCenter.default.publisher(for: BlockingPauseStore.exceptionDomainsDidChange)
+            .receive(on: RunLoop.main)
+            .debounce(for: .seconds(1.5), scheduler: RunLoop.main)
+            .sink { [weak self] _ in self?.handleLocalSave() }
+            .store(in: &cancellables)
+
         dataManager.didSaveData
             .receive(on: RunLoop.main)
             .debounce(for: .seconds(1.5), scheduler: RunLoop.main)
@@ -782,6 +788,16 @@ final class CloudSyncManager: ObservableObject {
         }
         for url in currentExcluded.subtracting(desiredExcluded) {
             dataManager.removeExcludedDefaultUserScriptURL(url)
+        }
+
+        if let remoteDomains = payload.settings.blockingPauseExceptionDomains {
+            BlockingPauseStore.setExceptionDomains(Self.mergeStringSet(
+                local: BlockingPauseStore.exceptionDomains(),
+                baseline: settingsBaseline.blockingPauseExceptionDomains ?? [],
+                remote: DisabledSitesNormalizer.normalizedDomains(from: remoteDomains)
+            ))
+            UserScriptManager.invalidateDocumentStartExecutionCache()
+            ZapperRuleManager.notifySafariRulesChanged()
         }
 
         // Merge domain sets independently so a local whitelist edit does not discard a
@@ -1899,7 +1915,8 @@ final class CloudSyncManager: ObservableObject {
             autoUpdateEnabled: dataManager.autoUpdateEnabled,
             autoUpdateIntervalHours: dataManager.autoUpdateIntervalHours,
             userScriptShowEnabledOnly: dataManager.getUserScriptShowEnabledOnly(),
-            excludedDefaultUserScriptURLs: dataManager.getExcludedDefaultUserScriptURLs().sorted()
+            excludedDefaultUserScriptURLs: dataManager.getExcludedDefaultUserScriptURLs().sorted(),
+            blockingPauseExceptionDomains: BlockingPauseStore.exceptionDomains()
         )
 
         let filterLists = currentFilterLists()
@@ -2510,6 +2527,7 @@ private struct SyncPayload: Codable {
         let autoUpdateIntervalHours: Double
         let userScriptShowEnabledOnly: Bool
         let excludedDefaultUserScriptURLs: [String]
+        let blockingPauseExceptionDomains: [String]?
     }
 
     struct CustomFilterList: Codable {
