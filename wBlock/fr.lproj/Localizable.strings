@@ -1063,3 +1063,5 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Last Successful Update" = "Dernière mise à jour réussie";
 
 "Site Actions" = "Actions par site";
+
+"Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "La pause du blocage est activée lorsque tous les composants sont en pause. Chaque composant peut aussi être mis en pause séparément.";

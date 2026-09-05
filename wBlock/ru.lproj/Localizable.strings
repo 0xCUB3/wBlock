@@ -1063,3 +1063,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Last Successful Update" = "Последнее успешное обновление";
 
 "Site Actions" = "Действия для сайтов";
+
+"Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "Пауза блокировки включается, когда приостановлены все компоненты. Каждый компонент также можно приостановить отдельно.";

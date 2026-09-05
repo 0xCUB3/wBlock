@@ -1063,3 +1063,5 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Last Successful Update" = "Ostatnia udana aktualizacja";
 
 "Site Actions" = "Działania w witrynach";
+
+"Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "Wstrzymanie blokowania włącza się, gdy wszystkie składniki są wstrzymane. Każdy składnik można też wstrzymać osobno.";

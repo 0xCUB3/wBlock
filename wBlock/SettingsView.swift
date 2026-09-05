@@ -220,7 +220,7 @@ struct SettingsView: View {
 
     private var pauseBlockingBinding: Binding<Bool> {
         Binding(
-            get: { filterManager.isBlockingPaused },
+            get: { filterManager.pausedComponents == .all },
             set: { newValue in
                 Task { await filterManager.setBlockingPaused(newValue) }
             }
@@ -638,11 +638,7 @@ struct SettingsView: View {
         } header: {
             Text("Blocking")
         } footer: {
-            Text(
-                filterManager.isBlockingPaused
-                    ? "Pause Blocking is on while any selected component is paused. Resume restores all components."
-                    : "Temporarily pause selected components without changing their enabled settings."
-            )
+            Text("Pause Blocking turns on when all components are paused. Each component can also be paused separately.")
         }
 
         // The component options live in their own section so they read as
@@ -655,9 +651,7 @@ struct SettingsView: View {
             Text("Paused Components")
         }
         .disabled(
-            !filterManager.isBlockingPaused
-                || filterManager.isLoading
-                || filterManager.isApplyInFlight
+            filterManager.isLoading || filterManager.isApplyInFlight
         )
 
         Section {

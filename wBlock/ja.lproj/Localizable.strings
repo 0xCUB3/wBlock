@@ -1063,3 +1063,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Last Successful Update" = "最後に成功した更新";
 
 "Site Actions" = "サイトの操作";
+
+"Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "すべての機能が一時停止すると、ブロックの一時停止がオンになります。各機能を個別に一時停止することもできます。";

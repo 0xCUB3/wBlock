@@ -1063,3 +1063,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Last Successful Update" = "Τελευταία επιτυχής ενημέρωση";
 
 "Site Actions" = "Ενέργειες ιστοτόπων";
+
+"Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "Η παύση αποκλεισμού ενεργοποιείται όταν όλα τα στοιχεία είναι σε παύση. Κάθε στοιχείο μπορεί επίσης να τεθεί σε παύση ξεχωριστά.";

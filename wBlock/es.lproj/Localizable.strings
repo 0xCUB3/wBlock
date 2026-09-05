@@ -1063,3 +1063,5 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Last Successful Update" = "Última actualización correcta";
 
 "Site Actions" = "Acciones por sitio";
+
+"Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "La pausa del bloqueo se activa cuando todos los componentes están pausados. También se puede pausar cada componente por separado.";

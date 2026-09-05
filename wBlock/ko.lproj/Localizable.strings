@@ -1063,3 +1063,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Last Successful Update" = "마지막으로 성공한 업데이트";
 
 "Site Actions" = "사이트 작업";
+
+"Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "모든 구성 요소가 일시 중지되면 차단 일시 중지가 켜집니다. 각 구성 요소를 따로 일시 중지할 수도 있습니다.";

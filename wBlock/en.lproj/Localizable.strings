@@ -1062,3 +1062,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Last Successful Update" = "Last Successful Update";
 
 "Site Actions" = "Site Actions";
+
+"Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "Pause Blocking turns on when all components are paused. Each component can also be paused separately.";

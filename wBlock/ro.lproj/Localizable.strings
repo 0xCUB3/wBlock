@@ -1063,3 +1063,5 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Last Successful Update" = "Ultima actualizare reușită";
 
 "Site Actions" = "Acțiuni pentru site-uri";
+
+"Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "Pauza blocării se activează când toate componentele sunt întrerupte. Fiecare componentă poate fi întreruptă și separat.";
