@@ -28,6 +28,11 @@ struct UserScriptMatchingAndPayloadTests {
         expect(script.matches(url: "https://namemc.com/profile/example"), "exact namemc match should work")
         expect(script.matches(url: "https://sub.namemc.com/profile/example"), "wildcard namemc match should work")
         expect(!script.matches(url: "https://unrelated.invalid/"), "unrelated host should not match")
+        expect(script.matches(url: "http://namemc.com/"), "*:// should match http")
+        expect(!script.matches(url: "ftp://namemc.com/"), "*:// must not match ftp (#751)")
+        expect(!UserScript.matchesMatchPattern("*://namemc.com/*", url: "ftp://namemc.com/x"), "structured *:// must not match ftp")
+        expect(!UserScript.matchesMatchPattern("*://namemc.com/*?a=*", url: "ftp://namemc.com/x?a=1"), "regex fallback *:// must not match ftp")
+        expect(UserScript.matchesMatchPattern("ftp://namemc.com/*", url: "ftp://namemc.com/x"), "explicit ftp:// still matches ftp")
 
         let executable = script.executableContent
         expectEqual(executable, requiredPrefix + body, "executable payload should remove metadata and keep required prefix")

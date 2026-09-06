@@ -130,9 +130,29 @@
             }
         }
 
+        // Typing a space or "k" into a search box is not a play gesture even
+        // when the box lives inside the player chrome (#752). Only the media
+        // key counts while an editable element has focus.
+        function isEditable(node) {
+            if (!node) return false;
+            try {
+                if (node.isContentEditable) return true;
+                var name = node.localName;
+                if (name === 'input' || name === 'textarea' || name === 'select') return true;
+            } catch (e) { /* ignore */ }
+            return false;
+        }
+
         function onKey(event) {
             var key = event.key;
             if (key !== ' ' && key !== 'k' && key !== 'K' && key !== 'MediaPlayPause') return;
+            if (key !== 'MediaPlayPause') {
+                var path = eventPath(event);
+                for (var i = 0; i < path.length; i++) {
+                    if (isEditable(path[i])) return;
+                }
+                if (isEditable(event.target) || isEditable(doc.activeElement)) return;
+            }
             unlockFromEvent(event);
         }
 

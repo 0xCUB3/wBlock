@@ -820,7 +820,9 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
             cache: matchRegexCache,
             buildRegexPattern: { sourcePattern in
                 var regexPattern = NSRegularExpression.escapedPattern(for: sourcePattern)
-                regexPattern = regexPattern.replacingOccurrences(of: "\\*:\\/\\/", with: "(https?|ftp)://")
+                // Greasemonkey and Tampermonkey expand "*://" to http and https only
+                // (#751); ftp needs an explicit scheme.
+                regexPattern = regexPattern.replacingOccurrences(of: "\\*:\\/\\/", with: "https?://")
                 regexPattern = regexPattern.replacingOccurrences(of: "\\*\\.", with: "([^/]*\\.)?")
                 regexPattern = regexPattern.replacingOccurrences(of: "\\/\\*", with: "/.*")
                 regexPattern = regexPattern.replacingOccurrences(of: "\\*", with: ".*")
@@ -843,7 +845,7 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
 
         switch schemePattern {
         case "*":
-            guard parsedURL.scheme == "http" || parsedURL.scheme == "https" || parsedURL.scheme == "ftp" else {
+            guard parsedURL.scheme == "http" || parsedURL.scheme == "https" else {
                 return false
             }
         case parsedURL.scheme:

@@ -311,6 +311,22 @@ async function playResult(media) {
   const arrowVideo = env.makeMedia("video");
   env.dispatch("keydown", { key: "ArrowDown", target: arrowVideo, composedPath: () => [arrowVideo] });
   check("non-playback key does not unlock media", (await playResult(arrowVideo)) === "NotAllowedError");
+
+  // #752: typing into a search box inside the player must not count as play.
+  const typedVideo = env.makeMedia("video");
+  const typedPlayer = { querySelectorAll: (sel) => (sel === "video, audio" ? [typedVideo] : []) };
+  const searchBox = { localName: "input", querySelectorAll: () => [], parentElement: typedPlayer };
+  env.dispatch("keydown", { key: " ", target: searchBox, composedPath: () => [searchBox, typedPlayer] });
+  env.dispatch("keydown", { key: "k", target: searchBox, composedPath: () => [searchBox, typedPlayer] });
+  check("space or k typed in a text field does not unlock the player's video",
+    (await playResult(typedVideo)) === "NotAllowedError");
+  const editable = { localName: "div", isContentEditable: true, querySelectorAll: () => [], parentElement: typedPlayer };
+  env.dispatch("keydown", { key: " ", target: editable, composedPath: () => [editable, typedPlayer] });
+  check("space in a contenteditable does not unlock the player's video",
+    (await playResult(typedVideo)) === "NotAllowedError");
+  env.dispatch("keydown", { key: "MediaPlayPause", target: searchBox, composedPath: () => [searchBox, typedPlayer] });
+  check("the hardware play key still unlocks from a text field",
+    (await playResult(typedVideo)) === "ok");
 }
 
 // --- 2b. Page-level gestures never unlock a page's only video ---
