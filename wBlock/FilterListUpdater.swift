@@ -707,7 +707,7 @@ final class FilterListUpdater: @unchecked Sendable {
         progressCallback: (@Sendable (FilterRefreshProgress) async -> Void)? = nil
     ) async -> [UserScript] {
         let eligibleScripts = scripts.filter {
-            !$0.isLocal && $0.isDownloaded && $0.isEligibleForUpdateCheck
+            $0.isEnabled && !$0.isLocal && $0.isDownloaded && $0.isEligibleForUpdateCheck
         }
         var scriptsWithUpdates: [UserScript] = []
         var checkedCount = 0

@@ -1169,7 +1169,7 @@ struct ContentModifiers: ViewModifier {
             }
             #if os(iOS)
             // A modal alert for "nothing to do" is one tap too many on a phone;
-            // show a toast that any touch (or three seconds) clears.
+            // Leave enough time to read; dismiss only on the toast itself.
             .overlay(alignment: .top) {
                 if filterManager.showingNoUpdatesAlert {
                     NoUpdatesToast { filterManager.showingNoUpdatesAlert = false }
@@ -1177,14 +1177,6 @@ struct ContentModifiers: ViewModifier {
                 }
             }
             .animation(.easeInOut(duration: 0.25), value: filterManager.showingNoUpdatesAlert)
-            .simultaneousGesture(
-                TapGesture().onEnded {
-                    if filterManager.showingNoUpdatesAlert {
-                        filterManager.showingNoUpdatesAlert = false
-                    }
-                },
-                including: filterManager.showingNoUpdatesAlert ? .all : .subviews
-            )
             #endif
             .alert(
                 filterManager.ruleLimitWarningTitle,
@@ -2863,7 +2855,7 @@ struct NoUpdatesToast: View {
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
         .task {
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            do { try await Task.sleep(nanoseconds: 8_000_000_000) } catch { return }
             dismiss()
         }
     }

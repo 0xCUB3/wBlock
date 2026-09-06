@@ -3650,11 +3650,31 @@ public class UserScriptManager: ObservableObject {
         return intervalHours * 3600
     }
 
+    /// Evicts downloaded copies, never local imports or the script record.
+    public func removeDisabledRemoteScriptDownloads() async {
+        var changed = false
+        for index in userScripts.indices {
+            let script = userScripts[index]
+            guard !script.isEnabled, !script.isLocal,
+                  script.resolvedDownloadURL != nil, hasDownloadedContent(for: script) else { continue }
+            removeUserScriptFile(script)
+            guard !userScriptFileExists(script) else { continue }
+            userScripts[index].content = ""
+            userScripts[index].resourceContents = [:]
+            userScripts[index].compiledStyleBody = nil
+            userScripts[index].lastUpdated = nil
+            changed = true
+        }
+        if changed { await persistUserScriptsNow() }
+    }
+
     public func autoUpdateEnabledUserScripts(
         skipFresh: Bool = false,
         progressCallback: (@MainActor (AutoUpdateProgress) async -> Void)? = nil
     ) async -> AutoUpdateResult {
         await waitUntilReady()
+
+        await removeDisabledRemoteScriptDownloads()
 
         var candidates = userScripts.filter { script in
             guard script.isEnabled && !script.isLocal && script.url != nil && script.updatesAutomatically else {
