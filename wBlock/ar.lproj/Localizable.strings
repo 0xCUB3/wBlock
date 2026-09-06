@@ -1106,7 +1106,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Applies filter lists and scriptlets. Userscripts have separate switches." = "يطبّق قوائم الفلاتر والسكربتات الصغيرة. لسكربتات المستخدم مفاتيح تبديل منفصلة.";
 "Not provided" = "غير متوفر";
 
-"(%@ submitted at last apply)" = "(%@ أُرسلت عند آخر تطبيق)";
+"%@ submitted at last apply" = "%@ أُرسلت عند آخر تطبيق";
 
 "Submitted at last apply" = "أُرسلت عند آخر تطبيق";
 

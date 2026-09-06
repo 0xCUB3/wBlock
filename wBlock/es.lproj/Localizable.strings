@@ -1106,7 +1106,7 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Applies filter lists and scriptlets. Userscripts have separate switches." = "Aplica listas de filtros y scriptlets. Los userscripts tienen interruptores separados.";
 "Not provided" = "No proporcionado";
 
-"(%@ submitted at last apply)" = "(%@ enviadas en la última aplicación)";
+"%@ submitted at last apply" = "%@ enviadas en la última aplicación";
 
 "Submitted at last apply" = "Enviadas en la última aplicación";
 

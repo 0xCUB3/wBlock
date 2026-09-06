@@ -941,7 +941,7 @@ struct FilterRowView: View {
                         onInfo()
                     }
                 }
-            if filter.isRemoteURL || isDownloaded {
+            if filter.isRemoteURL && (isDownloading || !isDownloaded) {
                 ContentDownloadControl(
                     isDownloaded: isDownloaded, isDownloading: isDownloading,
                     name: filter.localizedDisplayName, action: onDownload
@@ -1022,6 +1022,7 @@ struct FilterRowView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
+                        .help(submittedRuleCountHelp(for: filter))
                 } else if let count = filter.sourceRuleCount, count > 0 {
                     // Single count (no expansion, counts match, or rawSourceRuleCount is nil after restart)
                     Text(
@@ -1033,16 +1034,7 @@ struct FilterRowView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                }
-
-                if filter.isSelected, let submitted = filter.uniqueRuleCount {
-                    Text(String.localizedStringWithFormat(
-                        NSLocalizedString("(%@ submitted at last apply)", comment: "Actual source rules admitted to the last successful compilation"),
-                        submitted.formatted()
-                    ))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                        .help(submittedRuleCountHelp(for: filter))
                 }
 
                 if !filter.localizedDisplayDescription.isEmpty {
@@ -1083,6 +1075,16 @@ struct FilterRowView: View {
             }
             Spacer(minLength: 0)
         }
+    }
+
+    /// Hover text for the rule count: how many source rules the last
+    /// successful apply actually handed to the converter (#742).
+    private func submittedRuleCountHelp(for filter: FilterList) -> String {
+        guard filter.isSelected, let submitted = filter.uniqueRuleCount else { return "" }
+        return String.localizedStringWithFormat(
+            NSLocalizedString("%@ submitted at last apply", comment: "Actual source rules admitted to the last successful compilation"),
+            submitted.formatted()
+        )
     }
 }
 

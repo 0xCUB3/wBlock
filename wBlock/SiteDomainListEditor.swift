@@ -15,7 +15,10 @@ struct SiteDomainListEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                TextField("example.com", text: $input)
+                // The title becomes a leading column label inside a macOS Form,
+                // so keep the example in the prompt only.
+                TextField(text: $input, prompt: Text("example.com")) { EmptyView() }
+                    .labelsHidden()
                     .textFieldStyle(.roundedBorder)
                     .disableAutocorrection(true)
                     #if os(iOS)

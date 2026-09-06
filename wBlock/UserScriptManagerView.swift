@@ -897,7 +897,7 @@ struct UserScriptManagerView: View {
             }
 
             HStack(spacing: 8) {
-                if !script.isLocal || script.isDownloaded {
+                if !script.isLocal && (downloadingScriptIDs.contains(script.id) || !script.isDownloaded) {
                     ContentDownloadControl(
                         isDownloaded: script.isDownloaded,
                         isDownloading: downloadingScriptIDs.contains(script.id),

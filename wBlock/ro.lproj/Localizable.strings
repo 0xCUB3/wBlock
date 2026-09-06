@@ -1106,7 +1106,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Applies filter lists and scriptlets. Userscripts have separate switches." = "Aplică liste de filtre și scriptleturi. Userscripturile au comutatoare separate.";
 "Not provided" = "Nefurnizat";
 
-"(%@ submitted at last apply)" = "(%@ trimise la ultima aplicare)";
+"%@ submitted at last apply" = "%@ trimise la ultima aplicare";
 
 "Submitted at last apply" = "Trimise la ultima aplicare";
 

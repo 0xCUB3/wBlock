@@ -1105,7 +1105,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Applies filter lists and scriptlets. Userscripts have separate switches." = "Filtre listelerini ve scriptletleri uygular. Kullanıcı betiklerinin ayrı anahtarları vardır.";
 "Not provided" = "Sağlanmadı";
 
-"(%@ submitted at last apply)" = "(son uygulamada %@ gönderildi)";
+"%@ submitted at last apply" = "son uygulamada %@ gönderildi";
 
 "Submitted at last apply" = "Son uygulamada gönderilen";
 

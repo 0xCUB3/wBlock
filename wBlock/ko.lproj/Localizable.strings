@@ -1106,7 +1106,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Applies filter lists and scriptlets. Userscripts have separate switches." = "필터 목록과 스크립틀릿을 적용합니다. 유저스크립트에는 별도의 스위치가 있습니다.";
 "Not provided" = "제공되지 않음";
 
-"(%@ submitted at last apply)" = "(마지막 적용 시 %@개 전달)";
+"%@ submitted at last apply" = "마지막 적용 시 %@개 전달";
 
 "Submitted at last apply" = "마지막 적용 시 전달";
 

@@ -1106,7 +1106,7 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Applies filter lists and scriptlets. Userscripts have separate switches." = "Aplica listas de filtros e scriptlets. Userscripts têm interruptores separados.";
 "Not provided" = "Não informado";
 
-"(%@ submitted at last apply)" = "(%@ enviadas na última aplicação)";
+"%@ submitted at last apply" = "%@ enviadas na última aplicação";
 
 "Submitted at last apply" = "Enviadas na última aplicação";
 

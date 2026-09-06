@@ -1106,7 +1106,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Applies filter lists and scriptlets. Userscripts have separate switches." = "Alkalmazza a szűrőlistákat és a scriptleteket. A userscripteknek külön kapcsolóik vannak.";
 "Not provided" = "Nincs megadva";
 
-"(%@ submitted at last apply)" = "(%@ elküldve a legutóbbi alkalmazáskor)";
+"%@ submitted at last apply" = "%@ elküldve a legutóbbi alkalmazáskor";
 
 "Submitted at last apply" = "Elküldve a legutóbbi alkalmazáskor";
 

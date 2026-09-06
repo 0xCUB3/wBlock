@@ -1106,7 +1106,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Applies filter lists and scriptlets. Userscripts have separate switches." = "套用過濾列表和 scriptlet。使用者腳本有獨立的開關。";
 "Not provided" = "未提供";
 
-"(%@ submitted at last apply)" = "（上次套用時提交了 %@ 條）";
+"%@ submitted at last apply" = "上次套用時提交了 %@ 條";
 
 "Submitted at last apply" = "上次套用時提交";
 

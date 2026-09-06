@@ -1106,7 +1106,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Applies filter lists and scriptlets. Userscripts have separate switches." = "Stosuje listy filtrów i skryptlety. Userscripty mają oddzielne przełączniki.";
 "Not provided" = "Nie podano";
 
-"(%@ submitted at last apply)" = "(%@ przesłanych przy ostatnim zastosowaniu)";
+"%@ submitted at last apply" = "%@ przesłanych przy ostatnim zastosowaniu";
 
 "Submitted at last apply" = "Przesłane przy ostatnim zastosowaniu";
 

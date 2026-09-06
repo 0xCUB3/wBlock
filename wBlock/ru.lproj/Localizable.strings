@@ -1106,7 +1106,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Applies filter lists and scriptlets. Userscripts have separate switches." = "Применяет списки фильтров и скриптлеты. Для пользовательских скриптов есть отдельные переключатели.";
 "Not provided" = "Не указано";
 
-"(%@ submitted at last apply)" = "(%@ передано при последнем применении)";
+"%@ submitted at last apply" = "%@ передано при последнем применении";
 
 "Submitted at last apply" = "Передано при последнем применении";
 

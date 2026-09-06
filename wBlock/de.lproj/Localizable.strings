@@ -1106,7 +1106,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Applies filter lists and scriptlets. Userscripts have separate switches." = "Wendet Filterlisten und Scriptlets an. Userscripts haben eigene Schalter.";
 "Not provided" = "Nicht angegeben";
 
-"(%@ submitted at last apply)" = "(%@ beim letzten Anwenden übergeben)";
+"%@ submitted at last apply" = "%@ beim letzten Anwenden übergeben";
 
 "Submitted at last apply" = "Beim letzten Anwenden übergeben";
 

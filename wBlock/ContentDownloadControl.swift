@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// Shown only while a download is running or when the content is missing;
+/// downloaded rows draw nothing here so the toggle sits flush.
 struct ContentDownloadControl: View {
     let isDownloaded: Bool
     let isDownloading: Bool
@@ -11,11 +13,7 @@ struct ContentDownloadControl: View {
             if isDownloading {
                 ProgressView().controlSize(.small)
                     .accessibilityLabel("Downloading…")
-            } else if isDownloaded {
-                Image(systemName: "checkmark.circle")
-                    .foregroundStyle(.green)
-                    .accessibilityLabel("Downloaded")
-            } else {
+            } else if !isDownloaded {
                 Button(action: action) {
                     Image(systemName: "arrow.down.circle")
                         .foregroundStyle(Color.accentColor)

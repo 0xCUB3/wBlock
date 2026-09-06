@@ -1106,7 +1106,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Applies filter lists and scriptlets. Userscripts have separate switches." = "Εφαρμόζει λίστες φίλτρων και scriptlet. Τα userscript έχουν ξεχωριστούς διακόπτες.";
 "Not provided" = "Δεν παρέχεται";
 
-"(%@ submitted at last apply)" = "(%@ υποβλήθηκαν στην τελευταία εφαρμογή)";
+"%@ submitted at last apply" = "%@ υποβλήθηκαν στην τελευταία εφαρμογή";
 
 "Submitted at last apply" = "Υποβλήθηκαν στην τελευταία εφαρμογή";
 

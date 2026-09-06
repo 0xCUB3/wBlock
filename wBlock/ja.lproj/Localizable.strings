@@ -1106,7 +1106,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Applies filter lists and scriptlets. Userscripts have separate switches." = "フィルターリストとスクリプトレットを適用します。ユーザースクリプトには別のスイッチがあります。";
 "Not provided" = "未指定";
 
-"(%@ submitted at last apply)" = "（前回の適用時に%@件送信）";
+"%@ submitted at last apply" = "前回の適用時に%@件送信";
 
 "Submitted at last apply" = "前回の適用時に送信";
 
