@@ -818,10 +818,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     }
 
     @MainActor
-    private static func contentBlockerIsEnabled(identifier: String) async -> Bool {
+    private static func contentBlockerIsEnabled(identifier: String) async -> Bool? {
         await withCheckedContinuation { continuation in
             SFContentBlockerManager.getStateOfContentBlocker(withIdentifier: identifier) { state, error in
-                continuation.resume(returning: error == nil && state?.isEnabled == true)
+                continuation.resume(returning: error == nil ? state?.isEnabled : nil)
             }
         }
     }
@@ -959,7 +959,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     mustReloadNewestOutput = true
                     continue
                 }
-                if enabled,
+                if enabled == true,
                    !BlockingPauseStore.isContentBlockingPaused(groupIdentifier: groupIdentifier),
                    reloadMarkerMatches(verified)
                 {
@@ -987,19 +987,19 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             let enabledInSafari = await contentBlockerIsEnabled(identifier: identifier)
             let reload = await reloadWithRetryRaw(
                 identifier: identifier,
-                maxRetries: enabledInSafari ? maxRetries : 1,
+                maxRetries: enabledInSafari == false ? 1 : maxRetries,
                 timeout: recovering ? ContentBlockerReloadPolicy.recoveryTimeout : reloadCompletionTimeout
             )
             totalAttempts += reload.attempts
             guard reload.success else {
                 return ReloadAttemptResult(
                     success: false,
-                    disabledInSafari: !enabledInSafari,
+                    disabledInSafari: enabledInSafari == false,
                     attempts: totalAttempts,
                     durationMs: elapsedMs(),
-                    failureReason: enabledInSafari
-                        ? reload.failureReason
-                        : ReloadFailureReason.disabledInSafari
+                    failureReason: enabledInSafari == false
+                        ? ReloadFailureReason.disabledInSafari
+                        : reload.failureReason
                 )
             }
 

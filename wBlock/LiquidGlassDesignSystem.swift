@@ -93,7 +93,9 @@ private struct CompactToolbarButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 17))
-            .frame(width: 36, height: 36)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, 10)
+            .frame(minWidth: 36, minHeight: 36)
             .contentShape(Rectangle())
             .foregroundStyle(.primary)
             .background(Color.primary.opacity(isHovered && isEnabled ? 0.08 : 0), in: .capsule)
