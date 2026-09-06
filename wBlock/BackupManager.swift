@@ -26,7 +26,6 @@ struct WBlockBackup: Codable, Sendable {
     var lockPortraitOrientation: Bool?
     var appearance: String?
     var cosmeticFilteringEnabled: Bool?
-    var blockingPauseExceptionDomains: [String]?
     struct FilterSelection: Codable, Sendable {
         var url: String
         var isSelected: Bool
@@ -187,8 +186,7 @@ struct WBlockBackup: Codable, Sendable {
         autoUpdateIntervalHours: Double? = nil,
         lockPortraitOrientation: Bool? = nil,
         appearance: String? = nil,
-        cosmeticFilteringEnabled: Bool? = nil,
-        blockingPauseExceptionDomains: [String]? = nil
+        cosmeticFilteringEnabled: Bool? = nil
     ) {
         self.version = version
         self.createdAt = createdAt
@@ -207,7 +205,6 @@ struct WBlockBackup: Codable, Sendable {
         self.lockPortraitOrientation = lockPortraitOrientation
         self.appearance = appearance
         self.cosmeticFilteringEnabled = cosmeticFilteringEnabled
-        self.blockingPauseExceptionDomains = blockingPauseExceptionDomains
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -228,7 +225,6 @@ struct WBlockBackup: Codable, Sendable {
         case lockPortraitOrientation
         case appearance
         case cosmeticFilteringEnabled
-        case blockingPauseExceptionDomains
     }
 
     init(from decoder: Decoder) throws {
@@ -250,7 +246,6 @@ struct WBlockBackup: Codable, Sendable {
         lockPortraitOrientation = try container.decodeIfPresent(Bool.self, forKey: .lockPortraitOrientation)
         appearance = try container.decodeIfPresent(String.self, forKey: .appearance)
         cosmeticFilteringEnabled = try container.decodeIfPresent(Bool.self, forKey: .cosmeticFilteringEnabled)
-        blockingPauseExceptionDomains = try container.decodeIfPresent([String].self, forKey: .blockingPauseExceptionDomains)
     }
 }
 
@@ -360,8 +355,7 @@ enum BackupManager {
             autoUpdateIntervalHours: filterManager.dataManager.autoUpdateIntervalHours,
             lockPortraitOrientation: PortraitOrientationLock.isEnabled,
             appearance: UserDefaults.standard.string(forKey: AppAppearance.storageKey),
-            cosmeticFilteringEnabled: CosmeticFilteringPreference.isEnabled(),
-            blockingPauseExceptionDomains: BlockingPauseStore.exceptionDomains()
+            cosmeticFilteringEnabled: CosmeticFilteringPreference.isEnabled()
         )
     }
 
@@ -503,12 +497,6 @@ enum BackupManager {
         }
         if let cosmetic = backup.cosmeticFilteringEnabled {
             CosmeticFilteringPreference.setEnabled(cosmetic)
-        }
-
-        if let domains = backup.blockingPauseExceptionDomains {
-            BlockingPauseStore.setExceptionDomains(domains)
-            UserScriptManager.invalidateDocumentStartExecutionCache()
-            ZapperRuleManager.notifySafariRulesChanged()
         }
 
         // 7. Mark unapplied changes so user can apply

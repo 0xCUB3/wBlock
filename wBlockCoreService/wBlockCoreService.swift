@@ -459,10 +459,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         return result
     }
 
-    private static func combinedRulesWithEmbeddedCompatibility(_ rawRules: String, siteRestriction: [String]?) -> String {
-        let extraRules = siteRestriction.map { FilterListSiteExclusion.restrictingRules(embeddedCompatibilityRules, to: $0) }
-            ?? embeddedCompatibilityRules
-        let trimmedExtraRules = extraRules.trimmingCharacters(in: .whitespacesAndNewlines)
+    private static func combinedRulesWithEmbeddedCompatibility(_ rawRules: String) -> String {
+        let trimmedExtraRules = embeddedCompatibilityRules.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedExtraRules.isEmpty else { return rawRules }
 
         let trimmedBaseRules = rawRules.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1436,7 +1434,6 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         targetRulesFilename: String,
         disabledSites: [String],
         cosmeticFilteringEnabled: Bool = true,
-        compatibilitySiteRestriction: [String]? = nil,
         isCancelled: (() -> Bool)? = nil
     ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
         let cancellationRequested = {
@@ -1444,7 +1441,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         }
         let sitesToUse = disabledSites
         let effectiveRulesHash = effectiveRulesHashHex(
-            baseRulesHashHex: rulesSHA256Hex + (compatibilitySiteRestriction.map { "|compatibilitySites=" + $0.sorted().joined(separator: ",") } ?? ""),
+            baseRulesHashHex: rulesSHA256Hex,
             cosmeticFilteringEnabled: cosmeticFilteringEnabled
         )
 
@@ -1511,7 +1508,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             throw CancellationError()
         }
         let combinedRules = try String(contentsOf: rulesFileURL, encoding: .utf8)
-        var effectiveRules = combinedRulesWithEmbeddedCompatibility(combinedRules, siteRestriction: compatibilitySiteRestriction)
+        var effectiveRules = combinedRulesWithEmbeddedCompatibility(combinedRules)
         if !cosmeticFilteringEnabled {
             effectiveRules = CosmeticFilteringPreference.strippingCosmeticRules(from: effectiveRules)
         }
@@ -1586,7 +1583,6 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             groupIdentifier: groupIdentifier,
             extraRulesText: extraRulesText,
             cosmeticFilteringEnabled: cosmeticFilteringEnabled,
-            compatibilitySiteRestriction: orderedSelectedFilters.isEmpty ? [] : orderedSelectedFilters.first?.activeSiteRestriction,
             compileOrder: orderedSelectedFilters
         )
         let storedSignature = ContentBlockerIncrementalCache.loadInputSignature(
@@ -1746,7 +1742,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     guard assigned.contains(filter.id), let source = sources[filter.id] else { continue }
                     text = source
                 }
-                text = FilterListSiteExclusion.applyingSiteRestrictions(text, for: filter)
+                text = FilterListSiteExclusion.restrictingAdvancedRules(text, excluding: filter.excludedSites)
                 for line in text.components(separatedBy: .newlines) {
                     let trimmed = line.trimmingCharacters(in: .whitespaces)
                     if trimmed.hasPrefix("@@") || trimmed.contains("#@") || trimmed.contains("$badfilter") || trimmed.contains(",badfilter") || trimmed.hasPrefix("!#") {
@@ -1764,7 +1760,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             guard snapshot.content(for: filter.id) == nil,
                   let raw = sources[filter.id], !raw.contains("!#"),
                   let slot = owners[filter.id], let context = contexts[slot] else { continue }
-            let text = FilterListSiteExclusion.applyingSiteRestrictions(raw, for: filter)
+            let text = FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.excludedSites)
             for line in text.components(separatedBy: .newlines) {
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
                 guard FilterRuleAnalysis.isRuleLine(trimmed), !trimmed.hasPrefix("@@"), !trimmed.contains("#@") else { continue }
@@ -1837,7 +1833,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     allTargets: allTargets,
                     isCancelled: cancellationRequested
                 )
-                let restricted = FilterListSiteExclusion.applyingSiteRestrictions(filtered, for: filter)
+                let restricted = FilterListSiteExclusion.restrictingAdvancedRules(filtered, excluding: filter.excludedSites)
                 try sourceRuleAdmissions.record(
                     filterID: filter.id,
                     rulesText: restricted,
@@ -1858,7 +1854,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             ) {
                 if let duplicates = exclusions[filter.id], !duplicates.isEmpty {
                     let raw = try String(contentsOf: sourceURL, encoding: .utf8)
-                    let restricted = FilterListSiteExclusion.applyingSiteRestrictions(raw, for: filter)
+                    let restricted = FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.excludedSites)
                     let kept = restricted.components(separatedBy: .newlines).filter {
                         !duplicates.contains(FilterRuleAnalysis.ruleIdentity($0))
                     }
@@ -1873,7 +1869,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                         keptText, to: fileHandle, hasher: &hasher,
                         newlineData: newlineData, isCancelled: cancellationRequested
                     )
-                } else if filter.excludedSites.isEmpty && filter.activeSiteRestriction == nil {
+                } else if filter.excludedSites.isEmpty {
                     let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
                     try sourceRuleAdmissions.record(
                         filterID: filter.id,
@@ -1891,7 +1887,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     )
                 } else {
                     let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
-                    let restricted = FilterListSiteExclusion.applyingSiteRestrictions(rawContent, for: filter)
+                    let restricted = FilterListSiteExclusion.restrictingAdvancedRules(rawContent, excluding: filter.excludedSites)
                     try sourceRuleAdmissions.record(
                         filterID: filter.id,
                         rulesText: restricted,
@@ -1929,7 +1925,6 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             targetRulesFilename: targetInfo.rulesFilename,
             disabledSites: disabledSites,
             cosmeticFilteringEnabled: cosmeticFilteringEnabled,
-            compatibilitySiteRestriction: orderedSelectedFilters.isEmpty ? [] : orderedSelectedFilters.first?.activeSiteRestriction,
             isCancelled: cancellationRequested
         )
         return (

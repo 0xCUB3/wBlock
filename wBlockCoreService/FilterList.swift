@@ -70,8 +70,6 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     public var hasUserProvidedDescription: Bool = false
     /// Hosts this list should not apply to (issue #653). Independent of Site Settings.
     public var excludedSites: [String] = []
-    /// Transient positive scope for a paused apply; never persisted as list metadata.
-    public var activeSiteRestriction: [String]? = nil
     /// Source rule lines admitted for this list by the last confirmed apply.
     /// Nil when no compile-time provenance is available.
     public var uniqueRuleCount: Int?

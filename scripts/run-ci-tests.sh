@@ -240,7 +240,6 @@ compile_and_run include-resolution \
 
 compile_and_run pause-store \
   wBlockCoreService/GroupIdentifier.swift \
-  wBlockCoreService/DisabledSitesNormalizer.swift \
   wBlockCoreService/BlockingPauseStore.swift \
   scripts/test_issue_508_pause_store.swift
 

@@ -33,7 +33,6 @@ struct SettingsView: View {
     @State private var showingSyncAdoptPrompt = false
     @State private var syncAdoptTimestamp: String?
     @State private var showingRuleCapacity = false
-    @State private var pauseExceptionSites = BlockingPauseStore.exceptionDomains()
     @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system
     #if os(iOS)
         @State private var backupDocument: BackupDocument? = nil
@@ -663,24 +662,6 @@ struct SettingsView: View {
         .disabled(
             filterManager.isLoading || filterManager.isApplyInFlight
         )
-
-        Section {
-            SiteDomainListEditor(sites: pauseExceptionSites, knownSites: SiteDomainListEditor.knownSites(in: dataManager)) { sites in
-                Task {
-                    await filterManager.setPauseExceptionDomains(sites)
-                    pauseExceptionSites = BlockingPauseStore.exceptionDomains()
-                }
-            }
-            .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
-            .onAppear { pauseExceptionSites = BlockingPauseStore.exceptionDomains() }
-            .onReceive(NotificationCenter.default.publisher(for: BlockingPauseStore.exceptionDomainsDidChange)) { _ in
-                pauseExceptionSites = BlockingPauseStore.exceptionDomains()
-            }
-        } header: {
-            Text("Keep Blocking on These Sites")
-        } footer: {
-            Text("Paused components continue working on these sites and their subdomains.")
-        }
     }
 
     @ViewBuilder

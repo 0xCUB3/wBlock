@@ -264,7 +264,6 @@ public enum ContentBlockerIncrementalCache {
         groupIdentifier: String,
         extraRulesText: String? = nil,
         cosmeticFilteringEnabled: Bool = true,
-        compatibilitySiteRestriction: [String]? = nil,
         compileOrder: [FilterList] = []
     ) -> String? {
         guard let containerURL = FileManager.default.containerURL(
@@ -297,12 +296,6 @@ public enum ContentBlockerIncrementalCache {
         }
         for filter in canonicalFilterOrder(filters + affinityContributors) {
             canonical.append("distribution=\(filter.id.uuidString)|\(filter.sourceRuleCount ?? 0)\n")
-            if let sites = filter.activeSiteRestriction {
-                canonical.append("scope=\(filter.id.uuidString)|\(sites.sorted().joined(separator: ","))\n")
-            }
-        }
-        if let sites = compatibilitySiteRestriction {
-            canonical.append("compatibilityScope=\(sites.sorted().joined(separator: ","))\n")
         }
         if !compileOrder.isEmpty {
             canonical.append("compileOrder=\(compileOrder.map(\.id.uuidString).joined(separator: ","))\n")

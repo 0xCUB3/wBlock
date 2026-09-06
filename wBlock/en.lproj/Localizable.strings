@@ -1053,10 +1053,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Needs wBlock Scripts" = "Needs wBlock Scripts";
 "View" = "View";
 
-"Keep Blocking on These Sites" = "Keep Blocking on These Sites";
-
-"Paused components continue working on these sites and their subdomains." = "Paused components continue working on these sites and their subdomains.";
-
 "Last Update Check" = "Last Update Check";
 
 "Last Successful Update" = "Last Successful Update";

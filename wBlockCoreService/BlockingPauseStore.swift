@@ -70,35 +70,8 @@ public enum BlockingPauseStore {
     public static func isContentBlockingPaused(
         groupIdentifier: String = GroupIdentifier.shared.value
     ) -> Bool {
-        isFullyPaused(.filters, groupIdentifier: groupIdentifier)
-            && isFullyPaused(.elementZapper, groupIdentifier: groupIdentifier)
-    }
-
-    public static let exceptionDomainsDidChange = Notification.Name("wBlock.pauseExceptionDomainsDidChange")
-
-    public static let exceptionDomainsKey = "blockingPauseExceptionDomains"
-
-    public static func exceptionDomains(groupIdentifier: String = GroupIdentifier.shared.value) -> [String] {
-        DisabledSitesNormalizer.normalizedDomains(from: UserDefaults(suiteName: groupIdentifier)?.stringArray(forKey: exceptionDomainsKey) ?? [])
-    }
-
-    public static func setExceptionDomains(_ domains: [String], groupIdentifier: String = GroupIdentifier.shared.value) {
-        let normalized = DisabledSitesNormalizer.normalizedDomains(from: domains)
-        guard normalized != exceptionDomains(groupIdentifier: groupIdentifier) else { return }
-        UserDefaults(suiteName: groupIdentifier)?.set(normalized, forKey: exceptionDomainsKey)
-        NotificationCenter.default.post(name: exceptionDomainsDidChange, object: nil)
-    }
-
-    public static func isFullyPaused(_ component: BlockingPauseComponents, groupIdentifier: String = GroupIdentifier.shared.value) -> Bool {
-        isPaused(component, groupIdentifier: groupIdentifier) && exceptionDomains(groupIdentifier: groupIdentifier).isEmpty
-    }
-
-    public static func isPaused(_ component: BlockingPauseComponents, onHost host: String, groupIdentifier: String = GroupIdentifier.shared.value) -> Bool {
-        guard isPaused(component, groupIdentifier: groupIdentifier) else { return false }
-        let normalizedHost = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return !exceptionDomains(groupIdentifier: groupIdentifier).contains { site in
-            normalizedHost == site || normalizedHost.hasSuffix("." + site)
-        }
+        isPaused(.filters, groupIdentifier: groupIdentifier)
+            && isPaused(.elementZapper, groupIdentifier: groupIdentifier)
     }
 
     /// Reads the global paused state. It remains true whenever any component is paused.

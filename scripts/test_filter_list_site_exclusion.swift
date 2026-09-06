@@ -115,12 +115,12 @@ struct FilterListSiteExclusionTests {
         requireContains(protoExt, "excludedSites: Array(protoData.excludedSites)", "protobuf loads must restore excluded sites")
         requireContains(
             conversion,
-            "FilterListSiteExclusion.applyingSiteRestrictions",
+            "FilterListSiteExclusion.restrictingAdvancedRules",
             "conversion must restrict lists with exclusions before Safari conversion"
         )
         requireContains(
             affinity,
-            "FilterListSiteExclusion.applyingSiteRestrictions",
+            "FilterListSiteExclusion.restrictingAdvancedRules",
             "affinity contributions must honor per-list exclusions"
         )
         print("PASS")
