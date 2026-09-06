@@ -136,7 +136,13 @@ extension View {
         #else
         let placement: SearchFieldPlacement = .automatic
         #endif
-        if #available(iOS 17.0, macOS 14.0, *) {
+        if #available(iOS 26.0, macOS 26.0, *) {
+            searchable(text: text, isPresented: isPresented, placement: placement, prompt: prompt)
+                #if os(iOS)
+                .searchToolbarBehavior(.minimize)
+                #endif
+                .modifier(SearchKeyboardDismissal(isPresented: isPresented))
+        } else if #available(iOS 17.0, macOS 14.0, *) {
             searchable(text: text, isPresented: isPresented, placement: placement, prompt: prompt)
                 .modifier(SearchKeyboardDismissal(isPresented: isPresented))
         } else {
