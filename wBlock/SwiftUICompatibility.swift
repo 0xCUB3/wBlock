@@ -16,6 +16,28 @@ struct ApplySheetGlassBackgroundModifier: ViewModifier {
 }
 #endif
 
+/// On iOS 26 the tab-bar search field can close (the X in the field, or a tab
+/// switch) while the keyboard it raised stays on screen with nothing focused,
+/// the "ghost keyboard". Resign whatever is first responder when the search
+/// presentation turns off, and let a scroll drag the keyboard away too.
+struct SearchKeyboardDismissal: ViewModifier {
+    @Binding var isPresented: Bool
+
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        content
+            .scrollDismissesKeyboardCompat()
+            .onChangeCompat(of: isPresented) { presented in
+                guard !presented else { return }
+                UIApplication.shared.sendAction(
+                    #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            }
+        #else
+        content
+        #endif
+    }
+}
+
 struct CompatibleNavigationStack<Content: View>: View {
     /// Pre-Tahoe non-navigation tabs must not own stacks because SwiftUI can
     /// duplicate their window toolbar contributions after closing panels.
@@ -116,8 +138,19 @@ extension View {
         #endif
         if #available(iOS 17.0, macOS 14.0, *) {
             searchable(text: text, isPresented: isPresented, placement: placement, prompt: prompt)
+                .modifier(SearchKeyboardDismissal(isPresented: isPresented))
         } else {
             searchable(text: text, placement: placement, prompt: prompt)
+                .modifier(SearchKeyboardDismissal(isPresented: isPresented))
+        }
+    }
+
+    @ViewBuilder
+    func scrollDismissesKeyboardCompat() -> some View {
+        if #available(iOS 16.0, macOS 13.0, *) {
+            scrollDismissesKeyboard(.interactively)
+        } else {
+            self
         }
     }
 

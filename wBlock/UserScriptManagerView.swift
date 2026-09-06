@@ -1206,8 +1206,11 @@ private struct ScriptUpdateSettingsView: View {
         }
         .toggleStyle(.switch)
         .padding(.vertical, 6)
-        .background(Color.orange.opacity(updatesAutomatically ? 0 : 0.08))
-        .cornerRadius(8)
+        .padding(.horizontal, 8)
+        // A shape background instead of cornerRadius: the latter clips, and on
+        // iOS 26 the switch's glass thumb extends past the row's bounds.
+        .background(Color.orange.opacity(updatesAutomatically ? 0 : 0.08), in: RoundedRectangle(cornerRadius: 8))
+        .padding(.horizontal, -8)
     }
 }
 
@@ -1496,6 +1499,7 @@ private struct UserScriptSourceSheet: View {
             .padding(16)
             Divider()
             if canEdit {
+                GeometryReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         AddContentMetadataFields(name: $editedName, description: $editedDescription,
@@ -1525,16 +1529,20 @@ private struct UserScriptSourceSheet: View {
                                     #if os(iOS)
                                     .textInputAutocapitalization(.never)
                                     #endif
-                                    .frame(minHeight: 260)
+                                    .frame(minHeight: 260, maxHeight: .infinity)
                             } else {
                                 CodeMirrorTextEditor(controller: editorController, isEditable: false,
                                     isLineWrappingEnabled: isLineWrappingEnabled)
-                                    .frame(minHeight: 260)
+                                    .frame(minHeight: 260, maxHeight: .infinity)
                             }
                         }
                     }
                     .padding(20)
+                    // Stretch the content to the sheet so the source editor takes
+                    // the space under the metadata fields instead of a fixed 260pt.
+                    .frame(minHeight: proxy.size.height)
                     .disabled(isSaving)
+                }
                 }
             } else {
                 CodeMirrorTextEditor(controller: editorController, isEditable: false,

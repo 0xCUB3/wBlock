@@ -61,23 +61,53 @@ struct InfoMetadataRow: View {
     var url: URL? = nil
     var color: Color = .primary
 
+    /// Values longer than this drop under the title. A URL of this length
+    /// wraps beside the title into a centered ragged block.
+    private static let inlineValueLimit = 40
+
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 4) {
-            HStack(spacing: 0) { Text(title); Text(verbatim: ":") }
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: true, vertical: false)
-            Group {
-                if let url {
-                    Link(value, destination: url)
-                } else {
-                    Text(verbatim: value).foregroundStyle(color)
+        Group {
+            if value.count > Self.inlineValueLimit {
+                VStack(alignment: .leading, spacing: 2) {
+                    titleLabel
+                    valueLabel
+                }
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    titleLabel.fixedSize(horizontal: true, vertical: false)
+                    valueLabel
                 }
             }
-            .textSelection(.enabled)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .font(.callout)
+    }
+
+    private var titleLabel: some View {
+        HStack(spacing: 0) { Text(title); Text(verbatim: ":") }
+            .foregroundStyle(.secondary)
+    }
+
+    @Environment(\.openURL) private var openURL
+
+    private var valueLabel: some View {
+        Group {
+            if let url {
+                // Link centers its wrapped lines regardless of alignment; a Text
+                // with an open action wraps ragged-left like the other rows.
+                Button { openURL(url) } label: {
+                    Text(verbatim: value)
+                        .foregroundStyle(Color.accentColor)
+                        .multilineTextAlignment(.leading)
+                }
+                .buttonStyle(.plain)
+            } else {
+                Text(verbatim: value).foregroundStyle(color)
+            }
+        }
+        .multilineTextAlignment(.leading)
+        .textSelection(.enabled)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
