@@ -359,12 +359,15 @@ struct ContentView: View {
             onTap: applyPendingChanges,
             onForceApply: { filterManager.forceApplyChanges() }
         ) {
+#if os(macOS)
+            Text("Apply").fontWeight(.semibold)
+#else
             if hasPendingChanges {
-                Text("Apply")
-                    .fontWeight(.semibold)
+                Text("Apply").fontWeight(.semibold)
             } else {
                 Image(systemName: applyChangesSymbolName)
             }
+#endif
         }
         #if os(macOS)
         // Right-click exposes the apply variants (#651); iOS uses pull-to-refresh

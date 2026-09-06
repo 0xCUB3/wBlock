@@ -20,6 +20,8 @@ import {
   defaultKeymap,
   history,
   historyKeymap,
+  undo,
+  redo,
 } from "@codemirror/commands";
 import {
   searchKeymap,
@@ -252,6 +254,12 @@ window.wblockEditor = {
   },
   getDocument() {
     return view ? view.state.doc.toString() : "";
+  },
+  undo() {
+    return view && !view.state.readOnly ? undo(view) : false;
+  },
+  redo() {
+    return view && !view.state.readOnly ? redo(view) : false;
   },
   openSearch() {
     if (!view) return false;

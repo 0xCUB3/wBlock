@@ -216,12 +216,15 @@ struct UserScriptManagerView: View {
             onTap: onApplyChanges,
             onForceApply: onForceApplyChanges
         ) {
+#if os(macOS)
+            Text("Apply").fontWeight(.semibold)
+#else
             if hasPendingChanges {
-                Text("Apply")
-                    .fontWeight(.semibold)
+                Text("Apply").fontWeight(.semibold)
             } else {
                 Image(systemName: "arrow.triangle.2.circlepath")
             }
+#endif
         }
         #if os(macOS)
         .contextMenu {
@@ -1750,6 +1753,8 @@ struct CodeEditorSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var isLineWrappingEnabled = false
+    @State private var originalText: String?
+    @State private var didFinish = false
 
     var body: some View {
         Group {
@@ -1773,23 +1778,31 @@ struct CodeEditorSheet: View {
                 .frame(width: 1000, height: 700)
             #endif
         }
+        .task { originalText = await editorController.currentText() }
+        .interactiveDismissDisabled()
         .onDisappear {
-            Task { @MainActor in
-                onTextChanged(await editorController.currentText())
-            }
+            if !didFinish, let originalText { editorController.replaceText(originalText, markClean: true) }
         }
     }
 
     private var editorBody: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Spacer()
-                SourceViewerControls(wrapsLines: $isLineWrappingEnabled) { editorController.openSearch() }
-                Button(action: onPaste) {
-                    Label("Paste", systemImage: "doc.on.clipboard")
+            VStack(spacing: 10) {
+                HStack {
+                    Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+                    Spacer()
+                    Button("Done", action: finish).keyboardShortcut(.defaultAction)
                 }
-                SheetDoneButton(action: finish)
+                HStack(spacing: 10) {
+                    Spacer()
+                    SourceViewerControls(wrapsLines: $isLineWrappingEnabled) { editorController.openSearch() }
+                    Button(action: editorController.undo) { Label("Undo", systemImage: "arrow.uturn.backward") }
+                    Button(action: editorController.redo) { Label("Redo", systemImage: "arrow.uturn.forward") }
+                    Button(action: onPaste) { Label("Paste", systemImage: "doc.on.clipboard") }
+                }
+                .labelStyle(.iconOnly)
             }
+            .disabled(originalText == nil)
             .padding(12)
             #if os(macOS)
             .liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)
@@ -1813,6 +1826,7 @@ struct CodeEditorSheet: View {
 
     private func finish() {
         Task { @MainActor in
+            didFinish = true
             onTextChanged(await editorController.currentText())
             dismiss()
         }

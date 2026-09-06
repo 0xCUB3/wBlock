@@ -35,10 +35,8 @@ extension View {
 }
 
 #if os(macOS)
-/// The Filters and Userscripts tabs share one macOS toolbar shape: Add and
-/// Apply together, the enabled-only filter on its own, then search. On macOS 26
-/// compact glass groups keep an eight-point gap; older releases render the
-/// same buttons as one flat group.
+/// Both tabs use native toolbar buttons with separate glass backgrounds on
+/// macOS 26, preserving hover and pressed feedback and the Apply label.
 struct MacActionsToolbar<Primary: View, Filter: View, Search: View>: ViewModifier {
     let isSearchExpanded: Bool
     @ViewBuilder let primary: () -> Primary
@@ -72,30 +70,14 @@ struct MacActionsToolbar<Primary: View, Filter: View, Search: View>: ViewModifie
     private var compactActions: some View {
         GlassEffectContainer(spacing: 4) {
             HStack(spacing: 8) {
-                HStack(spacing: 0) { primary() }
-                    .glassEffect(.regular.interactive(), in: .capsule)
+                primary()
                 filter()
-                    .glassEffect(.regular.interactive(), in: .capsule)
                 search()
-                    .glassEffect(.regular.interactive(), in: .capsule)
             }
         }
-        .labelStyle(.iconOnly)
-        .buttonStyle(CompactToolbarButtonStyle())
-    }
-}
-
-@available(macOS 26.0, *)
-private struct CompactToolbarButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: 17))
-            .frame(width: 36, height: 36)
-            .contentShape(Rectangle())
-            .foregroundStyle(.primary)
-            .opacity(isEnabled ? (configuration.isPressed ? 0.6 : 1) : 0.35)
+        .labelStyle(.titleAndIcon)
+        .buttonStyle(.glass)
+        .controlSize(.regular)
     }
 }
 

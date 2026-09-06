@@ -34,6 +34,9 @@ final class CodeMirrorEditorController: ObservableObject {
         return text
     }
 
+    func undo() { bridge?.undo() }
+    func redo() { bridge?.redo() }
+
     func openSearch() {
         bridge?.openSearch()
     }
@@ -79,6 +82,8 @@ final class CodeMirrorEditorController: ObservableObject {
 private protocol CodeMirrorEditorBridge: AnyObject {
     func currentText() async -> String
     func openSearch()
+    func undo()
+    func redo()
     func focus()
     func resetDocument(to text: String, markClean: Bool)
 }
@@ -299,6 +304,16 @@ extension CodeMirrorTextEditor {
             guard webView.alpha < 1 else { return }
             UIView.animate(withDuration: 0.12) { webView.alpha = 1 }
             #endif
+        }
+
+        func undo() {
+            guard hasBootedEditor else { return }
+            runScript("window.wblockEditor.undo()")
+        }
+
+        func redo() {
+            guard hasBootedEditor else { return }
+            runScript("window.wblockEditor.redo()")
         }
 
         func openSearch() {
