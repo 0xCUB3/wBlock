@@ -125,6 +125,9 @@ public enum WebExtensionRequestHandler {
             case "getUserScriptResourceChunk":
                 handleUserScriptChunkRequest(message: message!, context: context, kind: .resource)
                 return
+            case "getUserScriptRequestPolicy":
+                handleUserScriptRequestPolicy(message: message!, context: context)
+                return
             case "validateUserScriptExecution":
                 handleValidateUserScriptExecution(message: message!, context: context)
                 return
@@ -1189,6 +1192,7 @@ public enum WebExtensionRequestHandler {
             "noframes": script.noframes,
             "injectInto": injectInto,
             "grant": script.grant,
+            "connect": script.connect,
             "require": script.require,
             "resourceURLs": script.resource.map { "\($0.name)=\($0.url)" },
             "matches": script.matches,
@@ -1338,6 +1342,33 @@ public enum WebExtensionRequestHandler {
         }
     }
 
+    @MainActor
+    private static func requestPolicy(message: [String: Any?]) async -> UserScriptConnectPolicy? {
+        guard let id = message["scriptId"] as? String, let scriptID = UUID(uuidString: id),
+              let pageURL = message["pageURL"] as? String,
+              let page = URL(string: pageURL),
+              ["http", "https"].contains(page.scheme?.lowercased() ?? ""),
+              !BlockingPauseStore.isPaused(.userScripts) else { return nil }
+        let manager = UserScriptManager.shared
+        await manager.refreshFromDiskForExecution()
+        guard !BlockingPauseStore.isPaused(.userScripts),
+              let script = manager.userScript(withId: scriptID), script.isEnabled,
+              !script.isUserStyle, script.matches(url: pageURL),
+              !manager.isUserScript(script, disabledOnHost: page.host ?? ""),
+              !script.noframes || message["isTopFrame"] as? Bool == true else { return nil }
+        return UserScriptConnectPolicy(entries: script.connect, pageURL: page)
+    }
+
+    private static func handleUserScriptRequestPolicy(message: [String: Any?], context: NSExtensionContext) {
+        Task { @MainActor in
+            guard let policy = await requestPolicy(message: message) else {
+                context.completeRequest(returningItems: [createResponse(with: ["ok": false])])
+                return
+            }
+            context.completeRequest(returningItems: [createResponse(with: ["ok": true, "connect": policy.entries])])
+        }
+    }
+
     private static func handleNativeGMXmlhttpRequest(message: [String: Any?], context: NSExtensionContext) {
         guard let urlString = message["url"] as? String,
               let url = URL(string: urlString)
@@ -1375,8 +1406,14 @@ public enum WebExtensionRequestHandler {
             ?? (message["timeout"] as? Int).map(Double.init)
             ?? 0
 
-        Task {
+        Task { @MainActor in
+            guard let policy = await requestPolicy(message: message), policy.allows(url) else {
+                context.completeRequest(returningItems: [createResponse(with: ["error": "GM_xmlhttpRequest blocked by @connect"])])
+                return
+            }
             let result = await performNativeGMXmlhttpRequest(
+                policy: policy,
+                redirect: message["redirect"] as? String ?? "follow",
                 url: url,
                 method: method.isEmpty ? "GET" : method,
                 headers: headers,
@@ -1392,6 +1429,8 @@ public enum WebExtensionRequestHandler {
     }
 
     private static func performNativeGMXmlhttpRequest(
+        policy: UserScriptConnectPolicy,
+        redirect: String,
         url: URL,
         method: String,
         headers: [String: String],
@@ -1414,7 +1453,8 @@ public enum WebExtensionRequestHandler {
         }
 
         do {
-            let (bytes, response) = try await session.bytes(for: request)
+            let delegate = GMRedirectPolicyDelegate(policy: policy, redirect: redirect)
+            let (bytes, response) = try await session.bytes(for: request, delegate: delegate)
             guard let httpResponse = response as? HTTPURLResponse else {
                 return ["error": "Invalid HTTP response"]
             }

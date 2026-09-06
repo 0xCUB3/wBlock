@@ -26351,6 +26351,52 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * @param sender The sender of the message.
    * @returns The response message from the native host.
    */
+  const gmConnectAllows = (entries, target, pageURL) => {
+    try {
+      const url = new URL(target);
+      if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) return false;
+      const host = url.hostname.toLowerCase().replace(/\.+$/, "");
+      const pageHost = new URL(pageURL).hostname.toLowerCase().replace(/\.+$/, "");
+      return entries.some(raw => {
+        if (typeof raw !== "string") return false;
+        const value = raw.trim().toLowerCase();
+        if (value === "*") return true;
+        if (value === "self") return host === pageHost;
+        if (!value || /[\s/:@?#*]/.test(value) || value.includes("\\") || value.includes("%")) return false;
+        try {
+          const domain = new URL(`https://${value}`).hostname.toLowerCase().replace(/\.+$/, "");
+          return !!domain && (host === domain || host.endsWith(`.${domain}`));
+        } catch { return false; }
+      });
+    } catch { return false; }
+  };
+  const fetchGMWithConnect = async (target, options, entries, pageURL, redirect) => {
+    let url = new URL(target);
+    const headers = new Headers(options.headers);
+    let method = String(options.method || "GET").toUpperCase();
+    let body = options.body;
+    for (let hop = 0; hop <= 20; hop++) {
+      if (!gmConnectAllows(entries, url.href, pageURL)) throw new Error("GM_xmlhttpRequest redirect blocked by @connect");
+      const response = await fetch(url.href, { ...options, method, body, headers, redirect: "manual" });
+      if (response.type === "opaqueredirect") throw new Error("GM_xmlhttpRequest cannot safely inspect this redirect");
+      if (![301, 302, 303, 307, 308].includes(response.status)) return response;
+      if (redirect === "manual") return response;
+      if (redirect !== "follow") throw new Error("GM_xmlhttpRequest redirect refused");
+      const location = response.headers.get("location");
+      if (!location) return response;
+      const next = new URL(location, url);
+      if (next.origin !== url.origin) {
+        for (const name of ["authorization", "cookie", "proxy-authorization"]) headers.delete(name);
+      }
+      if ((response.status === 303 && method !== "HEAD") || ([301, 302].includes(response.status) && method === "POST")) {
+        method = "GET"; body = undefined;
+        for (const name of ["content-type", "content-length"]) headers.delete(name);
+      }
+      if (response.body) await response.body.cancel();
+      url = next;
+    }
+    throw new Error("GM_xmlhttpRequest redirect limit exceeded");
+  };
   const FORBIDDEN_GM_XHR_HEADER_NAMES = new Set([
     "accept-charset",
     "accept-encoding",
@@ -26814,6 +26860,19 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     if (message && message.action === "gmXmlhttpRequest") {
       try {
+        const pageURL = sender.url;
+        if (typeof message.scriptId !== "string" || typeof pageURL !== "string" || !/^https?:/.test(pageURL)) {
+          return { error: "GM_xmlhttpRequest requires a verified script and frame" };
+        }
+        const policy = await sendPriorityNativeMessage({
+          action: "getUserScriptRequestPolicy", scriptId: message.scriptId,
+          pageURL, isTopFrame: sender.frameId === 0
+        });
+        if (!policy || policy.ok !== true || !Array.isArray(policy.connect)) {
+          return { error: "GM_xmlhttpRequest script is no longer authorized" };
+        }
+        const entries = policy.connect;
+        if (!gmConnectAllows(entries, message.url, pageURL)) return { error: "GM_xmlhttpRequest blocked by @connect" };
         const MAX_GM_XHR_RESPONSE_BYTES = 25 * 1024 * 1024;
         const MAX_GM_XHR_REQUEST_BODY_BYTES = 2 * 1024 * 1024;
         const requestHeaders = message.headers || {};
@@ -26827,6 +26886,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           }
           const nativeRequest = {
             action: "gmXmlhttpRequestNative",
+            scriptId: message.scriptId,
+            pageURL,
+            isTopFrame: sender.frameId === 0,
             requestId: "userscript-gmxhr-native-" + Date.now(),
             url: message.url,
             method: message.method || 'GET',
@@ -26852,7 +26914,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           method: message.method || 'GET',
           headers: requestHeaders,
           credentials: message.anonymous ? 'omit' : 'include',
-          redirect: message.redirect || 'follow'
+          redirect: "manual"
         };
         if (abortController) {
           fetchOptions.signal = abortController.signal;
@@ -26863,7 +26925,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         let fetchResponse;
         try {
-          fetchResponse = await fetch(message.url, fetchOptions);
+          fetchResponse = await fetchGMWithConnect(message.url, fetchOptions, entries, pageURL, message.redirect || "follow");
         } finally {
           if (timeoutId) {
             clearTimeout(timeoutId);
@@ -26959,6 +27021,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         console.error("[wBlock] Failed to get userscript chunk:", error);
         return { error: String(error && error.message ? error.message : error) };
       }
+    }
+    if (message && ["gmXmlhttpRequestNative", "getUserScriptRequestPolicy"].includes(message.action)) {
+      return { error: "Native userscript networking is only available through the authorized GM bridge" };
     }
     const tabId = ((_sender$tab = sender.tab) === null || _sender$tab === void 0 ? void 0 : _sender$tab.id) ?? 0;
     const frameId = sender.frameId ?? 0;

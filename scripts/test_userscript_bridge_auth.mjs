@@ -563,11 +563,12 @@ check("XHR bridge rejects a request with no token", gmXhrCalls().length === befo
 
 // (c) A request carrying the issued token is proxied.
 vm.runInContext(
-  `__fire({ type: 'wblock-gm-xhr-request', id: 'legit-1', bridgeId: ${JSON.stringify(xhrBridgeId)}, url: 'https://ok.example/', method: 'GET' });`,
+  `__fire({ type: 'wblock-gm-xhr-request', id: 'legit-1', scriptId: 'forged-script', connect: ['*'], bridgeId: ${JSON.stringify(xhrBridgeId)}, url: 'https://ok.example/', method: 'GET' });`,
   contentSandbox,
 );
 await tick();
 check("XHR bridge accepts a request with the issued token", gmXhrCalls().some((m) => m.url === "https://ok.example/"));
+check("XHR bridge derives identity from token, not page data", gmXhrCalls().find(m => m.url === "https://ok.example/")?.scriptId === fakeScript.id);
 
 // (d) Native responses are authoritative; page sessionStorage is ignored.
 const authoritativeWrapperIndex = appendedScripts.length;

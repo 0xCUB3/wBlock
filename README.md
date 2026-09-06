@@ -297,6 +297,8 @@ No in normal use. wBlock uses Safari's native declarative content blocking API, 
 <summary><b>Do userscripts work on iOS and iPadOS?</b></summary>
 <br>
 Yes. The userscript engine implements common Greasemonkey APIs (GM_getValue, GM_setValue, GM_xmlhttpRequest, GM_addStyle) on iOS, iPadOS, and macOS via Safari Web Extensions.
+
+`GM_xmlhttpRequest` checks the installed script's `@connect` metadata before sending a request. A bare host permits that host and its subdomains. `localhost`, `self` (the current frame's host), and `*` are supported. Scripts without `@connect` can contact only their current host; add explicit hosts for cross-host requests. There is no per-domain permission prompt yet. Only HTTP and HTTPS are allowed, and redirects are checked before following. Safari redirects whose destination is hidden from the extension fail rather than bypass the allow-list.
 </details>
 
 <details>

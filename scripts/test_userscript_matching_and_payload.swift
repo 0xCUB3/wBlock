@@ -82,6 +82,74 @@ struct UserScriptMatchingAndPayloadTests {
         expectEqual(revisedPayload, Data("prepared-other".utf8), "changed source should replace cached bytes")
         expectEqual(payloadBuilds, 2, "payload cache should prepare each source revision once")
 
+        let padding = (0..<100).map { "https://unused\($0).invalid/*" }
+        let patterns = ["*://*.example.org/private*", "https://exact.invalid:8443/*", "https://foo*bar.invalid/*", "https://*/*allowed*", "legacy*"]
+        var indexed = UserScript(name: "indexed")
+        indexed.matches = padding + patterns
+        for url in ["https://sub.example.org/private?a=1", "ftp://sub.example.org/private", "https://example.org/public", "https://exact.invalid:8443/x", "https://exact.invalid/x", "https://fooxbar.invalid/x", "https://other.invalid/allowed", "https://other.invalid/no", "https://evil-example.org/private"] {
+            let linear = indexed.matches.contains { UserScript.matchesMatchPattern($0, url: url) }
+            expectEqual(indexed.matches(url: url), linear, "indexed match must equal linear match for \(url)")
+        }
+        indexed.matches = padding + ["https://changed.invalid/*"]
+        expect(indexed.matches(url: "https://changed.invalid/"), "same-ID pattern mutation rebuilds index")
+        expect(!indexed.matches(url: "https://sub.example.org/private"), "old indexed hosts cannot survive mutation")
+        indexed.excludeMatches = padding + ["https://changed.invalid/*"]
+        expect(!indexed.matches(url: "https://changed.invalid/"), "large exclude list uses its own index")
+        indexed.excludeMatches = padding
+        expect(indexed.matches(url: "https://changed.invalid/"), "exclude mutation rebuilds independently")
+
+        var connectScript = UserScript(name: "connect", content: "// ==UserScript==\n// @connect example.org\n//\t@connect\tlocalhost\n// ==/UserScript==\n// @connect *")
+        expectEqual(connectScript.connect, ["example.org", "localhost"], "only metadata grants network hosts")
+        expectEqual(UserScript(name: "legacy").connect, ["self"], "missing connect defaults to same-host only")
+        connectScript.content = "// ==UserScript==\n// @connect *\n// ==/UserScript=="
+        expectEqual(connectScript.connect, ["*"], "source mutation invalidates connect metadata cache")
+        connectScript.content = "// ==UserScript==\n// @connect\n// ==/UserScript=="
+        expectEqual(connectScript.connect, [], "empty declared connect fails closed")
+        let page = URL(string: "https://page.invalid/")!
+        for (entries, target, allowed) in [
+            (["example.org"], "https://sub.example.org/x", true),
+            (["example.org"], "https://evil-example.org/x", false),
+            (["example.org"], "https://example.org.evil/x", false),
+            (["self"], "https://page.invalid:8443/x", true),
+            (["self"], "https://sub.page.invalid/x", false),
+            (["localhost"], "http://localhost:8080/x", true),
+            (["*"], "file:///etc/passwd", false),
+            (["*"], "https://user:secret@example.org/", false),
+            (["*"], "https://anywhere.invalid/", true),
+            (["https://example.org"], "https://example.org/", false),
+            ([String](), "https://page.invalid/", false)
+        ] {
+            expectEqual(UserScriptConnectPolicy(entries: entries, pageURL: page).allows(URL(string: target)!), allowed, "connect policy for \(target) with \(entries)")
+        }
+
+        let session = URLSession(configuration: .ephemeral)
+        defer { session.invalidateAndCancel() }
+        let redirectResponse = HTTPURLResponse(url: page, statusCode: 302, httpVersion: nil, headerFields: nil)!
+        for (mode, target, allowed) in [("follow", page, true), ("follow", URL(string: "https://outside.invalid/")!, false), ("manual", page, false), ("error", page, false)] {
+            let task = session.dataTask(with: page)
+            let delegate = GMRedirectPolicyDelegate(policy: UserScriptConnectPolicy(entries: ["self"], pageURL: page), redirect: mode)
+            var called = false
+            delegate.urlSession(session, task: task, willPerformHTTPRedirection: redirectResponse, newRequest: URLRequest(url: target)) { request in
+                called = true
+                expectEqual(request != nil, allowed, "native redirect policy for \(target) in \(mode) mode")
+            }
+            expect(called, "native redirect callback must always complete")
+            task.cancel()
+        }
+
+        let crossHost = URL(string: "https://allowed.invalid/")!
+        var authenticated = URLRequest(url: crossHost)
+        authenticated.setValue("secret", forHTTPHeaderField: "Authorization")
+        authenticated.setValue("session=secret", forHTTPHeaderField: "Cookie")
+        let redirectTask = session.dataTask(with: page)
+        GMRedirectPolicyDelegate(policy: UserScriptConnectPolicy(entries: ["*"], pageURL: page), redirect: "follow")
+            .urlSession(session, task: redirectTask, willPerformHTTPRedirection: redirectResponse, newRequest: authenticated) { request in
+                expectEqual(request?.url, crossHost, "approved cross-host redirect may proceed")
+                expect(request?.value(forHTTPHeaderField: "Authorization") == nil, "native redirect strips cross-host authorization")
+                expect(request?.value(forHTTPHeaderField: "Cookie") == nil, "native redirect strips cross-host cookie header")
+            }
+        redirectTask.cancel()
+
         print("PASS: userscript matching and payload")
     }
 

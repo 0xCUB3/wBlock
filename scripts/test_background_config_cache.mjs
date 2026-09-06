@@ -43,7 +43,7 @@ const makeConfig = (css, engineTimestamp, js = [], scriptlets = [], state = {}) 
 // Loads the bundle with a fresh browser stub.
 // nativeHandler receives every sendNativeMessage payload and returns the
 // response (or a never-resolving promise to simulate a hung native host).
-const loadBackground = ({ storage = {}, nativeHandler, executeScript = async () => [{}] }) => {
+const loadBackground = ({ storage = {}, nativeHandler, executeScript = async () => [{}], fetchImpl = globalThis.fetch }) => {
   const state = {
     storage,
     nativeMessages: [],
@@ -112,8 +112,8 @@ const loadBackground = ({ storage = {}, nativeHandler, executeScript = async () 
     i18n: { getMessage: () => "" }
   };
 
-  const run = new Function("browser", "window", "self", bundleSource);
-  run(browser, globalThis, globalThis);
+  const run = new Function("browser", "window", "self", "fetch", bundleSource);
+  run(browser, globalThis, globalThis, fetchImpl);
   if (typeof state.onMessage !== "function") {
     throw new Error("background bundle did not register an onMessage listener");
   }
@@ -749,6 +749,72 @@ for (const maintenanceAction of ["maybeUpdateUserScripts", "maybeStageFilterUpda
   await requests;
 }
 
+
+// Requests use native metadata and the browser-supplied frame URL, not page payloads.
+{
+  let entries = ["self"];
+  let authorized = true;
+  const calls = [];
+  let respond = async () => new Response("ok");
+  const state = loadBackground({
+    nativeHandler: message => {
+      if (message.action === "getUserScriptRequestPolicy") return { ok: authorized, connect: entries };
+      if (message.action === "gmXmlhttpRequestNative") return { responseText: "native-ok" };
+      return { payload: makeConfig([], 1) };
+    },
+    fetchImpl: async (url, options) => { calls.push({ url, options }); return respond(url, options); }
+  });
+  const sender = { tab: { id: 7 }, frameId: 0, url: "https://page.invalid/" };
+  const request = url => state.onMessage({ action: "gmXmlhttpRequest", scriptId: "script-1", url, connect: ["*"], pageURL: "https://forged.invalid/" }, sender);
+  for (const action of ["gmXmlhttpRequestNative", "getUserScriptRequestPolicy"]) {
+    const count = () => state.nativeMessages.filter(message => message.action === action).length;
+    const before = count();
+    check(`raw ${action} cannot bypass GM authorization`, !!(await state.onMessage({ action, scriptId: "script-1", pageURL: sender.url, url: sender.url }, sender)).error && count() === before);
+  }
+  check("missing script identity cannot fetch", !!(await state.onMessage({ action: "gmXmlhttpRequest", url: sender.url }, sender)).error && calls.length === 0);
+  check("missing sender URL cannot borrow payload URL", !!(await state.onMessage({ action: "gmXmlhttpRequest", scriptId: "script-1", url: sender.url, pageURL: sender.url }, { frameId: 0 })).error && calls.length === 0);
+  check("caller cannot forge connect wildcard", !!(await request("https://outside.invalid/")).error && calls.length === 0);
+  check("self request succeeds", (await request(sender.url)).responseText === "ok");
+  const policyRequest = state.nativeMessages.find(message => message.action === "getUserScriptRequestPolicy");
+  check("policy uses sender identity and frame", policyRequest.pageURL === sender.url && policyRequest.isTopFrame === true);
+  for (const [rules, url, allowed] of [
+    [["example.org"], "https://sub.example.org/", true],
+    [["example.org"], "https://evil-example.org/", false],
+    [["example.org"], "https://example.org.evil/", false],
+    [["localhost"], "http://localhost:8080/", true],
+    [["*"], "file:///etc/passwd", false],
+    [["*"], "https://user:secret@example.org/", false],
+    [["*"], "https://anywhere.invalid/", true],
+    [["https://example.org"], "https://example.org/", false],
+    [[], sender.url, false]
+  ]) {
+    entries = rules;
+    const before = calls.length;
+    const result = await request(url);
+    check(`connect ${JSON.stringify(rules)} for ${url}`, allowed ? result.responseText === "ok" : !!result.error && calls.length === before);
+  }
+  entries = ["page.invalid"];
+  respond = async () => new Response(null, { status: 302, headers: { location: "https://outside.invalid/" } });
+  let before = calls.length;
+  check("unapproved redirect never fetches target", !!(await request(sender.url)).error && calls.length === before + 1);
+  entries = ["page.invalid", "allowed.invalid"];
+  respond = async url => url === sender.url ? new Response(null, { status: 302, headers: { location: "https://allowed.invalid/" } }) : new Response("redirect-ok");
+  check("approved redirect succeeds", (await request(sender.url)).responseText === "redirect-ok");
+  check("fetch always uses manual redirects", calls.every(call => call.options.redirect === "manual"));
+  respond = async () => ({ type: "opaqueredirect" });
+  check("opaque redirects fail closed", !!(await request(sender.url)).error);
+  authorized = false;
+  before = calls.length;
+  check("disabled scripts lose network access", !!(await request(sender.url)).error && calls.length === before);
+  authorized = true;
+  entries = ["self"];
+  const nativeCount = () => state.nativeMessages.filter(message => message.action === "gmXmlhttpRequestNative").length;
+  const restricted = await state.onMessage({ action: "gmXmlhttpRequest", scriptId: "script-1", url: "https://outside.invalid/", headers: { "User-Agent": "test" } }, sender);
+  check("native-header path cannot bypass connect", !!restricted.error && nativeCount() === 0);
+  await state.onMessage({ action: "gmXmlhttpRequest", scriptId: "script-1", url: sender.url, headers: { "User-Agent": "test" } }, sender);
+  const nativeRequest = state.nativeMessages.find(message => message.action === "gmXmlhttpRequestNative");
+  check("native path carries trusted identity for revalidation", nativeRequest?.scriptId === "script-1" && nativeRequest?.pageURL === sender.url);
+}
 
 if (failures > 0) {
   console.error(`\n${failures} check(s) failed`);

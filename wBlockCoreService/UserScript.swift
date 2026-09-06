@@ -244,6 +244,60 @@ public enum UserScriptRestoreMatcher {
     }
 }
 
+public struct UserScriptConnectPolicy: Sendable {
+    public let entries: [String]
+    public let pageURL: URL
+
+    public init(entries: [String], pageURL: URL) {
+        self.entries = entries
+        self.pageURL = pageURL
+    }
+
+    public func allows(_ url: URL) -> Bool {
+        guard ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
+              url.user == nil, url.password == nil, let rawHost = url.host else { return false }
+        let host = rawHost.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+        let pageHost = pageURL.host?.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+        return entries.contains { raw in
+            let value = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if value == "*" { return true }
+            if value == "self" { return host == pageHost }
+            guard !value.isEmpty,
+                  !value.contains(where: { $0.isWhitespace || "/:@?#*\\%".contains($0) }),
+                  let parsed = URL(string: "https://\(value)"), let domain = parsed.host?.lowercased(),
+                  !domain.isEmpty else { return false }
+            let normalized = domain.trimmingCharacters(in: CharacterSet(charactersIn: "."))
+            return !normalized.isEmpty && (host == normalized || host.hasSuffix(".\(normalized)"))
+        }
+    }
+}
+
+final class GMRedirectPolicyDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    let policy: UserScriptConnectPolicy
+    let redirect: String
+    init(policy: UserScriptConnectPolicy, redirect: String) {
+        self.policy = policy
+        self.redirect = redirect
+    }
+    func urlSession(_ session: URLSession, task: URLSessionTask,
+                    willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest,
+                    completionHandler: @escaping (URLRequest?) -> Void) {
+        guard let url = request.url, policy.allows(url), redirect == "follow" else {
+            if redirect != "manual" { task.cancel() }
+            completionHandler(nil)
+            return
+        }
+        var authorizedRequest = request
+        if response.url?.scheme != url.scheme || response.url?.host != url.host || response.url?.port != url.port {
+            for name in ["Authorization", "Cookie", "Proxy-Authorization"] {
+                authorizedRequest.setValue(nil, forHTTPHeaderField: name)
+            }
+        }
+        completionHandler(authorizedRequest)
+    }
+}
+
 public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     public let id: UUID
     public var name: String
@@ -258,6 +312,39 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     public var runAt: String = "document-end"
     public var injectInto: String = "auto"
     public var grant: [String] = []
+    private final class ConnectMetadata {
+        let source: String
+        let entries: [String]
+        init(source: String, entries: [String]) { self.source = source; self.entries = entries }
+    }
+    private static let connectMetadataCache: NSCache<NSString, ConnectMetadata> = {
+        let cache = NSCache<NSString, ConnectMetadata>()
+        cache.countLimit = 128
+        cache.totalCostLimit = 32 * 1024 * 1024
+        return cache
+    }()
+    public var connect: [String] {
+        let key = id.uuidString as NSString
+        if let cached = Self.connectMetadataCache.object(forKey: key), cached.source == content {
+            return cached.entries
+        }
+        var values: [String] = []
+        var inMetadata = false
+        var declared = false
+        content.enumerateLines { line, stop in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed == "// ==UserScript==" { inMetadata = true; return }
+            if trimmed == "// ==/UserScript==" { stop = true; return }
+            guard inMetadata else { return }
+            let parts = trimmed.split(maxSplits: 2, whereSeparator: { $0.isWhitespace })
+            guard parts.count >= 2, parts[0] == "//", parts[1] == "@connect" else { return }
+            declared = true
+            if parts.count == 3 { values.append(String(parts[2])) }
+        }
+        let entries = declared ? values : ["self"]
+        Self.connectMetadataCache.setObject(ConnectMetadata(source: content, entries: entries), forKey: key, cost: content.utf8.count)
+        return entries
+    }
     public var require: [String] = []
     public var resource: [UserScriptResource] = []
     public var resourceContents: [String: String] = [:] // Cached resource content
@@ -449,6 +536,74 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
             if r < l { return false }
         }
         return false
+    }
+
+    private final class MatchHostIndex {
+        let patterns: [String]
+        var exact: [String: [String]] = [:]
+        var suffix: [String: [String]] = [:]
+        var fallback: [String] = []
+
+        init(_ patterns: [String]) {
+            self.patterns = patterns
+            for pattern in patterns {
+                guard let separator = pattern.range(of: "://"),
+                      let slash = pattern[separator.upperBound...].firstIndex(of: "/") else {
+                    fallback.append(pattern)
+                    continue
+                }
+                let host = String(pattern[separator.upperBound..<slash]).lowercased()
+                if host.hasPrefix("*.") && !host.dropFirst(2).contains("*") {
+                    suffix[String(host.dropFirst(2)), default: []].append(pattern)
+                } else if !host.contains("*") {
+                    exact[host, default: []].append(pattern)
+                } else {
+                    fallback.append(pattern)
+                }
+            }
+        }
+
+        func candidates(for host: String) -> [String] {
+            var result = exact[host] ?? []
+            var tail = host[...]
+            while !tail.isEmpty {
+                result += suffix[String(tail)] ?? []
+                guard let dot = tail.firstIndex(of: ".") else { break }
+                tail = tail[tail.index(after: dot)...]
+            }
+            return result
+        }
+    }
+
+    private static let matchHostIndexes: NSCache<NSString, MatchHostIndex> = {
+        let cache = NSCache<NSString, MatchHostIndex>()
+        cache.countLimit = 128
+        cache.totalCostLimit = 200_000
+        return cache
+    }()
+
+    private func indexedMatch(patterns: [String], kind: String, url: String,
+                              parsedURL: ParsedMatchURL, urlRange: NSRange) -> Bool {
+        // Small lists avoid index construction. Large lists share their immutable
+        // array storage across frames; mutations invalidate the cached host index.
+        guard patterns.count > 64 else {
+            return patterns.contains { Self.matchesPattern(pattern: $0, url: url, parsedURL: parsedURL, urlRange: urlRange) }
+        }
+        let key = "\(id.uuidString):\(kind)" as NSString
+        let index: MatchHostIndex
+        if let cached = Self.matchHostIndexes.object(forKey: key), cached.patterns == patterns {
+            index = cached
+        } else {
+            index = MatchHostIndex(patterns)
+            Self.matchHostIndexes.setObject(index, forKey: key, cost: patterns.count)
+        }
+        var candidates = index.candidates(for: parsedURL.host)
+        if parsedURL.hostWithPort != parsedURL.host {
+            candidates += index.candidates(for: parsedURL.hostWithPort)
+        }
+        return (candidates + index.fallback).contains {
+            Self.matchesPattern(pattern: $0, url: url, parsedURL: parsedURL, urlRange: urlRange)
+        }
     }
 
     private static let matchRegexCache: NSCache<NSString, NSRegularExpression> = {
@@ -726,18 +881,14 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         if isUserStyle {
             isIncluded = UserStyleSupport.matches(serializedConditions: matches, url: url)
         } else {
-            isIncluded = matches.contains {
-                Self.matchesPattern(pattern: $0, url: url, parsedURL: parsedURL, urlRange: urlRange)
-            } || includes.contains {
+            isIncluded = indexedMatch(patterns: matches, kind: "include", url: url, parsedURL: parsedURL, urlRange: urlRange) || includes.contains {
                 Self.matchesIncludePattern(pattern: $0, url: url, urlRange: urlRange)
             }
         }
 
         guard isIncluded else { return false }
 
-        if excludeMatches.contains(where: {
-            Self.matchesPattern(pattern: $0, url: url, parsedURL: parsedURL, urlRange: urlRange)
-        }) {
+        if indexedMatch(patterns: excludeMatches, kind: "exclude", url: url, parsedURL: parsedURL, urlRange: urlRange) {
             return false
         }
 

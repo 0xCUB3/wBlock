@@ -111,7 +111,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.extensionContextUnavailableLogged = false;
             this.pendingNativeRequests = new Map(); // requestId -> { resolve, reject, timeoutId }
             this.storageBridgeScriptIDs = new Map(); // bridgeId -> scriptId
-            this.xhrBridgeTokens = new Set(); // verified GM_xmlhttpRequest bridge tokens
+            this.xhrBridgeTokens = new Map(); // verified token -> native script ID
             this.provisionalXhrTokens = new Map(); // warm-start token -> queued requests
             this.provisionalScripts = new Map(); // execution key -> provisional state
             this.pageMenuBridgeElements = new Map(); // bridgeId -> script element
@@ -268,8 +268,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
         handleXhrBridgeRequest(data) {
             const { id, url, method, headers, body, anonymous, responseType, timeout, redirect, overrideMimeType, portName } = data;
 
-            this.proxyXhr({ url, method, headers, body, anonymous, responseType, timeout, redirect, overrideMimeType, portName })
+            this.proxyXhr({ scriptId: this.xhrBridgeTokens.get(data.bridgeId), url, method, headers, body, anonymous, responseType, timeout, redirect, overrideMimeType, portName })
                 .then(result => {
+                    if (result && result.error) throw new Error(result.error);
                     window.postMessage({
                         type: 'wblock-gm-xhr-response',
                         id: id,
@@ -527,6 +528,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.sendMessage) {
                 return await browser.runtime.sendMessage({
                     action: 'gmXmlhttpRequest',
+                    scriptId: details.scriptId,
                     url: details.url,
                     method: details.method || 'GET',
                     headers: details.headers || {},
@@ -551,6 +553,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     this.pendingNativeRequests.set(requestId, { resolve, reject, timeoutId });
                     safari.extension.dispatchMessage('gmXmlhttpRequest', {
                         requestId,
+                        scriptId: details.scriptId,
+                        pageURL: window.location.href,
+                        isTopFrame: window.top === window,
                         url: details.url,
                         method: details.method || 'GET',
                         headers: details.headers || {},
@@ -977,7 +982,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 if (fresh && this.isWarmStartEligible(fresh) && this.warmStartFingerprint(fresh) === provisional.fingerprint) {
                     this.provisionalScripts.delete(key);
                     this.provisionalXhrTokens.delete(provisional.token);
-                    this.xhrBridgeTokens.add(provisional.token);
+                    this.xhrBridgeTokens.set(provisional.token, fresh.id);
                     for (const request of provisional.queue) this.handleXhrBridgeRequest(request);
                 } else {
                     this.provisionalScripts.delete(key);
@@ -1383,7 +1388,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 // scripts cannot borrow the extension's CORS-free network access.
                 if (!warmStart && !fullScript.xhrBridgeId) {
                     fullScript.xhrBridgeId = this.generateSecret('gmxhr');
-                    this.xhrBridgeTokens.add(fullScript.xhrBridgeId);
+                    this.xhrBridgeTokens.set(fullScript.xhrBridgeId, fullScript.id);
                 }
                 // Token used to namespace this script's GM runtime ports so other
                 // page scripts cannot guess the channel name and spoof port
@@ -2547,6 +2552,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             };
 
             const requestPayload = {
+                scriptId: '${escapeForJS(script.id || '')}',
                 url: resolveUserscriptRequestURL(details.url),
                 method: method,
                 headers: details.headers || {},
