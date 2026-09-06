@@ -14,9 +14,15 @@ public enum FilterListURLMirror {
         return !(isSafariPrimary && fallbackPath.contains("/ios/filters/"))
     }
 
+    /// R2 public bucket for the Bypass Paywalls Clean list; the worker serves the
+    /// same object through its edge cache if the bucket URL ever fails.
+    static let bpcBucketURL = URL(string: "https://pub-d303b9085c0b41b5aa749fc74609d4d9.r2.dev/bpc-paywall-filter.txt")!
+    static let bpcWorkerURL = URL(string: "https://bpc-filter-proxy.wmailrelayb8d890.workers.dev")!
+
     public static func fallbackURLs(for primary: URL) -> [URL] {
         guard primary.scheme?.lowercased() == "https",
               let host = primary.host?.lowercased() else { return [] }
+        if primary == bpcBucketURL { return [bpcWorkerURL] }
         if host == "cdn.jsdelivr.net" || host == "filters.adtidy.org" { return [] }
         guard host == "raw.githubusercontent.com" else { return [] }
         // Use the encoded path: URL.path decodes spaces and other characters, which

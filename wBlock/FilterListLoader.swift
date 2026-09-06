@@ -41,6 +41,10 @@ class FilterListLoader {
     static let essentialFilterNames: Set<String> = recommendedFilterNames.subtracting(["AdGuard Cookie Notices"])
 
     private static let filterURLMigrations: [String: URL] = [
+        // 2026-09: the worker now mirrors BPC into R2; reads go to the bucket so
+        // update checks stop counting against the worker's daily quota.
+        "https://bpc-filter-proxy.wmailrelayb8d890.workers.dev": URL(string: "https://pub-d303b9085c0b41b5aa749fc74609d4d9.r2.dev/bpc-paywall-filter.txt")!,
+        "https://bpc-filter-proxy.wmailrelayb8d890.workers.dev/": URL(string: "https://pub-d303b9085c0b41b5aa749fc74609d4d9.r2.dev/bpc-paywall-filter.txt")!,
         "https://raw.githubusercontent.com/List-KR/List-KR/refs/heads/master/filter-AdGuard-forward.txt":
             URL(string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
         "https://raw.githubusercontent.com/List-KR/List-KR/master/filter-AdGuard-forward.txt": URL(
@@ -346,7 +350,7 @@ class FilterListLoader {
                 id: UUID(), name: "Bypass Paywalls Clean Filter",
                 url: URL(
                     string:
-                        "https://bpc-filter-proxy.wmailrelayb8d890.workers.dev"
+                        "https://pub-d303b9085c0b41b5aa749fc74609d4d9.r2.dev/bpc-paywall-filter.txt"
                 )!, category: FilterListCategory.annoyances,
                 description:
                     "Blocks paywall-related elements. Enable the corresponding userscript for best results."

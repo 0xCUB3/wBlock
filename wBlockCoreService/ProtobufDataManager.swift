@@ -1593,7 +1593,7 @@ public class ProtobufDataManager: ObservableObject {
 
                 // Migrate BPC filter list from gitflic to Cloudflare proxy
                 let oldBpcFilterURL = "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=bpc-paywall-filter.txt"
-                let newBpcFilterURL = "https://bpc-filter-proxy.wmailrelayb8d890.workers.dev"
+                let newBpcFilterURL = "https://pub-d303b9085c0b41b5aa749fc74609d4d9.r2.dev/bpc-paywall-filter.txt"
                 if let bpcFilterIndex = appData.filterLists.firstIndex(where: { $0.url == oldBpcFilterURL }) {
                     appData.filterLists[bpcFilterIndex].url = newBpcFilterURL
                     logger.info("🔄 Migrated BPC filter list URL from gitflic to Cloudflare proxy")

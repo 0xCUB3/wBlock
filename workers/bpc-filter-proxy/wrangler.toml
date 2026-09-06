@@ -1,3 +1,10 @@
 name = "bpc-filter-proxy"
 main = "index.js"
 compatibility_date = "2024-01-01"
+
+[triggers]
+crons = ["17 */6 * * *"]
+
+[[r2_buckets]]
+binding = "BPC_BUCKET"
+bucket_name = "bpc-filter"
