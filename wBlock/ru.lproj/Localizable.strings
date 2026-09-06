@@ -1112,3 +1112,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Счётчик показывает исходные правила, переданные конвертеру, а не итоговое число правил Safari.";
 "Failed to persist pending filter update revision" = "Не удалось сохранить ожидающее обновление фильтра";
+
+"Paste non-empty plain text and review it before adding." = "Вставьте непустой обычный текст и проверьте его перед добавлением.";
+
+"Choose a non-empty text file and review it before adding." = "Выберите непустой текстовый файл и проверьте его перед добавлением.";

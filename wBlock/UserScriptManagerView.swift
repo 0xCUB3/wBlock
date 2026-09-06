@@ -2025,7 +2025,7 @@ struct AddUserScriptView: View {
                     userScriptMetaFields
                 }
                 if parsedURLs.count > 1 {
-                    AddContentField(title: "Category") { userScriptCategoryPicker.labelsHidden() }
+                    userScriptCategoryPicker
                 }
                 validationMessage
             }
@@ -2035,7 +2035,8 @@ struct AddUserScriptView: View {
 
     private var textTab: some View {
         AddContentPanelLayout {
-            AddContentCard { simpleTextContent }
+            AddContentCard { userScriptMetaFields }
+            simpleTextContent
             editorRequirementsPanel
         }
         .task {
@@ -2076,38 +2077,23 @@ struct AddUserScriptView: View {
     #endif
 
     private var simpleTextContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            userScriptMetaFields
-
-            TextEditor(text: $textInput)
-                .font(.body)
-                .autocorrectionDisabled()
-                .focused($textInputFocused)
-                .frame(minHeight: 260, idealHeight: 320, maxHeight: 500)
-                .padding(8)
-                .background(.background, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(.quaternary, lineWidth: 1)
-                )
-                .accessibilityLabel(Text("Script Content"))
-
-            HStack(spacing: 10) {
-                Button(action: pasteScriptFromClipboard) {
-                    Label("Paste", systemImage: "doc.on.clipboard")
+        AddContentSourceCard(title: "Script Content", isDisabled: isAdding,
+            onPaste: pasteScriptFromClipboard, onOpenEditor: openEditorSheet) {
+                if #available(iOS 16.0, macOS 13.0, *) {
+                    scriptTextEditor.scrollContentBackground(.hidden)
+                } else {
+                    scriptTextEditor
                 }
-                .disabled(isAdding)
-
-                Button(action: openEditorSheet) {
-                    Label("Use Editor", systemImage: "curlybraces")
-                }
-                .disabled(isAdding)
-
-                Spacer()
             }
-            .buttonStyle(.bordered)
+    }
 
-        }
+    private var scriptTextEditor: some View {
+        TextEditor(text: $textInput)
+            .font(.system(.body, design: .monospaced))
+            .autocorrectionDisabled()
+            .focused($textInputFocused)
+            .frame(minHeight: 260, idealHeight: 320, maxHeight: 500)
+            .accessibilityLabel(Text("Script Content"))
     }
 
     #if os(macOS)
@@ -2168,7 +2154,7 @@ struct AddUserScriptView: View {
                 Text("Titles will be created from each URL.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                AddContentField(title: "Category") { userScriptCategoryPicker.labelsHidden() }
+                userScriptCategoryPicker
             } else {
                 userScriptMetaFields
             }
@@ -2182,7 +2168,10 @@ struct AddUserScriptView: View {
     }
 
     private var macosTextCard: some View {
-        AddContentCard { simpleTextContent }
+        VStack(spacing: 16) {
+            AddContentCard { userScriptMetaFields }
+            simpleTextContent
+        }
     }
 
     private var macosFileCard: some View {
@@ -2252,7 +2241,7 @@ struct AddUserScriptView: View {
 
     private var editorRequirementsPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
-            AddContentRequirementsPanel(requirements: [
+            AddContentRequirementsPanel(requirements: AddContentRequirement.localImport(fromFile: false) + [
                 AddContentRequirement(systemImage: "doc.badge.gearshape", text: metadataRequirementText)
             ])
             if let editorImportError {
@@ -2286,7 +2275,7 @@ struct AddUserScriptView: View {
     }
 
     private var fileRequirementsPanel: some View {
-        AddContentRequirementsPanel(requirements: [
+        AddContentRequirementsPanel(requirements: AddContentRequirement.localImport(fromFile: true) + [
             AddContentRequirement(systemImage: "doc.badge.gearshape", text: metadataRequirementText)
         ])
     }

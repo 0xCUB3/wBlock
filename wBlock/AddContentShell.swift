@@ -41,6 +41,18 @@ struct AddContentRequirement: Identifiable {
     }
 }
 
+extension AddContentRequirement {
+    static func localImport(fromFile: Bool) -> [AddContentRequirement] {
+        [
+            AddContentRequirement(systemImage: "character.cursor.ibeam", text: "Title is required."),
+            AddContentRequirement(systemImage: fromFile ? "doc" : "doc.on.clipboard", text: fromFile
+                ? "Choose a non-empty text file and review it before adding."
+                : "Paste non-empty plain text and review it before adding."),
+            AddContentRequirement(systemImage: "arrow.triangle.2.circlepath", text: "Local imports won't auto-update; re-import to replace.")
+        ]
+    }
+}
+
 struct AddContentRequirementsPanel: View {
     let requirements: [AddContentRequirement]
     let footer: LocalizedStringKey?
@@ -162,6 +174,31 @@ struct AddContentCard<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
             .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+    }
+}
+
+struct AddContentSourceCard<Content: View>: View {
+    let title: LocalizedStringKey
+    let isDisabled: Bool
+    let onPaste: () -> Void
+    let onOpenEditor: () -> Void
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        AddContentCard {
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            content().frame(minHeight: 260)
+            Divider()
+            HStack(spacing: 10) {
+                Button(action: onPaste) { Label("Paste", systemImage: "doc.on.clipboard") }
+                Button(action: onOpenEditor) { Label("Use Editor", systemImage: "curlybraces") }
+                Spacer()
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.regular)
+            .tint(.accentColor)
+            .disabled(isDisabled)
+        }
     }
 }
 

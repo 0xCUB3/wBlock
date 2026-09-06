@@ -1111,3 +1111,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 "Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Bu sayı, Safari’nin son kural sayısını değil, dönüştürücüye gönderilen kaynak kuralları gösterir.";
 "Failed to persist pending filter update revision" = "Bekleyen filtre güncellemesi kaydedilemedi";
+
+"Paste non-empty plain text and review it before adding." = "Boş olmayan düz metin yapıştırın ve eklemeden önce inceleyin.";
+
+"Choose a non-empty text file and review it before adding." = "Boş olmayan bir metin dosyası seçin ve eklemeden önce inceleyin.";

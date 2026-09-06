@@ -1112,3 +1112,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 "Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Ez a szám az átalakítónak elküldött forrásszabályokat jelzi, nem a Safari végleges szabályszámát.";
 "Failed to persist pending filter update revision" = "Nem sikerült menteni a függőben lévő szűrőfrissítést";
+
+"Paste non-empty plain text and review it before adding." = "Illesszen be nem üres egyszerű szöveget, és ellenőrizze a hozzáadás előtt.";
+
+"Choose a non-empty text file and review it before adding." = "Válasszon egy nem üres szövegfájlt, és ellenőrizze a hozzáadás előtt.";

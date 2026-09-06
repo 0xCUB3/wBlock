@@ -1112,3 +1112,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 
 "Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Ce nombre correspond aux règles sources transmises au convertisseur, pas au nombre final de règles de Safari.";
 "Failed to persist pending filter update revision" = "Impossible d’enregistrer la mise à jour du filtre en attente";
+
+"Paste non-empty plain text and review it before adding." = "Collez du texte brut non vide et vérifiez-le avant de l’ajouter.";
+
+"Choose a non-empty text file and review it before adding." = "Choisissez un fichier texte non vide et vérifiez-le avant de l’ajouter.";

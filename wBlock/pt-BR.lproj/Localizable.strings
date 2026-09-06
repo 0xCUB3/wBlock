@@ -1112,3 +1112,7 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 
 "Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "A contagem indica as regras de origem enviadas ao conversor, não o número final de regras do Safari.";
 "Failed to persist pending filter update revision" = "Não foi possível salvar a atualização pendente do filtro";
+
+"Paste non-empty plain text and review it before adding." = "Cole texto simples não vazio e revise-o antes de adicionar.";
+
+"Choose a non-empty text file and review it before adding." = "Escolha um arquivo de texto não vazio e revise-o antes de adicionar.";

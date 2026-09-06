@@ -1112,3 +1112,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "送信数は変換処理に渡された元のルール数です。Safariの最終的なルール数とは異なります。";
 "Failed to persist pending filter update revision" = "保留中のフィルタ更新を保存できませんでした";
+
+"Paste non-empty plain text and review it before adding." = "空でないプレーンテキストを貼り付け、追加する前に確認してください。";
+
+"Choose a non-empty text file and review it before adding." = "空でないテキストファイルを選び、追加する前に確認してください。";

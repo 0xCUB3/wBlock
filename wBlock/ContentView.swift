@@ -1587,33 +1587,17 @@ struct AddFilterListView: View {
                 urlEntryModePicker
                 AddContentField(title: urlFieldTitle) { urlInputEditor }
                 urlMetadataFields
-                AddContentField(title: "Category") {
-                    userListCategoryPicker(selection: $selectedCategory).labelsHidden()
-                }
+                userListCategoryPicker(selection: $selectedCategory)
                 urlFooterMessage
             }
         }
 
         private var macosPasteCard: some View {
-	            AddContentCard {
-	                userListMetaFields
-
-	                VStack(alignment: .leading, spacing: 6) {
-	                    Text("Rules")
-	                        .font(.caption)
-	                        .foregroundStyle(.secondary)
-
-                    SyntaxHighlightingTextView(text: $pastedRules)
-                        .frame(minHeight: 260)
-                        .background(.background, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(.quaternary, lineWidth: 1)
-                        )
-                    pasteRulesButton
-	                }
-	            }
-	        }
+            VStack(spacing: 16) {
+                AddContentCard { userListMetaFields }
+                filterSourceCard
+            }
+        }
 
 	        private var macosFileCard: some View {
 	            AddContentCard {
@@ -1696,9 +1680,7 @@ struct AddFilterListView: View {
                 urlEntryModePicker
                 AddContentField(title: urlFieldTitle) { urlInputEditor }
                 urlMetadataFields
-                AddContentField(title: "Category") {
-                    userListCategoryPicker(selection: $selectedCategory).labelsHidden()
-                }
+                userListCategoryPicker(selection: $selectedCategory)
                 urlFooterMessage
             }
             filterRequirementsPanel
@@ -1708,19 +1690,7 @@ struct AddFilterListView: View {
     private var pasteTab: some View {
         AddContentPanelLayout {
             AddContentCard { userListMetaFields }
-            AddContentCard {
-                Text("Rules").font(.caption).foregroundStyle(.secondary)
-                SyntaxHighlightingTextView(text: $pastedRules).frame(minHeight: 220)
-                HStack(spacing: 10) {
-                    pasteRulesButton
-                    Button {
-                        rulesEditorController.replaceText(pastedRules, markClean: true)
-                        isShowingRulesEditor = true
-                    } label: { Label("Use Editor", systemImage: "curlybraces") }
-                    .buttonStyle(.bordered)
-                    .disabled(isSaving)
-                }
-            }
+            filterSourceCard
             filterTextRequirementsPanel
         }
     }
@@ -1734,6 +1704,16 @@ struct AddFilterListView: View {
             filterFileRequirementsPanel
             if let importErrorMessage { Text(importErrorMessage).foregroundStyle(.orange) }
         }
+    }
+
+    private var filterSourceCard: some View {
+        AddContentSourceCard(title: "Rules", isDisabled: isSaving, onPaste: pasteRulesFromClipboard,
+            onOpenEditor: {
+                rulesEditorController.replaceText(pastedRules, markClean: true)
+                isShowingRulesEditor = true
+            }) {
+                SyntaxHighlightingTextView(text: $pastedRules)
+            }
     }
 
     private var pasteRulesButton: some View {
@@ -1816,18 +1796,11 @@ struct AddFilterListView: View {
     }
 
     private var filterTextRequirementsPanel: some View {
-        AddContentRequirementsPanel(requirements: [
-            AddContentRequirement(systemImage: "character.cursor.ibeam", text: "Title is required."),
-            AddContentRequirement(systemImage: "checkmark.circle", text: "Rules")
-        ])
+        AddContentRequirementsPanel(requirements: AddContentRequirement.localImport(fromFile: false))
     }
 
     private var filterFileRequirementsPanel: some View {
-        AddContentRequirementsPanel(requirements: [
-            AddContentRequirement(systemImage: "doc", text: "Choose File"),
-            AddContentRequirement(systemImage: "character.cursor.ibeam", text: "Title is required."),
-            AddContentRequirement(systemImage: "checkmark.circle", text: "Rules")
-        ])
+        AddContentRequirementsPanel(requirements: AddContentRequirement.localImport(fromFile: true))
     }
 
 	    private var filterRequirementsPanel: some View {
@@ -1836,8 +1809,7 @@ struct AddFilterListView: View {
                 AddContentRequirement(systemImage: "link", text: "Starts with http:// or https://"),
                 AddContentRequirement(systemImage: "globe", text: "Include a host name"),
                 AddContentRequirement(systemImage: "checkmark.circle", text: "Do not use a userscript URL ending in .js, .mjs, or .cjs")
-            ],
-            footer: "wBlock will fetch and enable the filter list automatically"
+            ]
         )
     }
 
@@ -1903,7 +1875,8 @@ struct AddFilterListView: View {
 	            } else {
 	                switch validationState {
 	                case .idle:
-	                    EmptyView()
+	                    Text("wBlock will fetch and enable the filter list automatically")
+                            .foregroundStyle(.secondary)
 	                case .invalid:
                         if let lineNumber = parsedURLInput.invalidLineNumbers.first {
                             Text(LocalizedStrings.format(

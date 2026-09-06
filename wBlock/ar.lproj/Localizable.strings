@@ -1112,3 +1112,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "تحسب الأعداد المرسلة قواعد المصدر المرسلة إلى المحوّل، وليس العدد النهائي لقواعد Safari.";
 "Failed to persist pending filter update revision" = "تعذر حفظ تحديث قائمة التصفية المعلّق";
+
+"Paste non-empty plain text and review it before adding." = "الصق نصًا عاديًا غير فارغ وراجعه قبل إضافته.";
+
+"Choose a non-empty text file and review it before adding." = "اختر ملفًا نصيًا غير فارغ وراجعه قبل إضافته.";

@@ -1112,3 +1112,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 "Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Numărul indică regulile sursă trimise convertorului, nu numărul final de reguli Safari.";
 "Failed to persist pending filter update revision" = "Actualizarea în așteptare a filtrului nu a putut fi salvată";
+
+"Paste non-empty plain text and review it before adding." = "Lipiți text simplu care nu este gol și verificați-l înainte de adăugare.";
+
+"Choose a non-empty text file and review it before adding." = "Alegeți un fișier text care nu este gol și verificați-l înainte de adăugare.";

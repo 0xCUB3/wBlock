@@ -1121,3 +1121,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Submitted counts track source rules sent to the converter, not Safari’s final rule count.";
 "Failed to persist pending filter update revision" = "Failed to save the pending filter update";
+
+"Paste non-empty plain text and review it before adding." = "Paste non-empty plain text and review it before adding.";
+
+"Choose a non-empty text file and review it before adding." = "Choose a non-empty text file and review it before adding.";

@@ -1112,3 +1112,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Η καταμέτρηση αφορά τους αρχικούς κανόνες που στάλθηκαν στον μετατροπέα, όχι το τελικό πλήθος κανόνων του Safari.";
 "Failed to persist pending filter update revision" = "Δεν ήταν δυνατή η αποθήκευση της εκκρεμούς ενημέρωσης φίλτρου";
+
+"Paste non-empty plain text and review it before adding." = "Επικολλήστε μη κενό απλό κείμενο και ελέγξτε το πριν το προσθέσετε.";
+
+"Choose a non-empty text file and review it before adding." = "Επιλέξτε ένα μη κενό αρχείο κειμένου και ελέγξτε το πριν το προσθέσετε.";
