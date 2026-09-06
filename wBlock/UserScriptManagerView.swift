@@ -216,15 +216,11 @@ struct UserScriptManagerView: View {
             onTap: onApplyChanges,
             onForceApply: onForceApplyChanges
         ) {
-#if os(macOS)
-            Text("Apply").fontWeight(.semibold)
-#else
             if hasPendingChanges {
                 Text("Apply").fontWeight(.semibold)
             } else {
                 Image(systemName: "arrow.triangle.2.circlepath")
             }
-#endif
         }
         #if os(macOS)
         .contextMenu {
