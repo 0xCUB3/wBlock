@@ -11,11 +11,11 @@ import UniformTypeIdentifiers
 
 private extension FilterListCategory {
     static var userScriptCategories: [FilterListCategory] {
-        [.scripts, .scriptBlocking, .scriptFunctionality, .scriptAppearance, .scriptOther]
+        [.scriptBlocking, .scriptFunctionality, .scriptAppearance, .scriptOther]
     }
 
     var userScriptCategoryName: String {
-        self == .scripts ? NSLocalizedString("Automatic", comment: "Automatic script category") : localizedName
+        (isUserScriptOnly ? self : .scriptOther).localizedName
     }
 }
 
@@ -1224,11 +1224,13 @@ struct UserScriptInfoSidebar: View {
     let onUpdatesAutomaticallyChanged: (Bool) -> Void
     let onCategoryChanged: (FilterListCategory) -> Void
     let userScriptManager: UserScriptManager
+    let onEdit: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             let metadata = ContentInfoMetadata.userscript(script.content)
             ScriptNameAndDescriptionView(script: script, isBeta: isBeta)
+            if !isBuiltIn { Button("Edit", action: onEdit) }
             ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0, isBuiltIn: isBuiltIn)
             if script.url != nil || script.updateURL != nil || script.downloadURL != nil {
                 ScriptUpdateSettingsView(
@@ -1241,15 +1243,16 @@ struct UserScriptInfoSidebar: View {
                     script.isUserStyle ? "Userstyle" : (isIntegratedUserScript(script, isBuiltIn: isBuiltIn, builtInDisplayRole: builtInDisplayRole) ? "Integrated" : "Userscript"),
                     comment: "Content type"
                 ), color: script.isUserStyle ? .purple : .red)
-                Picker("Category", selection: Binding(
-                    get: { script.category == .scripts || script.category.isUserScriptOnly ? script.category : .scriptOther },
-                    set: onCategoryChanged
-                )) {
-                    ForEach(FilterListCategory.userScriptCategories) { category in
-                        Text(category.userScriptCategoryName).tag(category)
-                    }
+                if isBuiltIn {
+                    InfoMetadataRow(title: "Category", value: NSLocalizedString(UserScriptDisplayCategorySupport.category(
+                        isUserStyle: script.isUserStyle, builtInRole: builtInDisplayRole, persistedCategory: script.category
+                    ).rawValue, comment: "Userscript category"))
+                } else {
+                    ContentCategoryPicker(selection: Binding(
+                        get: { script.category.isUserScriptOnly ? script.category : .scriptOther },
+                        set: onCategoryChanged
+                    ), categories: FilterListCategory.userScriptCategories)
                 }
-                .pickerStyle(.menu)
                 InfoMetadataRow(title: "Author", value: metadata.author ?? String(localized: "Not provided"))
                 InfoMetadataRow(
                     title: "Homepage",
@@ -1274,6 +1277,7 @@ struct UserScriptInfoView: View {
     @State private var script: UserScript?
     @State private var isPatternsExpanded = false
     @State private var isLoading = true
+    @State private var showingMetadataEditor = false
 
     var body: some View {
         Group {
@@ -1291,7 +1295,8 @@ struct UserScriptInfoView: View {
                             isBeta: userScriptManager.isBeta(for: script),
                             onUpdatesAutomaticallyChanged: setUpdatesAutomatically,
                             onCategoryChanged: setCategory,
-                            userScriptManager: userScriptManager
+                            userScriptManager: userScriptManager,
+                            onEdit: { showingMetadataEditor = true }
                         )
                         .padding()
                     }
@@ -1316,7 +1321,8 @@ struct UserScriptInfoView: View {
                         isBeta: userScriptManager.isBeta(for: script),
                         onUpdatesAutomaticallyChanged: setUpdatesAutomatically,
                         onCategoryChanged: setCategory,
-                        userScriptManager: userScriptManager
+                        userScriptManager: userScriptManager,
+                        onEdit: { showingMetadataEditor = true }
                     )
                     .padding(20)
                 }
@@ -1336,6 +1342,11 @@ struct UserScriptInfoView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        .sheet(isPresented: $showingMetadataEditor, onDismiss: {
+            Task { script = await userScriptManager.userScriptEditorSnapshot(withId: scriptId) }
+        }) {
+            UserScriptContentView(scriptId: scriptId, userScriptManager: userScriptManager, metadataOnly: true)
+        }
         .task(id: scriptId) {
             isLoading = true
             script = await userScriptManager.userScriptEditorSnapshot(withId: scriptId)
@@ -1344,7 +1355,7 @@ struct UserScriptInfoView: View {
     }
 
     private func setCategory(_ category: FilterListCategory) {
-        guard var currentScript = script else { return }
+        guard var currentScript = script, !userScriptManager.isDefaultUserScript(currentScript) else { return }
         currentScript.category = category
         script = currentScript
         Task { await userScriptManager.setUserScript(currentScript, category: category) }
@@ -1367,12 +1378,13 @@ struct UserScriptInfoView: View {
     }
 }
 
-/// View Content and Edit Content both open the CodeMirror source sheet directly,
-/// matching the filter list viewer (#616). Metadata lives in UserScriptInfoView.
+/// Custom scripts share metadata fields with filters; their local source can
+/// also be edited inline or opened in the full source editor.
 struct UserScriptContentView: View {
     let scriptId: UUID
     var userScriptManager: UserScriptManager
     var startsEditing: Bool = false
+    var metadataOnly: Bool = false
     @State private var script: UserScript?
     @State private var loadedContent = ""
     @State private var isLoadingContent = true
@@ -1383,17 +1395,19 @@ struct UserScriptContentView: View {
                 UserScriptSourceSheet(
                     script: script,
                     initialContent: loadedContent,
-                    canEdit: script.isLocal && !userScriptManager.isDefaultUserScript(script),
-                    startsEditing: startsEditing,
-                    onSave: { newContent, name, description in
-                        if let error = await userScriptManager.saveEditedContent(for: script.id, newContent: newContent) {
+                    canEdit: !userScriptManager.isDefaultUserScript(script),
+                    metadataOnly: metadataOnly,
+                    onSave: { newContent, name, description, category in
+                        if script.isLocal && !metadataOnly && newContent != loadedContent,
+                           let error = await userScriptManager.saveEditedContent(for: script.id, newContent: newContent) {
                             return error
                         }
-                        await userScriptManager.setUserScriptMetadataOverrides(
-                            for: script.id,
-                            name: name,
-                            description: description
-                        )
+                        guard await userScriptManager.setUserScriptMetadataOverrides(
+                            for: script.id, name: name, description: description
+                        ) else {
+                            return String(localized: "Couldn't save the edited source.")
+                        }
+                        await userScriptManager.setUserScript(script, category: category)
                         return nil
                     }
                 )
@@ -1436,179 +1450,132 @@ private struct UserScriptSourceSheet: View {
     let script: UserScript
     let initialContent: String
     let canEdit: Bool
-    let onSave: (String, String, String) async -> String?
+    let metadataOnly: Bool
+    let onSave: (String, String, String, FilterListCategory) async -> String?
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var editorController: CodeMirrorEditorController
-    @State private var isEditing: Bool
+    @State private var editedContent: String
+    @State private var editedName: String
+    @State private var editedDescription: String
+    @State private var selectedCategory: FilterListCategory
+    @State private var isShowingEditor = false
     @State private var isLineWrappingEnabled = false
     @State private var isSaving = false
     @State private var validationMessage: String?
-    @State private var editedName: String
-    @State private var editedDescription: String
 
-    init(
-        script: UserScript,
-        initialContent: String,
-        canEdit: Bool,
-        startsEditing: Bool = false,
-        onSave: @escaping (String, String, String) async -> String?
-    ) {
+    init(script: UserScript, initialContent: String, canEdit: Bool, metadataOnly: Bool = false,
+         onSave: @escaping (String, String, String, FilterListCategory) async -> String?) {
         self.script = script
         self.initialContent = initialContent
         self.canEdit = canEdit
+        self.metadataOnly = metadataOnly
         self.onSave = onSave
         _editorController = StateObject(wrappedValue: CodeMirrorEditorController(text: initialContent, isUserStyle: script.isUserStyle))
-        _isEditing = State(initialValue: startsEditing && canEdit)
+        _editedContent = State(initialValue: initialContent)
         _editedName = State(initialValue: script.name)
         _editedDescription = State(initialValue: script.description)
+        _selectedCategory = State(initialValue: script.category.isUserScriptOnly ? script.category : .scriptOther)
     }
 
     var body: some View {
-        #if os(iOS)
-        CompatibleNavigationStack {
-            sourceSheetBody
-                .background(Color(.systemGray6))
-                .navigationTitle("Script Content")
-                .navigationBarTitleDisplayMode(.inline)
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Text(script.localizedDisplayName).font(.headline).lineLimit(1)
+                Spacer()
+                if !canEdit && !metadataOnly {
+                    SourceViewerControls(wrapsLines: $isLineWrappingEnabled) { editorController.openSearch() }
+                }
+                if canEdit {
+                    Button("Save") { Task { await saveChanges() } }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(isSaving || !hasChanges || editedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+                SheetDoneButton { dismiss() }
+                    .disabled(isSaving)
+            }
+            .padding(16)
+            Divider()
+            if canEdit {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 16) {
+                        AddContentMetadataFields(name: $editedName, description: $editedDescription,
+                            category: $selectedCategory, categories: FilterListCategory.userScriptCategories)
+                        if let validationMessage {
+                            Text(validationMessage).foregroundStyle(.red).font(.caption)
+                        }
+                        if !metadataOnly {
+                            HStack {
+                                (script.isUserStyle ? Text("Style Content") : Text("Script Content"))
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                if script.isLocal {
+                                    Button { pasteContent() } label: { Label("Paste", systemImage: "doc.on.clipboard") }
+                                    Button {
+                                        editorController.replaceText(editedContent, markClean: true)
+                                        isShowingEditor = true
+                                    } label: { Label("Use Editor", systemImage: "curlybraces") }
+                                } else {
+                                    SourceViewerControls(wrapsLines: $isLineWrappingEnabled) { editorController.openSearch() }
+                                }
+                            }
+                            if script.isLocal {
+                                TextEditor(text: $editedContent)
+                                    .font(.system(.body, design: .monospaced))
+                                    .disableAutocorrection(true)
+                                    #if os(iOS)
+                                    .textInputAutocapitalization(.never)
+                                    #endif
+                                    .frame(minHeight: 260)
+                            } else {
+                                CodeMirrorTextEditor(controller: editorController, isEditable: false,
+                                    isLineWrappingEnabled: isLineWrappingEnabled)
+                                    .frame(minHeight: 260)
+                            }
+                        }
+                    }
+                    .padding(20)
+                    .disabled(isSaving)
+                }
+            } else {
+                CodeMirrorTextEditor(controller: editorController, isEditable: false,
+                    isLineWrappingEnabled: isLineWrappingEnabled)
+            }
         }
+        #if os(macOS)
+        .frame(width: metadataOnly ? 460 : 1000, height: metadataOnly ? 360 : 700)
+        #endif
+        .interactiveDismissDisabled(isSaving)
+        .sheet(isPresented: $isShowingEditor) {
+            CodeEditorSheet(editorController: editorController, onTextChanged: { editedContent = $0 }, onPaste: {
+                if let text = clipboardText { editorController.replaceText(text) }
+            })
+        }
+    }
+
+    private var clipboardText: String? {
+        #if os(iOS)
+        UIPasteboard.general.string
         #else
-        sourceSheetBody
-            .frame(width: 1000, height: 700)
+        NSPasteboard.general.string(forType: .string)
         #endif
     }
 
-    private var sourceSheetBody: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                #if os(macOS)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(script.localizedDisplayName)
-                        .font(.headline)
-                    (script.isUserStyle ? Text("Style Content") : Text("Script Content"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                #endif
-
-                SourceViewerControls(wrapsLines: $isLineWrappingEnabled) {
-                    editorController.openSearch()
-                }
-
-                Spacer()
-
-                if isEditing {
-                    Button("Cancel") {
-                        handleCancel()
-                    }
-
-                    Button {
-                        Task {
-                            await saveChanges()
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            if isSaving {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                    .frame(width: 12, height: 12)
-                            }
-                            Text("Save")
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(isSaving || (!editorController.isDirty && !hasMetadataChanges))
-                } else {
-                    if canEdit {
-                        Button("Edit") {
-                            isEditing = true
-                            DispatchQueue.main.async {
-                                editorController.focus()
-                            }
-                        }
-                    }
-
-                    SheetDoneButton {
-                        dismiss()
-                    }
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-
-            Divider()
-
-            if let analysis = editorController.analysis, analysis.isLargeDocument {
-                HStack(spacing: 4) {
-                    Image(systemName: "bolt.slash")
-                        .font(.caption2)
-                        .foregroundStyle(.orange)
-                    Text(LocalizedStrings.text(
-                        "Highlighting disabled for performance",
-                        comment: "CodeMirror source sheet: large document note"
-                    ))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 6)
-                Divider()
-            }
-
-            if isEditing && canEdit {
-                VStack(alignment: .leading, spacing: 8) {
-                    TextField("Name", text: $editedName)
-                        .textFieldStyle(.roundedBorder)
-                    TextField("Description", text: $editedDescription)
-                        .textFieldStyle(.roundedBorder)
-                    if let validationMessage {
-                        Text(validationMessage)
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 8)
-            }
-
-            CodeMirrorTextEditor(
-                controller: editorController,
-                isEditable: isEditing && canEdit,
-                isLineWrappingEnabled: isLineWrappingEnabled
-            )
-        }
+    private func pasteContent() {
+        if let text = clipboardText { editedContent = text }
     }
 
-    private var hasMetadataChanges: Bool {
-        editedName.trimmingCharacters(in: .whitespacesAndNewlines) != script.name
-            || editedDescription.trimmingCharacters(in: .whitespacesAndNewlines) != script.description
+    private var hasChanges: Bool {
+        editedContent != initialContent || editedName != script.name || editedDescription != script.description
+            || selectedCategory != (script.category.isUserScriptOnly ? script.category : .scriptOther)
     }
 
-    @MainActor
-    private func saveChanges() async {
-        let trimmedName = editedName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else {
-            validationMessage = LocalizedStrings.text(
-                "Title is required.",
-                comment: "Userscript metadata validation error"
-            )
-            return
-        }
-
+    @MainActor private func saveChanges() async {
         isSaving = true
-        let newContent = await editorController.currentText()
-        let error = await onSave(newContent, trimmedName, editedDescription)
+        let error = await onSave(editedContent, editedName.trimmingCharacters(in: .whitespacesAndNewlines),
+                                 editedDescription, selectedCategory)
         isSaving = false
-        if let error {
-            validationMessage = error
-        } else {
-            dismiss()
-        }
-    }
-
-    private func handleCancel() {
-        editorController.discardChanges()
-        isEditing = false
+        if let error { validationMessage = error } else { dismiss() }
     }
 }
 
@@ -1816,31 +1783,11 @@ struct CodeEditorSheet: View {
     private var editorBody: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                Button {
-                    editorController.openSearch()
-                } label: {
-                    Label("Search", systemImage: "magnifyingglass")
-                }
-                .accessibilityLabel("Search")
-
-                Button {
-                    isLineWrappingEnabled.toggle()
-                } label: {
-                    Label("Wrap Lines", systemImage: isLineWrappingEnabled ? "text.justify.left" : "text.alignleft")
-                }
-                .foregroundStyle(isLineWrappingEnabled ? Color.accentColor : Color.secondary)
-                .accessibilityValue(
-                    isLineWrappingEnabled
-                        ? String(localized: "On")
-                        : String(localized: "Off")
-                )
-
                 Spacer()
-
+                SourceViewerControls(wrapsLines: $isLineWrappingEnabled) { editorController.openSearch() }
                 Button(action: onPaste) {
                     Label("Paste", systemImage: "doc.on.clipboard")
                 }
-
                 SheetDoneButton(action: finish)
             }
             .padding(12)
@@ -1854,7 +1801,11 @@ struct CodeEditorSheet: View {
                 isEditable: true,
                 isLineWrappingEnabled: isLineWrappingEnabled
             )
+            #if os(macOS)
             .frame(minWidth: 420, minHeight: 360)
+            #else
+            .frame(minHeight: 260)
+            #endif
             .padding(.horizontal, 12)
             .padding(.bottom, 12)
         }
@@ -1889,7 +1840,7 @@ struct AddUserScriptView: View {
     @State private var stagingGeneration = 0
     @State private var stagedName = ""
     @State private var stagedDescription = ""
-    @State private var selectedCategory: FilterListCategory = .scripts
+    @State private var selectedCategory: FilterListCategory = .scriptOther
     @State private var editorMetadataState = EditorMetadataAutofillState()
     @State private var editorMetadataRefreshTask: Task<Void, Never>?
     @State private var metadataRefreshGeneration = 0
@@ -2299,12 +2250,7 @@ struct AddUserScriptView: View {
     }
 
     private var userScriptCategoryPicker: some View {
-        Picker("Category", selection: $selectedCategory) {
-            ForEach(FilterListCategory.userScriptCategories) { category in
-                Text(category.userScriptCategoryName).tag(category)
-            }
-        }
-        .pickerStyle(.menu)
+        ContentCategoryPicker(selection: $selectedCategory, categories: FilterListCategory.userScriptCategories)
     }
 
     private var userScriptMetaFields: some View {
@@ -2611,7 +2557,7 @@ struct AddUserScriptView: View {
                     ? UserScriptURLSupport.displayName(forFilename: url.lastPathComponent)
                     : metadataName
                 stagedDescription = parsed.description.trimmingCharacters(in: .whitespacesAndNewlines)
-                selectedCategory = .scripts
+                selectedCategory = .scriptOther
                 isStagingFile = false
             } catch {
                 guard generation == stagingGeneration else { return }

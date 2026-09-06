@@ -119,15 +119,7 @@ struct AddContentMetadataFields: View {
                     .textInputAutocapitalization(.sentences)
                     #endif
             }
-            AddContentField(title: "Category") {
-                Picker("Category", selection: $category) {
-                    ForEach(categories) { category in
-                        Text(categoryName(category)).tag(category)
-                    }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-            }
+            ContentCategoryPicker(selection: $category, categories: categories, categoryName: categoryName)
         }
     }
 }
@@ -170,5 +162,28 @@ struct AddContentCard<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
             .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+    }
+}
+
+struct ContentCategoryPicker: View {
+    @Binding var selection: FilterListCategory
+    let categories: [FilterListCategory]
+    var categoryName: (FilterListCategory) -> String = { $0.localizedName }
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            HStack(spacing: 0) { Text("Category"); Text(verbatim: ":") }
+                .foregroundStyle(.secondary)
+                .fixedSize()
+            Picker("Category", selection: $selection) {
+                ForEach(categories) { category in
+                    Text(categoryName(category)).tag(category)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+        }
+        .font(.callout)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

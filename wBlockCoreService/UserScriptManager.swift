@@ -991,7 +991,7 @@ public class UserScriptManager: ObservableObject {
         return scripts
     }
 
-    /// Hydrates source content without discarding display metadata chosen for a local import.
+    /// Hydrates source content without discarding custom display metadata.
     nonisolated private static func hydrateUserScriptFromDisk(_ script: UserScript) -> UserScript {
         var hydratedScript = script
         guard let content = readUserScriptContentOffMain(script) else { return hydratedScript }
@@ -1032,7 +1032,7 @@ public class UserScriptManager: ObservableObject {
             hydratedScript[keyPath: keyPath] = script[keyPath: keyPath]
         }
 
-        if script.isLocal {
+        if !BuiltInUserScripts.allProtectedURLs.contains(script.url?.absoluteString ?? "") {
             if !persistedName.isEmpty {
                 hydratedScript.name = script.name
             }
@@ -2513,6 +2513,9 @@ public class UserScriptManager: ObservableObject {
     ) -> UserScript {
         var updated = parsed
         updated.name = existing.name
+        if !isDefaultUserScript(existing) {
+            updated.description = existing.description
+        }
         updated.url = existing.url
         updated.isEnabled = existing.isEnabled
         updated.isLocal = existing.isLocal
@@ -3161,6 +3164,7 @@ public class UserScriptManager: ObservableObject {
         origin: UserScriptMutationOrigin = .local
     ) async {
         guard let index = userScripts.firstIndex(where: { $0.id == userScript.id }) else { return }
+        guard !isDefaultUserScript(userScripts[index]), category.isUserScriptOnly else { return }
         guard userScripts[index].category != category else { return }
 
         userScripts[index].category = category
@@ -3551,7 +3555,7 @@ public class UserScriptManager: ObservableObject {
         return nil
     }
 
-    /// Persists display metadata overrides for an editable local import.
+    /// Persists display metadata for a custom script without changing its source.
     @discardableResult
     public func setUserScriptMetadataOverrides(
         for scriptId: UUID,
@@ -3559,7 +3563,8 @@ public class UserScriptManager: ObservableObject {
         description: String,
         origin: UserScriptMutationOrigin = .local
     ) async -> Bool {
-        guard let index = indexOfUserScript(withId: scriptId), userScripts[index].isLocal else { return false }
+        guard let index = indexOfUserScript(withId: scriptId),
+              !isDefaultUserScript(userScripts[index]) else { return false }
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return false }
         userScripts[index].name = trimmedName

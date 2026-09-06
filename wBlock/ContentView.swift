@@ -226,7 +226,11 @@ struct ContentView: View {
                 .infoSheetPresentationCompat()
         }
         .sheet(item: $selectedFilterRules) { filter in
-            FilterRulesView(filter: filter, filterManager: filterManager)
+            if filter.isInlineUserList {
+                EditUserListView(filterManager: filterManager, filter: filter)
+            } else {
+                FilterRulesView(filter: filter, filterManager: filterManager)
+            }
         }
         .sheet(item: $selectedCategoryInfo) { category in
             FilterCategoryInfoView(
@@ -1296,19 +1300,14 @@ struct ContentModifiers: ViewModifier {
     #endif
 }
 
-private extension FilterListCategory {
+extension FilterListCategory {
     static var userListCategories: [FilterListCategory] {
         [.custom] + allCases.filter { $0 != .all && $0 != .custom && $0 != .scripts && !$0.isUserScriptOnly }
     }
 }
 
 private func userListCategoryPicker(selection: Binding<FilterListCategory>) -> some View {
-    Picker("Category", selection: selection) {
-        ForEach(FilterListCategory.userListCategories) { category in
-            Text(category.localizedName).tag(category)
-        }
-    }
-    .pickerStyle(.menu)
+    ContentCategoryPicker(selection: selection, categories: FilterListCategory.userListCategories)
 }
 
 
@@ -2370,6 +2369,7 @@ struct EditCustomFilterView: View {
     @FocusState private var nameFieldIsFocused: Bool
 
     @State private var name: String
+    @State private var description: String
     @State private var selectedCategory: FilterListCategory
     @State private var errorMessage: String?
 
@@ -2377,6 +2377,7 @@ struct EditCustomFilterView: View {
         self.filterManager = filterManager
         self.filter = filter
         self._name = State(initialValue: filter.name)
+        self._description = State(initialValue: filter.description)
         self._selectedCategory = State(initialValue: filter.category)
     }
 
@@ -2398,6 +2399,7 @@ struct EditCustomFilterView: View {
                                     }
                                 }
 
+                            TextField("Description", text: $description)
                             userListCategoryPicker(selection: $selectedCategory)
 
                             Text(filter.url.absoluteString)
@@ -2450,12 +2452,9 @@ struct EditCustomFilterView: View {
                                         }
                                     }
 
-                                Text("Category")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-
+                                TextField("Description", text: $description)
+                                    .textFieldStyle(.roundedBorder)
                                 userListCategoryPicker(selection: $selectedCategory)
-                                    .labelsHidden()
 
                                 Text(filter.url.absoluteString)
                                     .font(.caption2)
@@ -2529,7 +2528,8 @@ struct EditCustomFilterView: View {
         if filterManager.updateCustomFilterList(
             id: filter.id,
             name: trimmedName,
-            category: selectedCategory
+            category: selectedCategory,
+            description: description
         ) {
             dismiss()
         } else {
@@ -2588,7 +2588,7 @@ struct EditUserListView: View {
                         Section("Rules") {
                             SyntaxHighlightingTextView(text: $rules)
                                 .frame(minHeight: 260)
-                            useEditorButton
+                            sourceActions
                         }
                     }
                     .navigationTitle("Edit User List")
@@ -2655,12 +2655,7 @@ struct EditUserListView: View {
                                     .textFieldStyle(.roundedBorder)
                                     .autocorrectionDisabled()
 
-                                Text("Category")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-
                                 userListCategoryPicker(selection: $selectedCategory)
-                                    .labelsHidden()
 
                                 Text(filter.url.absoluteString)
                                     .font(.caption2)
@@ -2683,7 +2678,7 @@ struct EditUserListView: View {
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                     Spacer()
-                                    useEditorButton
+                                    sourceActions
                                         .controlSize(.small)
                                 }
 
@@ -2737,6 +2732,20 @@ struct EditUserListView: View {
                 onPaste: pasteRulesIntoEditor
             )
         }
+    }
+
+    private var sourceActions: some View {
+        HStack {
+            Button {
+                #if os(iOS)
+                if let text = UIPasteboard.general.string { rules = text }
+                #else
+                if let text = NSPasteboard.general.string(forType: .string) { rules = text }
+                #endif
+            } label: { Label("Paste", systemImage: "doc.on.clipboard") }
+            useEditorButton
+        }
+        .disabled(isLoadingContent)
     }
 
     private var useEditorButton: some View {

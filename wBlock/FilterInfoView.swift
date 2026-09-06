@@ -11,6 +11,7 @@ struct FilterInfoView: View {
     @ObservedObject var filterManager: AppFilterManager
 
     @Environment(\.dismiss) private var dismiss
+    @State private var showingMetadataEditor = false
     @State private var newSite = ""
     @State private var cachedMetadata = ContentInfoMetadata()
     @State private var cachedByteCount: Int?
@@ -40,6 +41,9 @@ struct FilterInfoView: View {
             infoContent.padding(20).infoSheetChromeCompat { dismiss() }
             #endif
         }
+        .sheet(isPresented: $showingMetadataEditor) {
+            EditCustomFilterView(filterManager: filterManager, filter: liveFilter)
+        }
         .task(id: liveFilter.lastUpdated) {
             let snapshot = liveFilter
             let cached = await Task.detached(priority: .userInitiated) { () -> (Int, String)? in
@@ -59,7 +63,10 @@ struct FilterInfoView: View {
                 Text(liveFilter.localizedDisplayName)
                     .font(.title2.weight(.semibold))
                     .textSelection(.enabled)
-
+                if liveFilter.isCustom {
+                    Spacer()
+                    Button("Edit") { showingMetadataEditor = true }
+                }
             }
             if !liveFilter.localizedDisplayDescription.isEmpty {
                 Text(liveFilter.localizedDisplayDescription)
@@ -177,6 +184,10 @@ struct FilterRulesView: View {
     let filter: FilterList
     @ObservedObject var filterManager: AppFilterManager
     @State private var rules = ""
+    @State private var editedName = ""
+    @State private var editedDescription = ""
+    @State private var editedCategory: FilterListCategory = .custom
+    @State private var metadataError: String?
     @State private var searchQuery = ""
     @State private var showsSearch = false
     @State private var wrapsLines = false
@@ -204,11 +215,27 @@ struct FilterRulesView: View {
                 if analysis != nil {
                     filterMenu
                 }
+                if filter.isCustom {
+                    Button("Save") {
+                        if filterManager.updateCustomFilterList(id: filter.id, name: editedName,
+                            category: editedCategory, description: editedDescription) {
+                            dismiss()
+                        } else { metadataError = filterManager.statusDescription }
+                    }
+                    .disabled(editedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
                 SheetDoneButton { dismiss() }
             }
             .padding(16)
             Divider()
 
+            if filter.isCustom {
+                AddContentMetadataFields(name: $editedName, description: $editedDescription,
+                    category: $editedCategory, categories: FilterListCategory.userListCategories)
+                    .padding(16)
+                if let metadataError { Text(metadataError).font(.caption).foregroundStyle(.red) }
+                Divider()
+            }
             if showsSearch {
                 HStack {
                     TextField("Search", text: $searchQuery).textFieldStyle(.roundedBorder)
@@ -247,6 +274,11 @@ struct FilterRulesView: View {
         #else
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         #endif
+        .onAppear {
+            editedName = filter.name
+            editedDescription = filter.description
+            editedCategory = filter.category
+        }
         .task {
             rules = FilterListLoader().readLocalFilterContent(filter) ?? ""
             displayedRules = rules

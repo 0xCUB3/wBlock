@@ -385,7 +385,7 @@ extension AppFilterManager {
     }
 
     @discardableResult
-    func updateCustomFilterList(id: UUID, name: String, category: FilterListCategory) -> Bool {
+    func updateCustomFilterList(id: UUID, name: String, category: FilterListCategory, description: String? = nil) -> Bool {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
 
@@ -414,6 +414,10 @@ extension AppFilterManager {
         filterLists[index].name = trimmed
         filterLists[index].category = category
         filterLists[index].hasUserProvidedName = true
+        if let description {
+            filterLists[index].description = description.trimmingCharacters(in: .whitespacesAndNewlines)
+            filterLists[index].hasUserProvidedDescription = true
+        }
         saveFilterListsCoalesced()
 
         if oldCategory != category {
