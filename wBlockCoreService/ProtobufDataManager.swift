@@ -35,10 +35,65 @@ private func normalizeAppDataIdentifiers(_ data: inout Wblock_Data_AppData) -> B
     return changed
 }
 
+/// Decoding the shared store costs on the order of 100 ms once a few large
+/// userscripts are installed, and one save can decode the same bytes several
+/// times (disk read, in-memory baseline, rebase read). The app and the Safari
+/// extension handlers also re-read the file on every request. Keying a small
+/// cache by the exact serialized bytes turns those repeats into a memcmp and a
+/// copy-on-write struct copy, without changing what any caller observes.
+private final class AppDataDecodeCache: @unchecked Sendable {
+    static let shared = AppDataDecodeCache()
+
+    private struct Entry {
+        let rawData: Data
+        let appData: Wblock_Data_AppData
+        let repaired: Bool
+    }
+
+    private let lock = NSLock()
+    private var entries: [Entry] = []
+    private let capacity = 4
+
+    func decode(_ bytes: Data) throws -> (appData: Wblock_Data_AppData, repaired: Bool) {
+        if let cached = lookup(bytes) {
+            return (cached.appData, cached.repaired)
+        }
+        var data = try Wblock_Data_AppData(serializedBytes: bytes)
+        let repaired = normalizeAppDataIdentifiers(&data)
+        store(Entry(rawData: bytes, appData: data, repaired: repaired))
+        return (data, repaired)
+    }
+
+    /// Records bytes the store just produced from an already normalized value so
+    /// the next read of the file we wrote does not decode it again.
+    func remember(_ bytes: Data, appData: Wblock_Data_AppData) {
+        if lookup(bytes) != nil { return }
+        store(Entry(rawData: bytes, appData: appData, repaired: false))
+    }
+
+    private func lookup(_ bytes: Data) -> Entry? {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let index = entries.firstIndex(where: { $0.rawData.count == bytes.count && $0.rawData == bytes }) else {
+            return nil
+        }
+        let entry = entries.remove(at: index)
+        entries.append(entry)
+        return entry
+    }
+
+    private func store(_ entry: Entry) {
+        lock.lock()
+        defer { lock.unlock() }
+        entries.append(entry)
+        if entries.count > capacity {
+            entries.removeFirst(entries.count - capacity)
+        }
+    }
+}
+
 private func decodeAppData(_ bytes: Data) throws -> Wblock_Data_AppData {
-    var data = try Wblock_Data_AppData(serializedBytes: bytes)
-    _ = normalizeAppDataIdentifiers(&data)
-    return data
+    try AppDataDecodeCache.shared.decode(bytes).appData
 }
 
 private func mergeField<T: Equatable>(_ local: inout T, baseline: T, persisted: T) {
@@ -294,9 +349,8 @@ private actor ProtobufDiskStore {
 
     func readAppData(from url: URL) throws -> (appData: Wblock_Data_AppData, rawData: Data, modificationDate: Date?, identitiesRepaired: Bool) {
         let rawData = try Data(contentsOf: url)
-        var appData = try Wblock_Data_AppData(serializedBytes: rawData)
-        let repaired = normalizeAppDataIdentifiers(&appData)
-        return (appData: appData, rawData: rawData, modificationDate: modificationDate(for: url), identitiesRepaired: repaired)
+        let decoded = try AppDataDecodeCache.shared.decode(rawData)
+        return (appData: decoded.appData, rawData: rawData, modificationDate: modificationDate(for: url), identitiesRepaired: decoded.repaired)
     }
 
     func writeData(_ data: Data, to url: URL) throws {
@@ -391,6 +445,7 @@ private actor ProtobufDiskStore {
 
         let mutationResult = mutate(&workingData)
         let updatedRawData = try workingData.serializedData()
+        AppDataDecodeCache.shared.remember(updatedRawData, appData: workingData)
         let currentVersion = dataVersion(for: versionURL)
 
         if current.rawData == updatedRawData {
@@ -442,6 +497,7 @@ private actor ProtobufDiskStore {
         }
 
         let rawData = try mergedSnapshot.serializedData()
+        AppDataDecodeCache.shared.remember(rawData, appData: mergedSnapshot)
         if current.rawData == rawData {
             return (
                 appData: mergedSnapshot,
@@ -1481,7 +1537,6 @@ public class ProtobufDataManager: ObservableObject {
         pendingSaveTask?.cancel()
         let writeGeneration = storageGeneration
         let pendingSnapshot = appData
-        let pendingRawData = try? pendingSnapshot.serializedData()
         let pendingBaseline = lastSavedData
 
         do {
@@ -1502,10 +1557,11 @@ public class ProtobufDataManager: ObservableObject {
             // have unsaved in-memory changes in another field. Rebase those changes
             // over the mutation and persist the combined result instead of dropping
             // them when appData is replaced below.
-            if let pendingRawData,
-               let pendingBaseline,
-               pendingRawData != pendingBaseline,
-               let previousSnapshot = try? decodeAppData(pendingBaseline) {
+            // Decoding the baseline is a cache hit; comparing structs avoids a
+            // main-actor serialization pass on every save.
+            if let pendingBaseline,
+               let previousSnapshot = try? decodeAppData(pendingBaseline),
+               previousSnapshot != pendingSnapshot {
                 var rebased = pendingSnapshot
                 mergePersistedChanges(
                     in: &rebased,
@@ -1824,7 +1880,6 @@ public class ProtobufDataManager: ObservableObject {
     private func performSaveData() async -> Bool {
         let writeGeneration = storageGeneration
         let snapshot = appData
-        let snapshotRawData = try? snapshot.serializedData()
         let previous = lastSavedData
 
         guard writeGeneration == storageGeneration else { return false }
@@ -1836,7 +1891,7 @@ public class ProtobufDataManager: ObservableObject {
                 versionURL: dataVersionFileURL
             ) {
                 guard writeGeneration == storageGeneration else { return false }
-                if (try? appData.serializedData()) == snapshotRawData {
+                if appData == snapshot {
                     appData = result.appData
                 } else {
                     mergePersistedChanges(
