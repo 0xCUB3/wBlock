@@ -365,6 +365,7 @@
 "Failed to read local content for rule counting" = "Citirea conținutului local pentru numărarea regulilor a eșuat";
 "Failed to reload %@." = "Nu s-a reîncărcat %@.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ dezactivat(e) în Safari. Activează-le în setările Safari pentru a încărca regulile aplicate.";
+"%d URL parameter rules were dropped: Safari allows at most %d." = "%d reguli pentru parametri URL au fost omise: Safari permite cel mult %d.";
 "Skipped reload for extensions turned off in Safari" = "Reîncărcare omisă pentru extensiile dezactivate în Safari";
 "wBlock launched" = "wBlock a pornit";
 "Failed to reload content blocker" = "Reîncărcarea blocatorului de conținut a eșuat";
@@ -1053,6 +1054,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Duplicates" = "Duplicate";
 "Comments" = "Comentarii";
 "Needs wBlock Scripts" = "Necesită wBlock Scripts";
+"URL Parameters" = "Parametri URL";
 "View" = "Vizualizare";
 
 "Last Update Check" = "Ultima verificare a actualizărilor";

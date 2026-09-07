@@ -2059,7 +2059,7 @@ public actor SharedAutoUpdateManager {
         let disabledSites = await getDisabledSites()
         do {
             let summary = try RemoveParamDNRRuleGenerator.saveRules(for: selectedFilters, disabledSites: disabledSites, groupIdentifier: GroupIdentifier.shared.value)
-            appendSharedLog("Prepared removeparam DNR rules: generated=\(summary.generatedRules) source=\(summary.removeParamRules) exceptions=\(summary.exceptionRules) skipped=\(summary.skippedRules)")
+            appendSharedLog("Prepared removeparam DNR rules: generated=\(summary.generatedRules) source=\(summary.removeParamRules) exceptions=\(summary.exceptionRules) skipped=\(summary.skippedRules) truncated=\(summary.truncatedRules)")
         } catch { appendSharedLog("Failed to prepare removeparam DNR rules: \(error.localizedDescription)") }
         let ordered = ContentBlockerMappingService.orderedForCompilation(selectedFilters)
         let byTarget = ContentBlockerMappingService.distribute(selectedFilters: selectedFilters, across: targets)

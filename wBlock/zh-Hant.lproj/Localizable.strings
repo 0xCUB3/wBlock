@@ -365,6 +365,7 @@
 "Failed to read local content for rule counting" = "讀取本機內容以統計規則失敗";
 "Failed to reload %@." = "無法重新載入 %@。";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ 已在 Safari 中關閉。請在 Safari 設定中啟用它們以載入已套用的規則。";
+"%d URL parameter rules were dropped: Safari allows at most %d." = "已捨棄 %d 條 URL 參數規則：Safari 最多允許 %d 條。";
 "Skipped reload for extensions turned off in Safari" = "已略過在 Safari 中關閉的擴充功能的重新載入";
 "wBlock launched" = "wBlock 已啟動";
 "Failed to reload content blocker" = "重新載入內容阻擋器失敗";
@@ -1053,6 +1054,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Duplicates" = "重複";
 "Comments" = "註解";
 "Needs wBlock Scripts" = "需要 wBlock Scripts";
+"URL Parameters" = "URL 參數";
 "View" = "檢視";
 
 "Last Update Check" = "上次檢查更新";

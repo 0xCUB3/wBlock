@@ -365,6 +365,7 @@
 "Failed to read local content for rule counting" = "A helyi tartalom olvasása a szabályok számlálásához sikertelen";
 "Failed to reload %@." = "A %@ újratöltése sikertelen.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ ki van kapcsolva a Safariban. Kapcsold be a Safari beállításaiban az alkalmazott szabályok betöltéséhez.";
+"%d URL parameter rules were dropped: Safari allows at most %d." = "%d URL-paraméter szabály kimaradt: a Safari legfeljebb %d-t enged.";
 "Skipped reload for extensions turned off in Safari" = "Újratöltés kihagyva a Safariban kikapcsolt bővítményeknél";
 "wBlock launched" = "A wBlock elindult";
 "Failed to reload content blocker" = "A tartalomblokkoló újratöltése sikertelen";
@@ -1053,6 +1054,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Duplicates" = "Duplikátumok";
 "Comments" = "Megjegyzések";
 "Needs wBlock Scripts" = "wBlock Scripts szükséges";
+"URL Parameters" = "URL-paraméterek";
 "View" = "Nézet";
 
 "Last Update Check" = "Utolsó frissítéskeresés";

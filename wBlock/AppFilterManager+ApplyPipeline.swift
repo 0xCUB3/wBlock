@@ -661,7 +661,9 @@ extension AppFilterManager {
                 )
             }
         }.value
+        var removeParamTruncatedRules = 0
         if case .success(let removeParamDNRSummary) = removeParamDNRResult {
+            removeParamTruncatedRules = removeParamDNRSummary.truncatedRules
             await ConcurrentLogManager.shared.info(
                 .filterApply,
                 LocalizedStrings.text("Prepared removeparam DNR rules"),
@@ -670,9 +672,20 @@ extension AppFilterManager {
                     "sourceRemoveparam": "\(removeParamDNRSummary.removeParamRules)",
                     "exceptions": "\(removeParamDNRSummary.exceptionRules)",
                     "skipped": "\(removeParamDNRSummary.skippedRules)",
+                    "truncated": "\(removeParamDNRSummary.truncatedRules)",
                     "disabledAllow": "\(removeParamDNRSummary.disabledSiteAllowRules)",
                 ]
             )
+            if removeParamDNRSummary.truncatedRules > 0 {
+                await ConcurrentLogManager.shared.warning(
+                    .filterApply,
+                    LocalizedStrings.text("Dropped removeparam rules over Safari's dynamic rule limit"),
+                    metadata: [
+                        "truncated": "\(removeParamDNRSummary.truncatedRules)",
+                        "limit": "\(RemoveParamDNRRuleGenerator.maxGeneratedRules)",
+                    ]
+                )
+            }
         } else if case .failure(let error) = removeParamDNRResult {
             await ConcurrentLogManager.shared.warning(
                 .filterApply,
@@ -1060,6 +1073,13 @@ extension AppFilterManager {
                         "%@ turned off in Safari. Enable them in Safari settings to load the applied rules.",
                         comment: "Apply pipeline warning for extensions disabled in Safari settings",
                         reloadSummary.disabledInSafariNames.joined(separator: ", ")
+                    )
+                } else if removeParamTruncatedRules > 0 {
+                    resultWarning = LocalizedStrings.format(
+                        "%d URL parameter rules were dropped: Safari allows at most %d.",
+                        comment: "Apply pipeline warning when removeparam rules exceed Safari's dynamic rule limit",
+                        removeParamTruncatedRules,
+                        RemoveParamDNRRuleGenerator.maxGeneratedRules
                     )
                 }
             } else if !allReloadsSuccessful {

@@ -365,6 +365,7 @@
 "Failed to read local content for rule counting" = "Не удалось прочитать локальное содержимое для подсчёта правил";
 "Failed to reload %@." = "Не удалось перезагрузить %@.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ отключено в Safari. Включите их в настройках Safari, чтобы загрузить применённые правила.";
+"%d URL parameter rules were dropped: Safari allows at most %d." = "Пропущено правил параметров URL: %d. Safari допускает не более %d.";
 "Skipped reload for extensions turned off in Safari" = "Перезагрузка пропущена для расширений, отключённых в Safari";
 "wBlock launched" = "wBlock запущен";
 "Failed to reload content blocker" = "Не удалось перезагрузить блокировщик контента";
@@ -1053,6 +1054,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Duplicates" = "Дубликаты";
 "Comments" = "Комментарии";
 "Needs wBlock Scripts" = "Требуется wBlock Scripts";
+"URL Parameters" = "Параметры URL";
 "View" = "Вид";
 
 "Last Update Check" = "Последняя проверка обновлений";

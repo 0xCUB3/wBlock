@@ -365,6 +365,7 @@
 "Failed to read local content for rule counting" = "Échec de la lecture du contenu local pour le comptage des règles";
 "Failed to reload %@." = "Échec du rechargement de %@.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ désactivé(s) dans Safari. Activez-les dans les réglages de Safari pour charger les règles appliquées.";
+"%d URL parameter rules were dropped: Safari allows at most %d." = "%d règles de paramètres d’URL ont été ignorées : Safari en autorise au plus %d.";
 "Skipped reload for extensions turned off in Safari" = "Rechargement ignoré pour les extensions désactivées dans Safari";
 "wBlock launched" = "wBlock lancé";
 "Failed to reload content blocker" = "Échec du rechargement du bloqueur de contenu";
@@ -1053,6 +1054,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Duplicates" = "Doublons";
 "Comments" = "Commentaires";
 "Needs wBlock Scripts" = "Nécessite wBlock Scripts";
+"URL Parameters" = "Paramètres d’URL";
 "View" = "Affichage";
 
 "Last Update Check" = "Dernière recherche de mises à jour";

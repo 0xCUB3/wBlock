@@ -26,8 +26,21 @@ struct RemoveParamDNRRuleGeneratorTests {
         expectEqual(summary.removeParamRules, 9, "source removeparam count")
         expectEqual(summary.exceptionRules, 1, "exception count")
         expectEqual(summary.skippedRules, 3, "unsupported rules skipped")
+        expectEqual(summary.truncatedRules, 0, "nothing truncated under the budget")
         expectEqual(summary.disabledSiteAllowRules, 2, "disabled-site allow rules")
         expectEqual(summary.generatedRules, 8, "generated DNR rule count")
+
+        // Over-budget lists drop the tail and report it separately from
+        // unsupported rules, so the apply result can say what happened.
+        expectEqual(RemoveParamDNRRuleGenerator.maxGeneratedRules, 30_000, "budget matches WebKit's dynamic rule limit")
+        let overBudget = (0..<(RemoveParamDNRRuleGenerator.maxGeneratedRules + 250))
+            .map { "||site\($0).example^$removeparam=p\($0)" }
+            .joined(separator: "\n")
+        let truncated = RemoveParamDNRRuleGenerator.generateRules(from: overBudget)
+        expectEqual(truncated.rules.count, RemoveParamDNRRuleGenerator.maxGeneratedRules, "rules stop at the budget")
+        expectEqual(truncated.summary.truncatedRules, 250, "overflow is counted as truncated")
+        expectEqual(truncated.summary.skippedRules, 0, "overflow is not reported as unsupported")
+        expectEqual(truncated.rules.last?.id, RemoveParamDNRRuleGenerator.ruleIDBase + RemoveParamDNRRuleGenerator.maxGeneratedRules - 1, "rule IDs stay inside the reserved range")
 
         let disabledByRequestDomain = rules[0]
         expectEqual(disabledByRequestDomain.action.type, "allow", "disabled request-domain allow")

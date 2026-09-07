@@ -365,6 +365,7 @@
 "Failed to read local content for rule counting" = "تعذّرت قراءة المحتوى المحلي لعدّ القواعد";
 "Failed to reload %@." = "فشل في إعادة تحميل %@.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ متوقف في Safari. فعّلها من إعدادات Safari لتحميل القواعد المطبّقة.";
+"%d URL parameter rules were dropped: Safari allows at most %d." = "تم إسقاط %d من قواعد معلمات URL: يسمح Safari بحد أقصى %d.";
 "Skipped reload for extensions turned off in Safari" = "تم تخطي إعادة التحميل للإضافات المتوقفة في Safari";
 "wBlock launched" = "تم تشغيل wBlock";
 "Failed to reload content blocker" = "فشل إعادة تحميل مانع المحتوى";
@@ -1053,6 +1054,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Duplicates" = "مكررة";
 "Comments" = "تعليقات";
 "Needs wBlock Scripts" = "تتطلب wBlock Scripts";
+"URL Parameters" = "معلمات URL";
 "View" = "عرض";
 
 "Last Update Check" = "آخر تحقق من التحديثات";

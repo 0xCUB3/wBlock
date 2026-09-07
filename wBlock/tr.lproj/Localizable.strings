@@ -365,6 +365,7 @@
 "Failed to read local content for rule counting" = "Kural sayımı için yerel içerik okunamadı";
 "Failed to reload %@." = "%@ yeniden yüklenemedi.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "Safari'de %@ kapatıldı. Uygulanan kuralları yüklemek için Safari ayarlarından etkinleştirin.";
+"%d URL parameter rules were dropped: Safari allows at most %d." = "%d URL parametresi kuralı atıldı: Safari en fazla %d kurala izin verir.";
 "Skipped reload for extensions turned off in Safari" = "Safari'de kapatılan genişletmeler için yeniden yükleme atlandı";
 "wBlock launched" = "wBlock başlatıldı";
 "Failed to reload content blocker" = "İçerik engelleyici yeniden yüklenemedi";
@@ -1052,6 +1053,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Duplicates" = "Tekrarlar";
 "Comments" = "Yorumlar";
 "Needs wBlock Scripts" = "wBlock betiklerini gerektirir";
+"URL Parameters" = "URL parametreleri";
 "View" = "Görüntüle";
 
 "Last Update Check" = "Son güncelleme denetimi";

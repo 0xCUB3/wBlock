@@ -13,11 +13,13 @@ public enum RemoveParamDNRRuleGenerator {
     public static let ruleIDBase = 1_500_000
     public static let ruleIDLimit = 1_650_000
 
-    // Safari's dynamic DNR quota is more constrained than static content blocker
-    // quotas. Keep generated rules within the older 5k dynamic-rule budget so a
-    // large pair of URL-cleaning lists degrades by skipping tail rules instead
-    // of failing the whole dynamic ruleset install.
-    private static let maxGeneratedRules = min(ruleIDLimit - ruleIDBase, 5_000)
+    // WebKit caps dynamic plus session rules at 30,000 per extension
+    // (webExtensionDeclarativeNetRequestMaximumNumberOfDynamicAndSessionRules,
+    // Safari 17.4 and later). wBlock Scripts uses no session rules and clears
+    // its tracked dynamic rules before installing a new set, so the whole
+    // budget is available. Rules past it are dropped and reported in
+    // `Summary.truncatedRules` rather than failing the install.
+    public static let maxGeneratedRules = min(ruleIDLimit - ruleIDBase, 30_000)
     private static let urlFilterSpecialCharacters = CharacterSet(charactersIn: "|*^")
     private static let skippedOptionNames: Set<String> = [
         "app", "cname", "content", "cookie", "csp", "denyallow", "header",
@@ -61,9 +63,30 @@ public enum RemoveParamDNRRuleGenerator {
         public let generatedRules: Int
         public let removeParamRules: Int
         public let exceptionRules: Int
+        /// Rules the generator could not express safely in DNR.
         public let skippedRules: Int
+        /// Supported rules dropped only because the dynamic-rule budget was full.
+        public let truncatedRules: Int
         public let disabledSiteAllowRules: Int
         public let version: String
+
+        public init(
+            generatedRules: Int,
+            removeParamRules: Int,
+            exceptionRules: Int,
+            skippedRules: Int,
+            truncatedRules: Int = 0,
+            disabledSiteAllowRules: Int,
+            version: String
+        ) {
+            self.generatedRules = generatedRules
+            self.removeParamRules = removeParamRules
+            self.exceptionRules = exceptionRules
+            self.skippedRules = skippedRules
+            self.truncatedRules = truncatedRules
+            self.disabledSiteAllowRules = disabledSiteAllowRules
+            self.version = version
+        }
     }
 
     public struct DeclarativeRule: Codable, Equatable {
@@ -131,6 +154,7 @@ public enum RemoveParamDNRRuleGenerator {
         var removeParamRules = 0
         var exceptionRules = 0
         var skippedRules = 0
+        var truncatedRules = 0
 
         for rawLine in rulesText.split(whereSeparator: \.isNewline) {
             let result = buildRule(from: String(rawLine), nextID: ruleIDBase + rules.count)
@@ -141,7 +165,7 @@ public enum RemoveParamDNRRuleGenerator {
                 if rules.count < maxGeneratedRules {
                     rules.append(rule)
                 } else {
-                    skippedRules += 1
+                    truncatedRules += 1
                 }
             }
         }
@@ -152,6 +176,7 @@ public enum RemoveParamDNRRuleGenerator {
             removeParamRules: removeParamRules,
             exceptionRules: exceptionRules,
             skippedRules: skippedRules,
+            truncatedRules: truncatedRules,
             disabledSiteAllowRules: disabledAllowRulesCount,
             version: version
         )
@@ -178,11 +203,12 @@ public enum RemoveParamDNRRuleGenerator {
         try saveRules(generated.rules, groupIdentifier: groupIdentifier)
         os_log(
             .info,
-            "Saved %d removeparam DNR rules (%d source removeparam, %d exceptions, %d skipped, %d disabled-site allow rules)",
+            "Saved %d removeparam DNR rules (%d source removeparam, %d exceptions, %d skipped, %d truncated, %d disabled-site allow rules)",
             generated.summary.generatedRules,
             generated.summary.removeParamRules,
             generated.summary.exceptionRules,
             generated.summary.skippedRules,
+            generated.summary.truncatedRules,
             generated.summary.disabledSiteAllowRules
         )
         return generated.summary

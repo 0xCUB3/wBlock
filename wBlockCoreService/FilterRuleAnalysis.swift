@@ -7,12 +7,15 @@ internal import ContentBlockerConverter
 /// a duplicate when the same rule identity appeared earlier, either in a list
 /// that compiles before this one or earlier in the same list; the first copy
 /// keeps its own kind. Remaining rules are parsed with the converter: a parse
-/// failure is unsupported, an advanced rule needs wBlock Scripts, and the rest
-/// compile into Safari's native content blocker format.
+/// failure is unsupported, an advanced rule needs wBlock Scripts, a
+/// `$removeparam` rule the DNR generator can express is counted on its own
+/// because Safari caps those separately, and the rest compile into Safari's
+/// native content blocker format.
 public enum FilterRuleKind: String, CaseIterable, Sendable {
     case comment
     case supported
     case advanced
+    case removeParam
     case unsupported
     case duplicate
 }
@@ -103,7 +106,7 @@ public struct FilterRuleAnalysis: Sendable {
 
     static func classify(_ rule: String, safariVersion: SafariVersion) -> FilterRuleKind {
         if let supported = RemoveParamDNRRuleGenerator.supportsRule(rule) {
-            return supported ? .advanced : .unsupported
+            return supported ? .removeParam : .unsupported
         }
         do {
             guard let parsed = try RuleFactory.createRule(ruleText: rule, for: safariVersion) else {

@@ -365,6 +365,7 @@
 "Failed to read local content for rule counting" = "Nie udało się odczytać zawartości lokalnej do zliczenia reguł";
 "Failed to reload %@." = "Nie udało się ponownie załadować %@.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ wyłączone w Safari. Włącz je w ustawieniach Safari, aby wczytać zastosowane reguły.";
+"%d URL parameter rules were dropped: Safari allows at most %d." = "Pominięto %d reguł parametrów URL: Safari dopuszcza najwyżej %d.";
 "Skipped reload for extensions turned off in Safari" = "Pominięto przeładowanie rozszerzeń wyłączonych w Safari";
 "wBlock launched" = "Uruchomiono wBlock";
 "Failed to reload content blocker" = "Nie udało się ponownie wczytać blokady treści";
@@ -1053,6 +1054,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Duplicates" = "Duplikaty";
 "Comments" = "Komentarze";
 "Needs wBlock Scripts" = "Wymaga wBlock Scripts";
+"URL Parameters" = "Parametry URL";
 "View" = "Widok";
 
 "Last Update Check" = "Ostatnie sprawdzenie aktualizacji";

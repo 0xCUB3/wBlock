@@ -206,7 +206,7 @@ struct FilterRulesView: View {
     @ScaledMetric(relativeTo: .caption) private var legendColumnWidth = 160
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    private static let highlightedKinds: [FilterRuleKind] = [.supported, .advanced, .unsupported, .duplicate]
+    private static let highlightedKinds: [FilterRuleKind] = [.supported, .advanced, .removeParam, .unsupported, .duplicate]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -452,6 +452,7 @@ struct FilterRulesView: View {
         case .comment: return String(localized: "Comments")
         case .supported: return String(localized: "Supported")
         case .advanced: return String(localized: "Needs wBlock Scripts")
+        case .removeParam: return String(localized: "URL Parameters")
         case .unsupported: return String(localized: "Unsupported")
         case .duplicate: return String(localized: "Duplicates")
         }
@@ -462,6 +463,7 @@ struct FilterRulesView: View {
         case .comment: return "text.quote"
         case .supported: return "checkmark.circle"
         case .advanced: return "curlybraces"
+        case .removeParam: return "link.badge.plus"
         case .unsupported: return "xmark.circle"
         case .duplicate: return "doc.on.doc"
         }
@@ -472,6 +474,7 @@ struct FilterRulesView: View {
         case .comment: return .secondary
         case .supported: return .green
         case .advanced: return .blue
+        case .removeParam: return .teal
         case .unsupported: return .red
         case .duplicate: return .orange
         }
@@ -481,6 +484,7 @@ struct FilterRulesView: View {
     private static func tint(for kind: FilterRuleKind) -> NSColor? {
         switch kind {
         case .advanced: return NSColor.systemBlue.withAlphaComponent(0.18)
+        case .removeParam: return NSColor.systemTeal.withAlphaComponent(0.18)
         case .unsupported: return NSColor.systemRed.withAlphaComponent(0.22)
         case .duplicate: return NSColor.systemOrange.withAlphaComponent(0.22)
         case .comment, .supported: return nil
@@ -490,6 +494,7 @@ struct FilterRulesView: View {
     private static func tint(for kind: FilterRuleKind) -> UIColor? {
         switch kind {
         case .advanced: return UIColor.systemBlue.withAlphaComponent(0.18)
+        case .removeParam: return UIColor.systemTeal.withAlphaComponent(0.18)
         case .unsupported: return UIColor.systemRed.withAlphaComponent(0.22)
         case .duplicate: return UIColor.systemOrange.withAlphaComponent(0.22)
         case .comment, .supported: return nil

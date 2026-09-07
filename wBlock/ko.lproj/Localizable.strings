@@ -365,6 +365,7 @@
 "Failed to read local content for rule counting" = "규칙 수 카운트를 위한 로컬 내용 읽기에 실패했습니다";
 "Failed to reload %@." = "%@를 다시 로드하지 못했습니다.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@이(가) Safari에서 꺼져 있습니다. 적용된 규칙을 불러오려면 Safari 설정에서 켜세요.";
+"%d URL parameter rules were dropped: Safari allows at most %d." = "URL 매개변수 규칙 %d개가 제외되었습니다. Safari는 최대 %d개까지 허용합니다.";
 "Skipped reload for extensions turned off in Safari" = "Safari에서 꺼진 확장 프로그램의 새로고침을 건너뛰었습니다";
 "wBlock launched" = "wBlock 실행됨";
 "Failed to reload content blocker" = "콘텐츠 차단기 다시 로드 실패";
@@ -1053,6 +1054,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Duplicates" = "중복";
 "Comments" = "주석";
 "Needs wBlock Scripts" = "wBlock Scripts 필요";
+"URL Parameters" = "URL 매개변수";
 "View" = "보기";
 
 "Last Update Check" = "마지막 업데이트 확인";
