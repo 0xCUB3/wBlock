@@ -127,13 +127,13 @@ struct MacPushedActionsToolbar<Actions: View, Search: View>: ViewModifier {
                 }
             }
         } else {
+            // ToolbarContentBuilder has no `if` before macOS 13; an EmptyView
+            // search item takes no space.
             content.toolbar {
                 ToolbarItemGroup(placement: .automatic) {
                     if !isSearchExpanded { actions() }
                 }
-                if Search.self != EmptyView.self {
-                    ToolbarItem(placement: .automatic) { search() }
-                }
+                ToolbarItem(placement: .automatic) { search() }
             }
         }
     }
