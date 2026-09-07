@@ -14,7 +14,7 @@
 "%d script off" = "%d 件のスクリプトがオフ";
 "%d script update(s) failed" = "%d 個のスクリプトのアップデートに失敗しました";
 "%d scripts off" = "%d 件のスクリプトがオフ";
-"%d update(s) available" = ""%d 件のアップデートがあります";
+"%d update(s) available" = "%d 件のアップデートがあります";
 "%d update(s) found" = "%d 件のアップデートが見つかりました";
 "%d userscripts selected" = "%d 件のユーザースクリプトを選択中";
 "%d." = "%d.";
