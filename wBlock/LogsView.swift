@@ -118,26 +118,24 @@ struct LogsView: View {
                 }
             }
             #else
-            .toolbar {
-                ToolbarItemGroup(placement: .automatic) {
-                    Button {
-                        exportLogsToFile()
-                    } label: {
-                        Label("Export", systemImage: "square.and.arrow.up")
-                    }
-                    .disabled(entries.isEmpty)
-
-                    Button {
-                        Task {
-                            await ConcurrentLogManager.shared.clearLogs()
-                            await loadLogs()
-                        }
-                    } label: {
-                        Label("Clear", systemImage: "trash")
-                    }
-                    .disabled(entries.isEmpty)
+            .modifier(MacPushedActionsToolbar {
+                Button {
+                    exportLogsToFile()
+                } label: {
+                    Label("Export", systemImage: "square.and.arrow.up")
                 }
-            }
+                .disabled(entries.isEmpty)
+
+                Button {
+                    Task {
+                        await ConcurrentLogManager.shared.clearLogs()
+                        await loadLogs()
+                    }
+                } label: {
+                    Label("Clear", systemImage: "trash")
+                }
+                .disabled(entries.isEmpty)
+            })
             #endif
         }
         .searchable(text: $searchText, prompt: "Search logs")

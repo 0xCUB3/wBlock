@@ -72,6 +72,8 @@ struct SiteSettingsView: View {
             .padding(.vertical)
             .padding(.horizontal)
         }
+        .navigationTitle("Site Settings")
+        #if os(iOS)
         .toolbar {
             UndoRedoToolbar(
                 canUndo: pendingUndo != nil && !isMutationInFlight,
@@ -80,16 +82,19 @@ struct SiteSettingsView: View {
                 redo: redoSiteMutation
             )
         }
-        .navigationTitle("Site Settings")
-        #if os(iOS)
         .searchable(text: $searchText, prompt: "Search")
         .navigationBarTitleDisplayMode(.inline)
         #else
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                ToolbarSearchField(text: $searchText, isExpanded: $showSearch)
-            }
-        }
+        .modifier(MacPushedActionsToolbar(isSearchExpanded: showSearch) {
+            UndoRedoButtons(
+                canUndo: pendingUndo != nil && !isMutationInFlight,
+                canRedo: pendingRedo != nil && !isMutationInFlight,
+                undo: undoSiteMutation,
+                redo: redoSiteMutation
+            )
+        } search: {
+            ToolbarSearchField(text: $searchText, isExpanded: $showSearch)
+        })
         #endif
         .alert(item: $pendingConfirmation) { confirmation in
             switch confirmation {

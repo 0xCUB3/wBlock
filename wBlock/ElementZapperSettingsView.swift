@@ -54,6 +54,7 @@ struct ElementZapperSettingsView: View {
             .padding(.horizontal)
         }
         .disabled(isMutating || ruleManager.isMutationInFlight)
+        #if os(iOS)
         .toolbar {
             UndoRedoToolbar(
                 canUndo: pendingUndo != nil && !(isMutating || ruleManager.isMutationInFlight),
@@ -62,6 +63,18 @@ struct ElementZapperSettingsView: View {
                 redo: redoDeletedRule
             )
         }
+        #else
+        .modifier(MacPushedActionsToolbar(isSearchExpanded: showSearch) {
+            UndoRedoButtons(
+                canUndo: pendingUndo != nil && !(isMutating || ruleManager.isMutationInFlight),
+                canRedo: pendingRedo != nil && !(isMutating || ruleManager.isMutationInFlight),
+                undo: restoreDeletedRule,
+                redo: redoDeletedRule
+            )
+        } search: {
+            ToolbarSearchField(text: $searchText, isExpanded: $showSearch)
+        })
+        #endif
         .navigationTitle("Element Zapper")
         .task { await ruleManager.refreshNow() }
         .alert(item: $pendingConfirmation) { confirmation in
@@ -80,12 +93,6 @@ struct ElementZapperSettingsView: View {
         #if os(iOS)
         .searchable(text: $searchText, prompt: "Search")
         .navigationBarTitleDisplayMode(.inline)
-        #else
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                ToolbarSearchField(text: $searchText, isExpanded: $showSearch)
-            }
-        }
         #endif
     }
 

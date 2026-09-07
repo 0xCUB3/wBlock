@@ -72,7 +72,12 @@ struct MacActionsToolbar<Primary: View, Filter: View, Search: View>: ViewModifie
     private var compactActions: some View {
         GlassEffectContainer(spacing: 4) {
             HStack(spacing: 8) {
+                // Buttons that share a capsule get the smaller hit target and
+                // hover disc (#771); a button alone in its capsule fills it.
                 HStack(spacing: 0) { primary() }
+                    .environment(\.compactToolbarGrouped, true)
+                    .padding(.horizontal, 3)
+                    .frame(height: 36)
                     .glassEffect(.regular.interactive(), in: .capsule)
                 filter()
                     .glassEffect(.regular.interactive(), in: .capsule)
@@ -82,6 +87,66 @@ struct MacActionsToolbar<Primary: View, Filter: View, Search: View>: ViewModifie
         }
         .labelStyle(.iconOnly)
         .buttonStyle(CompactToolbarButtonStyle())
+    }
+}
+
+/// Toolbar for pages pushed inside the navigation stack (Site Settings,
+/// Element Zapper, Logs): the action buttons share one native glass group
+/// with compact hit targets, a fixed spacer breaks the bubble, and search
+/// stands alone on the right (#771). Native items are used here because a
+/// custom multi-button item inside a pushed page reports the first button's
+/// accessibility name for every button.
+struct MacPushedActionsToolbar<Actions: View, Search: View>: ViewModifier {
+    var isSearchExpanded = false
+    @ViewBuilder let actions: () -> Actions
+    @ViewBuilder let search: () -> Search
+
+    init(
+        isSearchExpanded: Bool = false,
+        @ViewBuilder actions: @escaping () -> Actions,
+        @ViewBuilder search: @escaping () -> Search = { EmptyView() }
+    ) {
+        self.isSearchExpanded = isSearchExpanded
+        self.actions = actions
+        self.search = search
+    }
+
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *) {
+            content.toolbar {
+                if !isSearchExpanded {
+                    ToolbarItemGroup(placement: .automatic) {
+                        actions().labelStyle(.iconOnly)
+                    }
+                }
+                if Search.self != EmptyView.self {
+                    if !isSearchExpanded {
+                        ToolbarSpacer(.fixed, placement: .automatic)
+                    }
+                    ToolbarItem(placement: .automatic) { search() }
+                }
+            }
+        } else {
+            content.toolbar {
+                ToolbarItemGroup(placement: .automatic) {
+                    if !isSearchExpanded { actions() }
+                }
+                if Search.self != EmptyView.self {
+                    ToolbarItem(placement: .automatic) { search() }
+                }
+            }
+        }
+    }
+}
+
+private struct CompactToolbarGroupedKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var compactToolbarGrouped: Bool {
+        get { self[CompactToolbarGroupedKey.self] }
+        set { self[CompactToolbarGroupedKey.self] = newValue }
     }
 }
 
@@ -101,12 +166,15 @@ private struct CompactToolbarButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
     @State private var isHovered = false
     @Environment(\.compactToolbarTextLabel) private var isTextLabel
+    @Environment(\.compactToolbarGrouped) private var isGrouped
+
+    private var side: CGFloat { isGrouped ? 30 : 36 }
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: isTextLabel ? 13 : 17))
+            .font(.system(size: isTextLabel ? 13 : (isGrouped ? 15 : 17)))
             .fixedSize(horizontal: true, vertical: false)
-            .frame(width: isTextLabel ? nil : 36, height: 36)
+            .frame(width: isTextLabel ? nil : side, height: side)
             .padding(.horizontal, isTextLabel ? 10 : 0)
             .contentShape(Rectangle())
             .foregroundStyle(.primary)
