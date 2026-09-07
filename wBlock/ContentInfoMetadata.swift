@@ -13,11 +13,15 @@ nonisolated struct ContentInfoMetadata: Sendable {
             for line in source[first.upperBound..<last.lowerBound].split(whereSeparator: \.isNewline) {
                 let clean = line.trimmingCharacters(in: CharacterSet(charactersIn: " /\t*"))
                 guard clean.hasPrefix("@") else { continue }
+                // Metadata blocks pad values for column alignment, so the
+                // remainder after the key still starts with a run of spaces.
                 let parts = clean.dropFirst().split(maxSplits: 1, whereSeparator: \.isWhitespace)
-                if parts.count == 2 { fields[String(parts[0]).lowercased()] = String(parts[1]) }
+                if parts.count == 2 {
+                    fields[String(parts[0]).lowercased()] = parts[1].trimmingCharacters(in: .whitespaces)
+                }
             }
             return Self(
-                author: fields["author"],
+                author: firstValue(in: fields, keys: ["author"]),
                 homepage: webURL(firstValue(in: fields, keys: ["homepageurl", "homepage", "website", "source", "supporturl"]))
             )
         }
