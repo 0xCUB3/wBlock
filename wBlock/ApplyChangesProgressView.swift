@@ -129,22 +129,11 @@ struct ApplyChangesProgressView: View {
                 }
             }
         case .failed:
-            ScrollView {
+            fittedContent {
                 VStack(alignment: .leading, spacing: 16) {
                     failureCard
-                    progressField
-
-                    Button {
-                        filterManager.forceApplyChanges()
-                    } label: {
-                        Text(String(localized: "Try Again"))
-                            .frame(maxWidth: .infinity)
-                    }
-                    .primaryActionButtonStyle()
-                    .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
-                    .keyboardShortcut(.defaultAction)
+                    ApplyProgressField(presentation: presentation, showsOnlyFailedPhase: true)
                 }
-                .padding(20)
             }
         }
     }
@@ -327,30 +316,36 @@ struct ApplyChangesProgressView: View {
                 )
             }
 
-            if !viewModel.state.resultWarning.isEmpty {
-                Label(viewModel.state.resultWarning, systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            if !viewModel.state.resultWarning.isEmpty || !filterManager.failedReloadTargets.isEmpty {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    if !viewModel.state.resultWarning.isEmpty {
+                        Label(viewModel.state.resultWarning, systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
 
-            if !filterManager.failedReloadTargets.isEmpty {
-                Button {
-                    filterManager.retryFailedReloads()
-                } label: {
-                    Label(
-                        String.localizedStringWithFormat(
-                            NSLocalizedString(
-                                "Retry %d failed extension(s)",
-                                comment: "Summary button that reloads only the blockers that failed"
-                            ),
-                            filterManager.failedReloadTargets.count
-                        ),
-                        systemImage: "arrow.clockwise"
-                    )
+                    if !filterManager.failedReloadTargets.isEmpty {
+                        Spacer(minLength: 0)
+                        Button {
+                            filterManager.retryFailedReloads()
+                        } label: {
+                            Label(String(localized: "Retry"), systemImage: "arrow.clockwise")
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .disabled(filterManager.isLoading)
+                        .accessibilityLabel(
+                            String.localizedStringWithFormat(
+                                NSLocalizedString(
+                                    "Retry %d failed extension(s)",
+                                    comment: "Summary button that reloads only the blockers that failed"
+                                ),
+                                filterManager.failedReloadTargets.count
+                            )
+                        )
+                    }
                 }
-                .buttonStyle(.bordered)
-                .disabled(filterManager.isLoading)
             }
 
             if viewModel.state.scriptsFailedCount > 0 {
@@ -386,6 +381,18 @@ struct ApplyChangesProgressView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+
+            Spacer(minLength: 12)
+
+            Button {
+                filterManager.forceApplyChanges()
+            } label: {
+                Label(String(localized: "Try Again"), systemImage: "arrow.clockwise")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
+            .keyboardShortcut(.defaultAction)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

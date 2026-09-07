@@ -9,6 +9,15 @@ import SwiftUI
 
 struct ApplyProgressField: View {
     let presentation: ApplyProgressPresentation
+    /// After a failure the completed and never-started phases add nothing, so
+    /// the sheet shows just the phase that failed and its message.
+    var showsOnlyFailedPhase = false
+
+    private var visibleNodes: [ApplyProgressPresentation.Node] {
+        guard showsOnlyFailedPhase else { return presentation.nodes }
+        let failed = presentation.nodes.filter { $0.status == .failed }
+        return failed.isEmpty ? presentation.nodes : failed
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -26,7 +35,7 @@ struct ApplyProgressField: View {
             .accessibilityValue(presentation.progressLabel)
 
             VStack(spacing: 0) {
-                ForEach(Array(presentation.nodes.enumerated()), id: \.element.id) { index, node in
+                ForEach(Array(visibleNodes.enumerated()), id: \.element.id) { index, node in
                     if index > 0 {
                         Divider()
                     }

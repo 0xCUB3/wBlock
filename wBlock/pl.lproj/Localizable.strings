@@ -203,7 +203,7 @@
 "Checked %@ ago" = "Sprawdzono %@ temu";
 "Checked just now" = "Sprawdzono przed chwilą";
 "Checking background agent…" = "Sprawdzanie agenta działającego w tle…";
-"Checking for Updates" = "Sprawdzanie aktualizacji filtrów";
+"Checking for Updates" = "Sprawdzanie aktualizacji";
 "Checking for updates..." = "Sprawdzam dostępność aktualizacji";
 "Checking for updates... (%d/%d)" = "Sprawdzam dostępność aktualizacji (%d/%d)";
 "Checking for script updates..." = "Sprawdzam aktualizacje skryptów";
@@ -1030,6 +1030,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Downloading…" = "Pobieranie…";
 "Download %@" = "Pobierz %@";
 "Downloading userscript" = "Pobieranie skryptu użytkownika";
+"Retry" = "Ponów";
 "Retry %d failed extension(s)" = "Ponów %d nieudane rozszerzenia";
 "All extensions reloaded." = "Wszystkie rozszerzenia przeładowano.";
 "%@ still failed to reload. Safari may need a restart." = "%@ nadal nie można przeładować. Safari może wymagać ponownego uruchomienia.";

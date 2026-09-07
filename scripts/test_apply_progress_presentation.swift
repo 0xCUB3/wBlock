@@ -51,12 +51,12 @@ struct ApplyProgressPresentationTests {
         let presentation = ApplyProgressPresentation.make(from: viewModel.state)
 
         check(presentation.fractionLabel == ApplyProgressPresentation.percentString(0.4), "updating must show a percent")
-        checkAlmostEqual(presentation.progress, 0.4 / 6, "updating progress occupies the first sixth")
+        checkAlmostEqual(presentation.progress, 0.4 / 5, "updating progress occupies the first fifth")
 
         viewModel.updatePhaseProgress(1.5)
         let clamped = ApplyProgressPresentation.make(from: viewModel.state)
         check(clamped.fractionLabel == ApplyProgressPresentation.percentString(1), "phase progress must clamp to 100%")
-        checkAlmostEqual(clamped.progress, 1.0 / 6, "full local progress reaches the next segment boundary")
+        checkAlmostEqual(clamped.progress, 1.0 / 5, "full local progress reaches the next segment boundary")
     }
 
     @MainActor
@@ -79,8 +79,8 @@ struct ApplyProgressPresentationTests {
         viewModel.updatePhaseCompletion(updating: true, scripts: false)
         record("scripts became active")
         check(
-            ApplyProgressPresentation.make(from: viewModel.state).title == ApplyChangesPhase.scripts.title,
-            "completing updates must focus scripts"
+            ApplyProgressPresentation.make(from: viewModel.state).title == ApplyChangesPhase.updating.title,
+            "the update row stays live while scripts are still checking"
         )
 
         viewModel.updatePhaseProgress(1)
@@ -128,9 +128,8 @@ struct ApplyProgressPresentationTests {
         let presentation = ApplyProgressPresentation.make(from: viewModel.state)
         check(presentation.title == ApplyChangesPhase.reading.title, "skipping downloads should land on reading")
         check(status(presentation, .updating) == .complete, "updating must already be complete")
-        check(status(presentation, .scripts) == .complete, "scripts must already be complete")
         check(status(presentation, .reading) == .active, "reading must be the live phase")
-        checkAlmostEqual(presentation.progress, (2 + 0.2) / 6, "reading uses a small segment floor")
+        checkAlmostEqual(presentation.progress, (1 + 0.2) / 5, "reading uses a small segment floor")
     }
 
     @MainActor
@@ -162,7 +161,7 @@ struct ApplyProgressPresentationTests {
         check(presentation.title == ApplyChangesPhase.converting.title, "converting title")
         check(presentation.detail == "Privacy", "converting detail is the current target")
         check(presentation.fractionLabel == "2/5", "converting fraction uses done/total")
-        checkAlmostEqual(presentation.progress, (3 + 0.4) / 6, "converting 2/5 sits 40% into its segment")
+        checkAlmostEqual(presentation.progress, (2 + 0.4) / 5, "converting 2/5 sits 40% into its segment")
     }
 
     @MainActor
@@ -189,7 +188,7 @@ struct ApplyProgressPresentationTests {
         presentation = ApplyProgressPresentation.make(from: viewModel.state)
         check(presentation.detail == "Ads", "reloading detail is the current target")
         check(presentation.fractionLabel == "5/5", "reloading 5/5")
-        checkAlmostEqual(presentation.progress, 5.0 / 6, "full local reload reaches the next boundary")
+        checkAlmostEqual(presentation.progress, 4.0 / 5, "full local reload reaches the next boundary")
     }
 
     @MainActor
@@ -208,7 +207,7 @@ struct ApplyProgressPresentationTests {
         check(presentation.title == ApplyChangesPhase.saving.title, "saving title")
         check(presentation.detail == nil, "saving has no extra detail")
         check(presentation.fractionLabel == nil, "saving has no count label")
-        checkAlmostEqual(presentation.progress, (5 + 0.2) / 6, "saving uses the same quiet floor as reading")
+        checkAlmostEqual(presentation.progress, (4 + 0.2) / 5, "saving uses the same quiet floor as reading")
     }
 
     @MainActor
@@ -254,49 +253,45 @@ struct ApplyProgressPresentationTests {
         var presentation = ApplyProgressPresentation.make(from: viewModel.state)
         check(presentation.detail == "Updating userscripts...", "script-related status is shown")
 
-        viewModel.updateStageDescription("Applying filters...")
-        presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.detail == nil, "non-script status is hidden on the scripts phase")
+        func completedUpdatingState() -> ApplyChangesState {
+            var state = viewModel.state
+            if let index = state.phases.firstIndex(where: { $0.phase == .updating }) {
+                state.phases[index].status = .complete
+                state.phases[index + 1].status = .pending
+            }
+            return state
+        }
 
         viewModel.updateScriptsUpdateResult(updated: 2, failed: 1)
-        // Focus the completed scripts phase by failing to activate a later one after marking complete,
-        // then inspect complete-state copy through a local step snapshot.
         viewModel.updatePhaseCompletion(scripts: true, reading: false)
-        var state = viewModel.state
-        if let index = state.phases.firstIndex(where: { $0.phase == .scripts }) {
-            state.phases[index].status = .complete
-            state.phases[index + 1].status = .pending
-        }
-        presentation = ApplyProgressPresentation.make(from: state)
+        presentation = ApplyProgressPresentation.make(from: completedUpdatingState())
         check(
             presentation.detail == String.localizedStringWithFormat(
                 NSLocalizedString("Updated %d, %d failed", comment: "Apply changes script phase detail"),
                 2,
                 1
             ),
-            "completed scripts should report mixed results when focused"
+            "completed update row should report mixed script results when focused"
         )
 
         viewModel.updateScriptsUpdateResult(updated: 3, failed: 0)
-        state = viewModel.state
-        if let index = state.phases.firstIndex(where: { $0.phase == .scripts }) {
-            state.phases[index].status = .complete
-            state.phases[index + 1].status = .pending
-        }
-        presentation = ApplyProgressPresentation.make(from: state)
+        presentation = ApplyProgressPresentation.make(from: completedUpdatingState())
         check(
             presentation.detail == localizedCount("Updated %d scripts", count: 3),
-            "completed scripts should report a success count"
+            "completed update row should report a script success count"
         )
 
+        viewModel.updateFilterUpdatesFound(4)
+        presentation = ApplyProgressPresentation.make(from: completedUpdatingState())
+        check(
+            presentation.detail == localizedCount("Downloaded %d updates", count: 4) + " · " + localizedCount("Updated %d scripts", count: 3),
+            "filter and script results share one line"
+        )
+
+        viewModel.updateFilterUpdatesFound(0)
         viewModel.updateScriptsUpdateResult(updated: 0, failed: 0)
-        state = viewModel.state
-        if let index = state.phases.firstIndex(where: { $0.phase == .scripts }) {
-            state.phases[index].status = .complete
-            state.phases[index + 1].status = .pending
-        }
-        presentation = ApplyProgressPresentation.make(from: state)
-        check(presentation.detail == String(localized: "No script updates"), "zero script updates have explicit copy")
+        presentation = ApplyProgressPresentation.make(from: completedUpdatingState())
+        check(presentation.detail == String(localized: "No updates available"), "zero updates of either kind have one explicit line")
     }
 
     @MainActor
@@ -342,7 +337,7 @@ struct ApplyProgressPresentationTests {
         viewModel.updateFiltersChecked(12, total: 87)
         let presentation = ApplyProgressPresentation.make(from: viewModel.state)
         check(presentation.fractionLabel == "12/87", "updating must show checked/total once counts exist")
-        checkAlmostEqual(presentation.progress, (12.0 / 87.0) / 6.0, "checked counts drive the phase fill")
+        checkAlmostEqual(presentation.progress, (12.0 / 87.0) / 5.0, "checked counts drive the phase fill")
 
         viewModel.updateFiltersChecked(90, total: 87)
         let clamped = ApplyProgressPresentation.make(from: viewModel.state)
@@ -361,13 +356,13 @@ struct ApplyProgressPresentationTests {
     private static func testScriptsShowCheckedCountAndName() {
         let viewModel = ApplyChangesViewModel()
         viewModel.beginProgressRun()
+        viewModel.updateFiltersChecked(10, total: 10)
         viewModel.updatePhaseCompletion(updating: true, scripts: false)
         viewModel.updateScriptsChecked(3, total: 12)
         viewModel.updateCurrentScript("Return YouTube Dislike")
         var presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.fractionLabel == "3/12", "scripts phase must show checked/total like filters")
-        check(presentation.detail == "Return YouTube Dislike", "scripts phase must show the script being fetched")
-        checkAlmostEqual(presentation.progress, (1 + 3.0 / 12.0) / 6.0, "script counts drive the phase fill")
+        check(presentation.fractionLabel == "13/22", "the update row counts filters and scripts together")
+        check(presentation.detail == "Return YouTube Dislike", "the update row must show the script being fetched")
 
         viewModel.updateCurrentScript("")
         viewModel.updateStageDescription("Downloading selected scripts...")
@@ -375,8 +370,9 @@ struct ApplyProgressPresentationTests {
         check(presentation.detail == "Downloading selected scripts...", "an empty script name falls back to the script status")
 
         viewModel.updateScriptsChecked(20, total: 12)
-        check(ApplyProgressPresentation.make(from: viewModel.state).fractionLabel == "12/12", "script count clamps to the total")
+        check(ApplyProgressPresentation.make(from: viewModel.state).fractionLabel == "22/22", "script count clamps to the total")
 
+        viewModel.updateFiltersChecked(0, total: 0)
         viewModel.updateScriptsChecked(0, total: 0)
         viewModel.updatePhaseProgress(0.25)
         presentation = ApplyProgressPresentation.make(from: viewModel.state)
@@ -402,7 +398,7 @@ struct ApplyProgressPresentationTests {
             node(presentation, .updating)?.accessory == ApplyProgressPresentation.percentString(0.93),
             "the update row should keep the local fraction as a short accessory"
         )
-        checkAlmostEqual(presentation.progress, 0.93 / 6.0, "overall fill stays in the first segment")
+        checkAlmostEqual(presentation.progress, 0.93 / 5.0, "overall fill stays in the first segment")
     }
 
     @MainActor
@@ -419,11 +415,11 @@ struct ApplyProgressPresentationTests {
 
         var presentation = ApplyProgressPresentation.make(from: viewModel.state)
         let complete = presentation.nodes.filter { $0.status == .complete }.count
-        check(complete == 3, "three finished rows should already be checked")
+        check(complete == 2, "two finished rows should already be checked")
         check(presentation.nodes.first(where: { $0.status == .active })?.phase == .converting, "converting is the live row")
         checkAlmostEqual(
             presentation.progress,
-            (Double(complete) + 2.0 / 5.0) / 6.0,
+            (Double(complete) + 2.0 / 5.0) / 5.0,
             "bar fill must equal finished rows plus the live fraction"
         )
         check(
@@ -436,7 +432,7 @@ struct ApplyProgressPresentationTests {
         presentation = ApplyProgressPresentation.make(from: viewModel.state)
         checkAlmostEqual(
             presentation.progress,
-            (3.0 + 4.0 / 5.0) / 6.0,
+            (2.0 + 4.0 / 5.0) / 5.0,
             "the bar must move when the live row's fraction moves"
         )
         check(
@@ -459,12 +455,9 @@ struct ApplyProgressPresentationTests {
 
         let presentation = ApplyProgressPresentation.make(from: viewModel.state)
         check(
-            node(presentation, .updating)?.detail == localizedCount("Downloaded %d updates", count: 3),
-            "completed update rows must keep their count"
-        )
-        check(
-            node(presentation, .scripts)?.detail == localizedCount("Updated %d scripts", count: 2),
-            "completed script rows must keep their count"
+            node(presentation, .updating)?.detail
+                == localizedCount("Downloaded %d updates", count: 3) + " · " + localizedCount("Updated %d scripts", count: 2),
+            "completed update row must keep both counts"
         )
         check(
             node(presentation, .reading)?.detail == localizedCount("Preparing %d extensions", count: 5),

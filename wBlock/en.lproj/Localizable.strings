@@ -203,7 +203,7 @@
 "Checked %@ ago" = "Checked %@ ago";
 "Checked just now" = "Checked just now";
 "Checking background agent…" = "Checking background agent…";
-"Checking for Updates" = "Checking for Filter Updates";
+"Checking for Updates" = "Checking for Updates";
 "Checking for updates..." = "Checking for updates";
 "Checking for updates... (%d/%d)" = "Checking for updates (%d/%d)";
 "Checking for script updates..." = "Checking for script updates";
@@ -1029,6 +1029,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Downloading…" = "Downloading…";
 "Download %@" = "Download %@";
 "Downloading userscript" = "Downloading userscript";
+"Retry" = "Retry";
 "Retry %d failed extension(s)" = "Retry %d failed extension(s)";
 "All extensions reloaded." = "All extensions reloaded.";
 "%@ still failed to reload. Safari may need a restart." = "%@ still failed to reload. Safari may need a restart.";

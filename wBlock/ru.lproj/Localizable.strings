@@ -203,7 +203,7 @@
 "Checked %@ ago" = "Проверено %@ назад";
 "Checked just now" = "Проверено только что";
 "Checking background agent…" = "Проверка фонового агента…";
-"Checking for Updates" = "Проверка обновлений фильтров";
+"Checking for Updates" = "Проверка обновлений";
 "Checking for updates..." = "Проверяем наличие обновлений";
 "Checking for updates... (%d/%d)" = "Проверяем наличие обновлений (%d/%d)";
 "Checking for script updates..." = "Проверяем обновления скриптов";
@@ -1030,6 +1030,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Downloading…" = "Загрузка…";
 "Download %@" = "Загрузить %@";
 "Downloading userscript" = "Загрузка пользовательского скрипта";
+"Retry" = "Повторить";
 "Retry %d failed extension(s)" = "Повторить для %d расширений с ошибкой";
 "All extensions reloaded." = "Все расширения перезагружены.";
 "%@ still failed to reload. Safari may need a restart." = "%@ по-прежнему не перезагружается. Возможно, нужно перезапустить Safari.";

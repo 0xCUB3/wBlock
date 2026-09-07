@@ -203,7 +203,7 @@
 "Checked %@ ago" = "%@ önce denetlendi";
 "Checked just now" = "Az önce denetlendi";
 "Checking background agent…" = "Arka plan görevi kontrol ediliyor…";
-"Checking for Updates" = "Filtre güncellemeleri denetleniyor";
+"Checking for Updates" = "Güncellemeler denetleniyor";
 "Checking for updates..." = "Güncellemeler denetleniyor";
 "Checking for updates... (%d/%d)" = "Güncellemeler denetleniyor (%d/%d)";
 "Checking for script updates..." = "Betik güncellemeleri denetleniyor";
@@ -1029,6 +1029,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Downloading…" = "İndiriliyor…";
 "Download %@" = "%@ indir";
 "Downloading userscript" = "Kullanıcı betiği indiriliyor";
+"Retry" = "Yeniden dene";
 "Retry %d failed extension(s)" = "%d başarısız genişletmeyi tekrar dene";
 "All extensions reloaded." = "Tüm genişletmeler yeniden yüklendi.";
 "%@ still failed to reload. Safari may need a restart." = "%@ yeniden yüklenemedi. Safari'yi kapatıp açmanız gerekebilir.";

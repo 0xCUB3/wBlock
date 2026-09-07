@@ -203,7 +203,7 @@
 "Checked %@ ago" = "%@ 前檢查";
 "Checked just now" = "剛剛檢查過";
 "Checking background agent…" = "正在檢查背景代理程式…";
-"Checking for Updates" = "正在檢查過濾器更新";
+"Checking for Updates" = "正在檢查更新";
 "Checking for updates..." = "正在檢查更新";
 "Checking for updates... (%d/%d)" = "正在檢查更新 (%d/%d)";
 "Checking for script updates..." = "正在檢查腳本更新";
@@ -1030,6 +1030,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Downloading…" = "正在下載…";
 "Download %@" = "下載 %@";
 "Downloading userscript" = "正在下載使用者腳本";
+"Retry" = "重試";
 "Retry %d failed extension(s)" = "重試 %d 個失敗的延伸功能";
 "All extensions reloaded." = "所有延伸功能已重新載入。";
 "%@ still failed to reload. Safari may need a restart." = "%@ 仍然無法重新載入。可能需要重新啟動 Safari。";

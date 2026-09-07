@@ -1459,6 +1459,13 @@ extension AppFilterManager {
         guard !targets.isEmpty, !isLoading, !isApplyInFlight else { return }
         isLoading = true
         applyProgressViewModel.updateIsLoading(true)
+        // Nothing before the reload runs again, so the sheet opens on that
+        // phase instead of replaying the update check from zero.
+        applyProgressViewModel.updatePhaseCompletion(
+            updating: true, reading: true, converting: true, reloading: false)
+        applyProgressViewModel.updateProcessedCount(0, total: targets.count)
+        applyProgressViewModel.updateReloadingDone(0)
+        applyProgressViewModel.updateCurrentFilter("")
         applyProgressViewModel.updateStageDescription(
             LocalizedStrings.text("Reloading Safari extensions...", comment: "Apply pipeline stage")
         )

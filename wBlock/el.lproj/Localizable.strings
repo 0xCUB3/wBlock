@@ -203,7 +203,7 @@
 "Checked %@ ago" = "Ελέγχθηκε %@ πριν";
 "Checked just now" = "Ελέγχθηκε μόλις τώρα";
 "Checking background agent…" = "Έλεγχος πράκτορα παρασκηνίου…";
-"Checking for Updates" = "Έλεγχος για ενημερώσεις φίλτρων";
+"Checking for Updates" = "Έλεγχος για ενημερώσεις";
 "Checking for updates..." = "Έλεγχος για ενημερώσεις";
 "Checking for updates... (%d/%d)" = "Έλεγχος για ενημερώσεις (%d/%d)";
 "Checking for script updates..." = "Έλεγχος για ενημερώσεις σεναρίων";
@@ -1030,6 +1030,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Downloading…" = "Γίνεται λήψη…";
 "Download %@" = "Λήψη %@";
 "Downloading userscript" = "Λήψη κώδικα χρήστη";
+"Retry" = "Επανάληψη";
 "Retry %d failed extension(s)" = "Επανάληψη για %d αποτυχημένες επεκτάσεις";
 "All extensions reloaded." = "Όλες οι επεκτάσεις φορτώθηκαν ξανά.";
 "%@ still failed to reload. Safari may need a restart." = "%@ εξακολουθεί να αποτυγχάνει. Ίσως χρειάζεται επανεκκίνηση του Safari.";

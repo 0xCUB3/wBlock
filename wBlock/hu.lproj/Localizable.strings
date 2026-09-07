@@ -203,7 +203,7 @@
 "Checked %@ ago" = "Ellenőrizve %@ ezelőtt";
 "Checked just now" = "Ellenőrizve épp most";
 "Checking background agent…" = "Háttérügynök ellenőrzése…";
-"Checking for Updates" = "Szűrőfrissítések keresése";
+"Checking for Updates" = "Frissítések keresése";
 "Checking for updates..." = "Frissítések keresése";
 "Checking for updates... (%d/%d)" = "Frissítések keresése (%d/%d)";
 "Checking for script updates..." = "Szkriptfrissítések keresése";
@@ -1030,6 +1030,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Downloading…" = "Letöltés folyamatban…";
 "Download %@" = "%@ letöltése";
 "Downloading userscript" = "Felhasználói szkript letöltése";
+"Retry" = "Újra";
 "Retry %d failed extension(s)" = "%d sikertelen bővítmény újrapróbálása";
 "All extensions reloaded." = "Minden bővítmény újratöltve.";
 "%@ still failed to reload. Safari may need a restart." = "%@ továbbra sem töltődik újra. A Safarit talán újra kell indítani.";

@@ -18,7 +18,6 @@ enum ApplyChangesSheetMode: Equatable {
 /// The phases the apply flow walks through.
 enum ApplyChangesPhase: String, CaseIterable, Identifiable {
     case updating
-    case scripts
     case reading
     case converting
     case reloading
@@ -29,7 +28,6 @@ enum ApplyChangesPhase: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .updating: return String(localized: "Checking for Updates")
-        case .scripts: return String(localized: "Updating Scripts")
         case .reading: return String(localized: "Reading Files")
         case .converting: return String(localized: "Converting Rules")
         case .reloading: return String(localized: "Reloading Extensions")
@@ -145,8 +143,14 @@ class ApplyChangesViewModel: ObservableObject {
         reloading: Bool? = nil,
         saving: Bool? = nil
     ) {
-        if let updating { setPhase(.updating, isComplete: updating) }
-        if let scripts { setPhase(.scripts, isComplete: scripts) }
+        // Filters and scripts share one row. The script check runs second, so
+        // its completion is what closes the row; a filter-only completion keeps
+        // it active until the scripts report in.
+        if let scripts {
+            setPhase(.updating, isComplete: scripts)
+        } else if let updating {
+            setPhase(.updating, isComplete: updating)
+        }
         if let reading { setPhase(.reading, isComplete: reading) }
         if let converting { setPhase(.converting, isComplete: converting) }
         if let reloading { setPhase(.reloading, isComplete: reloading) }
@@ -428,7 +432,7 @@ struct ApplyProgressPresentation: Equatable {
 
     static func localProgress(for step: ApplyChangesPhaseProgress, state: ApplyChangesState) -> Double {
         switch step.phase {
-        case .updating, .scripts:
+        case .updating:
             return (0...1).clamp(state.phaseProgress)
         case .converting:
             guard state.totalCount > 0 else { return 0 }
@@ -461,14 +465,9 @@ struct ApplyProgressPresentation: Equatable {
         guard step.status == .active else { return nil }
         switch step.phase {
         case .updating:
-            if state.filtersCheckedTotal > 0 {
-                return "\(state.filtersCheckedDone)/\(state.filtersCheckedTotal)"
-            }
-            let value = (0...1).clamp(state.phaseProgress)
-            return value > 0 ? percentString(value) : nil
-        case .scripts:
-            if state.scriptsCheckedTotal > 0 {
-                return "\(state.scriptsCheckedDone)/\(state.scriptsCheckedTotal)"
+            let total = state.filtersCheckedTotal + state.scriptsCheckedTotal
+            if total > 0 {
+                return "\(state.filtersCheckedDone + state.scriptsCheckedDone)/\(total)"
             }
             let value = (0...1).clamp(state.phaseProgress)
             return value > 0 ? percentString(value) : nil
@@ -497,44 +496,32 @@ struct ApplyProgressPresentation: Equatable {
                 if !state.currentFilterName.isEmpty {
                     return state.currentFilterName
                 }
-                return state.statusMessage.isEmpty ? nil : state.statusMessage
-            }
-            if step.status == .complete {
-                let count = state.filterUpdatesFound
-                if count > 0 {
-                    return localizedCount("Downloaded %d updates", count: count)
-                }
-                return String(localized: "No updates available")
-            }
-            return nil
-        case .scripts:
-            if step.status == .active {
                 if !state.currentScriptName.isEmpty {
                     return state.currentScriptName
                 }
-                let message = state.statusMessage
-                if message.localizedCaseInsensitiveContains("script") {
-                    return message
-                }
-                return nil
+                return state.statusMessage.isEmpty ? nil : state.statusMessage
             }
             if step.status == .complete {
-                let updated = state.scriptsUpdatedCount
-                let failed = state.scriptsFailedCount
-                if failed > 0 {
-                    return String.localizedStringWithFormat(
+                var parts: [String] = []
+                if state.filterUpdatesFound > 0 {
+                    parts.append(localizedCount("Downloaded %d updates", count: state.filterUpdatesFound))
+                }
+                if state.scriptsFailedCount > 0 {
+                    parts.append(String.localizedStringWithFormat(
                         NSLocalizedString(
                             "Updated %d, %d failed",
                             comment: "Apply changes script phase detail"
                         ),
-                        updated,
-                        failed
-                    )
+                        state.scriptsUpdatedCount,
+                        state.scriptsFailedCount
+                    ))
+                } else if state.scriptsUpdatedCount > 0 {
+                    parts.append(localizedCount("Updated %d scripts", count: state.scriptsUpdatedCount))
                 }
-                if updated > 0 {
-                    return localizedCount("Updated %d scripts", count: updated)
+                if parts.isEmpty {
+                    return String(localized: "No updates available")
                 }
-                return String(localized: "No script updates")
+                return parts.joined(separator: " · ")
             }
             return nil
         case .reading:

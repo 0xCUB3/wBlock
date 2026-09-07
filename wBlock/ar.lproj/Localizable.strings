@@ -203,7 +203,7 @@
 "Checked %@ ago" = "تم التحقق قبل %@";
 "Checked just now" = "تم التحقق للتو";
 "Checking background agent…" = "جارٍ التحقق من عامل الخلفية…";
-"Checking for Updates" = "جارٍ التحقق من تحديثات عوامل التصفية";
+"Checking for Updates" = "جارٍ التحقق من التحديثات";
 "Checking for updates..." = "جارٍ التحقق من وجود تحديثات";
 "Checking for updates... (%d/%d)" = "جارٍ التحقق من وجود تحديثات (%d/%d)";
 "Checking for script updates..." = "جارٍ التحقق من تحديثات النصوص البرمجية";
@@ -1030,6 +1030,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Downloading…" = "جارٍ التنزيل…";
 "Download %@" = "تنزيل %@";
 "Downloading userscript" = "جارٍ تنزيل سكريبت المستخدم";
+"Retry" = "إعادة المحاولة";
 "Retry %d failed extension(s)" = "إعادة محاولة %d ملحق فشل";
 "All extensions reloaded." = "أعيد تحميل كل الملحقات.";
 "%@ still failed to reload. Safari may need a restart." = "%@ لا يزال يفشل في إعادة التحميل. قد يحتاج Safari إلى إعادة التشغيل.";
