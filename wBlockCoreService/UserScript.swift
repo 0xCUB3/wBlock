@@ -312,6 +312,10 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     public var runAt: String = "document-end"
     public var injectInto: String = "auto"
     public var grant: [String] = []
+    public var allowsGMXMLHttpRequest: Bool {
+        let grants = Set(grant.map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() })
+        return !grants.contains("none") && (grants.contains("gm_xmlhttprequest") || grants.contains("gm.xmlhttprequest"))
+    }
     private final class ConnectMetadata {
         let source: String
         let entries: [String]

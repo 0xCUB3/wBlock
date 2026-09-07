@@ -97,6 +97,12 @@ struct IncludeResolverURLEncodingTests {
         expectOrigin(other, raw, false, "unrelated host stays cross-origin")
         expectOrigin(URL(string: "http://cdn.jsdelivr.net/gh/a/b@c/d.txt")!, raw, false, "scheme must still match")
 
+        expectOrigin(URL(string: "https://cdn.jsdelivr.net/npm/unrelated/file.txt")!, raw, false, "npm is not a GitHub mirror")
+        expectOrigin(URL(string: "https://cdn.jsdelivr.net/gh/attacker/ruadlist@master/file.txt")!, raw, false, "different owner is not a mirror")
+        expectOrigin(URL(string: "https://cdn.jsdelivr.net/gh/easylist/other@master/file.txt")!, raw, false, "different repository is not a mirror")
+        expectOrigin(URL(string: "https://cdn.jsdelivr.net/gh/easylist/ruadlist@dev/file.txt")!, raw, false, "different revision is not a mirror")
+        expectOrigin(URL(string: "https://cdn.jsdelivr.net:444/gh/easylist/ruadlist@master/file.txt")!, raw, false, "nonstandard port is not a mirror")
+
         print("PASS")
     }
 

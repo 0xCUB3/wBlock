@@ -108,10 +108,9 @@ final class ZapperRuleManager: ObservableObject {
     /// Removes a single CSS selector for the hostname and refreshes local state.
     func deleteRule(_ rule: String, forDomain hostname: String) {
         Task { @MainActor in
-            await ProtobufDataManager.shared.deleteZapperRule(rule, forHost: hostname)
-            await refreshFromDisk()
-            if selectedDomain == hostname {
-                rulesForSelectedDomain = rules(for: hostname)
+            await performMutation {
+                await ProtobufDataManager.shared.deleteZapperRule(rule, forHost: hostname)
+                self.publishStateFromDataManager()
             }
         }
     }
@@ -119,10 +118,9 @@ final class ZapperRuleManager: ObservableObject {
     /// Removes all rules for the hostname and refreshes local state.
     func deleteAllRules(forDomain hostname: String) {
         Task { @MainActor in
-            await ProtobufDataManager.shared.deleteAllZapperRules(forHost: hostname)
-            await refreshFromDisk()
-            if selectedDomain == hostname {
-                rulesForSelectedDomain = []
+            await performMutation {
+                await ProtobufDataManager.shared.deleteAllZapperRules(forHost: hostname)
+                self.publishStateFromDataManager()
             }
         }
     }
@@ -130,12 +128,11 @@ final class ZapperRuleManager: ObservableObject {
     /// Removes every stored rule for every hostname and refreshes local state.
     func deleteAllRules() {
         Task { @MainActor in
-            for domain in ProtobufDataManager.shared.getZapperDomains() {
-                await ProtobufDataManager.shared.deleteAllZapperRules(forHost: domain)
+            await performMutation {
+                await ProtobufDataManager.shared.deleteAllZapperRules()
+                self.publishStateFromDataManager()
+                self.selectedDomain = nil
             }
-            await refreshFromDisk()
-            selectedDomain = nil
-            rulesForSelectedDomain = []
         }
     }
 
@@ -152,18 +149,19 @@ final class ZapperRuleManager: ObservableObject {
     /// Flips the per-host kill switch and refreshes local state.
     func setDisabled(_ disabled: Bool, forDomain hostname: String) {
         Task { @MainActor in
-            await ProtobufDataManager.shared.setZapperRulesDisabled(disabled, forHost: hostname)
-            await refreshFromDisk()
+            await performMutation {
+                await ProtobufDataManager.shared.setZapperRulesDisabled(disabled, forHost: hostname)
+                self.publishStateFromDataManager()
+            }
         }
     }
 
     /// Re-inserts a previously deleted rule and refreshes local state.
     func restoreRule(_ rule: String, forDomain hostname: String, at index: Int) {
         Task { @MainActor in
-            await ProtobufDataManager.shared.restoreZapperRule(rule, forHost: hostname, at: index)
-            await refreshFromDisk()
-            if selectedDomain == hostname {
-                rulesForSelectedDomain = rules(for: hostname)
+            await performMutation {
+                await ProtobufDataManager.shared.restoreZapperRule(rule, forHost: hostname, at: index)
+                self.publishStateFromDataManager()
             }
         }
     }

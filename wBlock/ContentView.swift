@@ -495,10 +495,11 @@ struct ContentView: View {
                                 withAnimation { isForeignFiltersExpanded.toggle() }
                             } label: {
                                 HStack {
-                                    Text(item.category.localizedName)
-                                    Spacer()
                                     Image(systemName: isForeignFiltersExpanded ? "chevron.down" : "chevron.right")
                                         .font(.caption.weight(.semibold))
+                                        .frame(width: 16)
+                                    Text(item.category.localizedName)
+                                    Spacer()
                                 }
                                 .frame(minHeight: 44)
                                 .contentShape(Rectangle())
@@ -1332,6 +1333,8 @@ struct AddFilterListView: View {
 	@Environment(\.dismiss) private var dismiss
 	@FocusState private var urlFieldIsFocused: Bool
 
+    @State private var isReviewingURLs = false
+    @State private var urlCategories: [String: FilterListCategory] = [:]
     @State private var urlEntryMode: URLEntryMode = .single
     @State private var urlInput: String = ""
     @State private var customName: String = ""
@@ -1361,7 +1364,7 @@ struct AddFilterListView: View {
         let content: String
     }
 
-    private struct URLMetadata: Equatable {
+    private struct URLMetadata: Equatable, Sendable {
         var title: String?
         var description: String?
     }
@@ -1433,7 +1436,7 @@ struct AddFilterListView: View {
 		                                    Text(LocalizedStringKey(addButtonTitle))
 		                                }
 		                            }
-		                            .disabled(!canSubmit || isSaving)
+		                            .disabled(!canSubmit || isSaving || (isReviewingURLs && isFetchingURLMetadata))
 		                        }
 		                    }
 		            }
@@ -1444,6 +1447,7 @@ struct AddFilterListView: View {
 	        #endif
 	    }
         .onChangeCompat(of: urlInput) { oldValue, newValue in
+            isReviewingURLs = false
             let normalized: String
             if urlEntryMode == .single {
                 normalized = FilterListURLSupport.normalizeSingleURLInput(from: oldValue, to: newValue)
@@ -1458,6 +1462,7 @@ struct AddFilterListView: View {
             }
         }
         .onChangeCompat(of: urlEntryMode) { oldValue, newValue in
+            isReviewingURLs = false
             preserveURLMetadataFieldsForModeSwitch(from: oldValue, to: newValue)
             if newValue == .single {
                 urlInput = FilterListURLSupport.normalizeSingleURLInput(urlInput)
@@ -1466,6 +1471,13 @@ struct AddFilterListView: View {
             }
             syncURLMetadataFields()
             fetchMetadataForCurrentURLs()
+        }
+        .onChangeCompat(of: addMode) { _, mode in
+            if mode == .url { fetchMetadataForCurrentURLs() } else {
+                metadataFetchTask?.cancel()
+                metadataFetchGeneration += 1
+                isFetchingURLMetadata = false
+            }
         }
         .onDisappear {
             metadataFetchTask?.cancel()
@@ -1551,7 +1563,7 @@ struct AddFilterListView: View {
 	                }
 	            }
 	            .primaryActionButtonStyle()
-	            .disabled(!canSubmit || isSaving)
+	            .disabled(!canSubmit || isSaving || (isReviewingURLs && isFetchingURLMetadata))
 	            .keyboardShortcut(.defaultAction)
 	        }
 
@@ -1582,11 +1594,18 @@ struct AddFilterListView: View {
 
 	        private var macosURLCard: some View {
             AddContentCard {
-                urlEntryModePicker
-                AddContentField(title: urlFieldTitle) { urlInputEditor }
-                urlMetadataFields
-                userListCategoryPicker(selection: $selectedCategory)
-                urlFooterMessage
+                if urlEntryMode == .bulk && isReviewingURLs {
+                    Button("Back") { isReviewingURLs = false; metadataFetchTask?.cancel(); isFetchingURLMetadata = false }
+                    urlMetadataFields
+                } else {
+                    urlEntryModePicker
+                    AddContentField(title: urlFieldTitle) { urlInputEditor }
+                    if urlEntryMode == .single {
+                        urlMetadataFields
+                        userListCategoryPicker(selection: $selectedCategory)
+                    }
+                }
+                if !isSaving { urlFooterMessage }
             }
         }
 
@@ -1675,11 +1694,18 @@ struct AddFilterListView: View {
 		    private var urlTab: some View {
         AddContentPanelLayout {
             AddContentCard {
-                urlEntryModePicker
-                AddContentField(title: urlFieldTitle) { urlInputEditor }
-                urlMetadataFields
-                userListCategoryPicker(selection: $selectedCategory)
-                urlFooterMessage
+                if urlEntryMode == .bulk && isReviewingURLs {
+                    Button("Back") { isReviewingURLs = false; metadataFetchTask?.cancel(); isFetchingURLMetadata = false }
+                    urlMetadataFields
+                } else {
+                    urlEntryModePicker
+                    AddContentField(title: urlFieldTitle) { urlInputEditor }
+                    if urlEntryMode == .single {
+                        urlMetadataFields
+                        userListCategoryPicker(selection: $selectedCategory)
+                    }
+                }
+                if !isSaving { urlFooterMessage }
             }
             filterRequirementsPanel
         }
@@ -1784,6 +1810,10 @@ struct AddFilterListView: View {
                 .textFieldStyle(.roundedBorder)
             TextField(bulkDescriptionPlaceholder(for: url), text: descriptionBinding(for: key))
                 .textFieldStyle(.roundedBorder)
+            userListCategoryPicker(selection: Binding(
+                get: { urlCategories[url.absoluteString] ?? selectedCategory },
+                set: { urlCategories[url.absoluteString] = $0 }
+            ))
         }
         .padding(10)
         .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
@@ -1826,6 +1856,7 @@ struct AddFilterListView: View {
             } else {
                 ZStack(alignment: .topLeading) {
                     TextEditor(text: $urlInput)
+                        .hideEditorBackgroundCompat()
                         .font(.body)
                         .autocorrectionDisabled()
                         .focused($urlFieldIsFocused)
@@ -1849,7 +1880,7 @@ struct AddFilterListView: View {
                     }
                 }
                 .frame(minHeight: 64, maxHeight: 96)
-                .background(.background, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .background(Color.urlEditorBackground, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .stroke(.quaternary, lineWidth: 1)
@@ -1926,9 +1957,15 @@ struct AddFilterListView: View {
         switch addMode {
         case .url:
             guard case .valid(let urls) = validationState else { return }
+            if urlEntryMode == .bulk && !isReviewingURLs {
+                isReviewingURLs = true
+                urlFieldIsFocused = false
+                fetchMetadataForCurrentURLs()
+                return
+            }
             isSaving = true
             Task { @MainActor in
-                let allowsCustomName = urls.count == 1
+                let allowsCustomName = urlEntryMode == .single
                 let userProvidedName = allowsCustomName && !trimmedCustomName.isEmpty
                 for url in urls {
                     let finalName = nameForURL(url, singleUserProvidedName: userProvidedName)
@@ -1936,7 +1973,7 @@ struct AddFilterListView: View {
                     filterManager.addFilterList(
                         name: finalName,
                         urlString: url.absoluteString,
-                        category: selectedCategory,
+                        category: urlCategories[url.absoluteString] ?? selectedCategory,
                         hasUserProvidedName: userProvidedName || hasBulkName(for: url),
                         hasUserProvidedDescription: hasManualDescription(for: url, singleMode: allowsCustomName),
                         description: finalDescription
@@ -1989,6 +2026,7 @@ struct AddFilterListView: View {
     }
 
     private var addButtonTitle: String {
+        if addMode == .url && urlEntryMode == .bulk && !isReviewingURLs { return "Next" }
         switch addMode {
         case .url:
             if newURLs.count > 1 {
@@ -2079,14 +2117,14 @@ struct AddFilterListView: View {
 
     private func nameBinding(for key: String) -> Binding<String> {
         Binding(
-            get: { customURLNames[key] ?? "" },
+            get: { customURLNames[key] ?? (isReviewingURLs ? fetchedURLMetadata[key]?.title : nil) ?? "" },
             set: { customURLNames[key] = Self.singleLineMetadataField($0) }
         )
     }
 
     private func descriptionBinding(for key: String) -> Binding<String> {
         Binding(
-            get: { customURLDescriptions[key] ?? "" },
+            get: { customURLDescriptions[key] ?? (isReviewingURLs ? fetchedURLMetadata[key]?.description : nil) ?? "" },
             set: { customURLDescriptions[key] = Self.singleLineMetadataField($0) }
         )
     }
@@ -2148,6 +2186,12 @@ struct AddFilterListView: View {
     }
 
     private func fetchMetadataForCurrentURLs() {
+        guard urlEntryMode == .single || isReviewingURLs else {
+            metadataFetchTask?.cancel()
+            metadataFetchGeneration += 1
+            isFetchingURLMetadata = false
+            return
+        }
         metadataFetchGeneration += 1
         let generation = metadataFetchGeneration
         metadataFetchTask?.cancel()
@@ -2163,18 +2207,13 @@ struct AddFilterListView: View {
         metadataFetchTask = Task { @MainActor in
             try? await Task.sleep(nanoseconds: 350_000_000)
             guard generation == metadataFetchGeneration, !Task.isCancelled else { return }
-            for url in targets {
-                if Task.isCancelled { break }
-                let key = FilterListURLSupport.identityKey(for: url)
-                do {
-                    let metadata = try await RemoteFilterListMetadataLoader.fetch(from: url)
-                    guard generation == metadataFetchGeneration, !Task.isCancelled else { return }
-                    fetchedURLMetadata[key] = URLMetadata(title: metadata.title, description: metadata.description)
-                } catch {
-                    guard generation == metadataFetchGeneration, !Task.isCancelled else { return }
-                    fetchedURLMetadata[key] = URLMetadata()
-                }
-            }
+            await boundedConcurrentForEach(targets, maxConcurrent: 4, operation: { url in
+                let metadata = try? await RemoteFilterListMetadataLoader.fetch(from: url)
+                return (url, URLMetadata(title: metadata?.title, description: metadata?.description))
+            }, onResult: { url, metadata in
+                guard generation == metadataFetchGeneration, !Task.isCancelled else { return }
+                fetchedURLMetadata[FilterListURLSupport.identityKey(for: url)] = metadata
+            })
             if generation == metadataFetchGeneration {
                 isFetchingURLMetadata = false
             }

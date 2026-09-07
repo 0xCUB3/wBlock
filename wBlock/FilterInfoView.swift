@@ -142,6 +142,10 @@ struct FilterInfoView: View {
                     Image(systemName: "plus.circle.fill")
                         .font(.title2)
                         .foregroundStyle(addableSite == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.accentColor))
+                        #if os(iOS)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
+                        #endif
                 }
                 .buttonStyle(.plain)
                 .noFocusRingCompat()

@@ -36,6 +36,13 @@ final class ChainProtocol: URLProtocol {
         check(!FilterUpdateResponseClassifier.looksLikeFilterListData(Data("<html>challenge".utf8)), "HTML")
         check(!FilterUpdateResponseClassifier.looksLikeFilterListData(Data("404: Not Found".utf8)), "404 body")
         check(!FilterUpdateResponseClassifier.looksLikeFilterListData(Data()), "empty")
+        for scalar in ["é", "日", "😀"] {
+            for split in 1..<scalar.utf8.count {
+                let text = String(repeating: "!", count: 2048 - split) + scalar + "\n||example.com^"
+                check(FilterUpdateResponseClassifier.looksLikeFilterListData(Data(text.utf8)), "UTF-8 sniff boundary \(scalar) \(split)")
+            }
+        }
+        check(!FilterUpdateResponseClassifier.looksLikeFilterListData(Data([0xff, 0xff])), "invalid short UTF-8")
         check(FilterUpdateResponseClassifier.classify(statusCode: 200, responseData: Data("<html>challenge</html>".utf8), localData: nil) == .invalidContent, "HTML invalid")
         check(FilterUpdateResponseClassifier.classify(statusCode: 200, responseData: Data("404: Not Found".utf8), localData: nil) == .invalidContent, "404 body invalid")
         do { reset([304]); let r = try await fetch(); check(!r.servedFallback && ChainProtocol.requests.count == 1, "304 stops without fallback") } catch { check(false, "304 threw") }

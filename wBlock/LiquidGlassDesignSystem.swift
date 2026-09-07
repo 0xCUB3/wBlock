@@ -85,20 +85,32 @@ struct MacActionsToolbar<Primary: View, Filter: View, Search: View>: ViewModifie
     }
 }
 
+private struct CompactToolbarTextLabelKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var compactToolbarTextLabel: Bool {
+        get { self[CompactToolbarTextLabelKey.self] }
+        set { self[CompactToolbarTextLabelKey.self] = newValue }
+    }
+}
+
 @available(macOS 26.0, *)
 private struct CompactToolbarButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
     @State private var isHovered = false
+    @Environment(\.compactToolbarTextLabel) private var isTextLabel
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 17))
+            .font(.system(size: isTextLabel ? 13 : 17))
             .fixedSize(horizontal: true, vertical: false)
-            .padding(.horizontal, 10)
-            .frame(minWidth: 36, minHeight: 36)
+            .frame(width: isTextLabel ? nil : 36, height: 36)
+            .padding(.horizontal, isTextLabel ? 10 : 0)
             .contentShape(Rectangle())
             .foregroundStyle(.primary)
-            .background(Color.primary.opacity(isHovered && isEnabled ? 0.08 : 0), in: .capsule)
+            .background(Color.primary.opacity(isEnabled ? (configuration.isPressed ? 0.12 : (isHovered ? 0.08 : 0)) : 0), in: .capsule)
             .opacity(isEnabled ? (configuration.isPressed ? 0.6 : 1) : 0.35)
             .onHover { isHovered = $0 }
     }

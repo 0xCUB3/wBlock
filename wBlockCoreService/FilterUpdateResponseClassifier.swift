@@ -39,7 +39,12 @@ public enum FilterUpdateResponseClassifier {
     public static func looksLikeFilterListData(_ data: Data) -> Bool {
         guard !data.isEmpty else { return false }
         let prefix = data.prefix(2048)
-        guard let text = String(data: prefix, encoding: .utf8) else { return false }
+        // A bounded sniff can end inside a UTF-8 scalar. Trim only the incomplete
+        // tail; the downloader still validates the complete body before saving it.
+        let maxTrim = data.count > prefix.count ? 3 : 0
+        guard let text = (0...maxTrim).lazy.compactMap({ trim in
+            String(data: prefix.dropLast(trim), encoding: .utf8)
+        }).first else { return false }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard trimmed != "404: not found",
               !trimmed.hasPrefix("<!doctype html"), !trimmed.hasPrefix("<html") else { return false }

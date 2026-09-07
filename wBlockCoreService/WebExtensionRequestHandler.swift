@@ -37,25 +37,16 @@ public enum WebExtensionRequestHandler {
         return sharedLogDateFormatter.string(from: Date())
     }
 
-    // Long-lived sessions for GM_xmlhttpRequest. Creating a URLSession per
-    // request spins up a thread pool each time; these are reused instead.
-    // The anonymous session never stores or sends cookies, matching GM
-    // `anonymous` semantics. Per-request idle timeouts are still applied via
-    // URLRequest.timeoutInterval; the resource timeout is a fixed backstop.
+    // Reuse one stateless session. Native fallback must not inherit the app
+    // cookie jar or credential storage; it cannot access Safari's cookie store.
     private static let gmDefaultSession: URLSession = {
-        let configuration = URLSessionConfiguration.default
-        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        configuration.urlCache = nil
-        configuration.timeoutIntervalForResource = 300
-        return URLSession(configuration: configuration)
-    }()
-    private static let gmAnonymousSession: URLSession = {
         let configuration = URLSessionConfiguration.ephemeral
-        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        configuration.urlCache = nil
-        configuration.timeoutIntervalForResource = 300
         configuration.httpCookieStorage = nil
         configuration.httpShouldSetCookies = false
+        configuration.urlCredentialStorage = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        configuration.urlCache = nil
+        configuration.timeoutIntervalForResource = 300
         return URLSession(configuration: configuration)
     }()
 
@@ -1353,7 +1344,7 @@ public enum WebExtensionRequestHandler {
         await manager.refreshFromDiskForExecution()
         guard !BlockingPauseStore.isPaused(.userScripts),
               let script = manager.userScript(withId: scriptID), script.isEnabled,
-              !script.isUserStyle, script.matches(url: pageURL),
+              !script.isUserStyle, script.allowsGMXMLHttpRequest, script.matches(url: pageURL),
               !manager.isUserScript(script, disabledOnHost: page.host ?? ""),
               !script.noframes || message["isTopFrame"] as? Bool == true else { return nil }
         return UserScriptConnectPolicy(entries: script.connect, pageURL: page)
@@ -1441,13 +1432,16 @@ public enum WebExtensionRequestHandler {
         timeoutMilliseconds: Double
     ) async -> [String: Any?] {
         let timeoutSeconds = timeoutMilliseconds > 0 ? max(timeoutMilliseconds / 1000, 0.1) : 30
-        let session = anonymous ? gmAnonymousSession : gmDefaultSession
+        let session = gmDefaultSession
 
         var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: timeoutSeconds)
         request.httpMethod = method
         headers.forEach { key, value in
-            request.setValue(value, forHTTPHeaderField: key)
+            if !anonymous || key.caseInsensitiveCompare("Cookie") != .orderedSame {
+                request.setValue(value, forHTTPHeaderField: key)
+            }
         }
+        request.httpShouldHandleCookies = false
         if let body, !body.isEmpty, method != "GET", method != "HEAD" {
             request.httpBody = Data(body.utf8)
         }

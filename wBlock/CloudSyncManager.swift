@@ -387,6 +387,13 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func observeLocalUserScriptChanges() {
+        userScriptManager.$tubeCleanerFeatures.combineLatest(userScriptManager.$tubeCleanerDeArrow)
+            .dropFirst()
+            .filter { [weak self] _ in self?.isApplyingRemoteChanges == false }
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { [weak self] _ in self?.handleLocalSave() }
+            .store(in: &cancellables)
+
         NotificationCenter.default.publisher(for: .userScriptManagerDidUpsertUserScript)
             .sink { [weak self] notification in
                 guard let self, !self.isApplyingRemoteChanges else { return }
@@ -773,6 +780,14 @@ final class CloudSyncManager: ObservableObject {
         }
         if currentSettings.userScriptShowEnabledOnly == settingsBaseline.userScriptShowEnabledOnly {
             dataManager.setUserScriptShowEnabledOnly(payload.settings.userScriptShowEnabledOnly)
+        }
+        if let remote = payload.settings.tubeCleanerFeatures,
+           currentSettings.tubeCleanerFeatures == settingsBaseline.tubeCleanerFeatures {
+            userScriptManager.setTubeCleanerFeatures(remote)
+        }
+        if let remote = payload.settings.tubeCleanerDeArrow,
+           currentSettings.tubeCleanerDeArrow == settingsBaseline.tubeCleanerDeArrow {
+            userScriptManager.setTubeCleanerDeArrow(remote)
         }
         let mergedExcluded = Self.mergeStringSet(
             local: currentSettings.excludedDefaultUserScriptURLs,
@@ -1947,7 +1962,9 @@ final class CloudSyncManager: ObservableObject {
             autoUpdateEnabled: dataManager.autoUpdateEnabled,
             autoUpdateIntervalHours: dataManager.autoUpdateIntervalHours,
             userScriptShowEnabledOnly: dataManager.getUserScriptShowEnabledOnly(),
-            excludedDefaultUserScriptURLs: dataManager.getExcludedDefaultUserScriptURLs().sorted()
+            excludedDefaultUserScriptURLs: dataManager.getExcludedDefaultUserScriptURLs().sorted(),
+            tubeCleanerFeatures: TubeCleanerDeArrowPreference.features(),
+            tubeCleanerDeArrow: TubeCleanerDeArrowPreference.settings()
         )
 
         let filterLists = currentFilterLists()
@@ -2564,6 +2581,8 @@ private struct SyncPayload: Codable {
         let autoUpdateIntervalHours: Double
         let userScriptShowEnabledOnly: Bool
         let excludedDefaultUserScriptURLs: [String]
+        var tubeCleanerFeatures: TubeCleanerDeArrowPreference.Features? = nil
+        var tubeCleanerDeArrow: TubeCleanerDeArrowPreference.Settings? = nil
     }
 
     struct CustomFilterList: Codable {

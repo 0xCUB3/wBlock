@@ -38,7 +38,18 @@ struct UserScriptWebsiteExceptionsView: View {
                     .keyboardType(.URL)
                     .textInputAutocapitalization(.never)
                     #endif
-                Button("Add", action: addSite).disabled(candidate == nil)
+                Button(action: addSite) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(candidate == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.accentColor))
+                        #if os(iOS)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
+                        #endif
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Add")
+                .disabled(candidate == nil)
                 #if os(macOS)
                 if !knownSites.isEmpty {
                     Menu {

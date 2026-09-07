@@ -166,6 +166,8 @@ compile_direct_test userscript-persistence-race \
   wBlockCoreService/DataModels.pb.swift \
   wBlockCoreService/UserScriptPersistence.swift \
   scripts/test_userscript_persistence_race.swift
+compile_direct_test stable-record-identifiers \
+  wBlockCoreService/StableRecordIdentifier.swift scripts/test_stable_record_identifier.swift
 compile_direct_test userscript-matching-payload \
   wBlockCoreService/FilterListCategory.swift \
   wBlockCoreService/UserScript.swift \

@@ -224,3 +224,13 @@ struct ContentCategoryPicker: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+extension Color {
+    static var urlEditorBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .systemBackground)
+        #else
+        Color(nsColor: .textBackgroundColor)
+        #endif
+    }
+}

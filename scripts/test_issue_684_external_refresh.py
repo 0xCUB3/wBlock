@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 
 source = Path('wBlockCoreService/ProtobufDataManager.swift').read_text()
-helpers = source[source.index('private func mergeField'):source.index('// MARK: - Disk I/O')]
+helpers = source[source.index('private func normalizeAppDataIdentifiers'):source.index('// MARK: - Disk I/O')]
 start = source.index('    public func refreshFromDiskIfModified(')
 end = source.index('    // File URLs', start)
 method = source[start:end]
@@ -78,5 +78,5 @@ with tempfile.TemporaryDirectory() as temp:
     test.write_text(harness + '\n' + helpers)
     binary = str(Path(temp) / 'test')
     subprocess.run(['swiftc', '-parse-as-library', '-I', str(products), str(products / 'SwiftProtobuf.o'),
-                    'wBlockCoreService/DataModels.pb.swift', 'wBlockCoreService/UserScriptPersistence.swift', str(test), '-o', binary], check=True)
+                    'wBlockCoreService/DataModels.pb.swift', 'wBlockCoreService/StableRecordIdentifier.swift', 'wBlockCoreService/UserScriptPersistence.swift', str(test), '-o', binary], check=True)
     subprocess.run([binary], check=True)

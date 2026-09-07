@@ -282,8 +282,24 @@ public actor IncludeResolver {
     /// them, so a list served from one may include files addressed on the other.
     private static let githubContentHosts: Set<String> = ["raw.githubusercontent.com", "cdn.jsdelivr.net"]
 
-    /// Returns `true` when `url` and `base` share the same origin (scheme + host + port),
-    /// or when both are GitHub content hosts.
+    private static func githubRepositoryRevision(_ url: URL) -> String? {
+        let parts = url.path.split(separator: "/").map(String.init)
+        if url.host?.lowercased() == "raw.githubusercontent.com" {
+            guard parts.count >= 3 else { return nil }
+            let ref: String
+            if parts[2] == "refs" {
+                guard parts.count >= 5, parts[3] == "heads" || parts[3] == "tags" else { return nil }
+                ref = parts[4]
+            } else { ref = parts[2] }
+            return "\(parts[0].lowercased())/\(parts[1].lowercased())@\(ref)"
+        }
+        guard parts.count >= 3, parts[0] == "gh" else { return nil }
+        let repository = parts[2].split(separator: "@", omittingEmptySubsequences: false)
+        guard repository.count == 2, !repository[0].isEmpty, !repository[1].isEmpty else { return nil }
+        return "\(parts[1].lowercased())/\(repository[0].lowercased())@\(repository[1])"
+    }
+
+    /// Cross-host GitHub includes must stay within the same repository and revision.
     ///
     /// Nil host == nil host is treated as same-origin (covers the `file://` edge case).
     /// Port optionals are compared directly: a nil port (scheme default) equals another nil port.
@@ -300,7 +316,10 @@ public actor IncludeResolver {
         let baseHost = base.host?.lowercased()
         if let urlHost, let baseHost, urlHost != baseHost,
            Self.githubContentHosts.contains(urlHost), Self.githubContentHosts.contains(baseHost) {
-            return urlScheme == "https"
+            return urlScheme == "https" && (url.port ?? 443) == 443 && (base.port ?? 443) == 443
+                && url.user == nil && base.user == nil
+                && githubRepositoryRevision(url) != nil
+                && githubRepositoryRevision(url) == githubRepositoryRevision(base)
         }
         guard urlHost == baseHost else {
             return false

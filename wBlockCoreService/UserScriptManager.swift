@@ -2660,6 +2660,9 @@ public class UserScriptManager: ObservableObject {
     @discardableResult
     public func addUserScript(
         from url: URL,
+        nameOverride: String? = nil,
+        descriptionOverride: String? = nil,
+        category: FilterListCategory? = nil,
         origin: UserScriptMutationOrigin = .local
     ) async -> Error? {
         isLoading = true
@@ -2714,6 +2717,9 @@ public class UserScriptManager: ObservableObject {
                     return UserScriptImportError.styleCompilationFailed(style.compilationError ?? UserScriptImportError.fallbackCompilerError)
                 }
             }
+            if let name = nameOverride?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty { newUserScript.name = name }
+            if let descriptionOverride { newUserScript.description = descriptionOverride.trimmingCharacters(in: .whitespacesAndNewlines) }
+            if let category { newUserScript.category = category }
             newUserScript.isEnabled = true
             newUserScript.isLocal = false
             newUserScript.lastUpdated = Date()

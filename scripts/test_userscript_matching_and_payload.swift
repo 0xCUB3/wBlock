@@ -150,6 +150,17 @@ struct UserScriptMatchingAndPayloadTests {
             }
         redirectTask.cancel()
 
+        var granted = UserScript(name: "grant policy")
+        expect(!granted.allowsGMXMLHttpRequest, "missing grant cannot request privileged networking")
+        granted.grant = ["GM_getValue"]
+        expect(!granted.allowsGMXMLHttpRequest, "unrelated grant cannot request privileged networking")
+        granted.grant = ["GM_xmlhttpRequest"]
+        expect(granted.allowsGMXMLHttpRequest, "legacy request grant is accepted")
+        granted.grant = ["GM.xmlHttpRequest"]
+        expect(granted.allowsGMXMLHttpRequest, "promise request grant is accepted")
+        granted.grant.append("none")
+        expect(!granted.allowsGMXMLHttpRequest, "grant none overrides mixed request grants")
+
         print("PASS: userscript matching and payload")
     }
 

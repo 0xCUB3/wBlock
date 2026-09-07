@@ -192,7 +192,7 @@ extension ProtobufDataManager {
             let isCustom = normalizedCustomStatus(for: protoData, category: category)
 
             return FilterList(
-                id: UUID(uuidString: protoData.id) ?? UUID(),
+                id: StableRecordIdentifier.uuid(rawValue: protoData.id, namespace: "filter", source: protoData.url.isEmpty ? protoData.name : protoData.url),
                 name: protoData.name,
                 url: URL(string: protoData.url) ?? URL(string: "https://example.com")!,
                 category: category,
@@ -245,7 +245,7 @@ extension ProtobufDataManager {
             // (protobuf defaults booleans to `false` when the field wasn't written).
             let inferredIsLocalFromURL = rawURLString.isEmpty || (parsedURL?.isFileURL == true)
             var script = UserScript(
-                id: UUID(uuidString: protoData.id) ?? UUID(),
+                id: StableRecordIdentifier.uuid(rawValue: protoData.id, namespace: "script", source: protoData.url.isEmpty ? protoData.name : protoData.url),
                 name: protoData.name,
                 url: parsedURL,
                 content: includePersistedContent ? protoData.content : ""

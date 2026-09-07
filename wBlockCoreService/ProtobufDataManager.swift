@@ -10,6 +10,37 @@ internal import SwiftProtobuf
 import Combine
 import os.log
 
+private func normalizeAppDataIdentifiers(_ data: inout Wblock_Data_AppData) -> Bool {
+    var changed = false
+    // Normalize baselines as well as current snapshots so repair cannot resurrect an old ID during merge.
+    for index in data.filterLists.indices {
+        let record = data.filterLists[index]
+        let id = StableRecordIdentifier.uuid(rawValue: record.id, namespace: "filter", source: record.url.isEmpty ? record.name : record.url).uuidString
+        guard record.id != id else { continue }
+        changed = true
+        data.filterLists[index].id = id
+        if let value = data.autoUpdate.filterEtags.removeValue(forKey: record.id) { data.autoUpdate.filterEtags[id] = value }
+        if let value = data.autoUpdate.filterLastModified.removeValue(forKey: record.id) { data.autoUpdate.filterLastModified[id] = value }
+        if let value = data.autoUpdate.filterLastChecked.removeValue(forKey: record.id) { data.autoUpdate.filterLastChecked[id] = value }
+    }
+    for index in data.userScripts.indices {
+        let record = data.userScripts[index]
+        let id = StableRecordIdentifier.uuid(rawValue: record.id, namespace: "script", source: record.url.isEmpty ? record.name : record.url).uuidString
+        guard record.id != id else { continue }
+        changed = true
+        data.userScripts[index].id = id
+        if let value = data.userScriptDisabledHosts.removeValue(forKey: record.id) { data.userScriptDisabledHosts[id] = value }
+        if let value = data.autoUpdate.scriptLastChecked.removeValue(forKey: record.id) { data.autoUpdate.scriptLastChecked[id] = value }
+    }
+    return changed
+}
+
+private func decodeAppData(_ bytes: Data) throws -> Wblock_Data_AppData {
+    var data = try Wblock_Data_AppData(serializedBytes: bytes)
+    _ = normalizeAppDataIdentifiers(&data)
+    return data
+}
+
 private func mergeField<T: Equatable>(_ local: inout T, baseline: T, persisted: T) {
     if local == baseline { local = persisted }
 }
@@ -261,10 +292,11 @@ private actor ProtobufDiskStore {
         return (try? fileManager.attributesOfItem(atPath: url.path)[.modificationDate]) as? Date
     }
 
-    func readAppData(from url: URL) throws -> (appData: Wblock_Data_AppData, rawData: Data, modificationDate: Date?) {
+    func readAppData(from url: URL) throws -> (appData: Wblock_Data_AppData, rawData: Data, modificationDate: Date?, identitiesRepaired: Bool) {
         let rawData = try Data(contentsOf: url)
-        let appData = try Wblock_Data_AppData(serializedBytes: rawData)
-        return (appData: appData, rawData: rawData, modificationDate: modificationDate(for: url))
+        var appData = try Wblock_Data_AppData(serializedBytes: rawData)
+        let repaired = normalizeAppDataIdentifiers(&appData)
+        return (appData: appData, rawData: rawData, modificationDate: modificationDate(for: url), identitiesRepaired: repaired)
     }
 
     func writeData(_ data: Data, to url: URL) throws {
@@ -338,7 +370,7 @@ private actor ProtobufDiskStore {
         }
 
         let rawData = try Data(contentsOf: dataURL)
-        return (rawData: rawData, appData: try Wblock_Data_AppData(serializedBytes: rawData))
+        return (rawData: rawData, appData: try decodeAppData(rawData))
     }
 
 
@@ -400,7 +432,7 @@ private actor ProtobufDiskStore {
         if let persistedRawData = current.rawData,
            let previousData,
            previousData != persistedRawData {
-            let previousSnapshot = try Wblock_Data_AppData(serializedBytes: previousData)
+            let previousSnapshot = try decodeAppData(previousData)
             mergePersistedChanges(
                 in: &mergedSnapshot,
                 comparedTo: previousSnapshot,
@@ -1086,8 +1118,9 @@ public class ProtobufDataManager: ObservableObject {
     public func deleteZapperRule(_ selector: String, forHost host: String) async {
         await updateDataImmediately { data in
             var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
+            guard ruleList.selectors.contains(selector) else { return }
             ruleList.selectors.removeAll { $0 == selector }
-            ruleList.pendingDeletions.append(selector)
+            if !ruleList.pendingDeletions.contains(selector) { ruleList.pendingDeletions.append(selector) }
             if ruleList.selectors.isEmpty && ruleList.pendingDeletions.isEmpty {
                 data.extensionData.zapperRulesByHost.removeValue(forKey: host)
             } else {
@@ -1103,7 +1136,8 @@ public class ProtobufDataManager: ObservableObject {
     public func deleteAllZapperRules(forHost host: String) async {
         await updateDataImmediately { data in
             var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
-            ruleList.pendingDeletions.append(contentsOf: ruleList.selectors)
+            guard !ruleList.selectors.isEmpty else { return }
+            ruleList.pendingDeletions = Array(Set(ruleList.pendingDeletions + ruleList.selectors)).sorted()
             ruleList.selectors.removeAll()
             if ruleList.pendingDeletions.isEmpty {
                 data.extensionData.zapperRulesByHost.removeValue(forKey: host)
@@ -1111,6 +1145,21 @@ public class ProtobufDataManager: ObservableObject {
                 data.extensionData.zapperRulesByHost[host] = ruleList
             }
             data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
+    @MainActor
+    public func deleteAllZapperRules() async {
+        await updateDataImmediately { data in
+            var changed = false
+            for host in Array(data.extensionData.zapperRulesByHost.keys) {
+                guard var rules = data.extensionData.zapperRulesByHost[host], !rules.selectors.isEmpty else { continue }
+                rules.pendingDeletions = Array(Set(rules.pendingDeletions + rules.selectors)).sorted()
+                rules.selectors.removeAll()
+                data.extensionData.zapperRulesByHost[host] = rules
+                changed = true
+            }
+            if changed { data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970) }
         }
     }
 
@@ -1166,6 +1215,7 @@ public class ProtobufDataManager: ObservableObject {
     public func restoreZapperRule(_ selector: String, forHost host: String, at index: Int) async {
         await updateDataImmediately { data in
             var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
+            guard !ruleList.selectors.contains(selector) else { return }
             let insertIndex = min(max(index, 0), ruleList.selectors.count)
             ruleList.pendingDeletions.removeAll { $0 == selector }
             ruleList.selectors.insert(selector, at: insertIndex)
@@ -1338,7 +1388,7 @@ public class ProtobufDataManager: ObservableObject {
             let didChange = lastSavedData != loaded.rawData
             if didChange {
                 if let previousData = lastSavedData,
-                   let previous = try? Wblock_Data_AppData(serializedBytes: previousData) {
+                   let previous = try? decodeAppData(previousData) {
                     // Keep unsaved app edits while importing extension writes.
                     mergePersistedChanges(in: &appData, comparedTo: previous, from: loaded.appData)
                 } else {
@@ -1455,7 +1505,7 @@ public class ProtobufDataManager: ObservableObject {
             if let pendingRawData,
                let pendingBaseline,
                pendingRawData != pendingBaseline,
-               let previousSnapshot = try? Wblock_Data_AppData(serializedBytes: pendingBaseline) {
+               let previousSnapshot = try? decodeAppData(pendingBaseline) {
                 var rebased = pendingSnapshot
                 mergePersistedChanges(
                     in: &rebased,
@@ -1581,8 +1631,10 @@ public class ProtobufDataManager: ObservableObject {
 
                 logger.info("✅ Loaded protobuf data (\(loaded.rawData.count) bytes)")
 
+                // Persist identity repairs once; future reads no longer need a fallback.
+                var needsSave = loaded.identitiesRepaired
+                if needsSave { logger.warning("Repaired invalid or noncanonical persisted record identifiers") }
                 // Migrate BPC userscript from gitflic to Greasy Fork
-                var needsSave = false
                 let oldBpcURL = "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=userscript%2Fbpc.en.user.js"
                 let newBpcURL = "https://greasyfork.org/scripts/542351-bypass-paywalls-clean-en/code/Bypass%20Paywalls%20Clean%20(EN).user.js"
                 if let bpcIndex = appData.userScripts.firstIndex(where: { $0.url == oldBpcURL }) {

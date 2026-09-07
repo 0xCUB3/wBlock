@@ -123,6 +123,12 @@ struct RemoteFilterListMetadataLoaderTests {
         config.protocolClasses = [MetadataProtocol.self]
         let session = URLSession(configuration: config)
 
+        let script = RemoteFilterListMetadataLoader.userscriptMetadata(from: "// ==UserScript==\n// @name Example Script\n// @description Example description\n// ==/UserScript==\n// @name Spoof")
+        expectEqual(script.title, "Example Script", "userscript name comes from metadata header")
+        expectEqual(script.description, "Example description", "userscript description is parsed")
+        let style = RemoteFilterListMetadataLoader.userscriptMetadata(from: "/* ==UserStyle==\n * @name Example Style\n * @description Style description\n ==/UserStyle== */")
+        expectEqual(style.title, "Example Style", "userstyle header supports leading asterisks")
+        expectEqual(RemoteFilterListMetadataLoader.userscriptMetadata(from: "// @name Outside header").title, nil, "ignore non-header annotations")
         await testPartialResponse(session: session)
         await testIgnoredRangeIsCancelledAfterBound(session: session)
         await testNonSuccessResponse(session: session)

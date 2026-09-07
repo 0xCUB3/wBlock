@@ -5,7 +5,8 @@ public enum RemoteFilterListMetadataLoader {
         from url: URL,
         session: URLSession = .shared,
         maxBytes: Int = 64 * 1024,
-        maxLines: Int = 80
+        maxLines: Int = 80,
+        userscript: Bool = false
     ) async throws -> (title: String?, description: String?) {
         guard maxBytes > 0, maxLines > 0 else { return (nil, nil) }
         var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
@@ -28,7 +29,26 @@ public enum RemoteFilterListMetadataLoader {
             if prefix.count >= maxBytes || lines >= maxLines { break }
         }
         let content = String(decoding: prefix, as: UTF8.self)
+        if userscript { return userscriptMetadata(from: content) }
         let metadata = FilterListMetadataParser.parse(from: content, maxLines: maxLines)
         return (metadata.title, metadata.description)
+    }
+
+    public static func userscriptMetadata(from content: String) -> (title: String?, description: String?) {
+        var inHeader = false
+        var title: String?
+        var description: String?
+        for raw in content.components(separatedBy: .newlines) {
+            let line = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            if line.contains("==UserScript==") || line.contains("==UserStyle==") { inHeader = true; continue }
+            if line.contains("==/UserScript==") || line.contains("==/UserStyle==") { break }
+            guard inHeader else { continue }
+            let field = line.trimmingCharacters(in: CharacterSet(charactersIn: "/ *\t"))
+            let parts = field.split(maxSplits: 1, whereSeparator: { $0.isWhitespace })
+            guard parts.count == 2 else { continue }
+            if parts[0] == "@name", title == nil { title = String(parts[1]) }
+            if parts[0] == "@description", description == nil { description = String(parts[1]) }
+        }
+        return (title, description)
     }
 }

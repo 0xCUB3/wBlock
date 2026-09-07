@@ -99,6 +99,15 @@ private struct OnChangeCompatModifier<Value: Equatable>: ViewModifier {
 
 extension View {
     @ViewBuilder
+    func hideEditorBackgroundCompat() -> some View {
+        if #available(macOS 13.0, iOS 16.0, *) {
+            self.scrollContentBackground(.hidden)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
     func onChangeCompat<Value: Equatable>(
         of value: Value,
         perform action: @escaping (_ oldValue: Value, _ newValue: Value) -> Void
@@ -422,6 +431,9 @@ struct ApplyChangesHoldButton<Label: View>: View {
         .accessibilityLabel("Apply Changes")
         .accessibilityHint("Hold for 3 seconds to apply without checking for updates.")
         .help(helpText)
+        #if os(macOS)
+        .environment(\.compactToolbarTextLabel, hasPendingChanges)
+        #endif
         .simultaneousGesture(forceApplyHoldGesture)
         .onChangeCompat(of: isDisabled) { disabled in
             if disabled {

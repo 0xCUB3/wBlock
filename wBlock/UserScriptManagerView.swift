@@ -1845,6 +1845,17 @@ struct AddUserScriptView: View {
     @State private var urlInput: String = ""
     @State private var validationState: ValidationState = .idle
     @State private var urlImportError: String?
+    private enum URLEntryMode { case single, bulk }
+    private struct URLMetadata: Sendable { var title: String?; var description: String? }
+    @State private var urlEntryMode: URLEntryMode = .single
+    @State private var isReviewingURLs = false
+    @State private var urlNames: [String: String] = [:]
+    @State private var urlDescriptions: [String: String] = [:]
+    @State private var urlCategories: [String: FilterListCategory] = [:]
+    @State private var urlMetadata: [String: URLMetadata] = [:]
+    @State private var urlMetadataTask: Task<Void, Never>?
+    @State private var urlMetadataGeneration = 0
+    @State private var isFetchingURLMetadata = false
     @State private var isAdding: Bool = false
     @State private var fileImportError: String?
     @State private var editorImportError: String?
@@ -1924,7 +1935,26 @@ struct AddUserScriptView: View {
             // Do not rewrite the field while typing: collapsing lines here ate the
             // Return key, which made bulk entry impossible (#642). Paste and
             // submit normalize explicitly; validation tolerates blank lines.
+            isReviewingURLs = false
+            if urlEntryMode == .single {
+                let normalized = FilterListURLSupport.normalizeSingleURLInput(newValue)
+                if normalized != newValue { urlInput = normalized; return }
+            }
             validateInput(newValue)
+            fetchURLMetadata()
+        }
+        .onChangeCompat(of: urlEntryMode) { _, mode in
+            isReviewingURLs = false
+            if mode == .single { urlInput = FilterListURLSupport.normalizeSingleURLInput(urlInput) }
+            validateInput(urlInput)
+            fetchURLMetadata()
+        }
+        .onChangeCompat(of: addMode) { _, mode in
+            if mode == .url { fetchURLMetadata() } else {
+                urlMetadataTask?.cancel()
+                urlMetadataGeneration += 1
+                isFetchingURLMetadata = false
+            }
         }
         .onChangeCompat(of: textInput) { _, _ in
             guard addMode == .text else { return }
@@ -1943,6 +1973,7 @@ struct AddUserScriptView: View {
         }
         .onDisappear {
             editorMetadataRefreshTask?.cancel()
+            urlMetadataTask?.cancel()
         }
         .alert("Replace Existing Content?", isPresented: $showingPasteReplacementConfirmation) {
             Button("Cancel", role: .cancel) { pendingPasteText = nil }
@@ -1990,7 +2021,7 @@ struct AddUserScriptView: View {
                             if isAdding {
                                 ProgressView()
                             } else {
-                                Text("Add")
+                                Text(LocalizedStringKey(addURLButtonTitle))
                             }
                         }
                         .disabled(!canSubmit || isAdding)
@@ -2019,18 +2050,7 @@ struct AddUserScriptView: View {
     private var urlTab: some View {
         AddContentPanelLayout {
             AddContentCard {
-                urlInputEditor
-
-                if parsedURLs.count > 1 {
-                    Text("Titles will be created from each URL.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                } else {
-                    userScriptMetaFields
-                }
-                if parsedURLs.count > 1 {
-                    userScriptCategoryPicker
-                }
+                urlFormFields
                 validationMessage
             }
             requirementsPanel
@@ -2152,16 +2172,7 @@ struct AddUserScriptView: View {
 
     private var macosURLCard: some View {
         AddContentCard {
-            urlInputEditor
-
-            if parsedURLs.count > 1 {
-                Text("Titles will be created from each URL.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                userScriptCategoryPicker
-            } else {
-                userScriptMetaFields
-            }
+            urlFormFields
 
             HStack {
                 Spacer()
@@ -2284,11 +2295,84 @@ struct AddUserScriptView: View {
         ])
     }
 
-    private var urlInputEditor: some View {
-        AddContentField(title: "URLs") {
+    private var addURLButtonTitle: String {
+        if addMode == .url && urlEntryMode == .bulk {
+            return isReviewingURLs ? "Add URLs" : "Next"
+        }
+        return "Add"
+    }
 
+    private var urlFormFields: some View {
+        Group {
+            if urlEntryMode == .bulk && isReviewingURLs {
+                Button("Back") { isReviewingURLs = false; urlMetadataTask?.cancel(); isFetchingURLMetadata = false }
+            } else {
+                Picker("URL entry mode", selection: $urlEntryMode) {
+                    Text("Single URL").tag(URLEntryMode.single)
+                    Text("Bulk URLs").tag(URLEntryMode.bulk)
+                }
+                .pickerStyle(.segmented)
+                .disabled(isAdding)
+                urlInputEditor
+            }
+            if urlEntryMode == .single || isReviewingURLs {
+                if isFetchingURLMetadata { ProgressView().controlSize(.small) }
+                ForEach(parsedURLs, id: \.absoluteString) { url in
+                    VStack(alignment: .leading, spacing: 6) {
+                        if urlEntryMode == .bulk {
+                            Text(url.absoluteString).font(.caption2).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                        }
+                        AddContentMetadataFields(
+                            name: Binding(get: { urlNames[url.absoluteString] ?? urlMetadata[url.absoluteString]?.title ?? "" }, set: { urlNames[url.absoluteString] = $0 }),
+                            description: Binding(get: { urlDescriptions[url.absoluteString] ?? urlMetadata[url.absoluteString]?.description ?? "" }, set: { urlDescriptions[url.absoluteString] = $0 }),
+                            category: Binding(get: { urlCategories[url.absoluteString] ?? selectedCategory }, set: { urlCategories[url.absoluteString] = $0 }),
+                            categories: FilterListCategory.userScriptCategories,
+                            categoryName: { $0.userScriptCategoryName }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private func fetchURLMetadata() {
+        urlMetadataTask?.cancel()
+        urlMetadataGeneration += 1
+        let generation = urlMetadataGeneration
+        guard urlEntryMode == .single || isReviewingURLs else { isFetchingURLMetadata = false; return }
+        let targets = parsedURLs.filter { urlMetadata[$0.absoluteString] == nil }
+        guard !targets.isEmpty else { isFetchingURLMetadata = false; return }
+        isFetchingURLMetadata = true
+        urlMetadataTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            guard !Task.isCancelled, generation == urlMetadataGeneration else { return }
+            await boundedConcurrentForEach(targets, maxConcurrent: 4, operation: { url in
+                let metadata = try? await RemoteFilterListMetadataLoader.fetch(from: url, userscript: true)
+                return (url, URLMetadata(title: metadata?.title, description: metadata?.description))
+            }, onResult: { url, metadata in
+                guard !Task.isCancelled, generation == urlMetadataGeneration else { return }
+                urlMetadata[url.absoluteString] = metadata
+            })
+            if generation == urlMetadataGeneration { isFetchingURLMetadata = false }
+        }
+    }
+
+    private var urlInputEditor: some View {
+        AddContentField(title: urlEntryMode == .single ? "URL" : "URLs") {
+            if urlEntryMode == .single {
+                TextField("https://example.com/script.user.js", text: $urlInput)
+                    .textFieldStyle(.roundedBorder)
+                    .autocorrectionDisabled()
+                    .focused($urlFieldFocused)
+                    #if os(iOS)
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.URL)
+                    #endif
+                    .accessibilityLabel("URL")
+            } else {
             ZStack(alignment: .topLeading) {
                 TextEditor(text: $urlInput)
+                    .hideEditorBackgroundCompat()
                     .font(.body)
                     .autocorrectionDisabled()
                     .focused($urlFieldFocused)
@@ -2312,12 +2396,13 @@ struct AddUserScriptView: View {
                 }
             }
             .frame(minHeight: 64, maxHeight: 96)
-            .background(.background, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .background(Color.urlEditorBackground, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .stroke(.quaternary, lineWidth: 1)
             )
             .accessibilityLabel("URLs")
+            }
 
             HStack {
                 compactPasteButton
@@ -2327,7 +2412,11 @@ struct AddUserScriptView: View {
     }
 
     private var compactPasteButton: some View {
-        AddContentPasteButton(action: pasteFromClipboard).disabled(isAdding)
+        Button(action: pasteFromClipboard) {
+            Label(urlEntryMode == .single ? "Paste URL" : "Paste URLs", systemImage: "doc.on.clipboard")
+        }
+        .buttonStyle(.bordered)
+        .disabled(isAdding)
     }
 
     private var validationBadge: some View {
@@ -2384,7 +2473,7 @@ struct AddUserScriptView: View {
                     ProgressView()
                         .scaleEffect(0.9)
                 }
-                Text(LocalizedStringKey(isAdding ? "Adding…" : "Add"))
+                Text(LocalizedStringKey(isAdding ? "Adding…" : addURLButtonTitle))
                     .fontWeight(.semibold)
             }
         }
@@ -2394,7 +2483,7 @@ struct AddUserScriptView: View {
     }
 
     private var canSubmit: Bool {
-        if isAdding { return false }
+        if isAdding || (addMode == .url && isReviewingURLs && isFetchingURLMetadata) { return false }
         switch addMode {
         case .url:
             if case .valid = validationState { return true }
@@ -2412,6 +2501,12 @@ struct AddUserScriptView: View {
         switch addMode {
         case .url:
             guard case .valid(let urls) = validationState else { return }
+            if urlEntryMode == .bulk && !isReviewingURLs {
+                isReviewingURLs = true
+                urlFieldFocused = false
+                fetchURLMetadata()
+                return
+            }
 
             isAdding = true
             urlImportError = nil
@@ -2419,7 +2514,7 @@ struct AddUserScriptView: View {
             Task(priority: .userInitiated) {
                 for url in urls {
                     await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Adding new userscript from URL"), metadata: ["url": url.absoluteString])
-                    if let error = await userScriptManager.addUserScript(from: url) {
+                    if let error = await userScriptManager.addUserScript(from: url, nameOverride: urlNames[url.absoluteString], descriptionOverride: urlDescriptions[url.absoluteString], category: urlCategories[url.absoluteString] ?? selectedCategory) {
                         let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
                         await ConcurrentLogManager.shared.error(.userScript, LocalizedStrings.text("Failed to add userscript from URL"), metadata: ["url": url.absoluteString, "error": message])
                         await MainActor.run {
@@ -2427,9 +2522,6 @@ struct AddUserScriptView: View {
                             isAdding = false
                         }
                         return
-                    }
-                    if let script = userScriptManager.userScripts.first(where: { $0.url == url }) {
-                        await userScriptManager.setUserScript(script, category: selectedCategory)
                     }
                     await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Successfully added userscript from URL"), metadata: ["url": url.absoluteString])
                 }
@@ -2655,7 +2747,9 @@ struct AddUserScriptView: View {
         let string = NSPasteboard.general.string(forType: .string)
         #endif
         guard let string else { return }
-        urlInput = UserScriptURLSupport.appendingPastedURLs(string, to: urlInput)
+        urlInput = urlEntryMode == .single
+            ? FilterListURLSupport.normalizeSingleURLInput(string)
+            : UserScriptURLSupport.appendingPastedURLs(string, to: urlInput)
     }
 
     private func pasteScriptFromClipboard() {
