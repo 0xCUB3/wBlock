@@ -23,6 +23,10 @@ struct ContentView: View {
     @StateObject private var dataManager = ProtobufDataManager.shared
     @State private var showingAddFilterSheet = false
     @State private var downloadingFilterIDs: Set<UUID> = []
+    /// Filters with a cached copy on disk. Each row used to stat the app group
+    /// on every body evaluation, which multiplied by 84 rows on every progress
+    /// tick; now the set is rebuilt only when the list or an apply run changes.
+    @State private var downloadedFilterIDs: Set<UUID> = []
     @State private var showingFilterDownloadError = false
     @AppStorage("filtersShowEnabledOnly") private var showOnlyEnabledLists = false
     @State private var filterSearchText = ""
@@ -245,6 +249,13 @@ struct ContentView: View {
         .onChangeCompat(of: selectedTab) { _, _ in
             filterSearchText = ""
             showFilterSearch = false
+        }
+        .onAppear { refreshDownloadedFilterIDs() }
+        .onChangeCompat(of: filterManager.filterLists.map(\.id)) { _, _ in
+            refreshDownloadedFilterIDs()
+        }
+        .onChangeCompat(of: filterManager.isLoading) { _, isLoading in
+            if !isLoading { refreshDownloadedFilterIDs() }
         }
         .onReceive(NotificationCenter.default.publisher(for: .wBlockAddFilterListRequest)) { _ in
             selectedTab = 0
@@ -785,6 +796,11 @@ struct ContentView: View {
             .padding(.top, 6)
     }
 
+    private func refreshDownloadedFilterIDs() {
+        let loader = filterManager.loader
+        downloadedFilterIDs = Set(filterManager.filterLists.lazy.filter { loader.filterFileExists($0) }.map(\.id))
+    }
+
     private func downloadFilter(_ filter: FilterList) {
         guard filter.isRemoteURL, !filterManager.isLoading,
               !downloadingFilterIDs.contains(filter.id),
@@ -795,6 +811,7 @@ struct ContentView: View {
             downloadingFilterIDs.remove(filter.id)
             guard let current = filterManager.filterLists.first(where: { $0.id == filter.id }) else { return }
             if succeeded {
+                downloadedFilterIDs.insert(filter.id)
                 filterManager.saveFilterListsCoalesced()
                 if current.isSelected { filterManager.markNonSelectionChangesPending() }
             } else {
@@ -807,7 +824,7 @@ struct ContentView: View {
         FilterRowView(
             filter: filter,
             showsFlags: showsFlags,
-            isDownloaded: filterManager.loader.filterFileExists(filter),
+            isDownloaded: downloadedFilterIDs.contains(filter.id),
             isDownloading: downloadingFilterIDs.contains(filter.id),
             onDownload: { downloadFilter(filter) },
             onInfo: { selectedFilterInfo = filter },
