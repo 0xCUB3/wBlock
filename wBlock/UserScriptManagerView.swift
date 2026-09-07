@@ -1874,7 +1874,6 @@ struct AddUserScriptView: View {
     @State private var editorMetadataRefreshTask: Task<Void, Never>?
     @State private var metadataRefreshGeneration = 0
     @State private var addMode: AddMode = .url
-    @State private var showHints: Bool = false
     @StateObject private var editorController: CodeMirrorEditorController
     @FocusState private var urlFieldFocused: Bool
     @FocusState private var textInputFocused: Bool
@@ -2265,10 +2264,6 @@ struct AddUserScriptView: View {
                     .foregroundStyle(.orange)
             }
         }
-    }
-
-    private var userScriptCategoryPicker: some View {
-        ContentCategoryPicker(selection: $selectedCategory, categories: FilterListCategory.userScriptCategories)
     }
 
     private var userScriptMetaFields: some View {

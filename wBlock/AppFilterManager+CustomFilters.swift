@@ -152,38 +152,6 @@ extension AppFilterManager {
         hasError = false
     }
 
-    func addUserListFromFile(
-        _ fileURL: URL,
-        nameOverride: String?,
-        description: String? = nil,
-        category: FilterListCategory = .custom,
-        isSelected: Bool = true
-    ) {
-        do {
-            let content = try String(contentsOf: fileURL, encoding: .utf8)
-            let name = nameOverride?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            let importedAt = (try? fileURL.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? Date()
-            addUserList(
-                name: name,
-                description: description,
-                content: content,
-                category: category,
-                isSelected: isSelected,
-                lastUpdated: importedAt
-            )
-        } catch {
-            statusDescription = LocalizedStrings.text("Failed to read file.", comment: "File read error")
-            hasError = true
-            Task {
-                await ConcurrentLogManager.shared.error(
-                    .system,
-                    LocalizedStrings.text("Failed reading user list file"),
-                    metadata: ["error": LogErrorDescriber.describe(error)]
-                )
-            }
-        }
-    }
-
     func removeFilterList(_ listToRemove: FilterList) {
         removeCustomFilterList(listToRemove)
     }

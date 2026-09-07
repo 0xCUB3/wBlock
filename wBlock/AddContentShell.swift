@@ -136,23 +136,6 @@ struct AddContentMetadataFields: View {
     }
 }
 
-struct AddContentPasteButton: View {
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: "doc.on.clipboard")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 28, height: 28)
-                .background(Color.secondary.opacity(0.14), in: Circle())
-        }
-        .buttonStyle(.plain)
-        .noFocusRingCompat()
-        .accessibilityLabel("Paste")
-    }
-}
-
 /// All add modes share the Text tab's glass cards and space for their shadows.
 struct AddContentPanelLayout<Content: View>: View {
     @ViewBuilder var content: () -> Content

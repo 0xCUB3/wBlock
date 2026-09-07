@@ -1362,7 +1362,6 @@ struct AddFilterListView: View {
     @State private var metadataFetchGeneration = 0
     @State private var metadataFetchTask: Task<Void, Never>?
     @State private var isFetchingURLMetadata = false
-    @State private var isNameSectionExpanded: Bool = false
     @State private var isSaving: Bool = false
     @State private var showingFileImporter = false
     @State private var importErrorMessage: String?
@@ -1755,14 +1754,6 @@ struct AddFilterListView: View {
             }) {
                 SyntaxHighlightingTextView(text: $pastedRules)
             }
-    }
-
-    private var pasteRulesButton: some View {
-        Button(action: pasteRulesFromClipboard) {
-            Label("Paste", systemImage: "doc.on.clipboard")
-        }
-        .buttonStyle(.bordered)
-        .disabled(isSaving)
     }
 
     private var urlFieldTitle: LocalizedStringKey {

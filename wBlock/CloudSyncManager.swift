@@ -920,13 +920,6 @@ final class CloudSyncManager: ObservableObject {
         }
     }
 
-    private func encodedSectionEqual<T: Encodable>(_ lhs: T, _ rhs: T) -> Bool {
-        guard let left = try? sortedJSONEncoder.encode(lhs),
-              let right = try? sortedJSONEncoder.encode(rhs)
-        else { return false }
-        return left == right
-    }
-
     private static func customFilterEqualForSync(
         _ lhs: SyncPayload.CustomFilterList?,
         _ rhs: SyncPayload.CustomFilterList?

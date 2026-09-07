@@ -1358,14 +1358,6 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         return ContentBlockerSaveResult(ruleCount: rules.count, outputChanged: outputChanged)
     }
 
-    public static func saveContentBlocker(jsonRules: String, groupIdentifier: String, targetRulesFilename: String) throws -> Int {
-        try saveContentBlockerIfChanged(
-            jsonRules: jsonRules,
-            groupIdentifier: groupIdentifier,
-            targetRulesFilename: targetRulesFilename
-        ).ruleCount
-    }
-
     private static func targetSourceRuleProvenanceFilename(for targetRulesFilename: String) -> String {
         "\(targetRulesFilename).source-rule-provenance.json"
     }
@@ -1405,28 +1397,6 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
 
     /// Converts rules from a file, with a persistent on-disk cache keyed by the caller-provided SHA256.
     /// This avoids re-running SafariConverterLib when the combined rules for a target haven't changed.
-    public static func convertFilterFromFile(
-        rulesFileURL: URL,
-        rulesSHA256Hex: String,
-        groupIdentifier: String,
-        targetRulesFilename: String,
-        disabledSites: [String],
-        isCancelled: (() -> Bool)? = nil
-    ) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
-        let result = try convertFilterFromFileWithOutputChange(
-            rulesFileURL: rulesFileURL,
-            rulesSHA256Hex: rulesSHA256Hex,
-            groupIdentifier: groupIdentifier,
-            targetRulesFilename: targetRulesFilename,
-            disabledSites: disabledSites,
-            isCancelled: isCancelled
-        )
-        return (
-            safariRulesCount: result.safariRulesCount,
-            advancedRulesText: result.advancedRulesText
-        )
-    }
-
     static func convertFilterFromFileWithOutputChange(
         rulesFileURL: URL,
         rulesSHA256Hex: String,
@@ -2259,13 +2229,6 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 }
             }
         }
-    }
-
-    public static func buildCombinedFilterEngine(combinedAdvancedRules: String, groupIdentifier: String) throws {
-        try publishCombinedFilterEngine(
-            combinedAdvancedRules: combinedAdvancedRules,
-            groupIdentifier: groupIdentifier
-        )
     }
 
     private struct CombinedEngineFingerprint: Equatable {
