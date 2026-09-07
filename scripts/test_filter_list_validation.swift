@@ -86,6 +86,44 @@ struct FilterListValidationTests {
             "expected inserting a full URL to be treated as a paste"
         )
 
+        // #772: typing must never merge lines.
+        expectNormalizedURLInput(
+            from: "https://example.com/one.txt\n",
+            to: "https://example.com/one.txt\nww",
+            expected: "https://example.com/one.txt\nww",
+            "expected fast typing on a new line to stay on that line"
+        )
+        expectNormalizedURLInput(
+            from: "https://example.com/one.txt\nwww.example.com/two.txt",
+            to: "https://example.com/one.txt\nhttps://www.example.com/two.txt",
+            expected: "https://example.com/one.txt\nhttps://www.example.com/two.txt",
+            "expected fixing a line by inserting a scheme to leave the other lines alone"
+        )
+        expectNormalizedURLInput(
+            from: "https://example.com/one.txt\nwww.example.com/two.txt\nbad line",
+            to: "https://example.com/one.tx\nwww.example.com/two.txt\nbad line",
+            expected: "https://example.com/one.tx\nwww.example.com/two.txt\nbad line",
+            "expected deleting inside a valid URL not to pull the invalid lines below into it"
+        )
+        expectNormalizedURLInput(
+            from: "https://example.com/one.txt\nwww.example.com/two.txt",
+            to: "https://example.com/one.txt\nwww.example.com/two.txt\nhttps://example.com/three.txt",
+            expected: "https://example.com/one.txt\nwww.example.com/two.txt\nhttps://example.com/three.txt",
+            "expected pasting a URL below an invalid line to leave the invalid line in place"
+        )
+        expectNormalizedURLInput(
+            from: "https://example.com/one.txt\n",
+            to: "https://example.com/one.txt\nhttps://raw.githubusercontent.com/easylist/easylist/master/easylist/\neasylist_general_block.txt",
+            expected: "https://example.com/one.txt\nhttps://raw.githubusercontent.com/easylist/easylist/master/easylist/easylist_general_block.txt",
+            "expected a wrapped URL pasted after an existing line to rejoin only itself"
+        )
+        expectNormalizedURLInput(
+            from: "",
+            to: "https://example.com/one.txt\nwww.example.com/two.txt",
+            expected: "https://example.com/one.txt\nwww.example.com/two.txt",
+            "expected a pasted complete URL not to absorb the invalid line under it"
+        )
+
         expectValidContent(
             """
             ! Title: Test List

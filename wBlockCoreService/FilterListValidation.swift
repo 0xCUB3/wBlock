@@ -82,11 +82,60 @@ public enum FilterListURLSupport {
     /// lines. Bulk entry still works: a single trailing newline is kept while
     /// typing so the next URL can be added.
     public static func normalizeURLInput(from oldValue: String, to newValue: String) -> String {
-        normalizeURLInput(newValue, rejoinWrappedLines: looksLikePaste(from: oldValue, to: newValue))
+        let pasted = looksLikePaste(from: oldValue, to: newValue)
+        let normalized = normalizeURLInput(rejoiningPastedLines(from: oldValue, to: newValue), rejoinWrappedLines: false)
+        // A typed Return keeps its newline so the next URL can follow; a
+        // paste's trailing blank lines are noise.
+        return pasted ? normalized.trimmingCharacters(in: .newlines) : normalized
     }
 
     public static func normalizeSingleURLInput(from oldValue: String, to newValue: String) -> String {
-        normalizeSingleURLInput(newValue, rejoinWrappedLines: looksLikePaste(from: oldValue, to: newValue))
+        normalizeSingleURLInput(rejoiningPastedLines(from: oldValue, to: newValue), rejoinWrappedLines: false)
+    }
+
+    /// Rejoins a wrapped URL only inside the text a paste inserted (#772).
+    /// Typing, deleting, or fixing a line elsewhere leaves the other lines
+    /// alone, and a line that is already a complete URL never absorbs the
+    /// line below it.
+    static func rejoiningPastedLines(from oldValue: String, to newValue: String) -> String {
+        guard let insertion = insertedText(from: oldValue, to: newValue),
+              looksLikePaste(insertion.text) else {
+            return newValue
+        }
+        let leading = String(insertion.text.prefix(while: \.isNewline))
+        let trailing = String(insertion.text.reversed().prefix(while: \.isNewline))
+        let joined = leading + normalizeURLInput(insertion.text, rejoinWrappedLines: true) + trailing
+        let characters = Array(newValue)
+        let prefix = String(characters[..<insertion.start])
+        let suffix = String(characters[(insertion.start + insertion.text.count)...])
+        return prefix + joined + suffix
+    }
+
+    public static func looksLikePaste(from oldValue: String, to newValue: String) -> Bool {
+        guard let insertion = insertedText(from: oldValue, to: newValue) else { return false }
+        return looksLikePaste(insertion.text)
+    }
+
+    /// Key presses insert one character, or a couple when the system
+    /// coalesces fast typing. A pasted URL is far longer, and a paste that
+    /// needs rejoining carries text on both sides of a newline.
+    private static func looksLikePaste(_ inserted: String) -> Bool {
+        let trimmed = inserted.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.contains(where: \.isNewline) || trimmed.count >= 6
+    }
+
+    /// The characters a pure insertion added, or nil for a deletion or a
+    /// replacement.
+    private static func insertedText(from oldValue: String, to newValue: String) -> (start: Int, text: String)? {
+        let old = Array(oldValue)
+        let new = Array(newValue)
+        guard new.count > old.count else { return nil }
+        var prefix = 0
+        while prefix < old.count, old[prefix] == new[prefix] { prefix += 1 }
+        var suffix = 0
+        while suffix < old.count - prefix, old[old.count - 1 - suffix] == new[new.count - 1 - suffix] { suffix += 1 }
+        guard prefix + suffix == old.count else { return nil }
+        return (prefix, String(new[prefix..<(new.count - suffix)]))
     }
 
     public static func normalizeSingleURLInput(_ rawValue: String, rejoinWrappedLines: Bool = true) -> String {
@@ -105,6 +154,7 @@ public enum FilterListURLSupport {
             if rejoinWrappedLines,
                let last = lines.last,
                isURLLineStart(last),
+               !isCompleteURLLine(last),
                !isURLLineStart(trimmed) {
                 lines[lines.count - 1] = last + trimmed
             } else {
@@ -117,14 +167,6 @@ public enum FilterListURLSupport {
             result += "\n"
         }
         return result
-    }
-
-    public static func looksLikePaste(from oldValue: String, to newValue: String) -> Bool {
-        if newValue == oldValue { return false }
-        if newValue.hasPrefix(oldValue) || oldValue.hasPrefix(newValue) {
-            return abs(newValue.count - oldValue.count) > 1
-        }
-        return newValue.count > 1
     }
 
     private static func hasDisallowedScriptExtension(in path: String) -> Bool {
@@ -148,7 +190,15 @@ public enum FilterListURLSupport {
 
     private static func isURLLineStart(_ line: String) -> Bool {
         let candidate = unwrappedURLLine(line).lowercased()
-        return candidate.hasPrefix("http://") || candidate.hasPrefix("https://")
+        return candidate.hasPrefix("http://") || candidate.hasPrefix("https://") || candidate.hasPrefix("www.")
+    }
+
+    /// A URL whose last path component names a file is already whole, so the
+    /// line under it is a new entry rather than a wrapped tail (#772).
+    private static func isCompleteURLLine(_ line: String) -> Bool {
+        guard let url = validatedRemoteURL(from: unwrappedURLLine(line)) else { return false }
+        let leaf = url.lastPathComponent
+        return leaf != "/" && leaf.contains(".")
     }
 }
 
