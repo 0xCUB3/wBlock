@@ -8,7 +8,11 @@
 //
 //  Safari's converter rejects network rules that mix permitted and restricted
 //  domains, so a rule that is already scoped to specific sites is narrowed by
-//  removing the excluded ones instead of appending negations.
+//  removing the excluded ones instead of appending negations. When an excluded
+//  site is a subdomain of a scoped site (issue #767), the scope cannot be
+//  narrowed: cosmetic rules gain a negation (Safari 16.4+ converts those into
+//  per-domain entries) and network rules get a companion exception scoped to
+//  the excluded subdomain.
 //
 
 import Foundation
@@ -54,24 +58,44 @@ public enum FilterListSiteExclusion {
         return nil
     }
 
+    private struct RestrictedDomains {
+        var positives: [String]
+        var negatives: [String]
+        /// Excluded sites that are proper subdomains of a kept positive domain.
+        /// The positive scope still matches them, so they need explicit handling.
+        var uncoveredSubdomains: [String]
+
+        var joined: [String] { positives + negatives }
+    }
+
+    private static func covers(_ host: String, _ site: String) -> Bool {
+        host == site || site.hasSuffix(".\(host)")
+    }
+
     /// Narrows a domain list so it never matches an excluded site.
     /// Returns nil when the rule was scoped to sites that are all excluded.
-    private static func restrictDomainList(_ domains: [String], excluding sites: [String]) -> [String]? {
+    private static func restrictDomainList(_ domains: [String], excluding sites: [String]) -> RestrictedDomains? {
         let positives = domains.filter { !$0.hasPrefix("~") }
         var negatives = domains.filter { $0.hasPrefix("~") }
+        let negatedHosts = negatives.map { String($0.dropFirst()) }
 
         if positives.isEmpty {
-            for site in sites where !negatives.contains("~\(site)") {
+            for site in sites where !negatedHosts.contains(where: { covers($0, site) }) {
                 negatives.append("~\(site)")
             }
-            return negatives
+            return RestrictedDomains(positives: [], negatives: negatives, uncoveredSubdomains: [])
         }
 
         let kept = positives.filter { host in
-            !sites.contains { site in host == site || host.hasSuffix(".\(site)") }
+            !sites.contains { site in covers(site, host) }
         }
         if kept.isEmpty { return nil }
-        return kept + negatives
+
+        let uncovered = sites.filter { site in
+            kept.contains { host in host != site && covers(host, site) }
+                && !negatedHosts.contains { covers($0, site) }
+        }
+        return RestrictedDomains(positives: kept, negatives: negatives, uncoveredSubdomains: uncovered)
     }
 
     private static func restrictCosmetic(
@@ -84,7 +108,8 @@ public enum FilterListSiteExclusion {
             .filter { !$0.isEmpty }
 
         guard let restricted = restrictDomainList(rawDomains, excluding: sites) else { return nil }
-        return restricted.joined(separator: ",") + cosmetic.separator + cosmetic.body
+        let negations = restricted.uncoveredSubdomains.map { "~\($0)" }
+        return (restricted.joined + negations).joined(separator: ",") + cosmetic.separator + cosmetic.body
     }
 
     private static func restrictNetworkLine(_ line: String, excluding sites: [String]) -> String? {
@@ -110,7 +135,33 @@ public enum FilterListSiteExclusion {
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
         guard let restricted = restrictDomainList(rawDomains, excluding: sites) else { return nil }
-        parts[domainIndex] = "domain=" + restricted.joined(separator: "|")
-        return "\(body)$\(parts.joined(separator: ","))"
+        parts[domainIndex] = "domain=" + restricted.joined.joined(separator: "|")
+        let rule = "\(body)$\(parts.joined(separator: ","))"
+
+        guard !restricted.uncoveredSubdomains.isEmpty,
+              let companion = companionException(
+                body: body, options: parts, domainIndex: domainIndex, sites: restricted.uncoveredSubdomains
+              ) else {
+            return rule
+        }
+        return rule + "\n" + companion
+    }
+
+    /// Safari cannot express "smth.com but not m.smth.com" on a network rule, so a
+    /// blocking rule scoped to a parent domain is paired with an exception scoped
+    /// to the excluded subdomains. Exception and badfilter rules have no inverse
+    /// in the content blocker format and are left as they are.
+    private static func companionException(
+        body: String,
+        options: [String],
+        domainIndex: Int,
+        sites: [String]
+    ) -> String? {
+        guard !body.hasPrefix("@@") else { return nil }
+        if options.contains("badfilter") { return nil }
+
+        var exceptionOptions = options
+        exceptionOptions[domainIndex] = "domain=" + sites.joined(separator: "|")
+        return "@@\(body)$\(exceptionOptions.joined(separator: ","))"
     }
 }

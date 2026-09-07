@@ -94,6 +94,42 @@ struct FilterListSiteExclusionTests {
             exit(1)
         }
 
+        let subdomainNetwork = FilterListSiteExclusion.restrictingAdvancedRules(
+            "||ads.example^$third-party,domain=smth.com",
+            excluding: ["m.smth.com"]
+        )
+        guard subdomainNetwork == "||ads.example^$third-party,domain=smth.com\n@@||ads.example^$third-party,domain=m.smth.com" else {
+            fputs("FAIL: excluded subdomains of a scoped network rule need a companion exception (#767)\n\(subdomainNetwork)\n", stderr)
+            exit(1)
+        }
+
+        let subdomainCosmetic = FilterListSiteExclusion.restrictingAdvancedRules(
+            "smth.com##.ad",
+            excluding: ["m.smth.com"]
+        )
+        guard subdomainCosmetic == "smth.com,~m.smth.com##.ad" else {
+            fputs("FAIL: excluded subdomains of a scoped cosmetic rule need a negation (#767)\n\(subdomainCosmetic)\n", stderr)
+            exit(1)
+        }
+
+        let subdomainException = FilterListSiteExclusion.restrictingAdvancedRules(
+            "@@||ads.example^$domain=smth.com",
+            excluding: ["m.smth.com"]
+        )
+        guard subdomainException == "@@||ads.example^$domain=smth.com" else {
+            fputs("FAIL: exceptions scoped to a parent domain have no inverse and must pass through\n\(subdomainException)\n", stderr)
+            exit(1)
+        }
+
+        let alreadyNegated = FilterListSiteExclusion.restrictingAdvancedRules(
+            "smth.com,~m.smth.com##.ad",
+            excluding: ["m.smth.com"]
+        )
+        guard alreadyNegated == "smth.com,~m.smth.com##.ad" else {
+            fputs("FAIL: existing negations must not be duplicated\n\(alreadyNegated)\n", stderr)
+            exit(1)
+        }
+
         let manager = try! String(contentsOfFile: "wBlock/AppFilterManager.swift", encoding: .utf8)
         let info = try! String(contentsOfFile: "wBlock/FilterInfoView.swift", encoding: .utf8)
         let protoExt = try! String(contentsOfFile: "wBlockCoreService/ProtobufDataManager+Extensions.swift", encoding: .utf8)
