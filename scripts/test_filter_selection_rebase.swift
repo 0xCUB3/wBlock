@@ -10,7 +10,17 @@ struct FilterSelectionRebaseTests {
             FilterList(id: otherID, name: "New", url: URL(string: "https://example.com/new")!, category: .privacy, isSelected: true)
         ]
         let persisted = [
-            FilterList(id: id, name: "Persisted", url: URL(string: "https://example.com")!, category: .ads, isSelected: false, excludedSites: ["nytimes.com"])
+            FilterList(
+                id: id,
+                name: "User Renamed",
+                url: URL(string: "https://example.com")!,
+                category: .ads,
+                isSelected: false,
+                description: "User Description",
+                hasUserProvidedName: true,
+                hasUserProvidedDescription: true,
+                excludedSites: ["nytimes.com"]
+            )
         ]
         let rebased = FilterSelectionRebaser.rebaseSelection(snapshot: snapshot, latestPersisted: persisted)
 
@@ -20,6 +30,13 @@ struct FilterSelectionRebaseTests {
         }
         guard rebased.first?.excludedSites == ["nytimes.com"] else {
             fputs("FAIL: latest persisted per-list exclusions must win\n", stderr)
+            exit(1)
+        }
+        guard rebased.first?.name == "User Renamed",
+              rebased.first?.description == "User Description",
+              rebased.first?.hasUserProvidedName == true,
+              rebased.first?.hasUserProvidedDescription == true else {
+            fputs("FAIL: user metadata edits made during a suspended download must win\n", stderr)
             exit(1)
         }
         guard rebased.last?.isSelected == true else {

@@ -8,8 +8,8 @@
 import Foundation
 
 public enum FilterSelectionRebaser {
-    /// Keeps the update snapshot's metadata while taking selection and per-list
-    /// site exclusions from the latest persisted state.
+    /// Keeps downloaded metadata while taking live selection, per-list site
+    /// exclusions, and explicit user name/description edits from persisted state.
     public static func rebaseSelection(
         snapshot: [FilterList],
         latestPersisted: [FilterList]
@@ -20,6 +20,15 @@ public enum FilterSelectionRebaser {
             var rebased = filter
             rebased.isSelected = latest.isSelected
             rebased.excludedSites = latest.excludedSites
+            if latest.hasUserProvidedName || latest.hasUserProvidedName != filter.hasUserProvidedName {
+                rebased.name = latest.name
+            }
+            rebased.hasUserProvidedName = latest.hasUserProvidedName
+            if latest.hasUserProvidedDescription
+                || latest.hasUserProvidedDescription != filter.hasUserProvidedDescription {
+                rebased.description = latest.description
+            }
+            rebased.hasUserProvidedDescription = latest.hasUserProvidedDescription
             return rebased
         }
     }

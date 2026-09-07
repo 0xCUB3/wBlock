@@ -313,30 +313,6 @@ final class FilterListUpdater: @unchecked Sendable {
         )
     }
 
-    /// Validates if content appears to be a valid filter list.
-    private func isValidFilterContent(_ content: String) -> Bool {
-        FilterListContentValidator.appearsToBeFilterList(content)
-    }
-
-    /// Strips unknown `!#` directives from downloaded filter content.
-    /// Directives used by preprocessing and Safari content blocker affinity are preserved.
-    /// Unknown directives (for example `!#diff-path`) are removed and logged.
-    /// Comment lines such as `!##example` are preserved.
-    private func stripUnknownDirectives(from content: String) async -> String {
-        var stripped: [String] = []
-        let processed = FilterListContentProcessing.stripUnknownDirectives(from: content) { directive in
-            stripped.append(directive)
-        }
-        for directive in stripped {
-            await ConcurrentLogManager.shared.debug(
-                .filterUpdate,
-                LocalizedStrings.text("Stripped unknown directive"),
-                metadata: ["directive": directive]
-            )
-        }
-        return processed
-    }
-
     /// Fetches, processes, and saves a filter list.
     private func fetchAndProcessFilterResult(_ filter: FilterList) async -> FilterFetchResult {
         if !filter.isRemoteURL {
@@ -420,82 +396,35 @@ final class FilterListUpdater: @unchecked Sendable {
             return .unchanged
         }
 
-        guard let content = String(data: download.data, encoding: .utf8) else {
-            await ConcurrentLogManager.shared.error(
-                .network, LocalizedStrings.text("Failed to decode filter content"), metadata: ["filter": filter.name])
-            return .failed
-        }
-
-        // Strip unknown !# directives before validation and saving while preserving preprocessing and affinity directives.
-        let processedContent = await stripUnknownDirectives(from: content)
-
-        // Measure the pre-expansion rule count (before !#include resolution).
-        let rawCount = countRulesInContent(content: processedContent)
-
-        // Preprocess: expand !#include directives and evaluate !#if conditionals.
-        // Skip for built-in optimized lists — they are already pre-expanded.
-        let preprocessed: String
-        if filter.isOptimizedBuiltin {
-            preprocessed = processedContent
-        } else {
-            let filterName = filter.name
-            let preprocessor = FilterPreprocessor(
-                urlSession: urlSession,
-                onFetchError: { subURL, statusCode in
-                    let statusStr = statusCode.map { "\($0)" } ?? "network error"
-                    await ConcurrentLogManager.shared.warning(
-                        .filterUpdate,
-                        LocalizedStrings.text("!#include fetch failed"),
-                        metadata: [
-                            "filter": filterName,
-                            "subURL": subURL.absoluteString,
-                            "status": statusStr,
-                        ]
-                    )
-                }
-            )
-            preprocessed = await preprocessor.preprocess(
-                content: processedContent,
-                listURL: download.sourceURL
-            )
-        }
-
-        guard isValidFilterContent(preprocessed) else {
-            await ConcurrentLogManager.shared.error(
-                .network, LocalizedStrings.text("Downloaded content does not appear to be a valid filter list"),
-                metadata: ["filter": filter.name, "contentLength": "\(preprocessed.count)"])
-            return .failed
-        }
-
-        let metadata = parseMetadata(from: preprocessed)
-        var updatedFilter = FilterListRemoteMetadataPolicy.applying(
-            title: metadata.title,
-            description: metadata.description,
-            version: metadata.version,
-            to: filter
-        )
-        updatedFilter.sourceRuleCount = countRulesInContent(content: preprocessed)
-        updatedFilter.rawSourceRuleCount = rawCount
-        updatedFilter.lastUpdated = Date()
-
-        updatedFilter.etag = responseEtag
-        updatedFilter.serverLastModified = responseLastModified
-
         guard let containerURL = loader.getSharedContainerURL() else {
             await ConcurrentLogManager.shared.error(
                 .system, LocalizedStrings.text("Unable to access shared container"), metadata: [:])
             return .failed
         }
 
-        let fileURL = containerURL.appendingPathComponent(
-            ContentBlockerIncrementalCache.localFilename(for: filter)
-        )
-        let stagedFileURL = containerURL.appendingPathComponent(
-            ".pending-filter-\(uuid)-\(UUID().uuidString).txt",
-            isDirectory: false
-        )
+        let processed: (filter: FilterList, strippedDirectives: [String])
         do {
-            try preprocessed.write(to: stagedFileURL, atomically: true, encoding: .utf8)
+            processed = try await FilterDownloadProcessor.processAndPublish(
+                data: download.data,
+                sourceURL: download.sourceURL,
+                filter: filter,
+                containerURL: containerURL,
+                etag: responseEtag,
+                lastModified: responseLastModified,
+                urlSession: urlSession,
+                onIncludeFetchError: { subURL, statusCode in
+                    let statusStr = statusCode.map { "\($0)" } ?? "network error"
+                    await ConcurrentLogManager.shared.warning(
+                        .filterUpdate,
+                        LocalizedStrings.text("!#include fetch failed"),
+                        metadata: [
+                            "filter": filter.name,
+                            "subURL": subURL.absoluteString,
+                            "status": statusStr,
+                        ]
+                    )
+                }
+            )
         } catch {
             await ConcurrentLogManager.shared.error(
                 .system,
@@ -505,58 +434,35 @@ final class FilterListUpdater: @unchecked Sendable {
             return .failed
         }
 
-        guard PendingFilterUpdateRevisions.markDownloaded(
-            filterID: uuid,
+        for directive in processed.strippedDirectives {
+            await ConcurrentLogManager.shared.debug(
+                .filterUpdate,
+                LocalizedStrings.text("Stripped unknown directive"),
+                metadata: ["directive": directive]
+            )
+        }
+
+        await ProtobufDataManager.shared.setFilterValidators(
+            uuid,
             etag: responseEtag,
-            lastModified: responseLastModified,
-            version: updatedFilter.version.isEmpty ? nil : updatedFilter.version,
-            publish: {
-                if FileManager.default.fileExists(atPath: fileURL.path) {
-                    _ = try FileManager.default.replaceItemAt(fileURL, withItemAt: stagedFileURL)
-                } else {
-                    try FileManager.default.moveItem(at: stagedFileURL, to: fileURL)
-                }
-            }
-        ) != nil else {
-            try? FileManager.default.removeItem(at: stagedFileURL)
-            await ConcurrentLogManager.shared.error(
-                .system,
-                LocalizedStrings.text("Failed to persist pending filter update revision"),
-                metadata: ["filter": filter.name]
-            )
-            return .failed
-        }
+            lastModified: responseLastModified
+        )
 
-        if responseEtag != nil || responseLastModified != nil {
-            await ProtobufDataManager.shared.setFilterValidators(
-                uuid,
-                etag: responseEtag,
-                lastModified: responseLastModified
-            )
-        }
-
-        let finalFilter = updatedFilter
+        let finalFilter = processed.filter
         await MainActor.run {
             if let index = filterListManager?.filterLists.firstIndex(where: {
                 $0.id == finalFilter.id
             }) {
                 // Apply converts the captured snapshot. Preserve live user
                 // configuration changed while the download was in flight.
-                var merged = finalFilter
                 let current = filterListManager!.filterLists[index]
+                var merged = FilterSelectionRebaser.rebaseSelection(
+                    snapshot: [finalFilter],
+                    latestPersisted: [current]
+                ).first ?? finalFilter
                 merged.url = current.url
                 merged.category = current.category
                 merged.isCustom = current.isCustom
-                merged.isSelected = current.isSelected
-                if current.hasUserProvidedName {
-                    merged.name = current.name
-                }
-                merged.hasUserProvidedName = current.hasUserProvidedName
-                if current.hasUserProvidedDescription {
-                    merged.description = current.description
-                }
-                merged.hasUserProvidedDescription = current.hasUserProvidedDescription
-                merged.excludedSites = current.excludedSites
                 filterListManager?.filterLists[index] = merged
                 filterListManager?.objectWillChange.send()
             }
