@@ -529,10 +529,11 @@ extension ProtobufDataManager {
         }
     }
     
+    @discardableResult
     public func updateUserScripts(
         _ userScripts: [UserScript],
         explicitEnabledStates: [UUID: Bool] = [:]
-    ) async {
+    ) async -> Bool {
         let incoming = userScripts.map { userScript -> Wblock_Data_UserScriptData in
             var protoUserScript = Wblock_Data_UserScriptData()
             protoUserScript.id = userScript.id.uuidString
@@ -567,7 +568,7 @@ extension ProtobufDataManager {
         let knownIDs = Set(appData.userScripts.map(\.id))
         let allowedInsertIDs = Set(incoming.map(\.id).filter { !knownIDs.contains($0) })
 
-        _ = await updateDataImmediately { data in
+        return await updateDataImmediately { data in
             data.userScripts = UserScriptPersistence.merge(
                 persisted: data.userScripts,
                 incoming: incoming,
@@ -579,7 +580,8 @@ extension ProtobufDataManager {
 
     /// Replaces the userscript collection intentionally. Ordinary upserts must use
     /// `updateUserScripts` so records written by another process are not deleted.
-    public func replaceUserScripts(_ userScripts: [UserScript]) async {
+    @discardableResult
+    public func replaceUserScripts(_ userScripts: [UserScript]) async -> Bool {
         let incoming = userScripts.map { userScript -> Wblock_Data_UserScriptData in
             var record = Wblock_Data_UserScriptData()
             record.id = userScript.id.uuidString
@@ -609,7 +611,7 @@ extension ProtobufDataManager {
             record.lastUpdated = Int64(Date().timeIntervalSince1970)
             return record
         }
-        _ = await updateDataImmediately(userScriptsAreAuthoritative: true) { data in
+        return await updateDataImmediately(userScriptsAreAuthoritative: true) { data in
             data.userScripts = UserScriptPersistence.replace(with: incoming)
         }
     }

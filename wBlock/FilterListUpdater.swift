@@ -789,41 +789,6 @@ final class FilterListUpdater: @unchecked Sendable {
         }
     }
 
-    /// Fetches and processes a userscript
-    func fetchAndProcessScript(_ script: UserScript) async -> (UserScript?, Bool) {
-        guard !script.isLocal,
-              let downloadURL = script.resolvedDownloadURL
-        else {
-            await ConcurrentLogManager.shared.error(
-                .userScript, LocalizedStrings.text("No download URL for script"), metadata: ["script": script.name])
-            return (nil, false)
-        }
-
-        do {
-            let (data, response) = try await urlSession.data(from: downloadURL)
-
-            guard let httpResponse = response as? HTTPURLResponse,
-                httpResponse.statusCode == 200,
-                let content = String(data: data, encoding: .utf8)
-            else {
-                await ConcurrentLogManager.shared.error(
-                    .network, LocalizedStrings.text("Failed to fetch script"), metadata: ["script": script.name])
-                return (nil, false)
-            }
-
-            var updatedScript = script
-            updatedScript.content = content
-            updatedScript.parseMetadata()
-
-            return (updatedScript, true)
-        } catch {
-            await ConcurrentLogManager.shared.error(
-                .network, LocalizedStrings.text("Error fetching script"),
-                metadata: ["script": script.name, "error": LogErrorDescriber.describe(error)])
-            return (nil, false)
-        }
-    }
-
     /// Updates selected scripts and returns the list of successfully updated scripts.
     /// Progress is reported as "downloaded/total" and the script being fetched is
     /// published to the apply sheet, mirroring the filter download pass.
@@ -856,17 +821,18 @@ final class FilterListUpdater: @unchecked Sendable {
             await MainActor.run {
                 self.filterListManager?.applyProgressViewModel.updateCurrentScript(script.name)
             }
-            let (updatedScript, success) = await self.fetchAndProcessScript(script)
-            return (script, updatedScript, success)
-        }, onResult: { (script, updatedScript, success) in
-            if success, let updated = updatedScript {
-                updatedScripts.append(updated)
+            guard let manager = self.userScriptManager else {
+                return (script, false)
+            }
+            let success = await manager.updateUserScript(script, showAlerts: false)
+            return (script, success)
+        }, onResult: { (script, success) in
+            if success {
+                if let updated = await self.userScriptManager?.userScript(withId: script.id) {
+                    updatedScripts.append(updated)
+                }
                 await ConcurrentLogManager.shared.info(
                     .userScript, LocalizedStrings.text("Successfully updated script"), metadata: ["script": script.name])
-
-                if let manager = userScriptManager {
-                    await manager.updateUserScript(updated)
-                }
             } else {
                 await ConcurrentLogManager.shared.error(
                     .userScript, LocalizedStrings.text("Failed to update script"), metadata: ["script": script.name])

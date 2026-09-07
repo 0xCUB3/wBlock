@@ -71,6 +71,8 @@ compile_direct_test() {
 compile_direct_test compiler-timeout scripts/test_issue_511_compiler_timeout.swift
 compile_direct_test main-window-frame-restore \
   wBlock/MainWindowFrameRestorer.swift scripts/test_main_window_frame_restore.swift
+compile_direct_test userscript-update-operation \
+  wBlockCoreService/UserScriptUpdateOperation.swift scripts/test_userscript_update_operation.swift
 
 # Core-module API tests. Source-only wBlock tests add their production source
 # explicitly; the remaining tests use the freshly built core framework.

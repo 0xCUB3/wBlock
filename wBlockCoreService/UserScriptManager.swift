@@ -302,6 +302,7 @@ public class UserScriptManager: ObservableObject {
     public private(set) var localMutationRevision: UInt64 = 0
     public private(set) var payloadMutationRevision: UInt64 = 0
     private var contentMutationRevisions: [UUID: UInt64] = [:]
+    private var userScriptsPendingPersistence = Set<UUID>()
 
     public func currentLocalSyncMutationRevision() -> UInt64 { localMutationRevision }
 
@@ -2380,12 +2381,6 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    private func saveUserScripts() {
-        Task { @MainActor in
-            await persistUserScriptsNow()
-        }
-    }
-
     /// Persists the current in-memory userscripts and waits for completion. Use this in async flows
     /// where the caller needs stronger ordering guarantees.
     @MainActor
@@ -2409,34 +2404,41 @@ public class UserScriptManager: ObservableObject {
         )
     }
 
+    @discardableResult
     private func persistUserScriptsNow(
         invalidateExecutionCache: Bool = true,
         explicitEnabledStates: [UUID: Bool] = [:],
         authoritative: Bool = false
-    ) async {
+    ) async -> Bool {
         if var deferral = startupPersistDeferral {
             deferral.pending = true
             deferral.authoritative = deferral.authoritative || authoritative
             deferral.invalidateExecutionCache = deferral.invalidateExecutionCache || invalidateExecutionCache
             deferral.explicitEnabledStates.merge(explicitEnabledStates) { _, new in new }
             startupPersistDeferral = deferral
-            return
+            return false
         }
         logger.info("💾 Saving \(self.userScripts.count) userscripts to ProtobufDataManager")
         let records = userScripts.map(persistableUserScript)
+        let persisted: Bool
         if authoritative {
-            await dataManager.replaceUserScripts(records)
+            persisted = await dataManager.replaceUserScripts(records)
         } else {
-            await dataManager.updateUserScripts(
+            persisted = await dataManager.updateUserScripts(
                 records,
                 explicitEnabledStates: explicitEnabledStates
             )
+        }
+        guard persisted else {
+            logger.error("💾 Failed to persist userscripts to ProtobufDataManager")
+            return false
         }
         if invalidateExecutionCache {
             Self.invalidateDocumentStartExecutionCache()
         }
         logger.info(
             "💾 Successfully saved \(self.userScripts.count) userscripts to ProtobufDataManager")
+        return true
     }
 
     /// Oversized pattern arrays stay in the source file only. The trim is gated on
@@ -3491,60 +3493,41 @@ public class UserScriptManager: ObservableObject {
         return false
     }
 
-    public func updateUserScript(_ userScript: UserScript) async {
+    @discardableResult
+    public func updateUserScript(
+        _ userScript: UserScript,
+        showAlerts: Bool = true
+    ) async -> Bool {
         guard let index = userScripts.firstIndex(where: { $0.id == userScript.id }),
               !userScripts[index].isLocal,
-              let url = userScripts[index].url,
-              url.scheme?.lowercased() == "http" || url.scheme?.lowercased() == "https"
-        else { return }
+              userScripts[index].resolvedDownloadURL != nil
+        else { return false }
 
-        let mutationRevision = scriptMutationRevision(userScript.id)
-        await MainActor.run {
+        if showAlerts {
             isLoading = true
             statusDescription = "Updating \(userScript.name)..."
         }
 
         do {
-            let content = try await downloadUserScriptContent(from: url)
-
-            guard mutationRevision == scriptMutationRevision(userScript.id),
-                  let current = userScripts.first(where: { $0.id == userScript.id }) else {
-                isLoading = false
-                return
-            }
-            let tempUserScript = try await validatedDownloadedUserScriptContent(
-                content,
-                replacing: current
-            )
-
-            // Process @require directives and @resource directives
-            let dependencies = await processedDependencies(for: tempUserScript)
-            let processedContent = dependencies.content
-            let resourceContents = dependencies.resources
-
-            guard mutationRevision == scriptMutationRevision(userScript.id),
-                  let index = userScripts.firstIndex(where: { $0.id == userScript.id }) else {
-                isLoading = false
-                return
-            }
-            let updated = updatedUserScript(
+            let updated = try await updateSingleScript(
                 userScripts[index],
-                from: tempUserScript,
-                content: processedContent,
-                resources: resourceContents
+                checkRemoteVersion: false,
+                persistChanges: true,
+                recordMutation: true
             )
-            guard writeUserScriptFiles(updated) else {
-                throw CocoaError(.fileWriteUnknown)
+            guard updated else {
+                if showAlerts { isLoading = false }
+                return false
             }
-            userScripts[index] = updated
-            recordScriptMutation(userScript.id)
-            await persistUserScriptsNow()
-            statusDescription = "Updated \(userScript.name)"
-            updateAlertMessage = "\(userScript.name) has been successfully updated."
-            showingUpdateSuccessAlert = true
-            isLoading = false
+            if showAlerts {
+                statusDescription = "Updated \(userScript.name)"
+                updateAlertMessage = "\(userScript.name) has been successfully updated."
+                showingUpdateSuccessAlert = true
+                isLoading = false
+            }
+            return true
         } catch {
-            await MainActor.run {
+            if showAlerts {
                 hasError = true
                 errorMessage = "Failed to update userscript: \(error.localizedDescription)"
                 statusDescription = "Update failed"
@@ -3553,6 +3536,7 @@ public class UserScriptManager: ObservableObject {
                 showingUpdateErrorAlert = true
                 isLoading = false
             }
+            return false
         }
     }
 
@@ -3772,6 +3756,7 @@ public class UserScriptManager: ObservableObject {
         let total = candidates.count
         var completed = 0
         var verifiedTimes: [String: Int64] = [:]
+        var updatedScriptIDs = Set<UUID>()
         let now = Int64(Date().timeIntervalSince1970)
 
         for candidate in candidates {
@@ -3784,6 +3769,7 @@ public class UserScriptManager: ObservableObject {
                 if updated {
                     updatedCount += 1
                     didChange = true
+                    updatedScriptIDs.insert(candidate.id)
                 }
             } catch {
                 failedCount += 1
@@ -3794,11 +3780,20 @@ public class UserScriptManager: ObservableObject {
 
         await progressCallback?(AutoUpdateProgress(completed: total, total: total, currentScriptName: ""))
 
-        await ProtobufDataManager.shared.setScriptLastChecked(verifiedTimes)
-
         if didChange {
-            await persistUserScriptsNow()
+            if !(await persistUserScriptsNow()) {
+                userScriptsPendingPersistence.formUnion(updatedScriptIDs)
+                for id in updatedScriptIDs {
+                    verifiedTimes.removeValue(forKey: id.uuidString)
+                }
+                failedCount += updatedCount
+                updatedCount = 0
+            } else {
+                userScriptsPendingPersistence.subtract(updatedScriptIDs)
+            }
         }
+
+        await ProtobufDataManager.shared.setScriptLastChecked(verifiedTimes)
 
         if updatedCount > 0 {
             logger.info("✅ Auto-updated \(updatedCount) userscripts (\(failedCount) failed)")
@@ -3811,14 +3806,21 @@ public class UserScriptManager: ObservableObject {
     /// Phase 1: fetch meta URL, compare @version. If newer, proceed to phase 2.
     /// Phase 2: download full script, process directives, write if content changed.
     /// Falls back to full download + content comparison if meta check is inconclusive.
-    private func updateSingleScript(_ candidate: UserScript) async throws -> Bool {
+    private func updateSingleScript(
+        _ candidate: UserScript,
+        checkRemoteVersion: Bool = true,
+        persistChanges: Bool = false,
+        recordMutation: Bool = false
+    ) async throws -> Bool {
         guard !candidate.isLocal,
               userScripts.contains(where: { $0.id == candidate.id })
         else { return false }
+        let mutationRevision = scriptMutationRevision(candidate.id)
+        let needsPersistenceRetry = userScriptsPendingPersistence.contains(candidate.id)
 
         // Phase 1: Try meta check
-        let metaURL = resolveMetaURL(for: candidate)
-        if let metaURL = metaURL {
+        let metaURL = checkRemoteVersion && !needsPersistenceRetry ? resolveMetaURL(for: candidate) : nil
+        if let metaURL {
             let remoteVersion = await fetchRemoteVersion(from: metaURL)
             if let remoteVersion = remoteVersion, !candidate.version.isEmpty {
                 // Both versions available: compare
@@ -3833,84 +3835,76 @@ public class UserScriptManager: ObservableObject {
         // Phase 2: Full download + content comparison
         guard let downloadURL = resolveDownloadURL(for: candidate) else { return false }
 
-        let rawContent = try await downloadUserScriptContent(from: downloadURL)
+        return try await UserScriptUpdateOperation.run(
+            downloadURL: downloadURL,
+            fetch: { url in
+                try await self.downloadUserScriptContent(from: url)
+            },
+            isCurrent: {
+                mutationRevision == self.scriptMutationRevision(candidate.id)
+                    && self.userScripts.contains(where: { $0.id == candidate.id })
+            },
+            prepare: { rawContent in
+                guard let current = self.userScripts.first(where: { $0.id == candidate.id }) else {
+                    throw CancellationError()
+                }
+                let parsed = try await self.validatedDownloadedUserScriptContent(
+                    rawContent,
+                    replacing: current
+                )
+                let dependencies = await self.processedDependencies(for: parsed)
+                return (parsed, dependencies.content, dependencies.resources)
+            },
+            commit: { parsed, processedContent, resourceContents in
+                guard let index = self.userScripts.firstIndex(where: { $0.id == candidate.id }) else {
+                    return false
+                }
 
-        let tempUserScript = try await validatedDownloadedUserScriptContent(
-            rawContent,
-            replacing: candidate
+                if self.userScripts[index].content == processedContent,
+                   self.userScripts[index].resourceContents == resourceContents {
+                    if persistChanges || needsPersistenceRetry {
+                        guard await self.persistUserScriptsNow() else {
+                            self.userScriptsPendingPersistence.insert(candidate.id)
+                            throw CocoaError(.fileWriteUnknown)
+                        }
+                        guard !Task.isCancelled,
+                              mutationRevision == self.scriptMutationRevision(candidate.id),
+                              self.userScripts.contains(where: { $0.id == candidate.id })
+                        else { return false }
+                        self.userScriptsPendingPersistence.remove(candidate.id)
+                        return true
+                    }
+                    return false
+                }
+
+                let updated = self.updatedUserScript(
+                    self.userScripts[index],
+                    from: parsed,
+                    content: processedContent,
+                    resources: resourceContents
+                )
+                guard self.writeUserScriptFiles(updated) else {
+                    throw CocoaError(.fileWriteUnknown)
+                }
+                self.userScripts[index] = updated
+                if recordMutation {
+                    self.recordScriptMutation(candidate.id)
+                }
+                if persistChanges {
+                    let persistenceRevision = self.scriptMutationRevision(candidate.id)
+                    guard await self.persistUserScriptsNow() else {
+                        self.userScriptsPendingPersistence.insert(candidate.id)
+                        throw CocoaError(.fileWriteUnknown)
+                    }
+                    guard !Task.isCancelled,
+                          persistenceRevision == self.scriptMutationRevision(candidate.id),
+                          self.userScripts.contains(where: { $0.id == candidate.id })
+                    else { return false }
+                    self.userScriptsPendingPersistence.remove(candidate.id)
+                }
+                return true
+            }
         )
-
-        let dependencies = await processedDependencies(for: tempUserScript)
-        let processedContent = dependencies.content
-        let resourceContents = dependencies.resources
-
-        guard let index = userScripts.firstIndex(where: { $0.id == candidate.id }) else { return false }
-
-        // Skip if nothing changed
-        if userScripts[index].content == processedContent,
-           userScripts[index].resourceContents == resourceContents {
-            return false
-        }
-
-        let updated = updatedUserScript(
-            userScripts[index],
-            from: tempUserScript,
-            content: processedContent,
-            resources: resourceContents
-        )
-        guard writeUserScriptFiles(updated) else {
-            throw CocoaError(.fileWriteUnknown)
-        }
-        userScripts[index] = updated
-        return true
-    }
-
-    public func downloadAndEnableUserScript(_ userScript: UserScript) async {
-        guard !userScript.isLocal, let url = userScript.url else { return }
-
-        await MainActor.run {
-            isLoading = true
-            statusDescription = "Downloading \(userScript.name)..."
-        }
-
-        do {
-            let content = try await downloadUserScriptContent(from: url)
-
-            guard let index = userScripts.firstIndex(where: { $0.id == userScript.id }) else {
-                isLoading = false
-                return
-            }
-            let downloaded = try await validatedDownloadedUserScriptContent(
-                content,
-                replacing: userScripts[index]
-            )
-            userScripts[index] = downloaded
-
-            // Process @require directives and @resource directives after metadata is parsed
-            if let index = userScripts.firstIndex(where: { $0.id == userScript.id }) {
-                let dependencies = await processedDependencies(for: userScripts[index])
-                let processedContent = dependencies.content
-                let resourceContents = dependencies.resources
-
-                userScripts[index].content = processedContent
-                userScripts[index].resourceContents = resourceContents
-                userScripts[index].isEnabled = true
-                userScripts[index].isLocal = false
-                userScripts[index].lastUpdated = Date()
-
-                _ = writeUserScriptFiles(userScripts[index])
-                await persistUserScriptsNow()
-                statusDescription = "Downloaded and enabled \(userScript.name)"
-                isLoading = false
-            }
-        } catch {
-            await MainActor.run {
-                hasError = true
-                errorMessage = "Failed to download userscript: \(error.localizedDescription)"
-                statusDescription = "Download failed"
-                isLoading = false
-            }
-        }
     }
 
     public func getEnabledUserScriptsForURL(_ url: String) -> [UserScript] {
