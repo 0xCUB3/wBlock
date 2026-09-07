@@ -991,10 +991,47 @@ public class UserScriptManager: ObservableObject {
         return scripts
     }
 
+    /// Hydration output is a pure function of the persisted record and the source
+    /// text. Parsing tinyShield's 31k-line header costs over 100 ms, and the
+    /// extension process rehydrates every enabled script on each page request,
+    /// so the last result per script is memoized against a fingerprint of both
+    /// inputs. Any edit to the file or the record changes the fingerprint.
+    private struct HydrationFingerprint: Hashable {
+        let record: UserScript
+        let content: String
+    }
+
+    nonisolated private static let hydrationCacheLock = NSLock()
+    nonisolated(unsafe) private static var hydrationCache: [UUID: (fingerprint: HydrationFingerprint, hydrated: UserScript)] = [:]
+
+    nonisolated private static func hydrationFingerprint(for script: UserScript, content: String) -> HydrationFingerprint {
+        var record = script
+        record.content = ""
+        record.resourceContents = [:]
+        return HydrationFingerprint(record: record, content: content)
+    }
+
     /// Hydrates source content without discarding custom display metadata.
     nonisolated private static func hydrateUserScriptFromDisk(_ script: UserScript) -> UserScript {
+        guard let content = readUserScriptContentOffMain(script) else { return script }
+
+        let fingerprint = hydrationFingerprint(for: script, content: content)
+        hydrationCacheLock.lock()
+        let cached = hydrationCache[script.id]
+        hydrationCacheLock.unlock()
+        if let cached, cached.fingerprint == fingerprint {
+            return cached.hydrated
+        }
+
+        let hydrated = hydrateUserScript(script, content: content)
+        hydrationCacheLock.lock()
+        hydrationCache[script.id] = (fingerprint, hydrated)
+        hydrationCacheLock.unlock()
+        return hydrated
+    }
+
+    nonisolated private static func hydrateUserScript(_ script: UserScript, content: String) -> UserScript {
         var hydratedScript = script
-        guard let content = readUserScriptContentOffMain(script) else { return hydratedScript }
 
         // Source is authoritative. The derived artifact is loaded or rebuilt off-main;
         // neither protobuf hydration nor runtime injection ever compiles on @MainActor.
@@ -1603,6 +1640,7 @@ public class UserScriptManager: ObservableObject {
             userScripts = hydratedScripts
         }
 
+        await shrinkOversizedPersistedPatternsIfNeeded()
     }
 
     /// Startup maintenance that needs the network. It must not gate
@@ -2385,11 +2423,12 @@ public class UserScriptManager: ObservableObject {
             return
         }
         logger.info("💾 Saving \(self.userScripts.count) userscripts to ProtobufDataManager")
+        let records = userScripts.map(persistableUserScript)
         if authoritative {
-            await dataManager.replaceUserScripts(userScripts)
+            await dataManager.replaceUserScripts(records)
         } else {
             await dataManager.updateUserScripts(
-                userScripts,
+                records,
                 explicitEnabledStates: explicitEnabledStates
             )
         }
@@ -2398,6 +2437,27 @@ public class UserScriptManager: ObservableObject {
         }
         logger.info(
             "💾 Successfully saved \(self.userScripts.count) userscripts to ProtobufDataManager")
+    }
+
+    /// Oversized pattern arrays stay in the source file only. The trim is gated on
+    /// the file actually existing so a record whose source never reached disk keeps
+    /// its patterns and remains matchable.
+    private func persistableUserScript(_ script: UserScript) -> UserScript {
+        guard script.exceedsPersistedPatternBudget,
+              userScriptFileExists(script)
+        else { return script }
+        return script.withoutPersistedPatterns()
+    }
+
+    /// One-time shrink for stores written before the pattern budget existed.
+    private func shrinkOversizedPersistedPatternsIfNeeded() async {
+        let oversized = dataManager.getUserScripts().filter {
+            $0.exceedsPersistedPatternBudget && userScriptFileExists($0)
+        }
+        guard !oversized.isEmpty else { return }
+        logger.info(
+            "💾 Dropping oversized persisted patterns for \(oversized.count) userscript(s); source files remain authoritative")
+        await persistUserScriptsNow(invalidateExecutionCache: false)
     }
 
     private func readUserScriptContent(_ userScript: UserScript) -> String? {

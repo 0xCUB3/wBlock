@@ -131,6 +131,7 @@ compile_direct_test filter-update-popup-status \
   scripts/test_filter_update_popup_status.swift
 compile_core_test filter-selection-rebase scripts/test_filter_selection_rebase.swift
 compile_core_test filter-list-site-exclusion scripts/test_filter_list_site_exclusion.swift
+compile_core_test userscript-pattern-budget scripts/test_userscript_pattern_budget.swift
 compile_core_test issue-645-compile-order scripts/test_issue_645_compile_order.swift
 compile_core_test compilation-provenance scripts/test_compilation_provenance.swift
 compile_core_test issue-729-headless-rebuild-gate scripts/test_issue_729_headless_rebuild_gate.swift
