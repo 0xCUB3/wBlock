@@ -12,11 +12,11 @@
 "%d rule" = "%d 件のルール";
 "%d rules" = "%d 件のルール";
 "%d script off" = "%d 件のスクリプトがオフ";
-"%d script update(s) failed" = "%d script update(s) failed";
+"%d script update(s) failed" = "%d 個のスクリプトのアップデートに失敗しました";
 "%d scripts off" = "%d 件のスクリプトがオフ";
-"%d update(s) available" = "%d update(s) available";
-"%d update(s) found" = "%d update(s) found";
-"%d userscripts selected" = "%d 個のユーザースクリプトを選択中";
+"%d update(s) available" = ""%d 件のアップデートがあります";
+"%d update(s) found" = "%d 件のアップデートが見つかりました";
+"%d userscripts selected" = "%d 件のユーザースクリプトを選択中";
 "%d." = "%d.";
 "%d/%d" = "%d/%d";
 "(%@ rules)" = "（%@ 件のルール）";
@@ -275,8 +275,8 @@
 "Downloading %d update(s)..." = "%d アップデートをダウンロード中...";
 "Downloading and applying filter lists…" = "フィルターリストをダウンロードして適用中…";
 "Downloading filter updates..." = "フィルターの更新をダウンロードしています...";
-"Downloading selected scripts..." = "Downloading selected scripts...";
-"Downloading selected updates..." = "Downloading selected updates...";
+"Downloading selected scripts..." = "選択したスクリプトをダウンロードしています...";
+"Downloading selected updates..." = "選択したアップデートをダウンロードしています...";
 "Downloading Updates" = "アップデートをダウンロードしています";
 "due now" = "今すぐ実行";
 "Due soon catch-up" = "まもなく期限の追いつき実行";
