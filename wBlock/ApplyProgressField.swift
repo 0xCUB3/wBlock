@@ -54,6 +54,7 @@ private struct ApplyProgressRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             statusLeading
+                .id(node.status)
                 .frame(width: 16, height: 16)
                 .padding(.top, 3)
 

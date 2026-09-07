@@ -23,6 +23,8 @@ struct ApplyProgressPresentationTests {
         testUpdatingShowsCurrentFilter()
         testUpdatingShowsCheckedCount()
         testScriptsShowCheckedCountAndName()
+        testOnlyOnePhaseSpinsAtATime()
+        testDownloadNameDoesNotLeakIntoConverting()
         print("PASS")
     }
 
@@ -383,6 +385,66 @@ struct ApplyProgressPresentationTests {
     }
 
     @MainActor
+    private static func testOnlyOnePhaseSpinsAtATime() {
+        let viewModel = ApplyChangesViewModel()
+        viewModel.beginProgressRun()
+
+        func activeCount(_ label: String) {
+            let active = viewModel.state.phases.filter { $0.status == .active }.map(\.phase)
+            check(active.count == 1, "\(label): expected one active phase, got \(active)")
+        }
+
+        // Out-of-order reports from the pipeline must not leave two spinners.
+        viewModel.updatePhaseCompletion(updating: true, scripts: false)
+        activeCount("filters done, scripts still checking")
+        viewModel.updatePhaseCompletion(scripts: true, reading: false)
+        activeCount("reading")
+        viewModel.updatePhaseCompletion(reading: true, converting: false)
+        activeCount("converting")
+        // A late completion for an earlier phase, as when the pause/resume
+        // path re-reports the update pass after conversion started.
+        viewModel.updatePhaseCompletion(updating: true, scripts: true)
+        activeCount("stale updating completion during converting")
+        check(phaseStatus(viewModel, .converting) == .active, "converting keeps spinning after a stale earlier completion")
+        // Re-activating an earlier phase pulls later ones back to pending.
+        viewModel.updatePhaseCompletion(reading: false)
+        activeCount("reading re-entered")
+        check(phaseStatus(viewModel, .converting) == .pending, "converting returns to pending when reading re-enters")
+        check(phaseStatus(viewModel, .updating) == .complete, "phases before the active one are complete")
+        viewModel.updatePhaseCompletion(reading: true, converting: true, reloading: false)
+        activeCount("reloading")
+        viewModel.updatePhaseCompletion(reloading: true, saving: false)
+        activeCount("saving")
+        viewModel.updatePhaseCompletion(saving: true)
+        check(viewModel.state.phases.allSatisfy { $0.status == .complete }, "finished run is all complete")
+    }
+
+    @MainActor
+    private static func testDownloadNameDoesNotLeakIntoConverting() {
+        let viewModel = ApplyChangesViewModel()
+        viewModel.beginProgressRun()
+        viewModel.updateCurrentFilter("tif")
+        check(ApplyProgressPresentation.make(from: viewModel.state).detail == "tif", "download name shows under the update row")
+
+        viewModel.updatePhaseCompletion(updating: true, scripts: false)
+        viewModel.updateCurrentScript("YouTube Fix")
+        viewModel.updatePhaseCompletion(scripts: true, reading: false)
+        viewModel.updateProcessedCount(0, total: 5)
+        viewModel.updatePhaseCompletion(reading: true, converting: false)
+        viewModel.updateConvertingDone(0)
+
+        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
+        check(presentation.title == ApplyChangesPhase.converting.title, "converting is focused")
+        check(node(presentation, .converting)?.detail == nil, "converting shows no list name before its first target finishes, got \(String(describing: node(presentation, .converting)?.detail))")
+        check(presentation.fractionLabel == "0/5", "converting starts at 0/5")
+        check(viewModel.state.currentScriptName.isEmpty, "script name is cleared with the phase change")
+
+        viewModel.updateConvertingDone(1)
+        viewModel.updateCurrentFilter("Ads")
+        check(node(ApplyProgressPresentation.make(from: viewModel.state), .converting)?.detail == "Ads", "converting names its own target")
+    }
+
+    @MainActor
     private static func testUpdatingShowsCurrentFilter() {
         let viewModel = ApplyChangesViewModel()
         viewModel.beginProgressRun()
@@ -491,6 +553,11 @@ struct ApplyProgressPresentationTests {
         _ phase: ApplyChangesPhase
     ) -> ApplyProgressPresentation.Node? {
         presentation.nodes.first(where: { $0.phase == phase })
+    }
+
+    @MainActor
+    private static func phaseStatus(_ viewModel: ApplyChangesViewModel, _ phase: ApplyChangesPhase) -> ApplyChangesPhaseStatus? {
+        viewModel.state.phases.first { $0.phase == phase }?.status
     }
 
     private static func status(

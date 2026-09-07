@@ -296,15 +296,43 @@ class ApplyChangesViewModel: ObservableObject {
         }
     }
 
+    // The rail is a strict sequence: exactly one phase spins at a time, every
+    // phase before it is done, and every phase after it is pending. Callers
+    // report transitions out of order occasionally (a download pass that
+    // finishes after the next stage started, a retry that re-enters the
+    // pipeline mid-way), so this normalizes the whole array on every change
+    // instead of trusting call order.
     private func setPhase(_ phase: ApplyChangesPhase, isComplete: Bool) {
-        updatePhase(phase) { phaseProgress in
-            phaseProgress.status = isComplete ? .complete : .active
+        guard let index = state.phases.firstIndex(where: { $0.phase == phase }) else { return }
+        var phases = state.phases
+
+        for position in phases.indices where phases[position].status != .failed {
+            if position < index {
+                phases[position].status = .complete
+            } else if position == index {
+                phases[position].status = isComplete ? .complete : .active
+            } else if !isComplete {
+                phases[position].status = .pending
+            }
         }
 
         if isComplete {
-            activateNextPendingPhase(after: phase)
-        } else {
-            resetPhasesAfter(phase)
+            let hasLaterActive = phases[index...].dropFirst().contains { $0.status == .active }
+            if !hasLaterActive,
+               let next = phases[index...].dropFirst().firstIndex(where: { $0.status == .pending }) {
+                phases[next].status = .active
+            }
+            state.phaseProgress = 0
+        }
+
+        let activeBefore = state.phases.first { $0.status == .active }?.phase
+        state.phases = phases
+        let activeAfter = phases.first { $0.status == .active }?.phase
+        if activeBefore != activeAfter {
+            // Names are scoped to the phase that set them. A list name from
+            // the download pass must not linger under Converting Rules.
+            state.currentFilterName = ""
+            state.currentScriptName = ""
         }
     }
 
@@ -315,30 +343,6 @@ class ApplyChangesViewModel: ObservableObject {
         state.phases = mutablePhases
     }
 
-    private func activateNextPendingPhase(after phase: ApplyChangesPhase) {
-        guard let currentIndex = state.phases.firstIndex(where: { $0.phase == phase }) else { return }
-        state.phaseProgress = 0
-        var mutablePhases = state.phases
-
-        if let nextIndex = mutablePhases[currentIndex...].dropFirst().firstIndex(where: { $0.status == .pending }) {
-            mutablePhases[nextIndex].status = .active
-        }
-
-        state.phases = mutablePhases
-    }
-
-    private func resetPhasesAfter(_ phase: ApplyChangesPhase) {
-        guard let currentIndex = state.phases.firstIndex(where: { $0.phase == phase }) else { return }
-        var mutablePhases = state.phases
-
-        for index in mutablePhases.indices where index > currentIndex {
-            if mutablePhases[index].status == .complete {
-                mutablePhases[index].status = .pending
-            }
-        }
-
-        state.phases = mutablePhases
-    }
 }
 
 
