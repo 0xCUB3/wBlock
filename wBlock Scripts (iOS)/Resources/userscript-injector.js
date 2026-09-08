@@ -75,7 +75,8 @@ function isTubeCleanerPageScript(script) {
     return script && script.isLocal === false
         && script.sourceURL === 'https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js'
         && /(^|\.)youtube\.com$/i.test(location.hostname) && location.protocol === 'https:'
-        && (script.grant || []).every(grant => ['gm_getvalue', 'gm_setvalue'].includes(String(grant).toLowerCase()));
+        && (script.grant || []).every(grant => ['none', 'unsafewindow', 'gm_info', 'gm.info',
+            'gm_getvalue', 'gm.getvalue', 'gm_setvalue', 'gm.setvalue'].includes(String(grant).toLowerCase()));
 }
 function usesPageOnlyNetwork(script) {
     const grants = (script.grant || []).map(grant => String(grant).toLowerCase());

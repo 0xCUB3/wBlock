@@ -953,6 +953,16 @@ const tube = { ...fakeScript, id:'official-tube', sourceURL:'https://raw.githubu
   matches:['https://*.youtube.com/*'], grant:['GM_getValue','GM_setValue'],
   storageSnapshot: { 'wblock.tubeCleaner.sponsorBlock':JSON.stringify(preferences), secret:'must-not-reach-page' },
   content:"window.__tubeHooks = true;" };
+for (const grants of [['GM.getValue', 'GM.setValue', 'GM.info', 'unsafeWindow'], ['GM_getValue', 'GM_setValue', 'GM_info', 'none']]) {
+  const base = appendedScripts.length;
+  const aliases = buildContentScriptSandbox(null, [{ ...tube, grant: grants }], 'https://www.youtube.com/watch?v=abc');
+  vm.createContext(aliases); vm.runInContext(source, aliases); await tick(); await tick();
+  check(`safe Tube aliases retain page hooks: ${grants.join(',')}`, appendedScripts.slice(base).some(code => code.includes('__tubeHooks')));
+}
+const privilegedTubeBase = appendedScripts.length;
+const privilegedTube = buildContentScriptSandbox(null, [{ ...tube, grant: [...tube.grant, 'GM_xmlhttpRequest'] }], 'https://www.youtube.com/watch?v=abc');
+vm.createContext(privilegedTube); vm.runInContext(source, privilegedTube); await tick(); await tick();
+check('Tube cannot add unrelated native grants while retaining page execution', appendedScripts.length === privilegedTubeBase && privilegedTube.__tubeHooks === true);
 const tubeBase = appendedScripts.length;
 const tubeSandbox = buildContentScriptSandbox(null, [tube], 'https://www.youtube.com/watch?v=abc');
 vm.createContext(tubeSandbox); vm.runInContext(source, tubeSandbox); await tick(); await tick();
