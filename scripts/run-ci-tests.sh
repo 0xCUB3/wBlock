@@ -144,6 +144,7 @@ compile_core_test filter-catalog-remote scripts/test_filter_catalog_remote.swift
 compile_core_test filter-list-fetch-chain scripts/test_filter_list_fetch_chain.swift
 compile_core_test filter-download-processor scripts/test_filter_download_processor.swift
 compile_core_test issue-508-backup scripts/test_issue_508_backup_userscript.swift
+compile_core_test backup-restore scripts/test_backup_restore.swift wBlock/BackupManager.swift
 compile_core_test issue-508-import-identity scripts/test_issue_508_import_identity.swift
 compile_core_test issue-508-oversized-import scripts/test_issue_508_oversized_import.swift
 compile_core_test issue-531-custom-exception-affinity scripts/test_issue_531_custom_exception_affinity.swift

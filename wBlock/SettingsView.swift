@@ -876,7 +876,16 @@ extension SettingsView {
         guard let backup = pendingBackup else { return }
         pendingBackup = nil
         Task {
-            await BackupManager.restoreBackup(backup, filterManager: filterManager)
+            do {
+                try await BackupManager.restoreBackup(backup, filterManager: filterManager)
+            } catch {
+                backupStatusMessage = String.localizedStringWithFormat(
+                    NSLocalizedString("Import failed: %@", comment: "Backup import failure"),
+                    error.localizedDescription
+                )
+                showingBackupStatus = true
+                return
+            }
             #if os(iOS)
             PortraitOrientationLock.apply()
             #endif

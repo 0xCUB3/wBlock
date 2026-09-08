@@ -1184,7 +1184,15 @@ struct OnboardingView: View {
     private func performBackupRestore() async {
         guard let backup = pendingBackup else { return }
         pendingBackup = nil
-        await BackupManager.restoreBackup(backup, filterManager: filterManager)
+        do {
+            try await BackupManager.restoreBackup(backup, filterManager: filterManager)
+        } catch {
+            backupRestoreError = String.localizedStringWithFormat(
+                NSLocalizedString("Import failed: %@", comment: "Backup import failure"),
+                error.localizedDescription
+            )
+            return
+        }
         userScriptManager.markInitialSetupComplete()
         guard await dataManager.setHasCompletedOnboarding(true) else { return }
         dismiss()
