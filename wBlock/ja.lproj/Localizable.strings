@@ -601,7 +601,7 @@
 "Raajje AdList" = "Raajje AdList";
 "Reading Files" = "ファイルを読み込み中";
 "Ready" = "準備完了";
-"Ready." = "準備ができて。";
+"Ready." = "準備完了。";
 "Received %@, %@ %@" = "%@ に受信、%@ %@";
 "Received %@, waiting for completion" = "%@ に受信、完了待ち";
 "Recommended" = "推奨";
@@ -761,11 +761,7 @@
 "The following filters were automatically disabled:
 
 %@
-
 To re-enable these filters, disable other large filters and apply changes again." = "次のフィルターは自動的に無効になりました:
-
-%@
-
 再度有効にするには、他の大きなフィルターを無効にしてからもう一度変更を適用してください。";
 "The following filters were automatically disabled:\\n\\n%@\\n\\nTo re-enable these filters, disable other large filters and apply changes again." = "次のフィルタは自動的に無効になりました:\\n\\n%@\\n\\nこれらのフィルタを再度有効にするには、他の大きなフィルタを無効にして、変更を再度適用してください。";
 "These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later." = "これらのフィルターは、既定のフィルターリストに加えて、選択した言語でのブロック力を強化します。既定のフィルターリストでは、英語サイトと国際的なサイトはすでにカバーされています。後で細かく調整できます。";
@@ -909,13 +905,10 @@ To re-enable these filters, disable other large filters and apply changes again.
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 自動更新: 実行対象です（次回トリガーで実行されます）";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 自動更新: 次回まで %dh %dm %ds";
 "🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 自動更新: まだ実行されていません（間隔=%dh）";
-
 /* Language picker */
 "Selected" = "選択済み";
 "Search languages" = "言語を検索";
-
 "Built-in" = "内蔵";
-
 /* Filter catalog additions */
 "Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
 "Adblock Warning Removal List" = "Adblock Warning Removal List";
@@ -926,20 +919,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks tracking pixels and other mail tracking techniques." = "トラッキングピクセルやその他のメール追跡技術をブロックします。";
 "Blocks public websites from reaching local network addresses and router admin pages. Can break some local apps." = "公開ウェブサイトがローカルネットワークのアドレスやルーター管理ページにアクセスするのを防ぎます。一部のローカルアプリが動作しなくなる場合があります。";
 "Allows sites and resources that should not be blocked." = "ブロックすべきでないサイトやリソースを許可します。";
-
-
 /* Auto-update controls */
 "Auto-Update" = "自動更新";
 "Auto-Update Filters & Userscripts" = "フィルターとユーザースクリプトを自動更新";
 "Update Now" = "今すぐ更新";
-
 /* Add mode controls */
 "Text" = "テキスト";
 "Choose File" = "ファイルを選択";
 "Change File" = "ファイルを変更";
 "Local imports won't auto-update; re-import to replace." = "ローカルインポートは自動更新されません。置き換えるには再インポートしてください。";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard ExtraはTwitchの広告をブロックし、複雑な広告ブロック対策に対応します。";
-
 /* Issue 508 UI */
 "Disable Essential Filter?" = "必須フィルタを無効にしますか？";
 "Replace Existing Content?" = "既存の内容を置き換えますか？";
@@ -959,20 +948,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Developer" = "開発者";
 "GPL-3.0 License" = "GPL-3.0 ライセンス";
 "Privacy Policy" = "プライバシーポリシー";
-
-/* Issue 508 UI */
 "Use a valid http:// or https:// URL" = "有効な http:// または https:// URL を使用してください";
 "Include a host name" = "ホスト名を含めてください";
 "Do not use a userscript URL ending in .js, .mjs, or .cjs" = ".js、.mjs、.cjs で終わる Userscript URL は使用しないでください";
 "wBlock will fetch and enable the filter list automatically" = "wBlock がフィルタリストを自動取得して有効にします";
-
 /* Issue 508 UI follow-up */
 "Starts with http:// or https://" = "http:// または https:// で始まる";
 "Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "末尾が .js、.user.js、.user.css、.less、.sass、.scss、.styl、または .pcss";
 "Hosted on a trusted source" = "信頼できるソースでホストされている";
-
 "The file must include userscript or userstyle metadata." = "ファイルにはユーザースクリプトまたはユーザースタイルのメタデータを含める必要があります。";
-
 "Failed to clear downloaded custom filter state; apply again to retry." = "ダウンロードしたカスタムフィルタの状態を消去できませんでした。もう一度適用して再試行してください。";
 "Failed to resume blocking." = "ブロックを再開できませんでした。";
 /* Userscript display categories */
@@ -982,7 +966,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "ウェブサイトに便利な機能を追加または復元するユーザースクリプトです。";
 "Userstyles and scripts that change the appearance of websites." = "ウェブサイトの外観を変更するユーザースタイルとスクリプトです。";
 "Custom, remote, and local scripts that do not have a more specific display category." = "より具体的な表示カテゴリに分類されないカスタム、リモート、ローカルスクリプトです。";
-
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = ".user.js、.js、.user.css、.less、.sass、.scss、.styl、または .pcss ファイルを選択してください。";
 "Couldn't read the selected file." = "選択したファイルを読み取れませんでした。";
@@ -1022,7 +1005,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replace Thumbnails" = "サムネイルを置き換える";
 "Random Frame When No Thumbnail" = "サムネイルがない場合はランダムなフレーム";
 "Show Original on Hover" = "ホバー時に元を表示";
-"Powered by DeArrow" = "DeArrow 提供";
+"Powered by DeArrow" = "Powered by DeArrow";
 "Donate to DeArrow" = "DeArrowに寄付";
 "DeArrow: On" = "DeArrow: オン";
 "DeArrow: Off" = "DeArrow: オフ";
@@ -1049,8 +1032,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Resume Where You Left Off" = "前回の位置から再開";
 "Quality and Audio Toolbar" = "画質と音声のツールバー";
 "Enable All" = "すべて有効にする";
-
-
 "Supported" = "対応";
 "Unsupported" = "非対応";
 "Duplicates" = "重複";
@@ -1058,42 +1039,24 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Needs wBlock Scripts" = "wBlock Scripts が必要";
 "URL Parameters" = "URLパラメータ";
 "View" = "表示";
-
 "Last Update Check" = "最終更新チェック";
-
 "Last Successful Update" = "最後に成功した更新";
-
 "Site Actions" = "サイトの操作";
-
 "Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "すべての機能が一時停止すると、ブロックの一時停止がオンになります。各機能を個別に一時停止することもできます。";
-
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "YouTubeのタイトルとサムネイルをDeArrowコミュニティが投稿した代替案に置き換えます。";
-
 "DeArrow" = "DeArrow";
-
 "Original Thumbnail Channels" = "元のサムネイルを使うチャンネル";
-
 "Keep original thumbnails for these YouTube channels." = "これらのYouTubeチャンネルでは元のサムネイルを使用します。";
-
 "Channel URL, @handle, or channel ID" = "チャンネルURL、@ハンドル、チャンネルID";
-
 "Type" = "種類";
-
 "Author" = "作者";
-
 "Homepage" = "ホームページ";
-
 "Size" = "サイズ";
-
 "Automatic" = "自動";
-
 "This script will not run on these sites. Other scripts still run." = "このスクリプトはこれらのサイトでは実行されません。他のスクリプトは引き続き実行されます。";
-
 "Operation details" = "操作の詳細";
-
 /* Native name; keep in Montenegrin in every display language. */
 "crnogorski" = "crnogorski";
-
 "URL entry mode" = "URL入力モード";
 "Single URL" = "単一のURL";
 "Bulk URLs" = "複数のURL";
@@ -1106,14 +1069,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unavailable while this site is disabled." = "このサイトが無効の間は利用できません。";
 "Applies filter lists and scriptlets. Userscripts have separate switches." = "フィルターリストとスクリプトレットを適用します。ユーザースクリプトには別のスイッチがあります。";
 "Not provided" = "未指定";
-
 "%@ submitted at last apply" = "前回の適用時に%@件送信";
-
 "Submitted at last apply" = "前回の適用時に送信";
-
 "Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "送信数は変換処理に渡された元のルール数です。Safariの最終的なルール数とは異なります。";
 "Failed to persist pending filter update revision" = "保留中のフィルタ更新を保存できませんでした";
-
 "Paste non-empty plain text and review it before adding." = "空でないプレーンテキストを貼り付け、追加する前に確認してください。";
-
 "Choose a non-empty text file and review it before adding." = "空でないテキストファイルを選び、追加する前に確認してください。";
