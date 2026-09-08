@@ -1043,6 +1043,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Chapters" = "Chapitres";
 "Captions in Native Player" = "Sous-titres dans le lecteur natif";
 "Picture in Picture" = "Image dans l'image";
+"Automatic Picture in Picture" = "Image dans l’image automatique";
 "Background Playback" = "Lecture en arrière-plan";
 "SponsorBlock" = "SponsorBlock";
 "Resume Where You Left Off" = "Reprendre là où vous en étiez";

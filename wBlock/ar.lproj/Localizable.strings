@@ -1043,6 +1043,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Chapters" = "الفصول";
 "Captions in Native Player" = "الترجمة في المشغّل الأصلي";
 "Picture in Picture" = "صورة داخل صورة";
+"Automatic Picture in Picture" = "صورة داخل صورة تلقائية";
 "Background Playback" = "التشغيل في الخلفية";
 "SponsorBlock" = "SponsorBlock";
 "Resume Where You Left Off" = "استئناف من حيث توقفت";

@@ -28,6 +28,7 @@ struct WBlockBackup: Codable, Sendable {
     var cosmeticFilteringEnabled: Bool?
     var tubeCleanerFeatures: TubeCleanerDeArrowPreference.Features?
     var tubeCleanerDeArrow: TubeCleanerDeArrowPreference.Settings?
+    var playerCleanerFeatures: PlayerCleanerPreference.Features?
     struct FilterSelection: Codable, Sendable {
         var url: String
         var isSelected: Bool
@@ -190,7 +191,8 @@ struct WBlockBackup: Codable, Sendable {
         appearance: String? = nil,
         cosmeticFilteringEnabled: Bool? = nil,
         tubeCleanerFeatures: TubeCleanerDeArrowPreference.Features? = nil,
-        tubeCleanerDeArrow: TubeCleanerDeArrowPreference.Settings? = nil
+        tubeCleanerDeArrow: TubeCleanerDeArrowPreference.Settings? = nil,
+        playerCleanerFeatures: PlayerCleanerPreference.Features? = nil
     ) {
         self.version = version
         self.createdAt = createdAt
@@ -211,6 +213,7 @@ struct WBlockBackup: Codable, Sendable {
         self.cosmeticFilteringEnabled = cosmeticFilteringEnabled
         self.tubeCleanerFeatures = tubeCleanerFeatures
         self.tubeCleanerDeArrow = tubeCleanerDeArrow
+        self.playerCleanerFeatures = playerCleanerFeatures
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -230,7 +233,7 @@ struct WBlockBackup: Codable, Sendable {
         case autoUpdateIntervalHours
         case lockPortraitOrientation
         case appearance
-        case cosmeticFilteringEnabled, tubeCleanerFeatures, tubeCleanerDeArrow
+        case cosmeticFilteringEnabled, tubeCleanerFeatures, tubeCleanerDeArrow, playerCleanerFeatures
     }
 
     init(from decoder: Decoder) throws {
@@ -254,6 +257,7 @@ struct WBlockBackup: Codable, Sendable {
         cosmeticFilteringEnabled = try container.decodeIfPresent(Bool.self, forKey: .cosmeticFilteringEnabled)
         tubeCleanerFeatures = try container.decodeIfPresent(TubeCleanerDeArrowPreference.Features.self, forKey: .tubeCleanerFeatures)
         tubeCleanerDeArrow = try container.decodeIfPresent(TubeCleanerDeArrowPreference.Settings.self, forKey: .tubeCleanerDeArrow)
+        playerCleanerFeatures = try container.decodeIfPresent(PlayerCleanerPreference.Features.self, forKey: .playerCleanerFeatures)
     }
 }
 
@@ -365,7 +369,8 @@ enum BackupManager {
             appearance: UserDefaults.standard.string(forKey: AppAppearance.storageKey),
             cosmeticFilteringEnabled: CosmeticFilteringPreference.isEnabled(),
             tubeCleanerFeatures: TubeCleanerDeArrowPreference.features(),
-            tubeCleanerDeArrow: TubeCleanerDeArrowPreference.settings()
+            tubeCleanerDeArrow: TubeCleanerDeArrowPreference.settings(),
+            playerCleanerFeatures: PlayerCleanerPreference.features()
         )
     }
 
@@ -511,6 +516,7 @@ enum BackupManager {
 
         if let features = backup.tubeCleanerFeatures { UserScriptManager.shared.setTubeCleanerFeatures(features) }
         if let settings = backup.tubeCleanerDeArrow { UserScriptManager.shared.setTubeCleanerDeArrow(settings) }
+        if let features = backup.playerCleanerFeatures { UserScriptManager.shared.setPlayerCleanerFeatures(features) }
 
         // 7. Mark unapplied changes so user can apply
         filterManager.markNonSelectionChangesPending()

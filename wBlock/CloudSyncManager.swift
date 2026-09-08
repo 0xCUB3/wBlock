@@ -387,7 +387,8 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func observeLocalUserScriptChanges() {
-        userScriptManager.$tubeCleanerFeatures.combineLatest(userScriptManager.$tubeCleanerDeArrow)
+        userScriptManager.$tubeCleanerFeatures
+            .combineLatest(userScriptManager.$tubeCleanerDeArrow, userScriptManager.$playerCleanerFeatures)
             .dropFirst()
             .filter { [weak self] _ in self?.isApplyingRemoteChanges == false }
             .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
@@ -788,6 +789,10 @@ final class CloudSyncManager: ObservableObject {
         if let remote = payload.settings.tubeCleanerDeArrow,
            currentSettings.tubeCleanerDeArrow == settingsBaseline.tubeCleanerDeArrow {
             userScriptManager.setTubeCleanerDeArrow(remote)
+        }
+        if let remote = payload.settings.playerCleanerFeatures,
+           currentSettings.playerCleanerFeatures == settingsBaseline.playerCleanerFeatures {
+            userScriptManager.setPlayerCleanerFeatures(remote)
         }
         let mergedExcluded = Self.mergeStringSet(
             local: currentSettings.excludedDefaultUserScriptURLs,
@@ -1957,7 +1962,8 @@ final class CloudSyncManager: ObservableObject {
             userScriptShowEnabledOnly: dataManager.getUserScriptShowEnabledOnly(),
             excludedDefaultUserScriptURLs: dataManager.getExcludedDefaultUserScriptURLs().sorted(),
             tubeCleanerFeatures: TubeCleanerDeArrowPreference.features(),
-            tubeCleanerDeArrow: TubeCleanerDeArrowPreference.settings()
+            tubeCleanerDeArrow: TubeCleanerDeArrowPreference.settings(),
+            playerCleanerFeatures: PlayerCleanerPreference.features()
         )
 
         let filterLists = currentFilterLists()
@@ -2576,6 +2582,7 @@ private struct SyncPayload: Codable {
         let excludedDefaultUserScriptURLs: [String]
         var tubeCleanerFeatures: TubeCleanerDeArrowPreference.Features? = nil
         var tubeCleanerDeArrow: TubeCleanerDeArrowPreference.Settings? = nil
+        var playerCleanerFeatures: PlayerCleanerPreference.Features? = nil
     }
 
     struct CustomFilterList: Codable {

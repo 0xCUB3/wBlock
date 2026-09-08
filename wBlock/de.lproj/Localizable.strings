@@ -1043,6 +1043,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Chapters" = "Kapitel";
 "Captions in Native Player" = "Untertitel im nativen Player";
 "Picture in Picture" = "Bild-in-Bild";
+"Automatic Picture in Picture" = "Automatisches Bild-in-Bild";
 "Background Playback" = "Hintergrundwiedergabe";
 "SponsorBlock" = "SponsorBlock";
 "Resume Where You Left Off" = "Dort fortsetzen, wo du aufgehört hast";

@@ -1043,6 +1043,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Chapters" = "챕터";
 "Captions in Native Player" = "기본 플레이어 자막";
 "Picture in Picture" = "화면 속 화면";
+"Automatic Picture in Picture" = "자동 화면 속 화면";
 "Background Playback" = "백그라운드 재생";
 "SponsorBlock" = "SponsorBlock";
 "Resume Where You Left Off" = "이어서 보기";

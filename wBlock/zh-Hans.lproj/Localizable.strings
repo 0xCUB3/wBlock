@@ -1043,6 +1043,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Chapters" = "章节";
 "Captions in Native Player" = "原生播放器字幕";
 "Picture in Picture" = "画中画";
+"Automatic Picture in Picture" = "自动画中画";
 "Background Playback" = "后台播放";
 "SponsorBlock" = "SponsorBlock";
 "Resume Where You Left Off" = "从上次位置继续";

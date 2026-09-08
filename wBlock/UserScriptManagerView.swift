@@ -57,6 +57,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let isDarkReader: Bool
     let isTubeCleaner: Bool
     let isDeArrow: Bool
+    let isPlayerCleaner: Bool
 
     init(
         script: UserScript,
@@ -66,7 +67,8 @@ private struct UserScriptListItem: Identifiable, Hashable {
         isBeta: Bool = false,
         isDarkReader: Bool = false,
         isTubeCleaner: Bool = false,
-        isDeArrow: Bool = false
+        isDeArrow: Bool = false,
+        isPlayerCleaner: Bool = false
     ) {
         id = script.id
         name = script.name
@@ -98,6 +100,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
         self.isDarkReader = isDarkReader
         self.isTubeCleaner = isTubeCleaner
         self.isDeArrow = isDeArrow
+        self.isPlayerCleaner = isPlayerCleaner
     }
 }
 
@@ -524,7 +527,8 @@ struct UserScriptManagerView: View {
                 isBeta: userScriptManager.isBeta(for: script),
                 isDarkReader: userScriptManager.isDarkReader(script),
                 isTubeCleaner: userScriptManager.isTubeCleaner(script),
-                isDeArrow: userScriptManager.isDeArrow(script)
+                isDeArrow: userScriptManager.isDeArrow(script),
+                isPlayerCleaner: userScriptManager.isPlayerCleaner(script)
             )
         }
     }
@@ -873,6 +877,14 @@ struct UserScriptManagerView: View {
                         features: Binding(
                             get: { userScriptManager.tubeCleanerFeatures },
                             set: { userScriptManager.setTubeCleanerFeatures($0) }
+                        )
+                    )
+                }
+                if script.isPlayerCleaner {
+                    PlayerCleanerFeaturesPicker(
+                        features: Binding(
+                            get: { userScriptManager.playerCleanerFeatures },
+                            set: { userScriptManager.setPlayerCleanerFeatures($0) }
                         )
                     )
                 }
@@ -1530,7 +1542,7 @@ private struct UserScriptSourceSheet: View {
                     .padding(20)
                     // Stretch the content to the sheet so the source editor takes
                     // the space under the metadata fields instead of a fixed 260pt.
-                    .frame(minHeight: proxy.size.height)
+                    .frame(minHeight: proxy.size.height, alignment: .top)
                     .disabled(isSaving)
                 }
                 }
@@ -1663,6 +1675,51 @@ private struct TubeCleanerFeaturesPicker: View {
             Toggle("Quality and Audio Toolbar", isOn: $features.toolbar)
             Divider()
             Button("Enable All") { features = TubeCleanerDeArrowPreference.Features() }
+                .disabled(features.allEnabled)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "slider.horizontal.3")
+                    .imageScale(.small)
+                Text(summary)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.primary.opacity(0.06))
+            )
+        }
+        .buttonStyle(.plain)
+        .noFocusRingCompat()
+        .accessibilityLabel(summary)
+    }
+}
+
+private struct PlayerCleanerFeaturesPicker: View {
+    @Binding var features: PlayerCleanerPreference.Features
+
+    private var summary: String {
+        features.allEnabled
+            ? String(localized: "Features: All")
+            : String.localizedStringWithFormat(
+                NSLocalizedString("Features: %d off", comment: "Tube Cleaner feature picker label with the number of disabled features"),
+                features.disabledCount
+            )
+    }
+
+    var body: some View {
+        Menu {
+            Toggle("Automatic Picture in Picture", isOn: $features.autoPictureInPicture)
+            Toggle("Background Playback", isOn: $features.backgroundPlayback)
+            Divider()
+            Button("Enable All") { features = PlayerCleanerPreference.Features() }
                 .disabled(features.allEnabled)
         } label: {
             HStack(spacing: 6) {

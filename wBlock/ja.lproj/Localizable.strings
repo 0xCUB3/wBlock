@@ -1043,6 +1043,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Chapters" = "チャプター";
 "Captions in Native Player" = "ネイティブプレーヤーの字幕";
 "Picture in Picture" = "ピクチャ・イン・ピクチャ";
+"Automatic Picture in Picture" = "自動ピクチャ・イン・ピクチャ";
 "Background Playback" = "バックグラウンド再生";
 "SponsorBlock" = "SponsorBlock";
 "Resume Where You Left Off" = "前回の位置から再開";

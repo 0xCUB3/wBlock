@@ -1043,6 +1043,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Chapters" = "Κεφάλαια";
 "Captions in Native Player" = "Υπότιτλοι στο εγγενές πρόγραμμα";
 "Picture in Picture" = "Εικόνα σε εικόνα";
+"Automatic Picture in Picture" = "Αυτόματη εικόνα σε εικόνα";
 "Background Playback" = "Αναπαραγωγή στο παρασκήνιο";
 "SponsorBlock" = "SponsorBlock";
 "Resume Where You Left Off" = "Συνέχεια από εκεί που σταμάτησες";

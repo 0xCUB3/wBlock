@@ -1043,6 +1043,7 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Chapters" = "Capítulos";
 "Captions in Native Player" = "Subtítulos en el reproductor nativo";
 "Picture in Picture" = "Imagen dentro de imagen";
+"Automatic Picture in Picture" = "Imagen en imagen automática";
 "Background Playback" = "Reproducción en segundo plano";
 "SponsorBlock" = "SponsorBlock";
 "Resume Where You Left Off" = "Reanudar donde lo dejaste";

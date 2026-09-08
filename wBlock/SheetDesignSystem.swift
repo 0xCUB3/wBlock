@@ -41,10 +41,16 @@ struct SheetDoneButton: View {
     private var styledCloseButton: some View {
         #if os(iOS)
         if #available(iOS 26.0, *) {
+            // A bare glyph makes the glass capsule shorter than the neighboring
+            // text buttons; sizing the label to a text line and asking for a
+            // circle keeps the X round and level with Save (cameren, Discord).
             Button(action: action) {
                 Image(systemName: "xmark")
+                    .font(.body.weight(.medium))
+                    .frame(width: 20, height: 20)
             }
             .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
             .accessibilityLabel("Close")
             .keyboardShortcut(.cancelAction)
         } else {

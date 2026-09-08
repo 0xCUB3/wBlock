@@ -1142,6 +1142,12 @@ public enum WebExtensionRequestHandler {
                 settings: TubeCleanerDeArrowPreference.settings()
             )
         }
+        if PlayerCleanerPreference.matches(scriptURL: script.url) {
+            return PlayerCleanerPreference.configuredExecutableContent(
+                script.executableContent,
+                features: PlayerCleanerPreference.features()
+            )
+        }
         if TubeCleanerDeArrowPreference.matches(scriptURL: script.url) {
             // Older downloaded Tube Cleaner versions must not run a second branding engine.
             var legacySettings = TubeCleanerDeArrowPreference.settings()

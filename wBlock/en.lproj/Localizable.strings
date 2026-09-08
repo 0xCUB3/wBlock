@@ -1042,6 +1042,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Chapters" = "Chapters";
 "Captions in Native Player" = "Captions in Native Player";
 "Picture in Picture" = "Picture in Picture";
+"Automatic Picture in Picture" = "Automatic Picture in Picture";
 "Background Playback" = "Background Playback";
 "SponsorBlock" = "SponsorBlock";
 "Resume Where You Left Off" = "Resume Where You Left Off";

@@ -468,7 +468,9 @@ struct FilterRulesView: View {
         case .advanced: return .blue
         case .removeParam: return .teal
         case .unsupported: return .red
-        case .duplicate: return .orange
+        // Orange is the syntax color for $modifiers, so duplicates use indigo
+        // to keep the legend distinct from tinted rule text.
+        case .duplicate: return .indigo
         }
     }
 
@@ -478,7 +480,7 @@ struct FilterRulesView: View {
         case .advanced: return NSColor.systemBlue.withAlphaComponent(0.18)
         case .removeParam: return NSColor.systemTeal.withAlphaComponent(0.18)
         case .unsupported: return NSColor.systemRed.withAlphaComponent(0.22)
-        case .duplicate: return NSColor.systemOrange.withAlphaComponent(0.22)
+        case .duplicate: return NSColor.systemIndigo.withAlphaComponent(0.22)
         case .comment, .supported: return nil
         }
     }
@@ -488,7 +490,7 @@ struct FilterRulesView: View {
         case .advanced: return UIColor.systemBlue.withAlphaComponent(0.18)
         case .removeParam: return UIColor.systemTeal.withAlphaComponent(0.18)
         case .unsupported: return UIColor.systemRed.withAlphaComponent(0.22)
-        case .duplicate: return UIColor.systemOrange.withAlphaComponent(0.22)
+        case .duplicate: return UIColor.systemIndigo.withAlphaComponent(0.22)
         case .comment, .supported: return nil
         }
     }
