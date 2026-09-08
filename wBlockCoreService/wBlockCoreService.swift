@@ -20,6 +20,7 @@ public enum ContentBlockerService {
 
 public struct ContentBlockerTargetOutcome: Sendable {
     public let safariRulesCount: Int
+    public let truncatedRuleCount: Int
     public let advancedRulesText: String?
     public let reusedCachedBase: Bool
     public let outputChanged: Bool
@@ -33,10 +34,12 @@ public struct ContentBlockerTargetOutcome: Sendable {
         safariRulesCount: Int,
         advancedRulesText: String?,
         reusedCachedBase: Bool,
+        truncatedRuleCount: Int = 0,
         admittedSourceRuleCountsByFilterID: [UUID: Int] = [:]
     ) {
         self.init(
             safariRulesCount: safariRulesCount,
+            truncatedRuleCount: truncatedRuleCount,
             advancedRulesText: advancedRulesText,
             reusedCachedBase: reusedCachedBase,
             outputChanged: true,
@@ -46,12 +49,14 @@ public struct ContentBlockerTargetOutcome: Sendable {
 
     public init(
         safariRulesCount: Int,
+        truncatedRuleCount: Int = 0,
         advancedRulesText: String?,
         reusedCachedBase: Bool,
         outputChanged: Bool,
         admittedSourceRuleCountsByFilterID: [UUID: Int] = [:]
     ) {
         self.safariRulesCount = safariRulesCount
+        self.truncatedRuleCount = truncatedRuleCount
         self.advancedRulesText = advancedRulesText
         self.reusedCachedBase = reusedCachedBase
         self.outputChanged = outputChanged
@@ -1327,7 +1332,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     public static func saveContentBlockerIfChanged(
         jsonRules: String,
         groupIdentifier: String,
-        targetRulesFilename: String
+        targetRulesFilename: String,
+        containerURL explicitContainerURL: URL? = nil
     ) throws -> ContentBlockerSaveResult {
         os_log(.info, "Saving pre-formatted JSON content blocker rules to %@", targetRulesFilename)
         let data = Data(jsonRules.utf8)
@@ -1335,7 +1341,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             throw CocoaError(.fileReadCorruptFile)
         }
 
-        guard let appGroupURL = FileManager.default.containerURL(
+        guard let appGroupURL = explicitContainerURL ?? FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else {
             throw CocoaError(.fileNoSuchFile)
@@ -1358,6 +1364,44 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         return ContentBlockerSaveResult(ruleCount: rules.count, outputChanged: outputChanged)
     }
 
+    public static func finalizeAndSaveContentBlockerIfWithinLimit(
+        baseJSON: String,
+        disabledSites: [String],
+        knownBaseCount: Int? = nil,
+        ruleLimit: Int = safariContentBlockerRuleLimit,
+        groupIdentifier: String,
+        targetRulesFilename: String,
+        containerURL: URL? = nil,
+        isCancelled: (() -> Bool)? = nil
+    ) throws -> (ruleCount: Int, truncatedRuleCount: Int, outputChanged: Bool) {
+        if Task.isCancelled || isCancelled?() == true { throw CancellationError() }
+        let finalized = finalizeContentBlockerJSON(
+            baseJSON: baseJSON,
+            disabledSites: disabledSites,
+            knownBaseCount: knownBaseCount,
+            ruleLimit: ruleLimit
+        )
+        guard finalized.truncatedRuleCount == 0 else {
+            return (
+                ruleCount: finalized.ruleCount,
+                truncatedRuleCount: finalized.truncatedRuleCount,
+                outputChanged: false
+            )
+        }
+        if Task.isCancelled || isCancelled?() == true { throw CancellationError() }
+        let output = try saveContentBlockerIfChanged(
+            jsonRules: finalized.json,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: targetRulesFilename,
+            containerURL: containerURL
+        )
+        return (
+            ruleCount: finalized.ruleCount,
+            truncatedRuleCount: 0,
+            outputChanged: output.outputChanged
+        )
+    }
+
     private static func targetSourceRuleProvenanceFilename(for targetRulesFilename: String) -> String {
         "\(targetRulesFilename).source-rule-provenance.json"
     }
@@ -1365,9 +1409,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     private static func loadTargetSourceRuleProvenance(
         targetRulesFilename: String,
         inputSignature: String,
-        groupIdentifier: String
+        groupIdentifier: String,
+        containerURL explicitContainerURL: URL? = nil
     ) -> [UUID: Int] {
-        guard let containerURL = FileManager.default.containerURL(
+        guard let containerURL = explicitContainerURL ?? FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else { return [:] }
         let url = containerURL.appendingPathComponent(
@@ -1384,14 +1429,16 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         _ counts: [UUID: Int],
         targetRulesFilename: String,
         inputSignature: String,
-        groupIdentifier: String
+        groupIdentifier: String,
+        containerURL: URL? = nil
     ) {
         let stored = StoredTargetSourceRuleProvenance(admittedSourceRuleCountsByFilterID: counts, inputSignature: inputSignature)
         guard let data = try? JSONEncoder().encode(stored) else { return }
         try? saveBlockerListFile(
             contents: String(decoding: data, as: UTF8.self),
             groupIdentifier: groupIdentifier,
-            filename: targetSourceRuleProvenanceFilename(for: targetRulesFilename)
+            filename: targetSourceRuleProvenanceFilename(for: targetRulesFilename),
+            containerURL: containerURL
         )
     }
 
@@ -1404,8 +1451,9 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         targetRulesFilename: String,
         disabledSites: [String],
         cosmeticFilteringEnabled: Bool = true,
+        containerURL explicitContainerURL: URL? = nil,
         isCancelled: (() -> Bool)? = nil
-    ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
+    ) throws -> (safariRulesCount: Int, truncatedRuleCount: Int, advancedRulesText: String?, outputChanged: Bool) {
         let cancellationRequested = {
             Task.isCancelled || isCancelled?() == true
         }
@@ -1415,7 +1463,9 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             cosmeticFilteringEnabled: cosmeticFilteringEnabled
         )
 
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
+        guard let containerURL = explicitContainerURL ?? FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else {
             throw CocoaError(.fileNoSuchFile)
         }
 
@@ -1436,7 +1486,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             cachedHash == effectiveRulesHash,
             ContentBlockerIncrementalCache.hasCoherentBaseRulesCache(
                 targetRulesFilename: targetRulesFilename,
-                groupIdentifier: groupIdentifier
+                groupIdentifier: groupIdentifier,
+                containerURL: containerURL
             ),
             let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8),
             let parsedBaseCount = parsedContentBlockerRuleCount(baseJSON),
@@ -1447,18 +1498,14 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             if cancellationRequested() {
                 throw CancellationError()
             }
-            let finalized = finalizeContentBlockerJSON(
+            let finalized = try finalizeAndSaveContentBlockerIfWithinLimit(
                 baseJSON: baseJSON,
                 disabledSites: sitesToUse,
-                knownBaseCount: baseCount
-            )
-            if cancellationRequested() {
-                throw CancellationError()
-            }
-            let output = try saveContentBlockerIfChanged(
-                jsonRules: finalized.json,
+                knownBaseCount: baseCount,
                 groupIdentifier: groupIdentifier,
-                targetRulesFilename: targetRulesFilename
+                targetRulesFilename: targetRulesFilename,
+                containerURL: containerURL,
+                isCancelled: cancellationRequested
             )
 
             let advancedText =
@@ -1468,8 +1515,9 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
 
             return (
                 safariRulesCount: finalized.ruleCount,
+                truncatedRuleCount: finalized.truncatedRuleCount,
                 advancedRulesText: advancedText,
-                outputChanged: output.outputChanged
+                outputChanged: finalized.outputChanged
             )
         }
 
@@ -1496,27 +1544,28 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         _ = try saveContentBlockerIfChanged(
             jsonRules: result.safariRulesJSON,
             groupIdentifier: groupIdentifier,
-            targetRulesFilename: baseFilename
+            targetRulesFilename: baseFilename,
+            containerURL: containerURL
         )
-        try saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename)
-        try saveBlockerListFile(contents: result.advancedRulesText ?? "", groupIdentifier: groupIdentifier, filename: advancedFilename)
+        try saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename, containerURL: containerURL)
+        try saveBlockerListFile(contents: result.advancedRulesText ?? "", groupIdentifier: groupIdentifier, filename: advancedFilename, containerURL: containerURL)
 
-        let finalized = finalizeContentBlockerJSON(
+        let finalized = try finalizeAndSaveContentBlockerIfWithinLimit(
             baseJSON: result.safariRulesJSON,
             disabledSites: sitesToUse,
-            knownBaseCount: result.safariRulesCount
-        )
-        let output = try saveContentBlockerIfChanged(
-            jsonRules: finalized.json,
+            knownBaseCount: result.safariRulesCount,
             groupIdentifier: groupIdentifier,
-            targetRulesFilename: targetRulesFilename
+            targetRulesFilename: targetRulesFilename,
+            containerURL: containerURL,
+            isCancelled: cancellationRequested
         )
-        try saveBlockerListFile(contents: effectiveRulesHash, groupIdentifier: groupIdentifier, filename: baseHashFilename)
+        try saveBlockerListFile(contents: effectiveRulesHash, groupIdentifier: groupIdentifier, filename: baseHashFilename, containerURL: containerURL)
 
         return (
             safariRulesCount: finalized.ruleCount,
+            truncatedRuleCount: finalized.truncatedRuleCount,
             advancedRulesText: result.advancedRulesText,
-            outputChanged: output.outputChanged
+            outputChanged: finalized.outputChanged
         )
     }
 
@@ -1530,6 +1579,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         disabledSites: [String],
         extraRulesText: String?,
         groupIdentifier: String,
+        containerURL: URL? = nil,
         isCancelled: (() -> Bool)? = nil
     ) throws -> ContentBlockerTargetOutcome {
         if Task.isCancelled || isCancelled?() == true {
@@ -1553,40 +1603,48 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             groupIdentifier: groupIdentifier,
             extraRulesText: extraRulesText,
             cosmeticFilteringEnabled: cosmeticFilteringEnabled,
-            compileOrder: orderedSelectedFilters
+            compileOrder: orderedSelectedFilters,
+            containerURL: containerURL
         )
         let storedSignature = ContentBlockerIncrementalCache.loadInputSignature(
             targetRulesFilename: rulesFilename,
-            groupIdentifier: groupIdentifier
+            groupIdentifier: groupIdentifier,
+            containerURL: containerURL
         )
 
         if let currentSignature,
            currentSignature == storedSignature,
            ContentBlockerIncrementalCache.hasCoherentBaseRulesCache(
                 targetRulesFilename: rulesFilename,
-                groupIdentifier: groupIdentifier
+                groupIdentifier: groupIdentifier,
+                containerURL: containerURL
            ) {
             let fastUpdate = try ContentBlockerService.fastUpdateDisabledSitesWithOutputChange(
                 groupIdentifier: groupIdentifier,
                 targetRulesFilename: rulesFilename,
-                disabledSites: disabledSites
+                disabledSites: disabledSites,
+                containerURL: containerURL,
+                allowTruncation: true
             )
             let cachedAdvancedRules = ContentBlockerIncrementalCache.loadCachedAdvancedRules(
                 targetRulesFilename: rulesFilename,
-                groupIdentifier: groupIdentifier
+                groupIdentifier: groupIdentifier,
+                containerURL: containerURL
             )
             let trimmedAdvanced = cachedAdvancedRules?.trimmingCharacters(
                 in: .whitespacesAndNewlines
             )
             return ContentBlockerTargetOutcome(
                 safariRulesCount: fastUpdate.safariRulesCount,
+                truncatedRuleCount: fastUpdate.truncatedRuleCount,
                 advancedRulesText: (trimmedAdvanced?.isEmpty == false) ? trimmedAdvanced : nil,
                 reusedCachedBase: true,
                 outputChanged: fastUpdate.outputChanged,
                 admittedSourceRuleCountsByFilterID: loadTargetSourceRuleProvenance(
                     targetRulesFilename: rulesFilename,
                     inputSignature: currentSignature,
-                    groupIdentifier: groupIdentifier
+                    groupIdentifier: groupIdentifier,
+                    containerURL: containerURL
                 )
             )
         }
@@ -1601,6 +1659,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             extraRulesText: extraRulesText,
             cosmeticFilteringEnabled: cosmeticFilteringEnabled,
             groupIdentifier: groupIdentifier,
+            containerURL: containerURL,
             isCancelled: isCancelled
         )
 
@@ -1608,18 +1667,21 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             ContentBlockerIncrementalCache.saveInputSignature(
                 currentSignature,
                 targetRulesFilename: rulesFilename,
-                groupIdentifier: groupIdentifier
+                groupIdentifier: groupIdentifier,
+                containerURL: containerURL
             )
             saveTargetSourceRuleProvenance(
                 conversion.admittedSourceRuleCountsByFilterID,
                 targetRulesFilename: rulesFilename,
                 inputSignature: currentSignature,
-                groupIdentifier: groupIdentifier
+                groupIdentifier: groupIdentifier,
+                containerURL: containerURL
             )
         }
 
         return ContentBlockerTargetOutcome(
             safariRulesCount: conversion.safariRulesCount,
+            truncatedRuleCount: conversion.truncatedRuleCount,
             advancedRulesText: conversion.advancedRulesText,
             reusedCachedBase: false,
             outputChanged: conversion.outputChanged,
@@ -1637,9 +1699,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         disabledSites: [String],
         extraRulesText: String?,
         groupIdentifier: String,
+        containerURL explicitContainerURL: URL? = nil,
         isCancelled: (() -> Bool)? = nil
     ) throws -> ContentBlockerTargetOutcome {
-        guard let containerURL = FileManager.default.containerURL(
+        guard let containerURL = explicitContainerURL ?? FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else {
             throw CocoaError(.fileNoSuchFile)
@@ -1672,6 +1735,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             disabledSites: disabledSites,
             extraRulesText: extraRulesText,
             groupIdentifier: groupIdentifier,
+            containerURL: containerURL,
             isCancelled: isCancelled
         )
     }
@@ -1756,9 +1820,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         extraRulesText: String?,
         cosmeticFilteringEnabled: Bool,
         groupIdentifier: String,
+        containerURL explicitContainerURL: URL? = nil,
         isCancelled: (() -> Bool)?
-    ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool, admittedSourceRuleCountsByFilterID: [UUID: Int]) {
-        guard let containerURL = FileManager.default.containerURL(
+    ) throws -> (safariRulesCount: Int, truncatedRuleCount: Int, advancedRulesText: String?, outputChanged: Bool, admittedSourceRuleCountsByFilterID: [UUID: Int]) {
+        guard let containerURL = explicitContainerURL ?? FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else {
             throw CocoaError(.fileNoSuchFile)
@@ -1895,10 +1960,12 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             targetRulesFilename: targetInfo.rulesFilename,
             disabledSites: disabledSites,
             cosmeticFilteringEnabled: cosmeticFilteringEnabled,
+            containerURL: containerURL,
             isCancelled: cancellationRequested
         )
         return (
             safariRulesCount: conversion.safariRulesCount,
+            truncatedRuleCount: conversion.truncatedRuleCount,
             advancedRulesText: conversion.advancedRulesText,
             outputChanged: conversion.outputChanged,
             admittedSourceRuleCountsByFilterID: sourceRuleAdmissions.countsByFilterID
@@ -1916,12 +1983,15 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     public static func fastUpdateDisabledSites(
         groupIdentifier: String,
         targetRulesFilename: String,
-        disabledSites: [String]
+        disabledSites: [String],
+        containerURL: URL? = nil
     ) throws -> (safariRulesCount: Int, advancedRulesText: String?) {
         let result = try fastUpdateDisabledSitesWithOutputChange(
             groupIdentifier: groupIdentifier,
             targetRulesFilename: targetRulesFilename,
-            disabledSites: disabledSites
+            disabledSites: disabledSites,
+            containerURL: containerURL,
+            allowTruncation: false
         )
         return (
             safariRulesCount: result.safariRulesCount,
@@ -1932,11 +2002,15 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     static func fastUpdateDisabledSitesWithOutputChange(
         groupIdentifier: String,
         targetRulesFilename: String,
-        disabledSites: [String]
-    ) throws -> (safariRulesCount: Int, advancedRulesText: String?, outputChanged: Bool) {
+        disabledSites: [String],
+        containerURL explicitContainerURL: URL? = nil,
+        allowTruncation: Bool = false
+    ) throws -> (safariRulesCount: Int, truncatedRuleCount: Int, advancedRulesText: String?, outputChanged: Bool) {
         let sitesToUse = disabledSites
 
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
+        guard let containerURL = explicitContainerURL ?? FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else {
             throw CocoaError(.fileNoSuchFile)
         }
         
@@ -1948,23 +2022,25 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
         if ContentBlockerIncrementalCache.hasCoherentBaseRulesCache(
             targetRulesFilename: targetRulesFilename,
-            groupIdentifier: groupIdentifier
+            groupIdentifier: groupIdentifier,
+            containerURL: containerURL
         ),
            let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8),
            let parsedBaseCount = parsedContentBlockerRuleCount(baseJSON),
            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
                 .flatMap({ Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }),
            baseCount == parsedBaseCount {
-            let finalized = finalizeContentBlockerJSON(
+            let finalized = try finalizeAndSaveContentBlockerIfWithinLimit(
                 baseJSON: baseJSON,
                 disabledSites: sitesToUse,
-                knownBaseCount: baseCount
-            )
-            let output = try saveContentBlockerIfChanged(
-                jsonRules: finalized.json,
+                knownBaseCount: baseCount,
                 groupIdentifier: groupIdentifier,
-                targetRulesFilename: targetRulesFilename
+                targetRulesFilename: targetRulesFilename,
+                containerURL: containerURL
             )
+            if finalized.truncatedRuleCount > 0 && !allowTruncation {
+                throw CocoaError(.fileReadCorruptFile)
+            }
 
             let advancedURL = containerURL.appendingPathComponent(
                 ContentBlockerIncrementalCache.baseAdvancedRulesFilename(for: targetRulesFilename)
@@ -1976,8 +2052,9 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
             return (
                 safariRulesCount: finalRuleCount,
+                truncatedRuleCount: finalized.truncatedRuleCount,
                 advancedRulesText: advancedRulesText.isEmpty ? nil : advancedRulesText,
-                outputChanged: output.outputChanged
+                outputChanged: finalized.outputChanged
             )
         }
 
@@ -1994,27 +2071,28 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         disabledSites: [String],
         knownBaseCount: Int? = nil,
         ruleLimit: Int = safariContentBlockerRuleLimit
-    ) -> (json: String, ruleCount: Int) {
+    ) -> (json: String, ruleCount: Int, truncatedRuleCount: Int) {
         let limit = max(ruleLimit, 0)
         let sites = Array(
             DisabledSitesNormalizer.normalizedDomains(from: disabledSites).prefix(limit)
         )
+        let baseCount = knownBaseCount ?? countRulesInJSON(baseJSON)
 
         guard !sites.isEmpty else {
-            if let knownBaseCount, knownBaseCount <= limit {
-                return (baseJSON, knownBaseCount)
+            if baseCount <= limit {
+                return (baseJSON, baseCount, 0)
             }
             if let truncated = truncateContentBlockerJSON(baseJSON, to: limit) {
-                return truncated
+                return (truncated.json, truncated.ruleCount, max(0, baseCount - truncated.ruleCount))
             }
-            return (baseJSON, min(knownBaseCount ?? countRulesInJSON(baseJSON), limit))
+            return (baseJSON, min(baseCount, limit), max(0, baseCount - limit))
         }
 
-        let baseCount = knownBaseCount ?? countRulesInJSON(baseJSON)
         if baseCount + sites.count <= limit {
             return (
                 injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sites),
-                baseCount + sites.count
+                baseCount + sites.count,
+                0
             )
         }
 
@@ -2023,15 +2101,17 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             if baseCount <= maxBase {
                 return (
                     injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sites),
-                    baseCount + sites.count
+                    baseCount + sites.count,
+                    0
                 )
             }
-            return (baseJSON, min(baseCount, limit))
+            return (baseJSON, min(baseCount, limit), max(0, baseCount - maxBase))
         }
 
         return (
             injectIgnoreRulesForDisabledSites(json: truncated.json, disabledSites: sites),
-            truncated.ruleCount + sites.count
+            truncated.ruleCount + sites.count,
+            max(0, baseCount - truncated.ruleCount)
         )
     }
 
@@ -2735,9 +2815,14 @@ extension ContentBlockerService {
     /// - Parameters:
     ///   - contents: String content to write to the blocker list file.
     ///   - groupIdentifier: App group identifier for accessing the shared container.
-    private static func saveBlockerListFile(contents: String, groupIdentifier: String, filename: String) throws {
+    private static func saveBlockerListFile(
+        contents: String,
+        groupIdentifier: String,
+        filename: String,
+        containerURL explicitContainerURL: URL? = nil
+    ) throws {
         guard
-            let appGroupURL = FileManager.default.containerURL(
+            let appGroupURL = explicitContainerURL ?? FileManager.default.containerURL(
                 forSecurityApplicationGroupIdentifier: groupIdentifier
             )
         else {

@@ -325,9 +325,9 @@ final class FilterListUpdater: @unchecked Sendable {
         if let cached = await pendingDownloads.take(filter.id) {
             return await processDownloadedFilter(filter, download: cached)
         }
-        if PendingFilterUpdateRevisions.contains(filterID: filter.id.uuidString),
-           loader.filterFileExists(filter) {
-            return .unchanged
+        if let pending = PendingFilterUpdateRevisions.publishedRevision(filterID: filter.id.uuidString),
+           await applyPublishedPendingRevision(pending, to: filter) {
+            return .updated
         }
         do {
             let validators = loader.filterFileExists(filter)
@@ -362,6 +362,41 @@ final class FilterListUpdater: @unchecked Sendable {
                 metadata: ["filter": filter.name, "error": LogErrorDescriber.describe(error)])
             return .unavailable
         }
+    }
+
+    private func applyPublishedPendingRevision(
+        _ revision: PendingFilterUpdateRevisions.Revision,
+        to filter: FilterList
+    ) async -> Bool {
+        guard let content = loader.readLocalFilterContent(filter) else { return false }
+        let metadata = parseMetadata(from: content)
+        var recovered = FilterListRemoteMetadataPolicy.applying(
+            title: metadata.title,
+            description: metadata.description,
+            version: revision.version ?? metadata.version,
+            to: filter
+        )
+        recovered.sourceRuleCount = countRulesInContent(content: content)
+        recovered.lastUpdated = Date(timeIntervalSince1970: revision.downloadedAt)
+        recovered.etag = revision.etag
+        recovered.serverLastModified = revision.lastModified
+
+        await MainActor.run {
+            guard let index = filterListManager?.filterLists.firstIndex(where: { $0.id == recovered.id }) else {
+                return
+            }
+            let current = filterListManager!.filterLists[index]
+            var merged = FilterSelectionRebaser.rebaseSelection(
+                snapshot: [recovered],
+                latestPersisted: [current]
+            ).first ?? recovered
+            merged.url = current.url
+            merged.category = current.category
+            merged.isCustom = current.isCustom
+            filterListManager?.filterLists[index] = merged
+            filterListManager?.objectWillChange.send()
+        }
+        return true
     }
 
     /// Saves a fetched (or previously checked) filter body. Shared by the

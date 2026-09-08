@@ -264,9 +264,10 @@ public enum ContentBlockerIncrementalCache {
         groupIdentifier: String,
         extraRulesText: String? = nil,
         cosmeticFilteringEnabled: Bool = true,
-        compileOrder: [FilterList] = []
+        compileOrder: [FilterList] = [],
+        containerURL explicitContainerURL: URL? = nil
     ) -> String? {
-        guard let containerURL = FileManager.default.containerURL(
+        guard let containerURL = explicitContainerURL ?? FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else {
             return nil
@@ -311,10 +312,15 @@ public enum ContentBlockerIncrementalCache {
 
     public static func loadInputSignature(
         targetRulesFilename: String,
-        groupIdentifier: String
+        groupIdentifier: String,
+        containerURL: URL? = nil
     ) -> String? {
         guard
-            let url = stateFileURL(targetRulesFilename: targetRulesFilename, groupIdentifier: groupIdentifier),
+            let url = stateFileURL(
+                targetRulesFilename: targetRulesFilename,
+                groupIdentifier: groupIdentifier,
+                containerURL: containerURL
+            ),
             let data = try? Data(contentsOf: url),
             let state = try? JSONDecoder().decode(State.self, from: data)
         else {
@@ -326,11 +332,13 @@ public enum ContentBlockerIncrementalCache {
     public static func saveInputSignature(
         _ signature: String,
         targetRulesFilename: String,
-        groupIdentifier: String
+        groupIdentifier: String,
+        containerURL: URL? = nil
     ) {
         guard let url = stateFileURL(
             targetRulesFilename: targetRulesFilename,
-            groupIdentifier: groupIdentifier
+            groupIdentifier: groupIdentifier,
+            containerURL: containerURL
         ) else {
             return
         }
@@ -346,11 +354,13 @@ public enum ContentBlockerIncrementalCache {
 
     public static func invalidateInputSignature(
         targetRulesFilename: String,
-        groupIdentifier: String
+        groupIdentifier: String,
+        containerURL: URL? = nil
     ) {
         guard let url = stateFileURL(
             targetRulesFilename: targetRulesFilename,
-            groupIdentifier: groupIdentifier
+            groupIdentifier: groupIdentifier,
+            containerURL: containerURL
         ) else {
             return
         }
@@ -363,9 +373,10 @@ public enum ContentBlockerIncrementalCache {
     /// conversion rather than silently dropping advanced rules.
     public static func hasCoherentBaseRulesCache(
         targetRulesFilename: String,
-        groupIdentifier: String
+        groupIdentifier: String,
+        containerURL explicitContainerURL: URL? = nil
     ) -> Bool {
-        guard let containerURL = FileManager.default.containerURL(
+        guard let containerURL = explicitContainerURL ?? FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else { return false }
 
@@ -413,9 +424,10 @@ public enum ContentBlockerIncrementalCache {
 
     public static func loadCachedAdvancedRules(
         targetRulesFilename: String,
-        groupIdentifier: String
+        groupIdentifier: String,
+        containerURL explicitContainerURL: URL? = nil
     ) -> String? {
-        guard let containerURL = FileManager.default.containerURL(
+        guard let containerURL = explicitContainerURL ?? FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else {
             return nil
@@ -462,9 +474,10 @@ public enum ContentBlockerIncrementalCache {
 
     private static func stateFileURL(
         targetRulesFilename: String,
-        groupIdentifier: String
+        groupIdentifier: String,
+        containerURL explicitContainerURL: URL? = nil
     ) -> URL? {
-        guard let containerURL = FileManager.default.containerURL(
+        guard let containerURL = explicitContainerURL ?? FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else {
             return nil

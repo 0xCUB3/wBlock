@@ -963,7 +963,8 @@ public actor SharedAutoUpdateManager {
             // Filter files the Safari extension downloaded while browsing (#528)
             // are already on disk, so the servers report nothing new here. The
             // marker tells this run to rebuild from them anyway.
-            if !isExternalHelperTrigger(trigger), let staged = StagedFilterDownloads.load() {
+            let stagedDownloadMarker = isExternalHelperTrigger(trigger) ? nil : StagedFilterDownloads.load()
+            if let staged = stagedDownloadMarker {
                 let stagedIDs = Set(staged.filterIDs)
                 let alreadyIncluded = Set(updatedFilterSet.map { $0.id.uuidString })
                 let fromMarker = stagedIDs.isEmpty
@@ -1075,7 +1076,7 @@ public actor SharedAutoUpdateManager {
             try await saveAutoUpdateStateImmediately(context: AutoUpdateBudgetPhase.finalStateSave)
             try throwIfCancelled()
             let helperStagedUpdates = isExternalHelperTrigger(trigger)
-            let pendingRevisionSnapshot = PendingFilterUpdateRevisions.snapshot(
+            let pendingRevisionSnapshot = PendingFilterUpdateRevisions.snapshotPublished(
                 filterIDs: Set(merged.filter { $0.isSelected }.map { $0.id.uuidString })
             )
             let rebuildSummary = try await rebuildAndReload(
@@ -1095,7 +1096,9 @@ public actor SharedAutoUpdateManager {
             try throwIfCancelled()
             if !helperStagedUpdates {
                 PendingFilterUpdateRevisions.acknowledge(pendingRevisionSnapshot)
-                StagedFilterDownloads.clear()
+                if let stagedDownloadMarker {
+                    _ = StagedFilterDownloads.clear(ifMatches: stagedDownloadMarker)
+                }
             }
 
             try requireUserScriptsBudget()
@@ -1278,7 +1281,9 @@ public actor SharedAutoUpdateManager {
 
         // Marker first: if this process dies between writing a list file and
         // saving metadata, the app still rebuilds from whatever landed.
-        StagedFilterDownloads.save(filterIDs: [])
+        guard let stagingMarker = StagedFilterDownloads.save(filterIDs: []) else {
+            return .skipped(reason: "staging_marker_unavailable")
+        }
         await ProtobufDataManager.shared.setAutoUpdateLastCheckTime(Int64(now))
         appendSharedLog("Extension staging started: trigger=\(trigger), intervalHours=\(String(format: "%.1f", interval))")
 
@@ -1286,7 +1291,7 @@ public actor SharedAutoUpdateManager {
         do {
             updateResult = try await checkAndFetchUpdates(filters: selectedFilters)
         } catch {
-            StagedFilterDownloads.clear()
+            _ = StagedFilterDownloads.clear(ifMatches: stagingMarker)
             appendSharedLog("Extension staging failed: \(error.localizedDescription)")
             return .skipped(reason: "fetch_failed")
         }
@@ -1296,7 +1301,7 @@ public actor SharedAutoUpdateManager {
         let nextCheck = completion + (updateResult.hadErrors ? retryDelay : interval * 3600)
 
         guard !updateResult.updatedFilters.isEmpty else {
-            StagedFilterDownloads.clear()
+            _ = StagedFilterDownloads.clear(ifMatches: stagingMarker)
             await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextCheck))
             _ = await ProtobufDataManager.shared.saveDataImmediately()
             invalidateStatusCache()
@@ -1316,7 +1321,7 @@ public actor SharedAutoUpdateManager {
         let latestPersisted = await ProtobufDataManager.shared.getFilterLists()
         merged = FilterSelectionRebaser.rebaseSelection(snapshot: merged, latestPersisted: latestPersisted)
         await saveFilterListsToProtobuf(merged)
-        StagedFilterDownloads.save(filterIDs: updateResult.updatedFilters.map { $0.id.uuidString })
+        _ = StagedFilterDownloads.save(filterIDs: updateResult.updatedFilters.map { $0.id.uuidString })
         await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
         await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextCheck))
         _ = await ProtobufDataManager.shared.saveDataImmediately()
@@ -1464,6 +1469,22 @@ public actor SharedAutoUpdateManager {
 
     private func fetchIfUpdated(_ filter: FilterList, containerURL: URL) async -> FilterFetchOutcome {
         let uuid = filter.id.uuidString
+        if let pending = PendingFilterUpdateRevisions.publishedRevision(filterID: uuid) {
+            var updated = filter
+            if let data = localDataForComparison(filter: filter, containerURL: containerURL) {
+                updated.sourceRuleCount = countRulesInData(data: data)
+            }
+            if let version = pending.version, !version.isEmpty {
+                updated.version = version
+            }
+            updated.lastUpdated = Date(timeIntervalSince1970: pending.downloadedAt)
+            updated.etag = pending.etag
+            updated.serverLastModified = pending.lastModified
+            return .updated(
+                filter: updated,
+                validators: (etag: pending.etag, lastModified: pending.lastModified)
+            )
+        }
         let etag = await getFilterEtag(uuid)
         let lastModified = await getFilterLastModified(uuid)
         // Attempt a uBlock-Origin-style delta/differential update first. A nil
@@ -1915,7 +1936,7 @@ public actor SharedAutoUpdateManager {
 
     private struct ConversionTargetResult: Sendable {
         let target: ContentBlockerTargetInfo
-        let conversion: (safariRulesCount: Int, advancedRulesText: String?)?
+        let conversion: (safariRulesCount: Int, truncatedRuleCount: Int, advancedRulesText: String?)?
         let usedCache: Bool
         let admittedSourceRuleCountsByFilterID: [UUID: Int]
         let inputWriteMs: Int
@@ -1957,7 +1978,11 @@ public actor SharedAutoUpdateManager {
                 isCancelled: { Task.isCancelled }
             )
 
-            let conversion = (safariRulesCount: outcome.safariRulesCount, advancedRulesText: outcome.advancedRulesText)
+            let conversion = (
+                safariRulesCount: outcome.safariRulesCount,
+                truncatedRuleCount: outcome.truncatedRuleCount,
+                advancedRulesText: outcome.advancedRulesText
+            )
             return ConversionTargetResult(
                 target: target,
                 conversion: conversion,
@@ -2067,6 +2092,26 @@ public actor SharedAutoUpdateManager {
                 )
             case nil:
                 guard result.conversion != nil else { throw CancellationError() }
+            }
+        }
+
+        for target in targets {
+            guard let conversion = results[target.bundleIdentifier]?.conversion else {
+                throw CancellationError()
+            }
+            if conversion.truncatedRuleCount > 0 {
+                throw NSError(
+                    domain: "SharedAutoUpdateManager.RuleLimit",
+                    code: 1,
+                    userInfo: [
+                        NSLocalizedDescriptionKey:
+                            String.localizedStringWithFormat(
+                                NSLocalizedString("%@ dropped %d rules at Safari's per-extension limit.", comment: "Truncated Safari rule count"),
+                                target.displayName,
+                                conversion.truncatedRuleCount
+                            )
+                    ]
+                )
             }
         }
 

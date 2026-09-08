@@ -10,6 +10,26 @@ import Foundation
 /// Shared slot-mapping logic used by the app and background auto-update flows.
 /// This keeps target distribution behavior identical across processes.
 public enum ContentBlockerMappingService {
+    /// Refreshes download-derived metadata without changing the user configuration
+    /// captured at the start of an apply run.
+    public static func refreshingCompilationMetadata(
+        snapshot: [FilterList],
+        latest: [FilterList]
+    ) -> [FilterList] {
+        let latestByID = Dictionary(latest.map { ($0.id, $0) }, uniquingKeysWith: { _, newer in newer })
+        return snapshot.map { filter in
+            guard let current = latestByID[filter.id] else { return filter }
+            var refreshed = filter
+            refreshed.version = current.version
+            refreshed.sourceRuleCount = current.sourceRuleCount
+            refreshed.rawSourceRuleCount = current.rawSourceRuleCount
+            refreshed.lastUpdated = current.lastUpdated
+            refreshed.etag = current.etag
+            refreshed.serverLastModified = current.serverLastModified
+            return refreshed
+        }
+    }
+
     /// Order in which a target's lists are fed to the converter (#645). Safari's
     /// converter keeps the first rules and drops the rest when a target overflows,
     /// so the most recently updated lists go first and stale content is what gets

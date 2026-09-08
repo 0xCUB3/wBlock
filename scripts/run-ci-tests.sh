@@ -268,6 +268,11 @@ compile_and_run pending-filter-update-revisions \
   wBlockCoreService/PendingFilterUpdateRevisions.swift \
   scripts/test_pending_filter_update_revisions.swift
 
+compile_and_run staged-filter-downloads \
+  wBlockCoreService/GroupIdentifier.swift \
+  wBlockCoreService/StagedFilterDownloads.swift \
+  scripts/test_staged_filter_downloads.swift
+
 compile_and_run bounded-concurrency \
   wBlockCoreService/AsyncConcurrency.swift \
   scripts/test_bounded_concurrent_compact_map.swift

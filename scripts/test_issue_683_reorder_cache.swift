@@ -5,9 +5,8 @@ import wBlockCoreService
 struct ReorderCacheTests {
     static func main() throws {
         let group = "group.wblock.test.issue683.\(UUID().uuidString)"
-        guard let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group) else {
-            fatalError("scratch container unavailable")
-        }
+        let container = FileManager.default.temporaryDirectory
+            .appendingPathComponent("wblock-issue683-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: container, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: container) }
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: .macOS)
@@ -27,7 +26,8 @@ struct ReorderCacheTests {
             try ContentBlockerService.compileTargetRules(
                 filters: assigned, orderedSelectedFilters: ordered,
                 affinitySnapshot: SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: container),
-                targetInfo: target, allTargets: targets, disabledSites: [], extraRulesText: extra, groupIdentifier: group
+                targetInfo: target, allTargets: targets, disabledSites: [], extraRulesText: extra,
+                groupIdentifier: group, containerURL: container
             )
         }
         func output() throws -> Data {
@@ -39,7 +39,11 @@ struct ReorderCacheTests {
         let reordered = try compile([b, a], [d, b, c, a])
         precondition(reordered.reusedCachedBase, "reordering assigned and affinity lists must hit cache")
         precondition(first.safariRulesCount == reordered.safariRulesCount)
-        ContentBlockerIncrementalCache.invalidateInputSignature(targetRulesFilename: target.rulesFilename, groupIdentifier: group)
+        ContentBlockerIncrementalCache.invalidateInputSignature(
+            targetRulesFilename: target.rulesFilename,
+            groupIdentifier: group,
+            containerURL: container
+        )
         let rebuilt = try compile([b, a], [d, b, c, a])
         let fresh = try output()
         precondition(!rebuilt.reusedCachedBase && original == fresh, "fresh output must match cached output after reorder")

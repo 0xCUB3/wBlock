@@ -3,6 +3,9 @@ import wBlockCoreService
 
 final class FilterDownloadProtocol: URLProtocol {
     nonisolated(unsafe) static var requests: [URL] = []
+    nonisolated(unsafe) static var statusCode = 200
+    nonisolated(unsafe) static var responseData = Data("||included.example^\n".utf8)
+    nonisolated(unsafe) static var responseError: Error?
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -10,15 +13,18 @@ final class FilterDownloadProtocol: URLProtocol {
     override func startLoading() {
         guard let url = request.url else { return }
         Self.requests.append(url)
-        let body = "||included.example^\n"
+        if let error = Self.responseError {
+            client?.urlProtocol(self, didFailWithError: error)
+            return
+        }
         let response = HTTPURLResponse(
             url: url,
-            statusCode: 200,
+            statusCode: Self.statusCode,
             httpVersion: nil,
             headerFields: ["Content-Type": "text/plain"]
         )!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-        client?.urlProtocol(self, didLoad: Data(body.utf8))
+        client?.urlProtocol(self, didLoad: Self.responseData)
         client?.urlProtocolDidFinishLoading(self)
     }
 
@@ -89,8 +95,103 @@ struct FilterDownloadProcessorTests {
         expect(!published.contains("!#unsupported"), "published source should strip unknown directives")
 
         let revisionStoreURL = containerURL.appendingPathComponent(PendingFilterUpdateRevisions.filename)
+        let sourceBeforeFailedInclude = try Data(contentsOf: publishedURL)
+        let revisionsBeforeFailedInclude = PendingFilterUpdateRevisions.load(storeURL: revisionStoreURL)
+        func expectFailedIncludePreservesPublishedSource(_ label: String) async {
+            do {
+                _ = try await FilterDownloadProcessor.processAndPublish(
+                    data: Data("!#include child.txt\n||replacement.example^\n".utf8),
+                    sourceURL: sourceURL,
+                    filter: processed.filter,
+                    containerURL: containerURL,
+                    etag: "etag-failed-include",
+                    lastModified: nil,
+                    urlSession: session
+                )
+                fatalError("\(label) must not publish a partial filter")
+            } catch {
+                expectEqual(
+                    try! Data(contentsOf: publishedURL), sourceBeforeFailedInclude,
+                    "\(label) must preserve the previously published source"
+                )
+                expectEqual(
+                    PendingFilterUpdateRevisions.load(storeURL: revisionStoreURL), revisionsBeforeFailedInclude,
+                    "\(label) must not advance the pending revision"
+                )
+            }
+        }
+
+        FilterDownloadProtocol.statusCode = 503
+        await expectFailedIncludePreservesPublishedSource("HTTP 503 include")
+        FilterDownloadProtocol.statusCode = 200
+        FilterDownloadProtocol.responseData = Data([0xff, 0xfe])
+        await expectFailedIncludePreservesPublishedSource("invalid UTF-8 include")
+        FilterDownloadProtocol.responseData = Data("||included.example^\n".utf8)
+        FilterDownloadProtocol.responseError = URLError(.cannotConnectToHost)
+        await expectFailedIncludePreservesPublishedSource("network-failed include")
+        FilterDownloadProtocol.responseError = nil
+
+        let cancelledInclude = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await FilterDownloadProcessor.processAndPublish(
+                data: Data("!#include child.txt\n||replacement.example^\n".utf8),
+                sourceURL: sourceURL,
+                filter: processed.filter,
+                containerURL: containerURL,
+                etag: "etag-cancelled-include",
+                lastModified: nil,
+                urlSession: session
+            )
+        }
+        do {
+            _ = try await cancelledInclude.value
+            fatalError("cancelled include processing must not publish")
+        } catch is CancellationError {
+            expectEqual(
+                try Data(contentsOf: publishedURL), sourceBeforeFailedInclude,
+                "cancelled include processing must preserve the previously published source"
+            )
+            expectEqual(
+                PendingFilterUpdateRevisions.load(storeURL: revisionStoreURL), revisionsBeforeFailedInclude,
+                "cancelled include processing must not advance the pending revision"
+            )
+        } catch {
+            fatalError("cancelled include processing must propagate CancellationError, got \(error)")
+        }
+
+        let emptyContainerURL = containerURL.appendingPathComponent("empty-include-control", isDirectory: true)
+        try FileManager.default.createDirectory(at: emptyContainerURL, withIntermediateDirectories: true)
+        FilterDownloadProtocol.responseData = Data()
+        let emptyIncludeFilter = FilterList(
+            name: "Empty Include",
+            url: URL(string: "https://fallback.example/lists/empty-main.txt")!,
+            category: .custom,
+            isCustom: true
+        )
+        let emptyIncludeResult = try await FilterDownloadProcessor.processAndPublish(
+            data: Data("!#include child.txt\n||empty-control.example^\n".utf8),
+            sourceURL: emptyIncludeFilter.url,
+            filter: emptyIncludeFilter,
+            containerURL: emptyContainerURL,
+            etag: nil,
+            lastModified: nil,
+            urlSession: session
+        )
+        expectEqual(emptyIncludeResult.filter.sourceRuleCount, 1, "empty HTTP 200 include should remain a successful fetch")
+        let emptyIncludeURL = emptyContainerURL.appendingPathComponent(
+            ContentBlockerIncrementalCache.localFilename(for: emptyIncludeFilter)
+        )
+        let emptyIncludeContent = try String(contentsOf: emptyIncludeURL, encoding: .utf8)
+        expect(emptyIncludeContent.contains("||empty-control.example^"),
+               "empty HTTP 200 include should still publish the parent filter")
+        FilterDownloadProtocol.responseData = Data("||included.example^\n".utf8)
+
         let revision = PendingFilterUpdateRevisions.load(storeURL: revisionStoreURL)[filter.id.uuidString]
         expectEqual(revision?.etag, "etag-1", "publication should record the matching pending revision")
+        expectEqual(revision?.sourceFilename, filename, "pending revision should identify its published source file")
+        expect(revision?.sourceSHA256?.isEmpty == false, "pending revision should bind to a source digest")
+        expect(PendingFilterUpdateRevisions.isPublished(filterID: filter.id.uuidString, storeURL: revisionStoreURL),
+               "freshly published revision should verify against its source digest")
 
         let baselineURL = containerURL.appendingPathComponent("diff-baseline-\(filename)")
         expectEqual(
