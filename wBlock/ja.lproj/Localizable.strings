@@ -761,7 +761,11 @@
 "The following filters were automatically disabled:
 
 %@
+
 To re-enable these filters, disable other large filters and apply changes again." = "次のフィルターは自動的に無効になりました:
+
+%@
+
 再度有効にするには、他の大きなフィルターを無効にしてからもう一度変更を適用してください。";
 "The following filters were automatically disabled:\\n\\n%@\\n\\nTo re-enable these filters, disable other large filters and apply changes again." = "次のフィルタは自動的に無効になりました:\\n\\n%@\\n\\nこれらのフィルタを再度有効にするには、他の大きなフィルタを無効にして、変更を再度適用してください。";
 "These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later." = "これらのフィルターは、既定のフィルターリストに加えて、選択した言語でのブロック力を強化します。既定のフィルターリストでは、英語サイトと国際的なサイトはすでにカバーされています。後で細かく調整できます。";
@@ -919,16 +923,19 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks tracking pixels and other mail tracking techniques." = "トラッキングピクセルやその他のメール追跡技術をブロックします。";
 "Blocks public websites from reaching local network addresses and router admin pages. Can break some local apps." = "公開ウェブサイトがローカルネットワークのアドレスやルーター管理ページにアクセスするのを防ぎます。一部のローカルアプリが動作しなくなる場合があります。";
 "Allows sites and resources that should not be blocked." = "ブロックすべきでないサイトやリソースを許可します。";
+
 /* Auto-update controls */
 "Auto-Update" = "自動更新";
 "Auto-Update Filters & Userscripts" = "フィルターとユーザースクリプトを自動更新";
 "Update Now" = "今すぐ更新";
+
 /* Add mode controls */
 "Text" = "テキスト";
 "Choose File" = "ファイルを選択";
 "Change File" = "ファイルを変更";
 "Local imports won't auto-update; re-import to replace." = "ローカルインポートは自動更新されません。置き換えるには再インポートしてください。";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard ExtraはTwitchの広告をブロックし、複雑な広告ブロック対策に対応します。";
+
 /* Issue 508 UI */
 "Disable Essential Filter?" = "必須フィルタを無効にしますか？";
 "Replace Existing Content?" = "既存の内容を置き換えますか？";
@@ -948,10 +955,13 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Developer" = "開発者";
 "GPL-3.0 License" = "GPL-3.0 ライセンス";
 "Privacy Policy" = "プライバシーポリシー";
+
+/* Issue 508 UI */
 "Use a valid http:// or https:// URL" = "有効な http:// または https:// URL を使用してください";
 "Include a host name" = "ホスト名を含めてください";
 "Do not use a userscript URL ending in .js, .mjs, or .cjs" = ".js、.mjs、.cjs で終わる Userscript URL は使用しないでください";
 "wBlock will fetch and enable the filter list automatically" = "wBlock がフィルタリストを自動取得して有効にします";
+
 /* Issue 508 UI follow-up */
 "Starts with http:// or https://" = "http:// または https:// で始まる";
 "Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "末尾が .js、.user.js、.user.css、.less、.sass、.scss、.styl、または .pcss";
@@ -959,6 +969,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "The file must include userscript or userstyle metadata." = "ファイルにはユーザースクリプトまたはユーザースタイルのメタデータを含める必要があります。";
 "Failed to clear downloaded custom filter state; apply again to retry." = "ダウンロードしたカスタムフィルタの状態を消去できませんでした。もう一度適用して再試行してください。";
 "Failed to resume blocking." = "ブロックを再開できませんでした。";
+
 /* Userscript display categories */
 "Functionality" = "機能";
 "Appearance" = "外観";
