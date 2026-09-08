@@ -18,7 +18,7 @@ class FilterUpdateService: NSObject, FilterUpdateProtocol {
     }
 
     func startFilterUpdate(_ reply: @escaping (Bool) -> Void) {
-        guard FilterUpdatePopupStatus.beginIfIdle() else {
+        guard let claim = FilterUpdatePopupStatus.beginIfIdle() else {
             reply(false)
             return
         }
@@ -31,7 +31,7 @@ class FilterUpdateService: NSObject, FilterUpdateProtocol {
                 trigger: "XPCService",
                 force: true
             )
-            FilterUpdatePopupStatus.finish(outcome)
+            FilterUpdatePopupStatus.finish(outcome, claim: claim)
         }
     }
 }

@@ -1126,3 +1126,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Paste non-empty plain text and review it before adding." = "비어 있지 않은 일반 텍스트를 붙여넣고 추가하기 전에 검토하세요.";
 
 "Choose a non-empty text file and review it before adding." = "비어 있지 않은 텍스트 파일을 선택하고 추가하기 전에 검토하세요.";
+
+/* Filter update reliability */
+"A wBlock filter update is already in progress." = "wBlock 필터 업데이트가 이미 진행 중입니다.";
+"wBlock filter update completed." = "wBlock 필터 업데이트가 완료되었습니다.";
+"wBlock filter update completed with errors." = "wBlock 필터 업데이트가 오류와 함께 완료되었습니다.";
+"Shared update status is unavailable." = "공유 업데이트 상태를 사용할 수 없습니다.";
+"Shared update status lock is unavailable." = "공유 업데이트 상태 잠금을 사용할 수 없습니다.";
+"%@ dropped %d rules at Safari's per-extension limit." = "%@에서 Safari의 확장 프로그램별 제한으로 인해 규칙 %d개를 제외했습니다.";

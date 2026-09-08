@@ -1126,3 +1126,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Paste non-empty plain text and review it before adding." = "Επικολλήστε μη κενό απλό κείμενο και ελέγξτε το πριν το προσθέσετε.";
 
 "Choose a non-empty text file and review it before adding." = "Επιλέξτε ένα μη κενό αρχείο κειμένου και ελέγξτε το πριν το προσθέσετε.";
+
+/* Filter update reliability */
+"A wBlock filter update is already in progress." = "Μια ενημέρωση φίλτρων του wBlock βρίσκεται ήδη σε εξέλιξη.";
+"wBlock filter update completed." = "Η ενημέρωση φίλτρων του wBlock ολοκληρώθηκε.";
+"wBlock filter update completed with errors." = "Η ενημέρωση φίλτρων του wBlock ολοκληρώθηκε με σφάλματα.";
+"Shared update status is unavailable." = "Η κοινόχρηστη κατάσταση ενημέρωσης δεν είναι διαθέσιμη.";
+"Shared update status lock is unavailable." = "Το κλείδωμα της κοινόχρηστης κατάστασης ενημέρωσης δεν είναι διαθέσιμο.";
+"%@ dropped %d rules at Safari's per-extension limit." = "Το %@ παρέλειψε %d κανόνες λόγω του ορίου του Safari ανά επέκταση.";

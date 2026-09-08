@@ -32,9 +32,14 @@ struct UpdateWBlockFiltersIntent: AppIntent {
         await manager.waitUntilReady()
         await UserScriptManager.shared.waitUntilReady()
         manager.setUserScriptManager(UserScriptManager.shared)
-        await manager.performFilterUpdate(showProgress: false)
-
-        return .result(dialog: IntentDialog("wBlock filter update started."))
+        let started = await manager.performFilterUpdate(showProgress: false)
+        guard started else {
+            return .result(dialog: IntentDialog("A wBlock filter update is already in progress."))
+        }
+        if manager.lastApplySucceeded && !manager.hasError {
+            return .result(dialog: IntentDialog("wBlock filter update completed."))
+        }
+        return .result(dialog: IntentDialog("wBlock filter update completed with errors."))
     }
 }
 

@@ -416,19 +416,19 @@ class AppFilterManager: ObservableObject {
             queue: nil
         ) { [weak self] _ in
             Task { @MainActor [weak self] in
-                guard let self, FilterUpdatePopupStatus.consumeUpdateRequest() else { return }
-                await self.handleFilterUpdateRequest()
+                guard let self, let claim = FilterUpdatePopupStatus.consumeUpdateRequest() else { return }
+                await self.handleFilterUpdateRequest(claim: claim)
             }
         }
 
-        if FilterUpdatePopupStatus.consumeUpdateRequest() {
+        if let claim = FilterUpdatePopupStatus.consumeUpdateRequest() {
             Task { @MainActor [weak self] in
-                await self?.handleFilterUpdateRequest()
+                await self?.handleFilterUpdateRequest(claim: claim)
             }
         }
     }
 
-    private func handleFilterUpdateRequest() async {
+    private func handleFilterUpdateRequest(claim: FilterUpdatePopupStatus.ClaimToken) async {
         guard !filterUpdateInFlight else { return }
         filterUpdateInFlight = true
         defer { filterUpdateInFlight = false }
@@ -438,7 +438,7 @@ class AppFilterManager: ObservableObject {
             trigger: "Popup",
             force: true
         )
-        FilterUpdatePopupStatus.finish(outcome)
+        FilterUpdatePopupStatus.finish(outcome, claim: claim)
     }
 
     private static let filterUpdateRequestCallback: CFNotificationCallback = { _, _, _, _, _ in

@@ -1126,3 +1126,11 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Paste non-empty plain text and review it before adding." = "Lipiți text simplu care nu este gol și verificați-l înainte de adăugare.";
 
 "Choose a non-empty text file and review it before adding." = "Alegeți un fișier text care nu este gol și verificați-l înainte de adăugare.";
+
+/* Filter update reliability */
+"A wBlock filter update is already in progress." = "O actualizare a filtrelor wBlock este deja în curs.";
+"wBlock filter update completed." = "Actualizarea filtrelor wBlock s-a încheiat.";
+"wBlock filter update completed with errors." = "Actualizarea filtrelor wBlock s-a încheiat cu erori.";
+"Shared update status is unavailable." = "Starea partajată a actualizării nu este disponibilă.";
+"Shared update status lock is unavailable." = "Blocarea stării partajate a actualizării nu este disponibilă.";
+"%@ dropped %d rules at Safari's per-extension limit." = "%@ a omis %d reguli din cauza limitei Safari pentru fiecare extensie.";

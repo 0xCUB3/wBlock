@@ -339,9 +339,11 @@ extension AppDelegate: NSApplicationDelegate {
         let dataManager = ProtobufDataManager.shared
         let desired = dataManager.autoUpdateEnabled && !dataManager.backgroundAgentDisabled
         guard lastObservedLaunchAgentDesiredState != desired || reason == "Launch" else { return }
-        lastObservedLaunchAgentDesiredState = desired
 
         let status = AutoUpdateLaunchAgentManager.shared.reconcileWithAutoUpdateSetting(desired)
+        if status.satisfies(desiredEnabled: desired) {
+            lastObservedLaunchAgentDesiredState = desired
+        }
         os_log(
             "Launch agent reconciliation (%{public}@): %{public}@",
             type: .info,
@@ -388,8 +390,8 @@ extension AppDelegate: NSApplicationDelegate {
                 "Headless launch from Safari extension",
                 metadata: ["reason": reason.rawValue]
             )
-            let requested = FilterUpdatePopupStatus.consumeUpdateRequest()
-            if requested || reason == .stagedDownloads {
+            let popupClaim = FilterUpdatePopupStatus.consumeUpdateRequest()
+            if popupClaim != nil || reason == .stagedDownloads {
                 await SharedAutoUpdateManager.shared.forceNextUpdate()
                 let outcome = await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
                     trigger: "Headless-\(reason.rawValue)",
@@ -408,8 +410,8 @@ extension AppDelegate: NSApplicationDelegate {
                         HeadlessLaunch.recordAutoRebuildLaunchOutcome(.rebuildFailed)
                     }
                 }
-                if requested {
-                    FilterUpdatePopupStatus.finish(outcome)
+                if let popupClaim {
+                    FilterUpdatePopupStatus.finish(outcome, claim: popupClaim)
                 }
             }
             await ConcurrentLogManager.shared.persistNow()

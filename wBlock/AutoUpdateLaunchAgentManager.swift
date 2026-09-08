@@ -29,6 +29,13 @@ final class AutoUpdateLaunchAgentManager {
         var needsApproval: Bool {
             state == .requiresApproval
         }
+
+        func satisfies(desiredEnabled: Bool) -> Bool {
+            if desiredEnabled {
+                return state == .enabled || state == .requiresApproval
+            }
+            return state == .notRegistered || state == .notFound
+        }
     }
 
     private let logger = Logger(subsystem: "skula.wBlock", category: "AutoUpdateLaunchAgent")
