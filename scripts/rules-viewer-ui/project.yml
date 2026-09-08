@@ -1,0 +1,49 @@
+name: ScrollProbe
+options:
+  deploymentTarget:
+    iOS: "26.0"
+targets:
+  ScrollProbe:
+    type: application
+    platform: iOS
+    sources:
+      - App.swift
+      - MonospacedTextView.swift
+      - ViewportSyntaxHighlighter.swift
+      - AdGuardSyntaxHighlighter.swift
+    info:
+      path: Info.plist
+      properties:
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.wblock.ScrollProbe
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        SWIFT_VERSION: "5.0"
+  ScrollTests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - ScrollTests.swift
+    dependencies:
+      - target: ScrollProbe
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.wblock.ScrollTests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  ScrollProbe:
+    build:
+      targets:
+        ScrollProbe: all
+    test:
+      targets:
+        - ScrollTests

@@ -179,43 +179,77 @@ struct MonospacedTextView: NSViewRepresentable {
 #elseif os(iOS)
 import UIKit
 
-/// UITextView keeps its scrollable width at the viewport width even when its
-/// text container is unbounded. Publish the laid-out line width for horizontal pans.
-final class HorizontallyScrollingTextView: UITextView {
-    private var isUpdatingScrollableWidth = false
+/// The outer scroll view owns horizontal movement; UITextView owns vertical
+/// movement and lays out against a stable, finite document width.
+final class RulesDocumentScrollView: UIScrollView {
+    let textView = UITextView(frame: .zero, textContainer: nil)
+    var onViewportResize: (() -> Void)?
+    private var document: String?
+    private var wrapsLines = true
+    private var measuredWidth: CGFloat = 0
+    private var widthTask: Task<Void, Never>?
 
-    override var contentSize: CGSize {
-        didSet { updateScrollableWidth() }
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        showsVerticalScrollIndicator = false
+        isDirectionalLockEnabled = true
+        contentInsetAdjustmentBehavior = .never
+        addSubview(textView)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    func setDocument(_ text: String, wrapsLines: Bool) {
+        let modeChanged = self.wrapsLines != wrapsLines
+        self.wrapsLines = wrapsLines
+        showsHorizontalScrollIndicator = !wrapsLines
+        if document != text {
+            document = text
+            measuredWidth = 0
+            widthTask?.cancel()
+            let font = textView.font ?? .monospacedSystemFont(ofSize: 13, weight: .regular)
+            widthTask = Task { [weak self] in
+                let measurement = Task.detached(priority: .userInitiated) {
+                    var width: CGFloat = 0
+                    text.enumerateLines { line, stop in
+                        if Task.isCancelled { stop = true; return }
+                        width = max(width, (line as NSString).size(withAttributes: [.font: font]).width)
+                    }
+                    return ceil(width)
+                }
+                let width = await withTaskCancellationHandler {
+                    await measurement.value
+                } onCancel: {
+                    measurement.cancel()
+                }
+                guard !Task.isCancelled, let self else { return }
+                self.measuredWidth = width
+                self.setNeedsLayout()
+            }
+            setContentOffset(.zero, animated: false)
+            setNeedsLayout()
+        }
+        if modeChanged {
+            setContentOffset(.zero, animated: false)
+            setNeedsLayout()
+        }
     }
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        updateScrollableWidth()
+        let inset = textView.textContainerInset
+        let width = wrapsLines ? bounds.width : max(bounds.width, measuredWidth + inset.left + inset.right)
+        let frame = CGRect(x: 0, y: 0, width: width, height: bounds.height)
+        if textView.frame != frame {
+            textView.frame = frame
+            onViewportResize?()
+        }
+        let size = CGSize(width: width, height: bounds.height)
+        if contentSize != size { contentSize = size }
+        textView.verticalScrollIndicatorInsets.right = max(0, width - bounds.maxX)
     }
 
-    private func updateScrollableWidth() {
-        guard !isUpdatingScrollableWidth else { return }
-        isUpdatingScrollableWidth = true
-        defer { isUpdatingScrollableWidth = false }
-        let width: CGFloat
-        if textContainer.widthTracksTextView {
-            width = bounds.width
-        } else {
-            // UIKit can reset the container width during a bounds change even
-            // when widthTracksTextView is false.
-            if textContainer.size.width != .greatestFiniteMagnitude {
-                textContainer.size.width = .greatestFiniteMagnitude
-            }
-            // Refresh only the viewport after a wrap change, not the whole list.
-            let viewport = bounds.offsetBy(dx: -textContainerInset.left, dy: -textContainerInset.top)
-            layoutManager.ensureLayout(forBoundingRect: viewport, in: textContainer)
-            let used = layoutManager.usedRect(for: textContainer)
-            width = max(bounds.width, ceil(used.width + textContainerInset.left + textContainerInset.right))
-        }
-        if abs(contentSize.width - width) > 0.5 {
-            contentSize.width = width
-        }
-    }
+    deinit { widthTask?.cancel() }
 }
 
 struct MonospacedTextView: UIViewRepresentable {
@@ -227,22 +261,30 @@ struct MonospacedTextView: UIViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
-    func makeUIView(context: Context) -> UITextView {
-        let textView = HorizontallyScrollingTextView(frame: .zero, textContainer: nil)
+    func makeUIView(context: Context) -> RulesDocumentScrollView {
+        let scrollView = RulesDocumentScrollView()
+        let textView = scrollView.textView
         configure(textView: textView)
         textView.delegate = context.coordinator
         context.coordinator.textView = textView
+        scrollView.onViewportResize = { [weak coordinator = context.coordinator] in
+            guard let coordinator, coordinator.highlightingEnabled, let textView = coordinator.textView else { return }
+            coordinator.highlighter.scheduleHighlight(of: textView)
+        }
         apply(to: textView, coordinator: context.coordinator)
-        return textView
+        scrollView.setDocument(text, wrapsLines: isLineWrappingEnabled)
+        return scrollView
     }
 
-    func updateUIView(_ textView: UITextView, context: Context) {
+    func updateUIView(_ scrollView: RulesDocumentScrollView, context: Context) {
+        let textView = scrollView.textView
         configure(textView: textView)
         let selectedRange = textView.selectedRange
         if apply(to: textView, coordinator: context.coordinator) {
             let length = (textView.text as NSString?)?.length ?? 0
             if NSMaxRange(selectedRange) <= length { textView.selectedRange = selectedRange }
         }
+        scrollView.setDocument(text, wrapsLines: isLineWrappingEnabled)
     }
 
     /// Returns true when the document changed.
@@ -293,21 +335,18 @@ struct MonospacedTextView: UIViewRepresentable {
         textView.smartDashesType = .no
         textView.isScrollEnabled = true
         textView.alwaysBounceVertical = true
-        textView.alwaysBounceHorizontal = !isLineWrappingEnabled
+        textView.alwaysBounceHorizontal = false
         if #available(iOS 26.0, *), softTopEdge {
             textView.topEdgeEffect.style = .soft
         }
         textView.showsVerticalScrollIndicator = true
-        textView.showsHorizontalScrollIndicator = !isLineWrappingEnabled
+        textView.showsHorizontalScrollIndicator = false
         textView.contentInsetAdjustmentBehavior = .always
         textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         textView.layoutManager.allowsNonContiguousLayout = true
         textView.textContainerInset = UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 20)
         textView.textContainer.lineFragmentPadding = 0
-        textView.textContainer.widthTracksTextView = isLineWrappingEnabled
-        textView.textContainer.size.width = isLineWrappingEnabled
-            ? max(0, textView.bounds.width - textView.textContainerInset.left - textView.textContainerInset.right)
-            : CGFloat.greatestFiniteMagnitude
+        textView.textContainer.widthTracksTextView = true
         textView.textContainer.heightTracksTextView = false
         textView.textContainer.lineBreakMode = .byWordWrapping
     }
