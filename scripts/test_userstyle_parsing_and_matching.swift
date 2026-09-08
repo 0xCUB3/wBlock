@@ -543,6 +543,31 @@ struct UserStyleParsingAndMatchingTests {
         expect(builtinCSS.contains("width: 20px"), "single-quoted select arrays must supply typed numeric values")
         expect(builtinCSS.contains("data:image/png;base64,AA=="), "ordinary CSS URLs need no filesystem access")
         expect((UserStyleSupport.effectiveCSS(forContent: stylusBuiltins, url: "https://unrelated.invalid/") ?? "").isEmpty, "compiled Stylus must retain document scope")
+
+        let duplicateStylusVariable = """
+        /* ==UserStyle==
+        @name Duplicate Stylus variable
+        @preprocessor stylus
+        @var color accent "First" red
+        @var color accent "Second" blue
+        ==/UserStyle== */
+        body
+          color accent
+        """
+        let duplicateStylusCSS = UserStyleSupport.effectiveCSS(forContent: duplicateStylusVariable, url: "https://example.com/") ?? ""
+        expect(duplicateStylusCSS.contains("#00f"), "duplicate Stylus variables should deterministically use the last declaration")
+
+        let duplicateLessVariable = """
+        /* ==UserStyle==
+        @name Duplicate Less variable
+        @preprocessor less
+        @var color accent "First" red
+        @var color accent "Second" blue
+        ==/UserStyle== */
+        body { color: @accent; }
+        """
+        let duplicateLessCSS = UserStyleSupport.effectiveCSS(forContent: duplicateLessVariable, url: "https://example.com/") ?? ""
+        expect(duplicateLessCSS.contains("#0000ff") || duplicateLessCSS.contains("blue"), "duplicate Less variables should deterministically use the last declaration")
         let inlineImport = stylus.components(separatedBy: "==/UserStyle== */")[0] + "==/UserStyle== */\n.a { @import 'remote'; color: red; }"
         expect(UserStyleSupport.parsed(from: inlineImport)?.isCompiled == false, "inline imports must remain unavailable")
 

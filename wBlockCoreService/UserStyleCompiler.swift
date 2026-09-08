@@ -189,7 +189,7 @@ private struct StylusBackend: UserStylePreprocessorBackend {
     let maximumOutputBytes = UserStylePreprocessorService.maximumOutputBytes
     let consumesVariables = true
     func compile(_ request: UserStyleCompilationRequest) throws -> String {
-        let variables = Dictionary(uniqueKeysWithValues: request.variables.map { ($0.name, $0.value) })
+        let variables = UserStyleCompiler.variableMap(request.variables)
         return try UserStyleCompiler.callObjectBridge(resource: "stylus-jsc", extension: "js", function: "StylusCompile", request: ["source": request.source, "variables": variables])
     }
 }
@@ -245,7 +245,7 @@ enum UserStyleCompiler {
     }
 
     static func compileLess(_ request: UserStyleCompilationRequest) throws -> String {
-        let globals = Dictionary(uniqueKeysWithValues: request.variables.map { ($0.name, $0.value) })
+        let globals = variableMap(request.variables)
         let bridgeRequest: [String: Any] = ["source": request.source, "variables": globals]
         guard JSONSerialization.isValidJSONObject(bridgeRequest),
               serializedInputSize(source: request.source, metadata: ["variables": globals]) <= maximumSourceBytes else {
@@ -268,6 +268,16 @@ enum UserStyleCompiler {
         """
         let object = try UserStyleCompilerExecutionHost.run(runtime: bundle, request: bridgeRequest, adapter: adapter)
         return try extractCSS(object)
+    }
+
+    /// UserCSS metadata may repeat variable names. Match Sass behavior: the last
+    /// declaration wins deterministically instead of trapping on duplicate keys.
+    static func variableMap(_ variables: [UserStyleSupport.Variable]) -> [String: String] {
+        var result: [String: String] = [:]
+        for variable in variables {
+            result[variable.name] = variable.value
+        }
+        return result
     }
 
     static func callJSONBridge(resource: String, extension: String, function: String, request: [String: Any], lineAdjustment: Int = 0) throws -> String {

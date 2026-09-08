@@ -425,6 +425,37 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
             == canonicalName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
+    /// Compares authoritative persisted/script metadata while deliberately
+    /// excluding only process-local compiled CSS.
+    func hasSameAuthoritativeState(as other: UserScript) -> Bool {
+        id == other.id
+            && name == other.name
+            && url == other.url
+            && isEnabled == other.isEnabled
+            && description == other.description
+            && version == other.version
+            && matches == other.matches
+            && excludeMatches == other.excludeMatches
+            && includes == other.includes
+            && excludes == other.excludes
+            && runAt == other.runAt
+            && injectInto == other.injectInto
+            && grant == other.grant
+            && require == other.require
+            && resource == other.resource
+            && resourceContents == other.resourceContents
+            && noframes == other.noframes
+            && isUserStyle == other.isUserStyle
+            && isLocal == other.isLocal
+            && updateURL == other.updateURL
+            && downloadURL == other.downloadURL
+            && content == other.content
+            && lastUpdated == other.lastUpdated
+            && updatesAutomatically == other.updatesAutomatically
+            && category == other.category
+            && localImportIdentity == other.localImportIdentity
+    }
+
     /// Computed property to check if the userscript is downloaded and ready to use
     public var isDownloaded: Bool {
         !content.isEmpty
@@ -831,9 +862,9 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
                     }
                 case "@noframes":
                     self.noframes = true
-                case "@updateURL":
+                case "@updateurl":
                     self.updateURL = value.isEmpty ? nil : value
-                case "@downloadURL":
+                case "@downloadurl":
                     self.downloadURL = value.isEmpty ? nil : value
                 default:
                     break
@@ -878,25 +909,27 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     
     /// Check if userscript or userstyle matches a given URL
     public func matches(url: String) -> Bool {
-        guard let parsedURL = Self.parsedMatchURL(from: url) else { return false }
-        let urlRange = NSRange(location: 0, length: url.utf16.count)
+        let comparableURL = Self.urlWithoutFragment(url)
+        guard let parsedURL = Self.parsedMatchURL(from: comparableURL) else { return false }
+        let comparableRange = NSRange(location: 0, length: comparableURL.utf16.count)
+        let rawURLRange = NSRange(location: 0, length: url.utf16.count)
 
         let isIncluded: Bool
         if isUserStyle {
             isIncluded = UserStyleSupport.matches(serializedConditions: matches, url: url)
         } else {
-            isIncluded = indexedMatch(patterns: matches, kind: "include", url: url, parsedURL: parsedURL, urlRange: urlRange) || includes.contains {
-                Self.matchesIncludePattern(pattern: $0, url: url, urlRange: urlRange)
+            isIncluded = indexedMatch(patterns: matches, kind: "include", url: comparableURL, parsedURL: parsedURL, urlRange: comparableRange) || includes.contains {
+                Self.matchesIncludePattern(pattern: $0, url: url, urlRange: rawURLRange)
             }
         }
 
         guard isIncluded else { return false }
 
-        if indexedMatch(patterns: excludeMatches, kind: "exclude", url: url, parsedURL: parsedURL, urlRange: urlRange) {
+        if indexedMatch(patterns: excludeMatches, kind: "exclude", url: comparableURL, parsedURL: parsedURL, urlRange: comparableRange) {
             return false
         }
 
-        if excludes.contains(where: { Self.matchesIncludePattern(pattern: $0, url: url, urlRange: urlRange) }) {
+        if excludes.contains(where: { Self.matchesIncludePattern(pattern: $0, url: url, urlRange: rawURLRange) }) {
             return false
         }
 
@@ -905,15 +938,22 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
 
     /// Greasemonkey-style `@match` evaluation for a single pattern.
     static func matchesMatchPattern(_ pattern: String, url: String) -> Bool {
-        guard let parsedURL = parsedMatchURL(from: url) else { return false }
+        let comparableURL = urlWithoutFragment(url)
+        guard let parsedURL = parsedMatchURL(from: comparableURL) else { return false }
         return matchesPattern(
-            pattern: pattern, url: url, parsedURL: parsedURL,
-            urlRange: NSRange(location: 0, length: url.utf16.count))
+            pattern: pattern, url: comparableURL, parsedURL: parsedURL,
+            urlRange: NSRange(location: 0, length: comparableURL.utf16.count))
     }
 
     /// Greasemonkey-style `@include` glob evaluation for a single pattern.
     static func matchesIncludePattern(_ pattern: String, url: String) -> Bool {
         matchesIncludePattern(pattern: pattern, url: url, urlRange: NSRange(location: 0, length: url.utf16.count))
+    }
+
+    private static func urlWithoutFragment(_ url: String) -> String {
+        guard var components = URLComponents(string: url), components.fragment != nil else { return url }
+        components.fragment = nil
+        return components.string ?? url
     }
 
     private struct ParsedMatchURL {
@@ -945,10 +985,6 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         if let query = components.percentEncodedQuery {
             pathAndSuffix += "?\(query)"
         }
-        if let fragment = components.percentEncodedFragment {
-            pathAndSuffix += "#\(fragment)"
-        }
-
         return ParsedMatchURL(
             scheme: scheme,
             host: host,
@@ -1064,6 +1100,24 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     }
     
     private static func matchesIncludePattern(pattern: String, url: String, urlRange: NSRange) -> Bool {
+        // Regex-form @include/@exclude is supported by userscript managers. Keep
+        // it bounded before handing the expression to ICU so hostile metadata
+        // cannot feed arbitrarily large patterns or subjects into the matcher.
+        if pattern.utf8.count <= 4_096,
+           url.utf8.count <= 16_384,
+           isRegexIncludePattern(pattern) {
+            let body = String(pattern.dropFirst().dropLast())
+                .replacingOccurrences(of: "\\/", with: "/")
+            guard let regex = cachedRegex(
+                for: "regex:\(body)",
+                cache: includeRegexCache,
+                buildRegexPattern: { _ in body }
+            ) else {
+                return false
+            }
+            return boundedRegexMatch(regex, in: url, range: urlRange)
+        }
+
         guard let regex = cachedRegex(
             for: pattern,
             cache: includeRegexCache,
@@ -1078,6 +1132,45 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
             return false
         }
         return regex.firstMatch(in: url, options: [], range: urlRange) != nil
+    }
+
+    private static func boundedRegexMatch(
+        _ regex: NSRegularExpression,
+        in value: String,
+        range: NSRange,
+        budget: TimeInterval = 0.025
+    ) -> Bool {
+        let deadline = ProcessInfo.processInfo.systemUptime + budget
+        var matched = false
+        regex.enumerateMatches(
+            in: value,
+            options: [.reportProgress, .reportCompletion],
+            range: range
+        ) { result, flags, stop in
+            if result != nil {
+                matched = true
+                stop.pointee = true
+                return
+            }
+            if flags.contains(.progress), ProcessInfo.processInfo.systemUptime >= deadline {
+                stop.pointee = true
+            }
+        }
+        return matched
+    }
+
+    private static func isRegexIncludePattern(_ pattern: String) -> Bool {
+        guard pattern.count >= 2, pattern.first == "/", pattern.last == "/" else { return false }
+        let delimiter = pattern.index(before: pattern.endIndex)
+        var cursor = delimiter
+        var precedingBackslashes = 0
+        while cursor > pattern.startIndex {
+            let previous = pattern.index(before: cursor)
+            guard pattern[previous] == "\\" else { break }
+            precedingBackslashes += 1
+            cursor = previous
+        }
+        return precedingBackslashes.isMultiple(of: 2)
     }
     
     // Shared formatters to avoid allocating new ones per row
