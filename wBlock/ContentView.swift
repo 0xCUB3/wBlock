@@ -1159,7 +1159,9 @@ struct ContentModifiers: ViewModifier {
                 set: { presented in
                     if !presented && !filterManager.isLoading {
                         filterManager.showingApplyProgressSheet = false
+                        #if os(macOS)
                         filterManager.showingNoUpdatesAlert = false
+                        #endif
                     }
                 }
             )) {
@@ -1188,7 +1190,7 @@ struct ContentModifiers: ViewModifier {
             }
             #if os(iOS)
             // A modal alert for "nothing to do" is one tap too many on a phone;
-            // Leave enough time to read; dismiss only on the toast itself.
+            // Tapping elsewhere or closing the progress sheet must not dismiss the toast.
             .overlay(alignment: .top) {
                 if filterManager.showingNoUpdatesAlert {
                     NoUpdatesToast { filterManager.showingNoUpdatesAlert = false }
