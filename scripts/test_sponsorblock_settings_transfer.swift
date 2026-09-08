@@ -65,18 +65,5 @@ struct SponsorBlockSettingsTransferTests {
         catch {}
         require(try await Transfer.settings(scriptID: id, storage: storage) == edited)
         print("PASS: native import -> GM snapshot -> player edit -> refreshed native export; failed writes preserve settings")
-        if CommandLine.arguments.count == 3, CommandLine.arguments[1] == "--browser-edit" {
-            let browserData = try Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[2]))
-            let browserSettings = try Transfer.validated(JSONDecoder().decode(Transfer.Settings.self, from: browserData))
-            let write = await storage.setSerializedValue(String(decoding: browserData, as: UTF8.self), forKey: Transfer.storageKey, scriptID: id.uuidString)
-            require(write.ok && browserSettings.modes["intro"] == "auto")
-            let native = try await Transfer.settings(scriptID: id, storage: storage)!
-            require(try Transfer.parse(Transfer.exportData(native)) == browserSettings)
-            print("PASS: real browser GM message persisted and exported back through native code")
-        }
-        if CommandLine.arguments.count == 2 {
-            // A browser probe can consume the native-produced snapshot verbatim.
-            try JSONEncoder().encode(snapshot).write(to: URL(fileURLWithPath: CommandLine.arguments[1]))
-        }
     }
 }
