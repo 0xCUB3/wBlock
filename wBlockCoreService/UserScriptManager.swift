@@ -3382,6 +3382,8 @@ public class UserScriptManager: ObservableObject {
             let requestedEnable = enabledIDs.contains(userScripts[i].id)
             let canEnable = userScripts[i].isLocal || userScripts[i].isDownloaded
             let shouldEnable = requestedEnable && canEnable
+            // A failed enable must not be replayed as True by a later disk sync.
+            latestUserScriptIntentValues[userScripts[i].id] = shouldEnable
 
             if requestedEnable && !canEnable && !userScripts[i].isLocal {
                 failedRemoteEnables.insert(userScripts[i].name)
