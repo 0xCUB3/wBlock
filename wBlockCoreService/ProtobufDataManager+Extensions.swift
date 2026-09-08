@@ -188,16 +188,17 @@ extension ProtobufDataManager {
     // MARK: - Filter Lists
     public func getFilterLists() -> [FilterList] {
         return appData.filterLists.map { protoData in
+            let storedURL = PersistedFilterURL.resolve(protoData.url)
             let category = mapProtoToFilterListCategory(protoData.category)
             let isCustom = normalizedCustomStatus(for: protoData, category: category)
 
             return FilterList(
                 id: StableRecordIdentifier.uuid(rawValue: protoData.id, namespace: "filter", source: protoData.url.isEmpty ? protoData.name : protoData.url),
                 name: protoData.name,
-                url: URL(string: protoData.url) ?? URL(string: "https://example.com")!,
+                url: storedURL.url,
                 category: category,
                 isCustom: isCustom,
-                isSelected: protoData.isSelected,
+                isSelected: protoData.isSelected && storedURL.isUsable,
                 description: protoData.description_p,
                 version: protoData.version,
                 sourceRuleCount: protoData.hasSourceRuleCount ? Int(protoData.sourceRuleCount) : nil,
