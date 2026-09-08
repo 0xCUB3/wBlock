@@ -867,6 +867,24 @@ for (const maintenanceAction of ["maybeUpdateUserScripts", "maybeStageFilterUpda
     !update?.addRules?.some(rule => rule.id === 1500002));
 }
 
+for (const source of [canonicalSource, bundleSource]) {
+  const rules = [
+    { id: 1500000, priority: 10000, action: { type: "allow" }, condition: { excludedRequestDomains: ["exception.example"], urlFilter: "^p=" } },
+    { id: 1500001, priority: 1, action: { type: "redirect", redirect: { transform: { queryTransform: { removeParams: ["p"] } } } }, condition: { urlFilter: "^p=" } },
+  ];
+  const state = loadBackground({
+    source,
+    dnrLimit: null,
+    removeParamHandler: message => ({
+      ok: true, version: "legacy-unsupported-exception", count: rules.length,
+      rules: message.offset === 0 ? rules : [], ruleIdBase: 1500000, ruleIdLimit: 1650000
+    }),
+    nativeHandler: () => ({ payload: makeConfig([], 1) }),
+  });
+  await sleep(50);
+  check("old Safari never widens redirects by dropping an unsupported exception", state.dnrUpdates[0]?.addRules?.length === 0);
+}
+
 {
   const rules = Array.from({ length: 5100 }, (_, index) => ({
     id: 1500000 + index,

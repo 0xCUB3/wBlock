@@ -27678,9 +27678,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const dnr = browser.declarativeNetRequest;
     const reported = Number(dnr && dnr.MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES);
     const modernConditionSupport = Number.isFinite(reported) && reported > 0;
-    const prepared = modernConditionSupport
-      ? rules.slice()
-      : rules.map(legacySafariRemoveParamRule).filter(Boolean);
+    let prepared = rules.slice();
+    if (!modernConditionSupport) {
+      const legacyRules = rules.map(legacySafariRemoveParamRule);
+      const lostProtection = rules.some((rule, index) =>
+        rule && rule.action && rule.action.type === "allow" && !legacyRules[index]);
+      // Dropping a redirect narrows behavior; dropping its exception widens it.
+      // Without an exact legacy exception, keep query parameters untouched.
+      prepared = lostProtection ? [] : legacyRules.filter(Boolean);
+    }
     return { prepared, reportedLimit: modernConditionSupport ? Math.floor(reported) : REMOVE_PARAM_DNR_OLD_SAFARI_FALLBACK_LIMIT };
   };
   const installRemoveParamDNRRules = async () => {
