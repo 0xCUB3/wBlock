@@ -144,32 +144,64 @@ public enum RemoveParamDNRRuleGenerator {
         from rulesText: String,
         disabledSites: [String] = []
     ) -> (rules: [DeclarativeRule], summary: Summary) {
-        var rules = makeDisabledSiteAllowRules(
+        let disabledRules = makeDisabledSiteAllowRules(
             disabledSites,
             startingID: ruleIDBase,
             remainingCapacity: maxGeneratedRules
         )
-        rules.reserveCapacity(1024)
-        let disabledAllowRulesCount = rules.count
+        let disabledAllowRulesCount = disabledRules.count
+        var sourceRulesInOrder: [DeclarativeRule] = []
+        var protectiveRules: [DeclarativeRule] = []
+        var redirectRules: [DeclarativeRule] = []
+        sourceRulesInOrder.reserveCapacity(1024)
+        protectiveRules.reserveCapacity(128)
+        redirectRules.reserveCapacity(1024)
+        var generatedSourceRuleCount = 0
 
         var removeParamRules = 0
         var exceptionRules = 0
         var skippedRules = 0
-        var truncatedRules = 0
 
         for rawLine in rulesText.split(whereSeparator: \.isNewline) {
-            let result = buildRule(from: String(rawLine), nextID: ruleIDBase + rules.count)
+            let result = buildRule(from: String(rawLine), nextID: ruleIDBase + generatedSourceRuleCount)
             if result.wasRemoveParamRule { removeParamRules += 1 }
             if result.wasExceptionRule { exceptionRules += 1 }
             if result.skipped { skippedRules += 1 }
             if let rule = result.rule {
-                if rules.count < maxGeneratedRules {
-                    rules.append(rule)
-                } else {
-                    truncatedRules += 1
+                generatedSourceRuleCount += 1
+                if sourceRulesInOrder.count < maxGeneratedRules {
+                    sourceRulesInOrder.append(rule)
+                }
+                if rule.action.type == "allow" {
+                    if protectiveRules.count < maxGeneratedRules {
+                        protectiveRules.append(rule)
+                    }
+                } else if redirectRules.count < maxGeneratedRules {
+                    redirectRules.append(rule)
                 }
             }
         }
+
+        let availableSourceCapacity = max(0, maxGeneratedRules - disabledRules.count)
+        let admittedSourceRules: [DeclarativeRule]
+        if generatedSourceRuleCount <= availableSourceCapacity {
+            admittedSourceRules = sourceRulesInOrder
+        } else {
+            if protectiveRules.count >= availableSourceCapacity {
+                // Never keep stripping rules when protections alone consume the
+                // budget. This avoids widening behavior by dropping exceptions.
+                admittedSourceRules = Array(protectiveRules.prefix(availableSourceCapacity))
+            } else {
+                let redirectCapacity = availableSourceCapacity - protectiveRules.count
+                admittedSourceRules = protectiveRules + Array(redirectRules.prefix(redirectCapacity))
+            }
+        }
+
+        var rules = disabledRules + admittedSourceRules
+        for index in rules.indices {
+            rules[index].id = ruleIDBase + index
+        }
+        let truncatedRules = max(0, generatedSourceRuleCount - admittedSourceRules.count)
 
         let version = versionHex(for: rules)
         let summary = Summary(

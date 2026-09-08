@@ -30,8 +30,8 @@ struct RemoveParamDNRRuleGeneratorTests {
         expectEqual(summary.disabledSiteAllowRules, 2, "disabled-site allow rules")
         expectEqual(summary.generatedRules, 8, "generated DNR rule count")
 
-        // Over-budget lists drop the tail and report it separately from
-        // unsupported rules, so the apply result can say what happened.
+        // Over-budget redirect-only lists drop the tail and report it separately
+        // from unsupported rules, so the apply result can say what happened.
         expectEqual(RemoveParamDNRRuleGenerator.maxGeneratedRules, 30_000, "budget matches WebKit's dynamic rule limit")
         let overBudget = (0..<(RemoveParamDNRRuleGenerator.maxGeneratedRules + 250))
             .map { "||site\($0).example^$removeparam=p\($0)" }
@@ -41,6 +41,44 @@ struct RemoveParamDNRRuleGeneratorTests {
         expectEqual(truncated.summary.truncatedRules, 250, "overflow is counted as truncated")
         expectEqual(truncated.summary.skippedRules, 0, "overflow is not reported as unsupported")
         expectEqual(truncated.rules.last?.id, RemoveParamDNRRuleGenerator.ruleIDBase + RemoveParamDNRRuleGenerator.maxGeneratedRules - 1, "rule IDs stay inside the reserved range")
+
+        // A protective exception after the old source-order cutoff must displace
+        // a redirect rather than disappear and widen parameter stripping.
+        let lateExceptionRules = (0..<RemoveParamDNRRuleGenerator.maxGeneratedRules)
+            .map { "||late\($0).example^$removeparam=p\($0)" }
+            + ["@@||late0.example^$removeparam=p0"]
+        let lateException = RemoveParamDNRRuleGenerator.generateRules(
+            from: lateExceptionRules.joined(separator: "\n")
+        )
+        expectEqual(lateException.rules.count, RemoveParamDNRRuleGenerator.maxGeneratedRules,
+                    "late exception overflow stays within the public ceiling")
+        expectEqual(lateException.summary.exceptionRules, 1, "late exception is counted")
+        expectEqual(lateException.summary.truncatedRules, 1, "late exception displaces exactly one redirect")
+        expectEqual(lateException.summary.skippedRules, 0, "capacity displacement is not unsupported syntax")
+        expectEqual(lateException.rules.filter { $0.action.type == "allow" }.count, 1,
+                    "late exception survives generator truncation")
+
+        let lateExceptionWithDisabledSite = RemoveParamDNRRuleGenerator.generateRules(
+            from: lateExceptionRules.joined(separator: "\n"), disabledSites: ["disabled.example"]
+        )
+        expectEqual(lateExceptionWithDisabledSite.summary.disabledSiteAllowRules, 2,
+                    "disabled-site protections reserve capacity before source rules")
+        expectEqual(lateExceptionWithDisabledSite.rules.filter { $0.action.type == "allow" }.count, 3,
+                    "the late exception and both disabled-site protections must survive together")
+        expectEqual(lateExceptionWithDisabledSite.summary.truncatedRules, 3,
+                    "all protected slots displace redirects within the same ceiling")
+
+        let protectionsOnly = (0...RemoveParamDNRRuleGenerator.maxGeneratedRules)
+            .map { "@@||protected\($0).example^$removeparam=p" }
+        let protectiveOverflow = RemoveParamDNRRuleGenerator.generateRules(
+            from: (["$removeparam=p"] + protectionsOnly).joined(separator: "\n")
+        )
+        expectEqual(protectiveOverflow.rules.count, RemoveParamDNRRuleGenerator.maxGeneratedRules,
+                    "protective overflow still respects the native ceiling")
+        expectEqual(protectiveOverflow.rules.filter { $0.action.type != "allow" }.count, 0,
+                    "no stripping rule may remain when all protections cannot fit")
+        expectEqual(protectiveOverflow.summary.truncatedRules, 2,
+                    "protective overflow accounts for the omitted exception and redirect")
 
         let disabledByRequestDomain = rules[0]
         expectEqual(disabledByRequestDomain.action.type, "allow", "disabled request-domain allow")
