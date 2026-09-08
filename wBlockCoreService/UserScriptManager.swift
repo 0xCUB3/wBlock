@@ -3187,7 +3187,14 @@ public class UserScriptManager: ObservableObject {
             return
         }
         if current.isEnabled == isEnabled {
-            // Even an idempotent request invalidates an older suspended enable.
+            // Memory may already show Off while an older save is still in flight.
+            // Persist the explicit choice even when the visible value is unchanged.
+            await persistUserScriptsNow(explicitEnabledStates: [userScript.id: isEnabled])
+            if !isCurrentUserScriptIntent(userScript.id, revision: revision) {
+                await persistUserScriptsNow(
+                    explicitEnabledStates: latestUserScriptIntentValues.filter { $0.key == userScript.id }
+                )
+            }
             finishUserScriptIntent(userScript.id, revision: revision)
             return
         }
@@ -3225,11 +3232,9 @@ public class UserScriptManager: ObservableObject {
         )
         guard isCurrentUserScriptIntent(userScript.id, revision: revision) else {
             // A newer toggle may have completed while persistence was reading shared state.
-            // Rewrite the live array so the older completion cannot become the disk winner.
+            // The winning intent may already have completed and left the pending map.
             await persistUserScriptsNow(
-                explicitEnabledStates: pendingUserScriptIntents.reduce(into: [:]) { result, entry in
-                    result[entry.key] = entry.value
-                }
+                explicitEnabledStates: latestUserScriptIntentValues.filter { $0.key == userScript.id }
             )
             return
         }
@@ -3392,8 +3397,11 @@ public class UserScriptManager: ObservableObject {
             logger.info("💾 Persisting batch userscript enable states for \(enabledIDs.count) scripts")
             await persistUserScriptsNow(
                 explicitEnabledStates: Dictionary(
-                    uniqueKeysWithValues: batchRevisions.keys.compactMap { id in
-                        enabledIDs.contains(id) ? (id, true) : (id, false)
+                    uniqueKeysWithValues: userScripts.compactMap { script in
+                        guard let revision = batchRevisions[script.id],
+                              isCurrentUserScriptIntent(script.id, revision: revision)
+                        else { return nil }
+                        return (script.id, script.isEnabled)
                     }
                 )
             )
@@ -3410,11 +3418,9 @@ public class UserScriptManager: ObservableObject {
         }
         if batchWasSuperseded {
             // A newer per-script toggle won while the batch save was suspended. Persist the
-            // current array once more so the stale batch cannot win on disk.
+            // latest choices once more, including toggles whose saves already completed.
             await persistUserScriptsNow(
-                explicitEnabledStates: pendingUserScriptIntents.reduce(into: [:]) { result, entry in
-                    result[entry.key] = entry.value
-                }
+                explicitEnabledStates: latestUserScriptIntentValues.filter { batchRevisions[$0.key] != nil }
             )
         }
 
