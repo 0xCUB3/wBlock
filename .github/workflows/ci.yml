@@ -42,6 +42,38 @@ jobs:
           WBLOCK_DERIVED_DATA: ${{ env.DERIVED_DATA }}
         run: scripts/run-ci-tests.sh
 
+  rules-viewer-ui:
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install XcodeGen
+        run: command -v xcodegen >/dev/null || brew install xcodegen
+
+      - name: Select an available iPhone simulator
+        id: simulator
+        run: |
+          xcrun simctl list devices available --json > "$RUNNER_TEMP/simulators.json"
+          python3 - "$RUNNER_TEMP/simulators.json" >> "$GITHUB_OUTPUT" <<'PY'
+          import json
+          import sys
+          with open(sys.argv[1]) as source:
+              runtimes = json.load(source)["devices"]
+          phones = [device for runtime, devices in sorted(runtimes.items(), reverse=True)
+                    if ".iOS-" in runtime for device in devices
+                    if device.get("isAvailable") and device["name"].startswith("iPhone")]
+          if not phones:
+              raise SystemExit("No available iPhone simulator in this runner's Xcode")
+          print("udid=" + phones[0]["udid"])
+          PY
+
+      - name: Run production rules-viewer gesture tests
+        env:
+          SIMULATOR: ${{ steps.simulator.outputs.udid }}
+        run: bash scripts/test_rules_viewer_ui.sh "$SIMULATOR"
+
   build:
     runs-on: macos-26
     timeout-minutes: 30
