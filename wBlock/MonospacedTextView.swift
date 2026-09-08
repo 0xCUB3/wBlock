@@ -179,6 +179,45 @@ struct MonospacedTextView: NSViewRepresentable {
 #elseif os(iOS)
 import UIKit
 
+/// UITextView keeps its scrollable width at the viewport width even when its
+/// text container is unbounded. Publish the laid-out line width for horizontal pans.
+final class HorizontallyScrollingTextView: UITextView {
+    private var isUpdatingScrollableWidth = false
+
+    override var contentSize: CGSize {
+        didSet { updateScrollableWidth() }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        updateScrollableWidth()
+    }
+
+    private func updateScrollableWidth() {
+        guard !isUpdatingScrollableWidth else { return }
+        isUpdatingScrollableWidth = true
+        defer { isUpdatingScrollableWidth = false }
+        let width: CGFloat
+        if textContainer.widthTracksTextView {
+            width = bounds.width
+        } else {
+            // UIKit can reset the container width during a bounds change even
+            // when widthTracksTextView is false.
+            if textContainer.size.width != .greatestFiniteMagnitude {
+                textContainer.size.width = .greatestFiniteMagnitude
+            }
+            // Refresh only the viewport after a wrap change, not the whole list.
+            let viewport = bounds.offsetBy(dx: -textContainerInset.left, dy: -textContainerInset.top)
+            layoutManager.ensureLayout(forBoundingRect: viewport, in: textContainer)
+            let used = layoutManager.usedRect(for: textContainer)
+            width = max(bounds.width, ceil(used.width + textContainerInset.left + textContainerInset.right))
+        }
+        if abs(contentSize.width - width) > 0.5 {
+            contentSize.width = width
+        }
+    }
+}
+
 struct MonospacedTextView: UIViewRepresentable {
     @Binding var text: String
     /// Category color per line index; presence turns on viewport highlighting.
@@ -189,7 +228,7 @@ struct MonospacedTextView: UIViewRepresentable {
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeUIView(context: Context) -> UITextView {
-        let textView = UITextView(frame: .zero, textContainer: nil)
+        let textView = HorizontallyScrollingTextView(frame: .zero, textContainer: nil)
         configure(textView: textView)
         textView.delegate = context.coordinator
         context.coordinator.textView = textView
