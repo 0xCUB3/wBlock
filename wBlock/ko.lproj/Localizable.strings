@@ -1,3 +1,12 @@
+"SponsorBlock Settings" = "SponsorBlock 설정";
+"Import SponsorBlock Settings" = "SponsorBlock 설정 가져오기";
+"Export SponsorBlock Settings" = "SponsorBlock 설정 내보내기";
+"Transfers category choices, skip notices, minimum segment length, and legacy channel allowlists. Private user IDs, contributions, and per-channel profiles are excluded. Seek-bar-only categories become Disabled." = "카테고리, 건너뛰기 알림, 최소 구간 길이, 이전 형식의 채널 허용 목록을 이전합니다. 비공개 사용자 ID, 기여 내역, 채널별 프로필은 제외됩니다. 탐색 막대에만 표시하는 카테고리는 비활성화됩니다.";
+"Use Tube Cleaner 0.1.36 or later. Reload YouTube after importing; open a video before exporting settings changed in Safari." = "Tube Cleaner 0.1.36 이상을 사용하세요. 가져온 후 YouTube를 새로고침하세요. Safari에서 변경한 설정을 내보내기 전에 동영상을 여세요.";
+"No synced SponsorBlock settings yet. Open YouTube with Tube Cleaner enabled, then try again." = "동기화된 SponsorBlock 설정이 없습니다. Tube Cleaner를 활성화한 상태로 YouTube를 열고 다시 시도하세요.";
+"Replace SponsorBlock settings?" = "SponsorBlock 설정을 교체할까요?";
+"Settings imported. Reload YouTube to apply them." = "설정을 가져왔습니다. YouTube를 새로고침하여 적용하세요.";
+"Could not transfer SponsorBlock settings. Use a valid settings JSON file and check available storage." = "SponsorBlock 설정을 이전할 수 없습니다. 올바른 설정 JSON 파일을 사용하고 저장 공간을 확인하세요.";
 " · Last success: %@" = " · 최근 성공: %@";
 " · Scheduled: %@" = " · 예정: %@";
 "!#include fetch failed" = "!#include 가져오기에 실패했습니다";

@@ -1,3 +1,12 @@
+"SponsorBlock Settings" = "SponsorBlock 设置";
+"Import SponsorBlock Settings" = "导入 SponsorBlock 设置";
+"Export SponsorBlock Settings" = "导出 SponsorBlock 设置";
+"Transfers category choices, skip notices, minimum segment length, and legacy channel allowlists. Private user IDs, contributions, and per-channel profiles are excluded. Seek-bar-only categories become Disabled." = "传输类别选择、跳过提示、最短片段长度和旧版频道允许列表。不包含私人用户 ID、贡献记录及各频道配置。仅在进度条中显示的类别将被停用。";
+"Use Tube Cleaner 0.1.36 or later. Reload YouTube after importing; open a video before exporting settings changed in Safari." = "请使用 Tube Cleaner 0.1.36 或更高版本。导入后请重新加载 YouTube；导出在 Safari 中更改的设置前，请先打开一个视频。";
+"No synced SponsorBlock settings yet. Open YouTube with Tube Cleaner enabled, then try again." = "尚无已同步的 SponsorBlock 设置。请启用 Tube Cleaner 并打开 YouTube，然后重试。";
+"Replace SponsorBlock settings?" = "替换 SponsorBlock 设置？";
+"Settings imported. Reload YouTube to apply them." = "设置已导入。请重新加载 YouTube 以应用。";
+"Could not transfer SponsorBlock settings. Use a valid settings JSON file and check available storage." = "无法传输 SponsorBlock 设置。请使用有效的设置 JSON 文件，并检查可用存储空间。";
 " · Last success: %@" = " · 上次成功：%@";
 " · Scheduled: %@" = " · 计划：%@";
 "!#include fetch failed" = "!#include 获取失败";

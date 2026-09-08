@@ -1,3 +1,12 @@
+"SponsorBlock Settings" = "SponsorBlock Ayarları";
+"Import SponsorBlock Settings" = "SponsorBlock Ayarlarını İçe Aktar";
+"Export SponsorBlock Settings" = "SponsorBlock Ayarlarını Dışa Aktar";
+"Transfers category choices, skip notices, minimum segment length, and legacy channel allowlists. Private user IDs, contributions, and per-channel profiles are excluded. Seek-bar-only categories become Disabled." = "Kategorileri, atlama bildirimlerini, minimum bölüm süresini ve eski izin verilen kanal listelerini aktarır. Özel kullanıcı kimlikleri, katkılar ve kanal profilleri hariç tutulur. Yalnızca ilerleme çubuğunda gösterilen kategoriler devre dışı bırakılır.";
+"Use Tube Cleaner 0.1.36 or later. Reload YouTube after importing; open a video before exporting settings changed in Safari." = "Tube Cleaner 0.1.36 veya üstünü kullanın. İçe aktardıktan sonra YouTube’u yenileyin; Safari’de değiştirilen ayarları dışa aktarmadan önce bir video açın.";
+"No synced SponsorBlock settings yet. Open YouTube with Tube Cleaner enabled, then try again." = "Henüz eşitlenmiş SponsorBlock ayarı yok. Tube Cleaner etkinken YouTube’u açıp tekrar deneyin.";
+"Replace SponsorBlock settings?" = "SponsorBlock ayarları değiştirilsin mi?";
+"Settings imported. Reload YouTube to apply them." = "Ayarlar içe aktarıldı. Uygulamak için YouTube’u yenileyin.";
+"Could not transfer SponsorBlock settings. Use a valid settings JSON file and check available storage." = "SponsorBlock ayarları aktarılamadı. Geçerli bir ayar JSON dosyası kullanın ve kullanılabilir depolama alanını kontrol edin.";
 " · Last success: %@" = " · Son başarılı: %@";
 " · Scheduled: %@" = " · Planlandı: %@";
 "!#include fetch failed" = "!#include alma başarısız";

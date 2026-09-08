@@ -1,3 +1,12 @@
+"SponsorBlock Settings" = "Ustawienia SponsorBlock";
+"Import SponsorBlock Settings" = "Importuj ustawienia SponsorBlock";
+"Export SponsorBlock Settings" = "Eksportuj ustawienia SponsorBlock";
+"Transfers category choices, skip notices, minimum segment length, and legacy channel allowlists. Private user IDs, contributions, and per-channel profiles are excluded. Seek-bar-only categories become Disabled." = "Przenosi kategorie, powiadomienia o pominięciu, minimalną długość segmentu i starsze listy dozwolonych kanałów. Pomija prywatne identyfikatory, wkład i profile kanałów. Kategorie wyświetlane tylko na pasku postępu zostaną wyłączone.";
+"Use Tube Cleaner 0.1.36 or later. Reload YouTube after importing; open a video before exporting settings changed in Safari." = "Użyj Tube Cleaner 0.1.36 lub nowszego. Po imporcie odśwież YouTube; przed eksportem ustawień zmienionych w Safari otwórz film.";
+"No synced SponsorBlock settings yet. Open YouTube with Tube Cleaner enabled, then try again." = "Brak zsynchronizowanych ustawień SponsorBlock. Otwórz YouTube z włączonym Tube Cleaner i spróbuj ponownie.";
+"Replace SponsorBlock settings?" = "Zastąpić ustawienia SponsorBlock?";
+"Settings imported. Reload YouTube to apply them." = "Ustawienia zaimportowane. Odśwież YouTube, aby je zastosować.";
+"Could not transfer SponsorBlock settings. Use a valid settings JSON file and check available storage." = "Nie udało się przenieść ustawień SponsorBlock. Użyj prawidłowego pliku JSON z ustawieniami i sprawdź wolne miejsce.";
 " · Last success: %@" = " · Ostatni sukces: %@";
 " · Scheduled: %@" = " · Zaplanowano: %@";
 "!#include fetch failed" = "Nie udało się pobrać !#include";

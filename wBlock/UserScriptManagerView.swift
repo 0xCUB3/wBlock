@@ -873,6 +873,7 @@ struct UserScriptManagerView: View {
                 }
 
                 if script.isTubeCleaner {
+                    SponsorBlockTransferButton(scriptID: script.id)
                     TubeCleanerFeaturesPicker(
                         features: Binding(
                             get: { userScriptManager.tubeCleanerFeatures },

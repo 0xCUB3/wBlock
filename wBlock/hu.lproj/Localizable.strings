@@ -1,3 +1,12 @@
+"SponsorBlock Settings" = "SponsorBlock-beállítások";
+"Import SponsorBlock Settings" = "SponsorBlock-beállítások importálása";
+"Export SponsorBlock Settings" = "SponsorBlock-beállítások exportálása";
+"Transfers category choices, skip notices, minimum segment length, and legacy channel allowlists. Private user IDs, contributions, and per-channel profiles are excluded. Seek-bar-only categories become Disabled." = "Átviszi a kategóriákat, átugrási értesítéseket, minimális szakaszhosszt és régi csatornaengedélyezési listákat. A privát felhasználói azonosítók, hozzájárulások és csatornaprofilok kimaradnak. A csak a folyamatjelzőn megjelenő kategóriák letiltódnak.";
+"Use Tube Cleaner 0.1.36 or later. Reload YouTube after importing; open a video before exporting settings changed in Safari." = "Tube Cleaner 0.1.36 vagy újabb szükséges. Importálás után töltse újra a YouTube-ot; a Safariban módosított beállítások exportálása előtt nyisson meg egy videót.";
+"No synced SponsorBlock settings yet. Open YouTube with Tube Cleaner enabled, then try again." = "Még nincsenek szinkronizált SponsorBlock-beállítások. Nyissa meg a YouTube-ot bekapcsolt Tube Cleanerrel, majd próbálja újra.";
+"Replace SponsorBlock settings?" = "Lecseréli a SponsorBlock-beállításokat?";
+"Settings imported. Reload YouTube to apply them." = "Beállítások importálva. Az alkalmazásukhoz töltse újra a YouTube-ot.";
+"Could not transfer SponsorBlock settings. Use a valid settings JSON file and check available storage." = "Nem sikerült átvinni a SponsorBlock-beállításokat. Használjon érvényes JSON-beállításfájlt, és ellenőrizze a szabad tárhelyet.";
 " · Last success: %@" = " · Legutóbbi siker: %@";
 " · Scheduled: %@" = " · Ütemezett: %@";
 "!#include fetch failed" = "A !#include lekérése sikertelen";

@@ -1,3 +1,12 @@
+"SponsorBlock Settings" = "SponsorBlock設定";
+"Import SponsorBlock Settings" = "SponsorBlock設定を読み込む";
+"Export SponsorBlock Settings" = "SponsorBlock設定を書き出す";
+"Transfers category choices, skip notices, minimum segment length, and legacy channel allowlists. Private user IDs, contributions, and per-channel profiles are excluded. Seek-bar-only categories become Disabled." = "カテゴリ、スキップ通知、最小区間長、旧形式のチャンネル許可リストを移行します。非公開ユーザーID、投稿データ、チャンネル別プロファイルは除外されます。シークバー表示のみのカテゴリは無効になります。";
+"Use Tube Cleaner 0.1.36 or later. Reload YouTube after importing; open a video before exporting settings changed in Safari." = "Tube Cleaner 0.1.36以降を使用してください。読み込み後はYouTubeを再読み込みしてください。Safariで変更した設定を書き出す前に動画を開いてください。";
+"No synced SponsorBlock settings yet. Open YouTube with Tube Cleaner enabled, then try again." = "同期済みのSponsorBlock設定がありません。Tube Cleanerを有効にしてYouTubeを開き、再試行してください。";
+"Replace SponsorBlock settings?" = "SponsorBlock設定を置き換えますか？";
+"Settings imported. Reload YouTube to apply them." = "設定を読み込みました。YouTubeを再読み込みして適用してください。";
+"Could not transfer SponsorBlock settings. Use a valid settings JSON file and check available storage." = "SponsorBlock設定を移行できませんでした。有効な設定JSONファイルを使用し、空き容量を確認してください。";
 " · Last success: %@" = " · 前回成功: %@";
 " · Scheduled: %@" = " · 予定: %@";
 "!#include fetch failed" = "!#include の取得に失敗しました";

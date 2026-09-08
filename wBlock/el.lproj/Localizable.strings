@@ -1,3 +1,12 @@
+"SponsorBlock Settings" = "Ρυθμίσεις SponsorBlock";
+"Import SponsorBlock Settings" = "Εισαγωγή ρυθμίσεων SponsorBlock";
+"Export SponsorBlock Settings" = "Εξαγωγή ρυθμίσεων SponsorBlock";
+"Transfers category choices, skip notices, minimum segment length, and legacy channel allowlists. Private user IDs, contributions, and per-channel profiles are excluded. Seek-bar-only categories become Disabled." = "Μεταφέρει κατηγορίες, ειδοποιήσεις παράλειψης, ελάχιστη διάρκεια και παλιές λίστες επιτρεπόμενων καναλιών. Εξαιρούνται ιδιωτικά αναγνωριστικά, συνεισφορές και προφίλ καναλιών. Οι κατηγορίες μόνο για τη γραμμή προόδου απενεργοποιούνται.";
+"Use Tube Cleaner 0.1.36 or later. Reload YouTube after importing; open a video before exporting settings changed in Safari." = "Χρησιμοποιήστε Tube Cleaner 0.1.36 ή νεότερο. Φορτώστε ξανά το YouTube μετά την εισαγωγή· ανοίξτε βίντεο πριν εξαγάγετε ρυθμίσεις που αλλάξατε στο Safari.";
+"No synced SponsorBlock settings yet. Open YouTube with Tube Cleaner enabled, then try again." = "Δεν υπάρχουν συγχρονισμένες ρυθμίσεις SponsorBlock. Ανοίξτε το YouTube με ενεργό Tube Cleaner και δοκιμάστε ξανά.";
+"Replace SponsorBlock settings?" = "Αντικατάσταση ρυθμίσεων SponsorBlock;";
+"Settings imported. Reload YouTube to apply them." = "Οι ρυθμίσεις εισήχθησαν. Φορτώστε ξανά το YouTube για εφαρμογή.";
+"Could not transfer SponsorBlock settings. Use a valid settings JSON file and check available storage." = "Δεν ήταν δυνατή η μεταφορά ρυθμίσεων SponsorBlock. Χρησιμοποιήστε έγκυρο αρχείο JSON και ελέγξτε τον διαθέσιμο χώρο.";
 " · Last success: %@" = " · Τελευταία επιτυχία: %@";
 " · Scheduled: %@" = " · Προγραμματισμένο: %@";
 "!#include fetch failed" = "Αποτυχία λήψης !#include";

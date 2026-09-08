@@ -24,8 +24,11 @@ actor UserScriptStorageManager {
     private var lastLoadedModificationDate: Date?
     private var lastLoadedVersion: Int64 = 0
 
-    private init() {
-        let directoryURL = Self.makeDataDirectoryURL(fileManager: fileManager)
+    private let directoryOverride: URL?
+
+    init(directoryURL: URL? = nil) {
+        directoryOverride = directoryURL
+        let directoryURL = directoryURL ?? Self.makeDataDirectoryURL(fileManager: fileManager)
         try? fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
     }
 
@@ -107,7 +110,7 @@ actor UserScriptStorageManager {
     }
 
     private var dataDirectoryURL: URL {
-        Self.makeDataDirectoryURL(fileManager: fileManager)
+        directoryOverride ?? Self.makeDataDirectoryURL(fileManager: fileManager)
     }
 
     private static func makeDataDirectoryURL(fileManager: FileManager) -> URL {
