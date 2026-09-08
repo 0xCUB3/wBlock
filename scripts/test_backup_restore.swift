@@ -15,10 +15,12 @@ actor ConcurrentLogManager {
 }
 @MainActor final class CloudSyncManager {
     static let shared = CloudSyncManager()
-    func clearDeletedCustomListURL(_ url: String) {}
+    var clearedURLs: [String] = []
+    func clearDeletedCustomListURL(_ url: String) { clearedURLs.append(url) }
 }
 @MainActor final class ProtobufDataManager {
     static let shared = ProtobufDataManager()
+    var lastError: Error?
     var disabledSites: [String] = []
     var filterDisabledSites: [String] = []
     var isNoAutoplayEnabled = false
@@ -61,7 +63,13 @@ actor ConcurrentLogManager {
 @MainActor final class AppFilterManager {
     var filterLists: [FilterList] = []
     var dataManager = ProtobufDataManager.shared
-    func saveFilterLists() async {}
+    var saveFilterListsResult = true
+    var saveFilterListsHook: (() -> Void)?
+    @discardableResult
+    func saveFilterLists() async -> Bool {
+        saveFilterListsHook?()
+        return saveFilterListsResult
+    }
     func markNonSelectionChangesPending() {}
 }
 @MainActor final class ZapperRuleManager {
@@ -116,6 +124,62 @@ enum AppAppearance: String {
         precondition(ProtobufDataManager.shared.disabledHosts["unrelated"] == ["keep.example"])
         precondition(ProtobufDataManager.shared.zapperDisabled["example.com"] == false)
         precondition(ProtobufDataManager.shared.zapperDisabled["unrelated.example"] == true)
+
+        // Caller-level persistence failure must roll back transaction-owned inline
+        // bytes, restore unchanged in-memory metadata, and leave Cloud tombstones alone.
+        let persistenceFailureManager = AppFilterManager()
+        persistenceFailureManager.filterLists = [original]
+        try "||persist-original.example^".write(to: file, atomically: true, encoding: .utf8)
+        persistenceFailureManager.saveFilterListsResult = false
+        let persistenceError = NSError(domain: "BackupPersistenceTest", code: 77)
+        persistenceFailureManager.dataManager.lastError = persistenceError
+        CloudSyncManager.shared.clearedURLs.removeAll()
+        do {
+            try await BackupManager.restoreBackup(decoded, filterManager: persistenceFailureManager)
+            fatalError("metadata persistence failure must abort backup restore")
+        } catch let error as BackupCustomFilterRestorer.RestoreWriteError {
+            let original = error.original as NSError
+            precondition(original.domain == persistenceError.domain && original.code == persistenceError.code,
+                         "restore must preserve the metadata persistence error")
+        }
+        let contentAfterPersistenceFailure = try String(contentsOf: file, encoding: .utf8)
+        precondition(contentAfterPersistenceFailure == "||persist-original.example^")
+        precondition(persistenceFailureManager.filterLists == [original])
+        precondition(CloudSyncManager.shared.clearedURLs.isEmpty,
+                     "failed metadata persistence must not clear deletion tombstones")
+
+        // If another MainActor edit lands while persistence is awaited, failure must
+        // not replace that newer in-memory state with the pre-restore snapshot.
+        var newer = original
+        newer.name = "Newer edit"
+        persistenceFailureManager.filterLists = [original]
+        persistenceFailureManager.saveFilterListsHook = {
+            persistenceFailureManager.filterLists = [newer]
+        }
+        do {
+            try await BackupManager.restoreBackup(decoded, filterManager: persistenceFailureManager)
+            fatalError("metadata persistence failure must still abort after a newer in-memory edit")
+        } catch is BackupCustomFilterRestorer.RestoreWriteError {}
+        precondition(persistenceFailureManager.filterLists == [newer],
+                     "rollback must not overwrite newer in-memory filter edits")
+        let contentAfterNewerEditFailure = try String(contentsOf: file, encoding: .utf8)
+        precondition(contentAfterNewerEditFailure == "||persist-original.example^")
+        persistenceFailureManager.saveFilterListsHook = nil
+        persistenceFailureManager.saveFilterListsResult = true
+
+        // Successful persistence must still respect a newer in-memory deletion that
+        // lands while the save is awaited; do not clear that filter's deletion marker.
+        let successfulConcurrentDeleteManager = AppFilterManager()
+        successfulConcurrentDeleteManager.filterLists = [original]
+        successfulConcurrentDeleteManager.saveFilterListsHook = {
+            successfulConcurrentDeleteManager.filterLists = []
+        }
+        CloudSyncManager.shared.clearedURLs.removeAll()
+        try await BackupManager.restoreBackup(decoded, filterManager: successfulConcurrentDeleteManager)
+        precondition(successfulConcurrentDeleteManager.filterLists.isEmpty)
+        precondition(CloudSyncManager.shared.clearedURLs.isEmpty,
+                     "post-save tombstone clearing must use current membership after concurrent deletion")
+
         let fresh = AppFilterManager()
         try await BackupManager.restoreBackup(decoded, filterManager: fresh)
         try await BackupManager.restoreBackup(decoded, filterManager: fresh)

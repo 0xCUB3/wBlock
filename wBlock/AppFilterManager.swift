@@ -274,7 +274,8 @@ class AppFilterManager: ObservableObject {
     }
 
     // Save filter lists
-    func saveFilterLists() async {
+    @discardableResult
+    func saveFilterLists() async -> Bool {
         // Use existing updateFilterLists method from ProtobufDataManager+Extensions
         await dataManager.updateFilterLists(filterLists)
     }

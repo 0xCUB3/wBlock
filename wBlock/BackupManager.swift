@@ -276,7 +276,42 @@ enum BackupCustomFilterRestorer {
         }
     }
 
-    static func restore(
+    struct RestoreResult {
+        let lists: [FilterList]
+        fileprivate let previous: [URL: Data?]
+        fileprivate let published: [(url: URL, bytes: Data)]
+
+        func rollback(
+            readData: (URL) throws -> Data? = { url in
+                guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+                return try Data(contentsOf: url)
+            },
+            writeData: (Data, URL) throws -> Void = { data, url in
+                try data.write(to: url, options: .atomic)
+            },
+            removeFile: (URL) throws -> Void = { url in
+                guard FileManager.default.fileExists(atPath: url.path) else { return }
+                try FileManager.default.removeItem(at: url)
+            }
+        ) -> [Error] {
+            var failures: [Error] = []
+            for item in published.reversed() {
+                do {
+                    guard try readData(item.url) == item.bytes else { continue }
+                    if let old = previous[item.url] ?? nil {
+                        try writeData(old, item.url)
+                    } else {
+                        try removeFile(item.url)
+                    }
+                } catch {
+                    failures.append(error)
+                }
+            }
+            return failures
+        }
+    }
+
+    static func restoreWithReceipt(
         _ entries: [WBlockBackup.CustomFilterEntry],
         into existing: [FilterList],
         localFileURL: (FilterList) -> URL?,
@@ -291,7 +326,8 @@ enum BackupCustomFilterRestorer {
             guard FileManager.default.fileExists(atPath: url.path) else { return }
             try FileManager.default.removeItem(at: url)
         }
-    ) throws -> [FilterList] {
+    ) throws -> RestoreResult {
+
         var lists = existing
         var writes: [URL: Data] = [:]
         for entry in entries {
@@ -374,22 +410,40 @@ enum BackupCustomFilterRestorer {
             }
         } catch {
             let original = error
-            var rollbackFailures: [Error] = []
-            for item in published.reversed() {
-                do {
-                    guard try readData(item.url) == item.bytes else { continue }
-                    if let old = previous[item.url] ?? nil {
-                        try writeData(old, item.url)
-                    } else {
-                        try removeFile(item.url)
-                    }
-                } catch {
-                    rollbackFailures.append(error)
-                }
-            }
+            let rollbackFailures = RestoreResult(
+                lists: lists,
+                previous: previous,
+                published: published
+            ).rollback(readData: readData, writeData: writeData, removeFile: removeFile)
             throw RestoreWriteError(original: original, rollbackFailures: rollbackFailures)
         }
-        return lists
+        return RestoreResult(lists: lists, previous: previous, published: published)
+    }
+
+    static func restore(
+        _ entries: [WBlockBackup.CustomFilterEntry],
+        into existing: [FilterList],
+        localFileURL: (FilterList) -> URL?,
+        readData: (URL) throws -> Data? = { url in
+            guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+            return try Data(contentsOf: url)
+        },
+        writeData: (Data, URL) throws -> Void = { data, url in
+            try data.write(to: url, options: .atomic)
+        },
+        removeFile: (URL) throws -> Void = { url in
+            guard FileManager.default.fileExists(atPath: url.path) else { return }
+            try FileManager.default.removeItem(at: url)
+        }
+    ) throws -> [FilterList] {
+        try restoreWithReceipt(
+            entries,
+            into: existing,
+            localFileURL: localFileURL,
+            readData: readData,
+            writeData: writeData,
+            removeFile: removeFile
+        ).lists
     }
 }
 
@@ -527,11 +581,13 @@ enum BackupManager {
 
     static func restoreBackup(_ backup: WBlockBackup, filterManager: AppFilterManager) async throws {
         let loader = FilterListLoader()
-        var lists = try BackupCustomFilterRestorer.restore(
+        let originalLists = filterManager.filterLists
+        let restored = try BackupCustomFilterRestorer.restoreWithReceipt(
             backup.customFilterLists,
-            into: filterManager.filterLists,
+            into: originalLists,
             localFileURL: loader.localFileURL(for:)
         )
+        var lists = restored.lists
         // 1. Restore built-in filter selections by URL
         for selection in backup.filterSelections {
             if let index = lists.firstIndex(where: { !$0.isCustom && $0.url.absoluteString == selection.url }) {
@@ -540,13 +596,25 @@ enum BackupManager {
             }
         }
         filterManager.filterLists = lists
+        let persisted = await filterManager.saveFilterLists()
+        guard persisted else {
+            let persistenceError = filterManager.dataManager.lastError ?? CocoaError(.fileWriteUnknown)
+            let rollbackFailures = restored.rollback()
+            if filterManager.filterLists == lists {
+                filterManager.filterLists = originalLists
+            }
+            throw BackupCustomFilterRestorer.RestoreWriteError(
+                original: persistenceError,
+                rollbackFailures: rollbackFailures
+            )
+        }
+        let currentLists = filterManager.filterLists
         for entry in backup.customFilterLists {
             if let url = URL(string: entry.url),
-               let filter = lists.first(where: { $0.isCustom && FilterListURLSupport.isSameList($0.url, url) }) {
+               let filter = currentLists.first(where: { $0.isCustom && FilterListURLSupport.isSameList($0.url, url) }) {
                 CloudSyncManager.shared.clearDeletedCustomListURL(filter.url.absoluteString)
             }
         }
-        await filterManager.saveFilterLists()
 
         // 3. Restore whitelist
         await filterManager.dataManager.setWhitelistedDomains(backup.whitelistedDomains)

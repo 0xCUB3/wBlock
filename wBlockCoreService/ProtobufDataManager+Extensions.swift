@@ -32,7 +32,8 @@ extension ProtobufDataManager {
             || filter.url == Self.adGuardMobileCurrentURL
     }
 
-    public func updateFilterLists(_ filterLists: [FilterList]) async {
+    @discardableResult
+    public func updateFilterLists(_ filterLists: [FilterList]) async -> Bool {
         let incomingIDs = Set(filterLists.map { $0.id.uuidString })
         // Deletions are relative to this process's local baseline, not the newest
         // cross-process disk snapshot. Otherwise a concurrently inserted filter that
@@ -62,7 +63,7 @@ extension ProtobufDataManager {
             }
             return protoFilterList
         }
-        _ = await updateDataImmediately(explicitlyDeletedFilterIDs: deletedIDs) { data in
+        return await updateDataImmediately(explicitlyDeletedFilterIDs: deletedIDs) { data in
             var merged = protoFilterLists
             mergeFilterListsForPersistence(
                 &merged,
