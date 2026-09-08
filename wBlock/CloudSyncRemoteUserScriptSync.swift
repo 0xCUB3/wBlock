@@ -45,41 +45,62 @@ enum CloudSyncRemoteUserScriptReconciler {
 
     static func deletedURLsToClearDuringUploadReconciliation(
         existingDeletedURLs: Set<String>,
-        localRemoteScriptURLs: Set<String>
+        localRemoteScriptURLs: Set<String>,
+        locallyAddedURLs: Set<String> = []
     ) -> Set<String> {
         normalizedURLs(existingDeletedURLs)
             .intersection(normalizedURLs(localRemoteScriptURLs))
+            .intersection(normalizedURLs(locallyAddedURLs))
     }
 
     static func deletedURLsToMergeDuringUploadReconciliation(
         remoteDeletedURLs: Set<String>,
-        localRemoteScriptURLs: Set<String>
+        localRemoteScriptURLs: Set<String>,
+        locallyAddedURLs: Set<String> = []
     ) -> Set<String> {
         deletedURLsToMerge(
             remoteDeletedURLs: remoteDeletedURLs,
             liveRemoteScriptURLs: normalizedURLs(localRemoteScriptURLs)
+                .intersection(normalizedURLs(locallyAddedURLs))
         )
     }
 
     static func deletedURLsToMergeDuringRemoteApply(
         remoteDeletedURLs: Set<String>,
         remoteRemoteScriptURLs: Set<String>,
-        localRemoteScriptURLs: Set<String>
+        localRemoteScriptURLs: Set<String>,
+        locallyAddedURLs: Set<String> = []
     ) -> Set<String> {
         deletedURLsToMerge(
             remoteDeletedURLs: remoteDeletedURLs,
             liveRemoteScriptURLs: normalizedURLs(remoteRemoteScriptURLs)
-                .union(normalizedURLs(localRemoteScriptURLs))
+                .union(normalizedURLs(localRemoteScriptURLs).intersection(normalizedURLs(locallyAddedURLs)))
         )
     }
 
     static func deletedURLsToClearDuringReconciliation(
         existingDeletedURLs: Set<String>,
         remoteRemoteScriptURLs: Set<String>,
-        localRemoteScriptURLs: Set<String>
+        localRemoteScriptURLs: Set<String>,
+        locallyAddedURLs: Set<String> = []
     ) -> Set<String> {
         normalizedURLs(existingDeletedURLs)
-            .intersection(normalizedURLs(remoteRemoteScriptURLs).union(normalizedURLs(localRemoteScriptURLs)))
+            .intersection(normalizedURLs(remoteRemoteScriptURLs).union(
+                normalizedURLs(localRemoteScriptURLs).intersection(normalizedURLs(locallyAddedURLs))
+            ))
+    }
+
+    /// A successful sync acknowledges only the local add generation it actually
+    /// observed. A remove/re-add while CloudKit is suspended must remain pending.
+    static func additionsAfterAcknowledging(
+        current: [String: String],
+        snapshot: [String: String],
+        syncedURLs: Set<String>
+    ) -> [String: String] {
+        let synced = normalizedURLs(syncedURLs)
+        return current.filter { url, generation in
+            !synced.contains(normalizedURL(url)) || snapshot[url] != generation
+        }
     }
 
     private static func deletedURLsToMerge(

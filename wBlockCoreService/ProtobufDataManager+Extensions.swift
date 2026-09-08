@@ -32,10 +32,15 @@ extension ProtobufDataManager {
             || filter.url == Self.adGuardMobileCurrentURL
     }
 
-    public func updateFilterLists(_ filterLists: [FilterList]) async {
+    @discardableResult
+    public func updateFilterLists(_ filterLists: [FilterList]) async -> Bool {
         let incomingIDs = Set(filterLists.map { $0.id.uuidString })
-        let snapshot = await latestAppDataSnapshot()
-        let deletedIDs = Set(snapshot.filterLists.map(\.id)).subtracting(incomingIDs)
+        // Deletions are relative to this process's local baseline, not the newest
+        // cross-process disk snapshot. Otherwise a concurrently inserted filter that
+        // this caller has never seen can be mistaken for a local deletion.
+        let localBaseline = appData.filterLists
+        let localBaselineIDs = Set(localBaseline.map(\.id))
+        let deletedIDs = localBaselineIDs.subtracting(incomingIDs)
         let protoFilterLists = filterLists.map { filter -> Wblock_Data_FilterListData in
             var protoFilterList = Wblock_Data_FilterListData()
             protoFilterList.id = filter.id.uuidString
@@ -58,8 +63,15 @@ extension ProtobufDataManager {
             }
             return protoFilterList
         }
-        _ = await updateDataImmediately(explicitlyDeletedFilterIDs: deletedIDs) { data in
-            data.filterLists = protoFilterLists
+        return await updateDataImmediately(explicitlyDeletedFilterIDs: deletedIDs) { data in
+            var merged = protoFilterLists
+            mergeFilterListsForPersistence(
+                &merged,
+                baseline: localBaseline,
+                persisted: data.filterLists,
+                deletedIDs: deletedIDs
+            )
+            data.filterLists = merged
         }
     }
 
@@ -252,6 +264,8 @@ extension ProtobufDataManager {
                 content: includePersistedContent ? protoData.content : ""
             )
             script.isEnabled = protoData.isEnabled
+            script.lastUpdated = protoData.lastUpdated > 0
+                ? Date(timeIntervalSince1970: TimeInterval(protoData.lastUpdated)) : nil
             script.description = protoData.description_p
             script.version = protoData.version
             script.matches = protoData.matches

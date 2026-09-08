@@ -1,6 +1,15 @@
 import Foundation
+import CryptoKit
 
 public enum FilterDownloadProcessor {
+    private actor IncludeFailureTracker {
+        private(set) var failed = false
+
+        func markFailed() {
+            failed = true
+        }
+    }
+
     private enum ProcessingError: Error {
         case invalidContent
         case decodingFailed
@@ -32,14 +41,22 @@ public enum FilterDownloadProcessor {
         if filter.isOptimizedBuiltin {
             finalContent = processedContent
         } else {
+            let includeFailureTracker = IncludeFailureTracker()
             let preprocessor = FilterPreprocessor(
                 urlSession: urlSession,
-                onFetchError: onIncludeFetchError
+                onFetchError: { url, statusCode in
+                    await includeFailureTracker.markFailed()
+                    await onIncludeFetchError?(url, statusCode)
+                }
             )
             finalContent = await preprocessor.preprocess(
                 content: processedContent,
                 listURL: sourceURL
             )
+            try Task.checkCancellation()
+            guard !(await includeFailureTracker.failed) else {
+                throw ProcessingError.invalidContent
+            }
         }
 
         try Task.checkCancellation()
@@ -73,6 +90,7 @@ public enum FilterDownloadProcessor {
             isDirectory: false
         )
         try finalData.write(to: stagedFileURL, options: .atomic)
+        let sourceSHA256 = SHA256.hash(data: finalData).map { String(format: "%02x", $0) }.joined()
 
         let revisionStoreURL = containerURL.appendingPathComponent(
             PendingFilterUpdateRevisions.filename,
@@ -86,6 +104,9 @@ public enum FilterDownloadProcessor {
             etag: etag,
             lastModified: lastModified,
             version: updatedFilter.version.isEmpty ? nil : updatedFilter.version,
+            sourceSHA256: sourceSHA256,
+            sourceFilename: filename,
+            stagedFilename: stagedFileURL.lastPathComponent,
             storeURL: revisionStoreURL,
             publish: {
                 // Clear stale delta state before exposing a new source. If writing

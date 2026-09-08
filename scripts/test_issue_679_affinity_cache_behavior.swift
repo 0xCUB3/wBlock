@@ -13,9 +13,8 @@ struct Main {
 
     static func main() throws {
         let groupIdentifier = "group.wblock.test.issue679.\(UUID().uuidString.prefix(8))"
-        guard let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
-            fail("no scratch container")
-        }
+        let container = FileManager.default.temporaryDirectory
+            .appendingPathComponent("wblock-issue679-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: container, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: container) }
 
@@ -45,7 +44,8 @@ struct Main {
                 allTargets: [target, other],
                 disabledSites: [],
                 extraRulesText: nil,
-                groupIdentifier: groupIdentifier
+                groupIdentifier: groupIdentifier,
+                containerURL: container
             )
         }
 

@@ -1,8 +1,28 @@
 import Foundation
+import CryptoKit
+import Darwin
 
 @main
 struct PendingFilterUpdateRevisionTests {
     static func main() {
+        if CommandLine.arguments.count == 6, CommandLine.arguments[1] == "--crash-child" {
+            let storeURL = URL(fileURLWithPath: CommandLine.arguments[2])
+            let sourceFilename = CommandLine.arguments[3]
+            let stagedFilename = CommandLine.arguments[4]
+            let sourceSHA256 = CommandLine.arguments[5]
+            _ = PendingFilterUpdateRevisions.markDownloaded(
+                filterID: "crash-filter",
+                version: "2",
+                sourceSHA256: sourceSHA256,
+                sourceFilename: sourceFilename,
+                stagedFilename: stagedFilename,
+                token: "crash-token",
+                storeURL: storeURL,
+                publish: { _exit(77) }
+            )
+            fatalError("hard-exit publication probe unexpectedly returned")
+        }
+
         let directory = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("pending-filter-update-revisions-")
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -97,6 +117,18 @@ struct PendingFilterUpdateRevisionTests {
         expect(PendingFilterUpdateRevisions.load(storeURL: storeURL)[firstID]?.token == "new-token",
                "acknowledging an older apply snapshot must preserve a newer downloaded revision")
 
+        let legacyID = UUID().uuidString
+        PendingFilterUpdateRevisions.markDownloaded(
+            filterID: legacyID,
+            token: "legacy-no-digest",
+            now: 450,
+            storeURL: storeURL
+        )
+        expect(PendingFilterUpdateRevisions.publishedRevision(filterID: legacyID, storeURL: storeURL) == nil,
+               "pre-digest pending revisions must not be trusted as published")
+        expect(!PendingFilterUpdateRevisions.contains(filterID: legacyID, storeURL: storeURL),
+               "unverifiable legacy revisions should be pruned so they do not recur forever")
+
         PendingFilterUpdateRevisions.markDownloaded(
             filterID: deletedID,
             token: "deleted-token",
@@ -140,6 +172,56 @@ struct PendingFilterUpdateRevisionTests {
         expect(published != nil, "transactional source publication should succeed")
         expect(snapshotFinished.wait(timeout: .now() + 2) == .success, "snapshot should finish after publication")
 
+        let crashDirectory = directory.appendingPathComponent("crash-recovery", isDirectory: true)
+        try? FileManager.default.createDirectory(at: crashDirectory, withIntermediateDirectories: true)
+        let crashStoreURL = crashDirectory.appendingPathComponent(PendingFilterUpdateRevisions.filename)
+        let crashSourceURL = crashDirectory.appendingPathComponent("source.txt")
+        let crashStagedURL = crashDirectory.appendingPathComponent(".pending-source.txt")
+        let crashBaselineURL = crashDirectory.appendingPathComponent("diff-baseline-source.txt")
+        let newSource = Data("||new.example^\n".utf8)
+        try? Data("||old.example^\n".utf8).write(to: crashSourceURL, options: .atomic)
+        try? newSource.write(to: crashStagedURL, options: .atomic)
+        try? Data("stale baseline".utf8).write(to: crashBaselineURL, options: .atomic)
+        let digest = SHA256.hash(data: newSource).map { String(format: "%02x", $0) }.joined()
+
+        let child = Process()
+        child.executableURL = URL(fileURLWithPath: CommandLine.arguments[0])
+        child.arguments = [
+            "--crash-child",
+            crashStoreURL.path,
+            crashSourceURL.lastPathComponent,
+            crashStagedURL.lastPathComponent,
+            digest,
+        ]
+        do {
+            try child.run()
+            child.waitUntilExit()
+        } catch {
+            fail("failed to launch hard-exit publication child: \(error)")
+        }
+        expect(child.terminationStatus == 77, "publication child must hard-exit inside publish")
+        expect(
+            (try? String(contentsOf: crashSourceURL, encoding: .utf8))?.contains("old.example") == true,
+            "hard exit must occur before source publication"
+        )
+
+        let recovered = PendingFilterUpdateRevisions.snapshotPublished(
+            filterIDs: ["crash-filter"],
+            storeURL: crashStoreURL
+        )
+        expect(recovered.tokensByFilterID["crash-filter"] == "crash-token",
+               "verified snapshot should recover and capture the staged crash revision")
+        expect((try? Data(contentsOf: crashSourceURL)) == newSource,
+               "verified snapshot should promote the digest-matching staged source")
+        expect(!FileManager.default.fileExists(atPath: crashStagedURL.path),
+               "recovered staged source should be consumed")
+        expect(!FileManager.default.fileExists(atPath: crashBaselineURL.path),
+               "crash recovery must discard a delta baseline that may not match the recovered source")
+        expect(PendingFilterUpdateRevisions.publishedRevision(
+            filterID: "crash-filter",
+            storeURL: crashStoreURL
+        )?.version == "2", "background readers should receive verified pending metadata")
+
         print("PASS")
     }
 
@@ -148,5 +230,10 @@ struct PendingFilterUpdateRevisionTests {
             fputs("FAIL: \(message)\n", stderr)
             exit(1)
         }
+    }
+
+    private static func fail(_ message: String) -> Never {
+        fputs("FAIL: \(message)\n", stderr)
+        exit(1)
     }
 }

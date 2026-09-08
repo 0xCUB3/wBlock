@@ -3,6 +3,7 @@
 set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 SIMULATOR=${1:?Pass an available iOS simulator UUID}
+xcrun simctl bootstatus "$SIMULATOR" -b
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wblock-scroll-tests.XXXXXX")
 trap 'rm -rf "$WORK"' EXIT
 cp "$ROOT/scripts/rules-viewer-ui/"{App.swift,ScrollTests.swift,project.yml} "$WORK/"

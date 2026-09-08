@@ -22,6 +22,7 @@ struct SafariRuleLimitCapTests {
             knownBaseCount: 3
         )
         expectEqual(unchanged.ruleCount, 3, "empty disabled sites should keep the base count")
+        expectEqual(unchanged.truncatedRuleCount, 0, "under-limit base must not report truncation")
         expectEqual(unchanged.json, threeRuleJSON, "empty disabled sites should keep the base JSON")
 
         let underLimit = ContentBlockerService.finalizeContentBlockerJSON(
@@ -43,6 +44,7 @@ struct SafariRuleLimitCapTests {
         )
         let atLimitRules = rules(in: atLimit.json)
         expectEqual(atLimit.ruleCount, 3, "150k + 1 disabled site must stay at the Safari limit")
+        expectEqual(atLimit.truncatedRuleCount, 1, "reserved ignore slot must report one dropped base rule")
         expectEqual(atLimitRules.count, 3, "capped JSON must not exceed the limit")
         expectEqual(filterOf(atLimitRules[0]), "a", "the first converted rule should be kept")
         expectEqual(filterOf(atLimitRules[1]), "b", "the second converted rule should be kept")
@@ -56,6 +58,7 @@ struct SafariRuleLimitCapTests {
         )
         let twoSiteRules = rules(in: twoSites.json)
         expectEqual(twoSites.ruleCount, 3, "two ignore rules should reserve two slots")
+        expectEqual(twoSites.truncatedRuleCount, 2, "two reserved ignore slots must report two dropped base rules")
         expectEqual(filterOf(twoSiteRules[0]), "a", "only the first converted rule should remain")
         expect(isIgnoreRule(twoSiteRules[1], for: "*one.example"), "first ignore rule should be preserved")
         expect(isIgnoreRule(twoSiteRules[2], for: "*two.example"), "second ignore rule should be preserved")
@@ -85,6 +88,7 @@ struct SafariRuleLimitCapTests {
         )
         let ignoreOnlyRules = rules(in: ignoreOnly.json)
         expectEqual(ignoreOnly.ruleCount, 1, "ignore rules themselves must not exceed the limit")
+        expectEqual(ignoreOnly.truncatedRuleCount, 3, "ignore-only output must report all dropped base rules")
         expect(isIgnoreRule(ignoreOnlyRules[0], for: "*one.example"), "the first ignore rule should win when even ignore rules must be capped")
 
         let overLimitBase = ContentBlockerService.finalizeContentBlockerJSON(
@@ -94,7 +98,45 @@ struct SafariRuleLimitCapTests {
             ruleLimit: 2
         )
         expectEqual(overLimitBase.ruleCount, 2, "an over-limit base list should be truncated")
+        expectEqual(overLimitBase.truncatedRuleCount, 1, "over-limit base must report its dropped rule count")
         expectEqual(rules(in: overLimitBase.json).count, 2, "truncated JSON should match the reported count")
+
+        let container = FileManager.default.temporaryDirectory
+            .appendingPathComponent("wblock-rule-limit-preserve-\(UUID().uuidString)", isDirectory: true)
+        try! FileManager.default.createDirectory(at: container, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: container) }
+        let targetFilename = "test-rules.json"
+        let targetURL = container.appendingPathComponent(targetFilename)
+        let prior = compactJSON([blockRule("prior")])
+        try! prior.write(to: targetURL, atomically: true, encoding: .utf8)
+
+        let rejectedFresh = try! ContentBlockerService.finalizeAndSaveContentBlockerIfWithinLimit(
+            baseJSON: threeRuleJSON,
+            disabledSites: [],
+            knownBaseCount: 3,
+            ruleLimit: 2,
+            groupIdentifier: "unused.test.group",
+            targetRulesFilename: targetFilename,
+            containerURL: container
+        )
+        expectEqual(rejectedFresh.truncatedRuleCount, 1, "fresh over-limit publish should report truncation")
+        expect(!rejectedFresh.outputChanged, "fresh over-limit publish must not change target output")
+        expectEqual(try! String(contentsOf: targetURL, encoding: .utf8), prior,
+                    "fresh over-limit publish must preserve prior valid target")
+
+        let rejectedCached = try! ContentBlockerService.finalizeAndSaveContentBlockerIfWithinLimit(
+            baseJSON: threeRuleJSON,
+            disabledSites: ["example.com"],
+            knownBaseCount: 3,
+            ruleLimit: 3,
+            groupIdentifier: "unused.test.group",
+            targetRulesFilename: targetFilename,
+            containerURL: container
+        )
+        expectEqual(rejectedCached.truncatedRuleCount, 1, "cache-path over-limit publish should report truncation")
+        expect(!rejectedCached.outputChanged, "cache-path over-limit publish must not change target output")
+        expectEqual(try! String(contentsOf: targetURL, encoding: .utf8), prior,
+                    "cache-path over-limit publish must preserve prior valid target")
 
         print("ok")
     }

@@ -1125,3 +1125,11 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Paste non-empty plain text and review it before adding." = "Boş olmayan düz metin yapıştırın ve eklemeden önce inceleyin.";
 
 "Choose a non-empty text file and review it before adding." = "Boş olmayan bir metin dosyası seçin ve eklemeden önce inceleyin.";
+
+/* Filter update reliability */
+"A wBlock filter update is already in progress." = "Bir wBlock filtre güncellemesi zaten devam ediyor.";
+"wBlock filter update completed." = "wBlock filtre güncellemesi tamamlandı.";
+"wBlock filter update completed with errors." = "wBlock filtre güncellemesi hatalarla tamamlandı.";
+"Shared update status is unavailable." = "Paylaşılan güncelleme durumu kullanılamıyor.";
+"Shared update status lock is unavailable." = "Paylaşılan güncelleme durumu kilidi kullanılamıyor.";
+"%@ dropped %d rules at Safari's per-extension limit." = "%@, Safari’nin uzantı başına sınırı nedeniyle %d kuralı çıkardı.";

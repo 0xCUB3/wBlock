@@ -69,6 +69,33 @@ public enum UserScriptManagerNotificationKey {
     public static let url = "url"
     public static let isLocal = "isLocal"
     public static let localImportIdentity = "localImportIdentity"
+    public static let isRemoteSync = "isRemoteSync"
+    public static let isNewAddition = "isNewAddition"
+
+    public static func userInfo(
+        for script: UserScript,
+        origin: UserScriptMutationOrigin = .local,
+        isNewAddition: Bool = false
+    ) -> [String: Any] {
+        var info: [String: Any] = [
+            name: script.name,
+            isLocal: script.isLocal,
+            isRemoteSync: origin == .remoteSync,
+            Self.isNewAddition: isNewAddition,
+        ]
+        if let identity = UserScriptImportIdentity.normalized(script.localImportIdentity) {
+            info[localImportIdentity] = identity
+        }
+        if let scriptURL = script.url?.absoluteString {
+            info[url] = scriptURL
+        }
+        return info
+    }
+
+    /// Replacing an existing record is not a new add intent, even when its source changes.
+    public static func identifiesLocalAddition(_ info: [AnyHashable: Any]?) -> Bool {
+        info?[isNewAddition] as? Bool == true && info?[isRemoteSync] as? Bool == false
+    }
 }
 
 struct BuiltInUserScriptDefinition {
@@ -927,7 +954,7 @@ public class UserScriptManager: ObservableObject {
         let diskScripts = dataManager.getUserScripts(includePersistedContent: true)
         let hydratedScripts = await hydrateUserScriptsFromDisk(
             diskScripts,
-            includeResources: false,
+            includeResources: true,
             hydrateDisabled: false
         )
         guard areUserScriptsEqual(userScripts, hydratedScripts) == false else { return }
@@ -951,7 +978,7 @@ public class UserScriptManager: ObservableObject {
         // Update content from stored files (do file I/O off main thread)
         var updatedScripts = await hydrateUserScriptsFromDisk(
             newUserScripts,
-            includeResources: false,
+            includeResources: true,
             hydrateDisabled: false
         )
         guard generation == dataManagerSyncGeneration else {
@@ -1229,20 +1256,7 @@ public class UserScriptManager: ObservableObject {
 
     private func areUserScriptsEqual(_ scripts1: [UserScript], _ scripts2: [UserScript]) -> Bool {
         guard scripts1.count == scripts2.count else { return false }
-
-        for i in 0..<scripts1.count {
-            let script1 = scripts1[i]
-            let script2 = scripts2[i]
-
-            if script1.id != script2.id || script1.isEnabled != script2.isEnabled
-                || script1.name != script2.name || script1.version != script2.version
-                || script1.content != script2.content
-            {
-                return false
-            }
-        }
-
-        return true
+        return zip(scripts1, scripts2).allSatisfy { $0.hasSameAuthoritativeState(as: $1) }
     }
 
     /// Simple and reliable duplicate detection - only finds truly duplicate scripts
@@ -1384,22 +1398,6 @@ public class UserScriptManager: ObservableObject {
 
         removeUserScriptResourcesFile(userScript)
         Self.removeCompiledStyleArtifact(scriptID: userScript.id)
-    }
-
-    private func userScriptNotificationInfo(for userScript: UserScript) -> [String: Any] {
-        var info: [String: Any] = [
-            UserScriptManagerNotificationKey.name: userScript.name,
-            UserScriptManagerNotificationKey.isLocal: userScript.isLocal,
-        ]
-
-        if let identity = UserScriptImportIdentity.normalized(userScript.localImportIdentity) {
-            info[UserScriptManagerNotificationKey.localImportIdentity] = identity
-        }
-        if let url = userScript.url?.absoluteString {
-            info[UserScriptManagerNotificationKey.url] = url
-        }
-
-        return info
     }
 
     private func setup() async {
@@ -2713,11 +2711,14 @@ public class UserScriptManager: ObservableObject {
             NotificationCenter.default.post(
                 name: .userScriptManagerDidUpsertUserScript,
                 object: self,
-                userInfo: userScriptNotificationInfo(for: scriptToRestore)
+                userInfo: UserScriptManagerNotificationKey.userInfo(
+                    for: scriptToRestore, isNewAddition: existingIndex == nil
+                )
             )
         }
 
         userScripts = mergedScripts
+        recordLocalMutation()
         await removeRetiredYouTubeAdBlockIfNeeded()
         await persistUserScriptsNow(authoritative: true)
         // Flush the restored scripts to disk right away instead of relying on the
@@ -2739,6 +2740,7 @@ public class UserScriptManager: ObservableObject {
         category: FilterListCategory? = nil,
         origin: UserScriptMutationOrigin = .local
     ) async -> Error? {
+        let startingLocalMutationRevision = origin == .remoteSync ? localMutationRevision : nil
         isLoading = true
         statusDescription = UserStyleSupport.isUserStyleURL(url)
             ? "Downloading userstyle..." : "Downloading userscript..."
@@ -2805,8 +2807,15 @@ public class UserScriptManager: ObservableObject {
             newUserScript.content = processedContent
             newUserScript.resourceContents = resourceContents
 
+            if let startingLocalMutationRevision,
+               localMutationRevision != startingLocalMutationRevision {
+                isLoading = false
+                return CancellationError()
+            }
+
             // Check if script already exists
-            if let existingIndex = userScripts.firstIndex(where: { $0.url == url }) {
+            let existingIndex = userScripts.firstIndex(where: { $0.url == url })
+            if let existingIndex {
                 newUserScript.updatesAutomatically = userScripts[existingIndex].updatesAutomatically
                 userScripts[existingIndex] = newUserScript
                 if origin == .local { recordScriptMutation(newUserScript.id) }
@@ -2822,7 +2831,9 @@ public class UserScriptManager: ObservableObject {
             NotificationCenter.default.post(
                 name: .userScriptManagerDidUpsertUserScript,
                 object: self,
-                userInfo: userScriptNotificationInfo(for: newUserScript)
+                userInfo: UserScriptManagerNotificationKey.userInfo(
+                    for: newUserScript, origin: origin, isNewAddition: existingIndex == nil
+                )
             )
 
             // Check for duplicates after adding a script
@@ -3002,6 +3013,7 @@ public class UserScriptManager: ObservableObject {
         legacyLocalImportMatching: Bool = false,
         origin: UserScriptMutationOrigin = .local
     ) async -> Error? {
+        let startingLocalMutationRevision = origin == .remoteSync ? localMutationRevision : nil
         isLoading = true
         statusDescription = "Adding userscript..."
         hasError = false
@@ -3017,7 +3029,8 @@ public class UserScriptManager: ObservableObject {
                 categoryOverride: category,
                 localImportIdentity: localImportIdentity ?? UserScriptImportIdentity.forContent(content),
                 legacyLocalImportMatching: legacyLocalImportMatching,
-                origin: origin
+                origin: origin,
+                startingLocalMutationRevision: startingLocalMutationRevision
             )
 
             isLoading = false
@@ -3042,7 +3055,8 @@ public class UserScriptManager: ObservableObject {
         categoryOverride: FilterListCategory? = nil,
         localImportIdentity: String? = nil,
         legacyLocalImportMatching: Bool = false,
-        origin: UserScriptMutationOrigin = .local
+        origin: UserScriptMutationOrigin = .local,
+        startingLocalMutationRevision: UInt64? = nil
     ) async throws -> UserScript {
         let trimmedContent = rawContent.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -3133,6 +3147,11 @@ public class UserScriptManager: ObservableObject {
         newUserScript.replaceContentAndParseMetadata(processedContent, compiledBody: tempScript.compiledStyleBody)
         newUserScript.resourceContents = resourceContents
 
+        if let startingLocalMutationRevision,
+           localMutationRevision != startingLocalMutationRevision {
+            throw CancellationError()
+        }
+
         // Disk and sidecar writes must succeed before any observable mutation.
         guard writeUserScriptFiles(newUserScript) else {
             throw CocoaError(.fileWriteUnknown)
@@ -3150,12 +3169,16 @@ public class UserScriptManager: ObservableObject {
         NotificationCenter.default.post(
             name: .userScriptManagerDidImportLocalUserScript,
             object: self,
-            userInfo: [UserScriptManagerNotificationKey.name: newUserScript.name]
+            userInfo: UserScriptManagerNotificationKey.userInfo(
+                for: newUserScript, origin: origin, isNewAddition: existingIndex == nil
+            )
         )
         NotificationCenter.default.post(
             name: .userScriptManagerDidUpsertUserScript,
             object: self,
-            userInfo: userScriptNotificationInfo(for: newUserScript)
+            userInfo: UserScriptManagerNotificationKey.userInfo(
+                for: newUserScript, origin: origin, isNewAddition: existingIndex == nil
+            )
         )
 
         checkForDuplicatesAndAskForConfirmation()
@@ -3457,24 +3480,24 @@ public class UserScriptManager: ObservableObject {
             userScripts.remove(at: index)
             if origin == .local { recordScriptMutation(removedScript.id) }
 
-            // Persist the exact deletion before touching sidecar files or returning. Any
-            // stale in-flight upsert is ignored by its ID-based merge, and suspension
-            // cannot leave an executable record on disk.
-            await dataManager.removeUserScript(withId: removedScript.id)
-            removeUserScriptFile(removedScript)
-
             if removedScript.isLocal {
                 NotificationCenter.default.post(
                     name: .userScriptManagerDidRemoveLocalUserScript,
                     object: self,
-                    userInfo: [UserScriptManagerNotificationKey.name: removedScript.name]
+                    userInfo: UserScriptManagerNotificationKey.userInfo(for: removedScript, origin: origin)
                 )
             }
             NotificationCenter.default.post(
                 name: .userScriptManagerDidRemoveUserScript,
                 object: self,
-                userInfo: userScriptNotificationInfo(for: removedScript)
+                userInfo: UserScriptManagerNotificationKey.userInfo(for: removedScript, origin: origin)
             )
+
+            // Persist the exact deletion before touching sidecar files or returning. Any
+            // stale in-flight upsert is ignored by its ID-based merge, and suspension
+            // cannot leave an executable record on disk.
+            await dataManager.removeUserScript(withId: removedScript.id)
+            removeUserScriptFile(removedScript)
 
             statusDescription = "Removed \(removedScript.name)"
 

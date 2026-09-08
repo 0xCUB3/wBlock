@@ -4,6 +4,12 @@ import Foundation
 @main
 struct UserScriptMatchingAndPayloadTests {
     static func main() {
+        if CommandLine.arguments.contains("--hostile-regex-probe") {
+            let hostileURL = String(repeating: "a", count: 12_000) + "!"
+            let matched = UserScript.matchesIncludePattern("/(a+)+$/", url: hostileURL)
+            exit(matched ? 2 : 0)
+        }
+
         var metadataLines: [String] = [
             "// ==UserScript==",
             "// @name tinyShield-sized test",
@@ -33,6 +39,46 @@ struct UserScriptMatchingAndPayloadTests {
         expect(!UserScript.matchesMatchPattern("*://namemc.com/*", url: "ftp://namemc.com/x"), "structured *:// must not match ftp")
         expect(!UserScript.matchesMatchPattern("*://namemc.com/*?a=*", url: "ftp://namemc.com/x?a=1"), "regex fallback *:// must not match ftp")
         expect(UserScript.matchesMatchPattern("ftp://namemc.com/*", url: "ftp://namemc.com/x"), "explicit ftp:// still matches ftp")
+        expect(UserScript.matchesMatchPattern("https://namemc.com/profile/example", url: "https://namemc.com/profile/example#bio"), "@match must ignore URL fragments")
+
+        var endpoints = UserScript(
+            name: "endpoints",
+            url: URL(string: "https://example.com/original.user.js"),
+            content: """
+            // ==UserScript==
+            // @name Endpoints
+            // @updateURL https://updates.example/meta.js
+            // @downloadURL https://updates.example/full.user.js
+            // ==/UserScript==
+            """
+        )
+        endpoints.isLocal = false
+        endpoints.parseMetadata()
+        expectEqual(endpoints.updateURL, "https://updates.example/meta.js", "mixed-case @updateURL should parse case-insensitively")
+        expectEqual(endpoints.downloadURL, "https://updates.example/full.user.js", "mixed-case @downloadURL should parse case-insensitively")
+        expectEqual(endpoints.resolvedMetaURL?.absoluteString, "https://updates.example/meta.js", "explicit update endpoint should win")
+        expectEqual(endpoints.resolvedDownloadURL?.absoluteString, "https://updates.example/full.user.js", "explicit download endpoint should win")
+
+        expect(
+            UserScript.matchesIncludePattern("/^https:\\/\\/www\\.example\\.com\\/docs\\//", url: "https://www.example.com/docs/start"),
+            "regex-form @include should match"
+        )
+        expect(
+            !UserScript.matchesIncludePattern("/^https:\\/\\/www\\.example\\.com\\/docs\\//", url: "https://www.example.com/other"),
+            "regex-form @include should reject nonmatches"
+        )
+        var regexScript = UserScript(name: "regex")
+        regexScript.matches = ["https://example.com/*"]
+        regexScript.excludes = ["/\\/private(?:\\/|$)/"]
+        expect(regexScript.matches(url: "https://example.com/public"), "regex @exclude should leave unrelated URLs enabled")
+        expect(!regexScript.matches(url: "https://example.com/private/x"), "regex @exclude should block matching URLs")
+        let oversizedRegex = "/" + String(repeating: "a", count: 4_096) + "/"
+        expect(!UserScript.matchesIncludePattern(oversizedRegex, url: "https://example.com/a"), "oversized regex metadata should fail closed")
+        expectHostileRegexProbeFinishes()
+
+        var includeFragment = UserScript(name: "include fragment")
+        includeFragment.includes = ["https://example.com/page#section"]
+        expect(includeFragment.matches(url: "https://example.com/page#section"), "raw @include subject must retain its fragment")
 
         let executable = script.executableContent
         expectEqual(executable, requiredPrefix + body, "executable payload should remove metadata and keep required prefix")
@@ -97,6 +143,38 @@ struct UserScriptMatchingAndPayloadTests {
         expect(!indexed.matches(url: "https://changed.invalid/"), "large exclude list uses its own index")
         indexed.excludeMatches = padding
         expect(indexed.matches(url: "https://changed.invalid/"), "exclude mutation rebuilds independently")
+
+        var authoritative = UserScript(id: UUID(), name: "state", url: URL(string: "https://example.com/a.user.js"), content: "body")
+        authoritative.isEnabled = true
+        authoritative.description = "description"
+        authoritative.version = "1.0"
+        authoritative.matches = ["https://example.com/*"]
+        authoritative.excludeMatches = ["https://example.com/private*"]
+        authoritative.includes = ["https://legacy.example/*"]
+        authoritative.excludes = ["https://legacy.example/private*"]
+        authoritative.runAt = "document-start"
+        authoritative.injectInto = "content"
+        authoritative.grant = ["GM_getValue"]
+        authoritative.require = ["https://example.com/dep.js"]
+        authoritative.resource = [UserScriptResource(name: "icon", url: "https://example.com/icon.png")]
+        authoritative.noframes = true
+        authoritative.isLocal = false
+        authoritative.updateURL = "https://example.com/a.meta.js"
+        authoritative.downloadURL = "https://example.com/a.user.js"
+        authoritative.lastUpdated = Date(timeIntervalSince1970: 123)
+        authoritative.updatesAutomatically = false
+        authoritative.category = .scripts
+        authoritative.localImportIdentity = "identity"
+        expect(authoritative.hasSameAuthoritativeState(as: authoritative), "identical authoritative state should compare equal")
+        var changedMetadata = authoritative
+        changedMetadata.matches.append("https://other.example/*")
+        expect(!authoritative.hasSameAuthoritativeState(as: changedMetadata), "match-only changes must invalidate authoritative equality")
+        changedMetadata = authoritative
+        changedMetadata.updatesAutomatically.toggle()
+        expect(!authoritative.hasSameAuthoritativeState(as: changedMetadata), "update-preference-only changes must invalidate authoritative equality")
+        changedMetadata = authoritative
+        changedMetadata.description = "renamed metadata"
+        expect(!authoritative.hasSameAuthoritativeState(as: changedMetadata), "description-only changes must invalidate authoritative equality")
 
         var connectScript = UserScript(name: "connect", content: "// ==UserScript==\n// @connect example.org\n//\t@connect\tlocalhost\n// ==/UserScript==\n// @connect *")
         expectEqual(connectScript.connect, ["example.org", "localhost"], "only metadata grants network hosts")
@@ -176,5 +254,28 @@ struct UserScriptMatchingAndPayloadTests {
             fputs("FAIL: \(message)\nactual: \(actual)\nexpected: \(expected)\n", stderr)
             exit(1)
         }
+    }
+
+    private static func expectHostileRegexProbeFinishes() {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: CommandLine.arguments[0])
+        process.arguments = ["--hostile-regex-probe"]
+        do {
+            try process.run()
+        } catch {
+            expect(false, "hostile regex subprocess failed to launch: \(error)")
+            return
+        }
+        let deadline = Date().addingTimeInterval(1.0)
+        while process.isRunning && Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.01)
+        }
+        if process.isRunning {
+            process.terminate()
+            process.waitUntilExit()
+            expect(false, "hostile regex evaluation exceeded the bounded subprocess deadline")
+            return
+        }
+        expectEqual(process.terminationStatus, 0, "hostile regex should fail closed without timing out")
     }
 }

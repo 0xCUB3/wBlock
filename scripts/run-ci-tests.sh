@@ -74,6 +74,8 @@ compile_direct_test main-window-frame-restore \
 compile_direct_test userscript-update-operation \
   wBlockCoreService/UserScriptUpdateOperation.swift scripts/test_userscript_update_operation.swift
 
+compile_direct_test userscript-world-isolation scripts/test_userscript_world_isolation.swift
+
 # Core-module API tests. Source-only wBlock tests add their production source
 # explicitly; the remaining tests use the freshly built core framework.
 compile_core_test apply-progress-presentation scripts/test_apply_progress_presentation.swift \
@@ -144,6 +146,9 @@ compile_core_test filter-catalog-remote scripts/test_filter_catalog_remote.swift
 compile_core_test filter-list-fetch-chain scripts/test_filter_list_fetch_chain.swift
 compile_core_test filter-download-processor scripts/test_filter_download_processor.swift
 compile_core_test issue-508-backup scripts/test_issue_508_backup_userscript.swift
+compile_core_test backup-restore scripts/test_backup_restore.swift wBlock/BackupManager.swift
+compile_core_test protobuf-reliability scripts/test_protobuf_reliability.swift
+compile_core_test filter-update-work-lifetime scripts/test_filter_update_work_lifetime.swift
 compile_core_test issue-508-import-identity scripts/test_issue_508_import_identity.swift
 compile_core_test issue-508-oversized-import scripts/test_issue_508_oversized_import.swift
 compile_core_test issue-531-custom-exception-affinity scripts/test_issue_531_custom_exception_affinity.swift
@@ -199,7 +204,7 @@ swiftc -parse-as-library -D DEBUG \
   wBlockCoreService/UserStyleRemoteImportInliner.swift \
   scripts/test_userstyle_parsing_and_matching.swift -o "$TMP/userstyle-parsing-matching"
 WBLOCK_LESS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/less.min.js" \
-WBLOCK_SASS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/sass/wblock-sass-1.102.0.min.js" \
+WBLOCK_SASS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/sass/wblock-sass-1.104.0.min.js" \
 WBLOCK_STYLUS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/stylus/stylus-jsc.js" \
 WBLOCK_POSTCSS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/postcss-nested/wblock-postcss-nested.js" \
   "$TMP/userstyle-parsing-matching"
@@ -211,7 +216,7 @@ swiftc -F "$CORE_PRODUCTS" -I "$CORE_PRODUCTS" -L "$CORE_PRODUCTS" \
   -framework wBlockCoreService -Xlinker -rpath -Xlinker "$CORE_PRODUCTS" \
   scripts/test_issue_511_packaged_compilers.swift -o "$TMP/packaged-compilers"
 WBLOCK_LESS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/less.min.js" \
-WBLOCK_SASS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/sass/wblock-sass-1.102.0.min.js" \
+WBLOCK_SASS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/sass/wblock-sass-1.104.0.min.js" \
 WBLOCK_STYLUS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/stylus/stylus-jsc.js" \
 WBLOCK_POSTCSS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/postcss-nested/wblock-postcss-nested.js" \
   "$TMP/packaged-compilers"
@@ -222,7 +227,16 @@ for test in scripts/test_*.mjs; do
 done
 
 for test in scripts/test_*.sh; do
-  run bash "$test"
+  if [[ "$test" == scripts/test_rules_viewer_ui.sh ]]; then
+    # This parameterized suite has its own simulator job in CI.
+    if [[ -n "${WBLOCK_UI_TEST_SIMULATOR:-}" ]]; then
+      run bash "$test" "$WBLOCK_UI_TEST_SIMULATOR"
+    else
+      echo "[test] rules-viewer-ui runs separately; set WBLOCK_UI_TEST_SIMULATOR to include it locally"
+    fi
+  else
+    run bash "$test"
+  fi
 done
 
 compile_and_run() {
@@ -256,6 +270,11 @@ compile_and_run pending-filter-update-revisions \
   wBlockCoreService/GroupIdentifier.swift \
   wBlockCoreService/PendingFilterUpdateRevisions.swift \
   scripts/test_pending_filter_update_revisions.swift
+
+compile_and_run staged-filter-downloads \
+  wBlockCoreService/GroupIdentifier.swift \
+  wBlockCoreService/StagedFilterDownloads.swift \
+  scripts/test_staged_filter_downloads.swift
 
 compile_and_run bounded-concurrency \
   wBlockCoreService/AsyncConcurrency.swift \

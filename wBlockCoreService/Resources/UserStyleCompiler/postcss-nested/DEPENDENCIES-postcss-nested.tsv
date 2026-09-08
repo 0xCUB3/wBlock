@@ -31,7 +31,7 @@ cssesc	3.0.0	MIT	sha512-/Tb/JcjK111nNScGob5MNtsntNM1aCNUDipB/TkwZFhyDrrE47SOx/18
 esbuild	0.25.9	MIT	sha512-CRbODhYyQx3qp7ZEwzxOk4JBqmD/seJrzPa/cGjY1VtIn5E09Oi9/dB4JwctnfZ8Q8iT7rioVv5k/FNT/uf54g==	https://registry.npmjs.org/esbuild/-/esbuild-0.25.9.tgz
 nanoid	3.3.18	MIT	sha512-DTg4MJbGMWkfi6VZFdNt2/caMbQy4Ou+Op/hJQvGEWcnVfoA1QA+xzRKAzw9jD6+GVOOeYr/mIcuDSdug6F6+w==	https://registry.npmjs.org/nanoid/-/nanoid-3.3.18.tgz
 picocolors	1.1.1	ISC	sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==	https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz
-postcss	8.5.26	MIT	sha512-u82N74LFzG8ca+dD8puPnplTXoGH4fTPpVGuIbt36G3qvNlkvfD0lEAZSxaly3KX8TS/L1A1gsCEmvKmBcVbkQ==	https://registry.npmjs.org/postcss/-/postcss-8.5.26.tgz
+postcss	8.5.28	MIT	sha512-RRuzqDtt5Y9h3quz5hWhK+TPnsmVs6WwSU6LkJMeY4HstUEDuYTG8UJSdawMRzmzAtV+KEoG8N3Qg2qLy5vM/A==	https://registry.npmjs.org/postcss/-/postcss-8.5.28.tgz
 postcss-nested	8.0.1	MIT	sha512-PvSIwDVh1NTw939iu4FBK+oeZfSm0cbErFAjXCTPiStammzobBNE2SiQNezy8Xp+Oud2uLXaLpTauv3UdxWjbQ==	https://registry.npmjs.org/postcss-nested/-/postcss-nested-8.0.1.tgz
 postcss-selector-parser	7.1.5	MIT	sha512-KvvtD7SrlBP7dlgkBghEE3r84CABm5SmV2aNcG4oCA+qDnJ/tvKonFVvwWAyyWUEwxuNawdfEAZKP9zM3oZ2Uw==	https://registry.npmjs.org/postcss-selector-parser/-/postcss-selector-parser-7.1.5.tgz
 source-map-js	1.2.1	BSD-3-Clause	sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==	https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz

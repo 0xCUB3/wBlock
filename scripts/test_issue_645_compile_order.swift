@@ -34,6 +34,36 @@ struct Test {
         let ties = ContentBlockerMappingService.orderedForCompilation([tieA, tieB]).map(\.name)
         require(ties == ["tie-b", "tie-a"], "equal dates fall back to distribution order: \(ties)")
 
+        var stale: [FilterList] = []
+        let refreshedCounts = [100_000, 90_000, 80_000, 70_000, 60_000, 50_000]
+        for index in refreshedCounts.indices {
+            stale.append(FilterList(
+                id: UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", index + 1))!,
+                name: "stale-\(index)",
+                url: URL(string: "https://example.com/stale-\(index).txt")!,
+                category: .ads,
+                isSelected: true
+            ))
+        }
+        var latest = stale
+        for index in latest.indices {
+            latest[index].sourceRuleCount = refreshedCounts[index]
+            latest[index].lastUpdated = Date(timeIntervalSince1970: TimeInterval(10_000 + index))
+        }
+        let refreshed = ContentBlockerMappingService.refreshingCompilationMetadata(
+            snapshot: stale,
+            latest: latest
+        )
+        let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: .macOS)
+        let mapping = ContentBlockerMappingService.distribute(selectedFilters: refreshed, across: targets)
+        let loads = targets.map { target in
+            (mapping[target] ?? []).reduce(0) { $0 + ($1.sourceRuleCount ?? 0) }
+        }
+        require(loads == [100_000, 90_000, 80_000, 70_000, 110_000],
+                "apply-time metadata refresh must balance using downloaded counts: \(loads)")
+        require(refreshed.map(\.isSelected) == stale.map(\.isSelected),
+                "metadata refresh must preserve run-start selection")
+
         let pipeline = try! String(contentsOfFile: "wBlock/AppFilterManager+ApplyPipeline.swift", encoding: .utf8)
         let shared = try! String(contentsOfFile: "wBlockCoreService/SharedAutoUpdateManager.swift", encoding: .utf8)
         require(pipeline.contains("ContentBlockerMappingService.orderedForCompilation(allSelectedFilters)"), "app apply uses compile order")

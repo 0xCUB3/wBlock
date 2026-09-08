@@ -1,13 +1,18 @@
 {
-  "source": "final/wblock-sass-1.102.0.js",
-  "sassVersion": "1.102.0",
+  "source": "generated/wblock-sass-1.104.0.js",
+  "sassVersion": "1.104.0",
+  "sassIntegrity": "sha512-btHMApW2bgolvClhRW8AlQJzgI9lUB3pPSofBQQT+E46GWvf9o0TVQ13SYv5riWZVFyPN+JNz3TKW9XhBlc10w==",
   "immutableVersion": "5.1.5",
+  "immutableIntegrity": "sha512-t7xcm2siw+hlUM68I+UEOK+z84RzmN59as9DZ7P1l0994DKUWV7UXBMQZVxaoMSRQ+PBZbHCOoBt7a2wxOMt+A==",
+  "esbuildVersion": "0.25.9",
+  "esbuildIntegrity": "sha512-CRbODhYyQx3qp7ZEwzxOk4JBqmD/seJrzPa/cGjY1VtIn5E09Oi9/dB4JwctnfZ8Q8iT7rioVv5k/FNT/uf54g==",
+  "esbuildOptions": "--bundle --platform=browser --target=es2020 --format=iife --legal-comments=none",
   "terserVersion": "5.50.0",
   "terserIntegrity": "sha512-CN9BVxWhgS/hRxtUMjtC2uRWSTcSfQFHMDWma6sKKfIivCD91sM+FOPfvwoaRMqCSrUpe1nv3jDamd9eEQ4y+w==",
   "terserOptions": "--compress --mangle --comments false",
-  "rawBytes": 5874010,
-  "minBytes": 3277321,
-  "minGzipBytes": 702615,
-  "rawSha256": "9e519296ea68c2ebdf6ec32cd3c119e7bf3f3e896d34211f19329def61133791",
-  "minSha256": "a575120ee471de3fc9f8ddad036f4296de483ec312daf960bdda8f289582d6c8"
+  "rawBytes": 6226336,
+  "minBytes": 3279821,
+  "minGzipBytes": 702747,
+  "rawSha256": "124a338c559ac7f799bbe19c2345c31158836e58d6a83dec0ef3aaf92cd30d9c",
+  "minSha256": "ef5db10a0eb58fd8fbb2027f476d27197118c6280e2669996c5f43df7b6f305f"
 }

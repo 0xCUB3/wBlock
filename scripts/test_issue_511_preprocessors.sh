@@ -2,9 +2,10 @@
 set -euo pipefail
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-DERIVED="${TMPDIR:-/tmp}/wblock-issue-511-tests"
-LOG="${TMPDIR:-/tmp}/wblock-issue-511-build.log"
-FRAMEWORKS="$DERIVED/Build/Products/Debug"
+TEST_TMP=$(mktemp -d "${TMPDIR:-/tmp}/wblock-preprocessors.XXXXXX")
+trap 'rm -rf "$TEST_TMP"' EXIT
+LOG="$TEST_TMP/core-build.log"
+FRAMEWORKS="${WBLOCK_CORE_PRODUCTS:-}"
 
 cd "$ROOT"
 (
@@ -20,10 +21,22 @@ cd "$ROOT"
 if [ -n "${WBLOCK_CORE_PRODUCTS:-}" ] && [ -d "${WBLOCK_CORE_PRODUCTS}/wBlockCoreService.framework" ]; then
   FRAMEWORKS="$WBLOCK_CORE_PRODUCTS"
 else
-  rm -rf "$DERIVED"
+  DERIVED="${WBLOCK_DERIVED_DATA:-}"
+  if [ -z "$DERIVED" ]; then
+    for candidate in "$HOME"/Library/Developer/Xcode/DerivedData/wBlock-*/Build/Products/Debug/wBlock.app; do
+      if [ -d "$candidate" ]; then
+        DERIVED="${candidate%/Build/Products/Debug/wBlock.app}"
+        break
+      fi
+    done
+  fi
+  : "${DERIVED:?Set WBLOCK_DERIVED_DATA to the existing signed Xcode build directory}"
+  FRAMEWORKS="$DERIVED/Build/Products/Debug"
+  signing_args=()
+  if [[ "${CI:-}" == "true" ]]; then signing_args+=(CODE_SIGNING_ALLOWED=NO); fi
   xcodebuild -project wBlock.xcodeproj -scheme wBlockCoreService \
     -destination 'platform=macOS' -derivedDataPath "$DERIVED" \
-    CODE_SIGNING_ALLOWED=NO build >"$LOG" 2>&1
+    "${signing_args[@]}" build >"$LOG" 2>&1 || { cat "$LOG"; exit 1; }
 fi
 
 swiftc -D DEBUG -framework WebKit -framework CryptoKit \
@@ -34,7 +47,7 @@ swiftc -D DEBUG -framework WebKit -framework CryptoKit \
   wBlockCoreService/UserStyleRemoteImportInliner.swift \
   wBlockCoreService/UserScript.swift \
   wBlockCoreService/FilterListCategory.swift \
-  -o "${TMPDIR:-/tmp}/wblock-userstyle-preprocessor-tests"
+  -o "$TEST_TMP/userstyle-tests"
 
 swiftc -D DEBUG -framework WebKit -framework CryptoKit \
   scripts/test_issue_511_compiler_timeout.swift \
@@ -43,20 +56,20 @@ swiftc -D DEBUG -framework WebKit -framework CryptoKit \
   wBlockCoreService/UserStyle.swift \
   wBlockCoreService/UserScript.swift \
   wBlockCoreService/FilterListCategory.swift \
-  -o "${TMPDIR:-/tmp}/wblock-compiler-timeout-tests"
-"${TMPDIR:-/tmp}/wblock-compiler-timeout-tests"
+  -o "$TEST_TMP/timeout-tests"
+"$TEST_TMP/timeout-tests"
 
 WBLOCK_LESS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/less.min.js" \
-WBLOCK_SASS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/sass/wblock-sass-1.102.0.min.js" \
+WBLOCK_SASS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/sass/wblock-sass-1.104.0.min.js" \
 WBLOCK_STYLUS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/stylus/stylus-jsc.js" \
 WBLOCK_POSTCSS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/postcss-nested/wblock-postcss-nested.js" \
-  "${TMPDIR:-/tmp}/wblock-userstyle-preprocessor-tests"
+  "$TEST_TMP/userstyle-tests"
 
 swiftc scripts/test_issue_511_packaged_compilers.swift \
   -F "$FRAMEWORKS" -framework wBlockCoreService \
   -Xlinker -rpath -Xlinker "$FRAMEWORKS" \
-  -o "${TMPDIR:-/tmp}/wblock-packaged-preprocessor-tests"
-"${TMPDIR:-/tmp}/wblock-packaged-preprocessor-tests"
+  -o "$TEST_TMP/packaged-tests"
+"$TEST_TMP/packaged-tests"
 
 find wBlock -path '*.lproj/Localizable.strings' -print0 \
   | xargs -0 -n1 plutil -lint >/dev/null

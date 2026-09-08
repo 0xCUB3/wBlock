@@ -102,7 +102,8 @@ struct WBlockBackup: Codable, Sendable {
             updatesAutomatically = userScript.updatesAutomatically
             category = userScript.category.rawValue
             localImportIdentity = userScript.localImportIdentity
-            self.disabledHosts = disabledHosts.isEmpty ? nil : disabledHosts
+            // An empty collection is authoritative; nil belongs only to legacy backups.
+            self.disabledHosts = disabledHosts
         }
 
         private enum CodingKeys: String, CodingKey {
@@ -261,6 +262,191 @@ struct WBlockBackup: Codable, Sendable {
     }
 }
 
+/// Plans identity-preserving upserts before writing any inline content. The URL
+/// resolver is injected so restore behavior can be tested without app-group data.
+@MainActor
+enum BackupCustomFilterRestorer {
+    struct RestoreWriteError: LocalizedError {
+        let original: Error
+        let rollbackFailures: [Error]
+
+        var errorDescription: String? {
+            guard !rollbackFailures.isEmpty else { return original.localizedDescription }
+            return ([original] + rollbackFailures).map(\.localizedDescription).joined(separator: "\n")
+        }
+    }
+
+    struct RestoreResult {
+        let lists: [FilterList]
+        fileprivate let previous: [URL: Data?]
+        fileprivate let published: [(url: URL, bytes: Data)]
+
+        func rollback(
+            readData: (URL) throws -> Data? = { url in
+                guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+                return try Data(contentsOf: url)
+            },
+            writeData: (Data, URL) throws -> Void = { data, url in
+                try data.write(to: url, options: .atomic)
+            },
+            removeFile: (URL) throws -> Void = { url in
+                guard FileManager.default.fileExists(atPath: url.path) else { return }
+                try FileManager.default.removeItem(at: url)
+            }
+        ) -> [Error] {
+            var failures: [Error] = []
+            for item in published.reversed() {
+                do {
+                    guard try readData(item.url) == item.bytes else { continue }
+                    if let old = previous[item.url] ?? nil {
+                        try writeData(old, item.url)
+                    } else {
+                        try removeFile(item.url)
+                    }
+                } catch {
+                    failures.append(error)
+                }
+            }
+            return failures
+        }
+    }
+
+    static func restoreWithReceipt(
+        _ entries: [WBlockBackup.CustomFilterEntry],
+        into existing: [FilterList],
+        localFileURL: (FilterList) -> URL?,
+        readData: (URL) throws -> Data? = { url in
+            guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+            return try Data(contentsOf: url)
+        },
+        writeData: (Data, URL) throws -> Void = { data, url in
+            try data.write(to: url, options: .atomic)
+        },
+        removeFile: (URL) throws -> Void = { url in
+            guard FileManager.default.fileExists(atPath: url.path) else { return }
+            try FileManager.default.removeItem(at: url)
+        }
+    ) throws -> RestoreResult {
+
+        var lists = existing
+        var writes: [URL: Data] = [:]
+        for entry in entries {
+            guard let components = URLComponents(string: entry.url),
+                  !entry.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            let inline = components.scheme?.lowercased() == "wblock"
+            let url: URL
+            let inlineID: UUID?
+            if inline {
+                let path = components.path.split(separator: "/")
+                guard components.host?.lowercased() == "userlist", path.count == 1,
+                      let id = UUID(uuidString: String(path[0])),
+                      components.user == nil, components.password == nil, components.port == nil,
+                      components.query == nil, components.fragment == nil,
+                      entry.content != nil else {
+                    throw CocoaError(.fileReadCorruptFile)
+                }
+                inlineID = id
+                url = URL(string: "wblock://userlist/\(id.uuidString)")!
+            } else {
+                guard let remoteURL = FilterListURLSupport.validatedRemoteURL(from: entry.url) else {
+                    throw CocoaError(.fileReadCorruptFile)
+                }
+                inlineID = nil
+                url = remoteURL
+            }
+            func matches(_ filter: FilterList) -> Bool {
+                guard filter.isCustom, filter.isInlineUserList == inline else { return false }
+                if let inlineID {
+                    return UUID(uuidString: filter.url.lastPathComponent) == inlineID
+                }
+                return FilterListURLSupport.isSameList(filter.url, url)
+            }
+            let old = lists.first(where: matches)
+            let id = inlineID ?? old?.id ?? UUID()
+            guard !lists.contains(where: { $0.id == id && !matches($0) }) else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            var restored = FilterList(
+                id: id, name: entry.name, url: url,
+                category: FilterListCategory(rawValue: entry.category) ?? .custom,
+                isCustom: true, isSelected: entry.isSelected, description: entry.description,
+                version: inline ? "" : (old?.version ?? ""),
+                sourceRuleCount: inline ? entry.content.map(FilterList.countRules) : old?.sourceRuleCount,
+                lastUpdated: inline ? Date() : old?.lastUpdated,
+                hasUserProvidedName: entry.userProvidedName ?? true,
+                hasUserProvidedDescription: entry.userProvidedDescription ?? !entry.description.isEmpty,
+                excludedSites: old?.excludedSites ?? []
+            )
+            // Admission belongs to a confirmed compilation, not to imported metadata.
+            restored.uniqueRuleCount = nil
+            if let content = entry.content, inline {
+                guard let destination = localFileURL(restored) else {
+                    throw CocoaError(.fileWriteNoPermission)
+                }
+                writes[destination] = Data(content.utf8)
+            }
+            if let index = lists.firstIndex(where: matches) {
+                lists[index] = restored
+                lists = lists.enumerated().filter { $0.offset == index || !matches($0.element) }.map(\.element)
+            } else {
+                lists.append(restored)
+            }
+        }
+        // This synchronous MainActor section does not interleave with app-side
+        // edits. Rollback is best effort and leaves externally changed bytes
+        // alone; any rollback I/O failures are returned with the original error.
+        let orderedWrites = writes.sorted { $0.key.path < $1.key.path }
+        var previous: [URL: Data?] = [:]
+        var published: [(url: URL, bytes: Data)] = []
+        do {
+            for (url, _) in orderedWrites {
+                previous[url] = try readData(url)
+            }
+            for (url, content) in orderedWrites {
+                published.append((url, content))
+                try writeData(content, url)
+            }
+        } catch {
+            let original = error
+            let rollbackFailures = RestoreResult(
+                lists: lists,
+                previous: previous,
+                published: published
+            ).rollback(readData: readData, writeData: writeData, removeFile: removeFile)
+            throw RestoreWriteError(original: original, rollbackFailures: rollbackFailures)
+        }
+        return RestoreResult(lists: lists, previous: previous, published: published)
+    }
+
+    static func restore(
+        _ entries: [WBlockBackup.CustomFilterEntry],
+        into existing: [FilterList],
+        localFileURL: (FilterList) -> URL?,
+        readData: (URL) throws -> Data? = { url in
+            guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+            return try Data(contentsOf: url)
+        },
+        writeData: (Data, URL) throws -> Void = { data, url in
+            try data.write(to: url, options: .atomic)
+        },
+        removeFile: (URL) throws -> Void = { url in
+            guard FileManager.default.fileExists(atPath: url.path) else { return }
+            try FileManager.default.removeItem(at: url)
+        }
+    ) throws -> [FilterList] {
+        try restoreWithReceipt(
+            entries,
+            into: existing,
+            localFileURL: localFileURL,
+            readData: readData,
+            writeData: writeData,
+            removeFile: removeFile
+        ).lists
+    }
+}
+
 // MARK: - BackupDocument (FileDocument for iOS fileExporter)
 
 struct BackupDocument: FileDocument {
@@ -393,70 +579,41 @@ enum BackupManager {
 
     // MARK: - Restore
 
-    static func restoreBackup(_ backup: WBlockBackup, filterManager: AppFilterManager) async {
+    static func restoreBackup(_ backup: WBlockBackup, filterManager: AppFilterManager) async throws {
+        let loader = FilterListLoader()
+        let originalLists = filterManager.filterLists
+        let restored = try BackupCustomFilterRestorer.restoreWithReceipt(
+            backup.customFilterLists,
+            into: originalLists,
+            localFileURL: loader.localFileURL(for:)
+        )
+        var lists = restored.lists
         // 1. Restore built-in filter selections by URL
-        var lists = filterManager.filterLists
         for selection in backup.filterSelections {
-            if let index = lists.firstIndex(where: { $0.url.absoluteString == selection.url }) {
+            if let index = lists.firstIndex(where: { !$0.isCustom && $0.url.absoluteString == selection.url }) {
                 lists[index].isSelected = selection.isSelected
                 lists[index].uniqueRuleCount = nil
             }
         }
         filterManager.filterLists = lists
-        await filterManager.saveFilterLists()
-
-        // 2. Restore custom filter lists. The backup selection is authoritative for
-        // both an existing URL and a newly added remote definition.
-        var existingCustomSelectionChanged = false
-        for entry in backup.customFilterLists {
-            let matchingIndices = filterManager.filterLists.indices.filter { index in
-                filterManager.filterLists[index].isCustom
-                    && filterManager.filterLists[index].url.absoluteString == entry.url
+        let persisted = await filterManager.saveFilterLists()
+        guard persisted else {
+            let persistenceError = filterManager.dataManager.lastError ?? CocoaError(.fileWriteUnknown)
+            let rollbackFailures = restored.rollback()
+            if filterManager.filterLists == lists {
+                filterManager.filterLists = originalLists
             }
-            if !matchingIndices.isEmpty {
-                for index in matchingIndices {
-                    let restoredCount = entry.admittedSourceRuleCount
-                    if filterManager.filterLists[index].isSelected != entry.isSelected
-                        || filterManager.filterLists[index].uniqueRuleCount != restoredCount {
-                        filterManager.filterLists[index].isSelected = entry.isSelected
-                        filterManager.filterLists[index].uniqueRuleCount = restoredCount
-                        existingCustomSelectionChanged = true
-                    }
-                }
-                continue
-            }
-
-            let category = FilterListCategory(rawValue: entry.category) ?? .custom
-            let isInlineUserList = entry.url.hasPrefix("wblock://userlist/")
-            if isInlineUserList, let content = entry.content {
-                filterManager.addUserList(
-                    name: entry.name,
-                    description: entry.description.isEmpty ? nil : entry.description,
-                    content: content,
-                    category: category,
-                    isSelected: entry.isSelected
-                )
-            } else if !isInlineUserList {
-                filterManager.addFilterList(
-                    name: entry.name,
-                    urlString: entry.url,
-                    category: category,
-                    hasUserProvidedName: entry.userProvidedName ?? true,
-                    hasUserProvidedDescription: entry.userProvidedDescription ?? !entry.description.isEmpty,
-                    isSelected: entry.isSelected,
-                    description: entry.description.isEmpty ? nil : entry.description
-                )
-            }
-
-            if let index = filterManager.filterLists.firstIndex(where: { filter in
-                filter.isCustom && filter.url.absoluteString == entry.url
-            }) {
-                filterManager.filterLists[index].uniqueRuleCount = entry.admittedSourceRuleCount
-                existingCustomSelectionChanged = true
-            }
+            throw BackupCustomFilterRestorer.RestoreWriteError(
+                original: persistenceError,
+                rollbackFailures: rollbackFailures
+            )
         }
-        if existingCustomSelectionChanged {
-            await filterManager.saveFilterLists()
+        let currentLists = filterManager.filterLists
+        for entry in backup.customFilterLists {
+            if let url = URL(string: entry.url),
+               let filter = currentLists.first(where: { $0.isCustom && FilterListURLSupport.isSameList($0.url, url) }) {
+                CloudSyncManager.shared.clearDeletedCustomListURL(filter.url.absoluteString)
+            }
         }
 
         // 3. Restore whitelist
@@ -466,11 +623,12 @@ enum BackupManager {
         await filterManager.dataManager.setNoAutoplayAllowedSites(backup.noAutoplayAllowedSites)
 
         // 4. Restore zapper rules (to protobuf)
+        let disabledZapperHosts = Set(backup.disabledZapperDomains)
         await ProtobufDataManager.shared.applyZapperRulesBatch(
             rulesByHost: backup.zapperRules,
-            disabledByHost: Dictionary(
-                backup.disabledZapperDomains.map { ($0, true) },
-                uniquingKeysWith: { first, _ in first }
+            disabledByHost: Dictionary(uniqueKeysWithValues:
+                Set(backup.zapperRules.keys).union(disabledZapperHosts)
+                    .map { ($0, disabledZapperHosts.contains($0)) }
             )
         )
 
@@ -484,7 +642,7 @@ enum BackupManager {
             ProtobufDataManager.shared.getUserScriptDisabledHosts()
         }
         for entry in backup.userScripts {
-            guard let disabledHosts = entry.disabledHosts, !disabledHosts.isEmpty else { continue }
+            guard let disabledHosts = entry.disabledHosts else { continue }
             let restoredScript = entry.userScript
             guard let matchingIndex = UserScriptRestoreMatcher.matchingIndex(
                 for: restoredScript,

@@ -1126,3 +1126,11 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Paste non-empty plain text and review it before adding." = "Wklej niepusty zwykły tekst i sprawdź go przed dodaniem.";
 
 "Choose a non-empty text file and review it before adding." = "Wybierz niepusty plik tekstowy i sprawdź go przed dodaniem.";
+
+/* Filter update reliability */
+"A wBlock filter update is already in progress." = "Aktualizacja filtrów wBlock już trwa.";
+"wBlock filter update completed." = "Aktualizacja filtrów wBlock została zakończona.";
+"wBlock filter update completed with errors." = "Aktualizacja filtrów wBlock zakończyła się z błędami.";
+"Shared update status is unavailable." = "Współdzielony stan aktualizacji jest niedostępny.";
+"Shared update status lock is unavailable." = "Blokada współdzielonego stanu aktualizacji jest niedostępna.";
+"%@ dropped %d rules at Safari's per-extension limit." = "%@ pominął %d reguł z powodu limitu Safari na rozszerzenie.";

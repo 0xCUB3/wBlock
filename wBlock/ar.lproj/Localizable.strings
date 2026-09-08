@@ -1126,3 +1126,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Paste non-empty plain text and review it before adding." = "الصق نصًا عاديًا غير فارغ وراجعه قبل إضافته.";
 
 "Choose a non-empty text file and review it before adding." = "اختر ملفًا نصيًا غير فارغ وراجعه قبل إضافته.";
+
+/* Filter update reliability */
+"A wBlock filter update is already in progress." = "يجري تحديث فلاتر wBlock بالفعل.";
+"wBlock filter update completed." = "اكتمل تحديث فلاتر wBlock.";
+"wBlock filter update completed with errors." = "اكتمل تحديث فلاتر wBlock مع وجود أخطاء.";
+"Shared update status is unavailable." = "حالة التحديث المشتركة غير متاحة.";
+"Shared update status lock is unavailable." = "قفل حالة التحديث المشتركة غير متاح.";
+"%@ dropped %d rules at Safari's per-extension limit." = "أسقط %@ عدد %d من القواعد بسبب حد Safari لكل امتداد.";

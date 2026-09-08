@@ -5,11 +5,8 @@ import wBlockCoreService
 struct CompilationProvenanceTests {
     static func main() throws {
         let groupIdentifier = "group.wblock.test.provenance.\(UUID().uuidString.prefix(8))"
-        guard let container = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: groupIdentifier
-        ) else {
-            fail("no scratch container")
-        }
+        let container = FileManager.default.temporaryDirectory
+            .appendingPathComponent("wblock-compilation-provenance-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: container, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: container) }
 
@@ -32,7 +29,7 @@ struct CompilationProvenanceTests {
             in: container
         )
 
-        let first = try compile([older, newest], target: target, groupIdentifier: groupIdentifier)
+        let first = try compile([older, newest], target: target, groupIdentifier: groupIdentifier, container: container)
         expect(!first.reusedCachedBase, "first conversion should build the target")
         expect(first.safariRulesCount > 0, "converter should report actual target output")
         expectEqual(
@@ -51,7 +48,7 @@ struct CompilationProvenanceTests {
             "reported Safari count should match the saved target JSON"
         )
 
-        let second = try compile([older, newest], target: target, groupIdentifier: groupIdentifier)
+        let second = try compile([older, newest], target: target, groupIdentifier: groupIdentifier, container: container)
         expect(second.reusedCachedBase, "unchanged input should use the target cache")
         expectEqual(
             second.admittedSourceRuleCountsByFilterID,
@@ -63,7 +60,7 @@ struct CompilationProvenanceTests {
         var stale = try JSONSerialization.jsonObject(with: Data(contentsOf: sidecar)) as! [String: Any]
         stale["inputSignature"] = "different-input"
         try JSONSerialization.data(withJSONObject: stale).write(to: sidecar)
-        let third = try compile([older, newest], target: target, groupIdentifier: groupIdentifier)
+        let third = try compile([older, newest], target: target, groupIdentifier: groupIdentifier, container: container)
         expect(third.reusedCachedBase, "the valid compiled target should remain reusable")
         expect(third.admittedSourceRuleCountsByFilterID.isEmpty, "stale sidecar counts must not be reported as current evidence")
 
@@ -88,13 +85,9 @@ struct CompilationProvenanceTests {
     private static func compile(
         _ filters: [FilterList],
         target: ContentBlockerTargetInfo,
-        groupIdentifier: String
+        groupIdentifier: String,
+        container: URL
     ) throws -> ContentBlockerService.ContentBlockerTargetOutcome {
-        guard let container = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: groupIdentifier
-        ) else {
-            fail("no scratch container")
-        }
         let ordered = ContentBlockerMappingService.orderedForCompilation(filters)
         let snapshot = SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: container)
         return try ContentBlockerService.compileTargetRules(
@@ -105,7 +98,8 @@ struct CompilationProvenanceTests {
             allTargets: [target],
             disabledSites: [],
             extraRulesText: nil,
-            groupIdentifier: groupIdentifier
+            groupIdentifier: groupIdentifier,
+            containerURL: container
         )
     }
 

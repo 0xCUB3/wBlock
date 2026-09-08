@@ -35,7 +35,7 @@
 
     var hasExtensionContext = typeof browser !== 'undefined'
         && !!browser.runtime
-        && typeof browser.runtime.sendNativeMessage === 'function'
+        && typeof browser.runtime.sendMessage === 'function'
         && !!browser.storage
         && !!browser.storage.local;
     if (!hasExtensionContext) return;
@@ -196,7 +196,7 @@
 
     function getSiteDisabled(host) {
         return withTimeout(
-            browser.runtime.sendNativeMessage('application.id', { action: 'getSiteDisabledState', host: host }),
+            browser.runtime.sendMessage({ action: 'wblock:getSiteDisabledState', host: host }),
             NATIVE_MESSAGE_TIMEOUT_MS
         ).then(function (response) {
             if (!response || typeof response.disabled !== 'boolean') {
@@ -210,8 +210,8 @@
 
     function getNativeNoAutoplayState(host) {
         return withTimeout(
-            browser.runtime.sendNativeMessage('application.id', {
-                action: 'getNoAutoplayState',
+            browser.runtime.sendMessage({
+                action: 'wblock:noAutoplay:getState',
                 host: host,
             }),
             NATIVE_MESSAGE_TIMEOUT_MS

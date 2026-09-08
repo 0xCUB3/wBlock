@@ -13,9 +13,8 @@ struct Main {
 
     static func main() throws {
         let groupIdentifier = "group.wblock.test.issue681.\(UUID().uuidString.prefix(8))"
-        guard let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
-            fail("no scratch container")
-        }
+        let container = FileManager.default.temporaryDirectory
+            .appendingPathComponent("wblock-issue681-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: container, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: container) }
 
@@ -39,7 +38,8 @@ struct Main {
                 allTargets: targets,
                 disabledSites: [],
                 extraRulesText: nil,
-                groupIdentifier: groupIdentifier
+                groupIdentifier: groupIdentifier,
+                containerURL: container
             ).safariRulesCount
         }
 
@@ -72,7 +72,8 @@ struct Main {
                 try ContentBlockerService.compileTargetRules(
                     filters: mapping[slot] ?? [], orderedSelectedFilters: ordered,
                     affinitySnapshot: snapshot, targetInfo: slot, allTargets: targets,
-                    disabledSites: [], extraRulesText: nil, groupIdentifier: groupIdentifier
+                    disabledSites: [], extraRulesText: nil, groupIdentifier: groupIdentifier,
+                    containerURL: container
                 )
             }
         }

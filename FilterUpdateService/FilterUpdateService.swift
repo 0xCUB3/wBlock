@@ -11,27 +11,26 @@ import wBlockCoreService
 /// This object implements the protocol which we have defined. It provides the actual behavior for the service. It is 'exported' by the service to make it available to the process hosting the service over an NSXPCConnection.
 class FilterUpdateService: NSObject, FilterUpdateProtocol {
     func updateFilters(_ reply: @escaping (Bool) -> Void) {
-        Task {
+        FilterUpdateWorkLifetime.start {
             let outcome = await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "XPCService")
             reply(outcome.isSuccessfulForBackgroundTask)
         }
     }
 
     func startFilterUpdate(_ reply: @escaping (Bool) -> Void) {
-        guard FilterUpdatePopupStatus.beginIfIdle() else {
+        guard let claim = FilterUpdatePopupStatus.beginIfIdle() else {
             reply(false)
             return
         }
 
-        // Acknowledge after claiming the shared status, then keep the existing
-        // updater alive in the background. No containing-app activation occurs.
-        reply(true)
-        Task {
+        // The service owns an XPC transaction before replying, independent of
+        // the client connection. Release only after publishing the final status.
+        FilterUpdateWorkLifetime.start(acknowledge: { reply(true) }) {
             let outcome = await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
                 trigger: "XPCService",
                 force: true
             )
-            FilterUpdatePopupStatus.finish(outcome)
+            FilterUpdatePopupStatus.finish(outcome, claim: claim)
         }
     }
 }

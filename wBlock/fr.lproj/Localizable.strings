@@ -1126,3 +1126,11 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Paste non-empty plain text and review it before adding." = "Collez du texte brut non vide et vérifiez-le avant de l’ajouter.";
 
 "Choose a non-empty text file and review it before adding." = "Choisissez un fichier texte non vide et vérifiez-le avant de l’ajouter.";
+
+/* Filter update reliability */
+"A wBlock filter update is already in progress." = "Une mise à jour des filtres wBlock est déjà en cours.";
+"wBlock filter update completed." = "La mise à jour des filtres wBlock est terminée.";
+"wBlock filter update completed with errors." = "La mise à jour des filtres wBlock s’est terminée avec des erreurs.";
+"Shared update status is unavailable." = "L’état de mise à jour partagé est indisponible.";
+"Shared update status lock is unavailable." = "Le verrou de l’état de mise à jour partagé est indisponible.";
+"%@ dropped %d rules at Safari's per-extension limit." = "%@ a ignoré %d règles en raison de la limite de Safari par extension.";

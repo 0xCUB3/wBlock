@@ -649,7 +649,7 @@ public enum WebExtensionRequestHandler {
             withBundleIdentifier: "skula.wBlock"
         ).contains { !$0.isTerminated }
         if containingAppIsRunning {
-            let accepted = FilterUpdatePopupStatus.requestUpdate()
+            let accepted = FilterUpdatePopupStatus.requestUpdate() != nil
             let response = createResponse(with: [
                 "ok": true,
                 "accepted": accepted,
@@ -680,10 +680,14 @@ public enum WebExtensionRequestHandler {
                 // run inside an extension (safe mode), so queue the request
                 // and wake the app; it consumes the request on launch and
                 // reports back through the popup status (#676).
-                let accepted = FilterUpdatePopupStatus.requestUpdate()
+                let claim = FilterUpdatePopupStatus.requestUpdate()
+                let accepted = claim != nil
                 let opened = accepted && Self.launchContainingAppHeadless(reason: .popupUpdate)
-                if accepted && !opened {
-                    FilterUpdatePopupStatus.finish(.failed(message: "Open wBlock to update filters."))
+                if let claim, !opened {
+                    _ = FilterUpdatePopupStatus.finish(
+                        .failed(message: "Open wBlock to update filters."),
+                        claim: claim
+                    )
                 }
                 let response = createResponse(with: [
                     "ok": true,
@@ -1615,7 +1619,10 @@ public enum WebExtensionRequestHandler {
 
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
-            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            // Native invalidation already tells content scripts when rules changed;
+            // avoid forcing a protobuf reread for every frame refresh. The normal
+            // mtime/version check still reloads cross-process changes when needed.
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
             let rules = ProtobufDataManager.shared.getZapperRules(forHost: hostname)
             let disabled = BlockingPauseStore.isPaused(.elementZapper)
                 || ProtobufDataManager.shared.isZapperDisabled(forHost: hostname)

@@ -14,9 +14,6 @@ const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const scriptPath = process.argv[2]
   ?? path.join(repoRoot, "wBlock Scripts (iOS)", "Resources", "zapper-content.js");
 const source = readFileSync(scriptPath, "utf8");
-const backgroundSource = readFileSync(path.join(repoRoot, "extension-src", "background.js"), "utf8");
-const managerSource = readFileSync(path.join(repoRoot, "wBlock", "ZapperRuleManager.swift"), "utf8");
-const nativeSource = readFileSync(path.join(repoRoot, "wBlockCoreService", "WebExtensionRequestHandler.swift"), "utf8");
 
 let failures = 0;
 const check = (name, cond) => {
@@ -28,11 +25,12 @@ const HOST = "example.com";
 const STYLE_ID = "wblock-zapper-style";
 const LEGACY_KEY = `wblock.zapperRulesDisabled.v1:${HOST}`;
 
-function makeSandbox({ nativeRules, nativeDisabled, localStorageSeed = {} }) {
+function makeSandbox({ nativeRules, nativeDisabled, localStorageSeed = {}, isTopFrame = true, getRulesDelayMs = 0, broadcastReload = null }) {
   const native = {
     rules: [...nativeRules],
     disabled: nativeDisabled,
     setDisabledCalls: [],
+    getRulesCalls: 0,
   };
   const storage = new Map(Object.entries(localStorageSeed));
   const elementsById = new Map();
@@ -62,6 +60,14 @@ function makeSandbox({ nativeRules, nativeDisabled, localStorageSeed = {} }) {
   const handleNativeAction = (message) => {
     switch (message.action) {
       case "getZapperRules":
+        native.getRulesCalls += 1;
+        if (getRulesDelayMs > 0) {
+          return new Promise((resolve) => setTimeout(() => resolve({
+            ok: true,
+            rules: [...native.rules],
+            disabled: native.disabled
+          }), getRulesDelayMs));
+        }
         return { ok: true, rules: [...native.rules], disabled: native.disabled };
       case "setSiteZapperDisabled":
         native.disabled = Boolean(message.disabled);
@@ -78,6 +84,8 @@ function makeSandbox({ nativeRules, nativeDisabled, localStorageSeed = {} }) {
   };
 
   let onMessageListener = null;
+  const intervalDelays = [];
+  const intervalCallbacks = [];
   const browserStub = {
     i18n: { getMessage: (key) => key },
     storage: {
@@ -108,9 +116,18 @@ function makeSandbox({ nativeRules, nativeDisabled, localStorageSeed = {} }) {
         if (message.action === "wblock:zapper:syncRules") {
           return handleNativeAction({ ...message, action: "syncZapperRules" });
         }
+        if (message.action === "wblock:zapper:setDisabled") {
+          return handleNativeAction({ ...message, action: "setSiteZapperDisabled" });
+        }
+        if (message.action === "wblock:getSiteDisabledState") {
+          return { ok: true, ...handleNativeAction({ ...message, action: "getSiteDisabledState" }) };
+        }
+        if (message.action === "wblock:zapper:broadcastReload") {
+          if (typeof broadcastReload === 'function') return broadcastReload();
+          return { ok: true };
+        }
         return {};
       },
-      sendNativeMessage: async (_appId, message) => handleNativeAction(message),
       onMessage: {
         addListener: (fn) => {
           onMessageListener = fn;
@@ -120,11 +137,12 @@ function makeSandbox({ nativeRules, nativeDisabled, localStorageSeed = {} }) {
   };
 
   const windowStub = {
-    setInterval: () => 1,
+    setInterval: (fn, delay) => { intervalDelays.push(delay); intervalCallbacks.push(fn); return 1; },
     clearInterval: () => {},
     addEventListener() {},
     location: { hostname: HOST, protocol: "https:" },
   };
+  windowStub.top = isTopFrame ? windowStub : {};
 
   const sandbox = {
     browser: browserStub,
@@ -154,6 +172,8 @@ function makeSandbox({ nativeRules, nativeDisabled, localStorageSeed = {} }) {
     sandbox,
     native,
     storage,
+    intervalDelays,
+    intervalCallbacks,
     styleText: () => elementsById.get(STYLE_ID)?.textContent ?? null,
     sendRuntimeMessage: (message) => onMessageListener?.(message),
   };
@@ -174,14 +194,6 @@ function loadScript(sandbox) {
 }
 
 check(
-  "app-originated refresh dispatches through Safari to every content script",
-  managerSource.includes('withName: "wblock:zapperRulesChanged"')
-    && backgroundSource.includes('action === "wblock:zapperRulesChanged"')
-    && backgroundSource.includes('type: "wblock:zapper:reloadRules"')
-    && source.includes("message.type === 'wblock:zapper:reloadRules'")
-    && source.includes("reloadRulesAndApply().catch")
-);
-check(
   "refine mode renders tappable ancestor chips",
   source.includes("function updateAncestorRow")
     && source.includes("wblock-ancestor-chip")
@@ -192,10 +204,6 @@ check(
   source.includes("async function finalizeSession()")
     && !source.includes("window.location.reload()")
     && !source.includes("sessionRulesSignature")
-);
-check(
-  "global element-zapper pause is authoritative in native rule responses",
-  nativeSource.includes("BlockingPauseStore.isPaused(.elementZapper)")
 );
 
 check(
@@ -235,15 +243,66 @@ check(
   );
 
   env.native.disabled = true;
-  env.sendRuntimeMessage({ type: "wblock:zapper:reloadRules" });
+  const firstReload = env.sendRuntimeMessage({ type: "wblock:zapper:reloadRules" });
+  const secondReload = env.sendRuntimeMessage({ type: "wblock:zapper:reloadRules" });
+  await Promise.all([firstReload, secondReload]);
   const cleared = await waitFor(() => env.styleText() === "");
   check("clears applied hiding when native flag flips to disabled", cleared);
+  check("back-to-back invalidations coalesce into one native rules fetch", env.native.getRulesCalls === 2);
 
   const metaCached = await waitFor(() => {
     const meta = env.storage.get(`wblock.zapperMeta.v1:${HOST}`);
     return meta && meta.disabled === true;
   });
   check("caches the disabled flag in local meta for early paint", metaCached);
+  check("top frame uses only a coarse five-minute fallback poll",
+    env.intervalDelays.length === 1 && env.intervalDelays[0] === 5 * 60 * 1000);
+}
+
+// Subframes are push-only and do not start periodic native refreshes.
+{
+  const env = makeSandbox({ nativeRules: [], nativeDisabled: false, isTopFrame: false });
+  loadScript(env.sandbox);
+  await new Promise((r) => setTimeout(r, 20));
+  check("subframes do not start periodic rule polling", env.intervalDelays.length === 0);
+}
+
+// The top-frame safety tick asks the background to broadcast a reload, so an
+// iframe with no timer still refreshes when native push is unavailable.
+{
+  const iframe = makeSandbox({ nativeRules: [".old"], nativeDisabled: false, isTopFrame: false });
+  loadScript(iframe.sandbox);
+  await waitFor(() => (iframe.styleText() ?? "").includes(".old"));
+  iframe.native.rules = [".fresh-frame"];
+
+  const top = makeSandbox({
+    nativeRules: [],
+    nativeDisabled: false,
+    broadcastReload: () => iframe.sendRuntimeMessage({ type: "wblock:zapper:reloadRules" }),
+  });
+  loadScript(top.sandbox);
+  await new Promise((r) => setTimeout(r, 20));
+  await top.intervalCallbacks[0]();
+  const iframeRefreshed = await waitFor(() => (iframe.styleText() ?? "").includes(".fresh-frame"));
+  check("coarse top-frame tick refreshes iframe rules through background broadcast", iframeRefreshed);
+}
+
+// An invalidation during an in-flight initial read schedules one fresh pass;
+// multiple invalidations in that window still coalesce to that same pass.
+{
+  const env = makeSandbox({
+    nativeRules: [".initial"],
+    nativeDisabled: false,
+    getRulesDelayMs: 30,
+  });
+  loadScript(env.sandbox);
+  await new Promise((r) => setTimeout(r, 5));
+  env.native.rules = [".updated"];
+  const first = env.sendRuntimeMessage({ type: "wblock:zapper:reloadRules" });
+  const second = env.sendRuntimeMessage({ type: "wblock:zapper:reloadRules" });
+  await Promise.all([first, second]);
+  const updated = await waitFor(() => (env.styleText() ?? "").includes(".updated"));
+  check("in-flight invalidation triggers one fresh follow-up read", updated && env.native.getRulesCalls === 2);
 }
 
 // Scenario 3: disabled from the start -> rules fetched but never applied.

@@ -4,6 +4,7 @@
 //
 
 import Darwin
+import CryptoKit
 import Foundation
 
 /// Persistent record of downloaded filter source files that have not yet been
@@ -18,6 +19,9 @@ public enum PendingFilterUpdateRevisions {
         public let etag: String?
         public let lastModified: String?
         public let version: String?
+        public let sourceSHA256: String?
+        public let sourceFilename: String?
+        public let stagedFilename: String?
 
         public init(
             filterID: String,
@@ -25,7 +29,10 @@ public enum PendingFilterUpdateRevisions {
             downloadedAt: TimeInterval,
             etag: String?,
             lastModified: String?,
-            version: String?
+            version: String?,
+            sourceSHA256: String? = nil,
+            sourceFilename: String? = nil,
+            stagedFilename: String? = nil
         ) {
             self.filterID = filterID
             self.token = token
@@ -33,6 +40,9 @@ public enum PendingFilterUpdateRevisions {
             self.etag = etag
             self.lastModified = lastModified
             self.version = version
+            self.sourceSHA256 = sourceSHA256
+            self.sourceFilename = sourceFilename
+            self.stagedFilename = stagedFilename
         }
     }
 
@@ -68,6 +78,9 @@ public enum PendingFilterUpdateRevisions {
         etag: String? = nil,
         lastModified: String? = nil,
         version: String? = nil,
+        sourceSHA256: String? = nil,
+        sourceFilename: String? = nil,
+        stagedFilename: String? = nil,
         groupIdentifier: String = GroupIdentifier.shared.value,
         publish: () throws -> Void = {}
     ) -> Revision? {
@@ -77,6 +90,9 @@ public enum PendingFilterUpdateRevisions {
             etag: etag,
             lastModified: lastModified,
             version: version,
+            sourceSHA256: sourceSHA256,
+            sourceFilename: sourceFilename,
+            stagedFilename: stagedFilename,
             storeURL: url,
             publish: publish
         )
@@ -88,6 +104,9 @@ public enum PendingFilterUpdateRevisions {
         etag: String? = nil,
         lastModified: String? = nil,
         version: String? = nil,
+        sourceSHA256: String? = nil,
+        sourceFilename: String? = nil,
+        stagedFilename: String? = nil,
         token: String = UUID().uuidString,
         now: TimeInterval = Date().timeIntervalSince1970,
         storeURL: URL,
@@ -99,7 +118,10 @@ public enum PendingFilterUpdateRevisions {
             downloadedAt: now,
             etag: etag,
             lastModified: lastModified,
-            version: version
+            version: version,
+            sourceSHA256: sourceSHA256,
+            sourceFilename: sourceFilename,
+            stagedFilename: stagedFilename
         )
         lock.lock()
         defer { lock.unlock() }
@@ -179,6 +201,93 @@ public enum PendingFilterUpdateRevisions {
             }
             return Snapshot(tokensByFilterID: captured)
         }) ?? Snapshot(tokensByFilterID: [:])
+    }
+
+    /// Captures only revisions whose published source matches the revision digest.
+    /// If a process died after journaling but before source replacement, a matching
+    /// staged file is atomically promoted before the token is captured.
+    public static func snapshotPublished(
+        filterIDs: Set<String>,
+        groupIdentifier: String = GroupIdentifier.shared.value
+    ) -> Snapshot {
+        guard let url = storeURL(groupIdentifier: groupIdentifier) else {
+            return Snapshot(tokensByFilterID: [:])
+        }
+        return snapshotPublished(filterIDs: filterIDs, storeURL: url)
+    }
+
+    public static func snapshotPublished(filterIDs: Set<String>, storeURL: URL) -> Snapshot {
+        guard !filterIDs.isEmpty else { return Snapshot(tokensByFilterID: [:]) }
+        lock.lock()
+        defer { lock.unlock() }
+        return (try? withFileLock(for: storeURL) {
+            var state = loadStateUnlocked(from: storeURL)
+            var captured: [String: String] = [:]
+            var prunedLegacyRevision = false
+            for filterID in filterIDs {
+                guard let revision = state.revisionsByFilterID[filterID] else { continue }
+                guard hasSourceIdentity(revision) else {
+                    state.revisionsByFilterID.removeValue(forKey: filterID)
+                    prunedLegacyRevision = true
+                    continue
+                }
+                guard ensurePublishedUnlocked(revision, storeURL: storeURL) else { continue }
+                captured[filterID] = revision.token
+            }
+            if prunedLegacyRevision {
+                try saveStateUnlocked(state, to: storeURL)
+            }
+            return Snapshot(tokensByFilterID: captured)
+        }) ?? Snapshot(tokensByFilterID: [:])
+    }
+
+    public static func isPublished(
+        filterID: String,
+        groupIdentifier: String = GroupIdentifier.shared.value
+    ) -> Bool {
+        guard let url = storeURL(groupIdentifier: groupIdentifier) else { return false }
+        return isPublished(filterID: filterID, storeURL: url)
+    }
+
+    public static func isPublished(filterID: String, storeURL: URL) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return (try? withFileLock(for: storeURL) {
+            var state = loadStateUnlocked(from: storeURL)
+            guard let revision = state.revisionsByFilterID[filterID] else {
+                return false
+            }
+            guard hasSourceIdentity(revision) else {
+                state.revisionsByFilterID.removeValue(forKey: filterID)
+                try saveStateUnlocked(state, to: storeURL)
+                return false
+            }
+            return ensurePublishedUnlocked(revision, storeURL: storeURL)
+        }) ?? false
+    }
+
+    public static func publishedRevision(
+        filterID: String,
+        groupIdentifier: String = GroupIdentifier.shared.value
+    ) -> Revision? {
+        guard let url = storeURL(groupIdentifier: groupIdentifier) else { return nil }
+        return publishedRevision(filterID: filterID, storeURL: url)
+    }
+
+    public static func publishedRevision(filterID: String, storeURL: URL) -> Revision? {
+        lock.lock()
+        defer { lock.unlock() }
+        return try? withFileLock(for: storeURL) {
+            var state = loadStateUnlocked(from: storeURL)
+            guard let revision = state.revisionsByFilterID[filterID] else { return nil }
+            guard hasSourceIdentity(revision) else {
+                state.revisionsByFilterID.removeValue(forKey: filterID)
+                try saveStateUnlocked(state, to: storeURL)
+                return nil
+            }
+            guard ensurePublishedUnlocked(revision, storeURL: storeURL) else { return nil }
+            return revision
+        }
     }
 
     public static func acknowledge(
@@ -309,5 +418,63 @@ public enum PendingFilterUpdateRevisions {
         )
         let data = try JSONEncoder().encode(state)
         try data.write(to: url, options: .atomic)
+    }
+
+    private static func ensurePublishedUnlocked(_ revision: Revision, storeURL: URL) -> Bool {
+        guard let expectedDigest = revision.sourceSHA256?.lowercased(), !expectedDigest.isEmpty,
+              let sourceFilename = safeFilename(revision.sourceFilename) else {
+            return false
+        }
+        let directory = storeURL.deletingLastPathComponent()
+        let sourceURL = directory.appendingPathComponent(sourceFilename, isDirectory: false)
+        if sha256Hex(of: sourceURL) == expectedDigest {
+            return true
+        }
+
+        guard let stagedFilename = safeFilename(revision.stagedFilename) else { return false }
+        let stagedURL = directory.appendingPathComponent(stagedFilename, isDirectory: false)
+        guard sha256Hex(of: stagedURL) == expectedDigest else { return false }
+        do {
+            if FileManager.default.fileExists(atPath: sourceURL.path) {
+                _ = try FileManager.default.replaceItemAt(sourceURL, withItemAt: stagedURL)
+            } else {
+                try FileManager.default.moveItem(at: stagedURL, to: sourceURL)
+            }
+            let baselineURL = directory.appendingPathComponent(
+                "diff-baseline-\(sourceFilename)",
+                isDirectory: false
+            )
+            try? FileManager.default.removeItem(at: baselineURL)
+            return sha256Hex(of: sourceURL) == expectedDigest
+        } catch {
+            return false
+        }
+    }
+
+    private static func hasSourceIdentity(_ revision: Revision) -> Bool {
+        revision.sourceSHA256?.isEmpty == false && safeFilename(revision.sourceFilename) != nil
+    }
+
+    private static func safeFilename(_ value: String?) -> String? {
+        guard let value, !value.isEmpty,
+              value == URL(fileURLWithPath: value).lastPathComponent,
+              !value.contains("/") else { return nil }
+        return value
+    }
+
+    private static func sha256Hex(of url: URL) -> String? {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+        var hasher = SHA256()
+        do {
+            while true {
+                let data = try handle.read(upToCount: 1024 * 1024) ?? Data()
+                if data.isEmpty { break }
+                hasher.update(data: data)
+            }
+        } catch {
+            return nil
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 }

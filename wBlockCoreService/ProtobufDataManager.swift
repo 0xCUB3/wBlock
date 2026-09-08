@@ -150,7 +150,7 @@ private func mergeSettings(
 }
 
 // Key paths retained in this merge contract: \.filterLists, \.userScripts, \.userScriptDisabledHosts.
-private func mergeFilterLists(
+func mergeFilterListsForPersistence(
     _ local: inout [Wblock_Data_FilterListData],
     baseline: [Wblock_Data_FilterListData],
     persisted: [Wblock_Data_FilterListData],
@@ -164,7 +164,12 @@ private func mergeFilterLists(
     local = ids.compactMap { id in
         if deletedIDs.contains(id) { return nil }
         guard let mine = localByID[id] else { return persistedByID[id] }
-        guard let theirs = persistedByID[id], let base = baselineByID[id] else { return mine }
+        guard let base = baselineByID[id] else { return mine }
+        guard let theirs = persistedByID[id] else {
+            // Another process deleted a record that this process did not edit. Preserve
+            // that deletion instead of resurrecting the unchanged stale baseline.
+            return mine == base ? nil : mine
+        }
         var merged = mine
         mergeField(&merged.name, baseline: base.name, persisted: theirs.name)
         mergeField(&merged.url, baseline: base.url, persisted: theirs.url)
@@ -217,7 +222,12 @@ private func mergePersistedChanges(
     var settings = snapshot.settings
     mergeSettings(&settings, baseline: previous.settings, persisted: persisted.settings)
     snapshot.settings = settings
-    mergeFilterLists(&snapshot.filterLists, baseline: previous.filterLists, persisted: persisted.filterLists, deletedIDs: explicitlyDeletedFilterIDs)
+    mergeFilterListsForPersistence(
+        &snapshot.filterLists,
+        baseline: previous.filterLists,
+        persisted: persisted.filterLists,
+        deletedIDs: explicitlyDeletedFilterIDs
+    )
 
     var explicitEnabledStates: [String: Bool] = [:]
     let previousScriptsByID = Dictionary(uniqueKeysWithValues: previous.userScripts.map { ($0.id, $0) })
@@ -428,8 +438,19 @@ private actor ProtobufDiskStore {
     }
 
 
+    private func preserveLastKnownGood(
+        currentRawData: Data?,
+        newRawData: Data,
+        backupURL: URL
+    ) throws {
+        // Keep the previously decoded main snapshot when one exists. On first write,
+        // seed the backup with the newly created valid snapshot instead.
+        try writeData(currentRawData ?? newRawData, to: backupURL)
+    }
+
     private func mutateAppDataOnce<Result: Sendable>(
         at dataURL: URL,
+        backupURL: URL,
         versionURL: URL,
         mutate: @Sendable (inout Wblock_Data_AppData) -> Result
     ) throws -> (
@@ -459,6 +480,11 @@ private actor ProtobufDiskStore {
             )
         }
 
+        try preserveLastKnownGood(
+            currentRawData: current.rawData,
+            newRawData: updatedRawData,
+            backupURL: backupURL
+        )
         try writeData(updatedRawData, to: dataURL)
         let nextVersion = currentVersion + 1
         try writeDataVersion(nextVersion, to: versionURL)
@@ -479,6 +505,7 @@ private actor ProtobufDiskStore {
         previousData: Data?,
         explicitlyDeletedFilterIDs: Set<String> = [],
         to dataURL: URL,
+        backupURL: URL,
         versionURL: URL
     ) throws -> (appData: Wblock_Data_AppData, rawData: Data, modificationDate: Date?, version: Int64, didWrite: Bool)? {
         let current = try readCurrentAppData(from: dataURL)
@@ -508,6 +535,11 @@ private actor ProtobufDiskStore {
             )
         }
 
+        try preserveLastKnownGood(
+            currentRawData: current.rawData,
+            newRawData: rawData,
+            backupURL: backupURL
+        )
         try writeData(rawData, to: dataURL)
 
         let nextVersion = dataVersion(for: versionURL) + 1
@@ -519,6 +551,7 @@ private actor ProtobufDiskStore {
 
     func mutateAppDataAtomically<Result: Sendable>(
         at dataURL: URL,
+        backupURL: URL,
         versionURL: URL,
         mutate: @Sendable (inout Wblock_Data_AppData) -> Result
     ) throws -> (
@@ -530,7 +563,12 @@ private actor ProtobufDiskStore {
         result: Result
     ) {
         return try withExclusiveFileLock(for: dataURL) {
-            try mutateAppDataOnce(at: dataURL, versionURL: versionURL, mutate: mutate)
+            try mutateAppDataOnce(
+                at: dataURL,
+                backupURL: backupURL,
+                versionURL: versionURL,
+                mutate: mutate
+            )
         }
     }
 
@@ -539,6 +577,7 @@ private actor ProtobufDiskStore {
         previousData: Data?,
         explicitlyDeletedFilterIDs: Set<String> = [],
         to dataURL: URL,
+        backupURL: URL,
         versionURL: URL
     ) throws -> (appData: Wblock_Data_AppData, rawData: Data, modificationDate: Date?, version: Int64, didWrite: Bool)? {
         return try withExclusiveFileLock(for: dataURL) {
@@ -547,7 +586,122 @@ private actor ProtobufDiskStore {
                 previousData: previousData,
                 explicitlyDeletedFilterIDs: explicitlyDeletedFilterIDs,
                 to: dataURL,
+                backupURL: backupURL,
                 versionURL: versionURL
+            )
+        }
+    }
+
+    func recoverCorruptMain(
+        dataURL: URL,
+        backupURL: URL,
+        versionURL: URL,
+        fallbackAppData: Wblock_Data_AppData
+    ) throws -> (appData: Wblock_Data_AppData, rawData: Data, modificationDate: Date?, version: Int64, recoveredFromBackup: Bool)? {
+        try withExclusiveFileLock(for: dataURL) {
+            guard fileExists(at: dataURL) else { return nil }
+
+            // Only quarantine a file we could read but could not decode. Transient
+            // filesystem read errors must surface without moving a potentially valid main.
+            let currentRawData = try Data(contentsOf: dataURL)
+            do {
+                let decoded = try AppDataDecodeCache.shared.decode(currentRawData)
+                return (
+                    decoded.appData,
+                    currentRawData,
+                    modificationDate(for: dataURL),
+                    dataVersion(for: versionURL),
+                    false
+                )
+            } catch {
+                // Validate the recovery source before changing the corrupt main. A
+                // transient read error on a valid backup must leave every original
+                // byte in place and surface to the caller for a later retry.
+                let replacementData: Wblock_Data_AppData
+                let replacementRawData: Data
+                let recoveredFromBackup: Bool
+                if fileExists(at: backupURL) {
+                    let backupRawData = try Data(contentsOf: backupURL)
+                    do {
+                        let decodedBackup = try AppDataDecodeCache.shared.decode(backupRawData)
+                        replacementData = decodedBackup.appData
+                        replacementRawData = backupRawData
+                        recoveredFromBackup = true
+                    } catch {
+                        // The backup bytes themselves decoded as corrupt. Defaults are
+                        // now the only valid canonical replacement.
+                        replacementData = fallbackAppData
+                        replacementRawData = try fallbackAppData.serializedData()
+                        recoveredFromBackup = false
+                    }
+                } else {
+                    replacementData = fallbackAppData
+                    replacementRawData = try fallbackAppData.serializedData()
+                    recoveredFromBackup = false
+                }
+
+                let quarantineURL = dataURL.appendingPathExtension("corrupt")
+                // Copy the corrupt bytes, never remove the canonical file before its
+                // atomic replacement. Process death at any boundary remains retryable.
+                try writeData(currentRawData, to: quarantineURL)
+                if !recoveredFromBackup {
+                    try writeData(replacementRawData, to: backupURL)
+                }
+                try writeData(replacementRawData, to: dataURL)
+                let nextVersion = dataVersion(for: versionURL) + 1
+                try writeDataVersion(nextVersion, to: versionURL)
+                return (
+                    replacementData,
+                    replacementRawData,
+                    modificationDate(for: dataURL),
+                    nextVersion,
+                    recoveredFromBackup
+                )
+            }
+        }
+    }
+
+    func initializeIfAbsent(
+        appData proposed: Wblock_Data_AppData,
+        dataURL: URL,
+        backupURL: URL,
+        versionURL: URL
+    ) throws -> (appData: Wblock_Data_AppData, rawData: Data, modificationDate: Date?, version: Int64, created: Bool) {
+        try withExclusiveFileLock(for: dataURL) {
+            if fileExists(at: dataURL) {
+                let existing = try readAppData(from: dataURL)
+                return (
+                    existing.appData,
+                    existing.rawData,
+                    existing.modificationDate,
+                    dataVersion(for: versionURL),
+                    false
+                )
+            }
+
+            // A missing canonical file can be an interrupted older recovery or
+            // first publication. Prefer the durable backup over fresh defaults.
+            if fileExists(at: backupURL) {
+                let backupRawData = try Data(contentsOf: backupURL)
+                if let decoded = try? AppDataDecodeCache.shared.decode(backupRawData) {
+                    try writeData(backupRawData, to: dataURL)
+                    let nextVersion = dataVersion(for: versionURL) + 1
+                    try writeDataVersion(nextVersion, to: versionURL)
+                    return (decoded.appData, backupRawData, modificationDate(for: dataURL), nextVersion, false)
+                }
+            }
+            let rawData = try proposed.serializedData()
+            AppDataDecodeCache.shared.remember(rawData, appData: proposed)
+            try writeData(rawData, to: backupURL)
+            try writeData(rawData, to: dataURL)
+            let nextVersion = dataVersion(for: versionURL) + 1
+            try writeDataVersion(nextVersion, to: versionURL)
+            return (
+                proposed,
+                rawData,
+                modificationDate(for: dataURL),
+                nextVersion,
+                true
             )
         }
     }
@@ -561,7 +715,8 @@ private actor ProtobufDiskStore {
     /// Reset is therefore one serialized storage transaction, not three independent deletes.
     func resetFiles(dataURL: URL, backupURL: URL, versionURL: URL) throws {
         try withExclusiveFileLock(for: dataURL) {
-            for url in [dataURL, backupURL, versionURL] where fileExists(at: url) {
+            let corruptURL = dataURL.appendingPathExtension("corrupt")
+            for url in [dataURL, backupURL, versionURL, corruptURL] where fileExists(at: url) {
                 try fileManager.removeItem(at: url)
             }
         }
@@ -1228,6 +1383,7 @@ public class ProtobufDataManager: ObservableObject {
         do {
             let mutation = try await diskStore.mutateAppDataAtomically(
                 at: dataFileURL,
+                backupURL: backupFileURL,
                 versionURL: dataVersionFileURL
             ) { data in
                 guard var ruleList = data.extensionData.zapperRulesByHost[host],
@@ -1365,6 +1521,39 @@ public class ProtobufDataManager: ObservableObject {
         }
     }
 
+    /// Applies Cloud Sync disabled-host changes per script without overwriting a newer
+    /// concurrent write. Each targeted key is changed only if the current persisted
+    /// value still matches the baseline captured before the remote apply began.
+    @MainActor
+    @discardableResult
+    public func applyCloudUserScriptDisabledHosts(
+        desired: [String: [String]],
+        baseline: [String: [String]]
+    ) async -> Bool {
+        guard !desired.isEmpty else { return true }
+        let succeeded = await updateDataImmediately { data in
+            let survivingIDs = Set(data.userScripts.map(\.id))
+            for (id, desiredHosts) in desired {
+                guard survivingIDs.contains(id) else { continue }
+                let currentHosts = data.userScriptDisabledHosts[id]?.hosts ?? []
+                let baselineHosts = baseline[id] ?? []
+                guard currentHosts == baselineHosts else { continue }
+
+                if desiredHosts.isEmpty {
+                    data.userScriptDisabledHosts.removeValue(forKey: id)
+                } else {
+                    var list = Wblock_Data_HostList()
+                    list.hosts = desiredHosts
+                    data.userScriptDisabledHosts[id] = list
+                }
+            }
+        }
+        if succeeded {
+            UserScriptManager.invalidateDocumentStartExecutionCache()
+        }
+        return succeeded
+    }
+
     // MARK: - Singleton
     public static let shared = ProtobufDataManager()
     
@@ -1383,6 +1572,9 @@ public class ProtobufDataManager: ObservableObject {
     private let logger = Logger(subsystem: "com.skula.wBlock", category: "ProtobufDataManager")
     private let fileManager = FileManager.default
     private let diskStore = ProtobufDiskStore()
+    private let dataDirectoryOverride: URL?
+    private let legacyStandardDefaults: UserDefaults
+    private let legacyGroupDefaults: UserDefaults
     private let dataFileName = "wblock_data.pb"
     private let backupFileName = "wblock_data_backup.pb"
     private let dataVersionFileName = "wblock_data.version"
@@ -1486,9 +1678,20 @@ public class ProtobufDataManager: ObservableObject {
     }()
     
     // MARK: - Initialization
-    private init() {
+    init(
+        dataDirectoryOverride: URL? = nil,
+        legacyStandardDefaults: UserDefaults = .standard,
+        legacyGroupDefaults: UserDefaults? = nil,
+        startInitialLoad: Bool = true
+    ) {
+        self.dataDirectoryOverride = dataDirectoryOverride
+        self.legacyStandardDefaults = legacyStandardDefaults
+        self.legacyGroupDefaults = legacyGroupDefaults
+            ?? UserDefaults(suiteName: GroupIdentifier.shared.value)
+            ?? .standard
         logger.info("🔧 ProtobufDataManager initializing...")
         setupDataDirectory()
+        guard startInitialLoad else { return }
         var task: Task<Void, Never>?
         task = Task { @MainActor [weak self] in
             defer {
@@ -1500,6 +1703,21 @@ public class ProtobufDataManager: ObservableObject {
         }
         initialLoadTask = task
     }
+
+    #if DEBUG
+    public static func makeIsolatedForTesting(
+        dataDirectoryURL: URL,
+        standardDefaults: UserDefaults,
+        groupDefaults: UserDefaults
+    ) -> ProtobufDataManager {
+        ProtobufDataManager(
+            dataDirectoryOverride: dataDirectoryURL,
+            legacyStandardDefaults: standardDefaults,
+            legacyGroupDefaults: groupDefaults,
+            startInitialLoad: false
+        )
+    }
+    #endif
 
     /// Waits for the initial protobuf load to complete.
     public func waitUntilLoaded() async {
@@ -1543,6 +1761,7 @@ public class ProtobufDataManager: ObservableObject {
             guard writeGeneration == storageGeneration else { return false }
             let mutation = try await diskStore.mutateAppDataAtomically(
                 at: dataFileURL,
+                backupURL: backupFileURL,
                 versionURL: dataVersionFileURL,
                 mutate: block
             )
@@ -1583,6 +1802,7 @@ public class ProtobufDataManager: ObservableObject {
                     previousData: mutation.rawData,
                     explicitlyDeletedFilterIDs: explicitlyDeletedFilterIDs,
                     to: dataFileURL,
+                    backupURL: backupFileURL,
                     versionURL: dataVersionFileURL
                 ) {
                     finalAppData = result.appData
@@ -1632,6 +1852,9 @@ public class ProtobufDataManager: ObservableObject {
     }
     
     private func getDataDirectoryURL() -> URL {
+        if let dataDirectoryOverride {
+            return dataDirectoryOverride
+        }
         if let containerURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) {
             return containerURL.appendingPathComponent("ProtobufData")
         } else {
@@ -1664,14 +1887,40 @@ public class ProtobufDataManager: ObservableObject {
     // MARK: - Data Loading
     public func loadData() async {
         isLoading = true
+        let migrationFlagExists = await diskStore.fileExists(at: migrationFlagURL)
+        var freshMigrationAttempt = false
         
         do {
-            // Check if migration is needed
-            if !(await diskStore.fileExists(at: migrationFlagURL)) {
-                logger.info("🔄 Starting migration from UserDefaults/SwiftData...")
-                await migrateFromLegacyStorage()
-                try await diskStore.writeData(Data(), to: migrationFlagURL)
-                logger.info("✅ Migration completed")
+            // A valid canonical store always wins over legacy defaults. Only migrate
+            // legacy data when no protobuf main exists. Initialization itself is one
+            // coordinated compare-and-create transaction, so concurrent first-launch
+            // processes cannot overwrite whichever valid canonical store appears first.
+            if !migrationFlagExists {
+                if await diskStore.fileExists(at: dataFileURL) {
+                    let existing = try await diskStore.readAppData(from: dataFileURL)
+                    appData = existing.appData
+                    lastSavedData = existing.rawData
+                    lastLoadedDataFileModificationDate = existing.modificationDate
+                    lastLoadedDataVersion = await diskStore.dataVersion(for: dataVersionFileURL)
+                    try await diskStore.writeData(Data(), to: migrationFlagURL)
+                } else {
+                    freshMigrationAttempt = true
+                    logger.info("🔄 Starting migration from UserDefaults/SwiftData...")
+                    let migratedData = await migratedLegacyData()
+                    let initialized = try await diskStore.initializeIfAbsent(
+                        appData: migratedData,
+                        dataURL: dataFileURL,
+                        backupURL: backupFileURL,
+                        versionURL: dataVersionFileURL
+                    )
+                    appData = initialized.appData
+                    lastSavedData = initialized.rawData
+                    lastLoadedDataFileModificationDate = initialized.modificationDate
+                    lastLoadedDataVersion = initialized.version
+                    try await diskStore.writeData(Data(), to: migrationFlagURL)
+                    logger.info("✅ Migration completed")
+                    freshMigrationAttempt = false
+                }
             }
             
             // Load protobuf data
@@ -1718,40 +1967,55 @@ public class ProtobufDataManager: ObservableObject {
                     await sanitizeStoredTerminology()
                 }
             } else {
-                logger.info("📝 No existing data file, creating default data")
-                await createDefaultData()
+                try await loadOrInitializeMissingMain()
             }
             
         } catch {
             logger.error("❌ Failed to load data: \(error)")
             lastError = error
-            
-            // Try to load backup
-            await loadBackup()
+
+            if freshMigrationAttempt {
+                // Never replace a failed migration with defaults or stamp the flag.
+                // Leaving both absent makes the migration retryable on the next launch.
+                logger.error("Legacy migration did not persist; leaving migration retryable")
+            } else {
+                await recoverAfterLoadFailure()
+            }
         }
         
         isLoading = false
     }
     
-    private func loadBackup() async {
-        guard await diskStore.fileExists(at: backupFileURL) else {
-            logger.info("📝 No backup file available, creating default data")
-            await createDefaultData()
-            return
-        }
-        
+    private func recoverAfterLoadFailure() async {
         do {
-            let loaded = try await diskStore.readAppData(from: backupFileURL)
+            guard let recovered = try await diskStore.recoverCorruptMain(
+                dataURL: dataFileURL,
+                backupURL: backupFileURL,
+                versionURL: dataVersionFileURL,
+                fallbackAppData: makeDefaultData()
+            ) else {
+                try await loadOrInitializeMissingMain()
+                return
+            }
 
-            appData = loaded.appData
-            lastSavedData = loaded.rawData
-            lastLoadedDataVersion = await diskStore.dataVersion(for: dataVersionFileURL)
+            appData = recovered.appData
+            lastSavedData = recovered.rawData
+            lastLoadedDataFileModificationDate = recovered.modificationDate
+            lastLoadedDataVersion = recovered.version
             lastError = nil
 
-            logger.info("✅ Loaded backup data (\(loaded.rawData.count) bytes)")
+            if recovered.recoveredFromBackup {
+                logger.warning("Recovered corrupt protobuf data from last-known-good backup")
+            }
         } catch {
-            logger.error("❌ Failed to load backup: \(error)")
-            await createDefaultData()
+            logger.error("❌ Failed to recover protobuf data: \(error)")
+            if await diskStore.fileExists(at: dataFileURL) {
+                // The main file still exists, so recovery failed before confirming
+                // corruption (for example a transient read error). Do not overwrite it.
+                lastError = error
+            } else {
+                _ = await createDefaultData()
+            }
         }
     }
     
@@ -1798,8 +2062,32 @@ public class ProtobufDataManager: ObservableObject {
         return storageGeneration == resetGeneration && createdDefaults && storageResetError == nil
     }
 
+    private func loadOrInitializeMissingMain() async throws {
+        let loaded = try await diskStore.initializeIfAbsent(
+            appData: makeDefaultData(), dataURL: dataFileURL,
+            backupURL: backupFileURL, versionURL: dataVersionFileURL
+        )
+        appData = loaded.appData
+        lastSavedData = loaded.rawData
+        lastLoadedDataFileModificationDate = loaded.modificationDate
+        lastLoadedDataVersion = loaded.version
+        lastError = nil
+    }
+
     @discardableResult
     private func createDefaultData(hasCompletedOnboarding: Bool = false) async -> Bool {
+        let defaultData = makeDefaultData(hasCompletedOnboarding: hasCompletedOnboarding)
+        appData = defaultData
+        let saved = await saveDataImmediately()
+        if saved {
+            logger.info("✅ Created default data")
+        } else {
+            logger.error("❌ Failed to persist default data")
+        }
+        return saved
+    }
+
+    private func makeDefaultData(hasCompletedOnboarding: Bool = false) -> Wblock_Data_AppData {
         var defaultData = Wblock_Data_AppData()
 
         // Initialize default settings
@@ -1831,14 +2119,7 @@ public class ProtobufDataManager: ObservableObject {
         defaultData.performance.lastReloadTime = "N/A"
         defaultData.performance.lastFastUpdateTime = "N/A"
 
-        appData = defaultData
-        let saved = await saveDataImmediately()
-        if saved {
-            logger.info("✅ Created default data")
-        } else {
-            logger.error("❌ Failed to persist default data")
-        }
-        return saved
+        return defaultData
     }
     
     // MARK: - Data Saving (debounced)
@@ -1888,6 +2169,7 @@ public class ProtobufDataManager: ObservableObject {
                 appData: snapshot,
                 previousData: previous,
                 to: dataFileURL,
+                backupURL: backupFileURL,
                 versionURL: dataVersionFileURL
             ) {
                 guard writeGeneration == storageGeneration else { return false }
@@ -2014,15 +2296,15 @@ public class ProtobufDataManager: ObservableObject {
     }
 
     // MARK: - Migration from Legacy Storage
-    private func migrateFromLegacyStorage() async {
+    private func migratedLegacyData() async -> Wblock_Data_AppData {
         logger.info("🔄 Migrating from UserDefaults and SwiftData...")
 
-        let groupDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? UserDefaults.standard
+        let groupDefaults = legacyGroupDefaults
         var migratedData = Wblock_Data_AppData()
 
         // Migrate app settings
-        migratedData.settings.hasCompletedOnboarding_p = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
-        migratedData.settings.selectedBlockingLevel = UserDefaults.standard.string(forKey: "selectedBlockingLevel") ?? "recommended"
+        migratedData.settings.hasCompletedOnboarding_p = legacyStandardDefaults.bool(forKey: "hasCompletedOnboarding")
+        migratedData.settings.selectedBlockingLevel = legacyStandardDefaults.string(forKey: "selectedBlockingLevel") ?? "recommended"
 
         // Migrate badge counter setting (from App Group UserDefaults)
         if groupDefaults.object(forKey: "isBadgeCounterEnabled") != nil {
@@ -2127,12 +2409,8 @@ public class ProtobufDataManager: ObservableObject {
             migratedData.ruleCounts.categoriesApproachingLimit = categories
         }
 
-        await MainActor.run {
-            self.appData = migratedData
-        }
-
-        saveData()
         logger.info("✅ Migration completed successfully")
+        return migratedData
     }
     
     private func migrateFilterLists(from userDefaults: UserDefaults, to appData: inout Wblock_Data_AppData) async {

@@ -529,16 +529,13 @@ extension AppFilterManager {
 
         if await failApplyIfCancelled() { return }
 
+        let compilationFilters = ContentBlockerMappingService.refreshingCompilationMetadata(
+            snapshot: runSnapshot.filters,
+            latest: filterLists
+        )
         let allSelectedFilters = pausedComponents.contains(.filters)
             ? []
-            : runSnapshot.filters.filter { $0.isSelected }
-        // The snapshot preserves the user's selection, but its counts can predate the
-        // metadata hydration/download above on the first apply.
-        let refreshedSourceRuleCounts = Dictionary(
-            uniqueKeysWithValues: filterLists.compactMap { filter in
-                filter.sourceRuleCount.map { (filter.id, $0) }
-            }
-        )
+            : compilationFilters.filter { $0.isSelected }
         let generatedZapperRules = pausedComponents.contains(.elementZapper)
             ? []
             : ZapperContentBlockerRuleGenerator.generatedRules(
@@ -547,7 +544,7 @@ extension AppFilterManager {
         let generatedZapperRulesText = generatedZapperRules.isEmpty
             ? nil
             : generatedZapperRules.joined(separator: "\n")
-        let pendingRevisionSnapshot = PendingFilterUpdateRevisions.snapshot(
+        let pendingRevisionSnapshot = PendingFilterUpdateRevisions.snapshotPublished(
             filterIDs: Set(allSelectedFilters.map { $0.id.uuidString })
         )
 
@@ -608,7 +605,7 @@ extension AppFilterManager {
         let totalFiltersCount = platformTargets.count
         await MainActor.run {
             self.sourceRulesCount = allSelectedFilters.reduce(0) {
-                $0 + (refreshedSourceRuleCounts[$1.id] ?? $1.sourceRuleCount ?? 0)
+                $0 + ($1.sourceRuleCount ?? 0)
             } + generatedZapperRules.count
 
             // Update ViewModel
@@ -792,6 +789,7 @@ extension AppFilterManager {
                 let targetInfo = completion.work.targetInfo
                 let blockerName = targetInfo.displayName
                 let ruleCountForThisTarget = conversionResult.safariRulesCount
+                let truncatedRuleCount = conversionResult.truncatedRuleCount
 
                 await MainActor.run {
                     self.applyProgressViewModel.updateStageDescription(
@@ -807,26 +805,26 @@ extension AppFilterManager {
                     self.applyProgressViewModel.updateCurrentFilter(blockerName)
                     self.ruleCountsByExtension[targetInfo.bundleIdentifier] = ruleCountForThisTarget
 
-                    if ruleCountForThisTarget >= warningThreshold && ruleCountForThisTarget < ruleLimit {
+                    if truncatedRuleCount > 0 {
+                        self.extensionsApproachingLimit.remove(targetInfo.bundleIdentifier)
+                        self.hasError = true
+                        self.statusDescription =
+                            "One or more content blockers exceeded Safari's \(ruleLimit.formatted()) rule limit. Disable some filter lists and try again."
+                    } else if ruleCountForThisTarget >= warningThreshold {
                         self.extensionsApproachingLimit.insert(targetInfo.bundleIdentifier)
                     } else {
                         self.extensionsApproachingLimit.remove(targetInfo.bundleIdentifier)
                     }
-
-                    if ruleCountForThisTarget > ruleLimit {
-                        self.hasError = true
-                        self.statusDescription =
-                            "One or more content blockers exceeded Safari's \(ruleLimit.formatted()) rule limit. Disable some filter lists and try again."
-                    }
                 }
 
-                if ruleCountForThisTarget > ruleLimit {
+                if truncatedRuleCount > 0 {
                     await ConcurrentLogManager.shared.error(
                         .filterApply, LocalizedStrings.text("Rule limit exceeded for blocker"),
                         metadata: [
                             "blocker": blockerName,
                             "bundleId": targetInfo.bundleIdentifier,
                             "ruleCount": "\(ruleCountForThisTarget)",
+                            "truncatedRules": "\(truncatedRuleCount)",
                             "ruleLimit": "\(ruleLimit)",
                         ]
                     )
@@ -894,6 +892,7 @@ extension AppFilterManager {
                     filterCount: filters.count,
                     safariRules: ruleCountForThisTarget,
                     advancedRules: advancedCount,
+                    truncatedRules: conversionResult.truncatedRuleCount,
                     reusedCachedBase: conversionResult.reusedCachedBase,
                     outputChanged: conversionResult.outputChanged,
                     durationMs: completion.durationMs
@@ -925,6 +924,7 @@ extension AppFilterManager {
                 "unchangedOutputs": "\(conversionMetrics.filter { !$0.outputChanged }.count)",
                 "totalRules": "\(conversionMetrics.reduce(0) { $0 + $1.safariRules })",
                 "advancedRules": "\(conversionMetrics.reduce(0) { $0 + $1.advancedRules })",
+                "truncatedRules": "\(conversionMetrics.reduce(0) { $0 + $1.truncatedRules })",
                 "conversionTime": await MainActor.run { self.lastConversionTime },
                 "avgTargetMs": conversionMetrics.isEmpty
                     ? "0"
@@ -932,6 +932,18 @@ extension AppFilterManager {
                 "slowestTarget": conversionMetrics.max(by: { $0.durationMs < $1.durationMs })
                     .map { "\($0.blockerName)@\($0.durationMs)ms" } ?? "n/a",
             ])
+
+        let totalTruncatedRules = conversionMetrics.reduce(0) { $0 + $1.truncatedRules }
+        if totalTruncatedRules > 0 {
+            let limitStatus =
+                "One or more content blockers exceeded Safari's \(ruleLimit.formatted()) rule limit. Disable some filter lists and try again."
+            await failApplyRun(
+                logMessage: LocalizedStrings.text("Rule limit exceeded for blocker"),
+                metadata: ["truncatedRules": "\(totalTruncatedRules)", "ruleLimit": "\(ruleLimit)"],
+                statusMessage: limitStatus
+            )
+            return
+        }
 
         // Reloading phase - reload all content blockers FIRST before building advanced engine
         await MainActor.run {
@@ -1435,6 +1447,7 @@ extension AppFilterManager {
         let filterCount: Int
         let safariRules: Int
         let advancedRules: Int
+        let truncatedRules: Int
         let reusedCachedBase: Bool
         let outputChanged: Bool
         let durationMs: Int

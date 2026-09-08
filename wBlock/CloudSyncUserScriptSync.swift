@@ -38,6 +38,13 @@ struct CloudSyncLocalUserScript: Codable, Equatable {
 }
 
 enum CloudSyncLocalUserScriptReconciler {
+    static func metadataOverrides(
+        existing: UserScript,
+        remote: CloudSyncLocalUserScript
+    ) -> (name: String, description: String) {
+        (remote.name, remote.description ?? existing.description)
+    }
+
     static func normalizedName(_ name: String) -> String {
         name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }

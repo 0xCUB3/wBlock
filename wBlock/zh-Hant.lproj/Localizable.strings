@@ -1126,3 +1126,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Paste non-empty plain text and review it before adding." = "貼上非空的純文字，並在新增前檢查。";
 
 "Choose a non-empty text file and review it before adding." = "選擇非空的文字檔案，並在新增前檢查。";
+
+/* Filter update reliability */
+"A wBlock filter update is already in progress." = "wBlock 過濾器更新已在進行中。";
+"wBlock filter update completed." = "wBlock 過濾器更新已完成。";
+"wBlock filter update completed with errors." = "wBlock 過濾器更新已完成，但發生錯誤。";
+"Shared update status is unavailable." = "共用更新狀態無法使用。";
+"Shared update status lock is unavailable." = "共用更新狀態鎖定無法使用。";
+"%@ dropped %d rules at Safari's per-extension limit." = "%@ 因 Safari 的每個擴充功能規則限制而捨棄了 %d 條規則。";

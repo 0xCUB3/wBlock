@@ -3,9 +3,23 @@ import UIKit
 
 final class ScrollTests: XCTestCase {
     @MainActor
-    private func position(_ app: XCUIApplication) -> (x: Int, y: Int) {
+    private func position(_ app: XCUIApplication) -> (x: Int, y: Int, width: Int) {
         let fields = app.staticTexts["geometry"].label.split(separator: " ")
-        return (Int(fields[0].dropFirst(2)) ?? -1, Int(fields[1].dropFirst(2)) ?? -1)
+        guard fields.count == 3 else { return (-1, -1, -1) }
+        return (Int(fields[0].dropFirst(2)) ?? -1, Int(fields[1].dropFirst(2)) ?? -1,
+                Int(fields[2].dropFirst(6)) ?? -1)
+    }
+
+    @MainActor
+    private func waitForGeometry(
+        _ app: XCUIApplication,
+        matching predicate: @escaping ((x: Int, y: Int, width: Int)) -> Bool
+    ) {
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            predicate(self.position(app))
+        }, object: app)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 30), .completed,
+                       "The measured scroll geometry must be ready before continuing")
     }
 
     @MainActor
@@ -41,16 +55,21 @@ final class ScrollTests: XCTestCase {
 
     @MainActor
     func testPanKeepsTextAndOffset() {
-        XCUIDevice.shared.orientation = .portrait
-        defer { XCUIDevice.shared.orientation = .portrait }
         let app = XCUIApplication()
         app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30))
+        if XCUIDevice.shared.orientation != .portrait {
+            XCUIDevice.shared.orientation = .portrait
+        }
+        defer { XCUIDevice.shared.orientation = .portrait }
         XCTAssertTrue(app.textViews.firstMatch.waitForExistence(timeout: 20))
-        sleep(3)
+        // Document width is measured asynchronously. A visible text view alone
+        // does not mean horizontal scrolling is available on a cold simulator.
+        waitForGeometry(app) { $0.width > Int(app.frame.width) + 100 }
         let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5))
         let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5))
-        start.press(forDuration: 0.05, thenDragTo: end)
-        sleep(3)
+        start.press(forDuration: 0.1, thenDragTo: end)
+        waitForGeometry(app) { $0.x > 100 }
         let x = position(app).x
         XCTAssertGreaterThan(x, 100)
         assertRenderedText("Horizontal pan")
@@ -69,8 +88,8 @@ final class ScrollTests: XCTestCase {
         sleep(3)
         XCTAssertEqual(position(app).x, 0)
         toggle.tap()
-        sleep(3)
-        start.press(forDuration: 0.05, thenDragTo: end)
+        waitForGeometry(app) { $0.width > Int(app.frame.width) + 100 }
+        start.press(forDuration: 0.1, thenDragTo: end)
         sleep(3)
         XCTAssertGreaterThan(position(app).x, 100)
         assertRenderedText("Wrapping disabled again")

@@ -19,7 +19,9 @@
   const HIGHLIGHT_ID = 'wblock-zapper-highlight';
   const TOAST_ID = 'wblock-zapper-toast';
   const MAX_RULES_PER_SITE = 200;
-  const RULE_SYNC_INTERVAL_MS = 5000;
+  // Native state changes are pushed through the background port. Keep only a
+  // coarse top-frame fallback for Safari sessions where that port is lost.
+  const RULE_SYNC_FALLBACK_INTERVAL_MS = 5 * 60 * 1000;
   const NATIVE_MESSAGE_TIMEOUT_MS = 3500;
 
   function t(key, substitutions, fallback = '') {
@@ -40,14 +42,6 @@
         timer = setTimeout(() => reject(new Error(message)), timeoutMs);
       }),
     ]);
-  }
-
-  function sendNativeMessageWithTimeout(message, timeoutMs = NATIVE_MESSAGE_TIMEOUT_MS) {
-    return withTimeout(
-      browser.runtime.sendNativeMessage('application.id', message),
-      timeoutMs,
-      `Native message timed out: ${message && message.action ? message.action : 'unknown'}`
-    );
   }
 
   const state = {
@@ -82,6 +76,9 @@
 
   let ruleSyncIntervalId = null;
   let ruleSyncInFlight = false;
+  let ruleReloadPromise = null;
+  let ruleReloadPending = false;
+  let ruleReloadActive = false;
   let isFinalizingSession = false;
   const pendingSaveOperations = new Set();
 
@@ -143,11 +140,11 @@
   async function setSiteZapperDisabled(host, disabled) {
     if (!host) return null;
     try {
-      return await sendNativeMessageWithTimeout({
-        action: 'setSiteZapperDisabled',
+      return await withTimeout(browser.runtime.sendMessage({
+        action: 'wblock:zapper:setDisabled',
         hostname: host,
         disabled: Boolean(disabled)
-      });
+      }), NATIVE_MESSAGE_TIMEOUT_MS, 'Zapper state update timed out.');
     } catch {
       return null;
     }
@@ -175,18 +172,24 @@
   async function getSiteDisabledState(host) {
     if (!host) return false;
     try {
-      const response = await sendNativeMessageWithTimeout({
-        action: 'getSiteDisabledState',
+      const response = await withTimeout(browser.runtime.sendMessage({
+        action: 'wblock:getSiteDisabledState',
         host
-      }, 800);
+      }), 800, 'Site state lookup timed out.');
+      if (!response || response.ok !== true || typeof response.disabled !== 'boolean') {
+        return null;
+      }
       return Boolean(response && response.disabled);
     } catch {
-      return false;
+      return null;
     }
   }
 
   async function shouldSuppressZapperRules(host) {
-    return state.rulesDisabled === true || (await getSiteDisabledState(host));
+    if (state.rulesDisabled === true) return true;
+    const siteDisabled = await getSiteDisabledState(host);
+    // Unknown must not reactivate rules on a site that may be globally disabled.
+    return siteDisabled !== false;
   }
 
   function normalizeRules(rules) {
@@ -301,22 +304,6 @@
       }
       return null;
     } catch {
-      try {
-        const response = await sendNativeMessageWithTimeout({
-          action: 'syncZapperRules',
-          hostname: host,
-          rules: normalizedRules
-        });
-        if (response && Array.isArray(response.rules)) {
-          const key = storageKey(host);
-          const normalized = normalizeRules(response.rules);
-          await browser.storage.local.set({ [key]: normalized });
-          await setSyncMeta(host, { pendingSync: false, lastSyncAt: Date.now() });
-          return normalized;
-        }
-      } catch {
-        return null;
-      }
       return null;
     }
   }
@@ -347,32 +334,7 @@
       await cacheZapperState(host, nativeState.rules, disabled);
       return { rules: nativeState.rules, disabled, inheritedRules: nativeState.inheritedRules };
     } catch {
-      try {
-        const response = await sendNativeMessageWithTimeout({
-          action: 'getZapperRules',
-          hostname: host
-        });
-        const nativeState = normalizeNativeZapperState(response);
-        if (!nativeState) {
-          return null;
-        }
-        const localRules = await loadRulesForHost(host);
-        const localSig = rulesSignature(localRules);
-        const nativeSig = rulesSignature(nativeState.rules);
-        const meta = await getSyncMeta(host);
-        if (meta.pendingSync && localSig !== nativeSig) {
-          const reconciled = await syncRulesToNative(host, localRules);
-          const rules = Array.isArray(reconciled) ? reconciled : localRules;
-          const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, rules);
-          await setSyncMeta(host, { disabled });
-          return { rules, disabled, inheritedRules: nativeState.inheritedRules };
-        }
-        const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, nativeState.rules.length === 0 ? localRules : null);
-        await cacheZapperState(host, nativeState.rules, disabled);
-        return { rules: nativeState.rules, disabled, inheritedRules: nativeState.inheritedRules };
-      } catch {
-        return null;
-      }
+      return null;
     }
   }
 
@@ -1411,16 +1373,17 @@
 
   function startRuleSyncLoop() {
     if (ruleSyncIntervalId !== null) return;
+    if (window.top !== window) return;
     ruleSyncIntervalId = window.setInterval(() => {
       if (document.visibilityState === 'hidden') return;
       if (ruleSyncInFlight) return;
       ruleSyncInFlight = true;
-      refreshRulesFromNativeIfNeeded()
+      browser.runtime.sendMessage({ action: 'wblock:zapper:broadcastReload' })
         .catch(() => {})
         .finally(() => {
           ruleSyncInFlight = false;
         });
-    }, RULE_SYNC_INTERVAL_MS);
+    }, RULE_SYNC_FALLBACK_INTERVAL_MS);
     window.addEventListener('pagehide', () => {
       if (ruleSyncIntervalId !== null) {
         clearInterval(ruleSyncIntervalId);
@@ -1456,6 +1419,28 @@
     }
   }
 
+  function reloadRulesAndApplyCoalesced() {
+    if (ruleReloadPromise) {
+      // A native invalidation racing an older read must not be swallowed. Fold
+      // any burst into exactly one follow-up pass after the current pass ends.
+      if (ruleReloadActive) ruleReloadPending = true;
+      return ruleReloadPromise;
+    }
+    // Start on the next microtask so same-tick invalidation bursts collapse into
+    // one pass before any native read has actually begun.
+    ruleReloadPromise = Promise.resolve().then(async () => {
+      ruleReloadActive = true;
+      do {
+        ruleReloadPending = false;
+        await reloadRulesAndApply();
+      } while (ruleReloadPending);
+    }).finally(() => {
+      ruleReloadActive = false;
+      ruleReloadPromise = null;
+    });
+    return ruleReloadPromise;
+  }
+
   browser.runtime.onMessage.addListener((message) => {
     if (!message || typeof message !== 'object') return;
 
@@ -1477,12 +1462,13 @@
       return Promise.resolve({ ok: true, handledBy: 'zapper-content' });
     }
     if (message.type === 'wblock:zapper:reloadRules') {
-      reloadRulesAndApply().catch(() => {});
-      return Promise.resolve({ ok: true, handledBy: 'zapper-content' });
+      return reloadRulesAndApplyCoalesced()
+        .then(() => ({ ok: true, handledBy: 'zapper-content' }))
+        .catch(() => ({ ok: false, handledBy: 'zapper-content' }));
     }
   });
 
   // Initial load: apply existing rules for this host.
-  reloadRulesAndApply().catch(() => {});
+  reloadRulesAndApplyCoalesced().catch(() => {});
   startRuleSyncLoop();
 })();
