@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Fetch main
         run: git fetch --no-tags --depth=1 origin main
@@ -30,7 +30,7 @@ jobs:
       # Package checkouts and the core framework's intermediates survive
       # between runs, so the test-time xcodebuild is incremental.
       - name: Restore core build cache
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .derived-data
           key: core-debug-${{ runner.os }}-${{ hashFiles('wBlock.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved', 'wBlockCoreService/**', 'wBlock.xcodeproj/project.pbxproj') }}
@@ -47,7 +47,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install XcodeGen
         run: command -v xcodegen >/dev/null || brew install xcodegen
@@ -58,14 +58,18 @@ jobs:
           xcrun simctl list devices available --json > "$RUNNER_TEMP/simulators.json"
           python3 - "$RUNNER_TEMP/simulators.json" >> "$GITHUB_OUTPUT" <<'PY'
           import json
+          import re
           import sys
           with open(sys.argv[1]) as source:
               runtimes = json.load(source)["devices"]
-          phones = [device for runtime, devices in sorted(runtimes.items(), reverse=True)
-                    if ".iOS-" in runtime for device in devices
+          versions = [(tuple(map(int, match.groups())), devices)
+                      for runtime, devices in runtimes.items()
+                      if (match := re.search(r"\.iOS-(\d+)-(\d+)", runtime))]
+          phones = [device for version, devices in sorted(versions, key=lambda item: item[0], reverse=True)
+                    if version >= (26, 0) for device in devices
                     if device.get("isAvailable") and device["name"].startswith("iPhone")]
           if not phones:
-              raise SystemExit("No available iPhone simulator in this runner's Xcode")
+              raise SystemExit("No available iOS 26+ iPhone simulator for the rules-viewer test host")
           print("udid=" + phones[0]["udid"])
           PY
 
@@ -88,10 +92,10 @@ jobs:
     name: build (${{ matrix.name }})
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Restore build cache
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .derived-data
           key: app-release-${{ matrix.name }}-${{ hashFiles('wBlock.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved', 'wBlock.xcodeproj/project.pbxproj') }}-${{ github.sha }}
