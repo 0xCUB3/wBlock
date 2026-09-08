@@ -236,6 +236,7 @@
 "Converting %@…" = "Преобразование %@â¦";
 "Converting Rules" = "Преобразование правил";
 "Copy URL" = "Копировать URL";
+"Copied" = "Скопировано";
 "Could not resolve URL from dropped item." = "Не удалось определить URL перетянутого элемента.";
 "Country or region" = "Страна или регион";
 "Country: %@" = "Страна: %@";
@@ -1021,7 +1022,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replace Thumbnails" = "Заменять значки";
 "Random Frame When No Thumbnail" = "Случайный кадр, если нет миниатюры";
 "Show Original on Hover" = "Показывать оригинал при наведении";
-"Using DeArrow" = "Использует DeArrow";
+"Powered by DeArrow" = "На основе DeArrow";
 "Donate to DeArrow" = "Поддержать DeArrow";
 "DeArrow: On" = "DeArrow: вкл.";
 "DeArrow: Off" = "DeArrow: выкл.";

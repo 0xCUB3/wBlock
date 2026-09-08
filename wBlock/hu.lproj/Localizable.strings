@@ -236,6 +236,7 @@
 "Converting %@…" = "%@â¦ konvertálása";
 "Converting Rules" = "Szabályok átalakítása";
 "Copy URL" = "URL másolása";
+"Copied" = "Másolva";
 "Could not resolve URL from dropped item." = "Nem sikerült feloldani az URL-t az ejtett elemből.";
 "Country or region" = "Ország vagy régió";
 "Country: %@" = "Ország: %@";
@@ -1021,7 +1022,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Replace Thumbnails" = "Bélyegképek cseréje";
 "Random Frame When No Thumbnail" = "Véletlen képkocka bélyegkép nélkül";
 "Show Original on Hover" = "Eredeti mutatása rámutatáskor";
-"Using DeArrow" = "DeArrow használatával";
+"Powered by DeArrow" = "DeArrow alapján";
 "Donate to DeArrow" = "Támogasd a DeArrow-t";
 "DeArrow: On" = "DeArrow: be";
 "DeArrow: Off" = "DeArrow: ki";

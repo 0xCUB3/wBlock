@@ -236,6 +236,7 @@
 "Converting %@…" = "تحويل %@";
 "Converting Rules" = "جارٍ تحويل القواعد";
 "Copy URL" = "نسخ الرابط";
+"Copied" = "تم النسخ";
 "Could not resolve URL from dropped item." = "تعذّر استخراج الرابط من العنصر المُسقط.";
 "Country or region" = "البلد أو المنطقة";
 "Country: %@" = "البلد: %@";
@@ -1021,7 +1022,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replace Thumbnails" = "استبدال الصور المصغّرة";
 "Random Frame When No Thumbnail" = "إطار عشوائي عند عدم وجود صورة مصغّرة";
 "Show Original on Hover" = "إظهار الأصل عند التمرير";
-"Using DeArrow" = "يستخدم DeArrow";
+"Powered by DeArrow" = "مدعوم من DeArrow";
 "Donate to DeArrow" = "تبرّع لـ DeArrow";
 "DeArrow: On" = "DeArrow: مفعّل";
 "DeArrow: Off" = "DeArrow: معطّل";

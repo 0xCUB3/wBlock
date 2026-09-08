@@ -1073,17 +1073,7 @@ private struct ScriptURLView: View {
         VStack(alignment: .leading, spacing: 6) {
             if let url = script.url {
                 InfoMetadataRow(title: "Source URL", value: url.absoluteString, url: url)
-                Button {
-                    #if os(iOS)
-                    UIPasteboard.general.string = url.absoluteString
-                    #elseif os(macOS)
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(url.absoluteString, forType: .string)
-                    #endif
-                } label: {
-                    Label("Copy URL", systemImage: "doc.on.doc")
-                }
-                .buttonStyle(.borderless)
+                CopyURLButton(url: url)
             }
         }
     }
@@ -1715,7 +1705,7 @@ private struct DeArrowSettingsPicker: View {
             Button("Original Thumbnail Channels") { showingChannels = true }
             Divider()
             // DeArrow data is CC BY-NC-SA 4.0; the credit link is a license term.
-            Link("Using DeArrow", destination: URL(string: "https://dearrow.ajay.app/")!)
+            Link("Powered by DeArrow", destination: URL(string: "https://dearrow.ajay.app/")!)
             Link("Donate to DeArrow", destination: URL(string: "https://dearrow.ajay.app/donate/")!)
         } label: {
             HStack(spacing: 6) {

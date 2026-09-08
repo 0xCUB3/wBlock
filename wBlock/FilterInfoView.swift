@@ -96,15 +96,7 @@ struct FilterInfoView: View {
                 if !liveFilter.version.isEmpty { InfoMetadataRow(title: "Version", value: liveFilter.version) }
                 if liveFilter.url.scheme?.lowercased() == "http" || liveFilter.url.scheme?.lowercased() == "https" {
                     InfoMetadataRow(title: "Source URL", value: liveFilter.url.absoluteString, url: liveFilter.url)
-                    Button {
-                        #if os(iOS)
-                        UIPasteboard.general.string = liveFilter.url.absoluteString
-                        #elseif os(macOS)
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(liveFilter.url.absoluteString, forType: .string)
-                        #endif
-                    } label: { Label("Copy URL", systemImage: "doc.on.doc") }
-                    .buttonStyle(.borderless)
+                    CopyURLButton(url: liveFilter.url)
                 }
                 if let size = cachedByteCount {
                     InfoMetadataRow(title: "Size", value: ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))

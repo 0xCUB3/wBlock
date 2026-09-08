@@ -236,6 +236,7 @@
 "Converting %@…" = "Converting %@…";
 "Converting Rules" = "Converting Rules";
 "Copy URL" = "Copy URL";
+"Copied" = "Copied";
 "Could not resolve URL from dropped item." = "Could not resolve URL from dropped item.";
 "Country or region" = "Country or region";
 "Country: %@" = "Country: %@";
@@ -1020,7 +1021,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replace Thumbnails" = "Replace Thumbnails";
 "Random Frame When No Thumbnail" = "Random Frame When No Thumbnail";
 "Show Original on Hover" = "Show Original on Hover";
-"Using DeArrow" = "Using DeArrow";
+"Powered by DeArrow" = "Powered by DeArrow";
 "Donate to DeArrow" = "Donate to DeArrow";
 "DeArrow: On" = "DeArrow: On";
 "DeArrow: Off" = "DeArrow: Off";

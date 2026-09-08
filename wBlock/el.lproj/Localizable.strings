@@ -236,6 +236,7 @@
 "Converting %@…" = "Μετατροπή %@â¦";
 "Converting Rules" = "Μετατροπή κανόνων";
 "Copy URL" = "Αντιγραφή URL";
+"Copied" = "Αντιγράφηκε";
 "Could not resolve URL from dropped item." = "Δεν ήταν δυνατή η επίλυση URL από το στοιχείο που αποτέθηκε.";
 "Country or region" = "Χώρα ή περιοχή";
 "Country: %@" = "Χώρα: %@";
@@ -1021,7 +1022,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replace Thumbnails" = "Αντικατάσταση μικρογραφιών";
 "Random Frame When No Thumbnail" = "Τυχαίο καρέ χωρίς μικρογραφία";
 "Show Original on Hover" = "Εμφάνιση πρωτότυπου με το ποντίκι";
-"Using DeArrow" = "Χρησιμοποιεί το DeArrow";
+"Powered by DeArrow" = "Με την υποστήριξη του DeArrow";
 "Donate to DeArrow" = "Δωρεά στο DeArrow";
 "DeArrow: On" = "DeArrow: ενεργό";
 "DeArrow: Off" = "DeArrow: ανενεργό";

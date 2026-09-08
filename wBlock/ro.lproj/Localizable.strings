@@ -236,6 +236,7 @@
 "Converting %@…" = "Conversia %@â¦";
 "Converting Rules" = "Se convertesc regulile";
 "Copy URL" = "Copiază URL-ul";
+"Copied" = "Copiat";
 "Could not resolve URL from dropped item." = "URL-ul nu a putut fi rezolvat din elementul plasat.";
 "Country or region" = "Țară sau regiune";
 "Country: %@" = "Țară: %@";
@@ -1021,7 +1022,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Replace Thumbnails" = "Înlocuiește miniaturile";
 "Random Frame When No Thumbnail" = "Cadru aleatoriu fără miniatură";
 "Show Original on Hover" = "Arată originalul la trecerea cursorului";
-"Using DeArrow" = "Folosește DeArrow";
+"Powered by DeArrow" = "Bazat pe DeArrow";
 "Donate to DeArrow" = "Donează pentru DeArrow";
 "DeArrow: On" = "DeArrow: activat";
 "DeArrow: Off" = "DeArrow: dezactivat";

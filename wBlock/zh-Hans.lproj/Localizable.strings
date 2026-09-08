@@ -236,6 +236,7 @@
 "Converting %@…" = "转换 %@…";
 "Converting Rules" = "正在转换规则";
 "Copy URL" = "复制 URL";
+"Copied" = "已复制";
 "Could not resolve URL from dropped item." = "无法从拖放的项目解析 URL。";
 "Country or region" = "国家或地区";
 "Country: %@" = "国家：%@";
@@ -1021,7 +1022,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replace Thumbnails" = "替换缩略图";
 "Random Frame When No Thumbnail" = "无缩略图时使用随机画面";
 "Show Original on Hover" = "悬停时显示原始内容";
-"Using DeArrow" = "使用 DeArrow";
+"Powered by DeArrow" = "由 DeArrow 提供支持";
 "Donate to DeArrow" = "向 DeArrow 捐款";
 "DeArrow: On" = "DeArrow：开";
 "DeArrow: Off" = "DeArrow：关";

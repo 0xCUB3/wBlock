@@ -236,6 +236,7 @@
 "Converting %@…" = "%@ 변환 중…";
 "Converting Rules" = "규칙 변환 중";
 "Copy URL" = "URL 복사";
+"Copied" = "복사됨";
 "Could not resolve URL from dropped item." = "놓은 항목에서 URL을 확인할 수 없습니다.";
 "Country or region" = "국가 또는 지역";
 "Country: %@" = "국가: %@";
@@ -1021,7 +1022,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replace Thumbnails" = "미리보기 이미지 바꾸기";
 "Random Frame When No Thumbnail" = "미리보기가 없으면 임의의 프레임";
 "Show Original on Hover" = "마우스를 올리면 원본 표시";
-"Using DeArrow" = "DeArrow 사용";
+"Powered by DeArrow" = "DeArrow 제공";
 "Donate to DeArrow" = "DeArrow에 기부";
 "DeArrow: On" = "DeArrow: 켜짐";
 "DeArrow: Off" = "DeArrow: 꺼짐";

@@ -236,6 +236,7 @@
 "Converting %@…" = "Conversion de %@…";
 "Converting Rules" = "Conversion des règles";
 "Copy URL" = "Copier l'URL";
+"Copied" = "Copié";
 "Could not resolve URL from dropped item." = "Impossible de résoudre l'URL de l'élément déposé.";
 "Country or region" = "Pays ou région";
 "Country: %@" = "Pays : %@";
@@ -1021,7 +1022,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Replace Thumbnails" = "Remplacer les miniatures";
 "Random Frame When No Thumbnail" = "Image aléatoire sans miniature proposée";
 "Show Original on Hover" = "Afficher l’original au survol";
-"Using DeArrow" = "Utilise DeArrow";
+"Powered by DeArrow" = "Propulsé par DeArrow";
 "Donate to DeArrow" = "Faire un don à DeArrow";
 "DeArrow: On" = "DeArrow : activé";
 "DeArrow: Off" = "DeArrow : désactivé";

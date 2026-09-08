@@ -236,6 +236,7 @@
 "Converting %@…" = "Konwersja %@â¦";
 "Converting Rules" = "Konwertowanie reguł";
 "Copy URL" = "Kopiuj URL";
+"Copied" = "Skopiowano";
 "Could not resolve URL from dropped item." = "Nie udało się rozpoznać URL z upuszczonego elementu.";
 "Country or region" = "Kraj lub region";
 "Country: %@" = "Kraj: %@";
@@ -1021,7 +1022,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Replace Thumbnails" = "Zastępuj miniatury";
 "Random Frame When No Thumbnail" = "Losowa klatka, gdy brak miniatury";
 "Show Original on Hover" = "Pokaż oryginał po najechaniu";
-"Using DeArrow" = "Używa DeArrow";
+"Powered by DeArrow" = "Obsługiwane przez DeArrow";
 "Donate to DeArrow" = "Wesprzyj DeArrow";
 "DeArrow: On" = "DeArrow: wł.";
 "DeArrow: Off" = "DeArrow: wył.";

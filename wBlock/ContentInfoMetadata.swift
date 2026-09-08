@@ -59,6 +59,42 @@ nonisolated struct ContentInfoMetadata: Sendable {
     }
 }
 
+/// Copies a URL and briefly swaps its label to a checkmark so the tap is
+/// visibly acknowledged.
+struct CopyURLButton: View {
+    let url: URL
+    @State private var copied = false
+    @State private var resetTask: Task<Void, Never>?
+
+    var body: some View {
+        Button {
+            #if os(iOS)
+            UIPasteboard.general.string = url.absoluteString
+            #elseif os(macOS)
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(url.absoluteString, forType: .string)
+            #endif
+            withAnimation(.easeInOut(duration: 0.15)) { copied = true }
+            resetTask?.cancel()
+            resetTask = Task {
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeInOut(duration: 0.15)) { copied = false }
+            }
+        } label: {
+            if copied {
+                Label("Copied", systemImage: "checkmark")
+                    .foregroundStyle(.green)
+            } else {
+                Label("Copy URL", systemImage: "doc.on.doc")
+            }
+        }
+        .buttonStyle(.borderless)
+        .animation(.easeInOut(duration: 0.15), value: copied)
+        .accessibilityLabel(copied ? Text("Copied") : Text("Copy URL"))
+    }
+}
+
 struct InfoMetadataRow: View {
     let title: LocalizedStringKey
     let value: String

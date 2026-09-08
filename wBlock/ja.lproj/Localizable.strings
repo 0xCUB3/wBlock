@@ -236,6 +236,7 @@
 "Converting %@…" = "%@ を変換中...";
 "Converting Rules" = "ルールを変換中";
 "Copy URL" = "URLをコピー";
+"Copied" = "コピーしました";
 "Could not resolve URL from dropped item." = "ドロップされた項目から URL を解決できませんでした。";
 "Country or region" = "国または地域";
 "Country: %@" = "国: %@";
@@ -1021,7 +1022,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Replace Thumbnails" = "サムネイルを置き換える";
 "Random Frame When No Thumbnail" = "サムネイルがない場合はランダムなフレーム";
 "Show Original on Hover" = "ホバー時に元を表示";
-"Using DeArrow" = "DeArrowを使用";
+"Powered by DeArrow" = "DeArrow 提供";
 "Donate to DeArrow" = "DeArrowに寄付";
 "DeArrow: On" = "DeArrow: オン";
 "DeArrow: Off" = "DeArrow: オフ";

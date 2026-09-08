@@ -236,6 +236,7 @@
 "Converting %@…" = "%@ dönüştürülüyor…";
 "Converting Rules" = "Kurallar dönüştürülüyor";
 "Copy URL" = "URL'yi kopyala";
+"Copied" = "Kopyalandı";
 "Could not resolve URL from dropped item." = "Sürüklenen öğeden URL çözümlenemedi.";
 "Country or region" = "Ülke veya bölge";
 "Country: %@" = "Ülke: %@";
@@ -1020,7 +1021,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Replace Thumbnails" = "Kapakları değiştir";
 "Random Frame When No Thumbnail" = "Kapak resmi yoksa rastgele kare";
 "Show Original on Hover" = "Üzerine gelince orijinali göster";
-"Using DeArrow" = "DeArrow kullanılıyor";
+"Powered by DeArrow" = "DeArrow tarafından desteklenmektedir";
 "Donate to DeArrow" = "DeArrow'a bağış yap";
 "DeArrow: On" = "DeArrow: Açık";
 "DeArrow: Off" = "DeArrow: Kapalı";
