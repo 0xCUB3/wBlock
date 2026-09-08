@@ -56,10 +56,10 @@ public protocol UserStylePreprocessorBackend: Sendable {
 }
 
 public enum UserStylePreprocessorService {
-    public static let lessRevision = "less-4.9.0-wblock-1"
-    public static let sassRevision = "sass-scss-1.102.0-wblock-1"
+    public static let lessRevision = "less-4.9.1-wblock-1"
+    public static let sassRevision = "sass-scss-1.104.0-wblock-1"
     public static let stylusRevision = "stylus-0.64.0-wblock-2-bounded-offline"
-    public static let postCSSRevision = "postcss-8.5.26-postcss-nested-8.0.1-wblock-1"
+    public static let postCSSRevision = "postcss-8.5.28-postcss-nested-8.0.1-wblock-1"
     public static let maximumSourceBytes = 2 * 1024 * 1024
     public static let maximumOutputBytes = 10 * 1024 * 1024
 
@@ -174,7 +174,7 @@ private struct SassBackend: UserStylePreprocessorBackend {
         for variable in request.variables { variables[variable.name] = variable.value }
         let prepared = UserStyleCompiler.prepareSassSource(request.source, syntax: syntax)
         let css = try UserStyleCompiler.callJSONBridge(
-            resource: "wblock-sass-1.102.0.min", extension: "js", function: "wblockSassCompile",
+            resource: "wblock-sass-1.104.0.min", extension: "js", function: "wblockSassCompile",
             request: ["source": prepared.source, "syntax": syntax, "variables": variables],
             lineAdjustment: -variables.count
         )

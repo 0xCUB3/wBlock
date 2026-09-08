@@ -201,7 +201,7 @@ swiftc -parse-as-library -D DEBUG \
   wBlockCoreService/UserStyleRemoteImportInliner.swift \
   scripts/test_userstyle_parsing_and_matching.swift -o "$TMP/userstyle-parsing-matching"
 WBLOCK_LESS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/less.min.js" \
-WBLOCK_SASS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/sass/wblock-sass-1.102.0.min.js" \
+WBLOCK_SASS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/sass/wblock-sass-1.104.0.min.js" \
 WBLOCK_STYLUS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/stylus/stylus-jsc.js" \
 WBLOCK_POSTCSS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/postcss-nested/wblock-postcss-nested.js" \
   "$TMP/userstyle-parsing-matching"
@@ -213,7 +213,7 @@ swiftc -F "$CORE_PRODUCTS" -I "$CORE_PRODUCTS" -L "$CORE_PRODUCTS" \
   -framework wBlockCoreService -Xlinker -rpath -Xlinker "$CORE_PRODUCTS" \
   scripts/test_issue_511_packaged_compilers.swift -o "$TMP/packaged-compilers"
 WBLOCK_LESS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/less.min.js" \
-WBLOCK_SASS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/sass/wblock-sass-1.102.0.min.js" \
+WBLOCK_SASS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/sass/wblock-sass-1.104.0.min.js" \
 WBLOCK_STYLUS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/stylus/stylus-jsc.js" \
 WBLOCK_POSTCSS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/postcss-nested/wblock-postcss-nested.js" \
   "$TMP/packaged-compilers"

@@ -1,6 +1,6 @@
 # Offline PostCSS nested artifact
 
-This directory ships a fixed browser bundle containing exactly `postcss@8.5.26`, `postcss-nested@8.0.1`, and their pinned reachable dependencies. It is not an arbitrary PostCSS plugin runner.
+This directory ships a fixed browser bundle containing exactly `postcss@8.5.28`, `postcss-nested@8.0.1`, and their pinned reachable dependencies. It is not an arbitrary PostCSS plugin runner.
 
 The IIFE defines synchronous `wblockPostcssNested`. Pass a JSON string containing `{ "source": string, "variables": object }`; it returns a JSON string containing either `{ "css": string }` or `{ "error": { "name", "message", optional "line", "column" } }`. The app passes no arbitrary plugin or host object. PostCSS variables are not UserCSS variable interpolation.
 
@@ -16,5 +16,5 @@ Verify every file shipped from this directory with `shasum -a 256 -c SHA256SUMS-
 
 Direct package integrities:
 
-- postcss 8.5.26: `sha512-u82N74LFzG8ca+dD8puPnplTXoGH4fTPpVGuIbt36G3qvNlkvfD0lEAZSxaly3KX8TS/L1A1gsCEmvKmBcVbkQ==`
+- postcss 8.5.28: `sha512-RRuzqDtt5Y9h3quz5hWhK+TPnsmVs6WwSU6LkJMeY4HstUEDuYTG8UJSdawMRzmzAtV+KEoG8N3Qg2qLy5vM/A==`
 - postcss-nested 8.0.1: `sha512-PvSIwDVh1NTw939iu4FBK+oeZfSm0cbErFAjXCTPiStammzobBNE2SiQNezy8Xp+Oud2uLXaLpTauv3UdxWjbQ==`

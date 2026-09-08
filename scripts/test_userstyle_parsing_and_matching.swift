@@ -7,7 +7,7 @@ struct UserStyleParsingAndMatchingTests {
 #if DEBUG
         let resources = [
             ("less.min", "WBLOCK_LESS_BUNDLE"),
-            ("wblock-sass-1.102.0.min", "WBLOCK_SASS_BUNDLE"),
+            ("wblock-sass-1.104.0.min", "WBLOCK_SASS_BUNDLE"),
             ("stylus-jsc", "WBLOCK_STYLUS_BUNDLE"),
             ("wblock-postcss-nested", "WBLOCK_POSTCSS_BUNDLE")
         ]

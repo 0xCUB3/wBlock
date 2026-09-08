@@ -6,9 +6,9 @@ The Worker runs in WebKit's WebContent process, which keeps compiler failure sep
 
 | Backend | Exact revision | Runtime | Size | SHA-256 |
 | --- | --- | --- | ---: | --- |
-| Less | 4.9.0 | `less.min.js` | 158,891 | `59c1ed0a6f51215a702b3b4095bf9f296c67d5c1610f82b95d82991c3c3f3082` |
-| Sass / SCSS | 1.102.0 | `sass/wblock-sass-1.102.0.min.js` | 3,277,321 | `a575120ee471de3fc9f8ddad036f4296de483ec312daf960bdda8f289582d6c8` |
-| PostCSS + nested | 8.5.26 + 8.0.1 | `postcss-nested/wblock-postcss-nested.js` | 125,669 | `68709da6d84de1838dfde79a68b0451f242eb4f2fa60a0b2f38fcb0a79f1d60e` |
+| Less | 4.9.1 | `less.min.js` | 158,911 | `4283b275378371c38b8dc1cc1d2d683947b441aa875e1d9716e922e2cff34977` |
+| Sass / SCSS | 1.104.0 | `sass/wblock-sass-1.104.0.min.js` | 3,279,821 | `ef5db10a0eb58fd8fbb2027f476d27197118c6280e2669996c5f43df7b6f305f` |
+| PostCSS + nested | 8.5.28 + 8.0.1 | `postcss-nested/wblock-postcss-nested.js` | 125,732 | `42d84b46d040387ef527b87b4b1a86d5fbbafb90cb0de63cbdd2a3d668c1d0f9` |
 | Stylus | 0.64.0, bounded offline | `stylus/stylus-jsc.js` | 428,606 | `b512616bb0de26ba1e92e45e03cb1144cb1facbad23304685c2494e7f8ef127b` |
 
 The Sass bridge supports SCSS and indented Sass, variables, nesting, and mixins. Sass `@import`, `@use`, and `@forward` are rejected. Stylus embeds its pinned standard library and supports typed globals, nesting, mixins, and ordinary CSS URLs; imports, plugins, file-backed helpers, and source maps are rejected. PostCSS is deliberately the pinned `postcss-nested` plugin only. Less imports and inline JavaScript are disabled, while ordinary CSS imports remain in generated CSS.
