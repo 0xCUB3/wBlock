@@ -641,33 +641,22 @@ private actor ProtobufDiskStore {
                 }
 
                 let quarantineURL = dataURL.appendingPathExtension("corrupt")
-                if fileExists(at: quarantineURL) {
-                    try fileManager.removeItem(at: quarantineURL)
+                // Copy the corrupt bytes, never remove the canonical file before its
+                // atomic replacement. Process death at any boundary remains retryable.
+                try writeData(currentRawData, to: quarantineURL)
+                if !recoveredFromBackup {
+                    try writeData(replacementRawData, to: backupURL)
                 }
-                try fileManager.moveItem(at: dataURL, to: quarantineURL)
-                do {
-                    if !recoveredFromBackup {
-                        try writeData(replacementRawData, to: backupURL)
-                    }
-                    try writeData(replacementRawData, to: dataURL)
-                    let nextVersion = dataVersion(for: versionURL) + 1
-                    try writeDataVersion(nextVersion, to: versionURL)
-                    return (
-                        replacementData,
-                        replacementRawData,
-                        modificationDate(for: dataURL),
-                        nextVersion,
-                        recoveredFromBackup
-                    )
-                } catch {
-                    // A replacement write failure must not turn recoverable corruption
-                    // into a missing main file. Restore the quarantined original so a
-                    // later launch can retry the same validated recovery transaction.
-                    if !fileExists(at: dataURL), fileExists(at: quarantineURL) {
-                        try? fileManager.moveItem(at: quarantineURL, to: dataURL)
-                    }
-                    throw error
-                }
+                try writeData(replacementRawData, to: dataURL)
+                let nextVersion = dataVersion(for: versionURL) + 1
+                try writeDataVersion(nextVersion, to: versionURL)
+                return (
+                    replacementData,
+                    replacementRawData,
+                    modificationDate(for: dataURL),
+                    nextVersion,
+                    recoveredFromBackup
+                )
             }
         }
     }
@@ -690,6 +679,17 @@ private actor ProtobufDiskStore {
                 )
             }
 
+            // A missing canonical file can be an interrupted older recovery or
+            // first publication. Prefer the durable backup over fresh defaults.
+            if fileExists(at: backupURL) {
+                let backupRawData = try Data(contentsOf: backupURL)
+                if let decoded = try? AppDataDecodeCache.shared.decode(backupRawData) {
+                    try writeData(backupRawData, to: dataURL)
+                    let nextVersion = dataVersion(for: versionURL) + 1
+                    try writeDataVersion(nextVersion, to: versionURL)
+                    return (decoded.appData, backupRawData, modificationDate(for: dataURL), nextVersion, false)
+                }
+            }
             let rawData = try proposed.serializedData()
             AppDataDecodeCache.shared.remember(rawData, appData: proposed)
             try writeData(rawData, to: backupURL)
@@ -1967,8 +1967,7 @@ public class ProtobufDataManager: ObservableObject {
                     await sanitizeStoredTerminology()
                 }
             } else {
-                logger.info("📝 No existing data file, creating default data")
-                await createDefaultData()
+                try await loadOrInitializeMissingMain()
             }
             
         } catch {
@@ -1995,8 +1994,7 @@ public class ProtobufDataManager: ObservableObject {
                 versionURL: dataVersionFileURL,
                 fallbackAppData: makeDefaultData()
             ) else {
-                logger.info("📝 No valid backup available, creating default data")
-                _ = await createDefaultData()
+                try await loadOrInitializeMissingMain()
                 return
             }
 
@@ -2062,6 +2060,18 @@ public class ProtobufDataManager: ObservableObject {
         )
         if let storageResetError { lastError = storageResetError }
         return storageGeneration == resetGeneration && createdDefaults && storageResetError == nil
+    }
+
+    private func loadOrInitializeMissingMain() async throws {
+        let loaded = try await diskStore.initializeIfAbsent(
+            appData: makeDefaultData(), dataURL: dataFileURL,
+            backupURL: backupFileURL, versionURL: dataVersionFileURL
+        )
+        appData = loaded.appData
+        lastSavedData = loaded.rawData
+        lastLoadedDataFileModificationDate = loaded.modificationDate
+        lastLoadedDataVersion = loaded.version
+        lastError = nil
     }
 
     @discardableResult

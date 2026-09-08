@@ -74,6 +74,8 @@ compile_direct_test main-window-frame-restore \
 compile_direct_test userscript-update-operation \
   wBlockCoreService/UserScriptUpdateOperation.swift scripts/test_userscript_update_operation.swift
 
+compile_direct_test userscript-world-isolation scripts/test_userscript_world_isolation.swift
+
 # Core-module API tests. Source-only wBlock tests add their production source
 # explicitly; the remaining tests use the freshly built core framework.
 compile_core_test apply-progress-presentation scripts/test_apply_progress_presentation.swift \
@@ -146,6 +148,7 @@ compile_core_test filter-download-processor scripts/test_filter_download_process
 compile_core_test issue-508-backup scripts/test_issue_508_backup_userscript.swift
 compile_core_test backup-restore scripts/test_backup_restore.swift wBlock/BackupManager.swift
 compile_core_test protobuf-reliability scripts/test_protobuf_reliability.swift
+compile_core_test filter-update-work-lifetime scripts/test_filter_update_work_lifetime.swift
 compile_core_test issue-508-import-identity scripts/test_issue_508_import_identity.swift
 compile_core_test issue-508-oversized-import scripts/test_issue_508_oversized_import.swift
 compile_core_test issue-531-custom-exception-affinity scripts/test_issue_531_custom_exception_affinity.swift

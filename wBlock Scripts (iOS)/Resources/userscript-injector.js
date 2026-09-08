@@ -11,7 +11,6 @@ var WBLOCK_WARM_START_CACHE_KEY = '__wblock_warm_start_v1';
 var WBLOCK_WARM_START_LEASE_MS = 30 * 60 * 1000;
 var WBLOCK_WARM_START_MAX_SCRIPTS = 4;
 var WBLOCK_WARM_START_MAX_BYTES = 2 * 1024 * 1024;
-var WBLOCK_WARM_START_MAX_QUEUED_XHR = 32;
 
 // The warm-start cache lives in localStorage so a brand-new tab still gets the
 // before-first-paint injection of eligible document-start scripts; the old
@@ -70,6 +69,47 @@ function escapeForJS(str) {
         .replace(/\$\{/g, '\\${');
 }
 
+// Page hooks may share these playback preferences, never a general GM capability.
+const TUBE_SETTINGS_KEY = 'wblock.tubeCleaner.sponsorBlock';
+function isTubeCleanerPageScript(script) {
+    return script && script.isLocal === false
+        && script.sourceURL === 'https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js'
+        && /(^|\.)youtube\.com$/i.test(location.hostname) && location.protocol === 'https:'
+        && (script.grant || []).every(grant => ['gm_getvalue', 'gm_setvalue'].includes(String(grant).toLowerCase()));
+}
+function usesPageOnlyNetwork(script) {
+    const grants = (script.grant || []).map(grant => String(grant).toLowerCase());
+    // Loaders such as Vencord need page globals, but their public downloads do
+    // not need extension authority. Keep normal page CSP/CORS checks intact.
+    return script.injectInto !== 'content' && grants.includes('unsafewindow')
+        && grants.every(grant => ['none', 'unsafewindow', 'gm_info', 'gm.info', 'gm_xmlhttprequest', 'gm.xmlhttprequest'].includes(grant));
+}
+function requiresIsolatedGM(script) {
+    return !isTubeCleanerPageScript(script) && !usesPageOnlyNetwork(script) && (script.grant || []).some(grant => {
+        const name = String(grant).toLowerCase();
+        return name.startsWith('gm') && name !== 'gm_info' && name !== 'gm.info';
+    });
+}
+function boundedTubeSettings(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const keys = ['enabled', 'showNotice', 'minimumDuration', 'modes', 'excludedChannels'];
+    if (Object.keys(value).some(key => !keys.includes(key))) return null;
+    if (typeof value.enabled !== 'boolean' || typeof value.showNotice !== 'boolean'
+        || !Number.isFinite(value.minimumDuration) || value.minimumDuration < 0 || value.minimumDuration > 86400
+        || !value.modes || typeof value.modes !== 'object' || Array.isArray(value.modes)
+        || !Array.isArray(value.excludedChannels) || value.excludedChannels.length > 200) return null;
+    const categories = ['sponsor', 'selfpromo', 'interaction', 'intro', 'outro', 'preview', 'filler', 'music_offtopic'];
+    if (Object.keys(value.modes).some(key => !categories.includes(key))) return null;
+    const modes = {};
+    for (const key of categories) {
+        if (!['auto', 'ask', 'off'].includes(value.modes[key])) return null;
+        modes[key] = value.modes[key];
+    }
+    if (value.excludedChannels.some(id => typeof id !== 'string' || id.length >= 200)) return null;
+    return { enabled: value.enabled, showNotice: value.showNotice, minimumDuration: value.minimumDuration,
+        modes, excludedChannels: value.excludedChannels.slice() };
+}
+
 // Best-effort CSP nonce detection for script-tag injection on strict CSP pages
 var wBlockCachedCspNonce = null;
 function getCspNonce() {
@@ -110,9 +150,6 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.extensionContextAvailable = false;
             this.extensionContextUnavailableLogged = false;
             this.pendingNativeRequests = new Map(); // requestId -> { resolve, reject, timeoutId }
-            this.storageBridgeScriptIDs = new Map(); // bridgeId -> scriptId
-            this.xhrBridgeTokens = new Map(); // verified token -> native script ID
-            this.provisionalXhrTokens = new Map(); // warm-start token -> queued requests
             this.provisionalScripts = new Map(); // execution key -> provisional state
             this.pageMenuBridgeElements = new Map(); // bridgeId -> script element
             this.contentMenuCommandCallbacks = new Map(); // bridgeId -> Map(commandId, callback)
@@ -146,9 +183,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             // Bridge page-context GM storage writes through the extension/native layer.
             this.setupStorageBridge();
 
-            // Bridge for GM_xmlhttpRequest: page-context scripts post messages here,
-            // and we forward them through the background/native layer (CORS-free).
-            this.setupXhrBridge();
+            // Privileged GM calls never arrive over page events.
 
             // Warm starts are quarantined. Page-world payloads retain their existing
             // page-authority behavior; content-world candidates need native integrity
@@ -169,10 +204,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
             // execution keys stay intact so scripts are never hot-run twice.
             const generation = ++this.documentStartRequestGeneration;
             this.pendingScripts = [];
-            this.xhrBridgeTokens.clear();
-            this.provisionalXhrTokens.clear();
             this.provisionalScripts.clear();
-            this.storageBridgeScriptIDs.clear();
+            this.tubeCleanerSettingsScript = null;
+            this.pendingTubeSettings = null;
             this.scriptPayloadPromises.clear();
             this.warmStartValidationPromises.clear();
             this.injectingScripts.clear();
@@ -246,92 +280,40 @@ if (window.wBlockUserscriptInjectorHasRun) {
             });
         }
 
-        setupXhrBridge() {
-            window.addEventListener('message', (event) => {
-                if (event.source !== window) return;
-                const data = event.data;
-                if (!data || data.type !== 'wblock-gm-xhr-request') return;
-                if (typeof data.bridgeId !== 'string') return;
-                if (this.provisionalXhrTokens.has(data.bridgeId)) {
-                    const queue = this.provisionalXhrTokens.get(data.bridgeId);
-                    if (queue.length < WBLOCK_WARM_START_MAX_QUEUED_XHR) queue.push(data);
-                    return;
-                }
-                if (!this.xhrBridgeTokens.has(data.bridgeId)) {
-                    wBlockWarn('[wBlock] Ignoring GM_xmlhttpRequest without a valid bridge token');
-                    return;
-                }
-                this.handleXhrBridgeRequest(data);
-            });
-        }
-
-        handleXhrBridgeRequest(data) {
-            const { id, url, method, headers, body, anonymous, responseType, timeout, redirect, overrideMimeType, portName } = data;
-
-            this.proxyXhr({ scriptId: this.xhrBridgeTokens.get(data.bridgeId), url, method, headers, body, anonymous, responseType, timeout, redirect, overrideMimeType, portName })
-                .then(result => {
-                    if (result && result.error) throw new Error(result.error);
-                    window.postMessage({
-                        type: 'wblock-gm-xhr-response',
-                        id: id,
-                        success: true,
-                        result: result
-                    }, '*');
-                })
-                .catch(error => {
-                    window.postMessage({
-                        type: 'wblock-gm-xhr-response',
-                        id: id,
-                        success: false,
-                        error: error.message || String(error)
-                    }, '*');
-                });
-        }
-
         setupStorageBridge() {
-            window.addEventListener('message', (event) => {
-                if (event.source !== window) return;
-                const data = event.data;
-                if (!data || (data.type !== 'wblock-gm-storage-set' && data.type !== 'wblock-gm-storage-delete')) return;
-                if (typeof data.bridgeId !== 'string' || typeof data.key !== 'string' || typeof data.requestId !== 'string') return;
-                if (data.type === 'wblock-gm-storage-set' && typeof data.rawValue !== 'string') return;
-
-                const scriptId = this.storageBridgeScriptIDs.get(data.bridgeId);
-                if (!scriptId) return;
-
-                const action = data.type === 'wblock-gm-storage-set'
-                    ? 'setUserScriptStorageValue'
-                    : 'deleteUserScriptStorageValue';
-                const payload = {
-                    scriptId: scriptId,
-                    key: data.key
-                };
-
-                if (action === 'setUserScriptStorageValue') {
-                    payload.rawValue = data.rawValue;
-                }
-
-                this.sendNativeRequest(action, payload)
-                    .then((result) => {
-                        const ok = !!result && result.ok !== false;
-                        window.postMessage({
-                            type: 'wblock-gm-storage-result',
-                            requestId: data.requestId,
-                            success: ok,
-                            error: ok ? undefined : ((result && result.error) || 'Failed to persist GM storage change')
-                        }, '*');
-                    })
-                    .catch((error) => {
-                        const errorMessage = error && error.message ? error.message : String(error);
-                        wBlockWarn('[wBlock] Failed to persist GM storage change:', errorMessage);
-                        window.postMessage({
-                            type: 'wblock-gm-storage-result',
-                            requestId: data.requestId,
-                            success: false,
-                            error: errorMessage
-                        }, '*');
-                    });
+            this.tubeCleanerSettingsScript = null;
+            this.pendingTubeSettings = null;
+            this.tubeSettingsWriting = false;
+            window.addEventListener('message', event => {
+                if (event.source !== window || !event.data || event.data.type !== 'wblock:tube-preferences') return;
+                const script = this.tubeCleanerSettingsScript;
+                if (!script || !isTubeCleanerPageScript(script)) return;
+                const settings = boundedTubeSettings(event.data.settings);
+                if (!settings) return;
+                // This preference is intentionally page-writable, like localStorage.
+                // Coalesce floods; the page cannot choose an action, key or identity.
+                this.pendingTubeSettings = { script, settings, generation: this.documentStartRequestGeneration };
+                if (!this.tubeSettingsWriting) this.flushTubeSettings();
             });
+        }
+
+        async flushTubeSettings() {
+            this.tubeSettingsWriting = true;
+            try {
+                while (this.pendingTubeSettings) {
+                    const { script, settings, generation } = this.pendingTubeSettings;
+                    this.pendingTubeSettings = null;
+                    if (generation !== this.documentStartRequestGeneration) continue;
+                    try {
+                        await this.sendNativeRequest('setUserScriptStorageValue', {
+                            scriptId: script.id, key: TUBE_SETTINGS_KEY, rawValue: JSON.stringify(settings)
+                        });
+                    } catch (_) { /* Local playback preferences still work offline. */ }
+                    await new Promise(resolve => setTimeout(resolve, 250));
+                }
+            } finally {
+                this.tubeSettingsWriting = false;
+            }
         }
 
         setupMenuCommandBridge() {
@@ -522,65 +504,14 @@ if (window.wBlockUserscriptInjectorHasRun) {
             });
         }
 
-        async proxyXhr(details) {
-            // Route the fetch through the background script (WebExtension) or
-            // native handler (Safari App Extension) to bypass page-level CORS.
-            if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.sendMessage) {
-                return await browser.runtime.sendMessage({
-                    action: 'gmXmlhttpRequest',
-                    scriptId: details.scriptId,
-                    url: details.url,
-                    method: details.method || 'GET',
-                    headers: details.headers || {},
-                    body: details.body || null,
-                    anonymous: !!details.anonymous,
-                    responseType: details.responseType || 'text',
-                    timeout: details.timeout || 0,
-                    redirect: details.redirect || 'follow',
-                    overrideMimeType: details.overrideMimeType || '',
-                    portName: details.portName || ''
-                });
-            }
 
-            if (typeof safari !== 'undefined' && safari.extension && safari.extension.dispatchMessage) {
-                return await new Promise((resolve, reject) => {
-                    const requestId = this.generateRequestId('gmxhr');
-                    const timeoutId = setTimeout(() => {
-                        this.pendingNativeRequests.delete(requestId);
-                        reject(new Error('GM_xmlhttpRequest timeout'));
-                    }, 30000);
-
-                    this.pendingNativeRequests.set(requestId, { resolve, reject, timeoutId });
-                    safari.extension.dispatchMessage('gmXmlhttpRequest', {
-                        requestId,
-                        scriptId: details.scriptId,
-                        pageURL: window.location.href,
-                        isTopFrame: window.top === window,
-                        url: details.url,
-                        method: details.method || 'GET',
-                        headers: details.headers || {},
-                        body: details.body || null,
-                        anonymous: !!details.anonymous,
-                        responseType: details.responseType || 'text',
-                        timeout: details.timeout || 0,
-                        redirect: details.redirect || 'follow',
-                        overrideMimeType: details.overrideMimeType || '',
-                        portName: details.portName || ''
-                    });
-                });
-            }
-
-            throw new Error('No messaging API available for GM_xmlhttpRequest proxy');
-        }
 
         generateRequestId(prefix) {
             return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         }
 
-        // Cryptographically strong, unguessable token for security-sensitive
-        // bridge IDs. Unlike generateRequestId (which only correlates a
-        // request/response pair), these secrets gate privileged bridges, so
-        // they must not be predictable by page scripts.
+        // Unique identifiers for popup commands and isolated runtime streams.
+        // These are not authentication for messages from the page.
         generateSecret(prefix) {
             const bytes = new Uint8Array(16);
             if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
@@ -841,10 +772,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
             if (script.runAt !== 'document-start'
                 || script.noframes === true && window !== window.top) return false;
             if (script.kind === 'style') return this.isStyleWarmStartEligible(script);
+            if (requiresIsolatedGM(script)) return false;
             const isRemote = script.isLocal === false && /^https:\/\//i.test(script.sourceURL || '');
             // Local page-world scripts may warm start too: the cache lives in
             // page-writable storage either way, cached page payloads execute with
-            // page authority only, and bridge privileges stay quarantined until
+            // page authority only and never acquire native privileges after
             // fingerprint reconciliation against the authoritative native response
             // (issue #537).
             const isPageWarmStart = script.injectInto === 'page' && (isRemote || script.isLocal === true);
@@ -861,7 +793,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 || script.resources && Object.keys(script.resources).length
                 || Object.prototype.hasOwnProperty.call(script, 'storageSnapshot')) return false;
             if (script.storageBridgeId || script.menuBridgeId || script.xhrBridgeId || script.portBridgeId) return false;
-            const safeGrants = new Set(['none', 'unsafewindow', 'gm_info', 'gm.info', 'gm_xmlhttprequest', 'gm.xmlhttprequest']);
+            const safeGrants = new Set(['none', 'unsafewindow', 'gm_info', 'gm.info']);
+            if (usesPageOnlyNetwork(script)) { safeGrants.add('gm_xmlhttprequest'); safeGrants.add('gm.xmlhttprequest'); }
             const grants = Array.isArray(script.grant) ? script.grant : [];
             return grants.every(grant => safeGrants.has(String(grant).toLowerCase()));
         }
@@ -981,12 +914,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 const fresh = authority.get(key);
                 if (fresh && this.isWarmStartEligible(fresh) && this.warmStartFingerprint(fresh) === provisional.fingerprint) {
                     this.provisionalScripts.delete(key);
-                    this.provisionalXhrTokens.delete(provisional.token);
-                    this.xhrBridgeTokens.set(provisional.token, fresh.id);
-                    for (const request of provisional.queue) this.handleXhrBridgeRequest(request);
+                    // Cached page code never gains GM authority, even after reconciliation.
                 } else {
                     this.provisionalScripts.delete(key);
-                    this.provisionalXhrTokens.delete(provisional.token);
+                    if (fresh && requiresIsolatedGM(fresh)) this.injectedScripts.delete(key);
                 }
             }
         }
@@ -1014,7 +945,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     this.reconcileWarmStart(scripts);
                     // Page-world warm starts have only page authority. Dark Reader's
                     // content-world cache must pass local and native digest checks first.
-                    // Fresh reconciliation is still required before bridge privileges are released.
+                    // Reconciliation never promotes page code to native GM authority.
                     this.persistWarmStartScripts(scripts);
                     this.enableReturnYouTubeDislikePrefetch(scripts);
                     if (scripts.length === 0) wBlockLog('[wBlock] No userscripts found in getUserScripts response.');
@@ -1100,7 +1031,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     }
 
                     if (message && message.type === 'wblock:gm-port-message') {
-                        window.postMessage(message, '*');
+                        // Isolated wrappers receive this directly from runtime.onMessage.
                         return Promise.resolve({ ok: true });
                     }
 
@@ -1355,19 +1286,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
             const warmStart = script.__wblockWarmStart === true;
             if (warmStart) {
                 // The warm-start cache belongs to the page. Strip every bridge field
-                // before the first await so a fast native reply can only authorize
-                // the fresh token created by this isolated-world engine.
+                // before the first await. Cached page code receives no native capability.
                 delete script.storageBridgeId;
                 delete script.menuBridgeId;
                 delete script.xhrBridgeId;
                 delete script.portBridgeId;
                 delete script.storageSnapshot;
-                script.xhrBridgeId = this.generateSecret('warm-xhr');
-                const queue = [];
-                this.provisionalXhrTokens.set(script.xhrBridgeId, queue);
                 this.provisionalScripts.set(executionKey, {
-                    token: script.xhrBridgeId,
-                    queue,
                     fingerprint: this.warmStartFingerprint(script)
                 });
             }
@@ -1375,20 +1300,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 const fullScript = await this.ensureScriptPayload(script);
                 if (generation !== this.documentStartRequestGeneration) return;
                 if (warmStart) fullScript.storageSnapshot = {};
-                if (!warmStart && fullScript.id && !fullScript.storageBridgeId) {
-                    fullScript.storageBridgeId = this.generateSecret('gmstorage');
-                    this.storageBridgeScriptIDs.set(fullScript.storageBridgeId, fullScript.id);
-                }
                 if (!warmStart && fullScript.id && !fullScript.menuBridgeId) {
                     fullScript.menuBridgeId = this.generateSecret('gmmenu');
-                }
-                // Every script gets an unguessable token that authorizes its
-                // GM_xmlhttpRequest calls. The page-context bridge below only
-                // honors requests carrying a known token, so arbitrary page
-                // scripts cannot borrow the extension's CORS-free network access.
-                if (!warmStart && !fullScript.xhrBridgeId) {
-                    fullScript.xhrBridgeId = this.generateSecret('gmxhr');
-                    this.xhrBridgeTokens.set(fullScript.xhrBridgeId, fullScript.id);
                 }
                 // Token used to namespace this script's GM runtime ports so other
                 // page scripts cannot guess the channel name and spoof port
@@ -1397,7 +1310,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     fullScript.portBridgeId = this.generateSecret('gmport');
                 }
 
-                const injectInto = fullScript.injectInto || 'page';
+                const injectInto = requiresIsolatedGM(fullScript) ? 'content' : (fullScript.injectInto || 'page');
+                if (injectInto !== 'content') {
+                    // No secret, arbitrary storage snapshot or native capability enters MAIN.
+                    delete fullScript.storageBridgeId;
+                    delete fullScript.xhrBridgeId;
+                    delete fullScript.portBridgeId;
+                }
                 wBlockLog(`[wBlock] Injecting userscript: ${fullScript.name} (mode: ${injectInto})`);
 
                 // Page-world injection requires an element parent. Start fetching
@@ -1415,11 +1334,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
                 if (generation !== this.documentStartRequestGeneration) return;
                 // Warm-start page scripts are quarantined: execute their cached page
-                // payload before native validation, but do not release any bridge
-                // privilege until authoritative reconciliation succeeds.
+                // payload before native validation, permanently without native GM authority.
                 if (!warmStart || injectInto === 'content') {
                     const validated = await this.validateScriptForExecution(fullScript);
                     if (generation !== this.documentStartRequestGeneration || !validated) return;
+                }
+                if (!warmStart && injectInto !== 'content' && isTubeCleanerPageScript(fullScript)) {
+                    this.tubeCleanerSettingsScript = fullScript;
                 }
                 if (injectInto === 'content') {
                     // Execute directly in content script context (CSP-safe)
@@ -1565,7 +1486,16 @@ if (window.wBlockUserscriptInjectorHasRun) {
         wrapUserScript(script, context = 'page') {
             // Serialize resources and shared storage state for injection
             const resourcesJSON = script.resources ? JSON.stringify(script.resources) : '{}';
-            const storageSnapshotJSON = script.storageSnapshot ? JSON.stringify(script.storageSnapshot) : '{}';
+            let pageSettings = null;
+            if (context !== 'content' && isTubeCleanerPageScript(script)) {
+                try {
+                    const parsed = boundedTubeSettings(JSON.parse((script.storageSnapshot || {})[TUBE_SETTINGS_KEY]));
+                    if (parsed) pageSettings = JSON.stringify(parsed);
+                } catch (_) { /* No arbitrary stored value is exposed to the page. */ }
+            }
+            const storageSnapshotJSON = context === 'content'
+                ? JSON.stringify(script.storageSnapshot || {})
+                : JSON.stringify(pageSettings ? { [TUBE_SETTINGS_KEY]: pageSettings } : {});
             const isContentContext = context === 'content';
             const exposePageGlobals = !isContentContext && script.name === 'AdGuard Popup Blocker';
             const exposeGMGlobals = isContentContext || exposePageGlobals;
@@ -1688,7 +1618,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             onMessage: onMessage,
             onDisconnect: onDisconnect,
             postMessage: function(message) {
-                window.postMessage({ type: 'wblock:gm-port-post-message', portName: channelName, message }, '*');
+                // These streaming ports are receive-only; page events are never a transport.
             },
             disconnect: function() {
                 const ports = runtimePorts.get(channelName);
@@ -1711,12 +1641,14 @@ if (window.wBlockUserscriptInjectorHasRun) {
         return true;
     };
 
-    window.addEventListener('message', (event) => {
-        if (event.source !== window) return;
-        const data = event.data;
-        if (!data || data.type !== 'wblock:gm-port-message') return;
-        deliverRuntimePortMessage(data.portName || '', data.message);
-    });
+    ${isContentContext ? `
+    if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.onMessage) {
+        browser.runtime.onMessage.addListener((data) => {
+            if (!data || data.type !== 'wblock:gm-port-message') return;
+            deliverRuntimePortMessage(data.portName || '', data.message);
+        });
+    }
+    ` : ''}
 
     const resolveUserscriptRequestURL = (url) => {
         try {
@@ -1926,6 +1858,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
             onFailure('No messaging API available for GM storage persistence');
         }
         ` : `
+        ${isTubeCleanerPageScript(script) ? `
+        if (kind === 'set' && key === 'wblock.tubeCleaner.sponsorBlock') {
+            try { window.postMessage({ type: 'wblock:tube-preferences', settings: JSON.parse(rawValue) }, '*'); }
+            catch (_) { /* Invalid preference updates have no native effect. */ }
+            return;
+        }
+        ` : ''}
         if (!storageBridgeId) {
             if (typeof onFailure === 'function') {
                 onFailure('Missing GM storage bridge identifier');
@@ -2594,31 +2533,19 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
             return { abort: function() { wBlockLog('[wBlock] GM_xmlhttpRequest abort called'); onFail('GM_xmlhttpRequest aborted', 'onabort'); } };
             ` : `
-            // Page context: proxy through the content script via postMessage
-            const responseHandler = (event) => {
-                if (event.source !== window) return;
-                const msg = event.data;
-                if (!msg || msg.type !== 'wblock-gm-xhr-response' || msg.id !== requestId) return;
-                window.removeEventListener('message', responseHandler);
-
-                if (msg.success) { onResult(msg.result); }
-                else { onFail(msg.error); }
-            };
-            window.addEventListener('message', responseHandler);
-            window.postMessage({
-                type: 'wblock-gm-xhr-request',
-                id: requestId,
-                bridgeId: xhrBridgeId,
-                ...requestPayload
-            }, '*');
-
-            return {
-                abort: function() {
-                    window.removeEventListener('message', responseHandler);
-                    wBlockLog('[wBlock] GM_xmlhttpRequest abort called');
-                    onFail('GM_xmlhttpRequest aborted', 'onabort');
-                }
-            };
+            // MAIN has ordinary page network authority only. CSP and CORS still
+            // apply, and no extension credentials, ports or native headers exist.
+            const pageAbort = typeof AbortController === 'function' ? new AbortController() : null;
+            Promise.resolve().then(() => fetch(requestPayload.url, {
+                method, headers: requestPayload.headers, body: requestPayload.body,
+                mode: 'cors', credentials: requestPayload.anonymous ? 'omit' : 'same-origin',
+                redirect: requestPayload.redirect, signal: pageAbort ? pageAbort.signal : undefined
+            })).then(async response => onResult({
+                status: response.status, statusText: response.statusText,
+                responseText: await response.text(), finalUrl: response.url,
+                responseHeaders: Array.from(response.headers.entries()).map(pair => pair.join(': ')).join('\\r\\n')
+            })).catch(error => onFail(error.message || String(error)));
+            return { abort: function() { if (pageAbort) pageAbort.abort(); onFail('GM_xmlhttpRequest aborted', 'onabort'); } };
             `}
         },
 

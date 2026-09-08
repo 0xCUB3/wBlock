@@ -106,12 +106,13 @@ enum AppAppearance: String {
             filterSelections: [],
             customFilterLists: [.init(name: "Backup title", url: url, category: FilterListCategory.privacy.rawValue,
                                      isSelected: true, description: "Backup description", content: "||backup.example^\n")],
-            whitelistedDomains: [], zapperRules: ["example.com": [".ad"]], disabledZapperDomains: [],
+            whitelistedDomains: [], zapperRules: ["example.com": [".ad"]], disabledZapperDomains: ["disabled-only.example"],
             userScripts: [scriptEntry])
         let decoded = try BackupManager.importData(from: BackupManager.exportData(backup: backup))
         precondition(decoded.userScripts[0].disabledHosts == [], "explicit empty state must round-trip")
         ProtobufDataManager.shared.disabledHosts = [script.id.uuidString: ["example.com"], "unrelated": ["keep.example"]]
-        ProtobufDataManager.shared.zapperDisabled = ["example.com": true, "unrelated.example": true]
+        ProtobufDataManager.shared.zapperDisabled = ["example.com": true, "unrelated.example": true, "disabled-only.example": false]
+        ProtobufDataManager.shared.zapper["disabled-only.example"] = [".local-ad"]
         try await BackupManager.restoreBackup(decoded, filterManager: manager)
         precondition(manager.filterLists.count == 1 && manager.filterLists[0].id == id)
         precondition(manager.filterLists[0].name == "Backup title")
@@ -124,6 +125,7 @@ enum AppAppearance: String {
         precondition(ProtobufDataManager.shared.disabledHosts["unrelated"] == ["keep.example"])
         precondition(ProtobufDataManager.shared.zapperDisabled["example.com"] == false)
         precondition(ProtobufDataManager.shared.zapperDisabled["unrelated.example"] == true)
+        precondition(ProtobufDataManager.shared.zapperDisabled["disabled-only.example"] == true)
 
         // Caller-level persistence failure must roll back transaction-owned inline
         // bytes, restore unchanged in-memory metadata, and leave Cloud tombstones alone.

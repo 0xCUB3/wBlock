@@ -954,7 +954,7 @@ public class UserScriptManager: ObservableObject {
         let diskScripts = dataManager.getUserScripts(includePersistedContent: true)
         let hydratedScripts = await hydrateUserScriptsFromDisk(
             diskScripts,
-            includeResources: false,
+            includeResources: true,
             hydrateDisabled: false
         )
         guard areUserScriptsEqual(userScripts, hydratedScripts) == false else { return }
@@ -978,7 +978,7 @@ public class UserScriptManager: ObservableObject {
         // Update content from stored files (do file I/O off main thread)
         var updatedScripts = await hydrateUserScriptsFromDisk(
             newUserScripts,
-            includeResources: false,
+            includeResources: true,
             hydrateDisabled: false
         )
         guard generation == dataManagerSyncGeneration else {

@@ -627,7 +627,8 @@ enum BackupManager {
         await ProtobufDataManager.shared.applyZapperRulesBatch(
             rulesByHost: backup.zapperRules,
             disabledByHost: Dictionary(uniqueKeysWithValues:
-                backup.zapperRules.keys.map { ($0, disabledZapperHosts.contains($0)) }
+                Set(backup.zapperRules.keys).union(disabledZapperHosts)
+                    .map { ($0, disabledZapperHosts.contains($0)) }
             )
         )
 

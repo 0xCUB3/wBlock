@@ -11,11 +11,37 @@ struct ProtobufReliabilityTests {
         defer { try? FileManager.default.removeItem(at: root) }
 
         await testDurableMigrationAndCorruptionRecovery(root: root.appendingPathComponent("recovery"))
+        await testMissingMainAndScriptTimestamp(root: root.appendingPathComponent("missing-main"))
         await testCorruptMainWithoutBackup(root: root.appendingPathComponent("no-backup-recovery"))
         await testMigrationFailureAndCanonicalPrecedence(root: root.appendingPathComponent("migration-failure"))
         await testThreeWayDeletionAndInsertion(root: root.appendingPathComponent("merge"))
         await testConditionalCloudDisabledHosts(root: root.appendingPathComponent("cloud-disabled-hosts"))
         print("PASS")
+    }
+
+    private static func testMissingMainAndScriptTimestamp(root: URL) async {
+        let suite = "test.wblock.protobuf.restart.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set("recover-me", forKey: "selectedBlockingLevel")
+        let first = await makeManager(root: root, standard: defaults, group: defaults)
+        await first.loadData()
+        let main = root.appendingPathComponent("wblock_data.pb")
+        let backup = root.appendingPathComponent("wblock_data_backup.pb")
+        let knownGood = try! Data(contentsOf: backup)
+        try! Data([0xff, 0x00, 0xff]).write(to: main, options: .atomic)
+        // Restart at the old implementation's quarantine/replace crash boundary.
+        try! FileManager.default.moveItem(at: main, to: main.appendingPathExtension("corrupt"))
+        let restarted = await makeManager(root: root, standard: defaults, group: defaults)
+        await restarted.loadData()
+        expect(restarted.selectedBlockingLevel == "recover-me", "missing main must recover backup settings")
+        expect((try! Data(contentsOf: backup)) == knownGood, "restart must not overwrite good backup with defaults")
+        var script = UserScript(name: "Dated", url: URL(string: "https://example.com/dated.user.js"))
+        script.lastUpdated = Date()
+        let saved = await restarted.updateUserScripts([script])
+        expect(saved, "dated script must persist")
+        expect(restarted.getUserScripts().first { $0.id == script.id }?.lastUpdated != nil,
+               "protobuf decoding must retain the persisted script date")
     }
 
     private static func testConditionalCloudDisabledHosts(root: URL) async {

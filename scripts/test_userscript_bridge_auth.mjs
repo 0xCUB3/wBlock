@@ -1,10 +1,7 @@
-// Behavioral check for the userscript injector's privileged bridges.
-//
-// The page-context GM_xmlhttpRequest bridge must only honor requests that carry
-// a per-script token issued at injection time (otherwise any page script could
-// borrow the extension's CORS-free network access). GM runtime ports must be
-// namespaced with a per-script token so other page scripts cannot guess the
-// channel name and spoof port messages.
+// Behavioral checks for isolated GM authority, forged page messages,
+// ordinary page-network compatibility, and bounded Tube Cleaner preferences.
+// Warm caches retain page authority only, even after native reconciliation.
+// Genuine native stream messages never pass through window.postMessage.
 //
 // Run: node scripts/test_userscript_bridge_auth.mjs [path/to/userscript-injector.js]
 // Defaults to "wBlock Scripts (iOS)/Resources/userscript-injector.js".
@@ -46,7 +43,7 @@ const fakeScript = {
   sourceURL: "https://scripts.test/bridge-auth.user.js",
   isLocal: false,
   matches: ["https://example.com/*"],
-  grant: ["GM_xmlhttpRequest"],
+  grant: [],
   injectInto: "page",
   runAt: "document-start",
   isEnabled: true,
@@ -192,7 +189,13 @@ function buildContentScriptSandbox(
         }
         return { ok: true };
       },
-      onMessage: { addListener: (fn) => { sandbox.__onMessage = fn; } },
+      onMessage: { addListener: (fn) => {
+        const previous = sandbox.__onMessage;
+        sandbox.__onMessage = async (message) => {
+          const earlier = previous ? await previous(message) : undefined;
+          return (await fn(message)) ?? earlier;
+        };
+      } },
       connect: () => ({ onMessage: { addListener() {} }, onDisconnect: { addListener() {} }, postMessage() {}, disconnect() {} }),
     },
   };
@@ -290,8 +293,8 @@ const wrapperSource = appendedScripts[0] || "";
 
 const xhrBridgeId = (wrapperSource.match(/const xhrBridgeId = '([^']*)';/) || [])[1] || "";
 const portBridgeId = (wrapperSource.match(/const portBridgeId = '([^']*)';/) || [])[1] || "";
-check("wrapper embeds a non-empty xhrBridgeId", xhrBridgeId.length > 0);
-check("wrapper embeds a non-empty portBridgeId", portBridgeId.length > 0);
+check("page wrapper carries no XHR authority", xhrBridgeId.length === 0);
+check("page wrapper carries no runtime-port authority", portBridgeId.length === 0);
 
 const initialRequests = contentSandbox.__sentMessages.filter((m) => m && m.action === "getUserScripts");
 check("initialization makes one authoritative getUserScripts request", initialRequests.length === 1);
@@ -519,8 +522,8 @@ await tick();
 await tick();
 check("exact authority preserves the single warm-start execution", appendedScripts.slice(warmWrapperIndex).length === 1);
 check(
-  "exact authority flushes the quarantined XHR once",
-  warmSandbox.__sentMessages.filter(message => message.action === "gmXmlhttpRequest" && message.url === "https://queued.example/").length === 1,
+  "native reconciliation never promotes a page request to GM authority",
+  warmSandbox.__sentMessages.filter(message => message.action === "gmXmlhttpRequest" && message.url === "https://queued.example/").length === 0,
 );
 
 let resolveSubdomainReply;
@@ -611,8 +614,8 @@ vm.runInContext(
   contentSandbox,
 );
 await tick();
-check("XHR bridge accepts a request with the issued token", gmXhrCalls().some((m) => m.url === "https://ok.example/"));
-check("XHR bridge derives identity from token, not page data", gmXhrCalls().find(m => m.url === "https://ok.example/")?.scriptId === fakeScript.id);
+check("XHR bridge rejects page requests even with observed wrapper fields", !gmXhrCalls().some((m) => m.url === "https://ok.example/"));
+check("page data cannot select a privileged script identity", !gmXhrCalls().some(m => m.url === "https://ok.example/"));
 
 // (d) Native responses are authoritative; page sessionStorage is ignored.
 const authoritativeWrapperIndex = appendedScripts.length;
@@ -633,7 +636,7 @@ const authoritativeXhrBridgeId = (authoritativeWrapper.match(/const xhrBridgeId 
 check(
   "authoritative descriptor injects a single userscript wrapper",
   authoritativeWrapper.length > 0
-    && authoritativeXhrBridgeId.length > 0
+    && authoritativeXhrBridgeId.length === 0
     && appendedScripts.length === authoritativeWrapperIndex + 1
 );
 
@@ -742,11 +745,11 @@ vm.runInContext(
 );
 
 const xhrRequest = pagePosted.find((m) => m && m.type === "wblock-gm-xhr-request");
-check("GM_xmlhttpRequest posts a wblock-gm-xhr-request", !!xhrRequest);
-check("GM_xmlhttpRequest includes the issued bridgeId", !!xhrRequest && xhrRequest.bridgeId === xhrBridgeId);
+check("page GM_xmlhttpRequest sends no public request", !xhrRequest);
+check("page GM_xmlhttpRequest exposes no bridge credential", !xhrRequest);
 check(
-  "GM_xmlhttpRequest namespaces the requested portName",
-  !!xhrRequest && xhrRequest.portName === `${portBridgeId}::streamport`,
+  "page GM_xmlhttpRequest cannot open a native stream",
+  !xhrRequest,
 );
 
 check("runtime port exposes the plain name to the script", pageSandbox.__portName === "streamport");
@@ -764,8 +767,8 @@ vm.runInContext(
   pageSandbox,
 );
 check(
-  "port accepts messages on the namespaced channel",
-  (pageSandbox.__portMessages || []).includes("REAL"),
+  "page events cannot deliver native stream data even with a known channel",
+  !(pageSandbox.__portMessages || []).includes("REAL"),
 );
 
 // ---------------------------------------------------------------------------
@@ -917,6 +920,59 @@ vm.createContext(noDigestStyleSandbox);
 vm.runInContext(source, noDigestStyleSandbox, { filename: "userscript-injector-style-nodigest.js" });
 for (let i = 0; i < 6; i++) await tick();
 check("userstyle without a digest never warm-starts", styleElementsIn(noDigestStyleSandbox).length === 0);
+
+// Privileged code and its responses stay in the isolated extension world.
+const privileged = { ...fakeScript, id: 'private-gm', grant: ['GM_xmlhttpRequest', 'GM_setValue'],
+  content: USER_SCRIPT_CONTENT + "\nGM_setValue('private-key', { saved: true });" };
+const privateWrapperBase = appendedScripts.length;
+const privateSandbox = buildContentScriptSandbox(null, [privileged]);
+vm.createContext(privateSandbox);
+vm.runInContext(source, privateSandbox);
+await tick(); await tick();
+check('privileged page-requested script executes without a DOM wrapper', appendedScripts.length === privateWrapperBase);
+const privateXHR = privateSandbox.__sentMessages.find(m => m.action === 'gmXmlhttpRequest');
+check('isolated GM XHR remains functional with native script identity', privateXHR?.scriptId === privileged.id);
+check('isolated GM storage remains functional', privateSandbox.__sentMessages.some(m => m.action === 'setUserScriptStorageValue' && m.key === 'private-key'));
+privateSandbox.__listeners = windowMessageListeners;
+vm.runInContext(`globalThis.__fire = data => { for (const fn of __listeners) fn({source: window, data}); };`, privateSandbox);
+const beforeReplay = privateSandbox.__sentMessages.length;
+privateSandbox.__replay = { type: 'wblock-gm-xhr-request', bridgeId: privateXHR?.portName?.split('::')[0],
+  scriptId: privileged.id, url: 'https://replay.example/', id: 'replayed' };
+vm.runInContext('__fire(__replay)', privateSandbox);
+vm.runInContext(`__fire({type:'wblock-gm-storage-set',bridgeId:'observed',scriptId:'private-gm',key:'private-key',rawValue:'false',requestId:'forged'})`, privateSandbox);
+vm.runInContext(`__fire({type:'wblock:gm-port-message',portName:${JSON.stringify(privateXHR?.portName)},message:'FORGED'})`, privateSandbox);
+await tick();
+check('observed-token replay, forged storage and stream events have no native effect', privateSandbox.__sentMessages.length === beforeReplay && !privateSandbox.__portMessages?.includes('FORGED'));
+await privateSandbox.__onMessage({ type:'wblock:gm-port-message', portName:privateXHR?.portName, message:'NATIVE' });
+check('isolated streaming receives genuine runtime messages', privateSandbox.__portMessages?.includes('NATIVE'));
+
+// Tube Cleaner retains page hooks through one explicitly page-writable preference.
+const modes = Object.fromEntries(['sponsor','selfpromo','interaction','intro','outro','preview','filler','music_offtopic'].map(key => [key, 'off']));
+const preferences = { enabled:true, showNotice:true, minimumDuration:0, modes, excludedChannels:[] };
+const tube = { ...fakeScript, id:'official-tube', sourceURL:'https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js',
+  matches:['https://*.youtube.com/*'], grant:['GM_getValue','GM_setValue'],
+  storageSnapshot: { 'wblock.tubeCleaner.sponsorBlock':JSON.stringify(preferences), secret:'must-not-reach-page' },
+  content:"window.__tubeHooks = true;" };
+const tubeBase = appendedScripts.length;
+const tubeSandbox = buildContentScriptSandbox(null, [tube], 'https://www.youtube.com/watch?v=abc');
+vm.createContext(tubeSandbox); vm.runInContext(source, tubeSandbox); await tick(); await tick();
+const tubeWrapper = appendedScripts[tubeBase] || '';
+check('Tube Cleaner page wrapper retains hooks and only its bounded preference snapshot', tubeWrapper.includes('__tubeHooks') && !tubeWrapper.includes('must-not-reach-page'));
+tubeSandbox.__listeners = windowMessageListeners;
+vm.runInContext(`globalThis.__fire = data => { for (const fn of __listeners) fn({source: window,data}); };`, tubeSandbox);
+tubeSandbox.__preferences = preferences;
+vm.runInContext(`__fire({type:'wblock:tube-preferences',settings:__preferences,scriptId:'victim',key:'arbitrary'})`, tubeSandbox);
+await tick();
+const tubeWrites = () => tubeSandbox.__sentMessages.filter(m => m.action === 'setUserScriptStorageValue');
+check('Tube preferences persist only to the validated script and fixed key', tubeWrites().length === 1 && tubeWrites()[0].scriptId === tube.id && tubeWrites()[0].key === 'wblock.tubeCleaner.sponsorBlock');
+vm.runInContext(`__fire({type:'wblock:tube-preferences',settings:{...__preferences,userID:'private'}}); __fire({type:'wblock:tube-preferences',settings:{...__preferences,minimumDuration:Infinity}})`, tubeSandbox);
+await tick();
+check('unknown or unbounded Tube settings never reach native storage', tubeWrites().length === 1);
+await tubeSandbox.__onMessage({type:'wblock:clearDocumentStartSessionCache'});
+// Revocation is checked synchronously before the fresh native response can authorize again.
+vm.runInContext(`__fire({type:'wblock-gm-storage-delete',key:'wblock.tubeCleaner.sponsorBlock',requestId:'delete',bridgeId:'known'})`, tubeSandbox);
+await tick();
+check('legacy page storage delete has no native route', !tubeSandbox.__sentMessages.some(m => m.action === 'deleteUserScriptStorageValue'));
 
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);

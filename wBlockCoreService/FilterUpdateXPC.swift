@@ -10,6 +10,25 @@ import Foundation
 import os.log
 
 #if os(macOS)
+import XPC
+
+/// Detached service work must own a transaction, not borrow the caller's connection.
+public enum FilterUpdateWorkLifetime {
+    public static func start(
+        acknowledge: () -> Void = {},
+        begin: () -> Void = { xpc_transaction_begin() },
+        end: @escaping @Sendable () -> Void = { xpc_transaction_end() },
+        operation: @escaping @Sendable () async -> Void
+    ) {
+        begin()
+        acknowledge()
+        Task {
+            defer { end() }
+            await operation()
+        }
+    }
+}
+
 @objc public protocol FilterUpdateProtocol {
     func updateFilters(_ reply: @escaping (Bool) -> Void)
     func startFilterUpdate(_ reply: @escaping (Bool) -> Void)

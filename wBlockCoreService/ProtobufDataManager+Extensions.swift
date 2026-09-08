@@ -264,6 +264,8 @@ extension ProtobufDataManager {
                 content: includePersistedContent ? protoData.content : ""
             )
             script.isEnabled = protoData.isEnabled
+            script.lastUpdated = protoData.lastUpdated > 0
+                ? Date(timeIntervalSince1970: TimeInterval(protoData.lastUpdated)) : nil
             script.description = protoData.description_p
             script.version = protoData.version
             script.matches = protoData.matches

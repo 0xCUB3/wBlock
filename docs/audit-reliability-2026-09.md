@@ -2,7 +2,7 @@
 
 This branch implements the actionable findings from the audit of `35834142`, on top of `ccb29f23`. Changes are split into ordinary commits for review in PR #780. The original main worktree and the sibling userscript repository are not modified.
 
-This is a record of implemented changes and their evidence, not a claim that the application is bug-free. In particular, the two unresolved investigations below are not represented as fixed.
+This is a record of implemented changes and their evidence, not a claim that the application is bug-free.
 
 ## Compatibility and the DNR limit correction
 
@@ -53,6 +53,12 @@ Cloud applies recheck local mutation revisions around suspended work. Per-script
 
 Inline restore failure tests cover rollback of transaction-owned bytes, preserving newer bytes, and surfacing failure instead of claiming successful restoration. Persistence outcome plumbing is checked at the caller rather than relying only on successful file writes.
 
+## Independent review corrections
+
+Corruption recovery copies the corrupt bytes before atomic canonical replacement, rather than creating a missing-main crash window. Missing-main initialization also recovers a valid backup under the file lock, including interrupted writes from older versions, without replacing it with defaults. A restart regression covers that exact on-disk state.
+
+Authoritative userscript refresh hydrates resource sidecars before comparison, and protobuf decoding restores `lastUpdated`. Backup restore includes hosts recorded only in the disabled-Zapper set, preserving unrelated sites. Isolated protobuf and production backup regressions cover timestamp decoding and disabled-only restoration.
+
 ## Dependency and tooling updates
 
 | Component | Before | After |
@@ -69,11 +75,15 @@ Compiler artifacts include updated provenance, checksums, and existing upstream 
 
 SafariConverterLib 4.3.0 and SwiftProtobuf 1.38.1 are unchanged. SafariConverterLib pins Swift Argument Parser 1.5.0 exactly, so this PR does not force an incompatible lockfile-only upgrade to that transitive dependency. Stylus and postcss-nested retain their current versions. Swift 6 language mode is not enabled as a cosmetic maintenance change.
 
-## Remaining investigations and validation limits
+## Security, service lifetime, and validation limits
 
-R01, MAIN-world privileged GM authority, remains unresolved. A browser-world experiment demonstrates that same-window messages are not secret across page/isolated worlds, but does not demonstrate a complete Safari exploit. Tube Cleaner explicitly needs page-world hooks plus GM storage; moving all privileged scripts into an isolated world would break existing behavior. A compatible sandbox/settings-bridge redesign and actual Safari integration tests are still required. Randomizing the same page-visible token is not a solution.
+R01 no longer relies on page-visible tokens. Scripts requiring native GM network or storage run in the isolated world, even when their descriptor requests page injection. Genuine GM calls and streaming responses use extension runtime messaging directly; page messages cannot invoke those operations. Cached page code never acquires native authority after reconciliation.
 
-R04, XPC work lifetime after an early acknowledgement/client disconnect, remains a lifecycle risk rather than a reproduced termination defect. No real service termination probe was executed, and the PR does not change that ownership protocol speculatively.
+Tube Cleaner retains its page hooks. Its only page-writable native projection is the bounded `wblock.tubeCleaner.sponsorBlock` playback-preference object: booleans, bounded duration, eight category modes and at most 200 bounded channel names. The isolated host fixes the script identity, action and key after native execution validation, coalesces writes, and rejects unknown fields. These preferences are deliberately public/page-writable, like the script's existing localStorage preferences; this channel provides no arbitrary storage, user IDs, credentials, networking or runtime ports.
+
+Page loaders requesting `unsafeWindow` and only GM XHR, such as Vencord, retain page execution but use ordinary page fetch under CSP/CORS, not extension networking. Other scripts needing both arbitrary native GM privileges and page globals must separate those responsibilities rather than inherit a privileged page bridge. Node regressions exercise genuine isolated calls, observed-token replay, forged storage/stream messages, warm-cache reconciliation and Tube preferences. A real WebKit `WKContentWorld` test verifies isolation and replay rejection with the shipped injector; it is not a full Safari extension integration test.
+
+R04 now has explicit service ownership. Both service entry points acquire a public libxpc transaction before starting detached work; early acknowledgement occurs only after acquisition. The task releases it in `defer` after the updater and final popup-status publication finish, so invalidating the client connection cannot make accepted work idle-exitable. The ordering regression checks acquisition, acknowledgement/disconnect, publication and release, and exercises the actual SDK transaction pair.
 
 No runtime validation on macOS 12.3 or iOS 15.4, live CloudKit account exchange, battery benchmark, or successful native visionOS build is claimed. Node harnesses model browser messaging; they are not substitutes for running the extension in the oldest supported Safari. Existing Swift 6 migration warnings remain outside this Swift 5-mode reliability patch.
 
