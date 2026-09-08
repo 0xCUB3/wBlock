@@ -34,8 +34,12 @@ extension ProtobufDataManager {
 
     public func updateFilterLists(_ filterLists: [FilterList]) async {
         let incomingIDs = Set(filterLists.map { $0.id.uuidString })
-        let snapshot = await latestAppDataSnapshot()
-        let deletedIDs = Set(snapshot.filterLists.map(\.id)).subtracting(incomingIDs)
+        // Deletions are relative to this process's local baseline, not the newest
+        // cross-process disk snapshot. Otherwise a concurrently inserted filter that
+        // this caller has never seen can be mistaken for a local deletion.
+        let localBaseline = appData.filterLists
+        let localBaselineIDs = Set(localBaseline.map(\.id))
+        let deletedIDs = localBaselineIDs.subtracting(incomingIDs)
         let protoFilterLists = filterLists.map { filter -> Wblock_Data_FilterListData in
             var protoFilterList = Wblock_Data_FilterListData()
             protoFilterList.id = filter.id.uuidString
@@ -59,7 +63,14 @@ extension ProtobufDataManager {
             return protoFilterList
         }
         _ = await updateDataImmediately(explicitlyDeletedFilterIDs: deletedIDs) { data in
-            data.filterLists = protoFilterLists
+            var merged = protoFilterLists
+            mergeFilterListsForPersistence(
+                &merged,
+                baseline: localBaseline,
+                persisted: data.filterLists,
+                deletedIDs: deletedIDs
+            )
+            data.filterLists = merged
         }
     }
 
