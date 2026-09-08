@@ -264,11 +264,33 @@ struct WBlockBackup: Codable, Sendable {
 
 /// Plans identity-preserving upserts before writing any inline content. The URL
 /// resolver is injected so restore behavior can be tested without app-group data.
+@MainActor
 enum BackupCustomFilterRestorer {
+    struct RestoreWriteError: LocalizedError {
+        let original: Error
+        let rollbackFailures: [Error]
+
+        var errorDescription: String? {
+            guard !rollbackFailures.isEmpty else { return original.localizedDescription }
+            return ([original] + rollbackFailures).map(\.localizedDescription).joined(separator: "\n")
+        }
+    }
+
     static func restore(
         _ entries: [WBlockBackup.CustomFilterEntry],
         into existing: [FilterList],
-        localFileURL: (FilterList) -> URL?
+        localFileURL: (FilterList) -> URL?,
+        readData: (URL) throws -> Data? = { url in
+            guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+            return try Data(contentsOf: url)
+        },
+        writeData: (Data, URL) throws -> Void = { data, url in
+            try data.write(to: url, options: .atomic)
+        },
+        removeFile: (URL) throws -> Void = { url in
+            guard FileManager.default.fileExists(atPath: url.path) else { return }
+            try FileManager.default.removeItem(at: url)
+        }
     ) throws -> [FilterList] {
         var lists = existing
         var writes: [URL: Data] = [:]
@@ -336,10 +358,36 @@ enum BackupCustomFilterRestorer {
                 lists.append(restored)
             }
         }
-        // Validate every definition before modifying files. Atomic replacement
-        // keeps each existing source usable if an individual write fails.
-        for (url, content) in writes {
-            try content.write(to: url, options: .atomic)
+        // This synchronous MainActor section does not interleave with app-side
+        // edits. Rollback is best effort and leaves externally changed bytes
+        // alone; any rollback I/O failures are returned with the original error.
+        let orderedWrites = writes.sorted { $0.key.path < $1.key.path }
+        var previous: [URL: Data?] = [:]
+        var published: [(url: URL, bytes: Data)] = []
+        do {
+            for (url, _) in orderedWrites {
+                previous[url] = try readData(url)
+            }
+            for (url, content) in orderedWrites {
+                published.append((url, content))
+                try writeData(content, url)
+            }
+        } catch {
+            let original = error
+            var rollbackFailures: [Error] = []
+            for item in published.reversed() {
+                do {
+                    guard try readData(item.url) == item.bytes else { continue }
+                    if let old = previous[item.url] ?? nil {
+                        try writeData(old, item.url)
+                    } else {
+                        try removeFile(item.url)
+                    }
+                } catch {
+                    rollbackFailures.append(error)
+                }
+            }
+            throw RestoreWriteError(original: original, rollbackFailures: rollbackFailures)
         }
         return lists
     }

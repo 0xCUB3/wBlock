@@ -147,6 +147,72 @@ enum AppAppearance: String {
         let restored = try BackupCustomFilterRestorer.restore([remoteEntry], into: [remote], localFileURL: { _ in nil })
         precondition(restored.count == 1 && restored[0].id == remoteID && restored[0].name == "Restored")
         precondition(restored[0].category == .privacy && restored[0].uniqueRuleCount == nil)
+
+        // A failure after the first inline publish must roll back every file and
+        // leave the caller's metadata untouched because restore never returned.
+        let id2 = UUID()
+        let url2 = "wblock://userlist/\(id2.uuidString)"
+        let original2 = FilterList(id: id2, name: "Second", url: URL(string: url2)!, category: .ads,
+                                   isCustom: true, description: "Second original")
+        let file2 = FilterListLoader().localFileURL(for: original2)!
+        try "||second-original.example^".write(to: file2, atomically: true, encoding: .utf8)
+        let originals = [original, original2]
+        let entries = [
+            WBlockBackup.CustomFilterEntry(name: "First restored", url: url, category: FilterListCategory.privacy.rawValue,
+                                           isSelected: true, description: "First restored", content: "||first-new.example^\n"),
+            WBlockBackup.CustomFilterEntry(name: "Second restored", url: url2, category: FilterListCategory.privacy.rawValue,
+                                           isSelected: true, description: "Second restored", content: "||second-new.example^\n"),
+        ]
+        var writes = 0
+        do {
+            _ = try BackupCustomFilterRestorer.restore(
+                entries,
+                into: originals,
+                localFileURL: FilterListLoader().localFileURL(for:),
+                writeData: { data, destination in
+                    writes += 1
+                    if writes == 2 { throw CocoaError(.fileWriteUnknown) }
+                    try data.write(to: destination, options: .atomic)
+                }
+            )
+            fatalError("second inline write failure must abort restore")
+        } catch {}
+        let firstAfterFailure = try String(contentsOf: file, encoding: .utf8)
+        let secondAfterFailure = try String(contentsOf: file2, encoding: .utf8)
+        precondition(firstAfterFailure == "||backup.example^\n")
+        precondition(secondAfterFailure == "||second-original.example^")
+        precondition(originals[0].name == "Edited" && originals[1].name == "Second",
+                     "failed file transaction must not publish restored metadata")
+
+        // Rollback must not clobber bytes published by a newer writer after our
+        // first write. The second injected write fails after replacing the first
+        // transaction-owned file with concurrent content.
+        var concurrentWriteCount = 0
+        var firstPublishedURL: URL?
+        do {
+            _ = try BackupCustomFilterRestorer.restore(
+                entries,
+                into: originals,
+                localFileURL: FilterListLoader().localFileURL(for:),
+                writeData: { data, destination in
+                    concurrentWriteCount += 1
+                    if concurrentWriteCount == 1 {
+                        firstPublishedURL = destination
+                        try data.write(to: destination, options: .atomic)
+                        return
+                    }
+                    if let firstPublishedURL {
+                        try Data("||concurrent-newer.example^".utf8).write(to: firstPublishedURL, options: .atomic)
+                    }
+                    throw CocoaError(.fileWriteUnknown)
+                }
+            )
+            fatalError("injected concurrent failure must abort restore")
+        } catch {}
+        guard let firstPublishedURL else { fatalError("first transaction write must occur") }
+        let concurrentContent = try String(contentsOf: firstPublishedURL, encoding: .utf8)
+        precondition(concurrentContent == "||concurrent-newer.example^",
+                     "rollback must not overwrite a concurrent newer file")
         print("PASS backup restore: metadata, source, identities, empty/legacy states, validation")
     }
 }
