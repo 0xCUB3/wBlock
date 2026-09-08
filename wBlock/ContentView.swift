@@ -2852,6 +2852,13 @@ struct EditUserListView: View {
 /// Non-blocking replacement for the "No Updates Found" alert on iOS.
 struct NoUpdatesToast: View {
     let dismiss: () -> Void
+    @GestureState(resetTransaction: Transaction(animation: .spring(response: 0.3, dampingFraction: 0.8)))
+    private var dragOffset: CGSize = .zero
+
+    static func shouldDismissDrag(_ translation: CGSize, predicted: CGSize) -> Bool {
+        abs(translation.width) >= 44 || translation.height <= -44
+            || abs(predicted.width) >= 120 || predicted.height <= -120
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -2874,9 +2881,22 @@ struct NoUpdatesToast: View {
         .padding(.horizontal, 16)
         .padding(.top, 8)
         .contentShape(Rectangle())
+        .offset(dragOffset)
+        .gesture(
+            DragGesture(minimumDistance: 10)
+                .updating($dragOffset) { value, offset, _ in
+                    offset = CGSize(width: value.translation.width, height: min(0, value.translation.height))
+                }
+                .onEnded { value in
+                    if Self.shouldDismissDrag(value.translation, predicted: value.predictedEndTranslation) {
+                        dismiss()
+                    }
+                }
+        )
         .onTapGesture(perform: dismiss)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
+        .accessibilityAction(.escape, dismiss)
         .task {
             do { try await Task.sleep(nanoseconds: 8_000_000_000) } catch { return }
             dismiss()
