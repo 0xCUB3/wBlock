@@ -16,7 +16,7 @@
     "description": "Label for the site-specific enable toggle in the popup."
   },
   "popup_element_zapper": {
-    "message": "Element zapper",
+    "message": "Element Zapper",
     "description": "Section title for the element zapper controls in the popup."
   },
   "popup_button_activate": {
