@@ -1,4 +1,5 @@
 import Foundation
+import wBlockCoreService
 
 func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
     if !condition() {
@@ -10,6 +11,23 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
 @main
 struct CloudSyncRemoteUserScriptTests {
     static func main() {
+        let notificationScript = UserScript(name: "Notification probe", url: URL(string: "https://example.com/probe.user.js"))
+        for origin: UserScriptMutationOrigin in [.local, .remoteSync] {
+            for isNew in [false, true] {
+                let info = UserScriptManagerNotificationKey.userInfo(
+                    for: notificationScript, origin: origin, isNewAddition: isNew
+                )
+                expect(
+                    UserScriptManagerNotificationKey.identifiesLocalAddition(info) == (origin == .local && isNew),
+                    "only an actual local insertion may create a re-add intent"
+                )
+            }
+        }
+        expect(!UserScriptManagerNotificationKey.identifiesLocalAddition(nil), "missing notification metadata is not an add intent")
+        expect(
+            !UserScriptManagerNotificationKey.identifiesLocalAddition([UserScriptManagerNotificationKey.isRemoteSync: false]),
+            "legacy update notifications without insertion evidence must not create an add intent"
+        )
         let retiredTinyShield =
             "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/a/tinyShield-ar.user.js"
         expect(
@@ -89,7 +107,8 @@ struct CloudSyncRemoteUserScriptTests {
         let mergedWithLocalReAdd =
             CloudSyncRemoteUserScriptReconciler.deletedURLsToMergeDuringUploadReconciliation(
                 remoteDeletedURLs: ["https://example.com/foo.user.js"],
-                localRemoteScriptURLs: ["https://example.com/foo.user.js"]
+                localRemoteScriptURLs: ["https://example.com/foo.user.js"],
+                locallyAddedURLs: ["https://example.com/foo.user.js"]
             )
         expect(
             mergedWithLocalReAdd.isEmpty,
@@ -141,7 +160,8 @@ struct CloudSyncRemoteUserScriptTests {
         let deletedToClearAfterLocalReAdd =
             CloudSyncRemoteUserScriptReconciler.deletedURLsToClearDuringUploadReconciliation(
                 existingDeletedURLs: ["https://example.com/foo.user.js"],
-                localRemoteScriptURLs: ["https://example.com/foo.user.js"]
+                localRemoteScriptURLs: ["https://example.com/foo.user.js"],
+                locallyAddedURLs: ["https://example.com/foo.user.js"]
             )
         expect(
             deletedToClearAfterLocalReAdd == ["https://example.com/foo.user.js"],
@@ -152,13 +172,66 @@ struct CloudSyncRemoteUserScriptTests {
             CloudSyncRemoteUserScriptReconciler.deletedURLsToClearDuringReconciliation(
                 existingDeletedURLs: ["https://example.com/foo.user.js"],
                 remoteRemoteScriptURLs: [],
-                localRemoteScriptURLs: ["https://example.com/foo.user.js"]
+                localRemoteScriptURLs: ["https://example.com/foo.user.js"],
+                locallyAddedURLs: ["https://example.com/foo.user.js"]
             )
         expect(
             deletedToClear == ["https://example.com/foo.user.js"],
             "re-adding a remote userscript locally should clear the local delete marker"
         )
 
+        let url = "https://example.com/previously-synced.user.js"
+        let deletedOnAnotherDevice: Set<String> = [url]
+        let unchangedLocal: Set<String> = [url]
+        let deletion = CloudSyncRemoteUserScriptReconciler.deletedURLsToMergeDuringRemoteApply(
+            remoteDeletedURLs: deletedOnAnotherDevice, remoteRemoteScriptURLs: [],
+            localRemoteScriptURLs: unchangedLocal
+        )
+        expect(deletion == [url], "an unchanged local copy must not veto a remote deletion")
+        let survivors = unchangedLocal.subtracting(deletion)
+        let uploadDeletion = CloudSyncRemoteUserScriptReconciler.deletedURLsToMergeDuringUploadReconciliation(
+            remoteDeletedURLs: deletion, localRemoteScriptURLs: survivors
+        )
+        expect(survivors.isEmpty && uploadDeletion == [url], "the follow-up upload must converge to deletion")
+        expect(
+            CloudSyncRemoteUserScriptReconciler.deletedURLsToMergeDuringUploadReconciliation(
+                remoteDeletedURLs: [url], localRemoteScriptURLs: [url]
+            ) == [url],
+            "an unrelated local setting change must not resurrect a remotely deleted script during upload"
+        )
+        expect(
+            CloudSyncRemoteUserScriptReconciler.deletedURLsToClearDuringUploadReconciliation(
+                existingDeletedURLs: [url], localRemoteScriptURLs: [url]
+            ).isEmpty,
+            "mere presence is not an explicit re-add"
+        )
+        expect(
+            CloudSyncRemoteUserScriptReconciler.deletedURLsToMergeDuringRemoteApply(
+                remoteDeletedURLs: [url], remoteRemoteScriptURLs: [], localRemoteScriptURLs: [url],
+                locallyAddedURLs: [url]
+            ).isEmpty,
+            "an explicit unsynced re-add must defeat a stale deletion"
+        )
+        let oldAdd = [url: "generation-1"]
+        let newAdd = [url: "generation-2"]
+        expect(
+            CloudSyncRemoteUserScriptReconciler.additionsAfterAcknowledging(
+                current: oldAdd, snapshot: oldAdd, syncedURLs: [url]
+            ).isEmpty,
+            "successful sync consumes the observed add intent"
+        )
+        expect(
+            CloudSyncRemoteUserScriptReconciler.additionsAfterAcknowledging(
+                current: newAdd, snapshot: oldAdd, syncedURLs: [url]
+            ) == newAdd,
+            "a re-add racing an older sync acknowledgement must survive"
+        )
+        expect(
+            CloudSyncRemoteUserScriptReconciler.additionsAfterAcknowledging(
+                current: oldAdd, snapshot: oldAdd, syncedURLs: []
+            ) == oldAdd,
+            "a payload missing the script cannot acknowledge its addition"
+        )
         print("PASS")
     }
 }

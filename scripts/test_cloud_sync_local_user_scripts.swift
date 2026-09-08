@@ -31,7 +31,19 @@ struct CloudSyncLocalUserScriptTests {
         expect(cloudSource.contains("let description: String?"), "CloudSync local payload description must be optional")
         expect(cloudSource.contains("description: script.description"), "CloudSync serialization must carry local descriptions")
         expect(cloudSource.contains("descriptionOverride: local.description ?? existing?.description"), "content updates must preserve legacy descriptions")
-        expect(cloudSource.contains("if let description = local.description"), "present descriptions must be applied")
+        var existingMetadata = UserScript(name: "Old name", url: nil, content: "// unchanged source")
+        existingMetadata.description = "Old description"
+        let renamed = CloudSyncLocalUserScript(name: "New name", content: existingMetadata.content,
+            isEnabled: true, description: nil, localImportIdentity: "stable-id")
+        let renameMetadata = CloudSyncLocalUserScriptReconciler.metadataOverrides(existing: existingMetadata, remote: renamed)
+        expect(renameMetadata.name == "New name", "metadata-only rename must use the remote name")
+        expect(renameMetadata.description == "Old description", "legacy absent description must preserve local metadata")
+        let clearedDescription = CloudSyncLocalUserScript(name: "New name", content: existingMetadata.content,
+            isEnabled: true, description: "", localImportIdentity: "stable-id")
+        expect(
+            CloudSyncLocalUserScriptReconciler.metadataOverrides(existing: existingMetadata, remote: clearedDescription).description.isEmpty,
+            "an explicit empty remote description must clear it"
+        )
 
         let bypass = CloudSyncLocalUserScript(name: "Bypass Paywalls Clean", content: "// script A", isEnabled: true)
         let other = CloudSyncLocalUserScript(name: "Other Script", content: "// script B", isEnabled: false)

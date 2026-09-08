@@ -14,7 +14,67 @@ struct ProtobufReliabilityTests {
         await testCorruptMainWithoutBackup(root: root.appendingPathComponent("no-backup-recovery"))
         await testMigrationFailureAndCanonicalPrecedence(root: root.appendingPathComponent("migration-failure"))
         await testThreeWayDeletionAndInsertion(root: root.appendingPathComponent("merge"))
+        await testConditionalCloudDisabledHosts(root: root.appendingPathComponent("cloud-disabled-hosts"))
         print("PASS")
+    }
+
+    private static func testConditionalCloudDisabledHosts(root: URL) async {
+        let standardSuite = "test.wblock.protobuf.cloudhosts.standard.\(UUID().uuidString)"
+        let groupSuite = "test.wblock.protobuf.cloudhosts.group.\(UUID().uuidString)"
+        let standard = UserDefaults(suiteName: standardSuite)!
+        let group = UserDefaults(suiteName: groupSuite)!
+        defer {
+            standard.removePersistentDomain(forName: standardSuite)
+            group.removePersistentDomain(forName: groupSuite)
+        }
+
+        let first = await makeManager(root: root, standard: standard, group: group)
+        await first.loadData()
+        let changedScript = UserScript(name: "Changed", url: URL(string: "https://example.com/changed.user.js"))
+        let unchangedScript = UserScript(name: "Unchanged", url: URL(string: "https://example.com/unchanged.user.js"))
+        let deletedScript = UserScript(name: "Deleted", url: URL(string: "https://example.com/deleted.user.js"))
+        let seeded = await first.updateUserScripts([changedScript, unchangedScript, deletedScript])
+        expect(seeded, "script fixtures must be persisted before host projection")
+        let changedID = changedScript.id.uuidString
+        let unchangedID = unchangedScript.id.uuidString
+        let deletedID = deletedScript.id.uuidString
+        let baseline = [
+            changedID: ["baseline-changed.example"],
+            unchangedID: ["baseline-unchanged.example"],
+        ]
+        await first.setAllUserScriptDisabledHosts(baseline)
+
+        let second = await makeManager(root: root, standard: standard, group: group)
+        await second.loadData()
+        await second.setUserScriptDisabledHosts(["popup-newer.example"], forScriptID: changedID)
+        await second.removeUserScript(withId: deletedScript.id)
+        await second.setUserScriptDisabledHosts(["unrelated.example"], forScriptID: "unrelated-key")
+
+        let cloudApplied = await first.applyCloudUserScriptDisabledHosts(
+            desired: [
+                changedID: ["remote-should-not-win.example"],
+                unchangedID: ["remote-applied.example"],
+                deletedID: ["must-not-resurrect.example"],
+            ],
+            baseline: baseline
+        )
+        expect(cloudApplied, "conditional Cloud disabled-host mutation should complete")
+
+        let verifier = await makeManager(root: root, standard: standard, group: group)
+        await verifier.loadData()
+        let final = verifier.getUserScriptDisabledHosts()
+        expect(final[changedID] == ["popup-newer.example"],
+               "concurrent persisted popup edit must survive conditional Cloud projection")
+        expect(final[unchangedID] == ["remote-applied.example"],
+               "unchanged baseline key should receive remote disabled-host projection")
+        expect(final[deletedID] == nil, "a script deleted during Cloud apply must not regain an orphan host entry")
+        expect(final["unrelated-key"] == ["unrelated.example"], "Cloud apply must preserve unrelated persisted keys")
+
+        let cleared = await verifier.applyCloudUserScriptDisabledHosts(
+            desired: [unchangedID: []], baseline: final
+        )
+        expect(cleared && verifier.getUserScriptDisabledHosts()[unchangedID] == nil,
+               "an explicit empty remote host list must clear an unchanged key")
     }
 
     private static func testCorruptMainWithoutBackup(root: URL) async {

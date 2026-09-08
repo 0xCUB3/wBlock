@@ -1521,6 +1521,39 @@ public class ProtobufDataManager: ObservableObject {
         }
     }
 
+    /// Applies Cloud Sync disabled-host changes per script without overwriting a newer
+    /// concurrent write. Each targeted key is changed only if the current persisted
+    /// value still matches the baseline captured before the remote apply began.
+    @MainActor
+    @discardableResult
+    public func applyCloudUserScriptDisabledHosts(
+        desired: [String: [String]],
+        baseline: [String: [String]]
+    ) async -> Bool {
+        guard !desired.isEmpty else { return true }
+        let succeeded = await updateDataImmediately { data in
+            let survivingIDs = Set(data.userScripts.map(\.id))
+            for (id, desiredHosts) in desired {
+                guard survivingIDs.contains(id) else { continue }
+                let currentHosts = data.userScriptDisabledHosts[id]?.hosts ?? []
+                let baselineHosts = baseline[id] ?? []
+                guard currentHosts == baselineHosts else { continue }
+
+                if desiredHosts.isEmpty {
+                    data.userScriptDisabledHosts.removeValue(forKey: id)
+                } else {
+                    var list = Wblock_Data_HostList()
+                    list.hosts = desiredHosts
+                    data.userScriptDisabledHosts[id] = list
+                }
+            }
+        }
+        if succeeded {
+            UserScriptManager.invalidateDocumentStartExecutionCache()
+        }
+        return succeeded
+    }
+
     // MARK: - Singleton
     public static let shared = ProtobufDataManager()
     
