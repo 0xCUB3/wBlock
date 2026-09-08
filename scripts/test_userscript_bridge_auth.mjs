@@ -227,6 +227,50 @@ check(
   rydSandbox.__fetches.includes("https://returnyoutubedislikeapi.com/votes?videoId=Z8CtXdQExek"),
 );
 
+// Chunked resources must carry the same page/revision authority as content.
+{
+  const chunkRequests = [];
+  const chunkedScript = {
+    ...fakeScript,
+    id: "chunked-script",
+    content: "",
+    resourceNames: ["payload"],
+    payloadRevision: 42,
+  };
+  const chunkSandbox = buildContentScriptSandbox(
+    null,
+    [chunkedScript],
+    "https://example.com/page",
+    [],
+    true,
+    async (message) => {
+      if (message.action === "getUserScripts") return { userScripts: [chunkedScript] };
+      if (message.action === "getUserScriptContentChunk" || message.action === "getUserScriptResourceChunk") {
+        chunkRequests.push({ ...message });
+        const text = message.action === "getUserScriptContentChunk" ? USER_SCRIPT_CONTENT : "resource-body";
+        return {
+          chunk: Buffer.from(text).toString("base64"),
+          totalChunks: 1,
+          payloadRevision: 42,
+        };
+      }
+      if (message.action === "validateUserScriptExecution") return { ok: true };
+      if (message.action === "gmXmlhttpRequest") return { status: 200, responseText: "OK", responseHeaders: "", finalUrl: message.url };
+      return { ok: true };
+    },
+  );
+  vm.createContext(chunkSandbox);
+  vm.runInContext(source, chunkSandbox, { filename: "userscript-injector-resource-chunks.js" });
+  await tick();
+  await tick();
+  const contentChunk = chunkRequests.find((message) => message.action === "getUserScriptContentChunk");
+  const resourceChunk = chunkRequests.find((message) => message.action === "getUserScriptResourceChunk");
+  check("content chunk carries page URL and payload revision",
+    contentChunk?.url === "https://example.com/page" && contentChunk?.payloadRevision === 42);
+  check("resource chunk carries the same page URL and payload revision",
+    resourceChunk?.url === "https://example.com/page" && resourceChunk?.payloadRevision === 42);
+}
+
 // Dispatch a message event from *inside* the content-script realm so that
 // event.source is the same `window` object the listeners compare against
 // (Node's vm wraps cross-realm objects, which would otherwise break the

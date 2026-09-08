@@ -11,7 +11,7 @@ set -euo pipefail
 # Usage: ./scripts/minify-extension-js.sh
 # Prerequisites: node (npx fetches the pinned esbuild on first run)
 
-ESBUILD_VERSION="0.28.1"
+ESBUILD_VERSION="0.28.2"
 # Deployment floor is iOS 15.4 / Safari 15.4; safari15 prevents esbuild from
 # emitting newer syntax while leaving the existing (already-supported) syntax
 # untouched.

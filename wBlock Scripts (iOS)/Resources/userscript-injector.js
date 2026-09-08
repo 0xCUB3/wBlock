@@ -727,7 +727,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 const resources = {};
                 for (const resourceName of resourceNames) {
                     resources[resourceName] = await this.fetchTextFromChunks('getUserScriptResourceChunk', {
-                        scriptId: script.id,
+                        ...chunkParams,
                         resourceName
                     });
                 }

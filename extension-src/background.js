@@ -26722,6 +26722,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         };
       }
     }
+    if (message && message.action === "wblock:noAutoplay:getState") {
+      const host = normalizeSiteDisabledHost(message.host);
+      if (!host) {
+        return { ok: false, error: "Missing host" };
+      }
+      try {
+        const response = await sendPriorityNativeMessage({ action: "getNoAutoplayState", host });
+        if (!response || typeof response.enabled !== "boolean" || typeof response.siteAllowed !== "boolean") {
+          throw new Error("Invalid No Autoplay state from native host");
+        }
+        return { ok: true, enabled: response.enabled, siteAllowed: response.siteAllowed };
+      } catch (error) {
+        return { ok: false, error: String(error && error.message ? error.message : error) };
+      }
+    }
     if (message && message.action === "wblock:getBlockingState") {
       const host = normalizeSiteDisabledHost(message.host);
       if (!host) {
@@ -26780,6 +26795,32 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         const errorMessage = String(error && error.message ? error.message : error);
         console.error(`[wBlock] Failed to fetch zapper rules via background bridge: ${errorMessage}`, error);
         return { ok: false, error: errorMessage, rules: [] };
+      }
+    }
+    if (message && message.action === "wblock:zapper:setDisabled") {
+      const hostname = typeof message.hostname === "string" ? message.hostname : "";
+      if (!hostname) return { ok: false, error: "Missing hostname" };
+      try {
+        const response = await sendQueuedNativeMessage({
+          action: "setSiteZapperDisabled",
+          hostname,
+          disabled: message.disabled === true
+        });
+        return response || { ok: false, error: "Empty response from native host" };
+      } catch (error) {
+        return { ok: false, error: String(error && error.message ? error.message : error) };
+      }
+    }
+    if (message && message.action === "wblock:zapper:broadcastReload") {
+      const tabId = sender && sender.tab ? sender.tab.id : undefined;
+      if (typeof tabId !== "number" || !browser.tabs || typeof browser.tabs.sendMessage !== "function") {
+        return { ok: false, error: "Missing tab" };
+      }
+      try {
+        await browser.tabs.sendMessage(tabId, { type: "wblock:zapper:reloadRules" });
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: String(error && error.message ? error.message : error) };
       }
     }
     if (message && message.action === "getUserScripts") {
@@ -27541,6 +27582,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const REMOVE_PARAM_DNR_CHUNK_SIZE = 250;
   const REMOVE_PARAM_DNR_STORAGE_KEY = "wblockRemoveParamDNRVersion";
   const REMOVE_PARAM_DNR_CHECK_INTERVAL_MS = 60000;
+  // Safari 16.4 added the runtime capacity constant. Older Safari versions
+  // supported dynamic DNR but did not expose their quota, so keep a
+  // conservative compatibility ceiling only for that legacy tier.
+  const REMOVE_PARAM_DNR_OLD_SAFARI_FALLBACK_LIMIT = 5000;
   let removeParamDNRInstallPromise = null;
   let removeParamDNRRulesCache = null;
   let removeParamDNRVersion = "";
@@ -27575,9 +27620,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (!chunk || chunk.ok !== true) {
         throw new Error(chunk && chunk.error ? chunk.error : `Failed to load removeparam DNR rules at ${offset}`);
       }
+      if (String(chunk.version || "") !== version) {
+        throw new Error(`Removeparam DNR rules changed while loading at ${offset}`);
+      }
       if (Array.isArray(chunk.rules)) {
         rules.push(...chunk.rules);
       }
+    }
+    if (rules.length !== count) {
+      throw new Error(`Removeparam DNR rule count mismatch: expected ${count}, got ${rules.length}`);
     }
     removeParamDNRRulesCache = rules;
     removeParamDNRVersion = version;
@@ -27589,36 +27640,91 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       rules
     };
   };
-  const getTrackedRemoveParamDNRRules = async (ruleIdBase, ruleIdLimit) => {
-    if (!browser.declarativeNetRequest || typeof browser.declarativeNetRequest.getDynamicRules !== "function") {
-      return [];
+  const legacySafariRemoveParamRule = rule => {
+    if (!rule || !rule.condition) return rule;
+    const condition = { ...rule.condition };
+
+    // Accept cached/generated rules from builds that used the newer spelling.
+    // `domains` is the compatibility representation wBlock now generates.
+    if (Array.isArray(condition.initiatorDomains)) {
+      condition.domains = condition.initiatorDomains;
+      delete condition.initiatorDomains;
     }
-    const dynamicRules = await browser.declarativeNetRequest.getDynamicRules();
-    return dynamicRules.filter(rule => rule && rule.id >= ruleIdBase && rule.id < ruleIdLimit);
+    if (Array.isArray(condition.excludedInitiatorDomains)) {
+      condition.excludedDomains = condition.excludedInitiatorDomains;
+      delete condition.excludedInitiatorDomains;
+    }
+
+    if (Array.isArray(condition.excludedRequestDomains) && condition.excludedRequestDomains.length > 0) {
+      // No exact pre-16.4 equivalent; dropping the scope would widen stripping.
+      return null;
+    }
+    if (Array.isArray(condition.requestDomains) && condition.requestDomains.length > 0) {
+      // A request-domain allow with no existing URL filter is safely expressible
+      // as one host-anchored URL filter (used by disabled-site protection).
+      if (rule.action && rule.action.type === "allow"
+          && !condition.urlFilter && condition.requestDomains.length === 1) {
+        condition.urlFilter = `||${condition.requestDomains[0]}^`;
+        delete condition.requestDomains;
+      } else {
+        // `$to=` redirect scopes have no exact legacy equivalent. Skip them
+        // rather than widening a removeparam rule beyond its intended target.
+        return null;
+      }
+    }
+    return { ...rule, condition };
+  };
+  const prepareRemoveParamRulesForRuntime = rules => {
+    const dnr = browser.declarativeNetRequest;
+    const reported = Number(dnr && dnr.MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES);
+    const modernConditionSupport = Number.isFinite(reported) && reported > 0;
+    const prepared = modernConditionSupport
+      ? rules.slice()
+      : rules.map(legacySafariRemoveParamRule).filter(Boolean);
+    return { prepared, reportedLimit: modernConditionSupport ? Math.floor(reported) : REMOVE_PARAM_DNR_OLD_SAFARI_FALLBACK_LIMIT };
   };
   const installRemoveParamDNRRules = async () => {
     if (!browser.declarativeNetRequest || typeof browser.declarativeNetRequest.updateDynamicRules !== "function") {
       return;
     }
     const loaded = await loadRemoveParamDNRRules();
-    const { version, count, ruleIdBase, ruleIdLimit, rules } = loaded;
+    const { version, ruleIdBase, ruleIdLimit, rules } = loaded;
     const stored = await browser.storage.local.get(REMOVE_PARAM_DNR_STORAGE_KEY);
-    const trackedRules = await getTrackedRemoveParamDNRRules(ruleIdBase, ruleIdLimit);
-    if (stored && stored[REMOVE_PARAM_DNR_STORAGE_KEY] === version && trackedRules.length === count) {
+    const dynamicRules = typeof browser.declarativeNetRequest.getDynamicRules === "function"
+      ? await browser.declarativeNetRequest.getDynamicRules()
+      : [];
+    const trackedRules = dynamicRules.filter(rule => rule && rule.id >= ruleIdBase && rule.id < ruleIdLimit);
+    const unrelatedDynamicCount = Math.max(0, dynamicRules.length - trackedRules.length);
+    const sessionRules = typeof browser.declarativeNetRequest.getSessionRules === "function"
+      ? await browser.declarativeNetRequest.getSessionRules()
+      : [];
+    const { prepared, reportedLimit } = prepareRemoveParamRulesForRuntime(rules);
+    const availableCapacity = Math.max(0, Math.min(
+      ruleIdLimit - ruleIdBase,
+      reportedLimit - unrelatedDynamicCount - sessionRules.length
+    ));
+    const protectiveRules = prepared.filter(rule => rule && rule.action && rule.action.type === "allow");
+    const redirectRules = prepared.filter(rule => !rule || !rule.action || rule.action.type !== "allow");
+    const installRules = protectiveRules.length > availableCapacity
+      ? []
+      : protectiveRules.concat(redirectRules.slice(0, availableCapacity - protectiveRules.length));
+    const storedState = stored && stored[REMOVE_PARAM_DNR_STORAGE_KEY];
+    if (storedState && typeof storedState === "object"
+        && storedState.version === version
+        && storedState.count === installRules.length
+        && trackedRules.length === installRules.length) {
       return;
     }
     const removeRuleIds = trackedRules.map(rule => rule.id);
-    if (removeRuleIds.length > 0) {
-      await browser.declarativeNetRequest.updateDynamicRules({ removeRuleIds });
-    }
-    const addChunk = async rules => {
-      if (!Array.isArray(rules) || rules.length === 0) return;
-      await browser.declarativeNetRequest.updateDynamicRules({ addRules: rules });
-    };
-    for (let offset = 0; offset < rules.length; offset += REMOVE_PARAM_DNR_CHUNK_SIZE) {
-      await addChunk(rules.slice(offset, offset + REMOVE_PARAM_DNR_CHUNK_SIZE));
-    }
-    await browser.storage.local.set({ [REMOVE_PARAM_DNR_STORAGE_KEY]: version });
+    // One API call is one atomic ruleset replacement: validation/quota failure
+    // leaves the previous complete set installed instead of a partial prefix.
+    await browser.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds,
+      addRules: installRules
+    });
+    await browser.storage.local.set({
+      [REMOVE_PARAM_DNR_STORAGE_KEY]: { version, count: installRules.length }
+    });
   };
   const removeParamURLFilterRegexCache = new Map();
   const dnrSeparatorPattern = "(?:[^A-Za-z0-9_.%-]|$)";
@@ -27683,6 +27789,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return false;
     }
     if (Array.isArray(condition.excludedInitiatorDomains) && condition.excludedInitiatorDomains.some(domain => domainMatches(host, domain))) {
+      return false;
+    }
+    if (Array.isArray(condition.domains) && condition.domains.length > 0) {
+      return false;
+    }
+    if (Array.isArray(condition.excludedDomains) && condition.excludedDomains.some(domain => domainMatches(host, domain))) {
       return false;
     }
     const regex = urlFilterToRegex(condition.urlFilter || "");

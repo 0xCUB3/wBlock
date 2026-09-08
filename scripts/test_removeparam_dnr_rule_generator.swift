@@ -68,8 +68,8 @@ struct RemoveParamDNRRuleGeneratorTests {
         let encoded = rules[6]
         expectEqual(encoded.action.redirect?.transform.queryTransform?.removeParams, ["$param"], "encoded param decoded")
         expectEqual(encoded.condition.resourceTypes, ["script"], "explicit resource type")
-        expectEqual(encoded.condition.initiatorDomains, ["foo.example"], "included domain")
-        expectEqual(encoded.condition.excludedInitiatorDomains, ["bar.example"], "excluded domain")
+        expectEqual(encoded.condition.domains, ["foo.example"], "included legacy-compatible domain")
+        expectEqual(encoded.condition.excludedDomains, ["bar.example"], "excluded legacy-compatible domain")
 
         let typed = rules[7]
         expectEqual(typed.condition.resourceTypes, ["xmlhttprequest"], "xmlhttprequest resource type")
@@ -93,13 +93,13 @@ struct RemoveParamDNRRuleGeneratorTests {
         expectEqual(scopedRegression.rules.count, 2, "valid scoped and unscoped rules generated")
 
         let validScoped = scopedRegression.rules[0]
-        expectEqual(validScoped.condition.initiatorDomains, ["good.example"], "valid included initiator domain")
-        expectEqual(validScoped.condition.excludedInitiatorDomains, ["excluded.example"], "valid excluded initiator domain")
+        expectEqual(validScoped.condition.domains, ["good.example"], "valid included legacy-compatible domain")
+        expectEqual(validScoped.condition.excludedDomains, ["excluded.example"], "valid excluded legacy-compatible domain")
         expectEqual(validScoped.condition.requestDomains, ["target.example"], "valid included request domain")
         expectEqual(validScoped.condition.excludedRequestDomains, ["not-target.example"], "valid excluded request domain")
 
         let unscoped = scopedRegression.rules[1]
-        expectEqual(unscoped.condition.initiatorDomains, nil, "unscoped initiator domains")
+        expectEqual(unscoped.condition.domains, nil, "unscoped domains")
         expectEqual(unscoped.condition.requestDomains, nil, "unscoped request domains")
 
         let encoder = JSONEncoder()

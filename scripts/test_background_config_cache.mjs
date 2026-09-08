@@ -43,7 +43,19 @@ const makeConfig = (css, engineTimestamp, js = [], scriptlets = [], state = {}) 
 // Loads the bundle with a fresh browser stub.
 // nativeHandler receives every sendNativeMessage payload and returns the
 // response (or a never-resolving promise to simulate a hung native host).
-const loadBackground = ({ storage = {}, nativeHandler, executeScript = async () => [{}], fetchImpl = globalThis.fetch }) => {
+const loadBackground = ({
+  storage = {},
+  nativeHandler,
+  executeScript = async () => [{}],
+  fetchImpl = globalThis.fetch,
+  source = bundleSource,
+  dynamicRules = [],
+  sessionRules = [],
+  dnrLimit = 30000,
+  dnrUpdateHandler = async () => {},
+  removeParamHandler = null,
+  tabMessageHandler = async () => ({}),
+}) => {
   const state = {
     storage,
     nativeMessages: [],
@@ -52,11 +64,13 @@ const loadBackground = ({ storage = {}, nativeHandler, executeScript = async () 
     onMessage: null,
     nativePortMessage: null,
     tabQueries: 0,
-    tabMessages: []
+    tabMessages: [],
+    dnrUpdates: []
   };
 
   const defaultNative = async message => {
     if (message && message.action === "getRemoveParamDNRRules") {
+      if (removeParamHandler) return removeParamHandler(message);
       return { ok: true, version: "test", count: 0, rules: [], ruleIdBase: 1500000, ruleIdLimit: 1650000 };
     }
     return nativeHandler(message);
@@ -92,7 +106,10 @@ const loadBackground = ({ storage = {}, nativeHandler, executeScript = async () 
     tabs: {
       query: async () => { state.tabQueries += 1; return [{ id: 7 }]; },
       get: async () => ({}),
-      sendMessage: async (tabId, message) => { state.tabMessages.push({ tabId, message }); return {}; },
+      sendMessage: async (tabId, message) => {
+        state.tabMessages.push({ tabId, message });
+        return tabMessageHandler(tabId, message);
+      },
       onUpdated: { addListener: fn => { state.onTabUpdated = fn; } },
       onActivated: listenerStub,
       onCreated: listenerStub,
@@ -106,13 +123,18 @@ const loadBackground = ({ storage = {}, nativeHandler, executeScript = async () 
       insertCSS: async injection => { state.cssInserted.push(injection); }
     },
     declarativeNetRequest: {
-      getDynamicRules: async () => [],
-      updateDynamicRules: async () => {}
+      ...(dnrLimit == null ? {} : { MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES: dnrLimit }),
+      getDynamicRules: async () => dynamicRules,
+      getSessionRules: async () => sessionRules,
+      updateDynamicRules: async update => {
+        state.dnrUpdates.push(update);
+        return dnrUpdateHandler(update);
+      }
     },
     i18n: { getMessage: () => "" }
   };
 
-  const run = new Function("browser", "window", "self", "fetch", bundleSource);
+  const run = new Function("browser", "window", "self", "fetch", source);
   run(browser, globalThis, globalThis, fetchImpl);
   if (typeof state.onMessage !== "function") {
     throw new Error("background bundle did not register an onMessage listener");
@@ -814,6 +836,193 @@ for (const maintenanceAction of ["maybeUpdateUserScripts", "maybeStageFilterUpda
   await state.onMessage({ action: "gmXmlhttpRequest", scriptId: "script-1", url: sender.url, headers: { "User-Agent": "test" } }, sender);
   const nativeRequest = state.nativeMessages.find(message => message.action === "gmXmlhttpRequestNative");
   check("native path carries trusted identity for revalidation", nativeRequest?.scriptId === "script-1" && nativeRequest?.pageURL === sender.url);
+}
+
+// RemoveParam runtime compatibility/capacity and atomic replacement use the
+// canonical source so these checks do not depend on when the generated bundle
+// is refreshed.
+{
+  const rules = [
+    { id: 1500000, priority: 20000, action: { type: "allow" }, condition: { requestDomains: ["disabled.example"], resourceTypes: ["main_frame"] } },
+    { id: 1500001, priority: 1, action: { type: "redirect", redirect: { transform: { queryTransform: { removeParams: ["utm"] } } } }, condition: { initiatorDomains: ["page.example"], urlFilter: "^utm=" } },
+    { id: 1500002, priority: 1, action: { type: "redirect", redirect: { transform: { queryTransform: { removeParams: ["id"] } } } }, condition: { requestDomains: ["target.example"], urlFilter: "^id=" } },
+  ];
+  const state = loadBackground({
+    source: canonicalSource,
+    dnrLimit: null,
+    removeParamHandler: message => ({
+      ok: true, version: "legacy", count: rules.length,
+      rules: message.offset === 0 ? rules : [], ruleIdBase: 1500000, ruleIdLimit: 1650000
+    }),
+    nativeHandler: () => ({ payload: makeConfig([], 1) }),
+  });
+  await sleep(50);
+  const update = state.dnrUpdates[0];
+  check("old Safari DNR uses one atomic replacement", state.dnrUpdates.length === 1 && Array.isArray(update?.removeRuleIds) && Array.isArray(update?.addRules));
+  check("old Safari request-domain allow downgrades to exact host URL filter",
+    update?.addRules?.some(rule => rule.id === 1500000 && rule.condition.urlFilter === "||disabled.example^" && !rule.condition.requestDomains));
+  check("old Safari initiatorDomains downgrades to legacy domains",
+    update?.addRules?.some(rule => rule.id === 1500001 && rule.condition.domains?.[0] === "page.example" && !rule.condition.initiatorDomains));
+  check("old Safari skips unrepresentable request-domain redirect instead of widening it",
+    !update?.addRules?.some(rule => rule.id === 1500002));
+}
+
+{
+  const rules = Array.from({ length: 5100 }, (_, index) => ({
+    id: 1500000 + index,
+    priority: 1,
+    action: { type: "redirect", redirect: { transform: { queryTransform: { removeParams: ["p"] } } } },
+    condition: { urlFilter: "^p=", resourceTypes: ["main_frame"] }
+  }));
+  const legacy = loadBackground({
+    source: canonicalSource,
+    dnrLimit: null,
+    removeParamHandler: message => ({
+      ok: true, version: "legacy-cap", count: rules.length,
+      rules: message.offset === 0 ? rules.slice(0, 250) : rules.slice(message.offset, message.offset + message.limit),
+      ruleIdBase: 1500000, ruleIdLimit: 1650000
+    }),
+    nativeHandler: () => ({ payload: makeConfig([], 1) }),
+  });
+  await sleep(80);
+  check("old Safari fallback capacity is bounded without lowering modern runtimes", legacy.dnrUpdates[0]?.addRules?.length === 5000);
+
+  const modern = loadBackground({
+    source: canonicalSource,
+    dnrLimit: 30000,
+    removeParamHandler: message => ({
+      ok: true, version: "modern-cap", count: rules.length,
+      rules: message.offset === 0 ? rules.slice(0, 250) : rules.slice(message.offset, message.offset + message.limit),
+      ruleIdBase: 1500000, ruleIdLimit: 1650000
+    }),
+    nativeHandler: () => ({ payload: makeConfig([], 1) }),
+  });
+  await sleep(80);
+  check("modern Safari preserves rules above the old fallback when runtime reports 30000", modern.dnrUpdates[0]?.addRules?.length === 5100);
+}
+
+{
+  const redirects = Array.from({ length: 6 }, (_, index) => ({
+    id: 1500100 + index,
+    priority: 1,
+    action: { type: "redirect", redirect: { transform: { queryTransform: { removeParams: ["p"] } } } },
+    condition: { urlFilter: `^p${index}=`, resourceTypes: ["main_frame"] }
+  }));
+  const protective = [
+    { id: 1500000, priority: 20000, action: { type: "allow" }, condition: { urlFilter: "||disabled.example^" } },
+    { id: 1500001, priority: 10000, action: { type: "allow" }, condition: { urlFilter: "||exception.example^" } },
+  ];
+  const mixed = [...redirects, ...protective];
+  const state = loadBackground({
+    source: canonicalSource,
+    dnrLimit: 5,
+    removeParamHandler: message => ({
+      ok: true, version: "protective-first", count: mixed.length,
+      rules: message.offset === 0 ? mixed : [], ruleIdBase: 1500000, ruleIdLimit: 1650000
+    }),
+    nativeHandler: () => ({ payload: makeConfig([], 1) }),
+  });
+  await sleep(50);
+  check("capacity keeps all allow/exception rules before redirect rules",
+    state.dnrUpdates[0]?.addRules?.length === 5
+      && state.dnrUpdates[0].addRules.slice(0, 2).every(rule => rule.action.type === "allow"));
+}
+
+{
+  const protective = Array.from({ length: 6 }, (_, index) => ({
+    id: 1500000 + index,
+    priority: 10000,
+    action: { type: "allow" },
+    condition: { urlFilter: `||protect${index}.example^` }
+  }));
+  const state = loadBackground({
+    source: canonicalSource,
+    dnrLimit: 5,
+    removeParamHandler: message => ({
+      ok: true, version: "protective-overflow", count: protective.length,
+      rules: message.offset === 0 ? protective : [], ruleIdBase: 1500000, ruleIdLimit: 1650000
+    }),
+    nativeHandler: () => ({ payload: makeConfig([], 1) }),
+  });
+  await sleep(50);
+  check("protective rules exceeding capacity disables removeparam rather than widening",
+    state.dnrUpdates[0]?.addRules?.length === 0);
+}
+
+{
+  const first = Array.from({ length: 250 }, (_, index) => ({ id: 1500000 + index, action: { type: "allow" }, condition: {} }));
+  const state = loadBackground({
+    source: canonicalSource,
+    removeParamHandler: message => message.offset === 0
+      ? { ok: true, version: "v1", count: 251, rules: first, ruleIdBase: 1500000, ruleIdLimit: 1650000 }
+      : { ok: true, version: "v2", count: 251, rules: [{ id: 1500250, action: { type: "allow" }, condition: {} }], ruleIdBase: 1500000, ruleIdLimit: 1650000 },
+    nativeHandler: () => ({ payload: makeConfig([], 1) }),
+  });
+  await sleep(50);
+  check("mixed-generation RemoveParam chunks are rejected before install", state.dnrUpdates.length === 0);
+}
+
+{
+  const state = loadBackground({
+    source: canonicalSource,
+    removeParamHandler: () => ({ ok: true, version: "short", count: 2, rules: [{ id: 1500000, action: { type: "allow" }, condition: {} }], ruleIdBase: 1500000, ruleIdLimit: 1650000 }),
+    nativeHandler: () => ({ payload: makeConfig([], 1) }),
+  });
+  await sleep(50);
+  check("declared RemoveParam count mismatch is rejected before install", state.dnrUpdates.length === 0);
+}
+
+{
+  const oldTracked = [{ id: 1500000, action: { type: "redirect" }, condition: {} }];
+  const replacement = [{ id: 1500000, priority: 1, action: { type: "allow" }, condition: { urlFilter: "||new.example^" } }];
+  const storage = {};
+  const state = loadBackground({
+    source: canonicalSource,
+    storage,
+    dynamicRules: oldTracked,
+    dnrLimit: 30000,
+    dnrUpdateHandler: async () => { throw new Error("validation failed"); },
+    removeParamHandler: message => ({
+      ok: true, version: "replacement", count: 1,
+      rules: message.offset === 0 ? replacement : [], ruleIdBase: 1500000, ruleIdLimit: 1650000
+    }),
+    nativeHandler: () => ({ payload: makeConfig([], 1) }),
+  });
+  await sleep(50);
+  check("failed RemoveParam replacement is attempted as one remove+add transaction",
+    state.dnrUpdates.length === 1
+      && state.dnrUpdates[0].removeRuleIds?.[0] === 1500000
+      && state.dnrUpdates[0].addRules?.[0]?.id === 1500000);
+  check("failed atomic replacement does not persist a success marker", storage.wblockRemoveParamDNRVersion === undefined);
+}
+
+// Content-script state/mutation requests terminate in the background; only the
+// background owns native messaging on Safari.
+{
+  const state = loadBackground({
+    source: canonicalSource,
+    nativeHandler: message => {
+      if (message.action === "getNoAutoplayState") return { enabled: true, siteAllowed: false };
+      if (message.action === "setSiteZapperDisabled") return { ok: true, disabled: message.disabled === true };
+      return { payload: makeConfig([], 1) };
+    },
+  });
+  const sender = topFrameSender("https://example.com/");
+  const autoplay = await state.onMessage({ action: "wblock:noAutoplay:getState", host: "Example.COM" }, sender);
+  check("No Autoplay content relay returns validated native state",
+    autoplay.ok === true && autoplay.enabled === true && autoplay.siteAllowed === false);
+  check("No Autoplay relay normalizes host before native messaging",
+    state.nativeMessages.some(message => message.action === "getNoAutoplayState" && message.host === "example.com"));
+
+  const zapper = await state.onMessage({ action: "wblock:zapper:setDisabled", hostname: "example.com", disabled: true }, sender);
+  check("Zapper content relay forwards per-site disable mutation",
+    zapper.ok === true && zapper.disabled === true
+      && state.nativeMessages.some(message => message.action === "setSiteZapperDisabled" && message.hostname === "example.com" && message.disabled === true));
+
+  const broadcast = await state.onMessage({ action: "wblock:zapper:broadcastReload" }, sender);
+  check("top-frame fallback relay broadcasts a reload to the sender tab",
+    broadcast.ok === true
+      && state.tabMessages.some(entry => entry.tabId === 7 && entry.message?.type === "wblock:zapper:reloadRules"));
 }
 
 if (failures > 0) {

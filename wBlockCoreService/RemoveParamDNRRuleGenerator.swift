@@ -13,12 +13,11 @@ public enum RemoveParamDNRRuleGenerator {
     public static let ruleIDBase = 1_500_000
     public static let ruleIDLimit = 1_650_000
 
-    // WebKit caps dynamic plus session rules at 30,000 per extension
-    // (webExtensionDeclarativeNetRequestMaximumNumberOfDynamicAndSessionRules,
-    // Safari 17.4 and later). wBlock Scripts uses no session rules and clears
-    // its tracked dynamic rules before installing a new set, so the whole
-    // budget is available. Rules past it are dropped and reported in
-    // `Summary.truncatedRules` rather than failing the install.
+    // Current WebKit caps combined dynamic + session rules at 30,000. This is
+    // the generated-file ceiling, not an assumption about every supported
+    // Safari runtime: the WebExtension installer uses Safari's reported
+    // MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES when available and a conservative
+    // compatibility ceiling on older runtimes.
     public static let maxGeneratedRules = min(ruleIDLimit - ruleIDBase, 30_000)
     private static let urlFilterSpecialCharacters = CharacterSet(charactersIn: "|*^")
     private static let skippedOptionNames: Set<String> = [
@@ -117,8 +116,10 @@ public enum RemoveParamDNRRuleGenerator {
     public struct RuleCondition: Codable, Equatable {
         public var urlFilter: String? = nil
         public var resourceTypes: [String]? = nil
-        public var initiatorDomains: [String]? = nil
-        public var excludedInitiatorDomains: [String]? = nil
+        // Safari has supported the legacy initiator-site spelling since the
+        // original DNR implementation; `initiatorDomains` arrived much later.
+        public var domains: [String]? = nil
+        public var excludedDomains: [String]? = nil
         public var requestDomains: [String]? = nil
         public var excludedRequestDomains: [String]? = nil
         public var domainType: String? = nil
@@ -505,8 +506,8 @@ public enum RemoveParamDNRRuleGenerator {
         else {
             return nil
         }
-        if !domains.included.isEmpty { condition.initiatorDomains = domains.included }
-        if !domains.excluded.isEmpty { condition.excludedInitiatorDomains = domains.excluded }
+        if !domains.included.isEmpty { condition.domains = domains.included }
+        if !domains.excluded.isEmpty { condition.excludedDomains = domains.excluded }
 
         if !toDomains.included.isEmpty { condition.requestDomains = toDomains.included }
         if !toDomains.excluded.isEmpty { condition.excludedRequestDomains = toDomains.excluded }
@@ -665,8 +666,8 @@ public enum RemoveParamDNRRuleGenerator {
                 condition: RuleCondition(
                     urlFilter: nil,
                     resourceTypes: ["main_frame", "sub_frame"],
-                    initiatorDomains: nil,
-                    excludedInitiatorDomains: nil,
+                    domains: nil,
+                    excludedDomains: nil,
                     requestDomains: [domain],
                     excludedRequestDomains: nil,
                     domainType: nil,
@@ -680,8 +681,8 @@ public enum RemoveParamDNRRuleGenerator {
                 condition: RuleCondition(
                     urlFilter: nil,
                     resourceTypes: ["main_frame", "sub_frame", "xmlhttprequest"],
-                    initiatorDomains: [domain],
-                    excludedInitiatorDomains: nil,
+                    domains: [domain],
+                    excludedDomains: nil,
                     requestDomains: nil,
                     excludedRequestDomains: nil,
                     domainType: nil,

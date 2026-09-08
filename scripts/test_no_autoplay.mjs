@@ -47,7 +47,6 @@ function createEnvironment(options = {}) {
     documentListeners: new Map(),
     mediaInDom: [],
     localStore: new Map(),
-    nativeCalls: [],
     storageWrites: [],
   };
 
@@ -193,24 +192,22 @@ function createEnvironment(options = {}) {
       runtime: {
         sendMessage(message) {
           env.runtimeMessages.push(message);
-          return Promise.resolve({ ok: true });
-        },
-        sendNativeMessage(_id, message) {
-          env.nativeCalls.push(message);
-          if (message && message.action === "getSiteDisabledState") {
+          if (message && message.action === "wblock:getSiteDisabledState") {
             if (options.siteDisabledUnknown === true) {
-              return Promise.reject(new Error("native unavailable"));
+              return Promise.reject(new Error("background unavailable"));
             }
             if (options.siteDisabledMalformed === true) {
-              return Promise.resolve({});
+              return Promise.resolve({ ok: true });
             }
-            return Promise.resolve({ disabled: options.nativeDisabled === true });
+            return Promise.resolve({ ok: true, disabled: options.nativeDisabled === true });
           }
-          if (message && message.action === "getNoAutoplayState"
-              && options.nativeNoAutoplayState !== undefined) {
-            return Promise.resolve(options.nativeNoAutoplayState);
+          if (message && message.action === "wblock:noAutoplay:getState") {
+            if (options.nativeNoAutoplayState !== undefined) {
+              return Promise.resolve({ ok: true, ...options.nativeNoAutoplayState });
+            }
+            return Promise.resolve({ ok: true, enabled: false, siteAllowed: false });
           }
-          return Promise.resolve({});
+          return Promise.resolve({ ok: true });
         },
       },
       storage: {
@@ -423,8 +420,8 @@ async function playResult(media) {
   await settle();
   check("authoritative check arms the gate on first visit", env.gateMarker());
   check("authoritative check records the hint for the next visit", env.localStore.get(HINT_KEY) === "1");
-  check("native disabled-sites state was consulted",
-    env.nativeCalls.some((m) => m && m.action === "getSiteDisabledState" && m.host === HOST));
+  check("disabled-sites state is relayed through the background",
+    env.runtimeMessages.some((m) => m && m.action === "wblock:getSiteDisabledState" && m.host === HOST));
 }
 
 // --- 7. Unmigrated legacy state wins over native protobuf defaults ---
