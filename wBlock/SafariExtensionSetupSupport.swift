@@ -21,6 +21,9 @@ enum SafariExtensionSetupSupport {
     static let currentPlatform: Platform = .iOS
     #endif
 
+    // Safari lazily creates a shared XPC connection. Concurrent first queries
+    // from onboarding can race its initialization and abort in xpc_connection_resume.
+    @MainActor
     static func contentBlockerSlotStates(forPlatform platform: Platform = currentPlatform) async -> [ContentBlockerSlotState] {
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: platform)
         var results: [ContentBlockerSlotState] = []
@@ -74,6 +77,7 @@ enum SafariExtensionSetupSupport {
         #endif
     }
 
+    @MainActor
     static func scriptsExtensionEnabledState() async -> Bool? {
         #if os(macOS)
         return await withCheckedContinuation { continuation in
