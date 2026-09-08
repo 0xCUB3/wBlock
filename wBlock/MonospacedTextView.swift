@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Read-only monospaced text. When `lineTints` is set, the visible lines are
-/// syntax coloured and tinted on scroll instead of building one attributed
+/// coloured by classification on scroll instead of building one attributed
 /// string for the whole document, which froze the phone on multi-megabyte
 /// lists (cameren, Discord).
 #if os(macOS)
@@ -9,7 +9,7 @@ import AppKit
 
 struct MonospacedTextView: NSViewRepresentable {
     @Binding var text: String
-    /// Background tint per line index; presence turns on viewport highlighting.
+    /// Category color per line index; presence turns on viewport highlighting.
     var lineTints: HighlightLineTints?
     var softTopEdge = false
     var isLineWrappingEnabled = false
@@ -58,10 +58,9 @@ struct MonospacedTextView: NSViewRepresentable {
             changed = true
         }
         if let lineTints {
-            if changed || coordinator.appliedTintsIdentity != lineTints.count || coordinator.tintsDirty {
+            if changed || coordinator.highlighter.lineTints != lineTints || !coordinator.highlightingEnabled {
+                coordinator.highlighter.usesCategoryColors = true
                 coordinator.highlighter.lineTints = lineTints
-                coordinator.appliedTintsIdentity = lineTints.count
-                coordinator.tintsDirty = false
                 coordinator.highlighter.scheduleHighlight(of: textView, delayNanoseconds: 0)
             }
             coordinator.highlightingEnabled = true
@@ -79,8 +78,6 @@ struct MonospacedTextView: NSViewRepresentable {
         ])
         weak var textView: NSTextView?
         var highlightingEnabled = false
-        var appliedTintsIdentity = -1
-        var tintsDirty = true
 
         @objc func boundsDidChange(_ notification: Notification) {
             guard highlightingEnabled, let textView else { return }
@@ -184,7 +181,7 @@ import UIKit
 
 struct MonospacedTextView: UIViewRepresentable {
     @Binding var text: String
-    /// Background tint per line index; presence turns on viewport highlighting.
+    /// Category color per line index; presence turns on viewport highlighting.
     var lineTints: HighlightLineTints?
     var softTopEdge = false
     var isLineWrappingEnabled = true
@@ -219,10 +216,9 @@ struct MonospacedTextView: UIViewRepresentable {
             changed = true
         }
         if let lineTints {
-            if changed || coordinator.appliedTintsIdentity != lineTints.count || coordinator.tintsDirty {
+            if changed || coordinator.highlighter.lineTints != lineTints || !coordinator.highlightingEnabled {
+                coordinator.highlighter.usesCategoryColors = true
                 coordinator.highlighter.lineTints = lineTints
-                coordinator.appliedTintsIdentity = lineTints.count
-                coordinator.tintsDirty = false
                 coordinator.highlighter.scheduleHighlight(of: textView, delayNanoseconds: 0)
             }
             coordinator.highlightingEnabled = true
@@ -240,8 +236,6 @@ struct MonospacedTextView: UIViewRepresentable {
         ])
         weak var textView: UITextView?
         var highlightingEnabled = false
-        var appliedTintsIdentity = -1
-        var tintsDirty = true
 
         func scrollViewDidScroll(_ scrollView: UIScrollView) {
             guard highlightingEnabled, let textView else { return }

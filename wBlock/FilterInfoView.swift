@@ -390,7 +390,7 @@ struct FilterRulesView: View {
     }
 
     /// Joins the lines that pass the View filter and records which of them
-    /// need a tint. The string join runs off the main thread; syntax colour is
+    /// need a category color. The string join runs off the main thread; colour is
     /// applied per viewport by MonospacedTextView, so a multi-megabyte list
     /// never builds one huge attributed string (that froze iPhones).
     private func rebuildDisplayedText() {
@@ -416,9 +416,7 @@ struct FilterRulesView: View {
                     if !query.isEmpty && !line.text.localizedCaseInsensitiveContains(query) { continue }
                     if index > 0 { text.append("\n") }
                     text.append(line.text)
-                    if line.kind == .advanced || line.kind == .unsupported || line.kind == .duplicate {
-                        tinted[index] = line.kind
-                    }
+                    tinted[index] = line.kind
                     index += 1
                 }
                 return (text, tinted)
@@ -468,8 +466,6 @@ struct FilterRulesView: View {
         case .advanced: return .blue
         case .removeParam: return .teal
         case .unsupported: return .red
-        // Orange is the syntax color for $modifiers, so duplicates use indigo
-        // to keep the legend distinct from tinted rule text.
         case .duplicate: return .indigo
         }
     }
@@ -477,21 +473,23 @@ struct FilterRulesView: View {
     #if os(macOS)
     private static func tint(for kind: FilterRuleKind) -> NSColor? {
         switch kind {
-        case .advanced: return NSColor.systemBlue.withAlphaComponent(0.18)
-        case .removeParam: return NSColor.systemTeal.withAlphaComponent(0.18)
-        case .unsupported: return NSColor.systemRed.withAlphaComponent(0.22)
-        case .duplicate: return NSColor.systemIndigo.withAlphaComponent(0.22)
-        case .comment, .supported: return nil
+        case .advanced: return NSColor.systemBlue
+        case .removeParam: return NSColor.systemTeal
+        case .unsupported: return NSColor.systemRed
+        case .duplicate: return NSColor.systemIndigo
+        case .comment: return NSColor.secondaryLabelColor
+        case .supported: return NSColor.systemGreen
         }
     }
     #else
     private static func tint(for kind: FilterRuleKind) -> UIColor? {
         switch kind {
-        case .advanced: return UIColor.systemBlue.withAlphaComponent(0.18)
-        case .removeParam: return UIColor.systemTeal.withAlphaComponent(0.18)
-        case .unsupported: return UIColor.systemRed.withAlphaComponent(0.22)
-        case .duplicate: return UIColor.systemIndigo.withAlphaComponent(0.22)
-        case .comment, .supported: return nil
+        case .advanced: return UIColor.systemBlue
+        case .removeParam: return UIColor.systemTeal
+        case .unsupported: return UIColor.systemRed
+        case .duplicate: return UIColor.systemIndigo
+        case .comment: return UIColor.secondaryLabel
+        case .supported: return UIColor.systemGreen
         }
     }
     #endif

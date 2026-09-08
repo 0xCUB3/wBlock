@@ -24,8 +24,8 @@ typealias HighlightPlatformColor = UIColor
 typealias HighlightPlatformTextView = UITextView
 #endif
 
-/// Background tint per zero-based line index, for the rules viewer's
-/// advanced / unsupported / duplicate markers.
+/// Colors per zero-based line index. The rules viewer uses these as foreground
+/// classification colors; syntax editors may use them as background markers.
 typealias HighlightLineTints = [Int: HighlightPlatformColor]
 
 @MainActor
@@ -37,6 +37,10 @@ final class ViewportSyntaxHighlighter {
     private var lineStartsTask: Task<Void, Never>?
     private var lineStarts: [Int] = []
     private var lineStartsTextLength = -1
+    // The rules viewer uses one palette matching its legend, not token syntax.
+    var usesCategoryColors = false {
+        didSet { highlightedRange = nil }
+    }
     var lineTints: HighlightLineTints = [:] {
         didSet { highlightedRange = nil }
     }
@@ -88,7 +92,9 @@ final class ViewportSyntaxHighlighter {
         }
 
         let chunk = text.substring(with: visible)
-        let highlighted = highlighter.highlight(chunk)
+        let highlighted = usesCategoryColors
+            ? NSAttributedString(string: chunk, attributes: baseAttributes)
+            : highlighter.highlight(chunk)
         if highlighted.length == visible.length {
             highlighted.enumerateAttributes(in: NSRange(location: 0, length: highlighted.length)) { attributes, range, _ in
                 storage.setAttributes(attributes, range: NSRange(location: visible.location + range.location, length: range.length))
@@ -121,7 +127,11 @@ final class ViewportSyntaxHighlighter {
         while cursor < end, lineIndex < lineStarts.count {
             let lineRange = text.lineRange(for: NSRange(location: cursor, length: 0))
             if let tint = lineTints[lineIndex], lineRange.length > 0 {
-                storage.addAttribute(.backgroundColor, value: tint, range: lineRange)
+                storage.addAttribute(
+                    usesCategoryColors ? .foregroundColor : .backgroundColor,
+                    value: tint,
+                    range: lineRange
+                )
             }
             cursor = NSMaxRange(lineRange)
             if cursor == lineRange.location { break }
