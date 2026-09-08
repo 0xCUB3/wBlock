@@ -19,6 +19,7 @@ public enum FilterSelectionRebaser {
             guard let latest = latestByID[filter.id] else { return filter }
             var rebased = filter
             rebased.isSelected = latest.isSelected
+            rebased.category = latest.category
             rebased.excludedSites = latest.excludedSites
             if latest.hasUserProvidedName || latest.hasUserProvidedName != filter.hasUserProvidedName {
                 rebased.name = latest.name

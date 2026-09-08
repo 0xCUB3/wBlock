@@ -14,7 +14,7 @@ struct FilterSelectionRebaseTests {
                 id: id,
                 name: "User Renamed",
                 url: URL(string: "https://example.com")!,
-                category: .ads,
+                category: .security,
                 isSelected: false,
                 description: "User Description",
                 hasUserProvidedName: true,
@@ -27,6 +27,9 @@ struct FilterSelectionRebaseTests {
         guard rebased.first?.isSelected == false else {
             fputs("FAIL: latest persisted selection must win\n", stderr)
             exit(1)
+        }
+        guard rebased.first?.category == .security, rebased.last?.category == .privacy else {
+            fatalError("Category edits must survive updates without changing newly added lists")
         }
         guard rebased.first?.excludedSites == ["nytimes.com"] else {
             fputs("FAIL: latest persisted per-list exclusions must win\n", stderr)

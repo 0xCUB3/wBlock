@@ -775,7 +775,7 @@ class AppFilterManager: ObservableObject {
 
             var hydrated = filter
             hydrated.name = catalogFilter.name
-            hydrated.category = catalogFilter.category
+            // Category is user-owned; the catalog only supplies descriptive metadata.
             hydrated.description = catalogFilter.description
             hydrated.languages = catalogFilter.languages
             hydrated.trustLevel = catalogFilter.trustLevel

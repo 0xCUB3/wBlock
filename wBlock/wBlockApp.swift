@@ -16,8 +16,8 @@ enum WBlockLaunchSetup {
         await dataManager.migrateLegacyFilterURLs()
         await dataManager.migrateMultipurposeToAnnoyances()
         await dataManager.migrateAnnoyancesFilterToSplitFilters()
-        await dataManager.migrateMobileFilterToAdsCategory()
-        await dataManager.migrateAllowlistsToDedicatedCategory()
+        // Current defaults already carry the catalog categories. Re-running the
+        // old Mobile/Allowlist corrections would undo categories chosen in Edit.
         await UserScriptManager.shared.waitUntilReady()
     }
 }
