@@ -28,8 +28,9 @@ actor UserScriptStorageManager {
 
     init(directoryURL: URL? = nil) {
         directoryOverride = directoryURL
-        let directoryURL = directoryURL ?? Self.makeDataDirectoryURL(fileManager: fileManager)
-        try? fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        let manager = FileManager.default
+        let directoryURL = directoryURL ?? Self.makeDataDirectoryURL(fileManager: manager)
+        try? manager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
     }
 
     func snapshot(for scriptID: String) async -> [String: String] {
