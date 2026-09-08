@@ -496,7 +496,7 @@
 "Logs" = "Protokolle";
 "Logs cleared" = "Protokolle gelöscht";
 "Logs will appear here as the app runs" = "Protokolle erscheinen hier, während die App läuft";
-"Looks good! Tap Add to continue." = "Sieht gut aus! Tippe auf Hinzufügen, um fortzufahren.";
+"Content will be checked when you tap Add." = "Der Inhalt wird geprüft, wenn du auf Hinzufügen tippst.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "Groß-/Kleinschreibung";
 "Migrated custom filter filename" = "Dateiname des benutzerdefinierten Filters migriert";

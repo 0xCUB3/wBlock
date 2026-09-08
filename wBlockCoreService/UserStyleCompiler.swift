@@ -58,7 +58,7 @@ public protocol UserStylePreprocessorBackend: Sendable {
 public enum UserStylePreprocessorService {
     public static let lessRevision = "less-4.9.0-wblock-1"
     public static let sassRevision = "sass-scss-1.102.0-wblock-1"
-    public static let stylusRevision = "stylus-0.64.0-wblock-1-bounded-offline"
+    public static let stylusRevision = "stylus-0.64.0-wblock-2-bounded-offline"
     public static let postCSSRevision = "postcss-8.5.26-postcss-nested-8.0.1-wblock-1"
     public static let maximumSourceBytes = 2 * 1024 * 1024
     public static let maximumOutputBytes = 10 * 1024 * 1024

@@ -496,7 +496,7 @@
 "Logs" = "Günlükler";
 "Logs cleared" = "Günlükler temizlendi";
 "Logs will appear here as the app runs" = "Uygulama çalıştıkça günlük kayıtları burada görünecektir";
-"Looks good! Tap Add to continue." = "Harika görünüyor! Devam etmek için Ekle öğesine dokunun.";
+"Content will be checked when you tap Add." = "Ekle’ye dokunduğunuzda içerik kontrol edilecek.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "büyük/küçük harf";
 "Migrated custom filter filename" = "Özel filtre dosya adı taşındı";

@@ -496,7 +496,7 @@
 "Logs" = "Αρχεία Καταγραφής";
 "Logs cleared" = "Εκκαθάριση αρχείων καταγραφής";
 "Logs will appear here as the app runs" = "Τα αρχεία καταγραφής θα εμφανίζονται εδώ καθώς εκτελείται η εφαρμογή";
-"Looks good! Tap Add to continue." = "Φαίνεται καλό! Πατήστε Προσθήκη για να συνεχίσετε.";
+"Content will be checked when you tap Add." = "Το περιεχόμενο θα ελεγχθεί όταν πατήσετε Προσθήκη.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "διάκριση πεζών-κεφαλαίων";
 "Migrated custom filter filename" = "Μεταφορά ονόματος αρχείου προσαρμοσμένου φίλτρου";

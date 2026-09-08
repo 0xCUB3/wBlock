@@ -9,9 +9,9 @@ The Worker runs in WebKit's WebContent process, which keeps compiler failure sep
 | Less | 4.9.0 | `less.min.js` | 158,891 | `59c1ed0a6f51215a702b3b4095bf9f296c67d5c1610f82b95d82991c3c3f3082` |
 | Sass / SCSS | 1.102.0 | `sass/wblock-sass-1.102.0.min.js` | 3,277,321 | `a575120ee471de3fc9f8ddad036f4296de483ec312daf960bdda8f289582d6c8` |
 | PostCSS + nested | 8.5.26 + 8.0.1 | `postcss-nested/wblock-postcss-nested.js` | 125,669 | `68709da6d84de1838dfde79a68b0451f242eb4f2fa60a0b2f38fcb0a79f1d60e` |
-| Stylus | 0.64.0, bounded offline | `stylus/stylus-jsc.js` | 420,979 | `8e6ef62152979cac41e145b3056d1a3a1c7ea6b2359bcf1ef332655b2b23af4b` |
+| Stylus | 0.64.0, bounded offline | `stylus/stylus-jsc.js` | 428,606 | `b512616bb0de26ba1e92e45e03cb1144cb1facbad23304685c2494e7f8ef127b` |
 
-The Sass bridge supports SCSS and indented Sass, variables, nesting, and mixins. Sass `@import`, `@use`, and `@forward` are rejected. Stylus supports its offline core, globals, nesting, and mixins; imports, plugins, file-backed helpers, and source maps are rejected. PostCSS is deliberately the pinned `postcss-nested` plugin only. Less imports and inline JavaScript are disabled, while ordinary CSS imports remain in generated CSS.
+The Sass bridge supports SCSS and indented Sass, variables, nesting, and mixins. Sass `@import`, `@use`, and `@forward` are rejected. Stylus embeds its pinned standard library and supports typed globals, nesting, mixins, and ordinary CSS URLs; imports, plugins, file-backed helpers, and source maps are rejected. PostCSS is deliberately the pinned `postcss-nested` plugin only. Less imports and inline JavaScript are disabled, while ordinary CSS imports remain in generated CSS.
 
 Supported metadata preprocessors are empty/default, `uso`, `less`, `sass`, `scss`, `stylus`, and `postcss`. A complete UserCSS metadata block is required; file extensions identify candidates but never select a compiler. Recognized paths include `.css`, `.user.css`, `.less`, `.sass`, `.scss`, `.styl`, and `.pcss`, including matching URL query values.
 

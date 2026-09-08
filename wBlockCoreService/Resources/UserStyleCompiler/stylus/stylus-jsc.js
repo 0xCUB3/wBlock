@@ -18194,6 +18194,32 @@ module.exports = class Normalizer extends Visitor {
 },{"../nodes":148,"../utils":178,"./":182}],184:[function(require,module,exports){
 /* Offline Stylus 0.64.0 JSC entry point. */
 var Renderer = require('../package-slim/lib/renderer');
+var Parser = require('../package-slim/lib/parser');
+var Evaluator = require('../package-slim/lib/visitor/evaluator');
+var nodes = require('../package-slim/lib/nodes');
+// Unmodified lib/functions/index.styl from the MIT-licensed Stylus 0.64.0 tarball.
+var standardLibrary = "called-from = ()\n\nvendors = moz webkit o ms official\n\n// stringify the given arg\n\n-string(arg)\n  type(arg) + ' ' + arg\n\n// require a color\n\nrequire-color(color)\n  unless color is a 'color'\n    error('RGB or HSL value expected, got a ' + -string(color))\n\n// require a unit\n\nrequire-unit(n)\n  unless n is a 'unit'\n    error('unit expected, got a ' + -string(n))\n\n// require a string\n\nrequire-string(str)\n  unless str is a 'string' or str is a 'ident'\n    error('string expected, got a ' + -string(str))\n\n// Math functions\n\nabs(n) { math(n, 'abs') }\nmin(a, b) { a < b ? a : b }\nmax(a, b) { a > b ? a : b }\n\n// Trigonometrics\nPI = -math-prop('PI')\n\nradians-to-degrees(angle)\n  angle * (180 / PI)\n\ndegrees-to-radians(angle)\n  angle * (PI / 180)\n\nsin(n)\n  n = unit(n) == 'deg' ? degrees-to-radians(unit(n, '')) : unit(n, '')\n  round(math(n, 'sin'), 9)\n\ncos(n)\n  n = unit(n) == 'deg' ? degrees-to-radians(unit(n, '')) : unit(n, '')\n  round(math(n, 'cos'), 9)\n\n// Rounding Math functions\n\nceil(n, precision = 0)\n  multiplier = 10 ** precision\n  math(n * multiplier, 'ceil') / multiplier\n\nfloor(n, precision = 0)\n  multiplier = 10 ** precision\n  math(n * multiplier, 'floor') / multiplier\n\nround(n, precision = 0)\n  multiplier = 10 ** precision\n  math(n * multiplier, 'round') / multiplier\n\n// return the sum of the given numbers\n\nsum(nums)\n  sum = 0\n  sum += n for n in nums\n\n// return the average of the given numbers\n\navg(nums)\n  sum(nums) / length(nums)\n\n// return a unitless number, or pass through\n\nremove-unit(n)\n  if typeof(n) is \"unit\"\n    unit(n, \"\")\n  else\n    n\n\n// convert a percent to a decimal, or pass through\n\npercent-to-decimal(n)\n  if unit(n) is \"%\"\n    remove-unit(n) / 100\n  else\n    n\n\n// check if n is an odd number\n\nodd(n)\n  1 == n % 2\n\n// check if n is an even number\n\neven(n)\n  0 == n % 2\n\n// check if color is light\n\nlight(color)\n  lightness(color) >= 50%\n\n// check if color is dark\n\ndark(color)\n  lightness(color) < 50%\n\n// desaturate color by amount\n\ndesaturate(color, amount)\n  adjust(color, 'saturation', - amount)\n\n// saturate color by amount\n\nsaturate(color = '', amount = 100%)\n  if color is a 'color'\n    adjust(color, 'saturation', amount)\n  else\n    unquote( \"saturate(\" + color + \")\" )\n\n// darken by the given amount\n\ndarken(color, amount)\n  adjust(color, 'lightness', - amount)\n\n// lighten by the given amount\n\nlighten(color, amount)\n  adjust(color, 'lightness', amount)\n\n// decrease opacity by amount\n\nfade-out(color, amount)\n  color - rgba(black, percent-to-decimal(amount))\n\n// increase opacity by amount\n\nfade-in(color, amount)\n  color + rgba(black, percent-to-decimal(amount))\n\n// spin hue by a given amount\n\nspin(color, amount)\n  color + unit(amount, deg)\n\n// mix two colors by a given amount\n\nmix(color1, color2, weight = 50%)\n  unless weight in 0..100\n    error(\"Weight must be between 0% and 100%\")\n\n  if length(color1) == 2\n    weight = color1[0]\n    color1 = color1[1]\n\n  else if length(color2) == 2\n    weight = 100 - color2[0]\n    color2 = color2[1]\n\n  require-color(color1)\n  require-color(color2)\n\n  p = unit(weight / 100, '')\n  w = p * 2 - 1\n\n  a = alpha(color1) - alpha(color2)\n\n  w1 = (((w * a == -1) ? w : (w + a) / (1 + w * a)) + 1) / 2\n  w2 = 1 - w1\n\n  channels = (red(color1) red(color2)) (green(color1) green(color2)) (blue(color1) blue(color2))\n  rgb = ()\n\n  for pair in channels\n    push(rgb, floor(pair[0] * w1 + pair[1] * w2))\n\n  a1 = alpha(color1) * p\n  a2 = alpha(color2) * (1 - p)\n  alpha = a1 + a2\n\n  rgba(rgb[0], rgb[1], rgb[2], alpha)\n\n// invert colors, leave alpha intact\n\ninvert(color = '')\n  if color is a 'color'\n    rgba(#fff - color, alpha(color))\n  else\n    unquote( \"invert(\" + color + \")\" )\n\n// give complement of the given color\n\ncomplement( color )\n  spin( color, 180 )\n\n// give grayscale of the given color\n\ngrayscale( color = '' )\n  if color is a 'color'\n    desaturate( color, 100% )\n  else\n    unquote( \"grayscale(\" + color + \")\" )\n\n// mix the given color with white\n\ntint( color, percent )\n  mix( white, color, percent )\n\n// mix the given color with black\n\nshade( color, percent )\n  mix( black, color, percent )\n\n// return the last value in the given expr\n\nlast(expr)\n  expr[length(expr) - 1]\n\n// return keys in the given pairs or object\n\nkeys(pairs)\n  ret = ()\n  if type(pairs) == 'object'\n    for key in pairs\n      push(ret, key)\n  else\n    for pair in pairs\n      push(ret, pair[0]);\n  ret\n\n// return values in the given pairs or object\n\nvalues(pairs)\n  ret = ()\n  if type(pairs) == 'object'\n    for key, val in pairs\n      push(ret, val)\n  else\n    for pair in pairs\n      push(ret, pair[1]);\n  ret\n\n// join values with the given delimiter\n\njoin(delim, vals...)\n  buf = ''\n  vals = vals[0] if length(vals) == 1\n  for val, i in vals\n    buf += i ? delim + val : val\n\n// add a CSS rule to the containing block\n\n// - This definition allows add-property to be used as a mixin\n// - It has the same effect as interpolation but allows users\n//   to opt for a functional style\n\nadd-property-function = add-property\nadd-property(name, expr)\n  if mixin\n    {name} expr\n  else\n    add-property-function(name, expr)\n\nprefix-classes(prefix)\n  -prefix-classes(prefix, block)\n\n// Caching mixin, use inside your functions to enable caching by extending.\n\n$stylus_mixin_cache = {}\ncache()\n  $key = (current-media() or 'no-media') + '__' + called-from[0] + '__' + arguments\n  if $key in $stylus_mixin_cache\n    @extend {\"$cache_placeholder_for_\" + $stylus_mixin_cache[$key]}\n  else if 'cache' in called-from\n    {block}\n  else\n    $id = length($stylus_mixin_cache)\n\n    &,\n    /$cache_placeholder_for_{$id}\n      $stylus_mixin_cache[$key] = $id\n      {block}\n\n// Percentage function to convert a number, e.g. \".45\", into a percentage, e.g. \"45%\"\n\npercentage(num)\n  return unit(num * 100, '%')\n\n// Returns the position of a `value` within a `list`\n\nindex(list, value)\n  for val, i in list\n    return i if val == value\n";
+class OfflineEvaluator extends Evaluator {
+  setup() {
+    super.setup();
+    // Parse a fresh tree per request: evaluation mutates nodes. Keep user source
+    // separate so errors still point to its original lines.
+    var filename = nodes.filename;
+    try {
+      nodes.filename = 'stylus-builtins.styl';
+      var library = new nodes.Block(this.root);
+      new Parser(standardLibrary, { root: library, cache: false }).parse();
+      library.scope = false;
+      this.root.nodes.unshift(library);
+    } finally {
+      nodes.filename = filename;
+    }
+  }
+
+  visitImport() {
+    throw new Error('imports_rejected: Stylus imports are unavailable in the offline compiler');
+  }
+}
 
 function fail(code, message) {
   return { error: { code: code, message: String(message) } };
@@ -18211,20 +18237,27 @@ function compile(input) {
     if (/(^|[\r\n])\s*@(?:import|require)\b/i.test(input.source)) {
       return fail('imports_rejected', 'Stylus imports are unavailable in the offline compiler');
     }
-    if (/(?:^|[\s;(])(?:embedurl|image-size|json|use|url)\s*\(/i.test(input.source)) {
+    if (/(?:^|[\s;(])(?:embedurl|image-size|json|use)\s*\(/i.test(input.source)) {
       return fail('unsupported_builtin', 'filesystem-backed Stylus built-ins are unavailable');
     }
     var variables = input.variables == null ? {} : input.variables;
     if (typeof variables !== 'object' || Array.isArray(variables)) {
       return fail('invalid_variables', 'variables must be an object');
     }
+    // UserCSS colors and numbers must be typed expressions, not opaque CSS
+    // literals, so standard helpers can perform color math and arithmetic.
+    var globals = Object.create(null);
+    Object.keys(variables).forEach(function (name) {
+      globals[name] = new Parser(String(variables[name]), { cache: false }).list();
+    });
     var renderer = new Renderer(input.source, {
       filename: 'offline.styl',
-      globals: variables,
+      Evaluator: OfflineEvaluator,
+      globals: globals,
       // Renderer adds a file import by default; disable it before rendering.
       imports: []
     });
-    // Remove the default import inserted by Renderer. Core language constructs remain.
+    // The standard library is embedded; user imports remain unavailable.
     renderer.options.imports = [];
     return { css: renderer.render() };
   } catch (error) {
@@ -18235,7 +18268,7 @@ function compile(input) {
 // JSContext's global object has globalThis on supported JavaScriptCore versions.
 if (typeof globalThis !== 'undefined') globalThis.StylusCompile = compile;
 
-},{"../package-slim/lib/renderer":171}],"debug":[function(require,module,exports){
+},{"../package-slim/lib/renderer":171,"../package-slim/lib/parser":170,"../package-slim/lib/visitor/evaluator":181,"../package-slim/lib/nodes":148}],"debug":[function(require,module,exports){
 module.exports = function () {
   return function () {};
 };

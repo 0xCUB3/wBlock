@@ -129,6 +129,11 @@ struct RemoteFilterListMetadataLoaderTests {
         let style = RemoteFilterListMetadataLoader.userscriptMetadata(from: "/* ==UserStyle==\n * @name Example Style\n * @description Style description\n ==/UserStyle== */")
         expectEqual(style.title, "Example Style", "userstyle header supports leading asterisks")
         expectEqual(RemoteFilterListMetadataLoader.userscriptMetadata(from: "// @name Outside header").title, nil, "ignore non-header annotations")
+        for header in ["// ==UserScript==\n// @name\t   Padded  Script\t\n// @description    A  description\t\n// ==/UserScript==", "/* ==UserStyle==\n * @name         Dark-GitHub\n * @description\t\tDark and light theme\n ==/UserStyle== */"] {
+            let metadata = RemoteFilterListMetadataLoader.userscriptMetadata(from: header)
+            expectEqual(metadata.title, header.hasPrefix("//") ? "Padded  Script" : "Dark-GitHub", "trim alignment whitespace without collapsing internal spaces")
+            expectEqual(metadata.description, header.hasPrefix("//") ? "A  description" : "Dark and light theme", "trim description alignment whitespace")
+        }
         await testPartialResponse(session: session)
         await testIgnoredRangeIsCancelledAfterBound(session: session)
         await testNonSuccessResponse(session: session)

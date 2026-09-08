@@ -496,7 +496,7 @@
 "Logs" = "ログ";
 "Logs cleared" = "ログを消去しました";
 "Logs will appear here as the app runs" = "アプリの実行中にここへログが表示されます";
-"Looks good! Tap Add to continue." = "問題ありません！続行するには「追加」をタップしてください。";
+"Content will be checked when you tap Add." = "「追加」をタップすると内容が確認されます。";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "大文字と小文字を区別";
 "Migrated custom filter filename" = "カスタムフィルターのファイル名を移行しました";

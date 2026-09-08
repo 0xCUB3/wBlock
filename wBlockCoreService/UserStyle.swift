@@ -750,7 +750,7 @@ public enum UserStyleSupport {
             return Variable(name: name, value: trimmed)
         }
         guard let data = trimmed.data(using: .utf8),
-              let array = try? JSONSerialization.jsonObject(with: data) as? [Any]
+              let array = try? JSONSerialization.jsonObject(with: data, options: [.json5Allowed]) as? [Any]
         else { return Variable(name: name, value: trimmed) }
 
         var defaultNumber: String?
@@ -826,7 +826,8 @@ public enum UserStyleSupport {
         var separators: [Character] = []
 
         var rest = Substring(block)
-        while let quoteStart = rest.firstIndex(of: "\"") {
+        while let quoteStart = rest.firstIndex(where: { $0 == "\"" || $0 == "'" }) {
+            let quote = rest[quoteStart]
             var cursor = rest.index(after: quoteStart)
             var value = ""
             var closed = false
@@ -840,7 +841,7 @@ public enum UserStyleSupport {
                         continue
                     }
                 }
-                if char == "\"" {
+                if char == quote {
                     closed = true
                     cursor = rest.index(after: cursor)
                     break
@@ -880,7 +881,7 @@ public enum UserStyleSupport {
         let trimmed = block.trimmingCharacters(in: .whitespaces)
         guard trimmed.hasPrefix("["),
               let data = trimmed.data(using: .utf8),
-              let array = try? JSONSerialization.jsonObject(with: data) as? [Any]
+              let array = try? JSONSerialization.jsonObject(with: data, options: [.json5Allowed]) as? [Any]
         else { return [] }
 
         return array.compactMap { element in

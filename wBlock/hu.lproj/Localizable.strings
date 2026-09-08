@@ -496,7 +496,7 @@
 "Logs" = "Naplók";
 "Logs cleared" = "Naplók törölve";
 "Logs will appear here as the app runs" = "A naplók itt jelennek meg az alkalmazás futása közben";
-"Looks good! Tap Add to continue." = "Jól néz ki! Koppints a Hozzáadásra a folytatáshoz.";
+"Content will be checked when you tap Add." = "A tartalmat a Hozzáadás gomb megérintésekor ellenőrizzük.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "kis- és nagybetű";
 "Migrated custom filter filename" = "Az egyéni szűrő fájlnevének migrációja";

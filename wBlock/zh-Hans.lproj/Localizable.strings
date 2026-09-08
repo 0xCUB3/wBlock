@@ -496,7 +496,7 @@
 "Logs" = "日志";
 "Logs cleared" = "日志已清除";
 "Logs will appear here as the app runs" = "应用运行时日志将显示在这里";
-"Looks good! Tap Add to continue." = "看起来不错！点按“添加”以继续。";
+"Content will be checked when you tap Add." = "轻点“添加”时将检查内容。";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "区分大小写";
 "Migrated custom filter filename" = "已迁移自定义过滤器文件名";

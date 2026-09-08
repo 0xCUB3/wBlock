@@ -496,7 +496,7 @@
 "Logs" = "Journaux";
 "Logs cleared" = "Journaux effacés";
 "Logs will appear here as the app runs" = "Les journaux apparaîtront ici pendant l'exécution de l'app";
-"Looks good! Tap Add to continue." = "Tout semble bon ! Touchez Ajouter pour continuer.";
+"Content will be checked when you tap Add." = "Le contenu sera vérifié lorsque vous toucherez Ajouter.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "respecter la casse";
 "Migrated custom filter filename" = "Nom de fichier de filtre personnalisé migré";

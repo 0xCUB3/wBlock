@@ -46,8 +46,10 @@ public enum RemoteFilterListMetadataLoader {
             let field = line.trimmingCharacters(in: CharacterSet(charactersIn: "/ *\t"))
             let parts = field.split(maxSplits: 1, whereSeparator: { $0.isWhitespace })
             guard parts.count == 2 else { continue }
-            if parts[0] == "@name", title == nil { title = String(parts[1]) }
-            if parts[0] == "@description", description == nil { description = String(parts[1]) }
+            let value = String(parts[1]).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !value.isEmpty else { continue }
+            if parts[0] == "@name", title == nil { title = value }
+            if parts[0] == "@description", description == nil { description = value }
         }
         return (title, description)
     }

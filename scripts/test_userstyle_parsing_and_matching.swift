@@ -515,6 +515,37 @@ struct UserStyleParsingAndMatchingTests {
         expect(stylusParsed.isPreprocessorSupported && stylusParsed.isCompiled, "Stylus should compile")
         expect((UserStyleSupport.effectiveCSS(forContent: stylus, url: "https://example.com/") ?? "").contains(".card .child"), "Stylus nesting should render")
 
+        let stylusBuiltins = """
+        /* ==UserStyle==
+        @name Stylus built-ins
+        @preprocessor stylus
+        @var color accent 'Accent' #123456
+        @var range amount 'Amount' [10, 0, 100, 1, '%']
+        @var select palette 'Palette' {'First': 'red', 'Chosen*': 'blue'}
+        @var select size 'Size' ['10px*', '20px']
+        ==/UserStyle== */
+        @-moz-document domain("example.com") {
+          .icon {
+            filter: invert(65%) sepia(95%) saturate(277%) hue-rotate(357deg) brightness(105%) contrast(80%);
+            color: lighten(accent, amount);
+            border-color: tint(#000, 50%);
+            background-color: palette;
+            width: size * 2;
+            background: url("data:image/png;base64,AA==");
+          }
+        }
+        """
+        let builtinCSS = UserStyleSupport.effectiveCSS(forContent: stylusBuiltins, url: "https://example.com/") ?? ""
+        expect(builtinCSS.contains("invert(65%) sepia(95%) saturate(277%)"), "Stylus must preserve CSS filter functions")
+        expect(builtinCSS.contains("#194878"), "Stylus must evaluate typed metadata colors and range units")
+        expect(builtinCSS.contains("#7f7f7f"), "nested standard helpers must retain access to their global scope")
+        expect(builtinCSS.contains("background-color: #00f"), "single-quoted select maps must resolve their default")
+        expect(builtinCSS.contains("width: 20px"), "single-quoted select arrays must supply typed numeric values")
+        expect(builtinCSS.contains("data:image/png;base64,AA=="), "ordinary CSS URLs need no filesystem access")
+        expect((UserStyleSupport.effectiveCSS(forContent: stylusBuiltins, url: "https://unrelated.invalid/") ?? "").isEmpty, "compiled Stylus must retain document scope")
+        let inlineImport = stylus.components(separatedBy: "==/UserStyle== */")[0] + "==/UserStyle== */\n.a { @import 'remote'; color: red; }"
+        expect(UserStyleSupport.parsed(from: inlineImport)?.isCompiled == false, "inline imports must remain unavailable")
+
         let rejectedStylusImport = """
         /* ==UserStyle==
         @name Stylus import

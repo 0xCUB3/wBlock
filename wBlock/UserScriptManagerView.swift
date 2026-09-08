@@ -2461,9 +2461,14 @@ struct AddUserScriptView: View {
         .disabled(isAdding)
     }
 
+    private var urlValidationFeedback: ValidationState {
+        if let urlImportError { return .invalid(urlImportError) }
+        return validationState
+    }
+
     private var validationBadge: some View {
         Group {
-            switch validationState {
+            switch urlValidationFeedback {
             case .idle:
                 EmptyView()
             case .invalid:
@@ -2482,7 +2487,7 @@ struct AddUserScriptView: View {
     private var validationMessage: some View {
         VStack(alignment: .leading, spacing: 4) {
             Group {
-                switch validationState {
+                switch urlValidationFeedback {
                 case .idle:
                     Text("wBlock will fetch and enable the script automatically.")
                         .font(.caption)
@@ -2492,16 +2497,10 @@ struct AddUserScriptView: View {
                         .font(.caption)
                         .foregroundStyle(.orange)
                 case .valid:
-                    Text("Looks good! Tap Add to continue.")
+                    Text("Content will be checked when you tap Add.")
                         .font(.caption)
-                        .foregroundStyle(.green)
+                        .foregroundStyle(.secondary)
                 }
-            }
-
-            if let urlImportError {
-                Text(urlImportError)
-                    .font(.caption)
-                    .foregroundStyle(.orange)
             }
         }
         .animation(.easeInOut(duration: 0.15), value: validationState)

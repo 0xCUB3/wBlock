@@ -496,7 +496,7 @@
 "Logs" = "Журналы";
 "Logs cleared" = "Журналы очищены";
 "Logs will appear here as the app runs" = "Журналы будут появляться здесь во время работы приложения";
-"Looks good! Tap Add to continue." = "Все хорошо! Нажмите «Добавить», чтобы продолжить.";
+"Content will be checked when you tap Add." = "Содержимое будет проверено после нажатия «Добавить».";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "учитывать регистр";
 "Migrated custom filter filename" = "Имя файла пользовательского фильтра перенесено";

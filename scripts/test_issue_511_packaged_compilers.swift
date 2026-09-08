@@ -29,7 +29,7 @@ DispatchQueue.global().async {
         ("less", "@accent: red; .a { color: @accent; .b { display: block; } }", ".a .b"),
         ("scss", "$accent: red; .a { color: $accent; .b { display: block; } }", ".a .b"),
         ("sass", "$accent: red\n.a\n  color: $accent\n  .b\n    display: block", ".a .b"),
-        ("stylus", "accent = red\n.a\n  color accent\n  .b\n    display block", ".a .b"),
+        ("stylus", "accent = red\n.a\n  color accent\n  .b\n    filter invert(65%) saturate(277%)\n    color tint(#000, 50%)", "#7f7f7f"),
         ("postcss", ".a { color: red; .b { display: block; } }", ".a .b")
     ]
 
