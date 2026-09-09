@@ -251,6 +251,10 @@ compile_and_run adguard-syntax \
   wBlock/AdGuardSyntaxHighlighter.swift \
   scripts/test_adguard_syntax_highlighter.swift
 
+compile_and_run userscript-content-validation \
+  wBlockCoreService/UserScriptContentValidation.swift \
+  scripts/test_userscript_content_validation.swift
+
 compile_and_run filter-diff \
   wBlockCoreService/FilterDiffUpdater.swift \
   scripts/test_filter_diff_updater.swift

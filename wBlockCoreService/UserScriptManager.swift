@@ -751,12 +751,8 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    /// Checks if content is a DDoS protection page instead of actual content
     private func isDDoSProtectionPage(_ content: String) -> Bool {
-        let lowerContent = content.lowercased()
-        return lowerContent.contains("ddos-guard") || lowerContent.contains("ddos protection")
-            || lowerContent.contains("checking your browser")
-            || (lowerContent.hasPrefix("<!doctype html") && lowerContent.contains("challenge"))
+        UserScriptContentValidation.isProtectionPage(content)
     }
 
     private func downloadUserScriptContent(from url: URL) async throws -> String {
