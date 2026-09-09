@@ -1138,14 +1138,6 @@ struct ContentModifiers: ViewModifier {
     // Track if initial presentation check has been done to avoid re-showing after dismiss
     @State private var hasPerformedInitialCheck = false
 
-    private var isShowingNoUpdatesSheet: Bool {
-        #if os(macOS)
-        filterManager.showingNoUpdatesAlert
-        #else
-        false
-        #endif
-    }
-
     func body(content: Content) -> some View {
         content
             .sheet(isPresented: $showingAddFilterSheet) {
@@ -1153,15 +1145,12 @@ struct ContentModifiers: ViewModifier {
             }
             .sheet(isPresented: Binding(
                 get: {
-                    filterManager.showingApplyProgressSheet || isShowingNoUpdatesSheet
+                    filterManager.showingApplyProgressSheet
                         || (filterManager.isLoading && !filterManager.suppressBlockingOverlay)
                 },
                 set: { presented in
                     if !presented && !filterManager.isLoading {
                         filterManager.showingApplyProgressSheet = false
-                        #if os(macOS)
-                        filterManager.showingNoUpdatesAlert = false
-                        #endif
                     }
                 }
             )) {
@@ -1171,26 +1160,12 @@ struct ContentModifiers: ViewModifier {
                         viewModel: filterManager.applyProgressViewModel,
                         isPresented: $filterManager.showingApplyProgressSheet
                     )
-                } else if isShowingNoUpdatesSheet {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("No Updates Found").font(.headline)
-                        Text("You're already using the latest filters.")
-                        HStack {
-                            Spacer()
-                            Button("OK") { filterManager.showingNoUpdatesAlert = false }
-                                .keyboardShortcut(.defaultAction)
-                        }
-                    }
-                    .padding(24)
-                    .frame(idealWidth: 380, maxWidth: 440)
                 } else {
                     UpdateCheckProgressView(filterManager: filterManager)
                         .interactiveDismissDisabled()
                 }
             }
-            #if os(iOS)
-            // A modal alert for "nothing to do" is one tap too many on a phone;
-            // Tapping elsewhere or closing the progress sheet must not dismiss the toast.
+            // Closing the progress sheet must not dismiss the non-blocking result toast.
             .overlay(alignment: .top) {
                 if filterManager.showingNoUpdatesAlert {
                     NoUpdatesToast { filterManager.showingNoUpdatesAlert = false }
@@ -1198,7 +1173,6 @@ struct ContentModifiers: ViewModifier {
                 }
             }
             .animation(.easeInOut(duration: 0.25), value: filterManager.showingNoUpdatesAlert)
-            #endif
             .alert(
                 filterManager.ruleLimitWarningTitle,
                 isPresented: $filterManager.showingRuleLimitWarningAlert
@@ -2847,63 +2821,6 @@ struct EditUserListView: View {
         }
     }
 }
-
-#if os(iOS)
-/// Non-blocking replacement for the "No Updates Found" alert on iOS.
-struct NoUpdatesToast: View {
-    let dismiss: () -> Void
-    @GestureState(resetTransaction: Transaction(animation: .spring(response: 0.3, dampingFraction: 0.8)))
-    private var dragOffset: CGSize = .zero
-
-    static func shouldDismissDrag(_ translation: CGSize, predicted: CGSize) -> Bool {
-        abs(translation.width) >= 44 || translation.height <= -44
-            || abs(predicted.width) >= 120 || predicted.height <= -120
-    }
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.title3)
-                .foregroundStyle(.green)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("No Updates Found")
-                    .font(.subheadline.weight(.semibold))
-                Text("You're already using the latest filters.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
-        .contentShape(Rectangle())
-        .offset(dragOffset)
-        .gesture(
-            DragGesture(minimumDistance: 10)
-                .updating($dragOffset) { value, offset, _ in
-                    offset = CGSize(width: value.translation.width, height: min(0, value.translation.height))
-                }
-                .onEnded { value in
-                    if Self.shouldDismissDrag(value.translation, predicted: value.predictedEndTranslation) {
-                        dismiss()
-                    }
-                }
-        )
-        .onTapGesture(perform: dismiss)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction(.escape, dismiss)
-        .task {
-            do { try await Task.sleep(nanoseconds: 8_000_000_000) } catch { return }
-            dismiss()
-        }
-    }
-}
-#endif
 
 struct RuleCapacityPopoverView: View {
     @ObservedObject var filterManager: AppFilterManager
