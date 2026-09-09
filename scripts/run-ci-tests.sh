@@ -84,6 +84,7 @@ compile_core_test apply-update-counts scripts/test_apply_update_counts.swift \
   wBlock/ApplyChangesViewModel.swift
 compile_core_test safari-setup-query-isolation scripts/test_safari_setup_query_isolation.swift \
   wBlock/SafariExtensionSetupSupport.swift
+compile_core_test userscript-frame-authorization scripts/test_userscript_frame_authorization.swift
 compile_core_test filter-refresh-planner scripts/test_filter_refresh_planner.swift
 compile_core_test issue-675-rule-analysis scripts/test_issue_675_rule_analysis.swift
 compile_core_test issue-679-affinity-cache-behavior scripts/test_issue_679_affinity_cache_behavior.swift

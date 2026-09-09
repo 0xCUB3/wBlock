@@ -466,7 +466,8 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     }
 
     public var usesGMStorage: Bool {
-        grant.contains { Self.storageGrants.contains($0.lowercased()) }
+        !grant.contains { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "none" }
+            && grant.contains { Self.storageGrants.contains($0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()) }
     }
 
     private static let storageGrants: Set<String> = [

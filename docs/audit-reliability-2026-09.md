@@ -79,6 +79,10 @@ SafariConverterLib 4.3.0 and SwiftProtobuf 1.38.1 are unchanged. SafariConverter
 
 Installed userscripts remain trusted extension-world code. This is not a per-script sandbox against malicious installed or remotely updated code; that pre-existing boundary is tracked in [#781](https://github.com/0xCUB3/wBlock/issues/781). GM grant checks alone must not be represented as such a sandbox.
 
+The September 9 follow-up binds userscript descriptor, validation, content/resource and storage relays to browser-supplied frame/site metadata. Native authorization checks current matching, enabled/paused state, site exceptions and `@noframes`; `@grant none` also denies native storage authorization. These checks authenticate the calling frame, not an individual installed script.
+
+A Near Membrane 0.19.0 prototype was rejected after real `WKWebExtension` tests on macOS 27.0 (26A5425a). Detaching its realm stalled native async continuations during the test's 20-second observation window; keeping it attached restored async execution but exposed `top.browser` through a constructor escape. The prototype is not shipped, and #781 remains open.
+
 R01 no longer relies on page-visible tokens. Scripts requiring native GM network or storage run in the isolated world, even when their descriptor requests page injection. Genuine GM calls and streaming responses use extension runtime messaging directly; page messages cannot invoke those operations. Cached page code never acquires native authority after reconciliation.
 
 Tube Cleaner retains its page hooks. Its only page-writable native projection is the bounded `wblock.tubeCleaner.sponsorBlock` playback-preference object: booleans, bounded duration, eight category modes and at most 200 bounded channel names. The isolated host fixes the script identity, action and key after native execution validation, coalesces writes, and rejects unknown fields. These preferences are deliberately public/page-writable, like the script's existing localStorage preferences; this channel provides no arbitrary storage, user IDs, credentials, networking or runtime ports.

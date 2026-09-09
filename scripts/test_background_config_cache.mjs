@@ -7,6 +7,7 @@
 // Run: node scripts/test_background_config_cache.mjs
 
 import { readFileSync } from "node:fs";
+import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -143,6 +144,33 @@ const loadBackground = ({
 };
 
 const topFrameSender = url => ({ url, frameId: 0, tab: { id: 7, url } });
+
+// The browser's sender metadata, never content-supplied fields, binds native relays.
+{
+  const actions = ['getUserScripts', 'validateUserScriptExecution', 'getUserScriptContentChunk',
+    'getUserScriptResourceChunk', 'setUserScriptStorageValue', 'deleteUserScriptStorageValue'];
+  for (const action of actions) {
+    const state = loadBackground({nativeHandler: async () => ({ok:true, userScripts:[]})});
+    const actualURL = 'https://actual.example/frame';
+    await state.onMessage({action, scriptId:'selected', url:'https://forged.example/',
+      pageURL:'https://forged.example/', isTopFrame:true, key:'key', rawValue:'true',
+      chunkIndex:0, chunkSize:100, payloadRevision:0, resourceName:'resource'},
+      {url:actualURL, frameId:3, tab:{id:7, url:'https://top.example/'}});
+    const forwarded = state.nativeMessages.find(message => message.action === action);
+    assert.ok(forwarded, `${action} reaches native with a verified frame`);
+    assert.equal(forwarded.pageURL ?? forwarded.url, actualURL, `${action} ignores forged site`);
+    assert.equal(forwarded.isTopFrame, false, `${action} ignores forged top-frame status`);
+    for (const sender of [{}, {url:actualURL,tab:{id:7}}, {url:actualURL,frameId:-1,tab:{id:7}},
+      {url:'data:text/html,forged',frameId:0,tab:{id:7}}]) {
+      const before = state.nativeMessages.filter(message => message.action === action).length;
+      const result = await state.onMessage({action,scriptId:'selected',url:actualURL},sender);
+      assert.equal(result.ok, false, `${action} rejects missing or invalid frame authority`);
+      assert.equal(state.nativeMessages.filter(message => message.action === action).length,before);
+    }
+  }
+  console.log('PASS: native userscript relays use authenticated frame/site metadata');
+}
+
 const frameSender = (url, topUrl, frameId = 1) => ({ url, frameId, tab: { id: 7, url: topUrl } });
 
 // Scenario A: persisted cache serves a top-frame config instantly while the

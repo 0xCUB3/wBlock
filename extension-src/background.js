@@ -26625,7 +26625,21 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const handleMessages = async (request, sender) => {
     var _sender$tab, _sender$tab2;
     // Cast the incoming request to `Message`.
-    const message = request;
+    let message = request;
+    const frameActions = new Set([
+      "getUserScripts", "validateUserScriptExecution", "getUserScriptContentChunk",
+      "getUserScriptResourceChunk", "setUserScriptStorageValue", "deleteUserScriptStorageValue"
+    ]);
+    if (message && frameActions.has(message.action)) {
+      // Content code never chooses its origin or top-frame status. This does
+      // not authenticate individual installed scripts within the content world.
+      if (!sender || !sender.tab || !Number.isSafeInteger(sender.tab.id)
+          || !Number.isSafeInteger(sender.frameId) || sender.frameId < 0
+          || typeof sender.url !== "string" || !/^https?:\/\//.test(sender.url)) {
+        return {ok:false, error:"Userscript request requires a verified frame"};
+      }
+      message = {...message, url:sender.url, pageURL:sender.url, isTopFrame:sender.frameId === 0};
+    }
     if (message && message.action === "wblock:noAutoplay:injectGate") {
       // Page-world fallback for the No Autoplay gate when the page's CSP
       // blocks inline scripts. Inject the bundled function directly so a
@@ -26827,6 +26841,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       const userScriptRequest = {
         action: "getUserScripts",
         url: message.url,
+        isTopFrame: message.isTopFrame,
         requestId: "userscripts-" + Date.now(),
         includeContent: message.includeContent === true,
         maxInlineContentBytes: message.maxInlineContentBytes || 0
@@ -26852,6 +26867,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         action: message.action,
         requestId: "userscript-storage-" + Date.now(),
         scriptId: message.scriptId,
+        pageURL: message.pageURL,
+        isTopFrame: message.isTopFrame,
         key: message.key
       };
       if (typeof message.rawValue === "string") {
@@ -27032,6 +27049,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return await sendPriorityNativeMessage({
           action: message.action,
           requestId: "userscript-validate-" + Date.now(),
+          isTopFrame: message.isTopFrame,
           scriptId: message.scriptId,
           url: message.url,
           payloadRevision: message.payloadRevision,
@@ -27045,6 +27063,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       const chunkRequest = {
         action: message.action,
         requestId: "userscript-chunk-" + Date.now(),
+        isTopFrame: message.isTopFrame,
         scriptId: message.scriptId,
         chunkIndex: message.chunkIndex,
         chunkSize: message.chunkSize,

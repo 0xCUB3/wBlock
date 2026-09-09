@@ -982,7 +982,9 @@ public enum WebExtensionRequestHandler {
             return
         }
 
-        guard let urlString = message["url"] as? String else {
+        guard let urlString = message["url"] as? String,
+              let page = URL(string: urlString), page.host?.isEmpty == false,
+              ["http", "https"].contains(page.scheme?.lowercased() ?? "") else {
             let response = createResponse(with: userScriptsResponse(userScripts: []))
             context.completeRequest(returningItems: [response])
             return
@@ -997,7 +999,9 @@ public enum WebExtensionRequestHandler {
             let userScriptManager = UserScriptManager.shared
             await userScriptManager.waitUntilReady()
             let payloadMutationRevision = userScriptManager.payloadMutationRevision
-            let userScripts = userScriptManager.getEnabledUserScriptsForURL(urlString)
+            let userScripts = userScriptManager.getEnabledUserScriptsForURL(urlString).filter {
+                !$0.noframes || message["isTopFrame"] as? Bool == true
+            }
 
             var userScriptDescriptors: [[String: Any]] = []
             userScriptDescriptors.reserveCapacity(userScripts.count)
@@ -1301,8 +1305,8 @@ public enum WebExtensionRequestHandler {
             await manager.refreshFromDiskForExecution()
             guard let scriptUUID = UUID(uuidString: scriptID),
                   let script = manager.userScript(withId: scriptUUID),
-                  script.isEnabled,
-                  script.usesGMStorage else {
+                  script.usesGMStorage,
+                  scriptAllowsFrame(script, message: message, manager: manager) else {
                 let response = createResponse(with: ["ok": false, "error": "Userscript storage is not authorized"])
                 context.completeRequest(returningItems: [response])
                 return
@@ -1329,8 +1333,8 @@ public enum WebExtensionRequestHandler {
             await manager.refreshFromDiskForExecution()
             guard let scriptUUID = UUID(uuidString: scriptID),
                   let script = manager.userScript(withId: scriptUUID),
-                  script.isEnabled,
-                  script.usesGMStorage else {
+                  script.usesGMStorage,
+                  scriptAllowsFrame(script, message: message, manager: manager) else {
                 let response = createResponse(with: ["ok": false, "error": "Userscript storage is not authorized"])
                 context.completeRequest(returningItems: [response])
                 return
@@ -1344,6 +1348,22 @@ public enum WebExtensionRequestHandler {
     }
 
     @MainActor
+    private static func scriptAllowsFrame(
+        _ script: UserScript,
+        message: [String: Any?],
+        manager: UserScriptManager
+    ) -> Bool {
+        guard let pageURL = (message["pageURL"] as? String) ?? (message["url"] as? String),
+              let host = URL(string: pageURL)?.host else { return false }
+        return UserScriptFrameAuthorization.allows(
+            script, pageURL: pageURL,
+            isTopFrame: message["isTopFrame"] as? Bool == true,
+            disabledOnSite: manager.isUserScript(script, disabledOnHost: host),
+            paused: BlockingPauseStore.isPaused(.userScripts)
+        )
+    }
+
+    @MainActor
     private static func requestPolicy(message: [String: Any?]) async -> UserScriptConnectPolicy? {
         guard let id = message["scriptId"] as? String, let scriptID = UUID(uuidString: id),
               let pageURL = message["pageURL"] as? String,
@@ -1352,11 +1372,9 @@ public enum WebExtensionRequestHandler {
               !BlockingPauseStore.isPaused(.userScripts) else { return nil }
         let manager = UserScriptManager.shared
         await manager.refreshFromDiskForExecution()
-        guard !BlockingPauseStore.isPaused(.userScripts),
-              let script = manager.userScript(withId: scriptID), script.isEnabled,
-              !script.isUserStyle, script.allowsGMXMLHttpRequest, script.matches(url: pageURL),
-              !manager.isUserScript(script, disabledOnHost: page.host ?? ""),
-              !script.noframes || message["isTopFrame"] as? Bool == true else { return nil }
+        guard let script = manager.userScript(withId: scriptID),
+              !script.isUserStyle, script.allowsGMXMLHttpRequest,
+              scriptAllowsFrame(script, message: message, manager: manager) else { return nil }
         return UserScriptConnectPolicy(entries: script.connect, pageURL: page)
     }
 
@@ -1745,8 +1763,7 @@ public enum WebExtensionRequestHandler {
             await manager.refreshFromDiskForExecution()
             guard UInt64(requestedRevision) == manager.payloadMutationRevision,
                   let script = manager.userScript(withId: scriptID),
-                  script.isEnabled,
-                  script.matches(url: pageURL),
+                  scriptAllowsFrame(script, message: message, manager: manager),
                   script.id.uuidString == scriptID.uuidString
             else {
                 context.completeRequest(returningItems: [createResponse(with: [
@@ -1832,8 +1849,7 @@ public enum WebExtensionRequestHandler {
             let payloadRevision = UInt64(requestedRevision)
             guard let pageURL = message["url"] as? String, !pageURL.isEmpty,
                   let script = manager.userScript(withId: scriptId),
-                  script.isEnabled,
-                  script.matches(url: pageURL) else {
+                  scriptAllowsFrame(script, message: message, manager: manager) else {
                 let response = createResponse(with: ["error": "Userscript is no longer enabled for this page"])
                 context.completeRequest(returningItems: [response])
                 return
