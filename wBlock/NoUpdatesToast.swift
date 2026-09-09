@@ -3,8 +3,10 @@ import SwiftUI
 /// Non-blocking result of a manual update check on either platform.
 struct NoUpdatesToast: View {
     let dismiss: () -> Void
-    @GestureState(resetTransaction: Transaction(animation: .spring(response: 0.3, dampingFraction: 0.8)))
-    private var dragOffset: CGSize = .zero
+    // Plain state rather than @GestureState: when a drag dismisses the toast, the offset
+    // must stay where the finger left it so the removal transition continues upward instead
+    // of springing back to the resting position first.
+    @State private var dragOffset: CGSize = .zero
 
     static func shouldDismissDrag(_ translation: CGSize, predicted: CGSize) -> Bool {
         abs(translation.width) >= 44 || translation.height <= -44
@@ -38,12 +40,16 @@ struct NoUpdatesToast: View {
         .offset(dragOffset)
         .gesture(
             DragGesture(minimumDistance: 10)
-                .updating($dragOffset) { value, offset, _ in
-                    offset = CGSize(width: value.translation.width, height: min(0, value.translation.height))
+                .onChanged { value in
+                    dragOffset = CGSize(width: value.translation.width, height: min(0, value.translation.height))
                 }
                 .onEnded { value in
                     if Self.shouldDismissDrag(value.translation, predicted: value.predictedEndTranslation) {
                         dismiss()
+                    } else {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            dragOffset = .zero
+                        }
                     }
                 }
         )

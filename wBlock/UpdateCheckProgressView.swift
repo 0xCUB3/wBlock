@@ -2,6 +2,9 @@ import SwiftUI
 
 struct UpdateCheckProgressView: View {
     @ObservedObject var filterManager: AppFilterManager
+    #if os(iOS)
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    #endif
 
     private var counter: String? {
         guard let progress = filterManager.updateCheckProgress, progress.total > 0 else { return nil }
@@ -30,7 +33,15 @@ struct UpdateCheckProgressView: View {
 
     var body: some View {
         #if os(iOS)
-        if #available(iOS 16.0, *) {
+        // iPhone ignores detents in landscape and shows a full-height sheet, which leaves a
+        // lone progress bar in a page of white. Float a card over a clear sheet instead.
+        if #available(iOS 16.4, *), verticalSizeClass == .compact {
+            content
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .padding(24)
+                .presentationBackground(.clear)
+                .presentationDragIndicator(.hidden)
+        } else if #available(iOS 16.0, *) {
             content
                 .presentationDetents([.height(160)])
                 .presentationDragIndicator(.hidden)
