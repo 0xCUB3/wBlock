@@ -1,0 +1,131 @@
+name: app-store-upload
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: "CURRENT_PROJECT_VERSION to stamp, for example 1094"
+        required: true
+        type: string
+      marketing_version:
+        description: "MARKETING_VERSION to stamp, for example 3.1.0"
+        required: true
+        type: string
+      platforms:
+        description: "Space-separated platforms to archive and upload"
+        required: false
+        default: "iOS macOS"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  upload:
+    runs-on: macos-26
+    timeout-minutes: 180
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Select Xcode 26.6 and confirm a release host OS
+        run: |
+          set -euo pipefail
+          sudo xcode-select -s /Applications/Xcode_26.6.app
+          xcodebuild -version
+          sw_vers
+          host_build="$(sw_vers -buildVersion)"
+          # Beta and RC builds carry a four-digit-or-longer numeric suffix after the letter, release builds do not.
+          if [[ "${host_build}" =~ [A-Z][0-9]{4,} ]]; then
+            echo "Host macOS ${host_build} looks like a beta build; App Review rejects such binaries (ITMS-90301)" >&2
+            exit 1
+          fi
+
+      - name: Import App Store distribution certificates
+        env:
+          APPSTORE_CERTS_P12_B64: ${{ secrets.APPSTORE_CERTS_P12_B64 }}
+          APPSTORE_CERTS_PASSWORD: ${{ secrets.APPSTORE_CERTS_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in APPSTORE_CERTS_P12_B64 APPSTORE_CERTS_PASSWORD; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Missing secret: ${name}" >&2
+              exit 1
+            fi
+          done
+          KEYCHAIN_PATH="${RUNNER_TEMP}/appstore.keychain-db"
+          KEYCHAIN_PASSWORD="$(uuidgen)"
+          echo "${APPSTORE_CERTS_P12_B64}" | base64 --decode > "${RUNNER_TEMP}/appstore.p12"
+          security create-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+          security set-keychain-settings -lut 21600 "${KEYCHAIN_PATH}"
+          security unlock-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+          security list-keychains -d user -s "${KEYCHAIN_PATH}" login.keychain-db
+          security import "${RUNNER_TEMP}/appstore.p12" -k "${KEYCHAIN_PATH}" -P "${APPSTORE_CERTS_PASSWORD}" -T /usr/bin/codesign -T /usr/bin/security -T /usr/bin/productbuild
+          security set-key-partition-list -S apple-tool:,apple: -s -k "${KEYCHAIN_PASSWORD}" "${KEYCHAIN_PATH}"
+          security find-identity -v -p codesigning "${KEYCHAIN_PATH}"
+          security find-identity -v "${KEYCHAIN_PATH}" | grep -q "3rd Party Mac Developer Installer" || { echo "Installer identity missing" >&2; exit 1; }
+
+      - name: Install App Store Connect API key
+        env:
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_KEY_P8_B64: ${{ secrets.APPLE_API_KEY_P8_B64 }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "${APPLE_API_KEY_P8_B64}" | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_${APPLE_API_KEY_ID}.p8
+          echo "AUTH_KEY_PATH=$HOME/.appstoreconnect/private_keys/AuthKey_${APPLE_API_KEY_ID}.p8" >> "$GITHUB_ENV"
+
+      - name: Archive, verify host stamp, and upload
+        env:
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          MARKETING_VERSION: ${{ inputs.marketing_version }}
+          PLATFORMS: ${{ inputs.platforms }}
+        run: |
+          set -euo pipefail
+          AUTH=(-allowProvisioningUpdates -authenticationKeyPath "${AUTH_KEY_PATH}" -authenticationKeyID "${APPLE_API_KEY_ID}" -authenticationKeyIssuerID "${APPLE_API_ISSUER_ID}")
+          cat > "${RUNNER_TEMP}/UploadOptions.plist" <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>DNP7DGUB7B</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+            <key>uploadSymbols</key><true/>
+            <key>testFlightInternalTestingOnly</key><false/>
+          </dict></plist>
+          PLIST
+          for platform in ${PLATFORMS}; do
+            archive="${RUNNER_TEMP}/wBlock-${platform}-${MARKETING_VERSION}-${BUILD_NUMBER}.xcarchive"
+            echo "== Archiving ${platform}"
+            xcodebuild -project wBlock.xcodeproj -scheme wBlock -configuration Release \
+              -destination "generic/platform=${platform}" \
+              -archivePath "${archive}" \
+              "${AUTH[@]}" \
+              CURRENT_PROJECT_VERSION="${BUILD_NUMBER}" MARKETING_VERSION="${MARKETING_VERSION}" \
+              archive 2>&1 | tee "${RUNNER_TEMP}/archive-${platform}.log" | grep -E "error:|warning: .*sign|ARCHIVE (SUCCEEDED|FAILED)" || true
+            grep -q "ARCHIVE SUCCEEDED" "${RUNNER_TEMP}/archive-${platform}.log" || { tail -60 "${RUNNER_TEMP}/archive-${platform}.log"; exit 1; }
+            app="$(find "${archive}/Products" -name wBlock.app -maxdepth 3 | head -1)"
+            if [[ "${platform}" == "macOS" ]]; then plist="${app}/Contents/Info.plist"; else plist="${app}/Info.plist"; fi
+            for key in CFBundleShortVersionString CFBundleVersion BuildMachineOSBuild DTXcodeBuild DTSDKName; do
+              printf '%s=' "${key}"; /usr/libexec/PlistBuddy -c "Print :${key}" "${plist}"
+            done
+            [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "${plist}")" == "${BUILD_NUMBER}" ]]
+            echo "== Uploading ${platform}"
+            xcodebuild -exportArchive -archivePath "${archive}" \
+              -exportOptionsPlist "${RUNNER_TEMP}/UploadOptions.plist" \
+              -exportPath "${RUNNER_TEMP}/upload-${platform}" \
+              "${AUTH[@]}" 2>&1 | tee "${RUNNER_TEMP}/upload-${platform}.log" | grep -E "error:|Upload succeeded|EXPORT (SUCCEEDED|FAILED)" || true
+            grep -q "EXPORT SUCCEEDED" "${RUNNER_TEMP}/upload-${platform}.log" || { tail -60 "${RUNNER_TEMP}/upload-${platform}.log"; exit 1; }
+          done
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: app-store-upload-logs-${{ inputs.build_number }}
+          path: ${{ runner.temp }}/*.log
+          if-no-files-found: ignore
