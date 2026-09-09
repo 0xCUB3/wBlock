@@ -81,7 +81,7 @@ Installed userscripts remain trusted extension-world code. This is not a per-scr
 
 The September 9 follow-up binds userscript descriptor, validation, content/resource and storage relays to browser-supplied frame/site metadata. Native authorization checks current matching, enabled/paused state, site exceptions and `@noframes`; `@grant none` also denies native storage authorization. These checks authenticate the calling frame, not an individual installed script.
 
-A Near Membrane 0.19.0 prototype was rejected after real `WKWebExtension` tests on macOS 27.0 (26A5425a). Detaching its realm stalled native async continuations during the test's 20-second observation window; keeping it attached restored async execution but exposed `top.browser` through a constructor escape. The prototype is not shipped, and #781 remains open.
+A Near Membrane 0.19.0 prototype was rejected after real `WKWebExtension` tests on macOS 27.0 (26A5425a). Detaching its realm stalled native async continuations during the test's 20-second observation window; keeping it attached restored async execution but exposed `top.browser` through a constructor escape. The prototype is not shipped. #781 is closed as deferred, not fixed; installed-script isolation remains outside the current security boundary.
 
 R01 no longer relies on page-visible tokens. Scripts requiring native GM network or storage run in the isolated world, even when their descriptor requests page injection. Genuine GM calls and streaming responses use extension runtime messaging directly; page messages cannot invoke those operations. Cached page code never acquires native authority after reconciliation.
 
