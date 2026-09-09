@@ -289,7 +289,7 @@
 "Downloading selected updates..." = "選択したアップデートをダウンロードしています...";
 "Downloading Updates" = "アップデートをダウンロードしています";
 "due now" = "今すぐ実行";
-"Due soon catch-up" = "まもなく期限の追いつき実行";
+"Due soon catch-up" = "補完処理の期限間近";
 "Duplicate Userscripts Found" = "重複するユーザースクリプトが見つかりました";
 "EasyList China" = "EasyList China";
 "EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard 中国語フィルター。中国語の Web サイト上の広告を特に削除するフィルターリスト。";
@@ -427,7 +427,7 @@
 "Find" = "検索";
 "Finnish ad blocking filter list." = "フィンランドの広告ブロック フィルターリスト。";
 "For complete ad blocking" = "広告を完全にブロックするには";
-"Foreground Catch-up" = "フォアグラウンド追いつき実行";
+"Foreground Catch-up" = "フォアグラウンド補完処理";
 "Foreign" = "海外";
 "Found %d update(s) available." = "利用可能な %d アップデートが見つかりました。";
 "Frellwit's Swedish Filter" = "Frellwit's Swedish Filter";
@@ -533,7 +533,7 @@
 "No download URL for script" = "スクリプトのダウンロード URL がありません";
 "No filter lists selected. Clearing rules from all extensions." = "フィルタ リストが選択されていません。すべての拡張機能からルールをクリアします。";
 "No filters selected - clearing all extensions" = "フィルターが選択されていません — すべての拡張機能をクリアしています";
-"No foreground catch-up recorded" = "フォアグラウンド追いつき実行の記録がありません";
+"No foreground catch-up recorded" = "フォアグラウンドの補完処理は記録されていません";
 "No logs found" = "ログが見つかりません";
 "No matching extensions for selected filters." = "選択したフィルターに一致する拡張子はありません。";
 "No matching userscripts" = "一致するユーザースクリプトはありません";
@@ -570,7 +570,7 @@
 "Open Safari Settings" = "Safariの設定を開く";
 "Optimized for mobile ad blocking. Recommended for iOS/iPadOS." = "モバイル広告ブロック用に最適化されています。 iOS/iPadOS推奨。";
 "Other" = "その他";
-"Overdue catch-up" = "期限超過の追いつき実行";
+"Overdue catch-up" = "補完実行の期限超過";
 "Paste" = "貼り付け";
 "Paste from Clipboard" = "クリップボードから貼り付け";
 "Paste one or more filter URLs, one per line." = "1行に1つずつ、1つ以上のフィルターURLを貼り付けてください。";
@@ -1100,6 +1100,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "A wBlock filter update is already in progress." = "wBlockのフィルター更新は既に実行中です。";
 "wBlock filter update completed." = "wBlockのフィルター更新が完了しました。";
 "wBlock filter update completed with errors." = "wBlockのフィルター更新は完了しましたが、一部エラーが発生しました。";
-"Shared update status is unavailable." = "共有の更新ステータスを利用できません。";
-"Shared update status lock is unavailable." = "共有の更新ステータスのロックを利用できません。";
+"Shared update status is unavailable." = "共有更新ステータスを取得できません。";
+"Shared update status lock is unavailable." = "共有更新ステータスのロックを取得できません。";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ はSafariの拡張機能ごとの上限により%d件のルールを除外しました。";
