@@ -10,6 +10,7 @@ struct ProtobufReliabilityTests {
         try! FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
+        await testInlineFilterSelection(root: root.appendingPathComponent("inline-filters"))
         await testDurableMigrationAndCorruptionRecovery(root: root.appendingPathComponent("recovery"))
         await testMissingMainAndScriptTimestamp(root: root.appendingPathComponent("missing-main"))
         await testCorruptMainWithoutBackup(root: root.appendingPathComponent("no-backup-recovery"))
@@ -17,6 +18,58 @@ struct ProtobufReliabilityTests {
         await testThreeWayDeletionAndInsertion(root: root.appendingPathComponent("merge"))
         await testConditionalCloudDisabledHosts(root: root.appendingPathComponent("cloud-disabled-hosts"))
         print("PASS")
+    }
+
+    private static func testInlineFilterSelection(root: URL) async {
+        let suite = "test.wblock.inline.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let id = UUID()
+        let url = URL(string: "wblock://userlist/\(id.uuidString)")!
+        var filter = FilterList(id: id, name: "User Rules", url: url,
+                                category: .custom, isCustom: true, isSelected: true)
+        var manager = await makeManager(root: root, standard: defaults, group: defaults)
+        await manager.loadData()
+        for selected in [true, false, true] {
+            filter.isSelected = selected
+            let saved = await manager.updateFilterLists([filter])
+            expect(saved, "inline filter must persist")
+            manager = await makeManager(root: root, standard: defaults, group: defaults)
+            await manager.loadData()
+            let loaded = manager.getFilterLists().first { $0.id == id }!
+            expect(loaded.url == url && loaded.isInlineUserList, "restart must retain the local rules address")
+            expect(loaded.isSelected == selected, "restart must retain the user's selection")
+            let rebased = FilterSelectionRebaser.rebaseSelection(snapshot: [filter], latestPersisted: [loaded])
+            expect(rebased[0].isSelected == selected, "filter updates must retain inline selection")
+            let updated = await manager.updateFilterLists(rebased)
+            expect(updated, "updated inline filter must persist")
+        }
+
+        // Earlier versions saved the rejected local address inside a placeholder.
+        var placeholder = URLComponents()
+        placeholder.scheme = "wblock-invalid-filter"
+        placeholder.path = "unavailable"
+        placeholder.queryItems = [URLQueryItem(name: "source", value: url.absoluteString)]
+        filter.url = placeholder.url!
+        filter.isSelected = false
+        let saved = await manager.updateFilterLists([filter])
+        expect(saved, "legacy placeholder fixture must persist")
+        manager = await makeManager(root: root, standard: defaults, group: defaults)
+        await manager.loadData()
+        let recovered = manager.getFilterLists().first { $0.id == id }!
+        expect(recovered.url == url && recovered.isInlineUserList, "recover previously rejected local addresses")
+        expect(!recovered.isSelected, "recovery must not enable a disabled list")
+
+        for raw in ["", "not a URL", "https:///", "ftp://example.com/filter.txt", "wblock://other/123"] {
+            let rejected = PersistedFilterURL.resolve(raw)
+            expect(!rejected.isUsable, "unsupported addresses must stay disabled")
+            expect(!PersistedFilterURL.resolve(rejected.url.absoluteString).isUsable,
+                   "invalid placeholders must stay disabled")
+        }
+        for raw in ["https://example.com/filter.txt", "http://example.com/filter.txt", "file:///tmp/rules.txt",
+                    "WBLOCK://USERLIST/\(id.uuidString)"] {
+            expect(PersistedFilterURL.resolve(raw).isUsable, "supported addresses must remain usable")
+        }
     }
 
     private static func testMissingMainAndScriptTimestamp(root: URL) async {
