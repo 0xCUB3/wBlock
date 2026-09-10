@@ -142,6 +142,7 @@ compile_core_test filter-list-site-exclusion scripts/test_filter_list_site_exclu
 compile_core_test userscript-pattern-budget scripts/test_userscript_pattern_budget.swift
 compile_core_test issue-645-compile-order scripts/test_issue_645_compile_order.swift
 compile_core_test compilation-provenance scripts/test_compilation_provenance.swift
+compile_core_test target-compilation scripts/test_target_compilation.swift
 compile_core_test issue-729-headless-rebuild-gate scripts/test_issue_729_headless_rebuild_gate.swift
 compile_core_test filter-catalog-remote scripts/test_filter_catalog_remote.swift
 compile_core_test filter-list-fetch-chain scripts/test_filter_list_fetch_chain.swift

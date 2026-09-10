@@ -1913,111 +1913,100 @@ public actor SharedAutoUpdateManager {
         }
     }
 
-    // MARK: - Conversion & Reload
-    private struct ConversionTargetWork: Sendable {
-        let target: ContentBlockerTargetInfo
-        let filters: [FilterList]
-        let allTargets: [ContentBlockerTargetInfo]
-        let containerURL: URL
-        let disabledSites: [String]
-        let affinitySnapshot: SafariContentBlockerAffinitySnapshot
-        let orderedFilters: [FilterList]
-        let extraRulesText: String?
-        let isBackground: Bool
-        let deadline: Date?
-        let minimumTimeForConversionTarget: TimeInterval
+    public struct TargetCompilationRequest: Sendable {
+        public let target: ContentBlockerTargetInfo
+        public let filters: [FilterList]
+        public let allTargets: [ContentBlockerTargetInfo]
+        public let disabledSites: [String]
+        public let affinitySnapshot: SafariContentBlockerAffinitySnapshot
+        public let orderedFilters: [FilterList]
+        public let extraRulesText: String?
+        public let deadline: Date?
+        public let minimumTime: TimeInterval
+        public let isCancelled: @Sendable () -> Bool
+
+        public init(
+            target: ContentBlockerTargetInfo,
+            filters: [FilterList],
+            allTargets: [ContentBlockerTargetInfo],
+            disabledSites: [String],
+            affinitySnapshot: SafariContentBlockerAffinitySnapshot,
+            orderedFilters: [FilterList],
+            extraRulesText: String?,
+            deadline: Date?,
+            minimumTime: TimeInterval,
+            isCancelled: @escaping @Sendable () -> Bool
+        ) {
+            self.target = target
+            self.filters = filters
+            self.allTargets = allTargets
+            self.disabledSites = disabledSites
+            self.affinitySnapshot = affinitySnapshot
+            self.orderedFilters = orderedFilters
+            self.extraRulesText = extraRulesText
+            self.deadline = deadline
+            self.minimumTime = minimumTime
+            self.isCancelled = isCancelled
+        }
     }
 
-    private enum ConversionTargetFailure: Sendable {
-        case cancelled
-        case budgetExpired(remainingSeconds: Int)
-        case failed(description: String)
+    public struct TargetCompilationResult: Sendable {
+        public let target: ContentBlockerTargetInfo
+        public let outcome: ContentBlockerService.ContentBlockerTargetOutcome?
+        public let failureDescription: String?
+        public let budgetExpired: Int?
+        public let durationMs: Int
     }
 
-    private struct ConversionTargetResult: Sendable {
-        let target: ContentBlockerTargetInfo
-        let conversion: (safariRulesCount: Int, truncatedRuleCount: Int, advancedRulesText: String?)?
-        let usedCache: Bool
-        let admittedSourceRuleCountsByFilterID: [UUID: Int]
-        let inputWriteMs: Int
-        let inputBytes: Int64
-        let conversionMs: Int
-        let failure: ConversionTargetFailure?
-    }
-
-    private nonisolated static func convertTarget(_ work: ConversionTargetWork) -> ConversionTargetResult {
-        let target = work.target
-        let start = Date()
-
-        if work.isBackground, let deadline = work.deadline,
-           deadline.timeIntervalSinceNow < work.minimumTimeForConversionTarget {
-            return ConversionTargetResult(
-                target: target,
-                conversion: nil,
-                usedCache: false,
-                admittedSourceRuleCountsByFilterID: [:],
-                inputWriteMs: 0,
-                inputBytes: 0,
-                conversionMs: 0,
-                failure: .budgetExpired(
-                    remainingSeconds: max(0, Int(deadline.timeIntervalSinceNow.rounded(.down)))
+    /// Compiles independent targets with bounded concurrency and serial result delivery.
+    public nonisolated static func compileTargets(
+        _ requests: [TargetCompilationRequest],
+        onResult: ((TargetCompilationResult) async -> Void)? = nil
+    ) async -> [TargetCompilationResult] {
+        var results: [TargetCompilationResult] = []
+        await boundedConcurrentForEach(requests, operation: { request in
+            let started = Date()
+            func result(
+                outcome: ContentBlockerService.ContentBlockerTargetOutcome? = nil,
+                failureDescription: String? = nil,
+                budgetExpired: Int? = nil
+            ) -> TargetCompilationResult {
+                TargetCompilationResult(
+                    target: request.target, outcome: outcome,
+                    failureDescription: failureDescription, budgetExpired: budgetExpired,
+                    durationMs: Int(Date().timeIntervalSince(started) * 1000)
                 )
-            )
-        }
-
-        do {
-            let outcome = try ContentBlockerService.compileTargetRules(
-                filters: work.filters,
-                orderedSelectedFilters: work.orderedFilters,
-                affinitySnapshot: work.affinitySnapshot,
-                targetInfo: target,
-                allTargets: work.allTargets,
-                disabledSites: work.disabledSites,
-                extraRulesText: work.extraRulesText,
-                groupIdentifier: GroupIdentifier.shared.value,
-                isCancelled: { Task.isCancelled }
-            )
-
-            let conversion = (
-                safariRulesCount: outcome.safariRulesCount,
-                truncatedRuleCount: outcome.truncatedRuleCount,
-                advancedRulesText: outcome.advancedRulesText
-            )
-            return ConversionTargetResult(
-                target: target,
-                conversion: conversion,
-                usedCache: outcome.reusedCachedBase,
-                admittedSourceRuleCountsByFilterID: outcome.admittedSourceRuleCountsByFilterID,
-                inputWriteMs: 0,
-                inputBytes: 0,
-                conversionMs: Int(Date().timeIntervalSince(start) * 1000),
-                failure: nil
-            )
-        } catch is CancellationError {
-            return ConversionTargetResult(
-                target: target,
-                conversion: nil,
-                usedCache: false,
-                admittedSourceRuleCountsByFilterID: [:],
-                inputWriteMs: 0,
-                inputBytes: 0,
-                conversionMs: Int(Date().timeIntervalSince(start) * 1000),
-                failure: .cancelled
-            )
-        } catch {
-            return ConversionTargetResult(
-                target: target,
-                conversion: nil,
-                usedCache: false,
-                admittedSourceRuleCountsByFilterID: [:],
-                inputWriteMs: 0,
-                inputBytes: 0,
-                conversionMs: Int(Date().timeIntervalSince(start) * 1000),
-                failure: .failed(description: error.localizedDescription)
-            )
-        }
+            }
+            if let deadline = request.deadline, deadline.timeIntervalSinceNow < request.minimumTime {
+                return result(budgetExpired: max(0, Int(deadline.timeIntervalSinceNow.rounded(.down))))
+            }
+            if request.isCancelled() || Task.isCancelled { return result() }
+            do {
+                let outcome = try ContentBlockerService.compileTargetRules(
+                    filters: request.filters,
+                    orderedSelectedFilters: request.orderedFilters,
+                    affinitySnapshot: request.affinitySnapshot,
+                    targetInfo: request.target,
+                    allTargets: request.allTargets,
+                    disabledSites: request.disabledSites,
+                    extraRulesText: request.extraRulesText,
+                    groupIdentifier: GroupIdentifier.shared.value,
+                    isCancelled: { request.isCancelled() || Task.isCancelled }
+                )
+                return result(outcome: outcome)
+            } catch is CancellationError {
+                return result()
+            } catch {
+                return result(failureDescription: LogErrorDescriber.describe(error))
+            }
+        }, onResult: { result in
+            results.append(result)
+            await onResult?(result)
+        })
+        return results
     }
 
+    // MARK: - Conversion & Reload
     private func rebuildAndReload(
         selectedFilters: [FilterList],
         policy: AutoUpdateExecutionPolicy,
@@ -2048,76 +2037,43 @@ public actor SharedAutoUpdateManager {
                     from: ProtobufDataManager.shared.getActiveZapperRulesByHost()
                 )
         }
-        var results: [String: ConversionTargetResult] = [:]
-        let works = targets.map { target in
-            ConversionTargetWork(
+        let requests = targets.map { target in
+            TargetCompilationRequest(
                 target: target,
                 filters: byTarget[target] ?? [],
                 allTargets: targets,
-                containerURL: containerURL,
                 disabledSites: disabledSites,
                 affinitySnapshot: affinitySnapshot,
                 orderedFilters: ordered,
                 extraRulesText: target.slot == 5 ? zapper : nil,
-                isBackground: policy.isBackground,
-                deadline: policy.deadline,
-                minimumTimeForConversionTarget: policy.minimumTimeForConversionTarget
+                deadline: policy.isBackground ? policy.deadline : nil,
+                minimumTime: policy.minimumTimeForConversionTarget,
+                isCancelled: { Task.isCancelled }
             )
         }
-        await boundedConcurrentForEach(
-            works,
-            operation: { Self.convertTarget($0) },
-            onResult: { result in
-                results[result.target.bundleIdentifier] = result
-            }
-        )
+        let compiled = await Self.compileTargets(requests)
+        let results = Dictionary(uniqueKeysWithValues: compiled.map { ($0.target.bundleIdentifier, $0) })
 
         for target in targets {
-            guard let result = results[target.bundleIdentifier] else {
-                throw CancellationError()
+            guard let result = results[target.bundleIdentifier] else { throw CancellationError() }
+            if let remaining = result.budgetExpired {
+                throw AutoUpdateError.backgroundBudgetExpired(phase: AutoUpdateBudgetPhase.conversionTarget, remainingSeconds: remaining)
             }
-            switch result.failure {
-            case .cancelled:
-                throw CancellationError()
-            case let .budgetExpired(remainingSeconds):
-                throw AutoUpdateError.backgroundBudgetExpired(
-                    phase: AutoUpdateBudgetPhase.conversionTarget,
-                    remainingSeconds: remainingSeconds
-                )
-            case let .failed(description):
-                throw NSError(
-                    domain: "SharedAutoUpdateManager.Conversion",
-                    code: 1,
-                    userInfo: [NSLocalizedDescriptionKey: description]
-                )
-            case nil:
-                guard result.conversion != nil else { throw CancellationError() }
+            if let description = result.failureDescription {
+                throw NSError(domain: "SharedAutoUpdateManager.Conversion", code: 1, userInfo: [NSLocalizedDescriptionKey: description])
             }
+            guard result.outcome != nil else { throw CancellationError() }
         }
 
         for target in targets {
-            guard let conversion = results[target.bundleIdentifier]?.conversion else {
-                throw CancellationError()
-            }
+            guard let conversion = results[target.bundleIdentifier]?.outcome else { throw CancellationError() }
             if conversion.truncatedRuleCount > 0 {
-                throw NSError(
-                    domain: "SharedAutoUpdateManager.RuleLimit",
-                    code: 1,
-                    userInfo: [
-                        NSLocalizedDescriptionKey:
-                            String.localizedStringWithFormat(
-                                NSLocalizedString("%@ dropped %d rules at Safari's per-extension limit.", comment: "Truncated Safari rule count"),
-                                target.displayName,
-                                conversion.truncatedRuleCount
-                            )
-                    ]
-                )
+                throw NSError(domain: "SharedAutoUpdateManager.RuleLimit", code: 1, userInfo: [NSLocalizedDescriptionKey: String.localizedStringWithFormat(NSLocalizedString("%@ dropped %d rules at Safari's per-extension limit.", comment: "Truncated Safari rule count"), target.displayName, conversion.truncatedRuleCount)])
             }
         }
-
         var reloadResults: [String: ContentBlockerService.ReloadAttemptResult] = [:]
         if reloadContentBlockers {
-            let counts = results.mapValues { $0.conversion?.safariRulesCount ?? 0 }
+            let counts = results.mapValues { $0.outcome?.safariRulesCount ?? 0 }
             for target in ContentBlockerReloadPolicy.orderedTargets(targets, ruleCounts: counts) {
                 try Task.checkCancellation()
                 try checkBudget(
@@ -2141,7 +2097,7 @@ public actor SharedAutoUpdateManager {
         for target in targets {
             try Task.checkCancellation()
             guard let result = results[target.bundleIdentifier],
-                  let conversion = result.conversion else {
+                  let conversion = result.outcome else {
                 throw CancellationError()
             }
             let cached = ContentBlockerIncrementalCache.loadCachedAdvancedRules(
@@ -2163,16 +2119,16 @@ public actor SharedAutoUpdateManager {
                     failedNames.append(target.displayName)
                 }
             }
-            for (filterID, count) in result.admittedSourceRuleCountsByFilterID {
+            for (filterID, count) in conversion.admittedSourceRuleCountsByFilterID {
                 appliedSourceRuleCountsByFilterID[filterID, default: 0] += count
             }
             metrics.append(
                 RebuildTargetMetrics(
                     targetName: target.displayName,
-                    cacheHit: result.usedCache,
-                    inputWriteMs: result.inputWriteMs,
-                    inputBytes: result.inputBytes,
-                    conversionMs: result.conversionMs,
+                    cacheHit: conversion.reusedCachedBase,
+                    inputWriteMs: 0,
+                    inputBytes: 0,
+                    conversionMs: result.durationMs,
                     reloadMs: reloadMs,
                     reloadAttempts: reloadAttempts,
                     safariRules: conversion.safariRulesCount
