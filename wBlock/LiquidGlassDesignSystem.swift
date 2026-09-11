@@ -102,8 +102,8 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View, Search: View>
 
 /// Toolbar for pages pushed inside the navigation stack (Site Settings,
 /// Element Zapper, Logs): the action buttons share one native glass group
-/// with compact hit targets, a fixed spacer breaks the bubble, and search
-/// stands alone on the right (#771). Native items are used here because a
+/// with compact hit targets; search supplies its own capsule without an extra
+/// fixed spacer. Native action items are used here because a
 /// custom multi-button item inside a pushed page reports the first button's
 /// accessibility name for every button.
 struct MacPushedActionsToolbar<Actions: View, Search: View>: ViewModifier {
@@ -130,10 +130,13 @@ struct MacPushedActionsToolbar<Actions: View, Search: View>: ViewModifier {
                     }
                 }
                 if Search.self != EmptyView.self {
-                    if !isSearchExpanded {
-                        ToolbarSpacer(.fixed, placement: .automatic)
+                    ToolbarItem(placement: .automatic) {
+                        search()
+                            .labelStyle(.iconOnly)
+                            .buttonStyle(CompactToolbarButtonStyle())
+                            .glassEffect(.regular.interactive(), in: .capsule)
                     }
-                    ToolbarItem(placement: .automatic) { search() }
+                    .sharedBackgroundVisibility(.hidden)
                 }
             }
         } else {
