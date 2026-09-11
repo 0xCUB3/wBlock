@@ -344,6 +344,7 @@
 "Expired %@" = "Abgelaufen %@";
 "Export" = "Exportieren";
 "Export failed: %@" = "Export fehlgeschlagen: %@";
+"The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "Der Inhalt der lokalen Filterliste „%@“ ist nicht verfügbar. Stellen Sie die Liste auf dem ursprünglichen Gerät wieder her und erstellen Sie ein neues Backup.";
 "Export Settings" = "Einstellungen exportieren";
 "Extension Slots" = "Erweiterungs-Slots";
 "Extensions" = "Erweiterungen";

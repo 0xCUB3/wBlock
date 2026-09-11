@@ -801,10 +801,16 @@ extension SettingsView {
 
     private func exportBackup() {
         Task { @MainActor in
-            let backup = await BackupManager.createBackup(filterManager: filterManager)
-            guard let data = try? BackupManager.exportData(backup: backup) else {
-                await ConcurrentLogManager.shared.operation("settings-export", fields: ["result": "encoding-failed"], level: .error)
-                backupStatusMessage = String(localized: "Failed to create backup.")
+            let data: Data
+            do {
+                let backup = try await BackupManager.createBackup(filterManager: filterManager)
+                data = try BackupManager.exportData(backup: backup)
+            } catch {
+                await ConcurrentLogManager.shared.operation("settings-export", fields: ["result": "creation-failed"], level: .error)
+                backupStatusMessage = String.localizedStringWithFormat(
+                    NSLocalizedString("Export failed: %@", comment: "Backup export failure"),
+                    error.localizedDescription
+                )
                 showingBackupStatus = true
                 return
             }

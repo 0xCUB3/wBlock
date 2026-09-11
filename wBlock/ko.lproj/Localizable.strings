@@ -344,6 +344,7 @@
 "Expired %@" = "만료됨 %@";
 "Export" = "내보내기";
 "Export failed: %@" = "내보내기 실패: %@";
+"The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "로컬 필터 목록 “%@”의 내용을 사용할 수 없습니다. 원래 기기에서 목록을 복구하고 새 백업을 만드세요.";
 "Export Settings" = "설정 내보내기";
 "Extension Slots" = "확장 슬롯";
 "Extensions" = "확장 프로그램";

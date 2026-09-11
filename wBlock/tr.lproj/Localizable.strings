@@ -344,6 +344,7 @@
 "Expired %@" = "%@ süresi doldu";
 "Export" = "Dışa aktar";
 "Export failed: %@" = "Dışa aktarılamadı: %@";
+"The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "Yerel filtre listesi “%@” içeriğine erişilemiyor. Listeyi asıl cihazda kurtarın ve yeni bir yedek oluşturun.";
 "Export Settings" = "Ayarları dışa aktar";
 "Extension Slots" = "Genişletme Modülleri";
 "Extensions" = "Genişletmeler";

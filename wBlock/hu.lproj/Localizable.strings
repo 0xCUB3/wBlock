@@ -344,6 +344,7 @@
 "Expired %@" = "Lejárt %@";
 "Export" = "Exportálás";
 "Export failed: %@" = "Exportálás sikertelen: %@";
+"The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "A helyi „%@” szűrőlista tartalma nem érhető el. Állítsa helyre a listát az eredeti eszközön, és készítsen új biztonsági mentést.";
 "Export Settings" = "Beállítások exportálása";
 "Extension Slots" = "Bővítményhelyek";
 "Extensions" = "Bővítmények";

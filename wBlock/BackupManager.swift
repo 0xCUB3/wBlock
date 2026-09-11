@@ -262,6 +262,23 @@ struct WBlockBackup: Codable, Sendable {
     }
 }
 
+enum BackupContentError: LocalizedError {
+    case unavailableLocalFilter(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .unavailableLocalFilter(let name):
+            return String.localizedStringWithFormat(
+                NSLocalizedString(
+                    "The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup.",
+                    comment: "Backup cannot safely export or restore a local list without its source"
+                ),
+                name
+            )
+        }
+    }
+}
+
 /// Plans identity-preserving upserts before writing any inline content. The URL
 /// resolver is injected so restore behavior can be tested without app-group data.
 @MainActor
@@ -343,9 +360,11 @@ enum BackupCustomFilterRestorer {
                 guard components.host?.lowercased() == "userlist", path.count == 1,
                       let id = UUID(uuidString: String(path[0])),
                       components.user == nil, components.password == nil, components.port == nil,
-                      components.query == nil, components.fragment == nil,
-                      entry.content != nil else {
+                      components.query == nil, components.fragment == nil else {
                     throw CocoaError(.fileReadCorruptFile)
+                }
+                guard entry.content != nil else {
+                    throw BackupContentError.unavailableLocalFilter(entry.name)
                 }
                 inlineID = id
                 url = URL(string: "wblock://userlist/\(id.uuidString)")!
@@ -473,7 +492,7 @@ enum BackupManager {
 
     // MARK: - Create
 
-    static func createBackup(filterManager: AppFilterManager) async -> WBlockBackup {
+    static func createBackup(filterManager: AppFilterManager) async throws -> WBlockBackup {
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
         let loader = FilterListLoader()
 
@@ -483,12 +502,19 @@ enum BackupManager {
             .map { WBlockBackup.FilterSelection(url: $0.url.absoluteString, isSelected: $0.isSelected) }
 
         // Custom filter lists
-        let customEntries = filterManager.filterLists
+        let customEntries = try filterManager.filterLists
             .filter { $0.isCustom }
             .map { filter -> WBlockBackup.CustomFilterEntry in
                 var content: String? = nil
-                if filter.isInlineUserList, let fileURL = loader.localFileURL(for: filter) {
-                    content = try? String(contentsOf: fileURL, encoding: .utf8)
+                if filter.isInlineUserList {
+                    guard let fileURL = loader.localFileURL(for: filter) else {
+                        throw BackupContentError.unavailableLocalFilter(filter.name)
+                    }
+                    do {
+                        content = try String(contentsOf: fileURL, encoding: .utf8)
+                    } catch {
+                        throw BackupContentError.unavailableLocalFilter(filter.name)
+                    }
                 }
                 return WBlockBackup.CustomFilterEntry(
                     name: filter.name,

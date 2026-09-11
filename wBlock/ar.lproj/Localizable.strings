@@ -344,6 +344,7 @@
 "Expired %@" = "انتهت صلاحيته %@";
 "Export" = "تصدير";
 "Export failed: %@" = "فشل التصدير: %@";
+"The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "محتويات قائمة الفلاتر المحلية «%@» غير متاحة. استعد القائمة على الجهاز الأصلي وأنشئ نسخة احتياطية جديدة.";
 "Export Settings" = "تصدير الإعدادات";
 "Extension Slots" = "فتحات الملحقات";
 "Extensions" = "الإضافات";

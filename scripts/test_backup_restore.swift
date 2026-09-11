@@ -5,8 +5,10 @@ import wBlockCoreService
 // the identity-derived inline files are real, and live inside a unique temp dir.
 struct FilterListLoader {
     nonisolated(unsafe) static var directory: URL!
+    nonisolated(unsafe) static var unavailableIDs: Set<UUID> = []
     func localFileURL(for filter: FilterList) -> URL? {
-        Self.directory.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: filter))
+        guard !Self.unavailableIDs.contains(filter.id) else { return nil }
+        return Self.directory.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: filter))
     }
 }
 actor ConcurrentLogManager {
@@ -86,11 +88,81 @@ enum AppAppearance: String {
 }
 
 @main struct BackupRestoreTests {
+    @MainActor static func testLocalSourceAvailability() async throws {
+        let manager = AppFilterManager()
+        let id = UUID()
+        let filter = FilterList(id: id, name: "Local rules", url: URL(string: "wblock://userlist/\(id.uuidString)")!,
+                                category: .custom, isCustom: true, isSelected: false)
+        let file = FilterListLoader().localFileURL(for: filter)!
+        defer {
+            try? FileManager.default.removeItem(at: file)
+            FilterListLoader.unavailableIDs = []
+        }
+        manager.filterLists = [filter]
+
+        func expectCreationFailure() async throws {
+            do {
+                _ = try await BackupManager.createBackup(filterManager: manager)
+                fatalError("unavailable local source must abort export, even for a disabled list")
+            } catch BackupContentError.unavailableLocalFilter(let name) {
+                precondition(name == filter.name)
+            }
+        }
+        try await expectCreationFailure()
+        try Data([0xFF, 0xFE, 0xFF]).write(to: file)
+        try await expectCreationFailure()
+        try FileManager.default.removeItem(at: file)
+        try FileManager.default.createDirectory(at: file, withIntermediateDirectories: true)
+        try await expectCreationFailure()
+        try FileManager.default.removeItem(at: file)
+        FilterListLoader.unavailableIDs = [id]
+        try await expectCreationFailure()
+        FilterListLoader.unavailableIDs = []
+
+        for source in ["", "||example.com^\n! Unicode 🐺\n"] {
+            try source.write(to: file, atomically: true, encoding: .utf8)
+            let backup = try await BackupManager.createBackup(filterManager: manager)
+            let decoded = try BackupManager.importData(from: BackupManager.exportData(backup: backup))
+            precondition(decoded.customFilterLists[0].content == source)
+            try await BackupManager.restoreBackup(decoded, filterManager: manager)
+            let restored = try String(contentsOf: file, encoding: .utf8)
+            precondition(restored == source, "empty content is authoritative, not missing")
+        }
+
+        var incomplete = try await BackupManager.createBackup(filterManager: manager)
+        incomplete.customFilterLists[0].content = "||must-not-write.example^"
+        var missing = incomplete.customFilterLists[0]
+        missing.url = "wblock://userlist/\(UUID().uuidString)"
+        missing.name = "Missing list"
+        missing.content = nil
+        incomplete.customFilterLists.append(missing)
+        let decoded = try BackupManager.importData(from: BackupManager.exportData(backup: incomplete))
+        let before = try Data(contentsOf: file)
+        let beforeIDs = manager.filterLists.map(\.id)
+        do {
+            try await BackupManager.restoreBackup(decoded, filterManager: manager)
+            fatalError("incomplete legacy exports must fail before changing any files or metadata")
+        } catch BackupContentError.unavailableLocalFilter(let name) {
+            precondition(name == "Missing list")
+        }
+        let after = try Data(contentsOf: file)
+        precondition(after == before && manager.filterLists.map(\.id) == beforeIDs)
+
+        manager.filterLists = [FilterList(name: "Remote", url: URL(string: "https://example.com/list.txt")!,
+                                         category: .custom, isCustom: true)]
+        let remote = try await BackupManager.createBackup(filterManager: manager)
+        precondition(remote.customFilterLists[0].content == nil)
+        try await BackupManager.restoreBackup(BackupManager.importData(from: BackupManager.exportData(backup: remote)),
+                                              filterManager: manager)
+        print("PASS backup sources: missing, invalid UTF-8, unreadable, unavailable path, empty, valid, remote, atomic rejection")
+    }
+
     @MainActor static func main() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
         FilterListLoader.directory = directory
+        try await testLocalSourceAvailability()
         let id = UUID()
         let url = "wblock://userlist/\(id.uuidString)"
         let manager = AppFilterManager()

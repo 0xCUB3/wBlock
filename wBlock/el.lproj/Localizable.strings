@@ -344,6 +344,7 @@
 "Expired %@" = "Έληξε %@";
 "Export" = "Εξαγωγή";
 "Export failed: %@" = "Η εξαγωγή απέτυχε: %@";
+"The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "Το περιεχόμενο της τοπικής λίστας φίλτρων «%@» δεν είναι διαθέσιμο. Ανακτήστε τη λίστα στην αρχική συσκευή και δημιουργήστε νέο αντίγραφο ασφαλείας.";
 "Export Settings" = "Εξαγωγή ρυθμίσεων";
 "Extension Slots" = "Θέσεις επέκτασης";
 "Extensions" = "Επεκτάσεις";

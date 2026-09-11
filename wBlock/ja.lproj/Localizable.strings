@@ -344,6 +344,7 @@
 "Expired %@" = "期限切れ %@";
 "Export" = "書き出し";
 "Export failed: %@" = "書き出しに失敗しました: %@";
+"The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "ローカルフィルターリスト「%@」の内容を利用できません。元のデバイスでリストを復元し、新しいバックアップを作成してください。";
 "Export Settings" = "設定を書き出す";
 "Extension Slots" = "拡張機能スロット";
 "Extensions" = "拡張機能";
