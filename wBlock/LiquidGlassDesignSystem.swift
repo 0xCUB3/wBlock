@@ -77,12 +77,11 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View, Search: View>
             HStack(spacing: 8) {
                 // Buttons that share a capsule get the smaller hit target and
                 // hover disc (#771); a button alone in its capsule fills it.
-                HStack(spacing: 0) {
+                HStack(spacing: 6) {
                     primary()
                     if !hasPendingChanges { apply() }
                 }
-                    .environment(\.compactToolbarGrouped, true)
-                    .padding(.horizontal, 3)
+                    .environment(\.compactToolbarGrouped, !hasPendingChanges)
                     .frame(height: 36)
                     .glassEffect(.regular.interactive(), in: .capsule)
                 if hasPendingChanges {
