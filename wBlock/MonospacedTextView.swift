@@ -38,12 +38,23 @@ struct MonospacedTextView: NSViewRepresentable {
         applyTrailingScrollerInset(to: scrollView)
         guard let textView = scrollView.documentView as? NSTextView else { return }
         let selectedRanges = textView.selectedRanges
+        let contentOrigin = scrollView.contentView.bounds.origin
         if apply(to: textView, coordinator: context.coordinator) {
             textView.selectedRanges = selectedRanges.filter {
                 NSMaxRange($0.rangeValue) <= (textView.string as NSString).length
             }
         }
         expandDocumentToFit(textView, in: scrollView)
+        restoreContentOrigin(contentOrigin, in: scrollView)
+    }
+
+    private func restoreContentOrigin(_ origin: NSPoint, in scrollView: NSScrollView) {
+        let clip = scrollView.contentView
+        guard let documentView = scrollView.documentView else { return }
+        let maxX = max(0, documentView.bounds.width - clip.bounds.width)
+        let maxY = max(0, documentView.bounds.height - clip.bounds.height)
+        clip.setBoundsOrigin(NSPoint(x: min(origin.x, maxX), y: min(origin.y, maxY)))
+        scrollView.reflectScrolledClipView(clip)
     }
 
     /// Returns true when the document changed.
@@ -91,7 +102,7 @@ struct MonospacedTextView: NSViewRepresentable {
         scrollView.borderType = .noBorder
         scrollView.hasHorizontalScroller = true
         scrollView.hasVerticalScroller = true
-        scrollView.autohidesScrollers = true
+        scrollView.autohidesScrollers = false
         applyTrailingScrollerInset(to: scrollView)
 
         let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
@@ -116,7 +127,7 @@ struct MonospacedTextView: NSViewRepresentable {
         textView.backgroundColor = .clear
         textView.drawsBackground = false
         textView.textContainerInset = NSSize(width: 12, height: 12)
-        textView.isHorizontallyResizable = true
+        textView.isHorizontallyResizable = false
         textView.isVerticallyResizable = true
         textView.minSize = .zero
         textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
@@ -150,7 +161,9 @@ struct MonospacedTextView: NSViewRepresentable {
     private func expandDocumentToFit(_ textView: NSTextView, in scrollView: NSScrollView) {
         guard let layoutManager = textView.layoutManager, let textContainer = textView.textContainer else { return }
         let availableWidth = max(0, scrollView.contentSize.width - scrollView.contentView.contentInsets.right)
-        textView.isHorizontallyResizable = !isLineWrappingEnabled
+        // This view owns the document width. NSTextView auto-sizing during
+        // asynchronous highlighting otherwise shrinks it and resets horizontal scroll.
+        textView.isHorizontallyResizable = false
         scrollView.hasHorizontalScroller = !isLineWrappingEnabled
         textContainer.widthTracksTextView = isLineWrappingEnabled
         textContainer.containerSize.width = isLineWrappingEnabled
@@ -292,7 +305,9 @@ struct MonospacedTextView: UIViewRepresentable {
     private func apply(to textView: UITextView, coordinator: Coordinator) -> Bool {
         var changed = false
         if (textView.text ?? "") != text {
+            let contentOffset = textView.contentOffset
             textView.attributedText = NSAttributedString(string: text, attributes: coordinator.highlighter.baseAttributes)
+            textView.setContentOffset(contentOffset, animated: false)
             coordinator.highlighter.reset()
             changed = true
         }

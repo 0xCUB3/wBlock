@@ -5,16 +5,16 @@ struct SourceViewerControls: View {
     let onSearch: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 4) {
             Button(action: onSearch) {
-                Image(systemName: "magnifyingglass").frame(width: 28, height: 28)
+                Image(systemName: "magnifyingglass").frame(width: 24, height: 24)
             }
             .buttonStyle(.plain)
             .noFocusRingCompat()
             .accessibilityLabel("Search")
             Button { wrapsLines.toggle() } label: {
                 Image(systemName: wrapsLines ? "text.justify.left" : "text.alignleft")
-                    .frame(width: 28, height: 28)
+                    .frame(width: 24, height: 24)
                     .foregroundStyle(wrapsLines ? Color.accentColor : Color.secondary)
             }
             .buttonStyle(.plain)
