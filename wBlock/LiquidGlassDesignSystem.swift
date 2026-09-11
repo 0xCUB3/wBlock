@@ -126,7 +126,10 @@ struct MacPushedActionsToolbar<Actions: View, Search: View>: ViewModifier {
             content.toolbar {
                 if !isSearchExpanded {
                     ToolbarItemGroup(placement: .automatic) {
-                        actions().labelStyle(.iconOnly)
+                        actions()
+                            .labelStyle(.iconOnly)
+                            .environment(\.compactToolbarGrouped, true)
+                            .buttonStyle(CompactToolbarButtonStyle())
                     }
                 }
                 if Search.self != EmptyView.self {
