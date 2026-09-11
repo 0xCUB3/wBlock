@@ -247,6 +247,8 @@ struct ContentView: View {
             .infoSheetPresentationCompat()
         }
         .onChangeCompat(of: selectedTab) { _, _ in
+            selectedFilterInfo = nil
+            selectedCategoryInfo = nil
             filterSearchText = ""
             showFilterSearch = false
         }
