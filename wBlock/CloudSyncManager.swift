@@ -993,6 +993,36 @@ final class CloudSyncManager: ObservableObject {
         return merged
     }
 
+    @MainActor
+    private struct CloudSyncFilterStorageAdapter {
+        let filterManager: AppFilterManager?
+        let dataManager: ProtobufDataManager
+
+        var filterLists: [FilterList] {
+            filterManager?.filterLists ?? dataManager.getFilterLists()
+        }
+
+        var selectionMutationRevision: UInt64? {
+            filterManager?.selectionMutationRevision
+        }
+
+        func commit(
+            _ filterLists: [FilterList],
+            selectionChanged: Bool = false,
+            nonSelectionChanged: Bool = false
+        ) async {
+            if let filterManager {
+                filterManager.filterLists = filterLists
+                if nonSelectionChanged {
+                    filterManager.markNonSelectionChangesPending()
+                } else if selectionChanged {
+                    filterManager.refreshPendingSelectionChanges()
+                }
+            }
+            await dataManager.updateFilterLists(filterLists)
+        }
+    }
+
     private func applyRemoteFilters(
         _ filters: SyncPayload.Filters,
         baselineFilters: SyncPayload.Filters,
@@ -1012,8 +1042,6 @@ final class CloudSyncManager: ObservableObject {
             !Self.customFilterEqualForSync(currentCustomByURL[url], baselineCustomByURL[url])
         })
 
-        // Tombstones are a set-valued field: merge local and remote deltas instead of
-        // replacing one side wholesale.
         let currentDeleted = Set(currentFilters.deletedCustomURLs ?? [])
         var mergedDeleted = Set(Self.mergeStringSet(
             local: Array(currentDeleted),
@@ -1021,249 +1049,115 @@ final class CloudSyncManager: ObservableObject {
             remote: filters.deletedCustomURLs ?? []
         ))
         for url in locallyChangedCustomURLs where currentCustomByURL[url] != nil {
-            // A local add/edit wins a conflicting remote tombstone for that URL.
             mergedDeleted.remove(url)
         }
         clearDeletedCustomListURLs(currentDeleted.subtracting(mergedDeleted))
         mergeDeletedCustomListURLs(mergedDeleted.subtracting(currentDeleted))
-        let deletedCustomURLs = mergedDeleted
 
-        let desiredSelected = Set(
-            filters.selectedURLs.map(FilterListLoader.canonicalFilterURLString)
-        )
+        let desiredSelected = Set(filters.selectedURLs.map(FilterListLoader.canonicalFilterURLString))
         let knownURLs = Set(
             (filters.knownURLs ?? filters.selectedURLs).map(FilterListLoader.canonicalFilterURLString)
         )
-
-        if let filterManager {
-            var changed = false
-            var selectionChanged = false
-            var nonSelectionChanged = false
-            let mayApplyRemoteSelection =
-                filterManager.selectionMutationRevision == localSelectionRevisionAtStart
-
-            // Remove remotely deleted custom lists only when that URL was unchanged locally.
-            if !deletedCustomURLs.isEmpty {
-                let liveCustomURLs = Set(
-                    filterManager.filterLists.filter(\.isCustom).map(\.url.absoluteString)
-                )
-                let urlsToDelete = CloudSyncCustomFilterReconciler.tombstonedURLsToDelete(
-                    tombstonedURLs: deletedCustomURLs.subtracting(locallyChangedCustomURLs),
-                    snapshotCustomURLs: Set(currentCustomByURL.keys),
-                    liveCustomURLs: liveCustomURLs
-                )
-                let removed = filterManager.filterLists.filter { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
-                if !removed.isEmpty {
-                    for list in removed {
-                        Self.deleteInlineUserListContentIfNeeded(urlString: list.url.absoluteString)
-                    }
-                    filterManager.filterLists.removeAll { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
-                    changed = true
-                    nonSelectionChanged = true
-                }
-            }
-
-            // Update selection for all non-custom filters by URL
-            for index in filterManager.filterLists.indices {
-                guard !filterManager.filterLists[index].isCustom else { continue }
-                let urlString = FilterListLoader.canonicalFilterURLString(
-                    filterManager.filterLists[index].url.absoluteString
-                )
-                guard knownURLs.contains(urlString), mayApplyRemoteSelection else { continue }
-                let shouldSelect = desiredSelected.contains(urlString)
-                if filterManager.filterLists[index].isSelected != shouldSelect {
-                    filterManager.filterLists[index].isSelected = shouldSelect
-                    changed = true
-                    selectionChanged = true
-                }
-            }
-
-            // Upsert remote custom lists independently by URL.
-            for remoteCustom in filters.customLists {
-                if locallyChangedCustomURLs.contains(remoteCustom.url) {
-                    continue
-                }
-                if deletedCustomURLs.contains(remoteCustom.url) {
-                    continue
-                }
-                let remoteCategory = remoteCustom.resolvedCategory
-                if let inlineID = Self.inlineUserListID(from: remoteCustom.url) {
-                    guard let content = remoteCustom.content else { continue }
-                    Self.writeInlineUserListContent(id: inlineID, content: content)
-                }
-
-                if let existingIndex = filterManager.filterLists.firstIndex(where: {
-                    $0.isCustom && $0.url.absoluteString == remoteCustom.url
-                }) {
-                    var shouldTreatAsMissing = false
-                    if let inlineID = Self.inlineUserListID(from: remoteCustom.url),
-                       filterManager.filterLists[existingIndex].id != inlineID
-                    {
-                        // Replace mismatched legacy entry (ID-based filename mismatch breaks local storage).
-                        let existing = filterManager.filterLists[existingIndex]
-                        filterManager.filterLists.removeAll { $0.id == existing.id }
-                        changed = true
-                        nonSelectionChanged = true
-                        shouldTreatAsMissing = true
-                    }
-
-                    if !shouldTreatAsMissing {
-                        if filterManager.filterLists[existingIndex].name != remoteCustom.name {
-                            filterManager.filterLists[existingIndex].name = remoteCustom.name
-                            changed = true
-                            nonSelectionChanged = true
-                        }
-                        if filterManager.filterLists[existingIndex].hasUserProvidedName != remoteCustom.resolvedUserProvidedName {
-                            filterManager.filterLists[existingIndex].hasUserProvidedName = remoteCustom.resolvedUserProvidedName
-                            changed = true
-                            nonSelectionChanged = true
-                        }
-                        if let desc = remoteCustom.description,
-                           filterManager.filterLists[existingIndex].description != desc
-                        {
-                            filterManager.filterLists[existingIndex].description = desc
-                            changed = true
-                            nonSelectionChanged = true
-                        }
-                        if filterManager.filterLists[existingIndex].hasUserProvidedDescription != remoteCustom.resolvedUserProvidedDescription {
-                            filterManager.filterLists[existingIndex].hasUserProvidedDescription = remoteCustom.resolvedUserProvidedDescription
-                            changed = true
-                            nonSelectionChanged = true
-                        }
-                        if filterManager.filterLists[existingIndex].category != remoteCategory {
-                            filterManager.filterLists[existingIndex].category = remoteCategory
-                            changed = true
-                            nonSelectionChanged = true
-                        }
-                        if mayApplyRemoteSelection,
-                           filterManager.filterLists[existingIndex].isSelected != remoteCustom.isSelected
-                        {
-                            filterManager.filterLists[existingIndex].isSelected = remoteCustom.isSelected
-                            changed = true
-                            selectionChanged = true
-                        }
-                    } else {
-                        let newFilter = FilterList(
-                            id: Self.inlineUserListID(from: remoteCustom.url) ?? UUID(),
-                            name: remoteCustom.name,
-                            url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
-                            category: remoteCategory,
-                            isCustom: true,
-                            isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
-                            description: remoteCustom.description ?? "User-added filter list.",
-                            sourceRuleCount: nil,
-                            hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
-                            hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
-                        )
-                        filterManager.filterLists.append(newFilter)
-                        changed = true
-                        nonSelectionChanged = true
-                    }
-                } else {
-                    let newFilter = FilterList(
-                        id: Self.inlineUserListID(from: remoteCustom.url) ?? UUID(),
-                        name: remoteCustom.name,
-                        url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
-                        category: remoteCategory,
-                        isCustom: true,
-                        isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
-                        description: remoteCustom.description ?? "User-added filter list.",
-                        sourceRuleCount: nil,
-                        hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
-                        hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
-                    )
-                    filterManager.filterLists.append(newFilter)
-                    changed = true
-                    nonSelectionChanged = true
-                }
-            }
-
-            if changed {
-                if nonSelectionChanged {
-                    filterManager.markNonSelectionChangesPending()
-                } else if selectionChanged {
-                    filterManager.refreshPendingSelectionChanges()
-                }
-                await filterManager.saveFilterLists()
-            }
-            return
-        }
-
-        // Fallback: update persisted lists without touching the in-memory manager.
-        var storedLists = dataManager.getFilterLists()
-
-        if !deletedCustomURLs.isEmpty {
-            let urlsToDelete = deletedCustomURLs.subtracting(locallyChangedCustomURLs)
-            storedLists.removeAll { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
-            for url in urlsToDelete {
-                Self.deleteInlineUserListContentIfNeeded(urlString: url)
-            }
-        }
-
+        let storage = CloudSyncFilterStorageAdapter(filterManager: filterManager, dataManager: dataManager)
+        var filterLists = storage.filterLists
         let mayApplyRemoteSelection =
-            filterManager == nil
-                || filterManager?.selectionMutationRevision == localSelectionRevisionAtStart
-        for index in storedLists.indices where !storedLists[index].isCustom {
-            let urlString = FilterListLoader.canonicalFilterURLString(
-                storedLists[index].url.absoluteString
-            )
-            guard knownURLs.contains(urlString), mayApplyRemoteSelection else { continue }
-            storedLists[index].isSelected = desiredSelected.contains(urlString)
+            storage.selectionMutationRevision.map { $0 == localSelectionRevisionAtStart } ?? true
+        var selectionChanged = false
+        var nonSelectionChanged = false
+
+        let liveCustomURLs = Set(filterLists.filter(\.isCustom).map { $0.url.absoluteString })
+        let urlsToDelete = CloudSyncCustomFilterReconciler.tombstonedURLsToDelete(
+            tombstonedURLs: mergedDeleted.subtracting(locallyChangedCustomURLs),
+            snapshotCustomURLs: Set(currentCustomByURL.keys),
+            liveCustomURLs: liveCustomURLs
+        )
+        let removed = filterLists.filter { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
+        if !removed.isEmpty {
+            removed.forEach { Self.deleteInlineUserListContentIfNeeded(urlString: $0.url.absoluteString) }
+            filterLists.removeAll { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
+            nonSelectionChanged = true
         }
 
-        // Upsert custom lists from remote without removing local-only customs.
-        let localCustomIndexByURL: [String: Int] = Dictionary(
-            uniqueKeysWithValues: storedLists.indices.compactMap { idx in
-                guard storedLists[idx].isCustom else { return nil }
-                return (storedLists[idx].url.absoluteString, idx)
+        for index in filterLists.indices where !filterLists[index].isCustom {
+            let url = FilterListLoader.canonicalFilterURLString(filterLists[index].url.absoluteString)
+            guard knownURLs.contains(url), mayApplyRemoteSelection else { continue }
+            let selected = desiredSelected.contains(url)
+            if filterLists[index].isSelected != selected {
+                filterLists[index].isSelected = selected
+                selectionChanged = true
             }
-        )
+        }
 
-        for remoteCustom in filters.customLists
-            where !deletedCustomURLs.contains(remoteCustom.url)
-                && !locallyChangedCustomURLs.contains(remoteCustom.url)
-        {
-            let remoteCategory = remoteCustom.resolvedCategory
+        for remoteCustom in filters.customLists {
+            guard !locallyChangedCustomURLs.contains(remoteCustom.url),
+                  !mergedDeleted.contains(remoteCustom.url) else { continue }
             if let inlineID = Self.inlineUserListID(from: remoteCustom.url) {
                 guard let content = remoteCustom.content else { continue }
                 Self.writeInlineUserListContent(id: inlineID, content: content)
             }
-
-            if let existingIndex = localCustomIndexByURL[remoteCustom.url] {
-                var updated = storedLists[existingIndex]
-                if updated.name != remoteCustom.name {
-                    updated.name = remoteCustom.name
+            let category = remoteCustom.resolvedCategory
+            if var index = filterLists.firstIndex(where: {
+                $0.isCustom && $0.url.absoluteString == remoteCustom.url
+            }) {
+                if let inlineID = Self.inlineUserListID(from: remoteCustom.url),
+                   filterLists[index].id != inlineID
+                {
+                    let oldID = filterLists[index].id
+                    filterLists.removeAll { $0.id == oldID }
+                    nonSelectionChanged = true
+                    index = filterLists.endIndex
                 }
-                updated.hasUserProvidedName = remoteCustom.resolvedUserProvidedName
-                if let desc = remoteCustom.description, updated.description != desc {
-                    updated.description = desc
+                if index < filterLists.endIndex {
+                    if filterLists[index].name != remoteCustom.name {
+                        filterLists[index].name = remoteCustom.name
+                        nonSelectionChanged = true
+                    }
+                    if filterLists[index].hasUserProvidedName != remoteCustom.resolvedUserProvidedName {
+                        filterLists[index].hasUserProvidedName = remoteCustom.resolvedUserProvidedName
+                        nonSelectionChanged = true
+                    }
+                    if let description = remoteCustom.description,
+                       filterLists[index].description != description
+                    {
+                        filterLists[index].description = description
+                        nonSelectionChanged = true
+                    }
+                    if filterLists[index].hasUserProvidedDescription != remoteCustom.resolvedUserProvidedDescription {
+                        filterLists[index].hasUserProvidedDescription = remoteCustom.resolvedUserProvidedDescription
+                        nonSelectionChanged = true
+                    }
+                    if filterLists[index].category != category {
+                        filterLists[index].category = category
+                        nonSelectionChanged = true
+                    }
+                    if mayApplyRemoteSelection, filterLists[index].isSelected != remoteCustom.isSelected {
+                        filterLists[index].isSelected = remoteCustom.isSelected
+                        selectionChanged = true
+                    }
+                    continue
                 }
-                updated.hasUserProvidedDescription = remoteCustom.resolvedUserProvidedDescription
-                if updated.category != remoteCategory {
-                    updated.category = remoteCategory
-                }
-                if mayApplyRemoteSelection {
-                    updated.isSelected = remoteCustom.isSelected
-                }
-                storedLists[existingIndex] = updated
-            } else {
-                let newFilter = FilterList(
-                    id: Self.inlineUserListID(from: remoteCustom.url) ?? UUID(),
-                    name: remoteCustom.name,
-                    url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
-                    category: remoteCategory,
-                    isCustom: true,
-                    isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
-                    description: remoteCustom.description ?? "User-added filter list.",
-                    sourceRuleCount: nil,
-                    hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
-                    hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
-                )
-                storedLists.append(newFilter)
             }
+            filterLists.append(FilterList(
+                id: Self.inlineUserListID(from: remoteCustom.url) ?? UUID(),
+                name: remoteCustom.name,
+                url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
+                category: category,
+                isCustom: true,
+                isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
+                description: remoteCustom.description ?? "User-added filter list.",
+                sourceRuleCount: nil,
+                hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
+                hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
+            ))
+            nonSelectionChanged = true
         }
 
-        await dataManager.updateFilterLists(storedLists)
+        guard selectionChanged || nonSelectionChanged else { return }
+        await storage.commit(
+            filterLists,
+            selectionChanged: selectionChanged,
+            nonSelectionChanged: nonSelectionChanged
+        )
     }
 
     private func applyRemoteUserScriptState(
@@ -1704,37 +1598,19 @@ final class CloudSyncManager: ObservableObject {
 
         let deletedCustomURLs = deletedCustomURLSet()
         if !deletedCustomURLs.isEmpty {
-            if let filterManager {
-                let urlsToDelete = CloudSyncCustomFilterReconciler.tombstonedURLsToDelete(
-                    tombstonedURLs: deletedCustomURLs,
-                    snapshotCustomURLs: localCustomURLs,
-                    liveCustomURLs: currentLocalCustomURLs()
-                )
-                let removed = filterManager.filterLists.filter { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
-                if !removed.isEmpty {
-                    for list in removed {
-                        Self.deleteInlineUserListContentIfNeeded(urlString: list.url.absoluteString)
-                    }
-                    filterManager.filterLists.removeAll { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
-                    filterManager.markNonSelectionChangesPending()
-                    await filterManager.saveFilterLists()
-                }
-            } else {
-                var storedLists = dataManager.getFilterLists()
-                let liveCustomURLs = Set(storedLists.filter(\.isCustom).map(\.url.absoluteString))
-                let urlsToDelete = CloudSyncCustomFilterReconciler.tombstonedURLsToDelete(
-                    tombstonedURLs: deletedCustomURLs,
-                    snapshotCustomURLs: localCustomURLs,
-                    liveCustomURLs: liveCustomURLs
-                )
-                let beforeCount = storedLists.count
-                storedLists.removeAll { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
-                if storedLists.count != beforeCount {
-                    for url in urlsToDelete {
-                        Self.deleteInlineUserListContentIfNeeded(urlString: url)
-                    }
-                    await dataManager.updateFilterLists(storedLists)
-                }
+            let storage = CloudSyncFilterStorageAdapter(filterManager: filterManager, dataManager: dataManager)
+            var filterLists = storage.filterLists
+            let liveCustomURLs = Set(filterLists.filter(\.isCustom).map { $0.url.absoluteString })
+            let urlsToDelete = CloudSyncCustomFilterReconciler.tombstonedURLsToDelete(
+                tombstonedURLs: deletedCustomURLs,
+                snapshotCustomURLs: localCustomURLs,
+                liveCustomURLs: liveCustomURLs
+            )
+            let removed = filterLists.filter { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
+            if !removed.isEmpty {
+                removed.forEach { Self.deleteInlineUserListContentIfNeeded(urlString: $0.url.absoluteString) }
+                filterLists.removeAll { $0.isCustom && urlsToDelete.contains($0.url.absoluteString) }
+                await storage.commit(filterLists, nonSelectionChanged: true)
             }
         }
 
@@ -1842,64 +1718,35 @@ final class CloudSyncManager: ObservableObject {
         defer { isApplyingRemoteChanges = false }
 
         if !missingCustoms.isEmpty {
+            let storage = CloudSyncFilterStorageAdapter(filterManager: filterManager, dataManager: dataManager)
+            var filterLists = storage.filterLists
             let mayApplyRemoteSelection =
-                (filterManager?.selectionMutationRevision ?? filterSelectionRevisionAtStart)
-                    == filterSelectionRevisionAtStart
-            if let filterManager {
-                var changed = false
-                for remoteCustom in missingCustoms {
-                    guard URL(string: remoteCustom.url) != nil else { continue }
-                    if filterManager.filterLists.contains(where: { $0.isCustom && $0.url.absoluteString == remoteCustom.url }) {
-                        continue
-                    }
-                    let remoteCategory = remoteCustom.resolvedCategory
-                    if let inlineID = Self.inlineUserListID(from: remoteCustom.url) {
-                        guard let content = remoteCustom.content else { continue }
-                        Self.writeInlineUserListContent(id: inlineID, content: content)
-                    }
-                    let newFilter = FilterList(
-                        id: Self.inlineUserListID(from: remoteCustom.url) ?? UUID(),
-                        name: remoteCustom.name,
-                        url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
-                        category: remoteCategory,
-                        isCustom: true,
-                        isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
-                        description: remoteCustom.description ?? "User-added filter list.",
-                        sourceRuleCount: nil,
-                        hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
-                        hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
-                    )
-                    filterManager.filterLists.append(newFilter)
-                    changed = true
+                storage.selectionMutationRevision.map { $0 == filterSelectionRevisionAtStart } ?? true
+            var existingCustomURLs = Set(filterLists.filter(\.isCustom).map { $0.url.absoluteString })
+            var changed = false
+            for remoteCustom in missingCustoms where !existingCustomURLs.contains(remoteCustom.url) {
+                guard URL(string: remoteCustom.url) != nil else { continue }
+                if let inlineID = Self.inlineUserListID(from: remoteCustom.url) {
+                    guard let content = remoteCustom.content else { continue }
+                    Self.writeInlineUserListContent(id: inlineID, content: content)
                 }
-                if changed {
-                    filterManager.markNonSelectionChangesPending()
-                    await filterManager.saveFilterLists()
-                }
-            } else {
-                var storedLists = dataManager.getFilterLists()
-                let existingCustomURLs = Set(storedLists.filter(\.isCustom).map { $0.url.absoluteString })
-                for remoteCustom in missingCustoms where !existingCustomURLs.contains(remoteCustom.url) {
-                    let remoteCategory = remoteCustom.resolvedCategory
-                    if let inlineID = Self.inlineUserListID(from: remoteCustom.url) {
-                        guard let content = remoteCustom.content else { continue }
-                        Self.writeInlineUserListContent(id: inlineID, content: content)
-                    }
-                    let newFilter = FilterList(
-                        id: Self.inlineUserListID(from: remoteCustom.url) ?? UUID(),
-                        name: remoteCustom.name,
-                        url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
-                        category: remoteCategory,
-                        isCustom: true,
-                        isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
-                        description: remoteCustom.description ?? "User-added filter list.",
-                        sourceRuleCount: nil,
-                        hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
-                        hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
-                    )
-                    storedLists.append(newFilter)
-                }
-                await dataManager.updateFilterLists(storedLists)
+                filterLists.append(FilterList(
+                    id: Self.inlineUserListID(from: remoteCustom.url) ?? UUID(),
+                    name: remoteCustom.name,
+                    url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
+                    category: remoteCustom.resolvedCategory,
+                    isCustom: true,
+                    isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
+                    description: remoteCustom.description ?? "User-added filter list.",
+                    sourceRuleCount: nil,
+                    hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
+                    hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
+                ))
+                existingCustomURLs.insert(remoteCustom.url)
+                changed = true
+            }
+            if changed {
+                await storage.commit(filterLists, nonSelectionChanged: true)
             }
         }
 

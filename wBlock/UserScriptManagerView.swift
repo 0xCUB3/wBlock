@@ -2054,29 +2054,18 @@ struct AddUserScriptView: View {
 
     #if os(iOS)
     private var iosBody: some View {
-        CompatibleNavigationStack {
+        AddContentIOSSheet(
+            title: "Add Userscript or Userstyle",
+            isLoading: isAdding,
+            buttonTitle: { LocalizedStringKey(addURLButtonTitle) },
+            isSubmitDisabled: !canSubmit || isAdding,
+            onDismiss: { dismiss() },
+            onSubmit: submit
+        ) {
             addTabs
-                .navigationTitle("Add Userscript or Userstyle")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") { dismiss() }
-                            .disabled(isAdding)
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button(action: submit) {
-                            if isAdding {
-                                ProgressView()
-                            } else {
-                                Text(LocalizedStringKey(addURLButtonTitle))
-                            }
-                        }
-                        .disabled(!canSubmit || isAdding)
-                    }
-                }
         }
-        .largeSheetPresentationCompat()
     }
+    #endif
 
     private var addTabs: some View {
         TabView(selection: $addMode) {
@@ -2129,23 +2118,15 @@ struct AddUserScriptView: View {
     }
 
     private var fileSelectionButton: some View {
-        Button {
+        AddContentFileSelectionButton(
+            filename: stagedFile?.filename,
+            isLoading: isStagingFile,
+            isDisabled: isAdding
+        ) {
             showingFileImporter = true
             fileImportError = nil
-        } label: {
-            HStack {
-                Image(systemName: "doc")
-                Text(stagedFile?.filename ?? "Choose File")
-                if isStagingFile { ProgressView().controlSize(.small) }
-                Spacer()
-                if stagedFile != nil {
-                    Text("Change File").foregroundStyle(.secondary)
-                }
-            }
         }
-        .disabled(isAdding)
     }
-    #endif
 
     private var simpleTextContent: some View {
         AddContentSourceCard(title: "Script Content", isDisabled: isAdding,
@@ -2169,27 +2150,18 @@ struct AddUserScriptView: View {
 
     #if os(macOS)
     private var macosBody: some View {
-        SheetContainer {
-            SheetHeader(title: "Add Userscript or Userstyle", isLoading: isAdding) {
-                dismiss()
-            }
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    modePickerCard
-                    macosModeContent
-                }
-                .padding(.horizontal, SheetDesign.contentHorizontalPadding)
-                .padding(.top, 12)
-                .padding(.bottom, 40)
-            }
-
-            SheetBottomToolbar {
-                Spacer()
-                addButton
-            }
+        AddContentMacSheet(
+            title: "Add Userscript or Userstyle",
+            isLoading: isAdding,
+            minHeight: 500,
+            onDismiss: { dismiss() },
+            isDismissDisabled: isAdding
+        ) {
+            modePickerCard
+            macosModeContent
+        } action: {
+            addButton
         }
-        .frame(minWidth: 560, minHeight: 500)
     }
 
     private var modePickerCard: some View {
@@ -2259,33 +2231,6 @@ struct AddUserScriptView: View {
         }
     }
 
-    private var fileSelectionButton: some View {
-        Button {
-            showingFileImporter = true
-            fileImportError = nil
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "doc")
-                Text(stagedFile?.filename ?? "Choose File")
-                if isStagingFile { ProgressView().controlSize(.small) }
-                Spacer()
-                if stagedFile != nil {
-                    Text("Change File").foregroundStyle(.secondary)
-                }
-            }
-            .padding(.vertical, 10)
-            .padding(.horizontal, 12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(.quaternary, lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-        .noFocusRingCompat()
-        .disabled(isAdding)
-    }
     #endif
 
     private var metadataRequirementText: LocalizedStringKey {
@@ -2402,65 +2347,21 @@ struct AddUserScriptView: View {
 
     private var urlInputEditor: some View {
         AddContentField(title: urlEntryMode == .single ? "URL" : "URLs") {
-            if urlEntryMode == .single {
-                TextField("https://example.com/script.user.js", text: $urlInput)
-                    .textFieldStyle(.roundedBorder)
-                    .autocorrectionDisabled()
-                    .focused($urlFieldFocused)
-                    #if os(iOS)
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(.URL)
-                    #endif
-                    .accessibilityLabel("URL")
-            } else {
-            ZStack(alignment: .topLeading) {
-                TextEditor(text: $urlInput)
-                    .hideEditorBackgroundCompat()
-                    .font(.body)
-                    .autocorrectionDisabled()
-                    .focused($urlFieldFocused)
-                    #if os(iOS)
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(.URL)
-                    #endif
-
-                if urlInput.isEmpty {
-                    Text(verbatim: "https://example.com/script.user.js")
-                        .font(.body)
-                        .foregroundStyle(.tertiary)
-                        #if os(macOS)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 1)
-                        #else
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 8)
-                        #endif
-                        .allowsHitTesting(false)
-                }
-            }
-            .frame(minHeight: 64, maxHeight: 96)
-            .background(Color.urlEditorBackground, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(.quaternary, lineWidth: 1)
+            AddContentURLInput(
+                text: $urlInput,
+                isFocused: $urlFieldFocused,
+                isBulk: urlEntryMode == .bulk,
+                singlePlaceholder: { Text(verbatim: "https://example.com/script.user.js") },
+                bulkPlaceholder: { Text(verbatim: "https://example.com/script.user.js") },
+                accessibilityLabel: urlEntryMode == .single ? "URL" : "URLs",
+                isDisabled: isAdding,
+                onPaste: pasteFromClipboard,
+                pasteTitle: urlEntryMode == .single ? "Paste URL" : "Paste URLs",
+                pasteButtonUsesRow: true
             )
-            .accessibilityLabel("URLs")
-            }
-
-            HStack {
-                compactPasteButton
-                Spacer()
-            }
         }
     }
 
-    private var compactPasteButton: some View {
-        Button(action: pasteFromClipboard) {
-            Label(urlEntryMode == .single ? "Paste URL" : "Paste URLs", systemImage: "doc.on.clipboard")
-        }
-        .buttonStyle(.bordered)
-        .disabled(isAdding)
-    }
 
     private var urlValidationFeedback: ValidationState {
         if let urlImportError { return .invalid(urlImportError) }

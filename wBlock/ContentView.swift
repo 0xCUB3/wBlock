@@ -1411,30 +1411,17 @@ struct AddFilterListView: View {
 		var body: some View {
 		    Group {
 		        #if os(iOS)
-		            CompatibleNavigationStack {
-		                addTabs
-		                    .navigationTitle("Add Filter List")
-		                    .navigationBarTitleDisplayMode(.inline)
-		                    .toolbar {
-		                        ToolbarItem(placement: .cancellationAction) {
-		                            Button("Cancel") { dismiss() }
-		                                .disabled(isSaving)
-		                        }
-		                        ToolbarItem(placement: .confirmationAction) {
-		                            Button(action: submit) {
-		                                if isSaving {
-		                                    ProgressView()
-		                                } else {
-		                                    Text(LocalizedStringKey(addButtonTitle))
-		                                }
-		                            }
-		                            .disabled(!canSubmit || isSaving || (isReviewingURLs && isFetchingURLMetadata))
-		                        }
-		                    }
-		            }
-		            .interactiveDismissDisabled(isSaving)
-		            .largeSheetPresentationCompat()
-	        #elseif os(macOS)
+		            AddContentIOSSheet(
+                    title: "Add Filter List",
+                    isLoading: isSaving,
+                    buttonTitle: { LocalizedStringKey(addButtonTitle) },
+                    isSubmitDisabled: !canSubmit || isSaving || (isReviewingURLs && isFetchingURLMetadata),
+                    onDismiss: { dismiss() },
+                    onSubmit: submit
+                ) {
+                    addTabs
+                }
+                #elseif os(macOS)
 	            macosBody
 	        #endif
 	    }
@@ -1518,30 +1505,20 @@ struct AddFilterListView: View {
 	    }
 
 	    #if os(macOS)
-	        private var macosBody: some View {
-	            SheetContainer {
-	                SheetHeader(title: "Add Filter List", isLoading: isSaving) {
-	                    dismiss()
-	                }
-
-	                ScrollView {
-	                    VStack(alignment: .leading, spacing: 16) {
-	                        modePickerCard
-	                        macosModeContent
-	                    }
-	                    .padding(.horizontal, SheetDesign.contentHorizontalPadding)
-	                    .padding(.top, 12)
-	                    .padding(.bottom, 40)
-	                }
-
-	                SheetBottomToolbar {
-	                    Spacer()
-	                    macosAddButton
-	                }
-	            }
-	            .interactiveDismissDisabled(isSaving)
-	            .frame(minWidth: 560, minHeight: addMode == .paste ? 620 : 520)
-	        }
+        private var macosBody: some View {
+            AddContentMacSheet(
+                title: "Add Filter List",
+                isLoading: isSaving,
+                minHeight: addMode == .paste ? 620 : 520,
+                onDismiss: { dismiss() },
+                isDismissDisabled: isSaving
+            ) {
+                modePickerCard
+                macosModeContent
+            } action: {
+                macosAddButton
+            }
+        }
 
 	        private var macosAddButton: some View {
 	            Button(action: submit) {
@@ -1617,55 +1594,18 @@ struct AddFilterListView: View {
 	            }
 	        }
 
-        private var fileSelectionButton: some View {
-            Button {
-                showingFileImporter = true
-                importErrorMessage = nil
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: "doc")
-                    Text(stagedFile?.filename ?? "Choose File")
-                    if isStagingFile { ProgressView().controlSize(.small) }
-                    Spacer()
-                    if stagedFile != nil {
-                        Text("Change File")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .padding(.vertical, 10)
-                .padding(.horizontal, 12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(.quaternary, lineWidth: 1)
-                )
-            }
-            .buttonStyle(.plain)
-            .noFocusRingCompat()
-            .disabled(isSaving)
-        }
-	    #endif
+    #endif
 
-        #if os(iOS)
         private var fileSelectionButton: some View {
-            Button {
+            AddContentFileSelectionButton(
+                filename: stagedFile?.filename,
+                isLoading: isStagingFile,
+                isDisabled: isSaving
+            ) {
                 showingFileImporter = true
                 importErrorMessage = nil
-            } label: {
-                HStack {
-                    Image(systemName: "doc")
-                    Text(stagedFile?.filename ?? "Choose File")
-                    if isStagingFile { ProgressView().controlSize(.small) }
-                    Spacer()
-                    if stagedFile != nil {
-                        Text("Change File").foregroundStyle(.secondary)
-                    }
-                }
             }
-            .disabled(isSaving)
         }
-        #endif
 
 	    private var addTabs: some View {
 	        TabView(selection: $addMode) {
@@ -1826,57 +1766,19 @@ struct AddFilterListView: View {
     }
 
 	    private var urlInputEditor: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            if urlEntryMode == .single {
-                TextField("https://example.com/filter.txt", text: $urlInput)
-                    .textFieldStyle(.roundedBorder)
-                    .autocorrectionDisabled()
-                    .focused($urlFieldIsFocused)
-                    #if os(iOS)
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(.URL)
-                    #endif
-                    .accessibilityLabel("URL")
-            } else {
-                ZStack(alignment: .topLeading) {
-                    TextEditor(text: $urlInput)
-                        .hideEditorBackgroundCompat()
-                        .font(.body)
-                        .autocorrectionDisabled()
-                        .focused($urlFieldIsFocused)
-                        #if os(iOS)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.URL)
-                        #endif
-
-                    if urlInput.isEmpty {
-                        Text("Paste one or more filter URLs, one per line.")
-                            .font(.body)
-                            .foregroundStyle(.tertiary)
-                            #if os(macOS)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 0)
-                            #else
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 8)
-                            #endif
-                            .allowsHitTesting(false)
-                    }
-                }
-                .frame(minHeight: 64, maxHeight: 96)
-                .background(Color.urlEditorBackground, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(.quaternary, lineWidth: 1)
-                )
-                .accessibilityLabel("URLs")
-            }
-            Button(action: pasteURLsFromClipboard) {
-                Label(pasteURLButtonTitle, systemImage: "doc.on.clipboard")
-            }
-            .buttonStyle(.bordered)
-            .disabled(isSaving)
-        }
+        AddContentURLInput(
+            text: $urlInput,
+            isFocused: $urlFieldIsFocused,
+            isBulk: urlEntryMode == .bulk,
+            singlePlaceholder: { Text("https://example.com/filter.txt") },
+            bulkPlaceholder: { Text("Paste one or more filter URLs, one per line.") },
+            accessibilityLabel: urlEntryMode == .single ? "URL" : "URLs",
+            isDisabled: isSaving,
+            onPaste: pasteURLsFromClipboard,
+            pasteTitle: pasteURLButtonTitle,
+            pasteButtonUsesRow: false,
+            macPlaceholderPadding: 0
+        )
     }
 
     // MARK: - Footer
@@ -2598,23 +2500,6 @@ struct EditUserListView: View {
                         }
                     }
                 }
-                .interactiveDismissDisabled(isLoadingContent)
-                .onAppear {
-                    titleFieldIsFocused = true
-                    loadContent()
-                }
-                .alert(
-                    "Couldn’t Save",
-                    isPresented: Binding(
-                        get: { errorMessage != nil },
-                        set: { _ in errorMessage = nil }
-                    )
-                ) {
-                    Button("OK", role: .cancel) { errorMessage = nil }
-                } message: {
-                    Text(errorMessage ?? "")
-                }
-                .largeSheetPresentationCompat()
             #else
                 SheetContainer {
                     SheetHeader(title: "Edit User List", isLoading: isLoadingContent) {
@@ -2696,24 +2581,27 @@ struct EditUserListView: View {
                         saveButton
                     }
                 }
-                .interactiveDismissDisabled(isLoadingContent)
-                .onAppear {
-                    titleFieldIsFocused = true
-                    loadContent()
-                }
-                .alert(
-                    "Couldn’t Save",
-                    isPresented: Binding(
-                        get: { errorMessage != nil },
-                        set: { _ in errorMessage = nil }
-                    )
-                ) {
-                    Button("OK", role: .cancel) { errorMessage = nil }
-                } message: {
-                    Text(errorMessage ?? "")
-                }
             #endif
         }
+        .interactiveDismissDisabled(isLoadingContent)
+        .onAppear {
+            titleFieldIsFocused = true
+            loadContent()
+        }
+        .alert(
+            "Couldn’t Save",
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { _ in errorMessage = nil }
+            )
+        ) {
+            Button("OK", role: .cancel) { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
+        #if os(iOS)
+        .largeSheetPresentationCompat()
+        #endif
         .sheet(isPresented: $isShowingEditor) {
             CodeEditorSheet(
                 editorController: editorController,
