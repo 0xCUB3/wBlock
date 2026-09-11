@@ -1075,7 +1075,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 "Site Actions" = "Webhelyműveletek";
 
-"Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "A blokkolás szüneteltetése akkor kapcsol be, ha minden összetevő szünetel. Az összetevők külön-külön is szüneteltethetők.";
+"Pause All Components" = "Összes összetevő szüneteltetése";
+"Pause all components at once, or pause them individually." = "Az összes összetevőt egyszerre vagy külön-külön is szüneteltetheti.";
 
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "A YouTube-címeket és bélyegképeket a DeArrow közössége által beküldött alternatívákra cseréli.";
 

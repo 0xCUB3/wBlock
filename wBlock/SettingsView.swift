@@ -639,29 +639,31 @@ struct SettingsView: View {
     @ViewBuilder
     private var pauseBlockingSection: some View {
         Section {
-            Toggle("Pause Blocking", isOn: pauseBlockingBinding)
-                .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
+            Toggle("Pause All Components", isOn: pauseBlockingBinding)
                 #if os(macOS)
                 .toggleStyle(.switch)
                 #endif
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Paused Components")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .accessibilityAddTraits(.isHeader)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Toggle("Filters", isOn: pauseComponentBinding(.filters))
+                    Toggle("Enabled Userscripts & Userstyles", isOn: pauseComponentBinding(.userScripts))
+                    Toggle("Element Zapper", isOn: pauseComponentBinding(.elementZapper))
+                }
+                .padding(.leading, 12)
+            }
+            .padding(.vertical, 4)
         } header: {
             Text("Blocking")
         } footer: {
-            Text("Pause Blocking turns on when all components are paused. Each component can also be paused separately.")
+            Text("Pause all components at once, or pause them individually.")
         }
-
-        // The component options live in their own section so they read as
-        // options of the pause toggle above rather than as more toggles (#604).
-        Section {
-            Toggle("Filters", isOn: pauseComponentBinding(.filters))
-            Toggle("Enabled Userscripts & Userstyles", isOn: pauseComponentBinding(.userScripts))
-            Toggle("Element Zapper", isOn: pauseComponentBinding(.elementZapper))
-        } header: {
-            Text("Paused Components")
-        }
-        .disabled(
-            filterManager.isLoading || filterManager.isApplyInFlight
-        )
+        .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
     }
 
     @ViewBuilder

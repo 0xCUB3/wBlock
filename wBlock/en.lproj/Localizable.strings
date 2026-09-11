@@ -1074,7 +1074,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Site Actions" = "Site Actions";
 
-"Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "Pause Blocking turns on when all components are paused. Each component can also be paused separately.";
+"Pause All Components" = "Pause All Components";
+"Pause all components at once, or pause them individually." = "Pause all components at once, or pause them individually.";
 
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives.";
 

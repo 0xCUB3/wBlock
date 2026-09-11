@@ -1063,7 +1063,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Last Update Check" = "最終更新チェック";
 "Last Successful Update" = "最後に成功した更新";
 "Site Actions" = "サイトの操作";
-"Pause Blocking turns on when all components are paused. Each component can also be paused separately." = "すべての機能が一時停止すると、ブロックの一時停止がオンになります。各機能を個別に一時停止することもできます。";
+"Pause All Components" = "すべての機能を一時停止";
+"Pause all components at once, or pause them individually." = "すべての機能をまとめて、または個別に一時停止できます。";
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "YouTubeのタイトルとサムネイルをDeArrowコミュニティが投稿した代替案に置き換えます。";
 "DeArrow" = "DeArrow";
 "Original Thumbnail Channels" = "元のサムネイルを使うチャンネル";
