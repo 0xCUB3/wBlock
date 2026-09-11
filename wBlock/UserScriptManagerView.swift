@@ -897,6 +897,11 @@ struct UserScriptManagerView: View {
 
             Spacer(minLength: 0)
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction {
+                selectedScriptInfo = SelectedUserScript(id: script.id, action: .info)
+            }
             .contentShape(.interaction, Rectangle())
             .onTapGesture {
                 // Defer to avoid race with context menu dismissal on iOS

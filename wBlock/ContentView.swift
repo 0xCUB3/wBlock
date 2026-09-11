@@ -956,6 +956,9 @@ struct FilterRowView: View {
             // competes with the switch on iOS 17, where the gesture wins and a tap
             // on the switch opens the info sheet instead of toggling the filter.
             filterDetails
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { onInfo() }
                 .contentShape(.interaction, Rectangle())
                 .onTapGesture {
                     // Defer to avoid race with context menu dismissal on iOS
