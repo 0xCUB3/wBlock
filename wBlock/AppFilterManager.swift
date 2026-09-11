@@ -67,6 +67,8 @@ class AppFilterManager: ObservableObject {
     @Published var failedReloadTargets: [ContentBlockerTargetInfo] = []
     @Published var progress: Float = 0
     @Published var updateCheckProgress: FilterListUpdater.FilterRefreshProgress?
+    /// Advances whenever downloaded filter content is successfully written.
+    @Published private(set) var downloadedFilterRevision = 0
     var missingFilters: [FilterList] = []
     var missingUserScripts: [UserScript] = []
     @Published var availableUpdates: [FilterList] = []
@@ -466,6 +468,11 @@ class AppFilterManager: ObservableObject {
             UserDefaults.standard.removePersistentDomain(forName: bundleID)
         }
         UserDefaults.standard.synchronize()
+    }
+
+    @MainActor
+    func publishDownloadedFilter() {
+        downloadedFilterRevision &+= 1
     }
 
     /// Resets the manager to its initial state so onboarding can run again.

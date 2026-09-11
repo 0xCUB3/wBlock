@@ -257,6 +257,9 @@ struct ContentView: View {
         .onChangeCompat(of: filterManager.isLoading) { _, isLoading in
             if !isLoading { refreshDownloadedFilterIDs() }
         }
+        .onChangeCompat(of: filterManager.downloadedFilterRevision) { _, _ in
+            refreshDownloadedFilterIDs()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .wBlockAddFilterListRequest)) { _ in
             selectedTab = 0
             showingAddFilterSheet = true

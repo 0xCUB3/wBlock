@@ -485,6 +485,7 @@ final class FilterListUpdater: @unchecked Sendable {
 
         let finalFilter = processed.filter
         await MainActor.run {
+            filterListManager?.publishDownloadedFilter()
             if let index = filterListManager?.filterLists.firstIndex(where: {
                 $0.id == finalFilter.id
             }) {
