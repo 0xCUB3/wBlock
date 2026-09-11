@@ -1767,7 +1767,9 @@ private struct DeArrowSettingsPicker: View {
             Button("Original Thumbnail Channels") { showingChannels = true }
             Divider()
             // DeArrow data is CC BY-NC-SA 4.0; the credit link is a license term.
-            Link("Powered by DeArrow", destination: URL(string: "https://dearrow.ajay.app/")!)
+            Link(destination: URL(string: "https://dearrow.ajay.app/")!) {
+                Label("About DeArrow", systemImage: "arrow.up.right.square")
+            }
             Link("Donate to DeArrow", destination: URL(string: "https://dearrow.ajay.app/donate/")!)
         } label: {
             HStack(spacing: 6) {
