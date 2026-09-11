@@ -228,10 +228,10 @@ extension View {
     /// fits the content in both dimensions; iPhone ignores sizing and keeps
     /// its detents.
     @ViewBuilder
-    func fittedFormSheetSizingCompat() -> some View {
+    func fittedFormSheetSizingCompat(fitsHorizontally: Bool = true) -> some View {
         #if os(iOS)
         if #available(iOS 18.0, *) {
-            presentationSizing(.form.fitted(horizontal: true, vertical: true))
+            presentationSizing(.form.fitted(horizontal: fitsHorizontally, vertical: true))
         } else {
             self
         }
@@ -241,10 +241,18 @@ extension View {
     }
 
     @ViewBuilder
-    func applySheetPresentationCompat(prefersLarge: Bool, contentHeight: CGFloat? = nil) -> some View {
+    func applySheetPresentationCompat(
+        prefersLarge: Bool,
+        contentHeight: CGFloat? = nil,
+        fitsHorizontally: Bool = true
+    ) -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {
             #if os(iOS)
-            applySheetDetentsCompat(prefersLarge: prefersLarge, contentHeight: contentHeight)
+            applySheetDetentsCompat(
+                prefersLarge: prefersLarge,
+                contentHeight: contentHeight,
+                fitsHorizontally: fitsHorizontally
+            )
                 .modifier(ApplySheetGlassBackgroundModifier())
             #else
             applySheetDetentsCompat(prefersLarge: prefersLarge)
@@ -256,14 +264,18 @@ extension View {
 
     @available(iOS 16.0, macOS 13.0, *)
     @ViewBuilder
-    private func applySheetDetentsCompat(prefersLarge: Bool, contentHeight: CGFloat? = nil) -> some View {
+    private func applySheetDetentsCompat(
+        prefersLarge: Bool,
+        contentHeight: CGFloat? = nil,
+        fitsHorizontally: Bool = true
+    ) -> some View {
         if prefersLarge {
             presentationDetents([.large])
                 .presentationDragIndicator(.visible)
         } else if let contentHeight {
             presentationDetents([.height(max(1, contentHeight))])
                 .presentationDragIndicator(.visible)
-                .fittedFormSheetSizingCompat()
+                .fittedFormSheetSizingCompat(fitsHorizontally: fitsHorizontally)
         } else {
             presentationDetents([.medium])
                 .presentationDragIndicator(.visible)

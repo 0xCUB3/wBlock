@@ -78,7 +78,11 @@ struct ApplyChangesProgressView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: fillsAvailableHeight ? .infinity : nil, alignment: .top)
-        .applySheetPresentationCompat(prefersLarge: fillsAvailableHeight, contentHeight: fittedHeight)
+        .applySheetPresentationCompat(
+            prefersLarge: fillsAvailableHeight,
+            contentHeight: fittedHeight,
+            fitsHorizontally: mode == .result
+        )
         .onPreferenceChange(ApplySheetHeightsKey.self) { measuredHeights = $0 }
         .interactiveDismissDisabled(isDismissDisabled)
         .onAppear {
@@ -103,9 +107,9 @@ struct ApplyChangesProgressView: View {
         #endif
         #if os(macOS)
         .frame(
-            minWidth: 560,
-            idealWidth: 560,
-            maxWidth: 560,
+            minWidth: mode == .result ? 460 : 560,
+            idealWidth: mode == .result ? 460 : 560,
+            maxWidth: mode == .result ? 460 : 560,
             minHeight: fillsAvailableHeight ? 320 : nil,
             idealHeight: fillsAvailableHeight ? 560 : nil,
             maxHeight: 640
