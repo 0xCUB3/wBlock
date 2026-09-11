@@ -59,19 +59,21 @@ struct FilterInfoView: View {
 
     private var infoContent: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text(liveFilter.localizedDisplayName)
-                    .font(.title2.weight(.semibold))
-                    .textSelection(.enabled)
-                if liveFilter.isCustom {
-                    Spacer()
-                    Button("Edit") { showingMetadataEditor = true }
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text(liveFilter.localizedDisplayName)
+                        .font(.title2.weight(.semibold))
+                        .textSelection(.enabled)
+                    if liveFilter.isCustom {
+                        Spacer()
+                        Button("Edit") { showingMetadataEditor = true }
+                    }
                 }
-            }
-            if !liveFilter.localizedDisplayDescription.isEmpty {
-                Text(liveFilter.localizedDisplayDescription)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                if !liveFilter.localizedDisplayDescription.isEmpty {
+                    Text(liveFilter.localizedDisplayDescription)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             HStack(spacing: 8) {
                 ForEach(Array(InfoBadgeSupport.filterBadges(liveFilter, isDownloaded: hasLoadedMetadata ? cachedByteCount != nil : nil).enumerated()), id: \.offset) { _, badge in
