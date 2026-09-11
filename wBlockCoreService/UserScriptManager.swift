@@ -2370,7 +2370,9 @@ public class UserScriptManager: ObservableObject {
                     }
                     self.userScripts[index] = updated
                     if origin == .local { self.recordScriptMutation(scriptID) }
-                    let saved = try await self.persistDownloadedUserScript(scriptID)
+                    // A deferred or failed metadata save does not undo the completed download.
+                    // The persistence helper keeps it pending for retry.
+                    let saved = (try? await self.persistDownloadedUserScript(scriptID)) ?? false
                     if saved { self.logger.info("✅ Downloaded and saved: \(updated.name)") }
                     return saved
                 }
