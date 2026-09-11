@@ -1091,7 +1091,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Not provided" = "未指定";
 "%@ submitted at last apply" = "前回の適用時に%@件送信";
 "Submitted at last apply" = "前回の適用時に送信";
-"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "送信数は変換処理に渡された元のルール数です。Safariの最終的なルール数とは異なります。";
+"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "前回の適用時に変換処理へ送信された元のルールであり、Safariの最終的なルール数ではありません。";
 "Failed to persist pending filter update revision" = "保留中のフィルタ更新を保存できませんでした";
 "Paste non-empty plain text and review it before adding." = "空でないプレーンテキストを貼り付け、追加する前に確認してください。";
 "Choose a non-empty text file and review it before adding." = "空でないテキストファイルを選び、追加する前に確認してください。";

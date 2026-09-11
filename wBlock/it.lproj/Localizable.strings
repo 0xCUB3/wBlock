@@ -1120,7 +1120,7 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 
 "Submitted at last apply" = "Inviate all’ultima applicazione";
 
-"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Il conteggio indica le regole di origine inviate al convertitore, non il numero finale di regole di Safari.";
+"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Regole di origine inviate al convertitore all’ultima applicazione, non il numero finale di regole di Safari.";
 "Failed to persist pending filter update revision" = "Impossibile salvare l’aggiornamento del filtro in sospeso";
 
 "Paste non-empty plain text and review it before adding." = "Incolla testo semplice non vuoto e controllalo prima di aggiungerlo.";

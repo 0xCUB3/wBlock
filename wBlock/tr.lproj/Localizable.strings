@@ -1119,7 +1119,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 "Submitted at last apply" = "Son uygulamada gönderilen";
 
-"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Bu sayı, Safari’nin son kural sayısını değil, dönüştürücüye gönderilen kaynak kuralları gösterir.";
+"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Son uygulamada dönüştürücüye gönderilen kaynak kurallar; Safari’nin son kural sayısı değil.";
 "Failed to persist pending filter update revision" = "Bekleyen filtre güncellemesi kaydedilemedi";
 
 "Paste non-empty plain text and review it before adding." = "Boş olmayan düz metin yapıştırın ve eklemeden önce inceleyin.";

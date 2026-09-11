@@ -1120,7 +1120,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 "Submitted at last apply" = "Elküldve a legutóbbi alkalmazáskor";
 
-"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Ez a szám az átalakítónak elküldött forrásszabályokat jelzi, nem a Safari végleges szabályszámát.";
+"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Az utolsó alkalmazáskor az átalakítónak elküldött forrásszabályok, nem a Safari végleges szabályszáma.";
 "Failed to persist pending filter update revision" = "Nem sikerült menteni a függőben lévő szűrőfrissítést";
 
 "Paste non-empty plain text and review it before adding." = "Illesszen be nem üres egyszerű szöveget, és ellenőrizze a hozzáadás előtt.";

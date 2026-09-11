@@ -1120,7 +1120,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 "Submitted at last apply" = "Trimise la ultima aplicare";
 
-"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Numărul indică regulile sursă trimise convertorului, nu numărul final de reguli Safari.";
+"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Reguli sursă trimise convertorului la ultima aplicare, nu numărul final de reguli Safari.";
 "Failed to persist pending filter update revision" = "Actualizarea în așteptare a filtrului nu a putut fi salvată";
 
 "Paste non-empty plain text and review it before adding." = "Lipiți text simplu care nu este gol și verificați-l înainte de adăugare.";

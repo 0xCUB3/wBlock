@@ -1120,7 +1120,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Submitted at last apply" = "上次套用時提交";
 
-"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "提交數量統計的是傳送給轉換器的來源規則，而非 Safari 的最終規則數量。";
+"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "上次套用時傳送給轉換器的來源規則，而非 Safari 的最終規則數量。";
 "Failed to persist pending filter update revision" = "無法儲存待套用的過濾器更新";
 
 "Paste non-empty plain text and review it before adding." = "貼上非空的純文字，並在新增前檢查。";

@@ -1120,7 +1120,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 
 "Submitted at last apply" = "Przesłane przy ostatnim zastosowaniu";
 
-"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Liczba dotyczy reguł źródłowych przesłanych do konwertera, a nie końcowej liczby reguł Safari.";
+"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Reguły źródłowe przesłane do konwertera przy ostatnim zastosowaniu, a nie końcowa liczba reguł Safari.";
 "Failed to persist pending filter update revision" = "Nie udało się zapisać oczekującej aktualizacji filtra";
 
 "Paste non-empty plain text and review it before adding." = "Wklej niepusty zwykły tekst i sprawdź go przed dodaniem.";

@@ -1120,7 +1120,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Submitted at last apply" = "마지막 적용 시 전달";
 
-"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "전달 수는 변환기에 보낸 원본 규칙 수이며, Safari의 최종 규칙 수가 아닙니다.";
+"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "마지막 적용 시 변환기에 제출된 원본 규칙이며, Safari의 최종 규칙 수가 아닙니다.";
 "Failed to persist pending filter update revision" = "대기 중인 필터 업데이트를 저장하지 못했습니다";
 
 "Paste non-empty plain text and review it before adding." = "비어 있지 않은 일반 텍스트를 붙여넣고 추가하기 전에 검토하세요.";

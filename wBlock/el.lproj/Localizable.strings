@@ -1120,7 +1120,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Submitted at last apply" = "Υποβλήθηκαν στην τελευταία εφαρμογή";
 
-"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Η καταμέτρηση αφορά τους αρχικούς κανόνες που στάλθηκαν στον μετατροπέα, όχι το τελικό πλήθος κανόνων του Safari.";
+"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Πηγαίοι κανόνες που υποβλήθηκαν στον μετατροπέα κατά την τελευταία εφαρμογή, όχι το τελικό πλήθος κανόνων του Safari.";
 "Failed to persist pending filter update revision" = "Δεν ήταν δυνατή η αποθήκευση της εκκρεμούς ενημέρωσης φίλτρου";
 
 "Paste non-empty plain text and review it before adding." = "Επικολλήστε μη κενό απλό κείμενο και ελέγξτε το πριν το προσθέσετε.";

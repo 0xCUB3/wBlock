@@ -1129,7 +1129,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Submitted at last apply" = "Submitted at last apply";
 
-"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Submitted counts track source rules sent to the converter, not Safari’s final rule count.";
+"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Source rules submitted to the converter at last apply, not Safari’s final rule count.";
 "Failed to persist pending filter update revision" = "Failed to save the pending filter update";
 
 "Paste non-empty plain text and review it before adding." = "Paste non-empty plain text and review it before adding.";

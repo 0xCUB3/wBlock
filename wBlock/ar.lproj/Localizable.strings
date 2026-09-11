@@ -1120,7 +1120,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Submitted at last apply" = "أُرسلت عند آخر تطبيق";
 
-"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "تحسب الأعداد المرسلة قواعد المصدر المرسلة إلى المحوّل، وليس العدد النهائي لقواعد Safari.";
+"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "قواعد المصدر المُرسلة إلى المحوّل عند آخر تطبيق، وليس العدد النهائي لقواعد Safari.";
 "Failed to persist pending filter update revision" = "تعذر حفظ تحديث قائمة التصفية المعلّق";
 
 "Paste non-empty plain text and review it before adding." = "الصق نصًا عاديًا غير فارغ وراجعه قبل إضافته.";

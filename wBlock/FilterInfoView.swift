@@ -83,8 +83,8 @@ struct FilterInfoView: View {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString("Filters", comment: "Content type"), color: .red)
                 InfoMetadataRow(title: "Category", value: liveFilter.category.localizedName)
                 if liveFilter.isSelected, let submitted = liveFilter.uniqueRuleCount {
-                    InfoMetadataRow(title: "Submitted at last apply", value: submitted.formatted())
-                    Text("Submitted counts track source rules sent to the converter, not Safari’s final rule count.")
+                    InfoMetadataRow(title: "Source Rules", value: submitted.formatted())
+                    Text("Source rules submitted to the converter at last apply, not Safari’s final rule count.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

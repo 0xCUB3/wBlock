@@ -1120,7 +1120,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Submitted at last apply" = "Передано при последнем применении";
 
-"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Счётчик показывает исходные правила, переданные конвертеру, а не итоговое число правил Safari.";
+"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Исходные правила, переданные конвертеру при последнем применении, а не итоговое число правил Safari.";
 "Failed to persist pending filter update revision" = "Не удалось сохранить ожидающее обновление фильтра";
 
 "Paste non-empty plain text and review it before adding." = "Вставьте непустой обычный текст и проверьте его перед добавлением.";

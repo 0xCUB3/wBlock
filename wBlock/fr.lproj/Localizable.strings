@@ -1120,7 +1120,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 
 "Submitted at last apply" = "Transmises lors de la dernière application";
 
-"Submitted counts track source rules sent to the converter, not Safari’s final rule count." = "Ce nombre correspond aux règles sources transmises au convertisseur, pas au nombre final de règles de Safari.";
+"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Règles sources transmises au convertisseur lors de la dernière application, pas le nombre final de règles de Safari.";
 "Failed to persist pending filter update revision" = "Impossible d’enregistrer la mise à jour du filtre en attente";
 
 "Paste non-empty plain text and review it before adding." = "Collez du texte brut non vide et vérifiez-le avant de l’ajouter.";
