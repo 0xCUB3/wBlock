@@ -32,11 +32,6 @@ struct FilterInfoView: View {
             #if os(macOS)
             InfoContentScrollView { infoContent.padding(20) }
                 .frame(width: 460)
-                .safeAreaInset(edge: .top, alignment: .trailing, spacing: 0) {
-                    SheetDoneButton { dismiss() }
-                        .padding(.top, 16)
-                        .padding(.trailing, 20)
-                }
             #else
             infoContent.padding(20).infoSheetChromeCompat { dismiss() }
             #endif
@@ -60,14 +55,18 @@ struct FilterInfoView: View {
     private var infoContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
+                HStack(alignment: .top) {
                     Text(liveFilter.localizedDisplayName)
                         .font(.title2.weight(.semibold))
                         .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 8)
                     if liveFilter.isCustom {
-                        Spacer()
                         Button("Edit") { showingMetadataEditor = true }
                     }
+                    #if os(macOS)
+                    SheetDoneButton { dismiss() }
+                    #endif
                 }
                 if !liveFilter.localizedDisplayDescription.isEmpty {
                     Text(liveFilter.localizedDisplayDescription)

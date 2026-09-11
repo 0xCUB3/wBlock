@@ -1033,15 +1033,17 @@ struct UserScriptManagerView: View {
 private struct ScriptNameAndDescriptionView: View {
     let script: UserScript
     let isBeta: Bool
+    var onClose: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .center, spacing: 8) {
+            HStack(alignment: .top, spacing: 8) {
                 Text(script.localizedDisplayName)
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.primary)
                     .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
                 if isBeta {
                     Text("Beta")
                         .font(.caption2)
@@ -1051,6 +1053,10 @@ private struct ScriptNameAndDescriptionView: View {
                         .background(Color.orange.opacity(0.15))
                         .foregroundStyle(.orange)
                         .cornerRadius(4)
+                }
+                if let onClose {
+                    Spacer(minLength: 8)
+                    SheetDoneButton(action: onClose)
                 }
             }
             if !script.localizedDisplayDescription.isEmpty {
@@ -1230,11 +1236,12 @@ struct UserScriptInfoSidebar: View {
     let onCategoryChanged: (FilterListCategory) -> Void
     let userScriptManager: UserScriptManager
     let onEdit: () -> Void
+    var onClose: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             let metadata = ContentInfoMetadata.userscript(script.content)
-            ScriptNameAndDescriptionView(script: script, isBeta: isBeta)
+            ScriptNameAndDescriptionView(script: script, isBeta: isBeta, onClose: onClose)
             if !isBuiltIn { Button("Edit", action: onEdit) }
             ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0, isBuiltIn: isBuiltIn)
             if script.url != nil || script.updateURL != nil || script.downloadURL != nil {
@@ -1327,16 +1334,12 @@ struct UserScriptInfoView: View {
                         onUpdatesAutomaticallyChanged: setUpdatesAutomatically,
                         onCategoryChanged: setCategory,
                         userScriptManager: userScriptManager,
-                        onEdit: { showingMetadataEditor = true }
+                        onEdit: { showingMetadataEditor = true },
+                        onClose: { dismiss() }
                     )
                     .padding(20)
                 }
                 .frame(width: 460)
-                .safeAreaInset(edge: .top, alignment: .trailing, spacing: 0) {
-                    SheetDoneButton { dismiss() }
-                        .padding(.top, 16)
-                        .padding(.trailing, 20)
-                }
                 #endif
             } else if isLoading {
                 ProgressView()
