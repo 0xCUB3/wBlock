@@ -36,12 +36,14 @@ extension View {
 
 #if os(macOS)
 /// The Filters and Userscripts tabs share one macOS toolbar shape: Add and
-/// Apply together, the enabled-only filter on its own, then search. On macOS 26
+/// Update together, pending Apply on its own, then the enabled-only filter and search. On macOS 26
 /// compact glass groups keep an eight-point gap; older releases render the
 /// same buttons as one flat group.
-struct MacActionsToolbar<Primary: View, Filter: View, Search: View>: ViewModifier {
+struct MacActionsToolbar<Primary: View, Apply: View, Filter: View, Search: View>: ViewModifier {
     let isSearchExpanded: Bool
+    let hasPendingChanges: Bool
     @ViewBuilder let primary: () -> Primary
+    @ViewBuilder let apply: () -> Apply
     @ViewBuilder let filter: () -> Filter
     @ViewBuilder let search: () -> Search
 
@@ -60,6 +62,7 @@ struct MacActionsToolbar<Primary: View, Filter: View, Search: View>: ViewModifie
                 ToolbarItemGroup(placement: .automatic) {
                     if !isSearchExpanded {
                         primary()
+                        apply()
                         filter()
                     }
                 }
@@ -74,11 +77,18 @@ struct MacActionsToolbar<Primary: View, Filter: View, Search: View>: ViewModifie
             HStack(spacing: 8) {
                 // Buttons that share a capsule get the smaller hit target and
                 // hover disc (#771); a button alone in its capsule fills it.
-                HStack(spacing: 0) { primary() }
+                HStack(spacing: 0) {
+                    primary()
+                    if !hasPendingChanges { apply() }
+                }
                     .environment(\.compactToolbarGrouped, true)
                     .padding(.horizontal, 3)
                     .frame(height: 36)
                     .glassEffect(.regular.interactive(), in: .capsule)
+                if hasPendingChanges {
+                    apply()
+                        .glassEffect(.regular.interactive(), in: .capsule)
+                }
                 filter()
                     .glassEffect(.regular.interactive(), in: .capsule)
                 search()

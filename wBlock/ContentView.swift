@@ -466,12 +466,13 @@ struct ContentView: View {
 
     #if os(macOS)
     private var macFiltersToolbar: some ViewModifier {
-        MacActionsToolbar(isSearchExpanded: showFilterSearch) {
+        MacActionsToolbar(isSearchExpanded: showFilterSearch, hasPendingChanges: hasPendingChanges) {
             Button {
                 showingAddFilterSheet = true
             } label: {
                 Label("Add Filter", systemImage: "plus")
             }
+        } apply: {
             applyChangesToolbarButton
         } filter: {
             Button {

@@ -480,12 +480,13 @@ struct UserScriptManagerView: View {
 
     #if os(macOS)
     private var macScriptsToolbar: some ViewModifier {
-        MacActionsToolbar(isSearchExpanded: showSearch) {
+        MacActionsToolbar(isSearchExpanded: showSearch, hasPendingChanges: hasPendingChanges) {
             Button {
                 showingAddScriptSheet = true
             } label: {
                 Label("Add Userscript or Userstyle", systemImage: "plus")
             }
+        } apply: {
             applyChangesToolbarButton
         } filter: {
             Button {
