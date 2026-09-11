@@ -225,7 +225,7 @@ struct ContentView: View {
                 EditCustomFilterView(filterManager: filterManager, filter: filter)
             }
         }
-        .sheet(item: $selectedFilterInfo) { filter in
+        .infoPresentation(item: $selectedFilterInfo) { filter in
             FilterInfoView(filter: filter, filterManager: filterManager)
                 .infoSheetPresentationCompat()
         }
@@ -236,7 +236,7 @@ struct ContentView: View {
                 FilterRulesView(filter: filter, filterManager: filterManager)
             }
         }
-        .sheet(item: $selectedCategoryInfo) { category in
+        .infoPresentation(item: $selectedCategoryInfo) { category in
             FilterCategoryInfoView(
                 category: category,
                 defaultFilterNames: defaultFilterNames(for: category),

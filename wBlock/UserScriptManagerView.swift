@@ -188,6 +188,7 @@ struct UserScriptManagerView: View {
     @State private var scripts: [UserScriptListItem] = []
     @State private var showingAddScriptSheet = false
     @State private var selectedScript: SelectedUserScript?
+    @State private var selectedScriptInfo: SelectedUserScript?
     @State private var showOnlyEnabled = false
     @State private var searchText = ""
     @State private var showSearch = false
@@ -292,24 +293,18 @@ struct UserScriptManagerView: View {
                 refreshScripts()
             })
         }
-        .sheet(item: $selectedScript, onDismiss: {
-            refreshScripts()
-        }) { selection in
-            if selection.action == .info {
-                UserScriptInfoView(
-                    scriptId: selection.id,
-                    userScriptManager: userScriptManager
-                )
+        .infoPresentation(item: $selectedScriptInfo, onDismiss: refreshScripts) { selection in
+            UserScriptInfoView(scriptId: selection.id, userScriptManager: userScriptManager)
                 .tallInfoSheetPresentationCompat()
-            } else {
-                UserScriptContentView(
-                    scriptId: selection.id,
-                    userScriptManager: userScriptManager,
-                    startsEditing: selection.action == .editContent
-                )
-            }
         }
-        .sheet(item: $selectedCategoryInfo) { category in
+        .sheet(item: $selectedScript, onDismiss: refreshScripts) { selection in
+            UserScriptContentView(
+                scriptId: selection.id,
+                userScriptManager: userScriptManager,
+                startsEditing: selection.action == .editContent
+            )
+        }
+        .infoPresentation(item: $selectedCategoryInfo) { category in
             UserScriptCategoryInfoView(
                 category: category,
                 defaultScriptNames: defaultScriptNames(for: category),
@@ -905,7 +900,7 @@ struct UserScriptManagerView: View {
             .onTapGesture {
                 // Defer to avoid race with context menu dismissal on iOS
                 DispatchQueue.main.async {
-                    selectedScript = SelectedUserScript(id: script.id, action: .info)
+                    selectedScriptInfo = SelectedUserScript(id: script.id, action: .info)
                 }
             }
 
@@ -946,7 +941,7 @@ struct UserScriptManagerView: View {
             )
             if actions.contains(.info) {
                 Button {
-                    selectedScript = SelectedUserScript(id: script.id, action: .info)
+                    selectedScriptInfo = SelectedUserScript(id: script.id, action: .info)
                 } label: {
                     Label("Info", systemImage: "info.circle")
                 }

@@ -178,6 +178,22 @@ extension View {
         }
     }
 
+    /// Informational panels dismiss on outside clicks on macOS; editing stays in sheets.
+    @ViewBuilder
+    func infoPresentation<Item: Identifiable, Info: View>(
+        item: Binding<Item?>,
+        onDismiss: @escaping () -> Void = {},
+        @ViewBuilder content: @escaping (Item) -> Info
+    ) -> some View {
+        #if os(macOS)
+        popover(item: item, attachmentAnchor: .point(.center), arrowEdge: .top) { value in
+            content(value).onDisappear(perform: onDismiss)
+        }
+        #else
+        sheet(item: item, onDismiss: onDismiss, content: content)
+        #endif
+    }
+
     /// Info popups open fully expanded so filters and userscripts use the same
     /// starting height and do not hide metadata behind a collapsed detent (#739).
     @ViewBuilder
