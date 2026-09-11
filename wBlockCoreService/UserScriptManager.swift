@@ -2324,57 +2324,59 @@ public class UserScriptManager: ObservableObject {
               userScripts.indices.contains(index)
         else { return }
         let scriptName = userScripts[index].name
+        let expectedURL = userScripts[index].url
         let mutationRevision = scriptMutationRevision(scriptID)
 
         logger.info("📥 Downloading userscript from: \(url)")
 
         do {
-            let content = try await downloadUserScriptContent(from: url)
+            _ = try await UserScriptUpdateOperation.run(
+                downloadURL: url,
+                fetch: { url in try await self.downloadUserScriptContent(from: url) },
+                isCurrent: {
+                    guard let current = self.userScript(withId: scriptID) else { return false }
+                    return mutationRevision == self.scriptMutationRevision(scriptID)
+                        && current.url == expectedURL
+                },
+                prepare: { content in
+                    guard let current = self.userScript(withId: scriptID) else {
+                        throw CancellationError()
+                    }
+                    return try await self.preparedDownloadedUserScript(content, replacing: current)
+                },
+                commit: { prepared in
+                    guard let index = self.indexOfUserScript(withId: scriptID),
+                          mutationRevision == self.scriptMutationRevision(scriptID)
+                    else { return false }
 
-            guard mutationRevision == scriptMutationRevision(scriptID),
-                  let currentIndex = indexOfUserScript(withId: scriptID),
-                  userScripts.indices.contains(currentIndex)
-            else { return }
-
-            let downloaded = try await validatedDownloadedUserScriptContent(
-                content,
-                replacing: userScripts[currentIndex]
+                    var updated = self.updatedUserScript(
+                        self.userScripts[index],
+                        from: prepared.parsed,
+                        content: prepared.content,
+                        resources: prepared.resources,
+                        preserveDisplayMetadata: false
+                    )
+                    if updated.description.isEmpty
+                        || updated.description == "Default userscript - downloading..."
+                    {
+                        updated.description = updated.description.isEmpty
+                            ? "Ready to enable" : updated.description
+                    }
+                    if updated.version == "Downloading..." {
+                        updated.version = updated.version.isEmpty ? "Downloaded" : updated.version
+                    }
+                    guard self.writeUserScriptFiles(updated) else {
+                        throw CocoaError(.fileWriteUnknown)
+                    }
+                    self.userScripts[index] = updated
+                    if origin == .local { self.recordScriptMutation(scriptID) }
+                    let saved = try await self.persistDownloadedUserScript(scriptID)
+                    if saved { self.logger.info("✅ Downloaded and saved: \(updated.name)") }
+                    return saved
+                }
             )
-            userScripts[currentIndex] = downloaded
-            userScripts[currentIndex].lastUpdated = Date()
-
-            // Update description and version from metadata, but keep disabled
-            if userScripts[currentIndex].description.isEmpty
-                || userScripts[currentIndex].description == "Default userscript - downloading..."
-            {
-                userScripts[currentIndex].description =
-                    userScripts[currentIndex].description.isEmpty
-                    ? "Ready to enable" : userScripts[currentIndex].description
-            }
-
-            if userScripts[currentIndex].version == "Downloading..." {
-                userScripts[currentIndex].version =
-                    userScripts[currentIndex].version.isEmpty
-                    ? "Downloaded" : userScripts[currentIndex].version
-            }
-
-            // Process @require directives after metadata is parsed
-            let scriptForDirectives = userScripts[currentIndex]
-            let dependencies = await processedDependencies(for: scriptForDirectives)
-            let processedContent = dependencies.content
-            let resourceContents = dependencies.resources
-
-            guard mutationRevision == scriptMutationRevision(scriptID),
-                  let finalIndex = indexOfUserScript(withId: scriptID),
-                  userScripts.indices.contains(finalIndex)
-            else { return }
-
-            userScripts[finalIndex].content = processedContent
-            userScripts[finalIndex].resourceContents = resourceContents
-            _ = writeUserScriptFiles(userScripts[finalIndex])
-            if origin == .local { recordScriptMutation(scriptID) }
-            await persistUserScriptsNow()
-            logger.info("✅ Downloaded and saved: \(self.userScripts[finalIndex].name)")
+        } catch is CancellationError {
+            return
         } catch {
             if mutationRevision == scriptMutationRevision(scriptID),
                let failedIndex = indexOfUserScript(withId: scriptID),
@@ -2573,16 +2575,40 @@ public class UserScriptManager: ObservableObject {
         return downloaded
     }
 
+    private func persistDownloadedUserScript(_ id: UUID) async throws -> Bool {
+        let revision = scriptMutationRevision(id)
+        guard await persistUserScriptsNow() else {
+            userScriptsPendingPersistence.insert(id)
+            throw CocoaError(.fileWriteUnknown)
+        }
+        guard !Task.isCancelled, revision == scriptMutationRevision(id),
+              indexOfUserScript(withId: id) != nil else { return false }
+        userScriptsPendingPersistence.remove(id)
+        return true
+    }
+
+    private func preparedDownloadedUserScript(
+        _ content: String,
+        replacing existing: UserScript
+    ) async throws -> (parsed: UserScript, content: String, resources: [String: String]) {
+        let parsed = try await validatedDownloadedUserScriptContent(content, replacing: existing)
+        let dependencies = await processedDependencies(for: parsed)
+        return (parsed, dependencies.content, dependencies.resources)
+    }
+
     private func updatedUserScript(
         _ existing: UserScript,
         from parsed: UserScript,
         content: String,
-        resources: [String: String]
+        resources: [String: String],
+        preserveDisplayMetadata: Bool = true
     ) -> UserScript {
         var updated = parsed
-        updated.name = existing.name
-        if !isDefaultUserScript(existing) {
-            updated.description = existing.description
+        if preserveDisplayMetadata {
+            updated.name = existing.name
+            if !isDefaultUserScript(existing) {
+                updated.description = existing.description
+            }
         }
         updated.url = existing.url
         updated.isEnabled = existing.isEnabled
@@ -2921,29 +2947,22 @@ public class UserScriptManager: ObservableObject {
         }.value
     }
 
-    public func addUserScript(
-        fromStagedImport staged: UserScript,
-        nameOverride: String,
-        descriptionOverride: String,
-        category: FilterListCategory,
-        origin: UserScriptMutationOrigin = .local
+    private func performLocalImport(
+        status: String,
+        securityScopedURL: URL? = nil,
+        operation: () async throws -> UserScript
     ) async -> Error? {
         isLoading = true
-        statusDescription = staged.isUserStyle ? "Importing userstyle..." : "Importing userscript..."
+        statusDescription = status
         hasError = false
 
+        let accessed = securityScopedURL?.startAccessingSecurityScopedResource() ?? false
+        defer {
+            if accessed { securityScopedURL?.stopAccessingSecurityScopedResource() }
+        }
+
         do {
-            _ = try await importLocalUserScript(
-                content: staged.content,
-                fallbackName: staged.name,
-                importedStatusVerb: "Imported",
-                replacedStatusVerb: "Replaced",
-                nameOverride: nameOverride,
-                descriptionOverride: descriptionOverride,
-                categoryOverride: category,
-                localImportIdentity: staged.localImportIdentity,
-                origin: origin
-            )
+            _ = try await operation()
             isLoading = false
             return nil
         } catch {
@@ -2956,28 +2975,16 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func addUserScript(
-        fromLocalFile fileURL: URL,
-        nameOverride: String? = nil,
-        descriptionOverride: String? = nil,
-        category: FilterListCategory? = nil,
+        fromStagedImport staged: UserScript,
+        nameOverride: String,
+        descriptionOverride: String,
+        category: FilterListCategory,
         origin: UserScriptMutationOrigin = .local
     ) async -> Error? {
-        isLoading = true
-        statusDescription = UserStyleSupport.isUserStylePath(fileURL.lastPathComponent)
-            ? "Importing userstyle..." : "Importing userscript..."
-        hasError = false
-
-        let accessed = fileURL.startAccessingSecurityScopedResource()
-        defer {
-            if accessed {
-                fileURL.stopAccessingSecurityScopedResource()
-            }
-        }
-
-        do {
-            let staged = try await stageUserScriptImport(fromLocalFile: fileURL)
-
-            _ = try await importLocalUserScript(
+        await performLocalImport(
+            status: staged.isUserStyle ? "Importing userstyle..." : "Importing userscript..."
+        ) {
+            try await self.importLocalUserScript(
                 content: staged.content,
                 fallbackName: staged.name,
                 importedStatusVerb: "Imported",
@@ -2988,15 +2995,33 @@ public class UserScriptManager: ObservableObject {
                 localImportIdentity: staged.localImportIdentity,
                 origin: origin
             )
+        }
+    }
 
-            isLoading = false
-            return nil
-        } catch {
-            hasError = true
-            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-            statusDescription = "Import failed"
-            isLoading = false
-            return error
+    public func addUserScript(
+        fromLocalFile fileURL: URL,
+        nameOverride: String? = nil,
+        descriptionOverride: String? = nil,
+        category: FilterListCategory? = nil,
+        origin: UserScriptMutationOrigin = .local
+    ) async -> Error? {
+        await performLocalImport(
+            status: UserStyleSupport.isUserStylePath(fileURL.lastPathComponent)
+                ? "Importing userstyle..." : "Importing userscript...",
+            securityScopedURL: fileURL
+        ) {
+            let staged = try await self.stageUserScriptImport(fromLocalFile: fileURL)
+            return try await self.importLocalUserScript(
+                content: staged.content,
+                fallbackName: staged.name,
+                importedStatusVerb: "Imported",
+                replacedStatusVerb: "Replaced",
+                nameOverride: nameOverride,
+                descriptionOverride: descriptionOverride,
+                categoryOverride: category,
+                localImportIdentity: staged.localImportIdentity,
+                origin: origin
+            )
         }
     }
 
@@ -3010,12 +3035,8 @@ public class UserScriptManager: ObservableObject {
         origin: UserScriptMutationOrigin = .local
     ) async -> Error? {
         let startingLocalMutationRevision = origin == .remoteSync ? localMutationRevision : nil
-        isLoading = true
-        statusDescription = "Adding userscript..."
-        hasError = false
-
-        do {
-            _ = try await importLocalUserScript(
+        return await performLocalImport(status: "Adding userscript...") {
+            try await self.importLocalUserScript(
                 content: content,
                 fallbackName: "Pasted Userscript",
                 importedStatusVerb: "Added",
@@ -3028,15 +3049,6 @@ public class UserScriptManager: ObservableObject {
                 origin: origin,
                 startingLocalMutationRevision: startingLocalMutationRevision
             )
-
-            isLoading = false
-            return nil
-        } catch {
-            hasError = true
-            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-            statusDescription = "Import failed"
-            isLoading = false
-            return error
         }
     }
 
@@ -3887,12 +3899,7 @@ public class UserScriptManager: ObservableObject {
                 guard let current = self.userScripts.first(where: { $0.id == candidate.id }) else {
                     throw CancellationError()
                 }
-                let parsed = try await self.validatedDownloadedUserScriptContent(
-                    rawContent,
-                    replacing: current
-                )
-                let dependencies = await self.processedDependencies(for: parsed)
-                return (parsed, dependencies.content, dependencies.resources)
+                return try await self.preparedDownloadedUserScript(rawContent, replacing: current)
             },
             commit: { parsed, processedContent, resourceContents in
                 guard let index = self.userScripts.firstIndex(where: { $0.id == candidate.id }) else {
@@ -3902,16 +3909,7 @@ public class UserScriptManager: ObservableObject {
                 if self.userScripts[index].content == processedContent,
                    self.userScripts[index].resourceContents == resourceContents {
                     if persistChanges || needsPersistenceRetry {
-                        guard await self.persistUserScriptsNow() else {
-                            self.userScriptsPendingPersistence.insert(candidate.id)
-                            throw CocoaError(.fileWriteUnknown)
-                        }
-                        guard !Task.isCancelled,
-                              mutationRevision == self.scriptMutationRevision(candidate.id),
-                              self.userScripts.contains(where: { $0.id == candidate.id })
-                        else { return false }
-                        self.userScriptsPendingPersistence.remove(candidate.id)
-                        return true
+                        return try await self.persistDownloadedUserScript(candidate.id)
                     }
                     return false
                 }
@@ -3930,16 +3928,7 @@ public class UserScriptManager: ObservableObject {
                     self.recordScriptMutation(candidate.id)
                 }
                 if persistChanges {
-                    let persistenceRevision = self.scriptMutationRevision(candidate.id)
-                    guard await self.persistUserScriptsNow() else {
-                        self.userScriptsPendingPersistence.insert(candidate.id)
-                        throw CocoaError(.fileWriteUnknown)
-                    }
-                    guard !Task.isCancelled,
-                          persistenceRevision == self.scriptMutationRevision(candidate.id),
-                          self.userScripts.contains(where: { $0.id == candidate.id })
-                    else { return false }
-                    self.userScriptsPendingPersistence.remove(candidate.id)
+                    return try await self.persistDownloadedUserScript(candidate.id)
                 }
                 return true
             }

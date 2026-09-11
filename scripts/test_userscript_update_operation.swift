@@ -69,6 +69,24 @@ struct UserScriptUpdateOperationRegression {
         precondition(!cancelled)
         precondition(!cancelledCommit)
 
+        var supersededDuringPreparation = false
+        var committedAfterPreparationSupersession = false
+        let preparationSuperseded = await UserScriptUpdateOperation.run(
+            downloadURL: resolvedURL,
+            fetch: { _ in "payload" },
+            isCurrent: { !supersededDuringPreparation },
+            prepare: { payload in
+                supersededDuringPreparation = true
+                return payload
+            },
+            commit: { _ in
+                committedAfterPreparationSupersession = true
+                return true
+            }
+        )
+        precondition(!preparationSuperseded)
+        precondition(!committedAfterPreparationSupersession)
+
         print("userscript update operation regression: PASS")
     }
 }
