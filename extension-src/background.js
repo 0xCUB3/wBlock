@@ -27439,7 +27439,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (canSetActionIcon) {
       updates.push(browser.action.setIcon({
         tabId: tab.id,
-        path: blockingPaused || siteDisabled ? DISABLED_ACTION_ICON : DEFAULT_ACTION_ICON
+        // Safari applies its own tint; the disabled asset must differ in shape.
+        path: !supported || blockingPaused || siteDisabled ? DISABLED_ACTION_ICON : DEFAULT_ACTION_ICON
       }).catch(error => {
         console.warn("[wBlock] Failed to update action icon:", error);
       }));

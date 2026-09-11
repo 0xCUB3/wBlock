@@ -223,6 +223,9 @@ WBLOCK_STYLUS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/stylus
 WBLOCK_POSTCSS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/postcss-nested/wblock-postcss-nested.js" \
   "$TMP/packaged-compilers"
 
+# Safari uses template tinting, so disabled toolbar icons need a distinct alpha mask.
+run swift scripts/test_action_icon_masks.swift
+
 for test in scripts/test_*.mjs; do
   [[ "$test" == scripts/test_no_autoplay.mjs ]] && continue
   run node "$test"
