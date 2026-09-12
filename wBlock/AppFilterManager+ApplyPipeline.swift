@@ -896,7 +896,17 @@ extension AppFilterManager {
             self.applyProgressViewModel.updateCurrentFilter("")
         }
 
-        let reloadSummary = await reloadContentBlockers(platformTargets)
+        let reloadSummary: ReloadPhaseSummary
+        if allowPausedResume {
+            // Safari's extension reads the shared pause flags, not this run's
+            // allowPausedResume override. Let it load the prepared rules rather
+            // than certify another inert list as a successful resume.
+            reloadSummary = await BlockingPauseStore.withContentBlockingResumed {
+                await reloadContentBlockers(platformTargets)
+            }
+        } else {
+            reloadSummary = await reloadContentBlockers(platformTargets)
+        }
         let allReloadsSuccessful = reloadSummary.allSuccessful
         let activeReloads = reloadSummary.metrics.filter { !$0.skipped }
         let reloadDurationMs = reloadSummary.durationMs
@@ -1112,8 +1122,8 @@ extension AppFilterManager {
     /// an inert no-op rule list to every content blocker target, then reloads each target.
     /// Used both by the "no filters selected" apply path and by the global pause toggle.
     /// Returns `true` on success, `false` after reporting the failure via `failApplyRun`.
-    func clearAllExtensionsAndEngine() async -> Bool {
-        if await failApplyIfCancelled() { return false }
+    func clearAllExtensionsAndEngine(ignoringCancellation: Bool = false) async -> Bool {
+        if !ignoringCancellation, await failApplyIfCancelled() { return false }
 
         let currentPlatform = self.currentPlatform
 
@@ -1303,8 +1313,8 @@ extension AppFilterManager {
         let started = await performExclusiveApply { [self] in
             lastApplySucceeded = false
             BlockingPauseStore.setResumeApplying()
-            // Keep blocking fail-closed in shared storage, but let SwiftUI paint the
-            // requested off state before the apply pipeline occupies the main actor.
+            // Keep shared consumers paused while preparing the rules. The reload
+            // phase temporarily lets Safari read them before we commit the resume.
             BlockingPauseStore.setPaused(true)
             UserScriptManager.invalidateDocumentStartExecutionCache()
             await MainActor.run {
@@ -1324,6 +1334,7 @@ extension AppFilterManager {
             )
 
             let succeeded = lastApplySucceeded && !hasError
+                && !Task.isCancelled && !ApplyCancellation.isCancelled
             if succeeded {
                 BlockingPauseStore.setPaused(false)
                 UserScriptManager.invalidateDocumentStartExecutionCache()
@@ -1337,6 +1348,13 @@ extension AppFilterManager {
                 }
             } else {
                 BlockingPauseStore.setPaused(true)
+                UserScriptManager.invalidateDocumentStartExecutionCache()
+                ZapperRuleManager.notifySafariRulesChanged()
+                // Some targets may already have loaded active rules. Undo that
+                // even on cancellation; changing the flag alone cannot change
+                // Safari's compiled lists. Cleanup runs in its own detached task.
+                _ = await clearAllExtensionsAndEngine(ignoringCancellation: true)
+                lastApplySucceeded = false
                 await MainActor.run {
                     self.pausedComponents = .all
                     self.isBlockingPaused = true

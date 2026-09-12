@@ -98,6 +98,19 @@ public enum BlockingPauseStore {
         setPausedComponents(paused ? .all : [], groupIdentifier: groupIdentifier)
     }
 
+    /// Allows Safari to read prepared rules during a serialized resume apply without
+    /// resuming user scripts or committing the global pause toggle prematurely.
+    @MainActor
+    public static func withContentBlockingResumed<T>(
+        groupIdentifier: String = GroupIdentifier.shared.value,
+        operation: @MainActor () async throws -> T
+    ) async rethrows -> T {
+        let previous = pausedComponents(groupIdentifier: groupIdentifier)
+        setPausedComponents(previous.subtracting([.filters, .elementZapper]), groupIdentifier: groupIdentifier)
+        defer { setPausedComponents(previous, groupIdentifier: groupIdentifier) }
+        return try await operation()
+    }
+
     /// Requests that the containing app run its canonical resume/apply lifecycle.
     /// Pending and applying requests are coalesced so repeated popup taps cannot start
     /// another apply or reset the status of the request already in progress.

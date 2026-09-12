@@ -5,7 +5,8 @@ import Foundation
 
 @main
 struct Issue508PauseStoreTest {
-    static func main() {
+    @MainActor
+    static func main() async {
         let suiteName = "issue-508-\(UUID().uuidString)"
         guard let defaults = UserDefaults(suiteName: suiteName) else {
             fatalError("could not create random UserDefaults suite")
@@ -31,6 +32,47 @@ struct Issue508PauseStoreTest {
         BlockingPauseStore.setPaused(false, groupIdentifier: suiteName)
         require(BlockingPauseStore.pausedComponents(groupIdentifier: suiteName).isEmpty, "resume must clear the component mask")
         require(!defaults.bool(forKey: BlockingPauseStore.key), "resume must clear the legacy pause bool")
+
+        for components: BlockingPauseComponents in [.all, .filters, .userScripts, .elementZapper] {
+            BlockingPauseStore.setPausedComponents(components, groupIdentifier: suiteName)
+            let loadedPreparedRules = await BlockingPauseStore.withContentBlockingResumed(groupIdentifier: suiteName) {
+                await Task.yield()
+                require(!BlockingPauseStore.isContentBlockingPaused(groupIdentifier: suiteName),
+                        "Safari must read prepared rules during resume, not the inert paused list")
+                require(BlockingPauseStore.isPaused(.userScripts, groupIdentifier: suiteName) == components.contains(.userScripts),
+                        "loading Safari rules must not change the userscript pause state")
+                return true
+            }
+            require(loadedPreparedRules, "reload result must reach the apply pipeline")
+            require(BlockingPauseStore.pausedComponents(groupIdentifier: suiteName) == components,
+                    "resume must stay uncommitted until the whole apply succeeds")
+        }
+        enum ReloadError: Error { case failed }
+        BlockingPauseStore.setPaused(true, groupIdentifier: suiteName)
+        do {
+            try await BlockingPauseStore.withContentBlockingResumed(groupIdentifier: suiteName) {
+                throw ReloadError.failed
+            }
+            fatalError("reload failure must propagate")
+        } catch {
+            require(BlockingPauseStore.pausedComponents(groupIdentifier: suiteName) == .all,
+                    "a failed reload must restore the paused state")
+        }
+        let cancelled = Task { @MainActor in
+            await BlockingPauseStore.withContentBlockingResumed(groupIdentifier: suiteName) {
+                withUnsafeCurrentTask { $0?.cancel() }
+                await Task.yield()
+                return !Task.isCancelled
+            }
+        }
+        let cancelledResult = await cancelled.value
+        require(!cancelledResult, "cancellation must reach the reload operation")
+        require(BlockingPauseStore.pausedComponents(groupIdentifier: suiteName) == .all,
+                "cancellation must restore the paused state")
+        BlockingPauseStore.setPaused(false, groupIdentifier: suiteName)
+        require(!BlockingPauseStore.isContentBlockingPaused(groupIdentifier: suiteName),
+                "committing a successful resume must leave Safari rules active")
+        print("PASS: resume exposes prepared rules only during reload and restores pause on failure or cancellation")
 
         let firstRequest = BlockingPauseStore.requestResume(groupIdentifier: suiteName)
         let duplicateRequest = BlockingPauseStore.requestResume(groupIdentifier: suiteName)
