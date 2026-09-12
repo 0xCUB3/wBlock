@@ -329,6 +329,8 @@ function syncPopupViewportHeight() {
 
 if (shouldFillIosPhoneSheet()) {
     document.documentElement.classList.add('ios-phone-sheet');
+} else if (CSS.supports('-webkit-touch-callout', 'none') && isIpadDevice()) {
+    document.documentElement.classList.add('ios-ipad-popover');
 }
 window.addEventListener('resize', syncPopupViewportHeight);
 syncPopupViewportHeight();

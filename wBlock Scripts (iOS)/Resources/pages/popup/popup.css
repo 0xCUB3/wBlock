@@ -88,8 +88,14 @@ body {
   background: transparent;
 }
 
-/* iPhone sheets are already as tall as the phone. Fill that instead of stopping at 600px. */
 @supports (-webkit-touch-callout: none) {
+  /* Let Safari paint the popover material through its native corner shape. */
+  html.ios-ipad-popover,
+  html.ios-ipad-popover body {
+    background: transparent;
+  }
+
+  /* iPhone sheets already have their full height; do not stop at 600px. */
   html.ios-phone-sheet,
   html.ios-phone-sheet body {
     height: 100%;
