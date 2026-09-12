@@ -76,7 +76,8 @@ struct WBlockBackup: Codable, Sendable {
         var localImportIdentity: String?
 
         var disabledHosts: [String]?
-        init(userScript: UserScript, disabledHosts: [String] = []) {
+        var siteAccess: UserScriptSiteAccess?
+        init(userScript: UserScript, disabledHosts: [String] = [], siteAccess: UserScriptSiteAccess = .init()) {
             id = userScript.id
             name = userScript.name
             url = userScript.url?.absoluteString
@@ -104,13 +105,14 @@ struct WBlockBackup: Codable, Sendable {
             localImportIdentity = userScript.localImportIdentity
             // An empty collection is authoritative; nil belongs only to legacy backups.
             self.disabledHosts = disabledHosts
+            self.siteAccess = siteAccess
         }
 
         private enum CodingKeys: String, CodingKey {
             case id, name, url, isEnabled, description, version, matches, excludeMatches
             case includes, excludes, runAt, injectInto, grant, require, resource, resourceContents
             case noframes, isLocal, updateURL, downloadURL, content, lastUpdated, updatesAutomatically
-            case category, localImportIdentity, disabledHosts
+            case category, localImportIdentity, disabledHosts, siteAccess
         }
 
         init(from decoder: Decoder) throws {
@@ -141,6 +143,7 @@ struct WBlockBackup: Codable, Sendable {
             category = try container.decodeIfPresent(String.self, forKey: .category)
             localImportIdentity = try container.decodeIfPresent(String.self, forKey: .localImportIdentity)
             disabledHosts = try container.decodeIfPresent([String].self, forKey: .disabledHosts)
+            siteAccess = try container.decodeIfPresent(UserScriptSiteAccess.self, forKey: .siteAccess)
         }
 
         var userScript: UserScript {
@@ -540,7 +543,8 @@ enum BackupManager {
         let userScriptEntries = backedUpUserScripts.map { script in
             WBlockBackup.UserScriptEntry(
                 userScript: script,
-                disabledHosts: userScriptDisabledHosts[script.id] ?? []
+                disabledHosts: userScriptDisabledHosts[script.id] ?? [],
+                siteAccess: ProtobufDataManager.shared.userScriptSiteAccess(forScriptID: script.id.uuidString)
             )
         }
 
@@ -668,7 +672,7 @@ enum BackupManager {
             ProtobufDataManager.shared.getUserScriptDisabledHosts()
         }
         for entry in backup.userScripts {
-            guard let disabledHosts = entry.disabledHosts else { continue }
+            let disabledHosts = entry.disabledHosts
             let restoredScript = entry.userScript
             guard let matchingIndex = UserScriptRestoreMatcher.matchingIndex(
                 for: restoredScript,
@@ -677,7 +681,10 @@ enum BackupManager {
                 continue
             }
             let matchedScript = restoredUserScripts[matchingIndex]
-            disabledHostsByScriptID[matchedScript.id.uuidString] = disabledHosts
+            if let disabledHosts { disabledHostsByScriptID[matchedScript.id.uuidString] = disabledHosts }
+            if let siteAccess = entry.siteAccess {
+                await ProtobufDataManager.shared.setUserScriptSiteAccess(siteAccess, forScriptID: matchedScript.id.uuidString)
+            }
         }
         await ProtobufDataManager.shared.setAllUserScriptDisabledHosts(disabledHostsByScriptID)
 

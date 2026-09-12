@@ -27,6 +27,7 @@ struct SiteSettingsView: View {
         let isFilterDisabled: Bool
         let isAutoplayAllowed: Bool
         let disabledScriptIDs: Set<String>
+        let selectedScriptIDs: Set<String>
     }
 
     private struct SiteUndoState {
@@ -167,17 +168,12 @@ struct SiteSettingsView: View {
         let filterDisabled = Set(DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites))
         let autoplayAllowed = Set(DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayAllowedSites))
         let exceptionsByScript = dataManager.getUserScriptDisabledHosts()
-        var scriptsOffByHost: [String: Int] = [:]
-        for hosts in exceptionsByScript.values {
-            for host in hosts {
-                scriptsOffByHost[host, default: 0] += 1
-            }
-        }
 
         var domains = whitelisted
         domains.formUnion(filterDisabled)
         domains.formUnion(autoplayAllowed)
-        domains.formUnion(scriptsOffByHost.keys)
+        domains.formUnion(exceptionsByScript.values.flatMap { $0 })
+        domains.formUnion(dataManager.getUserScriptAllowedHosts().values.flatMap { $0 })
 
         return domains.sorted().map { domain in
             SiteSummary(
@@ -185,7 +181,7 @@ struct SiteSettingsView: View {
                 isWhitelisted: whitelisted.contains(domain),
                 isFilterDisabled: filterDisabled.contains(domain),
                 isAutoplayAllowed: autoplayAllowed.contains(domain),
-                scriptsOffCount: scriptsOffByHost[domain] ?? 0,
+                scriptsOffCount: userScriptManager.pageUserScripts(for: "https://" + domain + "/").filter { $0.disabledForSite }.count,
             )
         }
 
@@ -451,7 +447,8 @@ struct SiteSettingsView: View {
             isAutoplayAllowed: isAutoplayAllowed(domain),
             disabledScriptIDs: Set(disabledHosts.compactMap { scriptID, hosts in
                 hosts.contains(domain) ? scriptID : nil
-            })
+            }),
+            selectedScriptIDs: Set(dataManager.getUserScriptAllowedHosts().compactMap { $0.value.contains(domain) ? $0.key : nil })
         )
     }
 
@@ -487,12 +484,20 @@ struct SiteSettingsView: View {
         let filterDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
         await dataManager.setFilterDisabledDomains(snapshot.isFilterDisabled ? DisabledSitesNormalizer.normalizedDomains(from: filterDomains + [domain]) : filterDomains.filter { $0 != domain })
         await dataManager.setNoAutoplaySiteAllowed(snapshot.isAutoplayAllowed, onHost: domain)
+        await restoreSelectedSites(snapshot.selectedScriptIDs, on: domain)
         let disabledHosts = dataManager.getUserScriptDisabledHosts()
         for scriptID in Set(disabledHosts.keys).union(snapshot.disabledScriptIDs) {
             var hosts = disabledHosts[scriptID] ?? []
             hosts.removeAll { $0 == domain }
             if snapshot.disabledScriptIDs.contains(scriptID) { hosts.append(domain) }
             await dataManager.setUserScriptDisabledHosts(Array(Set(hosts)).sorted(), forScriptID: scriptID)
+        }
+    }
+
+    private func restoreSelectedSites(_ ids: Set<String>, on domain: String) async {
+        for (id, hosts) in dataManager.getUserScriptAllowedHosts() {
+            let updated = hosts.filter { $0 != domain } + (ids.contains(id) ? [domain] : [])
+            await dataManager.setUserScriptSiteAccess(.init(onlySelectedSites: true, hosts: updated), forScriptID: id)
         }
     }
 
@@ -571,6 +576,9 @@ struct SiteSettingsView: View {
             if autoplaySites.contains(domain) { await dataManager.setNoAutoplaySiteAllowed(false, onHost: domain) }
             for (scriptID, hosts) in dataManager.getUserScriptDisabledHosts() where hosts.contains(domain) {
                 await dataManager.setUserScriptDisabledHosts(hosts.filter { $0 != domain }, forScriptID: scriptID)
+            }
+            for (id, hosts) in dataManager.getUserScriptAllowedHosts() where hosts.contains(domain) {
+                await dataManager.setUserScriptSiteAccess(.init(onlySelectedSites: true, hosts: hosts.filter { $0 != domain }), forScriptID: id)
             }
             expandedDomains.remove(domain)
         }

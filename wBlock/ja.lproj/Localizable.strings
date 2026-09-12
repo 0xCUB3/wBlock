@@ -1,3 +1,11 @@
+"Run on" = "実行するサイト";
+"All matching sites" = "条件に一致するすべてのサイト";
+"Only selected sites" = "選択したサイトのみ";
+"Selected Sites" = "選択したサイト";
+"No sites selected. This script will not run." = "サイトが選択されていません。このスクリプトは実行されません。";
+"This script will not run on excluded sites, even if they are selected." = "選択されていても、除外したサイトではこのスクリプトは実行されません。";
+"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "サイトにはサブドメインも含まれます。スクリプト独自の一致ルールも引き続き適用されます。変更後はページを再読み込みしてください。";
+"Could not save site settings" = "サイト設定を保存できませんでした";
 "SponsorBlock Settings" = "SponsorBlock設定";
 "Import SponsorBlock Settings" = "SponsorBlock設定を読み込む";
 "Export SponsorBlock Settings" = "SponsorBlock設定を書き出す";

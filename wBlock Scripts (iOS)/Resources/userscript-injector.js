@@ -151,7 +151,6 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.extensionContextAvailable = false;
             this.extensionContextUnavailableLogged = false;
             this.pendingNativeRequests = new Map(); // requestId -> { resolve, reject, timeoutId }
-            this.provisionalScripts = new Map(); // execution key -> provisional state
             this.pageMenuBridgeElements = new Map(); // bridgeId -> script element
             this.contentMenuCommandCallbacks = new Map(); // bridgeId -> Map(commandId, callback)
             this.registeredMenuCommands = new Map(); // bridgeId -> Map(commandId, descriptor)
@@ -186,9 +185,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
             // Privileged GM calls never arrive over page events.
 
-            // Warm starts are quarantined. Page-world payloads retain their existing
-            // page-authority behavior; content-world candidates need native integrity
-            // validation before they can execute.
+            // Validate cached permissions before executing, with no native bridge privileges.
             const warmStartValidationDispatch = this.loadWarmStartScripts();
             if (warmStartValidationDispatch) {
                 warmStartValidationDispatch
@@ -205,7 +202,6 @@ if (window.wBlockUserscriptInjectorHasRun) {
             // execution keys stay intact so scripts are never hot-run twice.
             const generation = ++this.documentStartRequestGeneration;
             this.pendingScripts = [];
-            this.provisionalScripts.clear();
             this.tubeCleanerSettingsScript = null;
             this.pendingTubeSettings = null;
             this.scriptPayloadPromises.clear();
@@ -722,6 +718,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
             try {
                 const pageURL = new URL(window.location.href);
                 const host = pageURL.hostname.toLowerCase();
+                if (Object.prototype.hasOwnProperty.call(script, 'allowedHosts')
+                    && (!Array.isArray(script.allowedHosts) || !script.allowedHosts.some(value => {
+                        const allowed = String(value).trim().toLowerCase();
+                        return allowed && (host === allowed || host.endsWith('.' + allowed));
+                    }))) return false;
                 const disabled = Array.isArray(script.disabledHosts) ? script.disabledHosts : [];
                 if (disabled.some(value => {
                     const blocked = String(value).trim().toLowerCase();
@@ -750,24 +751,6 @@ if (window.wBlockUserscriptInjectorHasRun) {
             } catch (_) { return false; }
         }
 
-        warmStartFingerprint(script) {
-            const canonicalize = value => {
-                if (Array.isArray(value)) return value.map(canonicalize);
-                if (value && typeof value === 'object') {
-                    return Object.keys(value).sort().reduce((result, key) => {
-                        result[key] = canonicalize(value[key]);
-                        return result;
-                    }, {});
-                }
-                return value;
-            };
-            const {
-                storageBridgeId, menuBridgeId, xhrBridgeId, portBridgeId,
-                __wblockWarmStart, ...descriptor
-            } = script || {};
-            return JSON.stringify(canonicalize(descriptor));
-        }
-
         isWarmStartEligible(script) {
             if (!script || script.isEnabled !== true) return false;
             if (script.runAt !== 'document-start'
@@ -775,11 +758,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             if (script.kind === 'style') return this.isStyleWarmStartEligible(script);
             if (requiresIsolatedGM(script)) return false;
             const isRemote = script.isLocal === false && /^https:\/\//i.test(script.sourceURL || '');
-            // Local page-world scripts may warm start too: the cache lives in
-            // page-writable storage either way, cached page payloads execute with
-            // page authority only and never acquire native privileges after
-            // fingerprint reconciliation against the authoritative native response
-            // (issue #537).
+            // Cached page scripts retain page authority only, even after validation.
             const isPageWarmStart = script.injectInto === 'page' && (isRemote || script.isLocal === true);
             const isDarkReaderContentWarmStart = isRemote
                 && script.injectInto === 'content'
@@ -800,10 +779,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             return grants.every(grant => safeGrants.has(String(grant).toLowerCase()));
         }
 
-        // Userstyles are plain CSS with no bridge privilege, so a cached copy can
-        // be applied before first paint and confirmed afterwards (#670). The
-        // native validator compares the SHA-256 of the configured CSS; a
-        // mismatch removes the provisional <style> element.
+        // Cached CSS needs both a matching digest and current site permission.
         isStyleWarmStartEligible(style) {
             if (typeof style.content !== 'string' || !style.content) return false;
             if (typeof style.contentDigest !== 'string' || !/^[0-9a-f]{64}$/.test(style.contentDigest)) return false;
@@ -861,22 +837,16 @@ if (window.wBlockUserscriptInjectorHasRun) {
             const validationDispatches = [];
             for (const script of scripts) {
                 if (!this.isWarmStartEligible(script)) continue;
-                if (script.injectInto !== 'content' && script.kind !== 'style') continue;
                 const key = this.scriptExecutionKey(script);
                 let markDispatched;
                 const dispatched = new Promise(resolve => { markDispatched = resolve; });
                 const validation = (async () => {
                     try {
-                        const actualDigest = await this.warmStartContentDigest(script.content);
-                        if (actualDigest !== script.contentDigest) {
-                            return { ok: false, error: 'userscript-integrity-mismatch' };
+                        if (script.injectInto === 'content' || script.kind === 'style') {
+                            const actualDigest = await this.warmStartContentDigest(script.content);
+                            if (actualDigest !== script.contentDigest) return { ok: false, error: 'userscript-integrity-mismatch' };
                         }
-                        const nativeValidation = this.sendNativeRequest('validateUserScriptExecution', {
-                            scriptId: script.id,
-                            url: window.location.href,
-                            payloadRevision: script.payloadRevision,
-                            contentDigest: script.contentDigest
-                        });
+                        const nativeValidation = this.requestScriptValidation(script);
                         markDispatched();
                         return await nativeValidation;
                     } finally {
@@ -909,20 +879,6 @@ if (window.wBlockUserscriptInjectorHasRun) {
             } catch (_) { /* page storage is optional */ }
         }
 
-        reconcileWarmStart(scripts) {
-            const authority = new Map((Array.isArray(scripts) ? scripts : []).map(script => [this.scriptExecutionKey(script), script]));
-            for (const [key, provisional] of this.provisionalScripts) {
-                const fresh = authority.get(key);
-                if (fresh && this.isWarmStartEligible(fresh) && this.warmStartFingerprint(fresh) === provisional.fingerprint) {
-                    this.provisionalScripts.delete(key);
-                    // Cached page code never gains GM authority, even after reconciliation.
-                } else {
-                    this.provisionalScripts.delete(key);
-                    if (fresh && requiresIsolatedGM(fresh)) this.injectedScripts.delete(key);
-                }
-            }
-        }
-
         requestUserScripts(attempt = 0, generation = this.documentStartRequestGeneration) {
             if (generation !== this.documentStartRequestGeneration) return;
             const url = window.location.href;
@@ -943,10 +899,6 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     }
 
                     const scripts = response && response.userScripts ? response.userScripts : [];
-                    this.reconcileWarmStart(scripts);
-                    // Page-world warm starts have only page authority. Dark Reader's
-                    // content-world cache must pass local and native digest checks first.
-                    // Reconciliation never promotes page code to native GM authority.
                     this.persistWarmStartScripts(scripts);
                     this.enableReturnYouTubeDislikePrefetch(scripts);
                     if (scripts.length === 0) wBlockLog('[wBlock] No userscripts found in getUserScripts response.');
@@ -1248,19 +1200,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     if (css.length > 0) {
                         await this.waitForDocumentRoot();
                         if (generation !== this.documentStartRequestGeneration) return;
-                        const warmStart = fullStyle.__wblockWarmStart === true;
-                        let provisionalElement = null;
-                        if (warmStart) {
-                            // Apply before validation so the page never paints unstyled;
-                            // the digest check below removes it if the cache is stale.
-                            provisionalElement = this.injectStyleElement(fullStyle, css);
-                        }
                         const validated = await this.validateScriptForExecution(fullStyle);
-                        if (generation !== this.documentStartRequestGeneration || !validated) {
-                            if (provisionalElement && provisionalElement.parentNode) provisionalElement.remove();
-                            return;
-                        }
-                        if (!provisionalElement) this.injectStyleElement(fullStyle, css);
+                        if (generation !== this.documentStartRequestGeneration || !validated) return;
+                        this.injectStyleElement(fullStyle, css);
                         if (generation === this.documentStartRequestGeneration) {
                             this.injectedScripts.add(executionKey);
                         }
@@ -1293,9 +1235,6 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 delete script.xhrBridgeId;
                 delete script.portBridgeId;
                 delete script.storageSnapshot;
-                this.provisionalScripts.set(executionKey, {
-                    fingerprint: this.warmStartFingerprint(script)
-                });
             }
             try {
                 const fullScript = await this.ensureScriptPayload(script);
@@ -1334,12 +1273,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 }
 
                 if (generation !== this.documentStartRequestGeneration) return;
-                // Warm-start page scripts are quarantined: execute their cached page
-                // payload before native validation, permanently without native GM authority.
-                if (!warmStart || injectInto === 'content') {
-                    const validated = await this.validateScriptForExecution(fullScript);
-                    if (generation !== this.documentStartRequestGeneration || !validated) return;
-                }
+                // Cached code must obey current site permissions before it runs, too.
+                const validated = await this.validateScriptForExecution(fullScript);
+                if (generation !== this.documentStartRequestGeneration || !validated) return;
                 if (!warmStart && injectInto !== 'content' && isTubeCleanerPageScript(fullScript)) {
                     this.tubeCleanerSettingsScript = fullScript;
                 }

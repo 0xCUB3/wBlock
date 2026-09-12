@@ -349,7 +349,7 @@ check(
 
 // A Vencord-sized page-world payload must be seeded even when iOS reports that
 // trusted document-start caching is unavailable. On the next navigation it may
-// execute with page authority, while extension privileges remain quarantined.
+// execute after native permission validation, without extension privileges.
 const largeWarmScript = {
   ...fakeScript,
   id: "vencord-like",
@@ -388,17 +388,24 @@ check(
   ),
 );
 
+let resolveWarmValidation;
+const warmValidation = new Promise(resolve => { resolveWarmValidation = resolve; });
 let resolveWarmReply;
 const warmReply = new Promise((resolve) => { resolveWarmReply = resolve; });
 const warmWrapperIndex = appendedScripts.length;
 const warmSandbox = buildContentScriptSandbox(
   seededCache, [], "https://discord.com/app", [], false,
-  (msg) => (msg.action === "getUserScripts" || msg.action === "validateUserScriptExecution") ? warmReply : { ok: true },
+  (msg) => msg.action === "validateUserScriptExecution" ? warmValidation
+    : msg.action === "getUserScripts" ? warmReply : { ok: true },
 );
 vm.createContext(warmSandbox);
 vm.runInContext(source, warmSandbox, { filename: "userscript-injector-warm-start.js" });
 await tick();
 await tick();
+check("cached page script waits for current native site permission", appendedScripts.length === warmWrapperIndex);
+check("cached page script requests validation before the full payload", warmSandbox.__sentMessages[0]?.action === "validateUserScriptExecution");
+resolveWarmValidation({ ok: true });
+await tick(); await tick();
 const warmWrapper = appendedScripts[warmWrapperIndex] || "";
 check("official Discord wildcard warm-starts on the root discord.com host", warmWrapper.length > 700 * 1024);
 let warmPageExecutionSucceeded = true;
@@ -407,9 +414,8 @@ try {
 } catch {
   warmPageExecutionSucceeded = false;
 }
-check("cached page-world script executes before native responses resolve", warmPageExecutionSucceeded && warmSandbox.__warmPageExecuted === true);
-check("warm-start execution sends no validation request", !warmSandbox.__sentMessages.some(message => message.action === "validateUserScriptExecution"));
-check("large warm-start payload executes once before native resolves", appendedScripts.slice(warmWrapperIndex).length === 1);
+check("cached page-world script executes after permission, before the full payload arrives", warmPageExecutionSucceeded && warmSandbox.__warmPageExecuted === true);
+check("large warm-start payload executes only once", appendedScripts.slice(warmWrapperIndex).length === 1);
 
 // Dark Reader is the sole content-world warm path. Its descriptor carries the
 // native-generated digest, so the page-controlled cache cannot authorize altered
@@ -577,6 +583,9 @@ for (const [label, cache] of [
   ["expired", { version: 1, savedAt: Date.now() - 31 * 60 * 1000, scripts: [largeWarmScript] }],
   ["oversized", { version: 1, savedAt: Date.now(), scripts: [{ ...largeWarmScript, content: "x".repeat(2 * 1024 * 1024 + 1) }] }],
   ["disabled host", { version: 1, savedAt: Date.now(), scripts: [{ ...largeWarmScript, disabledHosts: ["discord.com"] }] }],
+  ["empty selected sites", { version: 1, savedAt: Date.now(), scripts: [{ ...largeWarmScript, allowedHosts: [] }] }],
+  ["unselected site", { version: 1, savedAt: Date.now(), scripts: [{ ...largeWarmScript, allowedHosts: ["other.example"] }] }],
+  ["lookalike site", { version: 1, savedAt: Date.now(), scripts: [{ ...largeWarmScript, allowedHosts: ["cord.com"] }] }],
   ["resource privileged", { version: 1, savedAt: Date.now(), scripts: [{ ...largeWarmScript, resourceNames: ["payload"] }] }],
   ["storage snapshot", { version: 1, savedAt: Date.now(), scripts: [{ ...largeWarmScript, storageSnapshot: { secret: "page-controlled" } }] }],
   ["forged bridge", { version: 1, savedAt: Date.now(), scripts: [{ ...largeWarmScript, portBridgeId: "page-controlled" }] }],
@@ -588,6 +597,18 @@ for (const [label, cache] of [
   await tick();
   await tick();
   check(`${label} warm-start cache is rejected`, appendedScripts.length === wrapperIndex);
+}
+
+for (const cached of [largeWarmScript, { ...largeWarmScript, allowedHosts: ["discord.com"] }]) {
+  const before = appendedScripts.length;
+  const sandbox = buildContentScriptSandbox(
+    JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [cached] }),
+    [], "https://discord.com/app", [], false,
+    msg => msg.action === "validateUserScriptExecution" ? { ok: false, error: "userscript-state-changed" } : new Promise(() => {}),
+  );
+  vm.createContext(sandbox); vm.runInContext(source, sandbox);
+  await tick(); await tick();
+  check("new native restriction blocks even a stale unrestricted or previously allowed cache", appendedScripts.length === before);
 }
 
 // (a) An arbitrary page script posting without a valid token is ignored.
@@ -818,8 +839,7 @@ check(
 
 // ---------------------------------------------------------------------------
 // Local page-world document-start scripts are warm-start eligible: they
-// execute quarantined with page authority before any native response, the
-// same as remote page-world scripts (issue #537).
+// execute with page authority after native validation, just like remote scripts.
 // ---------------------------------------------------------------------------
 
 const localScript = {
@@ -852,7 +872,7 @@ vm.createContext(localWarmSandbox);
 vm.runInContext(source, localWarmSandbox, { filename: "userscript-injector-local-warm-start.js" });
 await tick();
 const localWarmWrapper = appendedScripts[localWarmWrapperIndex] || "";
-check("local script warm-starts before any native response", localWarmWrapper.includes("__localWarmExecuted"));
+check("local script warm-starts after validation without waiting for the full payload", localWarmWrapper.includes("__localWarmExecuted"));
 let localWarmExecutionSucceeded = true;
 try {
   vm.runInContext(localWarmWrapper, localWarmSandbox, { filename: "userscript-injector-local-warm-page.js" });
@@ -864,12 +884,11 @@ check(
   localWarmExecutionSucceeded && localWarmSandbox.__localWarmExecuted === true,
 );
 check(
-  "local warm start sends no validation request",
-  !localWarmSandbox.__sentMessages.some((message) => message.action === "validateUserScriptExecution"),
+  "local warm start validates native site permission",
+  localWarmSandbox.__sentMessages.some((message) => message.action === "validateUserScriptExecution"),
 );
 
-// #670: userstyles warm-start from the page cache so dark CSS lands before
-// first paint, then native digest validation confirms or removes it.
+// Cached userstyles require both native permission and digest validation.
 const styleCSS = "html { background: #000 !important; color: #eee !important; }";
 const styleDigest = Buffer.from(await webcrypto.subtle.digest("SHA-256", new TextEncoder().encode(styleCSS))).toString("hex");
 const cachedStyle = {
@@ -890,7 +909,7 @@ const styleSandbox = buildContentScriptSandbox(
 vm.createContext(styleSandbox);
 vm.runInContext(source, styleSandbox, { filename: "userscript-injector-style-warm.js" });
 for (let i = 0; i < 6; i++) await tick();
-check("cached userstyle is applied before native validation resolves", styleElementsIn(styleSandbox).length === 1 && styleElementsIn(styleSandbox)[0].textContent === styleCSS);
+check("cached userstyle waits for native site permission", styleElementsIn(styleSandbox).length === 0);
 check("userstyle warm start validates with its content digest", styleSandbox.__sentMessages.some((m) => m.action === "validateUserScriptExecution" && m.contentDigest === styleDigest));
 resolveStyleValidation({ ok: true });
 for (let i = 0; i < 10; i++) await tick();
@@ -906,10 +925,10 @@ const rejectedStyleSandbox = buildContentScriptSandbox(
 vm.createContext(rejectedStyleSandbox);
 vm.runInContext(source, rejectedStyleSandbox, { filename: "userscript-injector-style-rejected.js" });
 for (let i = 0; i < 6; i++) await tick();
-check("rejected userstyle was applied provisionally", styleElementsIn(rejectedStyleSandbox).length === 1);
+check("unvalidated userstyle is never applied provisionally", styleElementsIn(rejectedStyleSandbox).length === 0);
 resolveStyleRejection({ ok: false, error: "userscript-integrity-mismatch" });
 for (let i = 0; i < 10; i++) await tick();
-check("rejected userstyle is removed after native validation fails", styleElementsIn(rejectedStyleSandbox).length === 0);
+check("rejected userstyle remains unapplied", styleElementsIn(rejectedStyleSandbox).length === 0);
 
 const noDigestStyleSandbox = buildContentScriptSandbox(
   JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [{ ...cachedStyle, contentDigest: undefined }] }),

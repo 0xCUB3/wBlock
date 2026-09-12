@@ -1245,6 +1245,7 @@ struct UserScriptInfoSidebar: View {
             ScriptNameAndDescriptionView(script: script, isBeta: isBeta, onClose: onClose)
             if !isBuiltIn { Button("Edit", action: onEdit) }
             ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0, isBuiltIn: isBuiltIn)
+            UserScriptWebsiteExceptionsView(scriptID: script.id, userScriptManager: userScriptManager)
             if script.url != nil || script.updateURL != nil || script.downloadURL != nil {
                 ScriptUpdateSettingsView(
                     updatesAutomatically: script.updatesAutomatically,
@@ -1277,7 +1278,6 @@ struct UserScriptInfoSidebar: View {
                 if contentLength > 0 { InfoMetadataRow(title: "Size", value: formatFileSize(contentLength)) }
             }
             if !script.matches.isEmpty { ScriptMatchPatternsView(script: script, isPatternsExpanded: $isPatternsExpanded) }
-            UserScriptWebsiteExceptionsView(scriptID: script.id, userScriptManager: userScriptManager)
         }
     }
 }

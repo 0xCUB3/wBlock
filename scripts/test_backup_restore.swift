@@ -30,6 +30,9 @@ actor ConcurrentLogManager {
     var autoUpdateEnabled = true
     var autoUpdateIntervalHours = 6.0
     var disabledHosts: [String: [String]] = [:]
+    var siteAccess: [String: UserScriptSiteAccess] = [:]
+    func userScriptSiteAccess(forScriptID id: String) -> UserScriptSiteAccess { siteAccess[id] ?? .init() }
+    func setUserScriptSiteAccess(_ access: UserScriptSiteAccess, forScriptID id: String) async { siteAccess[id] = access }
     var zapperDisabled: [String: Bool] = [:]
     var zapper: [String: [String]] = [:]
     func getUserScriptDisabledHosts() -> [String: [String]] { disabledHosts }
@@ -173,7 +176,8 @@ enum AppAppearance: String {
         try "||edited.example^".write(to: file, atomically: true, encoding: .utf8)
         var script = UserScript(id: UUID(), name: "Local", url: nil, content: "// ==UserScript==\n// @name Local\n// ==/UserScript==\n")
         script.isLocal = true
-        let scriptEntry = WBlockBackup.UserScriptEntry(userScript: script, disabledHosts: [])
+        let selected = UserScriptSiteAccess(onlySelectedSites: true)
+        let scriptEntry = WBlockBackup.UserScriptEntry(userScript: script, disabledHosts: [], siteAccess: selected)
         let backup = WBlockBackup(version: 1, createdAt: Date(), appVersion: "test",
             filterSelections: [],
             customFilterLists: [.init(name: "Backup title", url: url, category: FilterListCategory.privacy.rawValue,
@@ -182,6 +186,7 @@ enum AppAppearance: String {
             userScripts: [scriptEntry])
         let decoded = try BackupManager.importData(from: BackupManager.exportData(backup: backup))
         precondition(decoded.userScripts[0].disabledHosts == [], "explicit empty state must round-trip")
+        precondition(decoded.userScripts[0].siteAccess == selected, "empty selected-sites mode must round-trip")
         ProtobufDataManager.shared.disabledHosts = [script.id.uuidString: ["example.com"], "unrelated": ["keep.example"]]
         ProtobufDataManager.shared.zapperDisabled = ["example.com": true, "unrelated.example": true, "disabled-only.example": false]
         ProtobufDataManager.shared.zapper["disabled-only.example"] = [".local-ad"]
@@ -195,6 +200,7 @@ enum AppAppearance: String {
         precondition(restoredContent == "||backup.example^\n")
         precondition(ProtobufDataManager.shared.disabledHosts[script.id.uuidString] == nil)
         precondition(ProtobufDataManager.shared.disabledHosts["unrelated"] == ["keep.example"])
+        precondition(ProtobufDataManager.shared.userScriptSiteAccess(forScriptID: script.id.uuidString) == selected)
         precondition(ProtobufDataManager.shared.zapperDisabled["example.com"] == false)
         precondition(ProtobufDataManager.shared.zapperDisabled["unrelated.example"] == true)
         precondition(ProtobufDataManager.shared.zapperDisabled["disabled-only.example"] == true)
@@ -261,9 +267,11 @@ enum AppAppearance: String {
 
         var legacy = decoded
         legacy.userScripts[0].disabledHosts = nil
+        legacy.userScripts[0].siteAccess = nil
         ProtobufDataManager.shared.disabledHosts[script.id.uuidString] = ["preserve.example"]
         try await BackupManager.restoreBackup(legacy, filterManager: manager)
         precondition(ProtobufDataManager.shared.disabledHosts[script.id.uuidString] == ["preserve.example"])
+        precondition(ProtobufDataManager.shared.userScriptSiteAccess(forScriptID: script.id.uuidString) == selected, "legacy backup cannot broaden selected-sites mode")
 
         var invalid = decoded
         invalid.customFilterLists[0].content = "||must-not-write.example^"

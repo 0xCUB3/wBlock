@@ -301,6 +301,7 @@ extension ProtobufDataManager {
             else { return }
             data.userScripts.removeAll { $0.id == id.uuidString }
             data.userScriptDisabledHosts.removeValue(forKey: id.uuidString)
+            data.userScriptAllowedHosts.removeValue(forKey: id.uuidString)
         }
         if changed {
             UserScriptManager.invalidateDocumentStartExecutionCache()
@@ -316,6 +317,7 @@ extension ProtobufDataManager {
             data.userScripts.removeAll { rawIDs.contains($0.id) }
             for id in rawIDs {
                 data.userScriptDisabledHosts.removeValue(forKey: id)
+                data.userScriptAllowedHosts.removeValue(forKey: id)
                 data.autoUpdate.scriptLastChecked.removeValue(forKey: id)
             }
         }

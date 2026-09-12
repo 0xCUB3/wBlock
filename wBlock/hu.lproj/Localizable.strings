@@ -1,3 +1,11 @@
+"Run on" = "Futtatás itt";
+"All matching sites" = "Minden illeszkedő webhelyen";
+"Only selected sites" = "Csak a kiválasztott webhelyeken";
+"Selected Sites" = "Kiválasztott webhelyek";
+"No sites selected. This script will not run." = "Nincs kiválasztott webhely. Ez a szkript nem fog futni.";
+"This script will not run on excluded sites, even if they are selected." = "Ez a szkript nem fut a kizárt webhelyeken, akkor sem, ha ki vannak választva.";
+"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "A webhelyek az aldomainjeiket is magukban foglalják. A szkript saját illeszkedési szabályai továbbra is érvényesek. A módosítások után töltsd újra az oldalt.";
+"Could not save site settings" = "Nem sikerült menteni a webhelybeállításokat";
 "SponsorBlock Settings" = "SponsorBlock-beállítások";
 "Import SponsorBlock Settings" = "SponsorBlock-beállítások importálása";
 "Export SponsorBlock Settings" = "SponsorBlock-beállítások exportálása";

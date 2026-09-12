@@ -30,6 +30,7 @@ private func normalizeAppDataIdentifiers(_ data: inout Wblock_Data_AppData) -> B
         changed = true
         data.userScripts[index].id = id
         if let value = data.userScriptDisabledHosts.removeValue(forKey: record.id) { data.userScriptDisabledHosts[id] = value }
+        if let value = data.userScriptAllowedHosts.removeValue(forKey: record.id) { data.userScriptAllowedHosts[id] = value }
         if let value = data.autoUpdate.scriptLastChecked.removeValue(forKey: record.id) { data.autoUpdate.scriptLastChecked[id] = value }
     }
     let uniqueScripts = UserScriptPersistence.uniqueRecords(data.userScripts)
@@ -319,6 +320,13 @@ private func mergePersistedChanges(
         persisted: persisted.userScriptDisabledHosts
     )
     snapshot.userScriptDisabledHosts = exceptions
+    var allowedHosts = snapshot.userScriptAllowedHosts
+    mergeMap(
+        &allowedHosts,
+        baseline: previous.userScriptAllowedHosts,
+        persisted: persisted.userScriptAllowedHosts
+    )
+    snapshot.userScriptAllowedHosts = allowedHosts
 
     var autoUpdate = snapshot.autoUpdate
     let base = previous.autoUpdate, theirs = persisted.autoUpdate
@@ -1478,6 +1486,55 @@ public class ProtobufDataManager: ObservableObject {
         }
     }
 
+    public func getUserScriptAllowedHosts() -> [String: [String]] {
+        appData.userScriptAllowedHosts.mapValues { $0.hosts }
+    }
+
+    public func userScriptSiteAccess(forScriptID id: String) -> UserScriptSiteAccess {
+        let list = appData.userScriptAllowedHosts[id]
+        return UserScriptSiteAccess(onlySelectedSites: list != nil, hosts: list?.hosts ?? [])
+    }
+
+    nonisolated private static func hostList(_ hosts: [String]?) -> Wblock_Data_HostList? {
+        hosts.map { hosts in
+            var list = Wblock_Data_HostList()
+            list.hosts = DisabledSitesNormalizer.normalizedDomains(from: hosts).sorted()
+            return list
+        }
+    }
+
+    @MainActor
+    private func updateUserScriptSites(_ mutation: @escaping @Sendable (inout Wblock_Data_AppData) -> Void) async -> Bool {
+        let saved = await updateDataImmediately(with: mutation)
+        if saved { UserScriptManager.invalidateDocumentStartExecutionCache() }
+        return saved
+    }
+
+    @MainActor
+    @discardableResult
+    public func setUserScriptSiteAccess(_ access: UserScriptSiteAccess, forScriptID id: String) async -> Bool {
+        await updateUserScriptSites { data in
+            guard data.userScripts.contains(where: { $0.id == id }) else { return }
+            data.userScriptAllowedHosts[id] = Self.hostList(access.onlySelectedSites ? access.hosts : nil)
+        }
+    }
+
+    /// Missing cloud fields are legacy payloads, not permission to broaden local access.
+    @MainActor
+    @discardableResult
+    public func applyCloudUserScriptSiteAccess(
+        desired: [String: UserScriptSiteAccess], baseline: [String: [String]]
+    ) async -> Bool {
+        guard !desired.isEmpty else { return true }
+        return await updateUserScriptSites { data in
+            let survivingIDs = Set(data.userScripts.map(\.id))
+            for (id, access) in desired {
+                guard survivingIDs.contains(id), data.userScriptAllowedHosts[id]?.hosts == baseline[id] else { continue }
+                data.userScriptAllowedHosts[id] = Self.hostList(access.onlySelectedSites ? access.hosts : nil)
+            }
+        }
+    }
+
     // MARK: - Per-Site Userscript Exceptions
 
     /// Map of script UUID string -> hosts where that script is disabled.
@@ -1492,19 +1549,10 @@ public class ProtobufDataManager: ObservableObject {
 
     /// Replaces the disabled-host list for one script; empty list removes the entry.
     @MainActor
-    public func setUserScriptDisabledHosts(_ hosts: [String], forScriptID id: String) async {
-        guard getUserScriptDisabledHosts(forScriptID: id) != hosts else { return }
-        let changed = await updateDataImmediately { data in
-            if hosts.isEmpty {
-                data.userScriptDisabledHosts.removeValue(forKey: id)
-            } else {
-                var list = Wblock_Data_HostList()
-                list.hosts = hosts
-                data.userScriptDisabledHosts[id] = list
-            }
-        }
-        if changed {
-            UserScriptManager.invalidateDocumentStartExecutionCache()
+    @discardableResult
+    public func setUserScriptDisabledHosts(_ hosts: [String], forScriptID id: String) async -> Bool {
+        await updateUserScriptSites { data in
+            data.userScriptDisabledHosts[id] = Self.hostList(hosts.isEmpty ? nil : hosts)
         }
     }
 
@@ -1513,16 +1561,8 @@ public class ProtobufDataManager: ObservableObject {
     public func setAllUserScriptDisabledHosts(_ map: [String: [String]]) async {
         let desired = map.filter { !$0.value.isEmpty }
         guard getUserScriptDisabledHosts() != desired else { return }
-        let changed = await updateDataImmediately { data in
-            data.userScriptDisabledHosts.removeAll()
-            for (id, hosts) in desired {
-                var list = Wblock_Data_HostList()
-                list.hosts = hosts
-                data.userScriptDisabledHosts[id] = list
-            }
-        }
-        if changed {
-            UserScriptManager.invalidateDocumentStartExecutionCache()
+        _ = await updateUserScriptSites { data in
+            data.userScriptDisabledHosts = desired.compactMapValues(Self.hostList)
         }
     }
 
@@ -1536,7 +1576,7 @@ public class ProtobufDataManager: ObservableObject {
         baseline: [String: [String]]
     ) async -> Bool {
         guard !desired.isEmpty else { return true }
-        let succeeded = await updateDataImmediately { data in
+        return await updateUserScriptSites { data in
             let survivingIDs = Set(data.userScripts.map(\.id))
             for (id, desiredHosts) in desired {
                 guard survivingIDs.contains(id) else { continue }
@@ -1544,19 +1584,9 @@ public class ProtobufDataManager: ObservableObject {
                 let baselineHosts = baseline[id] ?? []
                 guard currentHosts == baselineHosts else { continue }
 
-                if desiredHosts.isEmpty {
-                    data.userScriptDisabledHosts.removeValue(forKey: id)
-                } else {
-                    var list = Wblock_Data_HostList()
-                    list.hosts = desiredHosts
-                    data.userScriptDisabledHosts[id] = list
-                }
+                data.userScriptDisabledHosts[id] = Self.hostList(desiredHosts.isEmpty ? nil : desiredHosts)
             }
         }
-        if succeeded {
-            UserScriptManager.invalidateDocumentStartExecutionCache()
-        }
-        return succeeded
     }
 
     // MARK: - Singleton
@@ -1799,6 +1829,9 @@ public class ProtobufDataManager: ObservableObject {
                     rebased.userScripts = mutation.appData.userScripts
                     let survivingIDs = Set(rebased.userScripts.map(\.id))
                     rebased.userScriptDisabledHosts = rebased.userScriptDisabledHosts.filter {
+                        survivingIDs.contains($0.key)
+                    }
+                    rebased.userScriptAllowedHosts = rebased.userScriptAllowedHosts.filter {
                         survivingIDs.contains($0.key)
                     }
                 }

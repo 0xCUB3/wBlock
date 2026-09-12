@@ -5,91 +5,73 @@ struct UserScriptWebsiteExceptionsView: View {
     let scriptID: UUID
     @ObservedObject var userScriptManager: UserScriptManager
     @ObservedObject private var dataManager = ProtobufDataManager.shared
-    @State private var input = ""
     @State private var isSaving = false
+    @State private var saveFailed = false
 
-    private var domains: [String] {
+    private var access: UserScriptSiteAccess {
+        dataManager.userScriptSiteAccess(forScriptID: scriptID.uuidString)
+    }
+
+    private var excludedHosts: [String] {
         dataManager.getUserScriptDisabledHosts(forScriptID: scriptID.uuidString)
     }
 
-    private var candidate: String? {
-        guard let host = DisabledSitesNormalizer.normalizedDomain(input), !domains.contains(host) else { return nil }
-        return host
-    }
-
-    private var knownSites: [String] {
-        let sites = dataManager.disabledSites + dataManager.filterDisabledSites + dataManager.noAutoplayAllowedSites
-            + dataManager.getUserScriptDisabledHosts().values.flatMap { $0 }
-        return DisabledSitesNormalizer.normalizedDomains(from: sites).filter { !domains.contains($0) }.sorted()
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Excluded Sites").font(.callout.weight(.medium))
-            Text("This script will not run on these sites. Other scripts still run.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack {
-                TextField("example.com", text: $input, onCommit: addSite)
-                    .textFieldStyle(.roundedBorder)
-                    .disableAutocorrection(true)
-                    #if os(iOS)
-                    .keyboardType(.URL)
-                    .textInputAutocapitalization(.never)
-                    #endif
-                Button(action: addSite) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(candidate == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.accentColor))
-                        #if os(iOS)
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
-                        #endif
+        VStack(alignment: .leading, spacing: 12) {
+            Picker("Run on", selection: Binding(
+                get: { access.onlySelectedSites },
+                set: { onlySelected in
+                    save { await userScriptManager.setUserScriptSiteAccess(
+                        UserScriptSiteAccess(onlySelectedSites: onlySelected), for: scriptID
+                    ) }
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Add")
-                .disabled(candidate == nil)
-                #if os(macOS)
-                if !knownSites.isEmpty {
-                    Menu {
-                        ForEach(knownSites, id: \.self) { site in
-                            Button(site) { setExcluded(site, true) }
-                        }
-                    } label: {
-                        Label("Site Settings", systemImage: "globe").labelStyle(.iconOnly)
-                    }
-                    .help("Site Settings")
-                }
-                #endif
+            )) {
+                Text("All matching sites").tag(false)
+                Text("Only selected sites").tag(true)
             }
-            ForEach(domains, id: \.self) { site in
-                HStack {
-                    Text(verbatim: site).font(.callout).textSelection(.enabled)
-                    Spacer()
-                    Button { setExcluded(site, false) } label: {
-                        Image(systemName: "minus.circle").foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Remove")
-                    .accessibilityValue(site)
+            .pickerStyle(.menu)
+
+            if access.onlySelectedSites {
+                hostList("Selected Sites", hosts: access.hosts) { hosts in
+                    await userScriptManager.setUserScriptSiteAccess(
+                        UserScriptSiteAccess(onlySelectedSites: true, hosts: hosts), for: scriptID
+                    )
+                }
+                if access.hosts.isEmpty {
+                    Text("No sites selected. This script will not run.")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
             }
+            if !access.onlySelectedSites || !excludedHosts.isEmpty {
+                hostList("Excluded Sites", hosts: excludedHosts) { hosts in
+                    await dataManager.setUserScriptDisabledHosts(hosts, forScriptID: scriptID.uuidString)
+                }
+                Text("This script will not run on excluded sites, even if they are selected.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Text("Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes.")
+                .font(.caption).foregroundStyle(.secondary)
         }
+        .fixedSize(horizontal: false, vertical: true)
         .disabled(isSaving)
+        .alert("Could not save site settings", isPresented: $saveFailed) {
+            Button("OK", role: .cancel) { }
+        }
     }
 
-    private func addSite() {
-        guard let candidate else { return }
-        setExcluded(candidate, true)
+    private func hostList(
+        _ title: LocalizedStringKey, hosts: [String], update: @escaping ([String]) async -> Bool
+    ) -> some View {
+        SiteHostListEditor(title: title, hosts: hosts) { updated in
+            save { await update(updated) }
+        }
     }
 
-    private func setExcluded(_ site: String, _ excluded: Bool) {
+    private func save(_ operation: @escaping () async -> Bool) {
         guard !isSaving else { return }
         isSaving = true
         Task {
-            let saved = await userScriptManager.setUserScript(withId: scriptID, disabledOnHost: site, disabled: excluded)
-            if saved && excluded { input = "" }
+            saveFailed = !(await operation())
             isSaving = false
         }
     }

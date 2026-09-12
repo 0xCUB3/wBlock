@@ -1,3 +1,11 @@
+"Run on" = "运行范围";
+"All matching sites" = "所有匹配的网站";
+"Only selected sites" = "仅选定的网站";
+"Selected Sites" = "选定的网站";
+"No sites selected. This script will not run." = "未选择网站。此脚本不会运行。";
+"This script will not run on excluded sites, even if they are selected." = "即使已选中，此脚本也不会在排除的网站上运行。";
+"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "网站包括其子域名。脚本自身的匹配规则仍然适用。更改后请重新加载页面。";
+"Could not save site settings" = "无法保存网站设置";
 "SponsorBlock Settings" = "SponsorBlock 设置";
 "Import SponsorBlock Settings" = "导入 SponsorBlock 设置";
 "Export SponsorBlock Settings" = "导出 SponsorBlock 设置";

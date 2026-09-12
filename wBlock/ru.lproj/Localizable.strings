@@ -1,3 +1,11 @@
+"Run on" = "Запускать на";
+"All matching sites" = "Всех подходящих сайтах";
+"Only selected sites" = "Только выбранных сайтах";
+"Selected Sites" = "Выбранные сайты";
+"No sites selected. This script will not run." = "Сайты не выбраны. Этот скрипт не будет запускаться.";
+"This script will not run on excluded sites, even if they are selected." = "Этот скрипт не будет запускаться на исключённых сайтах, даже если они выбраны.";
+"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "Сайты включают свои поддомены. Собственные правила соответствия скрипта продолжают действовать. После изменений перезагрузите страницу.";
+"Could not save site settings" = "Не удалось сохранить настройки сайтов";
 "SponsorBlock Settings" = "Настройки SponsorBlock";
 "Import SponsorBlock Settings" = "Импорт настроек SponsorBlock";
 "Export SponsorBlock Settings" = "Экспорт настроек SponsorBlock";

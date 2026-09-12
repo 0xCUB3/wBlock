@@ -28,7 +28,11 @@ struct CloudSyncLocalUserScriptTests {
                 && managerSource.contains("not assigned to `userScripts`"),
             "CloudSync hydration must be an ephemeral snapshot and preserve idle disk-backed state"
         )
-        expect(cloudSource.contains("let description: String?"), "CloudSync local payload description must be optional")
+        for access in [UserScriptSiteAccess(), .init(onlySelectedSites: true), .init(onlySelectedSites: true, hosts: ["example.com"])] {
+            let record = CloudSyncLocalUserScript(name: "Scope", content: "// script", isEnabled: true, siteAccess: access)
+            let decoded = try! JSONDecoder().decode(CloudSyncLocalUserScript.self, from: JSONEncoder().encode(record))
+            expect(decoded == record, "cloud payload must preserve all, empty and populated selected-site modes")
+        }
         expect(cloudSource.contains("description: script.description"), "CloudSync serialization must carry local descriptions")
         expect(cloudSource.contains("descriptionOverride: local.description ?? existing?.description"), "content updates must preserve legacy descriptions")
         var existingMetadata = UserScript(name: "Old name", url: nil, content: "// unchanged source")
@@ -243,7 +247,7 @@ struct CloudSyncLocalUserScriptTests {
         expect(decodedDescribed == described, "local userscript description must survive encode/decode")
         let legacyJSON = #"{"name":"Legacy Name","content":"// legacy","isEnabled":true}"#.data(using: .utf8)!
         let decodedLegacy = try! JSONDecoder().decode(CloudSyncLocalUserScript.self, from: legacyJSON)
-        expect(decodedLegacy.description == nil, "legacy payloads must decode an absent description")
+        expect(decodedLegacy.description == nil && decodedLegacy.siteAccess == nil, "legacy payloads must decode absent descriptions and site access")
         let keptByIdentity = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
             localScripts: [legacyExisting],
             remoteScripts: [modernLocal, oldDisplayName],

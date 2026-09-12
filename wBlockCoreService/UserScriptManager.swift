@@ -1530,6 +1530,10 @@ public class UserScriptManager: ObservableObject {
             }
 
             let loserScripts = group.dropFirst()
+            let siteAccess = group.reduce(UserScriptSiteAccess()) { access, script in
+                access.intersecting(dataManager.userScriptSiteAccess(forScriptID: script.id.uuidString))
+            }
+            guard await dataManager.setUserScriptSiteAccess(siteAccess, forScriptID: retained.id.uuidString) else { continue }
             var disabledHosts = Set(repairedDisabledHosts[retained.id.uuidString] ?? [])
             for loser in loserScripts {
                 disabledHosts.formUnion(repairedDisabledHosts[loser.id.uuidString] ?? [])
@@ -1866,6 +1870,7 @@ public class UserScriptManager: ObservableObject {
                 else { return nil }
                 return script.id
             }
+            var mergedSiteAccess = dataManager.userScriptSiteAccess(forScriptID: retainedID.uuidString)
             var mergedDisabledHosts = Set(
                 dataManager.getUserScriptDisabledHosts(forScriptID: retainedID.uuidString)
             )
@@ -1877,6 +1882,7 @@ public class UserScriptManager: ObservableObject {
                     $0.id == retainedID
                 }) else { continue }
                 let duplicate = userScripts[duplicateIndex]
+                mergedSiteAccess = mergedSiteAccess.intersecting(dataManager.userScriptSiteAccess(forScriptID: duplicateID.uuidString))
                 mergedDisabledHosts.formUnion(
                     dataManager.getUserScriptDisabledHosts(forScriptID: duplicateID.uuidString)
                 )
@@ -1908,6 +1914,7 @@ public class UserScriptManager: ObservableObject {
             if !userScripts[currentIndex].content.isEmpty {
                 _ = writeUserScriptFiles(userScripts[currentIndex])
             }
+            await dataManager.setUserScriptSiteAccess(mergedSiteAccess, forScriptID: retainedID.uuidString)
             await dataManager.setUserScriptDisabledHosts(
                 mergedDisabledHosts.sorted(), forScriptID: retainedID.uuidString
             )
@@ -3953,21 +3960,35 @@ public class UserScriptManager: ObservableObject {
     @discardableResult
     public func setUserScript(withId scriptID: UUID, disabledOnHost host: String, disabled: Bool) async -> Bool {
         guard indexOfUserScript(withId: scriptID) != nil else { return false }
-        let normalizedHost = normalizedDisabledHost(host)
-        guard !normalizedHost.isEmpty else { return false }
+        guard let normalizedHost = DisabledSitesNormalizer.normalizedDomain(host) else { return false }
 
+        if !disabled {
+            var access = dataManager.userScriptSiteAccess(forScriptID: scriptID.uuidString)
+            if access.onlySelectedSites && !access.allows(host: normalizedHost) {
+                access.hosts.append(normalizedHost)
+                guard await setUserScriptSiteAccess(access, for: scriptID) else { return false }
+            }
+        }
         var disabledHosts = dataManager.getUserScriptDisabledHosts(forScriptID: scriptID.uuidString)
         disabledHosts.removeAll { $0 == normalizedHost }
         if disabled {
             disabledHosts.append(normalizedHost)
         }
-        await dataManager.setUserScriptDisabledHosts(disabledHosts.sorted(), forScriptID: scriptID.uuidString)
-        return true
+        return await dataManager.setUserScriptDisabledHosts(disabledHosts.sorted(), forScriptID: scriptID.uuidString)
     }
 
     public func isUserScript(_ userScript: UserScript, disabledOnHost host: String) -> Bool {
         let disabledHosts = dataManager.getUserScriptDisabledHosts(forScriptID: userScript.id.uuidString)
-        return HostMatcher.isHostDisabled(host: host, disabledSites: disabledHosts)
+        return !dataManager.userScriptSiteAccess(forScriptID: userScript.id.uuidString)
+            .allows(host: host, excludedHosts: disabledHosts)
+    }
+
+    @discardableResult
+    public func setUserScriptSiteAccess(_ access: UserScriptSiteAccess, for scriptID: UUID) async -> Bool {
+        guard indexOfUserScript(withId: scriptID) != nil else { return false }
+        let saved = await dataManager.setUserScriptSiteAccess(access, forScriptID: scriptID.uuidString)
+        if saved { recordScriptMutation(scriptID) }
+        return saved
     }
 
     /// One-time move of the legacy UserDefaults exceptions map into protobuf,
@@ -3977,17 +3998,13 @@ public class UserScriptManager: ObservableObject {
             return
         }
         for (scriptID, hosts) in legacy {
-            let normalized = hosts.map(normalizedDisabledHost).filter { !$0.isEmpty }
+            let normalized = DisabledSitesNormalizer.normalizedDomains(from: hosts)
             guard !normalized.isEmpty else { continue }
             let merged = Set(normalized).union(dataManager.getUserScriptDisabledHosts(forScriptID: scriptID))
             await dataManager.setUserScriptDisabledHosts(merged.sorted(), forScriptID: scriptID)
         }
         sharedDefaults.removeObject(forKey: userScriptSiteDisabledDefaultsKey)
         logger.info("✅ Migrated per-site userscript exceptions to protobuf (\(legacy.count) script(s))")
-    }
-
-    private func normalizedDisabledHost(_ host: String) -> String {
-        host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
     /// Manually triggers duplicate userscript removal and cleanup

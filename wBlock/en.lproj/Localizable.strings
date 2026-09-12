@@ -1,3 +1,11 @@
+"Run on" = "Run on";
+"All matching sites" = "All matching sites";
+"Only selected sites" = "Only selected sites";
+"Selected Sites" = "Selected Sites";
+"No sites selected. This script will not run." = "No sites selected. This script will not run.";
+"This script will not run on excluded sites, even if they are selected." = "This script will not run on excluded sites, even if they are selected.";
+"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes.";
+"Could not save site settings" = "Could not save site settings";
 "SponsorBlock Settings" = "SponsorBlock Settings";
 "Import SponsorBlock Settings" = "Import SponsorBlock Settings";
 "Export SponsorBlock Settings" = "Export SponsorBlock Settings";

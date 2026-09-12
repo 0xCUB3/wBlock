@@ -12,19 +12,12 @@ struct FilterInfoView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var showingMetadataEditor = false
-    @State private var newSite = ""
     @State private var cachedMetadata = ContentInfoMetadata()
     @State private var cachedByteCount: Int?
     @State private var hasLoadedMetadata = false
-    @FocusState private var isSiteFieldFocused: Bool
 
     private var liveFilter: FilterList {
         filterManager.filterLists.first(where: { $0.id == filter.id }) ?? filter
-    }
-
-    private var addableSite: String? {
-        guard let normalized = DisabledSitesNormalizer.normalizedDomain(newSite) else { return nil }
-        return liveFilter.excludedSites.contains(normalized) ? nil : normalized
     }
 
     var body: some View {
@@ -109,71 +102,13 @@ struct FilterInfoView: View {
 
     private var excludedSitesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(LocalizedStrings.text("Excluded Sites", comment: "Per-list site exclusion heading"))
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.secondary)
-
-            Text(LocalizedStrings.text(
-                "This list will not apply on these sites. Other lists still apply.",
-                comment: "Per-list site exclusion explanation"
-            ))
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
-
-            HStack(spacing: 12) {
-                TextField("example.com", text: $newSite)
-                    .textFieldStyle(.plain)
-                    .focused($isSiteFieldFocused)
-                    .onSubmit { addExcludedSite() }
-                    .padding(10)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
-
-                Button {
-                    addExcludedSite()
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(addableSite == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.accentColor))
-                        #if os(iOS)
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
-                        #endif
-                }
-                .buttonStyle(.plain)
-                .noFocusRingCompat()
-                .disabled(addableSite == nil)
+            SiteHostListEditor(title: "Excluded Sites", hosts: liveFilter.excludedSites) { hosts in
+                filterManager.setExcludedSites(hosts, for: liveFilter.id)
             }
-
-            ForEach(liveFilter.excludedSites, id: \.self) { site in
-                HStack {
-                    Text(site)
-                        .font(.subheadline)
-                        .textSelection(.enabled)
-                    Spacer()
-                    Button {
-                        removeExcludedSite(site)
-                    } label: {
-                        Image(systemName: "minus.circle.fill")
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .noFocusRingCompat()
-                    .accessibilityLabel(LocalizedStrings.text("Remove", comment: "Remove excluded site"))
-                }
-            }
+            Text("This list will not apply on these sites. Other lists still apply.")
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
-    }
-
-    private func addExcludedSite() {
-        guard let site = addableSite else { return }
-        filterManager.setExcludedSites(liveFilter.excludedSites + [site], for: liveFilter.id)
-        newSite = ""
-        isSiteFieldFocused = true
-    }
-
-    private func removeExcludedSite(_ site: String) {
-        filterManager.setExcludedSites(liveFilter.excludedSites.filter { $0 != site }, for: liveFilter.id)
     }
 }
 

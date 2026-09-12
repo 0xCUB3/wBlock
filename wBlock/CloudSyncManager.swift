@@ -98,13 +98,15 @@ final class CloudSyncManager: ObservableObject {
         let filterSelection: UInt64
         let userScripts: UInt64
         let userScriptDisabledHosts: [String: [String]]
+        let userScriptAllowedHosts: [String: [String]]
     }
 
     private func localMutationRevisionSnapshot() -> LocalMutationRevisionSnapshot {
         LocalMutationRevisionSnapshot(
             filterSelection: filterManager?.selectionMutationRevision ?? 0,
             userScripts: userScriptManager.localMutationRevision,
-            userScriptDisabledHosts: dataManager.getUserScriptDisabledHosts()
+            userScriptDisabledHosts: dataManager.getUserScriptDisabledHosts(),
+            userScriptAllowedHosts: dataManager.getUserScriptAllowedHosts()
         )
     }
 
@@ -904,6 +906,7 @@ final class CloudSyncManager: ObservableObject {
             payload.userScripts,
             baselineScripts: localPayloadBaseline.userScripts,
             disabledHostsBaseline: localMutationBaseline.userScriptDisabledHosts,
+            allowedHostsBaseline: localMutationBaseline.userScriptAllowedHosts,
             localMutationRevisionAtStart: userScriptMutationRevisionAtStart
         )
 
@@ -1200,6 +1203,7 @@ final class CloudSyncManager: ObservableObject {
         _ scripts: SyncPayload.UserScripts,
         baselineScripts: SyncPayload.UserScripts,
         disabledHostsBaseline: [String: [String]],
+        allowedHostsBaseline: [String: [String]],
         localMutationRevisionAtStart: UInt64
     ) async -> Bool {
         let remoteDeletedURLs = Set(scripts.deletedRemoteURLs ?? [])
@@ -1260,17 +1264,7 @@ final class CloudSyncManager: ObservableObject {
                 localImportIdentity: $0.localImportIdentity
             )
         }
-        let remoteLocalScripts = scripts.local.map {
-            CloudSyncLocalUserScript(
-                name: $0.name,
-                content: $0.content,
-                isEnabled: $0.isEnabled,
-                description: $0.description,
-                updatesAutomatically: $0.updatesAutomatically,
-                category: $0.category,
-                localImportIdentity: $0.localImportIdentity
-            )
-        }
+        let remoteLocalScripts = scripts.local
 
         let deletedLocalNamesToClear =
             CloudSyncLocalUserScriptReconciler.deletedNamesToClearDuringReconciliation(
@@ -1467,24 +1461,18 @@ final class CloudSyncManager: ObservableObject {
         }
 
         var desiredDisabledHostsByScriptID: [String: [String]] = [:]
+        var desiredSiteAccessByScriptID: [String: UserScriptSiteAccess] = [:]
         for remote in scripts.remote {
-            guard let disabledHosts = remote.disabledHosts else { continue }
+            let disabledHosts = remote.disabledHosts
             guard let url = CloudSyncRemoteUserScriptReconciler.canonicalURL(remote.url) else { continue }
             guard let script = userScriptManager.userScripts.first(where: { $0.url == url }) else { continue }
             desiredDisabledHostsByScriptID[script.id.uuidString] = disabledHosts
+            desiredSiteAccessByScriptID[script.id.uuidString] = remote.siteAccess
         }
 
         for local in scripts.local {
-            guard let disabledHosts = local.disabledHosts else { continue }
-            let localModel = CloudSyncLocalUserScript(
-                name: local.name,
-                content: local.content,
-                isEnabled: local.isEnabled,
-                description: local.description,
-                updatesAutomatically: local.updatesAutomatically,
-                category: local.category,
-                localImportIdentity: local.localImportIdentity
-            )
+            let disabledHosts = local.disabledHosts
+            let localModel = local
             guard restorableRemoteLocalScripts.contains(where: {
                 CloudSyncLocalUserScriptReconciler.matches(existing: localModel, remote: $0)
             }),
@@ -1494,6 +1482,7 @@ final class CloudSyncManager: ObservableObject {
                 continue
             }
             desiredDisabledHostsByScriptID[script.id.uuidString] = disabledHosts
+            desiredSiteAccessByScriptID[script.id.uuidString] = local.siteAccess
         }
         guard userScriptManager.localMutationRevision == localMutationRevisionAtStart else {
             return true
@@ -1501,6 +1490,9 @@ final class CloudSyncManager: ObservableObject {
         await dataManager.applyCloudUserScriptDisabledHosts(
             desired: desiredDisabledHostsByScriptID,
             baseline: disabledHostsBaseline
+        )
+        await dataManager.applyCloudUserScriptSiteAccess(
+            desired: desiredSiteAccessByScriptID, baseline: allowedHostsBaseline
         )
 
         // Report whether any never-synced local scripts were kept so the caller can schedule an
@@ -1692,17 +1684,7 @@ final class CloudSyncManager: ObservableObject {
                 && !localRemoteScriptURLs.contains(normalizedURL)
         }
 
-        let remoteLocalScripts = remotePayload.userScripts.local.map {
-            CloudSyncLocalUserScript(
-                name: $0.name,
-                content: $0.content,
-                isEnabled: $0.isEnabled,
-                description: $0.description,
-                updatesAutomatically: $0.updatesAutomatically,
-                category: $0.category,
-                localImportIdentity: $0.localImportIdentity
-            )
-        }
+        let remoteLocalScripts = remotePayload.userScripts.local
         let currentLocalScripts = (await userScriptManager.cloudSyncLocalUserScripts()).map {
             CloudSyncLocalUserScript(
                 name: $0.name,
@@ -1922,7 +1904,8 @@ final class CloudSyncManager: ObservableObject {
                     isEnabled: script.isEnabled,
                     updatesAutomatically: script.updatesAutomatically,
                     category: script.category.rawValue,
-                    disabledHosts: disabledHosts
+                    disabledHosts: disabledHosts,
+                    siteAccess: dataManager.userScriptSiteAccess(forScriptID: script.id.uuidString)
                 )
             }
             .sorted { $0.url < $1.url }
@@ -1950,7 +1933,8 @@ final class CloudSyncManager: ObservableObject {
                     updatesAutomatically: script.updatesAutomatically,
                     category: script.category.rawValue,
                     localImportIdentity: script.localImportIdentity,
-                    disabledHosts: disabledHosts
+                    disabledHosts: disabledHosts,
+                    siteAccess: dataManager.userScriptSiteAccess(forScriptID: script.id.uuidString)
                 )
             }
             .sorted { $0.name < $1.name }
@@ -2535,6 +2519,7 @@ private struct SyncPayload: Codable {
         /// Optional for compatibility with older CloudKit payloads.
         let category: String?
         let disabledHosts: [String]?
+        var siteAccess: UserScriptSiteAccess? = nil
 
         var resolvedUpdatesAutomatically: Bool {
             updatesAutomatically ?? true
@@ -2545,27 +2530,7 @@ private struct SyncPayload: Codable {
         }
     }
 
-    struct LocalUserScript: Codable {
-        let name: String
-        let content: String
-        let isEnabled: Bool
-        /// Optional for compatibility with older CloudKit payloads.
-        let description: String?
-        let updatesAutomatically: Bool?
-        /// Optional for compatibility with older CloudKit payloads.
-        let category: String?
-        /// Additive identity for local imports; absent in legacy payloads.
-        let localImportIdentity: String?
-        let disabledHosts: [String]?
-
-        var resolvedUpdatesAutomatically: Bool {
-            updatesAutomatically ?? true
-        }
-
-        var resolvedCategory: FilterListCategory {
-            FilterListCategory(rawValue: category ?? "") ?? .scripts
-        }
-    }
+    typealias LocalUserScript = CloudSyncLocalUserScript
 
     struct UserScripts: Codable {
         let remote: [RemoteUserScript]

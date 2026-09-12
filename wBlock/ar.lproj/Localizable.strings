@@ -1,3 +1,11 @@
+"Run on" = "التشغيل على";
+"All matching sites" = "كل المواقع المطابقة";
+"Only selected sites" = "المواقع المحددة فقط";
+"Selected Sites" = "المواقع المحددة";
+"No sites selected. This script will not run." = "لم تُحدد أي مواقع. لن يعمل هذا النص البرمجي.";
+"This script will not run on excluded sites, even if they are selected." = "لن يعمل هذا النص البرمجي على المواقع المستبعدة، حتى لو كانت محددة.";
+"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "تشمل المواقع نطاقاتها الفرعية. تظل قواعد المطابقة الخاصة بالنص البرمجي سارية. أعد تحميل الصفحة بعد إجراء التغييرات.";
+"Could not save site settings" = "تعذر حفظ إعدادات المواقع";
 "SponsorBlock Settings" = "إعدادات SponsorBlock";
 "Import SponsorBlock Settings" = "استيراد إعدادات SponsorBlock";
 "Export SponsorBlock Settings" = "تصدير إعدادات SponsorBlock";

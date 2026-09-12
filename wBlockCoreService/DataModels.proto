@@ -14,6 +14,8 @@ message AppData {
   ExtensionData extension_data = 8;
   // Per-site userscript exceptions: script UUID -> hosts where it is disabled
   map<string, HostList> user_script_disabled_hosts = 9;
+  // Presence enables selected-sites mode. An empty HostList permits no sites.
+  map<string, HostList> user_script_allowed_hosts = 10;
 }
 
 // Reusable wrapper for a list of hostnames (proto3 maps cannot hold repeated values)

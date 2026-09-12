@@ -604,6 +604,31 @@ public enum ContentBlockerIncrementalCache {
     }
 }
 
+/// User-selected scope is an additional restriction, never a replacement for script metadata.
+public struct UserScriptSiteAccess: Codable, Equatable, Sendable {
+    public var onlySelectedSites: Bool
+    public var hosts: [String]
+
+    public init(onlySelectedSites: Bool = false, hosts: [String] = []) {
+        self.onlySelectedSites = onlySelectedSites
+        self.hosts = DisabledSitesNormalizer.normalizedDomains(from: hosts).sorted()
+    }
+
+    public func allows(host: String, excludedHosts: [String] = []) -> Bool {
+        if HostMatcher.isHostDisabled(host: host, disabledSites: excludedHosts) { return false }
+        return !onlySelectedSites || HostMatcher.isHostDisabled(host: host, disabledSites: hosts)
+    }
+
+    /// Duplicate repair must never broaden either record's selected-site scope.
+    public func intersecting(_ other: Self) -> Self {
+        guard onlySelectedSites else { return other }
+        guard other.onlySelectedSites else { return self }
+        return Self(onlySelectedSites: true, hosts: (hosts + other.hosts).filter {
+            allows(host: $0) && other.allows(host: $0)
+        })
+    }
+}
+
 public enum HostMatcher {
     public static func isHostDisabled(host: String, disabledSites: [String]) -> Bool {
         let normalizedHost = host.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()

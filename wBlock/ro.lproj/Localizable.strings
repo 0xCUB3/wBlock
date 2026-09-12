@@ -1,3 +1,11 @@
+"Run on" = "Rulează pe";
+"All matching sites" = "Toate site-urile corespunzătoare";
+"Only selected sites" = "Doar site-urile selectate";
+"Selected Sites" = "Site-uri selectate";
+"No sites selected. This script will not run." = "Niciun site selectat. Acest script nu va rula.";
+"This script will not run on excluded sites, even if they are selected." = "Acest script nu va rula pe site-urile excluse, chiar dacă sunt selectate.";
+"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "Site-urile includ și subdomeniile lor. Regulile de potrivire ale scriptului se aplică în continuare. Reîncarcă pagina după modificări.";
+"Could not save site settings" = "Nu s-au putut salva setările site-urilor";
 "SponsorBlock Settings" = "Setări SponsorBlock";
 "Import SponsorBlock Settings" = "Importă setările SponsorBlock";
 "Export SponsorBlock Settings" = "Exportă setările SponsorBlock";

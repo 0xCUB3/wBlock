@@ -226,6 +226,12 @@ nonisolated struct Wblock_Data_AppData: @unchecked Sendable {
     set {_uniqueStorage()._userScriptDisabledHosts = newValue}
   }
 
+  /// Presence enables selected-sites mode. An empty HostList permits no sites.
+  var userScriptAllowedHosts: Dictionary<String,Wblock_Data_HostList> {
+    get {_storage._userScriptAllowedHosts}
+    set {_uniqueStorage()._userScriptAllowedHosts = newValue}
+  }
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -837,7 +843,7 @@ nonisolated extension Wblock_Data_Platform: SwiftProtobuf._ProtoNameProviding {
 
 nonisolated extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".AppData"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}settings\0\u{3}filter_lists\0\u{3}user_scripts\0\u{1}whitelist\0\u{3}rule_counts\0\u{1}performance\0\u{3}auto_update\0\u{3}extension_data\0\u{3}user_script_disabled_hosts\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}settings\0\u{3}filter_lists\0\u{3}user_scripts\0\u{1}whitelist\0\u{3}rule_counts\0\u{1}performance\0\u{3}auto_update\0\u{3}extension_data\0\u{3}user_script_disabled_hosts\0\u{3}user_script_allowed_hosts\0")
 
   fileprivate class _StorageClass {
     var _settings: Wblock_Data_AppSettings? = nil
@@ -849,6 +855,7 @@ nonisolated extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf.
     var _autoUpdate: Wblock_Data_AutoUpdateMetadata? = nil
     var _extensionData: Wblock_Data_ExtensionData? = nil
     var _userScriptDisabledHosts: Dictionary<String,Wblock_Data_HostList> = [:]
+    var _userScriptAllowedHosts: Dictionary<String,Wblock_Data_HostList> = [:]
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -868,6 +875,7 @@ nonisolated extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf.
       _autoUpdate = source._autoUpdate
       _extensionData = source._extensionData
       _userScriptDisabledHosts = source._userScriptDisabledHosts
+      _userScriptAllowedHosts = source._userScriptAllowedHosts
     }
   }
 
@@ -895,6 +903,7 @@ nonisolated extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf.
         case 7: try { try decoder.decodeSingularMessageField(value: &_storage._autoUpdate) }()
         case 8: try { try decoder.decodeSingularMessageField(value: &_storage._extensionData) }()
         case 9: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMessageMap<SwiftProtobuf.ProtobufString,Wblock_Data_HostList>.self, value: &_storage._userScriptDisabledHosts) }()
+        case 10: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMessageMap<SwiftProtobuf.ProtobufString,Wblock_Data_HostList>.self, value: &_storage._userScriptAllowedHosts) }()
         default: break
         }
       }
@@ -934,6 +943,9 @@ nonisolated extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf.
       if !_storage._userScriptDisabledHosts.isEmpty {
         try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMessageMap<SwiftProtobuf.ProtobufString,Wblock_Data_HostList>.self, value: _storage._userScriptDisabledHosts, fieldNumber: 9)
       }
+      if !_storage._userScriptAllowedHosts.isEmpty {
+        try visitor.visitMapField(fieldType: SwiftProtobuf._ProtobufMessageMap<SwiftProtobuf.ProtobufString,Wblock_Data_HostList>.self, value: _storage._userScriptAllowedHosts, fieldNumber: 10)
+      }
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -952,6 +964,7 @@ nonisolated extension Wblock_Data_AppData: SwiftProtobuf.Message, SwiftProtobuf.
         if _storage._autoUpdate != rhs_storage._autoUpdate {return false}
         if _storage._extensionData != rhs_storage._extensionData {return false}
         if _storage._userScriptDisabledHosts != rhs_storage._userScriptDisabledHosts {return false}
+        if _storage._userScriptAllowedHosts != rhs_storage._userScriptAllowedHosts {return false}
         return true
       }
       if !storagesAreEqual {return false}

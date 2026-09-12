@@ -1,3 +1,11 @@
+"Run on" = "執行範圍";
+"All matching sites" = "所有符合條件的網站";
+"Only selected sites" = "僅選取的網站";
+"Selected Sites" = "選取的網站";
+"No sites selected. This script will not run." = "尚未選取網站。此腳本不會執行。";
+"This script will not run on excluded sites, even if they are selected." = "即使已選取，此腳本也不會在排除的網站上執行。";
+"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "網站包括其子網域。腳本本身的比對規則仍然適用。變更後請重新載入頁面。";
+"Could not save site settings" = "無法儲存網站設定";
 "SponsorBlock Settings" = "SponsorBlock 設定";
 "Import SponsorBlock Settings" = "匯入 SponsorBlock 設定";
 "Export SponsorBlock Settings" = "匯出 SponsorBlock 設定";

@@ -1,3 +1,11 @@
+"Run on" = "Uruchamiaj na";
+"All matching sites" = "Wszystkich pasujących witrynach";
+"Only selected sites" = "Tylko wybranych witrynach";
+"Selected Sites" = "Wybrane witryny";
+"No sites selected. This script will not run." = "Nie wybrano witryn. Ten skrypt nie będzie uruchamiany.";
+"This script will not run on excluded sites, even if they are selected." = "Ten skrypt nie będzie uruchamiany na wykluczonych witrynach, nawet jeśli zostały wybrane.";
+"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "Witryny obejmują też swoje subdomeny. Reguły dopasowania skryptu nadal obowiązują. Po wprowadzeniu zmian odśwież stronę.";
+"Could not save site settings" = "Nie udało się zapisać ustawień witryn";
 "SponsorBlock Settings" = "Ustawienia SponsorBlock";
 "Import SponsorBlock Settings" = "Importuj ustawienia SponsorBlock";
 "Export SponsorBlock Settings" = "Eksportuj ustawienia SponsorBlock";

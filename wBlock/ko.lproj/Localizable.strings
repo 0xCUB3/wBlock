@@ -1,3 +1,11 @@
+"Run on" = "실행할 사이트";
+"All matching sites" = "조건에 맞는 모든 사이트";
+"Only selected sites" = "선택한 사이트만";
+"Selected Sites" = "선택한 사이트";
+"No sites selected. This script will not run." = "선택한 사이트가 없습니다. 이 스크립트는 실행되지 않습니다.";
+"This script will not run on excluded sites, even if they are selected." = "제외된 사이트에서는 선택되어 있어도 이 스크립트가 실행되지 않습니다.";
+"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "사이트에는 하위 도메인도 포함됩니다. 스크립트 자체의 일치 규칙도 계속 적용됩니다. 변경 후 페이지를 새로고침하세요.";
+"Could not save site settings" = "사이트 설정을 저장하지 못했습니다";
 "SponsorBlock Settings" = "SponsorBlock 설정";
 "Import SponsorBlock Settings" = "SponsorBlock 설정 가져오기";
 "Export SponsorBlock Settings" = "SponsorBlock 설정 내보내기";

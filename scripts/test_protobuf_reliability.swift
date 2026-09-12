@@ -17,6 +17,7 @@ struct ProtobufReliabilityTests {
         await testMigrationFailureAndCanonicalPrecedence(root: root.appendingPathComponent("migration-failure"))
         await testThreeWayDeletionAndInsertion(root: root.appendingPathComponent("merge"))
         await testConditionalCloudDisabledHosts(root: root.appendingPathComponent("cloud-disabled-hosts"))
+        await testSelectedSites(root: root.appendingPathComponent("selected-sites"))
         print("PASS")
     }
 
@@ -95,6 +96,45 @@ struct ProtobufReliabilityTests {
         expect(saved, "dated script must persist")
         expect(restarted.getUserScripts().first { $0.id == script.id }?.lastUpdated != nil,
                "protobuf decoding must retain the persisted script date")
+    }
+
+    private static func testSelectedSites(root: URL) async {
+        let suite = "test.wblock.selected-sites.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let first = await makeManager(root: root, standard: defaults, group: defaults)
+        await first.loadData()
+        let script = UserScript(name: "Selected sites", url: URL(string: "https://example.com/test.user.js"))
+        let id = script.id.uuidString
+        _ = await first.updateUserScripts([script])
+        expect(first.userScriptSiteAccess(forScriptID: id).allows(host: "any.example"), "legacy scripts remain unrestricted")
+        let empty = UserScriptSiteAccess(onlySelectedSites: true)
+        _ = await first.setUserScriptSiteAccess(empty, forScriptID: id)
+        let second = await makeManager(root: root, standard: defaults, group: defaults)
+        await second.loadData()
+        expect(second.getUserScriptAllowedHosts()[id] == [], "empty allowlist survives protobuf round trip")
+        expect(!second.userScriptSiteAccess(forScriptID: id).allows(host: "example.com"), "empty selected mode runs nowhere")
+        let selected = UserScriptSiteAccess(onlySelectedSites: true, hosts: ["https://Example.COM/path", "example.com"])
+        expect(selected.hosts == ["example.com"], "selected sites normalize and deduplicate")
+        expect(selected.allows(host: "news.example.com"), "selected domain includes subdomains")
+        expect(!selected.allows(host: "notexample.com") && !selected.allows(host: "example.com.evil.test"), "host boundaries prevent lookalike matches")
+        expect(!selected.allows(host: "example.com", excludedHosts: ["example.com"]), "exclusions take priority")
+        expect(!selected.allows(host: ""), "unknown host is denied in selected mode")
+        expect(selected.intersecting(empty) == empty, "duplicate repair keeps the narrower permission")
+        let baseline = second.getUserScriptAllowedHosts()
+        _ = await second.setUserScriptSiteAccess(selected, forScriptID: id)
+        _ = await first.applyCloudUserScriptSiteAccess(desired: [id: .init()], baseline: baseline)
+        await first.loadData()
+        expect(first.userScriptSiteAccess(forScriptID: id) == selected, "stale cloud scope cannot overwrite a newer site choice")
+        _ = await first.applyCloudUserScriptSiteAccess(desired: [:], baseline: first.getUserScriptAllowedHosts())
+        expect(first.userScriptSiteAccess(forScriptID: id) == selected, "legacy cloud payload does not clear restrictions")
+        _ = await first.applyCloudUserScriptSiteAccess(desired: [id: empty], baseline: first.getUserScriptAllowedHosts())
+        expect(first.userScriptSiteAccess(forScriptID: id) == empty, "explicit empty cloud allowlist is authoritative")
+        _ = await first.applyCloudUserScriptSiteAccess(desired: [id: .init()], baseline: first.getUserScriptAllowedHosts())
+        expect(first.getUserScriptAllowedHosts()[id] == nil, "explicit all-sites mode removes the restriction")
+        _ = await first.setUserScriptSiteAccess(selected, forScriptID: id)
+        await first.removeUserScript(withId: script.id)
+        expect(first.getUserScriptAllowedHosts()[id] == nil, "deleting a script removes its selected sites")
     }
 
     private static func testConditionalCloudDisabledHosts(root: URL) async {

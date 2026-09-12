@@ -1,3 +1,11 @@
+"Run on" = "Çalıştırılacak siteler";
+"All matching sites" = "Eşleşen tüm siteler";
+"Only selected sites" = "Yalnızca seçilen siteler";
+"Selected Sites" = "Seçilen Siteler";
+"No sites selected. This script will not run." = "Hiçbir site seçilmedi. Bu betik çalışmayacak.";
+"This script will not run on excluded sites, even if they are selected." = "Bu betik, seçilmiş olsalar bile hariç tutulan sitelerde çalışmaz.";
+"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "Siteler alt alan adlarını da kapsar. Betiğin kendi eşleştirme kuralları geçerli olmaya devam eder. Değişikliklerden sonra sayfayı yeniden yükleyin.";
+"Could not save site settings" = "Site ayarları kaydedilemedi";
 "SponsorBlock Settings" = "SponsorBlock Ayarları";
 "Import SponsorBlock Settings" = "SponsorBlock Ayarlarını İçe Aktar";
 "Export SponsorBlock Settings" = "SponsorBlock Ayarlarını Dışa Aktar";

@@ -1,3 +1,11 @@
+"Run on" = "Εκτέλεση σε";
+"All matching sites" = "Όλους τους αντίστοιχους ιστοτόπους";
+"Only selected sites" = "Μόνο επιλεγμένους ιστοτόπους";
+"Selected Sites" = "Επιλεγμένοι ιστότοποι";
+"No sites selected. This script will not run." = "Δεν έχουν επιλεγεί ιστότοποι. Αυτό το script δεν θα εκτελείται.";
+"This script will not run on excluded sites, even if they are selected." = "Αυτό το script δεν θα εκτελείται σε εξαιρούμενους ιστοτόπους, ακόμη κι αν έχουν επιλεγεί.";
+"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "Οι ιστότοποι περιλαμβάνουν τους υποτομείς τους. Οι κανόνες αντιστοίχισης του script εξακολουθούν να ισχύουν. Φορτώστε ξανά τη σελίδα μετά τις αλλαγές.";
+"Could not save site settings" = "Δεν ήταν δυνατή η αποθήκευση των ρυθμίσεων ιστοτόπων";
 "SponsorBlock Settings" = "Ρυθμίσεις SponsorBlock";
 "Import SponsorBlock Settings" = "Εισαγωγή ρυθμίσεων SponsorBlock";
 "Export SponsorBlock Settings" = "Εξαγωγή ρυθμίσεων SponsorBlock";

@@ -1068,6 +1068,8 @@ public enum WebExtensionRequestHandler {
                 descriptor["disabledHosts"] = ProtobufDataManager.shared.getUserScriptDisabledHosts(
                     forScriptID: script.id.uuidString
                 )
+                let siteAccess = ProtobufDataManager.shared.userScriptSiteAccess(forScriptID: script.id.uuidString)
+                if siteAccess.onlySelectedSites { descriptor["allowedHosts"] = siteAccess.hosts }
                 if script.usesGMStorage {
                     descriptor["storageSnapshot"] = await UserScriptStorageManager.shared.snapshot(
                         for: script.id.uuidString

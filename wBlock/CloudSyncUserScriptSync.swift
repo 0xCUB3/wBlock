@@ -9,6 +9,8 @@ struct CloudSyncLocalUserScript: Codable, Equatable {
     let updatesAutomatically: Bool?
     let category: String?
     let localImportIdentity: String?
+    let disabledHosts: [String]?
+    let siteAccess: UserScriptSiteAccess?
 
     var resolvedUpdatesAutomatically: Bool {
         updatesAutomatically ?? true
@@ -25,7 +27,9 @@ struct CloudSyncLocalUserScript: Codable, Equatable {
         description: String? = nil,
         updatesAutomatically: Bool? = nil,
         category: String? = nil,
-        localImportIdentity: String? = nil
+        localImportIdentity: String? = nil,
+        disabledHosts: [String]? = nil,
+        siteAccess: UserScriptSiteAccess? = nil
     ) {
         self.name = name
         self.content = content
@@ -34,6 +38,8 @@ struct CloudSyncLocalUserScript: Codable, Equatable {
         self.updatesAutomatically = updatesAutomatically
         self.category = category
         self.localImportIdentity = localImportIdentity
+        self.disabledHosts = disabledHosts
+        self.siteAccess = siteAccess
     }
 }
 
