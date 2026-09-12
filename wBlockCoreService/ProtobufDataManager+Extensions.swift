@@ -249,7 +249,7 @@ extension ProtobufDataManager {
     
     // MARK: - Userscripts
     public func getUserScripts(includePersistedContent: Bool = false) -> [UserScript] {
-        return appData.userScripts.map { protoData in
+        return UserScriptPersistence.uniqueRecords(appData.userScripts).map { protoData in
             let rawURLString = protoData.url.trimmingCharacters(in: .whitespacesAndNewlines)
             let parsedURL = rawURLString.isEmpty ? nil : URL(string: rawURLString)
 
@@ -307,6 +307,22 @@ extension ProtobufDataManager {
         }
     }
     
+    /// Deletes only the confirmed IDs, preserving inserts made by other processes.
+    /// The caller must retain a survivor before using this for built-in duplicates.
+    @discardableResult
+    func removeDuplicateUserScripts(withIDs ids: Set<UUID>) async -> Bool {
+        let rawIDs = Set(ids.map(\.uuidString))
+        let saved = await updateDataImmediately(userScriptsAreAuthoritative: true) { data in
+            data.userScripts.removeAll { rawIDs.contains($0.id) }
+            for id in rawIDs {
+                data.userScriptDisabledHosts.removeValue(forKey: id)
+                data.autoUpdate.scriptLastChecked.removeValue(forKey: id)
+            }
+        }
+        if saved { UserScriptManager.invalidateDocumentStartExecutionCache() }
+        return saved
+    }
+
     // MARK: - Whitelist Management
     public func getWhitelistedDomains() -> [String] {
         return appData.whitelist.disabledSites

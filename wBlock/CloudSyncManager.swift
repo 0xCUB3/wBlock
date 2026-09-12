@@ -188,7 +188,12 @@ final class CloudSyncManager: ObservableObject {
 
     func recordDeletedRemoteUserScriptURL(_ urlString: String) {
         let normalized = CloudSyncRemoteUserScriptReconciler.normalizedURL(urlString)
-        guard !normalized.isEmpty else { return }
+        guard !normalized.isEmpty,
+              !userScriptManager.userScripts.contains(where: {
+                  !$0.isLocal && CloudSyncRemoteUserScriptReconciler.normalizedURL(
+                      $0.url?.absoluteString ?? ""
+                  ) == normalized
+              }) else { return }
         var additions = pendingRemoteScriptAdditions()
         additions.removeValue(forKey: normalized)
         defaults.set(additions, forKey: Keys.pendingRemoteScriptAdditions)
@@ -210,6 +215,10 @@ final class CloudSyncManager: ObservableObject {
     }
 
     func recordDeletedLocalUserScriptName(_ name: String, identity: String? = nil) {
+        // Removing one copy must not tombstone another copy of the same sync identity.
+        guard CloudSyncLocalUserScriptReconciler.shouldRecordDeletion(
+            name: name, identity: identity, survivingScripts: userScriptManager.userScripts
+        ) else { return }
         if let identity = CloudSyncLocalUserScriptReconciler.normalizedIdentity(identity) {
             mergeDeletedMarkers(
                 [identity],

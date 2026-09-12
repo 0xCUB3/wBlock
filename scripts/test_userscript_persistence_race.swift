@@ -96,6 +96,18 @@ struct UserScriptPersistenceRaceTests {
             fatalError("stale remote insertion bypassed ID-based deletion protection")
         }
 
+        let repeatedIDs = [a, b, staleMetadata, staleMetadata]
+        let repaired = UserScriptPersistence.uniqueRecords(repeatedIDs)
+        guard repaired == [staleMetadata, b],
+              UserScriptPersistence.uniqueRecords(repaired) == repaired,
+              UserScriptPersistence.replace(with: repeatedIDs) == repaired,
+              UserScriptPersistence.merge(persisted: repeatedIDs, incoming: []) == repaired
+        else { fatalError("repeated UUID repair must retain one record and be idempotent") }
+        let distinctLocal = record("local-2", true, a.name, isLocal: true)
+        guard UserScriptPersistence.uniqueRecords([a, distinctLocal]).count == 2 else {
+            fatalError("identity repair must not collapse distinct imports by name")
+        }
+
         let authoritative = UserScriptPersistence.replace(with: [a, b])
         guard authoritative.map(\.id) == ["A", "B"] else {
             fatalError("authoritative replacement did not remove C")

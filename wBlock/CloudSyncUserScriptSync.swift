@@ -55,6 +55,20 @@ enum CloudSyncLocalUserScriptReconciler {
         return value.isEmpty ? nil : value
     }
 
+    static func shouldRecordDeletion(
+        name: String, identity: String?, survivingScripts: [UserScript]
+    ) -> Bool {
+        let identity = normalizedIdentity(identity)
+        return !survivingScripts.contains { script in
+            guard script.isLocal else { return false }
+            if let identity {
+                return normalizedIdentity(script.localImportIdentity) == identity
+            }
+            return normalizedIdentity(script.localImportIdentity) == nil
+                && normalizedName(script.name) == normalizedName(name)
+        }
+    }
+
     static func matches(existing: UserScript, remote: CloudSyncLocalUserScript) -> Bool {
         guard existing.isLocal else { return false }
         return matches(

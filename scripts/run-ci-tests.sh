@@ -41,7 +41,7 @@ compile_core_test() {
   local test="$2"
   shift 2
   local test_source="$TMP/$name.swift"
-  if grep -q '^import wBlockCoreService\\b' "$test"; then
+  if grep -Eq '^(@testable )?import wBlockCoreService' "$test"; then
     cp "$test" "$test_source"
   else
     {
@@ -140,6 +140,8 @@ compile_direct_test filter-update-popup-status \
 compile_core_test filter-selection-rebase scripts/test_filter_selection_rebase.swift
 compile_core_test filter-list-site-exclusion scripts/test_filter_list_site_exclusion.swift
 compile_core_test userscript-pattern-budget scripts/test_userscript_pattern_budget.swift
+compile_core_test userscript-duplicates scripts/test_userscript_duplicates.swift \
+  wBlock/CloudSyncUserScriptSync.swift
 compile_core_test issue-645-compile-order scripts/test_issue_645_compile_order.swift
 compile_core_test compilation-provenance scripts/test_compilation_provenance.swift
 compile_core_test target-compilation scripts/test_target_compilation.swift

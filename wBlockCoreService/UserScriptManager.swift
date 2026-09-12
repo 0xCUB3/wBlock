@@ -1255,66 +1255,49 @@ public class UserScriptManager: ObservableObject {
         return zip(scripts1, scripts2).allSatisfy { $0.hasSameAuthoritativeState(as: $1) }
     }
 
-    /// Simple and reliable duplicate detection - only finds truly duplicate scripts
     private func detectDuplicateUserScripts() -> [(older: UserScript, newer: UserScript)] {
-        guard userScripts.count > 1 else { return [] }
-
-        var duplicates: [(older: UserScript, newer: UserScript)] = []
-
-        for i in 0..<userScripts.count {
-            for j in (i + 1)..<userScripts.count {
-                let a = userScripts[i]
-                let b = userScripts[j]
-
-                if let urlA = a.url?.absoluteString, let urlB = b.url?.absoluteString,
-                   !urlA.isEmpty, urlA == urlB {
-                    let (older, newer) = b.isEnabled && !a.isEnabled ? (a, b) : (b, a)
-                    duplicates.append((older, newer))
-                    continue
-                }
-
-                let nameA = a.name.lowercased().trimmingCharacters(in: .whitespaces)
-                let nameB = b.name.lowercased().trimmingCharacters(in: .whitespaces)
-
-                guard nameA == nameB else { continue }
-
-                if UserScript.isVersionNewer(b.version, than: a.version) {
-                    duplicates.append((a, b))
-                } else if UserScript.isVersionNewer(a.version, than: b.version) {
-                    duplicates.append((b, a))
-                } else {
-                    duplicates.append(b.isEnabled && !a.isEnabled ? (a, b) : (b, a))
-                }
-            }
-        }
-
-        if !duplicates.isEmpty {
-            logger.info("🔍 Found \(duplicates.count) duplicate userscript pair(s)")
-        }
-        return duplicates
+        UserScriptDuplicateResolver.removalPairs(
+            in: userScripts,
+            protectedIDs: Set(userScripts.filter { isDefaultUserScript($0) }.map(\.id))
+        )
     }
 
-    /// Simple removal of duplicate userscripts
-    private func removeDuplicateUserScripts(_ duplicatesToRemove: [UserScript]) async {
-        guard !duplicatesToRemove.isEmpty else { return }
+    private func removeDuplicateUserScripts(_ requested: [UserScript]) async -> Int? {
+        // The alert may have been open while an import, update, or sync changed
+        // the collection. Only remove still-redundant IDs the user approved.
+        let requestedIDs = Set(requested.map(\.id))
+        let duplicates = detectDuplicateUserScripts().map(\.older).filter {
+            requestedIDs.contains($0.id)
+        }
+        let ids = Set(duplicates.map(\.id))
+        guard !ids.isEmpty else { return 0 }
 
-        logger.info("🗑️ Removing \(duplicatesToRemove.count) duplicate userscripts...")
-
-        // Get IDs of scripts to remove
-        let idsToRemove = Set(duplicatesToRemove.map { $0.id })
-
-        // Remove files first
-        for script in duplicatesToRemove {
-            removeUserScriptFile(script)
+        userScripts.removeAll { ids.contains($0.id) }
+        for script in duplicates { recordScriptMutation(script.id) }
+        guard await dataManager.removeDuplicateUserScripts(withIDs: ids) else {
+            userScripts = dataManager.getUserScripts(includePersistedContent: true)
+            hasError = true
+            errorMessage = dataManager.lastError?.localizedDescription
+                ?? CocoaError(.fileWriteUnknown).localizedDescription
+            return nil
         }
 
-        // Filter out the scripts to remove from the array
-        let originalCount = userScripts.count
-        userScripts = userScripts.filter { [idsToRemove] in !idsToRemove.contains($0.id) }
-
-        logger.info("🗑️ Removed \(originalCount - self.userScripts.count) duplicate, \(self.userScripts.count) remaining")
-
-        await persistUserScriptsNow(authoritative: true)
+        for script in duplicates {
+            if script.isLocal {
+                NotificationCenter.default.post(
+                    name: .userScriptManagerDidRemoveLocalUserScript,
+                    object: self,
+                    userInfo: UserScriptManagerNotificationKey.userInfo(for: script, origin: .local)
+                )
+            }
+            NotificationCenter.default.post(
+                name: .userScriptManagerDidRemoveUserScript,
+                object: self,
+                userInfo: UserScriptManagerNotificationKey.userInfo(for: script, origin: .local)
+            )
+            removeUserScriptFile(script)
+        }
+        return duplicates.count
     }
 
     /// Checks for duplicates and presents confirmation dialog to user
@@ -1342,7 +1325,7 @@ public class UserScriptManager: ObservableObject {
 
             // Use a small delay to ensure UI is ready to show the alert
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-                guard let self else { return }
+                guard let self, !self.pendingDuplicatesToRemove.isEmpty else { return }
                 self.showingDuplicatesAlert = true
                 self.logger.info("📋 Showing duplicate removal confirmation dialog")
             }
@@ -4016,20 +3999,14 @@ public class UserScriptManager: ObservableObject {
 
     /// Confirms removal of pending duplicate userscripts
     public func confirmDuplicateRemoval() {
-        let count = pendingDuplicatesToRemove.count
-        let scriptNames = pendingDuplicatesToRemove.map { $0.name }.joined(separator: ", ")
-
-        logger.info("✅ User confirmed removal of \(count) duplicate userscripts: \(scriptNames)")
+        let requested = pendingDuplicatesToRemove
+        pendingDuplicatesToRemove = []
+        showingDuplicatesAlert = false
 
         Task { @MainActor in
-            await removeDuplicateUserScripts(pendingDuplicatesToRemove)
-
-            // Clear pending state
-            pendingDuplicatesToRemove = []
-            showingDuplicatesAlert = false
+            guard let count = await removeDuplicateUserScripts(requested) else { return }
             statusDescription = "Removed \(count) duplicate userscript\(count == 1 ? "" : "s")"
-
-            logger.info("🎉 Duplicate removal completed successfully")
+            logger.info("✅ Removed \(count) duplicate userscripts")
         }
     }
 

@@ -32,6 +32,11 @@ private func normalizeAppDataIdentifiers(_ data: inout Wblock_Data_AppData) -> B
         if let value = data.userScriptDisabledHosts.removeValue(forKey: record.id) { data.userScriptDisabledHosts[id] = value }
         if let value = data.autoUpdate.scriptLastChecked.removeValue(forKey: record.id) { data.autoUpdate.scriptLastChecked[id] = value }
     }
+    let uniqueScripts = UserScriptPersistence.uniqueRecords(data.userScripts)
+    if uniqueScripts.count != data.userScripts.count {
+        data.userScripts = uniqueScripts
+        changed = true
+    }
     return changed
 }
 

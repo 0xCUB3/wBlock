@@ -12,6 +12,22 @@ import Foundation
 /// record's latest value. Concurrent inserts of the same remote URL retain the identity
 /// that reached disk first.
 enum UserScriptPersistence {
+    /// One UUID owns one source file and one set of site preferences. Keep the
+    /// last record, as ID-based upserts historically did, without touching either.
+    static func uniqueRecords(_ records: [Wblock_Data_UserScriptData]) -> [Wblock_Data_UserScriptData] {
+        var result: [Wblock_Data_UserScriptData] = []
+        var indices: [String: Int] = [:]
+        for record in records {
+            if !record.id.isEmpty, let index = indices[record.id] {
+                result[index] = record
+            } else {
+                if !record.id.isEmpty { indices[record.id] = result.count }
+                result.append(record)
+            }
+        }
+        return result
+    }
+
     static func canonicalRemoteURLIdentity(_ rawURL: String, isLocal: Bool) -> String? {
         guard !isLocal else { return nil }
         let trimmedURL = rawURL.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -59,7 +75,7 @@ enum UserScriptPersistence {
         explicitEnabledStates: [String: Bool] = [:],
         allowedInsertIDs: Set<String>? = nil
     ) -> [Wblock_Data_UserScriptData] {
-        var merged = persisted
+        var merged = uniqueRecords(persisted)
         var indexByID = Dictionary(
             merged.enumerated().compactMap { index, record in
                 record.id.isEmpty ? nil : (record.id, index)
@@ -125,6 +141,6 @@ enum UserScriptPersistence {
     static func replace(
         with incoming: [Wblock_Data_UserScriptData]
     ) -> [Wblock_Data_UserScriptData] {
-        incoming
+        uniqueRecords(incoming)
     }
 }
