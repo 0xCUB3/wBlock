@@ -139,8 +139,8 @@ private struct SourceRuleAdmissionCounter {
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
-    // 7: duplicate rule lines are dropped before conversion (#681).
-    public static let embeddedCompatibilityRulesVersion = "7"
+    // 8: defuse Urban Dictionary's AdShield fallback without triggering its sentinel redirect.
+    public static let embeddedCompatibilityRulesVersion = "8"
     private static let combinedEngineMarkerFileName = "combined-rules.sha256"
     private static let combinedEngineMarkerFormatVersion = 2
     private static let combinedEngineBuildLockFileName = "combined-engine-build.lock"
@@ -251,6 +251,11 @@ private struct SourceRuleAdmissionCounter {
 /js/pagead.js$script
 /widget/pagead.js$script
 ##.adbox.banner_ads.adsbox
+
+! Urban Dictionary AdShield compatibility
+! Keep the loader sentinel: suppressing eval outright triggers a reporting-page redirect.
+||html-load.com^$script,domain=urbandictionary.com
+urbandictionary.com#%#//scriptlet('trusted-replace-argument', 'eval', '0', 'replace:/^(window[.][a-zA-Z0-9_$]+=true;)(?=[^]*Please allow ads on this site)[^]*/$1/', 'html-load.com')
 
 ! NameMC Ad-Shield/Network N compatibility
 ||html-load.com^$script,domain=namemc.com
