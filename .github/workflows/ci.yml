@@ -78,6 +78,14 @@ jobs:
           SIMULATOR: ${{ steps.simulator.outputs.udid }}
         run: bash scripts/test_rules_viewer_ui.sh "$SIMULATOR"
 
+      - name: Preserve gesture-test screenshots and diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rules-viewer-results
+          path: ~/Library/Developer/Xcode/DerivedData/ScrollProbe-*/Logs/Test/*.xcresult
+          retention-days: 7
+
   build:
     runs-on: macos-26
     timeout-minutes: 30

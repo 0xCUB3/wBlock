@@ -30,6 +30,7 @@ struct ContentView: View {
     @State private var showingFilterDownloadError = false
     @AppStorage("filtersShowEnabledOnly") private var showOnlyEnabledLists = false
     @AppStorage("filterDisplayOrder") private var filterDisplayOrder = Data()
+    @StateObject private var filterDrag = ListDrag()
     @State private var filterSearchText = ""
     @State private var showFilterSearch = false
     @State private var editingCustomFilter: FilterList?
@@ -96,8 +97,13 @@ struct ContentView: View {
                 || filter.localizedDisplayDescription.localizedCaseInsensitiveContains(query)
                 || filter.url.absoluteString.localizedCaseInsensitiveContains(query))
         }, by: \.category)
-        return FilterListCategory.allCases.filter { $0 != .all && !$0.isUserScriptOnly }
-            .compactMap { category in groups[category].map { (category: category, filters: $0) } }
+        return FilterListCategory.allCases.filter { $0 != .all && $0 != .scripts && !$0.isUserScriptOnly }
+            .compactMap { category in
+                guard let filters = groups[category] else {
+                    return filterDrag.id == nil ? nil : (category: category, filters: [])
+                }
+                return (category: category, filters: filters)
+            }
     }
 
     /// Invisible zero-size buttons that surface hardware-keyboard shortcuts.
@@ -501,10 +507,8 @@ struct ContentView: View {
                         }
                     }
                 } else {
-                    Section {
+                    ContentListSection { categoryHeader(item.category) } content: {
                         filterRows(item.filters)
-                    } header: {
-                        categoryHeader(item.category)
                     }
                 }
             }
@@ -527,7 +531,9 @@ struct ContentView: View {
                         if item.category == .foreign {
                             macOSForeignFiltersView(filters: item.filters)
                         } else {
-                            macOSFilterSectionView(category: item.category, filters: item.filters)
+                            ContentListSection { categoryHeader(item.category) } content: {
+                                filterRows(item.filters)
+                            }
                         }
                     }
                 }
@@ -688,20 +694,8 @@ struct ContentView: View {
     }
 
     private func categoryHeader(_ category: FilterListCategory) -> some View {
-        HStack(spacing: 6) {
-            Text(category.localizedName)
-                .foregroundStyle(.primary)
-                .textCase(.none)
-            Button {
-                selectedCategoryInfo = category
-            } label: {
-                Image(systemName: "info.circle")
-            }
-            .buttonStyle(.plain)
-            .noFocusRingCompat()
-            .foregroundStyle(.secondary)
-            .accessibilityLabel("Info")
-        }
+        ListCategoryHeader(title: LocalizedStringKey(category.rawValue), info: { selectedCategoryInfo = category },
+                           drop: ListDrop(drag: filterDrag) { moveFilter($0, to: category) })
     }
 
     private func defaultFilterNames(for category: FilterListCategory) -> [String] {
@@ -785,46 +779,29 @@ struct ContentView: View {
 
     private var orderedFilters: [FilterList] {
         let filters = filterManager.filterLists
-        return FilterDisplayOrder.sorted(
+        return ListDisplayOrder.sorted(
             filters.filter { $0.category != .foreign }
                 + ForeignFilterOrganizer.sortedFilters(filters.filter { $0.category == .foreign }),
             order: filterDisplayOrder)
     }
 
-    private func moveFilters(_ filters: [FilterList], from source: IndexSet, to destination: Int) {
-        var moved = filters
-        moved.move(fromOffsets: source, toOffset: destination)
-        filterDisplayOrder = FilterDisplayOrder.saving(moved, in: orderedFilters)
+    private func moveFilter(_ id: UUID, to category: FilterListCategory) {
+        guard !filterManager.isApplyInFlight,
+              let index = filterManager.filterLists.firstIndex(where: { $0.id == id }),
+              filterManager.filterLists[index].category != category else { return }
+        filterManager.filterLists[index].category = category
+        filterManager.saveFilterListsCoalesced()
+        filterManager.markNonSelectionChangesPending()
     }
 
     private func filterRows(_ filters: [FilterList], showsFlags: Bool = true) -> some View {
-        let filters = FilterDisplayOrder.sorted(filters, order: filterDisplayOrder)
-        return ForEach(filters) { filter in
+        ReorderableRows(items: ListDisplayOrder.sorted(filters, order: filterDisplayOrder),
+                        allItems: orderedFilters, order: $filterDisplayOrder, drag: filterDrag,
+                        commit: { id in
+                            if let category = filters.first?.category { moveFilter(id, to: category) }
+                        }) { filter in
             filterRowView(for: filter, showsFlags: showsFlags)
-                #if os(macOS)
-                .onDrag { NSItemProvider(object: filter.id.uuidString as NSString) }
-                .onDrop(of: [.text], isTargeted: nil) { providers in
-                    guard let provider = providers.first else { return false }
-                    _ = provider.loadObject(ofClass: NSString.self) { value, _ in
-                        guard let value = value as? String else { return }
-                        DispatchQueue.main.async {
-                            guard let source = filters.firstIndex(where: { $0.id.uuidString == value }),
-                                  let target = filters.firstIndex(where: { $0.id == filter.id }) else { return }
-                            moveFilters(filters, from: IndexSet(integer: source), to: target + (source < target ? 1 : 0))
-                        }
-                    }
-                    return true
-                }
-                #endif
-            #if os(macOS)
-            if filter.id != filters.last?.id {
-                Divider().padding(.leading, 16)
-            }
-            #endif
         }
-        #if os(iOS)
-        .onMove { moveFilters(filters, from: $0, to: $1) }
-        #endif
     }
 
     private func filterRowView(for filter: FilterList, showsFlags: Bool = true) -> some View {
@@ -849,20 +826,6 @@ struct ContentView: View {
     }
 
     #if os(macOS)
-    private func macOSFilterSectionView(category: FilterListCategory, filters: [FilterList]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            categoryHeader(category)
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 4)
-
-            VStack(spacing: 0) {
-                filterRows(filters)
-            }
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-        }
-    }
-
     private func macOSForeignFiltersView(filters: [FilterList]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {

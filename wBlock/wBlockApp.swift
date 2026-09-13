@@ -14,10 +14,8 @@ enum WBlockLaunchSetup {
         let dataManager = ProtobufDataManager.shared
         await dataManager.waitUntilLoaded()
         await dataManager.migrateLegacyFilterURLs()
-        await dataManager.migrateMultipurposeToAnnoyances()
         await dataManager.migrateAnnoyancesFilterToSplitFilters()
-        // Current defaults already carry the catalog categories. Re-running the
-        // old Mobile/Allowlist corrections would undo categories chosen in Edit.
+        // Categories are user-owned; catalog corrections must not undo moves or edits.
         await UserScriptManager.shared.waitUntilReady()
     }
 }

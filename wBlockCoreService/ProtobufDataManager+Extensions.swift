@@ -10,27 +10,8 @@ internal import SwiftProtobuf
 
 // MARK: - Filter List Management
 extension ProtobufDataManager {
-    private static let adGuardMobileFilterName = "AdGuard Mobile Filter"
     private static let adGuardMobileLegacyURLFragment = "filter_11_Mobile"
     private static let adGuardMobileCurrentURL = "https://filters.adtidy.org/ios/filters/11_optimized.txt"
-
-    // Filter lists that unblock/whitelist content rather than block it. These belong in the
-    // dedicated "Allowlists" category so they are not mistaken for blocklists.
-    private static let allowlistFilterURLFragments = [
-        "whitelist-referral.txt",  // HaGeZi Referral Allowlist
-    ]
-
-    private func isAllowlistFilter(_ filter: Wblock_Data_FilterListData) -> Bool {
-        Self.allowlistFilterURLFragments.contains { fragment in
-            filter.url.contains(fragment)
-        }
-    }
-
-    private func isAdGuardMobileFilter(_ filter: Wblock_Data_FilterListData) -> Bool {
-        filter.name == Self.adGuardMobileFilterName
-            || filter.url.contains(Self.adGuardMobileLegacyURLFragment)
-            || filter.url == Self.adGuardMobileCurrentURL
-    }
 
     @discardableResult
     public func updateFilterLists(_ filterLists: [FilterList]) async -> Bool {
@@ -83,66 +64,6 @@ extension ProtobufDataManager {
         for i in 0..<updatedData.filterLists.count {
             if updatedData.filterLists[i].url.contains(Self.adGuardMobileLegacyURLFragment) {
                 updatedData.filterLists[i].url = Self.adGuardMobileCurrentURL
-                needsSave = true
-            }
-        }
-
-        if needsSave {
-            appData = updatedData
-            saveData()
-        }
-    }
-
-    public func migrateMultipurposeToAnnoyances() async {
-        var updatedData = appData
-        var needsSave = false
-
-        // Migrate filter lists
-        for i in 0..<updatedData.filterLists.count {
-            if updatedData.filterLists[i].category == .multipurpose {
-                // AdGuard Mobile Filter should be in "ads" category, not "annoyances"
-                if isAdGuardMobileFilter(updatedData.filterLists[i]) {
-                    updatedData.filterLists[i].category = .ads
-                } else {
-                    updatedData.filterLists[i].category = .annoyances
-                }
-                needsSave = true
-            }
-        }
-
-        if needsSave {
-            appData = updatedData
-            saveData()
-        }
-    }
-
-    /// Migrates AdGuard Mobile Filter to the correct "ads" category if it's in the wrong category
-    public func migrateMobileFilterToAdsCategory() async {
-        var updatedData = appData
-        var needsSave = false
-
-        for i in 0..<updatedData.filterLists.count {
-            if isAdGuardMobileFilter(updatedData.filterLists[i]) && updatedData.filterLists[i].category != .ads {
-                updatedData.filterLists[i].category = .ads
-                needsSave = true
-            }
-        }
-
-        if needsSave {
-            appData = updatedData
-            saveData()
-        }
-    }
-
-    /// Moves allowlist (exception/unblocking) filter lists out of blocklist categories such as
-    /// "Privacy" and into the dedicated "Allowlists" category so their inverse purpose is clear.
-    public func migrateAllowlistsToDedicatedCategory() async {
-        var updatedData = appData
-        var needsSave = false
-
-        for i in 0..<updatedData.filterLists.count {
-            if isAllowlistFilter(updatedData.filterLists[i]) && updatedData.filterLists[i].category != .allowlists {
-                updatedData.filterLists[i].category = .allowlists
                 needsSave = true
             }
         }

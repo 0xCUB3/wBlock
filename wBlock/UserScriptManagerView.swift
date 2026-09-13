@@ -104,11 +104,9 @@ private struct UserScriptListItem: Identifiable, Hashable {
     }
 }
 
-private typealias UserScriptSectionKind = UserScriptDisplayCategory
-
 private struct UserScriptDisplaySection: Identifiable {
-    let id: UserScriptSectionKind
-    let title: LocalizedStringKey
+    let id: UserScriptDisplayCategory
+    var title: LocalizedStringKey { LocalizedStringKey(id.rawValue) }
     let scripts: [UserScriptListItem]
 }
 
@@ -186,6 +184,8 @@ struct UserScriptManagerView: View {
     var onRetryFailedReloads: () -> Void = {}
 
     @State private var scripts: [UserScriptListItem] = []
+    @AppStorage("userScriptDisplayOrder") private var scriptDisplayOrder = Data()
+    @StateObject private var scriptDrag = ListDrag()
     @State private var showingAddScriptSheet = false
     @State private var selectedScript: SelectedUserScript?
     @State private var selectedScriptInfo: SelectedUserScript?
@@ -253,7 +253,7 @@ struct UserScriptManagerView: View {
     }
 
     private var displayedScripts: [UserScriptListItem] {
-        let filteredByEnabled = showOnlyEnabled ? scripts.filter(\.isEnabled) : scripts
+        let filteredByEnabled = showOnlyEnabled ? orderedScripts.filter(\.isEnabled) : orderedScripts
         let filteredBySearch: [UserScriptListItem]
 
         if trimmedSearchText.isEmpty {
@@ -268,20 +268,36 @@ struct UserScriptManagerView: View {
             }
         }
 
-        return filteredBySearch.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        return filteredBySearch
+    }
+
+    private var orderedScripts: [UserScriptListItem] {
+        ListDisplayOrder.sorted(scripts.sorted {
+            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }, order: scriptDisplayOrder)
     }
 
     private var displayedScriptSections: [UserScriptDisplaySection] {
-        UserScriptDisplayCategorySupport.orderedGroups(
-            displayedScripts,
-            category: { $0.displayCategory }
-        ).map { group in
-            UserScriptDisplaySection(
-                id: group.category,
-                title: LocalizedStringKey(group.category.rawValue),
-                scripts: group.items
-            )
+        UserScriptDisplayCategory.allCases.compactMap { category in
+            let matching = displayedScripts.filter { $0.displayCategory == category }
+            return matching.isEmpty && scriptDrag.id == nil ? nil
+                : UserScriptDisplaySection(id: category, scripts: matching)
         }
+    }
+
+    private func moveScript(_ id: UUID, to category: UserScriptDisplayCategory) {
+        guard let script = userScriptManager.userScript(withId: id),
+              let category = FilterListCategory(rawValue: category.rawValue) else { return }
+        Task {
+            await userScriptManager.setUserScript(script, category: category)
+            refreshScripts()
+        }
+    }
+
+    private func scriptRows(_ section: UserScriptDisplaySection) -> some View {
+        ReorderableRows(items: section.scripts, allItems: orderedScripts,
+                        order: $scriptDisplayOrder, drag: scriptDrag,
+                        commit: { moveScript($0, to: section.id) }, row: scriptRowView)
     }
 
     var body: some View {
@@ -383,12 +399,8 @@ struct UserScriptManagerView: View {
                 }
             } else {
                 ForEach(sections) { scriptSection in
-                    Section {
-                        ForEach(scriptSection.scripts) { script in
-                            scriptRowView(script: script)
-                        }
-                    } header: {
-                        displaySectionHeader(scriptSection)
+                    ContentListSection { displaySectionHeader(scriptSection) } content: {
+                        scriptRows(scriptSection)
                     }
                 }
             }        }
@@ -438,7 +450,12 @@ struct UserScriptManagerView: View {
                     noSearchResultsView
                         .padding(.top, 40)
                 } else {
-                    scriptsListView(sections: sections)
+                    LazyVStack(spacing: 16) {
+                        ForEach(sections) { section in
+                            ContentListSection { displaySectionHeader(section) } content: { scriptRows(section) }
+                        }
+                    }
+                    .padding(.horizontal)
                 }
 
                 Spacer(minLength: 20)
@@ -618,20 +635,8 @@ struct UserScriptManagerView: View {
     }
 
     private func displaySectionHeader(_ section: UserScriptDisplaySection) -> some View {
-        HStack(spacing: 6) {
-            Text(section.title)
-                .foregroundStyle(.primary)
-                .textCase(.none)
-            Button {
-                selectedCategoryInfo = section.id
-            } label: {
-                Image(systemName: "info.circle")
-            }
-            .buttonStyle(.plain)
-            .noFocusRingCompat()
-            .foregroundStyle(.secondary)
-            .accessibilityLabel("Info")
-        }
+        ListCategoryHeader(title: section.title, info: { selectedCategoryInfo = section.id },
+                           drop: ListDrop(drag: scriptDrag) { moveScript($0, to: section.id) })
     }
 
     private func defaultScriptNames(for category: UserScriptDisplayCategory) -> [String] {
@@ -678,56 +683,6 @@ struct UserScriptManagerView: View {
             await MainActor.run { refreshScripts() }
         }
     }
-
-    #if os(macOS)
-    private func scriptsListView(sections: [UserScriptDisplaySection]) -> some View {
-        LazyVStack(spacing: 16) {
-            ForEach(sections) { scriptSection in
-                macOSUserScriptSectionView(section: scriptSection)
-            }
-        }        .padding(.horizontal)
-    }
-
-    private func macOSUserScriptSectionView(
-        section: UserScriptDisplaySection
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(section.title)
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-                        Button {
-                            selectedCategoryInfo = section.id
-                        } label: {
-                            Image(systemName: "info.circle")
-                        }
-                        .buttonStyle(.plain)
-                        .noFocusRingCompat()
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel("Info")
-                    }
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 4)
-
-            VStack(spacing: 0) {
-                ForEach(section.scripts.indices, id: \.self) { index in
-                    scriptRowView(script: section.scripts[index])
-
-                    if index < section.scripts.count - 1 {
-                        Divider()
-                            .padding(.leading, 16)
-                    }
-                }
-            }
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-        }
-    }
-
-    #endif
 
     /// Fetches a remote script's content without changing its enabled state (#665).
     private func downloadScript(_ script: UserScriptListItem) {

@@ -15,6 +15,16 @@ struct ReorderCacheTests {
         var b = FilterList(name: "B", url: URL(string: "https://example.com/b.txt")!, category: .ads, isSelected: true)
         let c = FilterList(name: "C", url: URL(string: "https://example.com/c.txt")!, category: .privacy, isSelected: true)
         let d = FilterList(name: "D", url: URL(string: "https://example.com/d.txt")!, category: .privacy, isSelected: true)
+        let displayItems = [a, b, c, d]
+        let displayOrder = ListDisplayOrder.saving([d, a], in: displayItems)
+        precondition(ListDisplayOrder.sorted(displayItems, order: displayOrder).map(\.id) == [d.id, b.id, c.id, a.id],
+                     "moving visible rows must leave hidden slots in place")
+        precondition(ListDisplayOrder.sorted(displayItems, order: Data()).map(\.id) == displayItems.map(\.id))
+        let duplicateOrder = try JSONEncoder().encode([c.id, c.id, a.id])
+        precondition(ListDisplayOrder.sorted(displayItems, order: duplicateOrder).map(\.id) == [c.id, a.id, b.id, d.id])
+        let stale = FilterList(name: "Deleted", url: URL(string: "https://example.com/deleted")!, category: .ads)
+        precondition(ListDisplayOrder.sorted(displayItems, order: ListDisplayOrder.saving([stale, d, a], in: displayItems)).map(\.id)
+                     == [d.id, b.id, c.id, a.id], "deleted rows must not corrupt saved ordering")
         func write(_ filter: FilterList, _ text: String) throws {
             try text.write(to: container.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: filter)), atomically: true, encoding: .utf8)
         }

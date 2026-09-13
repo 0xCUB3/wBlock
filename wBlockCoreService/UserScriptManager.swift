@@ -3213,7 +3213,7 @@ public class UserScriptManager: ObservableObject {
         origin: UserScriptMutationOrigin = .local
     ) async {
         guard let index = userScripts.firstIndex(where: { $0.id == userScript.id }) else { return }
-        guard !isDefaultUserScript(userScripts[index]), category.isUserScriptOnly else { return }
+        guard category.isUserScriptOnly else { return }
         guard userScripts[index].category != category else { return }
 
         userScripts[index].category = category

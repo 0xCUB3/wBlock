@@ -1,0 +1,134 @@
+import SwiftUI
+
+@MainActor
+final class ListDrag: ObservableObject {
+    static let type = "app.wblock.list-row"
+    @Published var id: UUID?
+    private var session = UUID()
+
+    func begin(_ id: UUID, cancel: @escaping @MainActor () -> Void = {}) -> NSItemProvider {
+        self.id = id
+        session = UUID()
+        let token = session
+        let provider = ListDragProvider()
+        provider.registerDataRepresentation(forTypeIdentifier: Self.type, visibility: .ownProcess) { completion in
+            completion(Data(id.uuidString.utf8), nil)
+            return nil
+        }
+        provider.onEnd = { [weak self] in
+            Task { @MainActor in
+                if self?.session == token, self?.id != nil { cancel(); self?.id = nil }
+            }
+        }
+        return provider
+    }
+}
+
+private final class ListDragProvider: NSItemProvider, @unchecked Sendable {
+    var onEnd: (@Sendable () -> Void)?
+    deinit { onEnd?() }
+}
+
+struct ListDrop: DropDelegate {
+    let drag: ListDrag
+    var hover: (UUID) -> Void = { _ in }
+    let commit: (UUID) -> Void
+
+    func validateDrop(info: DropInfo) -> Bool {
+        drag.id != nil && info.hasItemsConforming(to: [ListDrag.type])
+    }
+    func dropEntered(info: DropInfo) {
+        if validateDrop(info: info), let id = drag.id {
+            withAnimation(.easeInOut(duration: 0.18)) { hover(id) }
+        }
+    }
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: validateDrop(info: info) ? .move : .forbidden)
+    }
+    func performDrop(info: DropInfo) -> Bool {
+        guard validateDrop(info: info), let id = drag.id else { return false }
+        withAnimation(.easeInOut(duration: 0.18)) { commit(id) }
+        drag.id = nil
+        return true
+    }
+}
+
+struct ReorderableRows<Item: Identifiable, Row: View>: View where Item.ID == UUID {
+    let items: [Item]
+    let allItems: [Item]
+    @Binding var order: Data
+    @ObservedObject var drag: ListDrag
+    let commit: (UUID) -> Void
+    @ViewBuilder let row: (Item) -> Row
+
+    private func move(_ source: IndexSet, to destination: Int) {
+        var moved = items
+        moved.move(fromOffsets: source, toOffset: destination)
+        order = ListDisplayOrder.saving(moved, in: allItems)
+    }
+
+    var body: some View {
+        ForEach(items) { item in
+            row(item)
+                .onDrag {
+                    let original = order
+                    return drag.begin(item.id) { order = original }
+                }
+                .onDrop(of: [ListDrag.type], delegate: ListDrop(drag: drag, hover: { id in
+                    guard id != item.id,
+                          let source = items.firstIndex(where: { $0.id == id }),
+                          let target = items.firstIndex(where: { $0.id == item.id }) else { return }
+                    move(IndexSet(integer: source), to: target + (source < target ? 1 : 0))
+                }, commit: { id in
+                    if !items.contains(where: { $0.id == id }),
+                       let source = allItems.first(where: { $0.id == id }),
+                       let target = items.firstIndex(where: { $0.id == item.id }) {
+                        var moved = items
+                        moved.insert(source, at: target)
+                        order = ListDisplayOrder.saving(moved, in: allItems)
+                    }
+                    commit(id)
+                }))
+            #if os(macOS)
+            if item.id != items.last?.id { Divider().padding(.leading, 16) }
+            #endif
+        }
+        #if os(iOS)
+        .onMove { move($0, to: $1) }
+        #endif
+    }
+}
+
+struct ContentListSection<Header: View, Content: View>: View {
+    @ViewBuilder let header: () -> Header
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        #if os(iOS)
+        Section(content: content, header: header)
+        #else
+        VStack(alignment: .leading, spacing: 12) {
+            header().font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 4)
+            VStack(spacing: 0, content: content)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        }
+        #endif
+    }
+}
+
+struct ListCategoryHeader: View {
+    let title: LocalizedStringKey
+    let info: () -> Void
+    let drop: ListDrop
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(title).foregroundStyle(.primary).textCase(.none)
+            Button(action: info) { Image(systemName: "info.circle") }
+                .buttonStyle(.plain).noFocusRingCompat()
+                .foregroundStyle(.secondary).accessibilityLabel("Info")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+        .onDrop(of: [ListDrag.type], delegate: drop)
+    }
+}

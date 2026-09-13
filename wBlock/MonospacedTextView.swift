@@ -192,10 +192,21 @@ struct MonospacedTextView: NSViewRepresentable {
 #elseif os(iOS)
 import UIKit
 
+final class RulesDocumentTextView: UITextView {
+    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        if gestureRecognizer === panGestureRecognizer {
+            let velocity = panGestureRecognizer.velocity(in: self)
+            if abs(velocity.x) > abs(velocity.y), let outer = superview as? UIScrollView,
+               outer.contentSize.width > outer.bounds.width { return false }
+        }
+        return super.gestureRecognizerShouldBegin(gestureRecognizer)
+    }
+}
+
 /// The outer scroll view owns horizontal movement; UITextView owns vertical
 /// movement and lays out against a stable, finite document width.
 final class RulesDocumentScrollView: UIScrollView {
-    let textView = UITextView(frame: .zero, textContainer: nil)
+    let textView = RulesDocumentTextView(frame: .zero, textContainer: nil)
     var onViewportResize: (() -> Void)?
     private var document: String?
     private var wrapsLines = true
@@ -211,6 +222,14 @@ final class RulesDocumentScrollView: UIScrollView {
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        if gestureRecognizer === panGestureRecognizer {
+            let velocity = panGestureRecognizer.velocity(in: self)
+            guard !wrapsLines, abs(velocity.x) > abs(velocity.y) else { return false }
+        }
+        return super.gestureRecognizerShouldBegin(gestureRecognizer)
+    }
 
     func setDocument(_ text: String, wrapsLines: Bool) {
         let modeChanged = self.wrapsLines != wrapsLines

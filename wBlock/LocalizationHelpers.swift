@@ -27,8 +27,8 @@ enum LocalizedStrings {
     }
 }
 
-enum FilterDisplayOrder {
-    static func sorted(_ filters: [FilterList], order: Data) -> [FilterList] {
+enum ListDisplayOrder {
+    static func sorted<Item: Identifiable>(_ filters: [Item], order: Data) -> [Item] where Item.ID == UUID {
         let ids = (try? JSONDecoder().decode([UUID].self, from: order)) ?? []
         let ranks = Dictionary(ids.enumerated().map { ($0.element, $0.offset) }, uniquingKeysWith: min)
         return filters.sorted {
@@ -37,7 +37,7 @@ enum FilterDisplayOrder {
     }
 
     // Replace only visible slots so search and enabled-only moves leave hidden rows in place.
-    static func saving(_ moved: [FilterList], in filters: [FilterList]) -> Data {
+    static func saving<Item: Identifiable>(_ moved: [Item], in filters: [Item]) -> Data where Item.ID == UUID {
         let liveIDs = Set(filters.map(\.id))
         let moved = moved.filter { liveIDs.contains($0.id) }
         let movedIDs = Set(moved.map(\.id))
