@@ -1,23 +1,23 @@
-"Run on" = "Çalıştırılacak siteler";
-"All matching sites" = "Eşleşen tüm siteler";
+"Run on" = "Çalıştır";
+"All matching sites" = "Tüm eşleşen siteler";
 "Only selected sites" = "Yalnızca seçilen siteler";
-"Selected Sites" = "Seçilen Siteler";
-"No sites selected. This script will not run." = "Hiçbir site seçilmedi. Bu betik çalışmayacak.";
-"This script will not run on excluded sites, even if they are selected." = "Bu betik, seçilmiş olsalar bile hariç tutulan sitelerde çalışmaz.";
-"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "Siteler alt alan adlarını da kapsar. Betiğin kendi eşleştirme kuralları geçerli olmaya devam eder. Değişikliklerden sonra sayfayı yeniden yükleyin.";
+"Selected Sites" = "Seçilen siteler";
+"No sites selected. This script will not run." = "Hiçbir site seçilmedi. Bu betik çalıştırılmayacaktır.";
+"This script will not run on excluded sites, even if they are selected." = "Bu betik, seçilmiş olsalar bile hariç tutulan sitelerde çalıştırılmayacaktır.";
+"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "Siteler alt alan adlarını da kapsar. Betiğin kendi eşleşme kuralları geçerliliğini korur. Değişiklik yaptıktan sonra sayfayı yeniden yükleyin.";
 "Could not save site settings" = "Site ayarları kaydedilemedi";
-"SponsorBlock Backups" = "SponsorBlock Yedekleri";
-"Import SponsorBlock Settings" = "SponsorBlock Ayarlarını İçe Aktar";
-"Export SponsorBlock Settings" = "SponsorBlock Ayarlarını Dışa Aktar";
-"Transfers category choices, skip notices, minimum segment length, and legacy channel allowlists. Private user IDs, contributions, and per-channel profiles are excluded. Seek-bar-only categories become Disabled." = "Kategorileri, atlama bildirimlerini, minimum bölüm süresini ve eski izin verilen kanal listelerini aktarır. Özel kullanıcı kimlikleri, katkılar ve kanal profilleri hariç tutulur. Yalnızca ilerleme çubuğunda gösterilen kategoriler devre dışı bırakılır.";
-"Use Tube Cleaner 0.1.36 or later. Reload YouTube after importing; open a video before exporting settings changed in Safari." = "Tube Cleaner 0.1.36 veya üstünü kullanın. İçe aktardıktan sonra YouTube’u yenileyin; Safari’de değiştirilen ayarları dışa aktarmadan önce bir video açın.";
-"No synced SponsorBlock settings yet. Open YouTube with Tube Cleaner enabled, then try again." = "Henüz eşitlenmiş SponsorBlock ayarı yok. Tube Cleaner etkinken YouTube’u açıp tekrar deneyin.";
+"SponsorBlock Backups" = "SponsorBlock yedekleri";
+"Import SponsorBlock Settings" = "SponsorBlock ayarlarını içe aktar";
+"Export SponsorBlock Settings" = "SponsorBlock ayarlarını dışa aktar";
+"Transfers category choices, skip notices, minimum segment length, and legacy channel allowlists. Private user IDs, contributions, and per-channel profiles are excluded. Seek-bar-only categories become Disabled." = "Kategori seçimleri, atlama bildirimleri, en düşük segment uzunluğu ve eski kanal izin listelerini aktarır. Özel kullanıcı kimlikleri, katkılar ve kanal bazlı profiller hariç tutulur. Yalnızca ilerleme çubuğu kategorileri Devre Dışı bırakılır.";
+"Use Tube Cleaner 0.1.36 or later. Reload YouTube after importing; open a video before exporting settings changed in Safari." = "Tube Cleaner 0.1.36 veya sonraki bir sürümünü kullanın. İçe aktardıktan sonra YouTube'u yeniden yükleyin; Safari'de değiştirilen ayarları dışa aktarmadan önce bir video açın.";
+"No synced SponsorBlock settings yet. Open YouTube with Tube Cleaner enabled, then try again." = "Eşitlenmiş SponsorBlock ayarı yok. Tube Cleaner etkin durumdayken YouTube'u açın ve tekrar deneyin.";
 "Replace SponsorBlock settings?" = "SponsorBlock ayarları değiştirilsin mi?";
-"Settings imported. Reload YouTube to apply them." = "Ayarlar içe aktarıldı. Uygulamak için YouTube’u yenileyin.";
-"Could not transfer SponsorBlock settings. Use a valid settings JSON file and check available storage." = "SponsorBlock ayarları aktarılamadı. Geçerli bir ayar JSON dosyası kullanın ve kullanılabilir depolama alanını kontrol edin.";
+"Settings imported. Reload YouTube to apply them." = "Ayarlar içe aktarıldı. Uygulamak için YouTube'u yeniden yükleyin.";
+"Could not transfer SponsorBlock settings. Use a valid settings JSON file and check available storage." = "SponsorBlock ayarları aktarılamadı. Geçerli bir ayarlar JSON dosyası kullanın ve mevcut depolama alanını kontrol edin.";
 " · Last success: %@" = " · Son başarılı: %@";
 " · Scheduled: %@" = " · Planlandı: %@";
-"!#include fetch failed" = "!#include alma başarısız";
+"!#include fetch failed" = "!#include alınamadı";
 "%@ %@" = "%@ %@";
 "%@ %@, %@" = "%@ %@, %@";
 "%@ entries" = "%@ girdi";
@@ -28,9 +28,9 @@
 "%d entries" = "%d girdi";
 "%d rule" = "%d kural";
 "%d rules" = "%d kural";
-"%d script off" = "%d betik devre dışı";
+"%d script off" = "%d betik kapalı";
 "%d script update(s) failed" = "%d betik güncellenemedi";
-"%d scripts off" = "%d betik devre dışı";
+"%d scripts off" = "%d betik kapalı";
 "%d update(s) available" = "%d güncelleme mevcut";
 "%d update(s) found" = "%d güncelleme bulundu";
 "%d userscripts selected" = "%d kullanıcı betiği seçildi";
@@ -166,7 +166,7 @@
 "Background Diagnostics" = "Arka plan görevleri";
 "Background Update Agent" = "Arka Plan Güncelleme Aracısı";
 "Backup" = "Yedek";
-"Local Backup" = "Yerel Yedek";
+"Local Backup" = "Yerel yedekleme";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@ yedeklemesi (uygulama sürümü: %@, filtreler: %@). Bu işlem; mevcut filtre seçimlerinizi, izin listenizi ve öğe gizleyici kurallarınızı değiştirecektir.";
 "Balanced defaults." = "Dengeli ayarlar.";
 "Base filter only." = "Yalnızca temel filtreler.";
@@ -353,7 +353,7 @@
 "Expired %@" = "%@ süresi doldu";
 "Export" = "Dışa aktar";
 "Export failed: %@" = "Dışa aktarılamadı: %@";
-"The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "Yerel filtre listesi “%@” içeriğine erişilemiyor. Listeyi asıl cihazda kurtarın ve yeni bir yedek oluşturun.";
+"The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "\"%@\" yerel filtre listesinin içeriği kullanılamıyor. Listeyi orijinal cihazda kurtarın ve yeni bir yedek oluşturun.";
 "Export Settings" = "Ayarları dışa aktar";
 "Extension Slots" = "Genişletme Modülleri";
 "Extensions" = "Genişletmeler";
@@ -385,7 +385,7 @@
 "Failed to read local content for rule counting" = "Kural sayımı için yerel içerik okunamadı";
 "Failed to reload %@." = "%@ yeniden yüklenemedi.";
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "Safari'de %@ kapatıldı. Uygulanan kuralları yüklemek için Safari ayarlarından etkinleştirin.";
-"%d URL parameter rules were dropped: Safari allows at most %d." = "%d URL parametresi kuralı atıldı: Safari en fazla %d kurala izin verir.";
+"%d URL parameter rules were dropped: Safari allows at most %d." = "%d URL parametre kuralı yoksayıldı: Safari en fazla %d tanesine izin verir.";
 "Skipped reload for extensions turned off in Safari" = "Safari'de kapatılan genişletmeler için yeniden yükleme atlandı";
 "wBlock launched" = "wBlock başlatıldı";
 "Failed to reload content blocker" = "İçerik engelleyici yeniden yüklenemedi";
@@ -467,7 +467,7 @@
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud Eşitlemesi geçici olarak kullanılamıyor. Lütfen birazdan tekrar deneyin.";
 "iCloud Sync needs an active iCloud account on this device." = "iCloud Eşitlemesi için bu cihazda aktif bir iCloud hesabı gereklidir.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "wBlock'u uygulanmamış değişikliklerle kapatırsanız, hiçbir şeyin unutulmaması için size bir hatırlatma göndereceğiz.";
-"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Özel Dolaşma kullanıyorsanız, wBlock Scripts ve 5 içerik engelleyici için Özel Dolaşmada İzin Ver seçeneğini de etkinleştirin. Bu ayar olmadan çerez bildirimleri ve diğer betikler Gizli pencerelerde çalışmaz.";
+"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Özel Dolaşma kullanıyorsanız, wBlock Scripts ve 5 içerik engelleyici için Özel Dolaşmada İzin Ver seçeneğini de etkinleştirin. Bu ayar olmadan çerez bildirimleri ve diğer scriptlet'ler Gizli pencerelerde çalışmaz.";
 "Ignoring invalid filter response" = "Geçersiz filtre yanıtı yok sayılıyor";
 "Import" = "İçe aktar";
 "Import Failed" = "İçe aktarılamadı";
@@ -515,7 +515,7 @@
 "Logs" = "Günlükler";
 "Logs cleared" = "Günlükler temizlendi";
 "Logs will appear here as the app runs" = "Uygulama çalıştıkça günlük kayıtları burada görünecektir";
-"Content will be checked when you tap Add." = "Ekle’ye dokunduğunuzda içerik kontrol edilecek.";
+"Content will be checked when you tap Add." = "İçerik, Ekle öğesine dokunduğunuzda kontrol edilecektir.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "büyük/küçük harf";
 "Migrated custom filter filename" = "Özel filtre dosya adı taşındı";
@@ -1040,7 +1040,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Replace Thumbnails" = "Kapakları değiştir";
 "Random Frame When No Thumbnail" = "Kapak resmi yoksa rastgele kare";
 "Show Original on Hover" = "Üzerine gelince orijinali göster";
-"About DeArrow" = "DeArrow Hakkında";
+"About DeArrow" = "DeArrow hakkında";
 "Donate to DeArrow" = "DeArrow'a bağış yap";
 "DeArrow: On" = "DeArrow: Açık";
 "DeArrow: Off" = "DeArrow: Kapalı";
@@ -1061,7 +1061,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Chapters" = "Bölümler";
 "Captions in Native Player" = "Yerel oynatıcıda altyazılar";
 "Picture in Picture" = "Resim içinde resim";
-"Automatic Picture in Picture" = "Otomatik Resim İçinde Resim";
+"Automatic Picture in Picture" = "Otomatik resim içinde resim";
 "Background Playback" = "Arkaplanda oynatma";
 "SponsorBlock" = "SponsorBlock";
 "Resume Where You Left Off" = "Kaldığın yerden sürdür";
@@ -1083,8 +1083,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 "Site Actions" = "Site eylemleri";
 
-"Pause All Components" = "Tüm Bileşenleri Duraklat";
-"Pause all components at once, or pause them individually." = "Tüm bileşenleri aynı anda veya ayrı ayrı duraklatın.";
+"Pause All Components" = "Tüm bileşenleri duraklat";
+"Pause all components at once, or pause them individually." = "Tüm bileşenleri aynı anda duraklatın veya ayrı ayrı duraklatın.";
 
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "YouTube başlıklarını ve kapak resimlerini topluluk tarafından gönderilen DeArrow alternatifleriyle değiştirir.";
 
@@ -1110,37 +1110,47 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 "Operation details" = "İşlem detayları";
 
-/* Native name; keep in Montenegrin in every display language. */
 "crnogorski" = "crnogorski";
 
 "URL entry mode" = "URL giriş modu";
+
 "Single URL" = "Tek URL";
+
 "Bulk URLs" = "Toplu URL";
-"Enter URLs to edit each list’s name and description." = "Her listenin adını ve açıklamasını düzenlemek için URL girin.";
-"Names and descriptions" = "Adlar ve açıklamalar";
-"Paste URL" = "URL yapıştır";
-"Paste URLs" = "URL'leri yapıştır";
-"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "Eklenen siteler filtre listelerini ve scriptletleri atlar. Kullanıcı betiklerinin ayrı anahtarları vardır.";
+
+"Enter URLs to edit each list’s name and description." = "Her listenin adını ve açıklamasını düzenlemek için URL'leri girin.";
+
+"Names and descriptions" = "Ad ve açıklama";
+
+"Paste URL" = "URL'yi yapıştırın";
+
+"Paste URLs" = "URL'leri yapıştırın";
+
+"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "Eklenen siteler; filtre listelerini ve scriptlet'leri atlar. Kullanıcı betiklerinin ayarları ayrıdır.";
+
 "Enable on this site" = "Bu sitede etkinleştir";
-"Unavailable while this site is disabled." = "Bu site devre dışıyken kullanılamaz.";
-"Applies filter lists and scriptlets. Userscripts have separate switches." = "Filtre listelerini ve scriptletleri uygular. Kullanıcı betiklerinin ayrı anahtarları vardır.";
-"Not provided" = "Sağlanmadı";
 
-"%@ submitted at last apply" = "son uygulamada %@ gönderildi";
+"Unavailable while this site is disabled." = "Bu site devre dışı bırakıldığında kullanılamaz.";
 
-"Submitted at last apply" = "Son uygulamada gönderilen";
+"Applies filter lists and scriptlets. Userscripts have separate switches." = "Filtre listelerini ve scriptlet'leri uygular. Kullanıcı betiklerinin ayarları ayrıdır.";
 
-"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Son uygulamada dönüştürücüye gönderilen kaynak kurallar; Safari’nin son kural sayısı değil.";
+"Not provided" = "Belirtilmedi";
+
+"%@ submitted at last apply" = "%@ son uygulamada gönderildi";
+
+"Submitted at last apply" = "Son uygulamada gönderildi";
+
+"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Safari'nin son kural sayısı değil, son uygulamada dönüştürücüye gönderilen kaynak kurallardır.";
 "Failed to persist pending filter update revision" = "Bekleyen filtre güncellemesi kaydedilemedi";
 
-"Paste non-empty plain text and review it before adding." = "Boş olmayan düz metin yapıştırın ve eklemeden önce inceleyin.";
+"Paste non-empty plain text and review it before adding." = "Boş olmayan düz metin yapıştırın ve eklemeden önce gözden geçirin.";
 
-"Choose a non-empty text file and review it before adding." = "Boş olmayan bir metin dosyası seçin ve eklemeden önce inceleyin.";
+"Choose a non-empty text file and review it before adding." = "Boş olmayan bir metin dosyası seçin ve eklemeden önce gözden geçirin.";
 
 /* Filter update reliability */
-"A wBlock filter update is already in progress." = "Bir wBlock filtre güncellemesi zaten devam ediyor.";
+"A wBlock filter update is already in progress." = "Devam eden bir wBlock filtre güncellemesi var.";
 "wBlock filter update completed." = "wBlock filtre güncellemesi tamamlandı.";
 "wBlock filter update completed with errors." = "wBlock filtre güncellemesi hatalarla tamamlandı.";
 "Shared update status is unavailable." = "Paylaşılan güncelleme durumu kullanılamıyor.";
-"Shared update status lock is unavailable." = "Paylaşılan güncelleme durumu kilidi kullanılamıyor.";
-"%@ dropped %d rules at Safari's per-extension limit." = "%@, Safari’nin uzantı başına sınırı nedeniyle %d kuralı çıkardı.";
+"Shared update status lock is unavailable." = "Paylaşılan güncelleme durumu kilidine ulaşılamıyor.";
+"%@ dropped %d rules at Safari's per-extension limit." = "%@, Safari'nin genişletme başına kural sınırı nedeniyle %d kuralı yoksaydı.";
