@@ -29,6 +29,7 @@ struct ContentView: View {
     @State private var downloadedFilterIDs: Set<UUID> = []
     @State private var showingFilterDownloadError = false
     @AppStorage("filtersShowEnabledOnly") private var showOnlyEnabledLists = false
+    @AppStorage("filterDisplayOrder") private var filterDisplayOrder = Data()
     @State private var filterSearchText = ""
     @State private var showFilterSearch = false
     @State private var editingCustomFilter: FilterList?
@@ -83,37 +84,20 @@ struct ContentView: View {
         hasAppliedFilters && appliedSafariRulesCount >= totalSafariRuleCapacity
     }
 
-    private var displayableCategories: [FilterListCategory] {
-        FilterListCategory.allCases.filter { $0 != .all && !$0.isUserScriptOnly }
-    }
-
     private var applyChangesSymbolName: String {
         "arrow.triangle.2.circlepath"
     }
 
-    /// Pre-computed filters grouped by category to avoid O(n²) filtering in ForEach
     private var categorizedFilters: [(category: FilterListCategory, filters: [FilterList])] {
-        let allFilters = filterManager.filterLists
         let query = filterSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        var result: [(category: FilterListCategory, filters: [FilterList])] = []
-
-        for category in displayableCategories {
-            let filters = allFilters.filter {
-                $0.category == category && (!showOnlyEnabledLists || $0.isSelected)
-            }
-            let searched = query.isEmpty
-                ? filters
-                : filters.filter { filter in
-                    filter.localizedDisplayName.localizedCaseInsensitiveContains(query)
-                        || filter.localizedDisplayDescription.localizedCaseInsensitiveContains(query)
-                        || filter.url.absoluteString.localizedCaseInsensitiveContains(query)
-                }
-            if !searched.isEmpty {
-                result.append((category: category, filters: searched))
-            }
-        }
-
-        return result
+        let groups = Dictionary(grouping: orderedFilters.filter { filter in
+            (!showOnlyEnabledLists || filter.isSelected) && (query.isEmpty
+                || filter.localizedDisplayName.localizedCaseInsensitiveContains(query)
+                || filter.localizedDisplayDescription.localizedCaseInsensitiveContains(query)
+                || filter.url.absoluteString.localizedCaseInsensitiveContains(query))
+        }, by: \.category)
+        return FilterListCategory.allCases.filter { $0 != .all && !$0.isUserScriptOnly }
+            .compactMap { category in groups[category].map { (category: category, filters: $0) } }
     }
 
     /// Invisible zero-size buttons that surface hardware-keyboard shortcuts.
@@ -507,45 +491,18 @@ struct ContentView: View {
             ForEach(categorizedFilters, id: \.category) { item in
                 if item.category == .foreign {
                     Section {
-                        HStack(spacing: 0) {
-                            Button {
-                                withAnimation { isForeignFiltersExpanded.toggle() }
-                            } label: {
-                                HStack {
-                                    Image(systemName: isForeignFiltersExpanded ? "chevron.down" : "chevron.right")
-                                        .font(.caption.weight(.semibold))
-                                        .frame(width: 16)
-                                    Text(item.category.localizedName)
-                                    Spacer()
-                                }
-                                .frame(minHeight: 44)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            Button {
-                                selectedCategoryInfo = item.category
-                            } label: {
-                                Image(systemName: "info.circle")
-                                    .frame(width: 44, height: 44)
-                            }
-                            .buttonStyle(.plain)
-                            .foregroundStyle(.secondary)
-                            .accessibilityLabel("Info")
-                        }
-                        if isForeignFiltersExpanded {
+                        DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
                             ForEach(ForeignFilterOrganizer.groups(for: item.filters)) { group in
                                 foreignFilterGroupHeader(group.title)
-                                ForEach(group.filters) { filter in
-                                    filterRowView(for: filter, showsFlags: false)
-                                }
+                                filterRows(group.filters, showsFlags: false)
                             }
+                        } label: {
+                            categoryHeader(item.category)
                         }
                     }
                 } else {
                     Section {
-                        ForEach(item.filters) { filter in
-                            filterRowView(for: filter)
-                        }
+                        filterRows(item.filters)
                     } header: {
                         categoryHeader(item.category)
                     }
@@ -826,6 +783,50 @@ struct ContentView: View {
         }
     }
 
+    private var orderedFilters: [FilterList] {
+        let filters = filterManager.filterLists
+        return FilterDisplayOrder.sorted(
+            filters.filter { $0.category != .foreign }
+                + ForeignFilterOrganizer.sortedFilters(filters.filter { $0.category == .foreign }),
+            order: filterDisplayOrder)
+    }
+
+    private func moveFilters(_ filters: [FilterList], from source: IndexSet, to destination: Int) {
+        var moved = filters
+        moved.move(fromOffsets: source, toOffset: destination)
+        filterDisplayOrder = FilterDisplayOrder.saving(moved, in: orderedFilters)
+    }
+
+    private func filterRows(_ filters: [FilterList], showsFlags: Bool = true) -> some View {
+        let filters = FilterDisplayOrder.sorted(filters, order: filterDisplayOrder)
+        return ForEach(filters) { filter in
+            filterRowView(for: filter, showsFlags: showsFlags)
+                #if os(macOS)
+                .onDrag { NSItemProvider(object: filter.id.uuidString as NSString) }
+                .onDrop(of: [.text], isTargeted: nil) { providers in
+                    guard let provider = providers.first else { return false }
+                    _ = provider.loadObject(ofClass: NSString.self) { value, _ in
+                        guard let value = value as? String else { return }
+                        DispatchQueue.main.async {
+                            guard let source = filters.firstIndex(where: { $0.id.uuidString == value }),
+                                  let target = filters.firstIndex(where: { $0.id == filter.id }) else { return }
+                            moveFilters(filters, from: IndexSet(integer: source), to: target + (source < target ? 1 : 0))
+                        }
+                    }
+                    return true
+                }
+                #endif
+            #if os(macOS)
+            if filter.id != filters.last?.id {
+                Divider().padding(.leading, 16)
+            }
+            #endif
+        }
+        #if os(iOS)
+        .onMove { moveFilters(filters, from: $0, to: $1) }
+        #endif
+    }
+
     private func filterRowView(for filter: FilterList, showsFlags: Bool = true) -> some View {
         FilterRowView(
             filter: filter,
@@ -850,22 +851,13 @@ struct ContentView: View {
     #if os(macOS)
     private func macOSFilterSectionView(category: FilterListCategory, filters: [FilterList]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                categoryHeader(category)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                Spacer()
-            }
-            .padding(.horizontal, 4)
+            categoryHeader(category)
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 4)
 
             VStack(spacing: 0) {
-                ForEach(filters) { filter in
-                    filterRowView(for: filter)
-                    if filter.id != filters.last?.id {
-                        Divider()
-                            .padding(.leading, 16)
-                    }
-                }
+                filterRows(filters)
             }
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         }
@@ -876,23 +868,11 @@ struct ContentView: View {
             DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
                 VStack(spacing: 0) {
                     ForEach(ForeignFilterOrganizer.groups(for: filters)) { group in
-                        HStack {
-                            Text(group.title)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                                .textCase(.uppercase)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-
-                        ForEach(group.filters) { filter in
-                            filterRowView(for: filter, showsFlags: false)
-                            if filter.id != group.filters.last?.id {
-                                Divider()
-                                    .padding(.leading, 16)
-                            }
-                        }
+                        foreignFilterGroupHeader(group.title)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                        filterRows(group.filters, showsFlags: false)
                     }
                 }
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
@@ -962,12 +942,7 @@ struct FilterRowView: View {
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { onInfo() }
                 .contentShape(.interaction, Rectangle())
-                .onTapGesture {
-                    // Defer to avoid race with context menu dismissal on iOS
-                    DispatchQueue.main.async {
-                        onInfo()
-                    }
-                }
+                .onTapGesture(perform: onInfo)
             if filter.isRemoteURL && (isDownloading || !isDownloaded) {
                 ContentDownloadControl(
                     isDownloaded: isDownloaded, isDownloading: isDownloading,
@@ -989,12 +964,16 @@ struct FilterRowView: View {
             )
             .labelsHidden()
             .toggleStyle(.switch)
-            .frame(alignment: .center)
-        }
-        .contextMenu {
-            contextMenuItems
+            #if os(iOS)
+            Menu { contextMenuItems } label: {
+                Label("Actions", systemImage: "ellipsis")
+                    .labelStyle(.iconOnly)
+                    .frame(minWidth: 44, minHeight: 44)
+            }
+            #endif
         }
         #if os(macOS)
+        .contextMenu { contextMenuItems }
         .padding(16)
         #endif
     }
