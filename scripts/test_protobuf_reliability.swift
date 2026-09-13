@@ -61,6 +61,14 @@ struct ProtobufReliabilityTests {
         expect(recovered.url == url && recovered.isInlineUserList, "recover previously rejected local addresses")
         expect(!recovered.isSelected, "recovery must not enable a disabled list")
 
+        let builtIn = FilterList(name: "Built-in", url: URL(string: "https://example.com/builtin.txt")!, category: .custom)
+        let movedSaved = await manager.updateFilterLists([filter, builtIn])
+        expect(movedSaved, "category move must persist")
+        manager = await makeManager(root: root, standard: defaults, group: defaults)
+        await manager.loadData()
+        let moved = manager.getFilterLists().first { $0.id == builtIn.id }!
+        expect(moved.category == .custom && !moved.isCustom, "Custom placement must not change built-in ownership")
+
         for raw in ["", "not a URL", "https:///", "ftp://example.com/filter.txt", "wblock://other/123"] {
             let rejected = PersistedFilterURL.resolve(raw)
             expect(!rejected.isUsable, "unsupported addresses must stay disabled")

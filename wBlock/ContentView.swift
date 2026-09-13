@@ -97,10 +97,10 @@ struct ContentView: View {
                 || filter.localizedDisplayDescription.localizedCaseInsensitiveContains(query)
                 || filter.url.absoluteString.localizedCaseInsensitiveContains(query))
         }, by: \.category)
-        return FilterListCategory.allCases.filter { $0 != .all && $0 != .scripts && !$0.isUserScriptOnly }
+        return FilterListCategory.allCases.filter { $0 != .all && !$0.isUserScriptOnly }
             .compactMap { category in
                 guard let filters = groups[category] else {
-                    return filterDrag.id == nil ? nil : (category: category, filters: [])
+                    return filterDrag.id == nil || category == .scripts ? nil : (category: category, filters: [])
                 }
                 return (category: category, filters: filters)
             }

@@ -123,7 +123,7 @@ extension ProtobufDataManager {
         return appData.filterLists.map { protoData in
             let storedURL = PersistedFilterURL.resolve(protoData.url)
             let category = mapProtoToFilterListCategory(protoData.category)
-            let isCustom = normalizedCustomStatus(for: protoData, category: category)
+            let isCustom = normalizedCustomStatus(for: protoData)
 
             return FilterList(
                 id: StableRecordIdentifier.uuid(rawValue: protoData.id, namespace: "filter", source: protoData.url.isEmpty ? protoData.name : protoData.url),
@@ -396,36 +396,15 @@ extension ProtobufDataManager {
     }
     
     // MARK: - Helper Methods
-    private func normalizedCustomStatus(
-        for protoData: Wblock_Data_FilterListData,
-        category: FilterListCategory? = nil
-    ) -> Bool {
-        if protoData.isCustom {
-            return true
-        }
-
-        let resolvedCategory = category ?? mapProtoToFilterListCategory(protoData.category)
-        if resolvedCategory == .custom {
-            return true
-        }
-
-        if isInlineUserListURL(protoData.url) {
-            return true
-        }
-
-        return hasLegacyCustomDescription(protoData.description_p)
+    private func normalizedCustomStatus(for protoData: Wblock_Data_FilterListData) -> Bool {
+        // Current saves include metadata flags and explicit ownership. Only legacy
+        // records infer ownership from a category that the user can now change.
+        protoData.isCustom || (!protoData.hasUserProvidedName && protoData.category == .custom)
+            || isInlineUserListURL(protoData.url) || hasLegacyCustomDescription(protoData.description_p)
     }
 
     private func shouldPersistCustomFlag(for filter: FilterList) -> Bool {
-        if filter.isCustom || filter.category == .custom {
-            return true
-        }
-
-        if isInlineUserListURL(filter.url.absoluteString) {
-            return true
-        }
-
-        return hasLegacyCustomDescription(filter.description)
+        filter.isCustom || isInlineUserListURL(filter.url.absoluteString) || hasLegacyCustomDescription(filter.description)
     }
 
     private func isInlineUserListURL(_ urlString: String) -> Bool {
