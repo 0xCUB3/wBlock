@@ -1173,81 +1173,22 @@ public class UserScriptManager: ObservableObject {
         for directory in scriptsDirectoryURLs() { try? FileManager.default.removeItem(at: compiledStyleURL(scriptID: scriptID, directory: directory)) }
     }
 
-    /// Read userscript content off the main thread
+    /// Shared source is authoritative; private files are legacy fallbacks only.
     nonisolated private static func readUserScriptContentOffMain(_ userScript: UserScript) -> String? {
-        // Try fallback directory first
-        if let fallbackURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("wBlock").appendingPathComponent("userscripts")
-        {
-            let fileURL = fallbackURL.appendingPathComponent("\(userScript.id.uuidString).user.js")
-            if FileManager.default.fileExists(atPath: fileURL.path),
-                let content = try? String(contentsOf: fileURL, encoding: .utf8)
-            {
-                if let groupURL = FileManager.default.containerURL(
-                    forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
-                )?.appendingPathComponent("userscripts") {
-                    let destURL = groupURL.appendingPathComponent(fileURL.lastPathComponent)
-                    try? FileManager.default.copyItem(at: fileURL, to: destURL)
-                }
-                return content
-            }
-        }
-
-        // Then try group directory
-        if let groupURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
-        )?.appendingPathComponent("userscripts") {
-            let fileURL = groupURL.appendingPathComponent("\(userScript.id.uuidString).user.js")
-            if FileManager.default.fileExists(atPath: fileURL.path),
-                let content = try? String(contentsOf: fileURL, encoding: .utf8)
-            {
-                return content
-            }
-        }
-        return nil
+        UserScriptFileStorage.read(
+            fileName: "\(userScript.id.uuidString).user.js",
+            directories: scriptsDirectoryURLs()
+        ) { String(data: $0, encoding: .utf8) }
     }
 
-    /// Read cached userscript resources off the main thread
+    /// Resources must follow the same shared-first ordering as their script.
     nonisolated private static func readUserScriptResourcesOffMain(
         _ userScript: UserScript
     ) -> [String: String]? {
-        let fileName = "\(userScript.id.uuidString).resources.json"
-
-        // Try fallback directory first (files may exist here initially)
-        if let fallbackURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("wBlock").appendingPathComponent("userscripts")
-        {
-            let fileURL = fallbackURL.appendingPathComponent(fileName)
-            if FileManager.default.fileExists(atPath: fileURL.path),
-                let data = try? Data(contentsOf: fileURL),
-                let decoded = try? JSONDecoder().decode([String: String].self, from: data)
-            {
-                if let groupURL = FileManager.default.containerURL(
-                    forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
-                )?.appendingPathComponent("userscripts") {
-                    let destURL = groupURL.appendingPathComponent(fileURL.lastPathComponent)
-                    if !FileManager.default.fileExists(atPath: destURL.path) {
-                        try? FileManager.default.copyItem(at: fileURL, to: destURL)
-                    }
-                }
-                return decoded
-            }
-        }
-
-        // Then try group directory
-        if let groupURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
-        )?.appendingPathComponent("userscripts") {
-            let fileURL = groupURL.appendingPathComponent(fileName)
-            if FileManager.default.fileExists(atPath: fileURL.path),
-                let data = try? Data(contentsOf: fileURL),
-                let decoded = try? JSONDecoder().decode([String: String].self, from: data)
-            {
-                return decoded
-            }
-        }
-
-        return nil
+        UserScriptFileStorage.read(
+            fileName: "\(userScript.id.uuidString).resources.json",
+            directories: scriptsDirectoryURLs()
+        ) { try? JSONDecoder().decode([String: String].self, from: $0) }
     }
 
     private func areUserScriptsEqual(_ scripts1: [UserScript], _ scripts2: [UserScript]) -> Bool {

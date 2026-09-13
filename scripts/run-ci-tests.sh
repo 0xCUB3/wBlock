@@ -262,6 +262,10 @@ compile_and_run userscript-content-validation \
   wBlockCoreService/UserScriptContentValidation.swift \
   scripts/test_userscript_content_validation.swift
 
+compile_and_run userscript-file-storage \
+  wBlockCoreService/UserScriptFileStorage.swift \
+  scripts/test_userscript_file_storage.swift
+
 compile_and_run filter-diff \
   wBlockCoreService/FilterDiffUpdater.swift \
   scripts/test_filter_diff_updater.swift

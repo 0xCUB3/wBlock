@@ -197,7 +197,7 @@
 "Blocks cookie consent notices on web pages." = "Bloque les avis de consentement aux cookies sur les pages Web.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Bloque divers éléments irritants non couverts par d’autres filtres.";
 "Blocks online tracking and web analytics systems." = "Bloque les systèmes de suivi en ligne et d’analyse Web.";
-"Blocks paywall-related elements. Enable the corresponding userscript for best results." = "Bloque les éléments liés au paywall. Activez le script utilisateur correspondant pour de meilleurs résultats.";
+"Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari ne peut pas appliquer les règles inline-script de cette liste. Activez Bypass Paywalls Clean dans Scripts utilisateur pour les sites anglophones pris en charge.";
 "Blocks pop-up ads on web pages." = "Bloque les publicités pop-up sur les pages web.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Bloque les fenêtres contextuelles promotionnelles, les inscriptions à la newsletter et les demandes de notification.";
 "Blocks social media content on webpages." = "Bloque le contenu des réseaux sociaux sur les pages Web.";

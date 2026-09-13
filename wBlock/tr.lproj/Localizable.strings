@@ -197,7 +197,7 @@
 "Blocks cookie consent notices on web pages." = "Web sayfalarındaki çerez onay bildirimlerini engeller.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Diğer filtrelerin kapsamadığı çeşitli rahatsız edici öğeleri engeller.";
 "Blocks online tracking and web analytics systems." = "Çevrim içi izleme ve web analitik sistemlerini engeller.";
-"Blocks paywall-related elements. Enable the corresponding userscript for best results." = "Ödeme duvarı (paywall) ile ilgili öğeleri engeller. En iyi sonuçlar için ilgili kullanıcı betiğini etkinleştirin.";
+"Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari bu listenin inline-script kurallarını uygulayamaz. Desteklenen İngilizce siteler için Kullanıcı Betikleri bölümünde Bypass Paywalls Clean'i etkinleştirin.";
 "Blocks pop-up ads on web pages." = "Web sayfalarındaki açılır reklamları engeller.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Tanıtım amaçlı açılır pencereleri, bülten kayıtlarını ve bildirim isteklerini engeller.";
 "Blocks social media content on webpages." = "Web sayfalarındaki sosyal medya içeriklerini engeller.";

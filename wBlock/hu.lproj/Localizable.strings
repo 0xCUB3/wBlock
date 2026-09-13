@@ -197,7 +197,7 @@
 "Blocks cookie consent notices on web pages." = "Letiltja a cookie-k engedélyezésére vonatkozó értesítéseket a weboldalakon.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Blokkolja a különféle irritáló elemeket, amelyeket más szűrők nem fednek le.";
 "Blocks online tracking and web analytics systems." = "Blokkolja az online nyomkövető és webelemző rendszereket.";
-"Blocks paywall-related elements. Enable the corresponding userscript for best results." = "Blokkolja a fizetőfallal kapcsolatos elemeket. A legjobb eredmény érdekében engedélyezze a megfelelő felhasználói szkriptet.";
+"Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "A Safari nem tudja alkalmazni a lista inline-script szabályait. A támogatott angol nyelvű webhelyekhez engedélyezd a Bypass Paywalls Clean szkriptet a felhasználói szkriptek között.";
 "Blocks pop-up ads on web pages." = "Blokkolja a felugró hirdetéseket a weboldalakon.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Letiltja a promóciós előugró ablakokat, a hírlevélre való feliratkozást és az értesítési kéréseket.";
 "Blocks social media content on webpages." = "Letiltja a közösségi média tartalmat a weboldalakon.";

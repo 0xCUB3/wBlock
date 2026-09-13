@@ -353,7 +353,7 @@ class FilterListLoader {
                         "https://pub-d303b9085c0b41b5aa749fc74609d4d9.r2.dev/bpc-paywall-filter.txt"
                 )!, category: FilterListCategory.annoyances,
                 description:
-                    "Blocks paywall-related elements. Enable the corresponding userscript for best results."
+                    "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites."
             ),
             FilterList(
                 id: UUID(), name: "AdGuard Experimental Filter",

@@ -197,7 +197,7 @@
 "Blocks cookie consent notices on web pages." = "Web ページ上の Cookie 同意通知をブロックします。";
 "Blocks miscellaneous irritating elements not covered by other filters." = "他のフィルターではカバーできないさまざまな刺激的な要素をブロックします。";
 "Blocks online tracking and web analytics systems." = "オンライン追跡システムと Web 分析システムをブロックします。";
-"Blocks paywall-related elements. Enable the corresponding userscript for best results." = "ペイウォール関連の要素をブロックします。最良の結果を得るには、対応するユーザースクリプトを有効にしてください。";
+"Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari はこのリストの inline-script ルールを適用できません。対応する英語サイトでは、ユーザースクリプトで Bypass Paywalls Clean を有効にしてください。";
 "Blocks pop-up ads on web pages." = "Webページ上のポップアップ広告をブロックします。";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "プロモーションのポップアップ、ニュースレターの登録、通知リクエストをブロックします。";
 "Blocks social media content on webpages." = "Web ページ上のソーシャル メディア コンテンツをブロックします。";
