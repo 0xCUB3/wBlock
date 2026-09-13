@@ -403,7 +403,7 @@ struct SettingsView: View {
         }
         #if os(macOS)
         .buttonStyle(.link)
-        .popover(isPresented: $showingRuleCapacity, arrowEdge: .leading) {
+        .modalPopover(isPresented: $showingRuleCapacity, arrowEdge: .leading) {
             RuleCapacityPopoverView(filterManager: filterManager)
         }
         #else

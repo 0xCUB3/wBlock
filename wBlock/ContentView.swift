@@ -672,7 +672,7 @@ struct ContentView: View {
             .buttonStyle(.plain)
             .noFocusRingCompat()
             #if os(macOS)
-            .popover(isPresented: $showingCapacityPopover, arrowEdge: .top) {
+            .modalPopover(isPresented: $showingCapacityPopover, arrowEdge: .top) {
                 RuleCapacityPopoverView(filterManager: filterManager)
             }
             #else
@@ -695,7 +695,7 @@ struct ContentView: View {
 
     private func categoryHeader(_ category: FilterListCategory) -> some View {
         ListCategoryHeader(title: LocalizedStringKey(category.rawValue), info: { selectedCategoryInfo = category },
-                           drop: ListDrop(drag: filterDrag) { moveFilter($0, to: category) })
+                           drop: ListDrop(drag: filterDrag) { moveFilter($0, to: category) }, anchorID: category.id)
     }
 
     private func defaultFilterNames(for category: FilterListCategory) -> [String] {
@@ -949,6 +949,7 @@ struct FilterRowView: View {
                         Text(flags)
                     }
                     Text(filter.localizedDisplayName)
+                        .infoPopoverAnchor(filter.id)
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)

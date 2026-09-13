@@ -636,7 +636,7 @@ struct UserScriptManagerView: View {
 
     private func displaySectionHeader(_ section: UserScriptDisplaySection) -> some View {
         ListCategoryHeader(title: section.title, info: { selectedCategoryInfo = section.id },
-                           drop: ListDrop(drag: scriptDrag) { moveScript($0, to: section.id) })
+                           drop: ListDrop(drag: scriptDrag) { moveScript($0, to: section.id) }, anchorID: section.id.id)
     }
 
     private func defaultScriptNames(for category: UserScriptDisplayCategory) -> [String] {
@@ -747,6 +747,7 @@ struct UserScriptManagerView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(script.localizedDisplayName)
+                        .infoPopoverAnchor(script.id)
                         .font(.body)
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)

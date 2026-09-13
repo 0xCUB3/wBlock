@@ -67,7 +67,9 @@ compile_direct_test() {
   "$TMP/$name"
 }
 
-# Standalone Foundation tests.
+# Standalone Foundation and AppKit tests.
+compile_direct_test popover-window-shield \
+  wBlock/InfoPresentation.swift scripts/test_popover_window_shield.swift
 compile_direct_test compiler-timeout scripts/test_issue_511_compiler_timeout.swift
 compile_direct_test main-window-frame-restore \
   wBlock/MainWindowFrameRestorer.swift scripts/test_main_window_frame_restore.swift

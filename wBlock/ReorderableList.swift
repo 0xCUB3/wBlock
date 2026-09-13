@@ -121,9 +121,10 @@ struct ListCategoryHeader: View {
     let title: LocalizedStringKey
     let info: () -> Void
     let drop: ListDrop
+    var anchorID: AnyHashable? = nil
     var body: some View {
         HStack(spacing: 6) {
-            Text(title).foregroundStyle(.primary).textCase(.none)
+            Text(title).infoPopoverAnchor(anchorID).foregroundStyle(.primary).textCase(.none)
             Button(action: info) { Image(systemName: "info.circle") }
                 .buttonStyle(.plain).noFocusRingCompat()
                 .foregroundStyle(.secondary).accessibilityLabel("Info")
