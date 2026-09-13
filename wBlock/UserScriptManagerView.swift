@@ -747,9 +747,9 @@ struct UserScriptManagerView: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(script.localizedDisplayName)
-                        .infoPopoverAnchor(script.id)
                         .font(.body)
                         .fontWeight(.medium)
+                        .infoPopoverAnchor(script.id)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
                 }

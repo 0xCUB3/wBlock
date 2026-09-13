@@ -949,8 +949,8 @@ struct FilterRowView: View {
                         Text(flags)
                     }
                     Text(filter.localizedDisplayName)
-                        .infoPopoverAnchor(filter.id)
                         .fontWeight(.medium)
+                        .infoPopoverAnchor(filter.id)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
                     if filter.isInlineUserList {
