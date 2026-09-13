@@ -1,3 +1,6 @@
+"Apply on" = "Aplicar en";
+"No sites selected. This list will not apply." = "No hay sitios seleccionados. Esta lista no se aplicará.";
+"Sites include their subdomains. Apply changes to update filtering." = "Los sitios incluyen sus subdominios. Aplica los cambios para actualizar el filtrado.";
 "Run on" = "Ejecutar en";
 "All matching sites" = "Todos los sitios coincidentes";
 "Only selected sites" = "Solo los sitios seleccionados";

@@ -66,12 +66,13 @@ struct FilterInfoView: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-            }
-            HStack(spacing: 8) {
-                ForEach(Array(InfoBadgeSupport.filterBadges(liveFilter, isDownloaded: hasLoadedMetadata ? cachedByteCount != nil : nil).enumerated()), id: \.offset) { _, badge in
-                    InfoBadgeView(kind: badge)
+                HStack(spacing: 8) {
+                    ForEach(Array(InfoBadgeSupport.filterBadges(liveFilter, isDownloaded: hasLoadedMetadata ? cachedByteCount != nil : nil).enumerated()), id: \.offset) { _, badge in
+                        InfoBadgeView(kind: badge)
+                    }
                 }
             }
+            siteScopeSection
             VStack(alignment: .leading, spacing: 6) {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString("Filters", comment: "Content type"), color: .red)
                 InfoMetadataRow(title: "Category", value: liveFilter.category.localizedName)
@@ -96,19 +97,18 @@ struct FilterInfoView: View {
                     InfoMetadataRow(title: "Size", value: ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
                 }
             }
-            excludedSitesSection
         }
     }
 
-    private var excludedSitesSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            SiteHostListEditor(title: "Excluded Sites", hosts: liveFilter.excludedSites) { hosts in
-                filterManager.setExcludedSites(hosts, for: liveFilter.id)
-            }
-            Text("This list will not apply on these sites. Other lists still apply.")
-                .font(.caption).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+    private var siteScopeSection: some View {
+        SiteScopeEditor(
+            title: "Apply on", selectedSites: liveFilter.selectedSites, excludedSites: liveFilter.excludedSites,
+            emptySelectionMessage: "No sites selected. This list will not apply.",
+            excludedMessage: "This list will not apply on these sites. Other lists still apply.",
+            footer: "Sites include their subdomains. Apply changes to update filtering.",
+            updateSelected: { filterManager.setSelectedSites($0, for: liveFilter.id) },
+            updateExcluded: { filterManager.setExcludedSites($0, for: liveFilter.id) }
+        )
     }
 }
 

@@ -1,3 +1,6 @@
+"Apply on" = "Uygulanacak siteler";
+"No sites selected. This list will not apply." = "Hiçbir site seçilmedi. Bu liste uygulanmayacak.";
+"Sites include their subdomains. Apply changes to update filtering." = "Siteler alt alan adlarını da içerir. Filtrelemeyi güncellemek için değişiklikleri uygulayın.";
 "Run on" = "Çalıştır";
 "All matching sites" = "Tüm eşleşen siteler";
 "Only selected sites" = "Yalnızca seçilen siteler";

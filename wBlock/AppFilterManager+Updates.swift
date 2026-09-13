@@ -25,6 +25,7 @@ extension AppFilterManager {
                 merged.description = current.description
                 merged.hasUserProvidedDescription = current.hasUserProvidedDescription
                 merged.excludedSites = current.excludedSites
+                merged.selectedSites = current.selectedSites
                 newFilterLists[index] = merged
             }
         }

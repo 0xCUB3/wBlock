@@ -4,6 +4,32 @@ import wBlockCoreService
 @main
 struct FilterListSiteExclusionTests {
     static func main() {
+        let selectedCases: [(String, [String], [String], String)] = [
+            ("##.ad", [], ["example.com"], "example.com##.ad"),
+            ("||ads.test^", [], ["example.com"], "||ads.test^$domain=example.com"),
+            ("example.com##.ad", [], ["news.example.com"], "news.example.com##.ad"),
+            ("news.example.com##.ad", [], ["example.com"], "news.example.com##.ad"),
+            ("other.test##.ad", [], ["example.com"], ""),
+            ("||ads.test^$domain=other.test", [], ["example.com"], ""),
+            ("||ads.test^$from=other.test", [], ["example.com"], ""),
+            ("||ads.test^$from=example.com", [], ["news.example.com"], "||ads.test^$domain=news.example.com"),
+            (#"/ads\/end$/$replace=/a$/b/"#, [], ["example.com"], #"/ads\/end$/$replace=/a$/b/,domain=example.com"#),
+            ("##.ad", ["example.com"], ["news.example.com"], ""),
+            ("~example.com##.ad", [], ["example.com"], ""),
+            ("~other.test##.ad", [], ["example.com"], "example.com##.ad"),
+            ("||ads.test^$domain=~other.test", [], ["example.com"], "||ads.test^$domain=example.com"),
+            ("##.ad", ["news.example.com"], ["example.com"], "example.com,~news.example.com##.ad"),
+            ("||ads.test^", ["news.example.com"], ["example.com"], "||ads.test^$domain=example.com\n@@||ads.test^$domain=news.example.com"),
+            ("@@||ads.test^$document", [], ["example.com"], "@@||ads.test^$document,domain=example.com"),
+            ("/ads[0-9]+$/", [], ["example.com"], "/ads[0-9]+$/$domain=example.com"),
+            ("##.ad", [], [], ""),
+            ("example.com#%#//scriptlet('abort-on-property-read', 'adblock')", [], ["news.example.com"],
+             "news.example.com#%#//scriptlet('abort-on-property-read', 'adblock')")
+        ]
+        for (rule, excluded, selected, expected) in selectedCases {
+            precondition(FilterListSiteExclusion.restrictingAdvancedRules(rule, excluding: excluded, including: selected) == expected,
+                         "selected-site restriction failed for \(rule)")
+        }
         let cosmetic = FilterListSiteExclusion.restrictingAdvancedRules(
             "##.ad",
             excluding: ["nytimes.com"]
@@ -130,35 +156,16 @@ struct FilterListSiteExclusionTests {
             exit(1)
         }
 
-        let manager = try! String(contentsOfFile: "wBlock/AppFilterManager.swift", encoding: .utf8)
-        let info = try! String(contentsOfFile: "wBlock/FilterInfoView.swift", encoding: .utf8)
-        let protoExt = try! String(contentsOfFile: "wBlockCoreService/ProtobufDataManager+Extensions.swift", encoding: .utf8)
-        let conversion = try! String(contentsOfFile: "wBlockCoreService/wBlockCoreService.swift", encoding: .utf8)
-        let affinity = try! String(contentsOfFile: "wBlockCoreService/SafariContentBlockerAffinityProcessor.swift", encoding: .utf8)
-
-        func requireContains(_ haystack: String, _ needle: String, _ message: String) {
-            guard haystack.contains(needle) else {
-                fputs("FAIL: \(message)\nMissing: \(needle)\n", stderr)
-                exit(1)
-            }
+        for selected: [String]? in [nil, [], ["news.example.com"]] {
+            let filter = FilterList(name: "Scoped", url: URL(string: "https://example.com/list")!, category: .ads,
+                                    excludedSites: ["excluded.example.com"], selectedSites: selected)
+            let encoded = try! JSONEncoder().encode(filter)
+            let restored = try! JSONDecoder().decode(FilterList.self, from: encoded)
+            precondition(restored.selectedSites == selected && restored.excludedSites == filter.excludedSites)
+            var stale = filter
+            stale.selectedSites = nil
+            precondition(FilterSelectionRebaser.rebaseSelection(snapshot: [stale], latestPersisted: [filter])[0].selectedSites == selected)
         }
-
-        requireContains(manager, "excludedSites = filter.excludedSites", "apply snapshots must treat exclusions as configuration")
-        requireContains(manager, "func setExcludedSites(", "the filter manager must persist per-list exclusions")
-        requireContains(info, "excludedSitesSection", "filter info must expose per-list exclusions")
-        requireContains(info, "filterManager.setExcludedSites", "filter info must write exclusions through the manager")
-        requireContains(protoExt, "protoFilterList.excludedSites = filter.excludedSites", "protobuf saves must persist excluded sites")
-        requireContains(protoExt, "excludedSites: Array(protoData.excludedSites)", "protobuf loads must restore excluded sites")
-        requireContains(
-            conversion,
-            "FilterListSiteExclusion.restrictingAdvancedRules",
-            "conversion must restrict lists with exclusions before Safari conversion"
-        )
-        requireContains(
-            affinity,
-            "FilterListSiteExclusion.restrictingAdvancedRules",
-            "affinity contributions must honor per-list exclusions"
-        )
         print("PASS")
     }
 }

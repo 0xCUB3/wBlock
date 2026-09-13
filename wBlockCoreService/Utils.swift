@@ -278,13 +278,13 @@ public enum ContentBlockerIncrementalCache {
 
         for filter in canonicalFilterOrder(filters) {
             let fileMarker = localFileFingerprint(for: filter, containerURL: containerURL)
-            canonical.append("\(filter.id.uuidString)|\(fileMarker)|\(excludedSitesMarker(for: filter))\n")
+            canonical.append("\(filter.id.uuidString)|\(fileMarker)|\(siteScopeMarker(for: filter))\n")
         }
         if !affinityContributors.isEmpty {
             canonical.append("affinity=\(affinityContributors.count)\n")
             for filter in canonicalFilterOrder(affinityContributors) {
                 let fileMarker = localFileFingerprint(for: filter, containerURL: containerURL)
-                canonical.append("a|\(filter.id.uuidString)|\(fileMarker)|\(excludedSitesMarker(for: filter))\n")
+                canonical.append("a|\(filter.id.uuidString)|\(fileMarker)|\(siteScopeMarker(for: filter))\n")
             }
         }
 
@@ -437,11 +437,12 @@ public enum ContentBlockerIncrementalCache {
         return try? String(contentsOf: advancedURL, encoding: .utf8)
     }
 
-    /// Per-list excluded sites change the compiled output without touching
+    /// Per-list site scope changes the compiled output without touching
     /// the list file, so they must be part of the signature.
-    private static func excludedSitesMarker(for filter: FilterList) -> String {
-        guard !filter.excludedSites.isEmpty else { return "" }
-        return filter.excludedSites.sorted().joined(separator: ",")
+    private static func siteScopeMarker(for filter: FilterList) -> String {
+        let excluded = filter.excludedSites.sorted().joined(separator: ",")
+        guard let selected = filter.selectedSites else { return excluded }
+        return excluded + "|selected=" + selected.sorted().joined(separator: ",")
     }
 
     private static func localFileFingerprint(for filter: FilterList, containerURL: URL) -> String {

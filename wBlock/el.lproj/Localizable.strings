@@ -1,3 +1,6 @@
+"Apply on" = "Εφαρμογή σε";
+"No sites selected. This list will not apply." = "Δεν έχουν επιλεγεί ιστότοποι. Αυτή η λίστα δεν θα εφαρμόζεται.";
+"Sites include their subdomains. Apply changes to update filtering." = "Οι ιστότοποι περιλαμβάνουν τους υποτομείς τους. Εφαρμόστε τις αλλαγές για να ενημερώσετε το φιλτράρισμα.";
 "Run on" = "Εκτέλεση σε";
 "All matching sites" = "Όλους τους αντίστοιχους ιστοτόπους";
 "Only selected sites" = "Μόνο επιλεγμένους ιστοτόπους";

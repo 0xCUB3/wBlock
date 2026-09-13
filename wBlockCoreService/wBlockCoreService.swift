@@ -1781,7 +1781,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     guard assigned.contains(filter.id), let source = sources[filter.id] else { continue }
                     text = source
                 }
-                text = FilterListSiteExclusion.restrictingAdvancedRules(text, excluding: filter.excludedSites)
+                text = FilterListSiteExclusion.restrictingAdvancedRules(text, excluding: filter.excludedSites, including: filter.selectedSites)
                 for line in text.components(separatedBy: .newlines) {
                     let trimmed = line.trimmingCharacters(in: .whitespaces)
                     if trimmed.hasPrefix("@@") || trimmed.contains("#@") || trimmed.contains("$badfilter") || trimmed.contains(",badfilter") || trimmed.hasPrefix("!#") {
@@ -1799,7 +1799,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             guard snapshot.content(for: filter.id) == nil,
                   let raw = sources[filter.id], !raw.contains("!#"),
                   let slot = owners[filter.id], let context = contexts[slot] else { continue }
-            let text = FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.excludedSites)
+            let text = FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.excludedSites, including: filter.selectedSites)
             for line in text.components(separatedBy: .newlines) {
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
                 guard FilterRuleAnalysis.isRuleLine(trimmed), !trimmed.hasPrefix("@@"), !trimmed.contains("#@") else { continue }
@@ -1873,7 +1873,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     allTargets: allTargets,
                     isCancelled: cancellationRequested
                 )
-                let restricted = FilterListSiteExclusion.restrictingAdvancedRules(filtered, excluding: filter.excludedSites)
+                let restricted = FilterListSiteExclusion.restrictingAdvancedRules(filtered, excluding: filter.excludedSites, including: filter.selectedSites)
                 try sourceRuleAdmissions.record(
                     filterID: filter.id,
                     rulesText: restricted,
@@ -1894,7 +1894,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             ) {
                 if let duplicates = exclusions[filter.id], !duplicates.isEmpty {
                     let raw = try String(contentsOf: sourceURL, encoding: .utf8)
-                    let restricted = FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.excludedSites)
+                    let restricted = FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.excludedSites, including: filter.selectedSites)
                     let kept = restricted.components(separatedBy: .newlines).filter {
                         !duplicates.contains(FilterRuleAnalysis.ruleIdentity($0))
                     }
@@ -1909,7 +1909,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                         keptText, to: fileHandle, hasher: &hasher,
                         newlineData: newlineData, isCancelled: cancellationRequested
                     )
-                } else if filter.excludedSites.isEmpty {
+                } else if filter.excludedSites.isEmpty && filter.selectedSites == nil {
                     let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
                     try sourceRuleAdmissions.record(
                         filterID: filter.id,
@@ -1927,7 +1927,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     )
                 } else {
                     let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
-                    let restricted = FilterListSiteExclusion.restrictingAdvancedRules(rawContent, excluding: filter.excludedSites)
+                    let restricted = FilterListSiteExclusion.restrictingAdvancedRules(rawContent, excluding: filter.excludedSites, including: filter.selectedSites)
                     try sourceRuleAdmissions.record(
                         filterID: filter.id,
                         rulesText: restricted,

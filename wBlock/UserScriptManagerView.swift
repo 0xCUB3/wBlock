@@ -1198,9 +1198,11 @@ struct UserScriptInfoSidebar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             let metadata = ContentInfoMetadata.userscript(script.content)
-            ScriptNameAndDescriptionView(script: script, isBeta: isBeta, onClose: onClose)
-            if !isBuiltIn { Button("Edit", action: onEdit) }
-            ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0, isBuiltIn: isBuiltIn)
+            VStack(alignment: .leading, spacing: 8) {
+                ScriptNameAndDescriptionView(script: script, isBeta: isBeta, onClose: onClose)
+                ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0, isBuiltIn: isBuiltIn)
+                if !isBuiltIn { Button("Edit", action: onEdit) }
+            }
             UserScriptWebsiteExceptionsView(scriptID: script.id, userScriptManager: userScriptManager)
             if script.url != nil || script.updateURL != nil || script.downloadURL != nil {
                 ScriptUpdateSettingsView(

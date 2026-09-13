@@ -22,28 +22,30 @@ public enum FilterListSiteExclusion {
         DisabledSitesNormalizer.normalizedDomains(from: raw)
     }
 
-    public static func restrictingAdvancedRules(_ text: String, excluding domains: [String]) -> String {
+    public static func restrictingAdvancedRules(_ text: String, excluding domains: [String], including selectedSites: [String]? = nil) -> String {
         let sites = normalizedDomains(from: domains)
-        guard !sites.isEmpty, !text.isEmpty else { return text }
+        let selected = selectedSites.map { normalizedDomains(from: $0) }
+        if selected?.isEmpty == true { return "" }
+        guard !text.isEmpty, !sites.isEmpty || selected != nil else { return text }
 
         return text
             .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
-            .map { restrictAdvancedLine(String($0), excluding: sites) }
+            .map { restrictAdvancedLine(String($0), excluding: sites, including: selected) }
             .joined(separator: "\n")
     }
 
     private static let cosmeticSeparators = ["#@$?#", "#$?#", "#@%#", "#%#", "#@?#", "#@$#", "#?#", "#$#", "#@#", "##"]
 
-    private static func restrictAdvancedLine(_ line: String, excluding sites: [String]) -> String {
+    private static func restrictAdvancedLine(_ line: String, excluding sites: [String], including selected: [String]?) -> String {
         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty || trimmed.hasPrefix("!") {
             return line
         }
 
         if let cosmetic = splitCosmetic(trimmed) {
-            return restrictCosmetic(cosmetic, excluding: sites) ?? ""
+            return restrictCosmetic(cosmetic, excluding: sites, including: selected) ?? ""
         }
-        return restrictNetworkLine(trimmed, excluding: sites) ?? ""
+        return restrictNetworkLine(trimmed, excluding: sites, including: selected) ?? ""
     }
 
     private static func splitCosmetic(_ line: String) -> (domains: String, separator: String, body: String)? {
@@ -74,10 +76,20 @@ public enum FilterListSiteExclusion {
 
     /// Narrows a domain list so it never matches an excluded site.
     /// Returns nil when the rule was scoped to sites that are all excluded.
-    private static func restrictDomainList(_ domains: [String], excluding sites: [String]) -> RestrictedDomains? {
+    private static func restrictDomainList(_ domains: [String], excluding sites: [String], including selected: [String]? = nil) -> RestrictedDomains? {
         let positives = domains.filter { !$0.hasPrefix("~") }
         var negatives = domains.filter { $0.hasPrefix("~") }
         let negatedHosts = negatives.map { String($0.dropFirst()) }
+
+        if let selected {
+            let intersection = selected.flatMap { site in
+                positives.isEmpty ? [site] : positives.compactMap { host in
+                    covers(host, site) ? site : (covers(site, host) ? host : nil)
+                }
+            }
+            guard !intersection.isEmpty else { return nil }
+            return restrictDomainList(Array(Set(intersection)).sorted(), excluding: sites + negatedHosts)
+        }
 
         if positives.isEmpty {
             for site in sites where !negatedHosts.contains(where: { covers($0, site) }) {
@@ -100,50 +112,48 @@ public enum FilterListSiteExclusion {
 
     private static func restrictCosmetic(
         _ cosmetic: (domains: String, separator: String, body: String),
-        excluding sites: [String]
+        excluding sites: [String], including selected: [String]?
     ) -> String? {
         let rawDomains = cosmetic.domains
             .split(separator: ",")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
 
-        guard let restricted = restrictDomainList(rawDomains, excluding: sites) else { return nil }
+        guard let restricted = restrictDomainList(rawDomains, excluding: sites, including: selected) else { return nil }
         let negations = restricted.uncoveredSubdomains.map { "~\($0)" }
         return (restricted.joined + negations).joined(separator: ",") + cosmetic.separator + cosmetic.body
     }
 
-    private static func restrictNetworkLine(_ line: String, excluding sites: [String]) -> String? {
-        let negations = sites.map { "~\($0)" }.joined(separator: "|")
-        guard let dollar = line.lastIndex(of: "$") else {
-            return "\(line)$domain=\(negations)"
-        }
-
-        let body = String(line[..<dollar])
-        let options = String(line[line.index(after: dollar)...])
-        var parts = options.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
-
-        guard let domainIndex = parts.firstIndex(where: { $0.hasPrefix("domain=") }) else {
-            if options.isEmpty {
-                return "\(body)$domain=\(negations)"
+    private static func restrictNetworkLine(_ line: String, excluding sites: [String], including selected: [String]?) -> String? {
+        var dollar = line.lastIndex(of: "$")
+        if line.hasPrefix("/") || line.hasPrefix("@@/") {
+            let start = line.index(line.startIndex, offsetBy: line.hasPrefix("@@") ? 3 : 1)
+            var escaped = false
+            for index in line[start...].indices {
+                if escaped { escaped = false; continue }
+                if line[index] == "\\" { escaped = true; continue }
+                if line[index] == "/" {
+                    let next = line.index(after: index)
+                    dollar = next < line.endIndex && line[next] == "$" ? next : nil
+                    break
+                }
             }
-            return "\(body)$\(options),domain=\(negations)"
         }
-
-        let rawDomains = parts[domainIndex]
-            .dropFirst("domain=".count)
-            .split(separator: "|")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-        guard let restricted = restrictDomainList(rawDomains, excluding: sites) else { return nil }
-        parts[domainIndex] = "domain=" + restricted.joined.joined(separator: "|")
+        let body = dollar.map { String(line[..<$0]) } ?? line
+        let options = dollar.map { String(line[line.index(after: $0)...]) } ?? ""
+        var parts = options.isEmpty ? [] : options.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
+        let domainIndex = parts.firstIndex(where: { $0.hasPrefix("domain=") || $0.hasPrefix("from=") }) ?? parts.count
+        let rawDomains = domainIndex < parts.count
+            ? parts[domainIndex].split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)[1].split(separator: "|")
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty } : []
+        guard let restricted = restrictDomainList(rawDomains, excluding: sites, including: selected) else { return nil }
+        let domainOption = "domain=" + restricted.joined.joined(separator: "|")
+        if domainIndex == parts.count { parts.append(domainOption) } else { parts[domainIndex] = domainOption }
         let rule = "\(body)$\(parts.joined(separator: ","))"
-
         guard !restricted.uncoveredSubdomains.isEmpty,
               let companion = companionException(
                 body: body, options: parts, domainIndex: domainIndex, sites: restricted.uncoveredSubdomains
-              ) else {
-            return rule
-        }
+              ) else { return rule }
         return rule + "\n" + companion
     }
 

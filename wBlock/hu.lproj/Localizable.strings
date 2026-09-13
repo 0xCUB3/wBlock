@@ -1,3 +1,6 @@
+"Apply on" = "Alkalmazás itt";
+"No sites selected. This list will not apply." = "Nincs kiválasztott webhely. Ez a lista nem lesz alkalmazva.";
+"Sites include their subdomains. Apply changes to update filtering." = "A webhelyek az aldomainjeiket is magukban foglalják. A szűrés frissítéséhez alkalmazd a módosításokat.";
 "Run on" = "Futtatás itt";
 "All matching sites" = "Minden illeszkedő webhelyen";
 "Only selected sites" = "Csak a kiválasztott webhelyeken";

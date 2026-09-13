@@ -1,3 +1,6 @@
+"Apply on" = "Применять на";
+"No sites selected. This list will not apply." = "Сайты не выбраны. Этот список не будет применяться.";
+"Sites include their subdomains. Apply changes to update filtering." = "Сайты включают свои поддомены. Примените изменения, чтобы обновить фильтрацию.";
 "Run on" = "Запускать на";
 "All matching sites" = "Всех подходящих сайтах";
 "Only selected sites" = "Только выбранных сайтах";

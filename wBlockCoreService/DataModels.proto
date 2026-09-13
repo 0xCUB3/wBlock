@@ -75,6 +75,8 @@ message FilterListData {
   // Source rule lines admitted for this list by the last confirmed apply.
   // Converter output is still only known exactly per target.
   optional int32 admitted_source_rule_count = 16;
+  // Absent means all sites; a present empty list means no sites.
+  HostList selected_sites = 17;
 }
 
 // Filter list categories

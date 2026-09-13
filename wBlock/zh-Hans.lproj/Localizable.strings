@@ -1,3 +1,6 @@
+"Apply on" = "应用范围";
+"No sites selected. This list will not apply." = "未选择任何网站。此列表将不会应用。";
+"Sites include their subdomains. Apply changes to update filtering." = "网站范围包含其子域名。请应用更改以更新过滤。";
 "Run on" = "运行范围";
 "All matching sites" = "所有匹配的网站";
 "Only selected sites" = "仅选定的网站";

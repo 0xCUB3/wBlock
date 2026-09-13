@@ -1,3 +1,6 @@
+"Apply on" = "套用範圍";
+"No sites selected. This list will not apply." = "未選取任何網站。此清單將不會套用。";
+"Sites include their subdomains. Apply changes to update filtering." = "網站範圍包含其子網域。請套用變更以更新過濾。";
 "Run on" = "執行範圍";
 "All matching sites" = "所有符合條件的網站";
 "Only selected sites" = "僅選取的網站";

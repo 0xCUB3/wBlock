@@ -1,3 +1,6 @@
+"Apply on" = "적용 대상";
+"No sites selected. This list will not apply." = "선택된 사이트가 없습니다. 이 목록은 적용되지 않습니다.";
+"Sites include their subdomains. Apply changes to update filtering." = "사이트에는 하위 도메인도 포함됩니다. 필터링을 업데이트하려면 변경 사항을 적용하세요.";
 "Run on" = "실행할 사이트";
 "All matching sites" = "조건에 맞는 모든 사이트";
 "Only selected sites" = "선택한 사이트만";

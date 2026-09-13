@@ -1,3 +1,6 @@
+"Apply on" = "تطبيق على";
+"No sites selected. This list will not apply." = "لم يتم تحديد أي مواقع. لن تُطبَّق هذه القائمة.";
+"Sites include their subdomains. Apply changes to update filtering." = "تشمل المواقع نطاقاتها الفرعية. طبّق التغييرات لتحديث التصفية.";
 "Run on" = "التشغيل على";
 "All matching sites" = "كل المواقع المطابقة";
 "Only selected sites" = "المواقع المحددة فقط";

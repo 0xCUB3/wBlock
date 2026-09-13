@@ -21,6 +21,7 @@ public enum FilterSelectionRebaser {
             rebased.isSelected = latest.isSelected
             rebased.category = latest.category
             rebased.excludedSites = latest.excludedSites
+            rebased.selectedSites = latest.selectedSites
             if latest.hasUserProvidedName || latest.hasUserProvidedName != filter.hasUserProvidedName {
                 rebased.name = latest.name
             }
@@ -80,6 +81,8 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     public var hasUserProvidedDescription: Bool = false
     /// Hosts this list should not apply to (issue #653). Independent of Site Settings.
     public var excludedSites: [String] = []
+    /// Nil applies everywhere; an empty selection applies nowhere.
+    public var selectedSites: [String]?
     /// Source rule lines admitted for this list by the last confirmed apply.
     /// Nil when no compile-time provenance is available.
     public var uniqueRuleCount: Int?
@@ -88,7 +91,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         case id, name, url, category, isCustom, isSelected, description,
              version, sourceRuleCount, lastUpdated, languages, trustLevel,
              etag, serverLastModified, limitExceededReason, hasUserProvidedName,
-             hasUserProvidedDescription, excludedSites, admittedSourceRuleCount,
+             hasUserProvidedDescription, excludedSites, selectedSites, admittedSourceRuleCount,
              uniqueRuleCount
         // uniqueRuleCount is decode-only legacy storage for pre-provenance estimates.
         // rawSourceRuleCount intentionally excluded — in-memory only, not persisted
@@ -113,6 +116,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
                 hasUserProvidedName: Bool = false,
                 hasUserProvidedDescription: Bool = false,
                 excludedSites: [String] = [],
+                selectedSites: [String]? = nil,
                 uniqueRuleCount: Int? = nil) {
         self.id = id
         self.name = name
@@ -133,6 +137,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         self.hasUserProvidedName = hasUserProvidedName
         self.hasUserProvidedDescription = hasUserProvidedDescription
         self.excludedSites = FilterListSiteExclusion.normalizedDomains(from: excludedSites)
+        self.selectedSites = selectedSites.map { FilterListSiteExclusion.normalizedDomains(from: $0) }
         self.uniqueRuleCount = uniqueRuleCount
     }
 
@@ -158,6 +163,8 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         excludedSites = FilterListSiteExclusion.normalizedDomains(
             from: try container.decodeIfPresent([String].self, forKey: .excludedSites) ?? []
         )
+        selectedSites = try container.decodeIfPresent([String].self, forKey: .selectedSites)
+            .map { FilterListSiteExclusion.normalizedDomains(from: $0) }
         uniqueRuleCount = try container.decodeIfPresent(Int.self, forKey: .admittedSourceRuleCount)
     }
 
@@ -181,6 +188,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         try container.encode(hasUserProvidedName, forKey: .hasUserProvidedName)
         try container.encode(hasUserProvidedDescription, forKey: .hasUserProvidedDescription)
         try container.encode(excludedSites, forKey: .excludedSites)
+        try container.encodeIfPresent(selectedSites, forKey: .selectedSites)
         try container.encodeIfPresent(uniqueRuleCount, forKey: .admittedSourceRuleCount)
     }
     

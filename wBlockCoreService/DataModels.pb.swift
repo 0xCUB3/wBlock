@@ -295,94 +295,133 @@ nonisolated struct Wblock_Data_AppSettings: Sendable {
 }
 
 /// Filter list data structure
-nonisolated struct Wblock_Data_FilterListData: Sendable {
+nonisolated struct Wblock_Data_FilterListData: @unchecked Sendable {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  var id: String = String()
+  var id: String {
+    get {_storage._id}
+    set {_uniqueStorage()._id = newValue}
+  }
 
-  var name: String = String()
+  var name: String {
+    get {_storage._name}
+    set {_uniqueStorage()._name = newValue}
+  }
 
-  var url: String = String()
+  var url: String {
+    get {_storage._url}
+    set {_uniqueStorage()._url = newValue}
+  }
 
-  var category: Wblock_Data_FilterListCategory = .unspecified
+  var category: Wblock_Data_FilterListCategory {
+    get {_storage._category}
+    set {_uniqueStorage()._category = newValue}
+  }
 
-  var isSelected: Bool = false
+  var isSelected: Bool {
+    get {_storage._isSelected}
+    set {_uniqueStorage()._isSelected = newValue}
+  }
 
-  var description_p: String = String()
+  var description_p: String {
+    get {_storage._description_p}
+    set {_uniqueStorage()._description_p = newValue}
+  }
 
-  var version: String = String()
+  var version: String {
+    get {_storage._version}
+    set {_uniqueStorage()._version = newValue}
+  }
 
   var sourceRuleCount: Int32 {
-    get {_sourceRuleCount ?? 0}
-    set {_sourceRuleCount = newValue}
+    get {_storage._sourceRuleCount ?? 0}
+    set {_uniqueStorage()._sourceRuleCount = newValue}
   }
   /// Returns true if `sourceRuleCount` has been explicitly set.
-  var hasSourceRuleCount: Bool {self._sourceRuleCount != nil}
+  var hasSourceRuleCount: Bool {_storage._sourceRuleCount != nil}
   /// Clears the value of `sourceRuleCount`. Subsequent reads from it will return its default value.
-  mutating func clearSourceRuleCount() {self._sourceRuleCount = nil}
+  mutating func clearSourceRuleCount() {_uniqueStorage()._sourceRuleCount = nil}
 
-  var lastUpdated: Int64 = 0
+  var lastUpdated: Int64 {
+    get {_storage._lastUpdated}
+    set {_uniqueStorage()._lastUpdated = newValue}
+  }
 
-  var isCustom: Bool = false
+  var isCustom: Bool {
+    get {_storage._isCustom}
+    set {_uniqueStorage()._isCustom = newValue}
+  }
 
-  var localFilePath: String = String()
+  var localFilePath: String {
+    get {_storage._localFilePath}
+    set {_uniqueStorage()._localFilePath = newValue}
+  }
 
-  var excludedSites: [String] = []
+  var excludedSites: [String] {
+    get {_storage._excludedSites}
+    set {_uniqueStorage()._excludedSites = newValue}
+  }
 
   /// Field 13 held legacy pre-provenance unique-count estimates. It is no
   /// longer read as admitted provenance so old saves do not become mislabeled
   /// as submitted/admitted counts after upgrade.
   var uniqueRuleCount: Int32 {
-    get {_uniqueRuleCount ?? 0}
-    set {_uniqueRuleCount = newValue}
+    get {_storage._uniqueRuleCount ?? 0}
+    set {_uniqueStorage()._uniqueRuleCount = newValue}
   }
   /// Returns true if `uniqueRuleCount` has been explicitly set.
-  var hasUniqueRuleCount: Bool {self._uniqueRuleCount != nil}
+  var hasUniqueRuleCount: Bool {_storage._uniqueRuleCount != nil}
   /// Clears the value of `uniqueRuleCount`. Subsequent reads from it will return its default value.
-  mutating func clearUniqueRuleCount() {self._uniqueRuleCount = nil}
+  mutating func clearUniqueRuleCount() {_uniqueStorage()._uniqueRuleCount = nil}
 
   /// Whether custom URL import metadata was supplied by the user and should
   /// survive future remote header refreshes.
   var userProvidedName: Bool {
-    get {_userProvidedName ?? false}
-    set {_userProvidedName = newValue}
+    get {_storage._userProvidedName ?? false}
+    set {_uniqueStorage()._userProvidedName = newValue}
   }
   /// Returns true if `userProvidedName` has been explicitly set.
-  var hasUserProvidedName: Bool {self._userProvidedName != nil}
+  var hasUserProvidedName: Bool {_storage._userProvidedName != nil}
   /// Clears the value of `userProvidedName`. Subsequent reads from it will return its default value.
-  mutating func clearUserProvidedName() {self._userProvidedName = nil}
+  mutating func clearUserProvidedName() {_uniqueStorage()._userProvidedName = nil}
 
   var userProvidedDescription: Bool {
-    get {_userProvidedDescription ?? false}
-    set {_userProvidedDescription = newValue}
+    get {_storage._userProvidedDescription ?? false}
+    set {_uniqueStorage()._userProvidedDescription = newValue}
   }
   /// Returns true if `userProvidedDescription` has been explicitly set.
-  var hasUserProvidedDescription: Bool {self._userProvidedDescription != nil}
+  var hasUserProvidedDescription: Bool {_storage._userProvidedDescription != nil}
   /// Clears the value of `userProvidedDescription`. Subsequent reads from it will return its default value.
-  mutating func clearUserProvidedDescription() {self._userProvidedDescription = nil}
+  mutating func clearUserProvidedDescription() {_uniqueStorage()._userProvidedDescription = nil}
 
   /// Source rule lines admitted for this list by the last confirmed apply.
   /// Converter output is still only known exactly per target.
   var admittedSourceRuleCount: Int32 {
-    get {_admittedSourceRuleCount ?? 0}
-    set {_admittedSourceRuleCount = newValue}
+    get {_storage._admittedSourceRuleCount ?? 0}
+    set {_uniqueStorage()._admittedSourceRuleCount = newValue}
   }
   /// Returns true if `admittedSourceRuleCount` has been explicitly set.
-  var hasAdmittedSourceRuleCount: Bool {self._admittedSourceRuleCount != nil}
+  var hasAdmittedSourceRuleCount: Bool {_storage._admittedSourceRuleCount != nil}
   /// Clears the value of `admittedSourceRuleCount`. Subsequent reads from it will return its default value.
-  mutating func clearAdmittedSourceRuleCount() {self._admittedSourceRuleCount = nil}
+  mutating func clearAdmittedSourceRuleCount() {_uniqueStorage()._admittedSourceRuleCount = nil}
+
+  /// Absent means all sites; a present empty list means no sites.
+  var selectedSites: Wblock_Data_HostList {
+    get {_storage._selectedSites ?? Wblock_Data_HostList()}
+    set {_uniqueStorage()._selectedSites = newValue}
+  }
+  /// Returns true if `selectedSites` has been explicitly set.
+  var hasSelectedSites: Bool {_storage._selectedSites != nil}
+  /// Clears the value of `selectedSites`. Subsequent reads from it will return its default value.
+  mutating func clearSelectedSites() {_uniqueStorage()._selectedSites = nil}
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
 
-  fileprivate var _sourceRuleCount: Int32? = nil
-  fileprivate var _uniqueRuleCount: Int32? = nil
-  fileprivate var _userProvidedName: Bool? = nil
-  fileprivate var _userProvidedDescription: Bool? = nil
-  fileprivate var _admittedSourceRuleCount: Int32? = nil
+  fileprivate var _storage = _StorageClass.defaultInstance
 }
 
 /// Userscript data structure
@@ -1096,108 +1135,181 @@ nonisolated extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProto
 
 nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".FilterListData"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{1}category\0\u{3}is_selected\0\u{1}description\0\u{1}version\0\u{3}source_rule_count\0\u{3}last_updated\0\u{3}is_custom\0\u{3}local_file_path\0\u{3}excluded_sites\0\u{3}unique_rule_count\0\u{3}user_provided_name\0\u{3}user_provided_description\0\u{3}admitted_source_rule_count\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{1}category\0\u{3}is_selected\0\u{1}description\0\u{1}version\0\u{3}source_rule_count\0\u{3}last_updated\0\u{3}is_custom\0\u{3}local_file_path\0\u{3}excluded_sites\0\u{3}unique_rule_count\0\u{3}user_provided_name\0\u{3}user_provided_description\0\u{3}admitted_source_rule_count\0\u{3}selected_sites\0")
+
+  fileprivate class _StorageClass {
+    var _id: String = String()
+    var _name: String = String()
+    var _url: String = String()
+    var _category: Wblock_Data_FilterListCategory = .unspecified
+    var _isSelected: Bool = false
+    var _description_p: String = String()
+    var _version: String = String()
+    var _sourceRuleCount: Int32? = nil
+    var _lastUpdated: Int64 = 0
+    var _isCustom: Bool = false
+    var _localFilePath: String = String()
+    var _excludedSites: [String] = []
+    var _uniqueRuleCount: Int32? = nil
+    var _userProvidedName: Bool? = nil
+    var _userProvidedDescription: Bool? = nil
+    var _admittedSourceRuleCount: Int32? = nil
+    var _selectedSites: Wblock_Data_HostList? = nil
+
+      // This property is used as the initial default value for new instances of the type.
+      // The type itself is protecting the reference to its storage via CoW semantics.
+      // This will force a copy to be made of this reference when the first mutation occurs;
+      // hence, it is safe to mark this as `nonisolated(unsafe)`.
+      static nonisolated(unsafe) let defaultInstance = _StorageClass()
+
+    private init() {}
+
+    init(copying source: _StorageClass) {
+      _id = source._id
+      _name = source._name
+      _url = source._url
+      _category = source._category
+      _isSelected = source._isSelected
+      _description_p = source._description_p
+      _version = source._version
+      _sourceRuleCount = source._sourceRuleCount
+      _lastUpdated = source._lastUpdated
+      _isCustom = source._isCustom
+      _localFilePath = source._localFilePath
+      _excludedSites = source._excludedSites
+      _uniqueRuleCount = source._uniqueRuleCount
+      _userProvidedName = source._userProvidedName
+      _userProvidedDescription = source._userProvidedDescription
+      _admittedSourceRuleCount = source._admittedSourceRuleCount
+      _selectedSites = source._selectedSites
+    }
+  }
+
+  fileprivate mutating func _uniqueStorage() -> _StorageClass {
+    if !isKnownUniquelyReferenced(&_storage) {
+      _storage = _StorageClass(copying: _storage)
+    }
+    return _storage
+  }
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.id) }()
-      case 2: try { try decoder.decodeSingularStringField(value: &self.name) }()
-      case 3: try { try decoder.decodeSingularStringField(value: &self.url) }()
-      case 4: try { try decoder.decodeSingularEnumField(value: &self.category) }()
-      case 5: try { try decoder.decodeSingularBoolField(value: &self.isSelected) }()
-      case 6: try { try decoder.decodeSingularStringField(value: &self.description_p) }()
-      case 7: try { try decoder.decodeSingularStringField(value: &self.version) }()
-      case 8: try { try decoder.decodeSingularInt32Field(value: &self._sourceRuleCount) }()
-      case 9: try { try decoder.decodeSingularInt64Field(value: &self.lastUpdated) }()
-      case 10: try { try decoder.decodeSingularBoolField(value: &self.isCustom) }()
-      case 11: try { try decoder.decodeSingularStringField(value: &self.localFilePath) }()
-      case 12: try { try decoder.decodeRepeatedStringField(value: &self.excludedSites) }()
-      case 13: try { try decoder.decodeSingularInt32Field(value: &self._uniqueRuleCount) }()
-      case 14: try { try decoder.decodeSingularBoolField(value: &self._userProvidedName) }()
-      case 15: try { try decoder.decodeSingularBoolField(value: &self._userProvidedDescription) }()
-      case 16: try { try decoder.decodeSingularInt32Field(value: &self._admittedSourceRuleCount) }()
-      default: break
+    _ = _uniqueStorage()
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      while let fieldNumber = try decoder.nextFieldNumber() {
+        // The use of inline closures is to circumvent an issue where the compiler
+        // allocates stack space for every case branch when no optimizations are
+        // enabled. https://github.com/apple/swift-protobuf/issues/1034
+        switch fieldNumber {
+        case 1: try { try decoder.decodeSingularStringField(value: &_storage._id) }()
+        case 2: try { try decoder.decodeSingularStringField(value: &_storage._name) }()
+        case 3: try { try decoder.decodeSingularStringField(value: &_storage._url) }()
+        case 4: try { try decoder.decodeSingularEnumField(value: &_storage._category) }()
+        case 5: try { try decoder.decodeSingularBoolField(value: &_storage._isSelected) }()
+        case 6: try { try decoder.decodeSingularStringField(value: &_storage._description_p) }()
+        case 7: try { try decoder.decodeSingularStringField(value: &_storage._version) }()
+        case 8: try { try decoder.decodeSingularInt32Field(value: &_storage._sourceRuleCount) }()
+        case 9: try { try decoder.decodeSingularInt64Field(value: &_storage._lastUpdated) }()
+        case 10: try { try decoder.decodeSingularBoolField(value: &_storage._isCustom) }()
+        case 11: try { try decoder.decodeSingularStringField(value: &_storage._localFilePath) }()
+        case 12: try { try decoder.decodeRepeatedStringField(value: &_storage._excludedSites) }()
+        case 13: try { try decoder.decodeSingularInt32Field(value: &_storage._uniqueRuleCount) }()
+        case 14: try { try decoder.decodeSingularBoolField(value: &_storage._userProvidedName) }()
+        case 15: try { try decoder.decodeSingularBoolField(value: &_storage._userProvidedDescription) }()
+        case 16: try { try decoder.decodeSingularInt32Field(value: &_storage._admittedSourceRuleCount) }()
+        case 17: try { try decoder.decodeSingularMessageField(value: &_storage._selectedSites) }()
+        default: break
+        }
       }
     }
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    // The use of inline closures is to circumvent an issue where the compiler
-    // allocates stack space for every if/case branch local when no optimizations
-    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
-    // https://github.com/apple/swift-protobuf/issues/1182
-    if !self.id.isEmpty {
-      try visitor.visitSingularStringField(value: self.id, fieldNumber: 1)
+    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every if/case branch local when no optimizations
+      // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+      // https://github.com/apple/swift-protobuf/issues/1182
+      if !_storage._id.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._id, fieldNumber: 1)
+      }
+      if !_storage._name.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._name, fieldNumber: 2)
+      }
+      if !_storage._url.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._url, fieldNumber: 3)
+      }
+      if _storage._category != .unspecified {
+        try visitor.visitSingularEnumField(value: _storage._category, fieldNumber: 4)
+      }
+      if _storage._isSelected != false {
+        try visitor.visitSingularBoolField(value: _storage._isSelected, fieldNumber: 5)
+      }
+      if !_storage._description_p.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._description_p, fieldNumber: 6)
+      }
+      if !_storage._version.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._version, fieldNumber: 7)
+      }
+      try { if let v = _storage._sourceRuleCount {
+        try visitor.visitSingularInt32Field(value: v, fieldNumber: 8)
+      } }()
+      if _storage._lastUpdated != 0 {
+        try visitor.visitSingularInt64Field(value: _storage._lastUpdated, fieldNumber: 9)
+      }
+      if _storage._isCustom != false {
+        try visitor.visitSingularBoolField(value: _storage._isCustom, fieldNumber: 10)
+      }
+      if !_storage._localFilePath.isEmpty {
+        try visitor.visitSingularStringField(value: _storage._localFilePath, fieldNumber: 11)
+      }
+      if !_storage._excludedSites.isEmpty {
+        try visitor.visitRepeatedStringField(value: _storage._excludedSites, fieldNumber: 12)
+      }
+      try { if let v = _storage._uniqueRuleCount {
+        try visitor.visitSingularInt32Field(value: v, fieldNumber: 13)
+      } }()
+      try { if let v = _storage._userProvidedName {
+        try visitor.visitSingularBoolField(value: v, fieldNumber: 14)
+      } }()
+      try { if let v = _storage._userProvidedDescription {
+        try visitor.visitSingularBoolField(value: v, fieldNumber: 15)
+      } }()
+      try { if let v = _storage._admittedSourceRuleCount {
+        try visitor.visitSingularInt32Field(value: v, fieldNumber: 16)
+      } }()
+      try { if let v = _storage._selectedSites {
+        try visitor.visitSingularMessageField(value: v, fieldNumber: 17)
+      } }()
     }
-    if !self.name.isEmpty {
-      try visitor.visitSingularStringField(value: self.name, fieldNumber: 2)
-    }
-    if !self.url.isEmpty {
-      try visitor.visitSingularStringField(value: self.url, fieldNumber: 3)
-    }
-    if self.category != .unspecified {
-      try visitor.visitSingularEnumField(value: self.category, fieldNumber: 4)
-    }
-    if self.isSelected != false {
-      try visitor.visitSingularBoolField(value: self.isSelected, fieldNumber: 5)
-    }
-    if !self.description_p.isEmpty {
-      try visitor.visitSingularStringField(value: self.description_p, fieldNumber: 6)
-    }
-    if !self.version.isEmpty {
-      try visitor.visitSingularStringField(value: self.version, fieldNumber: 7)
-    }
-    try { if let v = self._sourceRuleCount {
-      try visitor.visitSingularInt32Field(value: v, fieldNumber: 8)
-    } }()
-    if self.lastUpdated != 0 {
-      try visitor.visitSingularInt64Field(value: self.lastUpdated, fieldNumber: 9)
-    }
-    if self.isCustom != false {
-      try visitor.visitSingularBoolField(value: self.isCustom, fieldNumber: 10)
-    }
-    if !self.localFilePath.isEmpty {
-      try visitor.visitSingularStringField(value: self.localFilePath, fieldNumber: 11)
-    }
-    if !self.excludedSites.isEmpty {
-      try visitor.visitRepeatedStringField(value: self.excludedSites, fieldNumber: 12)
-    }
-    try { if let v = self._uniqueRuleCount {
-      try visitor.visitSingularInt32Field(value: v, fieldNumber: 13)
-    } }()
-    try { if let v = self._userProvidedName {
-      try visitor.visitSingularBoolField(value: v, fieldNumber: 14)
-    } }()
-    try { if let v = self._userProvidedDescription {
-      try visitor.visitSingularBoolField(value: v, fieldNumber: 15)
-    } }()
-    try { if let v = self._admittedSourceRuleCount {
-      try visitor.visitSingularInt32Field(value: v, fieldNumber: 16)
-    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: Wblock_Data_FilterListData, rhs: Wblock_Data_FilterListData) -> Bool {
-    if lhs.id != rhs.id {return false}
-    if lhs.name != rhs.name {return false}
-    if lhs.url != rhs.url {return false}
-    if lhs.category != rhs.category {return false}
-    if lhs.isSelected != rhs.isSelected {return false}
-    if lhs.description_p != rhs.description_p {return false}
-    if lhs.version != rhs.version {return false}
-    if lhs._sourceRuleCount != rhs._sourceRuleCount {return false}
-    if lhs.lastUpdated != rhs.lastUpdated {return false}
-    if lhs.isCustom != rhs.isCustom {return false}
-    if lhs.localFilePath != rhs.localFilePath {return false}
-    if lhs.excludedSites != rhs.excludedSites {return false}
-    if lhs._uniqueRuleCount != rhs._uniqueRuleCount {return false}
-    if lhs._userProvidedName != rhs._userProvidedName {return false}
-    if lhs._userProvidedDescription != rhs._userProvidedDescription {return false}
-    if lhs._admittedSourceRuleCount != rhs._admittedSourceRuleCount {return false}
+    if lhs._storage !== rhs._storage {
+      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
+        let _storage = _args.0
+        let rhs_storage = _args.1
+        if _storage._id != rhs_storage._id {return false}
+        if _storage._name != rhs_storage._name {return false}
+        if _storage._url != rhs_storage._url {return false}
+        if _storage._category != rhs_storage._category {return false}
+        if _storage._isSelected != rhs_storage._isSelected {return false}
+        if _storage._description_p != rhs_storage._description_p {return false}
+        if _storage._version != rhs_storage._version {return false}
+        if _storage._sourceRuleCount != rhs_storage._sourceRuleCount {return false}
+        if _storage._lastUpdated != rhs_storage._lastUpdated {return false}
+        if _storage._isCustom != rhs_storage._isCustom {return false}
+        if _storage._localFilePath != rhs_storage._localFilePath {return false}
+        if _storage._excludedSites != rhs_storage._excludedSites {return false}
+        if _storage._uniqueRuleCount != rhs_storage._uniqueRuleCount {return false}
+        if _storage._userProvidedName != rhs_storage._userProvidedName {return false}
+        if _storage._userProvidedDescription != rhs_storage._userProvidedDescription {return false}
+        if _storage._admittedSourceRuleCount != rhs_storage._admittedSourceRuleCount {return false}
+        if _storage._selectedSites != rhs_storage._selectedSites {return false}
+        return true
+      }
+      if !storagesAreEqual {return false}
+    }
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

@@ -66,6 +66,14 @@ struct ReorderCacheTests {
         try write(c, "!#safari_cb_affinity(all)\n@@||changed-c.example^\n@@||another.example^\n!#safari_cb_affinity\n")
         let changed = try compile([a, b], [a, b, c, d], extra: "||extra.example^")
         precondition(!changed.reusedCachedBase, "affinity content changes still miss")
+        b.selectedSites = ["only.test"]
+        let selectedOnly = try compile([a, b], [a, b, c, d], extra: "||extra.example^")
+        precondition(!selectedOnly.reusedCachedBase, "selected-site changes must invalidate cached output")
+        b.selectedSites = []
+        let nowhere = try compile([a, b], [a, b, c, d], extra: "||extra.example^")
+        let nowhereText = String(decoding: try output(), as: UTF8.self)
+        precondition(!nowhere.reusedCachedBase && !nowhereText.contains("ads-b") && nowhereText.contains("ads-a"),
+                     "an empty selection must disable only that list, not other lists")
         let removed = try compile([a], [a, c, d], extra: "||extra.example^")
         precondition(!removed.reusedCachedBase, "removing a selected list still misses")
         print("PASS #683 reordering hits cache, fresh output is identical, semantic changes invalidate")

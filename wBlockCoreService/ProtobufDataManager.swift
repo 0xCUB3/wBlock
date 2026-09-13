@@ -193,6 +193,10 @@ func mergeFilterListsForPersistence(
         mergeField(&merged.isCustom, baseline: base.isCustom, persisted: theirs.isCustom)
         mergeField(&merged.localFilePath, baseline: base.localFilePath, persisted: theirs.localFilePath)
         mergeField(&merged.excludedSites, baseline: base.excludedSites, persisted: theirs.excludedSites)
+        if merged.hasSelectedSites == base.hasSelectedSites && merged.selectedSites == base.selectedSites {
+            if theirs.hasSelectedSites { merged.selectedSites = theirs.selectedSites }
+            else { merged.clearSelectedSites() }
+        }
         if merged.hasAdmittedSourceRuleCount == base.hasAdmittedSourceRuleCount
             && (!merged.hasAdmittedSourceRuleCount || merged.admittedSourceRuleCount == base.admittedSourceRuleCount)
         {

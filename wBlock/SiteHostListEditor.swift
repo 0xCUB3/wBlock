@@ -5,6 +5,7 @@ struct SiteHostListEditor: View {
     let title: LocalizedStringKey
     let hosts: [String]
     let update: ([String]) -> Void
+    var isSaving = false
     @State private var input = ""
 
     private var candidate: String? {
@@ -13,7 +14,7 @@ struct SiteHostListEditor: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(title).font(.callout.weight(.medium))
             HStack {
                 TextField("example.com", text: $input, onCommit: addSite)
@@ -25,12 +26,16 @@ struct SiteHostListEditor: View {
                     #endif
                 Button(action: addSite) {
                     Image(systemName: "plus.circle.fill").font(.title2)
-                        .frame(minWidth: 28, minHeight: 44)
+                        #if os(macOS)
+                        .frame(minWidth: 28, minHeight: 28)
+                        #else
+                        .frame(minWidth: 44, minHeight: 44)
+                        #endif
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Add")
-                .disabled(candidate == nil)
+                .disabled(candidate == nil || isSaving)
             }
             ForEach(hosts, id: \.self) { site in
                 HStack {
@@ -44,14 +49,15 @@ struct SiteHostListEditor: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Remove")
                     .accessibilityValue(site)
+                    .disabled(isSaving)
                 }
             }
         }
     }
 
     private func addSite() {
-        guard let candidate else { return }
-        update((hosts + [candidate]).sorted())
+        guard !isSaving, let candidate else { return }
         input = ""
+        update((hosts + [candidate]).sorted())
     }
 }
