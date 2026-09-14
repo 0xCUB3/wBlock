@@ -77,7 +77,7 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View, Search: View>
             HStack(spacing: 8) {
                 // Buttons that share a capsule get the smaller hit target and
                 // hover disc (#771); a button alone in its capsule fills it.
-                HStack(spacing: 6) {
+                HStack(spacing: 0) {
                     primary()
                     if !hasPendingChanges { apply() }
                 }
@@ -196,6 +196,7 @@ private struct CompactToolbarButtonStyle: ButtonStyle {
             .background(Color.primary.opacity(isEnabled ? (configuration.isPressed ? 0.12 : (isHovered ? 0.08 : 0)) : 0), in: .capsule)
             .opacity(isEnabled ? (configuration.isPressed ? 0.6 : 1) : 0.35)
             .onHover { isHovered = $0 }
+            .padding(isGrouped ? 3 : 0)
     }
 }
 
