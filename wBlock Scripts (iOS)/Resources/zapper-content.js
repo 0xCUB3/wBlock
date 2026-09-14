@@ -466,15 +466,16 @@
       #${UI_ROOT_ID} .wblock-bar.wblock-dragging { cursor: grabbing; }
       #${UI_ROOT_ID} .wblock-drag-hint { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.3); margin: 0 auto 6px; }
       #${UI_ROOT_ID} .wblock-status { font-size: 13px; line-height: 1.35; flex: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-      #${UI_ROOT_ID} .wblock-actions { display: flex; gap: 10px; }
-      #${UI_ROOT_ID} button { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 11px; padding: 10px 12px; min-height: 40px; line-height: 1.1; font-size: 13px; font-weight: 650; color: #fff; background: rgba(255,255,255,0.14); touch-action: manipulation; -webkit-tap-highlight-color: transparent; white-space: nowrap; flex-shrink: 0; }
+      #${UI_ROOT_ID} .wblock-actions { display: flex; flex-wrap: wrap; gap: 10px; min-width: 0; max-width: 100%; }
+      #${UI_ROOT_ID} .wblock-default { flex-wrap: wrap; min-width: 0; max-width: 100%; }
+      #${UI_ROOT_ID} button { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 11px; padding: 10px 12px; min-height: 40px; line-height: 1.1; font-size: 13px; font-weight: 650; color: #fff; background: rgba(255,255,255,0.14); touch-action: manipulation; -webkit-tap-highlight-color: transparent; white-space: normal; overflow-wrap: anywhere; flex-shrink: 0; min-width: 0; max-width: 100%; box-sizing: border-box; }
       #${UI_ROOT_ID} button:disabled { opacity: 0.5; }
-      #${UI_ROOT_ID} .wblock-nav { display: none; gap: 10px; }
+      #${UI_ROOT_ID} .wblock-nav { display: none; flex-wrap: wrap; gap: 10px; min-width: 0; max-width: 100%; }
       #${UI_ROOT_ID} .wblock-nav.wblock-active { display: flex; }
       #${UI_ROOT_ID} .wblock-nav.wblock-active .wblock-hide-btn { background: rgba(249,115,22,0.88); animation: wblock-hide-pulse 1.8s ease-in-out 0.3s 2; }
       @keyframes wblock-hide-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(249,115,22,0); } 50% { box-shadow: 0 0 0 5px rgba(249,115,22,0.25); } }
       #${UI_ROOT_ID} .wblock-refine-active .wblock-done-btn { opacity: 0.45; }
-      #${UI_ROOT_ID} .wblock-ancestors { display: none; flex: 1 1 100%; align-items: center; gap: 6px; overflow-x: auto; overflow-y: hidden; touch-action: pan-x; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; padding: 2px 0 0; scrollbar-width: none; }
+      #${UI_ROOT_ID} .wblock-ancestors { display: none; flex: 1 1 100%; min-width: 0; max-width: 100%; align-items: center; gap: 6px; overflow-x: auto; overflow-y: hidden; touch-action: pan-x; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; padding: 2px 0 0; scrollbar-width: none; }
       #${UI_ROOT_ID} .wblock-ancestors.wblock-active { display: flex; }
       #${UI_ROOT_ID} .wblock-ancestors::-webkit-scrollbar { height: 0; display: none; }
       #${UI_ROOT_ID} button.wblock-ancestor-chip { appearance: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 999px; padding: 6px 10px; min-height: 28px; max-width: 42vw; line-height: 1.1; font-size: 11px; font-weight: 650; color: #fff; background: rgba(255,255,255,0.14); touch-action: manipulation; -webkit-tap-highlight-color: transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
