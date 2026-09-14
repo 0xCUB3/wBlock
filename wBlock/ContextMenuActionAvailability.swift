@@ -3,6 +3,7 @@ import wBlockCoreService
 
 enum FilterContextMenuAction: String {
     case info
+    case settings
     case viewRules
     case editRules
     case deleteList
@@ -10,6 +11,7 @@ enum FilterContextMenuAction: String {
 
 enum UserScriptContextMenuAction: String {
     case info
+    case settings
     case viewContent
     case editContent
     case download
@@ -18,12 +20,12 @@ enum UserScriptContextMenuAction: String {
 
 enum ContextMenuActionAvailability {
     static func filterActions(for filter: FilterList) -> [FilterContextMenuAction] {
-        guard filter.isCustom else { return [.info, .viewRules] }
+        guard filter.isCustom else { return [.info, .settings, .viewRules] }
         if filter.isInlineUserList {
-            return [.info, .editRules, .deleteList]
+            return [.info, .settings, .editRules, .deleteList]
         }
         // A URL-imported custom list can be inspected or removed, but not edited.
-        return [.info, .viewRules, .deleteList]
+        return [.info, .settings, .viewRules, .deleteList]
     }
 
     static func userScriptActions(isBuiltIn: Bool, isLocal: Bool) -> [UserScriptContextMenuAction] {
@@ -38,11 +40,11 @@ enum ContextMenuActionAvailability {
         isDownloaded: Bool
     ) -> [UserScriptContextMenuAction] {
         let download: [UserScriptContextMenuAction] = (!isLocal && !isDownloaded) ? [.download] : []
-        guard !isBuiltIn else { return [.info, .viewContent] + download }
+        guard !isBuiltIn else { return [.info, .settings, .viewContent] + download }
         if isLocal {
-            return [.info, .editContent, .deleteScript]
+            return [.info, .settings, .editContent, .deleteScript]
         }
         // A URL-imported custom script is view-only with respect to its source.
-        return [.info, .viewContent] + download + [.deleteScript]
+        return [.info, .settings, .viewContent] + download + [.deleteScript]
     }
 }

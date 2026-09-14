@@ -189,6 +189,7 @@ struct UserScriptManagerView: View {
     @State private var showingAddScriptSheet = false
     @State private var selectedScript: SelectedUserScript?
     @State private var selectedScriptInfo: SelectedUserScript?
+    @State private var selectedScriptSettings: SelectedUserScript?
     @State private var showOnlyEnabled = false
     @State private var searchText = ""
     @State private var showSearch = false
@@ -312,6 +313,10 @@ struct UserScriptManagerView: View {
         .infoPresentation(item: $selectedScriptInfo, onDismiss: refreshScripts) { selection in
             UserScriptInfoView(scriptId: selection.id, userScriptManager: userScriptManager)
                 .tallInfoSheetPresentationCompat()
+        }
+        .infoPresentation(item: $selectedScriptSettings, onDismiss: refreshScripts) { selection in
+            UserScriptSettingsView(scriptID: selection.id, userScriptManager: userScriptManager)
+                .infoSheetPresentationCompat()
         }
         .sheet(item: $selectedScript, onDismiss: refreshScripts) { selection in
             UserScriptContentView(
@@ -908,6 +913,13 @@ struct UserScriptManagerView: View {
                     Label("Info", systemImage: "info.circle")
                 }
             }
+            if actions.contains(.settings) {
+                Button {
+                    selectedScriptSettings = SelectedUserScript(id: script.id, action: .settings)
+                } label: {
+                    Label("Settings", systemImage: "gearshape")
+                }
+            }
             if actions.contains(.viewContent) {
                 Button {
                     selectedScript = SelectedUserScript(id: script.id, action: .viewContent)
@@ -1156,6 +1168,26 @@ private struct ScriptMatchPatternsView: View {
 }
 
 
+struct UserScriptSettingsView: View {
+    let scriptID: UUID
+    @ObservedObject var userScriptManager: UserScriptManager
+
+    var body: some View {
+        if let script = userScriptManager.userScript(withId: scriptID) {
+            ContentSettingsView(name: script.localizedDisplayName) {
+                UserScriptWebsiteExceptionsView(scriptID: scriptID, userScriptManager: userScriptManager)
+                if !script.isLocal && script.resolvedDownloadURL != nil {
+                    ScriptUpdateSettingsView(updatesAutomatically: script.updatesAutomatically) { enabled in
+                        Task { await userScriptManager.setUserScript(script, updatesAutomatically: enabled) }
+                    }
+                }
+            }
+        } else {
+            Text("Unable to load script")
+        }
+    }
+}
+
 private struct ScriptUpdateSettingsView: View {
     let updatesAutomatically: Bool
     let onChange: (Bool) -> Void
@@ -1189,9 +1221,7 @@ struct UserScriptInfoSidebar: View {
     let isBuiltIn: Bool
     let builtInDisplayRole: BuiltInUserScriptDisplayRole?
     let isBeta: Bool
-    let onUpdatesAutomaticallyChanged: (Bool) -> Void
     let onCategoryChanged: (FilterListCategory) -> Void
-    let userScriptManager: UserScriptManager
     let onEdit: () -> Void
     var onClose: (() -> Void)? = nil
 
@@ -1202,13 +1232,6 @@ struct UserScriptInfoSidebar: View {
                 ScriptNameAndDescriptionView(script: script, isBeta: isBeta, onClose: onClose)
                 ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0, isBuiltIn: isBuiltIn)
                 if !isBuiltIn { Button("Edit", action: onEdit) }
-            }
-            UserScriptWebsiteExceptionsView(scriptID: script.id, userScriptManager: userScriptManager)
-            if script.url != nil || script.updateURL != nil || script.downloadURL != nil {
-                ScriptUpdateSettingsView(
-                    updatesAutomatically: script.updatesAutomatically,
-                    onChange: onUpdatesAutomaticallyChanged
-                )
             }
             VStack(alignment: .leading, spacing: 6) {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString(
@@ -1264,9 +1287,7 @@ struct UserScriptInfoView: View {
                             isBuiltIn: userScriptManager.isDefaultUserScript(script),
                             builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
                             isBeta: userScriptManager.isBeta(for: script),
-                            onUpdatesAutomaticallyChanged: setUpdatesAutomatically,
                             onCategoryChanged: setCategory,
-                            userScriptManager: userScriptManager,
                             onEdit: { showingMetadataEditor = true }
                         )
                         .padding()
@@ -1290,9 +1311,7 @@ struct UserScriptInfoView: View {
                         isBuiltIn: userScriptManager.isDefaultUserScript(script),
                         builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
                         isBeta: userScriptManager.isBeta(for: script),
-                        onUpdatesAutomaticallyChanged: setUpdatesAutomatically,
                         onCategoryChanged: setCategory,
-                        userScriptManager: userScriptManager,
                         onEdit: { showingMetadataEditor = true },
                         onClose: { dismiss() }
                     )
@@ -1326,15 +1345,6 @@ struct UserScriptInfoView: View {
         currentScript.category = category
         script = currentScript
         Task { await userScriptManager.setUserScript(currentScript, category: category) }
-    }
-
-    private func setUpdatesAutomatically(_ updatesAutomatically: Bool) {
-        guard var currentScript = script else { return }
-        currentScript.updatesAutomatically = updatesAutomatically
-        script = currentScript
-        Task {
-            await userScriptManager.setUserScript(currentScript, updatesAutomatically: updatesAutomatically)
-        }
     }
 
     private func formatFileSize(_ bytes: Int) -> String {

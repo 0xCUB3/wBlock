@@ -35,6 +35,7 @@ struct ContentView: View {
     @State private var showFilterSearch = false
     @State private var editingCustomFilter: FilterList?
     @State private var selectedFilterInfo: FilterList?
+    @State private var selectedFilterSettings: FilterList?
     @State private var selectedFilterRules: FilterList?
     @State private var selectedCategoryInfo: FilterListCategory?
     @State private var isForeignFiltersExpanded = ProtobufDataManager.shared.isForeignFiltersExpanded
@@ -219,6 +220,10 @@ struct ContentView: View {
             FilterInfoView(filter: filter, filterManager: filterManager)
                 .infoSheetPresentationCompat()
         }
+        .infoPresentation(item: $selectedFilterSettings) { filter in
+            FilterSettingsView(filter: filter, filterManager: filterManager)
+                .infoSheetPresentationCompat()
+        }
         .sheet(item: $selectedFilterRules) { filter in
             if filter.isInlineUserList {
                 EditUserListView(filterManager: filterManager, filter: filter)
@@ -238,6 +243,7 @@ struct ContentView: View {
         }
         .onChangeCompat(of: selectedTab) { _, _ in
             selectedFilterInfo = nil
+            selectedFilterSettings = nil
             selectedCategoryInfo = nil
             filterSearchText = ""
             showFilterSearch = false
@@ -812,6 +818,7 @@ struct ContentView: View {
             isDownloading: downloadingFilterIDs.contains(filter.id),
             onDownload: { downloadFilter(filter) },
             onInfo: { selectedFilterInfo = filter },
+            onSettings: { selectedFilterSettings = filter },
             onViewRules: { selectedFilterRules = filter },
             onEdit: { editingCustomFilter = filter },
             onDelete: { filterManager.removeFilterList(filter) },
@@ -857,6 +864,7 @@ struct FilterRowView: View {
     let isDownloading: Bool
     var onDownload: () -> Void
     var onInfo: () -> Void
+    var onSettings: () -> Void
     var onViewRules: () -> Void
     var onEdit: () -> Void
     var onDelete: () -> Void
@@ -871,6 +879,9 @@ struct FilterRowView: View {
             } label: {
                 Label("Info", systemImage: "info.circle")
             }
+        }
+        if actions.contains(.settings) {
+            Button(action: onSettings) { Label("Settings", systemImage: "gearshape") }
         }
         if actions.contains(.viewRules) {
             Button {
@@ -935,8 +946,8 @@ struct FilterRowView: View {
             }
             #endif
         }
-        #if os(macOS)
         .contextMenu { contextMenuItems }
+        #if os(macOS)
         .padding(16)
         #endif
     }

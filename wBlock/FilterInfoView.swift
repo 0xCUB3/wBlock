@@ -72,7 +72,6 @@ struct FilterInfoView: View {
                     }
                 }
             }
-            siteScopeSection
             VStack(alignment: .leading, spacing: 6) {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString("Filters", comment: "Content type"), color: .red)
                 InfoMetadataRow(title: "Category", value: liveFilter.category.localizedName)
@@ -100,15 +99,27 @@ struct FilterInfoView: View {
         }
     }
 
-    private var siteScopeSection: some View {
-        SiteScopeEditor(
-            title: "Apply on", selectedSites: liveFilter.selectedSites, excludedSites: liveFilter.excludedSites,
-            emptySelectionMessage: "No sites selected. This list will not apply.",
-            excludedMessage: "This list will not apply on these sites. Other lists still apply.",
-            footer: "Sites include their subdomains. Apply changes to update filtering.",
-            updateSelected: { filterManager.setSelectedSites($0, for: liveFilter.id) },
-            updateExcluded: { filterManager.setExcludedSites($0, for: liveFilter.id) }
-        )
+}
+
+struct FilterSettingsView: View {
+    let filter: FilterList
+    @ObservedObject var filterManager: AppFilterManager
+
+    private var liveFilter: FilterList {
+        filterManager.filterLists.first(where: { $0.id == filter.id }) ?? filter
+    }
+
+    var body: some View {
+        ContentSettingsView(name: liveFilter.localizedDisplayName) {
+            SiteScopeEditor(
+                title: "Apply on", selectedSites: liveFilter.selectedSites, excludedSites: liveFilter.excludedSites,
+                emptySelectionMessage: "No sites selected. This list will not apply.",
+                excludedMessage: "This list will not apply on these sites. Other lists still apply.",
+                footer: "Sites include their subdomains. Apply changes to update filtering.",
+                updateSelected: { filterManager.setSelectedSites($0, for: liveFilter.id) },
+                updateExcluded: { filterManager.setExcludedSites($0, for: liveFilter.id) }
+            )
+        }
     }
 }
 
