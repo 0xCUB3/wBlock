@@ -46,7 +46,7 @@ struct ApplyChangesProgressView: View {
     }
 
     private var isDismissDisabled: Bool {
-        mode == .progress || isStartingSelectedUpdates
+        mode == .progress || (mode == .review && isStartingSelectedUpdates)
     }
 
     private var fillsAvailableHeight: Bool {
