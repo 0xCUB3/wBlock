@@ -42,7 +42,7 @@ struct ContentView: View {
     @State private var showingCapacityPopover = false
     @State private var selectedTab: Int = 0
     @State private var pendingEssentialFilter: FilterList?
-    /// Request tokens handed to the Userscripts tab so a ⌘⇧N or ⌘L that
+    /// Monotonic tokens handed to the Userscripts tab so a ⌘⇧N or ⌘L that
     /// arrives before that tab has been built is still honored on appear.
     @State private var addUserScriptRequest = 0
     @State private var userScriptSearchRequest = 0
@@ -197,7 +197,11 @@ struct ContentView: View {
     var body: some View {
         Group {
             #if os(macOS)
-            macTabView
+            if #available(macOS 26.0, *) {
+                nativeTabView
+            } else {
+                legacyMacTabView
+            }
             #else
             nativeTabView
             #endif
@@ -247,15 +251,7 @@ struct ContentView: View {
             )
             .infoSheetPresentationCompat()
         }
-        .onChangeCompat(of: selectedTab) { _, newTab in
-            #if os(macOS)
-            // The direct switch remounts Userscripts. Retire requests when leaving
-            // so a later visit cannot replay an already handled shortcut.
-            if newTab != 1 {
-                addUserScriptRequest = 0
-                userScriptSearchRequest = 0
-            }
-            #endif
+        .onChangeCompat(of: selectedTab) { _, _ in
             selectedFilterInfo = nil
             selectedFilterSettings = nil
             selectedCategoryInfo = nil
@@ -340,9 +336,7 @@ struct ContentView: View {
     }
 
     #if os(macOS)
-    private var macTabView: some View {
-        // Keep page selection synchronous with the toolbar picker. The native
-        // macOS TabView adds a transition between the selection and its content.
+    private var legacyMacTabView: some View {
         Group {
             switch selectedTab {
             case 1:
