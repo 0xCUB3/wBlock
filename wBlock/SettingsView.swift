@@ -66,6 +66,7 @@ struct SettingsView: View {
         #endif
         .task {
             await updateScheduleLine()
+            guard !Task.isCancelled else { return }
             await MainActor.run { startTimer() }
         }
         .onDisappear { stopTimer() }
@@ -1128,9 +1129,8 @@ extension SettingsView {
 
     private func updateScheduleLine(shouldTriggerOverdue: Bool = true) async {
         #if os(macOS)
-        let launchAgentStatus = await MainActor.run {
-            AutoUpdateLaunchAgentManager.shared.currentStatus()
-        }
+        let launchAgentStatus = await AutoUpdateLaunchAgentManager.shared.currentStatusForDisplay()
+        guard !Task.isCancelled else { return }
         let agentIntentionallyOff = backgroundAgentDisabled && !launchAgentStatus.isRegistered
         let launchAgentDetail = agentIntentionallyOff
             ? String(localized: "Background agent off (updates run while wBlock is open)")

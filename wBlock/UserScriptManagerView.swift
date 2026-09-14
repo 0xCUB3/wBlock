@@ -172,7 +172,7 @@ struct UserScriptManagerView: View {
     let isApplyingChanges: Bool
     let onApplyChanges: () -> Void
     let onForceApplyChanges: () -> Void
-    let tabSelection: Int
+    let tabSelection: AppTabSelection
     /// Incremented by ContentView for ⌘⇧N / ⌘L; see `handledAddRequest`.
     let addRequest: Int
     let searchRequest: Int
@@ -352,7 +352,7 @@ struct UserScriptManagerView: View {
             // reading the manager's still-stale value during this callback.
             refreshScripts(updatedScripts)
         }
-        .onChangeCompat(of: tabSelection) { _, _ in
+        .onReceive(tabSelection.$value.removeDuplicates().dropFirst()) { _ in
             searchText = ""
             showSearch = false
         }

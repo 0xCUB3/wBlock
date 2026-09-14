@@ -40,7 +40,22 @@ struct ContentView: View {
     @State private var selectedCategoryInfo: FilterListCategory?
     @State private var isForeignFiltersExpanded = ProtobufDataManager.shared.isForeignFiltersExpanded
     @State private var showingCapacityPopover = false
-    @State private var selectedTab: Int = 0
+    // Only AppTabView observes selection. A tab click must not invalidate every row.
+    @State private var tabSelection = AppTabSelection()
+    private var selectedTab: Int {
+        get { tabSelection.value }
+        nonmutating set { tabSelection.value = newValue }
+    }
+    #if os(macOS)
+    @State private var filterPresentation = FilterListPresentation()
+    @Environment(\.locale) private var locale
+
+    private var filterPresentationInput: FilterListPresentation.Input {
+        .init(filters: filterManager.filterLists, order: filterDisplayOrder,
+              searchText: filterSearchText, enabledOnly: showOnlyEnabledLists,
+              localeIdentifier: locale.identifier)
+    }
+    #endif
     @State private var pendingEssentialFilter: FilterList?
     /// Monotonic tokens handed to the Userscripts tab so a ⌘⇧N or ⌘L that
     /// arrives before that tab has been built is still honored on appear.
@@ -91,6 +106,17 @@ struct ContentView: View {
     }
 
     private var categorizedFilters: [(category: FilterListCategory, filters: [FilterList])] {
+        #if os(macOS)
+        let sections = filterPresentation.sections
+        return FilterListCategory.allCases.filter { $0 != .all && !$0.isUserScriptOnly }
+            .compactMap { category in
+                if let section = sections.first(where: { $0.category == category }) {
+                    return (category: category, filters: section.filters)
+                }
+                return filterDrag.id == nil || category == .scripts || category == .foreign
+                    ? nil : (category: category, filters: [])
+            }
+        #else
         let query = filterSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
         let groups = Dictionary(grouping: orderedFilters.filter { filter in
             (!showOnlyEnabledLists || filter.isSelected) && (query.isEmpty
@@ -111,6 +137,7 @@ struct ContentView: View {
                 }
                 return (category: category, filters: filters)
             }
+        #endif
     }
 
     /// Invisible zero-size buttons that surface hardware-keyboard shortcuts.
@@ -195,18 +222,20 @@ struct ContentView: View {
     }
 
     var body: some View {
-        Group {
-            #if os(macOS)
-            if #available(macOS 26.0, *) {
-                nativeTabView
-            } else {
-                legacyMacTabView
-            }
-            #else
-            nativeTabView
-            #endif
-        }
+        AppTabView(selection: tabSelection, filters: filtersView,
+                   userscripts: userscriptsView, settings: settingsView)
         .background(keyboardShortcutHandlers)
+        #if os(macOS)
+        .task(id: filterPresentationInput) {
+            if let prepared = try? await FilterListPresentation.prepare(filterPresentationInput),
+               !Task.isCancelled {
+                let isDragging = filterDrag.id != nil
+                var transaction = Transaction(animation: isDragging ? .easeInOut(duration: 0.18) : nil)
+                transaction.disablesAnimations = !isDragging
+                withTransaction(transaction) { filterPresentation = prepared }
+            }
+        }
+        #endif
         .modifier(
             ContentModifiers(
                 filterManager: filterManager,
@@ -251,7 +280,7 @@ struct ContentView: View {
             )
             .infoSheetPresentationCompat()
         }
-        .onChangeCompat(of: selectedTab) { _, _ in
+        .onReceive(tabSelection.$value.removeDuplicates().dropFirst()) { _ in
             selectedFilterInfo = nil
             selectedFilterSettings = nil
             selectedCategoryInfo = nil
@@ -320,47 +349,6 @@ struct ContentView: View {
             }
         }
     }
-
-    private var nativeTabView: some View {
-        TabView(selection: $selectedTab) {
-            filtersView
-                .tag(0)
-                .tabItem { Label("Filters", systemImage: "list.bullet.rectangle") }
-            userscriptsView
-                .tag(1)
-                .tabItem { Label("Userscripts", systemImage: "doc.text.fill") }
-            settingsView
-                .tag(2)
-                .tabItem { Label("Settings", systemImage: "gear") }
-        }
-    }
-
-    #if os(macOS)
-    private var legacyMacTabView: some View {
-        Group {
-            switch selectedTab {
-            case 1:
-                userscriptsView
-            case 2:
-                settingsView
-            default:
-                filtersView
-            }
-        }
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Picker("wBlock", selection: $selectedTab) {
-                    Text("Filters").tag(0)
-                    Text("Userscripts").tag(1)
-                    Text("Settings").tag(2)
-                }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .frame(width: 300)
-            }
-        }
-    }
-    #endif
 
     private func applyPendingChanges() {
         guard !filterManager.isLoading else { return }
@@ -546,7 +534,7 @@ struct ContentView: View {
                 VStack(spacing: 16) {
                     ForEach(categorizedFilters, id: \.category) { item in
                         if item.category == .foreign {
-                            macOSForeignFiltersView(filters: item.filters)
+                            macOSForeignFiltersView
                         } else {
                             ContentListSection { categoryHeader(item.category) } content: {
                                 if item.filters.isEmpty {
@@ -577,7 +565,7 @@ struct ContentView: View {
                 isApplyingChanges: filterManager.isLoading,
                 onApplyChanges: applyPendingChanges,
                 onForceApplyChanges: { filterManager.forceApplyChanges() },
-                tabSelection: selectedTab,
+                tabSelection: tabSelection,
                 addRequest: addUserScriptRequest,
                 searchRequest: userScriptSearchRequest,
                 onRefresh: {
@@ -881,11 +869,11 @@ struct ContentView: View {
             .onDrop(of: [ListDrag.type], delegate: ListDrop(drag: filterDrag) { moveFilter($0, to: category) })
     }
 
-    private func macOSForeignFiltersView(filters: [FilterList]) -> some View {
+    private var macOSForeignFiltersView: some View {
         VStack(alignment: .leading, spacing: 12) {
             DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
                 VStack(spacing: 0) {
-                    ForEach(ForeignFilterOrganizer.groups(for: filters)) { group in
+                    ForEach(filterPresentation.foreignGroups) { group in
                         foreignFilterGroupHeader(group.title)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 16)

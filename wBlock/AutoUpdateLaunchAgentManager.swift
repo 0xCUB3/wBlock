@@ -49,6 +49,18 @@ final class AutoUpdateLaunchAgentManager {
         return legacyStatus()
     }
 
+    /// ServiceManagement can block on XPC; opening Settings must not wait on the UI thread.
+    func currentStatusForDisplay() async -> RegistrationStatus {
+        if #available(macOS 13.0, *) {
+            let plistName = Self.plistName
+            let serviceStatus = await Task.detached(priority: .userInitiated) {
+                SMAppService.agent(plistName: plistName).status
+            }.value
+            return status(from: serviceStatus)
+        }
+        return legacyStatus()
+    }
+
     @discardableResult
     func reconcileWithAutoUpdateSetting(_ enabled: Bool) -> RegistrationStatus {
         if #available(macOS 13.0, *) {

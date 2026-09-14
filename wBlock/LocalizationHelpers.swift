@@ -27,7 +27,7 @@ enum LocalizedStrings {
     }
 }
 
-struct ForeignFilterGroup: Identifiable {
+struct ForeignFilterGroup: Identifiable, Sendable {
     let languageCode: String
     let title: String
     let sortTitle: String
