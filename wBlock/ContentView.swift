@@ -513,14 +513,14 @@ struct ContentView: View {
 
             ForEach(sections, id: \.category) { item in
                 if item.category == .foreign {
-                    Section {
-                        DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
+                    // Same section chrome as every other category; the header's
+                    // chevron collapses the rows instead of a nested DisclosureGroup.
+                    ContentListSection { categoryHeader(item.category) } content: {
+                        if isForeignFiltersExpanded {
                             ForEach(ForeignFilterOrganizer.groups(for: item.filters)) { group in
                                 foreignFilterGroupHeader(group.title)
                                 filterRows(group.filters, showsFlags: false)
                             }
-                        } label: {
-                            categoryHeader(item.category)
                         }
                     }
                 } else {
@@ -715,7 +715,16 @@ struct ContentView: View {
 
     private func categoryHeader(_ category: FilterListCategory) -> some View {
         ListCategoryHeader(title: LocalizedStringKey(category.rawValue), info: { selectedCategoryInfo = category },
-                           drop: category == .foreign ? nil : ListDrop(drag: filterDrag) { moveFilter($0, to: category) }, anchorID: category.id)
+                           drop: category == .foreign ? nil : ListDrop(drag: filterDrag) { moveFilter($0, to: category) }, anchorID: category.id,
+                           isExpanded: iOSForeignExpansion(for: category))
+    }
+
+    private func iOSForeignExpansion(for category: FilterListCategory) -> Binding<Bool>? {
+        #if os(iOS)
+        return category == .foreign ? $isForeignFiltersExpanded : nil
+        #else
+        return nil
+        #endif
     }
 
     private func defaultFilterNames(for category: FilterListCategory) -> [String] {

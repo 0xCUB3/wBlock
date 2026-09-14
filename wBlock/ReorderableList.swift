@@ -127,6 +127,8 @@ struct ListCategoryHeader: View {
     let info: () -> Void
     var drop: ListDrop? = nil
     var anchorID: AnyHashable? = nil
+    /// When set, the header gains a trailing chevron and toggles this binding on tap.
+    var isExpanded: Binding<Bool>? = nil
 
     var body: some View {
         #if os(macOS)
@@ -146,7 +148,20 @@ struct ListCategoryHeader: View {
             Button(action: info) { Image(systemName: "info.circle") }
                 .buttonStyle(.plain).noFocusRingCompat()
                 .foregroundStyle(.secondary).accessibilityLabel("Info")
+            if let isExpanded {
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.down")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(isExpanded.wrappedValue ? 0 : -90))
+                    .accessibilityHidden(true)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
+        .onTapGesture {
+            guard let isExpanded else { return }
+            withAnimation(.easeInOut(duration: 0.2)) { isExpanded.wrappedValue.toggle() }
+        }
+        .accessibilityAddTraits(isExpanded == nil ? [] : .isButton)
     }
 }
