@@ -946,8 +946,8 @@ struct FilterRowView: View {
             }
             #endif
         }
-        .contextMenu { contextMenuItems }
         #if os(macOS)
+        .contextMenu { contextMenuItems }
         .padding(16)
         #endif
     }

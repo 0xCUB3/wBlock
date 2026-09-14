@@ -897,70 +897,80 @@ struct UserScriptManagerView: View {
                         || (script.isLocal && !script.isDownloaded)
                 )
                 .frame(alignment: .center)
+                #if os(iOS)
+                Menu { scriptMenuItems(script) } label: {
+                    Label("Actions", systemImage: "ellipsis")
+                        .labelStyle(.iconOnly)
+                        .frame(minWidth: 44, minHeight: 44)
+                }
+                #endif
             }
         }
         .id(script.id)
-        .contextMenu {
-            let actions = ContextMenuActionAvailability.userScriptActions(
-                isBuiltIn: script.isBuiltIn,
-                isLocal: script.isLocal,
-                isDownloaded: script.isDownloaded
-            )
-            if actions.contains(.info) {
-                Button {
-                    selectedScriptInfo = SelectedUserScript(id: script.id, action: .info)
-                } label: {
-                    Label("Info", systemImage: "info.circle")
-                }
-            }
-            if actions.contains(.settings) {
-                Button {
-                    selectedScriptSettings = SelectedUserScript(id: script.id, action: .settings)
-                } label: {
-                    Label("Settings", systemImage: "gearshape")
-                }
-            }
-            if actions.contains(.viewContent) {
-                Button {
-                    selectedScript = SelectedUserScript(id: script.id, action: .viewContent)
-                } label: {
-                    Label("View Content", systemImage: "doc.text")
-                }
-            }
-            if actions.contains(.editContent) {
-                Button {
-                    selectedScript = SelectedUserScript(id: script.id, action: .editContent)
-                } label: {
-                    Label("Edit Content", systemImage: "pencil")
-                }
-            }
-            if actions.contains(.download) {
-                Button {
-                    downloadScript(script)
-                } label: {
-                    Label("Download", systemImage: "arrow.down.circle")
-                }
-                .disabled(downloadingScriptIDs.contains(script.id))
-            }
-            if actions.contains(.deleteScript),
-               let managedScript = userScriptManager.userScript(withId: script.id) {
-                Button(role: .destructive) {
-                    Task {
-                        await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Removing userscript"), metadata: ["script": script.name])
-                        await userScriptManager.removeUserScript(managedScript)
-                        refreshScripts()
-                    }
-                } label: {
-                    Label(
-                        script.isUserStyle ? "Delete Style" : "Delete Script",
-                        systemImage: "trash"
-                    )
-                }
-            }
-        }
         #if os(macOS)
+        .contextMenu { scriptMenuItems(script) }
         .padding(16)
         #endif
+    }
+
+    @ViewBuilder
+    private func scriptMenuItems(_ script: UserScriptListItem) -> some View {
+        let actions = ContextMenuActionAvailability.userScriptActions(
+            isBuiltIn: script.isBuiltIn,
+            isLocal: script.isLocal,
+            isDownloaded: script.isDownloaded
+        )
+        if actions.contains(.info) {
+            Button {
+                selectedScriptInfo = SelectedUserScript(id: script.id, action: .info)
+            } label: {
+                Label("Info", systemImage: "info.circle")
+            }
+        }
+        if actions.contains(.settings) {
+            Button {
+                selectedScriptSettings = SelectedUserScript(id: script.id, action: .settings)
+            } label: {
+                Label("Settings", systemImage: "gearshape")
+            }
+        }
+        if actions.contains(.viewContent) {
+            Button {
+                selectedScript = SelectedUserScript(id: script.id, action: .viewContent)
+            } label: {
+                Label("View Content", systemImage: "doc.text")
+            }
+        }
+        if actions.contains(.editContent) {
+            Button {
+                selectedScript = SelectedUserScript(id: script.id, action: .editContent)
+            } label: {
+                Label("Edit Content", systemImage: "pencil")
+            }
+        }
+        if actions.contains(.download) {
+            Button {
+                downloadScript(script)
+            } label: {
+                Label("Download", systemImage: "arrow.down.circle")
+            }
+            .disabled(downloadingScriptIDs.contains(script.id))
+        }
+        if actions.contains(.deleteScript),
+           let managedScript = userScriptManager.userScript(withId: script.id) {
+            Button(role: .destructive) {
+                Task {
+                    await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Removing userscript"), metadata: ["script": script.name])
+                    await userScriptManager.removeUserScript(managedScript)
+                    refreshScripts()
+                }
+            } label: {
+                Label(
+                    script.isUserStyle ? "Delete Style" : "Delete Script",
+                    systemImage: "trash"
+                )
+            }
+        }
     }
 
     private var emptyStateView: some View {
