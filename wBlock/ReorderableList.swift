@@ -62,12 +62,21 @@ struct ReorderableRows<Item: Identifiable, Row: View>: View where Item.ID == UUI
     @ViewBuilder let row: (Item) -> Row
 
     private func move(_ source: IndexSet, to destination: Int) {
+        guard source.allSatisfy({ items.indices.contains($0) }),
+              (0...items.count).contains(destination) else { return }
         var moved = items
         moved.move(fromOffsets: source, toOffset: destination)
         order = ListDisplayOrder.saving(moved, in: allItems)
     }
 
     var body: some View {
+        #if os(iOS)
+        // Let List snapshot and move the whole cell with one native drag session.
+        ForEach(items) { item in
+            row(item)
+        }
+        .onMove(perform: move)
+        #else
         ForEach(items) { item in
             row(item)
                 .onDrag {
@@ -89,15 +98,7 @@ struct ReorderableRows<Item: Identifiable, Row: View>: View where Item.ID == UUI
                     }
                     commit(id)
                 }))
-            #if os(macOS)
             if item.id != items.last?.id { Divider().padding(.leading, 16) }
-            #endif
-        }
-        #if os(iOS)
-        .onMove {
-            // Native List moves bypass performDrop; provider cleanup must not undo them.
-            drag.id = nil
-            move($0, to: $1)
         }
         #endif
     }
@@ -124,9 +125,22 @@ struct ContentListSection<Header: View, Content: View>: View {
 struct ListCategoryHeader: View {
     let title: LocalizedStringKey
     let info: () -> Void
-    let drop: ListDrop
+    var drop: ListDrop? = nil
     var anchorID: AnyHashable? = nil
+
     var body: some View {
+        #if os(macOS)
+        if let drop {
+            header.onDrop(of: [ListDrag.type], delegate: drop)
+        } else {
+            header
+        }
+        #else
+        header
+        #endif
+    }
+
+    private var header: some View {
         HStack(spacing: 6) {
             Text(title).infoPopoverAnchor(anchorID).foregroundStyle(.primary).textCase(.none)
             Button(action: info) { Image(systemName: "info.circle") }
@@ -134,6 +148,5 @@ struct ListCategoryHeader: View {
                 .foregroundStyle(.secondary).accessibilityLabel("Info")
         }
         .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
-        .onDrop(of: [ListDrag.type], delegate: drop)
     }
 }

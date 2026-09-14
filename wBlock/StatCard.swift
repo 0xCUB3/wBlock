@@ -77,7 +77,7 @@ struct StatCard: View {
         .padding(.vertical, 12)
         .padding(.horizontal, compact ? 14 : 20)
         #if os(iOS)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         #else
         .frame(minWidth: 155)
         #endif

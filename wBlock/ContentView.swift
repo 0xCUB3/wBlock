@@ -101,7 +101,13 @@ struct ContentView: View {
         return FilterListCategory.allCases.filter { $0 != .all && !$0.isUserScriptOnly }
             .compactMap { category in
                 guard let filters = groups[category] else {
-                    return filterDrag.id == nil || category == .scripts ? nil : (category: category, filters: [])
+                    #if os(iOS)
+                    // Inserting sections during a native drag invalidates SwiftUI shadow row indexes.
+                    return nil
+                    #else
+                    return filterDrag.id == nil || category == .scripts || category == .foreign
+                        ? nil : (category: category, filters: [])
+                    #endif
                 }
                 return (category: category, filters: filters)
             }
@@ -494,13 +500,14 @@ struct ContentView: View {
 
     private var nativeFiltersListView: some View {
         #if os(iOS)
-        List {
+        let sections = categorizedFilters
+        return List {
             Section {
                 statsCardsView
                     .unifiedTabCardSectionRow()
             }
 
-            ForEach(categorizedFilters, id: \.category) { item in
+            ForEach(sections, id: \.category) { item in
                 if item.category == .foreign {
                     Section {
                         DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
@@ -696,12 +703,15 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             #endif
         }
+        #if os(iOS)
+        .fixedSize(horizontal: false, vertical: true)
+        #endif
         .padding(.horizontal)
     }
 
     private func categoryHeader(_ category: FilterListCategory) -> some View {
         ListCategoryHeader(title: LocalizedStringKey(category.rawValue), info: { selectedCategoryInfo = category },
-                           drop: ListDrop(drag: filterDrag) { moveFilter($0, to: category) }, anchorID: category.id)
+                           drop: category == .foreign ? nil : ListDrop(drag: filterDrag) { moveFilter($0, to: category) }, anchorID: category.id)
     }
 
     private func defaultFilterNames(for category: FilterListCategory) -> [String] {
@@ -785,28 +795,37 @@ struct ContentView: View {
 
     private var orderedFilters: [FilterList] {
         let filters = filterManager.filterLists
-        return ListDisplayOrder.sorted(
-            filters.filter { $0.category != .foreign }
-                + ForeignFilterOrganizer.sortedFilters(filters.filter { $0.category == .foreign }),
-            order: filterDisplayOrder)
+        return ListDisplayOrder.sorted(filters.filter { $0.category != .foreign }, order: filterDisplayOrder)
+            + ForeignFilterOrganizer.sortedFilters(filters.filter { $0.category == .foreign })
     }
 
     private func moveFilter(_ id: UUID, to category: FilterListCategory) {
-        guard !filterManager.isApplyInFlight,
+        guard !filterManager.isApplyInFlight, category != .foreign,
               let index = filterManager.filterLists.firstIndex(where: { $0.id == id }),
+              filterManager.filterLists[index].category != .foreign,
               filterManager.filterLists[index].category != category else { return }
         filterManager.filterLists[index].category = category
         filterManager.saveFilterListsCoalesced()
         filterManager.markNonSelectionChangesPending()
     }
 
+    @ViewBuilder
     private func filterRows(_ filters: [FilterList], showsFlags: Bool = true) -> some View {
-        ReorderableRows(items: ListDisplayOrder.sorted(filters, order: filterDisplayOrder),
-                        allItems: orderedFilters, order: $filterDisplayOrder, drag: filterDrag,
-                        commit: { id in
-                            if let category = filters.first?.category { moveFilter(id, to: category) }
-                        }) { filter in
-            filterRowView(for: filter, showsFlags: showsFlags)
+        if filters.first?.category == .foreign {
+            ForEach(filters) { filter in
+                filterRowView(for: filter, showsFlags: showsFlags)
+                #if os(macOS)
+                if filter.id != filters.last?.id { Divider().padding(.leading, 16) }
+                #endif
+            }
+        } else {
+            ReorderableRows(items: filters,
+                            allItems: orderedFilters, order: $filterDisplayOrder, drag: filterDrag,
+                            commit: { id in
+                                if let category = filters.first?.category { moveFilter(id, to: category) }
+                            }) { filter in
+                filterRowView(for: filter, showsFlags: showsFlags)
+            }
         }
     }
 
@@ -828,7 +847,9 @@ struct ContentView: View {
                 } else {
                     filterManager.setFilterListSelection(id: filter.id, selected: newValue)
                 }
-            }
+            },
+            onChangeCategory: filter.category == .foreign || filterManager.isApplyInFlight
+                ? nil : { moveFilter(filter.id, to: $0) }
         )
     }
 
@@ -869,6 +890,7 @@ struct FilterRowView: View {
     var onEdit: () -> Void
     var onDelete: () -> Void
     var onToggle: (Bool) -> Void
+    var onChangeCategory: ((FilterListCategory) -> Void)? = nil
 
     @ViewBuilder
     private var contextMenuItems: some View {
@@ -897,6 +919,18 @@ struct FilterRowView: View {
                 Label("Edit Rules", systemImage: "pencil")
             }
         }
+        #if os(iOS)
+        if let onChangeCategory {
+            Picker("Category", selection: Binding(get: { filter.category }, set: onChangeCategory)) {
+                ForEach(FilterListCategory.allCases.filter {
+                    $0 != .all && $0 != .foreign && $0 != .scripts && !$0.isUserScriptOnly
+                }) { category in
+                    Text(LocalizedStringKey(category.rawValue)).tag(category)
+                }
+            }
+            .pickerStyle(.menu)
+        }
+        #endif
         if actions.contains(.deleteList) {
             Button(role: .destructive) {
                 onDelete()

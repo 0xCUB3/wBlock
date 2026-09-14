@@ -281,8 +281,12 @@ struct UserScriptManagerView: View {
     private var displayedScriptSections: [UserScriptDisplaySection] {
         UserScriptDisplayCategory.allCases.compactMap { category in
             let matching = displayedScripts.filter { $0.displayCategory == category }
+            #if os(iOS)
+            return matching.isEmpty ? nil : UserScriptDisplaySection(id: category, scripts: matching)
+            #else
             return matching.isEmpty && scriptDrag.id == nil ? nil
                 : UserScriptDisplaySection(id: category, scripts: matching)
+            #endif
         }
     }
 
@@ -408,7 +412,8 @@ struct UserScriptManagerView: View {
                         scriptRows(scriptSection)
                     }
                 }
-            }        }
+            }
+        }
         .unifiedTabListStyle()
         .refreshable {
             await onRefresh()
@@ -636,6 +641,9 @@ struct UserScriptManagerView: View {
                 compact: compact
             )
         }
+        #if os(iOS)
+        .fixedSize(horizontal: false, vertical: true)
+        #endif
         .padding(.horizontal)
     }
 
@@ -956,6 +964,17 @@ struct UserScriptManagerView: View {
             }
             .disabled(downloadingScriptIDs.contains(script.id))
         }
+        #if os(iOS)
+        Picker("Category", selection: Binding(
+            get: { script.displayCategory },
+            set: { moveScript(script.id, to: $0) }
+        )) {
+            ForEach(UserScriptDisplayCategory.allCases) { category in
+                Text(LocalizedStringKey(category.rawValue)).tag(category)
+            }
+        }
+        .pickerStyle(.menu)
+        #endif
         if actions.contains(.deleteScript),
            let managedScript = userScriptManager.userScript(withId: script.id) {
             Button(role: .destructive) {
