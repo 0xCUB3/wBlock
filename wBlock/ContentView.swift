@@ -223,8 +223,12 @@ struct ContentView: View {
             }
         }
         .infoPresentation(item: $selectedFilterInfo) { filter in
-            FilterInfoView(filter: filter, filterManager: filterManager)
-                .infoSheetPresentationCompat()
+            FilterInfoView(
+                filter: filter, filterManager: filterManager,
+                onChangeCategory: filter.category == .foreign || filterManager.isApplyInFlight
+                    ? nil : { moveFilter(filter.id, to: $0) }
+            )
+            .infoSheetPresentationCompat()
         }
         .infoPresentation(item: $selectedFilterSettings) { filter in
             FilterSettingsView(filter: filter, filterManager: filterManager)
@@ -919,18 +923,6 @@ struct FilterRowView: View {
                 Label("Edit Rules", systemImage: "pencil")
             }
         }
-        #if os(iOS)
-        if let onChangeCategory {
-            Picker("Category", selection: Binding(get: { filter.category }, set: onChangeCategory)) {
-                ForEach(FilterListCategory.allCases.filter {
-                    $0 != .all && $0 != .foreign && $0 != .scripts && !$0.isUserScriptOnly
-                }) { category in
-                    Text(LocalizedStringKey(category.rawValue)).tag(category)
-                }
-            }
-            .pickerStyle(.menu)
-        }
-        #endif
         if actions.contains(.deleteList) {
             Button(role: .destructive) {
                 onDelete()
@@ -972,17 +964,27 @@ struct FilterRowView: View {
             )
             .labelsHidden()
             .toggleStyle(.switch)
-            #if os(iOS)
-            Menu { contextMenuItems } label: {
-                Label("Actions", systemImage: "ellipsis")
-                    .labelStyle(.iconOnly)
-                    .frame(minWidth: 44, minHeight: 44)
-            }
-            #endif
         }
         #if os(macOS)
         .contextMenu { contextMenuItems }
         .padding(16)
+        #else
+        // iOS keeps the switch flush right. Secondary actions live in the Info
+        // sheet the row opens and in the trailing swipe.
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            let actions = ContextMenuActionAvailability.filterActions(for: filter)
+            if actions.contains(.deleteList) {
+                Button(role: .destructive, action: onDelete) {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+            if actions.contains(.settings) {
+                Button(action: onSettings) {
+                    Label("Settings", systemImage: "gearshape")
+                }
+                .tint(.gray)
+            }
+        }
         #endif
     }
 
@@ -1016,80 +1018,59 @@ struct FilterRowView: View {
                 }
                 .font(.body)
 
-                if filter.isCustom && !filter.isInlineUserList && filter.sourceRuleCount == nil {
-                    Text("Not Downloaded")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else if let rawCount = filter.rawSourceRuleCount,
-                   let expandedCount = filter.sourceRuleCount,
-                   rawCount != expandedCount {
-                    // Both counts available and different — show expansion
-                    Text(
-                        String.localizedStringWithFormat(
-                            NSLocalizedString(
-                                "(%@ source → %@ expanded rules)",
-                                comment: "Filter rule expansion summary"
-                            ),
-                            rawCount.formatted(),
-                            expandedCount.formatted()
-                        )
-                    )
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .help(submittedRuleCountHelp(for: filter))
-                } else if let count = filter.sourceRuleCount, count > 0 {
-                    // Single count (no expansion, counts match, or rawSourceRuleCount is nil after restart)
-                    Text(
-                        String.localizedStringWithFormat(
-                            NSLocalizedString("(%@ rules)", comment: "Filter rule count summary"),
-                            count.formatted()
-                        )
-                    )
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .help(submittedRuleCountHelp(for: filter))
-                }
-
                 if !filter.localizedDisplayDescription.isEmpty {
                     Text(filter.localizedDisplayDescription)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(nil)
+                        #if os(iOS)
+                        .lineLimit(2)
+                        #endif
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                HStack(spacing: 4) {
-                    if !filter.version.isEmpty {
-                        Text(
-                            LocalizedStrings.format(
-                                "Version %@",
-                                comment: "Filter version label",
-                                filter.version
-                            )
-                        )
-                            .font(.caption2)
-                            .foregroundStyle(.gray)
-                    }
-
-                    if let lastUpdatedFormatted = filter.lastUpdatedFormatted {
-                        if !filter.version.isEmpty {
-                            Text("·")
-                                .font(.caption2)
-                                .foregroundStyle(.gray)
-                        }
-                        Text(lastUpdatedFormatted)
-                            .font(.caption2)
-                            .foregroundStyle(.gray)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                    }
+                // One metadata line: rule count, version, and update time. The
+                // Info sheet carries the full detail.
+                if !metadataSummary.isEmpty {
+                    Text(metadataSummary)
+                        .font(.caption2)
+                        .foregroundStyle(.gray)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .help(submittedRuleCountHelp(for: filter))
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
             Spacer(minLength: 0)
         }
+    }
+
+    private var ruleCountSummary: String? {
+        if filter.isCustom && !filter.isInlineUserList && filter.sourceRuleCount == nil {
+            return NSLocalizedString("Not Downloaded", comment: "Filter has no local content")
+        }
+        if let rawCount = filter.rawSourceRuleCount,
+           let expandedCount = filter.sourceRuleCount,
+           rawCount != expandedCount {
+            return String.localizedStringWithFormat(
+                NSLocalizedString("%@ source → %@ expanded rules", comment: "Filter rule expansion summary"),
+                rawCount.formatted(),
+                expandedCount.formatted()
+            )
+        }
+        if let count = filter.sourceRuleCount, count > 0 {
+            return String.localizedStringWithFormat(
+                NSLocalizedString("%@ rules", comment: "Filter rule count summary"),
+                count.formatted()
+            )
+        }
+        return nil
+    }
+
+    private var metadataSummary: String {
+        ContentRowMetadata.summary([
+            ruleCountSummary,
+            ContentRowMetadata.versionLabel(filter.version),
+            ContentRowMetadata.updatedLabel(filter.lastUpdated),
+        ])
     }
 
     /// Hover text for the rule count: how many source rules the last

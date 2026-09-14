@@ -45,6 +45,8 @@
 "%d/%d" = "%d/%d";
 "(%@ rules)" = "(%@ regras)";
 "(%@ source → %@ expanded rules)" = "(%@ regras de origem → %@ regras expandidas)";
+"%@ rules" = "%@ regras";
+"%@ source → %@ expanded rules" = "%@ regras de origem → %@ regras expandidas";
 "(%@) source rules)" = "(%@) regras de origem)";
 "(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) regras de origem)";
 "(empty rule)" = "(regra vazia)";
@@ -1153,3 +1155,4 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Shared update status is unavailable." = "O status compartilhado da atualização está indisponível.";
 "Shared update status lock is unavailable." = "O bloqueio do status compartilhado da atualização está indisponível.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ descartou %d regras devido ao limite do Safari por extensão.";
+"Updated %@" = "Atualizado %@";

@@ -45,6 +45,8 @@
 "%d/%d" = "%d/%d";
 "(%@ rules)" = "(%@ szabály)";
 "(%@ source → %@ expanded rules)" = "(%@ forrásszabály → %@ kibontott szabály)";
+"%@ rules" = "%@ szabály";
+"%@ source → %@ expanded rules" = "%@ forrásszabály → %@ kibontott szabály";
 "(%@) source rules)" = "(%@) forrásszabály)";
 "(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) forrásszabály)";
 "(empty rule)" = "(üres szabály)";
@@ -1153,3 +1155,4 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Shared update status is unavailable." = "A megosztott frissítési állapot nem érhető el.";
 "Shared update status lock is unavailable." = "A megosztott frissítési állapot zárolása nem érhető el.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ %d szabályt hagyott ki a Safari bővítményenkénti korlátja miatt.";
+"Updated %@" = "Frissítve %@";

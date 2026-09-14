@@ -45,6 +45,8 @@
 "%d/%d" = "%d/%d";
 "(%@ rules)" = "(%@ قواعد)";
 "(%@ source → %@ expanded rules)" = "(%@ قواعد مصدر → %@ قواعد موسعة)";
+"%@ rules" = "%@ قواعد";
+"%@ source → %@ expanded rules" = "%@ قواعد مصدر → %@ قواعد موسعة";
 "(%@) source rules)" = "(%@) قواعد المصدر)";
 "(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) قواعد المصدر)";
 "(empty rule)" = "(قاعدة فارغة)";
@@ -1153,3 +1155,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Shared update status is unavailable." = "حالة التحديث المشتركة غير متاحة.";
 "Shared update status lock is unavailable." = "قفل حالة التحديث المشتركة غير متاح.";
 "%@ dropped %d rules at Safari's per-extension limit." = "أسقط %@ عدد %d من القواعد بسبب حد Safari لكل امتداد.";
+"Updated %@" = "تم التحديث %@";

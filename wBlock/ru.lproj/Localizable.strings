@@ -45,6 +45,8 @@
 "%d/%d" = "%d/%d";
 "(%@ rules)" = "(%@ правил)";
 "(%@ source → %@ expanded rules)" = "(%@ исходных правил → %@ развёрнутых правил)";
+"%@ rules" = "%@ правил";
+"%@ source → %@ expanded rules" = "%@ исходных правил → %@ развёрнутых правил";
 "(%@) source rules)" = "(%@) исходных правил)";
 "(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) исходных правил)";
 "(empty rule)" = "(пустое правило)";
@@ -1153,3 +1155,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Shared update status is unavailable." = "Общее состояние обновления недоступно.";
 "Shared update status lock is unavailable." = "Блокировка общего состояния обновления недоступна.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ пропустил %d правил из-за ограничения Safari на расширение.";
+"Updated %@" = "Обновлено %@";

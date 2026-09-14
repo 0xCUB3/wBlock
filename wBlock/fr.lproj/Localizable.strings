@@ -45,6 +45,8 @@
 "%d/%d" = "%d/%d";
 "(%@ rules)" = "(%@ règles)";
 "(%@ source → %@ expanded rules)" = "(%@ règles source → %@ règles développées)";
+"%@ rules" = "%@ règles";
+"%@ source → %@ expanded rules" = "%@ règles source → %@ règles développées";
 "(%@) source rules)" = "(%@) règles source)";
 "(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) règles source)";
 "(empty rule)" = "(règle vide)";
@@ -1153,3 +1155,4 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Shared update status is unavailable." = "L’état de mise à jour partagé est indisponible.";
 "Shared update status lock is unavailable." = "Le verrou de l’état de mise à jour partagé est indisponible.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ a ignoré %d règles en raison de la limite de Safari par extension.";
+"Updated %@" = "Mis à jour %@";

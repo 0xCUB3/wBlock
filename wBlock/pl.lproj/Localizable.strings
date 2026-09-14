@@ -45,6 +45,8 @@
 "%d/%d" = "%d/%d";
 "(%@ rules)" = "(%@ reguł)";
 "(%@ source → %@ expanded rules)" = "(%@ reguł źródłowych → %@ rozwiniętych reguł)";
+"%@ rules" = "%@ reguł";
+"%@ source → %@ expanded rules" = "%@ reguł źródłowych → %@ rozwiniętych reguł";
 "(%@) source rules)" = "(%@) reguł źródłowych)";
 "(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) reguł źródłowych)";
 "(empty rule)" = "(pusta reguła)";
@@ -1153,3 +1155,4 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Shared update status is unavailable." = "Współdzielony stan aktualizacji jest niedostępny.";
 "Shared update status lock is unavailable." = "Blokada współdzielonego stanu aktualizacji jest niedostępna.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ pominął %d reguł z powodu limitu Safari na rozszerzenie.";
+"Updated %@" = "Zaktualizowano %@";

@@ -9,9 +9,15 @@ import AppKit
 struct FilterInfoView: View {
     let filter: FilterList
     @ObservedObject var filterManager: AppFilterManager
+    /// iOS only. Rows have no overflow menu there, so the sheet hosts the
+    /// category move alongside the other secondary actions.
+    var onChangeCategory: ((FilterListCategory) -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var showingMetadataEditor = false
+    @State private var showingSettings = false
+    @State private var showingRules = false
+    @State private var confirmingDelete = false
     @State private var cachedMetadata = ContentInfoMetadata()
     @State private var cachedByteCount: Int?
     @State private var hasLoadedMetadata = false
@@ -32,6 +38,25 @@ struct FilterInfoView: View {
         .sheet(isPresented: $showingMetadataEditor) {
             EditCustomFilterView(filterManager: filterManager, filter: liveFilter)
         }
+        #if os(iOS)
+        .sheet(isPresented: $showingSettings) {
+            FilterSettingsView(filter: liveFilter, filterManager: filterManager)
+                .infoSheetPresentationCompat()
+        }
+        .sheet(isPresented: $showingRules) {
+            if liveFilter.isInlineUserList {
+                EditUserListView(filterManager: filterManager, filter: liveFilter)
+            } else {
+                FilterRulesView(filter: liveFilter, filterManager: filterManager)
+            }
+        }
+        .confirmationDialog("Delete Added List", isPresented: $confirmingDelete, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                filterManager.removeFilterList(liveFilter)
+                dismiss()
+            }
+        }
+        #endif
         .task(id: liveFilter.lastUpdated) {
             let snapshot = liveFilter
             let cached = await Task.detached(priority: .userInitiated) { () -> (Int, String)? in
@@ -74,7 +99,9 @@ struct FilterInfoView: View {
             }
             VStack(alignment: .leading, spacing: 6) {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString("Filters", comment: "Content type"), color: .red)
-                InfoMetadataRow(title: "Category", value: liveFilter.category.localizedName)
+                if onChangeCategory == nil {
+                    InfoMetadataRow(title: "Category", value: liveFilter.category.localizedName)
+                }
                 if liveFilter.isSelected, let submitted = liveFilter.uniqueRuleCount {
                     InfoMetadataRow(title: "Source Rules", value: submitted.formatted())
                     Text("Source rules submitted to the converter at last apply, not Safari’s final rule count.")
@@ -96,8 +123,41 @@ struct FilterInfoView: View {
                     InfoMetadataRow(title: "Size", value: ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
                 }
             }
+            #if os(iOS)
+            actionList
+            #endif
         }
     }
+
+    #if os(iOS)
+    /// The secondary actions macOS offers in the row's context menu.
+    private var actionList: some View {
+        let actions = ContextMenuActionAvailability.filterActions(for: liveFilter)
+        return InfoActionList {
+            if actions.contains(.settings) {
+                InfoActionRow("Settings", systemImage: "gearshape") { showingSettings = true }
+            }
+            if actions.contains(.viewRules) {
+                InfoActionRow("View Rules", systemImage: "doc.text") { showingRules = true }
+            }
+            if actions.contains(.editRules) {
+                InfoActionRow("Edit Rules", systemImage: "pencil") { showingRules = true }
+            }
+            if let onChangeCategory {
+                InfoCategoryRow(
+                    selection: Binding(get: { liveFilter.category }, set: onChangeCategory),
+                    categories: FilterListCategory.allCases.filter {
+                        $0 != .all && $0 != .foreign && $0 != .scripts && !$0.isUserScriptOnly
+                    },
+                    name: { $0.localizedName }
+                )
+            }
+            if actions.contains(.deleteList) {
+                InfoActionRow("Delete Added List", systemImage: "trash", role: .destructive) { confirmingDelete = true }
+            }
+        }
+    }
+    #endif
 
 }
 

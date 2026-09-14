@@ -45,6 +45,8 @@
 "%d/%d" = "%d/%d";
 "(%@ rules)" = "(%@ κανόνες)";
 "(%@ source → %@ expanded rules)" = "(%@ κανόνες πηγής → %@ αναπτυγμένοι κανόνες)";
+"%@ rules" = "%@ κανόνες";
+"%@ source → %@ expanded rules" = "%@ κανόνες πηγής → %@ αναπτυγμένοι κανόνες";
 "(%@) source rules)" = "(%@) κανόνες πηγής)";
 "(\\(sourceCount.formatted()) source rules)" = "(\(sourceCount.formatted()) κανόνες πηγής)";
 "(empty rule)" = "(κενός κανόνας)";
@@ -1153,3 +1155,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Shared update status is unavailable." = "Η κοινόχρηστη κατάσταση ενημέρωσης δεν είναι διαθέσιμη.";
 "Shared update status lock is unavailable." = "Το κλείδωμα της κοινόχρηστης κατάστασης ενημέρωσης δεν είναι διαθέσιμο.";
 "%@ dropped %d rules at Safari's per-extension limit." = "Το %@ παρέλειψε %d κανόνες λόγω του ορίου του Safari ανά επέκταση.";
+"Updated %@" = "Ενημερώθηκε %@";

@@ -45,6 +45,8 @@
 "%d/%d" = "%d/%d";
 "(%@ rules)" = "（%@ 條規則）";
 "(%@ source → %@ expanded rules)" = "（%@ 條來源規則 → %@ 條展開規則）";
+"%@ rules" = "%@ 條規則";
+"%@ source → %@ expanded rules" = "%@ 條來源規則 → %@ 條展開規則";
 "(%@) source rules)" = "(%@) 來源規則)";
 "(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) 來源規則)";
 "(empty rule)" = "(空白規則)";
@@ -1153,3 +1155,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Shared update status is unavailable." = "共用更新狀態無法使用。";
 "Shared update status lock is unavailable." = "共用更新狀態鎖定無法使用。";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ 因 Safari 的每個擴充功能規則限制而捨棄了 %d 條規則。";
+"Updated %@" = "已更新 %@";

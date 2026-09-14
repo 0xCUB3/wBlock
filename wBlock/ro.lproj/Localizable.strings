@@ -45,6 +45,8 @@
 "%d/%d" = "%d/%d";
 "(%@ rules)" = "(%@ reguli)";
 "(%@ source → %@ expanded rules)" = "(%@ reguli sursă → %@ reguli extinse)";
+"%@ rules" = "%@ reguli";
+"%@ source → %@ expanded rules" = "%@ reguli sursă → %@ reguli extinse";
 "(%@) source rules)" = "(%@) reguli sursă)";
 "(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) reguli sursă)";
 "(empty rule)" = "(regulă goală)";
@@ -1153,3 +1155,4 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Shared update status is unavailable." = "Starea partajată a actualizării nu este disponibilă.";
 "Shared update status lock is unavailable." = "Blocarea stării partajate a actualizării nu este disponibilă.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ a omis %d reguli din cauza limitei Safari pentru fiecare extensie.";
+"Updated %@" = "Actualizat %@";

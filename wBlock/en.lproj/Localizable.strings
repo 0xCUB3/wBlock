@@ -45,6 +45,8 @@
 "%d/%d" = "%d/%d";
 "(%@ rules)" = "(%@ rules)";
 "(%@ source → %@ expanded rules)" = "(%@ source → %@ expanded rules)";
+"%@ rules" = "%@ rules";
+"%@ source → %@ expanded rules" = "%@ source → %@ expanded rules";
 "(%@) source rules)" = "(%@) source rules)";
 "(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) source rules)";
 "(empty rule)" = "(empty rule)";
@@ -1162,3 +1164,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Shared update status is unavailable." = "Shared update status is unavailable.";
 "Shared update status lock is unavailable." = "Shared update status lock is unavailable.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ dropped %d rules at Safari's per-extension limit.";
+"Updated %@" = "Updated %@";

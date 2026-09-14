@@ -45,6 +45,8 @@
 "%d/%d" = "%d/%d";
 "(%@ rules)" = "(%@ kural)";
 "(%@ source → %@ expanded rules)" = "(%@ kaynak → %@ genişletilmiş kural)";
+"%@ rules" = "%@ kural";
+"%@ source → %@ expanded rules" = "%@ kaynak → %@ genişletilmiş kural";
 "(%@) source rules)" = "(%@) kaynak kural)";
 "(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) kaynak kural)";
 "(empty rule)" = "(kural boş)";
@@ -1162,3 +1164,4 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Shared update status is unavailable." = "Paylaşılan güncelleme durumu kullanılamıyor.";
 "Shared update status lock is unavailable." = "Paylaşılan güncelleme durumu kilidine ulaşılamıyor.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@, Safari'nin genişletme başına kural sınırı nedeniyle %d kuralı yoksaydı.";
+"Updated %@" = "Güncellendi %@";

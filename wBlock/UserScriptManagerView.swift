@@ -43,7 +43,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let updateURL: String?
     let isEnabled: Bool
     let version: String
-    let lastUpdatedFormatted: String?
+    let lastUpdated: Date?
     let isLocal: Bool
     let isDownloaded: Bool
     let updatesAutomatically: Bool
@@ -78,7 +78,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
         updateURL = script.updateURL
         isEnabled = script.isEnabled
         version = script.version
-        lastUpdatedFormatted = script.lastUpdatedFormatted
+        lastUpdated = script.lastUpdated
         isLocal = script.isLocal
         self.isDownloaded = isDownloaded
         updatesAutomatically = script.updatesAutomatically
@@ -315,8 +315,14 @@ struct UserScriptManagerView: View {
             })
         }
         .infoPresentation(item: $selectedScriptInfo, onDismiss: refreshScripts) { selection in
-            UserScriptInfoView(scriptId: selection.id, userScriptManager: userScriptManager)
-                .tallInfoSheetPresentationCompat()
+            UserScriptInfoView(
+                scriptId: selection.id, userScriptManager: userScriptManager,
+                onChangeDisplayCategory: { moveScript(selection.id, to: $0) },
+                onDownload: {
+                    if let item = scripts.first(where: { $0.id == selection.id }) { downloadScript(item) }
+                }
+            )
+            .tallInfoSheetPresentationCompat()
         }
         .infoPresentation(item: $selectedScriptSettings, onDismiss: refreshScripts) { selection in
             UserScriptSettingsView(scriptID: selection.id, userScriptManager: userScriptManager)
@@ -765,6 +771,14 @@ struct UserScriptManagerView: View {
                         .infoPopoverAnchor(script.id)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
+                    if script.isLocal {
+                        Badge(text: "Local Import", color: .blue)
+                    } else if script.isCustom {
+                        Badge(text: "Custom", color: .blue)
+                    }
+                    if script.isBeta {
+                        Badge(text: "Beta", color: .orange)
+                    }
                 }
 
                 if !script.localizedDisplayDescription.isEmpty {
@@ -775,47 +789,20 @@ struct UserScriptManagerView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                HStack(spacing: 6) {
-                    Text(script.isIntegrated ? "Integrated" : (script.isUserStyle ? "Userstyle" : "Userscript"))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    if script.isLocal {
-                        Badge(text: "Local Import", color: .blue)
-                    } else if script.isCustom {
-                        Badge(text: "Custom", color: .blue)
-                    }
-                    if script.isBeta {
-                        Badge(text: "Beta", color: .orange)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                HStack(spacing: 4) {
-                    if !script.version.isEmpty {
-                        Text(
-                            LocalizedStrings.format(
-                                "Version %@",
-                                comment: "Userscript version label",
-                                script.version
-                            )
-                        )
-                            .font(.caption2)
-                            .foregroundStyle(.gray)
-                    }
-                    if let lastUpdated = script.lastUpdatedFormatted {
-                        if !script.version.isEmpty {
-                            Text("·")
-                                .font(.caption2)
-                                .foregroundStyle(.gray)
-                        }
-                        Text(lastUpdated)
-                            .font(.caption2)
-                            .foregroundStyle(.gray)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                // One metadata line: kind, version, and update time. The Info
+                // sheet carries the full detail.
+                Text(ContentRowMetadata.summary([
+                    NSLocalizedString(
+                        script.isIntegrated ? "Integrated" : (script.isUserStyle ? "Userstyle" : "Userscript"),
+                        comment: "Content type"
+                    ),
+                    ContentRowMetadata.versionLabel(script.version),
+                    ContentRowMetadata.updatedLabel(script.lastUpdated),
+                ]))
+                    .font(.caption2)
+                    .foregroundStyle(.gray)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 if displayedEnabled && !script.isDownloaded && script.isLocal {
                     Text("Not Downloaded")
@@ -838,13 +825,15 @@ struct UserScriptManagerView: View {
                 }
 
                 if script.isTubeCleaner {
-                    SponsorBlockTransferButton(scriptID: script.id)
-                    TubeCleanerFeaturesPicker(
-                        features: Binding(
-                            get: { userScriptManager.tubeCleanerFeatures },
-                            set: { userScriptManager.setTubeCleanerFeatures($0) }
-                        )
-                    )
+                    // Side by side when the column is wide enough, stacked otherwise.
+                    if #available(iOS 16.0, macOS 13.0, *) {
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 6) { tubeCleanerControls(script) }
+                            VStack(alignment: .leading, spacing: 4) { tubeCleanerControls(script) }
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 4) { tubeCleanerControls(script) }
+                    }
                 }
                 if script.isPlayerCleaner {
                     PlayerCleanerFeaturesPicker(
@@ -905,20 +894,55 @@ struct UserScriptManagerView: View {
                         || (script.isLocal && !script.isDownloaded)
                 )
                 .frame(alignment: .center)
-                #if os(iOS)
-                Menu { scriptMenuItems(script) } label: {
-                    Label("Actions", systemImage: "ellipsis")
-                        .labelStyle(.iconOnly)
-                        .frame(minWidth: 44, minHeight: 44)
-                }
-                #endif
             }
         }
         .id(script.id)
         #if os(macOS)
         .contextMenu { scriptMenuItems(script) }
         .padding(16)
+        #else
+        // iOS keeps the switch flush right. Secondary actions live in the Info
+        // sheet the row opens and in the trailing swipe.
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            let actions = ContextMenuActionAvailability.userScriptActions(
+                isBuiltIn: script.isBuiltIn, isLocal: script.isLocal, isDownloaded: script.isDownloaded
+            )
+            if actions.contains(.deleteScript), let managedScript = userScriptManager.userScript(withId: script.id) {
+                Button(role: .destructive) {
+                    removeScript(managedScript, name: script.name)
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+            if actions.contains(.settings) {
+                Button {
+                    selectedScriptSettings = SelectedUserScript(id: script.id, action: .settings)
+                } label: {
+                    Label("Settings", systemImage: "gearshape")
+                }
+                .tint(.gray)
+            }
+        }
         #endif
+    }
+
+    @ViewBuilder
+    private func tubeCleanerControls(_ script: UserScriptListItem) -> some View {
+        SponsorBlockTransferButton(scriptID: script.id)
+        TubeCleanerFeaturesPicker(
+            features: Binding(
+                get: { userScriptManager.tubeCleanerFeatures },
+                set: { userScriptManager.setTubeCleanerFeatures($0) }
+            )
+        )
+    }
+
+    private func removeScript(_ managedScript: UserScript, name: String) {
+        Task {
+            await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Removing userscript"), metadata: ["script": name])
+            await userScriptManager.removeUserScript(managedScript)
+            refreshScripts()
+        }
     }
 
     @ViewBuilder
@@ -964,25 +988,10 @@ struct UserScriptManagerView: View {
             }
             .disabled(downloadingScriptIDs.contains(script.id))
         }
-        #if os(iOS)
-        Picker("Category", selection: Binding(
-            get: { script.displayCategory },
-            set: { moveScript(script.id, to: $0) }
-        )) {
-            ForEach(UserScriptDisplayCategory.allCases) { category in
-                Text(LocalizedStringKey(category.rawValue)).tag(category)
-            }
-        }
-        .pickerStyle(.menu)
-        #endif
         if actions.contains(.deleteScript),
            let managedScript = userScriptManager.userScript(withId: script.id) {
             Button(role: .destructive) {
-                Task {
-                    await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Removing userscript"), metadata: ["script": script.name])
-                    await userScriptManager.removeUserScript(managedScript)
-                    refreshScripts()
-                }
+                removeScript(managedScript, name: script.name)
             } label: {
                 Label(
                     script.isUserStyle ? "Delete Style" : "Delete Script",
@@ -1253,6 +1262,8 @@ struct UserScriptInfoSidebar: View {
     let onCategoryChanged: (FilterListCategory) -> Void
     let onEdit: () -> Void
     var onClose: (() -> Void)? = nil
+    /// False when the sheet shows a category picker in its action list.
+    var showsBuiltInCategory = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -1268,9 +1279,11 @@ struct UserScriptInfoSidebar: View {
                     comment: "Content type"
                 ), color: script.isUserStyle ? .purple : .red)
                 if isBuiltIn {
+                    if showsBuiltInCategory {
                     InfoMetadataRow(title: "Category", value: NSLocalizedString(UserScriptDisplayCategorySupport.category(
                         isUserStyle: script.isUserStyle, builtInRole: builtInDisplayRole, persistedCategory: script.category
                     ).rawValue, comment: "Userscript category"))
+                    }
                 } else {
                     ContentCategoryPicker(selection: Binding(
                         get: { script.category.isUserScriptOnly ? script.category : .scriptOther },
@@ -1295,12 +1308,19 @@ struct UserScriptInfoSidebar: View {
 struct UserScriptInfoView: View {
     let scriptId: UUID
     var userScriptManager: UserScriptManager
+    /// iOS only. Rows have no overflow menu there, so the sheet hosts the
+    /// secondary actions macOS keeps in the context menu.
+    var onChangeDisplayCategory: ((UserScriptDisplayCategory) -> Void)? = nil
+    var onDownload: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var script: UserScript?
     @State private var isPatternsExpanded = false
     @State private var isLoading = true
     @State private var showingMetadataEditor = false
+    @State private var showingSettings = false
+    @State private var showingSource = false
+    @State private var confirmingDelete = false
 
     var body: some View {
         Group {
@@ -1317,9 +1337,12 @@ struct UserScriptInfoView: View {
                             builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
                             isBeta: userScriptManager.isBeta(for: script),
                             onCategoryChanged: setCategory,
-                            onEdit: { showingMetadataEditor = true }
+                            onEdit: { showingMetadataEditor = true },
+                            showsBuiltInCategory: onChangeDisplayCategory == nil
                         )
                         .padding()
+                        actionList(for: script)
+                            .padding([.horizontal, .bottom])
                     }
                     // The sidebar already shows the name as its heading; a nav
                     // title on top of it read as a duplicate (#628).
@@ -1362,12 +1385,92 @@ struct UserScriptInfoView: View {
         }) {
             UserScriptContentView(scriptId: scriptId, userScriptManager: userScriptManager, metadataOnly: true)
         }
+        #if os(iOS)
+        .sheet(isPresented: $showingSettings) {
+            UserScriptSettingsView(scriptID: scriptId, userScriptManager: userScriptManager)
+                .infoSheetPresentationCompat()
+        }
+        .sheet(isPresented: $showingSource, onDismiss: {
+            Task { script = await userScriptManager.userScriptEditorSnapshot(withId: scriptId) }
+        }) {
+            UserScriptContentView(
+                scriptId: scriptId, userScriptManager: userScriptManager,
+                startsEditing: script.map { !userScriptManager.isDefaultUserScript($0) && $0.isLocal } ?? false
+            )
+        }
+        .confirmationDialog(
+            script?.isUserStyle == true ? "Delete Style" : "Delete Script",
+            isPresented: $confirmingDelete, titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                guard let script else { return }
+                Task {
+                    await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Removing userscript"), metadata: ["script": script.name])
+                    await userScriptManager.removeUserScript(script)
+                }
+                dismiss()
+            }
+        }
+        #endif
         .task(id: scriptId) {
             isLoading = true
             script = await userScriptManager.userScriptEditorSnapshot(withId: scriptId)
             isLoading = false
         }
     }
+
+    #if os(iOS)
+    @ViewBuilder
+    private func actionList(for script: UserScript) -> some View {
+        let isBuiltIn = userScriptManager.isDefaultUserScript(script)
+        let actions = ContextMenuActionAvailability.userScriptActions(
+            isBuiltIn: isBuiltIn, isLocal: script.isLocal,
+            isDownloaded: userScriptManager.hasDownloadedContent(for: script)
+        )
+        InfoActionList {
+            if actions.contains(.settings) {
+                InfoActionRow("Settings", systemImage: "gearshape") { showingSettings = true }
+            }
+            if actions.contains(.viewContent) {
+                InfoActionRow("View Content", systemImage: "doc.text") { showingSource = true }
+            }
+            if actions.contains(.editContent) {
+                InfoActionRow("Edit Content", systemImage: "pencil") { showingSource = true }
+            }
+            if actions.contains(.download), let onDownload {
+                InfoActionRow("Download", systemImage: "arrow.down.circle") {
+                    onDownload()
+                    dismiss()
+                }
+            }
+            if isBuiltIn, let onChangeDisplayCategory {
+                InfoCategoryRow(
+                    selection: Binding(
+                        get: {
+                            UserScriptDisplayCategorySupport.category(
+                                isUserStyle: script.isUserStyle,
+                                builtInRole: userScriptManager.builtInDisplayRole(for: script),
+                                persistedCategory: script.category
+                            )
+                        },
+                        set: { category in
+                            onChangeDisplayCategory(category)
+                            Task { self.script = await userScriptManager.userScriptEditorSnapshot(withId: scriptId) }
+                        }
+                    ),
+                    categories: UserScriptDisplayCategory.allCases,
+                    name: { NSLocalizedString($0.rawValue, comment: "Userscript category") }
+                )
+            }
+            if actions.contains(.deleteScript) {
+                InfoActionRow(
+                    script.isUserStyle ? "Delete Style" : "Delete Script",
+                    systemImage: "trash", role: .destructive
+                ) { confirmingDelete = true }
+            }
+        }
+    }
+    #endif
 
     private func setCategory(_ category: FilterListCategory) {
         guard var currentScript = script, !userScriptManager.isDefaultUserScript(currentScript) else { return }

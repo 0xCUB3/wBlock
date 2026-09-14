@@ -45,6 +45,8 @@
 "%d/%d" = "%d/%d";
 "(%@ rules)" = "（%@ 件のルール）";
 "(%@ source → %@ expanded rules)" = "（元 %@ 件 → 展開後 %@ 件のルール）";
+"%@ rules" = "%@ 件のルール";
+"%@ source → %@ expanded rules" = "元 %@ 件 → 展開後 %@ 件のルール";
 "(%@) source rules)" = "(%@) ソースルール)";
 "(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) ソースルール)";
 "(empty rule)" = "(空のルール)";
@@ -1122,3 +1124,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Shared update status is unavailable." = "共有更新ステータスを取得できません。";
 "Shared update status lock is unavailable." = "共有更新ステータスのロックを取得できません。";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ はSafariの拡張機能ごとの上限により%d件のルールを除外しました。";
+"Updated %@" = "更新 %@";
