@@ -300,7 +300,7 @@ struct UserScriptManagerView: View {
     }
 
     private func scriptRows(_ section: UserScriptDisplaySection) -> some View {
-        ReorderableRows(items: section.scripts, allItems: orderedScripts,
+        ReorderableRows(items: section.scripts, allItems: { orderedScripts },
                         order: $scriptDisplayOrder, drag: scriptDrag,
                         commit: { moveScript($0, to: section.id) }, row: scriptRowView)
     }

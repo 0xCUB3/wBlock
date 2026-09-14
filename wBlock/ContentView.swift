@@ -837,7 +837,7 @@ struct ContentView: View {
             }
         } else {
             ReorderableRows(items: filters,
-                            allItems: orderedFilters, order: $filterDisplayOrder, drag: filterDrag,
+                            allItems: { orderedFilters }, order: $filterDisplayOrder, drag: filterDrag,
                             commit: { id in
                                 if let category = filters.first?.category { moveFilter(id, to: category) }
                             }) { filter in

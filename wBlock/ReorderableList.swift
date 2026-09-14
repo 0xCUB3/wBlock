@@ -55,7 +55,8 @@ struct ListDrop: DropDelegate {
 
 struct ReorderableRows<Item: Identifiable, Row: View>: View where Item.ID == UUID {
     let items: [Item]
-    let allItems: [Item]
+    // Global ordering is only needed during a move, never during row layout.
+    let allItems: () -> [Item]
     @Binding var order: Data
     @ObservedObject var drag: ListDrag
     let commit: (UUID) -> Void
@@ -66,7 +67,7 @@ struct ReorderableRows<Item: Identifiable, Row: View>: View where Item.ID == UUI
               (0...items.count).contains(destination) else { return }
         var moved = items
         moved.move(fromOffsets: source, toOffset: destination)
-        order = ListDisplayOrder.saving(moved, in: allItems)
+        order = ListDisplayOrder.saving(moved, in: allItems())
     }
 
     var body: some View {
@@ -90,11 +91,11 @@ struct ReorderableRows<Item: Identifiable, Row: View>: View where Item.ID == UUI
                     move(IndexSet(integer: source), to: target + (source < target ? 1 : 0))
                 }, commit: { id in
                     if !items.contains(where: { $0.id == id }),
-                       let source = allItems.first(where: { $0.id == id }),
+                       let source = allItems().first(where: { $0.id == id }),
                        let target = items.firstIndex(where: { $0.id == item.id }) {
                         var moved = items
                         moved.insert(source, at: target)
-                        order = ListDisplayOrder.saving(moved, in: allItems)
+                        order = ListDisplayOrder.saving(moved, in: allItems())
                     }
                     commit(id)
                 }))
