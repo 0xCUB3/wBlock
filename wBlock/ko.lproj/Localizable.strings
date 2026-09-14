@@ -281,6 +281,8 @@
 "Default filters for balanced blocking and compatibility." = "균형 잡힌 차단과 호환성을 위한 기본 필터입니다.";
 "Deferred" = "연기됨";
 "Delete" = "삭제";
+"Drop here to move" = "여기에 놓아 이동";
+"Move to" = "이동";
 "Delete Added List" = "목록 삭제";
 "Description" = "설명";
 "Description (optional)" = "설명 (선택 사항)";

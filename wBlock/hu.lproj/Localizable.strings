@@ -281,6 +281,8 @@
 "Default filters for balanced blocking and compatibility." = "Alapértelmezett szűrők kiegyensúlyozott blokkoláshoz és kompatibilitáshoz.";
 "Deferred" = "Elhalasztva";
 "Delete" = "Törlés";
+"Drop here to move" = "Ejtsd ide az áthelyezéshez";
+"Move to" = "Áthelyezés ide";
 "Delete Added List" = "Lista törlése";
 "Description" = "Leírás";
 "Description (optional)" = "Leírás (opcionális)";

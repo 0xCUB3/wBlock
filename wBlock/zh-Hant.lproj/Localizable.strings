@@ -281,6 +281,8 @@
 "Default filters for balanced blocking and compatibility." = "提供平衡封鎖與相容性的預設過濾器。";
 "Deferred" = "已延後";
 "Delete" = "刪除";
+"Drop here to move" = "拖放到此處以移動";
+"Move to" = "移動到";
 "Delete Added List" = "刪除清單";
 "Description" = "描述";
 "Description (optional)" = "描述（選填）";

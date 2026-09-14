@@ -281,6 +281,8 @@
 "Default filters for balanced blocking and compatibility." = "فلاتر افتراضية لحظر متوازن وتوافق أفضل.";
 "Deferred" = "مؤجَّلة";
 "Delete" = "حذف";
+"Drop here to move" = "أفلت هنا للنقل";
+"Move to" = "نقل إلى";
 "Delete Added List" = "حذف القائمة";
 "Description" = "الوصف";
 "Description (optional)" = "الوصف (اختياري)";

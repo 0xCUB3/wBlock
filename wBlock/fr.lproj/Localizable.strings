@@ -281,6 +281,8 @@
 "Default filters for balanced blocking and compatibility." = "Filtres par défaut pour un blocage équilibré et une bonne compatibilité.";
 "Deferred" = "Différée";
 "Delete" = "Supprimer";
+"Drop here to move" = "Déposer ici pour déplacer";
+"Move to" = "Déplacer vers";
 "Delete Added List" = "Supprimer la liste";
 "Description" = "Description";
 "Description (optional)" = "Description (facultatif)";

@@ -281,6 +281,8 @@
 "Default filters for balanced blocking and compatibility." = "Filtre implicite pentru blocare echilibrată și compatibilitate.";
 "Deferred" = "Amânată";
 "Delete" = "Șterge";
+"Drop here to move" = "Plasează aici pentru a muta";
+"Move to" = "Mută în";
 "Delete Added List" = "Șterge lista";
 "Description" = "Descriere";
 "Description (optional)" = "Descriere (opțional)";

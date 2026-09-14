@@ -281,6 +281,8 @@
 "Default filters for balanced blocking and compatibility." = "Фильтры по умолчанию для сбалансированной блокировки и совместимости.";
 "Deferred" = "Отложена";
 "Delete" = "Удалить";
+"Drop here to move" = "Перетащите сюда для перемещения";
+"Move to" = "Переместить в";
 "Delete Added List" = "Удалить список";
 "Description" = "Описание";
 "Description (optional)" = "Описание (необязательно)";

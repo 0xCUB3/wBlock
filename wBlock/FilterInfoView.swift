@@ -146,9 +146,7 @@ struct FilterInfoView: View {
             if let onChangeCategory {
                 InfoCategoryRow(
                     selection: Binding(get: { liveFilter.category }, set: onChangeCategory),
-                    categories: FilterListCategory.allCases.filter {
-                        $0 != .all && $0 != .foreign && $0 != .scripts && !$0.isUserScriptOnly
-                    },
+                    categories: FilterListCategory.moveTargets,
                     name: { $0.localizedName }
                 )
             }

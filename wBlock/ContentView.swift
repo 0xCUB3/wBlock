@@ -549,7 +549,11 @@ struct ContentView: View {
                             macOSForeignFiltersView(filters: item.filters)
                         } else {
                             ContentListSection { categoryHeader(item.category) } content: {
-                                filterRows(item.filters)
+                                if item.filters.isEmpty {
+                                    emptyCategoryDropTarget(item.category)
+                                } else {
+                                    filterRows(item.filters)
+                                }
                             }
                         }
                     }
@@ -867,6 +871,16 @@ struct ContentView: View {
     }
 
     #if os(macOS)
+    /// Empty categories only appear while a row is being dragged. The header
+    /// alone is a thin drop target, so the section body accepts the drop too.
+    private func emptyCategoryDropTarget(_ category: FilterListCategory) -> some View {
+        Text("Drop here to move")
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .contentShape(Rectangle())
+            .onDrop(of: [ListDrag.type], delegate: ListDrop(drag: filterDrag) { moveFilter($0, to: category) })
+    }
+
     private func macOSForeignFiltersView(filters: [FilterList]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
@@ -932,6 +946,17 @@ struct FilterRowView: View {
                 Label("Edit Rules", systemImage: "pencil")
             }
         }
+        #if os(macOS)
+        if let onChangeCategory {
+            Picker(selection: Binding(get: { filter.category }, set: onChangeCategory)) {
+                ForEach(FilterListCategory.moveTargets) { category in
+                    Text(category.localizedName).tag(category)
+                }
+            } label: {
+                Label("Move to", systemImage: "folder")
+            }
+        }
+        #endif
         if actions.contains(.deleteList) {
             Button(role: .destructive) {
                 onDelete()
@@ -1277,6 +1302,11 @@ struct ContentModifiers: ViewModifier {
 extension FilterListCategory {
     static var userListCategories: [FilterListCategory] {
         [.custom] + allCases.filter { $0 != .all && $0 != .custom && $0 != .scripts && !$0.isUserScriptOnly }
+    }
+
+    /// Categories a filter list can be moved into, including ones with no lists yet.
+    static var moveTargets: [FilterListCategory] {
+        allCases.filter { $0 != .all && $0 != .foreign && $0 != .scripts && !$0.isUserScriptOnly }
     }
 }
 

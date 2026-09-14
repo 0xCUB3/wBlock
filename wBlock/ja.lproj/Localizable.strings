@@ -281,6 +281,8 @@
 "Default filters for balanced blocking and compatibility." = "バランスの取れたブロック性能と互換性のための既定フィルター。";
 "Deferred" = "延期";
 "Delete" = "削除";
+"Drop here to move" = "ここにドロップして移動";
+"Move to" = "移動先";
 "Delete Added List" = "リストを削除";
 "Description" = "説明";
 "Description (optional)" = "説明（任意）";

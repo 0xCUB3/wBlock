@@ -281,6 +281,8 @@
 "Default filters for balanced blocking and compatibility." = "Dengeli bir engelleme ve uyumluluk için varsayılan filtreler.";
 "Deferred" = "Ertelendi";
 "Delete" = "Sil";
+"Drop here to move" = "Taşımak için buraya bırakın";
+"Move to" = "Taşı";
 "Delete Added List" = "Listeyi sil";
 "Description" = "Açıklama";
 "Description (optional)" = "Açıklama (isteğe bağlı)";
