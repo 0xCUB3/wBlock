@@ -94,7 +94,11 @@ struct ReorderableRows<Item: Identifiable, Row: View>: View where Item.ID == UUI
             #endif
         }
         #if os(iOS)
-        .onMove { move($0, to: $1) }
+        .onMove {
+            // Native List moves bypass performDrop; provider cleanup must not undo them.
+            drag.id = nil
+            move($0, to: $1)
+        }
         #endif
     }
 }
