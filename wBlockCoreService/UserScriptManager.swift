@@ -3611,10 +3611,12 @@ public class UserScriptManager: ObservableObject {
     public struct AutoUpdateResult: Sendable {
         public let updated: Int
         public let failed: Int
+        public let errors: [String]
 
-        public init(updated: Int, failed: Int) {
+        public init(updated: Int, failed: Int, errors: [String] = []) {
             self.updated = updated
             self.failed = failed
+            self.errors = errors
         }
     }
 
@@ -3710,12 +3712,7 @@ public class UserScriptManager: ObservableObject {
 
         await removeDisabledRemoteScriptDownloads()
 
-        var candidates = userScripts.filter { script in
-            guard script.isEnabled && !script.isLocal && script.url != nil && script.updatesAutomatically else {
-                return false
-            }
-            return true
-        }
+        var candidates = userScripts.filter { $0.isEnabled && $0.canUpdateAutomatically }
 
         if skipFresh {
             let interval = await scriptFreshnessInterval()
@@ -3736,6 +3733,7 @@ public class UserScriptManager: ObservableObject {
 
         var updatedCount = 0
         var failedCount = 0
+        var errors: [String] = []
         var didChange = false
         let total = candidates.count
         var completed = 0
@@ -3757,6 +3755,7 @@ public class UserScriptManager: ObservableObject {
                 }
             } catch {
                 failedCount += 1
+                errors.append(candidate.name + ": " + error.localizedDescription)
                 logger.error("❌ Auto-update userscript failed: \(candidate.name) – \(error.localizedDescription)")
             }
             completed += 1
@@ -3769,6 +3768,9 @@ public class UserScriptManager: ObservableObject {
                 userScriptsPendingPersistence.formUnion(updatedScriptIDs)
                 for id in updatedScriptIDs {
                     verifiedTimes.removeValue(forKey: id.uuidString)
+                }
+                errors += candidates.filter { updatedScriptIDs.contains($0.id) }.map {
+                    $0.name + ": " + CocoaError(.fileWriteUnknown).localizedDescription
                 }
                 failedCount += updatedCount
                 updatedCount = 0
@@ -3783,7 +3785,7 @@ public class UserScriptManager: ObservableObject {
             logger.info("✅ Auto-updated \(updatedCount) userscripts (\(failedCount) failed)")
         }
 
-        return AutoUpdateResult(updated: updatedCount, failed: failedCount)
+        return AutoUpdateResult(updated: updatedCount, failed: failedCount, errors: errors)
     }
 
     /// Two-phase update for a single script.

@@ -508,19 +508,13 @@ struct ApplyProgressPresentation: Equatable {
             if step.status == .complete {
                 var parts: [String] = []
                 if state.filterUpdatesFound > 0 {
-                    parts.append(localizedCount("Downloaded %d updates", count: state.filterUpdatesFound))
+                    parts.append(localizedCount("Filter updates: %d", count: state.filterUpdatesFound))
+                }
+                if state.scriptsUpdatedCount > 0 {
+                    parts.append(localizedCount("Updated %d scripts", count: state.scriptsUpdatedCount))
                 }
                 if state.scriptsFailedCount > 0 {
-                    parts.append(String.localizedStringWithFormat(
-                        NSLocalizedString(
-                            "Updated %d, %d failed",
-                            comment: "Apply changes script phase detail"
-                        ),
-                        state.scriptsUpdatedCount,
-                        state.scriptsFailedCount
-                    ))
-                } else if state.scriptsUpdatedCount > 0 {
-                    parts.append(localizedCount("Updated %d scripts", count: state.scriptsUpdatedCount))
+                    parts.append(localizedCount("%d script update(s) failed", count: state.scriptsFailedCount))
                 }
                 if parts.isEmpty {
                     return String(localized: "No updates available")

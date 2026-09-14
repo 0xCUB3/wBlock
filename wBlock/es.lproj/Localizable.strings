@@ -870,6 +870,7 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Edit Rules" = "Editar reglas";
 "View Rules" = "Ver reglas";
 "View Content" = "Ver contenido";
+"Filter updates: %d" = "Actualizaciones de filtros: %d";
 "View Logs" = "Ver registros";
 "Waiting" = "Esperando";
 "Waiting for activity" = "Esperando actividad";

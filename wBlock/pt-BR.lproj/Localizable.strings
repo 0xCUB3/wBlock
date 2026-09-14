@@ -870,6 +870,7 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Edit Rules" = "Editar regras";
 "View Rules" = "Ver regras";
 "View Content" = "Ver conteúdo";
+"Filter updates: %d" = "Atualizações de filtros: %d";
 "View Logs" = "Ver logs";
 "Waiting" = "Aguardando";
 "Waiting for activity" = "Aguardando atividade";

@@ -873,6 +873,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Rules" = "編輯規則";
 "View Rules" = "檢視規則";
 "View Content" = "檢視內容";
+"Filter updates: %d" = "過濾器更新：%d";
 "View Logs" = "檢視日誌";
 "Waiting" = "等待中";
 "Waiting for activity" = "等待活動";

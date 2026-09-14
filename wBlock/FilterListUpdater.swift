@@ -743,7 +743,7 @@ final class FilterListUpdater: @unchecked Sendable {
             return []
         }
 
-        let scriptsToUpdate = selectedScripts.filter { !$0.isLocal && $0.updatesAutomatically }
+        let scriptsToUpdate = selectedScripts.filter { $0.canUpdateAutomatically }
         guard !scriptsToUpdate.isEmpty else {
             await progressCallback(FilterRefreshProgress(completed: 0, total: 0))
             return []

@@ -873,6 +873,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Rules" = "Επεξεργασία κανόνων";
 "View Rules" = "Προβολή κανόνων";
 "View Content" = "Προβολή Περιεχομένου";
+"Filter updates: %d" = "Ενημερώσεις φίλτρων: %d";
 "View Logs" = "Προβολή αρχείων καταγραφής";
 "Waiting" = "Αναμονή";
 "Waiting for activity" = "Αναμονή για ενεργοποίηση φόντου";

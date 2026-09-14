@@ -873,6 +873,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Edit Rules" = "Regeln bearbeiten";
 "View Rules" = "Regeln anzeigen";
 "View Content" = "Inhalt anzeigen";
+"Filter updates: %d" = "Filteraktualisierungen: %d";
 "View Logs" = "Protokolle anzeigen";
 "Waiting" = "Warten";
 "Waiting for activity" = "Warten auf Aktivität";

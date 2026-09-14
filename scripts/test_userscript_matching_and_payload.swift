@@ -41,6 +41,8 @@ struct UserScriptMatchingAndPayloadTests {
         expect(UserScript.matchesMatchPattern("ftp://namemc.com/*", url: "ftp://namemc.com/x"), "explicit ftp:// still matches ftp")
         expect(UserScript.matchesMatchPattern("https://namemc.com/profile/example", url: "https://namemc.com/profile/example#bio"), "@match must ignore URL fragments")
 
+        testUpdateEligibility()
+
         var endpoints = UserScript(
             name: "endpoints",
             url: URL(string: "https://example.com/original.user.js"),
@@ -254,6 +256,42 @@ struct UserScriptMatchingAndPayloadTests {
             fputs("FAIL: \(message)\nactual: \(actual)\nexpected: \(expected)\n", stderr)
             exit(1)
         }
+    }
+
+    private static func testUpdateEligibility() {
+        var script = UserScript(name: "Update policy", content: "// local content")
+        script.isLocal = false
+        for source in [nil, "", "about:blank", "file:///tmp/script.user.js", "custom://rules", "ftp://example.com/script.js"] as [String?] {
+            script.url = source.flatMap(URL.init(string:))
+            expect(!script.canUpdateAutomatically, "non-network sources must be skipped")
+            expect(!script.isEligibleForUpdateCheck, "non-network sources must not enter update review")
+            expect(script.resolvedDownloadURL == nil, "non-network sources have no download endpoint")
+        }
+        script.url = URL(string: "https://example.com/scripts/original.user.js")
+        expect(script.canUpdateAutomatically, "a valid source URL works without metadata update URLs")
+        expect(script.isEligibleForUpdateCheck, "downloaded remote sources remain eligible")
+        script.content = ""
+        expect(script.canUpdateAutomatically, "missing remote content can still be downloaded")
+        expect(!script.isEligibleForUpdateCheck, "missing content is not an available update")
+        script.content = "// content"
+        script.downloadURL = "../latest.user.js"
+        expectEqual(script.resolvedDownloadURL?.absoluteString, "https://example.com/latest.user.js", "relative endpoints resolve against the source")
+        script.updateURL = " none "
+        expect(!script.canUpdateAutomatically, "updateURL none opts out of automatic updates")
+        expect(script.resolvedMetaURL == nil, "none must not resolve to a relative network path")
+        script.updateURL = nil
+        script.downloadURL = "none"
+        expect(!script.canUpdateAutomatically, "downloadURL none opts out")
+        script.downloadURL = "file:///tmp/script.js"
+        expect(!script.canUpdateAutomatically, "explicit non-network downloads must be skipped")
+        script.downloadURL = "https://example.com/latest.user.js"
+        script.url = nil
+        expect(script.canUpdateAutomatically, "download metadata alone is sufficient")
+        script.updatesAutomatically = false
+        expect(!script.canUpdateAutomatically, "the automatic-update preference is respected")
+        script.updatesAutomatically = true
+        script.isLocal = true
+        expect(!script.canUpdateAutomatically, "local imports remain local even with remote metadata")
     }
 
     private static func expectHostileRegexProbeFinishes() {

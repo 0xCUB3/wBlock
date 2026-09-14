@@ -521,37 +521,45 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         parseMetadata()
     }
 
-    /// Resolves the metadata URL for checking updates.
-    /// Priority: updateURL > .user.js -> .meta.js derivation from url > url.
+    /// Resolves metadata against the source URL, falling back to its .meta.js sibling.
     public var resolvedMetaURL: URL? {
         guard !isLocal else { return nil }
-        if let updateURLString = updateURL, let url = URL(string: updateURLString) {
-            return url
+        if let updateURL, !updateURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return remoteUpdateURL(updateURL)
         }
-        guard let scriptURL = url else { return nil }
+        guard let scriptURL = remoteUpdateURL(url?.absoluteString) ?? resolvedDownloadURL else { return nil }
         let urlString = scriptURL.absoluteString
         if urlString.hasSuffix(".user.js") {
-            let metaString = String(urlString.dropLast(8)) + ".meta.js"
-            if let metaURL = URL(string: metaString) {
-                return metaURL
-            }
+            return URL(string: String(urlString.dropLast(8)) + ".meta.js")
         }
         return scriptURL
     }
 
-    /// Resolves the full script download URL.
-    /// Priority: downloadURL > url.
     public var resolvedDownloadURL: URL? {
         guard !isLocal else { return nil }
-        if let downloadURLString = downloadURL, let url = URL(string: downloadURLString) {
-            return url
+        if let downloadURL, !downloadURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return remoteUpdateURL(downloadURL)
         }
-        return url
+        return remoteUpdateURL(url?.absoluteString)
     }
 
-    /// Returns true if this remote script has sufficient URL information and auto-update preference to check for updates.
+    private func remoteUpdateURL(_ value: String?) -> URL? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !value.isEmpty, value.lowercased() != "none",
+              let resolved = URL(string: value, relativeTo: url)?.absoluteURL,
+              let scheme = resolved.scheme?.lowercased(), ["http", "https"].contains(scheme),
+              let host = resolved.host, !host.isEmpty else { return nil }
+        return resolved
+    }
+
+    /// Missing downloads may be fetched, but local sources and metadata opt-outs never are.
+    public var canUpdateAutomatically: Bool {
+        !isLocal && updatesAutomatically && resolvedDownloadURL != nil
+            && updateURL?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() != "none"
+    }
+
     public var isEligibleForUpdateCheck: Bool {
-        !isLocal && isDownloaded && updatesAutomatically && (resolvedMetaURL != nil || resolvedDownloadURL != nil)
+        isDownloaded && canUpdateAutomatically
     }
 
     /// Compares two dot-separated version strings numerically.

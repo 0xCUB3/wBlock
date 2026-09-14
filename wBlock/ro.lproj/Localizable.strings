@@ -870,6 +870,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Edit Rules" = "Editează regulile";
 "View Rules" = "Vezi regulile";
 "View Content" = "Vezi conținutul";
+"Filter updates: %d" = "Actualizări de filtre: %d";
 "View Logs" = "Vezi jurnalele";
 "Waiting" = "În așteptare";
 "Waiting for activity" = "În așteptarea activității";

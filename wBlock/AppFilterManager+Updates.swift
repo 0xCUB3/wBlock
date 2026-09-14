@@ -200,7 +200,7 @@ extension AppFilterManager {
                     await Self.allowProgressUIRefresh()
                 }
 
-                let failedCount = selectedScripts.count - successfullyUpdatedScripts.count
+                let failedCount = selectedScripts.filter { $0.canUpdateAutomatically }.count - successfullyUpdatedScripts.count
                 self.applyProgressViewModel.updateScriptsUpdateResult(
                     updated: successfullyUpdatedScripts.count,
                     failed: max(0, failedCount)

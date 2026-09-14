@@ -511,6 +511,12 @@ extension AppFilterManager {
                         await Self.allowProgressUIRefresh()
                     }
                 )
+                for error in scriptsResult.errors {
+                    await ConcurrentLogManager.shared.error(
+                        .userScript, LocalizedStrings.text("Failed to update script"),
+                        metadata: ["error": error]
+                    )
+                }
                 await MainActor.run {
                     self.applyProgressViewModel.updateCurrentScript("")
                     self.applyProgressViewModel.updateScriptsUpdateResult(

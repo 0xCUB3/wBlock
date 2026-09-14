@@ -870,6 +870,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Edit Rules" = "Modifier les règles";
 "View Rules" = "Afficher les règles";
 "View Content" = "Voir le contenu";
+"Filter updates: %d" = "Mises à jour des filtres : %d";
 "View Logs" = "Voir les journaux";
 "Waiting" = "En attente";
 "Waiting for activity" = "En attente d'activité";

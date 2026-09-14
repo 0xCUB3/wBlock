@@ -873,6 +873,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Rules" = "Изменить правила";
 "View Rules" = "Показать правила";
 "View Content" = "Показать содержимое";
+"Filter updates: %d" = "Обновления фильтров: %d";
 "View Logs" = "Просмотр журналов";
 "Waiting" = "Ожидание";
 "Waiting for activity" = "Ожидание активности";

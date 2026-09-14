@@ -873,6 +873,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Edit Rules" = "Szabályok szerkesztése";
 "View Rules" = "Szabályok megtekintése";
 "View Content" = "Tartalom megtekintése";
+"Filter updates: %d" = "Szűrőfrissítések: %d";
 "View Logs" = "Naplók megtekintése";
 "Waiting" = "Várakozás";
 "Waiting for activity" = "Várakozás tevékenységre";

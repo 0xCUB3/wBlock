@@ -873,6 +873,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Rules" = "규칙 편집";
 "View Rules" = "규칙 보기";
 "View Content" = "콘텐츠 보기";
+"Filter updates: %d" = "필터 업데이트: %d";
 "View Logs" = "로그 보기";
 "Waiting" = "대기 중";
 "Waiting for activity" = "활동 대기 중";

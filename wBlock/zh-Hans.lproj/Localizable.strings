@@ -870,6 +870,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Rules" = "编辑规则";
 "View Rules" = "查看规则";
 "View Content" = "查看内容";
+"Filter updates: %d" = "过滤器更新：%d";
 "View Logs" = "查看日志";
 "Waiting" = "等待中";
 "Waiting for activity" = "等待活动";

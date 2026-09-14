@@ -870,6 +870,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Edit Rules" = "Kuralları düzenle";
 "View Rules" = "Kuralları görüntüle";
 "View Content" = "İçeriği görüntüle";
+"Filter updates: %d" = "Filtre güncellemeleri: %d";
 "View Logs" = "Günlükleri görüntüle";
 "Waiting" = "Bekleniyor";
 "Waiting for activity" = "Etkinlik bekleniyor";

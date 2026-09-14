@@ -870,6 +870,7 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Edit Rules" = "Modifica regole";
 "View Rules" = "Visualizza regole";
 "View Content" = "Visualizza contenuto";
+"Filter updates: %d" = "Aggiornamenti filtri: %d";
 "View Logs" = "Visualizza log";
 "Waiting" = "In attesa";
 "Waiting for activity" = "In attesa di attività";

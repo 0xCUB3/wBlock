@@ -873,6 +873,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Rules" = "تحرير القواعد";
 "View Rules" = "عرض القواعد";
 "View Content" = "عرض المحتوى";
+"Filter updates: %d" = "تحديثات الفلاتر: %d";
 "View Logs" = "عرض السجلات";
 "Waiting" = "انتظار";
 "Waiting for activity" = "في انتظار النشاط";

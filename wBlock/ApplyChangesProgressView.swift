@@ -16,6 +16,7 @@ struct ApplyChangesProgressView: View {
     @State private var selectedFilters: Set<UUID> = []
     @State private var selectedScripts: Set<UUID> = []
     @State private var isStartingSelectedUpdates = false
+    @State private var showingLogs = false
     @State private var measuredHeights: [ApplySheetPart: CGFloat] = [:]
 
     private var mode: ApplyChangesSheetMode {
@@ -85,6 +86,15 @@ struct ApplyChangesProgressView: View {
         )
         .onPreferenceChange(ApplySheetHeightsKey.self) { measuredHeights = $0 }
         .interactiveDismissDisabled(isDismissDisabled)
+        .sheet(isPresented: $showingLogs) {
+            SheetContainer {
+                SheetHeader(title: "Logs") { showingLogs = false }
+                LogsView()
+            }
+            #if os(macOS)
+            .frame(width: 700, height: 500)
+            #endif
+        }
         .onAppear {
             syncSelectionFromAvailableUpdates()
         }
@@ -323,10 +333,7 @@ struct ApplyChangesProgressView: View {
             if !viewModel.state.resultWarning.isEmpty || !filterManager.failedReloadTargets.isEmpty {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
                     if !viewModel.state.resultWarning.isEmpty {
-                        Label(viewModel.state.resultWarning, systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                            .fixedSize(horizontal: false, vertical: true)
+                        warningLink(viewModel.state.resultWarning)
                     }
 
                     if !filterManager.failedReloadTargets.isEmpty {
@@ -353,21 +360,32 @@ struct ApplyChangesProgressView: View {
             }
 
             if viewModel.state.scriptsFailedCount > 0 {
-                Label(
+                warningLink(
                     String.localizedStringWithFormat(
                         NSLocalizedString(
                             "%d script update(s) failed",
                             comment: "Apply changes script failure caption"
                         ),
                         viewModel.state.scriptsFailedCount
-                    ),
-                    systemImage: "exclamationmark.triangle.fill"
+                    )
                 )
-                .font(.caption)
-                .foregroundStyle(.orange)
             }
 
         }
+    }
+
+    private func warningLink(_ message: String) -> some View {
+        Button { showingLogs = true } label: {
+            HStack {
+                Label(message, systemImage: "exclamationmark.triangle.fill")
+                    .fixedSize(horizontal: false, vertical: true)
+                Image(systemName: "chevron.right")
+            }
+            .font(.caption)
+            .foregroundStyle(.orange)
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("View Logs")
     }
 
     private var failureCard: some View {
@@ -380,10 +398,14 @@ struct ApplyChangesProgressView: View {
                 Text(String(localized: "Apply Failed"))
                     .font(.title3.weight(.semibold))
 
-                Text(failureText)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Button { showingLogs = true } label: {
+                    Text(failureText)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("View Logs")
             }
 
             Spacer(minLength: 12)

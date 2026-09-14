@@ -268,11 +268,8 @@ struct ApplyProgressPresentationTests {
         viewModel.updatePhaseCompletion(scripts: true, reading: false)
         presentation = ApplyProgressPresentation.make(from: completedUpdatingState())
         check(
-            presentation.detail == String.localizedStringWithFormat(
-                NSLocalizedString("Updated %d, %d failed", comment: "Apply changes script phase detail"),
-                2,
-                1
-            ),
+            presentation.detail == localizedCount("Updated %d scripts", count: 2)
+                + " · " + localizedCount("%d script update(s) failed", count: 1),
             "completed update row should report mixed script results when focused"
         )
 
@@ -286,7 +283,7 @@ struct ApplyProgressPresentationTests {
         viewModel.updateFilterUpdatesFound(4)
         presentation = ApplyProgressPresentation.make(from: completedUpdatingState())
         check(
-            presentation.detail == localizedCount("Downloaded %d updates", count: 4) + " · " + localizedCount("Updated %d scripts", count: 3),
+            presentation.detail == localizedCount("Filter updates: %d", count: 4) + " · " + localizedCount("Updated %d scripts", count: 3),
             "filter and script results share one line"
         )
 
@@ -518,7 +515,7 @@ struct ApplyProgressPresentationTests {
         let presentation = ApplyProgressPresentation.make(from: viewModel.state)
         check(
             node(presentation, .updating)?.detail
-                == localizedCount("Downloaded %d updates", count: 3) + " · " + localizedCount("Updated %d scripts", count: 2),
+                == localizedCount("Filter updates: %d", count: 3) + " · " + localizedCount("Updated %d scripts", count: 2),
             "completed update row must keep both counts"
         )
         check(

@@ -873,6 +873,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Rules" = "ルールを編集";
 "View Rules" = "ルールを表示";
 "View Content" = "内容を表示";
+"Filter updates: %d" = "フィルターの更新: %d";
 "View Logs" = "ログを表示";
 "Waiting" = "待機中";
 "Waiting for activity" = "アクティビティを待機中";

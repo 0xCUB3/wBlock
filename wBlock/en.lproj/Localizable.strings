@@ -870,6 +870,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Rules" = "Edit Rules";
 "View Rules" = "View Rules";
 "View Content" = "View Content";
+"Filter updates: %d" = "Filter updates: %d";
 "View Logs" = "View Logs";
 "Waiting" = "Waiting";
 "Waiting for activity" = "Waiting for activity";

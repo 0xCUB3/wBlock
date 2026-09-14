@@ -870,6 +870,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Edit Rules" = "Edytuj reguły";
 "View Rules" = "Pokaż reguły";
 "View Content" = "Pokaż zawartość";
+"Filter updates: %d" = "Aktualizacje filtrów: %d";
 "View Logs" = "Pokaż logi";
 "Waiting" = "Oczekiwanie";
 "Waiting for activity" = "Oczekiwanie na aktywność";
