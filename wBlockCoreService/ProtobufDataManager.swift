@@ -10,6 +10,23 @@ internal import SwiftProtobuf
 import Combine
 import os.log
 
+private final class ZapperReplacementOutcome: @unchecked Sendable {
+    private let lock = NSLock()
+    private var replaced = false
+
+    func markReplaced() {
+        lock.lock()
+        defer { lock.unlock() }
+        replaced = true
+    }
+
+    var wasReplaced: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return replaced
+    }
+}
+
 private func normalizeAppDataIdentifiers(_ data: inout Wblock_Data_AppData) -> Bool {
     var changed = false
     // Normalize baselines as well as current snapshots so repair cannot resurrect an old ID during merge.
@@ -1338,6 +1355,52 @@ public class ProtobufDataManager: ObservableObject {
             data.extensionData.zapperRulesByHost[host] = ruleList
             data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
         }
+    }
+
+    /// Replaces a saved selector in place, preserving site state and retiring the old selector.
+    /// The disk transaction checks the original again so a stale editor cannot recreate a deleted rule.
+    @MainActor
+    public func replaceZapperRule(_ original: String, with replacement: String, forHost host: String) async -> Bool {
+        let replacement = replacement.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !replacement.isEmpty, replacement != original else { return false }
+        let outcome = ZapperReplacementOutcome()
+        let saved = await updateDataImmediately { data in
+            guard var rules = data.extensionData.zapperRulesByHost[host],
+                  let index = rules.selectors.firstIndex(of: original),
+                  !rules.selectors.contains(replacement) else { return }
+            outcome.markReplaced()
+            rules.selectors[index] = replacement
+            rules.pendingDeletions.removeAll { $0 == replacement }
+            if !rules.pendingDeletions.contains(original) {
+                rules.pendingDeletions.append(original)
+            }
+            data.extensionData.zapperRulesByHost[host] = rules
+            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+        let rules = getZapperRules(forHost: host)
+        return saved && outcome.wasReplaced && rules.contains(replacement) && !rules.contains(original)
+    }
+
+    /// Applies an extension snapshot and acknowledges app-side deletions in one disk transaction.
+    /// Pending native changes win over a stale browser snapshot, including newly edited selectors.
+    @MainActor
+    public func synchronizeZapperRules(forHost host: String, rules incoming: [String]) async -> [String]? {
+        let incoming = incoming.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        let saved = await updateDataImmediately { data in
+            var rules = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
+            let deleted = Set(rules.pendingDeletions)
+            var seen = Set<String>()
+            let candidates = deleted.isEmpty ? incoming : rules.selectors + incoming
+            rules.selectors = candidates.filter { !deleted.contains($0) && seen.insert($0).inserted }
+            rules.pendingDeletions.removeAll()
+            if rules.selectors.isEmpty {
+                data.extensionData.zapperRulesByHost.removeValue(forKey: host)
+            } else {
+                data.extensionData.zapperRulesByHost[host] = rules
+            }
+            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+        return saved ? getZapperRules(forHost: host) : nil
     }
 
     /// Removes a single selector. If the selectors array becomes empty, removes the host key

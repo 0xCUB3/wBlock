@@ -1,7 +1,7 @@
 import SwiftUI
 import wBlockCoreService
 
-/// Per-domain element zapper rules and their apply switches.
+/// Per-domain element zapper rule editing and apply switches.
 struct ElementZapperSettingsView: View {
     @ObservedObject var filterManager: AppFilterManager
     @ObservedObject private var dataManager = ProtobufDataManager.shared
@@ -9,6 +9,7 @@ struct ElementZapperSettingsView: View {
     @State private var searchText = ""
     @State private var expandedDomains: Set<String> = []
     @State private var pendingConfirmation: PendingConfirmation?
+    @State private var editingRule: RuleSelection?
     @State private var pendingUndo: UndoEntry?
     @State private var pendingRedo: UndoEntry?
     @State private var isMutating = false
@@ -22,6 +23,12 @@ struct ElementZapperSettingsView: View {
         var id: String {
             switch self { case .clear(let domain): return domain }
         }
+    }
+
+    private struct RuleSelection: Identifiable {
+        let id = UUID()
+        let domain: String
+        let rule: String
     }
 
     private struct UndoEntry {
@@ -77,6 +84,11 @@ struct ElementZapperSettingsView: View {
         #endif
         .navigationTitle("Element Zapper")
         .task { await ruleManager.refreshNow() }
+        .sheet(item: $editingRule) { selection in
+            ElementZapperRuleEditor(domain: selection.domain, originalRule: selection.rule) { replacement in
+                await replaceRule(selection, with: replacement)
+            }
+        }
         .alert(item: $pendingConfirmation) { confirmation in
             switch confirmation {
             case .clear(let domain):
@@ -154,6 +166,15 @@ struct ElementZapperSettingsView: View {
                         .lineLimit(1)
                         .truncationMode(.tail)
                     Spacer()
+                    Button {
+                        editingRule = RuleSelection(domain: domain, rule: rule)
+                    } label: {
+                        Image(systemName: "pencil")
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .noFocusRingCompat()
+                    .accessibilityLabel("Edit")
                     Button {
                         deleteRule(rule, from: domain, at: index)
                     } label: {
@@ -236,6 +257,20 @@ struct ElementZapperSettingsView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 48)
+    }
+
+    @MainActor
+    private func replaceRule(_ selection: RuleSelection, with replacement: String) async -> Bool {
+        guard !isMutating else { return false }
+        _ = beginMutation(invalidateUndo: true)
+        defer { isMutating = false }
+        var saved = false
+        await ruleManager.performMutation {
+            saved = await dataManager.replaceZapperRule(selection.rule, with: replacement, forHost: selection.domain)
+            await ruleManager.refreshNow()
+            if saved { filterManager.markNonSelectionChangesPending() }
+        }
+        return saved
     }
 
     private func deleteRule(_ rule: String, from domain: String, at index: Int) {
@@ -338,5 +373,78 @@ struct ElementZapperSettingsView: View {
     private func localizedRuleCount(_ count: Int) -> String {
         let key = count == 1 ? "%d rule" : "%d rules"
         return String.localizedStringWithFormat(NSLocalizedString(key, comment: "Element zapper rule count"), count)
+    }
+}
+
+struct ElementZapperRuleEditor: View {
+    let domain: String
+    let originalRule: String
+    let save: @MainActor (String) async -> Bool
+    @Environment(\.dismiss) private var dismiss
+    @State private var draft: String
+    @State private var isSaving = false
+    @State private var saveFailed = false
+
+    init(domain: String, originalRule: String, save: @escaping @MainActor (String) async -> Bool) {
+        self.domain = domain
+        self.originalRule = originalRule
+        self.save = save
+        _draft = State(initialValue: originalRule)
+    }
+
+    private var trimmedDraft: String { draft.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            SheetHeader(title: "Edit Element Rule", isLoading: isSaving) { dismiss() }
+            VStack(alignment: .leading, spacing: 12) {
+                Text(domain).font(.headline).textSelection(.enabled)
+                Text("CSS Selector").font(.subheadline).foregroundStyle(.secondary)
+                TextEditor(text: $draft)
+                    .font(.system(.body, design: .monospaced))
+                    .autocorrectionDisabled()
+                    #if os(iOS)
+                    .textInputAutocapitalization(.never)
+                    #endif
+                    .frame(minHeight: 140)
+                    .accessibilityLabel("CSS Selector")
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(.secondary.opacity(0.3)))
+                    .disabled(isSaving)
+                if saveFailed {
+                    Text("The rule could not be saved. It may have changed or already exist.")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+                Text("Element Zapper changes take full effect after the next apply.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+            SheetBottomToolbar {
+                Button("Cancel") { dismiss() }
+                    .disabled(isSaving)
+                Spacer()
+                if isSaving { ProgressView().controlSize(.small) }
+                Button("Save") {
+                    let replacement = trimmedDraft
+                    isSaving = true
+                    saveFailed = false
+                    Task { @MainActor in
+                        let saved = await save(replacement)
+                        isSaving = false
+                        if saved { dismiss() }
+                        else { saveFailed = true }
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+                .disabled(isSaving || trimmedDraft.isEmpty || trimmedDraft == originalRule)
+            }
+        }
+        .interactiveDismissDisabled(isSaving)
+        #if os(macOS)
+        .frame(width: 560)
+        .frame(minHeight: 380, idealHeight: 440)
+        #endif
     }
 }

@@ -1,3 +1,7 @@
+"Edit Element Rule" = "تعديل قاعدة العنصر";
+"CSS Selector" = "محدد CSS";
+"The rule could not be saved. It may have changed or already exist." = "تعذر حفظ القاعدة. ربما تغيرت أو كانت موجودة بالفعل.";
+
 "Apply on" = "تطبيق على";
 "No sites selected. This list will not apply." = "لم يتم تحديد أي مواقع. لن تُطبَّق هذه القائمة.";
 "Sites include their subdomains. Apply changes to update filtering." = "تشمل المواقع نطاقاتها الفرعية. طبّق التغييرات لتحديث التصفية.";

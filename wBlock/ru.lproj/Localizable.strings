@@ -1,3 +1,7 @@
+"Edit Element Rule" = "Изменить правило элемента";
+"CSS Selector" = "CSS-селектор";
+"The rule could not be saved. It may have changed or already exist." = "Не удалось сохранить правило. Возможно, оно было изменено или уже существует.";
+
 "Apply on" = "Применять на";
 "No sites selected. This list will not apply." = "Сайты не выбраны. Этот список не будет применяться.";
 "Sites include their subdomains. Apply changes to update filtering." = "Сайты включают свои поддомены. Примените изменения, чтобы обновить фильтрацию.";

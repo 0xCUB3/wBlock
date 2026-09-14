@@ -1,3 +1,7 @@
+"Edit Element Rule" = "Επεξεργασία κανόνα στοιχείου";
+"CSS Selector" = "Επιλογέας CSS";
+"The rule could not be saved. It may have changed or already exist." = "Δεν ήταν δυνατή η αποθήκευση του κανόνα. Ίσως έχει αλλάξει ή υπάρχει ήδη.";
+
 "Apply on" = "Εφαρμογή σε";
 "No sites selected. This list will not apply." = "Δεν έχουν επιλεγεί ιστότοποι. Αυτή η λίστα δεν θα εφαρμόζεται.";
 "Sites include their subdomains. Apply changes to update filtering." = "Οι ιστότοποι περιλαμβάνουν τους υποτομείς τους. Εφαρμόστε τις αλλαγές για να ενημερώσετε το φιλτράρισμα.";

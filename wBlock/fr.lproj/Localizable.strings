@@ -1,3 +1,7 @@
+"Edit Element Rule" = "Modifier la règle d’élément";
+"CSS Selector" = "Sélecteur CSS";
+"The rule could not be saved. It may have changed or already exist." = "La règle n’a pas pu être enregistrée. Elle a peut-être été modifiée ou existe déjà.";
+
 "Apply on" = "Appliquer sur";
 "No sites selected. This list will not apply." = "Aucun site sélectionné. Cette liste ne sera pas appliquée.";
 "Sites include their subdomains. Apply changes to update filtering." = "Les sites incluent leurs sous-domaines. Appliquez les modifications pour mettre à jour le filtrage.";

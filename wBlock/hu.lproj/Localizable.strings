@@ -1,3 +1,7 @@
+"Edit Element Rule" = "Elemszabály szerkesztése";
+"CSS Selector" = "CSS-szelektor";
+"The rule could not be saved. It may have changed or already exist." = "A szabály nem menthető. Lehet, hogy megváltozott vagy már létezik.";
+
 "Apply on" = "Alkalmazás itt";
 "No sites selected. This list will not apply." = "Nincs kiválasztott webhely. Ez a lista nem lesz alkalmazva.";
 "Sites include their subdomains. Apply changes to update filtering." = "A webhelyek az aldomainjeiket is magukban foglalják. A szűrés frissítéséhez alkalmazd a módosításokat.";

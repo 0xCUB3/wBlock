@@ -1,3 +1,7 @@
+"Edit Element Rule" = "Öğe kuralını düzenle";
+"CSS Selector" = "CSS seçicisi";
+"The rule could not be saved. It may have changed or already exist." = "Kural kaydedilemedi. Değiştirilmiş veya zaten mevcut olabilir.";
+
 "Apply on" = "Uygulanacak siteler";
 "No sites selected. This list will not apply." = "Hiçbir site seçilmedi. Bu liste uygulanmayacak.";
 "Sites include their subdomains. Apply changes to update filtering." = "Siteler alt alan adlarını da içerir. Filtrelemeyi güncellemek için değişiklikleri uygulayın.";

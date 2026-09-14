@@ -1,3 +1,7 @@
+"Edit Element Rule" = "Edit Element Rule";
+"CSS Selector" = "CSS Selector";
+"The rule could not be saved. It may have changed or already exist." = "The rule could not be saved. It may have changed or already exist.";
+
 "Apply on" = "Apply on";
 "No sites selected. This list will not apply." = "No sites selected. This list will not apply.";
 "Sites include their subdomains. Apply changes to update filtering." = "Sites include their subdomains. Apply changes to update filtering.";

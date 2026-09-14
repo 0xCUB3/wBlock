@@ -1606,24 +1606,12 @@ public enum WebExtensionRequestHandler {
             await ProtobufDataManager.shared.waitUntilLoaded()
             _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
 
-            // Consume any rules deleted from the app since last sync
-            let pendingDeletions = await ProtobufDataManager.shared.consumeZapperPendingDeletions(forHost: hostname)
-            let deletionSet = Set(pendingDeletions)
-
-            if let rules = message["rules"] as? [String] {
-                let filtered = rules
-                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                    .filter { !$0.isEmpty && !deletionSet.contains($0) }
-                if filtered.isEmpty {
-                    await ProtobufDataManager.shared.deleteAllZapperRules(forHost: hostname)
-                } else {
-                    await ProtobufDataManager.shared.setZapperRules(forHost: hostname, rules: filtered)
-                }
-                let response = createResponse(with: ["ok": true, "rules": filtered])
+            let incoming = message["rules"] as? [String] ?? []
+            if let rules = await ProtobufDataManager.shared.synchronizeZapperRules(forHost: hostname, rules: incoming) {
+                let response = createResponse(with: ["ok": true, "rules": rules])
                 context.completeRequest(returningItems: [response])
             } else {
-                await ProtobufDataManager.shared.deleteAllZapperRules(forHost: hostname)
-                let response = createResponse(with: ["ok": true, "rules": [String]()])
+                let response = createResponse(with: ["ok": false, "error": "Failed to save zapper rules"])
                 context.completeRequest(returningItems: [response])
             }
         }

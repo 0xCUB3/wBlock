@@ -1,3 +1,7 @@
+"Edit Element Rule" = "编辑元素规则";
+"CSS Selector" = "CSS 选择器";
+"The rule could not be saved. It may have changed or already exist." = "无法保存规则。规则可能已更改或已存在。";
+
 "Apply on" = "应用范围";
 "No sites selected. This list will not apply." = "未选择任何网站。此列表将不会应用。";
 "Sites include their subdomains. Apply changes to update filtering." = "网站范围包含其子域名。请应用更改以更新过滤。";
