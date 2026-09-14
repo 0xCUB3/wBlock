@@ -225,7 +225,7 @@ struct ContentView: View {
         .infoPresentation(item: $selectedFilterInfo) { filter in
             FilterInfoView(
                 filter: filter, filterManager: filterManager,
-                onChangeCategory: filter.category == .foreign || filterManager.isApplyInFlight
+                onChangeCategory: filter.category == .foreign
                     ? nil : { moveFilter(filter.id, to: $0) }
             )
             .infoSheetPresentationCompat()
@@ -817,7 +817,7 @@ struct ContentView: View {
     }
 
     private func moveFilter(_ id: UUID, to category: FilterListCategory) {
-        guard !filterManager.isApplyInFlight, category != .foreign,
+        guard category != .foreign,
               let index = filterManager.filterLists.firstIndex(where: { $0.id == id }),
               filterManager.filterLists[index].category != .foreign,
               filterManager.filterLists[index].category != category else { return }
@@ -865,7 +865,7 @@ struct ContentView: View {
                     filterManager.setFilterListSelection(id: filter.id, selected: newValue)
                 }
             },
-            onChangeCategory: filter.category == .foreign || filterManager.isApplyInFlight
+            onChangeCategory: filter.category == .foreign
                 ? nil : { moveFilter(filter.id, to: $0) }
         )
     }
