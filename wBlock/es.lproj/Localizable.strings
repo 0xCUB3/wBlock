@@ -365,6 +365,7 @@
 "Export" = "Exportar";
 "Export failed: %@" = "La exportación falló: %@";
 "The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "El contenido de la lista de filtros local «%@» no está disponible. Recupera la lista en el dispositivo original y crea una nueva copia de seguridad.";
+"The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "La copia de seguridad no contiene datos utilizables para estas listas. Se omitirán al restaurar. %@";
 "Export Settings" = "Exportar ajustes";
 "Extension Slots" = "Ranuras de extensión";
 "Extensions" = "Extensiones";

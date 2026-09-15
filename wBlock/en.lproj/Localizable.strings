@@ -365,6 +365,7 @@
 "Export" = "Export";
 "Export failed: %@" = "Export failed: %@";
 "The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup.";
+"The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "The backup has no usable contents for these lists. They will be skipped when restoring. %@";
 "Export Settings" = "Export Settings";
 "Extension Slots" = "Extension Slots";
 "Extensions" = "Extensions";

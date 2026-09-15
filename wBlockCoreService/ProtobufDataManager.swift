@@ -40,6 +40,13 @@ private func normalizeAppDataIdentifiers(_ data: inout Wblock_Data_AppData) -> B
         if let value = data.autoUpdate.filterLastModified.removeValue(forKey: record.id) { data.autoUpdate.filterLastModified[id] = value }
         if let value = data.autoUpdate.filterLastChecked.removeValue(forKey: record.id) { data.autoUpdate.filterLastChecked[id] = value }
     }
+    var filterIDs = Set<String>()
+    let filtersByID = Dictionary(data.filterLists.map { ($0.id, $0) }, uniquingKeysWith: { _, latest in latest })
+    let uniqueFilters = data.filterLists.filter { filterIDs.insert($0.id).inserted }.map { filtersByID[$0.id]! }
+    if uniqueFilters.count != data.filterLists.count {
+        data.filterLists = uniqueFilters
+        changed = true
+    }
     for index in data.userScripts.indices {
         let record = data.userScripts[index]
         let id = StableRecordIdentifier.uuid(rawValue: record.id, namespace: "script", source: record.url.isEmpty ? record.name : record.url).uuidString
@@ -182,8 +189,8 @@ func mergeFilterListsForPersistence(
     let baselineByID = Dictionary(baseline.map { ($0.id, $0) }, uniquingKeysWith: { _, latest in latest })
     let localByID = Dictionary(local.map { ($0.id, $0) }, uniquingKeysWith: { _, latest in latest })
     let persistedByID = Dictionary(persisted.map { ($0.id, $0) }, uniquingKeysWith: { _, latest in latest })
-    var ids = persisted.map(\.id)
-    ids.append(contentsOf: local.map(\.id).filter { !ids.contains($0) })
+    var seenIDs = Set<String>()
+    let ids = (persisted + local).map(\.id).filter { seenIDs.insert($0).inserted }
     local = ids.compactMap { id in
         if deletedIDs.contains(id) { return nil }
         guard let mine = localByID[id] else { return persistedByID[id] }

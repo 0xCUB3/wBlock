@@ -166,6 +166,22 @@ enum AppAppearance: String {
         defer { try? FileManager.default.removeItem(at: directory) }
         FilterListLoader.directory = directory
         try await testLocalSourceAvailability()
+        for content: String? in [nil, "", "||example.com^"] {
+            let manager = AppFilterManager()
+            var backup = try await BackupManager.createBackup(filterManager: manager)
+            let url = "wblock://userlist/12EDE904-DAB1-4F65-9F6C-BA5CF3ADA37C"
+            backup.customFilterLists = [.init(name: "Legacy rules", url: "wblock-invalid-filter:unavailable?source=\(url)", category: "Custom", isSelected: false, description: "", content: content)]
+            let decoded = try BackupManager.importData(from: BackupManager.exportData(backup: backup))
+            precondition(decoded.customFilterLists[0].isUnavailable == (content == nil))
+            precondition(decoded.restoreConfirmation.contains("Legacy rules") == (content == nil))
+            try await BackupManager.restoreBackup(decoded, filterManager: manager)
+            precondition(manager.filterLists.count == (content == nil ? 0 : 1))
+            if let filter = manager.filterLists.first {
+                precondition(filter.url.absoluteString == url && !filter.isSelected)
+                precondition(CloudSyncManager.shared.clearedURLs.contains(url))
+                precondition(try! String(contentsOf: FilterListLoader().localFileURL(for: filter)!, encoding: .utf8) == content)
+            }
+        }
         let id = UUID()
         let url = "wblock://userlist/\(id.uuidString)"
         let manager = AppFilterManager()
@@ -290,7 +306,7 @@ enum AppAppearance: String {
                                 category: .ads, isCustom: true, uniqueRuleCount: 500)
         let remoteEntry = WBlockBackup.CustomFilterEntry(name: "Restored", url: remote.url.absoluteString,
             category: FilterListCategory.privacy.rawValue, isSelected: true, description: "Restored description")
-        let restored = try BackupCustomFilterRestorer.restore([remoteEntry], into: [remote], localFileURL: { _ in nil })
+        let restored = try BackupCustomFilterRestorer.restoreWithReceipt([remoteEntry], into: [remote], localFileURL: { _ in nil }).lists
         precondition(restored.count == 1 && restored[0].id == remoteID && restored[0].name == "Restored")
         precondition(restored[0].category == .privacy && restored[0].uniqueRuleCount == nil)
 
@@ -311,7 +327,7 @@ enum AppAppearance: String {
         ]
         var writes = 0
         do {
-            _ = try BackupCustomFilterRestorer.restore(
+            _ = try BackupCustomFilterRestorer.restoreWithReceipt(
                 entries,
                 into: originals,
                 localFileURL: FilterListLoader().localFileURL(for:),
@@ -336,7 +352,7 @@ enum AppAppearance: String {
         var concurrentWriteCount = 0
         var firstPublishedURL: URL?
         do {
-            _ = try BackupCustomFilterRestorer.restore(
+            _ = try BackupCustomFilterRestorer.restoreWithReceipt(
                 entries,
                 into: originals,
                 localFileURL: FilterListLoader().localFileURL(for:),

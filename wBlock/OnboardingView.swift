@@ -241,28 +241,13 @@ struct OnboardingView: View {
         ) { result in
             handleBackupImportResult(result)
         }
-        .alert("Restore Settings?", isPresented: $showingRestoreBackupConfirmation) {
+        .alert("Restore Settings?", isPresented: $showingRestoreBackupConfirmation, presenting: pendingBackup) { _ in
             Button("Cancel", role: .cancel) { pendingBackup = nil }
             Button("Restore") {
                 Task { await performBackupRestore() }
             }
-        } message: {
-            if let backup = pendingBackup {
-                let dateStr = backup.createdAt.formatted(date: .abbreviated, time: .shortened)
-                Text(
-                    String.localizedStringWithFormat(
-                        NSLocalizedString(
-                            "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules.",
-                            comment: "Restore backup confirmation message"
-                        ),
-                        dateStr,
-                        backup.appVersion,
-                        backup.filterSelections.count.formatted()
-                    )
-                )
-            } else {
-                Text("This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings.")
-            }
+        } message: { backup in
+            Text(backup.restoreConfirmation)
         }
         .alert("Backup", isPresented: Binding(
             get: { backupRestoreError != nil },

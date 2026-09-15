@@ -1102,7 +1102,9 @@ final class CloudSyncManager: ObservableObject {
 
         for remoteCustom in filters.customLists {
             guard !locallyChangedCustomURLs.contains(remoteCustom.url),
-                  !mergedDeleted.contains(remoteCustom.url) else { continue }
+                  !mergedDeleted.contains(remoteCustom.url),
+                  let url = URL(string: remoteCustom.url),
+                  url.scheme != "wblock-invalid-filter" else { continue }
             if let inlineID = Self.inlineUserListID(from: remoteCustom.url) {
                 guard let content = remoteCustom.content else { continue }
                 Self.writeInlineUserListContent(id: inlineID, content: content)
@@ -1152,7 +1154,7 @@ final class CloudSyncManager: ObservableObject {
             filterLists.append(FilterList(
                 id: Self.inlineUserListID(from: remoteCustom.url) ?? UUID(),
                 name: remoteCustom.name,
-                url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
+                url: url,
                 category: category,
                 isCustom: true,
                 isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
@@ -1716,7 +1718,8 @@ final class CloudSyncManager: ObservableObject {
             var existingCustomURLs = Set(filterLists.filter(\.isCustom).map { $0.url.absoluteString })
             var changed = false
             for remoteCustom in missingCustoms where !existingCustomURLs.contains(remoteCustom.url) {
-                guard URL(string: remoteCustom.url) != nil else { continue }
+                guard let url = URL(string: remoteCustom.url),
+                      url.scheme != "wblock-invalid-filter" else { continue }
                 if let inlineID = Self.inlineUserListID(from: remoteCustom.url) {
                     guard let content = remoteCustom.content else { continue }
                     Self.writeInlineUserListContent(id: inlineID, content: content)
@@ -1724,7 +1727,7 @@ final class CloudSyncManager: ObservableObject {
                 filterLists.append(FilterList(
                     id: Self.inlineUserListID(from: remoteCustom.url) ?? UUID(),
                     name: remoteCustom.name,
-                    url: URL(string: remoteCustom.url) ?? URL(string: "https://example.com")!,
+                    url: url,
                     category: remoteCustom.resolvedCategory,
                     isCustom: true,
                     isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,

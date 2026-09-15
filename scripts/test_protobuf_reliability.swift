@@ -55,8 +55,12 @@ struct ProtobufReliabilityTests {
         filter.isSelected = false
         let saved = await manager.updateFilterLists([filter])
         expect(saved, "legacy placeholder fixture must persist")
+        let file = root.appendingPathComponent("wblock_data.pb")
+        let bytes = try! Data(contentsOf: file)
+        try! (bytes + bytes).write(to: file, options: .atomic)
         manager = await makeManager(root: root, standard: defaults, group: defaults)
         await manager.loadData()
+        expect(manager.getFilterLists().count == 1, "repeated stored identities must collapse before reaching any reader")
         let recovered = manager.getFilterLists().first { $0.id == id }!
         expect(recovered.url == url && recovered.isInlineUserList, "recover previously rejected local addresses")
         expect(!recovered.isSelected, "recovery must not enable a disabled list")

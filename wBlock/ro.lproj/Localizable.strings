@@ -365,6 +365,7 @@
 "Export" = "Exportă";
 "Export failed: %@" = "Exportul a eșuat: %@";
 "The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "Conținutul listei locale de filtre „%@” nu este disponibil. Recuperați lista pe dispozitivul original și creați o nouă copie de siguranță.";
+"The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "Copia de rezervă nu conține date utilizabile pentru aceste liste. Vor fi omise la restaurare. %@";
 "Export Settings" = "Exportă setările";
 "Extension Slots" = "Sloturi de extensie";
 "Extensions" = "Extensii";

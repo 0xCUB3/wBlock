@@ -365,6 +365,7 @@
 "Export" = "匯出";
 "Export failed: %@" = "匯出失敗：%@";
 "The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "無法取得本機過濾清單「%@」的內容。請在原裝置上復原該清單，然後建立新的備份。";
+"The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "備份中沒有這些清單的可用內容。還原時將略過它們。%@";
 "Export Settings" = "匯出設定";
 "Extension Slots" = "擴充功能插槽";
 "Extensions" = "擴充功能";

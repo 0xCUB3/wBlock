@@ -78,26 +78,11 @@ struct SettingsView: View {
                 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow."
             )
         }
-        .alert("Restore Settings?", isPresented: $showingRestoreBackupConfirmation) {
+        .alert("Restore Settings?", isPresented: $showingRestoreBackupConfirmation, presenting: pendingBackup) { _ in
             Button("Cancel", role: .cancel) { pendingBackup = nil }
             Button("Restore") { performRestore() }
-        } message: {
-            if let backup = pendingBackup {
-                let dateStr = backup.createdAt.formatted(date: .abbreviated, time: .shortened)
-                Text(
-                    String.localizedStringWithFormat(
-                        NSLocalizedString(
-                            "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules.",
-                            comment: "Restore backup confirmation message"
-                        ),
-                        dateStr,
-                        backup.appVersion,
-                        backup.filterSelections.count.formatted()
-                    )
-                )
-            } else {
-                Text("This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings.")
-            }
+        } message: { backup in
+            Text(backup.restoreConfirmation)
         }
         .alert("Backup", isPresented: $showingBackupStatus) {
             Button("OK") {}

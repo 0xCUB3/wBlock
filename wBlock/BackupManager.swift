@@ -44,6 +44,27 @@ struct WBlockBackup: Codable, Sendable {
         var userProvidedDescription: Bool?
         var admittedSourceRuleCount: Int?
         var content: String?
+
+        var isUnavailable: Bool {
+            URL(string: url)?.scheme == "wblock-invalid-filter"
+                && (content == nil || !PersistedFilterURL.resolve(url).isUsable)
+        }
+    }
+
+    var restoreConfirmation: String {
+        let message = String.localizedStringWithFormat(
+            NSLocalizedString(
+                "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules.",
+                comment: "Restore backup confirmation message"
+            ),
+            createdAt.formatted(date: .abbreviated, time: .shortened), appVersion, filterSelections.count.formatted()
+        )
+        let unavailable = customFilterLists.filter(\.isUnavailable).map(\.name)
+        guard !unavailable.isEmpty else { return message }
+        return message + "\n\n" + String.localizedStringWithFormat(
+            NSLocalizedString("The backup has no usable contents for these lists. They will be skipped when restoring. %@", comment: "Warning before restoring an incomplete legacy backup"),
+            unavailable.joined(separator: ", ")
+        )
     }
 
     struct UserScriptEntry: Codable, Sendable {
@@ -350,8 +371,9 @@ enum BackupCustomFilterRestorer {
 
         var lists = existing
         var writes: [URL: Data] = [:]
-        for entry in entries {
-            guard let components = URLComponents(string: entry.url),
+        for entry in entries where !entry.isUnavailable {
+            let resolvedURL = PersistedFilterURL.resolve(entry.url).url
+            guard let components = URLComponents(url: resolvedURL, resolvingAgainstBaseURL: false),
                   !entry.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                 throw CocoaError(.fileReadCorruptFile)
             }
@@ -372,7 +394,7 @@ enum BackupCustomFilterRestorer {
                 inlineID = id
                 url = URL(string: "wblock://userlist/\(id.uuidString)")!
             } else {
-                guard let remoteURL = FilterListURLSupport.validatedRemoteURL(from: entry.url) else {
+                guard let remoteURL = FilterListURLSupport.validatedRemoteURL(from: resolvedURL.absoluteString) else {
                     throw CocoaError(.fileReadCorruptFile)
                 }
                 inlineID = nil
@@ -441,32 +463,6 @@ enum BackupCustomFilterRestorer {
         }
         return RestoreResult(lists: lists, previous: previous, published: published)
     }
-
-    static func restore(
-        _ entries: [WBlockBackup.CustomFilterEntry],
-        into existing: [FilterList],
-        localFileURL: (FilterList) -> URL?,
-        readData: (URL) throws -> Data? = { url in
-            guard FileManager.default.fileExists(atPath: url.path) else { return nil }
-            return try Data(contentsOf: url)
-        },
-        writeData: (Data, URL) throws -> Void = { data, url in
-            try data.write(to: url, options: .atomic)
-        },
-        removeFile: (URL) throws -> Void = { url in
-            guard FileManager.default.fileExists(atPath: url.path) else { return }
-            try FileManager.default.removeItem(at: url)
-        }
-    ) throws -> [FilterList] {
-        try restoreWithReceipt(
-            entries,
-            into: existing,
-            localFileURL: localFileURL,
-            readData: readData,
-            writeData: writeData,
-            removeFile: removeFile
-        ).lists
-    }
 }
 
 // MARK: - BackupDocument (FileDocument for iOS fileExporter)
@@ -508,16 +504,17 @@ enum BackupManager {
         let customEntries = try filterManager.filterLists
             .filter { $0.isCustom }
             .map { filter -> WBlockBackup.CustomFilterEntry in
+                var filter = filter
+                let resolved = PersistedFilterURL.resolve(filter.url.absoluteString)
+                guard resolved.isUsable else { throw CocoaError(.fileReadCorruptFile) }
+                filter.url = resolved.url
                 var content: String? = nil
                 if filter.isInlineUserList {
-                    guard let fileURL = loader.localFileURL(for: filter) else {
+                    guard let fileURL = loader.localFileURL(for: filter),
+                          let source = try? String(contentsOf: fileURL, encoding: .utf8) else {
                         throw BackupContentError.unavailableLocalFilter(filter.name)
                     }
-                    do {
-                        content = try String(contentsOf: fileURL, encoding: .utf8)
-                    } catch {
-                        throw BackupContentError.unavailableLocalFilter(filter.name)
-                    }
+                    content = source
                 }
                 return WBlockBackup.CustomFilterEntry(
                     name: filter.name,
@@ -533,17 +530,10 @@ enum BackupManager {
             }
 
         let backedUpUserScripts = await UserScriptManager.shared.userScriptsForBackup()
-        let userScriptDisabledHosts = await MainActor.run {
-            Dictionary(
-                uniqueKeysWithValues: backedUpUserScripts.map { script in
-                    (script.id, ProtobufDataManager.shared.getUserScriptDisabledHosts(forScriptID: script.id.uuidString))
-                }
-            )
-        }
         let userScriptEntries = backedUpUserScripts.map { script in
             WBlockBackup.UserScriptEntry(
                 userScript: script,
-                disabledHosts: userScriptDisabledHosts[script.id] ?? [],
+                disabledHosts: ProtobufDataManager.shared.getUserScriptDisabledHosts(forScriptID: script.id.uuidString),
                 siteAccess: ProtobufDataManager.shared.userScriptSiteAccess(forScriptID: script.id.uuidString)
             )
         }
@@ -553,17 +543,10 @@ enum BackupManager {
         let filterDisabledDomains = filterManager.dataManager.filterDisabledSites
         let noAutoplayEnabled = filterManager.dataManager.isNoAutoplayEnabled
         let noAutoplayAllowedSites = filterManager.dataManager.noAutoplayAllowedSites
-        let (zapperRules, disabledZapperDomains) = await MainActor.run {
-            var zapperRules: [String: [String]] = [:]
-            let zapperDomains = ProtobufDataManager.shared.getZapperDomains()
-            for domain in zapperDomains {
-                let rules = ProtobufDataManager.shared.getZapperRules(forHost: domain)
-                if !rules.isEmpty {
-                    zapperRules[domain] = rules
-                }
-            }
-            return (zapperRules, ProtobufDataManager.shared.getDisabledZapperDomains())
-        }
+        let zapperRules = Dictionary(uniqueKeysWithValues: ProtobufDataManager.shared.getZapperDomains().map {
+            ($0, ProtobufDataManager.shared.getZapperRules(forHost: $0))
+        }).filter { !$0.value.isEmpty }
+        let disabledZapperDomains = ProtobufDataManager.shared.getDisabledZapperDomains()
 
         await ConcurrentLogManager.shared.operation("backup-created", fields: ["filters": String(filterSelections.count + customEntries.count), "scripts": String(userScriptEntries.count), "zapperHosts": String(zapperRules.count)])
         return WBlockBackup(
@@ -639,9 +622,9 @@ enum BackupManager {
             )
         }
         let currentLists = filterManager.filterLists
-        for entry in backup.customFilterLists {
-            if let url = URL(string: entry.url),
-               let filter = currentLists.first(where: { $0.isCustom && FilterListURLSupport.isSameList($0.url, url) }) {
+        for entry in backup.customFilterLists where !entry.isUnavailable {
+            let url = PersistedFilterURL.resolve(entry.url).url
+            if let filter = currentLists.first(where: { $0.isCustom && FilterListURLSupport.isSameList($0.url, url) }) {
                 CloudSyncManager.shared.clearDeletedCustomListURL(filter.url.absoluteString)
             }
         }
@@ -665,12 +648,8 @@ enum BackupManager {
         // 5. Restore userscripts, including custom script content and enabled/update state
         let userScripts = backup.userScripts.map(\.userScript)
         await UserScriptManager.shared.restoreUserScriptsFromBackup(userScripts)
-        let restoredUserScripts = await MainActor.run {
-            UserScriptManager.shared.userScripts
-        }
-        var disabledHostsByScriptID = await MainActor.run {
-            ProtobufDataManager.shared.getUserScriptDisabledHosts()
-        }
+        let restoredUserScripts = UserScriptManager.shared.userScripts
+        var disabledHostsByScriptID = ProtobufDataManager.shared.getUserScriptDisabledHosts()
         for entry in backup.userScripts {
             let disabledHosts = entry.disabledHosts
             let restoredScript = entry.userScript
