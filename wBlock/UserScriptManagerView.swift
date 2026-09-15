@@ -48,8 +48,8 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let isDownloaded: Bool
     let updatesAutomatically: Bool
     let isUserStyle: Bool
-    let category: FilterListCategory
-    let displayCategory: UserScriptDisplayCategory
+    var category: FilterListCategory
+    var displayCategory: UserScriptDisplayCategory
     let isBuiltIn: Bool
     let isIntegrated: Bool
     let isCustom: Bool
@@ -185,7 +185,6 @@ struct UserScriptManagerView: View {
 
     @State private var scripts: [UserScriptListItem] = []
     @AppStorage("userScriptDisplayOrder") private var scriptDisplayOrder = Data()
-    @StateObject private var scriptDrag = ListDrag()
     @State private var showingAddScriptSheet = false
     @State private var selectedScript: SelectedUserScript?
     @State private var selectedScriptInfo: SelectedUserScript?
@@ -281,12 +280,7 @@ struct UserScriptManagerView: View {
     private var displayedScriptSections: [UserScriptDisplaySection] {
         UserScriptDisplayCategory.allCases.compactMap { category in
             let matching = displayedScripts.filter { $0.displayCategory == category }
-            #if os(iOS)
             return matching.isEmpty ? nil : UserScriptDisplaySection(id: category, scripts: matching)
-            #else
-            return matching.isEmpty && scriptDrag.id == nil ? nil
-                : UserScriptDisplaySection(id: category, scripts: matching)
-            #endif
         }
     }
 
@@ -301,8 +295,7 @@ struct UserScriptManagerView: View {
 
     private func scriptRows(_ section: UserScriptDisplaySection) -> some View {
         ReorderableRows(items: section.scripts, allItems: { orderedScripts },
-                        order: $scriptDisplayOrder, drag: scriptDrag,
-                        commit: { moveScript($0, to: section.id) }, row: scriptRowView)
+                        order: $scriptDisplayOrder, row: scriptRowView)
     }
 
     var body: some View {
@@ -314,16 +307,7 @@ struct UserScriptManagerView: View {
                 refreshScripts()
             })
         }
-        .infoPresentation(item: $selectedScriptInfo, onDismiss: refreshScripts) { selection in
-            UserScriptInfoView(
-                scriptId: selection.id, userScriptManager: userScriptManager,
-                onChangeDisplayCategory: { moveScript(selection.id, to: $0) },
-                onDownload: {
-                    if let item = scripts.first(where: { $0.id == selection.id }) { downloadScript(item) }
-                }
-            )
-            .tallInfoSheetPresentationCompat()
-        }
+        .infoPresentation(item: $selectedScriptInfo, onDismiss: refreshScripts, content: scriptInfoContent)
         .infoPresentation(item: $selectedScriptSettings, onDismiss: refreshScripts) { selection in
             UserScriptSettingsView(scriptID: selection.id, userScriptManager: userScriptManager)
                 .infoSheetPresentationCompat()
@@ -335,14 +319,7 @@ struct UserScriptManagerView: View {
                 startsEditing: selection.action == .editContent
             )
         }
-        .infoPresentation(item: $selectedCategoryInfo) { category in
-            UserScriptCategoryInfoView(
-                category: category,
-                defaultScriptNames: defaultScriptNames(for: category),
-                onReset: { resetCategory(category) }
-            )
-            .infoSheetPresentationCompat()
-        }
+        .infoPresentation(item: $selectedCategoryInfo, content: scriptCategoryInfoContent)
         .onAppear {
             refreshScripts()
             showOnlyEnabled = ProtobufDataManager.shared.getUserScriptShowEnabledOnly()
@@ -455,30 +432,13 @@ struct UserScriptManagerView: View {
             prompt: "Search scripts"
         )
         #else
-        ScrollView {
-            VStack(spacing: 20) {
-                statsCardsView
-
-                if scripts.isEmpty {
-                    emptyStateView
-                        .padding(.top, 40)
-                } else if sections.isEmpty {
-                    noSearchResultsView
-                        .padding(.top, 40)
-                } else {
-                    LazyVStack(spacing: 16) {
-                        ForEach(sections) { section in
-                            ContentListSection { displaySectionHeader(section) } content: { scriptRows(section) }
-                        }
-                    }
-                    .padding(.horizontal)
-                }
-
-                Spacer(minLength: 20)
-            }
-            .padding(.vertical)
-        }
-        .keyboardScrollable()
+        MacReorderableList(
+            sections: scripts.isEmpty || sections.isEmpty ? [] : macScriptSections,
+            header: AnyView(statsCardsView.padding(.vertical, 16)),
+            emptyContent: scripts.isEmpty ? AnyView(emptyStateView.padding(.vertical, 40))
+                : (sections.isEmpty ? AnyView(noSearchResultsView.padding(.vertical, 40)) : nil),
+            onMove: commitScriptMove
+        )
         .onDrop(of: [.fileURL], isTargeted: $isDropTarget, perform: handleDrop(providers:))
         .overlay(alignment: .topTrailing) {
             ZStack(alignment: .topTrailing) {
@@ -512,6 +472,32 @@ struct UserScriptManagerView: View {
     }
 
     #if os(macOS)
+    private var macScriptSections: [MacListSection] {
+        UserScriptDisplayCategory.allCases.map { category in
+            let section = UserScriptDisplaySection(id: category, scripts: displayedScripts.filter { $0.displayCategory == category })
+            return MacListSection(id: category.id, header: AnyView(displaySectionHeader(section)),
+                                  rows: section.scripts.map { script in MacListRow(script.id) { scriptRowView(script: script) } })
+        }
+    }
+
+    private func commitScriptMove(_ move: MacListMove) -> Bool {
+        guard let category = UserScriptDisplayCategory(rawValue: move.sectionID),
+              let persisted = FilterListCategory(rawValue: category.rawValue),
+              let index = scripts.firstIndex(where: { $0.id == move.itemID }),
+              userScriptManager.userScript(withId: move.itemID) != nil else { return false }
+        let all = orderedScripts
+        let byID = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
+        let moved = move.orderedIDs.compactMap { byID[$0] }
+        guard moved.count == move.orderedIDs.count else { return false }
+        scriptDisplayOrder = ListDisplayOrder.saving(moved, in: all)
+        if byID[move.itemID]?.displayCategory != category {
+            scripts[index].category = persisted
+            scripts[index].displayCategory = category
+            moveScript(move.itemID, to: category)
+        }
+        return true
+    }
+
     private var macScriptsToolbar: some ViewModifier {
         MacActionsToolbar(isSearchExpanded: showSearch, hasPendingChanges: hasPendingChanges) {
             Button {
@@ -654,8 +640,24 @@ struct UserScriptManagerView: View {
     }
 
     private func displaySectionHeader(_ section: UserScriptDisplaySection) -> some View {
-        ListCategoryHeader(title: section.title, info: { selectedCategoryInfo = section.id },
-                           drop: ListDrop(drag: scriptDrag) { moveScript($0, to: section.id) }, anchorID: section.id.id)
+        ListCategoryHeader(title: section.title, info: { selectedCategoryInfo = section.id }, anchorID: section.id.id)
+    }
+
+    private func scriptInfoContent(_ selection: SelectedUserScript) -> some View {
+        UserScriptInfoView(
+            scriptId: selection.id, userScriptManager: userScriptManager,
+            onChangeDisplayCategory: { moveScript(selection.id, to: $0) },
+            onDownload: {
+                if let item = scripts.first(where: { $0.id == selection.id }) { downloadScript(item) }
+            }
+        ).tallInfoSheetPresentationCompat()
+    }
+
+    private func scriptCategoryInfoContent(_ category: UserScriptDisplayCategory) -> some View {
+        UserScriptCategoryInfoView(
+            category: category, defaultScriptNames: defaultScriptNames(for: category),
+            onReset: { resetCategory(category) }
+        ).infoSheetPresentationCompat()
     }
 
     private func defaultScriptNames(for category: UserScriptDisplayCategory) -> [String] {
@@ -759,9 +761,7 @@ struct UserScriptManagerView: View {
         let isToggleInFlight = toggleState?.isInFlight ?? false
 
         return HStack(alignment: .center, spacing: 10) {
-            // The info tap lives on the text column only. A row-wide tap gesture
-            // competes with the switch on iOS 17, where the gesture wins and a tap
-            // on the switch opens the info sheet instead of toggling the script.
+            // Keep the iOS info gesture on the text column so it cannot consume switch taps.
             HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
@@ -861,12 +861,21 @@ struct UserScriptManagerView: View {
                 selectedScriptInfo = SelectedUserScript(id: script.id, action: .info)
             }
             .contentShape(.interaction, Rectangle())
+            #if os(iOS)
             .onTapGesture {
-                // Defer to avoid race with context menu dismissal on iOS
+                // Defer to avoid race with context menu dismissal on iOS.
                 DispatchQueue.main.async {
                     selectedScriptInfo = SelectedUserScript(id: script.id, action: .info)
                 }
             }
+            #endif
+            #if os(macOS)
+            Button { selectedScriptInfo = SelectedUserScript(id: script.id, action: .info) } label: {
+                Image(systemName: "info.circle")
+            }
+            .buttonStyle(.plain).noFocusRingCompat()
+            .foregroundStyle(.secondary).accessibilityLabel("Info")
+            #endif
 
             HStack(spacing: 8) {
                 if !script.isLocal && (downloadingScriptIDs.contains(script.id) || !script.isDownloaded) {

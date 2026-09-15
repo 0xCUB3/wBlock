@@ -68,6 +68,8 @@ compile_direct_test() {
 }
 
 # Standalone Foundation and AppKit tests.
+compile_direct_test native-list-reordering \
+  wBlock/MacReorderableList.swift wBlock/ListDisplayOrder.swift scripts/test_native_list_reordering.swift
 compile_direct_test popover-window-shield \
   wBlock/InfoPresentation.swift scripts/test_popover_window_shield.swift
 compile_direct_test compiler-timeout scripts/test_issue_511_compiler_timeout.swift

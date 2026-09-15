@@ -4,7 +4,7 @@ import AppKit
 @MainActor
 struct PopoverWindowShieldTests {
     static func main() {
-        _ = NSApplication.shared
+        NSApplication.shared.setActivationPolicy(.prohibited)
         let parent = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
                               styleMask: [.titled], backing: .buffered, defer: false)
         let popup = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 200, height: 200),

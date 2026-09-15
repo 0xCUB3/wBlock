@@ -30,7 +30,6 @@ struct ContentView: View {
     @State private var showingFilterDownloadError = false
     @AppStorage("filtersShowEnabledOnly") private var showOnlyEnabledLists = false
     @AppStorage("filterDisplayOrder") private var filterDisplayOrder = Data()
-    @StateObject private var filterDrag = ListDrag()
     @State private var filterSearchText = ""
     @State private var showFilterSearch = false
     @State private var editingCustomFilter: FilterList?
@@ -107,15 +106,7 @@ struct ContentView: View {
 
     private var categorizedFilters: [(category: FilterListCategory, filters: [FilterList])] {
         #if os(macOS)
-        let sections = filterPresentation.sections
-        return FilterListCategory.allCases.filter { $0 != .all && !$0.isUserScriptOnly }
-            .compactMap { category in
-                if let section = sections.first(where: { $0.category == category }) {
-                    return (category: category, filters: section.filters)
-                }
-                return filterDrag.id == nil || category == .scripts || category == .foreign
-                    ? nil : (category: category, filters: [])
-            }
+        return filterPresentation.sections.map { ($0.category, $0.filters) }
         #else
         let query = filterSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
         let groups = Dictionary(grouping: orderedFilters.filter { filter in
@@ -127,13 +118,7 @@ struct ContentView: View {
         return FilterListCategory.allCases.filter { $0 != .all && !$0.isUserScriptOnly }
             .compactMap { category in
                 guard let filters = groups[category] else {
-                    #if os(iOS)
-                    // Inserting sections during a native drag invalidates SwiftUI shadow row indexes.
                     return nil
-                    #else
-                    return filterDrag.id == nil || category == .scripts || category == .foreign
-                        ? nil : (category: category, filters: [])
-                    #endif
                 }
                 return (category: category, filters: filters)
             }
@@ -227,11 +212,11 @@ struct ContentView: View {
         .background(keyboardShortcutHandlers)
         #if os(macOS)
         .task(id: filterPresentationInput) {
-            if let prepared = try? await FilterListPresentation.prepare(filterPresentationInput),
-               !Task.isCancelled {
-                let isDragging = filterDrag.id != nil
-                var transaction = Transaction(animation: isDragging ? .easeInOut(duration: 0.18) : nil)
-                transaction.disablesAnimations = !isDragging
+            let input = filterPresentationInput
+            if let prepared = try? await FilterListPresentation.prepare(input),
+               !Task.isCancelled, input == filterPresentationInput {
+                var transaction = Transaction(animation: nil)
+                transaction.disablesAnimations = true
                 withTransaction(transaction) { filterPresentation = prepared }
             }
         }
@@ -251,14 +236,7 @@ struct ContentView: View {
                 EditCustomFilterView(filterManager: filterManager, filter: filter)
             }
         }
-        .infoPresentation(item: $selectedFilterInfo) { filter in
-            FilterInfoView(
-                filter: filter, filterManager: filterManager,
-                onChangeCategory: filter.category == .foreign
-                    ? nil : { moveFilter(filter.id, to: $0) }
-            )
-            .infoSheetPresentationCompat()
-        }
+        .infoPresentation(item: $selectedFilterInfo, content: filterInfoContent)
         .infoPresentation(item: $selectedFilterSettings) { filter in
             FilterSettingsView(filter: filter, filterManager: filterManager)
                 .infoSheetPresentationCompat()
@@ -270,16 +248,7 @@ struct ContentView: View {
                 FilterRulesView(filter: filter, filterManager: filterManager)
             }
         }
-        .infoPresentation(item: $selectedCategoryInfo) { category in
-            FilterCategoryInfoView(
-                category: category,
-                defaultFilterNames: defaultFilterNames(for: category),
-                filterLists: filterManager.filterLists,
-                onLanguagesChange: applyRegionalRecommendations,
-                onReset: { resetCategory(category) }
-            )
-            .infoSheetPresentationCompat()
-        }
+        .infoPresentation(item: $selectedCategoryInfo, content: filterCategoryInfoContent)
         .onReceive(tabSelection.$value.removeDuplicates().dropFirst()) { _ in
             selectedFilterInfo = nil
             selectedFilterSettings = nil
@@ -524,36 +493,14 @@ struct ContentView: View {
             await filterManager.checkForUpdates(scope: .filters, presentation: .refresh)
         }
         #else
-        ScrollView {
-            // Everything here is eager. LazyVStack hung the window on scroll (#172,
-            // #632) and, when nested, reported shifting estimated heights that made
-            // the scrollbar jump and left blank regional rows (#601, #602).
-            VStack(spacing: 20) {
-                statsCardsView
-
-                VStack(spacing: 16) {
-                    ForEach(categorizedFilters, id: \.category) { item in
-                        if item.category == .foreign {
-                            macOSForeignFiltersView
-                        } else {
-                            ContentListSection { categoryHeader(item.category) } content: {
-                                if item.filters.isEmpty {
-                                    emptyCategoryDropTarget(item.category)
-                                } else {
-                                    filterRows(item.filters)
-                                }
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal)
-
-                Spacer(minLength: 20)
+        MacReorderableList(
+            sections: macFilterSections,
+            header: AnyView(statsCardsView.padding(.vertical, 16)),
+            onMove: commitFilterMove,
+            onExpansion: { id, expanded in
+                if id == FilterListCategory.foreign.id { isForeignFiltersExpanded = expanded }
             }
-            .padding(.vertical)
-        }
-        .keyboardScrollable()
-        .id("\(showOnlyEnabledLists)-\(filterSearchText)")
+        )
         #endif
     }
 
@@ -707,7 +654,7 @@ struct ContentView: View {
 
     private func categoryHeader(_ category: FilterListCategory) -> some View {
         ListCategoryHeader(title: LocalizedStringKey(category.rawValue), info: { selectedCategoryInfo = category },
-                           drop: category == .foreign ? nil : ListDrop(drag: filterDrag) { moveFilter($0, to: category) }, anchorID: category.id,
+                           anchorID: category.id,
                            isExpanded: iOSForeignExpansion(for: category))
     }
 
@@ -825,10 +772,7 @@ struct ContentView: View {
             }
         } else {
             ReorderableRows(items: filters,
-                            allItems: { orderedFilters }, order: $filterDisplayOrder, drag: filterDrag,
-                            commit: { id in
-                                if let category = filters.first?.category { moveFilter(id, to: category) }
-                            }) { filter in
+                            allItems: { orderedFilters }, order: $filterDisplayOrder) { filter in
                 filterRowView(for: filter, showsFlags: showsFlags)
             }
         }
@@ -858,37 +802,67 @@ struct ContentView: View {
         )
     }
 
-    #if os(macOS)
-    /// Empty categories only appear while a row is being dragged. The header
-    /// alone is a thin drop target, so the section body accepts the drop too.
-    private func emptyCategoryDropTarget(_ category: FilterListCategory) -> some View {
-        Text("Drop here to move")
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .contentShape(Rectangle())
-            .onDrop(of: [ListDrag.type], delegate: ListDrop(drag: filterDrag) { moveFilter($0, to: category) })
+    private func filterInfoContent(_ filter: FilterList) -> some View {
+        FilterInfoView(
+            filter: filter, filterManager: filterManager,
+            onChangeCategory: filter.category == .foreign ? nil : { moveFilter(filter.id, to: $0) }
+        ).infoSheetPresentationCompat()
     }
 
-    private var macOSForeignFiltersView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            DisclosureGroup(isExpanded: $isForeignFiltersExpanded) {
-                VStack(spacing: 0) {
-                    ForEach(filterPresentation.foreignGroups) { group in
+    private func filterCategoryInfoContent(_ category: FilterListCategory) -> some View {
+        FilterCategoryInfoView(
+            category: category, defaultFilterNames: defaultFilterNames(for: category),
+            filterLists: filterManager.filterLists, onLanguagesChange: applyRegionalRecommendations,
+            onReset: { resetCategory(category) }
+        ).infoSheetPresentationCompat()
+    }
+
+    #if os(macOS)
+    private var macFilterSections: [MacListSection] {
+        FilterListCategory.allCases.filter { $0 != .all && !$0.isUserScriptOnly }.compactMap { category in
+            let filters = filterPresentation.sections.first { $0.category == category }?.filters ?? []
+            if category == .foreign {
+                guard !filters.isEmpty else { return nil }
+                let rows = filterPresentation.foreignGroups.flatMap { group in
+                    [MacListRow(decoration: "foreign-\(group.id)") {
                         foreignFilterGroupHeader(group.title)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                        filterRows(group.filters, showsFlags: false)
+                            .padding(.horizontal, 16).padding(.vertical, 8)
+                    }] + group.filters.map { filter in
+                        MacListRow(filter.id, movable: false, group: group.id) { filterRowView(for: filter, showsFlags: false) }
                     }
                 }
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-            } label: {
-                categoryHeader(.foreign)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
+                return MacListSection(id: category.id, header: AnyView(categoryHeader(category)),
+                                      rows: rows, acceptsMoves: false, isExpanded: isForeignFiltersExpanded)
             }
-            .padding(.horizontal, 4)
+            guard FilterListCategory.moveTargets.contains(category) || !filters.isEmpty else { return nil }
+            return MacListSection(id: category.id, header: AnyView(categoryHeader(category)),
+                                  rows: filters.map { filter in MacListRow(filter.id) { filterRowView(for: filter) } },
+                                  acceptsMoves: FilterListCategory.moveTargets.contains(category))
         }
+    }
+
+    private func commitFilterMove(_ move: MacListMove) -> Bool {
+        guard let category = FilterListCategory(rawValue: move.sectionID),
+              FilterListCategory.moveTargets.contains(category),
+              let filter = filterManager.filterLists.first(where: { $0.id == move.itemID }),
+              filter.category != .foreign else { return false }
+        let all = orderedFilters
+        let byID = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
+        let moved = move.orderedIDs.compactMap { byID[$0] }
+        guard moved.count == move.orderedIDs.count else { return false }
+        filterDisplayOrder = ListDisplayOrder.saving(moved, in: all)
+        moveFilter(move.itemID, to: category)
+        let live = Dictionary(uniqueKeysWithValues: filterManager.filterLists.map { ($0.id, $0) })
+        let previous = filterPresentation.sections
+        // Give the native outline the accepted arrangement immediately. The background
+        // presentation task subsequently refreshes metadata and search results.
+        filterPresentation.sections = FilterListCategory.allCases.compactMap { target in
+            let rows = target == category ? move.orderedIDs.compactMap { live[$0] }
+                : (previous.first { $0.category == target }?.filters.filter { $0.id != move.itemID } ?? [])
+            return rows.isEmpty ? nil : FilterListPresentation.Section(category: target, filters: rows)
+        }
+        return true
     }
     #endif
 }
@@ -956,15 +930,20 @@ struct FilterRowView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            // The info tap lives on the text column only. A row-wide tap gesture
-            // competes with the switch on iOS 17, where the gesture wins and a tap
-            // on the switch opens the info sheet instead of toggling the filter.
+            // Keep the iOS info gesture on the text column so it cannot consume switch taps.
             filterDetails
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { onInfo() }
                 .contentShape(.interaction, Rectangle())
+                #if os(iOS)
                 .onTapGesture(perform: onInfo)
+                #endif
+            #if os(macOS)
+            Button(action: onInfo) { Image(systemName: "info.circle") }
+                .buttonStyle(.plain).noFocusRingCompat()
+                .foregroundStyle(.secondary).accessibilityLabel("Info")
+            #endif
             if filter.isRemoteURL && (isDownloading || !isDownloaded) {
                 ContentDownloadControl(
                     isDownloaded: isDownloaded, isDownloading: isDownloading,
