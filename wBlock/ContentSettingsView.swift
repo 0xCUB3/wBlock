@@ -23,9 +23,7 @@ struct ContentSettingsView<Content: View>: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
-                #if os(macOS)
                 SheetDoneButton { dismiss() }
-                #endif
             }
             content()
         }

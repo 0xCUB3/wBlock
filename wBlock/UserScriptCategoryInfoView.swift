@@ -10,13 +10,12 @@ struct UserScriptCategoryInfoView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
+            HStack(alignment: .top) {
                 Text(LocalizedStringKey(category.rawValue))
                     .font(.title2.weight(.semibold))
-                #if os(macOS)
-                Spacer()
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
                 SheetDoneButton { dismiss() }
-                #endif
             }
 
             Text(LocalizedStringKey(category.descriptionKey))

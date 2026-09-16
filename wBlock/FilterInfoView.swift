@@ -82,9 +82,7 @@ struct FilterInfoView: View {
                     if liveFilter.isCustom {
                         Button("Edit") { showingMetadataEditor = true }
                     }
-                    #if os(macOS)
                     SheetDoneButton { dismiss() }
-                    #endif
                 }
                 if !liveFilter.localizedDisplayDescription.isEmpty {
                     Text(liveFilter.localizedDisplayDescription)

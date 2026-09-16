@@ -21,24 +21,9 @@ enum SheetDesign {
 /// pending work (the code editor hands its text back before dismissing).
 struct SheetDoneButton: View {
     let action: () -> Void
-    /// Let the surrounding toolbar style the control. Used for the iOS Info
-    /// navigation bar, where the system draws its own glass capsule.
-    var usesAutomaticStyle = false
 
     @ViewBuilder
     var body: some View {
-        if usesAutomaticStyle {
-            Button(action: action) {
-                Label("Close", systemImage: "xmark")
-            }
-            .keyboardShortcut(.cancelAction)
-        } else {
-            styledCloseButton
-        }
-    }
-
-    @ViewBuilder
-    private var styledCloseButton: some View {
         #if os(iOS)
         if #available(iOS 26.0, *) {
             // A bare glyph makes the glass capsule shorter than the neighboring
@@ -77,25 +62,16 @@ struct SheetDoneButton: View {
 // MARK: - Info sheet chrome
 
 extension View {
-    /// iPhone info sheets put the close button in the navigation bar, the way
-    /// the userscript info sheet already does, so a long title never squeezes
-    /// the X (cameren, Discord). macOS keeps the inline header the callers draw
-    /// themselves, so the close button here is iOS-only.
+    /// iPhone info sheets scroll their content directly under the grabber. The
+    /// close button sits in the heading row the callers draw, on every platform,
+    /// so there is no empty navigation bar above the title (#793). The title
+    /// wraps beside the X instead of squeezing it (cameren, Discord).
     @ViewBuilder
     func infoSheetChromeCompat(onDismiss: @escaping () -> Void) -> some View {
         #if os(iOS)
-        NavigationView {
-            ScrollView {
-                self.frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    SheetDoneButton(action: onDismiss, usesAutomaticStyle: true)
-                }
-            }
+        ScrollView {
+            self.frame(maxWidth: .infinity, alignment: .leading)
         }
-        .navigationViewStyle(.stack)
         #else
         self
         #endif

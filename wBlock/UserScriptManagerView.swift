@@ -1335,32 +1335,26 @@ struct UserScriptInfoView: View {
         Group {
             if let script {
                 #if os(iOS)
-                NavigationView {
-                    ScrollView {
-                        UserScriptInfoSidebar(
-                            script: script,
-                            contentLength: script.content.utf8.count,
-                            isPatternsExpanded: $isPatternsExpanded,
-                            formatFileSize: formatFileSize,
-                            isBuiltIn: userScriptManager.isDefaultUserScript(script),
-                            builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
-                            isBeta: userScriptManager.isBeta(for: script),
-                            onCategoryChanged: setCategory,
-                            onEdit: { showingMetadataEditor = true },
-                            showsBuiltInCategory: onChangeDisplayCategory == nil
-                        )
-                        .padding()
-                        actionList(for: script)
-                            .padding([.horizontal, .bottom])
-                    }
-                    // The sidebar already shows the name as its heading; a nav
-                    // title on top of it read as a duplicate (#628).
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            SheetDoneButton(action: { dismiss() }, usesAutomaticStyle: true)
-                        }
-                    }
+                // The sidebar shows the name as its heading with the close
+                // button beside it; a navigation bar on top read as a duplicate
+                // title (#628) and left an empty row above the content (#793).
+                ScrollView {
+                    UserScriptInfoSidebar(
+                        script: script,
+                        contentLength: script.content.utf8.count,
+                        isPatternsExpanded: $isPatternsExpanded,
+                        formatFileSize: formatFileSize,
+                        isBuiltIn: userScriptManager.isDefaultUserScript(script),
+                        builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
+                        isBeta: userScriptManager.isBeta(for: script),
+                        onCategoryChanged: setCategory,
+                        onEdit: { showingMetadataEditor = true },
+                        onClose: { dismiss() },
+                        showsBuiltInCategory: onChangeDisplayCategory == nil
+                    )
+                    .padding()
+                    actionList(for: script)
+                        .padding([.horizontal, .bottom])
                 }
                 #else
                 InfoContentScrollView {

@@ -29,13 +29,12 @@ struct FilterCategoryInfoView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
+            HStack(alignment: .top) {
                 Text(category.localizedName)
                     .font(.title2.weight(.semibold))
-                #if os(macOS)
-                Spacer()
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
                 SheetDoneButton { dismiss() }
-                #endif
             }
 
             Text(LocalizedStringKey(FilterCategorySupport.descriptionKey(for: category)))
