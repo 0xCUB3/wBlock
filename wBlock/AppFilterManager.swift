@@ -480,6 +480,13 @@ class AppFilterManager: ObservableObject {
     /// Resets the manager to its initial state so onboarding can run again.
     @MainActor
     func resetForOnboarding() async {
+        // The reset ends by presenting onboarding from the same view that owns the
+        // blocking progress sheet. Presenting that sheet here and then the onboarding
+        // cover while the sheet is still dismissing leaves the cover half-presented
+        // over the tab view on iOS, so keep the blocking overlay suppressed for the
+        // whole reset.
+        suppressBlockingOverlay = true
+        defer { suppressBlockingOverlay = false }
         isLoading = true
         statusDescription = LocalizedStrings.text("Resetting…", comment: "Filter manager reset status")
         markCurrentStateApplied()
