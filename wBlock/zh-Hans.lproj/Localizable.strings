@@ -968,6 +968,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "更改文件";
 "Local imports won't auto-update; re-import to replace." = "本地导入不会自动更新；请重新导入以替换。";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra 可拦截 Twitch 广告，并处理复杂的反广告拦截情况。";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "使用 TwitchAdSolutions 的 vaft 脚本拦截 Twitch 广告。请勿与 AdGuard Extra 同时运行。";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "要停用必要过滤器吗？";

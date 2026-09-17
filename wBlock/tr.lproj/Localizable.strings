@@ -968,6 +968,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Change File" = "Dosyayı değiştir";
 "Local imports won't auto-update; re-import to replace." = "Yerelden içe aktarmalar otomatik güncellenmez; güncellemek için yeniden içe aktarın.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra, Twitch reklamlarını engeller ve karmaşık reklam engelleyici karşıtı durumları çözer.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "TwitchAdSolutions’un vaft betiğiyle Twitch reklamlarını engeller. AdGuard Extra ile birlikte çalıştırmayın.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Temel filtre devre dışı bırakılsın mı?";

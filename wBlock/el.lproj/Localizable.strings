@@ -971,6 +971,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "Αλλαγή αρχείου";
 "Local imports won't auto-update; re-import to replace." = "Οι τοπικές εισαγωγές δεν ενημερώνονται αυτόματα· εισαγάγετε ξανά για αντικατάσταση.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "Το AdGuard Extra αποκλείει διαφημίσεις στο Twitch και αντιμετωπίζει σύνθετες περιπτώσεις anti-adblock.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "Αποκλείει διαφημίσεις στο Twitch με το σενάριο vaft του TwitchAdSolutions. Μην το εκτελείτε μαζί με το AdGuard Extra.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Απενεργοποίηση βασικού φίλτρου;";

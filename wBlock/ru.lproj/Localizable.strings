@@ -971,6 +971,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "Изменить файл";
 "Local imports won't auto-update; re-import to replace." = "Локальные импорты не обновляются автоматически; импортируйте заново для замены.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra блокирует рекламу Twitch и обрабатывает сложные случаи обхода блокировщиков.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "Блокирует рекламу Twitch с помощью скрипта vaft из TwitchAdSolutions. Не запускайте его вместе с AdGuard Extra.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Отключить основной фильтр?";

@@ -968,6 +968,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "Change File";
 "Local imports won't auto-update; re-import to replace." = "Local imports won't auto-update; re-import to replace.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Disable Essential Filter?";

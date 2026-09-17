@@ -971,6 +971,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Change File" = "Fájl módosítása";
 "Local imports won't auto-update; re-import to replace." = "A helyi importok nem frissülnek automatikusan; az új importálással cserélhetők.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "Az AdGuard Extra blokkolja a Twitch-hirdetéseket, és kezeli a bonyolult reklámblokkolás-ellenes eseteket.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "Twitch-hirdetések blokkolása a TwitchAdSolutions vaft parancsával. Ne futtasd együtt az AdGuard Extra bővítménnyel.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Letiltja az alapvető szűrőt?";
