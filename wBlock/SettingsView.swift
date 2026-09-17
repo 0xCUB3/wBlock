@@ -271,6 +271,7 @@ struct SettingsView: View {
                 Text(option.title).tag(option)
             }
         }
+        .macTrailingPicker("Appearance")
     }
 
     @ViewBuilder
@@ -279,13 +280,13 @@ struct SettingsView: View {
             NavigationLink {
                 SiteSettingsView()
             } label: {
-                Label("Site Settings", systemImage: "globe")
+                SettingsRowLabel("Site Settings", systemImage: "globe", accessory: .push)
             }
 
             NavigationLink {
                 ElementZapperSettingsView(filterManager: filterManager)
             } label: {
-                Label("Element Zapper", systemImage: "wand.and.stars")
+                SettingsRowLabel("Element Zapper", systemImage: "wand.and.stars", accessory: .push)
             }
         }
     }
@@ -296,7 +297,7 @@ struct SettingsView: View {
             NavigationLink {
                 LogsView()
             } label: {
-                Label("View Logs", systemImage: "doc.text.magnifyingglass")
+                SettingsRowLabel("View Logs", systemImage: "doc.text.magnifyingglass", accessory: .push)
             }
 
             ruleCapacityRow
@@ -343,31 +344,17 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var helpSection: some View {
-        Section {
+        Section("Help") {
             Link(destination: Self.faqURL) {
-                Label("FAQ", systemImage: "questionmark.circle")
+                SettingsRowLabel("FAQ", systemImage: "questionmark.circle", accessory: .external)
             }
             Link(destination: Self.reportIssueURL) {
-                Label("Report Issues", systemImage: "exclamationmark.triangle")
+                SettingsRowLabel("Report Issues", systemImage: "exclamationmark.triangle", accessory: .external)
             }
             Link(destination: Self.contactURL) {
-                Label("Contact Us", systemImage: "bubble.left")
+                SettingsRowLabel("Contact Us", systemImage: "bubble.left", accessory: .external)
             }
-            #if os(iOS)
             openSafariSettingsButton
-            #endif
-        } header: {
-            #if os(macOS)
-            HStack {
-                Text("Help")
-                Spacer()
-                openSafariSettingsButton
-                    .buttonStyle(.borderless)
-                    .controlSize(.small)
-            }
-            #else
-            Text("Help")
-            #endif
         }
     }
 
@@ -375,7 +362,7 @@ struct SettingsView: View {
         Button {
             SafariExtensionSetupSupport.openScriptsExtensionSettings()
         } label: {
-            Label("Open Safari Settings", systemImage: "gear")
+            SettingsRowLabel("Open Safari Settings", systemImage: "gear", accessory: .app)
         }
     }
 
@@ -385,11 +372,10 @@ struct SettingsView: View {
         Button {
             showingRuleCapacity = true
         } label: {
-            Label("Safari Rule Capacity", systemImage: "shield.lefthalf.filled")
+            SettingsRowLabel("Safari Rule Capacity", systemImage: "shield.lefthalf.filled", accessory: .popover)
         }
         #if os(macOS)
-        .buttonStyle(.link)
-        .modalPopover(isPresented: $showingRuleCapacity, arrowEdge: .leading) {
+        .modalPopover(isPresented: $showingRuleCapacity, arrowEdge: .trailing) {
             RuleCapacityPopoverView(filterManager: filterManager)
         }
         #else
@@ -435,7 +421,7 @@ struct SettingsView: View {
         Section {
             Toggle("Auto-Update Filters & Userscripts", isOn: autoUpdateToggleBinding)
                 #if os(macOS)
-                .toggleStyle(.switch)
+                .toggleStyle(MacTrailingSwitchToggleStyle())
                 #endif
 
             if autoUpdateEnabled {
@@ -444,10 +430,11 @@ struct SettingsView: View {
                         Text(intervalDescription(hours: hours)).tag(hours)
                     }
                 }
+                .macTrailingPicker("Update Interval")
 
                 #if os(macOS)
                 Toggle("Background Update Agent", isOn: backgroundAgentEnabledBinding)
-                    .toggleStyle(.switch)
+                    .toggleStyle(MacTrailingSwitchToggleStyle())
                     .help("Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open.")
                 #endif
             }
@@ -459,30 +446,25 @@ struct SettingsView: View {
                 Label("Update Now", systemImage: "arrow.triangle.2.circlepath")
             }
             .disabled(filterManager.isLoading)
-
+            #else
+            CompatibleLabeledContent {
+                Button("Update Now") {
+                    filterManager.applyOrCheckForUpdates()
+                }
+                .buttonStyle(.bordered)
+                .disabled(filterManager.isLoading)
+            } label: {
+                Text("Check for Updates")
+            }
             #endif
+
             NavigationLink {
                 autoUpdateDiagnosticsDetail
             } label: {
-                Label("Background Diagnostics", systemImage: "stethoscope")
+                SettingsRowLabel("Background Diagnostics", systemImage: "stethoscope", accessory: .push)
             }
         } header: {
-            #if os(macOS)
-            HStack {
-                Text("Auto-Update")
-                Spacer()
-                Button {
-                    filterManager.applyOrCheckForUpdates()
-                } label: {
-                    Label("Update Now", systemImage: "arrow.triangle.2.circlepath")
-                }
-                .buttonStyle(.borderless)
-                .controlSize(.small)
-                .disabled(filterManager.isLoading)
-            }
-            #else
             Text("Auto-Update")
-            #endif
         } footer: {
             VStack(alignment: .leading, spacing: 2) {
                 if autoUpdateEnabled {
@@ -587,10 +569,27 @@ struct SettingsView: View {
             Toggle("iCloud Sync", isOn: syncEnabledBinding)
                 .disabled(!syncManager.isCloudKitAvailable)
                 #if os(macOS)
-                .toggleStyle(.switch)
+                .toggleStyle(MacTrailingSwitchToggleStyle())
                 #endif
 
             if syncManager.isCloudKitAvailable && syncManager.isEnabled {
+                #if os(macOS)
+                CompatibleLabeledContent {
+                    HStack(spacing: 8) {
+                        if syncManager.isSyncing {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                        Button("Sync Now") {
+                            Task { await syncManager.syncNow(trigger: "Manual") }
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(syncManager.isSyncing)
+                    }
+                } label: {
+                    Text(syncFooterLine)
+                }
+                #else
                 Button {
                     Task { await syncManager.syncNow(trigger: "Manual") }
                 } label: {
@@ -604,6 +603,7 @@ struct SettingsView: View {
                     }
                 }
                 .disabled(syncManager.isSyncing)
+                #endif
             }
         } header: {
             Text("Sync")
@@ -612,7 +612,9 @@ struct SettingsView: View {
                 Text("This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can.")
             } else if syncManager.isEnabled {
                 VStack(alignment: .leading, spacing: 2) {
+                    #if os(iOS)
                     Text(syncFooterLine)
+                    #endif
                     if let error = syncManager.lastErrorMessage {
                         Text(error)
                             .foregroundStyle(.red)
@@ -627,25 +629,19 @@ struct SettingsView: View {
         Section {
             Toggle("Pause All Components", isOn: pauseBlockingBinding)
                 #if os(macOS)
-                .toggleStyle(.switch)
+                .toggleStyle(MacTrailingSwitchToggleStyle())
                 #endif
-
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Paused Components")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .accessibilityAddTraits(.isHeader)
-
-                VStack(alignment: .leading, spacing: 12) {
-                    Toggle("Filters", isOn: pauseComponentBinding(.filters))
-                    Toggle("Enabled Userscripts & Userstyles", isOn: pauseComponentBinding(.userScripts))
-                    Toggle("Element Zapper", isOn: pauseComponentBinding(.elementZapper))
-                }
-                .padding(.leading, 12)
-            }
-            .padding(.vertical, 4)
         } header: {
             Text("Blocking")
+        }
+        .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
+
+        Section {
+            Toggle("Filters", isOn: pauseComponentBinding(.filters))
+            Toggle("Enabled Userscripts & Userstyles", isOn: pauseComponentBinding(.userScripts))
+            Toggle("Element Zapper", isOn: pauseComponentBinding(.elementZapper))
+        } header: {
+            Text("Paused Components")
         } footer: {
             Text("Pause all components at once, or pause them individually.")
         }
@@ -662,16 +658,16 @@ struct SettingsView: View {
                 )
             }
             Link(destination: Self.developerURL) {
-                Label("Developer", systemImage: "person")
+                SettingsRowLabel("Developer", systemImage: "person", accessory: .external)
             }
             Link(destination: Self.sourceCodeURL) {
-                Label("Source Code", systemImage: "chevron.left.forwardslash.chevron.right")
+                SettingsRowLabel("Source Code", systemImage: "chevron.left.forwardslash.chevron.right", accessory: .external)
             }
             Link(destination: Self.licenseURL) {
-                Label("GPL-3.0 License", systemImage: "doc.text")
+                SettingsRowLabel("GPL-3.0 License", systemImage: "doc.text", accessory: .external)
             }
             Link(destination: Self.privacyPolicyURL) {
-                Label("Privacy Policy", systemImage: "hand.raised")
+                SettingsRowLabel("Privacy Policy", systemImage: "hand.raised", accessory: .external)
             }
         }
     }
@@ -693,6 +689,22 @@ struct SettingsView: View {
     @ViewBuilder
     private var dangerZoneSection: some View {
         Section {
+            #if os(macOS)
+            CompatibleLabeledContent {
+                Button(isRestarting ? "Restarting…" : "Restart Onboarding…") {
+                    showingRestartConfirmation = true
+                }
+                .buttonStyle(.bordered)
+                .disabled(isRestarting)
+            } label: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Restart Onboarding")
+                    Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            #else
             Button(role: .destructive) {
                 showingRestartConfirmation = true
             } label: {
@@ -704,14 +716,14 @@ struct SettingsView: View {
                 }
             }
             .tint(.red)
-            #if os(macOS)
-            .buttonStyle(.bordered)
-            #endif
             .disabled(isRestarting)
+            #endif
         } header: {
             Text("Danger Zone")
         } footer: {
+            #if os(iOS)
             Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
+            #endif
         }
     }
 
@@ -735,22 +747,35 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         #else
+        // Settings fills the window in the same cards as Filters and
+        // Userscripts. A grouped Form capped the content to a narrow centered
+        // column. Older macOS keeps the Form since the card list needs
+        // section introspection from macOS 15.
         CompatibleNavigationStack {
-            Form {
-                pauseBlockingSection
-                siteActionsSection
-                displaySection
-                autoUpdateSection
-                syncSection
-                advancedSection
-                helpSection
-                aboutSection
-                dangerZoneSection
+            if #available(macOS 15.0, *) {
+                MacSettingsCardList { settingsSections }
+            } else {
+                Form { settingsSections }
+                    .groupedFormStyleCompat()
             }
-            .groupedFormStyleCompat()
         }
         #endif
     }
+
+    #if os(macOS)
+    @ViewBuilder
+    private var settingsSections: some View {
+        pauseBlockingSection
+        siteActionsSection
+        displaySection
+        autoUpdateSection
+        syncSection
+        advancedSection
+        helpSection
+        aboutSection
+        dangerZoneSection
+    }
+    #endif
 
     private func handleAutoUpdateConfigChange() async {
         await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
