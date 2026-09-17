@@ -62,8 +62,6 @@ struct MacListSection {
     let header: AnyView
     var rows: [MacListRow]
     var acceptsMoves = true
-    // nil keeps an ordinary category expanded; a value enables native disclosure.
-    var isExpanded: Bool? = nil
 }
 
 struct MacListMove: Equatable {
@@ -95,7 +93,6 @@ struct MacReorderableList: NSViewRepresentable {
     let header: AnyView
     var emptyContent: AnyView? = nil
     let onMove: (MacListMove) -> Bool
-    var onExpansion: (String, Bool) -> Void = { _, _ in }
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -189,18 +186,16 @@ struct MacReorderableList: NSViewRepresentable {
             if previous != structure {
                 let selected = outline.selectedRow >= 0 ? outline.item(atRow: outline.selectedRow) as? Node : nil
                 outline.reloadData()
+                // reloadData leaves expandable sections collapsed, and AppKit
+                // refuses collapseItem once the outline cell is hidden, so the
+                // rows a section exposes are exactly the rows it gets.
                 for section in model.sections {
                     guard let node = sectionNode(section.id) else { continue }
-                    if section.isExpanded ?? true { outline.expandItem(node) } else { outline.collapseItem(node) }
+                    outline.expandItem(node)
                 }
                 if let selected {
                     let row = outline.row(forItem: selected)
                     if row >= 0 { outline.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false) }
-                }
-            } else {
-                for section in model.sections {
-                    guard let expanded = section.isExpanded, let node = sectionNode(section.id) else { continue }
-                    if expanded { outline.expandItem(node) } else { outline.collapseItem(node) }
                 }
             }
             outline.noteHeightOfRows(withIndexesChanged: refreshVisibleRows())
@@ -273,16 +268,7 @@ struct MacReorderableList: NSViewRepresentable {
         func outlineView(_ outlineView: NSOutlineView, shouldShowOutlineCellForItem item: Any) -> Bool {
             false
         }
-        func outlineView(_ outlineView: NSOutlineView, shouldCollapseItem item: Any) -> Bool {
-            section(for: item)?.isExpanded != nil
-        }
-        func outlineViewItemDidExpand(_ notification: Notification) { expansion(notification, expanded: true) }
-        func outlineViewItemDidCollapse(_ notification: Notification) { expansion(notification, expanded: false) }
-        private func expansion(_ notification: Notification, expanded: Bool) {
-            guard !updating, let item = notification.userInfo?["NSObject"],
-                  let section = section(for: item), section.isExpanded != nil else { return }
-            model.onExpansion(section.id, expanded)
-        }
+
         func outlineView(_ outlineView: NSOutlineView, shouldSelectItem item: Any) -> Bool {
             guard let node = item as? Node, case .row = node.id else { return false }
             return true

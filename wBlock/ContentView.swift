@@ -496,10 +496,7 @@ struct ContentView: View {
         MacReorderableList(
             sections: macFilterSections,
             header: AnyView(statsCardsView.padding(.vertical, 16)),
-            onMove: commitFilterMove,
-            onExpansion: { id, expanded in
-                if id == FilterListCategory.foreign.id { isForeignFiltersExpanded = expanded }
-            }
+            onMove: commitFilterMove
         )
         #endif
     }
@@ -822,17 +819,20 @@ struct ContentView: View {
             let filters = filterPresentation.sections.first { $0.category == category }?.filters ?? []
             if category == .foreign {
                 guard !filters.isEmpty else { return nil }
-                let rows = filterPresentation.foreignGroups.flatMap { group in
+                // Collapse is owned by the header's disclosure binding; the
+                // section simply carries its rows only while expanded.
+                let rows = isForeignFiltersExpanded ? filterPresentation.foreignGroups.flatMap { group in
                     [MacListRow(decoration: "foreign-\(group.id)") {
                         foreignFilterGroupHeader(group.title)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 16).padding(.vertical, 8)
                     }] + group.filters.map { filter in
-                        MacListRow(filter.id, movable: false, group: group.id) { filterRowView(for: filter, showsFlags: false) }
+                        MacListRow(filter.id, movable: false, group: group.id)
+                        { filterRowView(for: filter, showsFlags: false) }
                     }
-                }
+                } : []
                 return MacListSection(id: category.id, header: AnyView(categoryHeader(category)),
-                                      rows: rows, acceptsMoves: false, isExpanded: isForeignFiltersExpanded)
+                                      rows: rows, acceptsMoves: false)
             }
             guard FilterListCategory.moveTargets.contains(category) || !filters.isEmpty else { return nil }
             return MacListSection(id: category.id, header: AnyView(categoryHeader(category)),

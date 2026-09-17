@@ -45,9 +45,9 @@ import SwiftUI
             }.padding(16)
         }
     }
-    static func section(_ name: String, _ ids: [UUID], accepts: Bool = true, expanded: Bool? = nil) -> MacListSection {
+    static func section(_ name: String, _ ids: [UUID], accepts: Bool = true) -> MacListSection {
         MacListSection(id: name, header: AnyView(Text(name)), rows: ids.map { row($0, movable: accepts) },
-                       acceptsMoves: accepts, isExpanded: expanded)
+                       acceptsMoves: accepts)
     }
     static func descendants(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(descendants) }
     static func settle(_ host: NSView) async throws {
@@ -85,7 +85,7 @@ import SwiftUI
         precondition(MacListMove.proposed(itemID: UUID(), sectionID: "a", childIndex: 0, sections: base) == nil)
         precondition(MacListMove.proposed(itemID: ids[0], sectionID: "missing", childIndex: 0, sections: base) == nil)
         let fixedID = UUID()
-        let fixed = section("foreign", [fixedID], accepts: false, expanded: false)
+        let fixed = section("foreign", [fixedID], accepts: false)
         precondition(MacListMove.proposed(itemID: ids[0], sectionID: "foreign", childIndex: 0, sections: base + [fixed]) == nil)
         precondition(MacListMove.proposed(itemID: fixedID, sectionID: "a", childIndex: 0, sections: base + [fixed]) == nil)
 
@@ -99,11 +99,9 @@ import SwiftUI
         defaults.removeObject(forKey: "order")
 
         var commits: [MacListMove] = []
-        var expansions: [Bool] = []
         func list(_ sections: [MacListSection]) -> MacReorderableList {
             MacReorderableList(sections: sections, header: AnyView(Text("Statistics").padding(16)),
-                              onMove: { commits.append($0); return true },
-                              onExpansion: { _, expanded in expansions.append(expanded) })
+                              onMove: { commits.append($0); return true })
         }
         let model = list(base + [fixed])
         let host = NSHostingView(rootView: model)
@@ -127,13 +125,12 @@ import SwiftUI
         precondition(coordinator.outlineView(outline, pasteboardWriterForItem: parentA) == nil)
         precondition(coordinator.outlineView(outline, pasteboardWriterForItem: foreignRow) == nil)
         precondition(coordinator.outlineView(outline, pasteboardWriterForItem: firstRow) != nil)
-        precondition(!outline.isItemExpanded(foreignParent))
-        outline.expandItem(foreignParent)
-        outline.collapseItem(foreignParent)
-        precondition(expansions == [true, false])
+        // Collapse is owned by the SwiftUI header now: foreign rows simply are
+        // or are not part of the section, so the outline never draws a cell and
+        // ordinary sections stay expanded without native collapse.
         precondition(outline.isItemExpanded(parentA))
-        outline.collapseItem(parentA)
-        precondition(outline.isItemExpanded(parentA), "Ordinary categories must stay expanded")
+        precondition(outline.isItemExpanded(foreignParent))
+        precondition(outline.numberOfChildren(ofItem: foreignParent) == 1)
 
         let mouseDown = NSEvent.mouseEvent(with: .leftMouseDown, location: .zero, modifierFlags: [],
                                           timestamp: 0, windowNumber: window.windowNumber, context: nil,
@@ -257,11 +254,11 @@ import SwiftUI
             MacListRow(multilingualID, movable: false, group: "en") { Text("Multilingual filter") },
             MacListRow(decoration: "fr") { Text("French") },
             MacListRow(multilingualID, movable: false, group: "fr") { Text("Multilingual filter") }
-        ], acceptsMoves: false, isExpanded: true)
+        ], acceptsMoves: false)
         host.rootView = list([regional])
         try await settle(host)
         regional = MacListSection(id: regional.id, header: AnyView(Text("Updated regional metadata")), rows: regional.rows,
-                                  acceptsMoves: false, isExpanded: true)
+                                  acceptsMoves: false)
         host.rootView = list([regional])
         try await settle(host)
         precondition(outline.numberOfRows == 6)
@@ -287,6 +284,6 @@ import SwiftUI
             heights.append(first.height)
         }
         precondition(heights[0] > heights[1] && abs(heights[0] - heights[2]) < 1)
-        print("PASS \(cases) insertion cases, filtered persistence, native source restrictions, hover/cancel/commit, stale deletion, disclosure, selection, card boundaries, wrapping, scrolling and row reuse")
+        print("PASS \(cases) insertion cases, filtered persistence, native source restrictions, hover/cancel/commit, stale deletion, header disclosure, selection, card boundaries, wrapping, scrolling and row reuse")
     }
 }
