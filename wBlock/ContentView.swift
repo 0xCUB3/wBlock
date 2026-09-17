@@ -655,15 +655,14 @@ struct ContentView: View {
     private func categoryHeader(_ category: FilterListCategory) -> some View {
         ListCategoryHeader(title: LocalizedStringKey(category.rawValue), info: { selectedCategoryInfo = category },
                            anchorID: category.id,
-                           isExpanded: iOSForeignExpansion(for: category))
+                           isExpanded: foreignExpansion(for: category))
     }
 
-    private func iOSForeignExpansion(for category: FilterListCategory) -> Binding<Bool>? {
-        #if os(iOS)
-        return category == .foreign ? $isForeignFiltersExpanded : nil
-        #else
-        return nil
-        #endif
+    // The Foreign section is the one collapsible category; its disclosure lives
+    // in the header on both platforms now that macOS no longer renders
+    // AppKit's outline cell.
+    private func foreignExpansion(for category: FilterListCategory) -> Binding<Bool>? {
+        category == .foreign ? $isForeignFiltersExpanded : nil
     }
 
     private func defaultFilterNames(for category: FilterListCategory) -> [String] {
