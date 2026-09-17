@@ -192,11 +192,20 @@ struct MonospacedTextView: NSViewRepresentable {
 #elseif os(iOS)
 import UIKit
 
+/// Which axis a pan is heading along when it begins. Velocity is the
+/// better signal for a real finger, but a synthesized or very slow drag can
+/// report zero velocity on its first move, so translation stands in then.
+func rulesPanIsHorizontal(_ pan: UIPanGestureRecognizer, in view: UIView) -> Bool {
+    let velocity = pan.velocity(in: view)
+    if velocity != .zero { return abs(velocity.x) > abs(velocity.y) }
+    let translation = pan.translation(in: view)
+    return abs(translation.x) > abs(translation.y)
+}
+
 final class RulesDocumentTextView: UITextView {
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         if gestureRecognizer === panGestureRecognizer {
-            let velocity = panGestureRecognizer.velocity(in: self)
-            if abs(velocity.x) > abs(velocity.y), let outer = superview as? UIScrollView,
+            if rulesPanIsHorizontal(panGestureRecognizer, in: self), let outer = superview as? UIScrollView,
                outer.contentSize.width > outer.bounds.width { return false }
         }
         return super.gestureRecognizerShouldBegin(gestureRecognizer)
@@ -225,8 +234,7 @@ final class RulesDocumentScrollView: UIScrollView {
 
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         if gestureRecognizer === panGestureRecognizer {
-            let velocity = panGestureRecognizer.velocity(in: self)
-            guard !wrapsLines, abs(velocity.x) > abs(velocity.y) else { return false }
+            guard !wrapsLines, rulesPanIsHorizontal(panGestureRecognizer, in: self) else { return false }
         }
         return super.gestureRecognizerShouldBegin(gestureRecognizer)
     }

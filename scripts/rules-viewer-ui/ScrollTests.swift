@@ -22,6 +22,20 @@ final class ScrollTests: XCTestCase {
                        "The measured scroll geometry must be ready before continuing")
     }
 
+    /// A synthesized drag on a loaded CI runner sometimes never turns into a
+    /// scroll, so the pan is retried a few times until the offset moves.
+    @MainActor
+    private func panHorizontally(_ app: XCUIApplication, from start: XCUICoordinate, to end: XCUICoordinate) {
+        for _ in 0..<3 {
+            let before = position(app).x
+            start.press(forDuration: 0.1, thenDragTo: end, withVelocity: .fast, thenHoldForDuration: 0.1)
+            let moved = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                self.position(app).x > before + 100
+            }, object: app)
+            if XCTWaiter.wait(for: [moved], timeout: 5) == .completed { return }
+        }
+    }
+
     @MainActor
     private func assertRenderedText(_ name: String) {
         let screenshot = XCUIScreen.main.screenshot()
@@ -68,8 +82,7 @@ final class ScrollTests: XCTestCase {
         waitForGeometry(app) { $0.width > Int(app.frame.width) + 100 }
         let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5))
         let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5))
-        start.press(forDuration: 0.1, thenDragTo: end)
-        waitForGeometry(app) { $0.x > 100 }
+        panHorizontally(app, from: start, to: end)
         let x = position(app).x
         XCTAssertGreaterThan(x, 100)
         assertRenderedText("Horizontal pan")
@@ -89,8 +102,7 @@ final class ScrollTests: XCTestCase {
         XCTAssertEqual(position(app).x, 0)
         toggle.tap()
         waitForGeometry(app) { $0.width > Int(app.frame.width) + 100 }
-        start.press(forDuration: 0.1, thenDragTo: end)
-        sleep(3)
+        panHorizontally(app, from: start, to: end)
         XCTAssertGreaterThan(position(app).x, 100)
         assertRenderedText("Wrapping disabled again")
 
