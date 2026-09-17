@@ -1066,11 +1066,21 @@ struct FilterRowView: View {
         return nil
     }
 
+    /// The upstream Last-Modified date when the server reported one, so the
+    /// row reflects the list's own age rather than the last local download.
+    private var filterUpdatedDate: Date? {
+        if let header = ProtobufDataManager.shared.getFilterLastModified(filter.id.uuidString),
+           let serverDate = HTTPModifiedDate.date(from: header) {
+            return serverDate
+        }
+        return filter.lastUpdated
+    }
+
     private var metadataSummary: String {
         ContentRowMetadata.summary([
             ruleCountSummary,
             ContentRowMetadata.versionLabel(filter.version),
-            ContentRowMetadata.updatedLabel(filter.lastUpdated),
+            ContentRowMetadata.updatedLabel(filterUpdatedDate),
         ])
     }
 

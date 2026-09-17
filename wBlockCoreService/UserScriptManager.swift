@@ -214,6 +214,13 @@ enum BuiltInUserScripts {
             displayRole: .blocking
         ),
         BuiltInUserScriptDefinition(
+            name: "TwitchAdSolutions (vaft)",
+            url: "https://raw.githubusercontent.com/ryanbr/TwitchAdSolutions/master/vaft/vaft.user.js",
+            isEnabledByDefault: false,
+            description: "Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra.",
+            displayRole: .blocking
+        ),
+        BuiltInUserScriptDefinition(
             name: "tinyShield",
             url: tinyShieldURL,
             isEnabledByDefault: true,
@@ -756,7 +763,10 @@ public class UserScriptManager: ObservableObject {
     }
 
     private func downloadUserScriptContent(from url: URL) async throws -> String {
-        let (data, _) = try await downloadData(from: url, maximumBytes: Self.maximumUserScriptBytes)
+        let (data, response) = try await downloadData(from: url, maximumBytes: Self.maximumUserScriptBytes)
+        if let httpResponse = response as? HTTPURLResponse {
+            UserScriptModifiedStore.record(httpResponse.value(forHTTPHeaderField: "Last-Modified"), for: url)
+        }
         guard let content = String(data: data, encoding: .utf8),
               !content.isEmpty,
               !isDDoSProtectionPage(content)

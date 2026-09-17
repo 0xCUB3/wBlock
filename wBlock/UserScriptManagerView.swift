@@ -797,7 +797,9 @@ struct UserScriptManagerView: View {
                         comment: "Content type"
                     ),
                     ContentRowMetadata.versionLabel(script.version),
-                    ContentRowMetadata.updatedLabel(script.lastUpdated),
+                    ContentRowMetadata.updatedLabel(
+                        UserScriptModifiedStore.date(for: script.url) ?? script.lastUpdated
+                    ),
                 ]))
                     .font(.caption2)
                     .foregroundStyle(.gray)
