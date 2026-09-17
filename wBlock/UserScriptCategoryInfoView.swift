@@ -46,7 +46,9 @@ struct UserScriptCategoryInfoView: View {
             .frame(maxWidth: .infinity)
         }
         .padding(20)
+        #if os(macOS)
         .frame(minWidth: 320, idealWidth: 420, minHeight: 260)
+        #endif
         .infoSheetChromeCompat { dismiss() }
     }
 }

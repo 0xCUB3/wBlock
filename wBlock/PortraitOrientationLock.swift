@@ -15,10 +15,13 @@ enum PortraitOrientationLock {
     }
 
     #if os(iOS)
+    /// The lock is a phone preference; iPad keeps every orientation.
+    static var isAvailable: Bool {
+        UIDevice.current.userInterfaceIdiom != .pad
+    }
+
     static var mask: UIInterfaceOrientationMask {
-        if UIDevice.current.userInterfaceIdiom == .pad {
-            return .all
-        }
+        guard isAvailable else { return .all }
         return isEnabled ? .portrait : .allButUpsideDown
     }
 

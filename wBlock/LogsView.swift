@@ -86,12 +86,9 @@ struct LogsView: View {
                 }
             }
             #if os(iOS)
+            .navigationTitle("Logs")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("Logs")
-                        .font(.headline)
-                }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button {
                         Task {

@@ -334,11 +334,18 @@ struct ContentView: View {
             onTap: applyPendingChanges,
             onForceApply: { filterManager.forceApplyChanges() }
         ) {
+            #if os(iOS)
+            ApplyChangesToolbarLabel(
+                hasPendingChanges: hasPendingChanges,
+                symbolName: applyChangesSymbolName
+            )
+            #else
             if hasPendingChanges {
                 Text("Apply").fontWeight(.semibold)
             } else {
                 Image(systemName: applyChangesSymbolName)
             }
+            #endif
         }
         #if os(macOS)
         // Right-click exposes the apply variants (#651); iOS uses pull-to-refresh
@@ -384,24 +391,28 @@ struct ContentView: View {
                     ToolbarItem(placement: .topBarLeading) {
                         applyChangesToolbarButton
                     }
+                    .toolbarVisibilityPriorityCompat(.high)
+                    // Titles alongside symbols let the vertical bars on iPhone
+                    // Duo show the icon and name the item in the overflow menu.
                     ToolbarItemGroup(placement: .topBarTrailing) {
                         if #unavailable(iOS 26.0) {
                             Button {
                                 showFilterSearch = true
                             } label: {
-                                Image(systemName: "magnifyingglass")
+                                Label("Search", systemImage: "magnifyingglass")
                             }
                         }
                         Button {
                             showingAddFilterSheet = true
                         } label: {
-                            Image(systemName: "plus")
+                            Label("Add Filter", systemImage: "plus")
                         }
                         Button {
                             showOnlyEnabledLists.toggle()
                         } label: {
-                            Image(
-                                systemName: showOnlyEnabledLists
+                            Label(
+                                "Show Enabled Only",
+                                systemImage: showOnlyEnabledLists
                                     ? "line.3.horizontal.decrease.circle.fill"
                                     : "line.3.horizontal.decrease.circle")
                         }
@@ -531,6 +542,7 @@ struct ContentView: View {
                         ToolbarItem(placement: .topBarLeading) {
                             applyChangesToolbarButton
                         }
+                        .toolbarVisibilityPriorityCompat(.high)
                     }
                 #endif
         }
@@ -1105,13 +1117,61 @@ struct FilterRowView: View {
 }
 
 #if os(iOS)
+/// Pending changes read as the word Apply on a horizontal bar. When iPhone Duo
+/// stacks the bar vertically only symbols are shown, so the label carries a
+/// symbol there and keeps the word everywhere else.
+private struct ApplyChangesToolbarLabel: View {
+    let hasPendingChanges: Bool
+    let symbolName: String
+
+    var body: some View {
+        if #available(iOS 27.1, *) {
+            VerticalBarAwareApplyLabel(hasPendingChanges: hasPendingChanges, symbolName: symbolName)
+        } else {
+            horizontalLabel
+        }
+    }
+
+    @ViewBuilder
+    private var horizontalLabel: some View {
+        if hasPendingChanges {
+            Text("Apply").fontWeight(.semibold)
+        } else {
+            Image(systemName: symbolName)
+        }
+    }
+
+    @available(iOS 27.1, *)
+    private struct VerticalBarAwareApplyLabel: View {
+        let hasPendingChanges: Bool
+        let symbolName: String
+        @Environment(\.toolbarVerticalEdge) private var verticalEdge
+
+        var body: some View {
+            if verticalEdge != nil {
+                Label(
+                    "Apply",
+                    systemImage: hasPendingChanges ? "checkmark.arrow.trianglehead.counterclockwise" : symbolName
+                )
+            } else if hasPendingChanges {
+                Text("Apply").fontWeight(.semibold)
+            } else {
+                Image(systemName: symbolName)
+            }
+        }
+    }
+}
+
+/// Size class rather than idiom decides the presentation, so the regular-width
+/// inner display of iPhone Duo gets the sheet iPad already uses.
 private struct OnboardingPresentationModifier: ViewModifier {
     @Binding var isPresented: Bool
     let filterManager: AppFilterManager
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @ViewBuilder
     func body(content: Content) -> some View {
-        if UIDevice.current.userInterfaceIdiom == .pad {
+        if horizontalSizeClass == .regular {
             content.sheet(isPresented: $isPresented) {
                 OnboardingView(filterManager: filterManager)
             }

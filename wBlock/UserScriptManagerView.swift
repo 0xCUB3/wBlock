@@ -410,20 +410,21 @@ struct UserScriptManagerView: View {
                     Button {
                         showSearch = true
                     } label: {
-                        Image(systemName: "magnifyingglass")
+                        Label("Search", systemImage: "magnifyingglass")
                     }
                 }
                 Button {
                     showingAddScriptSheet = true
                 } label: {
-                    Image(systemName: "plus")
+                    Label("Add Userscript or Userstyle", systemImage: "plus")
                 }
                 Button {
                     showOnlyEnabled.toggle()
                     ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
                 } label: {
-                    Image(
-                        systemName: showOnlyEnabled
+                    Label(
+                        "Show Enabled Only",
+                        systemImage: showOnlyEnabled
                             ? "line.3.horizontal.decrease.circle.fill"
                             : "line.3.horizontal.decrease.circle")
                 }

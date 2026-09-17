@@ -97,6 +97,44 @@ private struct OnChangeCompatModifier<Value: Equatable>: ViewModifier {
     }
 }
 
+/// Size class rather than idiom picks the search placement, so the
+/// regular-width inner display of iPhone Duo gets the always-visible drawer
+/// iPad uses and the compact outer display keeps the automatic field.
+private struct SearchableCompatModifier: ViewModifier {
+    let text: Binding<String>
+    let isPresented: Binding<Bool>
+    let prompt: LocalizedStringKey
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    private var placement: SearchFieldPlacement {
+        #if os(iOS)
+        horizontalSizeClass == .regular ? .navigationBarDrawer(displayMode: .always) : .automatic
+        #else
+        .automatic
+        #endif
+    }
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, macOS 26.0, *) {
+            content
+                .searchable(text: text, isPresented: isPresented, placement: placement, prompt: prompt)
+                #if os(iOS)
+                .searchToolbarBehavior(.minimize)
+                #endif
+                .modifier(SearchKeyboardDismissal(isPresented: isPresented))
+        } else if #available(iOS 17.0, macOS 14.0, *) {
+            content
+                .searchable(text: text, isPresented: isPresented, placement: placement, prompt: prompt)
+                .modifier(SearchKeyboardDismissal(isPresented: isPresented))
+        } else {
+            content
+                .searchable(text: text, placement: placement, prompt: prompt)
+                .modifier(SearchKeyboardDismissal(isPresented: isPresented))
+        }
+    }
+}
+
 extension View {
     @ViewBuilder
     func hideEditorBackgroundCompat() -> some View {
@@ -133,31 +171,12 @@ extension View {
         }
     }
 
-    @ViewBuilder
     func searchableCompat(
         text: Binding<String>,
         isPresented: Binding<Bool>,
         prompt: LocalizedStringKey
     ) -> some View {
-        #if os(iOS)
-        let placement: SearchFieldPlacement = UIDevice.current.userInterfaceIdiom == .pad
-            ? .navigationBarDrawer(displayMode: .always) : .automatic
-        #else
-        let placement: SearchFieldPlacement = .automatic
-        #endif
-        if #available(iOS 26.0, macOS 26.0, *) {
-            searchable(text: text, isPresented: isPresented, placement: placement, prompt: prompt)
-                #if os(iOS)
-                .searchToolbarBehavior(.minimize)
-                #endif
-                .modifier(SearchKeyboardDismissal(isPresented: isPresented))
-        } else if #available(iOS 17.0, macOS 14.0, *) {
-            searchable(text: text, isPresented: isPresented, placement: placement, prompt: prompt)
-                .modifier(SearchKeyboardDismissal(isPresented: isPresented))
-        } else {
-            searchable(text: text, placement: placement, prompt: prompt)
-                .modifier(SearchKeyboardDismissal(isPresented: isPresented))
-        }
+        modifier(SearchableCompatModifier(text: text, isPresented: isPresented, prompt: prompt))
     }
 
     @ViewBuilder
@@ -407,6 +426,39 @@ private final class ApplyChangesHoldTracker {
     func reset() {
         cancel()
         didBegin = false
+    }
+}
+
+/// Overflow order for iPhone Duo's vertical bars. Items overflow from the
+/// bottom up; high priority keeps an item visible longest. A no-op before
+/// iOS 27 so the deployment target stays where it is.
+enum ToolbarVisibilityPriorityCompat {
+    case high
+    case low
+}
+
+extension ToolbarContent {
+    func toolbarVisibilityPriorityCompat(_ priority: ToolbarVisibilityPriorityCompat) -> some ToolbarContent {
+        ToolbarVisibilityPriorityContent(base: self, priority: priority)
+    }
+}
+
+/// ToolbarContentBuilder has no branching before iOS 16, so the availability
+/// check lives in a wrapper's body rather than inside the builder.
+private struct ToolbarVisibilityPriorityContent<Base: ToolbarContent>: ToolbarContent {
+    let base: Base
+    let priority: ToolbarVisibilityPriorityCompat
+
+    var body: some ToolbarContent {
+        #if os(iOS)
+        if #available(iOS 27.0, *) {
+            base.visibilityPriority(priority == .high ? .high : .low)
+        } else {
+            base
+        }
+        #else
+        base
+        #endif
     }
 }
 
