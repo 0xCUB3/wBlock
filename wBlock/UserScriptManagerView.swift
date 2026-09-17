@@ -912,8 +912,9 @@ struct UserScriptManagerView: View {
         .contextMenu { scriptMenuItems(script) }
         .padding(16)
         #else
-        // iOS keeps the switch flush right. Secondary actions live in the Info
-        // sheet the row opens and in the trailing swipe.
+        // iOS keeps the switch flush right. Secondary actions live in the
+        // long-press menu, the Info sheet, and the trailing swipe.
+        .contextMenu { scriptMenuItems(script) }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             let actions = ContextMenuActionAvailability.userScriptActions(
                 isBuiltIn: script.isBuiltIn, isLocal: script.isLocal, isDownloaded: script.isDownloaded
@@ -998,6 +999,16 @@ struct UserScriptManagerView: View {
                 Label("Download", systemImage: "arrow.down.circle")
             }
             .disabled(downloadingScriptIDs.contains(script.id))
+        }
+        Picker(selection: Binding(
+            get: { script.displayCategory },
+            set: { moveScript(script.id, to: $0) }
+        )) {
+            ForEach(UserScriptDisplayCategory.allCases) { category in
+                Text(LocalizedStringKey(category.rawValue)).tag(category)
+            }
+        } label: {
+            Label("Move to", systemImage: "folder")
         }
         if actions.contains(.deleteScript),
            let managedScript = userScriptManager.userScript(withId: script.id) {

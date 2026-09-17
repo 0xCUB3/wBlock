@@ -908,7 +908,6 @@ struct FilterRowView: View {
                 Label("Edit Rules", systemImage: "pencil")
             }
         }
-        #if os(macOS)
         if let onChangeCategory {
             Picker(selection: Binding(get: { filter.category }, set: onChangeCategory)) {
                 ForEach(FilterListCategory.moveTargets) { category in
@@ -918,7 +917,6 @@ struct FilterRowView: View {
                 Label("Move to", systemImage: "folder")
             }
         }
-        #endif
         if actions.contains(.deleteList) {
             Button(role: .destructive) {
                 onDelete()
@@ -970,8 +968,9 @@ struct FilterRowView: View {
         .contextMenu { contextMenuItems }
         .padding(16)
         #else
-        // iOS keeps the switch flush right. Secondary actions live in the Info
-        // sheet the row opens and in the trailing swipe.
+        // iOS keeps the switch flush right. Secondary actions live in the
+        // long-press menu, the Info sheet, and the trailing swipe.
+        .contextMenu { contextMenuItems }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             let actions = ContextMenuActionAvailability.filterActions(for: filter)
             if actions.contains(.deleteList) {
