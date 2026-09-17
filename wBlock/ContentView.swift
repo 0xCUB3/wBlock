@@ -464,7 +464,6 @@ struct ContentView: View {
                     .unifiedTabCardSectionRow()
             }
 
-            let firstRowID = sections.first?.filters.first?.id
             ForEach(sections, id: \.category) { item in
                 if item.category == .foreign {
                     // Same section chrome as every other category; the header's
@@ -479,14 +478,7 @@ struct ContentView: View {
                     }
                 } else {
                     ContentListSection { categoryHeader(item.category) } content: {
-                        filterRows(item.filters, peekRowID: firstRowID)
-                    }
-                }
-                if item.category == sections.first?.category {
-                    // Sits right under the section whose first row just peeked.
-                    Section {
-                        RowGestureHintCard()
-                            .unifiedTabCardSectionRow()
+                        filterRows(item.filters)
                     }
                 }
             }
@@ -763,7 +755,7 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    private func filterRows(_ filters: [FilterList], showsFlags: Bool = true, peekRowID: UUID? = nil) -> some View {
+    private func filterRows(_ filters: [FilterList], showsFlags: Bool = true) -> some View {
         if filters.first?.category == .foreign {
             ForEach(filters) { filter in
                 filterRowView(for: filter, showsFlags: showsFlags)
@@ -774,12 +766,7 @@ struct ContentView: View {
         } else {
             ReorderableRows(items: filters,
                             allItems: { orderedFilters }, order: $filterDisplayOrder) { filter in
-                #if os(iOS)
                 filterRowView(for: filter, showsFlags: showsFlags)
-                    .rowGesturePeek(filter.id == peekRowID)
-                #else
-                filterRowView(for: filter, showsFlags: showsFlags)
-                #endif
             }
         }
     }
@@ -927,12 +914,7 @@ struct FilterRowView: View {
             }
         }
         if let onChangeCategory {
-            Picker(selection: Binding(get: { filter.category }, set: { category in
-                #if os(iOS)
-                RowGestureHint.markLearned()
-                #endif
-                onChangeCategory(category)
-            })) {
+            Picker(selection: Binding(get: { filter.category }, set: onChangeCategory)) {
                 ForEach(FilterListCategory.moveTargets) { category in
                     Text(category.localizedName).tag(category)
                 }
@@ -941,12 +923,7 @@ struct FilterRowView: View {
             }
         }
         if actions.contains(.deleteList) {
-            Button(role: .destructive) {
-                #if os(iOS)
-                RowGestureHint.markLearned()
-                #endif
-                onDelete()
-            } label: {
+            Button(role: .destructive, action: onDelete) {
                 Label("Delete Added List", systemImage: "trash")
             }
         }
@@ -967,6 +944,8 @@ struct FilterRowView: View {
             Button(action: onInfo) { Image(systemName: "info.circle") }
                 .buttonStyle(.plain).noFocusRingCompat()
                 .foregroundStyle(.secondary).accessibilityLabel("Info")
+            #else
+            RowDisclosureChevron()
             #endif
             if filter.isRemoteURL && (isDownloading || !isDownloaded) {
                 ContentDownloadControl(
@@ -994,8 +973,9 @@ struct FilterRowView: View {
         .contextMenu { contextMenuItems }
         .padding(16)
         #else
-        // iOS keeps the switch flush right. Secondary actions live in the
-        // long-press menu, the Info sheet, and the trailing swipe.
+        // iOS keeps the switch flush right. The chevron says the row opens;
+        // the Info sheet lists every action. Long press and the trailing
+        // swipe are shortcuts to the same actions.
         .contextMenu { contextMenuItems }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             let actions = ContextMenuActionAvailability.filterActions(for: filter)
@@ -1005,10 +985,7 @@ struct FilterRowView: View {
                 }
             }
             if actions.contains(.settings) {
-                Button {
-                    RowGestureHint.markLearned()
-                    onSettings()
-                } label: {
+                Button(action: onSettings) {
                     Label("Settings", systemImage: "gearshape")
                 }
                 .tint(.gray)

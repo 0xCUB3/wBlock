@@ -1169,9 +1169,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Shared update status lock is unavailable." = "Paylaşılan güncelleme durumu kilidine ulaşılamıyor.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@, Safari'nin genişletme başına kural sınırı nedeniyle %d kuralı yoksaydı.";
 "Updated %@" = "Güncellendi %@";
-
-"Swipe a row for settings" = "Ayarlar için bir satırı kaydırın";
-"Hold a row to move or delete it." = "Taşımak veya silmek için bir satırı basılı tutun.";
 "Dismiss" = "Kapat";
 
 "Edit Info" = "Bilgileri Düzenle";

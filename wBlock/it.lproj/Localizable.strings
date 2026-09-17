@@ -1160,9 +1160,6 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Shared update status lock is unavailable." = "Il blocco dello stato condiviso dell’aggiornamento non è disponibile.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ ha scartato %d regole a causa del limite di Safari per estensione.";
 "Updated %@" = "Aggiornato %@";
-
-"Swipe a row for settings" = "Scorri una riga per le impostazioni";
-"Hold a row to move or delete it." = "Tieni premuta una riga per spostarla o eliminarla.";
 "Dismiss" = "Ignora";
 
 "Edit Info" = "Modifica informazioni";

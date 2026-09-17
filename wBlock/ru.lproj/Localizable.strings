@@ -1160,9 +1160,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Shared update status lock is unavailable." = "Блокировка общего состояния обновления недоступна.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ пропустил %d правил из-за ограничения Safari на расширение.";
 "Updated %@" = "Обновлено %@";
-
-"Swipe a row for settings" = "Смахните строку для настроек";
-"Hold a row to move or delete it." = "Удерживайте строку, чтобы переместить или удалить её.";
 "Dismiss" = "Закрыть";
 
 "Edit Info" = "Изменить сведения";

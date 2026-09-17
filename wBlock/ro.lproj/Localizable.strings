@@ -1160,9 +1160,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Shared update status lock is unavailable." = "Blocarea stării partajate a actualizării nu este disponibilă.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ a omis %d reguli din cauza limitei Safari pentru fiecare extensie.";
 "Updated %@" = "Actualizat %@";
-
-"Swipe a row for settings" = "Glisează un rând pentru setări";
-"Hold a row to move or delete it." = "Ține apăsat un rând pentru a-l muta sau șterge.";
 "Dismiss" = "Închide";
 
 "Edit Info" = "Editează informațiile";

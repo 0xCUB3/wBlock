@@ -1160,9 +1160,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Shared update status lock is unavailable." = "Το κλείδωμα της κοινόχρηστης κατάστασης ενημέρωσης δεν είναι διαθέσιμο.";
 "%@ dropped %d rules at Safari's per-extension limit." = "Το %@ παρέλειψε %d κανόνες λόγω του ορίου του Safari ανά επέκταση.";
 "Updated %@" = "Ενημερώθηκε %@";
-
-"Swipe a row for settings" = "Σύρετε μια γραμμή για ρυθμίσεις";
-"Hold a row to move or delete it." = "Κρατήστε πατημένη μια γραμμή για μετακίνηση ή διαγραφή.";
 "Dismiss" = "Απόρριψη";
 
 "Edit Info" = "Επεξεργασία πληροφοριών";

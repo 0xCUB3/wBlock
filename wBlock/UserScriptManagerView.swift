@@ -293,14 +293,10 @@ struct UserScriptManagerView: View {
         }
     }
 
-    private func scriptRows(_ section: UserScriptDisplaySection, peekRowID: UUID? = nil) -> some View {
+    private func scriptRows(_ section: UserScriptDisplaySection) -> some View {
         ReorderableRows(items: section.scripts, allItems: { orderedScripts },
                         order: $scriptDisplayOrder) { script in
-            #if os(iOS)
-            scriptRowView(script: script).rowGesturePeek(script.id == peekRowID)
-            #else
             scriptRowView(script: script)
-            #endif
         }
     }
 
@@ -397,17 +393,9 @@ struct UserScriptManagerView: View {
                         .padding(.vertical, 40)
                 }
             } else {
-                let firstRowID = sections.first?.scripts.first?.id
                 ForEach(sections) { scriptSection in
                     ContentListSection { displaySectionHeader(scriptSection) } content: {
-                        scriptRows(scriptSection, peekRowID: firstRowID)
-                    }
-                    if scriptSection.id == sections.first?.id {
-                        // Sits right under the section whose first row just peeked.
-                        Section {
-                            RowGestureHintCard()
-                                .unifiedTabCardSectionRow()
-                        }
+                        scriptRows(scriptSection)
                     }
                 }
             }
@@ -892,6 +880,8 @@ struct UserScriptManagerView: View {
             }
             .buttonStyle(.plain).noFocusRingCompat()
             .foregroundStyle(.secondary).accessibilityLabel("Info")
+            #else
+            RowDisclosureChevron()
             #endif
 
             HStack(spacing: 8) {
@@ -927,8 +917,9 @@ struct UserScriptManagerView: View {
         .contextMenu { scriptMenuItems(script) }
         .padding(16)
         #else
-        // iOS keeps the switch flush right. Secondary actions live in the
-        // long-press menu, the Info sheet, and the trailing swipe.
+        // iOS keeps the switch flush right. The chevron says the row opens;
+        // the Info sheet lists every action. Long press and the trailing
+        // swipe are shortcuts to the same actions.
         .contextMenu { scriptMenuItems(script) }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             let actions = ContextMenuActionAvailability.userScriptActions(
@@ -943,7 +934,6 @@ struct UserScriptManagerView: View {
             }
             if actions.contains(.settings) {
                 Button {
-                    RowGestureHint.markLearned()
                     selectedScriptSettings = SelectedUserScript(id: script.id, action: .settings)
                 } label: {
                     Label("Settings", systemImage: "gearshape")
@@ -1026,9 +1016,6 @@ struct UserScriptManagerView: View {
         Picker(selection: Binding(
             get: { script.displayCategory },
             set: { category in
-                #if os(iOS)
-                RowGestureHint.markLearned()
-                #endif
                 moveScript(script.id, to: category)
             }
         )) {
@@ -1041,9 +1028,6 @@ struct UserScriptManagerView: View {
         if actions.contains(.deleteScript),
            let managedScript = userScriptManager.userScript(withId: script.id) {
             Button(role: .destructive) {
-                #if os(iOS)
-                RowGestureHint.markLearned()
-                #endif
                 removeScript(managedScript, name: script.name)
             } label: {
                 Label(
