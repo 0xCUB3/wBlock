@@ -1169,3 +1169,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Shared update status lock is unavailable." = "Shared update status lock is unavailable.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ dropped %d rules at Safari's per-extension limit.";
 "Updated %@" = "Updated %@";
+
+"Swipe a row for settings" = "Swipe a row for settings";
+"Hold a row to move or delete it." = "Hold a row to move or delete it.";
+"Dismiss" = "Dismiss";

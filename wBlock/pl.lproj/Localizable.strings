@@ -1160,3 +1160,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Shared update status lock is unavailable." = "Blokada współdzielonego stanu aktualizacji jest niedostępna.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ pominął %d reguł z powodu limitu Safari na rozszerzenie.";
 "Updated %@" = "Zaktualizowano %@";
+
+"Swipe a row for settings" = "Przesuń wiersz, aby otworzyć ustawienia";
+"Hold a row to move or delete it." = "Przytrzymaj wiersz, aby go przenieść lub usunąć.";
+"Dismiss" = "Zamknij";

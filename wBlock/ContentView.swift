@@ -468,6 +468,7 @@ struct ContentView: View {
                     .unifiedTabCardSectionRow()
             }
 
+            let firstRowID = sections.first?.filters.first?.id
             ForEach(sections, id: \.category) { item in
                 if item.category == .foreign {
                     // Same section chrome as every other category; the header's
@@ -482,7 +483,14 @@ struct ContentView: View {
                     }
                 } else {
                     ContentListSection { categoryHeader(item.category) } content: {
-                        filterRows(item.filters)
+                        filterRows(item.filters, peekRowID: firstRowID)
+                    }
+                }
+                if item.category == sections.first?.category {
+                    // Sits right under the section whose first row just peeked.
+                    Section {
+                        RowGestureHintCard()
+                            .unifiedTabCardSectionRow()
                     }
                 }
             }
@@ -758,7 +766,7 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    private func filterRows(_ filters: [FilterList], showsFlags: Bool = true) -> some View {
+    private func filterRows(_ filters: [FilterList], showsFlags: Bool = true, peekRowID: UUID? = nil) -> some View {
         if filters.first?.category == .foreign {
             ForEach(filters) { filter in
                 filterRowView(for: filter, showsFlags: showsFlags)
@@ -769,7 +777,12 @@ struct ContentView: View {
         } else {
             ReorderableRows(items: filters,
                             allItems: { orderedFilters }, order: $filterDisplayOrder) { filter in
+                #if os(iOS)
                 filterRowView(for: filter, showsFlags: showsFlags)
+                    .rowGesturePeek(filter.id == peekRowID)
+                #else
+                filterRowView(for: filter, showsFlags: showsFlags)
+                #endif
             }
         }
     }
@@ -908,7 +921,12 @@ struct FilterRowView: View {
             }
         }
         if let onChangeCategory {
-            Picker(selection: Binding(get: { filter.category }, set: onChangeCategory)) {
+            Picker(selection: Binding(get: { filter.category }, set: { category in
+                #if os(iOS)
+                RowGestureHint.markLearned()
+                #endif
+                onChangeCategory(category)
+            })) {
                 ForEach(FilterListCategory.moveTargets) { category in
                     Text(category.localizedName).tag(category)
                 }
@@ -918,6 +936,9 @@ struct FilterRowView: View {
         }
         if actions.contains(.deleteList) {
             Button(role: .destructive) {
+                #if os(iOS)
+                RowGestureHint.markLearned()
+                #endif
                 onDelete()
             } label: {
                 Label("Delete Added List", systemImage: "trash")
@@ -978,7 +999,10 @@ struct FilterRowView: View {
                 }
             }
             if actions.contains(.settings) {
-                Button(action: onSettings) {
+                Button {
+                    RowGestureHint.markLearned()
+                    onSettings()
+                } label: {
                     Label("Settings", systemImage: "gearshape")
                 }
                 .tint(.gray)

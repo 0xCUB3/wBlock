@@ -1160,3 +1160,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Shared update status lock is unavailable." = "共用更新狀態鎖定無法使用。";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ 因 Safari 的每個擴充功能規則限制而捨棄了 %d 條規則。";
 "Updated %@" = "已更新 %@";
+
+"Swipe a row for settings" = "滑動列以開啟設定";
+"Hold a row to move or delete it." = "長按列可移動或刪除。";
+"Dismiss" = "關閉";
