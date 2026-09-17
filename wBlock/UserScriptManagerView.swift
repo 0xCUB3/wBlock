@@ -1079,21 +1079,18 @@ private struct ScriptNameAndDescriptionView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
-                Text(script.localizedDisplayName)
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.primary)
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
-                if isBeta {
-                    Text("Beta")
-                        .font(.caption2)
-                        .fontWeight(.medium)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.orange.opacity(0.15))
-                        .foregroundStyle(.orange)
-                        .cornerRadius(4)
+                // The badge shares the title's first baseline so it reads as
+                // part of the name. Done stays pinned to the top corner.
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(script.localizedDisplayName)
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if isBeta {
+                        Badge(text: "Beta", color: .orange)
+                    }
                 }
                 if let onClose {
                     Spacer(minLength: 8)
