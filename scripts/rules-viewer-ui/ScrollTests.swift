@@ -36,6 +36,24 @@ final class ScrollTests: XCTestCase {
         }
     }
 
+    /// Taps the Wrap switch until its value reads the requested state. A tap
+    /// on a busy runner can land while the switch is still settling.
+    @MainActor
+    private func setWrap(_ app: XCUIApplication, _ on: Bool) {
+        let expected = on ? "1" : "0"
+        let toggle = app.switches["Wrap"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 10))
+        for _ in 0..<3 {
+            if (toggle.value as? String) == expected { return }
+            toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+            let flipped = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+                (toggle.value as? String) == expected
+            }, object: toggle)
+            if XCTWaiter.wait(for: [flipped], timeout: 5) == .completed { return }
+        }
+        XCTFail("The Wrap switch must read \(expected)")
+    }
+
     @MainActor
     private func assertRenderedText(_ name: String) {
         let screenshot = XCUIScreen.main.screenshot()
@@ -96,11 +114,10 @@ final class ScrollTests: XCTestCase {
         XCTAssertGreaterThan(position(app).y, 100)
         assertRenderedText("Vertical pan at horizontal offset")
 
-        let toggle = app.switches["Wrap"].coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5))
-        toggle.tap()
-        sleep(3)
+        setWrap(app, true)
+        waitForGeometry(app) { $0.x == 0 }
         XCTAssertEqual(position(app).x, 0)
-        toggle.tap()
+        setWrap(app, false)
         waitForGeometry(app) { $0.width > Int(app.frame.width) + 100 }
         panHorizontally(app, from: start, to: end)
         XCTAssertGreaterThan(position(app).x, 100)
