@@ -771,7 +771,6 @@ struct UserScriptManagerView: View {
                     Text(script.localizedDisplayName)
                         .font(.body)
                         .fontWeight(.medium)
-                        .infoPopoverAnchor(script.id)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
                     if script.isLocal {
@@ -883,6 +882,7 @@ struct UserScriptManagerView: View {
             }
             .buttonStyle(.plain).noFocusRingCompat()
             .foregroundStyle(.secondary).accessibilityLabel("Info")
+            .infoPopoverAnchor(script.id)
             #endif
 
             if !script.isLocal && (downloadingScriptIDs.contains(script.id) || !script.isDownloaded) {

@@ -36,7 +36,12 @@ struct SettingsRowLabel: View {
     var body: some View {
         #if os(macOS)
         HStack {
-            Label(title, systemImage: systemImage)
+            Label {
+                Text(title)
+            } icon: {
+                Image(systemName: systemImage)
+                    .frame(width: 20)
+            }
             Spacer(minLength: 12)
             Image(systemName: accessory.systemImage)
                 .font(.footnote.weight(.semibold))
@@ -45,7 +50,20 @@ struct SettingsRowLabel: View {
         .frame(maxWidth: .infinity)
         .contentShape(Rectangle())
         #else
-        Label(title, systemImage: systemImage)
+        // iOS lists draw disclosure chevrons for NavigationLink only, so a
+        // sheet-presenting button borrows one to read the same way.
+        if accessory == .popover {
+            HStack {
+                Label(title, systemImage: systemImage)
+                    .foregroundStyle(.primary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+        } else {
+            Label(title, systemImage: systemImage)
+        }
         #endif
     }
 }

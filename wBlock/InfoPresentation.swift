@@ -29,12 +29,16 @@ extension View {
         overlayPreferenceValue(InfoPopoverAnchors.self) { anchors in
             GeometryReader { geometry in
                 if let selected = item.wrappedValue, let anchor = anchors[AnyHashable(selected.id)] {
-                    Color.clear.frame(width: 1, height: 1)
+                    // Sized to the info button so the popover hangs from it,
+                    // arrow pointing up at the glyph the way Finder and
+                    // System Settings anchor their popovers.
+                    let rect = geometry[anchor]
+                    Color.clear.frame(width: rect.width, height: rect.height)
                         .background(PopoverWindowShield { item.wrappedValue = nil })
-                        .popover(item: item, attachmentAnchor: .point(.center), arrowEdge: .top) { value in
+                        .popover(item: item, attachmentAnchor: .rect(.bounds), arrowEdge: .top) { value in
                             content(value).onDisappear(perform: onDismiss)
                         }
-                        .position(x: geometry[anchor].midX, y: geometry[anchor].midY)
+                        .position(x: rect.midX, y: rect.midY)
                 }
             }
         }

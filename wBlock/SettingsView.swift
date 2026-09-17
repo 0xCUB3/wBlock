@@ -375,8 +375,14 @@ struct SettingsView: View {
             SettingsRowLabel("Safari Rule Capacity", systemImage: "shield.lefthalf.filled", accessory: .popover)
         }
         #if os(macOS)
-        .modalPopover(isPresented: $showingRuleCapacity, arrowEdge: .trailing) {
-            RuleCapacityPopoverView(filterManager: filterManager)
+        // Anchored to the trailing accessory so the popover hangs from the
+        // chevron instead of floating beside a window-wide row.
+        .overlay(alignment: .trailing) {
+            Color.clear
+                .frame(width: 20, height: 20)
+                .modalPopover(isPresented: $showingRuleCapacity, arrowEdge: .top) {
+                    RuleCapacityPopoverView(filterManager: filterManager)
+                }
         }
         #else
         .sheet(isPresented: $showingRuleCapacity) {

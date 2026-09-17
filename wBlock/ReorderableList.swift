@@ -51,10 +51,11 @@ struct ListCategoryHeader: View {
                     .accessibilityHidden(true)
             }
             #endif
-            Text(title).infoPopoverAnchor(anchorID).foregroundStyle(.primary).textCase(.none)
+            Text(title).foregroundStyle(.primary).textCase(.none)
             Button(action: info) { Image(systemName: "info.circle") }
                 .buttonStyle(.plain).noFocusRingCompat()
                 .foregroundStyle(.secondary).accessibilityLabel("Info")
+                .infoPopoverAnchor(anchorID)
             #if os(iOS)
             if let isExpanded {
                 Spacer(minLength: 0)

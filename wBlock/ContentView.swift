@@ -944,6 +944,7 @@ struct FilterRowView: View {
             Button(action: onInfo) { Image(systemName: "info.circle") }
                 .buttonStyle(.plain).noFocusRingCompat()
                 .foregroundStyle(.secondary).accessibilityLabel("Info")
+                .infoPopoverAnchor(filter.id)
             #endif
             if filter.isRemoteURL && (isDownloading || !isDownloaded) {
                 // A switch is meaningless until the list exists, so the row
@@ -1004,7 +1005,6 @@ struct FilterRowView: View {
                     }
                     Text(filter.localizedDisplayName)
                         .fontWeight(.medium)
-                        .infoPopoverAnchor(filter.id)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
                     #if os(iOS)
