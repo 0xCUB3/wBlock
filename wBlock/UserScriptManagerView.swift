@@ -887,16 +887,6 @@ struct UserScriptManagerView: View {
                         name: script.name, action: { downloadScript(script) }
                     )
                 }
-                #if os(iOS)
-                // Make the long-press menu discoverable; this button opens the same items.
-                Menu {
-                    scriptMenuItems(script)
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .foregroundStyle(.secondary)
-                }
-                .accessibilityLabel("More")
-                #endif
                 Toggle("", isOn: Binding(
                     get: { displayedEnabled || downloadingScriptIDs.contains(script.id) },
                     set: { newValue in

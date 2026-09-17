@@ -1160,5 +1160,3 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Shared update status lock is unavailable." = "Die Sperre für den gemeinsamen Aktualisierungsstatus ist nicht verfügbar.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ hat wegen des Safari-Limits pro Erweiterung %d Regeln verworfen.";
 "Updated %@" = "Aktualisiert %@";
-
-"More" = "Mehr";

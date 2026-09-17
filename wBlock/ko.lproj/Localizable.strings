@@ -1160,5 +1160,3 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Shared update status lock is unavailable." = "공유 업데이트 상태 잠금을 사용할 수 없습니다.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@에서 Safari의 확장 프로그램별 제한으로 인해 규칙 %d개를 제외했습니다.";
 "Updated %@" = "업데이트 %@";
-
-"More" = "더 보기";

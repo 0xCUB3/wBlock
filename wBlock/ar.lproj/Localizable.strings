@@ -1160,5 +1160,3 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Shared update status lock is unavailable." = "قفل حالة التحديث المشتركة غير متاح.";
 "%@ dropped %d rules at Safari's per-extension limit." = "أسقط %@ عدد %d من القواعد بسبب حد Safari لكل امتداد.";
 "Updated %@" = "تم التحديث %@";
-
-"More" = "المزيد";

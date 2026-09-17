@@ -1160,5 +1160,3 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Shared update status lock is unavailable." = "Le verrou de l’état de mise à jour partagé est indisponible.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ a ignoré %d règles en raison de la limite de Safari par extension.";
 "Updated %@" = "Mis à jour %@";
-
-"More" = "Plus";

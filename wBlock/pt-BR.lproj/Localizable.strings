@@ -1160,5 +1160,3 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Shared update status lock is unavailable." = "O bloqueio do status compartilhado da atualização está indisponível.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@ descartou %d regras devido ao limite do Safari por extensão.";
 "Updated %@" = "Atualizado %@";
-
-"More" = "Mais";
