@@ -230,11 +230,7 @@ struct ContentView: View {
                 scenePhase: scenePhase
             ))
         .sheet(item: $editingCustomFilter) { filter in
-            if filter.isInlineUserList {
-                EditUserListView(filterManager: filterManager, filter: filter)
-            } else {
-                EditCustomFilterView(filterManager: filterManager, filter: filter)
-            }
+            EditCustomFilterView(filterManager: filterManager, filter: filter)
         }
         .infoPresentation(item: $selectedFilterInfo, content: filterInfoContent)
         .infoPresentation(item: $selectedFilterSettings) { filter in
@@ -658,7 +654,8 @@ struct ContentView: View {
     }
 
     private func categoryHeader(_ category: FilterListCategory) -> some View {
-        ListCategoryHeader(title: LocalizedStringKey(category.rawValue), info: { selectedCategoryInfo = category },
+        ListCategoryHeader(title: LocalizedStringKey(category == .foreign ? "Regional" : category.rawValue),
+                           info: { selectedCategoryInfo = category },
                            anchorID: category.id,
                            isExpanded: foreignExpansion(for: category))
     }
@@ -797,7 +794,8 @@ struct ContentView: View {
             onInfo: { selectedFilterInfo = filter },
             onSettings: { selectedFilterSettings = filter },
             onViewRules: { selectedFilterRules = filter },
-            onEdit: { editingCustomFilter = filter },
+            onEdit: { selectedFilterRules = filter },
+            onEditInfo: { editingCustomFilter = filter },
             onDelete: { filterManager.removeFilterList(filter) },
             onToggle: { newValue in
                 if !newValue && FilterListLoader.essentialFilterNames.contains(filter.name) {
@@ -889,6 +887,7 @@ struct FilterRowView: View {
     var onSettings: () -> Void
     var onViewRules: () -> Void
     var onEdit: () -> Void
+    var onEditInfo: () -> Void
     var onDelete: () -> Void
     var onToggle: (Bool) -> Void
     var onChangeCategory: ((FilterListCategory) -> Void)? = nil
@@ -918,6 +917,13 @@ struct FilterRowView: View {
                 onEdit()
             } label: {
                 Label("Edit Rules", systemImage: "pencil")
+            }
+        }
+        if actions.contains(.editInfo) {
+            Button {
+                onEditInfo()
+            } label: {
+                Label("Edit Info", systemImage: "square.and.pencil")
             }
         }
         if let onChangeCategory {
@@ -2309,10 +2315,12 @@ struct EditCustomFilterView: View {
                             TextField("Description", text: $description)
                             userListCategoryPicker(selection: $selectedCategory)
 
-                            Text(filter.url.absoluteString)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                                .textSelection(.enabled)
+                            if !filter.isInlineUserList {
+                                Text(filter.url.absoluteString)
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                                    .textSelection(.enabled)
+                            }
                         } footer: {
                             if isDuplicate {
                                 Text("That name is already used by another filter list.")
@@ -2363,11 +2371,13 @@ struct EditCustomFilterView: View {
                                     .textFieldStyle(.roundedBorder)
                                 userListCategoryPicker(selection: $selectedCategory)
 
-                                Text(filter.url.absoluteString)
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                                    .lineLimit(2)
-                                    .textSelection(.enabled)
+                                if !filter.isInlineUserList {
+                                    Text(filter.url.absoluteString)
+                                        .font(.caption2)
+                                        .foregroundStyle(.tertiary)
+                                        .lineLimit(2)
+                                        .textSelection(.enabled)
+                                }
 
                                 if isDuplicate {
                                     Text("That name is already used by another filter list.")
@@ -2450,11 +2460,7 @@ struct EditUserListView: View {
     let filter: FilterList
 
     @Environment(\.dismiss) private var dismiss
-    @FocusState private var titleFieldIsFocused: Bool
 
-    @State private var title: String
-    @State private var description: String
-    @State private var selectedCategory: FilterListCategory
     @State private var rules: String = ""
     @State private var isLoadingContent: Bool = true
     @State private var errorMessage: String?
@@ -2464,9 +2470,6 @@ struct EditUserListView: View {
     init(filterManager: AppFilterManager, filter: FilterList) {
         self.filterManager = filterManager
         self.filter = filter
-        self._title = State(initialValue: filter.name)
-        self._description = State(initialValue: filter.description == "User list." ? "" : filter.description)
-        self._selectedCategory = State(initialValue: filter.category)
     }
 
     var body: some View {
@@ -2474,31 +2477,13 @@ struct EditUserListView: View {
             #if os(iOS)
                 CompatibleNavigationStack {
                     Form {
-                        Section {
-                            TextField("Title", text: $title)
-                                .focused($titleFieldIsFocused)
-                                .textInputAutocapitalization(.words)
-                                .autocorrectionDisabled()
-
-                            TextField("Description", text: $description)
-                                .textInputAutocapitalization(.sentences)
-                                .autocorrectionDisabled()
-
-                            userListCategoryPicker(selection: $selectedCategory)
-                        } footer: {
-                            if isDuplicateTitle {
-                                Text("That title is already used by another filter list.")
-                                    .foregroundStyle(.orange)
-                            }
-                        }
-
                         Section("Rules") {
                             SyntaxHighlightingTextView(text: $rules)
                                 .frame(minHeight: 260)
                             sourceActions
                         }
                     }
-                    .navigationTitle("Edit User List")
+                    .navigationTitle(filter.localizedDisplayName)
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
@@ -2518,50 +2503,12 @@ struct EditUserListView: View {
                 }
             #else
                 SheetContainer {
-                    SheetHeader(title: "Edit User List", isLoading: isLoadingContent) {
+                    SheetHeader(title: filter.localizedDisplayName, isLoading: isLoadingContent) {
                         dismiss()
                     }
 
                     ScrollView {
                         VStack(alignment: .leading, spacing: 16) {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Title")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-
-                                TextField("User List", text: $title)
-                                    .textFieldStyle(.roundedBorder)
-                                    .focused($titleFieldIsFocused)
-                                    .autocorrectionDisabled()
-                                    .onSubmit {
-                                        titleFieldIsFocused = false
-                                    }
-
-                                Text("Description")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-
-                                TextField("Description", text: $description)
-                                    .textFieldStyle(.roundedBorder)
-                                    .autocorrectionDisabled()
-
-                                userListCategoryPicker(selection: $selectedCategory)
-
-                                Text(filter.url.absoluteString)
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                                    .lineLimit(2)
-                                    .textSelection(.enabled)
-
-                                if isDuplicateTitle {
-                                    Text("That title is already used by another filter list.")
-                                        .font(.caption)
-                                        .foregroundStyle(.orange)
-                                }
-                            }
-                            .padding(20)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-
                             VStack(alignment: .leading, spacing: 6) {
                                 HStack {
                                     Text("Rules")
@@ -2600,10 +2547,7 @@ struct EditUserListView: View {
             #endif
         }
         .interactiveDismissDisabled(isLoadingContent)
-        .onAppear {
-            titleFieldIsFocused = true
-            loadContent()
-        }
+        .onAppear(perform: loadContent)
         .alert(
             "Couldn’t Save",
             isPresented: Binding(
@@ -2660,24 +2604,12 @@ struct EditUserListView: View {
         editorController.replaceText(string, markClean: true)
     }
 
-    private var trimmedTitle: String {
-        title.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
     private var trimmedRules: String {
         rules.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var isDuplicateTitle: Bool {
-        let candidate = trimmedTitle
-        guard !candidate.isEmpty else { return false }
-        return filterManager.filterLists.contains(where: {
-            $0.id != filter.id && $0.name.caseInsensitiveCompare(candidate) == .orderedSame
-        })
-    }
-
     private var canSave: Bool {
-        !trimmedTitle.isEmpty && !trimmedRules.isEmpty && !isDuplicateTitle && !isLoadingContent
+        !trimmedRules.isEmpty && !isLoadingContent
     }
 
     private var saveButton: some View {
@@ -2713,9 +2645,9 @@ struct EditUserListView: View {
     private func save() {
         filterManager.updateUserList(
             id: filter.id,
-            name: trimmedTitle,
-            description: description,
-            category: selectedCategory,
+            name: filter.name,
+            description: filter.description,
+            category: filter.category,
             content: trimmedRules
         )
         if filterManager.hasError {

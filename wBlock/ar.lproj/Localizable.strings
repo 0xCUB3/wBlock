@@ -1164,3 +1164,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Swipe a row for settings" = "اسحب صفًا للإعدادات";
 "Hold a row to move or delete it." = "اضغط مطولًا على صف لنقله أو حذفه.";
 "Dismiss" = "تجاهل";
+
+"Edit Info" = "تعديل المعلومات";

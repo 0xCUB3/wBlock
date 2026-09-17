@@ -50,12 +50,6 @@ struct FilterInfoView: View {
                 FilterRulesView(filter: liveFilter, filterManager: filterManager)
             }
         }
-        .confirmationDialog("Delete Added List", isPresented: $confirmingDelete, titleVisibility: .visible) {
-            Button("Delete", role: .destructive) {
-                filterManager.removeFilterList(liveFilter)
-                dismiss()
-            }
-        }
         #endif
         .task(id: liveFilter.lastUpdated) {
             let snapshot = liveFilter
@@ -79,9 +73,6 @@ struct FilterInfoView: View {
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 8)
-                    if liveFilter.isCustom {
-                        Button("Edit") { showingMetadataEditor = true }
-                    }
                     SheetDoneButton { dismiss() }
                 }
                 if !liveFilter.localizedDisplayDescription.isEmpty {
@@ -141,6 +132,9 @@ struct FilterInfoView: View {
             if actions.contains(.editRules) {
                 InfoActionRow("Edit Rules", systemImage: "pencil") { showingRules = true }
             }
+            if actions.contains(.editInfo) {
+                InfoActionRow("Edit Info", systemImage: "square.and.pencil") { showingMetadataEditor = true }
+            }
             if let onChangeCategory {
                 InfoCategoryRow(
                     selection: Binding(get: { liveFilter.category }, set: onChangeCategory),
@@ -150,6 +144,13 @@ struct FilterInfoView: View {
             }
             if actions.contains(.deleteList) {
                 InfoActionRow("Delete Added List", systemImage: "trash", role: .destructive) { confirmingDelete = true }
+                    // Anchored to the row so the iPad popover arrow points at it.
+                    .confirmationDialog("Delete Added List", isPresented: $confirmingDelete, titleVisibility: .visible) {
+                        Button("Delete", role: .destructive) {
+                            filterManager.removeFilterList(liveFilter)
+                            dismiss()
+                        }
+                    }
             }
         }
     }
@@ -183,10 +184,6 @@ struct FilterRulesView: View {
     let filter: FilterList
     @ObservedObject var filterManager: AppFilterManager
     @State private var rules = ""
-    @State private var editedName = ""
-    @State private var editedDescription = ""
-    @State private var editedCategory: FilterListCategory = .custom
-    @State private var metadataError: String?
     @State private var searchQuery = ""
     @State private var showsSearch = false
     @State private var wrapsLines = false
@@ -214,27 +211,11 @@ struct FilterRulesView: View {
                 if analysis != nil {
                     filterMenu
                 }
-                if filter.isCustom {
-                    Button("Save") {
-                        if filterManager.updateCustomFilterList(id: filter.id, name: editedName,
-                            category: editedCategory, description: editedDescription) {
-                            dismiss()
-                        } else { metadataError = filterManager.statusDescription }
-                    }
-                    .disabled(editedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
                 SheetDoneButton { dismiss() }
             }
             .padding(16)
             Divider()
 
-            if filter.isCustom {
-                AddContentMetadataFields(name: $editedName, description: $editedDescription,
-                    category: $editedCategory, categories: FilterListCategory.userListCategories)
-                    .padding(16)
-                if let metadataError { Text(metadataError).font(.caption).foregroundStyle(.red) }
-                Divider()
-            }
             if showsSearch {
                 HStack {
                     TextField("Search", text: $searchQuery).textFieldStyle(.roundedBorder)
@@ -273,11 +254,6 @@ struct FilterRulesView: View {
         #else
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         #endif
-        .onAppear {
-            editedName = filter.name
-            editedDescription = filter.description
-            editedCategory = filter.category
-        }
         .task {
             rules = FilterListLoader().readLocalFilterContent(filter) ?? ""
             displayedRules = rules

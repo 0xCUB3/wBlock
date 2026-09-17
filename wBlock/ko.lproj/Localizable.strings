@@ -1164,3 +1164,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Swipe a row for settings" = "행을 스와이프하여 설정 열기";
 "Hold a row to move or delete it." = "행을 길게 눌러 이동하거나 삭제합니다.";
 "Dismiss" = "닫기";
+
+"Edit Info" = "정보 편집";

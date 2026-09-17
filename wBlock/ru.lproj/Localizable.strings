@@ -1164,3 +1164,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Swipe a row for settings" = "Смахните строку для настроек";
 "Hold a row to move or delete it." = "Удерживайте строку, чтобы переместить или удалить её.";
 "Dismiss" = "Закрыть";
+
+"Edit Info" = "Изменить сведения";

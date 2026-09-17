@@ -322,7 +322,8 @@ struct UserScriptManagerView: View {
             UserScriptContentView(
                 scriptId: selection.id,
                 userScriptManager: userScriptManager,
-                startsEditing: selection.action == .editContent
+                startsEditing: selection.action == .editContent,
+                metadataOnly: selection.action == .editInfo
             )
         }
         .infoPresentation(item: $selectedCategoryInfo, content: scriptCategoryInfoContent)
@@ -1007,6 +1008,13 @@ struct UserScriptManagerView: View {
                 Label("Edit Content", systemImage: "pencil")
             }
         }
+        if actions.contains(.editInfo) {
+            Button {
+                selectedScript = SelectedUserScript(id: script.id, action: .editInfo)
+            } label: {
+                Label("Edit Info", systemImage: "square.and.pencil")
+            }
+        }
         if actions.contains(.download) {
             Button {
                 downloadScript(script)
@@ -1305,7 +1313,6 @@ struct UserScriptInfoSidebar: View {
     let builtInDisplayRole: BuiltInUserScriptDisplayRole?
     let isBeta: Bool
     let onCategoryChanged: (FilterListCategory) -> Void
-    let onEdit: () -> Void
     var onClose: (() -> Void)? = nil
     /// False when the sheet shows a category picker in its action list.
     var showsBuiltInCategory = true
@@ -1316,7 +1323,6 @@ struct UserScriptInfoSidebar: View {
             VStack(alignment: .leading, spacing: 8) {
                 ScriptNameAndDescriptionView(script: script, isBeta: isBeta, onClose: onClose)
                 ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0, isBuiltIn: isBuiltIn)
-                if !isBuiltIn { Button("Edit", action: onEdit) }
             }
             VStack(alignment: .leading, spacing: 6) {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString(
@@ -1384,7 +1390,6 @@ struct UserScriptInfoView: View {
                         builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
                         isBeta: userScriptManager.isBeta(for: script),
                         onCategoryChanged: setCategory,
-                        onEdit: { showingMetadataEditor = true },
                         onClose: { dismiss() },
                         showsBuiltInCategory: onChangeDisplayCategory == nil
                     )
@@ -1403,7 +1408,6 @@ struct UserScriptInfoView: View {
                         builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
                         isBeta: userScriptManager.isBeta(for: script),
                         onCategoryChanged: setCategory,
-                        onEdit: { showingMetadataEditor = true },
                         onClose: { dismiss() }
                     )
                     .padding(20)
@@ -1437,19 +1441,6 @@ struct UserScriptInfoView: View {
                 startsEditing: script.map { !userScriptManager.isDefaultUserScript($0) && $0.isLocal } ?? false
             )
         }
-        .confirmationDialog(
-            script?.isUserStyle == true ? "Delete Style" : "Delete Script",
-            isPresented: $confirmingDelete, titleVisibility: .visible
-        ) {
-            Button("Delete", role: .destructive) {
-                guard let script else { return }
-                Task {
-                    await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Removing userscript"), metadata: ["script": script.name])
-                    await userScriptManager.removeUserScript(script)
-                }
-                dismiss()
-            }
-        }
         #endif
         .task(id: scriptId) {
             isLoading = true
@@ -1475,6 +1466,9 @@ struct UserScriptInfoView: View {
             }
             if actions.contains(.editContent) {
                 InfoActionRow("Edit Content", systemImage: "pencil") { showingSource = true }
+            }
+            if actions.contains(.editInfo) {
+                InfoActionRow("Edit Info", systemImage: "square.and.pencil") { showingMetadataEditor = true }
             }
             if actions.contains(.download), let onDownload {
                 InfoActionRow("Download", systemImage: "arrow.down.circle") {
@@ -1506,6 +1500,19 @@ struct UserScriptInfoView: View {
                     script.isUserStyle ? "Delete Style" : "Delete Script",
                     systemImage: "trash", role: .destructive
                 ) { confirmingDelete = true }
+                // Anchored to the row so the iPad popover arrow points at it.
+                .confirmationDialog(
+                    script.isUserStyle ? "Delete Style" : "Delete Script",
+                    isPresented: $confirmingDelete, titleVisibility: .visible
+                ) {
+                    Button("Delete", role: .destructive) {
+                        Task {
+                            await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Removing userscript"), metadata: ["script": script.name])
+                            await userScriptManager.removeUserScript(script)
+                        }
+                        dismiss()
+                    }
+                }
             }
         }
     }

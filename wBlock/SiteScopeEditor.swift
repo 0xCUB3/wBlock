@@ -13,13 +13,19 @@ struct SiteScopeEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Picker(title, selection: Binding(
-                get: { selectedSites != nil }, set: { updateSelected($0 ? [] : nil) }
-            )) {
-                Text("All matching sites").tag(false)
-                Text("Only selected sites").tag(true)
+            // A menu picker outside a Form drops its label on iOS, so the
+            // label is drawn as text and the picker's own label hidden.
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(title).foregroundStyle(.secondary).fixedSize()
+                Picker(title, selection: Binding(
+                    get: { selectedSites != nil }, set: { updateSelected($0 ? [] : nil) }
+                )) {
+                    Text("All matching sites").tag(false)
+                    Text("Only selected sites").tag(true)
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
             }
-            .pickerStyle(.menu)
             .disabled(isSaving)
             if let selectedSites {
                 VStack(alignment: .leading, spacing: 4) {

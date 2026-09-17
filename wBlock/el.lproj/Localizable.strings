@@ -1164,3 +1164,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Swipe a row for settings" = "Σύρετε μια γραμμή για ρυθμίσεις";
 "Hold a row to move or delete it." = "Κρατήστε πατημένη μια γραμμή για μετακίνηση ή διαγραφή.";
 "Dismiss" = "Απόρριψη";
+
+"Edit Info" = "Επεξεργασία πληροφοριών";

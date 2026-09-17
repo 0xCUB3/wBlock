@@ -1164,3 +1164,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Swipe a row for settings" = "滑动行以打开设置";
 "Hold a row to move or delete it." = "长按行可移动或删除。";
 "Dismiss" = "关闭";
+
+"Edit Info" = "编辑信息";

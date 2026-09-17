@@ -1133,3 +1133,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Swipe a row for settings" = "行をスワイプして設定を表示";
 "Hold a row to move or delete it." = "行を長押しすると移動や削除ができます。";
 "Dismiss" = "閉じる";
+
+"Edit Info" = "情報を編集";

@@ -1173,3 +1173,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Swipe a row for settings" = "Swipe a row for settings";
 "Hold a row to move or delete it." = "Hold a row to move or delete it.";
 "Dismiss" = "Dismiss";
+
+"Edit Info" = "Edit Info";

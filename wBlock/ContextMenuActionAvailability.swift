@@ -6,6 +6,7 @@ enum FilterContextMenuAction: String {
     case settings
     case viewRules
     case editRules
+    case editInfo
     case deleteList
 }
 
@@ -14,6 +15,7 @@ enum UserScriptContextMenuAction: String {
     case settings
     case viewContent
     case editContent
+    case editInfo
     case download
     case deleteScript
 }
@@ -22,10 +24,11 @@ enum ContextMenuActionAvailability {
     static func filterActions(for filter: FilterList) -> [FilterContextMenuAction] {
         guard filter.isCustom else { return [.info, .settings, .viewRules] }
         if filter.isInlineUserList {
-            return [.info, .settings, .editRules, .deleteList]
+            return [.info, .settings, .editRules, .editInfo, .deleteList]
         }
-        // A URL-imported custom list can be inspected or removed, but not edited.
-        return [.info, .settings, .viewRules, .deleteList]
+        // A URL-imported custom list can be inspected or removed, and its
+        // name, description, and category edited, but not its rules.
+        return [.info, .settings, .viewRules, .editInfo, .deleteList]
     }
 
     static func userScriptActions(isBuiltIn: Bool, isLocal: Bool) -> [UserScriptContextMenuAction] {
@@ -42,9 +45,9 @@ enum ContextMenuActionAvailability {
         let download: [UserScriptContextMenuAction] = (!isLocal && !isDownloaded) ? [.download] : []
         guard !isBuiltIn else { return [.info, .settings, .viewContent] + download }
         if isLocal {
-            return [.info, .settings, .editContent, .deleteScript]
+            return [.info, .settings, .editContent, .editInfo, .deleteScript]
         }
         // A URL-imported custom script is view-only with respect to its source.
-        return [.info, .settings, .viewContent] + download + [.deleteScript]
+        return [.info, .settings, .viewContent, .editInfo] + download + [.deleteScript]
     }
 }
