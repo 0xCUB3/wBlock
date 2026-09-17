@@ -1172,3 +1172,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dismiss" = "Dismiss";
 
 "Edit Info" = "Edit Info";
+
+"Get" = "Get";

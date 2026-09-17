@@ -782,6 +782,9 @@ struct UserScriptManagerView: View {
                     if script.isBeta {
                         Badge(text: "Beta", color: .orange)
                     }
+                    #if os(iOS)
+                    RowDisclosureChevron()
+                    #endif
                 }
 
                 if !script.localizedDisplayDescription.isEmpty {
@@ -880,20 +883,19 @@ struct UserScriptManagerView: View {
             }
             .buttonStyle(.plain).noFocusRingCompat()
             .foregroundStyle(.secondary).accessibilityLabel("Info")
-            #else
-            RowDisclosureChevron()
             #endif
 
-            HStack(spacing: 8) {
-                if !script.isLocal && (downloadingScriptIDs.contains(script.id) || !script.isDownloaded) {
-                    ContentDownloadControl(
-                        isDownloaded: script.isDownloaded,
-                        isDownloading: downloadingScriptIDs.contains(script.id),
-                        name: script.name, action: { downloadScript(script) }
-                    )
-                }
+            if !script.isLocal && (downloadingScriptIDs.contains(script.id) || !script.isDownloaded) {
+                // A switch is meaningless until the script exists, so the
+                // row offers Get in its place.
+                ContentDownloadControl(
+                    isDownloaded: script.isDownloaded,
+                    isDownloading: downloadingScriptIDs.contains(script.id),
+                    name: script.name, action: { downloadScript(script) }
+                )
+            } else {
                 Toggle("", isOn: Binding(
-                    get: { displayedEnabled || downloadingScriptIDs.contains(script.id) },
+                    get: { displayedEnabled },
                     set: { newValue in
                         if newValue, script.isBeta, !BetaUserscriptWarning.hasAcknowledged {
                             pendingBetaEnableScript = script
@@ -904,12 +906,7 @@ struct UserScriptManagerView: View {
                 ))
                 .labelsHidden()
                 .toggleStyle(.switch)
-                .disabled(
-                    isToggleInFlight
-                        || downloadingScriptIDs.contains(script.id)
-                        || (script.isLocal && !script.isDownloaded)
-                )
-                .frame(alignment: .center)
+                .disabled(isToggleInFlight || (script.isLocal && !script.isDownloaded))
             }
         }
         .id(script.id)
@@ -917,9 +914,9 @@ struct UserScriptManagerView: View {
         .contextMenu { scriptMenuItems(script) }
         .padding(16)
         #else
-        // iOS keeps the switch flush right. The chevron says the row opens;
-        // the Info sheet lists every action. Long press and the trailing
-        // swipe are shortcuts to the same actions.
+        // iOS keeps one control flush right. The chevron by the title says
+        // the row opens; the Info sheet lists every action. Long press and
+        // the trailing swipe are shortcuts to the same actions.
         .contextMenu { scriptMenuItems(script) }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             let actions = ContextMenuActionAvailability.userScriptActions(

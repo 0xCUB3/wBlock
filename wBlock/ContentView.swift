@@ -944,38 +944,39 @@ struct FilterRowView: View {
             Button(action: onInfo) { Image(systemName: "info.circle") }
                 .buttonStyle(.plain).noFocusRingCompat()
                 .foregroundStyle(.secondary).accessibilityLabel("Info")
-            #else
-            RowDisclosureChevron()
             #endif
             if filter.isRemoteURL && (isDownloading || !isDownloaded) {
+                // A switch is meaningless until the list exists, so the row
+                // offers Get in its place.
                 ContentDownloadControl(
                     isDownloaded: isDownloaded, isDownloading: isDownloading,
                     name: filter.localizedDisplayName, action: onDownload
                 )
-            }
-            Toggle(
-                "",
-                isOn: Binding(
-                    get: { filter.isSelected },
-                    set: { newValue in
-                        // Keep the explicit Toggle value across the deferred callback. The row's
-                        // captured filter can be stale after another state update.
-                        DispatchQueue.main.async {
-                            onToggle(newValue)
+            } else {
+                Toggle(
+                    "",
+                    isOn: Binding(
+                        get: { filter.isSelected },
+                        set: { newValue in
+                            // Keep the explicit Toggle value across the deferred callback. The row's
+                            // captured filter can be stale after another state update.
+                            DispatchQueue.main.async {
+                                onToggle(newValue)
+                            }
                         }
-                    }
+                    )
                 )
-            )
-            .labelsHidden()
-            .toggleStyle(.switch)
+                .labelsHidden()
+                .toggleStyle(.switch)
+            }
         }
         #if os(macOS)
         .contextMenu { contextMenuItems }
         .padding(16)
         #else
-        // iOS keeps the switch flush right. The chevron says the row opens;
-        // the Info sheet lists every action. Long press and the trailing
-        // swipe are shortcuts to the same actions.
+        // iOS keeps one control flush right. The chevron by the title says
+        // the row opens; the Info sheet lists every action. Long press and
+        // the trailing swipe are shortcuts to the same actions.
         .contextMenu { contextMenuItems }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             let actions = ContextMenuActionAvailability.filterActions(for: filter)
@@ -1006,6 +1007,9 @@ struct FilterRowView: View {
                         .infoPopoverAnchor(filter.id)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
+                    #if os(iOS)
+                    RowDisclosureChevron()
+                    #endif
                     if filter.isInlineUserList {
                         Text("Local Import")
                             .font(.caption2.weight(.medium))

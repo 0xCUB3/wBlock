@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// Shown only while a download is running or when the content is missing;
-/// downloaded rows draw nothing here so the toggle sits flush.
+/// Stands in for the enable switch while content is missing or downloading.
+/// A capsule Get button, the App Store idiom, replaces the switch until the
+/// download lands; downloaded rows draw the switch instead of this view.
 struct ContentDownloadControl: View {
     let isDownloaded: Bool
     let isDownloading: Bool
@@ -9,26 +10,37 @@ struct ContentDownloadControl: View {
     let action: () -> Void
 
     var body: some View {
-        Group {
-            if isDownloading {
-                ProgressView().controlSize(.small)
-                    .accessibilityLabel("Downloading…")
-            } else if !isDownloaded {
-                Button(action: action) {
-                    Image(systemName: "arrow.down.circle")
-                        .foregroundStyle(Color.accentColor)
+        Button(action: action) {
+            ZStack {
+                Text("Get")
+                    .fontWeight(.semibold)
+                    .opacity(isDownloading ? 0 : 1)
+                if isDownloading {
+                    ProgressView().controlSize(.small)
                 }
-                .buttonStyle(.plain)
-                .noFocusRingCompat()
-                .accessibilityLabel(LocalizedStrings.format("Download %@", comment: "Download content action", name))
-                .help("Download")
             }
         }
-        .font(.body)
-        #if os(iOS)
-        .frame(width: 32, height: 44)
-        #else
-        .frame(width: 24, height: 24)
-        #endif
+        .buttonStyle(.bordered)
+        .modifier(CapsuleBorderIfAvailable())
+        .controlSize(.small)
+        .disabled(isDownloading)
+        .noFocusRingCompat()
+        .accessibilityLabel(
+            isDownloading
+                ? LocalizedStrings.text("Downloading…")
+                : LocalizedStrings.format("Download %@", comment: "Download content action", name)
+        )
+        .help("Download")
+    }
+}
+
+/// The capsule border shape needs macOS 14; older macOS keeps the default.
+private struct CapsuleBorderIfAvailable: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 14.0, iOS 15.0, *) {
+            content.buttonBorderShape(.capsule)
+        } else {
+            content
+        }
     }
 }
