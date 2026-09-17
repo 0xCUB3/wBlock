@@ -37,10 +37,25 @@ struct ListCategoryHeader: View {
 
     var body: some View {
         HStack(spacing: 6) {
+            // macOS draws the disclosure where the other category titles start,
+            // with the title after it; iOS keeps the trailing chevron so every
+            // section header keeps the same chrome. The whole header toggles on
+            // either platform, which also gives the disclosure a real hit area.
+            #if os(macOS)
+            if let isExpanded {
+                Image(systemName: "chevron.down")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(isExpanded.wrappedValue ? 0 : -90))
+                    .frame(width: 14)
+                    .accessibilityHidden(true)
+            }
+            #endif
             Text(title).infoPopoverAnchor(anchorID).foregroundStyle(.primary).textCase(.none)
             Button(action: info) { Image(systemName: "info.circle") }
                 .buttonStyle(.plain).noFocusRingCompat()
                 .foregroundStyle(.secondary).accessibilityLabel("Info")
+            #if os(iOS)
             if let isExpanded {
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.down")
@@ -49,14 +64,13 @@ struct ListCategoryHeader: View {
                     .rotationEffect(.degrees(isExpanded.wrappedValue ? 0 : -90))
                     .accessibilityHidden(true)
             }
+            #endif
         }
         .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
-        #if os(iOS)
         .onTapGesture {
             guard let isExpanded else { return }
             withAnimation(.easeInOut(duration: 0.2)) { isExpanded.wrappedValue.toggle() }
         }
         .accessibilityAddTraits(isExpanded == nil ? [] : .isButton)
-        #endif
     }
 }

@@ -266,8 +266,12 @@ struct MacReorderableList: NSViewRepresentable {
             if case .section = node.id { return true }
             return false
         }
+        // The disclosure lives in the SwiftUI header (ListCategoryHeader) where
+        // it lines up with the other category titles. AppKit's own outline cell
+        // would pin a triangle to the row's leading edge, half outside the
+        // padded content and nearly impossible to hit.
         func outlineView(_ outlineView: NSOutlineView, shouldShowOutlineCellForItem item: Any) -> Bool {
-            section(for: item)?.isExpanded != nil
+            false
         }
         func outlineView(_ outlineView: NSOutlineView, shouldCollapseItem item: Any) -> Bool {
             section(for: item)?.isExpanded != nil
@@ -392,9 +396,25 @@ struct MacReorderableList: NSViewRepresentable {
                 refreshVisibleRows()
                 outlineView.layoutSubtreeIfNeeded()
             }
-            let frame = outlineView.rect(ofRow: outlineView.row(forItem: node))
+            let landingRow = outlineView.row(forItem: node)
+            let frame = outlineView.rect(ofRow: landingRow)
             info.enumerateDraggingItems(options: [], for: outlineView, classes: [NSPasteboardItem.self], searchOptions: [:]) { item, _, _ in
                 item.draggingFrame = frame
+            }
+            // The row already sits at its destination while the drag image is
+            // still flying there, which reads as a duplicate card behind the
+            // drop. Keep the row transparent until the image lands, then fade
+            // it in over the settling frames.
+            if landingRow >= 0,
+               let landingView = outlineView.view(atColumn: 0, row: landingRow, makeIfNecessary: false) {
+                landingView.alphaValue = 0
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    NSAnimationContext.runAnimationGroup { context in
+                        context.duration = 0.2
+                        context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                        landingView.animator().alphaValue = 1
+                    }
+                }
             }
             return true
         }
