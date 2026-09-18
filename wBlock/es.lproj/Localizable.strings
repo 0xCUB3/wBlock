@@ -55,9 +55,7 @@
 "1h" = "1h";
 "2." = "2.";
 "7d" = "7d";
-"Takes effect when No Autoplay is on." = "Tiene efecto cuando Sin reproducción automática está activado.";
 "Autoplay on" = "Reproducción automática activada";
-"Allow autoplay on this site" = "Permitir reproducción automática en este sitio";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) entradas";
 "\\(index + 1)." = "\\(índice + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(actualizarProgreso * 100))%";
@@ -1135,10 +1133,6 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Names and descriptions" = "Nombres y descripciones";
 "Paste URL" = "Pegar URL";
 "Paste URLs" = "Pegar URL";
-"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "Los sitios añadidos omiten listas de filtros y scriptlets. Los userscripts tienen interruptores separados.";
-"Enable on this site" = "Activar en este sitio";
-"Unavailable while this site is disabled." = "No disponible mientras este sitio esté desactivado.";
-"Applies filter lists and scriptlets. Userscripts have separate switches." = "Aplica listas de filtros y scriptlets. Los userscripts tienen interruptores separados.";
 "Not provided" = "No proporcionado";
 
 "%@ submitted at last apply" = "%@ enviadas en la última aplicación";
@@ -1165,3 +1159,11 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Edit Info" = "Editar información";
 
 "Get" = "Obtener";
+"Autoplay" = "Reproducción automática";
+"Autoplay off" = "Reproducción automática desactivada";
+"Userscripts off" = "Userscripts desactivados";
+"Following the Autoplay setting in the Safari extension." = "Sigue el ajuste de reproducción automática de la extensión de Safari.";
+"Overrides the Autoplay setting in the Safari extension." = "Anula el ajuste de reproducción automática de la extensión de Safari.";
+"Runs every enabled userscript that matches this site." = "Ejecuta todos los userscripts activados que coinciden con este sitio.";
+"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Aplica listas de filtros y scriptlets. Los userscripts, el zapper y la reproducción automática tienen sus propios interruptores.";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Los sitios añadidos omiten listas de filtros y scriptlets. Los userscripts, el zapper y la reproducción automática tienen sus propios interruptores.";

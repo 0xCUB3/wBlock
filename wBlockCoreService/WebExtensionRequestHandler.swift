@@ -128,6 +128,8 @@ public enum WebExtensionRequestHandler {
             case "deleteUserScriptStorageValue":
                 handleDeleteUserScriptStorageValue(message: message!, context: context)
                 return
+            case "setUserScriptsSiteDisabled":
+                handleSetUserScriptsSiteDisabled(message: message!, context: context)
             case "setUserScriptSiteDisabledState":
                 handleSetUserScriptSiteDisabledState(message: message!, context: context)
                 return
@@ -149,6 +151,10 @@ public enum WebExtensionRequestHandler {
             case "getSiteDisabledState":
                 handleGetSiteDisabledState(message: message!, context: context)
                 return
+            case "getSiteFilterDisabledState":
+                handleGetSiteFilterDisabledState(message: message!, context: context)
+            case "setSiteFilterDisabledState":
+                handleSetSiteFilterDisabledState(message: message!, context: context)
             case "setSiteDisabledState":
                 handleSetSiteDisabledState(message: message!, context: context)
                 return
@@ -410,6 +416,100 @@ public enum WebExtensionRequestHandler {
             let disabledSites = await currentDisabledSites()
             let disabled = HostMatcher.isHostDisabled(host: host, disabledSites: disabledSites)
             let response = createResponse(with: ["disabled": disabled])
+            context.completeRequest(returningItems: [response])
+        }
+    }
+
+    /// Content Filtering switch in the popup (#835). It only touches the
+    /// filter-only list, so userscripts and the zapper keep running; the
+    /// master whitelist stays reachable from Site Settings for whole-site opt out.
+    private static func handleGetSiteFilterDisabledState(message: [String: Any?], context: NSExtensionContext) {
+        let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !host.isEmpty else {
+            context.completeRequest(returningItems: [createResponse(with: ["disabled": false, "whitelisted": false])])
+            return
+        }
+        Task { @MainActor in
+            let master = await currentDisabledSites()
+            let filterOnly = await currentFilterDisabledSites()
+            let response = createResponse(with: [
+                "disabled": HostMatcher.isHostDisabled(host: host, disabledSites: filterOnly),
+                "whitelisted": HostMatcher.isHostDisabled(host: host, disabledSites: master)
+            ])
+            context.completeRequest(returningItems: [response])
+        }
+    }
+
+    private static func handleSetSiteFilterDisabledState(message: [String: Any?], context: NSExtensionContext) {
+        let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let disabled = message["disabled"] as? Bool ?? false
+        guard let normalizedHost = DisabledSitesNormalizer.normalizedDomain(host) else {
+            context.completeRequest(returningItems: [createResponse(with: ["disabled": false, "error": "Invalid host"])])
+            return
+        }
+
+        Task { @MainActor in
+            await ProtobufDataManager.shared.waitUntilLoaded()
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            var list = DisabledSitesNormalizer.normalizedDomains(from: ProtobufDataManager.shared.filterDisabledSites)
+            let previousList = list
+            if disabled {
+                if !list.contains(normalizedHost) { list.append(normalizedHost) }
+            } else {
+                list.removeAll { $0 == normalizedHost || normalizedHost.hasSuffix("." + $0) }
+            }
+            guard list != previousList else {
+                let response = createResponse(with: [
+                    "disabled": HostMatcher.isHostDisabled(host: host, disabledSites: list),
+                    "changed": false,
+                    "reloadDurationMs": 0,
+                    "reloadedTargets": 0,
+                    "skippedTargets": 0,
+                    "failedTargets": 0,
+                    "requiresFullApply": false
+                ])
+                context.completeRequest(returningItems: [response])
+                return
+            }
+
+            let groupID = GroupIdentifier.shared.value
+            ContentBlockerService.markDisabledSitesApplyStarted(groupIdentifier: groupID)
+            defer { ContentBlockerService.markDisabledSitesApplyFinished(groupIdentifier: groupID) }
+
+            await ProtobufDataManager.shared.setFilterDisabledDomains(list)
+
+            let selectedFilters = ProtobufDataManager.shared.getFilterLists().filter { $0.isSelected }
+            let effectiveDisabledSites = await currentFilterDisabledSites()
+            Task.detached(priority: .utility) {
+                do {
+                    _ = try RemoveParamDNRRuleGenerator.saveRules(
+                        for: selectedFilters,
+                        disabledSites: effectiveDisabledSites,
+                        groupIdentifier: GroupIdentifier.shared.value
+                    )
+                } catch {
+                    os_log(.error, "Failed to refresh removeparam DNR rules for filter-disabled site change: %@", error.localizedDescription)
+                }
+            }
+
+            #if os(macOS)
+            let platform: Platform = .macOS
+            #else
+            let platform: Platform = .iOS
+            #endif
+            let applyStart = Date()
+            let summary = await Task.detached(priority: .userInitiated) {
+                await applyDisabledSitesFastPath(disabledSites: effectiveDisabledSites, platform: platform)
+            }.value
+            let response = createResponse(with: [
+                "disabled": disabled,
+                "changed": true,
+                "reloadDurationMs": Int(Date().timeIntervalSince(applyStart) * 1000),
+                "reloadedTargets": summary.reloadedTargets,
+                "skippedTargets": summary.skippedTargets,
+                "failedTargets": summary.failedTargets,
+                "requiresFullApply": summary.requiresFullApply
+            ])
             context.completeRequest(returningItems: [response])
         }
     }
@@ -1261,7 +1361,32 @@ public enum WebExtensionRequestHandler {
                 ]
             }
 
-            let response = createResponse(with: ["userScripts": descriptors])
+            let host = URL(string: urlString)?.host ?? ""
+            let response = createResponse(with: [
+                "userScripts": descriptors,
+                "siteDisabled": ProtobufDataManager.shared.areUserScriptsDisabled(onHost: host)
+            ])
+            context.completeRequest(returningItems: [response])
+        }
+    }
+
+    /// Site-wide userscript switch from the popup (#835).
+    private static func handleSetUserScriptsSiteDisabled(message: [String: Any?], context: NSExtensionContext) {
+        let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard DisabledSitesNormalizer.normalizedDomain(host) != nil else {
+            let response = createResponse(with: ["ok": false, "error": "Invalid host"])
+            context.completeRequest(returningItems: [response])
+            return
+        }
+        let disabled = message["disabled"] as? Bool ?? false
+        Task { @MainActor in
+            await ProtobufDataManager.shared.waitUntilLoaded()
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            let ok = await ProtobufDataManager.shared.setUserScriptsDisabled(disabled, onHost: host)
+            let response = createResponse(with: [
+                "ok": ok,
+                "disabled": ProtobufDataManager.shared.areUserScriptsDisabled(onHost: host)
+            ])
             context.completeRequest(returningItems: [response])
         }
     }
@@ -1665,11 +1790,18 @@ public enum WebExtensionRequestHandler {
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
             _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
-            let siteAllowed = !host.isEmpty
-                && ProtobufDataManager.shared.isNoAutoplayAllowed(onHost: host)
+            // With a host, `enabled` becomes the effective per-site answer
+            // (gate armed) and `siteAllowed` its complement, so the gate and
+            // popup need no knowledge of the override lists (#835). Without a
+            // host the global switch is reported as before.
+            let manager = ProtobufDataManager.shared
+            let effectiveBlocked = host.isEmpty
+                ? manager.isNoAutoplayEnabled
+                : !manager.isAutoplayAllowed(onHost: host)
             let response = createResponse(with: [
-                "enabled": ProtobufDataManager.shared.isNoAutoplayEnabled,
-                "siteAllowed": siteAllowed,
+                "enabled": effectiveBlocked,
+                "siteAllowed": !host.isEmpty && !effectiveBlocked,
+                "globalEnabled": manager.isNoAutoplayEnabled,
             ])
             context.completeRequest(returningItems: [response])
         }
@@ -1711,11 +1843,13 @@ public enum WebExtensionRequestHandler {
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
             _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
-            let persisted = await ProtobufDataManager.shared.setNoAutoplaySiteAllowed(allowed, onHost: host)
+            let persisted = await ProtobufDataManager.shared.setAutoplayAllowed(allowed, onHost: host)
+            let siteAllowed = ProtobufDataManager.shared.isAutoplayAllowed(onHost: host)
             var payload: [String: Any?] = [
                 "ok": persisted,
-                "enabled": ProtobufDataManager.shared.isNoAutoplayEnabled,
-                "siteAllowed": ProtobufDataManager.shared.isNoAutoplayAllowed(onHost: host),
+                "enabled": !siteAllowed,
+                "siteAllowed": siteAllowed,
+                "globalEnabled": ProtobufDataManager.shared.isNoAutoplayEnabled,
             ]
             if !persisted {
                 payload["error"] = "Failed to save"

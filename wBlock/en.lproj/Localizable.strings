@@ -55,9 +55,7 @@
 "1h" = "1h";
 "2." = "2.";
 "7d" = "7d";
-"Takes effect when No Autoplay is on." = "Takes effect when No Autoplay is on.";
 "Autoplay on" = "Autoplay on";
-"Allow autoplay on this site" = "Allow autoplay on this site";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) entries";
 "\\(index + 1)." = "\\(index + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
@@ -1140,13 +1138,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Paste URLs" = "Paste URLs";
 
-"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "Added sites skip filter lists and scriptlets. Userscripts have separate switches.";
 
-"Enable on this site" = "Enable on this site";
 
-"Unavailable while this site is disabled." = "Unavailable while this site is disabled.";
 
-"Applies filter lists and scriptlets. Userscripts have separate switches." = "Applies filter lists and scriptlets. Userscripts have separate switches.";
 
 "Not provided" = "Not provided";
 
@@ -1174,3 +1168,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Info" = "Edit Info";
 
 "Get" = "Get";
+"Autoplay" = "Autoplay";
+"Autoplay off" = "Autoplay off";
+"Userscripts off" = "Userscripts off";
+"Following the Autoplay setting in the Safari extension." = "Following the Autoplay setting in the Safari extension.";
+"Overrides the Autoplay setting in the Safari extension." = "Overrides the Autoplay setting in the Safari extension.";
+"Runs every enabled userscript that matches this site." = "Runs every enabled userscript that matches this site.";
+"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches.";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches.";

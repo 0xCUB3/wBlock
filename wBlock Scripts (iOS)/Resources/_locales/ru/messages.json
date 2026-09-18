@@ -11,10 +11,6 @@
     "message": "Загрузка…",
     "description": "Popup status shown while loading state is being resolved."
   },
-  "popup_enable_on_site": {
-    "message": "Включить на этом сайте",
-    "description": "Label for the site-specific enable toggle in the popup."
-  },
   "popup_element_zapper": {
     "message": "Скрытие элементов",
     "description": "Section title for the element zapper controls in the popup."
@@ -291,16 +287,20 @@
     "message": "Не удалось начать обновление фильтров.",
     "description": "Error shown when the background filter update cannot be started."
   },
-  "popup_no_autoplay": {
-    "message": "Без автовоспроизведения",
-    "description": "Section title for the No Autoplay controls in the popup."
+  "popup_content_filtering": {
+    "message": "Фильтрация контента",
+    "description": "Label for the popup switch that turns filter lists on or off for the current site."
   },
-  "popup_no_autoplay_allow_site": {
-    "message": "Разрешить автовоспроизведение на этом сайте",
-    "description": "Label for the per-site toggle that allows autoplay on the current site."
+  "popup_autoplay": {
+    "message": "Автовоспроизведение",
+    "description": "Section title for the Autoplay controls in the popup; on by default."
   },
-  "popup_no_autoplay_hint": {
-    "message": "Медиа остаётся на паузе, пока вы не нажмёте на него.",
-    "description": "Hint explaining what No Autoplay does."
+  "popup_autoplay_site": {
+    "message": "Автовоспроизведение на этом сайте",
+    "description": "Label for the per-site autoplay switch; overrides the global default either way."
+  },
+  "popup_autoplay_hint": {
+    "message": "Когда выключено, медиа остаётся на паузе, пока вы не нажмёте на него. Переключатель сайта имеет приоритет над значением по умолчанию.",
+    "description": "Hint explaining the Autoplay switches."
   }
 }

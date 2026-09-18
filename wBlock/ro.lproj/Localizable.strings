@@ -55,9 +55,7 @@
 "1h" = "1h";
 "2." = "2.";
 "7d" = "7d";
-"Takes effect when No Autoplay is on." = "Are efect când Fără redare automată este activat.";
 "Autoplay on" = "Redare automată activată";
-"Allow autoplay on this site" = "Permite redarea automată pe acest site";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) intrări";
 "\\(index + 1)." = "\\(index + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
@@ -1135,10 +1133,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Names and descriptions" = "Nume și descrieri";
 "Paste URL" = "Lipește URL";
 "Paste URLs" = "Lipește URL-uri";
-"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "Site-urile adăugate omit listele de filtre și scriptleturile. Userscripturile au comutatoare separate.";
-"Enable on this site" = "Activează pe acest site";
-"Unavailable while this site is disabled." = "Indisponibil cât timp acest site este dezactivat.";
-"Applies filter lists and scriptlets. Userscripts have separate switches." = "Aplică liste de filtre și scriptleturi. Userscripturile au comutatoare separate.";
 "Not provided" = "Nefurnizat";
 
 "%@ submitted at last apply" = "%@ trimise la ultima aplicare";
@@ -1165,3 +1159,11 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Edit Info" = "Editează informațiile";
 
 "Get" = "Obține";
+"Autoplay" = "Redare automată";
+"Autoplay off" = "Redare automată dezactivată";
+"Userscripts off" = "Userscripturi dezactivate";
+"Following the Autoplay setting in the Safari extension." = "Urmează setarea de redare automată din extensia Safari.";
+"Overrides the Autoplay setting in the Safari extension." = "Înlocuiește setarea de redare automată din extensia Safari.";
+"Runs every enabled userscript that matches this site." = "Rulează fiecare userscript activat care se potrivește acestui site.";
+"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Aplică listele de filtre și scriptleturile. Userscripturile, zapper-ul și redarea automată au comutatoare proprii.";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Site-urile adăugate ocolesc listele de filtre și scriptleturile. Userscripturile, zapper-ul și redarea automată au comutatoare proprii.";

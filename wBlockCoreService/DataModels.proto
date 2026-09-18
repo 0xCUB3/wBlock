@@ -132,6 +132,10 @@ message WhitelistData {
   repeated string filter_disabled_sites = 3;
   bool no_autoplay_enabled = 4;
   repeated string no_autoplay_allowed_sites = 5;
+  // Sites where every userscript is off; per-script hosts still apply elsewhere.
+  repeated string user_scripts_disabled_sites = 6;
+  // Sites where autoplay is blocked even though it is allowed globally.
+  repeated string no_autoplay_blocked_sites = 7;
 }
 
 // Rule count tracking data

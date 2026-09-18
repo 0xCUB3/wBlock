@@ -55,9 +55,7 @@
 "1h" = "1 ώρα";
 "2." = "2.";
 "7d" = "7d";
-"Takes effect when No Autoplay is on." = "Ισχύει όταν η λειτουργία Χωρίς αυτόματη αναπαραγωγή είναι ενεργή.";
 "Autoplay on" = "Αυτόματη αναπαραγωγή ενεργή";
-"Allow autoplay on this site" = "Να επιτρέπεται η αυτόματη αναπαραγωγή σε αυτόν τον ιστότοπο";
 "\\(filteredEntries.count) entries" = "\(filteredEntries.count) καταχωρήσεις";
 "\\(index + 1)." = "\\(ευρετήριο + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
@@ -1135,10 +1133,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Names and descriptions" = "Ονόματα και περιγραφές";
 "Paste URL" = "Επικόλληση URL";
 "Paste URLs" = "Επικόλληση URL";
-"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "Οι ιστότοποι που προστίθενται παραλείπουν τις λίστες φίλτρων και τα scriptlet. Τα userscript έχουν ξεχωριστούς διακόπτες.";
-"Enable on this site" = "Ενεργοποίηση σε αυτόν τον ιστότοπο";
-"Unavailable while this site is disabled." = "Δεν είναι διαθέσιμο όσο αυτός ο ιστότοπος είναι απενεργοποιημένος.";
-"Applies filter lists and scriptlets. Userscripts have separate switches." = "Εφαρμόζει λίστες φίλτρων και scriptlet. Τα userscript έχουν ξεχωριστούς διακόπτες.";
 "Not provided" = "Δεν παρέχεται";
 
 "%@ submitted at last apply" = "%@ υποβλήθηκαν στην τελευταία εφαρμογή";
@@ -1165,3 +1159,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Info" = "Επεξεργασία πληροφοριών";
 
 "Get" = "Λήψη";
+"Autoplay" = "Αυτόματη αναπαραγωγή";
+"Autoplay off" = "Αυτόματη αναπαραγωγή ανενεργή";
+"Userscripts off" = "Userscripts ανενεργά";
+"Following the Autoplay setting in the Safari extension." = "Ακολουθεί τη ρύθμιση αυτόματης αναπαραγωγής της επέκτασης Safari.";
+"Overrides the Autoplay setting in the Safari extension." = "Παρακάμπτει τη ρύθμιση αυτόματης αναπαραγωγής της επέκτασης Safari.";
+"Runs every enabled userscript that matches this site." = "Εκτελεί κάθε ενεργό userscript που ταιριάζει σε αυτόν τον ιστότοπο.";
+"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Εφαρμόζει λίστες φίλτρων και scriptlets. Τα userscripts, το zapper και η αυτόματη αναπαραγωγή έχουν δικούς τους διακόπτες.";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Οι προστιθέμενοι ιστότοποι παρακάμπτουν λίστες φίλτρων και scriptlets. Τα userscripts, το zapper και η αυτόματη αναπαραγωγή έχουν δικούς τους διακόπτες.";

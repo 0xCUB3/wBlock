@@ -25,7 +25,9 @@ struct SiteSettingsView: View {
     private struct SiteSettingsSnapshot: Equatable {
         let isWhitelisted: Bool
         let isFilterDisabled: Bool
-        let isAutoplayAllowed: Bool
+        /// nil follows the global Autoplay setting; true/false override it.
+        let autoplayOverride: Bool?
+        let areUserScriptsDisabled: Bool
         let disabledScriptIDs: Set<String>
         let selectedScriptIDs: Set<String>
     }
@@ -48,7 +50,8 @@ struct SiteSettingsView: View {
         let domain: String
         let isWhitelisted: Bool
         let isFilterDisabled: Bool
-        let isAutoplayAllowed: Bool
+        let autoplayOverride: Bool?
+        let areUserScriptsDisabled: Bool
         let scriptsOffCount: Int
 
         var id: String { domain }
@@ -127,6 +130,8 @@ struct SiteSettingsView: View {
         let existing = Set(DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites))
             .union(DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites))
             .union(DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayAllowedSites))
+            .union(DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayBlockedSites))
+            .union(DisabledSitesNormalizer.normalizedDomains(from: dataManager.userScriptsDisabledSites))
         return existing.contains(normalized) ? nil : normalized
     }
 
@@ -154,7 +159,7 @@ struct SiteSettingsView: View {
                 .disabled(addableDomain == nil || isAddingDomain)
             }
 
-            Text("Added sites skip filter lists and scriptlets. Userscripts have separate switches.")
+            Text("Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
@@ -167,11 +172,15 @@ struct SiteSettingsView: View {
         let whitelisted = Set(DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites))
         let filterDisabled = Set(DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites))
         let autoplayAllowed = Set(DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayAllowedSites))
+        let autoplayBlocked = Set(DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayBlockedSites))
+        let scriptsDisabled = Set(DisabledSitesNormalizer.normalizedDomains(from: dataManager.userScriptsDisabledSites))
         let exceptionsByScript = dataManager.getUserScriptDisabledHosts()
 
         var domains = whitelisted
         domains.formUnion(filterDisabled)
         domains.formUnion(autoplayAllowed)
+        domains.formUnion(autoplayBlocked)
+        domains.formUnion(scriptsDisabled)
         domains.formUnion(exceptionsByScript.values.flatMap { $0 })
         domains.formUnion(dataManager.getUserScriptAllowedHosts().values.flatMap { $0 })
 
@@ -180,8 +189,11 @@ struct SiteSettingsView: View {
                 domain: domain,
                 isWhitelisted: whitelisted.contains(domain),
                 isFilterDisabled: filterDisabled.contains(domain),
-                isAutoplayAllowed: autoplayAllowed.contains(domain),
-                scriptsOffCount: userScriptManager.pageUserScripts(for: "https://" + domain + "/").filter { $0.disabledForSite }.count,
+                autoplayOverride: autoplayBlocked.contains(domain) ? false : (autoplayAllowed.contains(domain) ? true : nil),
+                areUserScriptsDisabled: scriptsDisabled.contains(domain),
+                scriptsOffCount: scriptsDisabled.contains(domain)
+                    ? 0
+                    : userScriptManager.pageUserScripts(for: "https://" + domain + "/").filter { $0.disabledForSite }.count,
             )
         }
 
@@ -240,10 +252,15 @@ struct SiteSettingsView: View {
                     } else if site.isFilterDisabled {
                         summaryBadge(Text("Filtering off"), systemImage: "line.3.horizontal.decrease.circle")
                     }
-                    if site.isAutoplayAllowed {
-                        summaryBadge(Text("Autoplay on"), systemImage: "play.circle")
+                    if let autoplay = site.autoplayOverride {
+                        summaryBadge(
+                            Text(autoplay ? "Autoplay on" : "Autoplay off"),
+                            systemImage: autoplay ? "play.circle" : "pause.circle"
+                        )
                     }
-                    if site.scriptsOffCount > 0 {
+                    if site.areUserScriptsDisabled {
+                        summaryBadge(Text("Userscripts off"), systemImage: "scroll")
+                    } else if site.scriptsOffCount > 0 {
                         summaryBadge(
                             Text(localizedScriptsOffCount(site.scriptsOffCount)),
                             systemImage: "scroll"
@@ -283,41 +300,49 @@ struct SiteSettingsView: View {
 
     @ViewBuilder
     private func expansionRows(_ site: SiteSummary) -> some View {
-        toggleRow(isOn: Binding(
-            get: { !isWhitelisted(site.domain) },
-            set: { setWhitelisted(!$0, domain: site.domain) }
-        )) {
-            Text("Enable on this site")
-                .font(.body)
-        }
-
+        // Content filtering is the switch the popup shows too. Turning it
+        // off here clears both the filter-only list and any older whole-site
+        // whitelist entry (#835).
         toggleRow(isOn: Binding(
             get: { contentFilteringRuns(on: site) },
-            set: { setFilterDisabled(!$0, domain: site.domain) }
+            set: { setContentFiltering($0, domain: site.domain) }
         )) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Content filtering")
                     .font(.body)
-                Text(site.isWhitelisted ? "Unavailable while this site is disabled." : "Applies filter lists and scriptlets. Userscripts have separate switches.")
+                Text("Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
-        .disabled(site.isWhitelisted)
 
         toggleRow(isOn: Binding(
-            get: { isAutoplayAllowed(site.domain) },
+            get: { dataManager.isAutoplayAllowed(onHost: site.domain) },
             set: { setAutoplayAllowed($0, domain: site.domain) }
         )) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Allow autoplay on this site")
+                Text("Autoplay")
                     .font(.body)
-                Text("Takes effect when No Autoplay is on.")
+                Text(site.autoplayOverride == nil
+                     ? "Following the Autoplay setting in the Safari extension."
+                     : "Overrides the Autoplay setting in the Safari extension.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
-        .disabled(site.isWhitelisted)
+
+        toggleRow(isOn: Binding(
+            get: { !site.areUserScriptsDisabled },
+            set: { setUserScriptsEnabled($0, domain: site.domain) }
+        )) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Userscripts")
+                    .font(.body)
+                Text("Runs every enabled userscript that matches this site.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
 
         ForEach(siteUserScripts(for: site.domain)) { script in
             toggleRow(isOn: Binding(
@@ -343,6 +368,7 @@ struct SiteSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .disabled(site.areUserScriptsDisabled)
         }
 
         VStack(spacing: 0) {
@@ -444,7 +470,10 @@ struct SiteSettingsView: View {
         return SiteSettingsSnapshot(
             isWhitelisted: isWhitelisted(domain),
             isFilterDisabled: isFilterDisabled(domain),
-            isAutoplayAllowed: isAutoplayAllowed(domain),
+            autoplayOverride: dataManager.isNoAutoplayBlocked(onHost: domain)
+                ? false
+                : (dataManager.isNoAutoplayAllowed(onHost: domain) ? true : nil),
+            areUserScriptsDisabled: DisabledSitesNormalizer.normalizedDomains(from: dataManager.userScriptsDisabledSites).contains(domain),
             disabledScriptIDs: Set(disabledHosts.compactMap { scriptID, hosts in
                 hosts.contains(domain) ? scriptID : nil
             }),
@@ -483,7 +512,11 @@ struct SiteSettingsView: View {
         await dataManager.setWhitelistedDomains(snapshot.isWhitelisted ? DisabledSitesNormalizer.normalizedDomains(from: domains + [domain]) : domains.filter { $0 != domain })
         let filterDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
         await dataManager.setFilterDisabledDomains(snapshot.isFilterDisabled ? DisabledSitesNormalizer.normalizedDomains(from: filterDomains + [domain]) : filterDomains.filter { $0 != domain })
-        await dataManager.setNoAutoplaySiteAllowed(snapshot.isAutoplayAllowed, onHost: domain)
+        let allowedSites = DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayAllowedSites).filter { $0 != domain }
+        let blockedSites = DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayBlockedSites).filter { $0 != domain }
+        await dataManager.setNoAutoplayAllowedSites(snapshot.autoplayOverride == true ? allowedSites + [domain] : allowedSites)
+        await dataManager.setNoAutoplayBlockedSites(snapshot.autoplayOverride == false ? blockedSites + [domain] : blockedSites)
+        await dataManager.setUserScriptsDisabled(snapshot.areUserScriptsDisabled, onHost: domain)
         await restoreSelectedSites(snapshot.selectedScriptIDs, on: domain)
         let disabledHosts = dataManager.getUserScriptDisabledHosts()
         for scriptID in Set(disabledHosts.keys).union(snapshot.disabledScriptIDs) {
@@ -513,9 +546,6 @@ struct SiteSettingsView: View {
         !site.isWhitelisted && !site.isFilterDisabled
     }
 
-    private func isAutoplayAllowed(_ domain: String) -> Bool {
-        DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayAllowedSites).contains(domain)
-    }
 
     private func siteUserScripts(for domain: String) -> [UserScript] {
         let syntheticURL = "https://\(domain)/"
@@ -535,8 +565,8 @@ struct SiteSettingsView: View {
         guard !isMutationInFlight, let normalizedDomain = addableDomain else { return }
         isAddingDomain = true
         mutateSite(normalizedDomain) {
-            let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
-            await dataManager.setWhitelistedDomains(DisabledSitesNormalizer.normalizedDomains(from: currentDomains + [normalizedDomain]))
+            let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
+            await dataManager.setFilterDisabledDomains(DisabledSitesNormalizer.normalizedDomains(from: currentDomains + [normalizedDomain]))
             newDomain = ""
             isAddingDomain = false
             isTextFieldFocused = true
@@ -544,25 +574,27 @@ struct SiteSettingsView: View {
         }
     }
 
-    private func setFilterDisabled(_ disabled: Bool, domain: String) {
-        mutateSite(domain) {
-            let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
-            let updated = disabled ? DisabledSitesNormalizer.normalizedDomains(from: currentDomains + [domain]) : currentDomains.filter { $0 != domain }
-            await dataManager.setFilterDisabledDomains(updated)
-        }
-    }
-
-    private func setWhitelisted(_ whitelisted: Bool, domain: String) {
-        mutateSite(domain) {
-            let currentDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
-            let updated = whitelisted ? DisabledSitesNormalizer.normalizedDomains(from: currentDomains + [domain]) : currentDomains.filter { $0 != domain }
-            await dataManager.setWhitelistedDomains(updated)
-        }
-    }
-
     private func setAutoplayAllowed(_ allowed: Bool, domain: String) {
         mutateSite(domain) {
-            await dataManager.setNoAutoplaySiteAllowed(allowed, onHost: domain)
+            await dataManager.setAutoplayAllowed(allowed, onHost: domain)
+        }
+    }
+
+    private func setUserScriptsEnabled(_ enabled: Bool, domain: String) {
+        mutateSite(domain) {
+            await dataManager.setUserScriptsDisabled(!enabled, onHost: domain)
+        }
+    }
+
+    private func setContentFiltering(_ runs: Bool, domain: String) {
+        mutateSite(domain) {
+            let filterDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
+            let updatedFilters = runs ? filterDomains.filter { $0 != domain } : DisabledSitesNormalizer.normalizedDomains(from: filterDomains + [domain])
+            if updatedFilters != filterDomains { await dataManager.setFilterDisabledDomains(updatedFilters) }
+            if runs {
+                let whitelist = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
+                if whitelist.contains(domain) { await dataManager.setWhitelistedDomains(whitelist.filter { $0 != domain }) }
+            }
         }
     }
 
@@ -573,7 +605,12 @@ struct SiteSettingsView: View {
             let filterDomains = DisabledSitesNormalizer.normalizedDomains(from: dataManager.filterDisabledSites)
             if filterDomains.contains(domain) { await dataManager.setFilterDisabledDomains(filterDomains.filter { $0 != domain }) }
             let autoplaySites = DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayAllowedSites)
-            if autoplaySites.contains(domain) { await dataManager.setNoAutoplaySiteAllowed(false, onHost: domain) }
+            if autoplaySites.contains(domain) { await dataManager.setNoAutoplayAllowedSites(autoplaySites.filter { $0 != domain }) }
+            let blockedSites = DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayBlockedSites)
+            if blockedSites.contains(domain) { await dataManager.setNoAutoplayBlockedSites(blockedSites.filter { $0 != domain }) }
+            if DisabledSitesNormalizer.normalizedDomains(from: dataManager.userScriptsDisabledSites).contains(domain) {
+                await dataManager.setUserScriptsDisabled(false, onHost: domain)
+            }
             for (scriptID, hosts) in dataManager.getUserScriptDisabledHosts() where hosts.contains(domain) {
                 await dataManager.setUserScriptDisabledHosts(hosts.filter { $0 != domain }, forScriptID: scriptID)
             }

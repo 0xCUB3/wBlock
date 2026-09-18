@@ -27,7 +27,7 @@
         <div class="popup-body">
         <div class="section">
             <div class="toggle-row">
-                <div id="enable-title" class="label" data-i18n="popup_enable_on_site">Enable on this site</div>
+                <div id="enable-title" class="label" data-i18n="popup_content_filtering">Content Filtering</div>
                 <label class="switch" for="enable-toggle">
                     <input id="enable-toggle" type="checkbox" aria-labelledby="enable-title" disabled />
                     <span class="slider" aria-hidden="true"></span>
@@ -38,13 +38,19 @@
                 <div id="paused-prompt-message" class="hint" data-i18n="popup_paused_prompt_message">Resume restores all components.</div>
             </div>
             <div id="userscripts-section" hidden>
-                <button id="userscripts-toggle" class="disclosure" type="button" aria-expanded="false">
-                    <span data-i18n="popup_userscripts">Userscripts</span>
-                    <span class="disclosure-meta">
-                        <span id="userscripts-count" class="value">0</span>
-                        <span id="userscripts-chevron" class="chevron" aria-hidden="true"></span>
-                    </span>
-                </button>
+                <div class="disclosure-row">
+                    <button id="userscripts-toggle" class="disclosure" type="button" aria-expanded="false">
+                        <span id="userscripts-title" data-i18n="popup_userscripts">Userscripts</span>
+                        <span class="disclosure-meta">
+                            <span id="userscripts-count" class="value">0</span>
+                            <span id="userscripts-chevron" class="chevron" aria-hidden="true"></span>
+                        </span>
+                    </button>
+                    <label class="switch" for="userscripts-site-toggle">
+                        <input id="userscripts-site-toggle" type="checkbox" checked aria-labelledby="userscripts-title" />
+                        <span class="slider" aria-hidden="true"></span>
+                    </label>
+                </div>
                 <div id="userscripts-panel" class="disclosure-panel" hidden>
                     <div class="disclosure-panel-inner">
                         <div id="userscripts-list" class="userscript-list" hidden></div>
@@ -83,21 +89,21 @@
 
         <div id="no-autoplay-section" class="section">
             <div class="row">
-                <div id="no-autoplay-title" class="label" data-i18n="popup_no_autoplay">No Autoplay</div>
+                <div id="no-autoplay-title" class="label" data-i18n="popup_autoplay">Autoplay</div>
                 <label class="switch" for="no-autoplay-enabled-toggle">
                     <input id="no-autoplay-enabled-toggle" type="checkbox" aria-labelledby="no-autoplay-title" />
                     <span class="slider" aria-hidden="true"></span>
                 </label>
             </div>
-            <div id="no-autoplay-site-row" class="toggle-row" hidden>
-                <div id="no-autoplay-site-title" class="label" data-i18n="popup_no_autoplay_allow_site">Allow autoplay on this site</div>
+            <div id="no-autoplay-site-row" class="toggle-row">
+                <div id="no-autoplay-site-title" class="label" data-i18n="popup_autoplay_site">Autoplay on this site</div>
                 <label class="switch" for="no-autoplay-site-toggle">
                     <input id="no-autoplay-site-toggle" type="checkbox" aria-labelledby="no-autoplay-site-title" />
                     <span class="slider" aria-hidden="true"></span>
                 </label>
             </div>
         </div>
-        <div class="hint" data-i18n="popup_no_autoplay_hint">Media stays paused until you tap or click it.</div>
+        <div class="hint" data-i18n="popup_autoplay_hint">When off, media stays paused until you tap or click it. The site switch overrides the default.</div>
 
         <div id="userscript-commands" class="section" hidden></div>
 

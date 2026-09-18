@@ -55,9 +55,7 @@
 "1h" = "1h";
 "2." = "2.";
 "7d" = "7d";
-"Takes effect when No Autoplay is on." = "在「停止自動播放」開啟時生效。";
 "Autoplay on" = "自動播放已開啟";
-"Allow autoplay on this site" = "允許此網站自動播放";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) 筆";
 "\\(index + 1)." = "\\(索引+1)。";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(刷新進度 * 100))%";
@@ -1135,10 +1133,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Names and descriptions" = "名稱和描述";
 "Paste URL" = "貼上 URL";
 "Paste URLs" = "貼上 URL";
-"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "已加入的網站會略過過濾列表和 scriptlet。使用者腳本有獨立的開關。";
-"Enable on this site" = "在此網站啟用";
-"Unavailable while this site is disabled." = "此網站停用時無法使用。";
-"Applies filter lists and scriptlets. Userscripts have separate switches." = "套用過濾列表和 scriptlet。使用者腳本有獨立的開關。";
 "Not provided" = "未提供";
 
 "%@ submitted at last apply" = "上次套用時提交了 %@ 條";
@@ -1165,3 +1159,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Info" = "編輯資訊";
 
 "Get" = "取得";
+"Autoplay" = "自動播放";
+"Autoplay off" = "自動播放已關閉";
+"Userscripts off" = "使用者指令碼已關閉";
+"Following the Autoplay setting in the Safari extension." = "遵循 Safari 延伸功能中的自動播放設定。";
+"Overrides the Autoplay setting in the Safari extension." = "覆蓋 Safari 延伸功能中的自動播放設定。";
+"Runs every enabled userscript that matches this site." = "執行所有符合此網站的已啟用使用者指令碼。";
+"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "套用過濾清單和小指令碼。使用者指令碼、元素清除器和自動播放各有自己的開關。";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "已加入的網站會略過過濾清單和小指令碼。使用者指令碼、元素清除器和自動播放各有自己的開關。";

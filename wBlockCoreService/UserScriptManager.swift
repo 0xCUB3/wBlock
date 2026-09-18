@@ -3882,9 +3882,9 @@ public class UserScriptManager: ObservableObject {
 
     public func getEnabledUserScriptsForURL(_ url: String) -> [UserScript] {
         guard !BlockingPauseStore.isPaused(.userScripts) else { return [] }
+        let host = URL(string: url)?.host ?? ""
         let enabledScripts = userScripts.filter { $0.isEnabled }
         let matchingScripts = enabledScripts.filter { $0.matches(url: url) }
-        let host = URL(string: url)?.host ?? ""
         let runnableScripts = matchingScripts.filter {
             !isUserScript($0, disabledOnHost: host)
         }
@@ -3930,7 +3930,10 @@ public class UserScriptManager: ObservableObject {
         return await dataManager.setUserScriptDisabledHosts(disabledHosts.sorted(), forScriptID: scriptID.uuidString)
     }
 
+    /// Per-script host settings and the site-wide userscripts switch (#835)
+    /// both stop a script; every execution gate goes through here.
     public func isUserScript(_ userScript: UserScript, disabledOnHost host: String) -> Bool {
+        if dataManager.areUserScriptsDisabled(onHost: host) { return true }
         let disabledHosts = dataManager.getUserScriptDisabledHosts(forScriptID: userScript.id.uuidString)
         return !dataManager.userScriptSiteAccess(forScriptID: userScript.id.uuidString)
             .allows(host: host, excludedHosts: disabledHosts)

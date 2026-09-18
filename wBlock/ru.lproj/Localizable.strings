@@ -55,9 +55,7 @@
 "1h" = "1ч";
 "2." = "2.";
 "7d" = "7д";
-"Takes effect when No Autoplay is on." = "Действует, когда включена функция Без автовоспроизведения.";
 "Autoplay on" = "Автовоспроизведение включено";
-"Allow autoplay on this site" = "Разрешить автовоспроизведение на этом сайте";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) записей";
 "\\(index + 1)." = "\\(индекс + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
@@ -1135,10 +1133,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Names and descriptions" = "Имена и описания";
 "Paste URL" = "Вставить URL";
 "Paste URLs" = "Вставить URL-адреса";
-"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "Добавленные сайты пропускают списки фильтров и скриптлеты. Для пользовательских скриптов есть отдельные переключатели.";
-"Enable on this site" = "Включить на этом сайте";
-"Unavailable while this site is disabled." = "Недоступно, пока этот сайт отключен.";
-"Applies filter lists and scriptlets. Userscripts have separate switches." = "Применяет списки фильтров и скриптлеты. Для пользовательских скриптов есть отдельные переключатели.";
 "Not provided" = "Не указано";
 
 "%@ submitted at last apply" = "%@ передано при последнем применении";
@@ -1165,3 +1159,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Info" = "Изменить сведения";
 
 "Get" = "Загрузить";
+"Autoplay" = "Автовоспроизведение";
+"Autoplay off" = "Автовоспроизведение выключено";
+"Userscripts off" = "Пользовательские скрипты выключены";
+"Following the Autoplay setting in the Safari extension." = "Следует настройке автовоспроизведения в расширении Safari.";
+"Overrides the Autoplay setting in the Safari extension." = "Переопределяет настройку автовоспроизведения в расширении Safari.";
+"Runs every enabled userscript that matches this site." = "Запускает все включённые пользовательские скрипты, подходящие этому сайту.";
+"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Применяет списки фильтров и скриптлеты. У пользовательских скриптов, заппера и автовоспроизведения свои переключатели.";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Добавленные сайты пропускают списки фильтров и скриптлеты. У пользовательских скриптов, заппера и автовоспроизведения свои переключатели.";

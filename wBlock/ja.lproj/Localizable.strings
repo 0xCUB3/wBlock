@@ -55,9 +55,7 @@
 "1h" = "1時間";
 "2." = "2.";
 "7d" = "7日";
-"Takes effect when No Autoplay is on." = "「自動再生をブロック」がオンのときに有効になります。";
 "Autoplay on" = "自動再生オン";
-"Allow autoplay on this site" = "このサイトで自動再生を許可";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) 件";
 "\\(index + 1)." = "\\(インデックス + 1)。";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
@@ -1109,10 +1107,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Names and descriptions" = "名前と説明";
 "Paste URL" = "URLをペースト";
 "Paste URLs" = "URLをペースト";
-"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "追加したサイトではフィルターリストとスクリプトレットを適用しません。ユーザースクリプトには別のスイッチがあります。";
-"Enable on this site" = "このサイトで有効にする";
-"Unavailable while this site is disabled." = "このサイトが無効の間は利用できません。";
-"Applies filter lists and scriptlets. Userscripts have separate switches." = "フィルターリストとスクリプトレットを適用します。ユーザースクリプトには別のスイッチがあります。";
 "Not provided" = "未指定";
 "%@ submitted at last apply" = "前回の適用時に%@件送信";
 "Submitted at last apply" = "前回の適用時に送信";
@@ -1134,3 +1128,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Edit Info" = "情報を編集";
 
 "Get" = "入手";
+"Autoplay" = "自動再生";
+"Autoplay off" = "自動再生オフ";
+"Userscripts off" = "ユーザースクリプトオフ";
+"Following the Autoplay setting in the Safari extension." = "Safari機能拡張の自動再生設定に従います。";
+"Overrides the Autoplay setting in the Safari extension." = "Safari機能拡張の自動再生設定を上書きします。";
+"Runs every enabled userscript that matches this site." = "このサイトに一致する有効なユーザースクリプトをすべて実行します。";
+"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "フィルタリストとスクリプトレットを適用します。ユーザースクリプト、ザッパー、自動再生には個別のスイッチがあります。";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "追加したサイトではフィルタリストとスクリプトレットを適用しません。ユーザースクリプト、ザッパー、自動再生には個別のスイッチがあります。";

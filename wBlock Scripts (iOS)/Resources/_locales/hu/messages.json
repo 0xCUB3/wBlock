@@ -11,10 +11,6 @@
     "message": "Betöltés…",
     "description": "Popup status shown while loading state is being resolved."
   },
-  "popup_enable_on_site": {
-    "message": "Engedélyezés ezen a webhelyen",
-    "description": "Label for the site-specific enable toggle in the popup."
-  },
   "popup_element_zapper": {
     "message": "Elemeltávolító",
     "description": "Section title for the element zapper controls in the popup."
@@ -291,16 +287,20 @@
     "message": "A szűrőfrissítés nem indítható el.",
     "description": "Error shown when the background filter update cannot be started."
   },
-  "popup_no_autoplay": {
-    "message": "Automatikus lejátszás tiltása",
-    "description": "Section title for the No Autoplay controls in the popup."
+  "popup_content_filtering": {
+    "message": "Tartalomszűrés",
+    "description": "Label for the popup switch that turns filter lists on or off for the current site."
   },
-  "popup_no_autoplay_allow_site": {
-    "message": "Automatikus lejátszás engedélyezése ezen az oldalon",
-    "description": "Label for the per-site toggle that allows autoplay on the current site."
+  "popup_autoplay": {
+    "message": "Automatikus lejátszás",
+    "description": "Section title for the Autoplay controls in the popup; on by default."
   },
-  "popup_no_autoplay_hint": {
-    "message": "A média szüneteltetve marad, amíg rá nem koppint vagy kattint.",
-    "description": "Hint explaining what No Autoplay does."
+  "popup_autoplay_site": {
+    "message": "Automatikus lejátszás ezen a webhelyen",
+    "description": "Label for the per-site autoplay switch; overrides the global default either way."
+  },
+  "popup_autoplay_hint": {
+    "message": "Kikapcsolva a média szünetel, amíg rá nem koppintasz vagy kattintasz. A webhely kapcsolója felülírja az alapértelmezést.",
+    "description": "Hint explaining the Autoplay switches."
   }
 }

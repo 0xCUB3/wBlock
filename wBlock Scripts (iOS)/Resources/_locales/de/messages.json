@@ -11,10 +11,6 @@
     "message": "Wird geladen…",
     "description": "Popup status shown while loading state is being resolved."
   },
-  "popup_enable_on_site": {
-    "message": "Auf dieser Website aktivieren",
-    "description": "Label for the site-specific enable toggle in the popup."
-  },
   "popup_element_zapper": {
     "message": "Element-Zapper",
     "description": "Section title for the element zapper controls in the popup."
@@ -291,16 +287,20 @@
     "message": "Filteraktualisierung konnte nicht gestartet werden.",
     "description": "Error shown when the background filter update cannot be started."
   },
-  "popup_no_autoplay": {
-    "message": "Keine automatische Wiedergabe",
-    "description": "Section title for the No Autoplay controls in the popup."
+  "popup_content_filtering": {
+    "message": "Inhaltsfilterung",
+    "description": "Label for the popup switch that turns filter lists on or off for the current site."
   },
-  "popup_no_autoplay_allow_site": {
-    "message": "Autoplay auf dieser Website erlauben",
-    "description": "Label for the per-site toggle that allows autoplay on the current site."
+  "popup_autoplay": {
+    "message": "Autoplay",
+    "description": "Section title for the Autoplay controls in the popup; on by default."
   },
-  "popup_no_autoplay_hint": {
-    "message": "Medien bleiben pausiert, bis du sie antippst oder anklickst.",
-    "description": "Hint explaining what No Autoplay does."
+  "popup_autoplay_site": {
+    "message": "Autoplay auf dieser Website",
+    "description": "Label for the per-site autoplay switch; overrides the global default either way."
+  },
+  "popup_autoplay_hint": {
+    "message": "Wenn aus, bleiben Medien pausiert, bis du sie antippst oder anklickst. Der Website-Schalter überschreibt die Voreinstellung.",
+    "description": "Hint explaining the Autoplay switches."
   }
 }

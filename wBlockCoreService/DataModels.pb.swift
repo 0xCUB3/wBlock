@@ -583,6 +583,12 @@ nonisolated struct Wblock_Data_WhitelistData: Sendable {
 
   var noAutoplayAllowedSites: [String] = []
 
+  /// Sites where every userscript is off; per-script hosts still apply elsewhere.
+  var userScriptsDisabledSites: [String] = []
+
+  /// Sites where autoplay is blocked even though it is allowed globally.
+  var noAutoplayBlockedSites: [String] = []
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -1534,7 +1540,7 @@ nonisolated extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftPr
 
 nonisolated extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".WhitelistData"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}disabled_sites\0\u{3}last_updated\0\u{3}filter_disabled_sites\0\u{3}no_autoplay_enabled\0\u{3}no_autoplay_allowed_sites\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}disabled_sites\0\u{3}last_updated\0\u{3}filter_disabled_sites\0\u{3}no_autoplay_enabled\0\u{3}no_autoplay_allowed_sites\0\u{3}user_scripts_disabled_sites\0\u{3}no_autoplay_blocked_sites\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1547,6 +1553,8 @@ nonisolated extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftPro
       case 3: try { try decoder.decodeRepeatedStringField(value: &self.filterDisabledSites) }()
       case 4: try { try decoder.decodeSingularBoolField(value: &self.noAutoplayEnabled) }()
       case 5: try { try decoder.decodeRepeatedStringField(value: &self.noAutoplayAllowedSites) }()
+      case 6: try { try decoder.decodeRepeatedStringField(value: &self.userScriptsDisabledSites) }()
+      case 7: try { try decoder.decodeRepeatedStringField(value: &self.noAutoplayBlockedSites) }()
       default: break
       }
     }
@@ -1568,6 +1576,12 @@ nonisolated extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftPro
     if !self.noAutoplayAllowedSites.isEmpty {
       try visitor.visitRepeatedStringField(value: self.noAutoplayAllowedSites, fieldNumber: 5)
     }
+    if !self.userScriptsDisabledSites.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.userScriptsDisabledSites, fieldNumber: 6)
+    }
+    if !self.noAutoplayBlockedSites.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.noAutoplayBlockedSites, fieldNumber: 7)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1577,6 +1591,8 @@ nonisolated extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftPro
     if lhs.filterDisabledSites != rhs.filterDisabledSites {return false}
     if lhs.noAutoplayEnabled != rhs.noAutoplayEnabled {return false}
     if lhs.noAutoplayAllowedSites != rhs.noAutoplayAllowedSites {return false}
+    if lhs.userScriptsDisabledSites != rhs.userScriptsDisabledSites {return false}
+    if lhs.noAutoplayBlockedSites != rhs.noAutoplayBlockedSites {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

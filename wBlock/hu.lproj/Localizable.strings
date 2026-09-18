@@ -55,9 +55,7 @@
 "1h" = "1h";
 "2." = "2.";
 "7d" = "7d";
-"Takes effect when No Autoplay is on." = "Akkor lép életbe, ha az Automatikus lejátszás tiltása be van kapcsolva.";
 "Autoplay on" = "Automatikus lejátszás be";
-"Allow autoplay on this site" = "Automatikus lejátszás engedélyezése ezen a webhelyen";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) bejegyzés";
 "\\(index + 1)." = "\\(index + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
@@ -1135,10 +1133,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Names and descriptions" = "Nevek és leírások";
 "Paste URL" = "URL beillesztése";
 "Paste URLs" = "URL-ek beillesztése";
-"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "A hozzáadott webhelyeken a szűrőlisták és a scriptletek kimaradnak. A userscripteknek külön kapcsolóik vannak.";
-"Enable on this site" = "Engedélyezés ezen a webhelyen";
-"Unavailable while this site is disabled." = "Nem érhető el, amíg ez a webhely le van tiltva.";
-"Applies filter lists and scriptlets. Userscripts have separate switches." = "Alkalmazza a szűrőlistákat és a scriptleteket. A userscripteknek külön kapcsolóik vannak.";
 "Not provided" = "Nincs megadva";
 
 "%@ submitted at last apply" = "%@ elküldve a legutóbbi alkalmazáskor";
@@ -1165,3 +1159,11 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Edit Info" = "Adatok szerkesztése";
 
 "Get" = "Letöltés";
+"Autoplay" = "Automatikus lejátszás";
+"Autoplay off" = "Automatikus lejátszás ki";
+"Userscripts off" = "Userscriptek ki";
+"Following the Autoplay setting in the Safari extension." = "A Safari-bővítmény automatikus lejátszás beállítását követi.";
+"Overrides the Autoplay setting in the Safari extension." = "Felülírja a Safari-bővítmény automatikus lejátszás beállítását.";
+"Runs every enabled userscript that matches this site." = "Minden engedélyezett, erre a webhelyre illő userscriptet futtat.";
+"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Szűrőlistákat és scriptleteket alkalmaz. A userscriptek, a zapper és az automatikus lejátszás külön kapcsolóval rendelkeznek.";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "A hozzáadott webhelyek kihagyják a szűrőlistákat és scriptleteket. A userscriptek, a zapper és az automatikus lejátszás külön kapcsolóval rendelkeznek.";

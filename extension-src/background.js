@@ -26632,6 +26632,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         "logExtensionDiagnostic", "syncZapperRules", "getZapperRules",
         "getBlockingPausedState", "getResumeRequestStatus", "resumeBlocking",
         "getSiteDisabledState", "setSiteDisabledState", "setSiteZapperDisabled",
+        "getSiteFilterDisabledState", "setSiteFilterDisabledState", "setUserScriptsSiteDisabled",
         "getPageUserScripts", "setUserScriptSiteDisabledState", "getNoAutoplayState",
         "setNoAutoplaySiteAllowed", "setNoAutoplayEnabled", "openContainingApp"
       ]);

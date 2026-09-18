@@ -11,10 +11,6 @@
     "message": "Φόρτωση…",
     "description": "Popup status shown while loading state is being resolved."
   },
-  "popup_enable_on_site": {
-    "message": "Ενεργοποίηση σε αυτόν τον ιστότοπο",
-    "description": "Label for the site-specific enable toggle in the popup."
-  },
   "popup_element_zapper": {
     "message": "Αποκλεισμός στοιχείου",
     "description": "Section title for the element zapper controls in the popup."
@@ -291,16 +287,20 @@
     "message": "Δεν ήταν δυνατή η έναρξη της ενημέρωσης φίλτρων.",
     "description": "Error shown when the background filter update cannot be started."
   },
-  "popup_no_autoplay": {
-    "message": "Χωρίς αυτόματη αναπαραγωγή",
-    "description": "Section title for the No Autoplay controls in the popup."
+  "popup_content_filtering": {
+    "message": "Φιλτράρισμα περιεχομένου",
+    "description": "Label for the popup switch that turns filter lists on or off for the current site."
   },
-  "popup_no_autoplay_allow_site": {
-    "message": "Να επιτρέπεται η αυτόματη αναπαραγωγή σε αυτόν τον ιστότοπο",
-    "description": "Label for the per-site toggle that allows autoplay on the current site."
+  "popup_autoplay": {
+    "message": "Αυτόματη αναπαραγωγή",
+    "description": "Section title for the Autoplay controls in the popup; on by default."
   },
-  "popup_no_autoplay_hint": {
-    "message": "Τα πολυμέσα παραμένουν σε παύση μέχρι να τα πατήσετε ή να κάνετε κλικ.",
-    "description": "Hint explaining what No Autoplay does."
+  "popup_autoplay_site": {
+    "message": "Αυτόματη αναπαραγωγή σε αυτόν τον ιστότοπο",
+    "description": "Label for the per-site autoplay switch; overrides the global default either way."
+  },
+  "popup_autoplay_hint": {
+    "message": "Όταν είναι απενεργοποιημένο, τα μέσα μένουν σε παύση μέχρι να τα πατήσετε. Ο διακόπτης ιστότοπου υπερισχύει της προεπιλογής.",
+    "description": "Hint explaining the Autoplay switches."
   }
 }

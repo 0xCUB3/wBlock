@@ -55,9 +55,7 @@
 "1h" = "1h";
 "2." = "2.";
 "7d" = "7d";
-"Takes effect when No Autoplay is on." = "Wirkt, wenn Keine automatische Wiedergabe aktiv ist.";
 "Autoplay on" = "Autoplay an";
-"Allow autoplay on this site" = "Autoplay auf dieser Website erlauben";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) Einträge";
 "\\(index + 1)." = "\\(Index + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
@@ -1135,10 +1133,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Names and descriptions" = "Namen und Beschreibungen";
 "Paste URL" = "URL einfügen";
 "Paste URLs" = "URLs einfügen";
-"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "Hinzugefügte Websites überspringen Filterlisten und Scriptlets. Userscripts haben eigene Schalter.";
-"Enable on this site" = "Auf dieser Website aktivieren";
-"Unavailable while this site is disabled." = "Nicht verfügbar, solange diese Website deaktiviert ist.";
-"Applies filter lists and scriptlets. Userscripts have separate switches." = "Wendet Filterlisten und Scriptlets an. Userscripts haben eigene Schalter.";
 "Not provided" = "Nicht angegeben";
 
 "%@ submitted at last apply" = "%@ beim letzten Anwenden übergeben";
@@ -1165,3 +1159,11 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Edit Info" = "Info bearbeiten";
 
 "Get" = "Laden";
+"Autoplay" = "Autoplay";
+"Autoplay off" = "Autoplay aus";
+"Userscripts off" = "Userscripts aus";
+"Following the Autoplay setting in the Safari extension." = "Folgt der Autoplay-Einstellung in der Safari-Erweiterung.";
+"Overrides the Autoplay setting in the Safari extension." = "Überschreibt die Autoplay-Einstellung in der Safari-Erweiterung.";
+"Runs every enabled userscript that matches this site." = "Führt jedes aktivierte Userscript aus, das zu dieser Website passt.";
+"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Wendet Filterlisten und Scriptlets an. Userscripts, der Zapper und Autoplay haben eigene Schalter.";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Hinzugefügte Websites überspringen Filterlisten und Scriptlets. Userscripts, der Zapper und Autoplay haben eigene Schalter.";

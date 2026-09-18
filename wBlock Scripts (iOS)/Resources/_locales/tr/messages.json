@@ -11,10 +11,6 @@
     "message": "Yükleniyor…",
     "description": "Popup status shown while loading state is being resolved."
   },
-  "popup_enable_on_site": {
-    "message": "Bu sitede etkinleştir",
-    "description": "Label for the site-specific enable toggle in the popup."
-  },
   "popup_element_zapper": {
     "message": "Öğe Zaplayıcı",
     "description": "Section title for the element zapper controls in the popup."
@@ -291,16 +287,20 @@
     "message": "Filtre güncellemesi başlatılamadı.",
     "description": "Error shown when the background filter update cannot be started."
   },
-  "popup_no_autoplay": {
-    "message": "Otomatik oynatma yok",
-    "description": "Section title for the No Autoplay controls in the popup."
+  "popup_content_filtering": {
+    "message": "İçerik Filtreleme",
+    "description": "Label for the popup switch that turns filter lists on or off for the current site."
   },
-  "popup_no_autoplay_allow_site": {
-    "message": "Bu sitede otomatik oynatmaya izin ver",
-    "description": "Label for the per-site toggle that allows autoplay on the current site."
+  "popup_autoplay": {
+    "message": "Otomatik Oynatma",
+    "description": "Section title for the Autoplay controls in the popup; on by default."
   },
-  "popup_no_autoplay_hint": {
-    "message": "Siz dokunana veya tıklayana kadar medya duraklatılmış kalır.",
-    "description": "Hint explaining what No Autoplay does."
+  "popup_autoplay_site": {
+    "message": "Bu sitede otomatik oynatma",
+    "description": "Label for the per-site autoplay switch; overrides the global default either way."
+  },
+  "popup_autoplay_hint": {
+    "message": "Kapalıyken medya siz dokunana veya tıklayana kadar duraklatılmış kalır. Site anahtarı varsayılanı geçersiz kılar.",
+    "description": "Hint explaining the Autoplay switches."
   }
 }

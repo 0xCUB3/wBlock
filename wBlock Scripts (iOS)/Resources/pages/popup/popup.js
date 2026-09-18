@@ -908,14 +908,21 @@ async function resumeBlocking() {
     return { status: 'unavailable' };
 }
 
+// The popup's main switch is Content Filtering (#835): it reads and writes
+// the filter-only list, so userscripts and the zapper keep their own
+// switches. A site on the master whitelist reports disabled too, since
+// filtering is off there as well, and the switch stays locked for it.
+let siteWhitelisted = false;
+
 async function getSiteDisabledState(host) {
     if (!host) return false;
     try {
         const response = await sendNativeMessageWithTimeout({
-            action: 'getSiteDisabledState',
+            action: 'getSiteFilterDisabledState',
             host,
         });
-        return Boolean(response && response.disabled);
+        siteWhitelisted = Boolean(response && response.whitelisted);
+        return Boolean(response && (response.disabled || response.whitelisted));
     } catch (error) {
         console.error('[wBlock] Failed to get disabled state:', error);
         return null;
@@ -934,10 +941,28 @@ async function readSiteDisabledStateAfterTimeout(targetHost) {
 async function setSiteDisabledState(host, disabled) {
     if (!host) return;
     return sendNativeMessageWithTimeout({
-        action: 'setSiteDisabledState',
+        action: 'setSiteFilterDisabledState',
         host,
         disabled: Boolean(disabled),
     }, 10000);
+}
+
+async function setUserScriptsSiteDisabled(host, disabled) {
+    if (!host) return { ok: false, disabled: false };
+    const response = await sendNativeMessageWithTimeout({
+        action: 'setUserScriptsSiteDisabled',
+        host,
+        disabled: Boolean(disabled),
+    }, 5000);
+    if (!response || response.ok !== true || typeof response.disabled !== 'boolean') {
+        throw new Error((response && response.error) || 'Invalid userscripts site state response');
+    }
+    try {
+        await browser.runtime.sendMessage({ action: 'wblock:clearCache' });
+    } catch (error) {
+        console.warn('[wBlock] Failed to clear cache after userscripts site change:', error);
+    }
+    return response;
 }
 
 async function setSiteZapperDisabled(host, disabled) {
@@ -1060,6 +1085,8 @@ async function fetchUserscriptCommands(tabId) {
     }
 }
 
+let userScriptsSiteDisabled = false;
+
 async function fetchPageUserScripts(url) {
     if (!url) return [];
     try {
@@ -1070,6 +1097,7 @@ async function fetchPageUserScripts(url) {
         if (!response || !Array.isArray(response.userScripts)) {
             return [];
         }
+        userScriptsSiteDisabled = response.siteDisabled === true;
         return response.userScripts.filter((script) => (
             script
             && typeof script.id === 'string'
@@ -1119,6 +1147,11 @@ function renderPageUserScripts(scripts, controlsDisabled = false) {
 
     section.hidden = false;
     if (empty) empty.hidden = true;
+    const siteToggle = document.getElementById('userscripts-site-toggle');
+    if (siteToggle) {
+        siteToggle.checked = !userScriptsSiteDisabled;
+        siteToggle.disabled = controlsDisabled;
+    }
 
     for (const script of normalizedScripts) {
         const idSuffix = String(script.id).replace(/[^A-Za-z0-9_-]/g, '_');
@@ -1149,7 +1182,9 @@ function renderPageUserScripts(scripts, controlsDisabled = false) {
         input.setAttribute('aria-labelledby', nameId);
         input.setAttribute('aria-label', script.name);
         input.checked = !script.disabledForSite;
-        input.disabled = controlsDisabled;
+        // The site switch already stops every script; the per-script rows
+        // show their own state but cannot be flipped until it is back on.
+        input.disabled = controlsDisabled || userScriptsSiteDisabled;
 
         const slider = document.createElement('span');
         slider.className = 'slider';
@@ -1197,6 +1232,13 @@ function isNativeNoAutoplayState(response) {
     );
 }
 
+// With a host, native `enabled` is the effective per-site answer; the global
+// switch comes from `globalEnabled` when the host reports it (#835).
+function globalNoAutoplayEnabled(state) {
+    if (state && typeof state.globalEnabled === 'boolean') return state.globalEnabled;
+    return Boolean(state && state.enabled);
+}
+
 async function readNoAutoplayLocalCache(siteHost) {
     const keys = [NO_AUTOPLAY_ENABLED_KEY];
     if (siteHost) keys.push(noAutoplayAllowKey(siteHost));
@@ -1233,7 +1275,12 @@ async function fetchNativeNoAutoplayState(siteHost) {
         const message = { action: 'getNoAutoplayState' };
         if (siteHost) message.host = siteHost;
         const response = await sendNativeMessageWithTimeout(message);
-        return isNativeNoAutoplayState(response) ? response : null;
+        if (!isNativeNoAutoplayState(response)) return null;
+        return {
+            enabled: response.enabled,
+            siteAllowed: response.siteAllowed,
+            globalEnabled: typeof response.globalEnabled === 'boolean' ? response.globalEnabled : response.enabled,
+        };
     } catch (error) {
         console.warn('[wBlock] Failed to read native No Autoplay state:', error);
         return null;
@@ -1343,12 +1390,12 @@ async function getNoAutoplayState(siteHost) {
         if (local !== null) {
             return local;
         }
-        return { enabled: native.enabled, siteAllowed: native.siteAllowed };
+        return native;
     }
 
     native = await fetchNativeNoAutoplayState(siteHost) || native;
     await mirrorNoAutoplayLocalCache(native.enabled, siteHost, native.siteAllowed);
-    return { enabled: native.enabled, siteAllowed: native.siteAllowed };
+    return native;
 }
 
 async function setNoAutoplayEnabled(enabled) {
@@ -1379,16 +1426,19 @@ async function setNoAutoplaySiteAllowed(siteHost, allowed) {
     await mirrorNoAutoplayLocalCache(response.enabled, siteHost, response.siteAllowed);
 }
 
+// The global switch reads as Autoplay (on by default); `state.enabled` is
+// still the native No Autoplay flag. The site switch is the effective
+// per-site answer and is available whatever the global setting (#835).
 function updateNoAutoplayControls(state, options = {}) {
     const enabledToggle = document.getElementById('no-autoplay-enabled-toggle');
     const siteRow = document.getElementById('no-autoplay-site-row');
     const siteToggle = document.getElementById('no-autoplay-site-toggle');
     const locked = options.locked === true;
     if (enabledToggle) {
-        enabledToggle.checked = state.enabled;
+        enabledToggle.checked = !globalNoAutoplayEnabled(state);
         enabledToggle.disabled = locked;
     }
-    if (siteRow) siteRow.hidden = !state.enabled || !options.host;
+    if (siteRow) siteRow.hidden = !options.host;
     if (siteToggle) {
         siteToggle.checked = state.siteAllowed;
         siteToggle.disabled = locked || options.siteDisabled === true;
@@ -1583,7 +1633,8 @@ function setupListeners() {
 
     if (noAutoplayEnabledToggle) {
         noAutoplayEnabledToggle.addEventListener('change', async () => {
-            const nextEnabled = noAutoplayEnabledToggle.checked;
+            // Checked means autoplay allowed, which is No Autoplay off.
+            const nextEnabled = !noAutoplayEnabledToggle.checked;
             try {
                 setError('');
                 noAutoplayEnabledToggle.disabled = true;
@@ -1593,9 +1644,31 @@ function setupListeners() {
             } catch (error) {
                 console.error('[wBlock] Failed to update No Autoplay state:', error);
                 setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
-                noAutoplayEnabledToggle.checked = !nextEnabled;
+                noAutoplayEnabledToggle.checked = nextEnabled;
             } finally {
                 noAutoplayEnabledToggle.disabled = false;
+            }
+        });
+    }
+
+    const userscriptsSiteToggle = document.getElementById('userscripts-site-toggle');
+    if (userscriptsSiteToggle) {
+        userscriptsSiteToggle.addEventListener('change', async () => {
+            const nextDisabled = !userscriptsSiteToggle.checked;
+            try {
+                setError('');
+                userscriptsSiteToggle.disabled = true;
+                const response = await setUserScriptsSiteDisabled(host, nextDisabled);
+                userScriptsSiteDisabled = response.disabled;
+                const scripts = await fetchPageUserScripts(tab && tab.url);
+                renderPageUserScripts(scripts, false);
+                await reloadActiveTab(tab && tab.id);
+            } catch (error) {
+                console.error('[wBlock] Failed to update userscripts site setting:', error);
+                setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
+                userscriptsSiteToggle.checked = nextDisabled;
+            } finally {
+                userscriptsSiteToggle.disabled = false;
             }
         });
     }
@@ -1898,7 +1971,8 @@ async function refreshUi() {
             disableToggle.disabled = true;
         } else if (!skipSiteToggleCommit) {
             disableToggle.checked = !siteDisabled;
-            disableToggle.disabled = filtersPaused;
+            // A whitelisted site is off as a whole; that is undone in Site Settings.
+            disableToggle.disabled = filtersPaused || siteWhitelisted;
         }
     }
     if (pausedPrompt) pausedPrompt.hidden = !blockingPaused;
@@ -1919,12 +1993,14 @@ async function refreshUi() {
         resumeButton.disabled = !(blockingPaused && resumeAvailable);
         resumeButton.removeAttribute('aria-busy');
     }
+    // Only the master whitelist turns the rest of the panel off. Content
+    // Filtering alone leaves the zapper, autoplay, and userscripts usable.
     if (zapperEnabledToggle) {
         zapperEnabledToggle.checked = !zapperRulesDisabled;
-        zapperEnabledToggle.disabled = siteDisabled || zapperPaused;
+        zapperEnabledToggle.disabled = siteWhitelisted || zapperPaused;
     }
-    noAutoplaySiteDisabled = siteDisabled;
-    updateNoAutoplayControls(noAutoplayState, { host, siteDisabled });
+    noAutoplaySiteDisabled = siteWhitelisted;
+    updateNoAutoplayControls(noAutoplayState, { host, siteDisabled: siteWhitelisted });
     const shouldCommitSiteStatus = !skipSiteToggleCommit || blockingPaused;
     if (shouldCommitSiteStatus) {
         if (siteDisabledUnknown && !blockingPaused) {
@@ -1944,7 +2020,7 @@ async function refreshUi() {
     }
 
     if (zapperActivate) {
-        zapperActivate.disabled = siteDisabled || zapperPaused || zapperRulesDisabled;
+        zapperActivate.disabled = siteWhitelisted || zapperPaused || zapperRulesDisabled;
     }
     if (rulesToggle) {
         rulesToggle.disabled = zapperPaused;

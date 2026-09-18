@@ -55,9 +55,7 @@
 "1h" = "1s";
 "2." = "2.";
 "7d" = "7g";
-"Takes effect when No Autoplay is on." = "Otomatik Oynatma Kapalı olduğunda geçerli olur.";
 "Autoplay on" = "Otomatik oynatma açık";
-"Allow autoplay on this site" = "Bu sitede otomatik oynatmaya izin ver";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) girdi";
 "\\(index + 1)." = "\\(index + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
@@ -1140,13 +1138,9 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 "Paste URLs" = "URL'leri yapıştırın";
 
-"Added sites skip filter lists and scriptlets. Userscripts have separate switches." = "Eklenen siteler; filtre listelerini ve scriptlet'leri atlar. Kullanıcı betiklerinin ayarları ayrıdır.";
 
-"Enable on this site" = "Bu sitede etkinleştir";
 
-"Unavailable while this site is disabled." = "Bu site devre dışı bırakıldığında kullanılamaz.";
 
-"Applies filter lists and scriptlets. Userscripts have separate switches." = "Filtre listelerini ve scriptlet'leri uygular. Kullanıcı betiklerinin ayarları ayrıdır.";
 
 "Not provided" = "Belirtilmedi";
 
@@ -1174,3 +1168,11 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Edit Info" = "Bilgileri Düzenle";
 
 "Get" = "Al";
+"Autoplay" = "Otomatik Oynatma";
+"Autoplay off" = "Otomatik oynatma kapalı";
+"Userscripts off" = "Kullanıcı betikleri kapalı";
+"Following the Autoplay setting in the Safari extension." = "Safari uzantısındaki otomatik oynatma ayarını izler.";
+"Overrides the Autoplay setting in the Safari extension." = "Safari uzantısındaki otomatik oynatma ayarını geçersiz kılar.";
+"Runs every enabled userscript that matches this site." = "Bu siteyle eşleşen tüm etkin kullanıcı betiklerini çalıştırır.";
+"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Filtre listelerini ve scriptletleri uygular. Kullanıcı betikleri, zapper ve otomatik oynatmanın kendi anahtarları vardır.";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Eklenen siteler filtre listelerini ve scriptletleri atlar. Kullanıcı betikleri, zapper ve otomatik oynatmanın kendi anahtarları vardır.";

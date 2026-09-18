@@ -465,6 +465,24 @@ body {
   gap: 8px;
 }
 
+/* Disclosure with a trailing switch: the button keeps its full-row hit area
+   and the switch sits where every other row places its control. */
+.disclosure-row {
+  display: flex;
+  align-items: center;
+}
+
+.disclosure-row .disclosure {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 8px;
+}
+
+.disclosure-row .switch {
+  flex: 0 0 auto;
+  margin-right: 14px;
+}
+
 .rules {
   margin: 0;
   display: flex;

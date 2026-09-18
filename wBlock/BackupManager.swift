@@ -15,6 +15,8 @@ struct WBlockBackup: Codable, Sendable {
     var filterDisabledDomains: [String]
     var noAutoplayEnabled: Bool = false
     var noAutoplayAllowedSites: [String] = []
+    var noAutoplayBlockedSites: [String] = []
+    var userScriptsDisabledSites: [String] = []
     var zapperRules: [String: [String]]
     var disabledZapperDomains: [String]
 
@@ -207,6 +209,8 @@ struct WBlockBackup: Codable, Sendable {
         filterDisabledDomains: [String] = [],
         noAutoplayEnabled: Bool = false,
         noAutoplayAllowedSites: [String] = [],
+        noAutoplayBlockedSites: [String] = [],
+        userScriptsDisabledSites: [String] = [],
         zapperRules: [String: [String]],
         disabledZapperDomains: [String],
         userScripts: [UserScriptEntry],
@@ -228,6 +232,8 @@ struct WBlockBackup: Codable, Sendable {
         self.filterDisabledDomains = filterDisabledDomains
         self.noAutoplayEnabled = noAutoplayEnabled
         self.noAutoplayAllowedSites = noAutoplayAllowedSites
+        self.noAutoplayBlockedSites = noAutoplayBlockedSites
+        self.userScriptsDisabledSites = userScriptsDisabledSites
         self.zapperRules = zapperRules
         self.disabledZapperDomains = disabledZapperDomains
         self.userScripts = userScripts
@@ -251,6 +257,8 @@ struct WBlockBackup: Codable, Sendable {
         case filterDisabledDomains
         case noAutoplayEnabled
         case noAutoplayAllowedSites
+        case noAutoplayBlockedSites
+        case userScriptsDisabledSites
         case zapperRules
         case disabledZapperDomains
         case userScripts
@@ -272,6 +280,8 @@ struct WBlockBackup: Codable, Sendable {
         filterDisabledDomains = try container.decodeIfPresent([String].self, forKey: .filterDisabledDomains) ?? []
         noAutoplayEnabled = try container.decodeIfPresent(Bool.self, forKey: .noAutoplayEnabled) ?? false
         noAutoplayAllowedSites = try container.decodeIfPresent([String].self, forKey: .noAutoplayAllowedSites) ?? []
+        noAutoplayBlockedSites = try container.decodeIfPresent([String].self, forKey: .noAutoplayBlockedSites) ?? []
+        userScriptsDisabledSites = try container.decodeIfPresent([String].self, forKey: .userScriptsDisabledSites) ?? []
         zapperRules = try container.decode([String: [String]].self, forKey: .zapperRules)
         disabledZapperDomains = try container.decodeIfPresent([String].self, forKey: .disabledZapperDomains) ?? []
         userScripts = try container.decodeIfPresent([UserScriptEntry].self, forKey: .userScripts) ?? []
@@ -559,6 +569,8 @@ enum BackupManager {
             filterDisabledDomains: filterDisabledDomains,
             noAutoplayEnabled: noAutoplayEnabled,
             noAutoplayAllowedSites: noAutoplayAllowedSites,
+            noAutoplayBlockedSites: filterManager.dataManager.noAutoplayBlockedSites,
+            userScriptsDisabledSites: filterManager.dataManager.userScriptsDisabledSites,
             zapperRules: zapperRules,
             disabledZapperDomains: disabledZapperDomains,
             userScripts: userScriptEntries,
@@ -634,6 +646,8 @@ enum BackupManager {
         await filterManager.dataManager.setFilterDisabledDomains(backup.filterDisabledDomains)
         await filterManager.dataManager.setNoAutoplayEnabled(backup.noAutoplayEnabled)
         await filterManager.dataManager.setNoAutoplayAllowedSites(backup.noAutoplayAllowedSites)
+        await filterManager.dataManager.setNoAutoplayBlockedSites(backup.noAutoplayBlockedSites)
+        await filterManager.dataManager.setUserScriptsDisabledSites(backup.userScriptsDisabledSites)
 
         // 4. Restore zapper rules (to protobuf)
         let disabledZapperHosts = Set(backup.disabledZapperDomains)

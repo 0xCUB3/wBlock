@@ -11,10 +11,6 @@
     "message": "로딩 중…",
     "description": "Popup status shown while loading state is being resolved."
   },
-  "popup_enable_on_site": {
-    "message": "이 사이트에서 활성화",
-    "description": "Label for the site-specific enable toggle in the popup."
-  },
   "popup_element_zapper": {
     "message": "요소 제거기",
     "description": "Section title for the element zapper controls in the popup."
@@ -291,16 +287,20 @@
     "message": "필터 업데이트를 시작할 수 없습니다.",
     "description": "Error shown when the background filter update cannot be started."
   },
-  "popup_no_autoplay": {
-    "message": "자동 재생 차단",
-    "description": "Section title for the No Autoplay controls in the popup."
+  "popup_content_filtering": {
+    "message": "콘텐츠 필터링",
+    "description": "Label for the popup switch that turns filter lists on or off for the current site."
   },
-  "popup_no_autoplay_allow_site": {
-    "message": "이 사이트에서 자동 재생 허용",
-    "description": "Label for the per-site toggle that allows autoplay on the current site."
+  "popup_autoplay": {
+    "message": "자동 재생",
+    "description": "Section title for the Autoplay controls in the popup; on by default."
   },
-  "popup_no_autoplay_hint": {
-    "message": "탭하거나 클릭하기 전에는 미디어가 일시 정지된 상태로 유지됩니다.",
-    "description": "Hint explaining what No Autoplay does."
+  "popup_autoplay_site": {
+    "message": "이 사이트에서 자동 재생",
+    "description": "Label for the per-site autoplay switch; overrides the global default either way."
+  },
+  "popup_autoplay_hint": {
+    "message": "끄면 탭하거나 클릭할 때까지 미디어가 일시정지 상태로 유지됩니다. 사이트 스위치가 기본값보다 우선합니다.",
+    "description": "Hint explaining the Autoplay switches."
   }
 }

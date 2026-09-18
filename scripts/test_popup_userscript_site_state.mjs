@@ -204,7 +204,7 @@ const sandbox = {
         if (message?.action === "getBlockingPausedState") {
           return { paused: false, filtersPaused: false, userScriptsPaused: false, elementZapperPaused: false, resumeAvailable: false };
         }
-        if (message?.action === "getSiteDisabledState") return { disabled: true };
+        if (message?.action === "getSiteFilterDisabledState") return { disabled: true, whitelisted: false };
         if (message?.action === "getPageUserScripts") return { userScripts: siteScripts.map((script) => ({ ...script })) };
         if (message?.action === "getZapperRules") return { ok: true, rules: [], disabled: false };
         if (message?.action === "getNoAutoplayState") return { enabled: true, siteAllowed: false };

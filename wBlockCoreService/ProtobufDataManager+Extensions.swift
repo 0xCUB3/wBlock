@@ -344,6 +344,91 @@ extension ProtobufDataManager {
             .contains(normalizedHost)
     }
 
+    public var noAutoplayBlockedSites: [String] {
+        appData.whitelist.noAutoplayBlockedSites
+    }
+
+    public func isNoAutoplayBlocked(onHost host: String) -> Bool {
+        guard let normalizedHost = DisabledSitesNormalizer.normalizedDomain(host) else {
+            return false
+        }
+        return DisabledSitesNormalizer.normalizedDomains(from: noAutoplayBlockedSites)
+            .contains(normalizedHost)
+    }
+
+    /// Whether media on `host` may autoplay. The per-site lists override the
+    /// global switch in both directions, so a site can be set either way no
+    /// matter how No Autoplay is configured (#835).
+    public func isAutoplayAllowed(onHost host: String) -> Bool {
+        if isNoAutoplayBlocked(onHost: host) { return false }
+        if isNoAutoplayAllowed(onHost: host) { return true }
+        return !isNoAutoplayEnabled
+    }
+
+    /// Sets the site's autoplay choice relative to the global switch: a value
+    /// equal to the global default clears both overrides.
+    @discardableResult
+    public func setAutoplayAllowed(_ allowed: Bool, onHost host: String) async -> Bool {
+        guard let normalizedHost = DisabledSitesNormalizer.normalizedDomain(host) else {
+            return false
+        }
+        return await updateDataImmediately { data in
+            var allowedSites = Set(DisabledSitesNormalizer.normalizedDomains(from: data.whitelist.noAutoplayAllowedSites))
+            var blockedSites = Set(DisabledSitesNormalizer.normalizedDomains(from: data.whitelist.noAutoplayBlockedSites))
+            allowedSites.remove(normalizedHost)
+            blockedSites.remove(normalizedHost)
+            let globalAllows = !data.whitelist.noAutoplayEnabled
+            if allowed != globalAllows {
+                if allowed { allowedSites.insert(normalizedHost) } else { blockedSites.insert(normalizedHost) }
+            }
+            data.whitelist.noAutoplayAllowedSites = Array(allowedSites).sorted()
+            data.whitelist.noAutoplayBlockedSites = Array(blockedSites).sorted()
+            data.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
+    @discardableResult
+    public func setNoAutoplayBlockedSites(_ sites: [String]) async -> Bool {
+        let normalized = DisabledSitesNormalizer.normalizedDomains(from: sites)
+        return await updateDataImmediately { data in
+            data.whitelist.noAutoplayBlockedSites = normalized
+            data.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
+    // MARK: - Userscripts per site
+
+    public var userScriptsDisabledSites: [String] {
+        appData.whitelist.userScriptsDisabledSites
+    }
+
+    public func areUserScriptsDisabled(onHost host: String) -> Bool {
+        guard !host.isEmpty else { return false }
+        return HostMatcher.isHostDisabled(host: host, disabledSites: userScriptsDisabledSites)
+    }
+
+    @discardableResult
+    public func setUserScriptsDisabled(_ disabled: Bool, onHost host: String) async -> Bool {
+        guard let normalizedHost = DisabledSitesNormalizer.normalizedDomain(host) else {
+            return false
+        }
+        return await updateDataImmediately { data in
+            var sites = Set(DisabledSitesNormalizer.normalizedDomains(from: data.whitelist.userScriptsDisabledSites))
+            if disabled { sites.insert(normalizedHost) } else { sites.remove(normalizedHost) }
+            data.whitelist.userScriptsDisabledSites = Array(sites).sorted()
+            data.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
+    @discardableResult
+    public func setUserScriptsDisabledSites(_ sites: [String]) async -> Bool {
+        let normalized = DisabledSitesNormalizer.normalizedDomains(from: sites)
+        return await updateDataImmediately { data in
+            data.whitelist.userScriptsDisabledSites = normalized
+            data.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
     // MARK: - App Settings
     public func updateAppSettings(
         hasCompletedOnboarding: Bool? = nil,
