@@ -217,7 +217,7 @@ struct ToolbarSearchField: View {
         }
         .padding(.horizontal, 10)
         .frame(width: 200, height: fieldHeight)
-        .background(fieldBackground)
+        .modifier(ToolbarSearchFieldChrome())
         .background(ToolbarFieldFocuser(request: focusRequests))
         .animation(.easeOut(duration: 0.15), value: text.isEmpty)
         .onAppear { if isExpanded { requestFocus() } }
@@ -231,20 +231,6 @@ struct ToolbarSearchField: View {
         return 28
     }
 
-    @ViewBuilder
-    private var fieldBackground: some View {
-        if #available(macOS 26.0, *) {
-            Capsule().fill(.clear).glassEffect(.regular, in: .capsule)
-        } else {
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(Color.primary.opacity(0.06))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
-                )
-        }
-    }
-
     private func requestFocus() {
         focusRequests += 1
         DispatchQueue.main.async { isExpanded = false }
@@ -254,6 +240,26 @@ struct ToolbarSearchField: View {
         text = ""
         isFocused = false
         NSApp.keyWindow?.makeFirstResponder(nil)
+    }
+}
+
+/// The glass effect is applied to the field itself rather than to a shape in
+/// its background. A glass shape placed in `.background` renders above the
+/// field's text on macOS 26, hiding what the user types.
+private struct ToolbarSearchFieldChrome: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *) {
+            content.glassEffect(.regular, in: .capsule)
+        } else {
+            content.background(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.primary.opacity(0.06))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
+                    )
+            )
+        }
     }
 }
 
