@@ -658,7 +658,7 @@ struct ContentView: View {
     }
 
     private func categoryHeader(_ category: FilterListCategory) -> some View {
-        ListCategoryHeader(title: LocalizedStringKey(category == .foreign ? "Regional" : category.rawValue),
+        ListCategoryHeader(title: LocalizedStringKey(category.localizedName),
                            info: { selectedCategoryInfo = category },
                            anchorID: category.id,
                            isExpanded: foreignExpansion(for: category))
@@ -1125,11 +1125,17 @@ private struct ApplyChangesToolbarLabel: View {
     let symbolName: String
 
     var body: some View {
+        // toolbarVerticalEdge ships with the iOS 27 SDK; older toolchains
+        // (CI's Xcode 26) compile the horizontal label only.
+        #if compiler(>=6.4)
         if #available(iOS 27.1, *) {
             VerticalBarAwareApplyLabel(hasPendingChanges: hasPendingChanges, symbolName: symbolName)
         } else {
             horizontalLabel
         }
+        #else
+        horizontalLabel
+        #endif
     }
 
     @ViewBuilder
@@ -1141,6 +1147,7 @@ private struct ApplyChangesToolbarLabel: View {
         }
     }
 
+    #if compiler(>=6.4)
     @available(iOS 27.1, *)
     private struct VerticalBarAwareApplyLabel: View {
         let hasPendingChanges: Bool
@@ -1160,6 +1167,7 @@ private struct ApplyChangesToolbarLabel: View {
             }
         }
     }
+    #endif
 }
 
 /// Size class rather than idiom decides the presentation, so the regular-width

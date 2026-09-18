@@ -450,7 +450,7 @@ private struct ToolbarVisibilityPriorityContent<Base: ToolbarContent>: ToolbarCo
     let priority: ToolbarVisibilityPriorityCompat
 
     var body: some ToolbarContent {
-        #if os(iOS)
+        #if os(iOS) && compiler(>=6.4)
         if #available(iOS 27.0, *) {
             base.visibilityPriority(priority == .high ? .high : .low)
         } else {
