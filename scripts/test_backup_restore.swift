@@ -27,6 +27,8 @@ actor ConcurrentLogManager {
     var filterDisabledSites: [String] = []
     var isNoAutoplayEnabled = false
     var noAutoplayAllowedSites: [String] = []
+    var noAutoplayBlockedSites: [String] = []
+    var userScriptsDisabledSites: [String] = []
     var autoUpdateEnabled = true
     var autoUpdateIntervalHours = 6.0
     var disabledHosts: [String: [String]] = [:]
@@ -47,6 +49,8 @@ actor ConcurrentLogManager {
     func setFilterDisabledDomains(_ value: [String]) async { filterDisabledSites = value }
     func setNoAutoplayEnabled(_ value: Bool) async { isNoAutoplayEnabled = value }
     func setNoAutoplayAllowedSites(_ value: [String]) async { noAutoplayAllowedSites = value }
+    func setNoAutoplayBlockedSites(_ value: [String]) async { noAutoplayBlockedSites = value }
+    func setUserScriptsDisabledSites(_ value: [String]) async { userScriptsDisabledSites = value }
     func setAutoUpdateEnabled(_ value: Bool) async { autoUpdateEnabled = value }
     func setAutoUpdateIntervalHours(_ value: Double) async { autoUpdateIntervalHours = value }
     func setHasCompletedOnboarding(_ value: Bool) async {}
