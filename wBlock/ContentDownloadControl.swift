@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// Stands in for the enable switch while content is missing or downloading.
-/// A capsule Get button, the App Store idiom, replaces the switch until the
-/// download lands; downloaded rows draw the switch instead of this view.
+/// A filled accent capsule replaces the switch until the download lands, at
+/// the switch's own height so the trailing column keeps one rhythm; downloaded
+/// rows draw the switch instead of this view.
 struct ContentDownloadControl: View {
     let isDownloaded: Bool
     let isDownloading: Bool
@@ -16,13 +17,18 @@ struct ContentDownloadControl: View {
                     .fontWeight(.semibold)
                     .opacity(isDownloading ? 0 : 1)
                 if isDownloading {
-                    ProgressView().controlSize(.small)
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(.white)
                 }
             }
+            .frame(minWidth: Self.switchWidth - 2 * Self.horizontalPadding, minHeight: Self.switchHeight)
+            .padding(.horizontal, Self.horizontalPadding)
+            .foregroundStyle(.white)
+            .background(Capsule().fill(Color.accentColor))
+            .contentShape(Capsule())
         }
-        .buttonStyle(.bordered)
-        .modifier(CapsuleBorderIfAvailable())
-        .controlSize(.small)
+        .buttonStyle(.plain)
         .disabled(isDownloading)
         .noFocusRingCompat()
         .accessibilityLabel(
@@ -32,15 +38,14 @@ struct ContentDownloadControl: View {
         )
         .help("Download")
     }
-}
 
-/// The capsule border shape needs macOS 14; older macOS keeps the default.
-private struct CapsuleBorderIfAvailable: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(macOS 14.0, iOS 15.0, *) {
-            content.buttonBorderShape(.capsule)
-        } else {
-            content
-        }
-    }
+    // Native switch metrics, so Get sits where the switch will and at its size.
+    #if os(macOS)
+    private static let switchWidth: CGFloat = 54
+    private static let switchHeight: CGFloat = 22
+    #else
+    private static let switchWidth: CGFloat = 51
+    private static let switchHeight: CGFloat = 31
+    #endif
+    private static let horizontalPadding: CGFloat = 12
 }
