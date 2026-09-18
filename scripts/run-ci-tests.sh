@@ -93,6 +93,7 @@ compile_core_test filter-refresh-planner scripts/test_filter_refresh_planner.swi
 compile_core_test issue-675-rule-analysis scripts/test_issue_675_rule_analysis.swift
 compile_core_test issue-679-affinity-cache-behavior scripts/test_issue_679_affinity_cache_behavior.swift
 compile_core_test issue-681-dedup-behavior scripts/test_issue_681_dedup_behavior.swift
+compile_core_test issue-836-cross-target-exceptions scripts/test_issue_836_cross_target_exceptions.swift
 compile_core_test issue-681-url-identity scripts/test_issue_681_url_identity.swift
 compile_core_test issue-683-reorder-cache scripts/test_issue_683_reorder_cache.swift \
   wBlock/ListDisplayOrder.swift

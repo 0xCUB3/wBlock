@@ -1857,12 +1857,25 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             containerURL: containerURL, isCancelled: cancellationRequested
         )
 
+        // Text compiled into this target, and the text of lists compiled
+        // elsewhere. Exceptions from the latter are replicated here when they
+        // can cancel one of this target's blocks (#836).
+        var writtenSources: [String] = []
+        var otherSources: [String] = []
+
         for filter in orderedSelectedFilters {
             if cancellationRequested() {
                 throw CancellationError()
             }
             let includeBaseRules = assignedFilterIDs.contains(filter.id)
             let hasAffinity = affinitySnapshot.content(for: filter.id) != nil
+            if !includeBaseRules,
+               let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(for: filter, containerURL: containerURL),
+               let raw = try? String(contentsOf: sourceURL, encoding: .utf8) {
+                otherSources.append(
+                    FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.excludedSites, including: filter.selectedSites)
+                )
+            }
             guard includeBaseRules || hasAffinity else { continue }
 
             if hasAffinity {
@@ -1881,6 +1894,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     isCancelled: cancellationRequested
                 )
                 guard !restricted.isEmpty else { continue }
+                if includeBaseRules { writtenSources.append(restricted) }
                 try ContentBlockerInputWriter.appendInline(
                     restricted,
                     to: fileHandle,
@@ -1899,6 +1913,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                         !duplicates.contains(FilterRuleAnalysis.ruleIdentity($0))
                     }
                     let keptText = kept.joined(separator: "\n")
+                    writtenSources.append(keptText)
                     try sourceRuleAdmissions.record(
                         filterID: filter.id,
                         rulesText: keptText,
@@ -1911,6 +1926,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     )
                 } else if filter.excludedSites.isEmpty && filter.selectedSites == nil {
                     let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
+                    writtenSources.append(rawContent)
                     try sourceRuleAdmissions.record(
                         filterID: filter.id,
                         rulesText: rawContent,
@@ -1928,6 +1944,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 } else {
                     let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
                     let restricted = FilterListSiteExclusion.restrictingAdvancedRules(rawContent, excluding: filter.excludedSites, including: filter.selectedSites)
+                    writtenSources.append(restricted)
                     try sourceRuleAdmissions.record(
                         filterID: filter.id,
                         rulesText: restricted,
@@ -1943,6 +1960,22 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     )
                 }
             }
+        }
+
+        let replicatedExceptions = try CrossTargetExceptionReplicator.replicatedExceptions(
+            targetSources: writtenSources,
+            candidateSources: otherSources,
+            isCancelled: cancellationRequested
+        )
+        if !replicatedExceptions.isEmpty {
+            try ContentBlockerInputWriter.appendInline(
+                "! wBlock: exceptions replicated from lists compiled into other blockers\n"
+                    + replicatedExceptions.joined(separator: "\n"),
+                to: fileHandle,
+                hasher: &hasher,
+                newlineData: newlineData,
+                isCancelled: cancellationRequested
+            )
         }
 
         if let extraRulesText, !extraRulesText.isEmpty {
