@@ -14,19 +14,24 @@ struct StatCard: View {
     let valueColor: Color
     /// Folds the icon into the title line so three cards fit an iPhone row.
     let compact: Bool
+    /// Draws the row chevron after the title so a tappable card reads as one,
+    /// and stands apart from the static cards beside it.
+    let showsDisclosure: Bool
 
     init(
         title: String,
         value: String,
         icon: String,
         valueColor: Color = .primary,
-        compact: Bool = false
+        compact: Bool = false,
+        showsDisclosure: Bool = false
     ) {
         self.title = title
         self.value = value
         self.icon = icon
         self.valueColor = valueColor
         self.compact = compact
+        self.showsDisclosure = showsDisclosure
     }
 
     var body: some View {
@@ -61,6 +66,11 @@ struct StatCard: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
+                    #if os(iOS)
+                    if showsDisclosure {
+                        RowDisclosureChevron()
+                    }
+                    #endif
                 }
 
                 Text(value)

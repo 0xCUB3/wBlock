@@ -615,7 +615,8 @@ struct ContentView: View {
                             ? appliedSafariRulesCount.formatted()
                             : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0")),
                     icon: "shield.lefthalf.filled",
-                    valueColor: enabledListsCount == 0 ? .secondary : (hasAppliedFilters ? .primary : .secondary)
+                    valueColor: enabledListsCount == 0 ? .secondary : (hasAppliedFilters ? .primary : .secondary),
+                    showsDisclosure: true
                 )
                 .overlay(alignment: .topTrailing) {
                     if shouldShowRuleLimitIndicator {
