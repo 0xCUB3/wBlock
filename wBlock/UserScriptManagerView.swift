@@ -916,29 +916,9 @@ struct UserScriptManagerView: View {
         .padding(16)
         #else
         // iOS keeps one control flush right. The chevron by the title says
-        // the row opens; the Info sheet lists every action. Long press and
-        // the trailing swipe are shortcuts to the same actions.
+        // the row opens; the Info sheet lists every action, and long press
+        // is a shortcut to the same actions.
         .contextMenu { scriptMenuItems(script) }
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            let actions = ContextMenuActionAvailability.userScriptActions(
-                isBuiltIn: script.isBuiltIn, isLocal: script.isLocal, isDownloaded: script.isDownloaded
-            )
-            if actions.contains(.deleteScript), let managedScript = userScriptManager.userScript(withId: script.id) {
-                Button(role: .destructive) {
-                    removeScript(managedScript, name: script.name)
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-            }
-            if actions.contains(.settings) {
-                Button {
-                    selectedScriptSettings = SelectedUserScript(id: script.id, action: .settings)
-                } label: {
-                    Label("Settings", systemImage: "gearshape")
-                }
-                .tint(.gray)
-            }
-        }
         #endif
     }
 

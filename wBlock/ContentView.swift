@@ -988,23 +988,9 @@ struct FilterRowView: View {
         .padding(16)
         #else
         // iOS keeps one control flush right. The chevron by the title says
-        // the row opens; the Info sheet lists every action. Long press and
-        // the trailing swipe are shortcuts to the same actions.
+        // the row opens; the Info sheet lists every action, and long press
+        // is a shortcut to the same actions.
         .contextMenu { contextMenuItems }
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            let actions = ContextMenuActionAvailability.filterActions(for: filter)
-            if actions.contains(.deleteList) {
-                Button(role: .destructive, action: onDelete) {
-                    Label("Delete", systemImage: "trash")
-                }
-            }
-            if actions.contains(.settings) {
-                Button(action: onSettings) {
-                    Label("Settings", systemImage: "gearshape")
-                }
-                .tint(.gray)
-            }
-        }
         #endif
     }
 

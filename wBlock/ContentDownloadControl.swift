@@ -13,8 +13,13 @@ struct ContentDownloadControl: View {
     var body: some View {
         Button(action: action) {
             ZStack {
+                // Fixed to the switch frame, so the label scales instead of
+                // growing the capsule under larger Dynamic Type.
                 Text("Get")
-                    .fontWeight(.semibold)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .padding(.horizontal, 6)
                     .opacity(isDownloading ? 0 : 1)
                 if isDownloading {
                     ProgressView()
@@ -22,8 +27,7 @@ struct ContentDownloadControl: View {
                         .tint(.white)
                 }
             }
-            .frame(minWidth: Self.switchWidth - 2 * Self.horizontalPadding, minHeight: Self.switchHeight)
-            .padding(.horizontal, Self.horizontalPadding)
+            .frame(width: Self.switchWidth, height: Self.switchHeight)
             .foregroundStyle(.white)
             .background(Capsule().fill(Color.accentColor))
             .contentShape(Capsule())
@@ -47,5 +51,4 @@ struct ContentDownloadControl: View {
     private static let switchWidth: CGFloat = 51
     private static let switchHeight: CGFloat = 31
     #endif
-    private static let horizontalPadding: CGFloat = 12
 }
