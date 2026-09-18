@@ -64,6 +64,19 @@ struct MacListSection {
     var acceptsMoves = true
 }
 
+/// Rows that cannot move never enter AppKit's drag machinery. Refusing only
+/// in `pasteboardWriterForItem` is too late: by then the outline has hidden the
+/// pressed row for its drag image, and with no session to end, nothing shows
+/// it again until another drag finishes (#834).
+final class MacReorderableOutlineView: NSOutlineView {
+    var canDragRow: (Int) -> Bool = { _ in true }
+
+    override func canDragRows(with rowIndexes: IndexSet, at mouseDownPoint: NSPoint) -> Bool {
+        rowIndexes.allSatisfy(canDragRow)
+            && super.canDragRows(with: rowIndexes, at: mouseDownPoint)
+    }
+}
+
 struct MacListMove: Equatable {
     let itemID: UUID
     let sectionID: String
@@ -101,8 +114,14 @@ struct MacReorderableList: NSViewRepresentable {
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
         scroll.drawsBackground = false
-        scroll.contentInsets.bottom = 20
-        let outline = NSOutlineView()
+        // The SwiftUI list this replaced ended with vertical padding plus a
+        // 20-point spacer, so keep the same breathing room under the last card (#824).
+        scroll.contentInsets.bottom = 36
+        let outline = MacReorderableOutlineView()
+        outline.canDragRow = { [weak coordinator = context.coordinator, weak outline] row in
+            guard let coordinator, let outline, let item = outline.item(atRow: row) else { return false }
+            return coordinator.movableID(for: item) != nil
+        }
         let column = NSTableColumn(identifier: .init("content"))
         outline.addTableColumn(column)
         outline.outlineTableColumn = column
@@ -198,7 +217,12 @@ struct MacReorderableList: NSViewRepresentable {
                     if row >= 0 { outline.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false) }
                 }
             }
-            outline.noteHeightOfRows(withIndexesChanged: refreshVisibleRows())
+            // AppKit animates row-height changes by default; after a drop the
+            // settling rows should snap so separators do not trail behind.
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0
+                outline.noteHeightOfRows(withIndexesChanged: refreshVisibleRows())
+            }
         }
 
         @discardableResult
@@ -229,6 +253,9 @@ struct MacReorderableList: NSViewRepresentable {
             return false
         }
 
+        // Reused cells host a different row each time they scroll in. Keying
+        // the content by row identity makes SwiftUI rebuild the switch instead
+        // of animating it from the previous row's state (#831).
         private func hosted(_ node: Node) -> AnyView {
             AnyView(Group {
                 if let shape = node.cardShape {
@@ -242,7 +269,9 @@ struct MacReorderableList: NSViewRepresentable {
                 } else {
                     node.content
                 }
-            }.environment(\.self, environment))
+            }
+            .id(node.id)
+            .environment(\.self, environment))
         }
 
         func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
@@ -289,7 +318,7 @@ struct MacReorderableList: NSViewRepresentable {
             guard let node = item as? Node, case .section(let id) = node.id else { return nil }
             return model.sections.first { $0.id == id }
         }
-        private func movableID(for item: Any) -> UUID? {
+        func movableID(for item: Any) -> UUID? {
             guard let node = item as? Node, case .row(let id) = node.id else { return nil }
             return model.sections.lazy.flatMap(\.rows).first { $0.id == id }?.movableID
         }
@@ -389,15 +418,14 @@ struct MacReorderableList: NSViewRepresentable {
             }
             // The row already sits at its destination while the drag image is
             // still flying there, which reads as a duplicate card behind the
-            // drop. Keep the row transparent until the image lands, then fade
-            // it in over the settling frames.
+            // drop. Keep the row transparent until the image lands, then show
+            // it at once so its separator does not lag the drop (#817).
             if landingRow >= 0,
                let landingView = outlineView.view(atColumn: 0, row: landingRow, makeIfNecessary: false) {
                 landingView.alphaValue = 0
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
                     NSAnimationContext.runAnimationGroup { context in
-                        context.duration = 0.2
-                        context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                        context.duration = 0.06
                         landingView.animator().alphaValue = 1
                     }
                 }
