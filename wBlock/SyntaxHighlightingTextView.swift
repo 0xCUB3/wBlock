@@ -25,6 +25,10 @@ struct SyntaxHighlightingTextView: NSViewRepresentable {
         scrollView.hasHorizontalScroller = true
         scrollView.hasVerticalScroller = true
         scrollView.autohidesScrollers = true
+        // Rules editors can be embedded in sheet layouts; disable AppKit's
+        // rubber-band response so wheel input never produces elastic drift.
+        scrollView.horizontalScrollElasticity = .none
+        scrollView.verticalScrollElasticity = .none
 
         let textView = NSTextView(usingTextLayoutManager: true)
         textView.frame = NSRect(x: 0, y: 0, width: 800, height: 600)

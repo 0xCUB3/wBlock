@@ -71,7 +71,7 @@ struct ElementZapperSettingsView: View {
             )
         }
         #else
-        .modifier(MacPushedActionsToolbar(isSearchExpanded: showSearch) {
+        .modifier(MacPushedActionsToolbar() {
             UndoRedoButtons(
                 canUndo: pendingUndo != nil && !(isMutating || ruleManager.isMutationInFlight),
                 canRedo: pendingRedo != nil && !(isMutating || ruleManager.isMutationInFlight),

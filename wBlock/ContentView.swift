@@ -438,7 +438,7 @@ struct ContentView: View {
 
     #if os(macOS)
     private var macFiltersToolbar: some ViewModifier {
-        MacActionsToolbar(isSearchExpanded: showFilterSearch, hasPendingChanges: hasPendingChanges) {
+        MacActionsToolbar(hasPendingChanges: hasPendingChanges) {
             Button {
                 showingAddFilterSheet = true
             } label: {
@@ -2543,37 +2543,37 @@ struct EditUserListView: View {
                         dismiss()
                     }
 
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 16) {
-                            VStack(alignment: .leading, spacing: 6) {
-                                HStack {
-                                    Text("Rules")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                    Spacer()
-                                    sourceActions
-                                        .controlSize(.small)
-                                }
-
-                                SyntaxHighlightingTextView(text: $rules)
-                                    .frame(minHeight: 260)
-                                    .padding(10)
-                                    .background(
-                                        .background,
-                                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .stroke(.quaternary, lineWidth: 1)
-                                    )
+                    VStack(alignment: .leading, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text("Rules")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                sourceActions
+                                    .controlSize(.small)
                             }
-                            .padding(20)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+
+                            SyntaxHighlightingTextView(text: $rules)
+                                .frame(minHeight: 260, maxHeight: .infinity)
+                                .padding(10)
+                                .background(
+                                    .background,
+                                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(.quaternary, lineWidth: 1)
+                                )
                         }
-                        .padding(.horizontal, SheetDesign.contentHorizontalPadding)
-                        .padding(.top, 12)
-                        .padding(.bottom, 40)
+                        .padding(20)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
                     }
+                    .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                    .padding(.top, 12)
+                    .padding(.bottom, 40)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
                     SheetBottomToolbar {
                         Spacer()

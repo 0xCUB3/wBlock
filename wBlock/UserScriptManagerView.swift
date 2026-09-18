@@ -503,7 +503,7 @@ struct UserScriptManagerView: View {
     }
 
     private var macScriptsToolbar: some ViewModifier {
-        MacActionsToolbar(isSearchExpanded: showSearch, hasPendingChanges: hasPendingChanges) {
+        MacActionsToolbar(hasPendingChanges: hasPendingChanges) {
             Button {
                 showingAddScriptSheet = true
             } label: {

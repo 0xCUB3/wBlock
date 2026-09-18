@@ -89,7 +89,7 @@ struct SiteSettingsView: View {
         .searchable(text: $searchText, prompt: "Search")
         .navigationBarTitleDisplayMode(.inline)
         #else
-        .modifier(MacPushedActionsToolbar(isSearchExpanded: showSearch) {
+        .modifier(MacPushedActionsToolbar() {
             UndoRedoButtons(
                 canUndo: pendingUndo != nil && !isMutationInFlight,
                 canRedo: pendingRedo != nil && !isMutationInFlight,

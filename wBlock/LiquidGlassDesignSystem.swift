@@ -36,11 +36,10 @@ extension View {
 
 #if os(macOS)
 /// The Filters and Userscripts tabs share one macOS toolbar shape: Add and
-/// Update together, pending Apply on its own, then the enabled-only filter and search. On macOS 26
-/// compact glass groups keep an eight-point gap; older releases render the
-/// same buttons as one flat group.
+/// Update together, pending Apply on its own, then the enabled-only filter and
+/// a persistent search field. On macOS 26 compact glass groups keep an
+/// eight-point gap; older releases render the same buttons as one flat group.
 struct MacActionsToolbar<Primary: View, Apply: View, Filter: View, Search: View>: ViewModifier {
-    let isSearchExpanded: Bool
     let hasPendingChanges: Bool
     @ViewBuilder let primary: () -> Primary
     @ViewBuilder let apply: () -> Apply
@@ -50,21 +49,15 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View, Search: View>
     func body(content: Content) -> some View {
         if #available(macOS 26.0, *) {
             content.toolbar {
-                if isSearchExpanded {
-                    ToolbarItem(placement: .automatic) { search() }
-                } else {
-                    ToolbarItem(placement: .automatic) { compactActions }
-                        .sharedBackgroundVisibility(.hidden)
-                }
+                ToolbarItem(placement: .automatic) { compactActions }
+                    .sharedBackgroundVisibility(.hidden)
             }
         } else {
             content.toolbar {
                 ToolbarItemGroup(placement: .automatic) {
-                    if !isSearchExpanded {
-                        primary()
-                        apply()
-                        filter()
-                    }
+                    primary()
+                    apply()
+                    filter()
                 }
                 ToolbarItem(placement: .automatic) { search() }
             }
@@ -91,7 +84,6 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View, Search: View>
                 filter()
                     .glassEffect(.regular.interactive(), in: .capsule)
                 search()
-                    .glassEffect(.regular.interactive(), in: .capsule)
             }
         }
         .labelStyle(.iconOnly)
@@ -101,21 +93,18 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View, Search: View>
 
 /// Toolbar for pages pushed inside the navigation stack (Site Settings,
 /// Element Zapper, Logs): the action buttons share one native glass group
-/// with compact hit targets; search supplies its own capsule without an extra
-/// fixed spacer. Native action items are used here because a
-/// custom multi-button item inside a pushed page reports the first button's
-/// accessibility name for every button.
+/// with compact hit targets; the search field supplies its own capsule.
+/// Native action items are used here because a custom multi-button item
+/// inside a pushed page reports the first button's accessibility name for
+/// every button.
 struct MacPushedActionsToolbar<Actions: View, Search: View>: ViewModifier {
-    var isSearchExpanded = false
     @ViewBuilder let actions: () -> Actions
     @ViewBuilder let search: () -> Search
 
     init(
-        isSearchExpanded: Bool = false,
         @ViewBuilder actions: @escaping () -> Actions,
         @ViewBuilder search: @escaping () -> Search = { EmptyView() }
     ) {
-        self.isSearchExpanded = isSearchExpanded
         self.actions = actions
         self.search = search
     }
@@ -123,38 +112,22 @@ struct MacPushedActionsToolbar<Actions: View, Search: View>: ViewModifier {
     func body(content: Content) -> some View {
         if #available(macOS 26.0, *) {
             content.toolbar {
-                if !isSearchExpanded {
-                    ToolbarItemGroup(placement: .automatic) {
-                        actions()
-                            .labelStyle(.iconOnly)
-                            .environment(\.compactToolbarGrouped, true)
-                            .buttonStyle(CompactToolbarButtonStyle())
-                    }
+                ToolbarItemGroup(placement: .automatic) {
+                    actions()
+                        .labelStyle(.iconOnly)
+                        .environment(\.compactToolbarGrouped, true)
+                        .buttonStyle(CompactToolbarButtonStyle())
                 }
                 if Search.self != EmptyView.self {
-                    // The collapsed magnifier gets the compact capsule. The
-                    // expanded field keeps the toolbar's own item chrome, as on
-                    // the main tabs; a capsule with no height squashed it (#830).
-                    if isSearchExpanded {
-                        ToolbarItem(placement: .automatic) { search() }
-                    } else {
-                        ToolbarItem(placement: .automatic) {
-                            search()
-                                .labelStyle(.iconOnly)
-                                .buttonStyle(CompactToolbarButtonStyle())
-                                .glassEffect(.regular.interactive(), in: .capsule)
-                        }
+                    ToolbarItem(placement: .automatic) { search() }
                         .sharedBackgroundVisibility(.hidden)
-                    }
                 }
             }
         } else {
             // ToolbarContentBuilder has no `if` before macOS 13; an EmptyView
             // search item takes no space.
             content.toolbar {
-                ToolbarItemGroup(placement: .automatic) {
-                    if !isSearchExpanded { actions() }
-                }
+                ToolbarItemGroup(placement: .automatic) { actions() }
                 ToolbarItem(placement: .automatic) { search() }
             }
         }
@@ -207,68 +180,109 @@ private struct CompactToolbarButtonStyle: ButtonStyle {
     }
 }
 
+/// A toolbar search field in the shape the HIG expects on the Mac: the
+/// magnifier sits inside an always-visible field, with a clear button once
+/// there is text. Setting `isExpanded` moves keyboard focus into the field
+/// (⌘F); it flips back to false once focus has been requested, so repeated
+/// requests keep working.
 struct ToolbarSearchField: View {
     @Binding var text: String
     @Binding var isExpanded: Bool
     var prompt: LocalizedStringKey = "Search"
 
     @FocusState private var isFocused: Bool
+    @State private var focusRequests = 0
 
     var body: some View {
-        Group {
-            if isExpanded {
-                HStack(spacing: 6) {
-                    TextField(prompt, text: $text)
-                        .textFieldStyle(.plain)
-                        .focused($isFocused)
-                        .onExitCommand { collapse() }
+        HStack(spacing: 5) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
 
-                    Button { collapse() } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .noFocusRingCompat()
-                    .help(String(localized: "Close search"))
+            TextField(prompt, text: $text)
+                .textFieldStyle(.plain)
+                .focused($isFocused)
+                .onExitCommand { dismissSearch() }
+
+            if !text.isEmpty {
+                Button { text = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
                 }
-                .padding(.horizontal, 8)
-                .frame(width: 180)
-                .background(ToolbarFieldFocuser())
-                .transition(.blurReplaceCompat)
-            } else {
-                Button {
-                    isExpanded = true
-                } label: {
-                    Label("Search", systemImage: "magnifyingglass")
-                }
-                .transition(.blurReplaceCompat)
+                .buttonStyle(.plain)
+                .noFocusRingCompat()
+                .help(String(localized: "Clear"))
+                .transition(.opacity)
             }
         }
-        .animation(.smooth(duration: 0.3), value: isExpanded)
-        .onChangeCompat(of: isFocused) { _, focused in
-            if !focused && isExpanded {
-                collapse()
-            }
+        .padding(.horizontal, 10)
+        .frame(width: 200, height: fieldHeight)
+        .background(fieldBackground)
+        .background(ToolbarFieldFocuser(request: focusRequests))
+        .animation(.easeOut(duration: 0.15), value: text.isEmpty)
+        .onAppear { if isExpanded { requestFocus() } }
+        .onChangeCompat(of: isExpanded) { _, wantsFocus in
+            if wantsFocus { requestFocus() }
         }
     }
 
-    private func collapse() {
+    private var fieldHeight: CGFloat {
+        if #available(macOS 26.0, *) { return 36 }
+        return 28
+    }
+
+    @ViewBuilder
+    private var fieldBackground: some View {
+        if #available(macOS 26.0, *) {
+            Capsule().fill(.clear).glassEffect(.regular, in: .capsule)
+        } else {
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(Color.primary.opacity(0.06))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
+                )
+        }
+    }
+
+    private func requestFocus() {
+        focusRequests += 1
+        DispatchQueue.main.async { isExpanded = false }
+    }
+
+    private func dismissSearch() {
         text = ""
-        isExpanded = false
+        isFocused = false
+        NSApp.keyWindow?.makeFirstResponder(nil)
     }
 }
 
 /// Toolbar items live in AppKit's toolbar view hierarchy, where SwiftUI's
-/// `@FocusState` does not reliably move the caret (#613). Once the expanded
-/// field is in a window, make its NSTextField the first responder directly.
+/// `@FocusState` does not reliably move the caret (#613). Each new focus
+/// request makes the sibling NSTextField the first responder directly.
 private struct ToolbarFieldFocuser: NSViewRepresentable {
+    let request: Int
+
+    final class Coordinator {
+        var handledRequest = 0
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
     func makeNSView(context: Context) -> NSView {
         let view = NSView(frame: .zero)
-        focusSibling(of: view, attemptsLeft: 10)
+        if request > 0 {
+            context.coordinator.handledRequest = request
+            focusSibling(of: view, attemptsLeft: 10)
+        }
         return view
     }
 
-    func updateNSView(_ nsView: NSView, context: Context) {}
+    func updateNSView(_ nsView: NSView, context: Context) {
+        guard request != context.coordinator.handledRequest else { return }
+        context.coordinator.handledRequest = request
+        focusSibling(of: nsView, attemptsLeft: 10)
+    }
 
     private func focusSibling(of view: NSView, attemptsLeft: Int) {
         DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(60)) {
