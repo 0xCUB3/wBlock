@@ -2552,6 +2552,10 @@ public class UserScriptManager: ObservableObject {
             if !isDefaultUserScript(existing) {
                 updated.description = existing.description
             }
+            updated.metadataAuthorOverride = existing.metadataAuthorOverride
+            updated.metadataHomepageOverride = existing.metadataHomepageOverride
+            updated.author = existing.author
+            updated.homepage = existing.homepage
         }
         updated.url = existing.url
         updated.isEnabled = existing.isEnabled
@@ -3605,6 +3609,8 @@ public class UserScriptManager: ObservableObject {
         for scriptId: UUID,
         name: String,
         description: String,
+        author: String? = nil,
+        homepage: String? = nil,
         origin: UserScriptMutationOrigin = .local
     ) async -> Bool {
         guard let index = indexOfUserScript(withId: scriptId),
@@ -3613,6 +3619,12 @@ public class UserScriptManager: ObservableObject {
         guard !trimmedName.isEmpty else { return false }
         userScripts[index].name = trimmedName
         userScripts[index].description = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedAuthor = author?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedHomepage = homepage?.trimmingCharacters(in: .whitespacesAndNewlines)
+        userScripts[index].metadataAuthorOverride = trimmedAuthor?.isEmpty == false ? trimmedAuthor : nil
+        userScripts[index].metadataHomepageOverride = trimmedHomepage?.isEmpty == false ? trimmedHomepage : nil
+        userScripts[index].author = userScripts[index].metadataAuthorOverride
+        userScripts[index].homepage = userScripts[index].metadataHomepageOverride
         if origin == .local { recordScriptMutation(userScripts[index].id) }
         await persistUserScriptsNow(invalidateExecutionCache: false)
         return true
@@ -3886,7 +3898,7 @@ public class UserScriptManager: ObservableObject {
         let enabledScripts = userScripts.filter { $0.isEnabled }
         let matchingScripts = enabledScripts.filter { $0.matches(url: url) }
         let runnableScripts = matchingScripts.filter {
-            !isUserScript($0, disabledOnHost: host)
+            !isUserScript($0, disabledOnHost: host) && !isTwitchAdGuardExtraSuppressed($0, host: host)
         }
 
         #if DEBUG
@@ -3903,11 +3915,25 @@ public class UserScriptManager: ObservableObject {
         let host = URL(string: url)?.host ?? ""
         let pageScripts = userScripts
             .filter { $0.isEnabled && $0.matches(url: url) }
+            .filter { !isTwitchAdGuardExtraSuppressed($0, host: host) }
             .map { script in
                 (script: script, disabledForSite: isUserScript(script, disabledOnHost: host))
             }
 
         return pageScripts
+    }
+
+    private func isTwitchAdGuardExtraSuppressed(_ script: UserScript, host: String) -> Bool {
+        let isTwitchHost = host == "twitch.tv" || host.hasSuffix(".twitch.tv")
+        guard isTwitchHost else { return false }
+        let name = script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let isAdGuardExtra = name == "adguard extra"
+        guard isAdGuardExtra else { return false }
+        return userScripts.contains { candidate in
+            candidate.isEnabled
+                && candidate.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                    == "twitchadsolutions (vaft)"
+        }
     }
 
     @discardableResult

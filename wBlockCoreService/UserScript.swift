@@ -304,6 +304,10 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     public var url: URL?
     public var isEnabled: Bool = false
     public var description: String = ""
+    public var author: String?
+    public var homepage: String?
+    public var metadataAuthorOverride: String?
+    public var metadataHomepageOverride: String?
     public var version: String = ""
     public var matches: [String] = []
     public var excludeMatches: [String] = []
@@ -433,6 +437,10 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
             && url == other.url
             && isEnabled == other.isEnabled
             && description == other.description
+            && author == other.author
+            && homepage == other.homepage
+            && metadataAuthorOverride == other.metadataAuthorOverride
+            && metadataHomepageOverride == other.metadataHomepageOverride
             && version == other.version
             && matches == other.matches
             && excludeMatches == other.excludeMatches
@@ -742,6 +750,8 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     public mutating func parseMetadata() {
         // Reset metadata-backed fields so repeated parsing stays idempotent.
         description = ""
+        author = nil
+        homepage = nil
         version = ""
         matches.removeAll(keepingCapacity: true)
         excludeMatches.removeAll(keepingCapacity: true)
@@ -839,6 +849,10 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
                     } else {
                         bareDescription = cleaned
                     }
+                case "@author":
+                    if !value.isEmpty { self.author = value }
+                case "@homepage", "@homepageurl", "@website", "@source":
+                    if !value.isEmpty { self.homepage = value }
                 case "@version":
                     self.version = value
                 case "@match":
@@ -892,6 +906,8 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
             ?? descByLocale["en"]
             ?? bareDescription
             ?? self.description
+        if let metadataAuthorOverride { author = metadataAuthorOverride }
+        if let metadataHomepageOverride { homepage = metadataHomepageOverride }
     }
 
     /// Populates metadata-backed fields from a parsed UserCSS style. The remaining

@@ -1430,14 +1430,9 @@ async function setNoAutoplaySiteAllowed(siteHost, allowed) {
 // still the native No Autoplay flag. The site switch is the effective
 // per-site answer and is available whatever the global setting (#835).
 function updateNoAutoplayControls(state, options = {}) {
-    const enabledToggle = document.getElementById('no-autoplay-enabled-toggle');
     const siteRow = document.getElementById('no-autoplay-site-row');
     const siteToggle = document.getElementById('no-autoplay-site-toggle');
     const locked = options.locked === true;
-    if (enabledToggle) {
-        enabledToggle.checked = !globalNoAutoplayEnabled(state);
-        enabledToggle.disabled = locked;
-    }
     if (siteRow) siteRow.hidden = !options.host;
     if (siteToggle) {
         siteToggle.checked = state.siteAllowed;
@@ -1628,28 +1623,7 @@ function setupListeners() {
         });
     }
 
-    const noAutoplayEnabledToggle = document.getElementById('no-autoplay-enabled-toggle');
     const noAutoplaySiteToggle = document.getElementById('no-autoplay-site-toggle');
-
-    if (noAutoplayEnabledToggle) {
-        noAutoplayEnabledToggle.addEventListener('change', async () => {
-            // Checked means autoplay allowed, which is No Autoplay off.
-            const nextEnabled = !noAutoplayEnabledToggle.checked;
-            try {
-                setError('');
-                noAutoplayEnabledToggle.disabled = true;
-                await setNoAutoplayEnabled(nextEnabled);
-                const state = await getNoAutoplayState(host);
-                updateNoAutoplayControls(state, { host, siteDisabled: noAutoplaySiteDisabled });
-            } catch (error) {
-                console.error('[wBlock] Failed to update No Autoplay state:', error);
-                setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
-                noAutoplayEnabledToggle.checked = nextEnabled;
-            } finally {
-                noAutoplayEnabledToggle.disabled = false;
-            }
-        });
-    }
 
     const userscriptsSiteToggle = document.getElementById('userscripts-site-toggle');
     if (userscriptsSiteToggle) {

@@ -1263,6 +1263,8 @@ final class CloudSyncManager: ObservableObject {
                 content: $0.content,
                 isEnabled: $0.isEnabled,
                 description: $0.description,
+                author: $0.author,
+                homepage: $0.homepage,
                 localImportIdentity: $0.localImportIdentity
             )
         }
@@ -1432,6 +1434,8 @@ final class CloudSyncManager: ObservableObject {
                         for: existing.id,
                         name: metadata.name,
                         description: metadata.description,
+                        author: metadata.author,
+                        homepage: metadata.homepage,
                         origin: .remoteSync
                     )
                 }
@@ -1558,6 +1562,8 @@ final class CloudSyncManager: ObservableObject {
                 content: $0.content,
                 isEnabled: $0.isEnabled,
                 description: $0.description,
+                author: $0.author,
+                homepage: $0.homepage,
                 localImportIdentity: $0.localImportIdentity
             )
         }
@@ -1693,6 +1699,8 @@ final class CloudSyncManager: ObservableObject {
                 content: $0.content,
                 isEnabled: $0.isEnabled,
                 description: $0.description,
+                author: $0.author,
+                homepage: $0.homepage,
                 localImportIdentity: $0.localImportIdentity
             )
         }

@@ -6,6 +6,8 @@ struct CloudSyncLocalUserScript: Codable, Equatable {
     let content: String
     let isEnabled: Bool
     let description: String?
+    let author: String?
+    let homepage: String?
     let updatesAutomatically: Bool?
     let category: String?
     let localImportIdentity: String?
@@ -25,6 +27,8 @@ struct CloudSyncLocalUserScript: Codable, Equatable {
         content: String,
         isEnabled: Bool,
         description: String? = nil,
+        author: String? = nil,
+        homepage: String? = nil,
         updatesAutomatically: Bool? = nil,
         category: String? = nil,
         localImportIdentity: String? = nil,
@@ -35,6 +39,8 @@ struct CloudSyncLocalUserScript: Codable, Equatable {
         self.content = content
         self.isEnabled = isEnabled
         self.description = description
+        self.author = author
+        self.homepage = homepage
         self.updatesAutomatically = updatesAutomatically
         self.category = category
         self.localImportIdentity = localImportIdentity
@@ -47,8 +53,8 @@ enum CloudSyncLocalUserScriptReconciler {
     static func metadataOverrides(
         existing: UserScript,
         remote: CloudSyncLocalUserScript
-    ) -> (name: String, description: String) {
-        (remote.name, remote.description ?? existing.description)
+    ) -> (name: String, description: String, author: String?, homepage: String?) {
+        (remote.name, remote.description ?? existing.description, remote.author ?? existing.author, remote.homepage ?? existing.homepage)
     }
 
     static func normalizedName(_ name: String) -> String {
@@ -83,6 +89,8 @@ enum CloudSyncLocalUserScriptReconciler {
                 content: existing.content,
                 isEnabled: existing.isEnabled,
                 description: existing.description,
+                author: existing.author,
+                homepage: existing.homepage,
                 localImportIdentity: existing.localImportIdentity
             ),
             remote: remote

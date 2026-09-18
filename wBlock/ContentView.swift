@@ -992,6 +992,21 @@ struct FilterRowView: View {
         // the row opens; the Info sheet lists every action, and long press
         // is a shortcut to the same actions.
         .contextMenu { contextMenuItems }
+        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            let actions = ContextMenuActionAvailability.filterActions(for: filter)
+            if actions.contains(.info) { Button { onInfo() } label: { Label("Info", systemImage: "info.circle") } }
+            if actions.contains(.settings) { Button { onSettings() } label: { Label("Settings", systemImage: "gearshape") } }
+            if actions.contains(.viewRules) { Button { onViewRules() } label: { Label("View Rules", systemImage: "doc.text") } }
+            if actions.contains(.editRules) { Button { onEdit() } label: { Label("Edit Rules", systemImage: "pencil") } }
+            if actions.contains(.editInfo) { Button { onEditInfo() } label: { Label("Edit Info", systemImage: "square.and.pencil") } }
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            let actions = ContextMenuActionAvailability.filterActions(for: filter)
+            if let onChangeCategory {
+                Menu { ForEach(FilterListCategory.moveTargets) { category in Button(category.localizedName) { onChangeCategory(category) } } } label: { Label("Move to", systemImage: "folder") }
+            }
+            if actions.contains(.deleteList) { Button(role: .destructive, action: onDelete) { Label("Delete Added List", systemImage: "trash") } }
+        }
         #endif
     }
 

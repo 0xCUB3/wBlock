@@ -274,6 +274,20 @@ struct SettingsView: View {
         .macTrailingPicker("Appearance")
     }
 
+    private var autoplayBinding: Binding<Bool> {
+        Binding(
+            get: { !dataManager.isNoAutoplayEnabled },
+            set: { enabled in Task { await dataManager.setNoAutoplayEnabled(!enabled) } }
+        )
+    }
+
+    @ViewBuilder
+    private var autoplaySection: some View {
+        Section("Autoplay") {
+            Toggle("Autoplay", isOn: autoplayBinding)
+        }
+    }
+
     @ViewBuilder
     private var siteActionsSection: some View {
         Section("Site Actions") {
@@ -739,6 +753,7 @@ struct SettingsView: View {
         CompatibleNavigationStack {
             List {
                 pauseBlockingSection
+                autoplaySection
                 siteActionsSection
                 displaySection
                 autoUpdateSection
@@ -772,6 +787,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var settingsSections: some View {
         pauseBlockingSection
+        autoplaySection
         siteActionsSection
         displaySection
         autoUpdateSection

@@ -919,6 +919,23 @@ struct UserScriptManagerView: View {
         // the row opens; the Info sheet lists every action, and long press
         // is a shortcut to the same actions.
         .contextMenu { scriptMenuItems(script) }
+        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            let actions = ContextMenuActionAvailability.userScriptActions(
+                isBuiltIn: script.isBuiltIn, isLocal: script.isLocal, isDownloaded: script.isDownloaded
+            )
+            if actions.contains(.info) { Button { selectedScriptInfo = SelectedUserScript(id: script.id, action: .info) } label: { Label("Info", systemImage: "info.circle") } }
+            if actions.contains(.settings) { Button { selectedScriptSettings = SelectedUserScript(id: script.id, action: .settings) } label: { Label("Settings", systemImage: "gearshape") } }
+            if actions.contains(.viewContent) { Button { selectedScript = SelectedUserScript(id: script.id, action: .viewContent) } label: { Label("View Content", systemImage: "doc.text") } }
+            if actions.contains(.editContent) { Button { selectedScript = SelectedUserScript(id: script.id, action: .editContent) } label: { Label("Edit Content", systemImage: "pencil") } }
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            let actions = ContextMenuActionAvailability.userScriptActions(
+                isBuiltIn: script.isBuiltIn, isLocal: script.isLocal, isDownloaded: script.isDownloaded
+            )
+            Menu { ForEach(UserScriptDisplayCategory.allCases) { category in Button(NSLocalizedString(category.rawValue, comment: "Userscript category")) { moveScript(script.id, to: category) } } } label: { Label("Move to", systemImage: "folder") }
+            if actions.contains(.download) { Button { downloadScript(script) } label: { Label("Download", systemImage: "arrow.down.circle") } }
+            if actions.contains(.deleteScript), let managedScript { Button(role: .destructive) { removeScript(managedScript, name: script.name) } label: { Label(script.isUserStyle ? "Delete Style" : "Delete Script", systemImage: "trash") } }
+        }
         #endif
     }
 
@@ -1278,7 +1295,11 @@ struct UserScriptInfoSidebar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            let metadata = ContentInfoMetadata.userscript(script.content)
+            let sourceMetadata = ContentInfoMetadata.userscript(script.content)
+            let metadata = ContentInfoMetadata(
+                author: script.author ?? sourceMetadata.author,
+                homepage: script.homepage.flatMap(URL.init(string:)) ?? sourceMetadata.homepage
+            )
             VStack(alignment: .leading, spacing: 8) {
                 ScriptNameAndDescriptionView(script: script, isBeta: isBeta, onClose: onClose)
                 ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0, isBuiltIn: isBuiltIn)
@@ -1511,13 +1532,14 @@ struct UserScriptContentView: View {
                     initialContent: loadedContent,
                     canEdit: !userScriptManager.isDefaultUserScript(script),
                     metadataOnly: metadataOnly,
-                    onSave: { newContent, name, description, category in
+                    onSave: { newContent, name, description, author, homepage, category in
                         if script.isLocal && !metadataOnly && newContent != loadedContent,
                            let error = await userScriptManager.saveEditedContent(for: script.id, newContent: newContent) {
                             return error
                         }
                         guard await userScriptManager.setUserScriptMetadataOverrides(
-                            for: script.id, name: name, description: description
+                            for: script.id, name: name, description: description,
+                            author: author, homepage: homepage
                         ) else {
                             return String(localized: "Couldn't save the edited source.")
                         }
@@ -1565,13 +1587,15 @@ private struct UserScriptSourceSheet: View {
     let initialContent: String
     let canEdit: Bool
     let metadataOnly: Bool
-    let onSave: (String, String, String, FilterListCategory) async -> String?
+    let onSave: (String, String, String, String?, String?, FilterListCategory) async -> String?
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var editorController: CodeMirrorEditorController
     @State private var editedContent: String
     @State private var editedName: String
     @State private var editedDescription: String
+    @State private var editedAuthor: String
+    @State private var editedHomepage: String
     @State private var selectedCategory: FilterListCategory
     @State private var isShowingEditor = false
     @State private var isLineWrappingEnabled = false
@@ -1579,7 +1603,7 @@ private struct UserScriptSourceSheet: View {
     @State private var validationMessage: String?
 
     init(script: UserScript, initialContent: String, canEdit: Bool, metadataOnly: Bool = false,
-         onSave: @escaping (String, String, String, FilterListCategory) async -> String?) {
+         onSave: @escaping (String, String, String, String?, String?, FilterListCategory) async -> String?) {
         self.script = script
         self.initialContent = initialContent
         self.canEdit = canEdit
@@ -1589,6 +1613,8 @@ private struct UserScriptSourceSheet: View {
         _editedContent = State(initialValue: initialContent)
         _editedName = State(initialValue: script.name)
         _editedDescription = State(initialValue: script.description)
+        _editedAuthor = State(initialValue: script.author ?? "")
+        _editedHomepage = State(initialValue: script.homepage ?? "")
         _selectedCategory = State(initialValue: script.category.isUserScriptOnly ? script.category : .scriptOther)
     }
 
@@ -1616,6 +1642,12 @@ private struct UserScriptSourceSheet: View {
                     VStack(alignment: .leading, spacing: 16) {
                         AddContentMetadataFields(name: $editedName, description: $editedDescription,
                             category: $selectedCategory, categories: FilterListCategory.userScriptCategories)
+                        AddContentField(title: "Author") {
+                            TextField("Author", text: $editedAuthor).textFieldStyle(.roundedBorder)
+                        }
+                        AddContentField(title: "Homepage") {
+                            TextField("Homepage", text: $editedHomepage).textFieldStyle(.roundedBorder)
+                        }
                         if let validationMessage {
                             Text(validationMessage).foregroundStyle(.red).font(.caption)
                         }
@@ -1686,13 +1718,14 @@ private struct UserScriptSourceSheet: View {
 
     private var hasChanges: Bool {
         editedContent != initialContent || editedName != script.name || editedDescription != script.description
+            || editedAuthor != (script.author ?? "") || editedHomepage != (script.homepage ?? "")
             || selectedCategory != (script.category.isUserScriptOnly ? script.category : .scriptOther)
     }
 
     @MainActor private func saveChanges() async {
         isSaving = true
         let error = await onSave(editedContent, editedName.trimmingCharacters(in: .whitespacesAndNewlines),
-                                 editedDescription, selectedCategory)
+                                 editedDescription, editedAuthor, editedHomepage, selectedCategory)
         isSaving = false
         if let error { validationMessage = error } else { dismiss() }
     }
