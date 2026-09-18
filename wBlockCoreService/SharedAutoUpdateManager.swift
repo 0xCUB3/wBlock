@@ -220,6 +220,13 @@ public actor SharedAutoUpdateManager {
     private var lastStatusCheck: Date?
     private let statusCacheTTL: TimeInterval = 5.0 // 5 seconds cache
     private var runInProgress = false
+    /// Set by the app around its own apply so an in-process auto-update run
+    /// does not rebuild the same targets concurrently (#821).
+    private var foregroundApplyInProgress = false
+
+    public func setForegroundApplyInProgress(_ active: Bool) {
+        foregroundApplyInProgress = active
+    }
 
     private let sharedAutoUpdateLogFilename = "auto_update.log"
 
@@ -674,6 +681,19 @@ public actor SharedAutoUpdateManager {
         defer { runInProgress = false }
 
         await ProtobufDataManager.shared.waitUntilLoaded()
+
+        // Onboarding owns the first download and apply; a rebuild racing it
+        // compiles half-written lists. The app's own apply likewise owns the
+        // targets while it runs.
+        let onboardingDone = await MainActor.run { ProtobufDataManager.shared.hasCompletedOnboarding }
+        if !onboardingDone {
+            appendSkipTelemetry(trigger: trigger, reason: "onboarding_incomplete")
+            return .skipped(reason: "onboarding_incomplete")
+        }
+        if foregroundApplyInProgress {
+            appendSkipTelemetry(trigger: trigger, reason: "foreground_apply")
+            return .skipped(reason: "foreground_apply")
+        }
 
         if Self.isAppExtensionProcess {
             if !hasLoggedExtensionSafeModeNotice {

@@ -1834,7 +1834,13 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             throw CocoaError(.fileNoSuchFile)
         }
 
-        let tempURL = containerURL.appendingPathComponent("temp_\(targetInfo.bundleIdentifier).txt")
+        // One input file per compilation. A shared per-target name let two
+        // overlapping builds of the same target truncate and delete each
+        // other's input, and the near-empty result was then cached under the
+        // signature of the intended input (#821).
+        let tempURL = containerURL.appendingPathComponent(
+            "temp_\(targetInfo.bundleIdentifier)_\(UUID().uuidString).txt"
+        )
         defer {
             try? FileManager.default.removeItem(at: tempURL)
         }

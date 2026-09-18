@@ -250,8 +250,16 @@ extension AppFilterManager {
         }
 
         isApplyInFlight = true
+        await SharedAutoUpdateManager.shared.setForegroundApplyInProgress(true)
+        #if os(macOS)
+        // Keep FilterUpdateAgent from rebuilding the same targets mid-apply.
+        // Waiting briefly is enough; the agent's runs are short.
+        let lease = SharedAutoUpdateLease.acquire(groupIdentifier: GroupIdentifier.shared.value, timeout: 2)
+        defer { withExtendedLifetime(lease) {} }
+        #endif
         defer {
             isApplyInFlight = false
+            Task { await SharedAutoUpdateManager.shared.setForegroundApplyInProgress(false) }
             if lastApplySucceeded
                 && hasUnappliedChanges
                 && !BlockingPauseStore.isPaused(.filters) {
