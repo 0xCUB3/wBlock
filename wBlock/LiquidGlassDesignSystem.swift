@@ -132,13 +132,20 @@ struct MacPushedActionsToolbar<Actions: View, Search: View>: ViewModifier {
                     }
                 }
                 if Search.self != EmptyView.self {
-                    ToolbarItem(placement: .automatic) {
-                        search()
-                            .labelStyle(.iconOnly)
-                            .buttonStyle(CompactToolbarButtonStyle())
-                            .glassEffect(.regular.interactive(), in: .capsule)
+                    // The collapsed magnifier gets the compact capsule. The
+                    // expanded field keeps the toolbar's own item chrome, as on
+                    // the main tabs; a capsule with no height squashed it (#830).
+                    if isSearchExpanded {
+                        ToolbarItem(placement: .automatic) { search() }
+                    } else {
+                        ToolbarItem(placement: .automatic) {
+                            search()
+                                .labelStyle(.iconOnly)
+                                .buttonStyle(CompactToolbarButtonStyle())
+                                .glassEffect(.regular.interactive(), in: .capsule)
+                        }
+                        .sharedBackgroundVisibility(.hidden)
                     }
-                    .sharedBackgroundVisibility(.hidden)
                 }
             }
         } else {
