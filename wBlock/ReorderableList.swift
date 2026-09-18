@@ -41,13 +41,16 @@ struct ListCategoryHeader: View {
             // with the title after it; iOS keeps the trailing chevron so every
             // section header keeps the same chrome. The whole header toggles on
             // either platform, which also gives the disclosure a real hit area.
+            // The glyph matches AppKit's disclosure triangle in size and sits
+            // tight against the title (#823).
             #if os(macOS)
             if let isExpanded {
-                Image(systemName: "chevron.down")
-                    .font(.footnote.weight(.semibold))
+                Image(systemName: "chevron.right")
+                    .font(.caption2.weight(.bold))
                     .foregroundStyle(.secondary)
-                    .rotationEffect(.degrees(isExpanded.wrappedValue ? 0 : -90))
-                    .frame(width: 14)
+                    .rotationEffect(.degrees(isExpanded.wrappedValue ? 90 : 0))
+                    .frame(width: 10)
+                    .padding(.trailing, -2)
                     .accessibilityHidden(true)
             }
             #endif
