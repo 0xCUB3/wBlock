@@ -35,13 +35,14 @@ public enum RemoveParamDNRRuleGenerator {
     private static let recognizedOptionNames: Set<String> = [
         "removeparam", "domain", "to", "third-party", "~third-party",
         "match-case", "important", "badfilter",
-        "document", "main_frame", "subdocument", "sub_frame",
+        "doc", "document", "main_frame", "subdocument", "sub_frame",
         "stylesheet", "script", "image", "font", "object",
         "xmlhttprequest", "xhr", "ping", "media", "websocket", "other",
     ]
 
     private static let resourceTypeMap: [String: [String]] = [
-        "document": ["main_frame", "sub_frame"],
+        "doc": ["main_frame"],
+        "document": ["main_frame"],
         "main_frame": ["main_frame"],
         "subdocument": ["sub_frame"],
         "sub_frame": ["sub_frame"],

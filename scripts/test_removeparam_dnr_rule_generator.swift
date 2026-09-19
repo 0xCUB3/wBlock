@@ -140,6 +140,22 @@ struct RemoveParamDNRRuleGeneratorTests {
         expectEqual(unscoped.condition.domains, nil, "unscoped domains")
         expectEqual(unscoped.condition.requestDomains, nil, "unscoped request domains")
 
+        let documentAliases = RemoveParamDNRRuleGenerator.generateRules(from: """
+        ||doc.example^$removeparam=utm,doc
+        ||document.example^$removeparam=utm,document
+        @@||document.example^$removeparam=utm,document
+        ||combined.example^$removeparam=utm,doc,subdocument
+        ||negated.example^$removeparam=utm,~doc
+        """)
+        expectEqual(documentAliases.summary.removeParamRules, 5, "document alias source count")
+        expectEqual(documentAliases.summary.exceptionRules, 1, "document alias exception count")
+        expectEqual(documentAliases.summary.skippedRules, 1, "negated document alias is skipped")
+        expectEqual(documentAliases.rules.count, 4, "document aliases and exception are generated")
+        expectEqual(documentAliases.rules[0].condition.resourceTypes, ["main_frame"], "doc scopes to main frame")
+        expectEqual(documentAliases.rules[1].condition.resourceTypes, ["main_frame"], "document scopes to main frame")
+        expectEqual(documentAliases.rules[2].condition.resourceTypes, ["main_frame"], "document exception scopes to main frame")
+        expectEqual(documentAliases.rules[3].condition.resourceTypes, ["main_frame", "sub_frame"], "combined document types preserve explicit subdocument scope")
+
         let encoder = JSONEncoder()
         _ = try encoder.encode(rules)
 

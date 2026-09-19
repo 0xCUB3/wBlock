@@ -870,6 +870,24 @@ for (const maintenanceAction of ["maybeUpdateUserScripts", "maybeStageFilterUpda
 // RemoveParam runtime compatibility/capacity and atomic replacement use the
 // canonical source so these checks do not depend on when the generated bundle
 // is refreshed.
+for (const source of [canonicalSource, bundleSource]) {
+  const rules = [
+    { id: 1500000, priority: 1, action: { type: "redirect", redirect: { transform: { queryTransform: { removeParams: ["ref"] } } } }, condition: { urlFilter: "^ref=", resourceTypes: ["main_frame"] } },
+    { id: 1500001, priority: 10000, action: { type: "allow" }, condition: { urlFilter: "^ref=", resourceTypes: ["main_frame"] } },
+  ];
+  const state = loadBackground({
+    source,
+    removeParamHandler: message => ({
+      ok: true, version: "priority-order", count: rules.length,
+      rules: message.offset === 0 ? rules : [], ruleIdBase: 1500000, ruleIdLimit: 1650000
+    }),
+    nativeHandler: () => ({ payload: makeConfig([], 1) }),
+  });
+  await sleep(50);
+  const result = await state.onMessage({ action: "wblock:getCleanURL", url: "https://docs.example/?ref=tracking" });
+  check("higher-priority document exception preserves the original URL", result.ok && result.cleanUrl === "https://docs.example/?ref=tracking");
+}
+
 {
   const rules = [
     { id: 1500000, priority: 20000, action: { type: "allow" }, condition: { requestDomains: ["disabled.example"], resourceTypes: ["main_frame"] } },

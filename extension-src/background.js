@@ -27876,7 +27876,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (!loaded.rules || loaded.rules.length === 0) return urlString;
     const originalURL = new URL(urlString);
     let url = new URL(urlString);
-    const rules = loaded.rules;
+    const rules = loaded.rules.slice().sort((a, b) => (b?.priority ?? 0) - (a?.priority ?? 0));
     for (let pass = 0; pass < 8; pass += 1) {
       let changed = false;
       for (const rule of rules) {
