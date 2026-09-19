@@ -10,6 +10,19 @@ struct ContentDownloadControl: View {
     let name: String
     let action: () -> Void
 
+    /// `.fill.tertiary` is the native capsule fill but needs macOS 14 / iOS 17.
+    /// Earlier systems get the matching semantic fill color.
+    private var capsuleFill: AnyShapeStyle {
+        if #available(macOS 14.0, iOS 17.0, *) {
+            return AnyShapeStyle(.fill.tertiary)
+        }
+        #if os(iOS)
+        return AnyShapeStyle(Color(uiColor: .tertiarySystemFill))
+        #else
+        return AnyShapeStyle(Color(nsColor: .quaternaryLabelColor))
+        #endif
+    }
+
     var body: some View {
         Toggle("", isOn: .constant(false))
             .labelsHidden()
@@ -31,12 +44,12 @@ struct ContentDownloadControl: View {
                         if isDownloading {
                             ProgressView()
                                 .controlSize(.small)
-                                .tint(.white)
+                                .tint(.primary)
                         }
                     }
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Capsule().fill(Color.accentColor))
+                    .background(Capsule().fill(capsuleFill))
                     .contentShape(Capsule())
                 }
                 .buttonStyle(.plain)
