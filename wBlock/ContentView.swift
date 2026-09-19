@@ -739,10 +739,14 @@ struct ContentView: View {
         downloadingFilterIDs.insert(filter.id)
         Task {
             let succeeded = await filterManager.filterUpdater.fetchAndProcessFilter(filter)
-            downloadingFilterIDs.remove(filter.id)
+            withAnimation(.easeInOut(duration: 0.2)) {
+                downloadingFilterIDs.remove(filter.id)
+            }
             guard let current = filterManager.filterLists.first(where: { $0.id == filter.id }) else { return }
             if succeeded {
-                downloadedFilterIDs.insert(filter.id)
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    downloadedFilterIDs.insert(filter.id)
+                }
                 filterManager.saveFilterListsCoalesced()
                 if current.isSelected { filterManager.markNonSelectionChangesPending() }
             } else {
@@ -1008,6 +1012,8 @@ struct FilterRowView: View {
             if actions.contains(.deleteList) { Button(role: .destructive, action: onDelete) { Label("Delete Added List", systemImage: "trash") } }
         }
         #endif
+        .animation(.easeInOut(duration: 0.2), value: isDownloading)
+        .animation(.easeInOut(duration: 0.2), value: isDownloaded)
     }
 
     private var filterDetails: some View {

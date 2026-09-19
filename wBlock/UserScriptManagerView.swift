@@ -721,8 +721,10 @@ struct UserScriptManagerView: View {
                 .userScript, LocalizedStrings.text("Downloading userscript"), metadata: ["script": script.name])
             _ = await userScriptManager.downloadUserScript(managedScript)
             await MainActor.run {
-                downloadingScriptIDs.remove(script.id)
-                refreshScripts()
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    downloadingScriptIDs.remove(script.id)
+                    refreshScripts()
+                }
             }
         }
     }
@@ -752,8 +754,10 @@ struct UserScriptManagerView: View {
             )
             await userScriptManager.setUserScript(managedScript, isEnabled: newValue)
             await MainActor.run {
-                downloadingScriptIDs.remove(script.id)
-                refreshScripts()
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    downloadingScriptIDs.remove(script.id)
+                    refreshScripts()
+                }
             }
         }
     }
