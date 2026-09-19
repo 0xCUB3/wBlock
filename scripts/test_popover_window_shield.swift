@@ -15,7 +15,7 @@ struct PopoverWindowShieldTests {
         precondition(!shield.consume(.leftMouseDown, in: parent))
         parent.contentView = shield
         for event in [NSEvent.EventType.leftMouseDown, .rightMouseDown, .otherMouseDown] {
-            precondition(shield.consume(event, in: parent), "outside click must be consumed, not retargeted")
+            precondition(!shield.consume(event, in: parent), "outside click must be retargeted after dismissal")
             precondition(!shield.consume(event, in: popup), "popup controls must stay interactive")
         }
         precondition(dismissals == 3)
@@ -27,6 +27,6 @@ struct PopoverWindowShieldTests {
         parent.contentView = NSView()
         precondition(shield.window == nil)
         precondition(!shield.consume(.leftMouseDown, in: parent), "detached shields must stop blocking")
-        print("PASS: popup click consumption, scroll isolation, and teardown")
+        print("PASS: popup dismissal and retargeting, scroll isolation, and teardown")
     }
 }
