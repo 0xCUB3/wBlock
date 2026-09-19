@@ -1,17 +1,17 @@
 "Edit Element Rule" = "Öğe kuralını düzenle";
-"CSS Selector" = "CSS seçicisi";
-"The rule could not be saved. It may have changed or already exist." = "Kural kaydedilemedi. Değiştirilmiş veya zaten mevcut olabilir.";
+"CSS Selector" = "CSS seçici";
+"The rule could not be saved. It may have changed or already exist." = "Kural kaydedilemedi. Değiştirilmiş olabilir veya zaten mevcut.";
 
 "Apply on" = "Uygulanacak siteler";
 "No sites selected. This list will not apply." = "Hiçbir site seçilmedi. Bu liste uygulanmayacak.";
-"Sites include their subdomains. Apply changes to update filtering." = "Siteler alt alan adlarını da içerir. Filtrelemeyi güncellemek için değişiklikleri uygulayın.";
-"Run on" = "Çalıştır";
-"All matching sites" = "Tüm eşleşen siteler";
+"Sites include their subdomains. Apply changes to update filtering." = "Siteler alt alan adlarını da kapsar. Filtrelemeyi güncellemek için değişiklikleri uygulayın.";
+"Run on" = "Çalıştırılacak siteler";
+"All matching sites" = "Eşleşen tüm siteler";
 "Only selected sites" = "Yalnızca seçilen siteler";
 "Selected Sites" = "Seçilen siteler";
-"No sites selected. This script will not run." = "Hiçbir site seçilmedi. Bu betik çalıştırılmayacaktır.";
-"This script will not run on excluded sites, even if they are selected." = "Bu betik, seçilmiş olsalar bile hariç tutulan sitelerde çalıştırılmayacaktır.";
-"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "Siteler alt alan adlarını da kapsar. Betiğin kendi eşleşme kuralları geçerliliğini korur. Değişiklik yaptıktan sonra sayfayı yeniden yükleyin.";
+"No sites selected. This script will not run." = "Hiçbir site seçilmedi. Bu betik çalışmayacak.";
+"This script will not run on excluded sites, even if they are selected." = "Bu betik, seçilmiş olsalar bile hariç tutulan sitelerde çalışmaz.";
+"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "Siteler alt alan adlarını da kapsar. Betiğin kendi eşleştirme kuralları geçerliliğini korur. Değişiklik yaptıktan sonra sayfayı yeniden yükleyin.";
 "Could not save site settings" = "Site ayarları kaydedilemedi";
 "SponsorBlock Backups" = "SponsorBlock yedekleri";
 "Import SponsorBlock Settings" = "SponsorBlock ayarlarını içe aktar";
@@ -173,7 +173,7 @@
 "Background Diagnostics" = "Arka plan görevleri";
 "Background Update Agent" = "Arka Plan Güncelleme Aracısı";
 "Backup" = "Yedek";
-"Local Backup" = "Yerel yedekleme";
+"Local Backup" = "Yerel yedek";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@ yedeklemesi (uygulama sürümü: %@, filtreler: %@). Bu işlem; mevcut filtre seçimlerinizi, izin listenizi ve öğe gizleyici kurallarınızı değiştirecektir.";
 "Balanced defaults." = "Dengeli ayarlar.";
 "Base filter only." = "Yalnızca temel filtreler.";
@@ -204,7 +204,7 @@
 "Blocks cookie consent notices on web pages." = "Web sayfalarındaki çerez onay bildirimlerini engeller.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Diğer filtrelerin kapsamadığı çeşitli rahatsız edici öğeleri engeller.";
 "Blocks online tracking and web analytics systems." = "Çevrim içi izleme ve web analitik sistemlerini engeller.";
-"Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari bu listenin inline-script kurallarını uygulayamaz. Desteklenen İngilizce siteler için Kullanıcı Betikleri bölümünde Bypass Paywalls Clean'i etkinleştirin.";
+"Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari, bu listenin satır içi komut dosyası kurallarını uygulayamıyor. Desteklenen İngilizce siteler için kullanıcı betikleri üzerinden Bypass Paywalls Clean'i etkinleştirin.";
 "Blocks pop-up ads on web pages." = "Web sayfalarındaki açılır reklamları engeller.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Tanıtım amaçlı açılır pencereleri, bülten kayıtlarını ve bildirim isteklerini engeller.";
 "Blocks social media content on webpages." = "Web sayfalarındaki sosyal medya içeriklerini engeller.";
@@ -477,7 +477,7 @@
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud Eşitlemesi geçici olarak kullanılamıyor. Lütfen birazdan tekrar deneyin.";
 "iCloud Sync needs an active iCloud account on this device." = "iCloud Eşitlemesi için bu cihazda aktif bir iCloud hesabı gereklidir.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "wBlock'u uygulanmamış değişikliklerle kapatırsanız, hiçbir şeyin unutulmaması için size bir hatırlatma göndereceğiz.";
-"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Özel Dolaşma kullanıyorsanız, wBlock Scripts ve 5 içerik engelleyici için Özel Dolaşmada İzin Ver seçeneğini de etkinleştirin. Bu ayar olmadan çerez bildirimleri ve diğer scriptlet'ler Gizli pencerelerde çalışmaz.";
+"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Özel Dolaşma kullanıyorsanız, wBlock Scripts ve 5 içerik engelleyici için Özel Dolaşmada İzin Ver seçeneğini de etkinleştirin. Bu ayar olmadan çerez bildirimleri ve diğer betikler Gizli pencerelerde çalışmaz.";
 "Ignoring invalid filter response" = "Geçersiz filtre yanıtı yok sayılıyor";
 "Import" = "İçe aktar";
 "Import Failed" = "İçe aktarılamadı";
@@ -877,7 +877,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Edit Rules" = "Kuralları düzenle";
 "View Rules" = "Kuralları görüntüle";
 "View Content" = "İçeriği görüntüle";
-"Filter updates: %d" = "Filtre güncellemeleri: %d";
+"Filter updates: %d" = "Filtre güncellendi: %d";
 "View Logs" = "Günlükleri görüntüle";
 "Waiting" = "Bekleniyor";
 "Waiting for activity" = "Etkinlik bekleniyor";
@@ -966,7 +966,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Change File" = "Dosyayı değiştir";
 "Local imports won't auto-update; re-import to replace." = "Yerelden içe aktarmalar otomatik güncellenmez; güncellemek için yeniden içe aktarın.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra, Twitch reklamlarını engeller ve karmaşık reklam engelleyici karşıtı durumları çözer.";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "TwitchAdSolutions’un vaft betiğiyle Twitch reklamlarını engeller. AdGuard Extra ile birlikte çalıştırmayın.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "TwitchAdSolutions'ın vaft betiğiyle Twitch reklamlarını engeller. AdGuard Extra ile birlikte çalıştırmayın.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Temel filtre devre dışı bırakılsın mı?";
@@ -1162,17 +1162,17 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Shared update status is unavailable." = "Paylaşılan güncelleme durumu kullanılamıyor.";
 "Shared update status lock is unavailable." = "Paylaşılan güncelleme durumu kilidine ulaşılamıyor.";
 "%@ dropped %d rules at Safari's per-extension limit." = "%@, Safari'nin genişletme başına kural sınırı nedeniyle %d kuralı yoksaydı.";
-"Updated %@" = "Güncellendi %@";
+"Updated %@" = "%@ güncellendi";
 "Dismiss" = "Kapat";
 
-"Edit Info" = "Bilgileri Düzenle";
+"Edit Info" = "Bilgileri düzenle";
 
 "Get" = "Al";
-"Autoplay" = "Otomatik Oynatma";
+"Autoplay" = "Otomatik oynatma";
 "Autoplay off" = "Otomatik oynatma kapalı";
 "Userscripts off" = "Kullanıcı betikleri kapalı";
-"Following the Autoplay setting in the Safari extension." = "Safari uzantısındaki otomatik oynatma ayarını izler.";
-"Overrides the Autoplay setting in the Safari extension." = "Safari uzantısındaki otomatik oynatma ayarını geçersiz kılar.";
+"Following the Autoplay setting in the Safari extension." = "Safari genişletmesindeki Otomatik Oynatma ayarına uyuluyor.";
+"Overrides the Autoplay setting in the Safari extension." = "Safari genişletmesindeki Otomatik Oynatma ayarını geçersiz kılar.";
 "Runs every enabled userscript that matches this site." = "Bu siteyle eşleşen tüm etkin kullanıcı betiklerini çalıştırır.";
-"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Filtre listelerini ve scriptletleri uygular. Kullanıcı betikleri, zapper ve otomatik oynatmanın kendi anahtarları vardır.";
-"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Eklenen siteler filtre listelerini ve scriptletleri atlar. Kullanıcı betikleri, zapper ve otomatik oynatmanın kendi anahtarları vardır.";
+"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Filtre listelerine ve betiklere uygular. Kullanıcı betikleri, öğe gizleyici ve otomatik oynatma ayarlarının açma/kapatma düğmeleri vardır.";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Eklenen siteler için filtre listelerini ve betikleri atlar. Kullanıcı betikleri, öğe gizleyici ve otomatik oynatma ayarlarının açma/kapatma düğmeleri vardır.";
