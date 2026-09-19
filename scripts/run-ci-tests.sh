@@ -101,7 +101,8 @@ compile_core_test cosmetic-filtering-preference scripts/test_cosmetic_filtering_
 compile_core_test cloud-custom-filters scripts/test_cloud_sync_custom_filters.swift \
   wBlock/CloudSyncCustomFilterSync.swift
 compile_core_test cloud-local-user-scripts scripts/test_cloud_sync_local_user_scripts.swift \
-  wBlock/CloudSyncUserScriptSync.swift
+  wBlock/CloudSyncUserScriptSync.swift \
+  wBlock/CloudSyncRemoteUserScriptSync.swift
 compile_core_test cloud-remote-user-scripts scripts/test_cloud_sync_remote_user_scripts.swift \
   wBlock/CloudSyncRemoteUserScriptSync.swift
 cat > "$TMP/localization-formatting-shim.swift" <<'SWIFT'
@@ -147,7 +148,8 @@ compile_core_test filter-selection-rebase scripts/test_filter_selection_rebase.s
 compile_core_test filter-list-site-exclusion scripts/test_filter_list_site_exclusion.swift
 compile_core_test userscript-pattern-budget scripts/test_userscript_pattern_budget.swift
 compile_core_test userscript-duplicates scripts/test_userscript_duplicates.swift \
-  wBlock/CloudSyncUserScriptSync.swift
+  wBlock/CloudSyncUserScriptSync.swift \
+  wBlock/CloudSyncRemoteUserScriptSync.swift
 compile_core_test issue-645-compile-order scripts/test_issue_645_compile_order.swift
 compile_core_test compilation-provenance scripts/test_compilation_provenance.swift
 compile_core_test target-compilation scripts/test_target_compilation.swift

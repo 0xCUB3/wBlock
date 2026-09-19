@@ -10,37 +10,52 @@ private enum CloudSyncError: Error {
     case cloudKitUnavailable
 }
 
+private enum CloudSyncErrorPolicy {
+    static func retryDelay(for error: CKError) -> AsyncDelay? {
+        if let seconds = error.userInfo[CKErrorRetryAfterKey] as? TimeInterval, seconds > 0 {
+            return .milliseconds(max(250, Int(seconds * 1000)))
+        }
+        let description = error.localizedDescription.lowercased()
+        if description.contains("pcs") || description.contains("oplock") { return .seconds(3) }
+        switch error.code {
+        case .networkUnavailable, .networkFailure: return .seconds(2)
+        case .serviceUnavailable, .requestRateLimited, .zoneBusy,
+             .accountTemporarilyUnavailable, .internalError, .serverRejectedRequest: return .seconds(3)
+        default: return nil
+        }
+    }
+
+    static func perform<T>(
+        operation: () async throws -> T,
+        sleep: (AsyncDelay) async throws -> Void = { try await TaskSleep.sleep(for: $0) }
+    ) async throws -> T {
+        var retries = 0
+        while true {
+            do { return try await operation() }
+            catch let error as CKError {
+                guard error.code != .serverRecordChanged, retries < 2,
+                      let delay = retryDelay(for: error) else { throw error }
+                retries += 1
+                try await sleep(delay)
+            }
+        }
+    }
+}
+
 @MainActor
 final class CloudSyncManager: ObservableObject {
-    enum SyncStatus {
-        case off
-        case on
-        case working
-        case downloading
-        case error
-        case uploading
-        case upToDate
-        case checking
+    enum SyncStatus: String {
+        case off = "Sync: Off"
+        case on = "Sync: On"
+        case working = "Sync: Working…"
+        case downloading = "Sync: Downloading…"
+        case error = "Sync: Error"
+        case uploading = "Sync: Uploading…"
+        case upToDate = "Sync: Up to date"
+        case checking = "Sync: Checking…"
 
         var localizedTitle: String {
-            switch self {
-            case .off:
-                return String(localized: "Sync: Off")
-            case .on:
-                return String(localized: "Sync: On")
-            case .working:
-                return String(localized: "Sync: Working…")
-            case .downloading:
-                return String(localized: "Sync: Downloading…")
-            case .error:
-                return String(localized: "Sync: Error")
-            case .uploading:
-                return String(localized: "Sync: Uploading…")
-            case .upToDate:
-                return String(localized: "Sync: Up to date")
-            case .checking:
-                return String(localized: "Sync: Checking…")
-            }
+            LocalizedStrings.text(rawValue, comment: "iCloud sync status")
         }
     }
 
@@ -60,6 +75,7 @@ final class CloudSyncManager: ObservableObject {
 
     @Published private(set) var isCloudKitAvailable: Bool
     @Published private(set) var isEnabled: Bool
+    @Published private(set) var syncUserScriptEnabledStates: Bool
     @Published private(set) var isSyncing: Bool = false
     @Published private(set) var status: SyncStatus = .off
     @Published private(set) var statusLine: String = String(localized: "Sync: Off")
@@ -135,6 +151,7 @@ final class CloudSyncManager: ObservableObject {
     private init() {
         isCloudKitAvailable = Self.hasCloudKitEntitlement
         isEnabled = defaults.bool(forKey: Keys.enabled)
+        syncUserScriptEnabledStates = CloudSyncUserScriptEnabledStatePolicy.syncEnabled(in: defaults)
         refreshStatusFromDefaults()
     }
 
@@ -285,6 +302,16 @@ final class CloudSyncManager: ObservableObject {
             }
             Task { await syncNow(trigger: "Enabled") }
         }
+    }
+
+    /// Local-only policy for userscript enabled states; all other script fields keep syncing.
+    func setSyncUserScriptEnabledStates(_ enabled: Bool) {
+        guard !isSyncing, enabled != syncUserScriptEnabledStates else { return }
+        syncUserScriptEnabledStates = enabled
+        CloudSyncUserScriptEnabledStatePolicy.setSyncEnabled(enabled, in: defaults)
+        if !enabled { freezeCurrentUserScriptEnabledStates() }
+        guard enabled else { return }
+        Task { await syncNow(trigger: "UserScriptEnabledStates") }
     }
 
     func syncNow(trigger: String) async {
@@ -536,73 +563,27 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func userFacingErrorMessage(for error: Error) -> String {
-        guard let ckError = error as? CKError else {
-            return error.localizedDescription
-        }
-
+        guard let ckError = error as? CKError else { return error.localizedDescription }
         let description = ckError.localizedDescription.lowercased()
-        if description.contains("pcs") || description.contains("oplock") {
-            return LocalizedStrings.text(
-                "iCloud Sync hit an iCloud account error. Try again in a moment. If it keeps happening, turn iCloud Sync off and back on. As a last resort, remove wBlock from iCloud settings, then re-enable sync.",
-                comment: "iCloud sync account error"
-            )
-        }
-
-        switch ckError.code {
+        let code: CKError.Code = description.contains("pcs") || description.contains("oplock")
+            ? .notAuthenticated : ckError.code
+        let message: String? = switch code {
         case .networkUnavailable, .networkFailure:
-            return LocalizedStrings.text(
-                "iCloud Sync couldn't reach iCloud. Check your connection and try again.",
-                comment: "iCloud sync network error"
-            )
+            "iCloud Sync couldn't reach iCloud. Check your connection and try again."
         case .serviceUnavailable, .requestRateLimited, .zoneBusy:
-            return LocalizedStrings.text(
-                "iCloud Sync is temporarily unavailable. Try again in a moment.",
-                comment: "iCloud sync temporary outage"
-            )
-        case .notAuthenticated:
-            return LocalizedStrings.text(
-                "iCloud Sync needs an active iCloud account on this device.",
-                comment: "iCloud sync authentication error"
-            )
+            "iCloud Sync is temporarily unavailable. Try again in a moment."
+        case .notAuthenticated, .accountTemporarilyUnavailable:
+            "iCloud Sync couldn't access your iCloud account. Try again, then check your iCloud sign-in in Settings."
         case .quotaExceeded:
-            return LocalizedStrings.text(
-                "iCloud Sync couldn't save because your iCloud storage is full.",
-                comment: "iCloud sync quota error"
-            )
+            "iCloud Sync couldn't save because your iCloud storage is full."
         case .permissionFailure:
-            return LocalizedStrings.text(
-                "iCloud Sync doesn't have permission to write to your iCloud account.",
-                comment: "iCloud sync permission error"
-            )
+            "iCloud Sync doesn't have permission to write to your iCloud account."
         case .serverRejectedRequest, .internalError:
-            return LocalizedStrings.text(
-                "iCloud Sync hit an iCloud server error. Try again in a moment.",
-                comment: "iCloud sync server error"
-            )
+            "iCloud Sync hit an iCloud server error. Try again in a moment."
         default:
-            return ckError.localizedDescription
+            nil
         }
-    }
-
-    private func retryDelay(for error: CKError) -> AsyncDelay? {
-        if let retryAfter = error.userInfo[CKErrorRetryAfterKey] as? TimeInterval, retryAfter > 0 {
-            return .milliseconds(max(250, Int(retryAfter * 1000)))
-        }
-
-        let description = error.localizedDescription.lowercased()
-        if description.contains("pcs") || description.contains("oplock") {
-            return .seconds(3)
-        }
-
-        switch error.code {
-        case .networkUnavailable, .networkFailure:
-            return .seconds(2)
-        case .serviceUnavailable, .requestRateLimited, .zoneBusy, .internalError,
-            .serverRejectedRequest:
-            return .seconds(3)
-        default:
-            return nil
-        }
+        return message.map { LocalizedStrings.text($0, comment: "iCloud sync error") } ?? ckError.localizedDescription
     }
 
     private func uploadLatestPayload(trigger: String, withinSyncSession: Bool = false) async {
@@ -647,6 +628,7 @@ final class CloudSyncManager: ObservableObject {
             var record = try await fetchRecord() ?? CKRecord(recordType: recordType, recordID: recordID)
 
             if let remotePayload = try? decodePayload(from: record) {
+                refreshSharedUserScriptEnabledStates(from: remotePayload)
                 await reconcileMissingDefinitionsIfNeeded(from: remotePayload)
             }
 
@@ -704,61 +686,34 @@ final class CloudSyncManager: ObservableObject {
                 return
             }
 
-            // contentHash and updatedAt are stored as top-level record fields, so compare
-            // them before downloading the payload asset. Decoding the asset is deferred until
-            // we actually have to apply the remote payload, which makes the common
-            // "nothing changed" / "local is newer" paths metadata-only fetches.
             let remoteContentHash = remoteRecord["contentHash"] as? String
-            let remoteRecordUpdatedAt = (remoteRecord["updatedAt"] as? Date)?.timeIntervalSince1970
-
+            let remoteUpdatedAt = (remoteRecord["updatedAt"] as? Date)?.timeIntervalSince1970
             if let remoteContentHash, remoteContentHash == localPayload.contentHash {
                 markUpToDate(from: localPayload, acknowledging: additionsAtStart)
                 return
             }
 
-            // Decide direction. With record fields the stored updatedAt tells us; legacy
-            // records without fields fall back to decoding the asset to compare reliably.
-            let remoteIsNewer: Bool
-            var legacyPayload: SyncPayload?
-            if let remoteRecordUpdatedAt {
-                remoteIsNewer = remoteRecordUpdatedAt > localUpdatedAt
-            } else {
-                guard let decoded = try decodePayload(from: remoteRecord) else {
-                    setStatus(.uploading)
-                    await uploadLatestPayload(trigger: "\(trigger)-BadRemote", withinSyncSession: true)
-                    return
-                }
-                legacyPayload = decoded
-                remoteIsNewer = decoded.updatedAt > localUpdatedAt
-                if decoded.contentHash == localPayload.contentHash {
-                    markUpToDate(from: localPayload, acknowledging: additionsAtStart)
-                    return
-                }
+            guard let remotePayload = try decodePayload(from: remoteRecord) else {
+                setStatus(.uploading)
+                await uploadLatestPayload(trigger: "\(trigger)-BadRemote", withinSyncSession: true)
+                return
             }
-
-            if remoteIsNewer {
-                let remotePayload: SyncPayload
-                if let legacyPayload {
-                    remotePayload = legacyPayload
-                } else {
-                    guard let decoded = try decodePayload(from: remoteRecord) else {
-                        setStatus(.uploading)
-                        await uploadLatestPayload(trigger: "\(trigger)-BadRemote", withinSyncSession: true)
-                        return
-                    }
-                    remotePayload = decoded
-                }
-                setStatus(.downloading)
-                await applyRemotePayload(
-                    remotePayload,
-                    trigger: trigger,
-                    localPayloadBaseline: localPayload,
-                    localMutationBaseline: localMutationBaseline
-                )
-            } else {
+            if remotePayload.contentHash == localPayload.contentHash {
+                markUpToDate(from: localPayload, acknowledging: additionsAtStart)
+                return
+            }
+            guard (remoteUpdatedAt ?? remotePayload.updatedAt) > localUpdatedAt else {
                 setStatus(.uploading)
                 await uploadLatestPayload(trigger: "\(trigger)-LocalNewer", withinSyncSession: true)
+                return
             }
+            setStatus(.downloading)
+            await applyRemotePayload(
+                remotePayload,
+                trigger: trigger,
+                localPayloadBaseline: localPayload,
+                localMutationBaseline: localMutationBaseline
+            )
         } catch {
             setLastSyncError(error)
             setStatus(.error)
@@ -774,6 +729,7 @@ final class CloudSyncManager: ObservableObject {
     ) async {
         logger.info("⬇️ Applying remote payload (\(trigger, privacy: .public))")
         let additionsAtStart = pendingRemoteScriptAdditions()
+        refreshSharedUserScriptEnabledStates(from: payload)
         let filterSelectionRevisionAtStart = localMutationBaseline.filterSelection
         let userScriptMutationRevisionAtStart = localMutationBaseline.userScripts
         let settingsBaseline = localPayloadBaseline.settings
@@ -1184,7 +1140,7 @@ final class CloudSyncManager: ObservableObject {
         guard userScriptManager.localMutationRevision == localMutationRevisionAtStart else { return }
         await userScriptManager.setUserScript(
             script,
-            isEnabled: isEnabled,
+            isEnabled: syncUserScriptEnabledStates ? isEnabled : script.isEnabled,
             origin: .remoteSync
         )
         guard userScriptManager.localMutationRevision == localMutationRevisionAtStart else { return }
@@ -1257,17 +1213,7 @@ final class CloudSyncManager: ObservableObject {
         let remoteDeletedLocalIdentities = Set(scripts.deletedLocalIdentities ?? [])
         let currentLocalScripts = await userScriptManager.cloudSyncLocalUserScripts()
         let localNames = currentLocalScripts.map(\.name)
-        let currentLocalModels = currentLocalScripts.map {
-            CloudSyncLocalUserScript(
-                name: $0.name,
-                content: $0.content,
-                isEnabled: $0.isEnabled,
-                description: $0.description,
-                author: $0.author,
-                homepage: $0.homepage,
-                localImportIdentity: $0.localImportIdentity
-            )
-        }
+        let currentLocalModels = currentLocalScripts.map(CloudSyncLocalUserScript.init)
         let remoteLocalScripts = scripts.local
 
         let deletedLocalNamesToClear =
@@ -1312,10 +1258,6 @@ final class CloudSyncManager: ObservableObject {
             mergeDeletedLocalUserScriptIdentities(remoteDeletedLocalIdentitiesToMerge)
         }
 
-        // Remote scripts (URL-based): ensure each desired script exists, then set its
-        // enabled / auto-update state. Downloads for missing scripts run concurrently so a
-        // multi-script restore isn't serialized behind each network fetch; the cheap local
-        // state writes are applied afterwards to keep them sequential.
         let desiredRemoteScripts = scripts.remote.filter { remote in
             let normalizedURL = CloudSyncRemoteUserScriptReconciler.normalizedURL(remote.url)
             guard !normalizedURL.isEmpty, !deletedRemoteURLs.contains(normalizedURL) else {
@@ -1364,23 +1306,12 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
-        // Local scripts (content-based)
-        // The newer remote payload is authoritative for synced local imports.
-
         let deletedLocalNames = deletedLocalUserScriptNameSet()
         let deletedLocalIdentities = deletedLocalUserScriptIdentitySet()
         let lastSyncedNames = lastSyncedLocalUserScriptNameSet()
         let lastSyncedIdentities = lastSyncedLocalUserScriptIdentitySet()
         let localScriptsToDelete = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
-            localScripts: currentLocalScripts.map {
-                CloudSyncLocalUserScript(
-                    name: $0.name,
-                    content: $0.content,
-                    isEnabled: $0.isEnabled,
-                    description: $0.description,
-                    localImportIdentity: $0.localImportIdentity
-                )
-            },
+            localScripts: currentLocalScripts.map(CloudSyncLocalUserScript.init),
             remoteScripts: remoteLocalScripts,
             deletedNames: deletedLocalNames,
             lastSyncedNames: lastSyncedNames,
@@ -1408,8 +1339,6 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
-        // A stale payload can contain a record that is also tombstoned locally.
-        // Keep it out of every restore/update pass, not just the missing-item pass.
         let restorableRemoteLocalScripts = CloudSyncLocalUserScriptReconciler.remoteScriptsAllowedAfterTombstones(
             remoteLocalScripts,
             deletedNames: deletedLocalNames,
@@ -1556,17 +1485,7 @@ final class CloudSyncManager: ObservableObject {
 
         let remoteDeletedLocalNames = Set(remotePayload.userScripts.deletedLocalNames ?? [])
         let remoteDeletedLocalIdentities = Set(remotePayload.userScripts.deletedLocalIdentities ?? [])
-        let localScripts = (await userScriptManager.cloudSyncLocalUserScripts()).map {
-            CloudSyncLocalUserScript(
-                name: $0.name,
-                content: $0.content,
-                isEnabled: $0.isEnabled,
-                description: $0.description,
-                author: $0.author,
-                homepage: $0.homepage,
-                localImportIdentity: $0.localImportIdentity
-            )
-        }
+        let localScripts = (await userScriptManager.cloudSyncLocalUserScripts()).map(CloudSyncLocalUserScript.init)
         let localNames = localScripts.map(\.name)
 
         let deletedLocalNamesToClear =
@@ -1693,17 +1612,7 @@ final class CloudSyncManager: ObservableObject {
         }
 
         let remoteLocalScripts = remotePayload.userScripts.local
-        let currentLocalScripts = (await userScriptManager.cloudSyncLocalUserScripts()).map {
-            CloudSyncLocalUserScript(
-                name: $0.name,
-                content: $0.content,
-                isEnabled: $0.isEnabled,
-                description: $0.description,
-                author: $0.author,
-                homepage: $0.homepage,
-                localImportIdentity: $0.localImportIdentity
-            )
-        }
+        let currentLocalScripts = (await userScriptManager.cloudSyncLocalUserScripts()).map(CloudSyncLocalUserScript.init)
         let missingLocalScripts = CloudSyncLocalUserScriptReconciler.missingRemoteScriptsToRestore(
             remoteScripts: remoteLocalScripts,
             localScripts: currentLocalScripts,
@@ -1800,15 +1709,10 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
-        // The local snapshot (lastLocalHash/lastLocalUpdatedAt) is refreshed by the caller
-        // when it rebuilds the payload via buildPayloadRefreshingSnapshot after reconcile.
     }
 
     // MARK: - Payload construction
 
-    /// Builds the payload while refreshing the persisted local content-hash/timestamp
-    /// snapshot in one pass. This replaces the old "refresh snapshot, then build payload"
-    /// pair so the content JSON is encoded once per cycle instead of twice.
     private func buildPayloadRefreshingSnapshot() async -> SyncPayload {
         let content = await buildPayloadContent()
         let contentData = try? sortedJSONEncoder.encode(content)
@@ -1904,6 +1808,7 @@ final class CloudSyncManager: ObservableObject {
 
         let userScriptDisabledHosts = dataManager.getUserScriptDisabledHosts()
         let currentLocalScripts = await userScriptManager.cloudSyncLocalUserScripts()
+        var sharedEnabledStates = loadSharedUserScriptEnabledStates()
         let remoteScripts = userScriptManager.userScripts
             .filter { !$0.isLocal && $0.url != nil }
             .compactMap { script -> SyncPayload.RemoteUserScript? in
@@ -1912,7 +1817,11 @@ final class CloudSyncManager: ObservableObject {
                     userScriptDisabledHosts[script.id.uuidString] ?? [])
                 return SyncPayload.RemoteUserScript(
                     url: url.absoluteString,
-                    isEnabled: script.isEnabled,
+                    isEnabled: syncUserScriptEnabledStates ? script.isEnabled : CloudSyncUserScriptEnabledStatePolicy.projectedState(
+                        localValue: script.isEnabled,
+                        key: CloudSyncUserScriptEnabledStatePolicy.remoteKey(url.absoluteString) ?? "remote:\(url.absoluteString)",
+                        sharedValues: &sharedEnabledStates
+                    ),
                     updatesAutomatically: script.updatesAutomatically,
                     category: script.category.rawValue,
                     disabledHosts: disabledHosts,
@@ -1939,7 +1848,11 @@ final class CloudSyncManager: ObservableObject {
                 return SyncPayload.LocalUserScript(
                     name: script.name,
                     content: script.content,
-                    isEnabled: script.isEnabled,
+                    isEnabled: syncUserScriptEnabledStates ? script.isEnabled : CloudSyncUserScriptEnabledStatePolicy.projectedState(
+                        localValue: script.isEnabled,
+                        key: CloudSyncUserScriptEnabledStatePolicy.localKey(identity: script.localImportIdentity, name: script.name),
+                        sharedValues: &sharedEnabledStates
+                    ),
                     description: script.description,
                     updatesAutomatically: script.updatesAutomatically,
                     category: script.category.rawValue,
@@ -1950,6 +1863,7 @@ final class CloudSyncManager: ObservableObject {
             }
             .sorted { $0.name < $1.name }
 
+        if !syncUserScriptEnabledStates { saveSharedUserScriptEnabledStates(sharedEnabledStates) }
         let deletedLocalNames = Array(deletedLocalNamesSet).sorted()
         let deletedLocalIdentities = Array(deletedLocalIdentitiesSet).sorted()
         let deletedRemoteURLs = Array(deletedRemoteUserScriptURLSet()).sorted()
@@ -2042,8 +1956,8 @@ final class CloudSyncManager: ObservableObject {
     private func fetchRecord() async throws -> CKRecord? {
         guard isCloudKitAvailable, let database else { throw CloudSyncError.cloudKitUnavailable }
         do {
-            return try await database.record(for: recordID)
-        } catch let ckError as CKError where ckError.code == .unknownItem {
+            return try await CloudSyncErrorPolicy.perform { try await database.record(for: recordID) }
+        } catch let error as CKError where error.code == .unknownItem {
             return nil
         }
     }
@@ -2051,22 +1965,9 @@ final class CloudSyncManager: ObservableObject {
     /// Low-level save with bounded retry for transient errors only (network, quota, etc.).
     /// `.serverRecordChanged` is intentionally re-thrown so the caller can reconcile the
     /// server record's definitions before retrying, rather than silently overwriting it.
-    private func saveRecord(_ record: CKRecord, retryCount: Int = 0) async throws -> CKRecord {
+    private func saveRecord(_ record: CKRecord) async throws -> CKRecord {
         guard isCloudKitAvailable, let database else { throw CloudSyncError.cloudKitUnavailable }
-        do {
-            return try await database.save(record)
-        } catch let ckError as CKError {
-            guard ckError.code != .serverRecordChanged,
-                  retryCount < 2,
-                  let delay = retryDelay(for: ckError) else {
-                throw ckError
-            }
-            logger.info(
-                "CloudKit save failed with retryable error \(ckError.code.rawValue, privacy: .public), retrying in \(String(describing: delay), privacy: .public)"
-            )
-            try await TaskSleep.sleep(for: delay)
-            return try await saveRecord(record, retryCount: retryCount + 1)
-        }
+        return try await CloudSyncErrorPolicy.perform { try await database.save(record) }
     }
 
     /// Saves the record, resolving `.serverRecordChanged` conflicts by reconciling the
@@ -2100,6 +2001,7 @@ final class CloudSyncManager: ObservableObject {
                 conflictRetries += 1
                 logger.info("Server record changed; reconciling definitions and retrying save (attempt \(conflictRetries, privacy: .public) of \(maxConflictRetries, privacy: .public))")
                 if let serverPayload = try? decodePayload(from: serverRecord) {
+                    refreshSharedUserScriptEnabledStates(from: serverPayload)
                     await reconcileMissingDefinitionsIfNeeded(from: serverPayload)
                 }
                 currentPayload = await buildPayloadRefreshingSnapshot()
@@ -2206,6 +2108,7 @@ final class CloudSyncManager: ObservableObject {
 
     private enum Keys {
         static let enabled = "cloudSyncEnabled"
+        static let sharedUserScriptEnabledStates = "cloudSyncSharedUserScriptEnabledStates"
         static let lastLocalHash = "cloudSyncLastLocalHash"
         static let lastLocalUpdatedAt = "cloudSyncLastLocalUpdatedAt"
         static let lastUploadedHash = "cloudSyncLastUploadedHash"
@@ -2220,6 +2123,38 @@ final class CloudSyncManager: ObservableObject {
         static let lastSyncedLocalUserScriptIdentities = "cloudSyncLastSyncedLocalUserScriptIdentities"
         static let deletedRemoteUserScriptURLs = "cloudSyncDeletedRemoteUserScriptURLs"
         static let pendingRemoteScriptAdditions = "cloudSyncPendingRemoteScriptAdditions"
+    }
+
+    private func loadSharedUserScriptEnabledStates() -> [String: Bool] {
+        defaults.dictionary(forKey: Keys.sharedUserScriptEnabledStates) as? [String: Bool] ?? [:]
+    }
+
+    private func saveSharedUserScriptEnabledStates(_ states: [String: Bool]) {
+        defaults.set(states, forKey: Keys.sharedUserScriptEnabledStates)
+    }
+
+    private func freezeCurrentUserScriptEnabledStates() {
+        var states = loadSharedUserScriptEnabledStates()
+        for script in userScriptManager.userScripts {
+            let key = script.isLocal
+                ? CloudSyncUserScriptEnabledStatePolicy.localKey(identity: script.localImportIdentity, name: script.name)
+                : script.url.flatMap { CloudSyncUserScriptEnabledStatePolicy.remoteKey($0.absoluteString) }
+            if let key { states[key] = script.isEnabled }
+        }
+        saveSharedUserScriptEnabledStates(states)
+    }
+
+    private func refreshSharedUserScriptEnabledStates(from payload: SyncPayload) {
+        var states = loadSharedUserScriptEnabledStates()
+        for script in payload.userScripts.remote {
+            if let key = CloudSyncUserScriptEnabledStatePolicy.remoteKey(script.url) {
+                states[key] = script.isEnabled
+            }
+        }
+        for script in payload.userScripts.local {
+            states[CloudSyncUserScriptEnabledStatePolicy.localKey(identity: script.localImportIdentity, name: script.name)] = script.isEnabled
+        }
+        saveSharedUserScriptEnabledStates(states)
     }
 
     private func pendingRemoteScriptAdditions() -> [String: String] {

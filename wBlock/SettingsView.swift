@@ -593,6 +593,15 @@ struct SettingsView: View {
                 #endif
 
             if syncManager.isCloudKitAvailable && syncManager.isEnabled {
+                Toggle("Sync Userscript Enabled States", isOn: Binding(
+                    get: { syncManager.syncUserScriptEnabledStates },
+                    set: { syncManager.setSyncUserScriptEnabledStates($0) }
+                ))
+                    .disabled(syncManager.isSyncing)
+                    #if os(macOS)
+                    .toggleStyle(MacTrailingSwitchToggleStyle())
+                    #endif
+
                 #if os(macOS)
                 CompatibleLabeledContent {
                     HStack(spacing: 8) {

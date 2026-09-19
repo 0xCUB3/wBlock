@@ -469,13 +469,12 @@
 "Icelandic ABP List" = "Icelandic ABP List";
 "iCloud Sync" = "Συγχρονισμός iCloud";
 "This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can." = "Αυτή η έκδοση GitHub/Homebrew δεν μπορεί να χρησιμοποιήσει τον συγχρονισμό iCloud. Η έκδοση App Store/TestFlight μπορεί.";
+"iCloud Sync couldn't access your iCloud account. Try again, then check your iCloud sign-in in Settings." = "Ο συγχρονισμός iCloud δεν μπόρεσε να αποκτήσει πρόσβαση στον λογαριασμό iCloud σου. Δοκίμασε ξανά και μετά έλεγξε τη σύνδεσή σου στο iCloud από τις Ρυθμίσεις.";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "Το iCloud Sync δεν μπόρεσε να φτάσει στο iCloud. Ελέγξτε τη σύνδεσή σας και δοκιμάστε ξανά.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "Δεν ήταν δυνατή η αποθήκευση του iCloud Sync επειδή ο αποθηκευτικός σας χώρος iCloud είναι γεμάτος.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "Το iCloud Sync δεν έχει άδεια εγγραφής στον λογαριασμό σας iCloud.";
-"iCloud Sync hit an iCloud account error. Try again in a moment. If it keeps happening, turn iCloud Sync off and back on. As a last resort, remove wBlock from iCloud settings, then re-enable sync." = "Το iCloud Sync παρουσίασε σφάλμα λογαριασμού iCloud. Δοκιμάστε ξανά σε λίγο. Εάν συνεχίζει να συμβαίνει, απενεργοποιήστε και ενεργοποιήστε ξανά το iCloud Sync. Ως έσχατη λύση, αφαιρέστε το wBlock από τις ρυθμίσεις iCloud και, στη συνέχεια, ενεργοποιήστε ξανά τον συγχρονισμό.";
 "iCloud Sync hit an iCloud server error. Try again in a moment." = "Το iCloud Sync παρουσίασε σφάλμα διακομιστή iCloud. Δοκιμάστε ξανά σε λίγο.";
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "Το iCloud Sync δεν είναι διαθέσιμο προσωρινά. Δοκιμάστε ξανά σε λίγο.";
-"iCloud Sync needs an active iCloud account on this device." = "Το iCloud Sync χρειάζεται έναν ενεργό λογαριασμό iCloud σε αυτήν τη συσκευή.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "Εάν κλείσετε το wBlock με μη εφαρμοσμένες αλλαγές, θα στείλουμε μια απαλή ώθηση, ώστε να μην ξεχαστεί τίποτα.";
 "If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Αν χρησιμοποιείτε Ιδιωτική περιήγηση, ενεργοποιήστε επίσης την επιλογή Αποδοχή στην Ιδιωτική περιήγηση για το wBlock Scripts και τα 5 content blockers. Χωρίς αυτήν, οι ειδοποιήσεις cookie και τα άλλα scriptlets δεν θα εκτελούνται σε ιδιωτικά παράθυρα.";
 "Ignoring invalid filter response" = "Παράβλεψη μη έγκυρης απάντησης φίλτρου";
@@ -763,6 +762,7 @@
 "Sync Now" = "Συγχρονισμός τώρα";
 "Sync settings across devices" = "Συγχρονισμός ρυθμίσεων σε όλες τις συσκευές";
 "Sync timestamps with device timezone" = "Συγχρονισμός χρονικών σημάνσεων με τη ζώνη ώρας συσκευής";
+"Sync Userscript Enabled States" = "Συγχρονισμός καταστάσεων ενεργοποίησης userscript";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Συγχρονισμός των επιλογών φίλτρων, των προσαρμοσμένων λιστών, του κώδικα χρήστη και της λίστας επιτρεπόμενων σε όλες τις συσκευές.";
 "Sync: Checking…" = "Συγχρονισμός: Έλεγχος…";
 "Sync: Downloading…" = "Συγχρονισμός: Λήψη…";

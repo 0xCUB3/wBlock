@@ -469,13 +469,12 @@
 "Icelandic ABP List" = "Icelandic ABP List";
 "iCloud Sync" = "iCloud szinkronizálás";
 "This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can." = "Ez a GitHub/Homebrew build nem használhatja az iCloud-szinkronizálást. Az App Store/TestFlight build használhatja.";
+"iCloud Sync couldn't access your iCloud account. Try again, then check your iCloud sign-in in Settings." = "Az iCloud Sync nem fért hozzá az iCloud-fiókodhoz. Próbáld újra, majd ellenőrizd az iCloud-bejelentkezésedet a Beállításokban.";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "Az iCloud Sync nem tudta elérni az iCloudot. Ellenőrizze a kapcsolatot, és próbálja újra.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "Az iCloud Sync nem tudta menteni, mert az iCloud-tárhely megtelt.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "Az iCloud Sync nem jogosult arra, hogy az Ön iCloud-fiókjába írjon.";
-"iCloud Sync hit an iCloud account error. Try again in a moment. If it keeps happening, turn iCloud Sync off and back on. As a last resort, remove wBlock from iCloud settings, then re-enable sync." = "Az iCloud Sync iCloud-fiókhibát észlelt. Próbálja újra egy pillanat múlva. Ha ez továbbra is megtörténik, kapcsolja ki, majd vissza az iCloud Sync funkciót. Végső megoldásként távolítsa el a wBlock alkalmazást az iCloud beállításai közül, majd engedélyezze újra a szinkronizálást.";
 "iCloud Sync hit an iCloud server error. Try again in a moment." = "Az iCloud Sync iCloud szerverhibába ütközött. Próbálja újra egy pillanat múlva.";
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "Az iCloud Sync átmenetileg nem érhető el. Próbálja újra egy pillanat múlva.";
-"iCloud Sync needs an active iCloud account on this device." = "Az iCloud Sync szolgáltatásnak aktív iCloud-fiókra van szüksége ezen az eszközön.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "Ha nem alkalmazott módosításokkal zárod be a wBlockot, küldünk egy finom emlékeztetőt, hogy semmi ne maradjon el.";
 "If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Ha Privát böngészést használsz, kapcsold be a Privát böngészésben engedélyezést a wBlock Scripts és az 5 tartalomblokkoló számára is. Cookie-figyelmeztetések és más scriptletek e nélkül nem futnak a privát ablakokban.";
 "Ignoring invalid filter response" = "Érvénytelen szűroválasz figyelmen kívül hagyása";
@@ -763,6 +762,7 @@
 "Sync Now" = "Szinkronizálás most";
 "Sync settings across devices" = "Beállítások szinkronizálása az eszközök között";
 "Sync timestamps with device timezone" = "Időbélyegek szinkronizálása az eszköz időzónájával";
+"Sync Userscript Enabled States" = "Userscript-bekapcsolási állapotok szinkronizálása";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Szinkronizáld az eszközök között a szűrőválasztásaidat, egyéni listáidat, felhasználói szkriptjeidet és az engedélyezőlistádat.";
 "Sync: Checking…" = "Szinkronizálás: Ellenőrzés…";
 "Sync: Downloading…" = "Szinkronizálás: Letöltés…";

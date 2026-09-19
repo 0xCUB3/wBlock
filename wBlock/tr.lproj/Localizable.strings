@@ -469,13 +469,12 @@
 "Icelandic ABP List" = "Icelandic ABP List";
 "iCloud Sync" = "iCloud Eşitlemesi";
 "This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can." = "iCloud eşitlemesi yalnızca App Store ve TestFlight sürümlerinde geçerlidir. GitHub/Homebrew sürümlerinde kullanılamaz.";
+"iCloud Sync couldn't access your iCloud account. Try again, then check your iCloud sign-in in Settings." = "iCloud Sync, iCloud hesabınıza erişemedi. Tekrar deneyin, ardından Ayarlar'da iCloud oturumunuzu kontrol edin.";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "iCloud Eşitlemesi, iCloud'a bağlanamadı. Bağlantınızı kontrol edin ve tekrar deneyin.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "iCloud saklama alanınız dolu olduğu için iCloud Eşitlemesi kaydedilemedi.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud Eşitlemesinin iCloud hesabınıza yazma izni yok.";
-"iCloud Sync hit an iCloud account error. Try again in a moment. If it keeps happening, turn iCloud Sync off and back on. As a last resort, remove wBlock from iCloud settings, then re-enable sync." = "iCloud Eşitlemesi bir iCloud hesabı hatasıyla karşılaştı. Lütfen birazdan tekrar deneyin. Sorun devam ederse, iCloud Eşitlemesini kapatıp tekrar açın. Son çare olarak, iCloud ayarlarından wBlock'u kaldırın ve ardından eşitlemeyi tekrar etkinleştirin.";
 "iCloud Sync hit an iCloud server error. Try again in a moment." = "iCloud Eşitlemesi sırasında bir iCloud sunucu hatası oluştu. Lütfen birazdan tekrar deneyin.";
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud Eşitlemesi geçici olarak kullanılamıyor. Lütfen birazdan tekrar deneyin.";
-"iCloud Sync needs an active iCloud account on this device." = "iCloud Eşitlemesi için bu cihazda aktif bir iCloud hesabı gereklidir.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "wBlock'u uygulanmamış değişikliklerle kapatırsanız, hiçbir şeyin unutulmaması için size bir hatırlatma göndereceğiz.";
 "If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Özel Dolaşma kullanıyorsanız, wBlock Scripts ve 5 içerik engelleyici için Özel Dolaşmada İzin Ver seçeneğini de etkinleştirin. Bu ayar olmadan çerez bildirimleri ve diğer betikler Gizli pencerelerde çalışmaz.";
 "Ignoring invalid filter response" = "Geçersiz filtre yanıtı yok sayılıyor";
@@ -760,6 +759,7 @@
 "Sync Now" = "Şimdi eşitle";
 "Sync settings across devices" = "Ayarları cihazlar arasında eşitle";
 "Sync timestamps with device timezone" = "Zaman damgalarını cihaz saat dilimiyle eşitle";
+"Sync Userscript Enabled States" = "Kullanıcı betiği etkinleştirme durumlarını eşitle";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Filtre seçimlerinizi, özel listelerinizi, kullanıcı betiklerinizi ve izin listenizi tüm cihazlarınızda eşitleyin.";
 "Sync: Checking…" = "Eşitleme: Kontrol ediliyor…";
 "Sync: Downloading…" = "Eşitleme: İndiriliyor…";

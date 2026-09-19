@@ -469,13 +469,12 @@
 "Icelandic ABP List" = "Icelandic ABP List";
 "iCloud Sync" = "مزامنة iCloud";
 "This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can." = "لا يمكن لهذا الإصدار من GitHub/Homebrew استخدام مزامنة iCloud. يمكن لإصدار App Store/TestFlight استخدامها.";
+"iCloud Sync couldn't access your iCloud account. Try again, then check your iCloud sign-in in Settings." = "تعذّر على iCloud Sync الوصول إلى حساب iCloud الخاص بك. حاول مرة أخرى، ثم تحقق من تسجيل دخولك إلى iCloud في الإعدادات.";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "تعذر على iCloud Sync الوصول إلى iCloud. تحقق من اتصالك وحاول مرة أخرى.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "تعذر حفظ iCloud Sync لأن مساحة تخزين iCloud لديك ممتلئة.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "ليس لدى iCloud Sync إذن بالكتابة إلى حساب iCloud الخاص بك.";
-"iCloud Sync hit an iCloud account error. Try again in a moment. If it keeps happening, turn iCloud Sync off and back on. As a last resort, remove wBlock from iCloud settings, then re-enable sync." = "حدث خطأ في iCloud Sync في حساب iCloud. حاول مرة أخرى بعد قليل. إذا استمر حدوث ذلك، فأوقف تشغيل iCloud Sync ثم أعد تشغيله مرة أخرى. كملاذ أخير، قم بإزالة wBlock من إعدادات iCloud، ثم أعد تمكين المزامنة.";
 "iCloud Sync hit an iCloud server error. Try again in a moment." = "حدث خطأ في iCloud Sync في خادم iCloud. حاول مرة أخرى بعد قليل.";
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "مزامنة iCloud غير متاحة مؤقتًا. حاول مرة أخرى بعد قليل.";
-"iCloud Sync needs an active iCloud account on this device." = "يحتاج iCloud Sync إلى حساب iCloud نشط على هذا الجهاز.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "إذا أغلقت wBlock مع تغييرات غير مطبقة، فسنرسل تذكيرًا لطيفًا حتى لا يُنسى شيء.";
 "If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "إذا كنت تستخدم التصفح الخاص، ففعّل أيضًا السماح في التصفح الخاص لـ wBlock Scripts ولجميع أدوات حظر المحتوى الخمس. بدون ذلك لن تعمل تنبيهات ملفات تعريف الارتباط وscriptlets الأخرى في النوافذ الخاصة.";
 "Ignoring invalid filter response" = "تجاهل استجابة فلتر غير صالحة";
@@ -763,6 +762,7 @@
 "Sync Now" = "المزامنة الآن";
 "Sync settings across devices" = "مزامنة الإعدادات عبر الأجهزة";
 "Sync timestamps with device timezone" = "مزامنة الطوابع الزمنية مع المنطقة الزمنية للجهاز";
+"Sync Userscript Enabled States" = "مزامنة حالات تفعيل سكربتات المستخدم";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "زامن اختيارات الفلاتر والقوائم المخصصة وسكريبتات المستخدم والقائمة البيضاء عبر الأجهزة.";
 "Sync: Checking…" = "المزامنة: جارٍ التحقق…";
 "Sync: Downloading…" = "المزامنة: جارٍ التنزيل…";

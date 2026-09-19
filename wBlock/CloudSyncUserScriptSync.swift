@@ -47,6 +47,18 @@ struct CloudSyncLocalUserScript: Codable, Equatable {
         self.disabledHosts = disabledHosts
         self.siteAccess = siteAccess
     }
+
+    init(_ script: UserScript) {
+        self.init(
+            name: script.name,
+            content: script.content,
+            isEnabled: script.isEnabled,
+            description: script.description,
+            author: script.author,
+            homepage: script.homepage,
+            localImportIdentity: script.localImportIdentity
+        )
+    }
 }
 
 enum CloudSyncLocalUserScriptReconciler {
@@ -83,18 +95,7 @@ enum CloudSyncLocalUserScriptReconciler {
 
     static func matches(existing: UserScript, remote: CloudSyncLocalUserScript) -> Bool {
         guard existing.isLocal else { return false }
-        return matches(
-            existing: CloudSyncLocalUserScript(
-                name: existing.name,
-                content: existing.content,
-                isEnabled: existing.isEnabled,
-                description: existing.description,
-                author: existing.author,
-                homepage: existing.homepage,
-                localImportIdentity: existing.localImportIdentity
-            ),
-            remote: remote
-        )
+        return matches(existing: CloudSyncLocalUserScript(existing), remote: remote)
     }
 
     static func matches(existing: CloudSyncLocalUserScript, remote: CloudSyncLocalUserScript) -> Bool {
@@ -322,11 +323,7 @@ enum CloudSyncLocalUserScriptReconciler {
         }
     }
 
-    private static func normalizedNames(_ names: [String]) -> Set<String> {
-        Set(names.map(normalizedName).filter { !$0.isEmpty })
-    }
-
-    private static func normalizedNames(_ names: Set<String>) -> Set<String> {
+    private static func normalizedNames<S: Sequence>(_ names: S) -> Set<String> where S.Element == String {
         Set(names.map(normalizedName).filter { !$0.isEmpty })
     }
 
@@ -336,5 +333,42 @@ enum CloudSyncLocalUserScriptReconciler {
 
     private static func identitySet(in scripts: [CloudSyncLocalUserScript]) -> Set<String> {
         Set(scripts.compactMap { normalizedIdentity($0.localImportIdentity) })
+    }
+}
+
+enum CloudSyncUserScriptEnabledStatePolicy {
+    static let preferenceKey = "cloudSyncSyncUserScriptEnabledStates"
+
+    static func syncEnabled(in defaults: UserDefaults) -> Bool {
+        defaults.object(forKey: preferenceKey) as? Bool ?? true
+    }
+
+    static func setSyncEnabled(_ enabled: Bool, in defaults: UserDefaults) {
+        defaults.set(enabled, forKey: preferenceKey)
+    }
+
+    static func remoteKey(_ url: String) -> String? {
+        guard let canonicalURL = CloudSyncRemoteUserScriptReconciler.canonicalURL(url) else {
+            return nil
+        }
+        return "remote:" + canonicalURL.absoluteString
+    }
+
+    static func localKey(identity: String?, name: String) -> String {
+        identity.flatMap(CloudSyncLocalUserScriptReconciler.normalizedIdentity).map {
+            "local-identity:" + $0
+        } ?? "local-name:" + CloudSyncLocalUserScriptReconciler.normalizedName(name)
+    }
+
+    static func projectedState(
+        localValue: Bool,
+        key: String,
+        sharedValues: inout [String: Bool]
+    ) -> Bool {
+        if let shared = sharedValues[key] {
+            return shared
+        }
+        sharedValues[key] = localValue
+        return localValue
     }
 }

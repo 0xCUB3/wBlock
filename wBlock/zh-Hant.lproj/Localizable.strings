@@ -469,13 +469,12 @@
 "Icelandic ABP List" = "Icelandic ABP List";
 "iCloud Sync" = "iCloud 同步";
 "This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can." = "此 GitHub/Homebrew 版本無法使用 iCloud 同步。App Store/TestFlight 版本可以使用。";
+"iCloud Sync couldn't access your iCloud account. Try again, then check your iCloud sign-in in Settings." = "iCloud Sync 無法存取你的 iCloud 帳戶。請重試，然後在「設定」中檢查 iCloud 登入狀態。";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "iCloud 同步無法到達 iCloud。檢查您的連線並重試。";
 "iCloud Sync couldn't save because your iCloud storage is full." = "iCloud 同步無法儲存，因為您的 iCloud 儲存空間已滿。";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud Sync 無權寫入您的 iCloud 帳戶。";
-"iCloud Sync hit an iCloud account error. Try again in a moment. If it keeps happening, turn iCloud Sync off and back on. As a last resort, remove wBlock from iCloud settings, then re-enable sync." = "iCloud 同步遇到 iCloud 帳號錯誤。稍後再試一次。如果這種情況持續發生，請關閉 iCloud 同步，然後重新開啟。作為最後的手段，請從 iCloud 設定中刪除 wBlock，然後重新啟用同步。";
 "iCloud Sync hit an iCloud server error. Try again in a moment." = "iCloud 同步遇到 iCloud 伺服器錯誤。稍後再試一次。";
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud 同步暫時無法使用。稍後再試一次。";
-"iCloud Sync needs an active iCloud account on this device." = "iCloud 同步需要此裝置上有一個有效的 iCloud 帳戶。";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "如果你在未套用變更時關閉 wBlock，我們會溫和提醒你，避免遺漏。";
 "If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "如果使用私人瀏覽，請同時為 wBlock Scripts 和全部 5 個內容阻擋器啟用「在私人瀏覽中允許」。否則 Cookie 提示和其他 scriptlet 不會在私人視窗中執行。";
 "Ignoring invalid filter response" = "正在忽略無效的過濾器回應";
@@ -763,6 +762,7 @@
 "Sync Now" = "立即同步";
 "Sync settings across devices" = "跨裝置同步設定";
 "Sync timestamps with device timezone" = "將時間戳記與裝置時區同步";
+"Sync Userscript Enabled States" = "同步使用者腳本啟用狀態";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "在裝置間同步你的過濾器選擇、自訂清單、使用者腳本與白名單。";
 "Sync: Checking…" = "同步：檢查中…";
 "Sync: Downloading…" = "同步：下載中…";

@@ -469,13 +469,12 @@
 "Icelandic ABP List" = "Icelandic ABP List";
 "iCloud Sync" = "Synchronizacja iCloud";
 "This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can." = "Ta kompilacja GitHub/Homebrew nie może używać synchronizacji iCloud. Kompilacja App Store/TestFlight może jej używać.";
+"iCloud Sync couldn't access your iCloud account. Try again, then check your iCloud sign-in in Settings." = "iCloud Sync nie mógł uzyskać dostępu do Twojego konta iCloud. Spróbuj ponownie, a następnie sprawdź logowanie do iCloud w Ustawieniach.";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "iCloud Sync nie może połączyć się z iCloud. Sprawdź połączenie i spróbuj ponownie.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "Nie można zapisać iCloud Sync, ponieważ pamięć iCloud jest pełna.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud Sync nie ma uprawnień do zapisu na Twoim koncie iCloud.";
-"iCloud Sync hit an iCloud account error. Try again in a moment. If it keeps happening, turn iCloud Sync off and back on. As a last resort, remove wBlock from iCloud settings, then re-enable sync." = "iCloud Sync napotkał błąd konta iCloud. Spróbuj ponownie za chwilę. Jeśli problem będzie się powtarzał, wyłącz i włącz ponownie synchronizację iCloud. W ostateczności usuń wBlock z ustawień iCloud, a następnie ponownie włącz synchronizację.";
 "iCloud Sync hit an iCloud server error. Try again in a moment." = "iCloud Sync napotkał błąd serwera iCloud. Spróbuj ponownie za chwilę.";
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "Synchronizacja iCloud jest tymczasowo niedostępna. Spróbuj ponownie za chwilę.";
-"iCloud Sync needs an active iCloud account on this device." = "iCloud Sync wymaga aktywnego konta iCloud na tym urządzeniu.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "Jeśli zamkniesz wBlock z niezastosowanymi zmianami, wyślemy delikatne przypomnienie, aby niczego nie pominąć.";
 "If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Jeśli korzystasz z trybu prywatnego, włącz także Pozwól w trybie prywatnym dla wBlock Scripts i 5 blokerów treści. Bez tego powiadomienia o plikach cookie i inne skrypty nie zadziałają w oknach prywatnych.";
 "Ignoring invalid filter response" = "Ignorowanie nieprawidłowej odpowiedzi filtru";
@@ -760,6 +759,7 @@
 "Sync Now" = "Synchronizuj teraz";
 "Sync settings across devices" = "Synchronizuj ustawienia między urządzeniami";
 "Sync timestamps with device timezone" = "Synchronizuj znaczniki czasu ze strefą czasową urządzenia";
+"Sync Userscript Enabled States" = "Synchronizuj stany włączenia userscriptów";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Synchronizuj wybrane filtry, listy niestandardowe, skrypty użytkownika i białą listę między urządzeniami.";
 "Sync: Checking…" = "Synchronizacja: Sprawdzanie…";
 "Sync: Downloading…" = "Synchronizacja: Pobieranie…";

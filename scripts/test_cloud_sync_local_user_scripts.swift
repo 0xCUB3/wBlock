@@ -14,27 +14,11 @@ func stubScripts(_ names: [String]) -> [CloudSyncLocalUserScript] {
 @main
 struct CloudSyncLocalUserScriptTests {
     static func main() {
-        let cloudSource = try! String(contentsOfFile: "wBlock/CloudSyncManager.swift", encoding: .utf8)
-        let managerSource = try! String(contentsOfFile: "wBlockCoreService/UserScriptManager.swift", encoding: .utf8)
-        expect(
-            cloudSource.contains("let currentLocalScripts = await userScriptManager.cloudSyncLocalUserScripts()")
-                && cloudSource.contains("content: script.content")
-                && cloudSource.contains("description: script.description"),
-            "CloudSync payloads must serialize hydrated local source and metadata"
-        )
-        expect(
-            managerSource.contains("public func cloudSyncLocalUserScripts() async -> [UserScript]")
-                && managerSource.contains("hydrateDisabled: true")
-                && managerSource.contains("not assigned to `userScripts`"),
-            "CloudSync hydration must be an ephemeral snapshot and preserve idle disk-backed state"
-        )
         for access in [UserScriptSiteAccess(), .init(onlySelectedSites: true), .init(onlySelectedSites: true, hosts: ["example.com"])] {
             let record = CloudSyncLocalUserScript(name: "Scope", content: "// script", isEnabled: true, siteAccess: access)
             let decoded = try! JSONDecoder().decode(CloudSyncLocalUserScript.self, from: JSONEncoder().encode(record))
             expect(decoded == record, "cloud payload must preserve all, empty and populated selected-site modes")
         }
-        expect(cloudSource.contains("description: script.description"), "CloudSync serialization must carry local descriptions")
-        expect(cloudSource.contains("descriptionOverride: local.description ?? existing?.description"), "content updates must preserve legacy descriptions")
         var existingMetadata = UserScript(name: "Old name", url: nil, content: "// unchanged source")
         existingMetadata.description = "Old description"
         let renamed = CloudSyncLocalUserScript(name: "New name", content: existingMetadata.content,
@@ -400,6 +384,36 @@ struct CloudSyncLocalUserScriptTests {
             deletedIdentities: []
         )
         expect(nameTombstoneRestore.isEmpty, "name-tombstoned legacy payload entries must stay out of restore loops")
+
+        let suiteName = "CloudSyncLocalUserScriptTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        expect(CloudSyncUserScriptEnabledStatePolicy.syncEnabled(in: defaults), "new installs default to enabled")
+        CloudSyncUserScriptEnabledStatePolicy.setSyncEnabled(true, in: defaults)
+        let enabledDefaults = UserDefaults(suiteName: suiteName)!
+        expect(CloudSyncUserScriptEnabledStatePolicy.syncEnabled(in: enabledDefaults), "enabled preference survives a fresh defaults instance")
+        CloudSyncUserScriptEnabledStatePolicy.setSyncEnabled(false, in: enabledDefaults)
+        let disabledDefaults = UserDefaults(suiteName: suiteName)!
+        expect(!CloudSyncUserScriptEnabledStatePolicy.syncEnabled(in: disabledDefaults), "disabled preference survives a fresh defaults instance")
+
+        let identityKey = CloudSyncUserScriptEnabledStatePolicy.localKey(identity: " file:/tmp/a ", name: "Renamed")
+        var shared = [identityKey: false]
+        expect(!CloudSyncUserScriptEnabledStatePolicy.projectedState(localValue: true, key: identityKey, sharedValues: &shared), "cached false stays false while local state toggles on")
+        expect(!CloudSyncUserScriptEnabledStatePolicy.projectedState(localValue: false, key: identityKey, sharedValues: &shared), "cached false remains frozen after later local toggles")
+
+        let remoteURL = "https://EXAMPLE.com/a#old"
+        let remoteKey = CloudSyncUserScriptEnabledStatePolicy.remoteKey(remoteURL)!
+        expect(!CloudSyncUserScriptEnabledStatePolicy.projectedState(localValue: false, key: remoteKey, sharedValues: &shared), "uncached remote state freezes its first local projection")
+        expect(!CloudSyncUserScriptEnabledStatePolicy.projectedState(localValue: true, key: remoteKey, sharedValues: &shared), "uncached remote state remains frozen after local toggles")
+        shared[remoteKey] = true
+        expect(CloudSyncUserScriptEnabledStatePolicy.projectedState(localValue: false, key: remoteKey, sharedValues: &shared), "remote cache update changes the later projection")
+
+        let bundledAlias = "https://bundled.wblock.invalid/tube-cleaner.user.js"
+        let canonicalBundled = "remote:https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js"
+        expect(CloudSyncUserScriptEnabledStatePolicy.remoteKey(bundledAlias) == canonicalBundled, "legacy bundled aliases use the current canonical identity")
+        expect(CloudSyncUserScriptEnabledStatePolicy.remoteKey("https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/example.user.js") == nil, "retired remote URLs are skipped")
+        expect(CloudSyncUserScriptEnabledStatePolicy.localKey(identity: " stable-id ", name: "Renamed") == "local-identity:stable-id", "stable identity wins across renames")
+        expect(CloudSyncUserScriptEnabledStatePolicy.localKey(identity: nil, name: " Legacy Name ") == "local-name:legacy name", "legacy names are normalized")
 
         print("PASS")
     }

@@ -469,13 +469,12 @@
 "Icelandic ABP List" = "Icelandic ABP List";
 "iCloud Sync" = "Sincronizare iCloud";
 "This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can." = "Această versiune GitHub/Homebrew nu poate folosi sincronizarea iCloud. Versiunea App Store/TestFlight o poate folosi.";
+"iCloud Sync couldn't access your iCloud account. Try again, then check your iCloud sign-in in Settings." = "iCloud Sync nu a putut accesa contul tău iCloud. Încearcă din nou, apoi verifică autentificarea iCloud în Setări.";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "iCloud Sync nu a putut ajunge la iCloud. Verificați conexiunea și încercați din nou.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "iCloud Sync nu a putut salva deoarece spațiul de stocare iCloud este plin.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud Sync nu are permisiunea de a scrie în contul tău iCloud.";
-"iCloud Sync hit an iCloud account error. Try again in a moment. If it keeps happening, turn iCloud Sync off and back on. As a last resort, remove wBlock from iCloud settings, then re-enable sync." = "iCloud Sync a lovit o eroare de cont iCloud. Încercați din nou peste un moment. Dacă se întâmplă în continuare, dezactivați și reporniți iCloud Sync. Ca ultimă soluție, eliminați wBlock din setările iCloud, apoi reactivați sincronizarea.";
 "iCloud Sync hit an iCloud server error. Try again in a moment." = "iCloud Sync a lovit o eroare de server iCloud. Încercați din nou peste un moment.";
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud Sync este temporar indisponibil. Încercați din nou peste un moment.";
-"iCloud Sync needs an active iCloud account on this device." = "iCloud Sync are nevoie de un cont iCloud activ pe acest dispozitiv.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "Dacă închizi wBlock cu modificări neaplicate, îți vom trimite o reamintire discretă ca să nu uiți nimic.";
 "If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Dacă folosești Navigarea privată, activează și Permite în Navigarea privată pentru wBlock Scripts și cele 5 blocatoare de conținut. Altfel, notificările cookie și celelalte scriptlet-uri nu vor rula în ferestrele private.";
 "Ignoring invalid filter response" = "Se ignoră răspunsul de filtru nevalid";
@@ -760,6 +759,7 @@
 "Sync Now" = "Sincronizează acum";
 "Sync settings across devices" = "Sincronizează setările între dispozitive";
 "Sync timestamps with device timezone" = "Sincronizează marcajele temporale cu fusul orar al dispozitivului";
+"Sync Userscript Enabled States" = "Sincronizează stările de activare ale userscripturilor";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Sincronizează între dispozitive selecțiile de filtre, listele personalizate, scripturile utilizator și lista albă.";
 "Sync: Checking…" = "Sincronizare: Se verifică…";
 "Sync: Downloading…" = "Sincronizare: Se descarcă…";
