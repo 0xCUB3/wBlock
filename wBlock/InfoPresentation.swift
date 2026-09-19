@@ -94,7 +94,7 @@ final class PopoverWindowShieldView: NSView {
         case .scrollWheel: return true
         case .leftMouseDown, .rightMouseDown, .otherMouseDown:
             dismiss()
-            return true
+            return false
         default: return false
         }
     }
