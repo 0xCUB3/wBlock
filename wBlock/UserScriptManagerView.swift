@@ -923,23 +923,7 @@ struct UserScriptManagerView: View {
         // the row opens; the Info sheet lists every action, and long press
         // is a shortcut to the same actions.
         .contextMenu { scriptMenuItems(script) }
-        .swipeActions(edge: .leading, allowsFullSwipe: false) {
-            let actions = ContextMenuActionAvailability.userScriptActions(
-                isBuiltIn: script.isBuiltIn, isLocal: script.isLocal, isDownloaded: script.isDownloaded
-            )
-            if actions.contains(.info) { Button { selectedScriptInfo = SelectedUserScript(id: script.id, action: .info) } label: { Label("Info", systemImage: "info.circle") } }
-            if actions.contains(.settings) { Button { selectedScriptSettings = SelectedUserScript(id: script.id, action: .settings) } label: { Label("Settings", systemImage: "gearshape") } }
-            if actions.contains(.viewContent) { Button { selectedScript = SelectedUserScript(id: script.id, action: .viewContent) } label: { Label("View Content", systemImage: "doc.text") } }
-            if actions.contains(.editContent) { Button { selectedScript = SelectedUserScript(id: script.id, action: .editContent) } label: { Label("Edit Content", systemImage: "pencil") } }
-        }
-        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            let actions = ContextMenuActionAvailability.userScriptActions(
-                isBuiltIn: script.isBuiltIn, isLocal: script.isLocal, isDownloaded: script.isDownloaded
-            )
-            Menu { ForEach(UserScriptDisplayCategory.allCases) { category in Button(NSLocalizedString(category.rawValue, comment: "Userscript category")) { moveScript(script.id, to: category) } } } label: { Label("Move to", systemImage: "folder") }
-            if actions.contains(.download) { Button { downloadScript(script) } label: { Label("Download", systemImage: "arrow.down.circle") } }
-            if actions.contains(.deleteScript), let managedScript { Button(role: .destructive) { removeScript(managedScript, name: script.name) } label: { Label(script.isUserStyle ? "Delete Style" : "Delete Script", systemImage: "trash") } }
-        }
+
         #endif
     }
 
@@ -970,69 +954,49 @@ struct UserScriptManagerView: View {
             isDownloaded: script.isDownloaded
         )
         if actions.contains(.info) {
-            Button {
-                selectedScriptInfo = SelectedUserScript(id: script.id, action: .info)
-            } label: {
+            Button { selectedScriptInfo = SelectedUserScript(id: script.id, action: .info) } label: {
                 Label("Info", systemImage: "info.circle")
             }
         }
         if actions.contains(.settings) {
-            Button {
-                selectedScriptSettings = SelectedUserScript(id: script.id, action: .settings)
-            } label: {
+            Button { selectedScriptSettings = SelectedUserScript(id: script.id, action: .settings) } label: {
                 Label("Settings", systemImage: "gearshape")
             }
         }
         if actions.contains(.viewContent) {
-            Button {
-                selectedScript = SelectedUserScript(id: script.id, action: .viewContent)
-            } label: {
+            Button { selectedScript = SelectedUserScript(id: script.id, action: .viewContent) } label: {
                 Label("View Content", systemImage: "doc.text")
             }
         }
         if actions.contains(.editContent) {
-            Button {
-                selectedScript = SelectedUserScript(id: script.id, action: .editContent)
-            } label: {
+            Button { selectedScript = SelectedUserScript(id: script.id, action: .editContent) } label: {
                 Label("Edit Content", systemImage: "pencil")
             }
         }
-        if actions.contains(.editInfo) {
-            Button {
-                selectedScript = SelectedUserScript(id: script.id, action: .editInfo)
-            } label: {
-                Label("Edit Info", systemImage: "square.and.pencil")
-            }
-        }
         if actions.contains(.download) {
-            Button {
-                downloadScript(script)
-            } label: {
+            Button { downloadScript(script) } label: {
                 Label("Download", systemImage: "arrow.down.circle")
             }
             .disabled(downloadingScriptIDs.contains(script.id))
         }
-        Picker(selection: Binding(
-            get: { script.displayCategory },
-            set: { category in
-                moveScript(script.id, to: category)
+        if actions.contains(.moveTo) {
+            Picker(selection: Binding(
+                get: { script.displayCategory },
+                set: { category in moveScript(script.id, to: category) }
+            )) {
+                ForEach(UserScriptDisplayCategory.allCases) { category in
+                    Text(LocalizedStringKey(category.rawValue)).tag(category)
+                }
+            } label: {
+                Label("Move to", systemImage: "folder")
             }
-        )) {
-            ForEach(UserScriptDisplayCategory.allCases) { category in
-                Text(LocalizedStringKey(category.rawValue)).tag(category)
-            }
-        } label: {
-            Label("Move to", systemImage: "folder")
         }
         if actions.contains(.deleteScript),
            let managedScript = userScriptManager.userScript(withId: script.id) {
             Button(role: .destructive) {
                 removeScript(managedScript, name: script.name)
             } label: {
-                Label(
-                    script.isUserStyle ? "Delete Style" : "Delete Script",
-                    systemImage: "trash"
-                )
+                Label(script.isUserStyle ? "Delete Style" : "Delete Script", systemImage: "trash")
             }
         }
     }

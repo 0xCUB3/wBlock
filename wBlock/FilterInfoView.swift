@@ -121,7 +121,7 @@ struct FilterInfoView: View {
     #if os(iOS)
     /// The secondary actions macOS offers in the row's context menu.
     private var actionList: some View {
-        let actions = ContextMenuActionAvailability.filterActions(for: liveFilter)
+        let actions = ContextMenuActionAvailability.filterActions(for: liveFilter, isDownloaded: hasLoadedMetadata ? cachedByteCount != nil : true)
         return InfoActionList {
             if actions.contains(.settings) {
                 InfoActionRow("Settings", systemImage: "gearshape") { showingSettings = true }
@@ -135,7 +135,7 @@ struct FilterInfoView: View {
             if actions.contains(.editInfo) {
                 InfoActionRow("Edit Info", systemImage: "square.and.pencil") { showingMetadataEditor = true }
             }
-            if let onChangeCategory {
+            if actions.contains(.moveTo), let onChangeCategory {
                 InfoCategoryRow(
                     selection: Binding(get: { liveFilter.category }, set: onChangeCategory),
                     categories: FilterListCategory.moveTargets,

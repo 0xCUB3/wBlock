@@ -7,6 +7,7 @@ enum FilterContextMenuAction: String {
     case viewRules
     case editRules
     case editInfo
+    case moveTo
     case deleteList
 }
 
@@ -17,37 +18,36 @@ enum UserScriptContextMenuAction: String {
     case editContent
     case editInfo
     case download
+    case moveTo
     case deleteScript
 }
 
 enum ContextMenuActionAvailability {
-    static func filterActions(for filter: FilterList) -> [FilterContextMenuAction] {
-        guard filter.isCustom else { return [.info, .settings, .viewRules] }
-        if filter.isInlineUserList {
-            return [.info, .settings, .editRules, .editInfo, .deleteList]
+    static func filterActions(for filter: FilterList, isDownloaded: Bool) -> [FilterContextMenuAction] {
+        var actions: [FilterContextMenuAction] = [.info, .settings]
+        if isDownloaded || filter.isInlineUserList {
+            actions.append(filter.isInlineUserList ? .editRules : .viewRules)
         }
-        // A URL-imported custom list can be inspected or removed, and its
-        // name, description, and category edited, but not its rules.
-        return [.info, .settings, .viewRules, .editInfo, .deleteList]
+        if filter.isCustom {
+            if filter.category != .foreign { actions.append(.moveTo) }
+            actions.append(.editInfo)
+            actions.append(.deleteList)
+        }
+        return actions
     }
 
-    static func userScriptActions(isBuiltIn: Bool, isLocal: Bool) -> [UserScriptContextMenuAction] {
-        userScriptActions(isBuiltIn: isBuiltIn, isLocal: isLocal, isDownloaded: true)
-    }
-
-    /// Remote scripts that have no content yet get an explicit Download action
-    /// (#665) so fetching does not require enabling them first.
     static func userScriptActions(
         isBuiltIn: Bool,
         isLocal: Bool,
         isDownloaded: Bool
     ) -> [UserScriptContextMenuAction] {
-        let download: [UserScriptContextMenuAction] = (!isLocal && !isDownloaded) ? [.download] : []
-        guard !isBuiltIn else { return [.info, .settings, .viewContent] + download }
-        if isLocal {
-            return [.info, .settings, .editContent, .editInfo, .deleteScript]
+        var actions: [UserScriptContextMenuAction] = [.info, .settings]
+        if !isLocal && !isDownloaded { actions.append(.download) }
+        if isDownloaded {
+            // URL-sourced content remains read-only because updates replace it.
+            actions.append(!isBuiltIn && isLocal ? .editContent : .viewContent)
         }
-        // A URL-imported custom script is view-only with respect to its source.
-        return [.info, .settings, .viewContent, .editInfo] + download + [.deleteScript]
+        if !isBuiltIn { actions += [.editInfo, .moveTo, .deleteScript] }
+        return actions
     }
 }
