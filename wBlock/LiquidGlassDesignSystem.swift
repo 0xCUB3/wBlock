@@ -192,8 +192,47 @@ struct ToolbarSearchField: View {
 
     @FocusState private var isFocused: Bool
     @State private var focusRequests = 0
+    @State private var usesCompactLayout = false
+    @State private var isPopoverPresented = false
 
+    @ViewBuilder
     var body: some View {
+        if #available(macOS 13.0, *) {
+            ViewThatFits(in: .horizontal) {
+                searchField
+                    .onAppear { usesCompactLayout = false }
+                Button {
+                    isExpanded = true
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                        .frame(width: 36, height: fieldHeight)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(prompt)
+                .help(prompt)
+                .onAppear { usesCompactLayout = true }
+            }
+            .modifier(ToolbarSearchFieldChrome())
+            .popover(isPresented: $isPopoverPresented, arrowEdge: .bottom) {
+                searchField
+                    .padding(8)
+            }
+            .onAppear { if isExpanded { requestFocus() } }
+            .onChangeCompat(of: isExpanded) { _, wantsFocus in
+                if wantsFocus { requestFocus() }
+            }
+        } else {
+            searchField
+                .modifier(ToolbarSearchFieldChrome())
+                .onAppear { if isExpanded { requestFocus() } }
+                .onChangeCompat(of: isExpanded) { _, wantsFocus in
+                    if wantsFocus { requestFocus() }
+                }
+        }
+    }
+
+    private var searchField: some View {
         HStack(spacing: 5) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 12, weight: .semibold))
@@ -217,13 +256,9 @@ struct ToolbarSearchField: View {
         }
         .padding(.horizontal, 10)
         .frame(width: 200, height: fieldHeight)
-        .modifier(ToolbarSearchFieldChrome())
+        .contentShape(Rectangle())
         .background(ToolbarFieldFocuser(request: focusRequests))
         .animation(.easeOut(duration: 0.15), value: text.isEmpty)
-        .onAppear { if isExpanded { requestFocus() } }
-        .onChangeCompat(of: isExpanded) { _, wantsFocus in
-            if wantsFocus { requestFocus() }
-        }
     }
 
     private var fieldHeight: CGFloat {
@@ -233,12 +268,16 @@ struct ToolbarSearchField: View {
 
     private func requestFocus() {
         focusRequests += 1
+        if usesCompactLayout {
+            isPopoverPresented = true
+        }
         DispatchQueue.main.async { isExpanded = false }
     }
 
     private func dismissSearch() {
         text = ""
         isFocused = false
+        isPopoverPresented = false
         NSApp.keyWindow?.makeFirstResponder(nil)
     }
 }
