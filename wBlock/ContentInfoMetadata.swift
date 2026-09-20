@@ -95,45 +95,86 @@ struct CopyURLButton: View {
     }
 }
 
+/// A grouped metadata container shared by filter and userscript info views.
+struct InfoMetadataList<Content: View>: View {
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        _VariadicView.Tree(Rows()) { content() }
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private struct Rows: _VariadicView_UnaryViewRoot {
+        func body(children: _VariadicView.Children) -> some View {
+            VStack(spacing: 0) {
+                ForEach(children) { child in
+                    child
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    if child.id != children.last?.id {
+                        Divider().padding(.leading, 14).padding(.trailing, 14)
+                    }
+                }
+            }
+        }
+    }
+}
+
 struct InfoMetadataRow: View {
     let title: LocalizedStringKey
     let value: String
     var url: URL? = nil
     var color: Color = .primary
 
-    /// Values longer than this drop under the title. A URL of this length
-    /// wraps beside the title into a centered ragged block.
     private static let inlineValueLimit = 40
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.openURL) private var openURL
+
+    private var shouldStack: Bool {
+        value.count > Self.inlineValueLimit || dynamicTypeSize.isAccessibilitySize
+    }
 
     var body: some View {
         Group {
-            if value.count > Self.inlineValueLimit {
-                VStack(alignment: .leading, spacing: 2) {
-                    titleLabel
-                    valueLabel
+            if shouldStack {
+                stackedLayout
+            } else if #available(macOS 13.0, iOS 16.0, *) {
+                ViewThatFits(in: .horizontal) {
+                    inlineLayout
+                    stackedLayout
                 }
             } else {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    titleLabel.fixedSize(horizontal: true, vertical: false)
-                    valueLabel
-                }
+                stackedLayout
             }
         }
         .font(.callout)
     }
 
-    private var titleLabel: some View {
-        HStack(spacing: 0) { Text(title); Text(verbatim: ":") }
-            .foregroundStyle(.secondary)
+    private var inlineLayout: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            titleLabel.fixedSize(horizontal: true, vertical: false)
+            Spacer(minLength: 8)
+            valueLabel.fixedSize(horizontal: true, vertical: false)
+        }
     }
 
-    @Environment(\.openURL) private var openURL
+    private var stackedLayout: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            titleLabel
+            valueLabel
+        }
+    }
+
+    private var titleLabel: some View {
+        Text(title)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
 
     private var valueLabel: some View {
         Group {
             if let url {
-                // Link centers its wrapped lines regardless of alignment; a Text
-                // with an open action wraps ragged-left like the other rows.
                 Button { openURL(url) } label: {
                     Text(verbatim: value)
                         .foregroundStyle(Color.accentColor)
@@ -147,7 +188,6 @@ struct InfoMetadataRow: View {
         .multilineTextAlignment(.leading)
         .textSelection(.enabled)
         .fixedSize(horizontal: false, vertical: true)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

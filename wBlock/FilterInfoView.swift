@@ -81,16 +81,18 @@ struct FilterInfoView: View {
                     }
                 }
             }
-            VStack(alignment: .leading, spacing: 6) {
+            InfoMetadataList {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString("Filters", comment: "Content type"), color: .red)
                 if onChangeCategory == nil {
                     InfoMetadataRow(title: "Category", value: liveFilter.category.localizedName)
                 }
                 if liveFilter.isSelected, let submitted = liveFilter.uniqueRuleCount {
-                    InfoMetadataRow(title: "Source Rules", value: submitted.formatted())
-                    Text("Source rules submitted to the converter at last apply, not Safari’s final rule count.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        InfoMetadataRow(title: "Source Rules", value: submitted.formatted())
+                        Text("Source rules submitted to the converter at last apply, not Safari’s final rule count.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 InfoMetadataRow(title: "Author", value: cachedMetadata.author ?? String(localized: "Not provided"))
                 InfoMetadataRow(
@@ -100,8 +102,10 @@ struct FilterInfoView: View {
                 )
                 if !liveFilter.version.isEmpty { InfoMetadataRow(title: "Version", value: liveFilter.version) }
                 if liveFilter.url.scheme?.lowercased() == "http" || liveFilter.url.scheme?.lowercased() == "https" {
-                    InfoMetadataRow(title: "Source URL", value: liveFilter.url.absoluteString, url: liveFilter.url)
-                    CopyURLButton(url: liveFilter.url)
+                    VStack(alignment: .leading, spacing: 6) {
+                        InfoMetadataRow(title: "Source URL", value: liveFilter.url.absoluteString, url: liveFilter.url)
+                        CopyURLButton(url: liveFilter.url)
+                    }
                 }
                 if let size = cachedByteCount {
                     InfoMetadataRow(title: "Size", value: ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))

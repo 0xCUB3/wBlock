@@ -1272,7 +1272,7 @@ struct UserScriptInfoSidebar: View {
                 ScriptNameAndDescriptionView(script: script, isBeta: isBeta, onClose: onClose)
                 ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0, isBuiltIn: isBuiltIn)
             }
-            VStack(alignment: .leading, spacing: 6) {
+            InfoMetadataList {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString(
                     script.isUserStyle ? "Userstyle" : (isIntegratedUserScript(script, isBuiltIn: isBuiltIn, builtInDisplayRole: builtInDisplayRole) ? "Integrated" : "Userscript"),
                     comment: "Content type"
