@@ -39,12 +39,12 @@
             </div>
             <div id="userscripts-section" hidden>
                 <div class="disclosure-row">
-                    <button id="userscripts-toggle" class="disclosure" type="button" aria-expanded="false">
+                    <button id="userscripts-toggle" class="disclosure" type="button" aria-expanded="false" aria-controls="userscripts-panel">
+                        <span id="userscripts-title" data-i18n="popup_userscripts">Userscripts</span>
                         <span class="disclosure-meta">
                             <span id="userscripts-chevron" class="chevron" aria-hidden="true"></span>
                             <span id="userscripts-count" class="value">0</span>
                         </span>
-                        <span id="userscripts-title" data-i18n="popup_userscripts">Userscripts</span>
                     </button>
                     <label class="switch" for="userscripts-site-toggle">
                         <input id="userscripts-site-toggle" type="checkbox" checked aria-labelledby="userscripts-title" />
@@ -75,7 +75,7 @@
                 <button id="zapper-activate" class="btn btn-primary" type="button" data-i18n="popup_button_activate">Activate</button>
                 <button id="zapper-clear" class="btn btn-secondary" type="button" disabled data-i18n="popup_button_clear">Clear</button>
             </div>
-            <button id="zapper-rules-toggle" class="disclosure" type="button" aria-expanded="false">
+            <button id="zapper-rules-toggle" class="disclosure" type="button" aria-expanded="false" aria-controls="zapper-rules-panel">
                 <span data-i18n="popup_rules">Rules</span>
                 <span id="zapper-rules-chevron" class="chevron" aria-hidden="true"></span>
             </button>

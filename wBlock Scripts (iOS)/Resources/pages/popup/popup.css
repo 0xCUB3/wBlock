@@ -412,7 +412,7 @@ body {
   font-size: 15px;
   font-weight: 400;
   letter-spacing: -0.23px;
-  text-align: left;
+  text-align: start;
 }
 
 .disclosure:active {
@@ -463,6 +463,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 0 0 auto;
 }
 
 /* Disclosure with a trailing switch: the button keeps its full-row hit area
@@ -475,12 +476,12 @@ body {
 .disclosure-row .disclosure {
   flex: 1 1 auto;
   min-width: 0;
-  padding-right: 8px;
+  padding-inline-end: 8px;
 }
 
 .disclosure-row .switch {
   flex: 0 0 auto;
-  margin-right: 14px;
+  margin-inline-end: 14px;
 }
 
 .rules {
