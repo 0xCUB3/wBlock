@@ -119,10 +119,8 @@ struct InfoCategoryRow<Category: Hashable & Identifiable>: View {
                 Text("Move to")
                 Spacer()
                 Text(name(selection))
-                    .foregroundStyle(.secondary)
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
             }
             .foregroundStyle(Color.accentColor)
             .padding(.horizontal, 14)
