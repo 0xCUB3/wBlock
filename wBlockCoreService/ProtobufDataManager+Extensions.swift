@@ -125,6 +125,7 @@ extension ProtobufDataManager {
             let storedURL = PersistedFilterURL.resolve(protoData.url)
             let category = mapProtoToFilterListCategory(protoData.category)
             let isCustom = normalizedCustomStatus(for: protoData)
+                || isInlineUserListURL(storedURL.url.absoluteString)
 
             return FilterList(
                 id: StableRecordIdentifier.uuid(rawValue: protoData.id, namespace: "filter", source: protoData.url.isEmpty ? protoData.name : protoData.url),
