@@ -95,6 +95,29 @@ struct CopyURLButton: View {
     }
 }
 
+enum InfoMetadataValueStyle: Equatable {
+    case plain
+    case typeBadge
+}
+
+struct InfoTypeBadge: View {
+    let text: String
+
+    var body: some View {
+        Text(verbatim: text)
+            .font(.callout.weight(.medium))
+            .foregroundStyle(.primary)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .fill(Color.secondary.opacity(0.18))
+            )
+    }
+}
+
 /// A grouped metadata container shared by filter and userscript info views.
 struct InfoMetadataList<Content: View>: View {
     @ViewBuilder let content: () -> Content
@@ -126,6 +149,7 @@ struct InfoMetadataRow: View {
     let value: String
     var url: URL? = nil
     var color: Color = .primary
+    var valueStyle: InfoMetadataValueStyle = .plain
 
     private static let inlineValueLimit = 40
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -181,6 +205,8 @@ struct InfoMetadataRow: View {
                         .multilineTextAlignment(.leading)
                 }
                 .buttonStyle(.plain)
+            } else if valueStyle == .typeBadge {
+                InfoTypeBadge(text: value)
             } else {
                 Text(verbatim: value).foregroundStyle(color)
             }

@@ -106,9 +106,11 @@ struct InfoSheetContainer<Header: View, Content: View>: View {
                 scrollContent
             }
             #else
-            header()
-                .frame(maxWidth: .infinity, alignment: .leading)
             ScrollView { scrollContent }
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    header()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             #endif
         }
     }
@@ -142,8 +144,32 @@ struct InfoSheetHeader<Title: View>: View {
         .padding(.horizontal, SheetDesign.contentHorizontalPadding)
         .padding(.top, SheetDesign.contentHorizontalPadding)
         .padding(.bottom, 12)
+        #if os(iOS)
+        .background {
+            Group {
+                InfoSheetHeaderBackground()
+            }
+            .ignoresSafeArea(.container, edges: .top)
+        }
+        .overlay(alignment: .bottom) { Divider() }
+        #endif
     }
 }
+
+#if os(iOS)
+private struct InfoSheetHeaderBackground: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    @ViewBuilder
+    var body: some View {
+        if reduceTransparency {
+            Color(uiColor: .systemBackground)
+        } else {
+            Rectangle().fill(.ultraThinMaterial)
+        }
+    }
+}
+#endif
 
 // MARK: - Reusable Sheet Header
 

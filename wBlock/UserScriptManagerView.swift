@@ -1249,7 +1249,7 @@ struct UserScriptInfoSidebar: View {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString(
                     script.isUserStyle ? "Userstyle" : (isIntegratedUserScript(script, isBuiltIn: isBuiltIn, builtInDisplayRole: builtInDisplayRole) ? "Integrated" : "Userscript"),
                     comment: "Content type"
-                ), color: script.isUserStyle ? .purple : .red)
+                ), valueStyle: .typeBadge)
                 InfoMetadataRow(title: "Author", value: metadata.author ?? String(localized: "Not provided"))
                 InfoMetadataRow(
                     title: "Homepage",
