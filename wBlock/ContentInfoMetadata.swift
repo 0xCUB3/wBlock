@@ -198,6 +198,7 @@ private struct InfoContentHeight: PreferenceKey {
 }
 
 struct InfoContentScrollView<Content: View>: View {
+    var maximumHeight: CGFloat = 640
     @ViewBuilder var content: () -> Content
     @State private var contentHeight: CGFloat = 360
 
@@ -207,7 +208,7 @@ struct InfoContentScrollView<Content: View>: View {
                 Color.clear.preference(key: InfoContentHeight.self, value: proxy.size.height)
             })
         }
-        .frame(height: min(contentHeight, 640))
+        .frame(height: min(contentHeight, maximumHeight))
         .onPreferenceChange(InfoContentHeight.self) { height in
             if height > 0 { contentHeight = height }
         }

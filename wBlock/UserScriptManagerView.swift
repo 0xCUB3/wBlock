@@ -1037,39 +1037,6 @@ struct UserScriptManagerView: View {
 
 // MARK: - UserScriptInfoSidebar Subviews
 
-private struct ScriptNameAndDescriptionView: View {
-    let script: UserScript
-    let isBeta: Bool
-    var onClose: (() -> Void)? = nil
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 8) {
-                // The badge shares the title's first baseline so it reads as
-                // part of the name. Done stays pinned to the top corner.
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(script.localizedDisplayName)
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.primary)
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if isBeta {
-                        Badge(text: "Beta", color: .orange)
-                    }
-                }
-                if let onClose {
-                    Spacer(minLength: 8)
-                    SheetDoneButton(action: onClose)
-                }
-            }
-            if !script.localizedDisplayDescription.isEmpty {
-                Text(script.localizedDisplayDescription).font(.body).foregroundStyle(.secondary).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-}
-
 private struct ScriptStatusBadgesView: View {
     let script: UserScript
     let isDownloaded: Bool
@@ -1255,9 +1222,7 @@ struct UserScriptInfoSidebar: View {
     let formatFileSize: (Int) -> String
     let isBuiltIn: Bool
     let builtInDisplayRole: BuiltInUserScriptDisplayRole?
-    let isBeta: Bool
     let onCategoryChanged: (FilterListCategory) -> Void
-    var onClose: (() -> Void)? = nil
     /// False when the sheet shows a category picker in its action list.
     var showsBuiltInCategory = true
 
@@ -1269,7 +1234,13 @@ struct UserScriptInfoSidebar: View {
                 homepage: script.homepage.flatMap(URL.init(string:)) ?? sourceMetadata.homepage
             )
             VStack(alignment: .leading, spacing: 8) {
-                ScriptNameAndDescriptionView(script: script, isBeta: isBeta, onClose: onClose)
+                if !script.localizedDisplayDescription.isEmpty {
+                    Text(script.localizedDisplayDescription)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0, isBuiltIn: isBuiltIn)
             }
             InfoMetadataList {
@@ -1287,7 +1258,7 @@ struct UserScriptInfoSidebar: View {
                     ContentCategoryPicker(selection: Binding(
                         get: { script.category.isUserScriptOnly ? script.category : .scriptOther },
                         set: onCategoryChanged
-                    ), categories: FilterListCategory.userScriptCategories)
+                    ), categories: FilterListCategory.userScriptCategories, usesMetadataLayout: true)
                 }
                 InfoMetadataRow(title: "Author", value: metadata.author ?? String(localized: "Not provided"))
                 InfoMetadataRow(
@@ -1321,14 +1292,31 @@ struct UserScriptInfoView: View {
     @State private var showingSource = false
     @State private var confirmingDelete = false
 
+    private var showsCategoryInMetadata: Bool {
+        #if os(iOS)
+        onChangeDisplayCategory == nil
+        #else
+        true
+        #endif
+    }
+
     var body: some View {
         Group {
             if let script {
-                #if os(iOS)
-                // The sidebar shows the name as its heading with the close
-                // button beside it; a navigation bar on top read as a duplicate
-                // title (#628) and left an empty row above the content (#793).
-                ScrollView {
+                InfoSheetContainer {
+                    InfoSheetHeader {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(script.localizedDisplayName)
+                                .font(.title2.weight(.semibold))
+                                .foregroundStyle(.primary)
+                                .textSelection(.enabled)
+                                .fixedSize(horizontal: false, vertical: true)
+                            if userScriptManager.isBeta(for: script) {
+                                Badge(text: "Beta", color: .orange)
+                            }
+                        }
+                    } onDismiss: { dismiss() }
+                } content: {
                     UserScriptInfoSidebar(
                         script: script,
                         contentLength: script.content.utf8.count,
@@ -1336,39 +1324,35 @@ struct UserScriptInfoView: View {
                         formatFileSize: formatFileSize,
                         isBuiltIn: userScriptManager.isDefaultUserScript(script),
                         builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
-                        isBeta: userScriptManager.isBeta(for: script),
                         onCategoryChanged: setCategory,
-                        onClose: { dismiss() },
-                        showsBuiltInCategory: onChangeDisplayCategory == nil
+                        showsBuiltInCategory: showsCategoryInMetadata
                     )
-                    .padding()
+                    #if os(iOS)
                     actionList(for: script)
-                        .padding([.horizontal, .bottom])
+                    #endif
                 }
-                #else
-                InfoContentScrollView {
-                    UserScriptInfoSidebar(
-                        script: script,
-                        contentLength: script.content.utf8.count,
-                        isPatternsExpanded: $isPatternsExpanded,
-                        formatFileSize: formatFileSize,
-                        isBuiltIn: userScriptManager.isDefaultUserScript(script),
-                        builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
-                        isBeta: userScriptManager.isBeta(for: script),
-                        onCategoryChanged: setCategory,
-                        onClose: { dismiss() }
-                    )
-                    .padding(20)
-                }
+                #if os(macOS)
                 .frame(width: 460)
                 #endif
             } else if isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                VStack(spacing: 0) {
+                    InfoSheetHeader { EmptyView() } onDismiss: { dismiss() }
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                #if os(macOS)
+                .frame(width: 460)
+                #endif
             } else {
-                Text("Unable to load script")
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                VStack(spacing: 0) {
+                    InfoSheetHeader { EmptyView() } onDismiss: { dismiss() }
+                    Text("Unable to load script")
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                #if os(macOS)
+                .frame(width: 460)
+                #endif
             }
         }
         .sheet(isPresented: $showingMetadataEditor, onDismiss: {

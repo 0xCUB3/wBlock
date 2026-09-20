@@ -78,6 +78,73 @@ extension View {
     }
 }
 
+// MARK: - Fixed-header info sheets
+
+/// An info sheet keeps its title and dismiss control outside the scroll view.
+struct InfoSheetContainer<Header: View, Content: View>: View {
+    let header: () -> Header
+    let content: () -> Content
+    #if os(macOS)
+    @State private var headerHeight: CGFloat = 0
+    #endif
+
+    init(@ViewBuilder header: @escaping () -> Header, @ViewBuilder content: @escaping () -> Content) {
+        self.header = header
+        self.content = content
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            #if os(macOS)
+            header()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(GeometryReader { proxy in
+                    Color.clear.preference(key: InfoSheetHeaderHeight.self, value: proxy.size.height)
+                })
+                .onPreferenceChange(InfoSheetHeaderHeight.self) { headerHeight = $0 }
+            InfoContentScrollView(maximumHeight: max(0, 640 - headerHeight)) {
+                scrollContent
+            }
+            #else
+            header()
+                .frame(maxWidth: .infinity, alignment: .leading)
+            ScrollView { scrollContent }
+            #endif
+        }
+    }
+
+    private var scrollContent: some View {
+        VStack(alignment: .leading, spacing: 16) { content() }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+            .padding(.bottom, SheetDesign.contentHorizontalPadding)
+    }
+}
+
+#if os(macOS)
+private struct InfoSheetHeaderHeight: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+#endif
+
+struct InfoSheetHeader<Title: View>: View {
+    let title: () -> Title
+    let onDismiss: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            title()
+                .frame(maxWidth: .infinity, alignment: .leading)
+            SheetDoneButton(action: onDismiss)
+                .fixedSize()
+        }
+        .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+        .padding(.top, SheetDesign.contentHorizontalPadding)
+        .padding(.bottom, 12)
+    }
+}
+
 // MARK: - Reusable Sheet Header
 
 struct SheetHeader: View {

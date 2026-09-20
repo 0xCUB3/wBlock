@@ -23,11 +23,18 @@ struct FilterInfoView: View {
 
     var body: some View {
         Group {
+            InfoSheetContainer {
+                InfoSheetHeader {
+                    Text(liveFilter.localizedDisplayName)
+                        .font(.title2.weight(.semibold))
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                } onDismiss: { dismiss() }
+            } content: {
+                infoContent
+            }
             #if os(macOS)
-            InfoContentScrollView { infoContent.padding(20) }
-                .frame(width: 460)
-            #else
-            infoContent.padding(20).infoSheetChromeCompat { dismiss() }
+            .frame(width: 460)
             #endif
         }
         .sheet(isPresented: $showingMetadataEditor) {
@@ -62,14 +69,6 @@ struct FilterInfoView: View {
     private var infoContent: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top) {
-                    Text(liveFilter.localizedDisplayName)
-                        .font(.title2.weight(.semibold))
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 8)
-                    SheetDoneButton { dismiss() }
-                }
                 if !liveFilter.localizedDisplayDescription.isEmpty {
                     Text(liveFilter.localizedDisplayDescription)
                         .foregroundStyle(.secondary)
