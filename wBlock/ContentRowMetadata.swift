@@ -106,22 +106,30 @@ struct InfoCategoryRow<Category: Hashable & Identifiable>: View {
     let name: (Category) -> String
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "folder")
-                .frame(width: 22)
-                .foregroundStyle(Color.accentColor)
-            Text("Category")
-            Spacer()
-            Picker("Category", selection: $selection) {
+        Menu {
+            Picker("Move to", selection: $selection) {
                 ForEach(categories) { category in
                     Text(name(category)).tag(category)
                 }
             }
-            .pickerStyle(.menu)
-            .labelsHidden()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "folder")
+                    .frame(width: 22)
+                Text("Move to")
+                Spacer()
+                Text(name(selection))
+                    .foregroundStyle(.secondary)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .foregroundStyle(Color.accentColor)
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, 14)
-        .frame(minHeight: 44)
+        .buttonStyle(.plain)
     }
 }
 #endif

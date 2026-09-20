@@ -189,21 +189,14 @@ struct ContentCategoryPicker: View {
     @Binding var selection: FilterListCategory
     let categories: [FilterListCategory]
     var categoryName: (FilterListCategory) -> String = { $0.localizedName }
-    /// Used by metadata rows; add/edit forms retain the compact inline layout.
-    var usesMetadataLayout = false
-
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: usesMetadataLayout ? 8 : 4) {
-            if usesMetadataLayout {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            HStack(spacing: 0) {
                 Text("Category")
-                    .foregroundStyle(.secondary)
-                    .fixedSize()
-                Spacer(minLength: 8)
-            } else {
-                HStack(spacing: 0) { Text("Category"); Text(verbatim: ":") }
-                    .foregroundStyle(.secondary)
-                    .fixedSize()
+                Text(verbatim: ":")
             }
+            .foregroundStyle(.secondary)
+            .fixedSize()
             Picker("Category", selection: $selection) {
                 ForEach(categories) { category in
                     Text(categoryName(category)).tag(category)

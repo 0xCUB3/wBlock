@@ -1146,8 +1146,13 @@ private struct ScriptMatchPatternsView: View {
                     Image(systemName: isPatternsExpanded ? "chevron.down" : "chevron.right")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain).noFocusRingCompat().padding(.horizontal, 8).padding(.vertical, 6).cornerRadius(6).onHover { _ in }
+            .buttonStyle(.plain)
+            .noFocusRingCompat()
 
             if isPatternsExpanded {
                 ScrollView {
@@ -1222,9 +1227,6 @@ struct UserScriptInfoSidebar: View {
     let formatFileSize: (Int) -> String
     let isBuiltIn: Bool
     let builtInDisplayRole: BuiltInUserScriptDisplayRole?
-    let onCategoryChanged: (FilterListCategory) -> Void
-    /// False when the sheet shows a category picker in its action list.
-    var showsBuiltInCategory = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -1248,18 +1250,6 @@ struct UserScriptInfoSidebar: View {
                     script.isUserStyle ? "Userstyle" : (isIntegratedUserScript(script, isBuiltIn: isBuiltIn, builtInDisplayRole: builtInDisplayRole) ? "Integrated" : "Userscript"),
                     comment: "Content type"
                 ), color: script.isUserStyle ? .purple : .red)
-                if isBuiltIn {
-                    if showsBuiltInCategory {
-                    InfoMetadataRow(title: "Category", value: NSLocalizedString(UserScriptDisplayCategorySupport.category(
-                        isUserStyle: script.isUserStyle, builtInRole: builtInDisplayRole, persistedCategory: script.category
-                    ).rawValue, comment: "Userscript category"))
-                    }
-                } else {
-                    ContentCategoryPicker(selection: Binding(
-                        get: { script.category.isUserScriptOnly ? script.category : .scriptOther },
-                        set: onCategoryChanged
-                    ), categories: FilterListCategory.userScriptCategories, usesMetadataLayout: true)
-                }
                 InfoMetadataRow(title: "Author", value: metadata.author ?? String(localized: "Not provided"))
                 InfoMetadataRow(
                     title: "Homepage",
@@ -1292,14 +1282,6 @@ struct UserScriptInfoView: View {
     @State private var showingSource = false
     @State private var confirmingDelete = false
 
-    private var showsCategoryInMetadata: Bool {
-        #if os(iOS)
-        onChangeDisplayCategory == nil
-        #else
-        true
-        #endif
-    }
-
     var body: some View {
         Group {
             if let script {
@@ -1323,9 +1305,7 @@ struct UserScriptInfoView: View {
                         isPatternsExpanded: $isPatternsExpanded,
                         formatFileSize: formatFileSize,
                         isBuiltIn: userScriptManager.isDefaultUserScript(script),
-                        builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
-                        onCategoryChanged: setCategory,
-                        showsBuiltInCategory: showsCategoryInMetadata
+                        builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script)
                     )
                     #if os(iOS)
                     actionList(for: script)
@@ -1408,7 +1388,7 @@ struct UserScriptInfoView: View {
                     dismiss()
                 }
             }
-            if isBuiltIn, let onChangeDisplayCategory {
+            if actions.contains(.moveTo) {
                 InfoCategoryRow(
                     selection: Binding(
                         get: {
@@ -1418,10 +1398,7 @@ struct UserScriptInfoView: View {
                                 persistedCategory: script.category
                             )
                         },
-                        set: { category in
-                            onChangeDisplayCategory(category)
-                            Task { self.script = await userScriptManager.userScriptEditorSnapshot(withId: scriptId) }
-                        }
+                        set: setDisplayCategory
                     ),
                     categories: UserScriptDisplayCategory.allCases,
                     name: { NSLocalizedString($0.rawValue, comment: "Userscript category") }
@@ -1450,11 +1427,17 @@ struct UserScriptInfoView: View {
     }
     #endif
 
-    private func setCategory(_ category: FilterListCategory) {
-        guard var currentScript = script, !userScriptManager.isDefaultUserScript(currentScript) else { return }
-        currentScript.category = category
+    private func setDisplayCategory(_ category: UserScriptDisplayCategory) {
+        guard var currentScript = script,
+              let mappedCategory = FilterListCategory(rawValue: category.rawValue)
+        else { return }
+        currentScript.category = mappedCategory
         script = currentScript
-        Task { await userScriptManager.setUserScript(currentScript, category: category) }
+        if let onChangeDisplayCategory {
+            onChangeDisplayCategory(category)
+        } else {
+            Task { await userScriptManager.setUserScript(currentScript, category: mappedCategory) }
+        }
     }
 
     private func formatFileSize(_ bytes: Int) -> String {

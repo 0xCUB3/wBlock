@@ -82,9 +82,6 @@ struct FilterInfoView: View {
             }
             InfoMetadataList {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString("Filters", comment: "Content type"), color: .red)
-                if onChangeCategory == nil {
-                    InfoMetadataRow(title: "Category", value: liveFilter.category.localizedName)
-                }
                 if liveFilter.isSelected, let submitted = liveFilter.uniqueRuleCount {
                     VStack(alignment: .leading, spacing: 2) {
                         InfoMetadataRow(title: "Source Rules", value: submitted.formatted())

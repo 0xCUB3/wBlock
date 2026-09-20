@@ -28,8 +28,8 @@ enum ContextMenuActionAvailability {
         if isDownloaded || filter.isInlineUserList {
             actions.append(filter.isInlineUserList ? .editRules : .viewRules)
         }
+        if filter.category != .foreign { actions.append(.moveTo) }
         if filter.isCustom {
-            if filter.category != .foreign { actions.append(.moveTo) }
             actions.append(.editInfo)
             actions.append(.deleteList)
         }
@@ -47,7 +47,8 @@ enum ContextMenuActionAvailability {
             // URL-sourced content remains read-only because updates replace it.
             actions.append(!isBuiltIn && isLocal ? .editContent : .viewContent)
         }
-        if !isBuiltIn { actions += [.editInfo, .moveTo, .deleteScript] }
+        actions.append(.moveTo)
+        if !isBuiltIn { actions += [.editInfo, .deleteScript] }
         return actions
     }
 }

@@ -141,6 +141,8 @@ compile_core_test tube-cleaner-dearrow scripts/test_tube_cleaner_dearrow_prefere
 compile_core_test sponsorblock-settings-transfer scripts/test_sponsorblock_settings_transfer.swift
 compile_core_test disabled-sites-normalization scripts/test_disabled_sites_normalization.swift
 compile_core_test filter-list-flags scripts/test_filter_list_flags.swift
+compile_core_test context-menu-actions scripts/test_context_menu_action_availability.swift \
+  wBlock/ContextMenuActionAvailability.swift
 compile_direct_test filter-update-popup-status \
   wBlockCoreService/FilterUpdatePopupStatus.swift \
   scripts/test_filter_update_popup_status.swift
