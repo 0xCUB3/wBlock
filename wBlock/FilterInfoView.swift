@@ -1,10 +1,5 @@
 import SwiftUI
 import wBlockCoreService
-#if os(iOS)
-import UIKit
-#elseif os(macOS)
-import AppKit
-#endif
 
 struct FilterInfoView: View {
     let filter: FilterList
@@ -184,15 +179,11 @@ struct FilterRulesView: View {
     let filter: FilterList
     @ObservedObject var filterManager: AppFilterManager
     @State private var rules = ""
-    @State private var searchQuery = ""
-    @State private var showsSearch = false
+    @StateObject private var editorController = CodeMirrorEditorController(text: "")
     @State private var wrapsLines = false
     @State private var analysis: FilterRuleAnalysis?
     @State private var isLoading = true
     @State private var shownKinds: Set<FilterRuleKind> = Set(FilterRuleKind.allCases)
-    /// The lines that pass the View filter, joined, plus a tint per line.
-    @State private var displayedRules = ""
-    @State private var displayedTints: HighlightLineTints?
     @State private var rebuildTask: Task<Void, Never>?
     @Environment(\.dismiss) private var dismiss
     @ScaledMetric(relativeTo: .caption) private var legendColumnWidth = 160
@@ -206,7 +197,7 @@ struct FilterRulesView: View {
                 Text(filter.localizedDisplayName)
                     .font(.headline)
                 Spacer()
-                SourceViewerControls(wrapsLines: $wrapsLines) { showsSearch.toggle() }
+                SourceViewerControls(wrapsLines: $wrapsLines) { editorController.openSearch() }
                     .disabled(isLoading)
                 if analysis != nil {
                     filterMenu
@@ -216,19 +207,6 @@ struct FilterRulesView: View {
             .padding(16)
             Divider()
 
-            if showsSearch {
-                HStack {
-                    TextField("Search", text: $searchQuery).textFieldStyle(.roundedBorder)
-                    Button {
-                        searchQuery = ""
-                        showsSearch = false
-                    } label: { Image(systemName: "xmark.circle.fill") }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Close search")
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-            }
             if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -237,10 +215,9 @@ struct FilterRulesView: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                MonospacedTextView(
-                    text: Binding(get: { displayedRules }, set: { _ in }),
-                    lineTints: displayedTints,
-                    softTopEdge: true,
+                CodeMirrorTextEditor(
+                    controller: editorController,
+                    isEditable: false,
                     isLineWrappingEnabled: wrapsLines
                 )
                 if let analysis {
@@ -256,7 +233,7 @@ struct FilterRulesView: View {
         #endif
         .task {
             rules = FilterListLoader().readLocalFilterContent(filter) ?? ""
-            displayedRules = rules
+            editorController.replaceText(rules, lineKinds: [:], markClean: true)
             isLoading = false
             guard !rules.isEmpty else { return }
             let content = rules
@@ -276,7 +253,6 @@ struct FilterRulesView: View {
             }
         }
         .onChangeCompat(of: shownKinds) { _ in rebuildDisplayedText() }
-        .onChangeCompat(of: searchQuery) { _ in rebuildDisplayedText() }
         .onDisappear { rebuildTask?.cancel() }
     }
 
@@ -368,37 +344,34 @@ struct FilterRulesView: View {
         }
     }
 
-    /// Joins the lines that pass the View filter and records which of them
-    /// need a category color. The string join runs off the main thread; colour is
-    /// applied per viewport by MonospacedTextView, so a multi-megabyte list
-    /// never builds one huge attributed string (that froze iPhones).
+    /// Joins the lines selected by the View menu off the main thread, then
+    /// replaces the read-only CodeMirror document and its visible line classes.
+    /// CodeMirror owns text search so filter viewing has the same Find/next/previous
+    /// behavior as userscripts.
     private func rebuildDisplayedText() {
         rebuildTask?.cancel()
         guard let analysis else {
-            displayedRules = rules
-            displayedTints = nil
+            editorController.replaceText(rules, lineKinds: [:], markClean: true)
             return
         }
         let kinds = shownKinds
-        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         let lines = analysis.lines
         rebuildTask = Task {
             try? await Task.sleep(nanoseconds: 150_000_000)
             guard !Task.isCancelled else { return }
-            let worker = Task.detached(priority: .userInitiated) { () -> (String, [Int: FilterRuleKind]) in
+            let worker = Task.detached(priority: .userInitiated) { () -> (String, [Int: String]) in
                 var text = ""
+                var lineKinds: [Int: String] = [:]
                 text.reserveCapacity(lines.reduce(0) { $0 + $1.text.utf8.count + 1 })
-                var tinted: [Int: FilterRuleKind] = [:]
                 var index = 0
                 for line in lines where kinds.contains(line.kind) {
                     if Task.isCancelled { return ("", [:]) }
-                    if !query.isEmpty && !line.text.localizedCaseInsensitiveContains(query) { continue }
                     if index > 0 { text.append("\n") }
                     text.append(line.text)
-                    tinted[index] = line.kind
+                    lineKinds[index] = line.kind.rawValue
                     index += 1
                 }
-                return (text, tinted)
+                return (text, lineKinds)
             }
             let built = await withTaskCancellationHandler {
                 await worker.value
@@ -406,13 +379,7 @@ struct FilterRulesView: View {
                 worker.cancel()
             }
             guard !Task.isCancelled else { return }
-            var tints: HighlightLineTints = [:]
-            tints.reserveCapacity(built.1.count)
-            for (index, kind) in built.1 {
-                if let tint = Self.tint(for: kind) { tints[index] = tint }
-            }
-            displayedRules = built.0
-            displayedTints = tints
+            editorController.replaceText(built.0, lineKinds: built.1, markClean: true)
         }
     }
 
@@ -449,27 +416,4 @@ struct FilterRulesView: View {
         }
     }
 
-    #if os(macOS)
-    private static func tint(for kind: FilterRuleKind) -> NSColor? {
-        switch kind {
-        case .advanced: return NSColor.systemBlue
-        case .removeParam: return NSColor.systemTeal
-        case .unsupported: return NSColor.systemRed
-        case .duplicate: return NSColor.systemIndigo
-        case .comment: return NSColor.secondaryLabelColor
-        case .supported: return NSColor.systemGreen
-        }
-    }
-    #else
-    private static func tint(for kind: FilterRuleKind) -> UIColor? {
-        switch kind {
-        case .advanced: return UIColor.systemBlue
-        case .removeParam: return UIColor.systemTeal
-        case .unsupported: return UIColor.systemRed
-        case .duplicate: return UIColor.systemIndigo
-        case .comment: return UIColor.secondaryLabel
-        case .supported: return UIColor.systemGreen
-        }
-    }
-    #endif
 }

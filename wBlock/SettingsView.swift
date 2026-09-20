@@ -325,13 +325,18 @@ struct SettingsView: View {
     }
 
     private var cosmeticFilteringControls: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Toggle("Cosmetic Filtering", isOn: cosmeticFilteringBinding)
-                .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
-            Text("Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+        Toggle(isOn: cosmeticFilteringBinding) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Cosmetic Filtering")
+                Text("Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
+        .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
+        #if os(macOS)
+        .padding(.vertical, 4)
+        #endif
     }
 
     private var cosmeticFilteringBinding: Binding<Bool> {
@@ -345,12 +350,17 @@ struct SettingsView: View {
     }
 
     private var logTimestampControls: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Toggle("Sync timestamps with device timezone", isOn: usesDeviceTimeZoneBinding)
-            Text("Controls the time zone used when displaying and exporting log timestamps.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+        Toggle(isOn: usesDeviceTimeZoneBinding) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Sync timestamps with device timezone")
+                Text("Controls the time zone used when displaying and exporting log timestamps.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
+        #if os(macOS)
+        .padding(.vertical, 4)
+        #endif
         .onChangeCompat(of: logTimeZoneIdentifier) { _ in
             LogDateFormatters.configureIfNeeded()
         }
@@ -732,6 +742,7 @@ struct SettingsView: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
+                .padding(.vertical, 4)
             }
             #else
             Button(role: .destructive) {

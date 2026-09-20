@@ -14,6 +14,7 @@ final class CodeMirrorEditorController: ObservableObject {
     fileprivate let initialText: String
     fileprivate let isUserStyle: Bool
     fileprivate var documentText: String
+    fileprivate var lineKinds: [Int: String] = [:]
     fileprivate var isDocumentClean = true
     fileprivate weak var bridge: (any CodeMirrorEditorBridge)?
 
@@ -47,16 +48,18 @@ final class CodeMirrorEditorController: ObservableObject {
 
     func discardChanges() {
         documentText = initialText
+        lineKinds = [:]
         isDocumentClean = true
         updateDirtyState(false)
-        bridge?.resetDocument(to: initialText, markClean: true)
+        bridge?.resetDocument(to: initialText, lineKinds: [:], markClean: true)
     }
 
-    func replaceText(_ text: String, markClean: Bool = false) {
+    func replaceText(_ text: String, lineKinds: [Int: String] = [:], markClean: Bool = false) {
         documentText = text
+        self.lineKinds = lineKinds
         isDocumentClean = markClean
         updateDirtyState(!markClean)
-        bridge?.resetDocument(to: text, markClean: markClean)
+        bridge?.resetDocument(to: text, lineKinds: lineKinds, markClean: markClean)
     }
 
     fileprivate func bind(_ bridge: any CodeMirrorEditorBridge) {
@@ -85,7 +88,7 @@ private protocol CodeMirrorEditorBridge: AnyObject {
     func undo()
     func redo()
     func focus()
-    func resetDocument(to text: String, markClean: Bool)
+    func resetDocument(to text: String, lineKinds: [Int: String], markClean: Bool)
 }
 
 private enum CodeMirrorResources {
@@ -129,6 +132,7 @@ private struct CodeMirrorBootstrapConfig: Encodable {
     let lineWrapping: Bool
     let isUserStyle: Bool
     let phrases: [String: String]
+    let lineKinds: [String: String]
 }
 
 private final class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
@@ -326,11 +330,15 @@ extension CodeMirrorTextEditor {
             runScript("window.wblockEditor.focus()")
         }
 
-        func resetDocument(to text: String, markClean: Bool) {
+        func resetDocument(to text: String, lineKinds: [Int: String], markClean: Bool) {
             controller.documentText = text
+            controller.lineKinds = lineKinds
             controller.isDocumentClean = markClean
-            guard hasBootedEditor, let encodedText = Self.encodedJSONString(text) else { return }
-            runScript("window.wblockEditor.setDocument(\(encodedText), \(markClean ? "true" : "false"))")
+            guard hasBootedEditor,
+                  let encodedText = Self.encodedJSONString(text),
+                  let encodedLineKinds = Self.encodedJSON(lineKinds.mapKeys(String.init))
+            else { return }
+            runScript("window.wblockEditor.setDocument(\(encodedText), \(markClean ? "true" : "false"), \(encodedLineKinds))")
         }
 
         func currentText() async -> String {
@@ -394,7 +402,8 @@ extension CodeMirrorTextEditor {
                 editable: pendingEditable,
                 lineWrapping: pendingLineWrapping,
                 isUserStyle: controller.isUserStyle,
-                phrases: CodeMirrorResources.localizedPhrases
+                phrases: CodeMirrorResources.localizedPhrases,
+                lineKinds: controller.lineKinds.mapKeys(String.init)
             )
             guard let encodedConfig = Self.encodedJSON(config) else { return nil }
             return """
@@ -442,6 +451,13 @@ extension CodeMirrorTextEditor {
                 syntaxHighlightingEnabled: syntaxHighlightingEnabled
             )
         }
+    }
+}
+
+@MainActor
+private extension Dictionary where Key == Int, Value == String {
+    func mapKeys(_ transform: (Int) -> String) -> [String: String] {
+        Dictionary(uniqueKeysWithValues: map { (transform($0.key), $0.value) })
     }
 }
 

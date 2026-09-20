@@ -237,13 +237,23 @@ import SwiftUI
         let bottom = outline.item(atRow: outline.numberOfRows - 1)!
         let writer = coordinator.outlineView(outline, pasteboardWriterForItem: bottom) as! NSPasteboardItem
         precondition(writer.string(forType: MacReorderableList.Coordinator.dragType) == many.last!.uuidString)
+
+        // A category expansion/rebuild while the user is scrolled must keep the
+        // same viewport instead of jumping back to the first section.
+        let viewportBeforeExpansion = outline.enclosingScrollView!.contentView.bounds.origin
+        host.rootView = list([section("long", [UUID()] + many)])
+        try await settle(host)
+        let viewportAfterExpansion = outline.enclosingScrollView!.contentView.bounds.origin
+        precondition(abs(viewportAfterExpansion.y - viewportBeforeExpansion.y) < 1,
+                     "rebuilding an expanded category must preserve the scrolled viewport")
+
         outline.scrollRowToVisible(0)
         try await settle(host)
         precondition(outline.visibleRect.minY == 0)
         for width in [480.0, 900.0] {
             host.setFrameSize(NSSize(width: width, height: 480))
             try await settle(host)
-            precondition(outline.numberOfRows == many.count + 2)
+            precondition(outline.numberOfRows == many.count + 3)
             let visible = outline.rows(in: outline.visibleRect)
             for rowIndex in visible.location..<NSMaxRange(visible) {
                 let rect = outline.rect(ofRow: rowIndex)

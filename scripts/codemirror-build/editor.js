@@ -6,6 +6,8 @@
 import { EditorState, Compartment } from "@codemirror/state";
 import {
   EditorView,
+  ViewPlugin,
+  Decoration,
   keymap,
   drawSelection,
   lineNumbers,
@@ -93,6 +95,7 @@ function theme() {
 const editableCompartment = new Compartment();
 const readOnlyCompartment = new Compartment();
 const lineWrappingCompartment = new Compartment();
+const lineKindsCompartment = new Compartment();
 const languageCompartment = new Compartment();
 const phrasesCompartment = new Compartment();
 
@@ -194,6 +197,43 @@ function highlightBlock(analysis, isUserStyle) {
   return fullHighlight(language);
 }
 
+const RULE_KINDS = new Set(["comment", "supported", "advanced", "removeParam", "unsupported", "duplicate"]);
+
+function visibleRuleDecorations(editorView, lineKinds) {
+  const ranges = [];
+  const seen = new Set();
+  for (const visible of editorView.visibleRanges) {
+    let line = editorView.state.doc.lineAt(visible.from);
+    const lastLine = editorView.state.doc.lineAt(visible.to);
+    while (line.number <= lastLine.number) {
+      const kind = lineKinds[String(line.number - 1)];
+      if (kind && RULE_KINDS.has(kind) && !seen.has(line.number)) {
+        ranges.push(Decoration.line({
+          attributes: { class: `wblock-rule-${kind}` },
+        }).range(line.from));
+        seen.add(line.number);
+      }
+      if (line.number === lastLine.number) break;
+      line = editorView.state.doc.line(line.number + 1);
+    }
+  }
+  return Decoration.set(ranges, true);
+}
+
+function categoryDecorations(lineKinds) {
+  if (!lineKinds || Object.keys(lineKinds).length === 0) return [];
+  return ViewPlugin.fromClass(class {
+    constructor(editorView) {
+      this.decorations = visibleRuleDecorations(editorView, lineKinds);
+    }
+    update(update) {
+      if (update.docChanged || update.viewportChanged) {
+        this.decorations = visibleRuleDecorations(update.view, lineKinds);
+      }
+    }
+  }, { decorations: (plugin) => plugin.decorations });
+}
+
 function reconfigure(compartment, extension) {
   if (view) view.dispatch({ effects: compartment.reconfigure(extension) });
 }
@@ -206,6 +246,7 @@ window.wblockEditor = {
     const editable = !!config.editable;
     const phrases = config.phrases ?? {};
     const isUserStyle = !!config.isUserStyle;
+    const lineKinds = config.lineKinds ?? {};
     baselineText = text;
     dirtyKnown = false;
 
@@ -214,6 +255,7 @@ window.wblockEditor = {
       editableCompartment.of(EditorView.editable.of(editable)),
       readOnlyCompartment.of(EditorState.readOnly.of(!editable)),
       lineWrappingCompartment.of(lineWrapping ? EditorView.lineWrapping : []),
+      lineKindsCompartment.of(categoryDecorations(lineKinds)),
       languageCompartment.of(highlightBlock(analysis, isUserStyle)),
       phrasesCompartment.of(EditorState.phrases.of(phrases)),
     ];
@@ -241,13 +283,17 @@ window.wblockEditor = {
     reconfigure(lineWrappingCompartment, enabled ? EditorView.lineWrapping : []);
     document.body.classList.toggle("cm-wrap-lines", !!enabled);
   },
-  setDocument(text, markClean = false) {
+  setDocument(text, markClean = false, lineKinds = {}) {
     if (!view) return;
+    const nextText = text ?? "";
     suppressDirty = true;
-    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: text ?? "" } });
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: nextText },
+      effects: lineKindsCompartment.reconfigure(categoryDecorations(lineKinds)),
+    });
     suppressDirty = false;
     if (markClean) {
-      baselineText = text ?? "";
+      baselineText = nextText;
       dirtyKnown = false;
       post({ type: "dirtyStateChanged", isDirty: false });
     }

@@ -205,6 +205,7 @@ struct MacReorderableList: NSViewRepresentable {
 
             if previous != structure {
                 let selected = outline.selectedRow >= 0 ? outline.item(atRow: outline.selectedRow) as? Node : nil
+                let preservedScrollOrigin = outline.enclosingScrollView?.contentView.bounds.origin
                 outline.reloadData()
                 // reloadData leaves expandable sections collapsed, and AppKit
                 // refuses collapseItem once the outline cell is hidden, so the
@@ -216,6 +217,15 @@ struct MacReorderableList: NSViewRepresentable {
                 if let selected {
                     let row = outline.row(forItem: selected)
                     if row >= 0 { outline.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false) }
+                }
+                // Rebuilding the outline otherwise scrolls the first expansion
+                // back to the top. Keep the user's viewport stable while the
+                // category adds its regional rows.
+                if let preservedScrollOrigin, let scroll = outline.enclosingScrollView {
+                    outline.layoutSubtreeIfNeeded()
+                    scroll.layoutSubtreeIfNeeded()
+                    scroll.contentView.scroll(to: preservedScrollOrigin)
+                    scroll.reflectScrolledClipView(scroll.contentView)
                 }
             }
             // AppKit animates row-height changes by default; after a drop the

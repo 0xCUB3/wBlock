@@ -23,6 +23,12 @@
   --cm-button-hover: #e7eaee;
   --cm-border: rgba(15, 23, 42, 0.12);
   --cm-bracket-match: rgba(251, 191, 36, 0.22);
+  --cm-rule-supported: #34c759;
+  --cm-rule-advanced: #007aff;
+  --cm-rule-remove-param: #00a6a6;
+  --cm-rule-unsupported: #ff3b30;
+  --cm-rule-duplicate: #5856d6;
+  --cm-rule-comment: #8e8e93;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -40,6 +46,12 @@
     --cm-button-hover: #3b4048;
     --cm-border: rgba(255, 255, 255, 0.14);
     --cm-bracket-match: rgba(250, 204, 21, 0.26);
+    --cm-rule-supported: #30d158;
+    --cm-rule-advanced: #0a84ff;
+    --cm-rule-remove-param: #64d2ff;
+    --cm-rule-unsupported: #ff453a;
+    --cm-rule-duplicate: #5e5ce6;
+    --cm-rule-comment: #98989d;
   }
 }
 
@@ -90,6 +102,19 @@ input {
 body.cm-wrap-lines .cm-scroller {
   overflow-x: hidden !important;
 }
+
+.wblock-rule-supported, .wblock-rule-supported *,
+.wblock-rule-advanced, .wblock-rule-advanced *,
+.wblock-rule-removeParam, .wblock-rule-removeParam *,
+.wblock-rule-unsupported, .wblock-rule-unsupported *,
+.wblock-rule-duplicate, .wblock-rule-duplicate *,
+.wblock-rule-comment, .wblock-rule-comment * { color: var(--cm-rule-color) !important; }
+.wblock-rule-supported { --cm-rule-color: var(--cm-rule-supported); }
+.wblock-rule-advanced { --cm-rule-color: var(--cm-rule-advanced); }
+.wblock-rule-removeParam { --cm-rule-color: var(--cm-rule-remove-param); }
+.wblock-rule-unsupported { --cm-rule-color: var(--cm-rule-unsupported); }
+.wblock-rule-duplicate { --cm-rule-color: var(--cm-rule-duplicate); }
+.wblock-rule-comment { --cm-rule-color: var(--cm-rule-comment); }
 
 body.cm-wrap-lines .cm-content,
 body.cm-wrap-lines .cm-lineWrapping {
