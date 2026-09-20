@@ -209,6 +209,10 @@ extension ProtobufDataManager {
             script.localImportIdentity = protoData.hasLocalImportIdentity
                 ? UserScriptImportIdentity.normalized(protoData.localImportIdentity)
                 : nil
+            script.metadataAuthorOverride = protoData.hasMetadataAuthorOverride ? protoData.metadataAuthorOverride : nil
+            script.metadataHomepageOverride = protoData.hasMetadataHomepageOverride ? protoData.metadataHomepageOverride : nil
+            script.author = script.metadataAuthorOverride
+            script.homepage = script.metadataHomepageOverride
             return script
         }
     }
@@ -581,6 +585,16 @@ extension ProtobufDataManager {
             } else {
                 protoUserScript.clearLocalImportIdentity()
             }
+            if let authorOverride = userScript.metadataAuthorOverride {
+                protoUserScript.metadataAuthorOverride = authorOverride
+            } else {
+                protoUserScript.clearMetadataAuthorOverride()
+            }
+            if let homepageOverride = userScript.metadataHomepageOverride {
+                protoUserScript.metadataHomepageOverride = homepageOverride
+            } else {
+                protoUserScript.clearMetadataHomepageOverride()
+            }
             protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
             return protoUserScript
         }
@@ -627,6 +641,16 @@ extension ProtobufDataManager {
                 record.localImportIdentity = identity
             } else {
                 record.clearLocalImportIdentity()
+            }
+            if let authorOverride = userScript.metadataAuthorOverride {
+                record.metadataAuthorOverride = authorOverride
+            } else {
+                record.clearMetadataAuthorOverride()
+            }
+            if let homepageOverride = userScript.metadataHomepageOverride {
+                record.metadataHomepageOverride = homepageOverride
+            } else {
+                record.clearMetadataHomepageOverride()
             }
             record.lastUpdated = Int64(Date().timeIntervalSince1970)
             return record

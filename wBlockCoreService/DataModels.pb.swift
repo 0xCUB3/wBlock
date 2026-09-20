@@ -560,6 +560,24 @@ nonisolated struct Wblock_Data_UserScriptData: @unchecked Sendable {
   /// Clears the value of `localImportIdentity`. Subsequent reads from it will return its default value.
   mutating func clearLocalImportIdentity() {_uniqueStorage()._localImportIdentity = nil}
 
+  var metadataAuthorOverride: String {
+    get {_storage._metadataAuthorOverride ?? String()}
+    set {_uniqueStorage()._metadataAuthorOverride = newValue}
+  }
+  /// Returns true if `metadataAuthorOverride` has been explicitly set.
+  var hasMetadataAuthorOverride: Bool {_storage._metadataAuthorOverride != nil}
+  /// Clears the value of `metadataAuthorOverride`. Subsequent reads from it will return its default value.
+  mutating func clearMetadataAuthorOverride() {_uniqueStorage()._metadataAuthorOverride = nil}
+
+  var metadataHomepageOverride: String {
+    get {_storage._metadataHomepageOverride ?? String()}
+    set {_uniqueStorage()._metadataHomepageOverride = newValue}
+  }
+  /// Returns true if `metadataHomepageOverride` has been explicitly set.
+  var hasMetadataHomepageOverride: Bool {_storage._metadataHomepageOverride != nil}
+  /// Clears the value of `metadataHomepageOverride`. Subsequent reads from it will return its default value.
+  mutating func clearMetadataHomepageOverride() {_uniqueStorage()._metadataHomepageOverride = nil}
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -1323,7 +1341,7 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
 
 nonisolated extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".UserScriptData"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{3}is_enabled\0\u{1}description\0\u{1}version\0\u{1}matches\0\u{3}exclude_matches\0\u{1}includes\0\u{1}excludes\0\u{3}run_at\0\u{3}inject_into\0\u{1}grant\0\u{3}is_local\0\u{3}update_url\0\u{3}download_url\0\u{1}content\0\u{3}last_updated\0\u{3}updates_automatically\0\u{3}is_user_style\0\u{1}category\0\u{3}local_import_identity\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{3}is_enabled\0\u{1}description\0\u{1}version\0\u{1}matches\0\u{3}exclude_matches\0\u{1}includes\0\u{1}excludes\0\u{3}run_at\0\u{3}inject_into\0\u{1}grant\0\u{3}is_local\0\u{3}update_url\0\u{3}download_url\0\u{1}content\0\u{3}last_updated\0\u{3}updates_automatically\0\u{3}is_user_style\0\u{1}category\0\u{3}local_import_identity\0\u{3}metadata_author_override\0\u{3}metadata_homepage_override\0")
 
   fileprivate class _StorageClass {
     var _id: String = String()
@@ -1348,6 +1366,8 @@ nonisolated extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftPr
     var _isUserStyle: Bool = false
     var _category: Wblock_Data_FilterListCategory = .unspecified
     var _localImportIdentity: String? = nil
+    var _metadataAuthorOverride: String? = nil
+    var _metadataHomepageOverride: String? = nil
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -1380,6 +1400,8 @@ nonisolated extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftPr
       _isUserStyle = source._isUserStyle
       _category = source._category
       _localImportIdentity = source._localImportIdentity
+      _metadataAuthorOverride = source._metadataAuthorOverride
+      _metadataHomepageOverride = source._metadataHomepageOverride
     }
   }
 
@@ -1420,6 +1442,8 @@ nonisolated extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftPr
         case 20: try { try decoder.decodeSingularBoolField(value: &_storage._isUserStyle) }()
         case 21: try { try decoder.decodeSingularEnumField(value: &_storage._category) }()
         case 22: try { try decoder.decodeSingularStringField(value: &_storage._localImportIdentity) }()
+        case 23: try { try decoder.decodeSingularStringField(value: &_storage._metadataAuthorOverride) }()
+        case 24: try { try decoder.decodeSingularStringField(value: &_storage._metadataHomepageOverride) }()
         default: break
         }
       }
@@ -1498,6 +1522,12 @@ nonisolated extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftPr
       try { if let v = _storage._localImportIdentity {
         try visitor.visitSingularStringField(value: v, fieldNumber: 22)
       } }()
+      try { if let v = _storage._metadataAuthorOverride {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 23)
+      } }()
+      try { if let v = _storage._metadataHomepageOverride {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 24)
+      } }()
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1529,6 +1559,8 @@ nonisolated extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftPr
         if _storage._isUserStyle != rhs_storage._isUserStyle {return false}
         if _storage._category != rhs_storage._category {return false}
         if _storage._localImportIdentity != rhs_storage._localImportIdentity {return false}
+        if _storage._metadataAuthorOverride != rhs_storage._metadataAuthorOverride {return false}
+        if _storage._metadataHomepageOverride != rhs_storage._metadataHomepageOverride {return false}
         return true
       }
       if !storagesAreEqual {return false}

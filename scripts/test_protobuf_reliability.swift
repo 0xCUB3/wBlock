@@ -18,6 +18,7 @@ struct ProtobufReliabilityTests {
         await testThreeWayDeletionAndInsertion(root: root.appendingPathComponent("merge"))
         await testConditionalCloudDisabledHosts(root: root.appendingPathComponent("cloud-disabled-hosts"))
         await testSelectedSites(root: root.appendingPathComponent("selected-sites"))
+        await testUserScriptMetadataOverrides(root: root.appendingPathComponent("metadata-overrides"))
         print("PASS")
     }
 
@@ -117,6 +118,40 @@ struct ProtobufReliabilityTests {
         expect(saved, "dated script must persist")
         expect(restarted.getUserScripts().first { $0.id == script.id }?.lastUpdated != nil,
                "protobuf decoding must retain the persisted script date")
+    }
+
+    private static func testUserScriptMetadataOverrides(root: URL) async {
+        let suite = "test.wblock.protobuf.metadata-overrides.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let first = await makeManager(root: root, standard: defaults, group: defaults)
+        await first.loadData()
+        var script = UserScript(name: "Metadata overrides", url: URL(string: "https://example.com/metadata.user.js"))
+        script.metadataAuthorOverride = "Local author"
+        script.metadataHomepageOverride = "https://example.com/local-home"
+        script.author = script.metadataAuthorOverride
+        script.homepage = script.metadataHomepageOverride
+        let updateSaved = await first.updateUserScripts([script])
+        expect(updateSaved, "metadata overrides must persist through update")
+
+        let updated = await makeManager(root: root, standard: defaults, group: defaults)
+        await updated.loadData()
+        let loaded = updated.getUserScripts().first { $0.id == script.id }!
+        expect(loaded.metadataAuthorOverride == "Local author" && loaded.author == "Local author", "author override must survive update restart")
+        expect(loaded.metadataHomepageOverride == "https://example.com/local-home" && loaded.homepage == "https://example.com/local-home", "homepage override must survive update restart")
+
+        script.metadataAuthorOverride = "Replacement author"
+        script.metadataHomepageOverride = "https://example.com/replacement-home"
+        script.author = script.metadataAuthorOverride
+        script.homepage = script.metadataHomepageOverride
+        let replacementSaved = await updated.replaceUserScripts([script])
+        expect(replacementSaved, "metadata overrides must persist through replacement")
+        let replaced = await makeManager(root: root, standard: defaults, group: defaults)
+        await replaced.loadData()
+        let replacement = replaced.getUserScripts().first { $0.id == script.id }!
+        expect(replacement.metadataAuthorOverride == "Replacement author" && replacement.author == "Replacement author", "author override must survive replacement restart")
+        expect(replacement.metadataHomepageOverride == "https://example.com/replacement-home" && replacement.homepage == "https://example.com/replacement-home", "homepage override must survive replacement restart")
     }
 
     private static func testSelectedSites(root: URL) async {
