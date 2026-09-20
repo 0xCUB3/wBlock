@@ -457,7 +457,7 @@ extension CodeMirrorTextEditor {
 @MainActor
 private extension Dictionary where Key == Int, Value == String {
     func mapKeys(_ transform: (Int) -> String) -> [String: String] {
-        Dictionary(uniqueKeysWithValues: map { (transform($0.key), $0.value) })
+        [String: String](uniqueKeysWithValues: map { (transform($0.key), $0.value) })
     }
 }
 
