@@ -114,9 +114,8 @@ struct MacReorderableList: NSViewRepresentable {
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
         scroll.drawsBackground = false
-        // Keep the old SwiftUI list's breathing room under the last card. The
-        // inset belongs to the content view, which owns the document geometry.
-        scroll.contentView.contentInsets.bottom = 36
+        scroll.automaticallyAdjustsContentInsets = false
+        scroll.contentView.automaticallyAdjustsContentInsets = false
         let outline = MacReorderableOutlineView()
         outline.canDragRow = { [weak coordinator = context.coordinator, weak outline] row in
             guard let coordinator, let outline, let item = outline.item(atRow: row) else { return false }
@@ -146,6 +145,8 @@ struct MacReorderableList: NSViewRepresentable {
         scroll.documentView = outline
         context.coordinator.outline = outline
         context.coordinator.update(self, environment: context.environment)
+        // Keep the old SwiftUI list's breathing room under the last card.
+        scroll.contentView.contentInsets.bottom = 36
         return scroll
     }
 

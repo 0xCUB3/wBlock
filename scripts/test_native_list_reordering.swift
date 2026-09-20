@@ -231,6 +231,9 @@ import SwiftUI
         outline.scrollRowToVisible(outline.numberOfRows - 1)
         try await settle(host)
         precondition(outline.visibleRect.minY > 0)
+        let scrollView = outline.enclosingScrollView!
+        precondition(scrollView.contentView.contentInsets.bottom == 36,
+                     "The native list must retain trailing space below its final row")
         let bottom = outline.item(atRow: outline.numberOfRows - 1)!
         let writer = coordinator.outlineView(outline, pasteboardWriterForItem: bottom) as! NSPasteboardItem
         precondition(writer.string(forType: MacReorderableList.Coordinator.dragType) == many.last!.uuidString)
