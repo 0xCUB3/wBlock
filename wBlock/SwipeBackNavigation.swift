@@ -22,9 +22,12 @@ import AppKit
 
 private struct MacSwipeBackNavigation: ViewModifier {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
-        content.background(SwipeBackMonitor(goBack: { dismiss() }))
+        content.background(SwipeBackMonitor(goBack: {
+            withAnimation(reduceMotion ? nil : .default) { dismiss() }
+        }))
     }
 }
 

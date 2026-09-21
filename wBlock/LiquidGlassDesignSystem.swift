@@ -40,8 +40,7 @@ extension View {
 /// On macOS 26 compact glass groups keep an eight-point gap; older releases
 /// retain their flat action group and trailing search field.
 ///
-/// Every tab keeps the default window toolbar background so the material
-/// behind the tab picker matches between Filters, Userscripts, and Settings.
+/// Native list tabs pin the window-toolbar material behind the tab picker.
 struct MacActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifier {
     @Binding var searchText: String
     @Binding var focusRequest: Bool
@@ -61,6 +60,7 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifier
                 ToolbarItem(placement: .automatic) { compactActions }
                     .sharedBackgroundVisibility(.hidden)
             }
+            .toolbarBackground(.visible, for: .windowToolbar)
         } else {
             content.toolbar {
                 ToolbarItemGroup(placement: .automatic) {
