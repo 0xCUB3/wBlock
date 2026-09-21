@@ -79,6 +79,8 @@ compile_direct_test userscript-update-operation \
   wBlockCoreService/UserScriptUpdateOperation.swift scripts/test_userscript_update_operation.swift
 
 compile_direct_test userscript-world-isolation scripts/test_userscript_world_isolation.swift
+compile_direct_test shared-auto-update-lease \
+  wBlockCoreService/SharedAutoUpdateLease.swift scripts/test_shared_auto_update_lease.swift
 
 # Core-module API tests. Source-only wBlock tests add their production source
 # explicitly; the remaining tests use the freshly built core framework.

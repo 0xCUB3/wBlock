@@ -253,8 +253,28 @@ extension AppFilterManager {
         await SharedAutoUpdateManager.shared.setForegroundApplyInProgress(true)
         #if os(macOS)
         // Keep FilterUpdateAgent from rebuilding the same targets mid-apply.
-        // Waiting briefly is enough; the agent's runs are short.
-        let lease = SharedAutoUpdateLease.acquire(groupIdentifier: GroupIdentifier.shared.value, timeout: 2)
+        // Await without blocking the main actor; refuse the apply if ownership
+        // cannot be obtained before the bounded deadline.
+        statusDescription = LocalizedStrings.text(
+            "Checking for updates...",
+            comment: "Apply pipeline waiting for background update lease"
+        )
+        guard let lease = await SharedAutoUpdateLease.acquire(
+            groupIdentifier: GroupIdentifier.shared.value,
+            timeout: 60
+        ) else {
+            isApplyInFlight = false
+            await SharedAutoUpdateManager.shared.setForegroundApplyInProgress(false)
+            await ConcurrentLogManager.shared.warning(
+                .filterApply,
+                LocalizedStrings.text(
+                    "Apply already in progress.",
+                    comment: "Apply pipeline lease contention status"
+                ),
+                metadata: ["reason": "background_update_lease_timeout"]
+            )
+            return false
+        }
         defer { withExtendedLifetime(lease) {} }
         #endif
         defer {
@@ -266,7 +286,6 @@ extension AppFilterManager {
                 scheduleAutoApplyDebounce()
             }
         }
-
         ApplyCancellation.reset()
         let applyTask = Task {
             await work()
