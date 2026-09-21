@@ -14,8 +14,10 @@ public enum FilterSelectionRebaser {
         snapshot: [FilterList],
         latestPersisted: [FilterList]
     ) -> [FilterList] {
-        let latestByID = Dictionary(uniqueKeysWithValues: latestPersisted.map { ($0.id, $0) })
-        return snapshot.map { filter in
+        let latestByID = Dictionary(latestPersisted.map { ($0.id, $0) }, uniquingKeysWith: { _, newer in newer })
+        var seenIDs = Set<UUID>()
+        return snapshot.compactMap { filter in
+            guard seenIDs.insert(filter.id).inserted else { return nil }
             guard let latest = latestByID[filter.id] else { return filter }
             var rebased = filter
             rebased.isSelected = latest.isSelected

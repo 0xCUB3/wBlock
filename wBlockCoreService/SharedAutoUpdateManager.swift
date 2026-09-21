@@ -1264,6 +1264,25 @@ public actor SharedAutoUpdateManager {
     /// run rebuilds from the staged files even though the servers then
     /// report nothing new. It follows the same interval as the app.
     public func stageFilterDownloadsFromExtension(trigger: String) async -> StagingOutcome {
+        #if os(iOS)
+        let stagingTask = Task {
+            await stageFilterDownloadsFromExtensionImpl(trigger: trigger)
+        }
+        let shield = SuspensionShield(reason: "wBlock extension filter staging") {
+            stagingTask.cancel()
+        }
+        defer { shield.release() }
+        return await withTaskCancellationHandler {
+            await stagingTask.value
+        } onCancel: {
+            stagingTask.cancel()
+        }
+        #else
+        return await stageFilterDownloadsFromExtensionImpl(trigger: trigger)
+        #endif
+    }
+
+    private func stageFilterDownloadsFromExtensionImpl(trigger: String) async -> StagingOutcome {
         guard Self.isAppExtensionProcess else { return .skipped(reason: "not_extension") }
         guard !stagingInProgress else { return .skipped(reason: "already_running") }
         stagingInProgress = true

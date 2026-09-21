@@ -629,9 +629,9 @@ class AppFilterManager: ObservableObject {
     func setup() {
         filterUpdater.filterListManager = self
 
-        // Load filter lists from protobuf data manager
-        var storedFilterLists = dataManager.getFilterLists()
-
+        // Load filter lists from protobuf data manager. Keep the in-memory
+        // boundary unique even when older or concurrent data supplies repeats.
+        var storedFilterLists = deduplicateFilterIDs(dataManager.getFilterLists())
         // Migrate old AdGuard Annoyances filter to new split filters
         storedFilterLists = migrateOldAnnoyancesFilter(in: storedFilterLists)
 
@@ -705,6 +705,7 @@ class AppFilterManager: ObservableObject {
         }
         migratedFilterLists = hydrateBuiltInFilterMetadata(in: migratedFilterLists, defaultLists: defaultLists)
         migratedFilterLists = collapseDuplicateBuiltInURLs(migratedFilterLists)
+        migratedFilterLists = deduplicateFilterIDs(migratedFilterLists)
         validatorClearIDs = migratedFilterLists.compactMap { filter in
             guard let originalURL = originalURLsByID[filter.id], originalURL != filter.url else { return nil }
             return filter.id.uuidString
@@ -778,6 +779,19 @@ class AppFilterManager: ObservableObject {
         }
         return result
     }
+    func deduplicateFilterIDs(_ filters: [FilterList]) -> [FilterList] {
+        var latestByID: [UUID: FilterList] = [:]
+        var firstIDs: [UUID] = []
+        var seenIDs = Set<UUID>()
+        for filter in filters {
+            latestByID[filter.id] = filter
+            if seenIDs.insert(filter.id).inserted {
+                firstIDs.append(filter.id)
+            }
+        }
+        return firstIDs.compactMap { latestByID[$0] }
+    }
+
 
     private func hydrateBuiltInFilterMetadata(in filters: [FilterList], defaultLists: [FilterList]) -> [FilterList] {
         let defaultsByURL = Dictionary(

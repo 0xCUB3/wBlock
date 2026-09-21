@@ -165,6 +165,7 @@ extension AppFilterManager {
             let newFilterToAdd = filter
 
             filterLists.append(newFilterToAdd)
+            filterLists = deduplicateFilterIDs(filterLists)
             saveFilterListsCoalesced()
             refreshPendingChanges()
 
@@ -221,8 +222,8 @@ extension AppFilterManager {
 
     internal func addCustomFilterListWithoutFetch(_ filter: FilterList) {
         guard !filterLists.contains(where: { FilterListURLSupport.isSameList($0.url, filter.url) }) else { return }
-
         filterLists.append(filter)
+        filterLists = deduplicateFilterIDs(filterLists)
         saveFilterListsCoalesced()
         refreshPendingChanges()
 

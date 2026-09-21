@@ -22,7 +22,15 @@ struct FilterSelectionRebaseTests {
                 excludedSites: ["nytimes.com"]
             )
         ]
-        let rebased = FilterSelectionRebaser.rebaseSelection(snapshot: snapshot, latestPersisted: persisted)
+        let duplicatedSnapshot = snapshot + [snapshot[0]]
+        let rebased = FilterSelectionRebaser.rebaseSelection(
+            snapshot: duplicatedSnapshot,
+            latestPersisted: persisted
+        )
+        guard rebased.count == snapshot.count else {
+            fputs("FAIL: duplicate snapshot IDs must be returned once\n", stderr)
+            exit(1)
+        }
 
         guard rebased.first?.isSelected == false else {
             fputs("FAIL: latest persisted selection must win\n", stderr)

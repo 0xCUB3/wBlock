@@ -33,6 +33,27 @@ struct Test {
         let tieB = list("tie-b", rules: 20, updated: 7_000)
         let ties = ContentBlockerMappingService.orderedForCompilation([tieA, tieB]).map(\.name)
         require(ties == ["tie-b", "tie-a"], "equal dates fall back to distribution order: \(ties)")
+        let duplicateID = list("duplicate-id", rules: 1, updated: 8_000)
+        let duplicateIDCopy = FilterList(
+            id: duplicateID.id,
+            name: "duplicate-id-copy",
+            url: URL(string: "https://example.com/duplicate-id-copy.txt")!,
+            category: .ads,
+            isSelected: true,
+            sourceRuleCount: 2,
+            lastUpdated: Date(timeIntervalSince1970: 9_000)
+        )
+        let duplicateSafe = ContentBlockerMappingService.orderedForCompilation(
+            [duplicateID, duplicateIDCopy]
+        )
+        let duplicateDistribution = ContentBlockerMappingService.orderedForDistribution(
+            [duplicateID, duplicateIDCopy]
+        )
+        require(
+            duplicateSafe.map(\.id) == [duplicateID.id]
+                && duplicateDistribution.map(\.id) == [duplicateID.id],
+            "duplicate filter IDs must compile and distribute once without trapping"
+        )
 
         var stale: [FilterList] = []
         let refreshedCounts = [100_000, 90_000, 80_000, 70_000, 60_000, 50_000]

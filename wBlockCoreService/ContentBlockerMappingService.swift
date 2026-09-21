@@ -35,18 +35,25 @@ public enum ContentBlockerMappingService {
     /// so the most recently updated lists go first and stale content is what gets
     /// cut. Ties fall back to the distribution order for determinism.
     public static func orderedForCompilation(_ selectedFilters: [FilterList]) -> [FilterList] {
-        let distribution = orderedForDistribution(selectedFilters)
-        let rank = Dictionary(uniqueKeysWithValues: distribution.enumerated().map { ($1.id, $0) })
-        return distribution.sorted { lhs, rhs in
-            let lhsDate = lhs.lastUpdated ?? .distantPast
-            let rhsDate = rhs.lastUpdated ?? .distantPast
-            if lhsDate != rhsDate { return lhsDate > rhsDate }
-            return (rank[lhs.id] ?? 0) < (rank[rhs.id] ?? 0)
-        }
+        orderedForDistribution(selectedFilters).enumerated()
+            .sorted { lhs, rhs in
+                let lhsDate = lhs.element.lastUpdated ?? .distantPast
+                let rhsDate = rhs.element.lastUpdated ?? .distantPast
+                if lhsDate != rhsDate { return lhsDate > rhsDate }
+                return lhs.offset < rhs.offset
+            }
+            .map(\.element)
     }
 
     public static func orderedForDistribution(_ selectedFilters: [FilterList]) -> [FilterList] {
-        selectedFilters.sorted { lhs, rhs in
+        var latestByID: [UUID: FilterList] = [:]
+        var firstIDs = Set<UUID>()
+        for filter in selectedFilters {
+            latestByID[filter.id] = filter
+            firstIDs.insert(filter.id)
+        }
+        let uniqueFilters = firstIDs.compactMap { latestByID[$0] }
+        return uniqueFilters.sorted { lhs, rhs in
             let lhsCount = lhs.sourceRuleCount ?? 0
             let rhsCount = rhs.sourceRuleCount ?? 0
             if lhsCount != rhsCount { return lhsCount > rhsCount }
