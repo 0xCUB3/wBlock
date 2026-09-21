@@ -1176,3 +1176,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Runs every enabled userscript that matches this site." = "Runs every enabled userscript that matches this site.";
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches.";
 "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches.";
+"Websites" = "Websites";
+"Restart…" = "Restart…";
+"Next update: %@" = "Next update: %@";
+"Next update" = "Next update";

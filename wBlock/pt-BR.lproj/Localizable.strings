@@ -1167,3 +1167,7 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Runs every enabled userscript that matches this site." = "Executa todos os userscripts ativados que correspondem a este site.";
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Aplica listas de filtros e scriptlets. Userscripts, zapper e reprodução automática têm seus próprios interruptores.";
 "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Sites adicionados ignoram listas de filtros e scriptlets. Userscripts, zapper e reprodução automática têm seus próprios interruptores.";
+"Websites" = "Sites";
+"Restart…" = "Reiniciar…";
+"Next update: %@" = "Próxima atualização: %@";
+"Next update" = "Próxima atualização";

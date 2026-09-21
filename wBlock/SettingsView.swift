@@ -16,7 +16,7 @@ struct SettingsView: View {
     private static let faqURL = URL(string: "https://github.com/0xCUB3/wBlock#faq")!
     private static let contactURL = URL(string: "https://discord.gg/5kmuEbwsut")!
     @AppStorage(LogTimeZonePreference.storageKey) private var logTimeZoneIdentifier: String = LogTimeZonePreference.deviceIdentifier
-    @State private var nextScheduleLine = String(localized: "Next: Loading…")
+    @State private var nextScheduleLine = String(localized: "Waiting")
     @State private var isOverdue = false
     @State private var scheduleRefreshTimer = ScheduleRefreshTimer()
     #if os(macOS)
@@ -282,15 +282,10 @@ struct SettingsView: View {
     }
 
     @ViewBuilder
-    private var autoplaySection: some View {
-        Section("Autoplay") {
+    private var websitesSection: some View {
+        Section("Websites") {
             Toggle("Autoplay", isOn: autoplayBinding)
-        }
-    }
 
-    @ViewBuilder
-    private var siteActionsSection: some View {
-        Section("Site Actions") {
             NavigationLink {
                 SiteSettingsView()
             } label: {
@@ -326,17 +321,12 @@ struct SettingsView: View {
 
     private var cosmeticFilteringControls: some View {
         Toggle(isOn: cosmeticFilteringBinding) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Cosmetic Filtering")
-                Text("Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
+            rowLabel(
+                "Cosmetic Filtering",
+                detail: Text("Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU.")
+            )
         }
         .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
-        #if os(macOS)
-        .padding(.vertical, 4)
-        #endif
     }
 
     private var cosmeticFilteringBinding: Binding<Bool> {
@@ -351,19 +341,32 @@ struct SettingsView: View {
 
     private var logTimestampControls: some View {
         Toggle(isOn: usesDeviceTimeZoneBinding) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Sync timestamps with device timezone")
-                Text("Controls the time zone used when displaying and exporting log timestamps.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
+            rowLabel(
+                "Sync timestamps with device timezone",
+                detail: Text("Controls the time zone used when displaying and exporting log timestamps.")
+            )
+        }
+        .onChangeCompat(of: logTimeZoneIdentifier) { _ in
+            LogDateFormatters.configureIfNeeded()
+        }
+    }
+
+    /// A title over a footnote, the two-line label System Settings gives rows
+    /// that need a sentence of explanation.
+    private func rowLabel(_ title: LocalizedStringKey, detail: Text) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+            detail
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
         #if os(macOS)
         .padding(.vertical, 4)
         #endif
-        .onChangeCompat(of: logTimeZoneIdentifier) { _ in
-            LogDateFormatters.configureIfNeeded()
-        }
+    }
+
+    private var nextScheduleSubtitle: Text {
+        Text(String.localizedStringWithFormat(NSLocalizedString("Next update: %@", comment: "Auto-update schedule"), nextScheduleLine))
     }
 
     @ViewBuilder
@@ -450,9 +453,6 @@ struct SettingsView: View {
     private var autoUpdateSection: some View {
         Section {
             Toggle("Auto-Update Filters & Userscripts", isOn: autoUpdateToggleBinding)
-                #if os(macOS)
-                .toggleStyle(MacTrailingSwitchToggleStyle())
-                #endif
 
             if autoUpdateEnabled {
                 Picker("Update Interval", selection: autoUpdateIntervalBinding) {
@@ -463,9 +463,12 @@ struct SettingsView: View {
                 .macTrailingPicker("Update Interval")
 
                 #if os(macOS)
-                Toggle("Background Update Agent", isOn: backgroundAgentEnabledBinding)
-                    .toggleStyle(MacTrailingSwitchToggleStyle())
-                    .help("Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open.")
+                Toggle(isOn: backgroundAgentEnabledBinding) {
+                    rowLabel(
+                        "Background Update Agent",
+                        detail: Text("Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open.")
+                    )
+                }
                 #endif
             }
 
@@ -484,7 +487,11 @@ struct SettingsView: View {
                 .buttonStyle(.bordered)
                 .disabled(filterManager.isLoading)
             } label: {
-                Text("Check for Updates")
+                if autoUpdateEnabled {
+                    rowLabel("Check for Updates", detail: nextScheduleSubtitle)
+                } else {
+                    Text("Check for Updates")
+                }
             }
             #endif
 
@@ -496,11 +503,11 @@ struct SettingsView: View {
         } header: {
             Text("Auto-Update")
         } footer: {
-            VStack(alignment: .leading, spacing: 2) {
-                if autoUpdateEnabled {
-                    Text(nextScheduleLine)
-                }
+            #if os(iOS)
+            if autoUpdateEnabled {
+                nextScheduleSubtitle
             }
+            #endif
         }
     }
 
@@ -521,7 +528,7 @@ struct SettingsView: View {
                         : (autoUpdateEnabled ? String(localized: "Enabled") : String(localized: "Disabled"))
                 )
                 diagnosticDetailView(title: "Update Interval", detail: intervalDescription(hours: autoUpdateIntervalHours))
-                diagnosticDetailView(title: "Next", detail: nextScheduleLine)
+                diagnosticDetailView(title: "Next update", detail: nextScheduleLine)
                 diagnosticDetailView(title: "Last Update Check", detail: formatDiagnosticTime(dataManager.autoUpdateLastCheckTime))
                 diagnosticDetailView(title: "Last Successful Update", detail: formatDiagnosticTime(dataManager.autoUpdateLastSuccessfulTime))
                 #else
@@ -598,9 +605,6 @@ struct SettingsView: View {
         Section {
             Toggle("iCloud Sync", isOn: syncEnabledBinding)
                 .disabled(!syncManager.isCloudKitAvailable)
-                #if os(macOS)
-                .toggleStyle(MacTrailingSwitchToggleStyle())
-                #endif
 
             if syncManager.isCloudKitAvailable && syncManager.isEnabled {
                 Toggle("Sync Userscript Enabled States", isOn: Binding(
@@ -608,9 +612,6 @@ struct SettingsView: View {
                     set: { syncManager.setSyncUserScriptEnabledStates($0) }
                 ))
                     .disabled(syncManager.isSyncing)
-                    #if os(macOS)
-                    .toggleStyle(MacTrailingSwitchToggleStyle())
-                    #endif
 
                 #if os(macOS)
                 CompatibleLabeledContent {
@@ -667,20 +668,11 @@ struct SettingsView: View {
     private var pauseBlockingSection: some View {
         Section {
             Toggle("Pause All Components", isOn: pauseBlockingBinding)
-                #if os(macOS)
-                .toggleStyle(MacTrailingSwitchToggleStyle())
-                #endif
-        } header: {
-            Text("Blocking")
-        }
-        .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
-
-        Section {
             Toggle("Filters", isOn: pauseComponentBinding(.filters))
             Toggle("Enabled Userscripts & Userstyles", isOn: pauseComponentBinding(.userScripts))
             Toggle("Element Zapper", isOn: pauseComponentBinding(.elementZapper))
         } header: {
-            Text("Paused Components")
+            Text("Pause Blocking")
         } footer: {
             Text("Pause all components at once, or pause them individually.")
         }
@@ -730,19 +722,16 @@ struct SettingsView: View {
         Section {
             #if os(macOS)
             CompatibleLabeledContent {
-                Button(isRestarting ? "Restarting…" : "Restart Onboarding…") {
+                Button(isRestarting ? "Restarting…" : "Restart…") {
                     showingRestartConfirmation = true
                 }
                 .buttonStyle(.bordered)
                 .disabled(isRestarting)
             } label: {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Restart Onboarding")
-                    Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 4)
+                rowLabel(
+                    "Restart Onboarding",
+                    detail: Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
+                )
             }
             #else
             Button(role: .destructive) {
@@ -773,8 +762,7 @@ struct SettingsView: View {
         CompatibleNavigationStack {
             List {
                 pauseBlockingSection
-                autoplaySection
-                siteActionsSection
+                websitesSection
                 displaySection
                 autoUpdateSection
                 syncSection
@@ -807,8 +795,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var settingsSections: some View {
         pauseBlockingSection
-        autoplaySection
-        siteActionsSection
+        websitesSection
         displaySection
         autoUpdateSection
         syncSection
@@ -972,7 +959,7 @@ extension SettingsView {
             }
             await filterManager.completeResetForOnboarding()
             await MainActor.run {
-                nextScheduleLine = String(localized: "Next: Loading…")
+                nextScheduleLine = String(localized: "Waiting")
             }
             await updateScheduleLine()
         }

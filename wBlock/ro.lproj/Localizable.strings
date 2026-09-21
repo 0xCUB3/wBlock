@@ -1167,3 +1167,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Runs every enabled userscript that matches this site." = "Rulează fiecare userscript activat care se potrivește acestui site.";
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Aplică listele de filtre și scriptleturile. Userscripturile, zapper-ul și redarea automată au comutatoare proprii.";
 "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Site-urile adăugate ocolesc listele de filtre și scriptleturile. Userscripturile, zapper-ul și redarea automată au comutatoare proprii.";
+"Websites" = "Site-uri";
+"Restart…" = "Repornește…";
+"Next update: %@" = "Următoarea actualizare: %@";
+"Next update" = "Următoarea actualizare";

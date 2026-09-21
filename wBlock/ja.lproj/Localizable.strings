@@ -1136,3 +1136,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Runs every enabled userscript that matches this site." = "このサイトに一致する有効なユーザースクリプトをすべて実行します。";
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "フィルタリストとスクリプトレットを適用します。ユーザースクリプト、ザッパー、自動再生には個別のスイッチがあります。";
 "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "追加したサイトではフィルタリストとスクリプトレットを適用しません。ユーザースクリプト、ザッパー、自動再生には個別のスイッチがあります。";
+"Websites" = "Webサイト";
+"Restart…" = "再起動…";
+"Next update: %@" = "次回のアップデート: %@";
+"Next update" = "次回のアップデート";

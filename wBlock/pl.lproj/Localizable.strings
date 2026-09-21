@@ -1167,3 +1167,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Runs every enabled userscript that matches this site." = "Uruchamia każdy włączony userscript pasujący do tej witryny.";
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Stosuje listy filtrów i scriptlety. Userscripty, zapper i autoodtwarzanie mają własne przełączniki.";
 "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Dodane witryny pomijają listy filtrów i scriptlety. Userscripty, zapper i autoodtwarzanie mają własne przełączniki.";
+"Websites" = "Witryny";
+"Restart…" = "Uruchom ponownie…";
+"Next update: %@" = "Następna aktualizacja: %@";
+"Next update" = "Następna aktualizacja";

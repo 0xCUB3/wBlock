@@ -1167,3 +1167,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Runs every enabled userscript that matches this site." = "Εκτελεί κάθε ενεργό userscript που ταιριάζει σε αυτόν τον ιστότοπο.";
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Εφαρμόζει λίστες φίλτρων και scriptlets. Τα userscripts, το zapper και η αυτόματη αναπαραγωγή έχουν δικούς τους διακόπτες.";
 "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Οι προστιθέμενοι ιστότοποι παρακάμπτουν λίστες φίλτρων και scriptlets. Τα userscripts, το zapper και η αυτόματη αναπαραγωγή έχουν δικούς τους διακόπτες.";
+"Websites" = "Ιστότοποι";
+"Restart…" = "Επανεκκίνηση…";
+"Next update: %@" = "Επόμενη ενημέρωση: %@";
+"Next update" = "Επόμενη ενημέρωση";

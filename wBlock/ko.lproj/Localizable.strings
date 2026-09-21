@@ -1167,3 +1167,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Runs every enabled userscript that matches this site." = "이 사이트와 일치하는 모든 활성 사용자 스크립트를 실행합니다.";
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "필터 목록과 스크립틀릿을 적용합니다. 사용자 스크립트, 재퍼, 자동 재생은 별도의 스위치가 있습니다.";
 "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "추가된 사이트는 필터 목록과 스크립틀릿을 건너뜁니다. 사용자 스크립트, 재퍼, 자동 재생은 별도의 스위치가 있습니다.";
+"Websites" = "웹 사이트";
+"Restart…" = "재시동…";
+"Next update: %@" = "다음 업데이트: %@";
+"Next update" = "다음 업데이트";

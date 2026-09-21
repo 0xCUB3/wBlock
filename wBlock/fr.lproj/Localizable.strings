@@ -1167,3 +1167,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Runs every enabled userscript that matches this site." = "Exécute chaque userscript activé correspondant à ce site.";
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Applique les listes de filtres et les scriptlets. Les userscripts, le zapper et la lecture automatique ont leurs propres interrupteurs.";
 "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Les sites ajoutés ignorent les listes de filtres et les scriptlets. Les userscripts, le zapper et la lecture automatique ont leurs propres interrupteurs.";
+"Websites" = "Sites web";
+"Restart…" = "Redémarrer…";
+"Next update: %@" = "Prochaine mise à jour : %@";
+"Next update" = "Prochaine mise à jour";
