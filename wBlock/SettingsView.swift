@@ -288,12 +288,14 @@ struct SettingsView: View {
 
             NavigationLink {
                 SiteSettingsView()
+                    .swipeBackNavigationCompat()
             } label: {
                 SettingsRowLabel("Site Settings", systemImage: "globe", accessory: .push)
             }
 
             NavigationLink {
                 ElementZapperSettingsView(filterManager: filterManager)
+                    .swipeBackNavigationCompat()
             } label: {
                 SettingsRowLabel("Element Zapper", systemImage: "wand.and.stars", accessory: .push)
             }
@@ -305,6 +307,7 @@ struct SettingsView: View {
         Section("Advanced") {
             NavigationLink {
                 LogsView()
+                    .swipeBackNavigationCompat()
             } label: {
                 SettingsRowLabel("View Logs", systemImage: "doc.text.magnifyingglass", accessory: .push)
             }
@@ -497,6 +500,7 @@ struct SettingsView: View {
 
             NavigationLink {
                 autoUpdateDiagnosticsDetail
+                    .swipeBackNavigationCompat()
             } label: {
                 SettingsRowLabel("Background Diagnostics", systemImage: "stethoscope", accessory: .push)
             }

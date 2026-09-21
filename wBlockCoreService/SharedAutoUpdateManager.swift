@@ -1265,8 +1265,14 @@ public actor SharedAutoUpdateManager {
     /// report nothing new. It follows the same interval as the app.
     public func stageFilterDownloadsFromExtension(trigger: String) async -> StagingOutcome {
         #if os(iOS)
-        let stagingTask = Task {
-            await stageFilterDownloadsFromExtensionImpl(trigger: trigger)
+        let stagingTask = Task { () -> StagingOutcome in
+            do {
+                return try await stageFilterDownloadsFromExtensionImpl(trigger: trigger)
+            } catch is CancellationError {
+                return .skipped(reason: "cancelled")
+            } catch {
+                return .skipped(reason: "failed")
+            }
         }
         let shield = SuspensionShield(reason: "wBlock extension filter staging") {
             stagingTask.cancel()
@@ -1278,19 +1284,30 @@ public actor SharedAutoUpdateManager {
             stagingTask.cancel()
         }
         #else
-        return await stageFilterDownloadsFromExtensionImpl(trigger: trigger)
+        do {
+            return try await stageFilterDownloadsFromExtensionImpl(trigger: trigger)
+        } catch is CancellationError {
+            return .skipped(reason: "cancelled")
+        } catch {
+            return .skipped(reason: "failed")
+        }
         #endif
     }
 
-    private func stageFilterDownloadsFromExtensionImpl(trigger: String) async -> StagingOutcome {
+    private func stageFilterDownloadsFromExtensionImpl(trigger: String) async throws -> StagingOutcome {
+        try Task.checkCancellation()
         guard Self.isAppExtensionProcess else { return .skipped(reason: "not_extension") }
         guard !stagingInProgress else { return .skipped(reason: "already_running") }
         stagingInProgress = true
         defer { stagingInProgress = false }
 
+        try Task.checkCancellation()
         await ProtobufDataManager.shared.waitUntilLoaded()
+        try Task.checkCancellation()
         guard await getAutoUpdateEnabled() else { return .skipped(reason: "auto_update_disabled") }
+        try Task.checkCancellation()
         guard !BlockingPauseStore.isPaused(.filters) else { return .skipped(reason: "filters_paused") }
+        try Task.checkCancellation()
         guard await !getAutoUpdateIsRunning() else { return .skipped(reason: "app_run_in_progress") }
 
         #if !os(iOS)
@@ -1302,34 +1319,51 @@ public actor SharedAutoUpdateManager {
         defer { withExtendedLifetime(lease) {} }
         #endif
 
+        try Task.checkCancellation()
         let now = Date().timeIntervalSince1970
         let interval = await getAutoUpdateIntervalHours()
+        try Task.checkCancellation()
         let nextEligible = await getAutoUpdateNextEligibleTime()
+        try Task.checkCancellation()
         if nextEligible > 0, now < TimeInterval(nextEligible) {
             return .skipped(reason: "throttled_not_eligible")
         }
         if nextEligible <= 0 {
             let lastCheck = await getAutoUpdateLastCheckTime()
+            try Task.checkCancellation()
             if lastCheck > 0, now - TimeInterval(lastCheck) < interval * 3600 {
                 return .skipped(reason: "throttled_legacy_interval")
             }
         }
 
+        try Task.checkCancellation()
         let (allFilters, selectedFilters) = await loadFilterListsFromProtobuf()
+        try Task.checkCancellation()
         guard !selectedFilters.isEmpty else { return .skipped(reason: "no_selected_filters") }
 
         // Marker first: if this process dies between writing a list file and
         // saving metadata, the app still rebuilds from whatever landed.
+        try Task.checkCancellation()
         guard let stagingMarker = StagedFilterDownloads.save(filterIDs: []) else {
             return .skipped(reason: "staging_marker_unavailable")
         }
+        try Task.checkCancellation()
         await ProtobufDataManager.shared.setAutoUpdateLastCheckTime(Int64(now))
+        try Task.checkCancellation()
         appendSharedLog("Extension staging started: trigger=\(trigger), intervalHours=\(String(format: "%.1f", interval))")
 
         let updateResult: UpdateFetchResult
         do {
             updateResult = try await checkAndFetchUpdates(filters: selectedFilters)
+            try Task.checkCancellation()
+        } catch is CancellationError {
+            // Leave the marker as a recovery signal if a download completed
+            // before cancellation. Do not write again while unwinding.
+            return .skipped(reason: "cancelled")
         } catch {
+            if Task.isCancelled {
+                return .skipped(reason: "cancelled")
+            }
             _ = StagedFilterDownloads.clear(ifMatches: stagingMarker)
             appendSharedLog("Extension staging failed: \(error.localizedDescription)")
             return .skipped(reason: "fetch_failed")
@@ -1340,9 +1374,13 @@ public actor SharedAutoUpdateManager {
         let nextCheck = completion + (updateResult.hadErrors ? retryDelay : interval * 3600)
 
         guard !updateResult.updatedFilters.isEmpty else {
+            try Task.checkCancellation()
             _ = StagedFilterDownloads.clear(ifMatches: stagingMarker)
+            try Task.checkCancellation()
             await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextCheck))
+            try Task.checkCancellation()
             _ = await ProtobufDataManager.shared.saveDataImmediately()
+            try Task.checkCancellation()
             invalidateStatusCache()
             appendSharedLog("Extension staging: no filter updates, checkErrors=\(updateResult.hadErrors), nextCheckIn=\(formatDurationSeconds(Int(nextCheck - completion)))")
             appendTelemetry("run_result", fields: [
@@ -1357,13 +1395,21 @@ public actor SharedAutoUpdateManager {
         for updated in updateResult.updatedFilters {
             if let idx = merged.firstIndex(where: { $0.id == updated.id }) { merged[idx] = updated }
         }
+        try Task.checkCancellation()
         let latestPersisted = await ProtobufDataManager.shared.getFilterLists()
+        try Task.checkCancellation()
         merged = FilterSelectionRebaser.rebaseSelection(snapshot: merged, latestPersisted: latestPersisted)
+        try Task.checkCancellation()
         await saveFilterListsToProtobuf(merged)
+        try Task.checkCancellation()
         _ = StagedFilterDownloads.save(filterIDs: updateResult.updatedFilters.map { $0.id.uuidString })
+        try Task.checkCancellation()
         await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
+        try Task.checkCancellation()
         await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextCheck))
+        try Task.checkCancellation()
         _ = await ProtobufDataManager.shared.saveDataImmediately()
+        try Task.checkCancellation()
         invalidateStatusCache()
 
         let preview = updateResult.updatedFilters.prefix(3).map(\.name).joined(separator: ", ")

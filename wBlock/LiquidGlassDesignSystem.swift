@@ -39,6 +39,12 @@ extension View {
 /// Update together, pending Apply on its own, then the enabled-only filter and
 /// a persistent search field. On macOS 26 compact glass groups keep an
 /// eight-point gap; older releases render the same buttons as one flat group.
+///
+/// These tabs scroll an AppKit list that draws its own scroll-edge material
+/// under the toolbar, so the SwiftUI toolbar background stays hidden here to
+/// avoid a divider while the initially empty lists load. Settings and its
+/// pushed pages scroll SwiftUI views and keep the default background, which
+/// is what paints the same material behind the tab picker there.
 struct MacActionsToolbar<Primary: View, Apply: View, Filter: View, Search: View>: ViewModifier {
     let hasPendingChanges: Bool
     @ViewBuilder let primary: () -> Primary
@@ -52,6 +58,7 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View, Search: View>
                 ToolbarItem(placement: .automatic) { compactActions }
                     .sharedBackgroundVisibility(.hidden)
             }
+            .toolbarBackground(.hidden, for: .windowToolbar)
         } else {
             content.toolbar {
                 ToolbarItemGroup(placement: .automatic) {
