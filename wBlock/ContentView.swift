@@ -504,6 +504,7 @@ struct ContentView: View {
             header: AnyView(statsCardsView.padding(.vertical, 16)),
             onMove: commitFilterMove
         )
+        .scrollingUnderToolbar()
         #endif
     }
 

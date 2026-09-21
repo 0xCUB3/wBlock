@@ -106,6 +106,27 @@ struct MacReorderableList: NSViewRepresentable {
     let header: AnyView
     var emptyContent: AnyView? = nil
     let onMove: (MacListMove) -> Bool
+    private var topContentInset: CGFloat? = nil
+
+    init(
+        sections: [MacListSection], header: AnyView, emptyContent: AnyView? = nil,
+        onMove: @escaping (MacListMove) -> Bool
+    ) {
+        self.sections = sections
+        self.header = header
+        self.emptyContent = emptyContent
+        self.onMove = onMove
+    }
+
+    /// Extend the native scroll surface under the toolbar while preserving
+    /// SwiftUI's content clearance, including any pause banner above the list.
+    func scrollingUnderToolbar() -> some View {
+        GeometryReader { geometry in
+            var list = self
+            list.topContentInset = geometry.safeAreaInsets.top
+            return list.ignoresSafeArea(.container, edges: .top)
+        }
+    }
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -114,7 +135,6 @@ struct MacReorderableList: NSViewRepresentable {
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
         scroll.drawsBackground = false
-        // SwiftUI owns the scroll-under geometry; let AppKit derive its insets.
         let outline = MacReorderableOutlineView()
         outline.canDragRow = { [weak coordinator = context.coordinator, weak outline] row in
             guard let coordinator, let outline, let item = outline.item(atRow: row) else { return false }
@@ -144,13 +164,31 @@ struct MacReorderableList: NSViewRepresentable {
         scroll.documentView = outline
         context.coordinator.outline = outline
         context.coordinator.update(self, environment: context.environment)
-        // Add trailing space without replacing AppKit's automatic toolbar inset.
+        // Standalone lists use AppKit insets; toolbar callers supply SwiftUI's safe area.
         scroll.additionalSafeAreaInsets.bottom = 36
+        updateContentInsets(scroll)
         return scroll
     }
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
+        updateContentInsets(scroll)
         context.coordinator.update(self, environment: context.environment)
+    }
+
+    private func updateContentInsets(_ scroll: NSScrollView) {
+        guard let topContentInset,
+              scroll.automaticallyAdjustsContentInsets
+                || scroll.contentInsets.top != topContentInset
+                || scroll.contentInsets.bottom != 36 else { return }
+        let oldTop = scroll.contentInsets.top
+        let origin = scroll.contentView.bounds.origin
+        let wasAtTop = origin.y <= -oldTop + 1
+        scroll.automaticallyAdjustsContentInsets = false
+        scroll.contentInsets = NSEdgeInsets(top: topContentInset, left: 0, bottom: 36, right: 0)
+        if wasAtTop {
+            scroll.contentView.scroll(to: NSPoint(x: origin.x, y: -topContentInset))
+            scroll.reflectScrolledClipView(scroll.contentView)
+        }
     }
 
     @MainActor final class Coordinator: NSObject, NSOutlineViewDataSource, NSOutlineViewDelegate {
