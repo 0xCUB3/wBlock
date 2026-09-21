@@ -237,6 +237,7 @@ struct InlineGlassSearchField: View {
                     .font(.system(size: 13))
                     .foregroundStyle(text.isEmpty ? Color.primary : Color.accentColor)
                     .frame(width: isExpanded ? 16 : 36, height: 36)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(prompt)
