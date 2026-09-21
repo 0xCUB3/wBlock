@@ -438,7 +438,12 @@ struct ContentView: View {
 
     #if os(macOS)
     private var macFiltersToolbar: some ViewModifier {
-        MacActionsToolbar(hasPendingChanges: hasPendingChanges) {
+        MacActionsToolbar(
+            searchText: $filterSearchText,
+            focusRequest: $showFilterSearch,
+            searchPrompt: "Search filters",
+            hasPendingChanges: hasPendingChanges
+        ) {
             Button {
                 showingAddFilterSheet = true
             } label: {
@@ -456,12 +461,6 @@ struct ContentView: View {
                         ? "line.3.horizontal.decrease.circle.fill"
                         : "line.3.horizontal.decrease.circle")
             }
-        } search: {
-            ToolbarSearchField(
-                text: $filterSearchText,
-                isExpanded: $showFilterSearch,
-                prompt: "Search filters"
-            )
         }
     }
     #endif

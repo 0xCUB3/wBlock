@@ -503,7 +503,12 @@ struct UserScriptManagerView: View {
     }
 
     private var macScriptsToolbar: some ViewModifier {
-        MacActionsToolbar(hasPendingChanges: hasPendingChanges) {
+        MacActionsToolbar(
+            searchText: $searchText,
+            focusRequest: $showSearch,
+            searchPrompt: "Search scripts",
+            hasPendingChanges: hasPendingChanges
+        ) {
             Button {
                 showingAddScriptSheet = true
             } label: {
@@ -522,12 +527,6 @@ struct UserScriptManagerView: View {
                         ? "line.3.horizontal.decrease.circle.fill"
                         : "line.3.horizontal.decrease.circle")
             }
-        } search: {
-            ToolbarSearchField(
-                text: $searchText,
-                isExpanded: $showSearch,
-                prompt: "Search scripts"
-            )
         }
     }
     #endif

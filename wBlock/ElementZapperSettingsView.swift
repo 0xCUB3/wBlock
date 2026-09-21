@@ -78,9 +78,8 @@ struct ElementZapperSettingsView: View {
                 undo: restoreDeletedRule,
                 redo: redoDeletedRule
             )
-        } search: {
-            ToolbarSearchField(text: $searchText, isExpanded: $showSearch)
         })
+        .toolbarSearch(text: $searchText, focusRequest: $showSearch, prompt: "Search")
         #endif
         .navigationTitle("Element Zapper")
         .task { await ruleManager.refreshNow() }

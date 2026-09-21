@@ -96,9 +96,8 @@ struct SiteSettingsView: View {
                 undo: undoSiteMutation,
                 redo: redoSiteMutation
             )
-        } search: {
-            ToolbarSearchField(text: $searchText, isExpanded: $showSearch)
         })
+        .toolbarSearch(text: $searchText, focusRequest: $showSearch, prompt: "Search")
         #endif
         .alert(item: $pendingConfirmation) { confirmation in
             switch confirmation {

@@ -114,8 +114,7 @@ struct MacReorderableList: NSViewRepresentable {
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
         scroll.drawsBackground = false
-        scroll.automaticallyAdjustsContentInsets = false
-        scroll.contentView.automaticallyAdjustsContentInsets = false
+        // SwiftUI owns the scroll-under geometry; let AppKit derive its insets.
         let outline = MacReorderableOutlineView()
         outline.canDragRow = { [weak coordinator = context.coordinator, weak outline] row in
             guard let coordinator, let outline, let item = outline.item(atRow: row) else { return false }
@@ -145,8 +144,8 @@ struct MacReorderableList: NSViewRepresentable {
         scroll.documentView = outline
         context.coordinator.outline = outline
         context.coordinator.update(self, environment: context.environment)
-        // Keep the old SwiftUI list's breathing room under the last card.
-        scroll.contentView.contentInsets.bottom = 36
+        // Add trailing space without replacing AppKit's automatic toolbar inset.
+        scroll.additionalSafeAreaInsets.bottom = 36
         return scroll
     }
 

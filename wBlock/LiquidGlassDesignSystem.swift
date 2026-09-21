@@ -35,30 +35,32 @@ extension View {
 }
 
 #if os(macOS)
-/// The Filters and Userscripts tabs share one macOS toolbar shape: Add and
-/// Update together, pending Apply on its own, then the enabled-only filter and
-/// a persistent search field. On macOS 26 compact glass groups keep an
-/// eight-point gap; older releases render the same buttons as one flat group.
+/// Filters and Userscripts share the same toolbar order: search, Add and
+/// Update together, pending Apply on its own, then the enabled-only filter.
+/// On macOS 26 compact glass groups keep an eight-point gap; older releases
+/// retain their flat action group and trailing search field.
 ///
-/// These tabs scroll an AppKit list that draws its own scroll-edge material
-/// under the toolbar, so the SwiftUI toolbar background stays hidden here to
-/// avoid a divider while the initially empty lists load. Settings and its
-/// pushed pages scroll SwiftUI views and keep the default background, which
-/// is what paints the same material behind the tab picker there.
-struct MacActionsToolbar<Primary: View, Apply: View, Filter: View, Search: View>: ViewModifier {
+/// Every tab keeps the default window toolbar background so the material
+/// behind the tab picker matches between Filters, Userscripts, and Settings.
+struct MacActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifier {
+    @Binding var searchText: String
+    @Binding var focusRequest: Bool
+    let searchPrompt: LocalizedStringKey
     let hasPendingChanges: Bool
     @ViewBuilder let primary: () -> Primary
     @ViewBuilder let apply: () -> Apply
     @ViewBuilder let filter: () -> Filter
-    @ViewBuilder let search: () -> Search
 
     func body(content: Content) -> some View {
         if #available(macOS 26.0, *) {
             content.toolbar {
+                ToolbarItem(placement: .automatic) {
+                    InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
+                }
+                .sharedBackgroundVisibility(.hidden)
                 ToolbarItem(placement: .automatic) { compactActions }
                     .sharedBackgroundVisibility(.hidden)
             }
-            .toolbarBackground(.hidden, for: .windowToolbar)
         } else {
             content.toolbar {
                 ToolbarItemGroup(placement: .automatic) {
@@ -66,7 +68,9 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View, Search: View>
                     apply()
                     filter()
                 }
-                ToolbarItem(placement: .automatic) { search() }
+                ToolbarItem(placement: .automatic) {
+                    ToolbarSearchField(text: $searchText, isExpanded: $focusRequest, prompt: searchPrompt)
+                }
             }
         }
     }
@@ -90,7 +94,6 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View, Search: View>
                 }
                 filter()
                     .glassEffect(.regular.interactive(), in: .capsule)
-                search()
             }
         }
         .labelStyle(.iconOnly)
@@ -99,21 +102,16 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View, Search: View>
 }
 
 /// Toolbar for pages pushed inside the navigation stack (Site Settings,
-/// Element Zapper, Logs): the action buttons share one native glass group
-/// with compact hit targets; the search field supplies its own capsule.
+/// Element Zapper, Logs): the action buttons retain their native toolbar
+/// grouping; search is supplied separately by `toolbarSearch`.
 /// Native action items are used here because a custom multi-button item
 /// inside a pushed page reports the first button's accessibility name for
 /// every button.
-struct MacPushedActionsToolbar<Actions: View, Search: View>: ViewModifier {
+struct MacPushedActionsToolbar<Actions: View>: ViewModifier {
     @ViewBuilder let actions: () -> Actions
-    @ViewBuilder let search: () -> Search
 
-    init(
-        @ViewBuilder actions: @escaping () -> Actions,
-        @ViewBuilder search: @escaping () -> Search = { EmptyView() }
-    ) {
+    init(@ViewBuilder actions: @escaping () -> Actions) {
         self.actions = actions
-        self.search = search
     }
 
     func body(content: Content) -> some View {
@@ -125,17 +123,11 @@ struct MacPushedActionsToolbar<Actions: View, Search: View>: ViewModifier {
                         .environment(\.compactToolbarGrouped, true)
                         .buttonStyle(CompactToolbarButtonStyle())
                 }
-                if Search.self != EmptyView.self {
-                    ToolbarItem(placement: .automatic) { search() }
-                        .sharedBackgroundVisibility(.hidden)
-                }
             }
         } else {
-            // ToolbarContentBuilder has no `if` before macOS 13; an EmptyView
-            // search item takes no space.
+            // Keep action items separate on older macOS releases.
             content.toolbar {
                 ToolbarItemGroup(placement: .automatic) { actions() }
-                ToolbarItem(placement: .automatic) { search() }
             }
         }
     }
@@ -184,6 +176,151 @@ private struct CompactToolbarButtonStyle: ButtonStyle {
             .opacity(isEnabled ? (configuration.isPressed ? 0.6 : 1) : 0.35)
             .onHover { isHovered = $0 }
             .padding(isGrouped ? 3 : 0)
+    }
+}
+
+
+/// Compact inline glass search on macOS 26 and the original toolbar field on older systems.
+/// Requests are one-shot so menu and notification commands can focus the field repeatedly.
+struct ToolbarSearchModifier: ViewModifier {
+    @Binding var text: String
+    @Binding var focusRequest: Bool
+    let prompt: LocalizedStringKey
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *) {
+            content.toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    InlineGlassSearchField(text: $text, focusRequest: $focusRequest, prompt: prompt)
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
+        } else {
+            content.toolbar {
+                ToolbarItem(placement: .automatic) {
+                    ToolbarSearchField(text: $text, isExpanded: $focusRequest, prompt: prompt)
+                }
+            }
+        }
+    }
+}
+
+extension View {
+    #if os(macOS)
+    func toolbarSearch(
+        text: Binding<String>,
+        focusRequest: Binding<Bool>,
+        prompt: LocalizedStringKey
+    ) -> some View {
+        modifier(ToolbarSearchModifier(text: text, focusRequest: focusRequest, prompt: prompt))
+    }
+    #endif
+}
+
+@available(macOS 26.0, *)
+struct InlineGlassSearchField: View {
+    @Binding var text: String
+    @Binding var focusRequest: Bool
+    let prompt: LocalizedStringKey
+
+    @State private var isExpanded = false
+    @State private var focusRequests = 0
+    @State private var isVisible = false
+    @FocusState private var isFocused: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Button(action: expandAndFocus) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 13))
+                    .foregroundStyle(text.isEmpty ? Color.primary : Color.accentColor)
+                    .frame(width: isExpanded ? 16 : 36, height: 36)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(prompt)
+            .accessibilityValue(text)
+            .help(prompt)
+
+            if isExpanded {
+                TextField(prompt, text: $text)
+                    .font(.system(size: 13))
+                    .textFieldStyle(.plain)
+                    .focused($isFocused)
+                    .onExitCommand {
+                        text = ""
+                        collapse()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .transition(.opacity)
+                if !text.isEmpty {
+                    Button { text = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .noFocusRingCompat()
+                    .help(String(localized: "Clear"))
+                    .accessibilityLabel(Text("Clear"))
+                    .transition(.opacity)
+                }
+            }
+        }
+        .padding(.horizontal, isExpanded ? 10 : 0)
+        .frame(minWidth: isExpanded ? 140 : 36, idealWidth: isExpanded ? 180 : 36, maxWidth: isExpanded ? 180 : 36)
+        .frame(height: 36)
+        .background {
+            if isExpanded {
+                ToolbarFieldFocuser(request: focusRequests, onClickOutside: {
+                    guard isVisible, isExpanded else { return }
+                    collapse()
+                })
+                    .frame(height: 36)
+            }
+        }
+        .glassEffect(.regular.interactive(), in: .capsule)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: isExpanded)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: text.isEmpty)
+        .onAppear {
+            isVisible = true
+            handleFocusRequest()
+        }
+        .onChangeCompat(of: focusRequest) { _, requested in
+            if requested { handleFocusRequest() }
+        }
+        .onChangeCompat(of: isFocused) { _, focused in
+            if !focused && isVisible && isExpanded { collapse() }
+        }
+        .onDisappear {
+            isVisible = false
+            collapse()
+        }
+    }
+
+    private func handleFocusRequest() {
+        guard focusRequest, isVisible else { return }
+        isExpanded = true
+        focusRequests += 1
+        focusRequest = false
+        DispatchQueue.main.async {
+            guard isVisible, isExpanded else { return }
+            isFocused = true
+        }
+    }
+
+    private func expandAndFocus() {
+        isExpanded = true
+        focusRequests += 1
+        DispatchQueue.main.async {
+            guard isVisible, isExpanded else { return }
+            isFocused = true
+        }
+    }
+
+    private func collapse() {
+        isExpanded = false
+        isFocused = false
     }
 }
 
@@ -314,36 +451,95 @@ private struct ToolbarSearchFieldChrome: ViewModifier {
 /// request makes the sibling NSTextField the first responder directly.
 private struct ToolbarFieldFocuser: NSViewRepresentable {
     let request: Int
+    let onClickOutside: (() -> Void)?
+
+    init(request: Int, onClickOutside: (() -> Void)? = nil) {
+        self.request = request
+        self.onClickOutside = onClickOutside
+    }
 
     final class Coordinator {
         var handledRequest = 0
+        var pendingFocus: DispatchWorkItem?
+        var eventMonitor: Any?
+        var onClickOutside: (() -> Void)?
+
+        func installMouseMonitor(for view: NSView) {
+            guard onClickOutside != nil, eventMonitor == nil else { return }
+            eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseUp) { [weak view, weak self] event in
+                guard let view, let self, let window = view.window,
+                      event.window === window,
+                      !view.bounds.contains(view.convert(event.locationInWindow, from: nil)) else {
+                    return event
+                }
+                // Let the clicked control finish its action before the toolbar resizes.
+                DispatchQueue.main.async { [weak self] in
+                    self?.onClickOutside?()
+                }
+                return event
+            }
+        }
+
+        func cancelPendingFocus() {
+            pendingFocus?.cancel()
+            pendingFocus = nil
+        }
+
+        func cancel() {
+            cancelPendingFocus()
+            if let eventMonitor {
+                NSEvent.removeMonitor(eventMonitor)
+                self.eventMonitor = nil
+            }
+            onClickOutside = nil
+        }
     }
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeNSView(context: Context) -> NSView {
         let view = NSView(frame: .zero)
+        context.coordinator.onClickOutside = onClickOutside
+        context.coordinator.installMouseMonitor(for: view)
         if request > 0 {
             context.coordinator.handledRequest = request
-            focusSibling(of: view, attemptsLeft: 10)
+            focusSibling(of: view, coordinator: context.coordinator, attemptsLeft: 10)
         }
         return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.onClickOutside = onClickOutside
+        context.coordinator.installMouseMonitor(for: nsView)
         guard request != context.coordinator.handledRequest else { return }
         context.coordinator.handledRequest = request
-        focusSibling(of: nsView, attemptsLeft: 10)
+        focusSibling(of: nsView, coordinator: context.coordinator, attemptsLeft: 10)
     }
 
-    private func focusSibling(of view: NSView, attemptsLeft: Int) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(60)) {
-            if let window = view.window, let field = Self.textField(near: view) {
+    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
+        coordinator.cancel()
+    }
+
+    private func focusSibling(of view: NSView, coordinator: Coordinator, attemptsLeft: Int) {
+        coordinator.cancelPendingFocus()
+        let work = DispatchWorkItem { [weak view, weak coordinator] in
+            guard let view, let coordinator,
+                  coordinator.pendingFocus?.isCancelled == false else { return }
+            guard let window = view.window else {
+                if attemptsLeft > 0 {
+                    self.focusSibling(of: view, coordinator: coordinator, attemptsLeft: attemptsLeft - 1)
+                }
+                return
+            }
+            guard window.isVisible, !view.isHiddenOrHasHiddenAncestor else { return }
+            if let field = Self.textField(near: view) {
                 window.makeFirstResponder(field)
             } else if attemptsLeft > 0 {
-                focusSibling(of: view, attemptsLeft: attemptsLeft - 1)
+                self.focusSibling(of: view, coordinator: coordinator, attemptsLeft: attemptsLeft - 1)
             }
         }
+        coordinator.pendingFocus = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(60), execute: work)
     }
 
     private static func textField(near view: NSView) -> NSTextField? {
@@ -363,4 +559,5 @@ private struct ToolbarFieldFocuser: NSViewRepresentable {
         return nil
     }
 }
+
 #endif
