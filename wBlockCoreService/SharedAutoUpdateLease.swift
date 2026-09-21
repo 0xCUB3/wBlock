@@ -69,6 +69,15 @@ public final class SharedAutoUpdateLease: @unchecked Sendable {
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else { return nil }
 
+        do {
+            try FileManager.default.createDirectory(
+                at: containerURL,
+                withIntermediateDirectories: true
+            )
+        } catch {
+            return nil
+        }
+
         let lockURL = containerURL.appendingPathComponent("auto-update.run.lock")
         let descriptor = open(lockURL.path, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR)
         return descriptor >= 0 ? descriptor : nil
