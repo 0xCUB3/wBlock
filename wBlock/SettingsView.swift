@@ -668,9 +668,15 @@ struct SettingsView: View {
     private var pauseBlockingSection: some View {
         Section {
             Toggle("Pause All Components", isOn: pauseBlockingBinding)
-            Toggle("Filters", isOn: pauseComponentBinding(.filters))
-            Toggle("Enabled Userscripts & Userstyles", isOn: pauseComponentBinding(.userScripts))
-            Toggle("Element Zapper", isOn: pauseComponentBinding(.elementZapper))
+            Group {
+                Toggle("Filters", isOn: pauseComponentBinding(.filters))
+                Toggle("Enabled Userscripts & Userstyles", isOn: pauseComponentBinding(.userScripts))
+                Toggle("Element Zapper", isOn: pauseComponentBinding(.elementZapper))
+            }
+            .disabled(filterManager.pausedComponents == .all)
+            #if os(macOS)
+            .padding(.leading, 20)
+            #endif
         } header: {
             Text("Pause Blocking")
         } footer: {
