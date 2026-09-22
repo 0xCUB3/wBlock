@@ -235,8 +235,11 @@ struct InlineGlassSearchField: View {
             Button(action: expandAndFocus) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 13))
+                    .fixedSize()
                     .foregroundStyle(text.isEmpty ? Color.primary : Color.accentColor)
-                    .frame(width: isExpanded ? 16 : 36, height: 36)
+                    .contentTransition(.identity)
+                    .transaction { transaction in transaction.animation = nil }
+                    .frame(width: isExpanded ? 20 : 36, height: 36)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -268,13 +271,13 @@ struct InlineGlassSearchField: View {
                 }
             }
         }
-        .padding(.horizontal, isExpanded ? 10 : 0)
+        .padding(.horizontal, isExpanded ? 8 : 0)
         .frame(minWidth: isExpanded ? 140 : 36, idealWidth: isExpanded ? 180 : 36, maxWidth: isExpanded ? 180 : 36)
         .frame(height: 36)
         .background {
             if isExpanded {
                 ToolbarFieldFocuser(request: focusRequests, onClickOutside: {
-                    guard isVisible, isExpanded else { return }
+                    guard isVisible, isExpanded, text.isEmpty else { return }
                     collapse()
                 })
                     .frame(height: 36)
@@ -285,13 +288,17 @@ struct InlineGlassSearchField: View {
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: text.isEmpty)
         .onAppear {
             isVisible = true
+            if !text.isEmpty { isExpanded = true }
             handleFocusRequest()
+        }
+        .onChangeCompat(of: text) { _, value in
+            if !value.isEmpty { isExpanded = true }
         }
         .onChangeCompat(of: focusRequest) { _, requested in
             if requested { handleFocusRequest() }
         }
         .onChangeCompat(of: isFocused) { _, focused in
-            if !focused && isVisible && isExpanded { collapse() }
+            if !focused && isVisible && isExpanded && text.isEmpty { collapse() }
         }
         .onDisappear {
             isVisible = false
@@ -463,22 +470,57 @@ private struct ToolbarFieldFocuser: NSViewRepresentable {
         var handledRequest = 0
         var pendingFocus: DispatchWorkItem?
         var eventMonitor: Any?
+        var pendingOutsideClick: DispatchWorkItem?
         var onClickOutside: (() -> Void)?
 
         func installMouseMonitor(for view: NSView) {
             guard onClickOutside != nil, eventMonitor == nil else { return }
-            eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseUp) { [weak view, weak self] event in
-                guard let view, let self, let window = view.window,
-                      event.window === window,
-                      !view.bounds.contains(view.convert(event.locationInWindow, from: nil)) else {
+            let mask: NSEvent.EventTypeMask = [.leftMouseDown, .leftMouseUp]
+            eventMonitor = NSEvent.addLocalMonitorForEvents(matching: mask) { [weak view, weak self] event in
+                guard let view, let self else { return event }
+                guard self.isOutside(event, view: view) else {
+                    self.pendingOutsideClick?.cancel()
+                    self.pendingOutsideClick = nil
                     return event
                 }
-                // Let the clicked control finish its action before the toolbar resizes.
-                DispatchQueue.main.async { [weak self] in
-                    self?.onClickOutside?()
+
+                if event.type == .leftMouseDown {
+                    // A blank click can omit mouseUp when the toolbar resizes;
+                    // keep a deferred fallback, but give normal controls time
+                    // to receive their mouseUp first.
+                    self.pendingOutsideClick?.cancel()
+                    let work = DispatchWorkItem { [weak self] in
+                        self?.onClickOutside?()
+                        self?.pendingOutsideClick = nil
+                    }
+                    self.pendingOutsideClick = work
+                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(150), execute: work)
+                } else {
+                    self.pendingOutsideClick?.cancel()
+                    self.pendingOutsideClick = nil
+                    // Let the clicked control finish its action before the toolbar resizes.
+                    DispatchQueue.main.async { [weak self] in
+                        self?.onClickOutside?()
+                    }
                 }
                 return event
             }
+        }
+
+        private func isOutside(_ event: NSEvent, view: NSView) -> Bool {
+            guard let window = view.window else { return false }
+            let pointInWindow: NSPoint
+            if let eventWindow = event.window {
+                guard eventWindow === window || event.windowNumber == window.windowNumber else { return false }
+                pointInWindow = event.locationInWindow
+            } else {
+                // Nil-window events are only trusted while this window is active,
+                // and their location is interpreted in screen coordinates.
+                guard window.isKeyWindow || window.isMainWindow,
+                      window.frame.contains(event.locationInWindow) else { return false }
+                pointInWindow = window.convertPoint(fromScreen: event.locationInWindow)
+            }
+            return !view.bounds.contains(view.convert(pointInWindow, from: nil))
         }
 
         func cancelPendingFocus() {
@@ -488,6 +530,8 @@ private struct ToolbarFieldFocuser: NSViewRepresentable {
 
         func cancel() {
             cancelPendingFocus()
+            pendingOutsideClick?.cancel()
+            pendingOutsideClick = nil
             if let eventMonitor {
                 NSEvent.removeMonitor(eventMonitor)
                 self.eventMonitor = nil

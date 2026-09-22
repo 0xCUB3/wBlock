@@ -32,7 +32,7 @@ import SwiftUI
 
 @main @MainActor struct NativeListTests {
     struct Item: Identifiable { let id: UUID }
-    static func row(_ id: UUID, movable: Bool = true) -> MacListRow {
+    static func row(_ id: UUID, movable: Bool = true, height: CGFloat? = nil) -> MacListRow {
         MacListRow(id, movable: movable) {
             HStack {
                 VStack(alignment: .leading) {
@@ -42,12 +42,20 @@ import SwiftUI
                 }
                 Spacer()
                 Toggle("Enabled", isOn: .constant(true)).labelsHidden().toggleStyle(.switch)
-            }.padding(16)
+            }
+            .padding(16)
+            .frame(height: height)
         }
     }
     static func section(_ name: String, _ ids: [UUID], accepts: Bool = true) -> MacListSection {
         MacListSection(id: name, header: AnyView(Text(name)), rows: ids.map { row($0, movable: accepts) },
                        acceptsMoves: accepts)
+    }
+    static func sizedSection(_ name: String, _ ids: [UUID], heights: [CGFloat]) -> MacListSection {
+        precondition(!heights.isEmpty)
+        return MacListSection(id: name, header: AnyView(Text(name)), rows: ids.enumerated().map {
+            row($0.element, height: heights[$0.offset % heights.count])
+        })
     }
     static func descendants(_ view: NSView) -> [NSView] { [view] + view.subviews.flatMap(descendants) }
     static func settle(_ host: NSView) async throws {
@@ -225,28 +233,70 @@ import SwiftUI
 
         // Exercise native row reuse and scrolling with substantially more than one viewport.
         let many = (0..<120).map { _ in UUID() }
-        host.rootView = list([section("long", many)])
+        let scrollHeights: [CGFloat] = [120, 82, 48, 120, 82]
+        host.rootView = list([sizedSection("long", many, heights: scrollHeights)])
         try await settle(host)
         precondition(outline.numberOfRows == many.count + 2)
         outline.scrollRowToVisible(outline.numberOfRows - 1)
         try await settle(host)
         precondition(outline.visibleRect.minY > 0)
         let scrollView = outline.enclosingScrollView!
-        precondition(scrollView.contentView.contentInsets.bottom == 36,
-                     "The native list must retain trailing space below its final row")
+        precondition(scrollView.contentView.contentInsets.bottom == 16,
+                     "The bottom list inset must match the horizontal card inset")
+        let measuredBottom = outline.convert(outline.rect(ofRow: outline.numberOfRows - 1), to: nil)
+        let measuredClip = scrollView.contentView.convert(scrollView.contentView.bounds, to: nil)
+        let measuredGap = measuredBottom.minY - measuredClip.minY
+        print("native mixture initial bottomGap=\(measuredGap)")
+        precondition(abs(measuredGap - 16) <= 1,
+                     "initial mixed-height bottom clearance must be 16, measured \(measuredGap)")
+
+        // Keep the identity and scroll position, then asynchronously shrink
+        // the actual measured rows. This bypasses structure-clamp logic.
+        host.rootView = list([sizedSection("long", many, heights: [48, 82, 120])])
+        try await settle(host)
+        let collapsedBottom = outline.convert(outline.rect(ofRow: outline.numberOfRows - 1), to: nil)
+        let collapsedClip = scrollView.contentView.convert(scrollView.contentView.bounds, to: nil)
+        let collapsedGap = collapsedBottom.minY - collapsedClip.minY
+        print("native mixture shrunk bottomGap=\(collapsedGap)")
+        precondition(abs(collapsedGap - 16) <= 1,
+                     "asynchronously shrunk rows must clamp bottom clearance to 16, measured \(collapsedGap)")
         let bottom = outline.item(atRow: outline.numberOfRows - 1)!
         let writer = coordinator.outlineView(outline, pasteboardWriterForItem: bottom) as! NSPasteboardItem
         precondition(writer.string(forType: MacReorderableList.Coordinator.dragType) == many.last!.uuidString)
 
-        // A category expansion/rebuild while the user is scrolled must keep the
-        // same viewport instead of jumping back to the first section.
-        let viewportBeforeExpansion = outline.enclosingScrollView!.contentView.bounds.origin
+        // Shrinking a scrolled document must clamp to AppKit's real document
+        // bounds, including a regional/category collapse at the bottom.
+        let few = Array(many.prefix(3))
+        host.rootView = list([section("long", few)])
+        try await settle(host)
+        let shortScroll = outline.enclosingScrollView!
+        let shortOrigin = shortScroll.contentView.bounds.origin
+        let shortConstrained = shortScroll.contentView.constrainBoundsRect(shortScroll.contentView.bounds).origin
+        precondition(abs(shortOrigin.y - shortConstrained.y) < 1,
+                     "shrinking a native list must clamp its clip origin")
+        // Expansion/reorder while scrolled must preserve the current viewport
+        // rather than jumping back to the first row.
+        shortScroll.contentView.scroll(to: NSPoint(x: shortOrigin.x, y: shortOrigin.y))
+        let viewportBeforeExpansion = shortScroll.contentView.bounds.origin
         host.rootView = list([section("long", [UUID()] + many)])
         try await settle(host)
-        let viewportAfterExpansion = outline.enclosingScrollView!.contentView.bounds.origin
+        let viewportAfterExpansion = shortScroll.contentView.bounds.origin
         precondition(abs(viewportAfterExpansion.y - viewportBeforeExpansion.y) < 1,
                      "rebuilding an expanded category must preserve the scrolled viewport")
 
+        // Rapid filter-like replacements must remain valid for both empty and
+        // non-empty results, including returning to a short list at the top.
+        for result in [Array(many.prefix(1)), [], Array(many.suffix(2)), []] {
+            host.rootView = list([section("long", result)])
+            try await settle(host)
+            let current = shortScroll.contentView.bounds
+            let constrained = shortScroll.contentView.constrainBoundsRect(current)
+            precondition(abs(current.origin.y - constrained.origin.y) < 1,
+                         "rapid result replacement must keep a valid clip origin")
+        }
+
+        host.rootView = list([section("long", [UUID()] + many)])
+        try await settle(host)
         outline.scrollRowToVisible(0)
         try await settle(host)
         precondition(outline.visibleRect.minY == 0)
@@ -297,6 +347,6 @@ import SwiftUI
             heights.append(first.height)
         }
         precondition(heights[0] > heights[1] && abs(heights[0] - heights[2]) < 1)
-        print("PASS \(cases) insertion cases, filtered persistence, native source restrictions, hover/cancel/commit, stale deletion, header disclosure, selection, card boundaries, wrapping, scrolling and row reuse")
+        print("PASS \(cases) insertion cases, filtered persistence, native source restrictions, hover/cancel/commit, stale deletion, header disclosure, selection, card boundaries, wrapping, scrolling, row reuse, shrink clamping and rapid result replacement")
     }
 }

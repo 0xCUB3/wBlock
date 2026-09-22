@@ -1013,6 +1013,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "為網站新增或恢復實用功能的使用者腳本。";
 "Userstyles and scripts that change the appearance of websites." = "變更網站外觀的使用者樣式與腳本。";
 "Custom, remote, and local scripts that do not have a more specific display category." = "沒有更具體顯示類別的自訂、遠端與本機腳本。";
+"Beta userscripts and scripts that are still being evaluated or may change." = "仍在評估中或可能變更的測試版使用者腳本與腳本。";
 
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "選擇 .user.js、.js、.user.css、.less、.sass、.scss、.styl 或 .pcss 檔案。";

@@ -227,6 +227,8 @@ extension FilterListCategory {
             NSLocalizedString("Regional", comment: "Filter list category")
         case .custom:
             NSLocalizedString("Other", comment: "Filter list category display name")
+        case .scriptExperimental:
+            NSLocalizedString("Experimental", comment: "Userscript category")
         default:
             NSLocalizedString(rawValue, comment: "Filter list category")
         }

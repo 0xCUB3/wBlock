@@ -7,6 +7,8 @@ struct FilterInfoView: View {
     /// iOS only. Rows have no overflow menu there, so the sheet hosts the
     /// category move alongside the other secondary actions.
     var onChangeCategory: ((FilterListCategory) -> Void)? = nil
+    var isDownloading = false
+    var onDownload: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var showingMetadataEditor = false
@@ -118,6 +120,33 @@ struct FilterInfoView: View {
     private var actionList: some View {
         let actions = ContextMenuActionAvailability.filterActions(for: liveFilter, isDownloaded: hasLoadedMetadata ? cachedByteCount != nil : true)
         return InfoActionList {
+            if actions.contains(.download), let onDownload {
+                Button {
+                    onDownload()
+                    dismiss()
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "arrow.down.circle").frame(width: 22)
+                        if isDownloading {
+                            Text("Downloading…")
+                            Spacer()
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Text("Download")
+                            Spacer()
+                            Image(systemName: "chevron.forward")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .foregroundStyle(Color.accentColor)
+                    .padding(.horizontal, 14)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(isDownloading)
+            }
             if actions.contains(.settings) {
                 InfoActionRow("Settings", systemImage: "gearshape") { showingSettings = true }
             }

@@ -11,11 +11,23 @@ import UniformTypeIdentifiers
 
 private extension FilterListCategory {
     static var userScriptCategories: [FilterListCategory] {
-        [.scriptBlocking, .scriptFunctionality, .scriptAppearance, .scriptOther]
+        [.scriptBlocking, .scriptFunctionality, .scriptExperimental, .scriptAppearance, .scriptOther]
     }
 
     var userScriptCategoryName: String {
-        (isUserScriptOnly ? self : .scriptOther).localizedName
+        if self == .scriptExperimental { return NSLocalizedString("Experimental", comment: "Userscript category") }
+        return (isUserScriptOnly ? self : .scriptOther).localizedName
+    }
+
+    var userScriptDisplayCategory: UserScriptDisplayCategory? {
+        switch self {
+        case .scriptBlocking: return .blocking
+        case .scriptFunctionality: return .functionality
+        case .scriptExperimental: return .experimental
+        case .scriptAppearance: return .appearance
+        case .scriptOther: return .other
+        default: return nil
+        }
     }
 }
 
@@ -87,7 +99,8 @@ private struct UserScriptListItem: Identifiable, Hashable {
         displayCategory = UserScriptDisplayCategorySupport.category(
             isUserStyle: script.isUserStyle,
             builtInRole: builtInDisplayRole,
-            persistedCategory: script.category
+            persistedCategory: script.category,
+            isBeta: isBeta
         )
         self.isBuiltIn = isBuiltIn
         isIntegrated = isIntegratedUserScript(
@@ -286,7 +299,7 @@ struct UserScriptManagerView: View {
 
     private func moveScript(_ id: UUID, to category: UserScriptDisplayCategory) {
         guard let script = userScriptManager.userScript(withId: id),
-              let category = FilterListCategory(rawValue: category.rawValue) else { return }
+              let category = FilterListCategory.allCases.first(where: { $0.userScriptDisplayCategory == category }) else { return }
         Task {
             await userScriptManager.setUserScript(script, category: category)
             refreshScripts()
@@ -487,7 +500,7 @@ struct UserScriptManagerView: View {
 
     private func commitScriptMove(_ move: MacListMove) -> Bool {
         guard let category = UserScriptDisplayCategory(rawValue: move.sectionID),
-              let persisted = FilterListCategory(rawValue: category.rawValue),
+              let persisted = FilterListCategory.allCases.first(where: { $0.userScriptDisplayCategory == category }),
               let index = scripts.firstIndex(where: { $0.id == move.itemID }),
               userScriptManager.userScript(withId: move.itemID) != nil else { return false }
         let all = orderedScripts
@@ -673,7 +686,8 @@ struct UserScriptManagerView: View {
                     displayCategory: UserScriptDisplayCategorySupport.category(
                         isUserStyle: script.isUserStyle,
                         builtInRole: userScriptManager.builtInDisplayRole(for: script),
-                        persistedCategory: script.category
+                        persistedCategory: script.category,
+                        isBeta: userScriptManager.isBeta(for: script)
                     ),
                     isEnabledByDefault: userScriptManager.isEnabledByDefault(script)
                 )
@@ -689,7 +703,8 @@ struct UserScriptManagerView: View {
             let displayCategory = UserScriptDisplayCategorySupport.category(
                 isUserStyle: script.isUserStyle,
                 builtInRole: userScriptManager.builtInDisplayRole(for: script),
-                persistedCategory: script.category
+                persistedCategory: script.category,
+                isBeta: userScriptManager.isBeta(for: script)
             )
             guard let shouldEnable = UserScriptCategorySupport.resetEnabled(
                 isBuiltIn: userScriptManager.isDefaultUserScript(script),
@@ -911,6 +926,7 @@ struct UserScriptManagerView: View {
                 ))
                 .labelsHidden()
                 .toggleStyle(.switch)
+                .fixedSize()
                 .disabled(isToggleInFlight || (script.isLocal && !script.isDownloaded))
             }
         }
@@ -1395,7 +1411,8 @@ struct UserScriptInfoView: View {
                             UserScriptDisplayCategorySupport.category(
                                 isUserStyle: script.isUserStyle,
                                 builtInRole: userScriptManager.builtInDisplayRole(for: script),
-                                persistedCategory: script.category
+                                persistedCategory: script.category,
+                                isBeta: userScriptManager.isBeta(for: script)
                             )
                         },
                         set: setDisplayCategory
@@ -1429,7 +1446,7 @@ struct UserScriptInfoView: View {
 
     private func setDisplayCategory(_ category: UserScriptDisplayCategory) {
         guard var currentScript = script,
-              let mappedCategory = FilterListCategory(rawValue: category.rawValue)
+              let mappedCategory = FilterListCategory.allCases.first(where: { $0.userScriptDisplayCategory == category })
         else { return }
         currentScript.category = mappedCategory
         script = currentScript

@@ -27,20 +27,7 @@ extension View {
     ) -> some View {
         #if os(macOS)
         overlayPreferenceValue(InfoPopoverAnchors.self) { anchors in
-            GeometryReader { geometry in
-                if let selected = item.wrappedValue, let anchor = anchors[AnyHashable(selected.id)] {
-                    // Sized to the info button so the popover hangs from it,
-                    // arrow pointing up at the glyph the way Finder and
-                    // System Settings anchor their popovers.
-                    let rect = geometry[anchor]
-                    Color.clear.frame(width: rect.width, height: rect.height)
-                        .background(PopoverWindowShield { item.wrappedValue = nil })
-                        .popover(item: item, attachmentAnchor: .rect(.bounds), arrowEdge: .top) { value in
-                            content(value).onDisappear(perform: onDismiss)
-                        }
-                        .position(x: rect.midX, y: rect.midY)
-                }
-            }
+            InfoPopoverHost(item: item, anchors: anchors, onDismiss: onDismiss, content: content)
         }
         #else
         sheet(item: item, onDismiss: onDismiss, content: content)
@@ -65,6 +52,73 @@ extension View {
 
 #if os(macOS)
 import AppKit
+
+private struct InfoPopoverHost<Item: Identifiable, Info: View>: View {
+    @Binding var item: Item?
+    let anchors: [AnyHashable: Anchor<CGRect>]
+    let onDismiss: () -> Void
+    let content: (Item) -> Info
+    @State private var hostIsReady = false
+
+    var body: some View {
+        GeometryReader { geometry in
+            if let selected = item, let anchor = anchors[AnyHashable(selected.id)] {
+                let rect = geometry[anchor]
+                if rect.width > 0, rect.height > 0 {
+                    let selectedID = selected.id
+                    let presented = Binding<Item?>(
+                        get: { hostIsReady ? item : nil },
+                        set: { value in
+                            guard item?.id == selectedID else { return }
+                            item = value
+                        }
+                    )
+                    // Keep one host when changing items, and wait for its actual
+                    // AppKit layout before presenting from the button-sized bounds.
+                    Color.clear.frame(width: rect.width, height: rect.height)
+                        .background(InfoPopoverLayoutObserver { hostIsReady = true })
+                        .background(PopoverWindowShield { presented.wrappedValue = nil })
+                        .popover(item: presented, attachmentAnchor: .rect(.bounds), arrowEdge: .top) { value in
+                            content(value).onDisappear(perform: onDismiss)
+                        }
+                        .position(x: rect.midX, y: rect.midY)
+                        .onDisappear { hostIsReady = false }
+                }
+            }
+        }
+    }
+}
+
+private struct InfoPopoverLayoutObserver: NSViewRepresentable {
+    let onReady: () -> Void
+
+    func makeNSView(context: Context) -> InfoPopoverAnchorView { InfoPopoverAnchorView() }
+    func updateNSView(_ view: InfoPopoverAnchorView, context: Context) {
+        view.onReady = onReady
+        view.needsLayout = true
+    }
+}
+
+private final class InfoPopoverAnchorView: NSView {
+    var onReady: () -> Void = {}
+    private var reported = false
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        reported = false
+        needsLayout = true
+    }
+
+    override func layout() {
+        super.layout()
+        guard window != nil, !bounds.isEmpty, !reported else { return }
+        reported = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.window != nil, !self.bounds.isEmpty else { return }
+            self.onReady()
+        }
+    }
+}
 
 private struct PopoverWindowShield: NSViewRepresentable {
     let dismiss: () -> Void

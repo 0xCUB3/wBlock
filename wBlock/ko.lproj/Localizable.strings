@@ -1013,6 +1013,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "웹사이트의 유용한 기능을 추가하거나 복원하는 사용자 스크립트입니다.";
 "Userstyles and scripts that change the appearance of websites." = "웹사이트의 모양을 변경하는 사용자 스타일과 스크립트입니다.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "더 구체적인 표시 카테고리가 없는 사용자 지정, 원격 및 로컬 스크립트입니다.";
+"Beta userscripts and scripts that are still being evaluated or may change." = "아직 평가 중이거나 변경될 수 있는 베타 사용자 스크립트와 스크립트입니다.";
 
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = ".user.js, .js, .user.css, .less, .sass, .scss, .styl 또는 .pcss 파일을 선택하세요.";

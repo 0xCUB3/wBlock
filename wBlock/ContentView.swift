@@ -747,6 +747,8 @@ struct ContentView: View {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     downloadedFilterIDs.insert(filter.id)
                 }
+                // Get also enables the list after its content is safely persisted.
+                filterManager.setFilterListSelection(id: current.id, selected: true)
                 filterManager.saveFilterListsCoalesced()
                 if current.isSelected { filterManager.markNonSelectionChangesPending() }
             } else {
@@ -816,7 +818,9 @@ struct ContentView: View {
     private func filterInfoContent(_ filter: FilterList) -> some View {
         FilterInfoView(
             filter: filter, filterManager: filterManager,
-            onChangeCategory: filter.category == .foreign ? nil : { moveFilter(filter.id, to: $0) }
+            onChangeCategory: filter.category == .foreign ? nil : { moveFilter(filter.id, to: $0) },
+            isDownloading: downloadingFilterIDs.contains(filter.id),
+            onDownload: { downloadFilter(filter) }
         ).infoSheetPresentationCompat()
     }
 
@@ -906,6 +910,12 @@ struct FilterRowView: View {
                 Label("Info", systemImage: "info.circle")
             }
         }
+        if actions.contains(.download) {
+            Button { onDownload() } label: {
+                Label("Download", systemImage: "arrow.down.circle")
+            }
+            .disabled(isDownloading)
+        }
         if actions.contains(.settings) {
             Button(action: onSettings) { Label("Settings", systemImage: "gearshape") }
         }
@@ -979,6 +989,7 @@ struct FilterRowView: View {
                 )
                 .labelsHidden()
                 .toggleStyle(.switch)
+                .fixedSize()
             }
         }
         #if os(macOS)

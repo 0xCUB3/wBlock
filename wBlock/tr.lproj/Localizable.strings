@@ -1009,6 +1009,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Userscripts and scripts that add or restore useful website functionality." = "Sitelere yararlı işlevler kazandıran veya kaybolan işlevleri geri getiren kullanıcı betikleri.";
 "Userstyles and scripts that change the appearance of websites." = "Sitelerinin görünümünü değiştiren kullanıcı stilleri ve betikler.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Belirli bir kategoride yer almayan özel, harici ve yerel betikler.";
+"Beta userscripts and scripts that are still being evaluated or may change." = "Hâlâ değerlendirilen veya değişebilecek beta kullanıcı betikleri ve betikler.";
 "Enabled Userscripts & Userstyles" = "Etkin Kullanıcı Betikleri ve Kullanıcı Stilleri";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Engellemeyi Duraklat özelliği, seçilen herhangi bir bileşen duraklatıldığı sürece etkindir. Sürdür seçeneği tüm bileşenleri eski haline getirir.";
 "Temporarily pause selected components without changing their enabled settings." = "Seçilen bileşenleri, etkin durumlarını değiştirmeden geçici olarak duraklatır.";

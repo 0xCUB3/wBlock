@@ -1013,6 +1013,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "Scripts που προσθέτουν ή επαναφέρουν χρήσιμες λειτουργίες ιστοτόπων.";
 "Userstyles and scripts that change the appearance of websites." = "Userstyles και scripts που αλλάζουν την εμφάνιση ιστοτόπων.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Προσαρμοσμένα, απομακρυσμένα και τοπικά scripts χωρίς ειδικότερη κατηγορία εμφάνισης.";
+"Beta userscripts and scripts that are still being evaluated or may change." = "Scripts beta και scripts που αξιολογούνται ακόμη ή ενδέχεται να αλλάξουν.";
 
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "Επιλέξτε ένα αρχείο .user.js, .js, .user.css, .less, .sass, .scss, .styl ή .pcss.";

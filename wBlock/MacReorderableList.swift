@@ -70,10 +70,40 @@ struct MacListSection {
 /// it again until another drag finishes (#834).
 final class MacReorderableOutlineView: NSOutlineView {
     var canDragRow: (Int) -> Bool = { _ in true }
+    private var clampingScroll = false
 
     override func canDragRows(with rowIndexes: IndexSet, at mouseDownPoint: NSPoint) -> Bool {
         rowIndexes.allSatisfy(canDragRow)
             && super.canDragRows(with: rowIndexes, at: mouseDownPoint)
+    }
+
+    /// Automatic row heights can shrink the document after the user has
+    /// already scrolled to its old end. Reconcile that asynchronous frame
+    /// change without disturbing valid scrolling or drag tracking.
+    override func layout() {
+        super.layout()
+        clampEnclosingScrollPosition()
+    }
+
+    override func setFrameSize(_ newSize: NSSize) {
+        let oldHeight = frame.height
+        super.setFrameSize(newSize)
+        guard newSize.height < oldHeight else { return }
+        DispatchQueue.main.async { [weak self] in
+            self?.clampEnclosingScrollPosition()
+        }
+    }
+
+    private func clampEnclosingScrollPosition() {
+        guard !clampingScroll, let scroll = enclosingScrollView else { return }
+        let clip = scroll.contentView
+        let current = clip.bounds
+        let constrained = clip.constrainBoundsRect(current)
+        guard abs(current.origin.y - constrained.origin.y) > 0.5 else { return }
+        clampingScroll = true
+        defer { clampingScroll = false }
+        clip.scroll(to: constrained.origin)
+        scroll.reflectScrolledClipView(clip)
     }
 }
 
@@ -102,6 +132,8 @@ struct MacListMove: Equatable {
 /// AppKit owns the drag session, row images, insertion gap, disclosure, and scrolling.
 /// SwiftUI supplies cell content and commits a move only after an accepted drop.
 struct MacReorderableList: NSViewRepresentable {
+    private static let nativeListBottomInset: CGFloat = 16
+
     var sections: [MacListSection]
     let header: AnyView
     var emptyContent: AnyView? = nil
@@ -152,6 +184,8 @@ struct MacReorderableList: NSViewRepresentable {
         outline.allowsEmptySelection = true
         outline.allowsMultipleSelection = false
         outline.usesAutomaticRowHeights = true
+        // Keep AppKit's estimate conservative; measured SwiftUI rows may
+        // settle asynchronously to substantially smaller heights.
         outline.rowHeight = 92
         outline.floatsGroupRows = false
         outline.verticalMotionCanBeginDrag = true
@@ -165,7 +199,7 @@ struct MacReorderableList: NSViewRepresentable {
         context.coordinator.outline = outline
         context.coordinator.update(self, environment: context.environment)
         // Standalone lists use AppKit insets; toolbar callers supply SwiftUI's safe area.
-        scroll.additionalSafeAreaInsets.bottom = 36
+        scroll.additionalSafeAreaInsets.bottom = Self.nativeListBottomInset
         updateContentInsets(scroll)
         return scroll
     }
@@ -179,12 +213,12 @@ struct MacReorderableList: NSViewRepresentable {
         guard let topContentInset,
               scroll.automaticallyAdjustsContentInsets
                 || scroll.contentInsets.top != topContentInset
-                || scroll.contentInsets.bottom != 36 else { return }
+                || scroll.contentInsets.bottom != Self.nativeListBottomInset else { return }
         let oldTop = scroll.contentInsets.top
         let origin = scroll.contentView.bounds.origin
         let wasAtTop = origin.y <= -oldTop + 1
         scroll.automaticallyAdjustsContentInsets = false
-        scroll.contentInsets = NSEdgeInsets(top: topContentInset, left: 0, bottom: 36, right: 0)
+        scroll.contentInsets = NSEdgeInsets(top: topContentInset, left: 0, bottom: Self.nativeListBottomInset, right: 0)
         if wasAtTop {
             scroll.contentView.scroll(to: NSPoint(x: origin.x, y: -topContentInset))
             scroll.reflectScrolledClipView(scroll.contentView)
@@ -240,7 +274,9 @@ struct MacReorderableList: NSViewRepresentable {
             }
             if let empty = model.emptyContent { roots.append(node(.empty, empty)) }
 
+            var reloaded = false
             if previous != structure {
+                reloaded = true
                 let selected = outline.selectedRow >= 0 ? outline.item(atRow: outline.selectedRow) as? Node : nil
                 let preservedScrollOrigin = outline.enclosingScrollView?.contentView.bounds.origin
                 outline.reloadData()
@@ -256,20 +292,32 @@ struct MacReorderableList: NSViewRepresentable {
                     if row >= 0 { outline.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false) }
                 }
                 // Rebuilding the outline otherwise scrolls the first expansion
-                // back to the top. Keep the user's viewport stable while the
-                // category adds its regional rows.
+                // back to the top. Refresh hosted rows before preserving the
+                // viewport: noteHeightOfRows can change the document frame, so
+                // clamping before this reflow leaves the clip view past EOF.
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = 0
+                    outline.noteHeightOfRows(withIndexesChanged: refreshVisibleRows())
+                }
                 if let preservedScrollOrigin, let scroll = outline.enclosingScrollView {
+                    // Row heights and the document frame are valid only after the
+                    // reload, expansion, and hosted-row reflow have laid out.
+                    // Clamp a shrink/collapse to AppKit's real document bounds.
                     outline.layoutSubtreeIfNeeded()
                     scroll.layoutSubtreeIfNeeded()
-                    scroll.contentView.scroll(to: preservedScrollOrigin)
+                    let proposed = NSRect(origin: preservedScrollOrigin, size: scroll.contentView.bounds.size)
+                    let constrained = scroll.contentView.constrainBoundsRect(proposed)
+                    scroll.contentView.scroll(to: constrained.origin)
                     scroll.reflectScrolledClipView(scroll.contentView)
                 }
             }
             // AppKit animates row-height changes by default; after a drop the
             // settling rows should snap so separators do not trail behind.
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0
-                outline.noteHeightOfRows(withIndexesChanged: refreshVisibleRows())
+            if !reloaded {
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = 0
+                    outline.noteHeightOfRows(withIndexesChanged: refreshVisibleRows())
+                }
             }
         }
 

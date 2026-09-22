@@ -1013,6 +1013,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "سكريبتات تضيف وظائف مفيدة إلى مواقع الويب أو تستعيدها.";
 "Userstyles and scripts that change the appearance of websites." = "أنماط وسكريبتات تغيّر مظهر مواقع الويب.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "سكريبتات مخصصة وبعيدة ومحلية لا تنتمي إلى فئة عرض أكثر تحديدًا.";
+"Beta userscripts and scripts that are still being evaluated or may change." = "سكريبتات تجريبية وسكريبتات لا تزال قيد التقييم أو قد تتغير.";
 
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "اختر ملفًا من نوع .user.js أو .js أو .user.css أو .less أو .sass أو .scss أو .styl أو .pcss.";

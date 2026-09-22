@@ -73,9 +73,8 @@ struct MacTrailingLabeledContentStyle: LabeledContentStyle {
 
 private extension View {
     func macSettingsCardRow(roundsTop: Bool, roundsBottom: Bool) -> some View {
-        frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+        frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
             .padding(.horizontal, 16)
-            .padding(.vertical, 8)
             .background(.regularMaterial, in: MacListCardShape(roundsTop: roundsTop, roundsBottom: roundsBottom))
             .overlay(alignment: .bottom) {
                 if !roundsBottom { Divider().padding(.leading, 16) }

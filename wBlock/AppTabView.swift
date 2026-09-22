@@ -36,6 +36,9 @@ struct AppTabView<Filters: View, Userscripts: View, Settings: View>: View {
                 .tag(2)
                 .tabItem { Label("Settings", systemImage: "gear") }
         }
+        #if os(macOS)
+        .frame(minWidth: 480, idealWidth: 540, minHeight: 550, idealHeight: 720)
+        #endif
     }
 
     #if os(macOS)
@@ -50,6 +53,7 @@ struct AppTabView<Filters: View, Userscripts: View, Settings: View>: View {
                 filters
             }
         }
+        .frame(minWidth: 480, idealWidth: 540, minHeight: 550, idealHeight: 720)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Picker("wBlock", selection: $selection.value) {

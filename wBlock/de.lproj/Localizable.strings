@@ -1013,6 +1013,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Userscripts and scripts that add or restore useful website functionality." = "Userscripts und Skripte, die nützliche Website-Funktionen hinzufügen oder wiederherstellen.";
 "Userstyles and scripts that change the appearance of websites." = "Userstyles und Skripte, die das Erscheinungsbild von Websites ändern.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Benutzerdefinierte, entfernte und lokale Skripte ohne eine spezifischere Anzeigekategorie.";
+"Beta userscripts and scripts that are still being evaluated or may change." = "Beta-Userscripts und Skripte, die noch getestet werden oder sich ändern können.";
 
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "Wähle eine .user.js-, .js-, .user.css-, .less-, .sass-, .scss-, .styl- oder .pcss-Datei aus.";

@@ -22,11 +22,12 @@ public enum FilterListCategory: String, CaseIterable, Identifiable, Codable, Sen
     case scripts = "Scripts"
     case scriptBlocking = "Blocking"
     case scriptFunctionality = "Functionality"
+    case scriptExperimental = "ScriptExperimental"
     case scriptAppearance = "Appearance"
     case scriptOther = "Other"
 
     public var isUserScriptOnly: Bool {
-        [.scriptBlocking, .scriptFunctionality, .scriptAppearance, .scriptOther].contains(self)
+        [.scriptBlocking, .scriptFunctionality, .scriptExperimental, .scriptAppearance, .scriptOther].contains(self)
     }
 
     public var id: String { self.rawValue }

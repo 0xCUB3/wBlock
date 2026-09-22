@@ -528,6 +528,7 @@ extension ProtobufDataManager {
         case .allowlists: return .allowlists
         case .scriptBlocking: return .scriptBlocking
         case .scriptFunctionality: return .scriptFunctionality
+        case .scriptExperimental: return .scriptExperimental
         case .scriptAppearance: return .scriptAppearance
         case .scriptOther: return .scriptOther
         case .UNRECOGNIZED(_), .unspecified: return .all
@@ -549,6 +550,7 @@ extension ProtobufDataManager {
         case .allowlists: return .allowlists
         case .scriptBlocking: return .scriptBlocking
         case .scriptFunctionality: return .scriptFunctionality
+        case .scriptExperimental: return .scriptExperimental
         case .scriptAppearance: return .scriptAppearance
         case .scriptOther: return .scriptOther
         }

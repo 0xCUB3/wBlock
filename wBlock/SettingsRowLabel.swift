@@ -47,7 +47,8 @@ struct SettingsRowLabel: View {
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.tertiary)
         }
-        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
         .contentShape(Rectangle())
         #else
         // iOS lists draw disclosure chevrons for NavigationLink only, so a

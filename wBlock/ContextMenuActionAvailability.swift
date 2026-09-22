@@ -4,6 +4,7 @@ import wBlockCoreService
 enum FilterContextMenuAction: String {
     case info
     case settings
+    case download
     case viewRules
     case editRules
     case editInfo
@@ -25,6 +26,7 @@ enum UserScriptContextMenuAction: String {
 enum ContextMenuActionAvailability {
     static func filterActions(for filter: FilterList, isDownloaded: Bool) -> [FilterContextMenuAction] {
         var actions: [FilterContextMenuAction] = [.info, .settings]
+        if filter.isRemoteURL && !isDownloaded { actions.append(.download) }
         if isDownloaded || filter.isInlineUserList {
             actions.append(filter.isInlineUserList ? .editRules : .viewRules)
         }

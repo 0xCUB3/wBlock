@@ -33,16 +33,24 @@ struct ContextMenuActionAvailabilityTest {
         let foreignCustom = filter("Foreign custom", category: .foreign, custom: true)
         let inlineCustom = filter("Inline custom", category: .custom, custom: true, url: inlineURL)
 
-        check(filterActions(builtIn, downloaded: false) == [.info, .settings, .moveTo],
+        check(filterActions(builtIn, downloaded: false) == [.info, .settings, .download, .moveTo],
               "undownloaded built-in nonforeign filters can move but cannot edit metadata")
         check(filterActions(builtIn, downloaded: true) == [.info, .settings, .viewRules, .moveTo],
               "downloaded built-in filters expose rules and move only")
-        check(filterActions(custom, downloaded: false) == [.info, .settings, .moveTo, .editInfo, .deleteList],
+        check(filterActions(custom, downloaded: false) == [.info, .settings, .download, .moveTo, .editInfo, .deleteList],
               "undownloaded custom nonforeign filters expose custom metadata actions")
         check(filterActions(custom, downloaded: true) == [.info, .settings, .viewRules, .moveTo, .editInfo, .deleteList],
               "downloaded custom nonforeign filters expose rules and custom metadata actions")
+        check(filterActions(foreignBuiltIn, downloaded: false).contains(.download),
+              "undownloaded remote foreign filters offer download")
+        check(!filterActions(foreignBuiltIn, downloaded: true).contains(.download),
+              "downloaded foreign filters do not offer download")
         check(!filterActions(foreignBuiltIn, downloaded: true).contains(.moveTo),
               "foreign built-in filters never expose move")
+        check(filterActions(foreignCustom, downloaded: false).contains(.download),
+              "undownloaded remote foreign custom filters offer download")
+        check(!filterActions(foreignCustom, downloaded: true).contains(.download),
+              "downloaded foreign custom filters do not offer download")
         check(!filterActions(foreignCustom, downloaded: true).contains(.moveTo),
               "foreign custom filters never expose move")
         check(!filterActions(builtIn, downloaded: true).contains(.editInfo),

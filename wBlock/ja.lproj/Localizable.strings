@@ -1008,6 +1008,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "ウェブサイトに便利な機能を追加または復元するユーザースクリプトです。";
 "Userstyles and scripts that change the appearance of websites." = "ウェブサイトの外観を変更するユーザースタイルとスクリプトです。";
 "Custom, remote, and local scripts that do not have a more specific display category." = "より具体的な表示カテゴリに分類されないカスタム、リモート、ローカルスクリプトです。";
+"Beta userscripts and scripts that are still being evaluated or may change." = "評価中または変更される可能性があるベータ版ユーザースクリプトとスクリプトです。";
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = ".user.js、.js、.user.css、.less、.sass、.scss、.styl、または .pcss ファイルを選択してください。";
 "Couldn't read the selected file." = "選択したファイルを読み取れませんでした。";

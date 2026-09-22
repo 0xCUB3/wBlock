@@ -1013,6 +1013,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Userscripts and scripts that add or restore useful website functionality." = "Hasznos webhelyfunkciókat hozzáadó vagy helyreállító szkriptek.";
 "Userstyles and scripts that change the appearance of websites." = "A webhelyek megjelenését módosító userstyle-ok és szkriptek.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Egyéni, távoli és helyi szkriptek, amelyekhez nem illik pontosabb megjelenítési kategória.";
+"Beta userscripts and scripts that are still being evaluated or may change." = "Béta felhasználói szkriptek és még értékelés alatt álló vagy változható szkriptek.";
 
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "Válassz egy .user.js, .js, .user.css, .less, .sass, .scss, .styl vagy .pcss fájlt.";

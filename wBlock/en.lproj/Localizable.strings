@@ -1009,6 +1009,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userscripts and scripts that add or restore useful website functionality." = "Userscripts and scripts that add or restore useful website functionality.";
 "Userstyles and scripts that change the appearance of websites." = "Userstyles and scripts that change the appearance of websites.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Custom, remote, and local scripts that do not have a more specific display category.";
+"Beta userscripts and scripts that are still being evaluated or may change." = "Beta userscripts and scripts that are still being evaluated or may change.";
 "Enabled Userscripts & Userstyles" = "Enabled Userscripts & Userstyles";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pause Blocking is on while any selected component is paused. Resume restores all components.";
 "Temporarily pause selected components without changing their enabled settings." = "Temporarily pause selected components without changing their enabled settings.";
