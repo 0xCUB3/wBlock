@@ -135,7 +135,7 @@ struct InfoSheetHeader<Title: View>: View {
     let onDismiss: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             title()
                 .frame(maxWidth: .infinity, alignment: .leading)
             SheetDoneButton(action: onDismiss)
@@ -145,31 +145,11 @@ struct InfoSheetHeader<Title: View>: View {
         .padding(.top, SheetDesign.contentHorizontalPadding)
         .padding(.bottom, 12)
         #if os(iOS)
-        .background {
-            Group {
-                InfoSheetHeaderBackground()
-            }
-            .ignoresSafeArea(.container, edges: .top)
-        }
-        .overlay(alignment: .bottom) { Divider() }
+        // Match the sheet body so the header does not read as a separate band.
+        .background(Color(uiColor: .systemBackground).ignoresSafeArea(.container, edges: .top))
         #endif
     }
 }
-
-#if os(iOS)
-private struct InfoSheetHeaderBackground: View {
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
-    @ViewBuilder
-    var body: some View {
-        if reduceTransparency {
-            Color(uiColor: .systemBackground)
-        } else {
-            Rectangle().fill(.ultraThinMaterial)
-        }
-    }
-}
-#endif
 
 // MARK: - Reusable Sheet Header
 
