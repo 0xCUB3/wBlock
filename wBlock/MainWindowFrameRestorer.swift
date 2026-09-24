@@ -38,8 +38,9 @@ final class MainWindowFrameRestorer: NSObject {
             object: nil
         )
 
-        for window in application.windows where adoptedWindow == nil {
-            adopt(window)
+        for window in application.windows {
+            lockToolbarDisplayMode(of: window)
+            if adoptedWindow == nil { adopt(window) }
         }
     }
 
@@ -124,8 +125,20 @@ final class MainWindowFrameRestorer: NSObject {
         return true
     }
 
+    /// The compact toolbar items are icon-only custom views, so the toolbar's
+    /// "Text Only" mode leaves them blank. Lock the mode and repair windows
+    /// that restored a saved text mode.
+    private func lockToolbarDisplayMode(of window: NSWindow) {
+        guard let toolbar = window.toolbar else { return }
+        toolbar.displayMode = .iconOnly
+        if #available(macOS 15.0, *) {
+            toolbar.allowsDisplayModeCustomization = false
+        }
+    }
+
     @objc private func windowDidBecomeMain(_ notification: Notification) {
         guard let window = notification.object as? NSWindow else { return }
+        lockToolbarDisplayMode(of: window)
         adopt(window)
     }
 
