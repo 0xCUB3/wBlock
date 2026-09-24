@@ -689,12 +689,6 @@ struct SettingsView: View {
                     }
                     .disabled(paused == .all)
                 }
-                if !paused.isEmpty {
-                    Divider()
-                    Button("Resume Blocking") {
-                        Task { await filterManager.setBlockingPaused(false) }
-                    }
-                }
             } label: {
                 Label(title, systemImage: paused.isEmpty ? "pause.circle" : "pause.circle.fill")
             }
