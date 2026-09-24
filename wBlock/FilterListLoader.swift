@@ -15,7 +15,6 @@ class FilterListLoader {
             "AdGuard Tracking Protection Filter",
             "AdGuard URL Tracking Protection Filter",
             "Actually Legitimate URL Shortener Tool",
-            "Online Malicious URL Blocklist",
             "Peter Lowe's Blocklist",
             "AdGuard Cookie Notices",
         ]
@@ -25,7 +24,6 @@ class FilterListLoader {
             "AdGuard Tracking Protection Filter",
             "AdGuard URL Tracking Protection Filter",
             "Actually Legitimate URL Shortener Tool",
-            "Online Malicious URL Blocklist",
             "Peter Lowe's Blocklist",
             "AdGuard Cookie Notices",
             "AdGuard Mobile Filter",
