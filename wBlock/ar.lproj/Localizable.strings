@@ -176,6 +176,7 @@
 "Local Backup" = "نسخة احتياطية محلية";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "نسخة احتياطية من %@ (إصدار التطبيق %@، %@ مرشحًا). سيؤدي هذا إلى استبدال اختيارات المرشحات الحالية وقائمة السماح وقواعد إخفاء العناصر.";
 "Balanced defaults." = "الإعدادات الافتراضية المتوازنة.";
+"Base and mobile filters only." = "الفلتر الأساسي وفلتر الجوال فقط.";
 "Base filter only." = "الفلتر الأساسي فقط.";
 "Baseline Userscripts" = "سكربتات المستخدم الأساسية";
 "Baseline userscripts are enabled by default. You can adjust them here." = "سكربتات المستخدم الأساسية مفعّلة افتراضيًا. يمكنك ضبطها هنا.";

@@ -176,6 +176,7 @@
 "Local Backup" = "ローカルバックアップ";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@ のバックアップ（アプリ v%@、%@ 個のフィルター）です。現在のフィルター選択、ホワイトリスト、要素ブロックのルールがこれで置き換えられます。";
 "Balanced defaults." = "バランスの取れた既定設定。";
+"Base and mobile filters only." = "ベースとモバイルフィルターのみ。";
 "Base filter only." = "ベースフィルターのみ。";
 "Baseline Userscripts" = "基本ユーザースクリプト";
 "Baseline userscripts are enabled by default. You can adjust them here." = "基本ユーザースクリプトはデフォルトで有効になっています。ここで調整できます。";

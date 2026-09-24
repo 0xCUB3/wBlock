@@ -10,6 +10,7 @@ import wBlockCoreService
 
 class FilterListLoader {
     #if os(macOS)
+        static let minimalFilterNames: Set<String> = ["AdGuard Base Filter"]
         static let recommendedFilterNames: Set<String> = [
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",
@@ -19,6 +20,7 @@ class FilterListLoader {
             "AdGuard Cookie Notices",
         ]
     #else
+        static let minimalFilterNames: Set<String> = ["AdGuard Base Filter", "AdGuard Mobile Filter"]
         static let recommendedFilterNames: Set<String> = [
             "AdGuard Base Filter",
             "AdGuard Tracking Protection Filter",

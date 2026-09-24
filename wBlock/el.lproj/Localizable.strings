@@ -176,6 +176,7 @@
 "Local Backup" = "Τοπικό αντίγραφο ασφαλείας";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Αντίγραφο ασφαλείας από %@ (έκδοση εφαρμογής %@, %@ φίλτρα). Αυτό θα αντικαταστήσει τις τρέχουσες επιλογές φίλτρων, τη λίστα επιτρεπόμενων και τους κανόνες του στοιχειο-αφανιστή.";
 "Balanced defaults." = "Ισορροπημένες προεπιλογές.";
+"Base and mobile filters only." = "Μόνο βασικό φίλτρο και φίλτρο κινητών.";
 "Base filter only." = "Μόνο βασικό φίλτρο.";
 "Baseline Userscripts" = "Βασικά σενάρια χρήστη";
 "Baseline userscripts are enabled by default. You can adjust them here." = "Τα βασικά σενάρια χρήστη είναι ενεργοποιημένα από προεπιλογή. Μπορείτε να τα προσαρμόσετε εδώ.";

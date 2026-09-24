@@ -176,6 +176,7 @@
 "Local Backup" = "Sauvegarde locale";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Sauvegarde du %@ (app v%@, %@ filtres). Cela remplacera vos sélections de filtres actuelles, la liste blanche et les règles du zappeur d’éléments.";
 "Balanced defaults." = "Paramètres par défaut équilibrés.";
+"Base and mobile filters only." = "Filtres de base et mobile uniquement.";
 "Base filter only." = "Filtre de base uniquement.";
 "Baseline Userscripts" = "Scripts utilisateur de base";
 "Baseline userscripts are enabled by default. You can adjust them here." = "Les scripts utilisateur de base sont activés par défaut. Vous pouvez les ajuster ici.";

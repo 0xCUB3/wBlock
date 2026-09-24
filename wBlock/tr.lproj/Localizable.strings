@@ -176,6 +176,7 @@
 "Local Backup" = "Yerel yedek";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@ yedeklemesi (uygulama sürümü: %@, filtreler: %@). Bu işlem; mevcut filtre seçimlerinizi, izin listenizi ve öğe gizleyici kurallarınızı değiştirecektir.";
 "Balanced defaults." = "Dengeli ayarlar.";
+"Base and mobile filters only." = "Yalnızca temel ve mobil filtreler.";
 "Base filter only." = "Yalnızca temel filtreler.";
 "Baseline Userscripts" = "Temel Kullanıcı Betikleri";
 "Baseline userscripts are enabled by default. You can adjust them here." = "Temel kullanıcı betikleri varsayılan olarak etkindir. Bunları buradan ayarlayabilirsiniz.";

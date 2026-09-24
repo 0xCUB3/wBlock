@@ -176,6 +176,7 @@
 "Local Backup" = "Helyi biztonsági mentés";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Biztonsági mentés innen: %@ (app v%@, %@ szűrő). Ez lecseréli a jelenlegi szűrőválasztásaidat, az engedélyezőlistádat és az elemeltávolító szabályaidat.";
 "Balanced defaults." = "Kiegyensúlyozott alapbeállítások.";
+"Base and mobile filters only." = "Csak az alap és a mobil szűrő.";
 "Base filter only." = "Csak az alap szűrő.";
 "Baseline Userscripts" = "Alapvető felhasználói szkriptek";
 "Baseline userscripts are enabled by default. You can adjust them here." = "Az alapvető felhasználói szkriptek alapértelmezés szerint engedélyezve vannak. Itt tudod őket módosítani.";

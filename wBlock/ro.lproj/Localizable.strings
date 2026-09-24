@@ -176,6 +176,7 @@
 "Local Backup" = "Copie de rezervă locală";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Copie de rezervă din %@ (app v%@, %@ filtre). Aceasta va înlocui selecțiile actuale de filtre, lista albă și regulile pentru eliminatorul de elemente.";
 "Balanced defaults." = "Setări implicite echilibrate.";
+"Base and mobile filters only." = "Doar filtrele de bază și mobil.";
 "Base filter only." = "Doar filtrul de bază.";
 "Baseline Userscripts" = "Userscript-uri de bază";
 "Baseline userscripts are enabled by default. You can adjust them here." = "Userscript-urile de bază sunt activate implicit. Le poți ajusta aici.";

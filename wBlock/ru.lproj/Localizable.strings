@@ -176,6 +176,7 @@
 "Local Backup" = "Локальная резервная копия";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Резервная копия от %@ (версия приложения %@, фильтров: %@). Это заменит текущие выбранные фильтры, белый список и правила скрытия элементов.";
 "Balanced defaults." = "Сбалансированные настройки по умолчанию.";
+"Base and mobile filters only." = "Только базовый и мобильный фильтры.";
 "Base filter only." = "Только базовый фильтр.";
 "Baseline Userscripts" = "Базовые пользовательские скрипты";
 "Baseline userscripts are enabled by default. You can adjust them here." = "Базовые пользовательские скрипты включены по умолчанию. Вы можете настроить их здесь.";

@@ -176,6 +176,7 @@
 "Local Backup" = "本地备份";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "来自 %@ 的备份（应用 v%@，%@ 个过滤器）。这将替换你当前的过滤器选择、白名单和元素清除规则。";
 "Balanced defaults." = "平衡的默认设置。";
+"Base and mobile filters only." = "仅基础和移动过滤器。";
 "Base filter only." = "仅基础过滤器。";
 "Baseline Userscripts" = "基础用户脚本";
 "Baseline userscripts are enabled by default. You can adjust them here." = "基础用户脚本默认启用。你可以在这里调整。";

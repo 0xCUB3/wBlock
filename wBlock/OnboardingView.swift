@@ -456,7 +456,11 @@ struct OnboardingView: View {
     func blockingLevelDescription(_ level: BlockingLevel) -> String {
         switch level {
         case .minimal:
+            #if os(macOS)
             return String(localized: "Base filter only.")
+            #else
+            return String(localized: "Base and mobile filters only.")
+            #endif
         case .recommended:
             return String(localized: "Balanced defaults.")
         }
@@ -934,16 +938,10 @@ struct OnboardingView: View {
         // Snapshot the then-current manager array and apply choices by stable IDs.
         let currentFilters = filterManager.filterLists
         let normalizedLevel = selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        var selectedFilterIDs = Set<UUID>()
-        if normalizedLevel == "minimal" {
-            selectedFilterIDs.formUnion(currentFilters.filter { $0.name == "AdGuard Base Filter" }.map(\.id))
-        } else {
-            selectedFilterIDs.formUnion(
-                currentFilters
-                    .filter { FilterListLoader.recommendedFilterNames.contains($0.name) }
-                    .map(\.id)
-            )
-        }
+        let presetNames = normalizedLevel == "minimal"
+            ? FilterListLoader.minimalFilterNames
+            : FilterListLoader.recommendedFilterNames
+        var selectedFilterIDs = Set(currentFilters.filter { presetNames.contains($0.name) }.map(\.id))
         if let bypassScript = bypassPaywallsScript,
            selectedUserscripts.contains(bypassScript.id),
            let filterName = bypassPaywallsFilterName,
