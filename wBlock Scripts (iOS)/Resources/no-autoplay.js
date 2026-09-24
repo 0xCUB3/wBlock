@@ -305,7 +305,14 @@
 
     // Live updates when the popup changes the global or per-site setting.
     try {
-        browser.storage.onChanged.addListener(function (changes, area) {
+        // iOS Safari keeps a frame alive while an extension event still holds its
+        // listener, so detach on pagehide or iframe-heavy pages run out of memory (#861).
+        const listenWhileShown = (event, listener) => {
+            event.addListener(listener);
+            window.addEventListener('pagehide', () => event.removeListener(listener));
+            window.addEventListener('pageshow', (e) => { if (e.persisted) event.addListener(listener); });
+        };
+        listenWhileShown(browser.storage.onChanged, function (changes, area) {
             if (area !== 'local') return;
             if ((NATIVE_MIGRATED_KEY in changes)
                 || (ENABLED_KEY in changes)

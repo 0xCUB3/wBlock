@@ -5,6 +5,14 @@
 
 (() => {
 
+// iOS Safari keeps a frame alive while an extension event still holds its
+// listener, so detach on pagehide or iframe-heavy pages run out of memory (#861).
+const listenWhileShown = (event, listener) => {
+    event.addListener(listener);
+    window.addEventListener('pagehide', () => event.removeListener(listener));
+    window.addEventListener('pageshow', (e) => { if (e.persisted) event.addListener(listener); });
+};
+
 // Debug logging flag - set to false to disable verbose console output
 var WBLOCK_DEBUG_LOGGING = false;
 var WBLOCK_WARM_START_CACHE_KEY = '__wblock_warm_start_v1';
@@ -958,7 +966,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
             if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.onMessage) {
                 wBlockLog('[wBlock] Using browser.runtime.onMessage for listening.');
-                browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+                listenWhileShown(browser.runtime.onMessage, (message, sender, sendResponse) => {
                     wBlockLog('[wBlock] Received message via browser.runtime.onMessage:', JSON.parse(JSON.stringify(message || {})));
 
                     if (message && message.type === 'wblock:pageSupportProbe') {
@@ -1580,10 +1588,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
     ${isContentContext ? `
     if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.onMessage) {
-        browser.runtime.onMessage.addListener((data) => {
+        const onPortMessage = (data) => {
             if (!data || data.type !== 'wblock:gm-port-message') return;
             deliverRuntimePortMessage(data.portName || '', data.message);
-        });
+        };
+        browser.runtime.onMessage.addListener(onPortMessage);
+        window.addEventListener('pagehide', () => browser.runtime.onMessage.removeListener(onPortMessage));
+        window.addEventListener('pageshow', (e) => { if (e.persisted) browser.runtime.onMessage.addListener(onPortMessage); });
     }
     ` : ''}
 

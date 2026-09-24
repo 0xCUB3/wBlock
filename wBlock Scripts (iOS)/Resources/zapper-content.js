@@ -1442,7 +1442,14 @@
     return ruleReloadPromise;
   }
 
-  browser.runtime.onMessage.addListener((message) => {
+  // iOS Safari keeps a frame alive while an extension event still holds its
+  // listener, so detach on pagehide or iframe-heavy pages run out of memory (#861).
+  const listenWhileShown = (event, listener) => {
+      event.addListener(listener);
+      window.addEventListener('pagehide', () => event.removeListener(listener));
+      window.addEventListener('pageshow', (e) => { if (e.persisted) event.addListener(listener); });
+  };
+  listenWhileShown(browser.runtime.onMessage, (message) => {
     if (!message || typeof message !== 'object') return;
 
     if (message.type === 'wblock:pageSupportProbe') {
