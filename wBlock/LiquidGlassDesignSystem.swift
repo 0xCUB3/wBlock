@@ -53,10 +53,6 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifier
     func body(content: Content) -> some View {
         if #available(macOS 26.0, *) {
             content.toolbar {
-                ToolbarItem(placement: .automatic) {
-                    InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
-                }
-                .sharedBackgroundVisibility(.hidden)
                 ToolbarItem(placement: .automatic) { compactActions }
                     .sharedBackgroundVisibility(.hidden)
             }
@@ -79,6 +75,9 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifier
     private var compactActions: some View {
         GlassEffectContainer(spacing: 4) {
             HStack(spacing: 8) {
+                // Search lives in the same stack so it keeps the 8pt gap;
+                // as a separate toolbar item it butted against Add.
+                InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
                 // Buttons that share a capsule get the smaller hit target and
                 // hover disc (#771); a button alone in its capsule fills it.
                 HStack(spacing: 0) {
