@@ -671,28 +671,36 @@ struct SettingsView: View {
     }
 
     #if os(macOS)
-    /// The pause switches sit in the window toolbar on macOS, where they stay
-    /// reachable without scrolling. The overall switch disables the others
-    /// while everything is paused, as the iOS section does.
+    /// On macOS the pause controls live in one toolbar menu so they stay
+    /// reachable without scrolling. Labeled checkmarks explain each switch,
+    /// and the icon fills while anything is paused.
     @ToolbarContentBuilder
     private var pauseBlockingToolbar: some ToolbarContent {
-        ToolbarItemGroup(placement: .primaryAction) {
-            pauseToolbarToggle("Pause All Components", systemImage: "pause.fill", isOn: pauseBlockingBinding)
-            Group {
-                pauseToolbarToggle("Filters", systemImage: "list.bullet.rectangle", isOn: pauseComponentBinding(.filters))
-                pauseToolbarToggle("Enabled Userscripts & Userstyles", systemImage: "doc.text.fill", isOn: pauseComponentBinding(.userScripts))
-                pauseToolbarToggle("Element Zapper", systemImage: "wand.and.stars", isOn: pauseComponentBinding(.elementZapper))
+        ToolbarItem(placement: .primaryAction) {
+            let paused = filterManager.pausedComponents
+            let title: LocalizedStringKey = paused.isEmpty ? "Pause Blocking" : "Paused Components"
+            Menu {
+                Section("Pause Blocking") {
+                    Toggle("Pause All Components", isOn: pauseBlockingBinding)
+                    Group {
+                        Toggle("Filters", isOn: pauseComponentBinding(.filters))
+                        Toggle("Enabled Userscripts & Userstyles", isOn: pauseComponentBinding(.userScripts))
+                        Toggle("Element Zapper", isOn: pauseComponentBinding(.elementZapper))
+                    }
+                    .disabled(paused == .all)
+                }
+                if !paused.isEmpty {
+                    Divider()
+                    Button("Resume Blocking") {
+                        Task { await filterManager.setBlockingPaused(false) }
+                    }
+                }
+            } label: {
+                Label(title, systemImage: paused.isEmpty ? "pause.circle" : "pause.circle.fill")
             }
-            .disabled(filterManager.pausedComponents == .all)
-        }
-    }
-
-    private func pauseToolbarToggle(_ title: LocalizedStringKey, systemImage: String, isOn: Binding<Bool>) -> some View {
-        Toggle(isOn: isOn) { Label(title, systemImage: systemImage) }
-            .toggleStyle(.button)
-            .labelStyle(.iconOnly)
             .help(title)
             .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
+        }
     }
     #else
     @ViewBuilder
