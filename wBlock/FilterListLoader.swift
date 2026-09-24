@@ -67,9 +67,20 @@ class FilterListLoader {
         "Fanboy's Anti-AI Suggestions": "! Title: Fanboy's Anti-AI"
     ]
 
+    /// Built-in lists removed from the catalog, matched by URL fragment.
+    private static let retiredBuiltInURLFragments = [
+        "d3ward/toolz",
+        "platforms/extension/safari/filters/208_optimized.txt",  // Online Malicious URL Blocklist (#864)
+    ]
+
+    static func isRetiredBuiltIn(_ filter: FilterList) -> Bool {
+        !filter.isCustom
+            && (filter.name == "d3Host List by d3ward"
+                || retiredBuiltInURLFragments.contains { filter.url.absoluteString.contains($0) })
+    }
+
     /// New built-in names and the names used by the previous catalog release.
     private static let filterNameMigrations: [String: [String]] = [
-        "Online Malicious URL Blocklist": ["Online Security Filter"],
         "Adblock Warning Removal List": ["Anti-Adblock List"],
         "Stevo's AI Blocklist": ["Fanboy's Anti-AI Suggestions"],
         "HaGeZi Pro Mini": ["Hagezi Pro Mini"],
@@ -297,14 +308,6 @@ class FilterListLoader {
                 description:
                     "Blocks AI-generated suggestions and recommendations on search engines and websites."
             ),
-            FilterList(
-                id: UUID(), name: "Online Malicious URL Blocklist",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/208_optimized.txt"
-                )!, category: FilterListCategory.security, isSelected: true,
-                description:
-                    "Protects against suspicious URLs, phishing sites, and unwanted software."),
             FilterList(
                 id: UUID(), name: "Mail Tracking Protection Filter",
                 url: URL(

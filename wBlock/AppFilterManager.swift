@@ -637,23 +637,22 @@ class AppFilterManager: ObservableObject {
 
         var selectedDeprecatedListWasRemoved = false
 
-        // Remove deprecated filter lists that are no longer shipped by wBlock.
-        let deprecatedFilterLists = storedFilterLists.filter { filter in
-            !filter.isCustom
-                && (filter.name == "d3Host List by d3ward"
-                    || filter.url.absoluteString.contains("d3ward/toolz"))
-        }
+        // Built-in lists wBlock no longer ships. A selected one becomes a custom
+        // list so the user keeps it; an unselected one is dropped.
+        let deprecatedFilterLists = storedFilterLists.filter(FilterListLoader.isRetiredBuiltIn)
         if !deprecatedFilterLists.isEmpty {
-            let removedSelected = deprecatedFilterLists.contains(where: { $0.isSelected })
-            storedFilterLists.removeAll { filter in
-                !filter.isCustom
-                    && (filter.name == "d3Host List by d3ward"
-                        || filter.url.absoluteString.contains("d3ward/toolz"))
+            storedFilterLists = storedFilterLists.compactMap { filter in
+                guard FilterListLoader.isRetiredBuiltIn(filter) else { return filter }
+                guard filter.isSelected else { return nil }
+                var kept = filter
+                kept.isCustom = true
+                kept.hasUserProvidedName = true
+                return kept
             }
 
-            let deprecatedFilterIDs = deprecatedFilterLists.map(\.id)
+            let removedFilterIDs = deprecatedFilterLists.filter { !$0.isSelected }.map(\.id)
             Task {
-                for id in deprecatedFilterIDs {
+                for id in removedFilterIDs {
                     await self.dataManager.removeFilterList(withId: id)
                 }
                 await ConcurrentLogManager.shared.info(
@@ -662,7 +661,7 @@ class AppFilterManager: ObservableObject {
                 )
             }
 
-            if removedSelected {
+            if deprecatedFilterLists.contains(where: \.isSelected) {
                 selectedDeprecatedListWasRemoved = true
                 markNonSelectionChangesPending()
             }
@@ -727,7 +726,7 @@ class AppFilterManager: ObservableObject {
             guard let originalURL = originalURLsByID[filter.id] else { return false }
             return originalURL != filter.url
         }
-        if hasURLMigrations || addedDefaultFilters {
+        if hasURLMigrations || addedDefaultFilters || selectedDeprecatedListWasRemoved {
             Task { await self.saveFilterLists() }
         }
 
