@@ -312,8 +312,6 @@ struct SettingsView: View {
                 SettingsRowLabel("View Logs", systemImage: "doc.text.magnifyingglass", accessory: .push)
             }
 
-            ruleCapacityRow
-
             cosmeticFilteringControls
 
             logTimestampControls
@@ -668,6 +666,35 @@ struct SettingsView: View {
         }
     }
 
+    private var ruleCapacitySection: some View {
+        Section { ruleCapacityRow }
+    }
+
+    #if os(macOS)
+    /// The pause switches sit in the window toolbar on macOS, where they stay
+    /// reachable without scrolling. The overall switch disables the others
+    /// while everything is paused, as the iOS section does.
+    @ToolbarContentBuilder
+    private var pauseBlockingToolbar: some ToolbarContent {
+        ToolbarItemGroup(placement: .primaryAction) {
+            pauseToolbarToggle("Pause All Components", systemImage: "pause.fill", isOn: pauseBlockingBinding)
+            Group {
+                pauseToolbarToggle("Filters", systemImage: "list.bullet.rectangle", isOn: pauseComponentBinding(.filters))
+                pauseToolbarToggle("Enabled Userscripts & Userstyles", systemImage: "doc.text.fill", isOn: pauseComponentBinding(.userScripts))
+                pauseToolbarToggle("Element Zapper", systemImage: "wand.and.stars", isOn: pauseComponentBinding(.elementZapper))
+            }
+            .disabled(filterManager.pausedComponents == .all)
+        }
+    }
+
+    private func pauseToolbarToggle(_ title: LocalizedStringKey, systemImage: String, isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn) { Label(title, systemImage: systemImage) }
+            .toggleStyle(.button)
+            .labelStyle(.iconOnly)
+            .help(title)
+            .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
+    }
+    #else
     @ViewBuilder
     private var pauseBlockingSection: some View {
         Section {
@@ -688,6 +715,7 @@ struct SettingsView: View {
         }
         .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
     }
+    #endif
 
     @ViewBuilder
     private var aboutSection: some View {
@@ -771,6 +799,7 @@ struct SettingsView: View {
         #if os(iOS)
         CompatibleNavigationStack {
             List {
+                ruleCapacitySection
                 pauseBlockingSection
                 websitesSection
                 displaySection
@@ -791,12 +820,15 @@ struct SettingsView: View {
         // column. Older macOS keeps the Form since the card list needs
         // section introspection from macOS 15.
         CompatibleNavigationStack {
-            if #available(macOS 15.0, *) {
-                MacSettingsCardList { settingsSections }
-            } else {
-                Form { settingsSections }
-                    .groupedFormStyleCompat()
+            Group {
+                if #available(macOS 15.0, *) {
+                    MacSettingsCardList { settingsSections }
+                } else {
+                    Form { settingsSections }
+                        .groupedFormStyleCompat()
+                }
             }
+            .toolbar { pauseBlockingToolbar }
         }
         #endif
     }
@@ -804,7 +836,7 @@ struct SettingsView: View {
     #if os(macOS)
     @ViewBuilder
     private var settingsSections: some View {
-        pauseBlockingSection
+        ruleCapacitySection
         websitesSection
         displaySection
         autoUpdateSection
