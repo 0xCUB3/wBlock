@@ -98,6 +98,11 @@ final class MacReorderableOutlineView: NSOutlineView {
         }
     }
 
+    override func viewDidEndLiveResize() {
+        super.viewDidEndLiveResize()
+        widthChanged()
+    }
+
     // Elastic bounce and momentum briefly sit outside the document; clamping
     // then fights AppKit and stutters. Reconcile once the gesture ends.
     override func viewDidMoveToWindow() {
@@ -299,7 +304,6 @@ struct MacReorderableList: NSViewRepresentable {
 
             var reloaded = false
             if previous != structure {
-                heights.removeAll()
                 reloaded = true
                 let selected = outline.selectedRow >= 0 ? outline.item(atRow: outline.selectedRow) as? Node : nil
                 let preservedScrollOrigin = outline.enclosingScrollView?.contentView.bounds.origin
@@ -360,23 +364,38 @@ struct MacReorderableList: NSViewRepresentable {
             return indexes
         }
 
+        /// A live resize re-measures only visible rows; the rest follow once it ends.
         func widthChanged() {
             guard let outline, !heights.isEmpty else { return }
-            heights.removeAll()
+            let rows: IndexSet
+            if outline.inLiveResize {
+                let visible = outline.rows(in: outline.visibleRect)
+                guard visible.location != NSNotFound else { return }
+                rows = IndexSet(integersIn: visible.location..<NSMaxRange(visible))
+                rows.compactMap { outline.item(atRow: $0) as? Node }.forEach { heights[$0.id] = nil }
+            } else {
+                rows = IndexSet(integersIn: 0..<outline.numberOfRows)
+                heights.removeAll()
+            }
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0
-                outline.noteHeightOfRows(withIndexesChanged: IndexSet(integersIn: 0..<outline.numberOfRows))
+                outline.noteHeightOfRows(withIndexesChanged: rows)
             }
         }
 
         func outlineView(_ outlineView: NSOutlineView, heightOfRowByItem item: Any) -> CGFloat {
             guard let node = item as? Node else { return 1 }
             if let height = heights[node.id] { return height }
-            sizer.setFrameSize(NSSize(width: max(outlineView.bounds.width, 1), height: 100))
-            sizer.setContent(hosted(node))
-            let height = max(1, ceil(sizer.fittingSize.height))
+            let height = measure(node, in: sizer, width: outlineView.bounds.width, keyed: false)
             heights[node.id] = height
             return height
+        }
+
+        /// Unkeyed content lets one sizer diff between rows instead of rebuilding each.
+        private func measure(_ node: Node, in view: MacListHostingView, width: CGFloat, keyed: Bool) -> CGFloat {
+            view.setFrameSize(NSSize(width: max(width, 1), height: view.frame.height))
+            view.setContent(hosted(node, keyed: keyed))
+            return max(1, ceil(view.fittingSize.height))
         }
 
         private func updateCardEdges(in parent: Node) {
@@ -396,8 +415,8 @@ struct MacReorderableList: NSViewRepresentable {
         // Reused cells host a different row each time they scroll in. Keying
         // the content by row identity makes SwiftUI rebuild the switch instead
         // of animating it from the previous row's state (#831).
-        private func hosted(_ node: Node) -> AnyView {
-            AnyView(Group {
+        private func hosted(_ node: Node, keyed: Bool = true) -> AnyView {
+            let content = Group {
                 if let shape = node.cardShape {
                     node.content
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -410,8 +429,8 @@ struct MacReorderableList: NSViewRepresentable {
                     node.content
                 }
             }
-            .id(node.id)
-            .environment(\.self, environment))
+            .environment(\.self, environment)
+            return keyed ? AnyView(content.id(node.id)) : AnyView(content)
         }
 
         func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
@@ -448,12 +467,10 @@ struct MacReorderableList: NSViewRepresentable {
             let view = outlineView.makeView(withIdentifier: identifier, owner: nil) as? MacListHostingView
                 ?? MacListHostingView(rootView: AnyView(EmptyView()))
             view.identifier = identifier
-            view.setContent(hosted(node))
             // Off-screen content may have changed since this row was measured.
+            let height = measure(node, in: view, width: outlineView.bounds.width, keyed: true)
             if let cached = heights[node.id] {
-                sizer.setFrameSize(NSSize(width: max(outlineView.bounds.width, 1), height: 100))
-                sizer.setContent(hosted(node))
-                if abs(ceil(sizer.fittingSize.height) - cached) > 0.5 {
+                if abs(height - cached) > 0.5 {
                     heights[node.id] = nil
                     DispatchQueue.main.async { [weak outlineView] in
                         guard let outlineView else { return }
