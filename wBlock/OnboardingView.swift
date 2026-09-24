@@ -298,7 +298,7 @@ struct OnboardingView: View {
                     .symbolRenderingMode(.hierarchical)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(step == .welcome ? "Welcome to wBlock!" : "Set up wBlock")
+                    Text("Set up wBlock")
                         .font(.title2.bold())
                 }
 
@@ -694,8 +694,7 @@ struct OnboardingView: View {
                     }
 
                     if !detectedContentBlockerStates.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 6) {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 76), spacing: 6, alignment: .leading)], alignment: .leading, spacing: 6) {
                                 ForEach(detectedContentBlockerStates) { slotState in
                                     HStack(spacing: 3) {
                                         Image(systemName: slotState.isEnabled ? "checkmark.circle.fill" : "xmark.circle")
@@ -710,7 +709,6 @@ struct OnboardingView: View {
                                     .background(Color.secondary.opacity(0.1))
                                     .cornerRadius(6)
                                 }
-                            }
                         }
                         .padding(.leading, 30)
                     }
@@ -1095,8 +1093,13 @@ struct OnboardingView: View {
                     .foregroundStyle(Color.accentColor)
             }
 
-            Toggle("Sync across devices", isOn: $wantsCloudSync)
-                .toggleStyle(.switch)
+            HStack {
+                Text("Sync across devices")
+                Spacer()
+                Toggle("Sync across devices", isOn: $wantsCloudSync)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
