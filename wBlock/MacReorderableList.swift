@@ -71,6 +71,7 @@ struct MacListSection {
 final class MacReorderableOutlineView: NSOutlineView {
     var canDragRow: (Int) -> Bool = { _ in true }
     private var clampingScroll = false
+    private var liveScrolling = false
 
     override func canDragRows(with rowIndexes: IndexSet, at mouseDownPoint: NSPoint) -> Bool {
         rowIndexes.allSatisfy(canDragRow)
@@ -85,17 +86,38 @@ final class MacReorderableOutlineView: NSOutlineView {
         clampEnclosingScrollPosition()
     }
 
+    var widthChanged: () -> Void = {}
+
     override func setFrameSize(_ newSize: NSSize) {
-        let oldHeight = frame.height
+        let oldSize = frame.size
         super.setFrameSize(newSize)
-        guard newSize.height < oldHeight else { return }
+        if oldSize.width != newSize.width { widthChanged() }
+        guard newSize.height < oldSize.height else { return }
         DispatchQueue.main.async { [weak self] in
             self?.clampEnclosingScrollPosition()
         }
     }
 
+    // Elastic bounce and momentum briefly sit outside the document; clamping
+    // then fights AppKit and stutters. Reconcile once the gesture ends.
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        // Remove only these names: NSTableView registers its own observers on self.
+        let names = [NSScrollView.willStartLiveScrollNotification, NSScrollView.didEndLiveScrollNotification]
+        names.forEach { NotificationCenter.default.removeObserver(self, name: $0, object: nil) }
+        guard let scroll = enclosingScrollView else { return }
+        names.forEach {
+            NotificationCenter.default.addObserver(self, selector: #selector(liveScrollChanged), name: $0, object: scroll)
+        }
+    }
+
+    @objc private func liveScrollChanged(_ note: Notification) {
+        liveScrolling = note.name == NSScrollView.willStartLiveScrollNotification
+        if !liveScrolling { clampEnclosingScrollPosition() }
+    }
+
     private func clampEnclosingScrollPosition() {
-        guard !clampingScroll, let scroll = enclosingScrollView else { return }
+        guard !clampingScroll, !liveScrolling, let scroll = enclosingScrollView else { return }
         let clip = scroll.contentView
         let current = clip.bounds
         let constrained = clip.constrainBoundsRect(current)
@@ -183,10 +205,9 @@ struct MacReorderableList: NSViewRepresentable {
         outline.selectionHighlightStyle = .none
         outline.allowsEmptySelection = true
         outline.allowsMultipleSelection = false
-        outline.usesAutomaticRowHeights = true
-        // Keep AppKit's estimate conservative; measured SwiftUI rows may
-        // settle asynchronously to substantially smaller heights.
-        outline.rowHeight = 92
+        // Rows are measured up front: automatic heights start from an estimate
+        // and resize the document as each row scrolls in, which stutters.
+        outline.widthChanged = { [weak coordinator = context.coordinator] in coordinator?.widthChanged() }
         outline.floatsGroupRows = false
         outline.verticalMotionCanBeginDrag = true
         outline.draggingDestinationFeedbackStyle = .gap
@@ -246,6 +267,8 @@ struct MacReorderableList: NSViewRepresentable {
         private var dragging = false
         private var accepted = false
         private var updating = false
+        private var heights: [Node.ID: CGFloat] = [:]
+        private let sizer = MacListHostingView(rootView: AnyView(EmptyView()))
 
         init(_ model: MacReorderableList) { self.model = model }
 
@@ -276,6 +299,7 @@ struct MacReorderableList: NSViewRepresentable {
 
             var reloaded = false
             if previous != structure {
+                heights.removeAll()
                 reloaded = true
                 let selected = outline.selectedRow >= 0 ? outline.item(atRow: outline.selectedRow) as? Node : nil
                 let preservedScrollOrigin = outline.enclosingScrollView?.contentView.bounds.origin
@@ -328,11 +352,31 @@ struct MacReorderableList: NSViewRepresentable {
             guard visible.location != NSNotFound else { return [] }
             let indexes = IndexSet(integersIn: visible.location..<NSMaxRange(visible))
             for row in indexes {
-                guard let node = outline.item(atRow: row) as? Node,
-                      let view = outline.view(atColumn: 0, row: row, makeIfNecessary: false) as? MacListHostingView else { continue }
+                guard let node = outline.item(atRow: row) as? Node else { continue }
+                heights[node.id] = nil
+                guard let view = outline.view(atColumn: 0, row: row, makeIfNecessary: false) as? MacListHostingView else { continue }
                 view.setContent(hosted(node))
             }
             return indexes
+        }
+
+        func widthChanged() {
+            guard let outline, !heights.isEmpty else { return }
+            heights.removeAll()
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0
+                outline.noteHeightOfRows(withIndexesChanged: IndexSet(integersIn: 0..<outline.numberOfRows))
+            }
+        }
+
+        func outlineView(_ outlineView: NSOutlineView, heightOfRowByItem item: Any) -> CGFloat {
+            guard let node = item as? Node else { return 1 }
+            if let height = heights[node.id] { return height }
+            sizer.setFrameSize(NSSize(width: max(outlineView.bounds.width, 1), height: 100))
+            sizer.setContent(hosted(node))
+            let height = max(1, ceil(sizer.fittingSize.height))
+            heights[node.id] = height
+            return height
         }
 
         private func updateCardEdges(in parent: Node) {
@@ -405,6 +449,23 @@ struct MacReorderableList: NSViewRepresentable {
                 ?? MacListHostingView(rootView: AnyView(EmptyView()))
             view.identifier = identifier
             view.setContent(hosted(node))
+            // Off-screen content may have changed since this row was measured.
+            if let cached = heights[node.id] {
+                sizer.setFrameSize(NSSize(width: max(outlineView.bounds.width, 1), height: 100))
+                sizer.setContent(hosted(node))
+                if abs(ceil(sizer.fittingSize.height) - cached) > 0.5 {
+                    heights[node.id] = nil
+                    DispatchQueue.main.async { [weak outlineView] in
+                        guard let outlineView else { return }
+                        let row = outlineView.row(forItem: node)
+                        guard row >= 0 else { return }
+                        NSAnimationContext.runAnimationGroup { context in
+                            context.duration = 0
+                            outlineView.noteHeightOfRows(withIndexesChanged: IndexSet(integer: row))
+                        }
+                    }
+                }
+            }
             return view
         }
 
