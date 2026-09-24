@@ -30,3 +30,5 @@ docs/superpowers/
 # Xcode clang scan cache
 *.xcodeproj/-Xcc/
 .derived-data
+node_modules/
+.claude/
