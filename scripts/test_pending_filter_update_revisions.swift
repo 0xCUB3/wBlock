@@ -222,6 +222,21 @@ struct PendingFilterUpdateRevisionTests {
             storeURL: crashStoreURL
         )?.version == "2", "background readers should receive verified pending metadata")
 
+        PendingFilterUpdateRevisions.markDownloaded(
+            filterID: "orphan-filter",
+            sourceSHA256: String(repeating: "0", count: 64),
+            sourceFilename: "missing-source.txt",
+            stagedFilename: ".pending-filter-missing.txt",
+            token: "orphan-token",
+            storeURL: crashStoreURL
+        )
+        expect(PendingFilterUpdateRevisions.pendingFilterIDs(
+            selectedFilterIDs: ["orphan-filter"],
+            storeURL: crashStoreURL
+        ).isEmpty, "a revision whose source and staged copy are gone must not report an update forever")
+        expect(!PendingFilterUpdateRevisions.contains(filterID: "orphan-filter", storeURL: crashStoreURL),
+               "an unpublishable revision should be pruned")
+
         print("PASS")
     }
 

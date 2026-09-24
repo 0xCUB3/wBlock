@@ -174,8 +174,22 @@ public enum PendingFilterUpdateRevisions {
         lock.lock()
         defer { lock.unlock() }
         return (try? withFileLock(for: storeURL) {
-            let storedIDs = Set(loadStateUnlocked(from: storeURL).revisionsByFilterID.keys)
-            return storedIDs.intersection(selectedFilterIDs)
+            var state = loadStateUnlocked(from: storeURL)
+            var pending = Set(state.revisionsByFilterID.keys).intersection(selectedFilterIDs)
+            // A revision whose source and staged copy both no longer match its
+            // digest (e.g. the list was renamed) can never publish; drop it so it
+            // stops reporting an update on every check.
+            let dead = pending.filter { id in
+                state.revisionsByFilterID[id].map {
+                    hasSourceIdentity($0) && !ensurePublishedUnlocked($0, storeURL: storeURL)
+                } ?? false
+            }
+            if !dead.isEmpty {
+                dead.forEach { state.revisionsByFilterID.removeValue(forKey: $0) }
+                pending.subtract(dead)
+                try saveStateUnlocked(state, to: storeURL)
+            }
+            return pending
         }) ?? []
     }
 
