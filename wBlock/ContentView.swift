@@ -45,7 +45,8 @@ struct ContentView: View {
         get { tabSelection.value }
         nonmutating set { tabSelection.value = newValue }
     }
-    #if os(macOS)
+    // Prepared off the main actor: every progress publish re-renders this view,
+    // and sorting the catalog there stalled older iPads until the watchdog fired (#860).
     @State private var filterPresentation = FilterListPresentation()
     @Environment(\.locale) private var locale
 
@@ -54,7 +55,6 @@ struct ContentView: View {
               searchText: filterSearchText, enabledOnly: showOnlyEnabledLists,
               localeIdentifier: locale.identifier)
     }
-    #endif
     @State private var pendingEssentialFilter: FilterList?
     /// Monotonic tokens handed to the Userscripts tab so a ⌘⇧N or ⌘L that
     /// arrives before that tab has been built is still honored on appear.
@@ -105,24 +105,7 @@ struct ContentView: View {
     }
 
     private var categorizedFilters: [(category: FilterListCategory, filters: [FilterList])] {
-        #if os(macOS)
-        return filterPresentation.sections.map { ($0.category, $0.filters) }
-        #else
-        let query = filterSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let groups = Dictionary(grouping: orderedFilters.filter { filter in
-            (!showOnlyEnabledLists || filter.isSelected) && (query.isEmpty
-                || filter.localizedDisplayName.localizedCaseInsensitiveContains(query)
-                || filter.localizedDisplayDescription.localizedCaseInsensitiveContains(query)
-                || filter.url.absoluteString.localizedCaseInsensitiveContains(query))
-        }, by: \.category)
-        return FilterListCategory.allCases.filter { $0 != .all && !$0.isUserScriptOnly }
-            .compactMap { category in
-                guard let filters = groups[category] else {
-                    return nil
-                }
-                return (category: category, filters: filters)
-            }
-        #endif
+        filterPresentation.sections.map { ($0.category, $0.filters) }
     }
 
     /// Invisible zero-size buttons that surface hardware-keyboard shortcuts.
@@ -210,7 +193,6 @@ struct ContentView: View {
         AppTabView(selection: tabSelection, filters: filtersView,
                    userscripts: userscriptsView, settings: settingsView)
         .background(keyboardShortcutHandlers)
-        #if os(macOS)
         .task(id: filterPresentationInput) {
             let input = filterPresentationInput
             if let prepared = try? await FilterListPresentation.prepare(input),
@@ -220,7 +202,6 @@ struct ContentView: View {
                 withTransaction(transaction) { filterPresentation = prepared }
             }
         }
-        #endif
         .modifier(
             ContentModifiers(
                 filterManager: filterManager,
@@ -480,7 +461,7 @@ struct ContentView: View {
                     // chevron collapses the rows instead of a nested DisclosureGroup.
                     ContentListSection { categoryHeader(item.category) } content: {
                         if isForeignFiltersExpanded {
-                            ForEach(ForeignFilterOrganizer.groups(for: item.filters)) { group in
+                            ForEach(filterPresentation.foreignGroups) { group in
                                 foreignFilterGroupHeader(group.title)
                                 filterRows(group.filters, showsFlags: false)
                             }
