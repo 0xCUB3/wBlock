@@ -4,7 +4,7 @@
 
 # wBlock
 
-The end of Safari ad-blocking B.S.
+**The end of Safari ad-blocking B.S.**
 
 A free, open-source ad blocker for Safari on Mac, iPhone, iPad, and Apple Vision Pro.
 
