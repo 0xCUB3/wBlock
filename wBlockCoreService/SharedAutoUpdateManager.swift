@@ -1312,11 +1312,13 @@ public actor SharedAutoUpdateManager {
 
         #if !os(iOS)
         // On macOS the app or its agent may be updating right now; the lease
-        // is the cross-process check. The extension is never suspended there.
-        guard let lease = SharedAutoUpdateLease.acquire(groupIdentifier: GroupIdentifier.shared.value) else {
+        // is the cross-process check. Release it at once: RunningBoard also
+        // suspends idle Safari extensions on macOS and kills one that holds a
+        // flock in the app group (0xDEAD10CC, #867). Staging writes atomically,
+        // like the unlocked iOS path.
+        guard SharedAutoUpdateLease.acquire(groupIdentifier: GroupIdentifier.shared.value) != nil else {
             return .skipped(reason: "already_running")
         }
-        defer { withExtendedLifetime(lease) {} }
         #endif
 
         try Task.checkCancellation()
