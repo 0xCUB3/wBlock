@@ -17,7 +17,6 @@ class FilterListLoader {
             "Actually Legitimate URL Shortener Tool",
             "Online Malicious URL Blocklist",
             "Peter Lowe's Blocklist",
-            "Adblock Warning Removal List",
             "AdGuard Cookie Notices",
         ]
     #else
@@ -28,7 +27,6 @@ class FilterListLoader {
             "Actually Legitimate URL Shortener Tool",
             "Online Malicious URL Blocklist",
             "Peter Lowe's Blocklist",
-            "Adblock Warning Removal List",
             "AdGuard Cookie Notices",
             "AdGuard Mobile Filter",
         ]
