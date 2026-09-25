@@ -296,7 +296,7 @@ struct InlineGlassSearchField: View {
             }
         }
         .glassEffect(.regular.interactive(), in: .capsule)
-        .animation(reduceMotion ? nil : .smooth(duration: Self.duration), value: isExpanded)
+        .animation(reduceMotion ? nil : .bouncy(duration: Self.duration, extraBounce: 0.25), value: isExpanded)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: text.isEmpty)
         .frame(width: holdsExpandedSlot ? Self.expandedWidth : 36, alignment: .trailing)
         .onAppear {
@@ -320,7 +320,7 @@ struct InlineGlassSearchField: View {
     }
 
     private static let expandedWidth: CGFloat = 180
-    private static let duration = 0.3
+    private static let duration = 0.32
 
     private func handleFocusRequest() {
         guard focusRequest, isVisible else { return }
