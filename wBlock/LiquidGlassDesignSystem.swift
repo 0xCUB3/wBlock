@@ -224,13 +224,17 @@ struct InlineGlassSearchField: View {
     let prompt: LocalizedStringKey
 
     @State private var isExpanded = false
+    /// The toolbar resizes its item without animating, so the slot stays at full width
+    /// until the capsule finishes collapsing and the capsule is pinned to its trailing edge.
+    @State private var holdsExpandedSlot = false
     @State private var focusRequests = 0
     @State private var isVisible = false
+    @State private var fieldWidth: CGFloat = 140
     @FocusState private var isFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: -2) {
             Button(action: expandAndFocus) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 13))
@@ -238,7 +242,8 @@ struct InlineGlassSearchField: View {
                     .foregroundStyle(text.isEmpty ? Color.primary : Color.accentColor)
                     .contentTransition(.identity)
                     .transaction { transaction in transaction.animation = nil }
-                    .frame(width: isExpanded ? 20 : 36, height: 36)
+                    .frame(width: 20, height: 36)
+                    .padding(.horizontal, 8)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -246,7 +251,9 @@ struct InlineGlassSearchField: View {
             .accessibilityValue(text)
             .help(prompt)
 
-            if isExpanded {
+            // The field stays mounted at its last expanded width while collapsed, so
+            // the capsule clips it instead of re-laying out the text mid-animation.
+            HStack(spacing: 6) {
                 TextField(prompt, text: $text)
                     .font(.system(size: 13))
                     .textFieldStyle(.plain)
@@ -256,7 +263,6 @@ struct InlineGlassSearchField: View {
                         collapse()
                     }
                     .frame(maxWidth: .infinity)
-                    .transition(.opacity)
                 if !text.isEmpty {
                     Button { text = "" } label: {
                         Image(systemName: "xmark.circle.fill")
@@ -269,10 +275,17 @@ struct InlineGlassSearchField: View {
                     .transition(.opacity)
                 }
             }
+            .frame(width: isExpanded ? nil : fieldWidth)
+            .onGeometryChange(for: CGFloat.self, of: \.size.width) { width in
+                if isExpanded { fieldWidth = width }
+            }
+            .opacity(isExpanded ? 1 : 0)
+            .allowsHitTesting(isExpanded)
+            .accessibilityHidden(!isExpanded)
+            .padding(.trailing, 8)
         }
-        .padding(.horizontal, isExpanded ? 8 : 0)
-        .frame(minWidth: isExpanded ? 140 : 36, idealWidth: isExpanded ? 180 : 36, maxWidth: isExpanded ? 180 : 36)
-        .frame(height: 36)
+        .frame(width: isExpanded ? Self.expandedWidth : 36, height: 36, alignment: .leading)
+        .clipShape(.capsule)
         .background {
             if isExpanded {
                 ToolbarFieldFocuser(request: focusRequests, onClickOutside: {
@@ -283,15 +296,16 @@ struct InlineGlassSearchField: View {
             }
         }
         .glassEffect(.regular.interactive(), in: .capsule)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: isExpanded)
+        .animation(reduceMotion ? nil : .smooth(duration: Self.duration), value: isExpanded)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: text.isEmpty)
+        .frame(width: holdsExpandedSlot ? Self.expandedWidth : 36, alignment: .trailing)
         .onAppear {
             isVisible = true
-            if !text.isEmpty { isExpanded = true }
+            if !text.isEmpty { expand() }
             handleFocusRequest()
         }
         .onChangeCompat(of: text) { _, value in
-            if !value.isEmpty { isExpanded = true }
+            if !value.isEmpty { expand() }
         }
         .onChangeCompat(of: focusRequest) { _, requested in
             if requested { handleFocusRequest() }
@@ -305,9 +319,12 @@ struct InlineGlassSearchField: View {
         }
     }
 
+    private static let expandedWidth: CGFloat = 180
+    private static let duration = 0.3
+
     private func handleFocusRequest() {
         guard focusRequest, isVisible else { return }
-        isExpanded = true
+        expand()
         focusRequests += 1
         focusRequest = false
         DispatchQueue.main.async {
@@ -316,8 +333,19 @@ struct InlineGlassSearchField: View {
         }
     }
 
+    /// Widens the slot first, without animation, so the capsule starts at the trailing
+    /// edge and grows toward the leading side on the next pass.
+    private func expand() {
+        guard !holdsExpandedSlot else {
+            isExpanded = true
+            return
+        }
+        holdsExpandedSlot = true
+        DispatchQueue.main.async { if holdsExpandedSlot { isExpanded = true } }
+    }
+
     private func expandAndFocus() {
-        isExpanded = true
+        expand()
         focusRequests += 1
         DispatchQueue.main.async {
             guard isVisible, isExpanded else { return }
@@ -328,6 +356,9 @@ struct InlineGlassSearchField: View {
     private func collapse() {
         isExpanded = false
         isFocused = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0 : Self.duration)) {
+            if !isExpanded { holdsExpandedSlot = false }
+        }
     }
 }
 
