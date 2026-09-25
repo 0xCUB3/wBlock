@@ -1135,9 +1135,24 @@ final class CloudSyncManager: ObservableObject {
         isEnabled: Bool,
         updatesAutomatically: Bool,
         category: String?,
+        name: String? = nil,
+        description: String? = nil,
         localMutationRevisionAtStart: UInt64
     ) async {
         guard userScriptManager.localMutationRevision == localMutationRevisionAtStart else { return }
+        if let name, let current = userScriptManager.userScripts.first(where: { $0.id == script.id }),
+           current.name != name || current.description != (description ?? current.description) {
+            // Custom URL scripts carry user-edited display metadata (#869).
+            await userScriptManager.setUserScriptMetadataOverrides(
+                for: script.id,
+                name: name,
+                description: description ?? current.description,
+                author: current.metadataAuthorOverride,
+                homepage: current.metadataHomepageOverride,
+                origin: .remoteSync
+            )
+            guard userScriptManager.localMutationRevision == localMutationRevisionAtStart else { return }
+        }
         await userScriptManager.setUserScript(
             script,
             isEnabled: syncUserScriptEnabledStates ? isEnabled : script.isEnabled,
@@ -1274,6 +1289,8 @@ final class CloudSyncManager: ObservableObject {
                     isEnabled: remote.isEnabled,
                     updatesAutomatically: remote.resolvedUpdatesAutomatically,
                     category: remote.category,
+                    name: remote.name,
+                    description: remote.description,
                     localMutationRevisionAtStart: localMutationRevisionAtStart
                 )
             }
@@ -1300,6 +1317,8 @@ final class CloudSyncManager: ObservableObject {
                         isEnabled: remote.isEnabled,
                         updatesAutomatically: remote.resolvedUpdatesAutomatically,
                         category: remote.category,
+                        name: remote.name,
+                        description: remote.description,
                         localMutationRevisionAtStart: localMutationRevisionAtStart
                     )
                 }
@@ -1678,6 +1697,8 @@ final class CloudSyncManager: ObservableObject {
                         isEnabled: remote.isEnabled,
                         updatesAutomatically: remote.resolvedUpdatesAutomatically,
                         category: remote.category,
+                        name: remote.name,
+                        description: remote.description,
                         localMutationRevisionAtStart: userScriptMutationRevisionAtStart
                     )
                 }
@@ -1825,7 +1846,9 @@ final class CloudSyncManager: ObservableObject {
                     updatesAutomatically: script.updatesAutomatically,
                     category: script.category.rawValue,
                     disabledHosts: disabledHosts,
-                    siteAccess: dataManager.userScriptSiteAccess(forScriptID: script.id.uuidString)
+                    siteAccess: dataManager.userScriptSiteAccess(forScriptID: script.id.uuidString),
+                    name: userScriptManager.isDefaultUserScript(script) ? nil : script.name,
+                    description: userScriptManager.isDefaultUserScript(script) ? nil : script.description
                 )
             }
             .sorted { $0.url < $1.url }
@@ -2466,6 +2489,9 @@ private struct SyncPayload: Codable {
         let category: String?
         let disabledHosts: [String]?
         var siteAccess: UserScriptSiteAccess? = nil
+        /// Display metadata for custom URL scripts; nil in legacy payloads and for built-ins.
+        var name: String? = nil
+        var description: String? = nil
 
         var resolvedUpdatesAutomatically: Bool {
             updatesAutomatically ?? true
