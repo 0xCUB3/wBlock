@@ -38,7 +38,15 @@ struct DisabledSitesNormalizationTests {
             ("example.com:8080/path", "example.com"),
             ("user:pass@example.com", "example.com"),
             ("https://", nil),
-            ("https://127.0.0.1/", nil),
+            ("https://127.0.0.1/", "127.0.0.1"),
+            ("http://192.168.20.2", "192.168.20.2"),
+            ("192.168.1.10:8080/admin", "192.168.1.10"),
+            ("localhost", "localhost"),
+            ("NAS.local", "nas.local"),
+            ("256.1.1.1", nil),
+            ("1.2.3", nil),
+            ("01.2.3.4", nil),
+            ("-bad.example", nil),
         ]
         for (input, expected) in urlInputs {
             expectEqual(

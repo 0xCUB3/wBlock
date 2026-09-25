@@ -21,18 +21,30 @@ public enum DisabledSitesNormalizer {
         }
 
         let range = NSRange(candidate.startIndex..., in: candidate)
-        guard domainRegex.firstMatch(in: candidate, options: [], range: range) != nil else {
-            return nil
-        }
+        guard isIPv4Address(candidate)
+            || hostnameRegex.firstMatch(in: candidate, options: [], range: range) != nil
+        else { return nil }
 
         return candidate
     }
 
+    /// Hostnames, including single-label and .local names on a LAN (#868). The last
+    /// label must contain a letter so malformed dotted numbers fall to the IPv4 check.
     /// Compiled once; normalizedDomain runs for every entry whenever site lists are
     /// normalized, and compiling the pattern per call dominated that loop.
-    private static let domainRegex = try! NSRegularExpression(
-        pattern: #"^(?:[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$"#
+    private static let hostnameRegex = try! NSRegularExpression(
+        pattern: #"^(?:[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?\.)*(?=[a-z0-9\-]*[a-z])[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?$"#
     )
+
+    private static func isIPv4Address(_ candidate: String) -> Bool {
+        let octets = candidate.split(separator: ".", omittingEmptySubsequences: false)
+        return octets.count == 4 && octets.allSatisfy { octet in
+            (1...3).contains(octet.count)
+                && octet.allSatisfy(\.isASCII) && octet.allSatisfy(\.isNumber)
+                && (octet == "0" || octet.first != "0")
+                && Int(octet).map { $0 <= 255 } == true
+        }
+    }
 
     public static func normalizedDomains(from rawDomains: [String]) -> [String] {
         Array(Set(rawDomains.compactMap(normalizedDomain))).sorted()
