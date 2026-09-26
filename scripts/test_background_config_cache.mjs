@@ -514,16 +514,20 @@ const runScriptInjectionScenario = async executeScript => {
     throw new Error("Unexpected script injection failure");
   });
   check(
-    "unexpected executeScript rejection is logged as an error",
-    !outcome.rejected && outcome.errors.some(args => args.some(value => String(value).includes("Failed to execute script in target")))
+    "unexpected executeScript rejection retains its message and reason in Safari error summaries",
+    !outcome.rejected && outcome.errors.some(args => args.length === 1
+      && args[0].includes("Failed to execute script in target")
+      && args[0].includes("Unexpected script injection failure"))
   );
 }
 
 {
   const outcome = await runScriptInjectionScenario(async () => [{ error: "Unexpected script injection result" }]);
   check(
-    "unexpected executeScript result error is logged",
-    !outcome.rejected && outcome.errors.some(args => args.some(value => String(value).includes("Failed to execute script in target")))
+    "unexpected executeScript result error retains its message and reason in Safari error summaries",
+    !outcome.rejected && outcome.errors.some(args => args.length === 1
+      && args[0].includes("Failed to execute script in target")
+      && args[0].includes("Unexpected script injection result"))
   );
 }
 

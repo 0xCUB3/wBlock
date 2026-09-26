@@ -32,6 +32,8 @@ RES_DIR="${ROOT_DIR}/wBlock Scripts (iOS)/Resources"
 
 FAIL=0
 
+node "${ROOT_DIR}/scripts/patch-extension-logging.mjs" "${SRC_DIR}/background.js" "${SRC_DIR}/content.js"
+
 minify_one() {
   local name="$1"
   local src="${SRC_DIR}/${name}.js"

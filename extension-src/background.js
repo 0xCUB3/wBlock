@@ -25573,6 +25573,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     LoggingLevel[LoggingLevel["Error"] = 0] = "Error";
   })(LoggingLevel || (LoggingLevel = {}));
   const getTimestamp = () => `[${new Date().toISOString()}]`;
+  const formatLogValue = value => {
+    if (value instanceof Error) {
+      return value.stack || value.message || String(value);
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
+    try {
+      return JSON.stringify(value);
+    } catch (_error) {
+      return String(value);
+    }
+  };
+  const formatLogLine = (prefix, args) => [getTimestamp(), prefix, ...args.map(formatLogValue)].join(' ');
   /**
    * Console logger implementation.
    */
@@ -25600,7 +25614,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         for (var _len3 = arguments.length, args = new Array(_len3), _key3 = 0; _key3 < _len3; _key3++) {
           args[_key3] = arguments[_key3];
         }
-        console.debug(getTimestamp(), this.prefix, ...args);
+        console.debug(formatLogLine(this.prefix, args));
       }
     }
     info() {
@@ -25608,7 +25622,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         for (var _len4 = arguments.length, args = new Array(_len4), _key4 = 0; _key4 < _len4; _key4++) {
           args[_key4] = arguments[_key4];
         }
-        console.info(getTimestamp(), this.prefix, ...args);
+        console.info(formatLogLine(this.prefix, args));
       }
     }
     error() {
@@ -25616,7 +25630,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         for (var _len5 = arguments.length, args = new Array(_len5), _key5 = 0; _key5 < _len5; _key5++) {
           args[_key5] = arguments[_key5];
         }
-        console.error(getTimestamp(), this.prefix, ...args);
+        console.error(formatLogLine(this.prefix, args));
       }
     }
   }

@@ -86,22 +86,8 @@ stripped = replaceExactly(
   "content runScriptlets implementation",
 );
 
-// Preserve wBlock's stable one-line native log formatting and its injection
-// fallback behavior while refreshing the upstream SafariExtension section.
-stripped = replaceExactly(
-  stripped,
-  "  const getTimestamp = () => `[${new Date().toISOString()}]`;\n",
-  "  const getTimestamp = () => `[${new Date().toISOString()}]`;\n  const formatLogValue = value => {\n    if (value instanceof Error) {\n      return value.stack || value.message || String(value);\n    }\n    if (typeof value === 'string') {\n      return value;\n    }\n    try {\n      return JSON.stringify(value);\n    } catch (_error) {\n      return String(value);\n    }\n  };\n  const formatLogLine = (prefix, args) => [getTimestamp(), prefix, ...args.map(formatLogValue)].join(' ');\n",
-  "logger timestamp helper",
-);
-for (const level of ["debug", "info", "error"]) {
-  stripped = replaceExactly(
-    stripped,
-    `        console.${level}(getTimestamp(), this.prefix, ...args);`,
-    `        console.${level}(formatLogLine(this.prefix, args));`,
-    `${level} logger call`,
-  );
-}
+// Preserve wBlock's page-injection fallback behavior. Shared logger formatting
+// is applied to both extension bundles by minify-extension-js.sh.
 stripped = replaceExactly(
   stripped,
   "    scripts.push(';document.currentScript.remove();');",
