@@ -1168,7 +1168,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Overrides the Autoplay setting in the Safari extension." = "يتجاوز إعداد التشغيل التلقائي في ملحق Safari.";
 "Runs every enabled userscript that matches this site." = "يشغّل كل برنامج نصي مفعّل يطابق هذا الموقع.";
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "يطبّق قوائم التصفية والبرامج النصية الصغيرة. للبرامج النصية وأداة الإزالة والتشغيل التلقائي مفاتيح خاصة بها.";
-"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "المواقع المضافة تتخطى قوائم التصفية والبرامج النصية الصغيرة. للبرامج النصية وأداة الإزالة والتشغيل التلقائي مفاتيح خاصة بها.";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "المواقع المضافة تتخطى قوائم التصفية والبرامج النصية الصغيرة. للبرامج النصية وأداة الإزالة والتشغيل التلقائي مفاتيح خاصة بها. يشمل كل موقع نطاقاته الفرعية.";
 "Websites" = "المواقع الإلكترونية";
 "Restart…" = "إعادة التشغيل…";
 "Next update: %@" = "التحديث التالي: %@";

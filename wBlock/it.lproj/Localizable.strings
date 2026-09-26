@@ -1168,7 +1168,7 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Overrides the Autoplay setting in the Safari extension." = "Sovrascrive l’impostazione di riproduzione automatica dell’estensione Safari.";
 "Runs every enabled userscript that matches this site." = "Esegue ogni userscript attivo che corrisponde a questo sito.";
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Applica liste di filtri e scriptlet. Userscript, zapper e riproduzione automatica hanno interruttori propri.";
-"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "I siti aggiunti ignorano liste di filtri e scriptlet. Userscript, zapper e riproduzione automatica hanno interruttori propri.";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "I siti aggiunti ignorano liste di filtri e scriptlet. Userscript, zapper e riproduzione automatica hanno interruttori propri. Ogni sito include i suoi sottodomini.";
 "Websites" = "Siti web";
 "Restart…" = "Riavvia…";
 "Next update: %@" = "Prossimo aggiornamento: %@";

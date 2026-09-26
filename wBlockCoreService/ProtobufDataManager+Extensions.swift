@@ -341,37 +341,21 @@ extension ProtobufDataManager {
         }
     }
 
-    public func isNoAutoplayAllowed(onHost host: String) -> Bool {
-        guard let normalizedHost = DisabledSitesNormalizer.normalizedDomain(host) else {
-            return false
-        }
-        return DisabledSitesNormalizer.normalizedDomains(from: noAutoplayAllowedSites)
-            .contains(normalizedHost)
-    }
-
     public var noAutoplayBlockedSites: [String] {
         appData.whitelist.noAutoplayBlockedSites
-    }
-
-    public func isNoAutoplayBlocked(onHost host: String) -> Bool {
-        guard let normalizedHost = DisabledSitesNormalizer.normalizedDomain(host) else {
-            return false
-        }
-        return DisabledSitesNormalizer.normalizedDomains(from: noAutoplayBlockedSites)
-            .contains(normalizedHost)
     }
 
     /// Whether media on `host` may autoplay. The per-site lists override the
     /// global switch in both directions, so a site can be set either way no
     /// matter how No Autoplay is configured (#835).
     public func isAutoplayAllowed(onHost host: String) -> Bool {
-        if isNoAutoplayBlocked(onHost: host) { return false }
-        if isNoAutoplayAllowed(onHost: host) { return true }
-        return !isNoAutoplayEnabled
+        HostMatcher.override(host: host, allowedSites: noAutoplayAllowedSites, blockedSites: noAutoplayBlockedSites)
+            ?? !isNoAutoplayEnabled
     }
 
-    /// Sets the site's autoplay choice relative to the global switch: a value
-    /// equal to the global default clears both overrides.
+    /// Sets the site's autoplay choice relative to what it would otherwise
+    /// inherit from a parent entry or the global switch: a matching value
+    /// clears the site's own override.
     @discardableResult
     public func setAutoplayAllowed(_ allowed: Bool, onHost host: String) async -> Bool {
         guard let normalizedHost = DisabledSitesNormalizer.normalizedDomain(host) else {
@@ -382,8 +366,10 @@ extension ProtobufDataManager {
             var blockedSites = Set(DisabledSitesNormalizer.normalizedDomains(from: data.whitelist.noAutoplayBlockedSites))
             allowedSites.remove(normalizedHost)
             blockedSites.remove(normalizedHost)
-            let globalAllows = !data.whitelist.noAutoplayEnabled
-            if allowed != globalAllows {
+            let inherited = HostMatcher.override(
+                host: normalizedHost, allowedSites: Array(allowedSites), blockedSites: Array(blockedSites)
+            ) ?? !data.whitelist.noAutoplayEnabled
+            if allowed != inherited {
                 if allowed { allowedSites.insert(normalizedHost) } else { blockedSites.insert(normalizedHost) }
             }
             data.whitelist.noAutoplayAllowedSites = Array(allowedSites).sorted()

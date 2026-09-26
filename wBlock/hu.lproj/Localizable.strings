@@ -1168,7 +1168,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Overrides the Autoplay setting in the Safari extension." = "Felülírja a Safari-bővítmény automatikus lejátszás beállítását.";
 "Runs every enabled userscript that matches this site." = "Minden engedélyezett, erre a webhelyre illő userscriptet futtat.";
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Szűrőlistákat és scriptleteket alkalmaz. A userscriptek, a zapper és az automatikus lejátszás külön kapcsolóval rendelkeznek.";
-"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "A hozzáadott webhelyek kihagyják a szűrőlistákat és scriptleteket. A userscriptek, a zapper és az automatikus lejátszás külön kapcsolóval rendelkeznek.";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "A hozzáadott webhelyek kihagyják a szűrőlistákat és scriptleteket. A userscriptek, a zapper és az automatikus lejátszás külön kapcsolóval rendelkeznek. Minden webhely az aldomainjeire is vonatkozik.";
 "Websites" = "Webhelyek";
 "Restart…" = "Újraindítás…";
 "Next update: %@" = "Következő frissítés: %@";

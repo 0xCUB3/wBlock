@@ -642,6 +642,23 @@ public enum HostMatcher {
         }
         return false
     }
+
+    /// The per-site override for `host` from the closest matching entry. An entry
+    /// covers its subdomains (#870); a more specific entry wins, and blocked wins
+    /// when the same entry is in both lists.
+    public static func override(host: String, allowedSites: [String], blockedSites: [String]) -> Bool? {
+        guard let host = DisabledSitesNormalizer.normalizedDomain(host) else { return nil }
+        let closest: ([String]) -> Int? = { sites in
+            DisabledSitesNormalizer.normalizedDomains(from: sites)
+                .compactMap { isHostDisabled(host: host, disabledSites: [$0]) ? $0.count : nil }.max()
+        }
+        switch (closest(allowedSites), closest(blockedSites)) {
+        case (nil, nil): return nil
+        case (let allowed?, let blocked?): return allowed > blocked
+        case (_?, nil): return true
+        case (nil, _?): return false
+        }
+    }
 }
 
 public enum UserScriptMetadataParser {

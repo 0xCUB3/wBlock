@@ -1168,7 +1168,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Overrides the Autoplay setting in the Safari extension." = "Înlocuiește setarea de redare automată din extensia Safari.";
 "Runs every enabled userscript that matches this site." = "Rulează fiecare userscript activat care se potrivește acestui site.";
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Aplică listele de filtre și scriptleturile. Userscripturile, zapper-ul și redarea automată au comutatoare proprii.";
-"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Site-urile adăugate ocolesc listele de filtre și scriptleturile. Userscripturile, zapper-ul și redarea automată au comutatoare proprii.";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "Site-urile adăugate ocolesc listele de filtre și scriptleturile. Userscripturile, zapper-ul și redarea automată au comutatoare proprii. Fiecare site își include subdomeniile.";
 "Websites" = "Site-uri";
 "Restart…" = "Repornește…";
 "Next update: %@" = "Următoarea actualizare: %@";

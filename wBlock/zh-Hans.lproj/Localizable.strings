@@ -1168,7 +1168,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Overrides the Autoplay setting in the Safari extension." = "覆盖 Safari 扩展中的自动播放设置。";
 "Runs every enabled userscript that matches this site." = "运行所有匹配此网站的已启用用户脚本。";
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "应用过滤列表和小脚本。用户脚本、元素清除器和自动播放有各自的开关。";
-"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "已添加的网站会跳过过滤列表和小脚本。用户脚本、元素清除器和自动播放有各自的开关。";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "已添加的网站会跳过过滤列表和小脚本。用户脚本、元素清除器和自动播放有各自的开关。每个网站都包括其子域名。";
 "Websites" = "网站";
 "Restart…" = "重新启动…";
 "Next update: %@" = "下次更新：%@";

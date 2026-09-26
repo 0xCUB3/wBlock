@@ -1177,7 +1177,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Overrides the Autoplay setting in the Safari extension." = "Safari genişletmesindeki Otomatik Oynatma ayarını geçersiz kılar.";
 "Runs every enabled userscript that matches this site." = "Bu siteyle eşleşen tüm etkin kullanıcı betiklerini çalıştırır.";
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Filtre listelerine ve betiklere uygular. Kullanıcı betikleri, öğe gizleyici ve otomatik oynatma ayarlarının açma/kapatma düğmeleri vardır.";
-"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Eklenen siteler için filtre listelerini ve betikleri atlar. Kullanıcı betikleri, öğe gizleyici ve otomatik oynatma ayarlarının açma/kapatma düğmeleri vardır.";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "Eklenen siteler için filtre listelerini ve betikleri atlar. Kullanıcı betikleri, öğe gizleyici ve otomatik oynatma ayarlarının açma/kapatma düğmeleri vardır. Her site alt alan adlarını da kapsar.";
 "Websites" = "Web Siteleri";
 "Restart…" = "Yeniden başlat…";
 "Next update: %@" = "Sonraki güncelleme: %@";

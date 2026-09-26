@@ -1168,7 +1168,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Overrides the Autoplay setting in the Safari extension." = "Переопределяет настройку автовоспроизведения в расширении Safari.";
 "Runs every enabled userscript that matches this site." = "Запускает все включённые пользовательские скрипты, подходящие этому сайту.";
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Применяет списки фильтров и скриптлеты. У пользовательских скриптов, заппера и автовоспроизведения свои переключатели.";
-"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Добавленные сайты пропускают списки фильтров и скриптлеты. У пользовательских скриптов, заппера и автовоспроизведения свои переключатели.";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "Добавленные сайты пропускают списки фильтров и скриптлеты. У пользовательских скриптов, заппера и автовоспроизведения свои переключатели. Каждый сайт включает свои поддомены.";
 "Websites" = "Сайты";
 "Restart…" = "Перезапустить…";
 "Next update: %@" = "Следующее обновление: %@";

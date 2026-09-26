@@ -158,7 +158,7 @@ struct SiteSettingsView: View {
                 .disabled(addableDomain == nil || isAddingDomain)
             }
 
-            Text("Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches.")
+            Text("Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
@@ -188,7 +188,7 @@ struct SiteSettingsView: View {
                 domain: domain,
                 isWhitelisted: whitelisted.contains(domain),
                 isFilterDisabled: filterDisabled.contains(domain),
-                autoplayOverride: autoplayBlocked.contains(domain) ? false : (autoplayAllowed.contains(domain) ? true : nil),
+                autoplayOverride: HostMatcher.override(host: domain, allowedSites: Array(autoplayAllowed), blockedSites: Array(autoplayBlocked)),
                 areUserScriptsDisabled: scriptsDisabled.contains(domain),
                 scriptsOffCount: scriptsDisabled.contains(domain)
                     ? 0
@@ -469,9 +469,9 @@ struct SiteSettingsView: View {
         return SiteSettingsSnapshot(
             isWhitelisted: isWhitelisted(domain),
             isFilterDisabled: isFilterDisabled(domain),
-            autoplayOverride: dataManager.isNoAutoplayBlocked(onHost: domain)
+            autoplayOverride: DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayBlockedSites).contains(domain)
                 ? false
-                : (dataManager.isNoAutoplayAllowed(onHost: domain) ? true : nil),
+                : (DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayAllowedSites).contains(domain) ? true : nil),
             areUserScriptsDisabled: DisabledSitesNormalizer.normalizedDomains(from: dataManager.userScriptsDisabledSites).contains(domain),
             disabledScriptIDs: Set(disabledHosts.compactMap { scriptID, hosts in
                 hosts.contains(domain) ? scriptID : nil
