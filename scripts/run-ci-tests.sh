@@ -11,6 +11,18 @@ run() {
   "$@"
 }
 
+case "${1:-all}" in
+  all|--javascript|--native) ;;
+  *) echo 'Usage: run-ci-tests.sh [--javascript|--native]' >&2; exit 2 ;;
+esac
+if [[ "${1:-all}" != --native ]]; then
+  for test in scripts/test_*.mjs; do
+    [[ "$test" == scripts/test_no_autoplay.mjs ]] && continue
+    run node "$test"
+  done
+fi
+[[ "${1:-all}" == --javascript ]] && exit 0
+
 # CI supplies its cached build directory. Local tests use the signed build
 # Safari already uses instead of creating another unsigned app installation.
 if [[ -z "${WBLOCK_DERIVED_DATA:-}" ]]; then
@@ -239,11 +251,6 @@ WBLOCK_POSTCSS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/postc
 
 # Safari uses template tinting, so disabled toolbar icons need a distinct alpha mask.
 run swift scripts/test_action_icon_masks.swift
-
-for test in scripts/test_*.mjs; do
-  [[ "$test" == scripts/test_no_autoplay.mjs ]] && continue
-  run node "$test"
-done
 
 for test in scripts/test_*.sh; do
   if [[ "$test" == scripts/test_rules_viewer_ui.sh || "$test" == scripts/test_apply_sheet_presentation.sh ]]; then

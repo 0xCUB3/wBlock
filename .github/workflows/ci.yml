@@ -17,9 +17,44 @@ env:
   DERIVED_DATA: ${{ github.workspace }}/.derived-data
 
 jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      native: ${{ steps.plan.outputs.native }}
+      build: ${{ steps.plan.outputs.build }}
+      rules_ui: ${{ steps.plan.outputs.rules_ui }}
+      sheet_ui: ${{ steps.plan.outputs.sheet_ui }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Select checks for the complete change
+        id: plan
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          FULL_CI: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          if [[ "$FULL_CI" == true || -z "$BASE_SHA" || "$BASE_SHA" =~ ^0+$ ]]; then
+            python3 scripts/ci_plan.py --full >> "$GITHUB_OUTPUT"
+          else
+            git fetch --no-tags --depth=1 origin "$BASE_SHA"
+            git diff --name-only --no-renames -z "$BASE_SHA" HEAD > "$RUNNER_TEMP/changed-paths"
+            python3 scripts/ci_plan.py "$RUNNER_TEMP/changed-paths" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check CI routing
+        run: python3 -m unittest discover -s scripts -p test_ci_plan.py
+
+      - name: Run JavaScript regressions
+        if: steps.plan.outputs.javascript == 'true'
+        run: bash scripts/run-ci-tests.sh --javascript
+
   tests:
+    needs: checks
+    if: needs.checks.outputs.native == 'true'
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -27,8 +62,6 @@ jobs:
       - name: Fetch main
         run: git fetch --no-tags --depth=1 origin main
 
-      # Package checkouts and the core framework's intermediates survive
-      # between runs, so the test-time xcodebuild is incremental.
       - name: Restore core build cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -37,22 +70,25 @@ jobs:
           restore-keys: |
             core-debug-${{ runner.os }}-
 
-      - name: Run regression tests
+      - name: Run native regressions
         env:
           WBLOCK_DERIVED_DATA: ${{ env.DERIVED_DATA }}
-        run: scripts/run-ci-tests.sh
+        run: scripts/run-ci-tests.sh --native
 
   rules-viewer-ui:
+    needs: checks
+    if: needs.checks.outputs.rules_ui == 'true' || needs.checks.outputs.sheet_ui == 'true'
     runs-on: macos-26
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install XcodeGen
+        if: needs.checks.outputs.rules_ui == 'true'
         run: command -v xcodegen >/dev/null || brew install xcodegen
 
-      - name: Select available iPhone and iPad simulators
+      - name: Select available iPad simulator
         id: simulator
         run: |
           xcrun simctl list devices available --json > "$RUNNER_TEMP/simulators.json"
@@ -65,36 +101,39 @@ jobs:
           versions = [(tuple(map(int, match.groups())), devices)
                       for runtime, devices in runtimes.items()
                       if (match := re.search(r"\.iOS-(\d+)-(\d+)", runtime))]
-          for family in ("iPhone", "iPad"):
-              matches = [device for version, devices in sorted(versions, key=lambda item: item[0], reverse=True)
-                         if version >= (26, 0) for device in devices
-                         if device.get("isAvailable") and device["name"].startswith(family)]
-              if not matches:
-                  raise SystemExit(f"No available iOS 26+ {family} simulator for UI tests")
-              print(family.lower() + "=" + matches[0]["udid"])
+          matches = [device for version, devices in sorted(versions, key=lambda item: item[0], reverse=True)
+                     if version >= (26, 0) for device in devices
+                     if device.get("isAvailable") and device["name"].startswith("iPad")]
+          if not matches:
+              raise SystemExit("No available iOS 26+ iPad simulator for UI tests")
+          print("udid=" + matches[0]["udid"])
           PY
 
-      - name: Run production rules-viewer gesture tests
+      - name: Run rules-viewer gestures
+        if: needs.checks.outputs.rules_ui == 'true'
         env:
-          SIMULATOR: ${{ steps.simulator.outputs.iphone }}
+          SIMULATOR: ${{ steps.simulator.outputs.udid }}
         run: bash scripts/test_rules_viewer_ui.sh "$SIMULATOR"
 
-      - name: Run fitted-sheet presentation regression
+      - name: Run fitted-sheet presentation
+        if: needs.checks.outputs.sheet_ui == 'true'
         env:
-          SIMULATOR: ${{ steps.simulator.outputs.ipad }}
+          SIMULATOR: ${{ steps.simulator.outputs.udid }}
         run: bash scripts/test_apply_sheet_presentation.sh "$SIMULATOR"
 
-      - name: Preserve gesture-test screenshots and diagnostics
-        if: always()
+      - name: Preserve gesture-test diagnostics on failure
+        if: failure() && needs.checks.outputs.rules_ui == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: rules-viewer-results
           path: ~/Library/Developer/Xcode/DerivedData/ScrollProbe-*/Logs/Test/*.xcresult
-          retention-days: 7
+          retention-days: 3
 
   build:
+    needs: checks
+    if: needs.checks.outputs.build == 'true'
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
