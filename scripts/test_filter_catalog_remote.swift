@@ -18,6 +18,8 @@ import wBlockCoreService
         check(overlay?.fallbacks(for: FilterList(name: "List", url: target, category: .ads)).isEmpty == true, "untrusted overlay fallback stripped")
         let input = [FilterList(name: "List", url: old, category: .ads)]
         check(overlay?.applyReplacements(to: input, defaultURLs: [target]).first?.url == target, "replacement applied")
+        let customOld = [FilterList(name: "Mine", url: old, category: .custom, isCustom: true)]
+        check(overlay?.applyReplacements(to: customOld, defaultURLs: [target]).first?.url == old, "custom list keeps its URL")
 
         let safari = URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/2_optimized.txt")!
         let track = URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_17_TrackParam/filter.txt")!

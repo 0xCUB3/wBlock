@@ -61,6 +61,19 @@ enum CloudSyncCustomFilterReconciler {
         )
     }
 
+    /// Built-in selection from a payload. Custom lists carry their own selection, so
+    /// legacy payloads that also listed them in selectedURLs must not select a
+    /// built-in list that shares a canonicalized URL (#871).
+    static func builtInSelection(
+        selectedURLs: [String],
+        knownURLs: [String]?,
+        customURLs: Set<String>,
+        canonicalize: (String) -> String
+    ) -> (selected: Set<String>, known: Set<String>) {
+        let selected = selectedURLs.filter { !customURLs.contains($0) }
+        return (Set(selected.map(canonicalize)), Set((knownURLs ?? selected).map(canonicalize)))
+    }
+
     private static func deletedURLsToMerge(
         remoteDeletedURLs: Set<String>,
         liveCustomURLs: Set<String>

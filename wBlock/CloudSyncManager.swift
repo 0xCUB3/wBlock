@@ -1022,9 +1022,11 @@ final class CloudSyncManager: ObservableObject {
         clearDeletedCustomListURLs(currentDeleted.subtracting(mergedDeleted))
         mergeDeletedCustomListURLs(mergedDeleted.subtracting(currentDeleted))
 
-        let desiredSelected = Set(filters.selectedURLs.map(FilterListLoader.canonicalFilterURLString))
-        let knownURLs = Set(
-            (filters.knownURLs ?? filters.selectedURLs).map(FilterListLoader.canonicalFilterURLString)
+        let (desiredSelected, knownURLs) = CloudSyncCustomFilterReconciler.builtInSelection(
+            selectedURLs: filters.selectedURLs,
+            knownURLs: filters.knownURLs,
+            customURLs: Set(filters.customLists.map(\.url)),
+            canonicalize: FilterListLoader.canonicalFilterURLString
         )
         let storage = CloudSyncFilterStorageAdapter(filterManager: filterManager, dataManager: dataManager)
         var filterLists = storage.filterLists
@@ -1788,7 +1790,7 @@ final class CloudSyncManager: ObservableObject {
             .sorted()
 
         let selectedURLs = filterLists
-            .filter { $0.isSelected }
+            .filter { $0.isSelected && !$0.isCustom }
             .map { FilterListLoader.canonicalFilterURLString($0.url.absoluteString) }
             .sorted()
 

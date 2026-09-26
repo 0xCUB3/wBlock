@@ -181,10 +181,10 @@ class FilterListLoader {
         filterURLMigrations[urlString]?.absoluteString ?? urlString
     }
 
-    /// Updates any known legacy filter URLs to their current endpoints.
+    /// Updates known legacy built-in filter URLs; custom lists keep the URL the user added.
     func migrateFilterURLs(in filters: [FilterList]) -> [FilterList] {
         filters.map { filter in
-            guard let newURL = Self.filterURLMigrations[filter.url.absoluteString] else {
+            guard !filter.isCustom, let newURL = Self.filterURLMigrations[filter.url.absoluteString] else {
                 return filter
             }
 

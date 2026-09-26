@@ -79,13 +79,14 @@ public struct FilterCatalogOverlay: Codable, Equatable, Sendable {
     }
 
     /// Applies only URL replacements whose target is already in the baked-in catalog.
+    /// Custom lists keep the URL the user added.
     public func applyReplacements(to filters: [FilterList], defaultURLs: Set<URL>) -> [FilterList] {
         var replacements: [URL: URL] = [:]
         for entry in lists where defaultURLs.contains(entry.url) {
             for old in entry.replaceFrom { replacements[old] = entry.url }
         }
         return filters.map { filter in
-            guard let target = replacements[filter.url] else { return filter }
+            guard !filter.isCustom, let target = replacements[filter.url] else { return filter }
             var copy = filter; copy.url = target; copy.etag = nil; copy.serverLastModified = nil
             return copy
         }

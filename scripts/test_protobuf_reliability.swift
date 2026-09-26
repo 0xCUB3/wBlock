@@ -19,6 +19,7 @@ struct ProtobufReliabilityTests {
         await testConditionalCloudDisabledHosts(root: root.appendingPathComponent("cloud-disabled-hosts"))
         await testSelectedSites(root: root.appendingPathComponent("selected-sites"))
         await testUserScriptMetadataOverrides(root: root.appendingPathComponent("metadata-overrides"))
+        await testLegacyBpcURLMigration(root: root.appendingPathComponent("bpc-url"))
         print("PASS")
     }
 
@@ -475,6 +476,25 @@ struct ProtobufReliabilityTests {
         let insertionResult = await insertionVerifier.getFilterLists()
         let ids = Set(insertionResult.map(\.id))
         expect(ids == [base.id, inserted.id], "stale collection replacement must preserve concurrent insertion")
+    }
+
+    private static func testLegacyBpcURLMigration(root: URL) async {
+        let suite = "test.wblock.bpc.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let gitflic = URL(string: "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=bpc-paywall-filter.txt")!
+        let custom = FilterList(name: "BPC", url: gitflic, category: .custom, isCustom: true, isSelected: true)
+        let builtIn = FilterList(name: "Bypass Paywalls Clean Filter", url: gitflic, category: .annoyances)
+        let seed = await makeManager(root: root, standard: defaults, group: defaults)
+        await seed.loadData()
+        _ = await seed.updateFilterLists([custom, builtIn])
+
+        let restarted = await makeManager(root: root, standard: defaults, group: defaults)
+        await restarted.loadData()
+        let lists = restarted.getFilterLists()
+        expect(lists.first { $0.id == custom.id }?.url == gitflic, "a user-added gitflic BPC list must keep its URL (#871)")
+        expect(lists.first { $0.id == builtIn.id }?.url.host == "pub-d303b9085c0b41b5aa749fc74609d4d9.r2.dev",
+               "the built-in gitflic BPC list must still migrate")
     }
 
     private static func makeManager(

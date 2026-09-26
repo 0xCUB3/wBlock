@@ -113,6 +113,17 @@ struct CloudSyncCustomFilterTests {
             "a tombstone still removes a custom filter that was already present at snapshot time"
         )
 
+        // #871: a selected custom URL that canonicalizes to a built-in must not select that built-in.
+        let gitflic = "https://gitflic.ru/bpc.txt", mirror = "https://r2.example/bpc.txt"
+        let selection = CloudSyncCustomFilterReconciler.builtInSelection(
+            selectedURLs: [gitflic, "https://example.com/base.txt"],
+            knownURLs: [mirror, "https://example.com/base.txt"],
+            customURLs: [gitflic],
+            canonicalize: { $0 == gitflic ? mirror : $0 }
+        )
+        expect(selection.selected == ["https://example.com/base.txt"], "custom selection must stay independent of built-ins")
+        expect(selection.known.contains(mirror), "an unselected built-in remains known so it is turned off")
+
         print("PASS")
     }
 }
