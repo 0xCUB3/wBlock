@@ -52,7 +52,7 @@ jobs:
       - name: Install XcodeGen
         run: command -v xcodegen >/dev/null || brew install xcodegen
 
-      - name: Select an available iPhone simulator
+      - name: Select available iPhone and iPad simulators
         id: simulator
         run: |
           xcrun simctl list devices available --json > "$RUNNER_TEMP/simulators.json"
@@ -65,18 +65,24 @@ jobs:
           versions = [(tuple(map(int, match.groups())), devices)
                       for runtime, devices in runtimes.items()
                       if (match := re.search(r"\.iOS-(\d+)-(\d+)", runtime))]
-          phones = [device for version, devices in sorted(versions, key=lambda item: item[0], reverse=True)
-                    if version >= (26, 0) for device in devices
-                    if device.get("isAvailable") and device["name"].startswith("iPhone")]
-          if not phones:
-              raise SystemExit("No available iOS 26+ iPhone simulator for the rules-viewer test host")
-          print("udid=" + phones[0]["udid"])
+          for family in ("iPhone", "iPad"):
+              matches = [device for version, devices in sorted(versions, key=lambda item: item[0], reverse=True)
+                         if version >= (26, 0) for device in devices
+                         if device.get("isAvailable") and device["name"].startswith(family)]
+              if not matches:
+                  raise SystemExit(f"No available iOS 26+ {family} simulator for UI tests")
+              print(family.lower() + "=" + matches[0]["udid"])
           PY
 
       - name: Run production rules-viewer gesture tests
         env:
-          SIMULATOR: ${{ steps.simulator.outputs.udid }}
+          SIMULATOR: ${{ steps.simulator.outputs.iphone }}
         run: bash scripts/test_rules_viewer_ui.sh "$SIMULATOR"
+
+      - name: Run fitted-sheet presentation regression
+        env:
+          SIMULATOR: ${{ steps.simulator.outputs.ipad }}
+        run: bash scripts/test_apply_sheet_presentation.sh "$SIMULATOR"
 
       - name: Preserve gesture-test screenshots and diagnostics
         if: always()

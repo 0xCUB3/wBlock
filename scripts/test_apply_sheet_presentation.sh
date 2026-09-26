@@ -1,9 +1,10 @@
 #!/bin/bash
 set -euo pipefail
-# Usage: bash scripts/test_apply_sheet_presentation.sh <booted iPad simulator UUID>
+# Usage: bash scripts/test_apply_sheet_presentation.sh <available iPad simulator UUID>
 # Requires an iOS 26+ SDK; run on iPadOS 17.x as well as a current runtime.
 root=$(cd "$(dirname "$0")/.." && pwd)
-device=${1:?Pass a booted iPad simulator UUID}
+device=${1:?Pass an available iPad simulator UUID}
+xcrun simctl bootstatus "$device" -b
 source=${SWIFTUI_COMPAT_SOURCE:-$root/wBlock/SwiftUICompatibility.swift}
 work=$(mktemp -d)
 bundle=dev.wblock.ApplySheetProbe

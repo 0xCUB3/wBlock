@@ -246,12 +246,12 @@ for test in scripts/test_*.mjs; do
 done
 
 for test in scripts/test_*.sh; do
-  if [[ "$test" == scripts/test_rules_viewer_ui.sh ]]; then
-    # This parameterized suite has its own simulator job in CI.
+  if [[ "$test" == scripts/test_rules_viewer_ui.sh || "$test" == scripts/test_apply_sheet_presentation.sh ]]; then
+    # These parameterized suites run in the simulator job in CI.
     if [[ -n "${WBLOCK_UI_TEST_SIMULATOR:-}" ]]; then
       run bash "$test" "$WBLOCK_UI_TEST_SIMULATOR"
     else
-      echo "[test] rules-viewer-ui runs separately; set WBLOCK_UI_TEST_SIMULATOR to include it locally"
+      echo "[test] $test runs separately; set WBLOCK_UI_TEST_SIMULATOR to include it locally"
     fi
   else
     run bash "$test"
