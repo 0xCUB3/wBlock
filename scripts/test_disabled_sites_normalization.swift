@@ -47,6 +47,13 @@ struct DisabledSitesNormalizationTests {
             ("1.2.3", nil),
             ("01.2.3.4", nil),
             ("-bad.example", nil),
+            ("*.Bandcamp.com", "bandcamp.com"),
+            ("https://*.bandcamp.com/", "bandcamp.com"),
+            ("*bandcamp.com", nil),
+            ("*", nil),
+            ("*.*.bandcamp.com", nil),
+            ("bandcamp.*", nil),
+            ("artist.*.bandcamp.com", nil),
         ]
         for (input, expected) in urlInputs {
             expectEqual(

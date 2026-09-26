@@ -19,6 +19,11 @@ public enum DisabledSitesNormalizer {
         if let portStart = candidate.firstIndex(of: ":") {
             candidate = String(candidate[..<portStart])
         }
+        // Every site entry already covers its subdomains, so "*.example.com"
+        // means the same as "example.com" (#870).
+        if candidate.hasPrefix("*.") {
+            candidate.removeFirst(2)
+        }
 
         let range = NSRange(candidate.startIndex..., in: candidate)
         guard isIPv4Address(candidate)
