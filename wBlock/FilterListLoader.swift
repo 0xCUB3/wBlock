@@ -309,7 +309,7 @@ class FilterListLoader {
                     "Blocks AI-generated suggestions and recommendations on search engines and websites."
             ),
             FilterList(
-                id: UUID(), name: "Mail Tracking Protection Filter",
+                id: UUID(), name: "AdGuard Mail Tracking Protection Filter",
                 url: URL(
                     string:
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/25_optimized.txt"
