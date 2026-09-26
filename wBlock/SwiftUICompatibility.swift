@@ -3,19 +3,6 @@ import SwiftUI
 import UIKit
 #endif
 
-#if os(iOS)
-struct ApplySheetGlassBackgroundModifier: ViewModifier {
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if #available(iOS 16.4, *) {
-            content.presentationBackground(.regularMaterial)
-        } else {
-            content
-        }
-    }
-}
-#endif
-
 /// On iOS 26 the tab-bar search field can close (the X in the field, or a tab
 /// switch) while the keyboard it raised stays on screen with nothing focused,
 /// the "ghost keyboard". Resign whatever is first responder when the search
@@ -251,12 +238,13 @@ extension View {
     ) -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {
             #if os(iOS)
+            // Keep the system background: an explicit material plus fitted detents
+            // and a nested sheet can make SwiftUI loop during presentation.
             applySheetDetentsCompat(
                 prefersLarge: prefersLarge,
                 contentHeight: contentHeight,
                 fitsHorizontally: fitsHorizontally
             )
-                .modifier(ApplySheetGlassBackgroundModifier())
             #else
             applySheetDetentsCompat(prefersLarge: prefersLarge)
             #endif
