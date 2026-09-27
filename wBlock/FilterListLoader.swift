@@ -71,6 +71,8 @@ class FilterListLoader {
     private static let retiredBuiltInURLFragments = [
         "d3ward/toolz",
         "platforms/extension/safari/filters/208_optimized.txt",  // Online Malicious URL Blocklist (#864)
+        "platforms/extension/safari/filters/122_optimized.txt",  // Fanboy's Annoyances Filter (#877)
+        "easylist.to/easylist/fanboy-social.txt",  // Fanboy's Social Blocking List (#877)
     ]
 
     static func isRetiredBuiltIn(_ filter: FilterList) -> Bool {
@@ -287,18 +289,6 @@ class FilterListLoader {
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/4_optimized.txt"
                 )!, category: FilterListCategory.annoyances,
                 description: "Blocks social media widgets and buttons."),
-            FilterList(
-                id: UUID(), name: "Fanboy's Annoyances Filter",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/122_optimized.txt"
-                )!, category: FilterListCategory.annoyances,
-                description: "Hides in-page pop-ups, banners, and other unwanted page elements."),
-            FilterList(
-                id: UUID(), name: "Fanboy's Social Blocking List",
-                url: URL(string: "https://easylist.to/easylist/fanboy-social.txt")!,
-                category: FilterListCategory.annoyances,
-                description: "Blocks social media content on webpages."),
             FilterList(
                 id: UUID(), name: "Stevo's AI Blocklist",
                 url: URL(
