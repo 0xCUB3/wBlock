@@ -111,7 +111,9 @@ import SwiftUI
             MacReorderableList(sections: sections, header: AnyView(Text("Statistics").padding(16)),
                               onMove: { commits.append($0); return true })
         }
-        let model = list(base + [fixed])
+        var concealed = section("concealed", [])
+        concealed.revealsOnlyWhileDragging = true
+        let model = list(base + [fixed, concealed])
         let host = NSHostingView(rootView: model)
         host.frame = NSRect(x: 0, y: 0, width: 540, height: 480)
         let window = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: false)
@@ -166,6 +168,14 @@ import SwiftUI
         defer { info.draggingPasteboard.releaseGlobally() }
         info.draggingSource = outline
         info.setID(ids[0])
+        let concealedParent = coordinator.outlineView(outline, child: 5, ofItem: nil)
+        func concealedHeight() -> CGFloat { outline.rect(ofRow: outline.row(forItem: concealedParent)).height }
+        precondition(concealedHeight() < 1, "An empty drag-only section must stay hidden outside a drag")
+        coordinator.beginDragging()
+        precondition(concealedHeight() > 20, "An empty drag-only section must appear as a drop target during a drag")
+        precondition(coordinator.outlineView(outline, validateDrop: info, proposedItem: concealedParent, proposedChildIndex: -1) == .move)
+        coordinator.endDragging()
+        precondition(concealedHeight() < 1, "An empty drag-only section must hide again after a drag")
         coordinator.beginDragging()
         for _ in 0..<100 {
             precondition(coordinator.outlineView(outline, validateDrop: info, proposedItem: parentB, proposedChildIndex: 0) == .move)
@@ -220,7 +230,7 @@ import SwiftUI
         // A deletion received during a drag invalidates its payload without reloading shadow rows.
         coordinator.beginDragging()
         let oldCount = outline.numberOfRows
-        let deleted = [section("a", Array(ids[1..<4])), base[1], base[2], fixed]
+        let deleted = [section("a", Array(ids[1..<4])), base[1], base[2], fixed, concealed]
         host.rootView = list(deleted)
         try await settle(host)
         precondition(outline.numberOfRows == oldCount)

@@ -62,6 +62,8 @@ struct MacListSection {
     let header: AnyView
     var rows: [MacListRow]
     var acceptsMoves = true
+    /// An empty section keeps its drop target but shows its header only while a row is dragged.
+    var revealsOnlyWhileDragging = false
 }
 
 /// Rows that cannot move never enter AppKit's drag machinery. Refusing only
@@ -385,6 +387,7 @@ struct MacReorderableList: NSViewRepresentable {
 
         func outlineView(_ outlineView: NSOutlineView, heightOfRowByItem item: Any) -> CGFloat {
             guard let node = item as? Node else { return 1 }
+            if isConcealed(node) { return Self.concealedHeight }
             if let height = heights[node.id] { return height }
             let height = measure(node, in: sizer, width: outlineView.bounds.width, keyed: false)
             heights[node.id] = height
@@ -467,6 +470,8 @@ struct MacReorderableList: NSViewRepresentable {
             let view = outlineView.makeView(withIdentifier: identifier, owner: nil) as? MacListHostingView
                 ?? MacListHostingView(rootView: AnyView(EmptyView()))
             view.identifier = identifier
+            view.isHidden = isConcealed(node)
+            if view.isHidden { return view }
             // Off-screen content may have changed since this row was measured.
             let height = measure(node, in: view, width: outlineView.bounds.width, keyed: true)
             if let cached = heights[node.id] {
@@ -484,6 +489,32 @@ struct MacReorderableList: NSViewRepresentable {
                 }
             }
             return view
+        }
+
+        /// AppKit rejects zero-height rows; this keeps a concealed header's drop target in place.
+        static let concealedHeight: CGFloat = 0.01
+
+        /// Concealing by height keeps row indexes stable, so revealing never disturbs a drag in progress.
+        private func isConcealed(_ node: Node) -> Bool {
+            !dragging && node.children.isEmpty && section(for: node)?.revealsOnlyWhileDragging == true
+        }
+
+        private func noteConcealableSections(animated: Bool) {
+            guard let outline else { return }
+            let rows = IndexSet(roots.filter { section(for: $0)?.revealsOnlyWhileDragging == true && $0.children.isEmpty }
+                .map { outline.row(forItem: $0) }.filter { $0 >= 0 })
+            guard !rows.isEmpty else { return }
+            for row in rows {
+                guard let node = outline.item(atRow: row) as? Node else { continue }
+                if let view = outline.view(atColumn: 0, row: row, makeIfNecessary: false) {
+                    view.isHidden = isConcealed(node)
+                    if !view.isHidden, let hostedView = view as? MacListHostingView { hostedView.setContent(hosted(node)) }
+                }
+            }
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = animated ? 0.15 : 0
+                outline.noteHeightOfRows(withIndexesChanged: rows)
+            }
         }
 
         private func sectionNode(_ id: String) -> Node? { roots.first { $0.id == .section(id) } }
@@ -514,10 +545,12 @@ struct MacReorderableList: NSViewRepresentable {
         func beginDragging() {
             dragging = true
             accepted = false
+            noteConcealableSections(animated: true)
         }
         func endDragging() {
             dragging = false
             accepted = false
+            noteConcealableSections(animated: false)
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
                 self.update(self.model, environment: self.environment)
