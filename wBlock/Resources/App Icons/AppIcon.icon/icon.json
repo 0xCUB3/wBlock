@@ -7,6 +7,14 @@
       "blur-material" : null,
       "layers" : [
         {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "automatic-gradient" : "srgb:0.58824,0.60784,1.00000,1.00000"
+              }
+            }
+          ],
           "image-name" : "2 - Layer 2.svg",
           "name" : "w"
         }
