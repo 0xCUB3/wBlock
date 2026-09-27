@@ -164,7 +164,8 @@ fileprivate func scheduleMessage(from status: SharedAutoUpdateManager.AutoUpdate
 #if os(macOS)
 extension AppDelegate: NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        return true
+        // A headless run hides its only window at launch; it quits itself when done.
+        !HeadlessLaunch.isHeadlessProcess
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
@@ -354,20 +355,9 @@ extension AppDelegate: NSApplicationDelegate {
 
 
     private func runMacOSBackgroundUpdate(trigger: String) async {
-        // Check if update is overdue
+        // Run in-process: helpers can only stage rules for the app to reload,
+        // so handing this off while the app is open never reaches Safari (#879).
         let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-
-        // If an XPC service exists in future builds, prefer it; else fallback in-process
-        #if os(macOS)
-        switch await FilterUpdateClient.shared.updateFilters() {
-        case .succeeded, .timedOut:
-            return
-        case .unavailable:
-            break
-        @unknown default:
-            break
-        }
-        #endif
 
         // Force update if overdue
         if status.isOverdue && !status.isRunning {

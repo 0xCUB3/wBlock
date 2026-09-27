@@ -850,7 +850,8 @@ struct ContentView: View {
                 return MacListSection(id: category.id, header: AnyView(categoryHeader(category)),
                                       rows: rows, acceptsMoves: false)
             }
-            guard FilterListCategory.moveTargets.contains(category) || !filters.isEmpty else { return nil }
+            // Empty categories stay reachable through "Move to" without an empty header.
+            guard !filters.isEmpty else { return nil }
             return MacListSection(id: category.id, header: AnyView(categoryHeader(category)),
                                   rows: filters.map { filter in MacListRow(filter.id) { filterRowView(for: filter) } },
                                   acceptsMoves: FilterListCategory.moveTargets.contains(category))

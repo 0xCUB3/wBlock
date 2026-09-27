@@ -694,6 +694,14 @@ public actor SharedAutoUpdateManager {
             appendSkipTelemetry(trigger: trigger, reason: "foreground_apply")
             return .skipped(reason: "foreground_apply")
         }
+        #if os(macOS)
+        // Helpers cannot reload Safari; while the app runs, its own schedule
+        // applies updates end to end (#879).
+        if isExternalHelperTrigger(trigger) && !force && HeadlessLaunch.isContainingAppRunning() {
+            appendSkipTelemetry(trigger: trigger, reason: "app_running")
+            return .skipped(reason: "app_running")
+        }
+        #endif
 
         if Self.isAppExtensionProcess {
             if !hasLoggedExtensionSafeModeNotice {
@@ -782,7 +790,9 @@ public actor SharedAutoUpdateManager {
         }
 
         let interval = await getAutoUpdateIntervalHours()
-        let forceFlag = await getAutoUpdateForceNext()
+        // forceNext asks the app to apply staged work; a helper cannot, so it
+        // must not re-stage the same lists on every launch (#879).
+        let forceFlag = await getAutoUpdateForceNext() && !isExternalHelperTrigger(trigger)
         let shouldForce = force || forceFlag
 
         if !shouldForce {
@@ -1130,19 +1140,18 @@ public actor SharedAutoUpdateManager {
             let nextCheckInSeconds: Int
             if helperStagedUpdates {
                 await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
-                nextCheckInSeconds = 0
             } else {
                 await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(successTime))
-                var nextEligibleTime = successTime + interval * 3600
-                if hadErrors {
-                    let retryDelaySeconds = min(3600.0, max(900.0, interval * 3600 * 0.25))
-                    nextEligibleTime = min(nextEligibleTime, successTime + retryDelaySeconds)
-                    nextCheckInSeconds = Int(retryDelaySeconds)
-                } else {
-                    nextCheckInSeconds = Int(interval * 3600)
-                }
-                await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
             }
+            var nextEligibleTime = successTime + interval * 3600
+            if hadErrors {
+                let retryDelaySeconds = min(3600.0, max(900.0, interval * 3600 * 0.25))
+                nextEligibleTime = min(nextEligibleTime, successTime + retryDelaySeconds)
+                nextCheckInSeconds = Int(retryDelaySeconds)
+            } else {
+                nextCheckInSeconds = Int(interval * 3600)
+            }
+            await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
             invalidateStatusCache()
 
             appendSharedLog(
