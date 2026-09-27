@@ -249,6 +249,7 @@ public enum FilterListContentValidator {
 
     private static func isFilterSyntaxLine(_ line: String) -> Bool {
         if line.hasPrefix("!") { return true } // ABP comment/directive
+        if FilterListContentProcessing.hostsEntryHosts(line) != nil { return true }
         if line.contains("##") || line.contains("#@#")
             || line.contains("#?#") || line.contains("#@?#")
             || line.contains("#$#") || line.contains("#@$#")

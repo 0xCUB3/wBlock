@@ -314,9 +314,7 @@ compile_and_run bounded-concurrency \
   wBlockCoreService/AsyncConcurrency.swift \
   scripts/test_bounded_concurrent_compact_map.swift
 
-compile_and_run filter-validation \
-  wBlockCoreService/FilterListValidation.swift \
-  scripts/test_filter_list_validation.swift
+compile_core_test filter-validation scripts/test_filter_list_validation.swift
 
 compile_and_run filter-remote-metadata-policy \
   wBlockCoreService/DisabledSitesNormalizer.swift \

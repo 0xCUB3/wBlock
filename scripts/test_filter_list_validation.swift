@@ -141,6 +141,23 @@ struct FilterListValidationTests {
         )
         expectValidContent(
             """
+            # Title: Hosts
+            127.0.0.1 localhost
+            0.0.0.0 ads.example.com # tracker
+            """,
+            "expected hosts-file lists to be accepted"
+        )
+        precondition(
+            FilterListContentProcessing.normalizedContent(from: "0.0.0.0 localhost\n127.0.0.1 a.example b.example")
+                == "||a.example^\n||b.example^",
+            "expected hosts entries to become domain rules"
+        )
+        precondition(
+            FilterListMetadataParser.parse(from: "# Note: prose\n# Title: Hosts").title == "Hosts",
+            "expected # Title headers to be read"
+        )
+        expectValidContent(
+            """
             [Adblock Plus]
             ! Title: Referral Allowlist
             @@||example.com^

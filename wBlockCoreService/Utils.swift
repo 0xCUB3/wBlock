@@ -11,18 +11,18 @@ import CryptoKit
 import os.log
 
 public enum FilterListMetadataParser {
-    private static let titleRegex = try! NSRegularExpression(
-        pattern: "^!\\s*Title\\s*:?\\s*(.*)$",
-        options: [.caseInsensitive]
-    )
-    private static let descriptionRegex = try! NSRegularExpression(
-        pattern: "^!\\s*Description\\s*:?\\s*(.*)$",
-        options: [.caseInsensitive]
-    )
-    private static let versionRegex = try! NSRegularExpression(
-        pattern: "^!\\s*(?:version|last modified|updated)\\s*:?\\s*(.*)$",
-        options: [.caseInsensitive]
-    )
+    private static let titleRegex = headerRegex("Title")
+    private static let descriptionRegex = headerRegex("Description")
+    private static let versionRegex = headerRegex("(?:version|last modified|updated)")
+
+    /// Adblock headers start with "!". Hosts-style lists use "#", where prose
+    /// comments are common, so those need the colon to count as a field.
+    private static func headerRegex(_ key: String) -> NSRegularExpression {
+        try! NSRegularExpression(
+            pattern: "^(?:!\\s*\(key)\\s*:?|#\\s*\(key)\\s*:)\\s*(.*)$",
+            options: [.caseInsensitive]
+        )
+    }
 
     public static func parse(
         from content: String,
@@ -173,21 +173,49 @@ public enum FilterListContentProcessing {
         return (title: title, description: description, version: version)
     }
 
-    public static func stripUnknownDirectives(
+    /// Drops unsupported `!#` directives and rewrites hosts-file entries
+    /// (`0.0.0.0 ads.example`) as `||ads.example^` rules.
+    public static func normalizedContent(
         from content: String,
         onStrip: ((String) -> Void)? = nil
     ) -> String {
         var result: [String] = []
         for line in content.split(omittingEmptySubsequences: false, whereSeparator: { $0.isNewline }) {
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            let originalLine = String(line)
-            guard FilterDirectivePolicy.shouldStripUnsupportedDirective(trimmed) else {
-                result.append(originalLine)
-                continue
+            if let hosts = hostsEntryHosts(trimmed) {
+                result += hosts.map { "||\($0)^" }
+            } else if FilterDirectivePolicy.shouldStripUnsupportedDirective(trimmed) {
+                onStrip?(String(trimmed.prefix(60)))
+            } else {
+                result.append(String(line))
             }
-            onStrip?(String(trimmed.prefix(60)))
         }
         return result.joined(separator: "\n")
+    }
+
+    private static let hostsAddress = try! NSRegularExpression(
+        pattern: "^(?:\\d{1,3}(?:\\.\\d{1,3}){3}|[0-9A-Fa-f]*:[0-9A-Fa-f]*:[0-9A-Fa-f:.]*(?:%\\w+)?)$"
+    )
+    private static let hostsHostname = try! NSRegularExpression(
+        pattern: "^(?:[A-Za-z0-9_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?\\.)+[A-Za-z][A-Za-z0-9-]*$"
+    )
+    private static let loopbackHostnames: Set<String> = ["localhost.localdomain", "ip6-localhost", "ip6-loopback"]
+
+    /// The hostnames of a hosts-file line, or nil when the line is not one.
+    /// Loopback names such as `localhost` map to an empty list.
+    public static func hostsEntryHosts(_ trimmedLine: String) -> [String]? {
+        let entry = trimmedLine.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)[0]
+        let fields = entry.split(whereSeparator: \.isWhitespace).map(String.init)
+        guard fields.count >= 2, matches(hostsAddress, fields[0]) else { return nil }
+        let names = fields.dropFirst()
+        guard names.allSatisfy({ !$0.contains("/") && !$0.contains("$") }) else { return nil }
+        return names
+            .map { $0.lowercased() }
+            .filter { matches(hostsHostname, $0) && !loopbackHostnames.contains($0) }
+    }
+
+    private static func matches(_ regex: NSRegularExpression, _ value: String) -> Bool {
+        regex.firstMatch(in: value, range: NSRange(value.startIndex..., in: value)) != nil
     }
 
     public static func localDataForComparison(filter: FilterList, containerURL: URL) -> Data? {

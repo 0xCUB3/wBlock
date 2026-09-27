@@ -80,7 +80,9 @@ extension AppFilterManager {
     ) {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedDescription = description?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedContent = FilterListContentProcessing.normalizedContent(
+            from: content.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
 
         guard !trimmedName.isEmpty else {
             statusDescription = LocalizedStrings.text("Title is required.", comment: "User list validation error")
@@ -421,7 +423,9 @@ extension AppFilterManager {
         }
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedContent = FilterListContentProcessing.normalizedContent(
+            from: content.trimmingCharacters(in: .whitespacesAndNewlines)
+        )
 
         guard !trimmedName.isEmpty else {
             statusDescription = LocalizedStrings.text("Title is required.", comment: "User list validation error")

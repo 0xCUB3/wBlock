@@ -32,7 +32,7 @@ nonisolated struct ContentInfoMetadata: Sendable {
         var fields: [String: String] = [:]
         for line in source.split(whereSeparator: \.isNewline) {
             let clean = line.trimmingCharacters(in: .whitespaces)
-            guard clean.hasPrefix("!") else { continue }
+            guard clean.hasPrefix("!") || clean.hasPrefix("#") else { continue }
             let parts = clean.dropFirst().split(separator: ":", maxSplits: 1)
             if parts.count == 2 {
                 fields[parts[0].trimmingCharacters(in: .whitespaces).lowercased()] = parts[1].trimmingCharacters(in: .whitespaces)

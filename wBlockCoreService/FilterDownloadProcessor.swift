@@ -32,7 +32,7 @@ public enum FilterDownloadProcessor {
         }
 
         var strippedDirectives: [String] = []
-        let processedContent = FilterListContentProcessing.stripUnknownDirectives(from: rawContent) {
+        let processedContent = FilterListContentProcessing.normalizedContent(from: rawContent) {
             strippedDirectives.append($0)
         }
         let rawCount = FilterList.countRules(in: processedContent)

@@ -250,11 +250,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     public static func countRules(in content: String) -> Int {
         var count = 0
         content.enumerateLines { line, _ in
-            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.isEmpty { return }
-            if trimmed.hasPrefix("!") { return }
-            if trimmed.hasPrefix("[") { return }
-            count += 1
+            if FilterRuleAnalysis.isRuleLine(line.trimmingCharacters(in: .whitespacesAndNewlines)) { count += 1 }
         }
         return count
     }
