@@ -1104,9 +1104,9 @@ private struct ApplyChangesToolbarLabel: View {
     let symbolName: String
 
     var body: some View {
-        // toolbarVerticalEdge ships with the iOS 27 SDK; older toolchains
-        // (CI's Xcode 26) compile the horizontal label only.
-        #if compiler(>=6.4)
+        // toolbarVerticalEdge ships with SwiftUI 8.1 (the iOS 27.1 SDK); older
+        // SDKs compile the horizontal label only.
+        #if canImport(SwiftUI, _version: 8.1)
         if #available(iOS 27.1, *) {
             VerticalBarAwareApplyLabel(hasPendingChanges: hasPendingChanges, symbolName: symbolName)
         } else {
@@ -1126,7 +1126,7 @@ private struct ApplyChangesToolbarLabel: View {
         }
     }
 
-    #if compiler(>=6.4)
+    #if canImport(SwiftUI, _version: 8.1)
     @available(iOS 27.1, *)
     private struct VerticalBarAwareApplyLabel: View {
         let hasPendingChanges: Bool
