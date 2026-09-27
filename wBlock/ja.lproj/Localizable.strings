@@ -1142,3 +1142,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Restart…" = "再起動…";
 "Next update: %@" = "次回のアップデート: %@";
 "Next update" = "次回のアップデート";
+"Enable Experimental Filter?" = "試験運用フィルタを有効にしますか？";
+"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "試験運用フィルタは、メインのリストに入る前の新しいルールを試すもので、Webサイトが正しく表示されなくなることがあります。不具合を見つけて報告できる場合にのみ有効にしてください。";

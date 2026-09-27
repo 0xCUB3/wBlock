@@ -1173,3 +1173,5 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Restart…" = "Neustart…";
 "Next update: %@" = "Nächstes Update: %@";
 "Next update" = "Nächstes Update";
+"Enable Experimental Filter?" = "Experimentellen Filter aktivieren?";
+"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Experimentelle Filter testen neue Regeln, bevor sie in die Hauptlisten aufgenommen werden, und können Websites beschädigen. Aktiviere sie nur, wenn du Fehler selbst finden und melden möchtest.";

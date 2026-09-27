@@ -1182,3 +1182,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Restart…" = "Restart…";
 "Next update: %@" = "Next update: %@";
 "Next update" = "Next update";
+"Enable Experimental Filter?" = "Enable Experimental Filter?";
+"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage.";

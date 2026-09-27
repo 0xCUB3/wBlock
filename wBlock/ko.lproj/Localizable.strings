@@ -1173,3 +1173,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Restart…" = "재시동…";
 "Next update: %@" = "다음 업데이트: %@";
 "Next update" = "다음 업데이트";
+"Enable Experimental Filter?" = "실험적 필터를 켜시겠습니까?";
+"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "실험적 필터는 새 규칙을 주요 목록에 넣기 전에 시험하는 필터로, 웹사이트가 깨질 수 있습니다. 문제를 찾아 신고하는 데 익숙한 경우에만 켜세요.";

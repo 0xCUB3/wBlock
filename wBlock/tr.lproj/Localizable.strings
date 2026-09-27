@@ -1182,3 +1182,5 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Restart…" = "Yeniden başlat…";
 "Next update: %@" = "Sonraki güncelleme: %@";
 "Next update" = "Sonraki güncelleme";
+"Enable Experimental Filter?" = "Deneysel filtre etkinleştirilsin mi?";
+"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Deneysel filtreler, yeni kuralları ana listelere girmeden önce dener ve web sitelerini bozabilir. Yalnızca sorunları bulup bildirmeye hazırsan etkinleştir.";

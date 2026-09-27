@@ -1173,3 +1173,5 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Restart…" = "Újraindítás…";
 "Next update: %@" = "Következő frissítés: %@";
 "Next update" = "Következő frissítés";
+"Enable Experimental Filter?" = "Engedélyezed a kísérleti szűrőt?";
+"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "A kísérleti szűrők új szabályokat tesztelnek, mielőtt azok a fő listákba kerülnének, és elronthatnak weboldalakat. Csak akkor engedélyezd őket, ha szívesen keresed és jelented a hibákat.";

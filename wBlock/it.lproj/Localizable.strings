@@ -1173,3 +1173,5 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Restart…" = "Riavvia…";
 "Next update: %@" = "Prossimo aggiornamento: %@";
 "Next update" = "Prossimo aggiornamento";
+"Enable Experimental Filter?" = "Attivare il filtro sperimentale?";
+"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "I filtri sperimentali testano nuove regole prima che arrivino negli elenchi principali e possono danneggiare i siti web. Attivali solo se ti senti a tuo agio nel trovare e segnalare i problemi.";

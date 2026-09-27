@@ -1173,3 +1173,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Restart…" = "重新启动…";
 "Next update: %@" = "下次更新：%@";
 "Next update" = "下次更新";
+"Enable Experimental Filter?" = "启用实验性过滤器？";
+"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "实验性过滤器会在新规则进入主列表之前对其进行测试，可能会导致网站出现问题。仅在你愿意发现并反馈问题时启用。";

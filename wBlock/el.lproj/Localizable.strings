@@ -1173,3 +1173,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Restart…" = "Επανεκκίνηση…";
 "Next update: %@" = "Επόμενη ενημέρωση: %@";
 "Next update" = "Επόμενη ενημέρωση";
+"Enable Experimental Filter?" = "Ενεργοποίηση πειραματικού φίλτρου;";
+"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Τα πειραματικά φίλτρα δοκιμάζουν νέους κανόνες πριν φτάσουν στις κύριες λίστες και μπορεί να χαλάσουν ιστότοπους. Ενεργοποιήστε τα μόνο αν σας βολεύει να εντοπίζετε και να αναφέρετε προβλήματα.";

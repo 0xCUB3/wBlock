@@ -1173,3 +1173,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Restart…" = "إعادة التشغيل…";
 "Next update: %@" = "التحديث التالي: %@";
 "Next update" = "التحديث التالي";
+"Enable Experimental Filter?" = "تفعيل الفلتر التجريبي؟";
+"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "تختبر الفلاتر التجريبية قواعد جديدة قبل وصولها إلى القوائم الرئيسية وقد تتسبب في تعطل المواقع. فعّلها فقط إذا كنت مرتاحًا لاكتشاف الأعطال والإبلاغ عنها.";

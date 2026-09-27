@@ -1173,3 +1173,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Restart…" = "Перезапустить…";
 "Next update: %@" = "Следующее обновление: %@";
 "Next update" = "Следующее обновление";
+"Enable Experimental Filter?" = "Включить экспериментальный фильтр?";
+"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Экспериментальные фильтры проверяют новые правила до их попадания в основные списки и могут ломать сайты. Включайте их, только если готовы находить поломки и сообщать о них.";

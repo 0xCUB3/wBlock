@@ -1173,3 +1173,5 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Restart…" = "Repornește…";
 "Next update: %@" = "Următoarea actualizare: %@";
 "Next update" = "Următoarea actualizare";
+"Enable Experimental Filter?" = "Activezi filtrul experimental?";
+"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Filtrele experimentale testează reguli noi înainte să ajungă în listele principale și pot strica site-uri web. Activează-le doar dacă ești dispus să găsești și să raportezi problemele.";
