@@ -193,14 +193,7 @@ compile_core_test zapper-native-rules scripts/test_zapper_native_rule_generator.
 compile_direct_test issue-508-protobuf-roundtrip \
   -I "$CORE_PRODUCTS" "$CORE_PRODUCTS/SwiftProtobuf.o" \
   wBlockCoreService/DataModels.pb.swift scripts/test_issue_508_protobuf_roundtrip.swift
-compile_direct_test issue-742-provenance-migration \
-  -I "$CORE_PRODUCTS" "$CORE_PRODUCTS/SwiftProtobuf.o" \
-  wBlockCoreService/DataModels.pb.swift \
-  wBlockCoreService/DisabledSitesNormalizer.swift \
-  wBlockCoreService/FilterListCategory.swift \
-  wBlockCoreService/FilterListSiteExclusion.swift \
-  wBlockCoreService/FilterList.swift \
-  scripts/test_issue_742_provenance_migration.swift
+compile_core_test issue-742-provenance-migration scripts/test_issue_742_provenance_migration.swift
 compile_direct_test userscript-persistence-race \
   -I "$CORE_PRODUCTS" "$CORE_PRODUCTS/SwiftProtobuf.o" \
   wBlockCoreService/DataModels.pb.swift \
@@ -316,20 +309,7 @@ compile_and_run bounded-concurrency \
 
 compile_core_test filter-validation scripts/test_filter_list_validation.swift
 
-compile_and_run filter-remote-metadata-policy \
-  wBlockCoreService/DisabledSitesNormalizer.swift \
-  wBlockCoreService/FilterListCategory.swift \
-  wBlockCoreService/FilterListSiteExclusion.swift \
-  wBlockCoreService/FilterList.swift \
-  scripts/test_filter_list_remote_metadata_policy.swift
-
-compile_and_run remote-filter-metadata \
-  wBlockCoreService/DisabledSitesNormalizer.swift \
-  wBlockCoreService/FilterListCategory.swift \
-  wBlockCoreService/FilterListSiteExclusion.swift \
-  wBlockCoreService/FilterList.swift \
-  wBlockCoreService/Utils.swift \
-  wBlockCoreService/RemoteFilterListMetadataLoader.swift \
-  scripts/test_remote_filter_list_metadata_loader.swift
+compile_core_test filter-remote-metadata-policy scripts/test_filter_list_remote_metadata_policy.swift
+compile_core_test remote-filter-metadata scripts/test_remote_filter_list_metadata_loader.swift
 
 echo "All CI tests passed"

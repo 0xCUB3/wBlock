@@ -1,5 +1,6 @@
 import Foundation
 internal import SwiftProtobuf
+@testable import wBlockCoreService
 
 @main
 struct Issue742ProvenanceMigrationTests {
