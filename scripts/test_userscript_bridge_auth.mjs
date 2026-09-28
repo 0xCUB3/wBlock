@@ -1003,5 +1003,13 @@ vm.runInContext(`__fire({type:'wblock-gm-storage-delete',key:'wblock.tubeCleaner
 await tick();
 check('legacy page storage delete has no native route', !tubeSandbox.__sentMessages.some(m => m.action === 'deleteUserScriptStorageValue'));
 
+// Sandboxed scripts feature-detect unsafeWindow to pick their page bridge (KISS Translator).
+for (const [grants, expected] of [[['GM.setValue', 'GM_getValue'], 'undefined'], [['GM.setValue', 'unsafeWindow'], 'object']]) {
+  const probe = buildContentScriptSandbox(null, [{ ...fakeScript, id: `uw-${expected}`, injectInto: 'content', grant: grants,
+    content: 'window.__uwType = typeof unsafeWindow; window.__uwOnGM = GM.unsafeWindow !== undefined;' }]);
+  vm.createContext(probe); vm.runInContext(source, probe); await tick(); await tick();
+  check(`content-context unsafeWindow follows its grant: ${grants.join(',')}`, probe.__uwType === expected && probe.__uwOnGM === (expected === 'object') && !('unsafeWindow' in probe));
+}
+
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);

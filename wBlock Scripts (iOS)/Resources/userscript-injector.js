@@ -1451,10 +1451,15 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
             // In content context, unsafeWindow is just the content script's window (no page JS access)
             // In page context, we try to access the real page window
+            // As in Tampermonkey, a sandboxed script sees unsafeWindow only when it grants it.
+            // Scripts such as KISS Translator feature-detect it and otherwise bridge to the
+            // page themselves; an isolated-window stand-in silently breaks that bridge.
+            const grants = (script.grant || []).map(grant => String(grant).toLowerCase());
+            const definesUnsafeWindow = !isContentContext || grants.includes('unsafewindow')
+                || grants.every(grant => grant === 'none');
             const unsafeWindowCode = isContentContext
-                ? `// Content context: unsafeWindow is the content script's window (no page JS access)
-    const unsafeWindow = window;
-    wBlockLog('[wBlock] Running in content context - unsafeWindow has no access to page JavaScript');`
+                ? (definesUnsafeWindow ? `// Content context: unsafeWindow is the content script's window (no page JS access)
+    const unsafeWindow = window;` : '')
                 : `// Get reference to the actual page window (not the isolated extension context)
     // This is the real unsafeWindow that can access page variables
     const unsafeWindow = (function() {
@@ -2501,8 +2506,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             return GM.xmlhttpRequest(details);
         },
 
-        // Provide access to the real page window object
-        unsafeWindow: unsafeWindow
+        ${definesUnsafeWindow ? 'unsafeWindow: unsafeWindow' : ''}
     };
 
     const __wBlockLegacyGM = {
@@ -2616,7 +2620,6 @@ if (window.wBlockUserscriptInjectorHasRun) {
     // Expose GM globals where the page can read them. Content-context scripts keep
     // these in the isolated world; AdGuard Popup Blocker's options page polls for
     // page-visible GM_* functions to decide whether the userscript is installed.
-    window.unsafeWindow = unsafeWindow;
     window.GM_info = GM_info;
     window.GM = GM;
 
