@@ -315,6 +315,13 @@ class FilterListLoader {
                     "Blocks public websites from reaching local network addresses and router admin pages. Can break some local apps.",
                 trustLevel: "high"),
             FilterList(
+                id: UUID(), name: "Dandelion Sprout's Anti-Malware List",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/259_optimized.txt"
+                )!, category: FilterListCategory.security,
+                description: "Blocks malware and scam domains, malicious redirects, and unwanted software prompts."),
+            FilterList(
                 id: UUID(), name: "Peter Lowe's Blocklist",
                 url: URL(
                     string:

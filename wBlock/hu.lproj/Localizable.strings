@@ -605,6 +605,8 @@
 "Pausing blocking..." = "Blokkolás szüneteltetése…";
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
+"Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
+"Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "Letiltja a kártevő- és csalódomaineket, a rosszindulatú átirányításokat és a nem kívánt szoftverek felugró kéréseit.";
 "Pick your base blocking level." = "Válaszd ki az alap blokkolási szintet.";
 "Polish Annoyances Filters" = "Polish Annoyances Filters";
 "Polish Anti Adblock Filters" = "Polish Anti Adblock Filters";
