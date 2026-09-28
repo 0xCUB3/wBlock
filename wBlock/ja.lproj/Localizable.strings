@@ -636,7 +636,6 @@
 "Received %@, %@ %@" = "%@ に受信、%@ %@";
 "Received %@, waiting for completion" = "%@ に受信、完了待ち";
 "Recommended" = "推奨";
-"Recommended Regional Filters" = "推奨地域フィルタ";
 "Recorded" = "記録済み";
 "Refresh" = "更新";
 "Regional" = "地域向け";

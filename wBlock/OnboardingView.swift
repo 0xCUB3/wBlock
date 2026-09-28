@@ -37,7 +37,8 @@ struct OnboardingView: View {
     @State private var step: OnboardingStep = .welcome
     @State private var selectedLanguages: Set<String>
     @State private var selectedRegionalFilters: Set<UUID> = []
-    @State private var recommendedRegionalFilters: [FilterList] = []
+    @State private var regionalFilters: [FilterList] = []
+    @State private var recommendedRegionalFilterIDs: Set<UUID> = []
     @State private var hasManuallyEditedRegionalSelection = false
     @State private var wantsCloudSync: Bool = false
     @State private var hasProbedRemoteConfig: Bool = false
@@ -90,7 +91,7 @@ struct OnboardingView: View {
         }
 
         _selectedRegionalFilters = State(initialValue: [])
-        _recommendedRegionalFilters = State(initialValue: [])
+        _regionalFilters = State(initialValue: [])
         _wantsCloudSync = State(initialValue: defaults.bool(forKey: Self.cloudSyncEnabledDefaultsKey))
     }
     private let sharedDefaults: UserDefaults
@@ -499,7 +500,7 @@ struct OnboardingView: View {
 
     private var languagesWithoutRegionalFilters: [RegionalLanguageOption] {
         let matchedCodes = Set(
-            recommendedRegionalFilters
+            regionalFilters
                 .flatMap { filter in filter.languages.map { $0.lowercased() } }
         )
         return languagePickerOptions.filter {
@@ -526,11 +527,11 @@ struct OnboardingView: View {
 
             languagePicker
 
-            if !recommendedRegionalFilters.isEmpty || !languagesWithoutRegionalFilters.isEmpty {
+            if !regionalFilters.isEmpty || !languagesWithoutRegionalFilters.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Recommended Regional Filters")
+                    Text(LocalizedStrings.text("Regional", comment: "Filter list category"))
                         .font(.headline)
-                    ForEach(ForeignFilterOrganizer.groups(for: recommendedRegionalFilters, preferredLanguages: selectedLanguages)) { group in
+                    ForEach(ForeignFilterOrganizer.groups(for: regionalFilters, preferredLanguages: selectedLanguages)) { group in
                         regionalFilterGroup(group, expandsCommunity: false)
                     }
                     ForEach(languagesWithoutRegionalFilters) { lang in
@@ -617,8 +618,11 @@ struct OnboardingView: View {
     private func regionalToggle(for filter: FilterList) -> some View {
         let isSelected = selectedRegionalFilters.contains(filter.id)
 
+        let name = Text(filter.localizedDisplayName)
         return SelectableRow(
-            title: Text(filter.localizedDisplayName),
+            title: recommendedRegionalFilterIDs.contains(filter.id)
+                ? Text(Image(systemName: "checkmark.circle")).foregroundColor(.accentColor) + Text(" ") + name
+                : name,
             subtitle: filter.localizedDisplayDescription,
             isSelected: isSelected,
             style: .card
@@ -1033,7 +1037,7 @@ struct OnboardingView: View {
     private func updateRegionalRecommendations(for languages: Set<String>) {
         guard !filterManager.filterLists.isEmpty else { return }
         guard !languages.isEmpty else {
-            recommendedRegionalFilters = []
+            regionalFilters = []
             if !hasManuallyEditedRegionalSelection {
                 selectedRegionalFilters.removeAll()
             }
@@ -1052,7 +1056,7 @@ struct OnboardingView: View {
         }
 
         guard !matchingFilters.isEmpty else {
-            recommendedRegionalFilters = []
+            regionalFilters = []
             if !hasManuallyEditedRegionalSelection {
                 selectedRegionalFilters.removeAll()
             }
@@ -1066,10 +1070,12 @@ struct OnboardingView: View {
             }
             return hydrated
         }
+        // Show every matching list; only the recommended ones are marked and preselected.
         let buckets = ForeignFilterOrganizer.recommendationBuckets(from: hydratedMatches)
         let primary = buckets.recommended
 
-        recommendedRegionalFilters = primary
+        regionalFilters = primary + buckets.optional
+        recommendedRegionalFilterIDs = Set(primary.map(\.id))
 
         let matchingIDs = Set(matchingFilters.map { $0.id })
         if hasManuallyEditedRegionalSelection {
