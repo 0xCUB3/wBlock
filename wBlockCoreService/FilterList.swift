@@ -50,7 +50,9 @@ public enum FilterListRemoteMetadataPolicy {
             updatedFilter.name = title
         }
         updatedFilter.version = version ?? "Unknown"
-        if !filter.hasUserProvidedDescription, let description = sanitized(description) {
+        // Built-in descriptions come from the localized catalog on every launch;
+        // taking the file header here made them flip between the two texts.
+        if filter.isCustom, !filter.hasUserProvidedDescription, let description = sanitized(description) {
             updatedFilter.description = description
         }
         return updatedFilter

@@ -42,6 +42,12 @@ struct FilterListRemoteMetadataPolicyTests {
         expectEqual(preserved.description, "My Description", "manual description should survive remote metadata")
         expectEqual(preserved.version, "Unknown", "missing remote version should remain the existing updater behavior")
 
+        let builtIn = FilterList(name: "Built-in", url: url, category: .ads, description: "Catalog Description")
+        let builtInHydrated = FilterListRemoteMetadataPolicy.applying(
+            title: "Remote Title", description: "Remote Description", version: "1", to: builtIn
+        )
+        expectEqual(builtInHydrated.description, "Catalog Description", "built-in lists keep the localized catalog description")
+
         let encoded = try JSONEncoder().encode(manual)
         let decoded = try JSONDecoder().decode(FilterList.self, from: encoded)
         expect(decoded.hasUserProvidedName, "Codable should persist manual name flag")
