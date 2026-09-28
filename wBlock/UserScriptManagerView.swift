@@ -1769,7 +1769,13 @@ private struct TubeCleanerFeaturesPicker: View {
             Toggle("Resume Where You Left Off", isOn: $features.resumePosition)
             Toggle("Quality and Audio Toolbar", isOn: $features.toolbar)
             Divider()
-            Button("Enable All") { features = TubeCleanerDeArrowPreference.Features() }
+            Toggle("Hide Shorts", isOn: $features.hideShorts)
+            Divider()
+            Button("Enable All") {
+                let hideShorts = features.hideShorts
+                features = TubeCleanerDeArrowPreference.Features()
+                features.hideShorts = hideShorts
+            }
                 .disabled(features.allEnabled)
         } label: {
             HStack(spacing: 6) {

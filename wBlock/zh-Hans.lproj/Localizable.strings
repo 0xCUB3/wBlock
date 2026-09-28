@@ -1081,6 +1081,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "SponsorBlock" = "SponsorBlock";
 "Resume Where You Left Off" = "从上次位置继续";
 "Quality and Audio Toolbar" = "画质与音频工具栏";
+"Hide Shorts" = "隐藏 Shorts";
 "Enable All" = "全部启用";
 
 

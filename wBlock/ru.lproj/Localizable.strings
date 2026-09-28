@@ -1081,6 +1081,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "SponsorBlock" = "SponsorBlock";
 "Resume Where You Left Off" = "Продолжить с места остановки";
 "Quality and Audio Toolbar" = "Панель качества и звука";
+"Hide Shorts" = "Скрыть Shorts";
 "Enable All" = "Включить все";
 
 

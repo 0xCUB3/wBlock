@@ -18,9 +18,9 @@ public enum TubeCleanerDeArrowPreference {
         public init() {}
     }
 
-    /// Per-feature switches for Tube Cleaner (issue #671). All on by default so
-    /// the script behaves as before until someone turns something off. Native
-    /// controls and ad handling are not switchable.
+    /// Per-feature switches for Tube Cleaner (issue #671). The original features
+    /// default to on so the script behaves as before; hiding Shorts (#884) is
+    /// opt-in. Native controls and ad handling are not switchable.
     public struct Features: Codable, Equatable, Sendable {
         public var chapters = true
         public var captions = true
@@ -29,10 +29,31 @@ public enum TubeCleanerDeArrowPreference {
         public var sponsorBlock = true
         public var resumePosition = true
         public var toolbar = true
+        public var hideShorts = false
 
         public init() {}
 
-        public var allEnabled: Bool { self == Features() }
+        public init(from decoder: Decoder) throws {
+            let defaults = Features()
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            func value(_ key: CodingKeys, _ fallback: Bool) throws -> Bool {
+                try container.decodeIfPresent(Bool.self, forKey: key) ?? fallback
+            }
+            chapters = try value(.chapters, defaults.chapters)
+            captions = try value(.captions, defaults.captions)
+            pictureInPicture = try value(.pictureInPicture, defaults.pictureInPicture)
+            backgroundPlayback = try value(.backgroundPlayback, defaults.backgroundPlayback)
+            sponsorBlock = try value(.sponsorBlock, defaults.sponsorBlock)
+            resumePosition = try value(.resumePosition, defaults.resumePosition)
+            toolbar = try value(.toolbar, defaults.toolbar)
+            hideShorts = try value(.hideShorts, defaults.hideShorts)
+        }
+
+        public var allEnabled: Bool {
+            var features = self
+            features.hideShorts = false
+            return features == Features()
+        }
         public var disabledCount: Int {
             [chapters, captions, pictureInPicture, backgroundPlayback, sponsorBlock, resumePosition, toolbar]
                 .filter { !$0 }.count

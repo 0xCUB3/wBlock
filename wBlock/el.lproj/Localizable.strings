@@ -1081,6 +1081,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "SponsorBlock" = "SponsorBlock";
 "Resume Where You Left Off" = "Συνέχεια από εκεί που σταμάτησες";
 "Quality and Audio Toolbar" = "Γραμμή ποιότητας και ήχου";
+"Hide Shorts" = "Απόκρυψη Shorts";
 "Enable All" = "Ενεργοποίηση όλων";
 
 

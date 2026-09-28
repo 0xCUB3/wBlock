@@ -39,7 +39,7 @@ struct TubeCleanerDeArrowPreferenceTests {
         )
         expect(configured.hasSuffix("window.__probe = true;"), "script content was not preserved")
         expect(
-            configured.contains("\nconst __wblockTubeCleanerFeatures = {\"backgroundPlayback\":true,\"captions\":true,\"chapters\":true,\"pictureInPicture\":true,\"resumePosition\":true,\"sponsorBlock\":true,\"toolbar\":true};\n"),
+            configured.contains("\nconst __wblockTubeCleanerFeatures = {\"backgroundPlayback\":true,\"captions\":true,\"chapters\":true,\"hideShorts\":false,\"pictureInPicture\":true,\"resumePosition\":true,\"sponsorBlock\":true,\"toolbar\":true};\n"),
             "default features constant must be prepended (#671): \(configured.prefix(400))"
         )
         var features = TubeCleanerDeArrowPreference.Features()
@@ -50,6 +50,14 @@ struct TubeCleanerDeArrowPreferenceTests {
         expect(features.disabledCount == 2 && !features.allEnabled, "disabled count reflects switched-off features")
         let withFeatures = TubeCleanerDeArrowPreference.configuredExecutableContent("x", settings: settings, features: features)
         expect(withFeatures.contains("\"backgroundPlayback\":false") && withFeatures.contains("\"sponsorBlock\":false"), "disabled features reach the script")
+        // Features saved before hideShorts existed must keep the user's switches (#884).
+        defaults.set(Data(#"{"chapters":false,"captions":true,"pictureInPicture":true,"backgroundPlayback":true,"sponsorBlock":true,"resumePosition":true,"toolbar":true}"#.utf8), forKey: TubeCleanerDeArrowPreference.featuresStorageKey)
+        let legacy = TubeCleanerDeArrowPreference.features(groupIdentifier: suite)
+        expect(!legacy.chapters && !legacy.hideShorts, "older saved features must decode without resetting")
+        var shortsHidden = TubeCleanerDeArrowPreference.Features()
+        shortsHidden.hideShorts = true
+        expect(shortsHidden.allEnabled && shortsHidden.disabledCount == 0, "hiding Shorts is not a disabled feature")
+        expect(TubeCleanerDeArrowPreference.configuredExecutableContent("x", settings: settings, features: shortsHidden).contains("\"hideShorts\":true"), "Shorts preference reaches the script")
         print("PASS: Tube Cleaner DeArrow preference")
     }
 

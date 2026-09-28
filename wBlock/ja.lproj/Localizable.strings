@@ -1075,6 +1075,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "SponsorBlock" = "SponsorBlock";
 "Resume Where You Left Off" = "前回の位置から再開";
 "Quality and Audio Toolbar" = "画質と音声のツールバー";
+"Hide Shorts" = "ショートを非表示";
 "Enable All" = "すべて有効にする";
 "Supported" = "対応";
 "Unsupported" = "非対応";
