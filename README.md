@@ -22,7 +22,7 @@ A free, open-source ad blocker for Safari on Mac, iPhone, iPad, and Apple Vision
 <br>
 
 [![Version](https://img.shields.io/github/v/release/0xCUB3/wBlock?style=flat&label=version&color=gray)](https://github.com/0xCUB3/wBlock/releases/latest)
-![Platforms](https://img.shields.io/badge/macOS_12.3+_|_iOS_15.4+_|_visionOS_2+-gray?style=flat&logo=apple&logoColor=white)
+![Platforms](https://img.shields.io/badge/macOS_12.3+_|_iOS_15.4+_|_visionOS_1.0+-gray?style=flat&logo=apple&logoColor=white)
 ![License](https://img.shields.io/badge/GPL--3.0-gray?style=flat&label=license)
 [![Discord](https://img.shields.io/badge/Discord-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.gg/Y3yTFPpbXr)
 [![Mentioned in Open-Source iOS Apps](https://awesome.re/mentioned-badge.svg)](https://github.com/dkhamsing/open-source-ios-apps)
