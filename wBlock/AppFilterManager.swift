@@ -743,10 +743,8 @@ class AppFilterManager: ObservableObject {
             if storedFailedUpgradeSignature() == currentSignature {
                 autoApplyTask?.cancel()
                 autoApplyTask = nil
-            } else if !HeadlessLaunch.isHeadlessProcess {
-                // An upgrade rebuild needs no confirmation; apply it now instead of
-                // leaving Apply pending until the 60s debounce or a manual tap.
-                applyOrCheckForUpdates()
+            } else {
+                launchRebuildPending = true
             }
         } else {
             markCurrentStateApplied()
@@ -968,6 +966,23 @@ class AppFilterManager: ObservableObject {
         missingScriptCount: Int
     ) -> Bool {
         hasUnappliedChanges || missingFilterCount > 0 || missingScriptCount > 0
+    }
+
+    /// Set by setup() when an app update requires a rebuild. Only the foreground app
+    /// launch consumes it, so managers created for intents or extensions never start one.
+    private var launchRebuildPending = false
+
+    /// The rebuild after an app update needs no confirmation; apply it at launch instead
+    /// of leaving Apply pending until the 60s debounce or a manual tap.
+    func applyRequiredRebuildOnLaunch() async {
+        await waitUntilReady()
+        guard launchRebuildPending else { return }
+        launchRebuildPending = false
+        await UserScriptManager.shared.waitUntilReady()
+        if filterUpdater.userScriptManager == nil {
+            setUserScriptManager(UserScriptManager.shared)
+        }
+        await performFilterUpdate()
     }
 
     func applyOrCheckForUpdates() {

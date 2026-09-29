@@ -53,6 +53,7 @@ struct wBlockApp: App {
                 hasCompletedLaunchSetup = true
                 CloudSyncManager.shared.activateAfterLaunchSetup()
             }
+            await filterManager.applyRequiredRebuildOnLaunch()
         }
     }
 
