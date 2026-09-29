@@ -237,12 +237,13 @@ extension AppFilterManager {
         }
     }
 
-    /// Drops downloaded state only after a remote filter is deselected and applied.
+    /// Drops downloaded state only after a remote filter or userscript is disabled and applied.
     /// The definition metadata remains so re-enabling can fetch the same source again.
     @discardableResult
     func clearDownloadedStateForDeselectedRemoteFilters(
         previouslyAppliedFilterIDs: Set<UUID>? = nil
     ) async -> Bool {
+        await (filterUpdater.userScriptManager ?? UserScriptManager.shared).removeDisabledRemoteScriptDownloads()
         let appliedIDs = previouslyAppliedFilterIDs ?? appliedSelectedFilterIDs
         let filtersToClear = filterLists.filter { filter in
             guard appliedIDs.contains(filter.id), !filter.isSelected,
@@ -294,6 +295,7 @@ extension AppFilterManager {
         }
 
         await saveFilterLists()
+        publishDownloadedFilter()
         return true
     }
 
