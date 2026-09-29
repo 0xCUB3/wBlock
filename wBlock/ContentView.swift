@@ -56,7 +56,7 @@ struct ContentView: View {
               localeIdentifier: locale.identifier)
     }
     @State private var pendingEssentialFilter: FilterList?
-    @State private var pendingExperimentalEnable: (() -> Void)?
+    @State private var pendingRiskyEnable: RiskyFilterEnable?
     /// Monotonic tokens handed to the Userscripts tab so a ⌘⇧N or ⌘L that
     /// arrives before that tab has been built is still honored on appear.
     @State private var addUserScriptRequest = 0
@@ -285,7 +285,7 @@ struct ContentView: View {
         } message: {
             Text("This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage.")
         }
-        .experimentalFilterAlert($pendingExperimentalEnable)
+        .riskyFilterAlert($pendingRiskyEnable)
         .onChangeCompat(of: dataManager.isForeignFiltersExpanded) { _, newValue in
             guard isForeignFiltersExpanded != newValue else { return }
             isForeignFiltersExpanded = newValue
@@ -715,11 +715,11 @@ struct ContentView: View {
         downloadedFilterIDs = Set(filterManager.filterLists.lazy.filter { loader.filterFileExists($0) }.map(\.id))
     }
 
-    /// Built-in experimental lists can break sites, so enabling one asks first (#878).
+    /// Built-in experimental lists and HaGeZi Pro Mini can break sites, so enabling one asks first (#878, #886).
     /// The alert is attached to the info sheet too, because an open sheet blocks alerts from the view underneath.
     private func confirmingExperimental(_ filter: FilterList, _ enable: @escaping () -> Void) {
-        if filter.category == .experimental && !filter.isCustom {
-            pendingExperimentalEnable = enable
+        if let warning = RiskyFilterEnable(filter: filter, enable: enable) {
+            pendingRiskyEnable = warning
         } else {
             enable()
         }
@@ -817,7 +817,7 @@ struct ContentView: View {
             isDownloading: downloadingFilterIDs.contains(filter.id),
             onDownload: { confirmingExperimental(filter) { downloadFilter(filter) } }
         )
-        .experimentalFilterAlert($pendingExperimentalEnable)
+        .riskyFilterAlert($pendingRiskyEnable)
         .infoSheetPresentationCompat()
     }
 
@@ -2869,19 +2869,39 @@ struct RuleCapacityPopoverView: View {
     }
 }
 
+private struct RiskyFilterEnable {
+    let title: LocalizedStringKey
+    let message: LocalizedStringKey
+    let enable: () -> Void
+
+    init?(filter: FilterList, enable: @escaping () -> Void) {
+        guard !filter.isCustom else { return nil }
+        self.enable = enable
+        if filter.category == .experimental {
+            title = "Enable Experimental Filter?"
+            message = "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage."
+        } else if filter.name == "HaGeZi Pro Mini" {
+            title = "Enable HaGeZi Pro Mini?"
+            message = "HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites."
+        } else {
+            return nil
+        }
+    }
+}
+
 private extension View {
-    func experimentalFilterAlert(_ pending: Binding<(() -> Void)?>) -> some View {
-        alert("Enable Experimental Filter?", isPresented: Binding(
+    func riskyFilterAlert(_ pending: Binding<RiskyFilterEnable?>) -> some View {
+        alert(pending.wrappedValue?.title ?? "", isPresented: Binding(
             get: { pending.wrappedValue != nil },
             set: { if !$0 { pending.wrappedValue = nil } }
         )) {
             Button("Cancel", role: .cancel) { pending.wrappedValue = nil }
             Button("Enable") {
-                pending.wrappedValue?()
+                pending.wrappedValue?.enable()
                 pending.wrappedValue = nil
             }
         } message: {
-            Text("Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage.")
+            if let message = pending.wrappedValue?.message { Text(message) }
         }
     }
 }

@@ -1179,3 +1179,5 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Next update" = "Következő frissítés";
 "Enable Experimental Filter?" = "Engedélyezed a kísérleti szűrőt?";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "A kísérleti szűrők új szabályokat tesztelnek, mielőtt azok a fő listákba kerülnének, és elronthatnak weboldalakat. Csak akkor engedélyezd őket, ha szívesen keresed és jelented a hibákat.";
+"Enable HaGeZi Pro Mini?" = "Bekapcsolod a HaGeZi Pro Mini listát?";
+"HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "A HaGeZi Pro Mini DNS-tiltólista, nem kifejezetten reklámblokkolókhoz tervezett szűrőlista. Kevésbé lehet stabil, mint a többi lista, és több téves találatot okozhat, amelyek elrontják a weboldalakat.";

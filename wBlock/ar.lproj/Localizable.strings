@@ -1179,3 +1179,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Next update" = "التحديث التالي";
 "Enable Experimental Filter?" = "تفعيل الفلتر التجريبي؟";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "تختبر الفلاتر التجريبية قواعد جديدة قبل وصولها إلى القوائم الرئيسية وقد تتسبب في تعطل المواقع. فعّلها فقط إذا كنت مرتاحًا لاكتشاف الأعطال والإبلاغ عنها.";
+"Enable HaGeZi Pro Mini?" = "تفعيل HaGeZi Pro Mini؟";
+"HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Pro Mini قائمة حظر موجهة لـ DNS وليست قائمة فلاتر مصممة خصيصًا لمانعات الإعلانات. قد تكون أقل استقرارًا من القوائم الأخرى وقد تسبب مزيدًا من الحظر الخاطئ الذي يعطل المواقع.";

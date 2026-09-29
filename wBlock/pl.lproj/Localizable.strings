@@ -1179,3 +1179,5 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Next update" = "Następna aktualizacja";
 "Enable Experimental Filter?" = "Włączyć filtr eksperymentalny?";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Filtry eksperymentalne testują nowe reguły, zanim trafią do głównych list, i mogą psuć strony internetowe. Włącz je tylko, jeśli chcesz wyszukiwać i zgłaszać błędy.";
+"Enable HaGeZi Pro Mini?" = "Włączyć HaGeZi Pro Mini?";
+"HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Pro Mini to lista blokowania DNS, a nie lista filtrów zaprojektowana specjalnie dla blokerów reklam. Może być mniej stabilna niż pozostałe listy i powodować więcej fałszywych trafień, które psują strony internetowe.";
