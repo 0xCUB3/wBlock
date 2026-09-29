@@ -919,7 +919,7 @@ class AppFilterManager: ObservableObject {
     }
 
     @discardableResult
-    func performFilterUpdate(showProgress: Bool = true) async -> Bool {
+    func performFilterUpdate(showProgress: Bool = true, skipPreApplyUpdates: Bool = false) async -> Bool {
         refreshMissingItems()
 
         let started = await performExclusiveApply {
@@ -933,7 +933,7 @@ class AppFilterManager: ObservableObject {
 
             await self.applyChanges(
                 prepareState: false,
-                skipPreApplyUpdates: false
+                skipPreApplyUpdates: skipPreApplyUpdates
             )
         }
 
@@ -982,7 +982,9 @@ class AppFilterManager: ObservableObject {
         if filterUpdater.userScriptManager == nil {
             setUserScriptManager(UserScriptManager.shared)
         }
-        await performFilterUpdate()
+        // Rebuild only: fetch what is missing, but leave optional update checks to the
+        // user's update settings.
+        await performFilterUpdate(skipPreApplyUpdates: true)
     }
 
     func applyOrCheckForUpdates() {
