@@ -33,6 +33,8 @@
 "%@." = "%@.";
 "%@: %@" = "%@: %@";
 "%d entries" = "%d 항목";
+"%d list off" = "목록 %d개 꺼짐";
+"%d lists off" = "목록 %d개 꺼짐";
 "%d rule" = "규칙 %d개";
 "%d rules" = "규칙 %d개";
 "%d script off" = "스크립트 %d개 꺼짐";

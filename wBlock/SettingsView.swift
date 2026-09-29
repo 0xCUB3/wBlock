@@ -287,7 +287,7 @@ struct SettingsView: View {
             Toggle("Autoplay", isOn: autoplayBinding)
 
             NavigationLink {
-                SiteSettingsView()
+                SiteSettingsView(filterManager: filterManager)
                     .swipeBackNavigationCompat()
             } label: {
                 SettingsRowLabel("Site Settings", systemImage: "globe", accessory: .push)

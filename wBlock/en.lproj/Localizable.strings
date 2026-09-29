@@ -33,6 +33,8 @@
 "%@." = "%@.";
 "%@: %@" = "%@: %@";
 "%d entries" = "%d entries";
+"%d list off" = "%d list off";
+"%d lists off" = "%d lists off";
 "%d rule" = "%d rule";
 "%d rules" = "%d rules";
 "%d script off" = "%d script off";
