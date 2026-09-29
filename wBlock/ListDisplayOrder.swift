@@ -16,6 +16,15 @@ enum ListDisplayOrder {
         order.isEmpty ? nil : sorted(items, order: order).compactMap(key)
     }
 
+    /// The order to store after a synced payload, or nil to keep the local one (no remote opinion,
+    /// or the user reordered since `baseline`).
+    static func applying<Item: Identifiable>(
+        _ keys: [String]?, to items: [Item], current: Data, baseline: Data, key: (Item) -> String?
+    ) -> Data? where Item.ID == UUID {
+        guard let keys, current == baseline else { return nil }
+        return merging(keys, into: sorted(items, order: current), key: key)
+    }
+
     /// Follows a synced key order for the items both devices have; the rest keep their slots.
     static func merging<Item: Identifiable>(_ keys: [String], into items: [Item], key: (Item) -> String?) -> Data
     where Item.ID == UUID {

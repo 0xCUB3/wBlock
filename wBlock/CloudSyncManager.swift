@@ -115,6 +115,8 @@ final class CloudSyncManager: ObservableObject {
         let userScripts: UInt64
         let userScriptDisabledHosts: [String: [String]]
         let userScriptAllowedHosts: [String: [String]]
+        let filterOrder: Data
+        let scriptOrder: Data
     }
 
     private func localMutationRevisionSnapshot() -> LocalMutationRevisionSnapshot {
@@ -122,7 +124,9 @@ final class CloudSyncManager: ObservableObject {
             filterSelection: filterManager?.selectionMutationRevision ?? 0,
             userScripts: userScriptManager.localMutationRevision,
             userScriptDisabledHosts: dataManager.getUserScriptDisabledHosts(),
-            userScriptAllowedHosts: dataManager.getUserScriptAllowedHosts()
+            userScriptAllowedHosts: dataManager.getUserScriptAllowedHosts(),
+            filterOrder: ListDisplayOrder.saved(ListDisplayOrder.filtersKey),
+            scriptOrder: ListDisplayOrder.saved(ListDisplayOrder.scriptsKey)
         )
     }
 
@@ -876,7 +880,7 @@ final class CloudSyncManager: ObservableObject {
             allowedHostsBaseline: localMutationBaseline.userScriptAllowedHosts,
             localMutationRevisionAtStart: userScriptMutationRevisionAtStart
         )
-        applyRemoteDisplayOrders(payload, current: currentContent, baseline: localPayloadBaseline)
+        applyRemoteDisplayOrders(payload, baseline: localMutationBaseline)
 
         if let filterManager,
            filterManager.selectionMutationRevision != filterSelectionRevisionAtStart
@@ -1153,18 +1157,21 @@ final class CloudSyncManager: ObservableObject {
     }
 
     /// Display order is local unless the remote has one and this device has not reordered since the baseline.
-    private func applyRemoteDisplayOrders(_ payload: SyncPayload, current: SyncPayload.Content, baseline: SyncPayload) {
-        if let keys = payload.filters.order, current.filters.order == baseline.filters.order {
-            let local = ListDisplayOrder.sorted(
-                currentFilterLists().filter { $0.category != .foreign }, order: ListDisplayOrder.saved(ListDisplayOrder.filtersKey))
-            UserDefaults.standard.set(
-                ListDisplayOrder.merging(keys, into: local, key: Self.filterOrderKey), forKey: ListDisplayOrder.filtersKey)
+    /// Compares against the blobs from sync start at write time, so a reorder made during the awaits survives.
+    private func applyRemoteDisplayOrders(_ payload: SyncPayload, baseline: LocalMutationRevisionSnapshot) {
+        if let order = ListDisplayOrder.applying(
+            payload.filters.order, to: currentFilterLists().filter { $0.category != .foreign },
+            current: ListDisplayOrder.saved(ListDisplayOrder.filtersKey), baseline: baseline.filterOrder,
+            key: Self.filterOrderKey)
+        {
+            UserDefaults.standard.set(order, forKey: ListDisplayOrder.filtersKey)
         }
-        if let keys = payload.userScripts.order, current.userScripts.order == baseline.userScripts.order {
-            let local = ListDisplayOrder.sorted(orderableUserScripts, order: ListDisplayOrder.saved(ListDisplayOrder.scriptsKey))
-            UserDefaults.standard.set(
-                ListDisplayOrder.merging(keys, into: local, key: CloudSyncUserScriptEnabledStatePolicy.key(for:)),
-                forKey: ListDisplayOrder.scriptsKey)
+        if let order = ListDisplayOrder.applying(
+            payload.userScripts.order, to: orderableUserScripts,
+            current: ListDisplayOrder.saved(ListDisplayOrder.scriptsKey), baseline: baseline.scriptOrder,
+            key: CloudSyncUserScriptEnabledStatePolicy.key(for:))
+        {
+            UserDefaults.standard.set(order, forKey: ListDisplayOrder.scriptsKey)
         }
     }
 
