@@ -133,12 +133,10 @@ final class CloudSyncManager: ObservableObject {
     private func stableLocalPayloadAndMutationBaseline() async -> (
         payload: SyncPayload, baseline: LocalMutationRevisionSnapshot
     ) {
-        while true {
-            let baseline = localMutationRevisionSnapshot()
-            let payload = await buildPayloadRefreshingSnapshot()
-            guard localMutationRevisionSnapshot() == baseline else { continue }
-            return (payload, baseline)
-        }
+        let stable = await StableSnapshot.build(
+            state: { self.localMutationRevisionSnapshot() },
+            value: { await self.buildPayloadRefreshingSnapshot() })
+        return (stable.value, stable.state)
     }
 
     private var uploadCoordinator = CloudSyncUploadCoordinator()
@@ -896,12 +894,11 @@ final class CloudSyncManager: ObservableObject {
             await filterManager.applyChanges(allowUserInteraction: true)
         }
 
-        let localMutationDuringApply =
-            (filterManager?.selectionMutationRevision ?? filterSelectionRevisionAtStart)
-                != filterSelectionRevisionAtStart
-            || userScriptManager.localMutationRevision != userScriptMutationRevisionAtStart
-
-        let finalLocalPayload = await buildPayloadRefreshingSnapshot()
+        // Finalize from a payload that no mutation slipped past: drags made during its awaits are
+        // suppressed by isApplyingRemoteChanges, so only the rebuilt payload's hash can reveal them.
+        let (finalLocalPayload, finalMutations) = await stableLocalPayloadAndMutationBaseline()
+        let localMutationDuringApply = finalMutations.filterSelection != filterSelectionRevisionAtStart
+            || finalMutations.userScripts != userScriptMutationRevisionAtStart
         let localPayloadDiffersFromRemote = finalLocalPayload.contentHash != payload.contentHash
 
         // Only a fully converged apply can advance the known-synced script baseline.

@@ -7,7 +7,7 @@ private struct Item: Identifiable {
 
 @main
 struct ListDisplayOrderSyncTests {
-    static func main() {
+    @MainActor static func main() async {
         let key: (Item) -> String? = \.key
         let deviceB = ["a", "b", "c", "d", "e"].map { Item(key: $0) }
         let none = Data()
@@ -34,5 +34,18 @@ struct ListDisplayOrderSyncTests {
         precondition(resetOnB == ListDisplayOrder.cleared, "the other device must adopt the reset")
         precondition(ListDisplayOrder.exportedKeys(deviceB, order: resetOnB!, key: key) == sentReset, "devices converge")
         precondition(ListDisplayOrder.sorted(deviceB, order: resetOnB!).compactMap(key) == ["a", "b", "c", "d", "e"])
+
+        // A drag made after the order was read, while final payload construction awaits, is rebuilt in
+        // and so differs from the remote payload, which schedules the follow-up upload.
+        var order = ["a", "b"]
+        var dragged = false
+        let final = await StableSnapshot.build(state: { order }) {
+            let captured = order
+            await Task.yield()
+            if !dragged { dragged = true; order = ["b", "a"] }
+            return captured
+        }
+        precondition(final.value == ["b", "a"], "the final payload must include the mid-build reorder")
+        precondition(final.value != ["a", "b"], "the reorder must differ from the remote payload")
     }
 }
