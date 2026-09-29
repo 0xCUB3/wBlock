@@ -385,6 +385,7 @@ struct ContentView: View {
                                 Label("Search", systemImage: "magnifyingglass")
                             }
                         }
+                        PauseBlockingMenu(filterManager: filterManager)
                         Button {
                             showingAddFilterSheet = true
                         } label: {
@@ -526,6 +527,9 @@ struct ContentView: View {
                             applyChangesToolbarButton
                         }
                         .toolbarVisibilityPriorityCompat(.high)
+                        ToolbarItem(placement: .topBarTrailing) {
+                            PauseBlockingMenu(filterManager: filterManager)
+                        }
                     }
                 #endif
         }
