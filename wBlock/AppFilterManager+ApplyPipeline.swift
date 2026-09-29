@@ -250,7 +250,7 @@ extension AppFilterManager {
         }
 
         isApplyInFlight = true
-        await SharedAutoUpdateManager.shared.beginForegroundApply()
+        await SharedAutoUpdateManager.shared.setForegroundApplyInProgress(true)
         #if os(macOS)
         // Keep FilterUpdateAgent from rebuilding the same targets mid-apply.
         // Await without blocking the main actor; refuse the apply if ownership

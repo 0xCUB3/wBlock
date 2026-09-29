@@ -743,8 +743,6 @@ class AppFilterManager: ObservableObject {
             if storedFailedUpgradeSignature() == currentSignature {
                 autoApplyTask?.cancel()
                 autoApplyTask = nil
-            } else {
-                launchRebuildPending = true
             }
         } else {
             markCurrentStateApplied()
@@ -919,7 +917,7 @@ class AppFilterManager: ObservableObject {
     }
 
     @discardableResult
-    func performFilterUpdate(showProgress: Bool = true, skipPreApplyUpdates: Bool = false) async -> Bool {
+    func performFilterUpdate(showProgress: Bool = true) async -> Bool {
         refreshMissingItems()
 
         let started = await performExclusiveApply {
@@ -933,7 +931,7 @@ class AppFilterManager: ObservableObject {
 
             await self.applyChanges(
                 prepareState: false,
-                skipPreApplyUpdates: skipPreApplyUpdates
+                skipPreApplyUpdates: false
             )
         }
 
@@ -966,25 +964,6 @@ class AppFilterManager: ObservableObject {
         missingScriptCount: Int
     ) -> Bool {
         hasUnappliedChanges || missingFilterCount > 0 || missingScriptCount > 0
-    }
-
-    /// Set by setup() when an app update requires a rebuild. Only the foreground app
-    /// launch consumes it, so managers created for intents or extensions never start one.
-    private var launchRebuildPending = false
-
-    /// The rebuild after an app update needs no confirmation; apply it at launch instead
-    /// of leaving Apply pending until the 60s debounce or a manual tap.
-    func applyRequiredRebuildOnLaunch() async {
-        await waitUntilReady()
-        guard launchRebuildPending else { return }
-        launchRebuildPending = false
-        await UserScriptManager.shared.waitUntilReady()
-        if filterUpdater.userScriptManager == nil {
-            setUserScriptManager(UserScriptManager.shared)
-        }
-        // Rebuild only: fetch what is missing, but leave optional update checks to the
-        // user's update settings.
-        await performFilterUpdate(skipPreApplyUpdates: true)
     }
 
     func applyOrCheckForUpdates() {
