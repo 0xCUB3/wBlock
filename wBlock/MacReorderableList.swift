@@ -389,6 +389,7 @@ struct MacReorderableList: NSViewRepresentable {
                 guard let node = outline.item(atRow: row) as? Node else { continue }
                 heights[node.id] = nil
                 guard let view = outline.view(atColumn: 0, row: row, makeIfNecessary: false) as? MacListHostingView else { continue }
+                view.isHidden = isConcealed(node)
                 view.setContent(hosted(node))
             }
             return indexes

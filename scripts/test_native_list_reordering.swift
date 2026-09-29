@@ -176,6 +176,15 @@ import SwiftUI
         precondition(coordinator.outlineView(outline, validateDrop: info, proposedItem: concealedParent, proposedChildIndex: -1) == .move)
         coordinator.endDragging()
         precondition(concealedHeight() < 1, "An empty drag-only section must hide again after a drag")
+        // The header view built during the drag is retained, hidden, once the section is empty again.
+        outline.scrollRowToVisible(outline.row(forItem: concealedParent))
+        let retained = outline.view(atColumn: 0, row: outline.row(forItem: concealedParent), makeIfNecessary: true)
+        precondition(retained?.isHidden == true, "The empty drag-only header must stay retained and hidden")
+        host.rootView = list(base + [fixed, section("concealed", [UUID()])])
+        try await settle(host)
+        precondition(retained?.isHidden == false, "A retained header must reappear when its drag-only section gains a row")
+        host.rootView = model
+        try await settle(host)
         coordinator.beginDragging()
         for _ in 0..<100 {
             precondition(coordinator.outlineView(outline, validateDrop: info, proposedItem: parentB, proposedChildIndex: 0) == .move)
