@@ -161,7 +161,8 @@ struct MacListMove: Equatable {
 /// AppKit owns the drag session, row images, insertion gap, disclosure, and scrolling.
 /// SwiftUI supplies cell content and commits a move only after an accepted drop.
 struct MacReorderableList: NSViewRepresentable {
-    private static let nativeListBottomInset: CGFloat = 16
+    /// Bottom clearance shared by every macOS tab's scroll surface.
+    static let nativeListBottomInset: CGFloat = 16
 
     var sections: [MacListSection]
     let header: AnyView
