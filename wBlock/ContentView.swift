@@ -1066,7 +1066,7 @@ struct FilterRowView: View {
     }
 
     private var ruleCountSummary: String? {
-        if filter.isCustom && !filter.isInlineUserList && filter.sourceRuleCount == nil {
+        if filter.isCustom && !filter.isInlineUserList && filter.isSelected && filter.sourceRuleCount == nil {
             return NSLocalizedString("Not Downloaded", comment: "Filter has no local content")
         }
         if let rawCount = filter.rawSourceRuleCount,
