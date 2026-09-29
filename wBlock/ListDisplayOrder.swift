@@ -4,16 +4,19 @@ enum ListDisplayOrder {
     static let filtersKey = "filterDisplayOrder"
     static let scriptsKey = "userScriptDisplayOrder"
 
+    /// An explicit reset to the default order. Unlike an absent blob ("never reordered"), it syncs.
+    static let cleared = Data("[]".utf8)
+
     static func reset() {
-        for key in [filtersKey, scriptsKey] { UserDefaults.standard.removeObject(forKey: key) }
+        for key in [filtersKey, scriptsKey] { UserDefaults.standard.set(cleared, forKey: key) }
     }
 
     static func saved(_ key: String) -> Data { UserDefaults.standard.data(forKey: key) ?? Data() }
 
-    /// Device-independent keys in display order; nil while the user has never reordered.
+    /// Device-independent keys in display order; nil while the user has never reordered, empty after a reset.
     static func exportedKeys<Item: Identifiable>(_ items: [Item], order: Data, key: (Item) -> String?) -> [String]?
     where Item.ID == UUID {
-        order.isEmpty ? nil : sorted(items, order: order).compactMap(key)
+        order.isEmpty ? nil : order == cleared ? [] : sorted(items, order: order).compactMap(key)
     }
 
     /// The order to store after a synced payload, or nil to keep the local one (no remote opinion,
@@ -22,7 +25,7 @@ enum ListDisplayOrder {
         _ keys: [String]?, to items: [Item], current: Data, baseline: Data, key: (Item) -> String?
     ) -> Data? where Item.ID == UUID {
         guard let keys, current == baseline else { return nil }
-        return merging(keys, into: sorted(items, order: current), key: key)
+        return keys.isEmpty ? cleared : merging(keys, into: sorted(items, order: current), key: key)
     }
 
     /// Follows a synced key order for the items both devices have; the rest keep their slots.
