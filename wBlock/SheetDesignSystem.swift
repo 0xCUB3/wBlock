@@ -65,7 +65,9 @@ extension View {
     /// iPhone info sheets scroll their content directly under the grabber. The
     /// close button sits in the heading row the callers draw, on every platform,
     /// so there is no empty navigation bar above the title (#793). The title
-    /// wraps beside the X instead of squeezing it (cameren, Discord).
+    /// wraps beside the X instead of squeezing it (cameren, Discord). macOS
+    /// popovers follow the content height up to a cap, then scroll, so content
+    /// that grows while open (adding regional languages) stays reachable.
     @ViewBuilder
     func infoSheetChromeCompat(onDismiss: @escaping () -> Void) -> some View {
         #if os(iOS)
@@ -73,7 +75,7 @@ extension View {
             self.frame(maxWidth: .infinity, alignment: .leading)
         }
         #else
-        self
+        InfoContentScrollView { self }.frame(width: 420)
         #endif
     }
 }
