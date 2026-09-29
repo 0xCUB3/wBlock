@@ -314,18 +314,24 @@ struct MacReorderableList: NSViewRepresentable {
                 // visible cell, and each rebuilt switch flickers or flashes as
                 // a blue oval while it settles.
                 let oldChildren = Dictionary(uniqueKeysWithValues: previous.map { ($0[0], Array($0.dropFirst())) })
-                outline.beginUpdates()
-                patch(old: previous.map { $0[0] }, new: roots.map(\.id), in: nil)
-                for parent in roots {
-                    if let old = oldChildren[parent.id] { patch(old: old, new: parent.children.map(\.id), in: parent) }
-                }
-                outline.endUpdates()
-                // Inserted sections arrive collapsed, and AppKit refuses
-                // collapseItem once the outline cell is hidden, so the
-                // rows a section exposes are exactly the rows it gets.
-                for section in model.sections {
-                    guard let node = sectionNode(section.id) else { continue }
-                    outline.expandItem(node)
+                // AppKit animates the row and cell frames it adjusts when the
+                // outline width changed since the last layout; those animated
+                // widths leave wrapped text measured against a stale frame.
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = 0
+                    outline.beginUpdates()
+                    patch(old: previous.map { $0[0] }, new: roots.map(\.id), in: nil)
+                    for parent in roots {
+                        if let old = oldChildren[parent.id] { patch(old: old, new: parent.children.map(\.id), in: parent) }
+                    }
+                    outline.endUpdates()
+                    // Inserted sections arrive collapsed, and AppKit refuses
+                    // collapseItem once the outline cell is hidden, so the
+                    // rows a section exposes are exactly the rows it gets.
+                    for section in model.sections {
+                        guard let node = sectionNode(section.id) else { continue }
+                        outline.expandItem(node)
+                    }
                 }
                 if let selected {
                     let row = outline.row(forItem: selected)
