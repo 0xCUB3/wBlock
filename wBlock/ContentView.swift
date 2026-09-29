@@ -29,7 +29,7 @@ struct ContentView: View {
     @State private var downloadedFilterIDs: Set<UUID> = []
     @State private var showingFilterDownloadError = false
     @AppStorage("filtersShowEnabledOnly") private var showOnlyEnabledLists = false
-    @AppStorage("filterDisplayOrder") private var filterDisplayOrder = Data()
+    @AppStorage(ListDisplayOrder.filterKey) private var filterDisplayOrder = Data()
     @State private var filterSearchText = ""
     @State private var showFilterSearch = false
     @State private var editingCustomFilter: FilterList?

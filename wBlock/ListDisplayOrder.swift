@@ -1,6 +1,13 @@
 import Foundation
 
 enum ListDisplayOrder {
+    static let filterKey = "filterDisplayOrder"
+    static let userScriptKey = "userScriptDisplayOrder"
+
+    static func reset() {
+        for key in [filterKey, userScriptKey] { UserDefaults.standard.removeObject(forKey: key) }
+    }
+
     static func sorted<Item: Identifiable>(_ filters: [Item], order: Data) -> [Item] where Item.ID == UUID {
         let ids = (try? JSONDecoder().decode([UUID].self, from: order)) ?? []
         let ranks = Dictionary(ids.enumerated().map { ($0.element, $0.offset) }, uniquingKeysWith: min)

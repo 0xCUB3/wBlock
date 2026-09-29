@@ -1181,3 +1181,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "实验性过滤器会在新规则进入主列表之前对其进行测试，可能会导致网站出现问题。仅在你愿意发现并反馈问题时启用。";
 "Enable HaGeZi Pro Mini?" = "要启用 HaGeZi Pro Mini 吗？";
 "HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Pro Mini 是 DNS 拦截列表，并非专为广告拦截器设计的过滤列表。它可能不如其他列表稳定，也可能产生更多导致网站异常的误报。";
+"Reset Ordering" = "重置排序";
+"Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "将内置列表和用户脚本恢复到默认分类和顺序，并将自定义项移至“其他”。";

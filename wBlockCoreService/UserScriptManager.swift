@@ -3235,6 +3235,19 @@ public class UserScriptManager: ObservableObject {
         await persistUserScriptsNow(invalidateExecutionCache: false)
     }
 
+    /// Puts built-in userscripts back in their default categories and moves custom ones to Other.
+    public func resetCategories() async {
+        var changed = false
+        for index in userScripts.indices {
+            let category: FilterListCategory = isDefaultUserScript(userScripts[index]) ? .scripts : .scriptOther
+            guard userScripts[index].category != category else { continue }
+            userScripts[index].category = category
+            recordScriptMutation(userScripts[index].id)
+            changed = true
+        }
+        if changed { await persistUserScriptsNow(invalidateExecutionCache: false) }
+    }
+
     /// Sets whether bulk and scheduled updates should include this userscript.
     public func setUserScript(
         _ userScript: UserScript,
