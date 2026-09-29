@@ -228,6 +228,16 @@ public actor SharedAutoUpdateManager {
         foregroundApplyInProgress = active
     }
 
+    /// Claims the targets for the app's own apply, first waiting out any auto-update run
+    /// already past its preflight. The wait ends and the flag is set with no suspension
+    /// in between, so a run cannot start between the two; later runs skip on the flag.
+    public func beginForegroundApply() async {
+        while runInProgress && !Task.isCancelled {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+        foregroundApplyInProgress = true
+    }
+
     private let sharedAutoUpdateLogFilename = "auto_update.log"
 
     // Reused for shared-log timestamps; safe because all access is actor-isolated.
