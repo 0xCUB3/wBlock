@@ -630,7 +630,7 @@ final class CloudSyncManager: ObservableObject {
         // to push. Checking before the fetch avoids a CloudKit round trip for the routine
         // save notifications fired by non-sync-visible state (e.g. filter version/count
         // refreshes). Remote-newer changes are still converged by two-way sync.
-        let preCheckPayload = await buildPayloadRefreshingSnapshot()
+        let preCheckPayload = await stableLocalPayloadAndMutationBaseline().payload
         if pendingRemoteScriptAdditions().isEmpty,
            preCheckPayload.contentHash == defaults.string(forKey: Keys.lastUploadedHash) {
             markUpToDate(from: preCheckPayload)
@@ -646,7 +646,7 @@ final class CloudSyncManager: ObservableObject {
             }
 
             let additionsForUpload = pendingRemoteScriptAdditions()
-            let payload = await buildPayloadRefreshingSnapshot()
+            let payload = await stableLocalPayloadAndMutationBaseline().payload
 
             let payloadURL = try await applyPayloadFields(payload, to: &record)
             defer { try? FileManager.default.removeItem(at: payloadURL) }
