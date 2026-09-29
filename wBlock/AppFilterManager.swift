@@ -743,6 +743,10 @@ class AppFilterManager: ObservableObject {
             if storedFailedUpgradeSignature() == currentSignature {
                 autoApplyTask?.cancel()
                 autoApplyTask = nil
+            } else if !HeadlessLaunch.isHeadlessProcess {
+                // An upgrade rebuild needs no confirmation; apply it now instead of
+                // leaving Apply pending until the 60s debounce or a manual tap.
+                applyOrCheckForUpdates()
             }
         } else {
             markCurrentStateApplied()
