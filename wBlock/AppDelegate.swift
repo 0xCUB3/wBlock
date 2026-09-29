@@ -432,6 +432,12 @@ extension AppDelegate: UIApplicationDelegate {
         // Register background tasks for filter updates (refresh + processing)
         registerBackgroundTasks()
 
+        // Scene-based SwiftUI apps never receive the app-level active and
+        // background delegate callbacks, only their notifications (#891).
+        let center = NotificationCenter.default
+        center.addObserver(self, selector: #selector(appDidBecomeActive), name: UIApplication.didBecomeActiveNotification, object: nil)
+        center.addObserver(self, selector: #selector(appDidEnterBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
+
         // Schedule only after the persisted interval and due date have loaded.
         Task { @MainActor in
             await rescheduleBackgroundTasks(reason: "Launch")
@@ -444,7 +450,7 @@ extension AppDelegate: UIApplicationDelegate {
         PortraitOrientationLock.mask
     }
 
-    func applicationDidBecomeActive(_ application: UIApplication) {
+    @objc private func appDidBecomeActive() {
         guard !BlockingPauseStore.isPaused(.filters) else { return }
 
         // Run opportunistic updates only when app is active (not during background launches).
@@ -467,7 +473,7 @@ extension AppDelegate: UIApplicationDelegate {
         }
     }
     
-    func applicationDidEnterBackground(_ application: UIApplication) {
+    @objc private func appDidEnterBackground() {
         // Reuse the persisted due date rather than restarting the interval.
         Task { @MainActor in
             await rescheduleBackgroundTasks(reason: "EnterBackground")
