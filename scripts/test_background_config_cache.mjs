@@ -713,6 +713,24 @@ for (const [label, inertState, activeCSS] of [
   );
 }
 
+// Scenario N: a slow (cold-start) state lookup still resolves instead of
+// failing page init (#893).
+{
+  const pageUrl = "https://slow-state.example/";
+  const state = loadBackground({
+    nativeHandler: message => {
+      if (message && message.action === "getBlockingState") {
+        return new Promise(resolve => setTimeout(() => resolve({ disabled: false, paused: false }), 1500));
+      }
+      return { payload: makeConfig(["#slow-state"], 32, [], [], { disabled: false, paused: false }) };
+    }
+  });
+  await sleep(20);
+  await state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  const response = await state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  check("slow cached state lookup does not error", response && response.state !== "error");
+}
+
 // Scenario L: the permanently-disabled native document-start catalog/cache
 // contract is absent, while ordinary userscript payloads remain authoritative.
 {

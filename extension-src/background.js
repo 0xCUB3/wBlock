@@ -26187,7 +26187,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     // A script pass can download several files; give it room before the
     // queue moves on. The native gate refuses overlapping runs anyway.
     if (action === "maybeUpdateUserScripts" || action === "maybeStageFilterUpdates") return 120000;
-    if (action === "getBlockingState") return 1000;
+    // Cold native-host launches wait for app data to load; a short cutoff
+    // fails the whole page init (#893).
+    if (action === "getBlockingState") return 10000;
     return 30000;
   };
   const withNativeMessageTimeout = (promise, timeoutMs, action) => {
