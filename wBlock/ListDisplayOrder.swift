@@ -28,6 +28,30 @@ enum ListDisplayOrder {
         return keys.isEmpty ? cleared : merging(keys, into: sorted(items, order: current), key: key)
     }
 
+    /// The order last agreed with the server. A device whose order still equals it has no opinion of its own.
+    static func synced(_ key: String, defaults: UserDefaults = .standard) -> Data {
+        defaults.data(forKey: key + "Synced") ?? Data()
+    }
+
+    /// Stores the remote order unless `applying` says to keep the local one, and records it as agreed.
+    static func adopt<Item: Identifiable>(
+        _ keys: [String]?, to items: [Item], key: String, baseline: Data,
+        defaults: UserDefaults = .standard, itemKey: (Item) -> String?
+    ) where Item.ID == UUID {
+        let current = defaults.data(forKey: key) ?? Data()
+        guard let order = applying(keys, to: items, current: current, baseline: baseline, key: itemKey) else { return }
+        defaults.set(order, forKey: key)
+        defaults.set(order, forKey: key + "Synced")
+    }
+
+    /// Records the current order as agreed once the server holds exactly it.
+    static func markSynced<Item: Identifiable>(
+        _ keys: [String]?, items: [Item], key: String, defaults: UserDefaults = .standard, itemKey: (Item) -> String?
+    ) where Item.ID == UUID {
+        let current = defaults.data(forKey: key) ?? Data()
+        if exportedKeys(items, order: current, key: itemKey) == keys { defaults.set(current, forKey: key + "Synced") }
+    }
+
     /// Follows a synced key order for the items both devices have; the rest keep their slots.
     static func merging<Item: Identifiable>(_ keys: [String], into items: [Item], key: (Item) -> String?) -> Data
     where Item.ID == UUID {
