@@ -191,9 +191,6 @@ public enum WebExtensionRequestHandler {
             case "maybeStageFilterUpdates":
                 handleMaybeStageFilterUpdates(context: context)
                 return
-            case "openContainingApp":
-                handleOpenContainingApp(context: context)
-                return
             case "logExtensionDiagnostic":
                 handleLogExtensionDiagnostic(message: message!, context: context)
                 return
@@ -722,27 +719,6 @@ public enum WebExtensionRequestHandler {
     }
     #endif
 
-    private static func requestContainingAppWake() -> (supported: Bool, attempted: Bool, opened: Bool, error: String?) {
-        #if os(macOS)
-        let opened = NSWorkspace.shared.open(URL(string: "wblockapp://open")!)
-        return (
-            supported: true,
-            attempted: true,
-            opened: opened,
-            error: opened ? nil : "Failed to open wBlock. Open it manually to resume blocking."
-        )
-        #else
-        // Safari's iOS web-extension host cannot call UIApplication.open or otherwise
-        // wake the containing app. This is a platform limitation, not an apply result.
-        return (
-            supported: false,
-            attempted: false,
-            opened: false,
-            error: "Open wBlock to resume blocking."
-        )
-        #endif
-    }
-
     private static func handleStartFilterUpdate(context: NSExtensionContext) {
         #if os(macOS)
         let containingAppIsRunning = NSRunningApplication.runningApplications(
@@ -893,15 +869,6 @@ public enum WebExtensionRequestHandler {
             payload["error"] = "The background update did not complete."
         }
         let response = createResponse(with: payload)
-        context.completeRequest(returningItems: [response])
-    }
-
-    private static func handleOpenContainingApp(context: NSExtensionContext) {
-        let wake = requestContainingAppWake()
-        let response = createResponse(with: [
-            "opened": wake.opened,
-            "error": wake.error
-        ])
         context.completeRequest(returningItems: [response])
     }
 

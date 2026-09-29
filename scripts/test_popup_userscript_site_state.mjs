@@ -136,7 +136,6 @@ const requiredIds = [
   "no-autoplay-enabled-toggle",
   "no-autoplay-site-row",
   "no-autoplay-site-toggle",
-  "open-app",
   "paused-prompt",
   "paused-prompt-message",
   "paused-prompt-title",
@@ -163,7 +162,7 @@ for (const id of ["enable-toggle", "no-autoplay-enabled-toggle", "no-autoplay-si
   elements.get(id).localName = "input";
   elements.get(id).tagName = "INPUT";
 }
-for (const id of ["open-app", "resume-blocking", "update-filters", "zapper-activate", "zapper-clear", "zapper-rules-toggle"]) {
+for (const id of ["resume-blocking", "update-filters", "zapper-activate", "zapper-clear", "zapper-rules-toggle"]) {
   elements.get(id).localName = "button";
   elements.get(id).tagName = "BUTTON";
 }

@@ -1450,7 +1450,6 @@ function setupListeners() {
     const userscriptCommands = document.getElementById('userscript-commands');
     const userscriptsList = document.getElementById('userscripts-list');
     const userscriptsToggle = document.getElementById('userscripts-toggle');
-    const openAppButton = document.getElementById('open-app');
     const resumeButton = document.getElementById('resume-blocking');
     const updateFiltersButton = document.getElementById('update-filters');
 
@@ -1769,29 +1768,6 @@ function setupListeners() {
         });
     }
 
-    if (openAppButton) {
-        openAppButton.addEventListener('click', async () => {
-            try {
-                setError('');
-                openAppButton.disabled = true;
-                const response = await sendNativeMessageWithTimeout({
-                    action: 'openContainingApp',
-                }, 5000);
-                if (response && response.opened) {
-                    window.close();
-                    return;
-                }
-
-                setError((response && response.error) || t('popup_error_open_app', undefined, 'Failed to open the app.'));
-            } catch (error) {
-                console.error('[wBlock] Failed to open app:', error);
-                setError(t('popup_error_open_app', undefined, 'Failed to open the app.'));
-            } finally {
-                openAppButton.disabled = false;
-            }
-        });
-    }
-
     if (zapperClear) {
         zapperClear.addEventListener('click', async () => {
             try {
@@ -1838,16 +1814,12 @@ async function refreshUi() {
     const zapperEnabledToggle = document.getElementById('zapper-enabled-toggle');
     const zapperActivate = document.getElementById('zapper-activate');
     const rulesToggle = document.getElementById('zapper-rules-toggle');
-    const openAppButton = document.getElementById('open-app');
     const userscriptsSection = document.getElementById('userscripts-section');
     const pausedPrompt = document.getElementById('paused-prompt');
     const pausedPromptTitle = document.getElementById('paused-prompt-title');
     const pausedPromptMessage = document.getElementById('paused-prompt-message');
     const resumeButton = document.getElementById('resume-blocking');
 
-    if (openAppButton) {
-        openAppButton.hidden = !isMac;
-    }
     tab = await getActiveTabWithRetry();
     let pageSupport = getPageSupport(tab);
     let supportProbe = null;

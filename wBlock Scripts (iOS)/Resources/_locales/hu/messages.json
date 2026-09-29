@@ -87,10 +87,6 @@
     "message": "Az elemeltávolító nem érhető el ezen az oldalon.",
     "description": "Error shown when zapper cannot be activated on the current tab."
   },
-  "popup_error_open_app": {
-    "message": "Nem sikerült megnyitni az alkalmazást.",
-    "description": "Error shown when popup fails to open the containing app."
-  },
   "popup_error_clear_rules": {
     "message": "Nem sikerült törölni az elemeltávolító szabályait.",
     "description": "Error shown when popup fails to clear zapper rules for the current site."

@@ -26648,7 +26648,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         "getSiteDisabledState", "setSiteDisabledState", "setSiteZapperDisabled",
         "getSiteFilterDisabledState", "setSiteFilterDisabledState", "setUserScriptsSiteDisabled",
         "getPageUserScripts", "setUserScriptSiteDisabledState", "getNoAutoplayState",
-        "setNoAutoplaySiteAllowed", "setNoAutoplayEnabled", "openContainingApp"
+        "setNoAutoplaySiteAllowed", "setNoAutoplayEnabled"
       ]);
       const nativeRequest = message.message;
       // A content script must not gain the popup's native mutation privileges.
