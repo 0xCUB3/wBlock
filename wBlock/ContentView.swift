@@ -1233,14 +1233,11 @@ struct ContentModifiers: ViewModifier {
                         .interactiveDismissDisabled()
                 }
             }
-            // Closing the progress sheet must not dismiss the non-blocking result toast.
-            .overlay(alignment: .top) {
-                if filterManager.showingNoUpdatesAlert {
-                    NoUpdatesToast { filterManager.showingNoUpdatesAlert = false }
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
+            .alert("No Updates Found", isPresented: $filterManager.showingNoUpdatesAlert) {
+                Button("OK") {}
+            } message: {
+                Text("You're already using the latest filters.")
             }
-            .animation(.easeInOut(duration: 0.25), value: filterManager.showingNoUpdatesAlert)
             .alert(
                 filterManager.ruleLimitWarningTitle,
                 isPresented: $filterManager.showingRuleLimitWarningAlert
