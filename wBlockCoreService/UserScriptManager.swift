@@ -3328,6 +3328,7 @@ public class UserScriptManager: ObservableObject {
         // indices because downloads suspend and the array may be synchronized meanwhile.
         let remoteScriptIDsToDownload = userScripts.compactMap { script -> (UUID, URL)? in
             guard enabledIDs.contains(script.id),
+                  !script.isEnabled,
                   !script.isLocal,
                   script.content.isEmpty,
                   let url = script.url
@@ -3371,7 +3372,9 @@ public class UserScriptManager: ObservableObject {
             else { continue }
 
             let requestedEnable = enabledIDs.contains(userScripts[i].id)
-            let canEnable = userScripts[i].isLocal || userScripts[i].isDownloaded
+            // A script that is already on stays on, as with a single toggle. Only a
+            // fresh enable needs its source to exist.
+            let canEnable = userScripts[i].isLocal || userScripts[i].isDownloaded || userScripts[i].isEnabled
             let shouldEnable = requestedEnable && canEnable
             // A failed enable must not be replayed as True by a later disk sync.
             latestUserScriptIntentValues[userScripts[i].id] = shouldEnable
