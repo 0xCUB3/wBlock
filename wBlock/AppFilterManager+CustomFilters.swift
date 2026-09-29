@@ -204,7 +204,7 @@ extension AppFilterManager {
                     // the list vanished. Apply retries selected lists that
                     // have no local file.
                     await MainActor.run {
-                        self.refreshPendingChanges()
+                        self.acknowledgeUndownloadedFilter(newFilterToAdd.id)
                         self.statusDescription = LocalizedStrings.text(
                             "Couldn't download this filter list. It was kept as not downloaded.",
                             comment: "Custom filter download failure; list is retained"

@@ -178,6 +178,17 @@ class AppFilterManager: ObservableObject {
         refreshHasUnappliedChanges()
     }
 
+    /// A custom list whose first download failed has nothing to apply, so it
+    /// joins the applied baseline as-is instead of lighting up Apply.
+    func acknowledgeUndownloadedFilter(_ id: UUID) {
+        if let filter = filterLists.first(where: { $0.id == id }) {
+            appliedCustomFilterKeys.insert(filter.url.absoluteString)
+            appliedFilterConfigurations.append(ApplyFilterConfiguration(filter))
+            if filter.isSelected { appliedSelectedFilterIDs.insert(id) }
+        }
+        refreshPendingChanges()
+    }
+
     func markNonSelectionChangesPending() {
         hasPendingNonSelectionChanges = true
         refreshHasUnappliedChanges()
