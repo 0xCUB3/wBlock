@@ -25,6 +25,16 @@ struct ReorderCacheTests {
         let stale = FilterList(name: "Deleted", url: URL(string: "https://example.com/deleted")!, category: .ads)
         precondition(ListDisplayOrder.sorted(displayItems, order: ListDisplayOrder.saving([stale, d, a], in: displayItems)).map(\.id)
                      == [d.id, b.id, c.id, a.id], "deleted rows must not corrupt saved ordering")
+        // Synced order is keyed by URL, so devices with different ids and extra lists converge.
+        let key: (FilterList) -> String? = { $0.url.absoluteString }
+        precondition(ListDisplayOrder.exportedKeys(displayItems, order: Data(), key: key) == nil)
+        let exported = ListDisplayOrder.exportedKeys(displayItems, order: displayOrder, key: key)!
+        precondition(exported == [d, b, c, a].map { $0.url.absoluteString })
+        let otherDevice = displayItems.map { FilterList(name: $0.name, url: $0.url, category: $0.category) }
+            + [FilterList(name: "Only here", url: URL(string: "https://example.com/e.txt")!, category: .ads)]
+        let merged = ListDisplayOrder.merging(exported + [exported[0]], into: otherDevice, key: key)
+        precondition(ListDisplayOrder.sorted(otherDevice, order: merged).compactMap(key)
+                     == ["d", "b", "c", "a", "e"].map { "https://example.com/\($0).txt" })
         func write(_ filter: FilterList, _ text: String) throws {
             try text.write(to: container.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: filter)), atomically: true, encoding: .utf8)
         }

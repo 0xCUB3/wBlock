@@ -438,6 +438,17 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func observeLocalUserScriptChanges() {
+        // Reordering only writes UserDefaults, so watch the two order blobs directly.
+        NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .prepend(Notification(name: UserDefaults.didChangeNotification))
+            .map { _ in [ListDisplayOrder.filtersKey, ListDisplayOrder.scriptsKey].map(ListDisplayOrder.saved) }
+            .removeDuplicates()
+            .dropFirst()
+            .filter { [weak self] _ in self?.isApplyingRemoteChanges == false }
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { [weak self] _ in self?.handleLocalSave() }
+            .store(in: &cancellables)
+
         userScriptManager.$tubeCleanerFeatures
             .combineLatest(userScriptManager.$tubeCleanerDeArrow, userScriptManager.$playerCleanerFeatures)
             .dropFirst()
@@ -865,6 +876,7 @@ final class CloudSyncManager: ObservableObject {
             allowedHostsBaseline: localMutationBaseline.userScriptAllowedHosts,
             localMutationRevisionAtStart: userScriptMutationRevisionAtStart
         )
+        applyRemoteDisplayOrders(payload, current: currentContent, baseline: localPayloadBaseline)
 
         if let filterManager,
            filterManager.selectionMutationRevision != filterSelectionRevisionAtStart
@@ -1130,6 +1142,30 @@ final class CloudSyncManager: ObservableObject {
             selectionChanged: selectionChanged,
             nonSelectionChanged: nonSelectionChanged
         )
+    }
+
+    private static func filterOrderKey(_ filter: FilterList) -> String {
+        FilterListLoader.canonicalFilterURLString(filter.url.absoluteString)
+    }
+
+    private var orderableUserScripts: [UserScript] {
+        userScriptManager.userScripts.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    /// Display order is local unless the remote has one and this device has not reordered since the baseline.
+    private func applyRemoteDisplayOrders(_ payload: SyncPayload, current: SyncPayload.Content, baseline: SyncPayload) {
+        if let keys = payload.filters.order, current.filters.order == baseline.filters.order {
+            let local = ListDisplayOrder.sorted(
+                currentFilterLists().filter { $0.category != .foreign }, order: ListDisplayOrder.saved(ListDisplayOrder.filtersKey))
+            UserDefaults.standard.set(
+                ListDisplayOrder.merging(keys, into: local, key: Self.filterOrderKey), forKey: ListDisplayOrder.filtersKey)
+        }
+        if let keys = payload.userScripts.order, current.userScripts.order == baseline.userScripts.order {
+            let local = ListDisplayOrder.sorted(orderableUserScripts, order: ListDisplayOrder.saved(ListDisplayOrder.scriptsKey))
+            UserDefaults.standard.set(
+                ListDisplayOrder.merging(keys, into: local, key: CloudSyncUserScriptEnabledStatePolicy.key(for:)),
+                forKey: ListDisplayOrder.scriptsKey)
+        }
     }
 
     private func applyRemoteUserScriptState(
@@ -1826,7 +1862,10 @@ final class CloudSyncManager: ObservableObject {
             knownURLs: knownURLs,
             selectedURLs: selectedURLs,
             customLists: customLists,
-            deletedCustomURLs: deletedCustomURLs.isEmpty ? nil : deletedCustomURLs
+            deletedCustomURLs: deletedCustomURLs.isEmpty ? nil : deletedCustomURLs,
+            order: ListDisplayOrder.exportedKeys(
+                filterLists.filter { $0.category != .foreign },
+                order: ListDisplayOrder.saved(ListDisplayOrder.filtersKey), key: Self.filterOrderKey)
         )
 
         let userScriptDisabledHosts = dataManager.getUserScriptDisabledHosts()
@@ -1897,7 +1936,10 @@ final class CloudSyncManager: ObservableObject {
             local: localScripts,
             deletedLocalNames: deletedLocalNames.isEmpty ? nil : deletedLocalNames,
             deletedLocalIdentities: deletedLocalIdentities.isEmpty ? nil : deletedLocalIdentities,
-            deletedRemoteURLs: deletedRemoteURLs.isEmpty ? nil : deletedRemoteURLs
+            deletedRemoteURLs: deletedRemoteURLs.isEmpty ? nil : deletedRemoteURLs,
+            order: ListDisplayOrder.exportedKeys(
+                orderableUserScripts, order: ListDisplayOrder.saved(ListDisplayOrder.scriptsKey),
+                key: CloudSyncUserScriptEnabledStatePolicy.key(for:))
         )
 
         let whitelistDomains = dataManager.getWhitelistedDomains().sorted()
@@ -2161,10 +2203,7 @@ final class CloudSyncManager: ObservableObject {
     private func freezeCurrentUserScriptEnabledStates() {
         var states = loadSharedUserScriptEnabledStates()
         for script in userScriptManager.userScripts {
-            let key = script.isLocal
-                ? CloudSyncUserScriptEnabledStatePolicy.localKey(identity: script.localImportIdentity, name: script.name)
-                : script.url.flatMap { CloudSyncUserScriptEnabledStatePolicy.remoteKey($0.absoluteString) }
-            if let key { states[key] = script.isEnabled }
+            if let key = CloudSyncUserScriptEnabledStatePolicy.key(for: script) { states[key] = script.isEnabled }
         }
         saveSharedUserScriptEnabledStates(states)
     }
@@ -2481,6 +2520,8 @@ private struct SyncPayload: Codable {
         let customLists: [CustomFilterList]
         /// Custom list URLs deleted by the user. Used to prevent resurrection during sync.
         let deletedCustomURLs: [String]?
+        /// Canonical URLs in the user's display order; nil until they reorder.
+        var order: [String]? = nil
     }
 
     struct RemoteUserScript: Codable, Sendable {
@@ -2513,6 +2554,8 @@ private struct SyncPayload: Codable {
         let deletedLocalNames: [String]?
         let deletedLocalIdentities: [String]?
         let deletedRemoteURLs: [String]?
+        /// Script keys in the user's display order; nil until they reorder.
+        var order: [String]? = nil
     }
 
     struct Content: Codable {

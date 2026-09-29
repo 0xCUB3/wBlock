@@ -197,7 +197,7 @@ struct UserScriptManagerView: View {
     var onRetryFailedReloads: () -> Void = {}
 
     @State private var scripts: [UserScriptListItem] = []
-    @AppStorage(ListDisplayOrder.userScriptKey) private var scriptDisplayOrder = Data()
+    @AppStorage(ListDisplayOrder.scriptsKey) private var scriptDisplayOrder = Data()
     @State private var showingAddScriptSheet = false
     @State private var selectedScript: SelectedUserScript?
     @State private var selectedScriptInfo: SelectedUserScript?

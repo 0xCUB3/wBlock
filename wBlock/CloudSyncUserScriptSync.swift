@@ -360,6 +360,12 @@ enum CloudSyncUserScriptEnabledStatePolicy {
         } ?? "local-name:" + CloudSyncLocalUserScriptReconciler.normalizedName(name)
     }
 
+    static func key(for script: UserScript) -> String? {
+        script.isLocal
+            ? localKey(identity: script.localImportIdentity, name: script.name)
+            : script.url.flatMap { remoteKey($0.absoluteString) }
+    }
+
     static func projectedState(
         localValue: Bool,
         key: String,
