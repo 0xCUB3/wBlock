@@ -940,7 +940,7 @@ extension SettingsView {
             #endif
             await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
             // Apply straight away instead of asking for a manual Apply tap (#630).
-            filterManager.forceApplyChanges()
+            filterManager.forceApplyChanges(checkForUpdates: true)
             backupStatusMessage = String(localized: "Settings restored. Applying now.")
             showingBackupStatus = true
         }

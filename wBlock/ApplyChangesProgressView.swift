@@ -411,7 +411,7 @@ struct ApplyChangesProgressView: View {
             Spacer(minLength: 12)
 
             Button {
-                filterManager.forceApplyChanges()
+                filterManager.forceApplyChanges(checkForUpdates: true)
             } label: {
                 Label(String(localized: "Try Again"), systemImage: "arrow.clockwise")
             }

@@ -916,8 +916,10 @@ class AppFilterManager: ObservableObject {
         }
     }
 
+    /// `checkForUpdates: false` applies local state only: nothing is downloaded, including
+    /// selected lists that have never been fetched.
     @discardableResult
-    func performFilterUpdate(showProgress: Bool = true) async -> Bool {
+    func performFilterUpdate(showProgress: Bool = true, checkForUpdates: Bool = true) async -> Bool {
         refreshMissingItems()
 
         let started = await performExclusiveApply {
@@ -925,13 +927,13 @@ class AppFilterManager: ObservableObject {
             self.failedReloadTargets = []
             self.showingApplyProgressSheet = showProgress
 
-            if !self.missingFilters.isEmpty || !self.missingUserScripts.isEmpty {
+            if checkForUpdates, !self.missingFilters.isEmpty || !self.missingUserScripts.isEmpty {
                 await self.downloadMissingItemsSilently()
             }
 
             await self.applyChanges(
                 prepareState: false,
-                skipPreApplyUpdates: false
+                skipPreApplyUpdates: !checkForUpdates
             )
         }
 
@@ -992,12 +994,14 @@ class AppFilterManager: ObservableObject {
         }
     }
 
-    func forceApplyChanges() {
+    func forceApplyChanges(checkForUpdates: Bool = false) {
         guard !isLoading, !isApplyInFlight else { return }
         clearFailedUpgradeRebuildSignature()
         isLoading = true
         showingNoUpdatesAlert = false
-        statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Apply pipeline status")
+        statusDescription = checkForUpdates
+            ? LocalizedStrings.text("Checking for updates...", comment: "Apply pipeline status")
+            : LocalizedStrings.text("Applying filters...", comment: "Apply pipeline stage")
         applyProgressViewModel.beginProgressRun()
         showingApplyProgressSheet = true
         Task {
@@ -1006,8 +1010,7 @@ class AppFilterManager: ObservableObject {
             if self.filterUpdater.userScriptManager == nil {
                 self.setUserScriptManager(UserScriptManager.shared)
             }
-            self.refreshMissingItems()
-            let started = await self.performFilterUpdate()
+            let started = await self.performFilterUpdate(checkForUpdates: checkForUpdates)
             if !started {
                 if !self.isApplyInFlight {
                     self.showingApplyProgressSheet = false
