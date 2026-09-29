@@ -1205,6 +1205,15 @@ struct ContentModifiers: ViewModifier {
     @State private var showOnboardingSheet = false
     // Track if initial presentation check has been done to avoid re-showing after dismiss
     @State private var hasPerformedInitialCheck = false
+    // False from the moment the progress sheet appears until its dismissal finishes.
+    // An alert requested while the sheet is up is held until then; SwiftUI drops an
+    // alert presented over a sheet that is still on screen or animating away.
+    @State private var progressSheetSettled = true
+
+    private var progressSheetPresented: Bool {
+        filterManager.showingApplyProgressSheet
+            || (filterManager.isLoading && !filterManager.suppressBlockingOverlay)
+    }
 
     func body(content: Content) -> some View {
         content
@@ -1212,16 +1221,13 @@ struct ContentModifiers: ViewModifier {
                 AddFilterListView(filterManager: filterManager)
             }
             .sheet(isPresented: Binding(
-                get: {
-                    filterManager.showingApplyProgressSheet
-                        || (filterManager.isLoading && !filterManager.suppressBlockingOverlay)
-                },
+                get: { progressSheetPresented },
                 set: { presented in
                     if !presented && !filterManager.isLoading {
                         filterManager.showingApplyProgressSheet = false
                     }
                 }
-            )) {
+            ), onDismiss: { progressSheetSettled = true }) {
                 if filterManager.showingApplyProgressSheet {
                     ApplyChangesProgressView(
                         filterManager: filterManager,
@@ -1233,7 +1239,13 @@ struct ContentModifiers: ViewModifier {
                         .interactiveDismissDisabled()
                 }
             }
-            .alert("No Updates Found", isPresented: $filterManager.showingNoUpdatesAlert) {
+            .onChangeCompat(of: progressSheetPresented) { _, presented in
+                if presented { progressSheetSettled = false }
+            }
+            .alert("No Updates Found", isPresented: Binding(
+                get: { filterManager.showingNoUpdatesAlert && !progressSheetPresented && progressSheetSettled },
+                set: { if !$0 { filterManager.showingNoUpdatesAlert = false } }
+            )) {
                 Button("OK") {}
             } message: {
                 Text("You're already using the latest filters.")
