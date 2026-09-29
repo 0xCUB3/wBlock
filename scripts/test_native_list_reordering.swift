@@ -294,6 +294,20 @@ import SwiftUI
         precondition(abs(viewportAfterExpansion.y - viewportBeforeExpansion.y) < 1,
                      "rebuilding an expanded category must preserve the scrolled viewport")
 
+        // Search and category expansion patch the outline: untouched rows keep
+        // their hosted cells instead of being rebuilt (flickering switches).
+        host.rootView = list([section("long", few)])
+        try await settle(host)
+        let keptCells = (2..<5).map { outline.view(atColumn: 0, row: $0, makeIfNecessary: false) }
+        precondition(keptCells.allSatisfy { $0 != nil })
+        host.rootView = list([section("long", few + [UUID()])])
+        try await settle(host)
+        precondition(outline.numberOfRows == 6)
+        for (offset, cell) in keptCells.enumerated() {
+            precondition(outline.view(atColumn: 0, row: offset + 2, makeIfNecessary: false) === cell,
+                         "a structure change must not rebuild untouched rows")
+        }
+
         // Rapid filter-like replacements must remain valid for both empty and
         // non-empty results, including returning to a short list at the top.
         for result in [Array(many.prefix(1)), [], Array(many.suffix(2)), []] {

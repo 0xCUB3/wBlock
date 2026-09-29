@@ -309,9 +309,18 @@ struct MacReorderableList: NSViewRepresentable {
                 reloaded = true
                 let selected = outline.selectedRow >= 0 ? outline.item(atRow: outline.selectedRow) as? Node : nil
                 let preservedScrollOrigin = outline.enclosingScrollView?.contentView.bounds.origin
-                outline.reloadData()
-                // reloadData leaves expandable sections collapsed, and AppKit
-                // refuses collapseItem once the outline cell is hidden, so the
+                // Patch only what changed. reloadData would rebuild every
+                // visible cell, and each rebuilt switch flickers or flashes as
+                // a blue oval while it settles.
+                let oldChildren = Dictionary(uniqueKeysWithValues: previous.map { ($0[0], Array($0.dropFirst())) })
+                outline.beginUpdates()
+                patch(old: previous.map { $0[0] }, new: roots.map(\.id), in: nil)
+                for parent in roots {
+                    if let old = oldChildren[parent.id] { patch(old: old, new: parent.children.map(\.id), in: parent) }
+                }
+                outline.endUpdates()
+                // Inserted sections arrive collapsed, and AppKit refuses
+                // collapseItem once the outline cell is hidden, so the
                 // rows a section exposes are exactly the rows it gets.
                 for section in model.sections {
                     guard let node = sectionNode(section.id) else { continue }
@@ -349,6 +358,18 @@ struct MacReorderableList: NSViewRepresentable {
                     outline.noteHeightOfRows(withIndexesChanged: refreshVisibleRows())
                 }
             }
+        }
+
+        private func patch(old: [Node.ID], new: [Node.ID], in parent: Node?) {
+            var removed = IndexSet(), inserted = IndexSet()
+            for change in new.difference(from: old) {
+                switch change {
+                case .remove(let offset, _, _): removed.insert(offset)
+                case .insert(let offset, _, _): inserted.insert(offset)
+                }
+            }
+            if !removed.isEmpty { outline?.removeItems(at: removed, inParent: parent, withAnimation: []) }
+            if !inserted.isEmpty { outline?.insertItems(at: inserted, inParent: parent, withAnimation: []) }
         }
 
         @discardableResult
