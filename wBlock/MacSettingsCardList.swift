@@ -50,7 +50,7 @@ struct MacSettingsCardList<Content: View>: View {
                 }
             }
             .padding(.top, 16)
-            .padding(.bottom, 24)
+            .padding(.bottom, MacReorderableList.nativeListBottomInset)
         }
         .toggleStyle(MacTrailingSwitchToggleStyle())
         .buttonStyle(.plain)

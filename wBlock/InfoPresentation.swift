@@ -113,9 +113,17 @@ private final class InfoPopoverAnchorView: NSView {
         super.layout()
         guard window != nil, !bounds.isEmpty, !reported else { return }
         reported = true
+        settle(from: convert(bounds, to: nil), remaining: 10)
+    }
+
+    // SwiftUI moves the host into place after its first layout. Present only
+    // once its window position holds still, or the popover flies in from a
+    // stale rect.
+    private func settle(from previous: CGRect, remaining: Int) {
         DispatchQueue.main.async { [weak self] in
             guard let self, self.window != nil, !self.bounds.isEmpty else { return }
-            self.onReady()
+            let current = self.convert(self.bounds, to: nil)
+            if current == previous || remaining == 0 { self.onReady() } else { self.settle(from: current, remaining: remaining - 1) }
         }
     }
 }

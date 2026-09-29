@@ -3235,6 +3235,19 @@ public class UserScriptManager: ObservableObject {
         await persistUserScriptsNow(invalidateExecutionCache: false)
     }
 
+    /// Puts built-in userscripts back in their default categories and moves custom ones to Other.
+    public func resetCategories() async {
+        var changed = false
+        for index in userScripts.indices {
+            let category: FilterListCategory = isDefaultUserScript(userScripts[index]) ? .scripts : .scriptOther
+            guard userScripts[index].category != category else { continue }
+            userScripts[index].category = category
+            recordScriptMutation(userScripts[index].id)
+            changed = true
+        }
+        if changed { await persistUserScriptsNow(invalidateExecutionCache: false) }
+    }
+
     /// Sets whether bulk and scheduled updates should include this userscript.
     public func setUserScript(
         _ userScript: UserScript,
@@ -3315,6 +3328,7 @@ public class UserScriptManager: ObservableObject {
         // indices because downloads suspend and the array may be synchronized meanwhile.
         let remoteScriptIDsToDownload = userScripts.compactMap { script -> (UUID, URL)? in
             guard enabledIDs.contains(script.id),
+                  !script.isEnabled,
                   !script.isLocal,
                   script.content.isEmpty,
                   let url = script.url
@@ -3358,7 +3372,9 @@ public class UserScriptManager: ObservableObject {
             else { continue }
 
             let requestedEnable = enabledIDs.contains(userScripts[i].id)
-            let canEnable = userScripts[i].isLocal || userScripts[i].isDownloaded
+            // A script that is already on stays on, as with a single toggle. Only a
+            // fresh enable needs its source to exist.
+            let canEnable = userScripts[i].isLocal || userScripts[i].isDownloaded || userScripts[i].isEnabled
             let shouldEnable = requestedEnable && canEnable
             // A failed enable must not be replayed as True by a later disk sync.
             latestUserScriptIntentValues[userScripts[i].id] = shouldEnable

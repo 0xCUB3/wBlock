@@ -82,6 +82,8 @@ compile_direct_test() {
 # Standalone Foundation and AppKit tests.
 compile_direct_test native-list-reordering \
   wBlock/MacReorderableList.swift wBlock/ListDisplayOrder.swift scripts/test_native_list_reordering.swift
+compile_direct_test list-display-order-sync \
+  wBlock/ListDisplayOrder.swift wBlock/StableSnapshot.swift scripts/test_list_display_order_sync.swift
 compile_direct_test popover-window-shield \
   wBlock/InfoPresentation.swift scripts/test_popover_window_shield.swift
 compile_direct_test compiler-timeout scripts/test_issue_511_compiler_timeout.swift
@@ -161,6 +163,8 @@ compile_direct_test filter-update-popup-status \
   wBlockCoreService/FilterUpdatePopupStatus.swift \
   scripts/test_filter_update_popup_status.swift
 compile_core_test filter-selection-rebase scripts/test_filter_selection_rebase.swift
+compile_core_test apply-baseline-acknowledgement scripts/test_apply_baseline_acknowledgement.swift \
+  wBlock/ApplyFilterConfiguration.swift
 compile_core_test filter-list-site-exclusion scripts/test_filter_list_site_exclusion.swift
 compile_core_test userscript-pattern-budget scripts/test_userscript_pattern_budget.swift
 compile_core_test userscript-duplicates scripts/test_userscript_duplicates.swift \

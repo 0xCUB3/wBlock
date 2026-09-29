@@ -37,8 +37,8 @@ extension View {
 #if os(macOS)
 /// Filters and Userscripts share the same toolbar order: search, Add and
 /// Update together, pending Apply on its own, then the enabled-only filter.
-/// On macOS 26 compact glass groups keep an eight-point gap; older releases
-/// retain their flat action group and trailing search field.
+/// On macOS 26 each control is a separate toolbar item with fixed spacing;
+/// older releases retain their flat action group and trailing search field.
 ///
 /// Native list tabs pin the window-toolbar material behind the tab picker.
 struct MacActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifier {
@@ -52,9 +52,24 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifier
 
     func body(content: Content) -> some View {
         if #available(macOS 26.0, *) {
+            // Every control is its own toolbar item so each one overflows into
+            // the >> menu instead of collapsing into the first button (#886).
             content.toolbar {
-                ToolbarItem(placement: .automatic) { compactActions }
-                    .sharedBackgroundVisibility(.hidden)
+                ToolbarItem(placement: .automatic) {
+                    InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
+                }
+                .sharedBackgroundVisibility(.hidden)
+                ToolbarSpacer(.fixed, placement: .automatic)
+                ToolbarItemGroup(placement: .automatic) {
+                    compact { primary() }
+                    if !hasPendingChanges { compact { apply() } }
+                }
+                if hasPendingChanges {
+                    ToolbarSpacer(.fixed, placement: .automatic)
+                    ToolbarItem(placement: .automatic) { compact { apply() } }
+                }
+                ToolbarSpacer(.fixed, placement: .automatic)
+                ToolbarItem(placement: .automatic) { compact { filter() } }
             }
             .toolbarBackground(.visible, for: .windowToolbar)
         } else {
@@ -72,31 +87,11 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifier
     }
 
     @available(macOS 26.0, *)
-    private var compactActions: some View {
-        GlassEffectContainer(spacing: 4) {
-            HStack(spacing: 8) {
-                // Search lives in the same stack so it keeps the 8pt gap;
-                // as a separate toolbar item it butted against Add.
-                InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
-                // Buttons that share a capsule get the smaller hit target and
-                // hover disc (#771); a button alone in its capsule fills it.
-                HStack(spacing: 0) {
-                    primary()
-                    if !hasPendingChanges { apply() }
-                }
-                    .environment(\.compactToolbarGrouped, !hasPendingChanges)
-                    .frame(height: 36)
-                    .glassEffect(.regular.interactive(), in: .capsule)
-                if hasPendingChanges {
-                    apply()
-                        .glassEffect(.regular.interactive(), in: .capsule)
-                }
-                filter()
-                    .glassEffect(.regular.interactive(), in: .capsule)
-            }
-        }
-        .labelStyle(.iconOnly)
-        .buttonStyle(CompactToolbarButtonStyle())
+    private func compact<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .labelStyle(.iconOnly)
+            .environment(\.compactToolbarGrouped, true)
+            .buttonStyle(CompactToolbarButtonStyle())
     }
 }
 

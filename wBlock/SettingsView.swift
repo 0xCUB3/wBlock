@@ -213,30 +213,6 @@ struct SettingsView: View {
         )
     }
 
-    private var pauseBlockingBinding: Binding<Bool> {
-        Binding(
-            get: { filterManager.pausedComponents == .all },
-            set: { newValue in
-                Task { await filterManager.setBlockingPaused(newValue) }
-            }
-        )
-    }
-
-    private func pauseComponentBinding(_ component: BlockingPauseComponents) -> Binding<Bool> {
-        Binding(
-            get: { filterManager.pausedComponents.contains(component) },
-            set: { newValue in
-                var components = filterManager.pausedComponents
-                if newValue {
-                    components.insert(component)
-                } else {
-                    components.remove(component)
-                }
-                Task { await filterManager.setPausedComponents(components) }
-            }
-        )
-    }
-
     #if os(iOS)
     @ViewBuilder
     private var displaySection: some View {
@@ -287,7 +263,7 @@ struct SettingsView: View {
             Toggle("Autoplay", isOn: autoplayBinding)
 
             NavigationLink {
-                SiteSettingsView()
+                SiteSettingsView(filterManager: filterManager)
                     .swipeBackNavigationCompat()
             } label: {
                 SettingsRowLabel("Site Settings", systemImage: "globe", accessory: .push)
@@ -671,51 +647,19 @@ struct SettingsView: View {
     }
 
     #if os(macOS)
-    /// On macOS the pause controls live in one toolbar menu so they stay
-    /// reachable without scrolling. Labeled checkmarks explain each switch,
-    /// and the icon fills while anything is paused.
     @ToolbarContentBuilder
     private var pauseBlockingToolbar: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            let paused = filterManager.pausedComponents
-            let title: LocalizedStringKey = paused.isEmpty ? "Pause Blocking" : "Paused Components"
-            Menu {
-                Section("Pause Blocking") {
-                    Toggle("Pause All Components", isOn: pauseBlockingBinding)
-                    Group {
-                        Toggle("Filters", isOn: pauseComponentBinding(.filters))
-                        Toggle("Enabled Userscripts & Userstyles", isOn: pauseComponentBinding(.userScripts))
-                        Toggle("Element Zapper", isOn: pauseComponentBinding(.elementZapper))
-                    }
-                    .disabled(paused == .all)
-                }
-            } label: {
-                Label(title, systemImage: paused.isEmpty ? "pause.circle" : "pause.circle.fill")
-            }
-            .help(title)
-            .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
-        }
+        ToolbarItem(placement: .primaryAction) { PauseBlockingMenu(filterManager: filterManager) }
     }
     #else
-    @ViewBuilder
     private var pauseBlockingSection: some View {
         Section {
-            Toggle("Pause All Components", isOn: pauseBlockingBinding)
-            Group {
-                Toggle("Filters", isOn: pauseComponentBinding(.filters))
-                Toggle("Enabled Userscripts & Userstyles", isOn: pauseComponentBinding(.userScripts))
-                Toggle("Element Zapper", isOn: pauseComponentBinding(.elementZapper))
-            }
-            .disabled(filterManager.pausedComponents == .all)
-            #if os(macOS)
-            .padding(.leading, 20)
-            #endif
+            PauseBlockingControls(filterManager: filterManager)
         } header: {
             Text("Pause Blocking")
         } footer: {
             Text("Pause all components at once, or pause them individually.")
         }
-        .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
     }
     #endif
 
@@ -773,6 +717,15 @@ struct SettingsView: View {
                     detail: Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
                 )
             }
+            CompatibleLabeledContent {
+                Button("Reset Ordering", action: resetOrdering)
+                    .buttonStyle(.bordered)
+            } label: {
+                rowLabel(
+                    "Reset Ordering",
+                    detail: Text("Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.")
+                )
+            }
             #else
             Button(role: .destructive) {
                 showingRestartConfirmation = true
@@ -786,12 +739,16 @@ struct SettingsView: View {
             }
             .tint(.red)
             .disabled(isRestarting)
+            Button(action: resetOrdering) {
+                Label("Reset Ordering", systemImage: "arrow.up.arrow.down")
+            }
             #endif
         } header: {
             Text("Danger Zone")
         } footer: {
             #if os(iOS)
             Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
+            Text("Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.")
             #endif
         }
     }
@@ -990,6 +947,12 @@ extension SettingsView {
     }
 
     // MARK: - User Defaults / Onboarding
+
+    private func resetOrdering() {
+        ListDisplayOrder.reset()
+        filterManager.resetCategories()
+        Task { await UserScriptManager.shared.resetCategories() }
+    }
 
     private func restartOnboarding() {
         guard !isRestarting else { return }
@@ -1302,5 +1265,57 @@ private final class ScheduleRefreshTimer {
 
     deinit {
         timer?.invalidate()
+    }
+}
+
+/// The pause switches shared by the Settings section and the toolbar menus.
+struct PauseBlockingControls: View {
+    @ObservedObject var filterManager: AppFilterManager
+
+    private var pauseAll: Binding<Bool> {
+        Binding(
+            get: { filterManager.pausedComponents == .all },
+            set: { newValue in Task { await filterManager.setBlockingPaused(newValue) } }
+        )
+    }
+
+    private func pause(_ component: BlockingPauseComponents) -> Binding<Bool> {
+        Binding(
+            get: { filterManager.pausedComponents.contains(component) },
+            set: { newValue in
+                var components = filterManager.pausedComponents
+                if newValue { components.insert(component) } else { components.remove(component) }
+                Task { await filterManager.setPausedComponents(components) }
+            }
+        )
+    }
+
+    var body: some View {
+        Group {
+            Toggle("Pause All Components", isOn: pauseAll)
+            Group {
+                Toggle("Filters", isOn: pause(.filters))
+                Toggle("Enabled Userscripts & Userstyles", isOn: pause(.userScripts))
+                Toggle("Element Zapper", isOn: pause(.elementZapper))
+            }
+            .disabled(filterManager.pausedComponents == .all)
+        }
+        .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
+    }
+}
+
+/// Toolbar menu for pausing blocking. The icon fills while anything is paused.
+struct PauseBlockingMenu: View {
+    @ObservedObject var filterManager: AppFilterManager
+
+    var body: some View {
+        let isPaused = !filterManager.pausedComponents.isEmpty
+        let title: LocalizedStringKey = isPaused ? "Paused Components" : "Pause Blocking"
+        Menu {
+            Section("Pause Blocking") { PauseBlockingControls(filterManager: filterManager) }
+        } label: {
+            Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
+        }
+        .help(title)
     }
 }

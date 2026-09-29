@@ -197,7 +197,7 @@ struct UserScriptManagerView: View {
     var onRetryFailedReloads: () -> Void = {}
 
     @State private var scripts: [UserScriptListItem] = []
-    @AppStorage("userScriptDisplayOrder") private var scriptDisplayOrder = Data()
+    @AppStorage(ListDisplayOrder.scriptsKey) private var scriptDisplayOrder = Data()
     @State private var showingAddScriptSheet = false
     @State private var selectedScript: SelectedUserScript?
     @State private var selectedScriptInfo: SelectedUserScript?
@@ -494,7 +494,8 @@ struct UserScriptManagerView: View {
         UserScriptDisplayCategory.allCases.map { category in
             let section = UserScriptDisplaySection(id: category, scripts: displayedScripts.filter { $0.displayCategory == category })
             return MacListSection(id: category.id, header: AnyView(displaySectionHeader(section)),
-                                  rows: section.scripts.map { script in MacListRow(script.id) { scriptRowView(script: script) } })
+                                  rows: section.scripts.map { script in MacListRow(script.id) { scriptRowView(script: script) } },
+                                  revealsOnlyWhileDragging: true)
         }
     }
 

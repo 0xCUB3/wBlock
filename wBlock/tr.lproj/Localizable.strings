@@ -33,6 +33,8 @@
 "%@." = "%@.";
 "%@: %@" = "%@: %@";
 "%d entries" = "%d girdi";
+"%d list off" = "%d liste kapalı";
+"%d lists off" = "%d liste kapalı";
 "%d rule" = "%d kural";
 "%d rules" = "%d kural";
 "%d script off" = "%d betik kapalı";
@@ -1186,3 +1188,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Next update" = "Sonraki güncelleme";
 "Enable Experimental Filter?" = "Deneysel filtre etkinleştirilsin mi?";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Deneysel filtreler, yeni kuralları ana listelere girmeden önce dener ve web sitelerini bozabilir. Yalnızca sorunları bulup bildirmeye hazırsan etkinleştir.";
+"Enable HaGeZi Pro Mini?" = "HaGeZi Pro Mini açılsın mı?";
+"HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Pro Mini bir DNS engelleme listesidir; özellikle reklam engelleyiciler için tasarlanmış bir filtre listesi değildir. Diğer listelere göre daha az kararlı olabilir ve web sitelerini bozan daha fazla yanlış pozitife yol açabilir.";
+"Reset Ordering" = "Sıralamayı sıfırla";
+"Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Yerleşik listeleri ve kullanıcı betiklerini varsayılan kategori ve sıralamalarına döndürür, özel olanları Diğer’e taşır.";

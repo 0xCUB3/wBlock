@@ -161,7 +161,8 @@ struct MacListMove: Equatable {
 /// AppKit owns the drag session, row images, insertion gap, disclosure, and scrolling.
 /// SwiftUI supplies cell content and commits a move only after an accepted drop.
 struct MacReorderableList: NSViewRepresentable {
-    private static let nativeListBottomInset: CGFloat = 16
+    /// Bottom clearance shared by every macOS tab's scroll surface.
+    static let nativeListBottomInset: CGFloat = 16
 
     var sections: [MacListSection]
     let header: AnyView
@@ -309,13 +310,28 @@ struct MacReorderableList: NSViewRepresentable {
                 reloaded = true
                 let selected = outline.selectedRow >= 0 ? outline.item(atRow: outline.selectedRow) as? Node : nil
                 let preservedScrollOrigin = outline.enclosingScrollView?.contentView.bounds.origin
-                outline.reloadData()
-                // reloadData leaves expandable sections collapsed, and AppKit
-                // refuses collapseItem once the outline cell is hidden, so the
-                // rows a section exposes are exactly the rows it gets.
-                for section in model.sections {
-                    guard let node = sectionNode(section.id) else { continue }
-                    outline.expandItem(node)
+                // Patch only what changed. reloadData would rebuild every
+                // visible cell, and each rebuilt switch flickers or flashes as
+                // a blue oval while it settles.
+                let oldChildren = Dictionary(uniqueKeysWithValues: previous.map { ($0[0], Array($0.dropFirst())) })
+                // AppKit animates the row and cell frames it adjusts when the
+                // outline width changed since the last layout; those animated
+                // widths leave wrapped text measured against a stale frame.
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = 0
+                    outline.beginUpdates()
+                    patch(old: previous.map { $0[0] }, new: roots.map(\.id), in: nil)
+                    for parent in roots {
+                        if let old = oldChildren[parent.id] { patch(old: old, new: parent.children.map(\.id), in: parent) }
+                    }
+                    outline.endUpdates()
+                    // Inserted sections arrive collapsed, and AppKit refuses
+                    // collapseItem once the outline cell is hidden, so the
+                    // rows a section exposes are exactly the rows it gets.
+                    for section in model.sections {
+                        guard let node = sectionNode(section.id) else { continue }
+                        outline.expandItem(node)
+                    }
                 }
                 if let selected {
                     let row = outline.row(forItem: selected)
@@ -351,6 +367,18 @@ struct MacReorderableList: NSViewRepresentable {
             }
         }
 
+        private func patch(old: [Node.ID], new: [Node.ID], in parent: Node?) {
+            var removed = IndexSet(), inserted = IndexSet()
+            for change in new.difference(from: old) {
+                switch change {
+                case .remove(let offset, _, _): removed.insert(offset)
+                case .insert(let offset, _, _): inserted.insert(offset)
+                }
+            }
+            if !removed.isEmpty { outline?.removeItems(at: removed, inParent: parent, withAnimation: []) }
+            if !inserted.isEmpty { outline?.insertItems(at: inserted, inParent: parent, withAnimation: []) }
+        }
+
         @discardableResult
         private func refreshVisibleRows() -> IndexSet {
             guard let outline else { return [] }
@@ -361,6 +389,7 @@ struct MacReorderableList: NSViewRepresentable {
                 guard let node = outline.item(atRow: row) as? Node else { continue }
                 heights[node.id] = nil
                 guard let view = outline.view(atColumn: 0, row: row, makeIfNecessary: false) as? MacListHostingView else { continue }
+                view.isHidden = isConcealed(node)
                 view.setContent(hosted(node))
             }
             return indexes

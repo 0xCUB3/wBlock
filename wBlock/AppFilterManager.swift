@@ -20,28 +20,6 @@ private extension Notification.Name {
     let APP_CONTENT_BLOCKER_ID = "skula.wBlock.wBlock-Filters-iOS"
 #endif
 
-struct ApplyFilterConfiguration: Equatable {
-    let id: UUID
-    let name: String
-    let url: URL
-    let category: FilterListCategory
-    let isCustom: Bool
-    let hasUserProvidedName: Bool
-    let excludedSites: [String]
-    let selectedSites: [String]?
-
-    init(_ filter: FilterList) {
-        id = filter.id
-        name = filter.name
-        url = filter.url
-        category = filter.category
-        isCustom = filter.isCustom
-        hasUserProvidedName = filter.hasUserProvidedName
-        excludedSites = filter.excludedSites
-        selectedSites = filter.selectedSites
-    }
-}
-
 struct ApplyRunSnapshot {
     let filters: [FilterList]
     let configurations: [ApplyFilterConfiguration]
@@ -176,6 +154,18 @@ class AppFilterManager: ObservableObject {
         hasPendingNonSelectionChanges = filterConfigurations != appliedFilterConfigurations
             || customFilterKeys != appliedCustomFilterKeys
         refreshHasUnappliedChanges()
+    }
+
+    /// A custom list whose first download failed has nothing to apply, so it
+    /// joins the applied baseline as-is instead of lighting up Apply.
+    func acknowledgeUndownloadedFilter(_ id: UUID) {
+        if let filter = filterLists.first(where: { $0.id == id }) {
+            appliedCustomFilterKeys.insert(filter.url.absoluteString)
+            appliedFilterConfigurations = ApplyFilterConfiguration.acknowledging(
+                id, in: filterConfigurations, baseline: appliedFilterConfigurations)
+            if filter.isSelected { appliedSelectedFilterIDs.insert(id) }
+        }
+        refreshPendingChanges()
     }
 
     func markNonSelectionChangesPending() {
@@ -811,6 +801,20 @@ class AppFilterManager: ObservableObject {
             hydrated.trustLevel = catalogFilter.trustLevel
             return hydrated
         }
+    }
+
+    /// Puts built-in lists back in their catalog categories and moves custom lists to Other.
+    func resetCategories() {
+        let defaults = Dictionary(
+            loader.getDefaultFilterLists().map { ($0.url, $0.category) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        for index in filterLists.indices {
+            let filter = filterLists[index]
+            filterLists[index].category = filter.isCustom ? .custom : defaults[filter.url] ?? filter.category
+        }
+        saveFilterListsCoalesced()
+        markNonSelectionChangesPending()
     }
 
     // MARK: - Migration

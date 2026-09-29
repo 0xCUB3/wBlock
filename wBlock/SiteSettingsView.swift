@@ -3,6 +3,7 @@ import wBlockCoreService
 
 /// Per-site blocking and userscript settings. Element Zapper has its own destination.
 struct SiteSettingsView: View {
+    @ObservedObject var filterManager: AppFilterManager
     @ObservedObject private var dataManager = ProtobufDataManager.shared
     @ObservedObject private var userScriptManager = UserScriptManager.shared
     @State private var newDomain: String = ""
@@ -30,6 +31,8 @@ struct SiteSettingsView: View {
         let areUserScriptsDisabled: Bool
         let disabledScriptIDs: Set<String>
         let selectedScriptIDs: Set<String>
+        /// Filter lists that skip this site through their own excluded sites.
+        let excludedFilterIDs: Set<UUID>
     }
 
     private struct SiteUndoState {
@@ -40,8 +43,9 @@ struct SiteSettingsView: View {
     }
 
     @State private var pendingConfirmation: PendingConfirmation?
-    @State private var pendingUndo: SiteUndoState?
-    @State private var pendingRedo: SiteUndoState?
+    /// Every site edit is kept, so adding several domains can each be undone.
+    @State private var undoStack: [SiteUndoState] = []
+    @State private var redoStack: [SiteUndoState] = []
     @State private var isMutationInFlight = false
     @State private var mutationGeneration = 0
     @FocusState private var isTextFieldFocused: Bool
@@ -53,6 +57,7 @@ struct SiteSettingsView: View {
         let autoplayOverride: Bool?
         let areUserScriptsDisabled: Bool
         let scriptsOffCount: Int
+        let listsOffCount: Int
 
         var id: String { domain }
     }
@@ -80,8 +85,8 @@ struct SiteSettingsView: View {
         #if os(iOS)
         .toolbar {
             UndoRedoToolbar(
-                canUndo: pendingUndo != nil && !isMutationInFlight,
-                canRedo: pendingRedo != nil && !isMutationInFlight,
+                canUndo: !undoStack.isEmpty && !isMutationInFlight,
+                canRedo: !redoStack.isEmpty && !isMutationInFlight,
                 undo: undoSiteMutation,
                 redo: redoSiteMutation
             )
@@ -91,8 +96,8 @@ struct SiteSettingsView: View {
         #else
         .modifier(MacPushedActionsToolbar() {
             UndoRedoButtons(
-                canUndo: pendingUndo != nil && !isMutationInFlight,
-                canRedo: pendingRedo != nil && !isMutationInFlight,
+                canUndo: !undoStack.isEmpty && !isMutationInFlight,
+                canRedo: !redoStack.isEmpty && !isMutationInFlight,
                 undo: undoSiteMutation,
                 redo: redoSiteMutation
             )
@@ -131,6 +136,7 @@ struct SiteSettingsView: View {
             .union(DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayAllowedSites))
             .union(DisabledSitesNormalizer.normalizedDomains(from: dataManager.noAutoplayBlockedSites))
             .union(DisabledSitesNormalizer.normalizedDomains(from: dataManager.userScriptsDisabledSites))
+            .union(filterManager.filterLists.flatMap(\.excludedSites))
         return existing.contains(normalized) ? nil : normalized
     }
 
@@ -182,6 +188,7 @@ struct SiteSettingsView: View {
         domains.formUnion(scriptsDisabled)
         domains.formUnion(exceptionsByScript.values.flatMap { $0 })
         domains.formUnion(dataManager.getUserScriptAllowedHosts().values.flatMap { $0 })
+        domains.formUnion(filterManager.filterLists.flatMap(\.excludedSites))
 
         return domains.sorted().map { domain in
             SiteSummary(
@@ -193,6 +200,7 @@ struct SiteSettingsView: View {
                 scriptsOffCount: scriptsDisabled.contains(domain)
                     ? 0
                     : userScriptManager.pageUserScripts(for: "https://" + domain + "/").filter { $0.disabledForSite }.count,
+                listsOffCount: excludedFilterIDs(on: domain).count
             )
         }
 
@@ -251,6 +259,12 @@ struct SiteSettingsView: View {
                     } else if site.isFilterDisabled {
                         summaryBadge(Text("Filtering off"), systemImage: "line.3.horizontal.decrease.circle")
                     }
+                    if site.listsOffCount > 0 {
+                        summaryBadge(
+                            Text(localizedCount(site.listsOffCount, one: "%d list off", other: "%d lists off")),
+                            systemImage: "list.bullet"
+                        )
+                    }
                     if let autoplay = site.autoplayOverride {
                         summaryBadge(
                             Text(autoplay ? "Autoplay on" : "Autoplay off"),
@@ -261,7 +275,7 @@ struct SiteSettingsView: View {
                         summaryBadge(Text("Userscripts off"), systemImage: "scroll")
                     } else if site.scriptsOffCount > 0 {
                         summaryBadge(
-                            Text(localizedScriptsOffCount(site.scriptsOffCount)),
+                            Text(localizedCount(site.scriptsOffCount, one: "%d script off", other: "%d scripts off")),
                             systemImage: "scroll"
                         )
                     }
@@ -441,24 +455,24 @@ struct SiteSettingsView: View {
     // MARK: - Undo and redo
 
     private func undoSiteMutation() {
-        guard let state = pendingUndo, let generation = beginMutation() else { return }
+        guard let state = undoStack.last, let generation = beginMutation() else { return }
         Task { @MainActor in
             defer { finishMutation(generation) }
             await apply(state.before, to: state.domain)
             guard generation == mutationGeneration else { return }
-            pendingUndo = nil
-            pendingRedo = state
+            undoStack.removeLast()
+            redoStack.append(state)
         }
     }
 
     private func redoSiteMutation() {
-        guard let state = pendingRedo, let generation = beginMutation() else { return }
+        guard let state = redoStack.last, let generation = beginMutation() else { return }
         Task { @MainActor in
             defer { finishMutation(generation) }
             await apply(state.after, to: state.domain)
             guard generation == mutationGeneration else { return }
-            pendingRedo = nil
-            pendingUndo = state
+            redoStack.removeLast()
+            undoStack.append(state)
         }
     }
 
@@ -476,8 +490,20 @@ struct SiteSettingsView: View {
             disabledScriptIDs: Set(disabledHosts.compactMap { scriptID, hosts in
                 hosts.contains(domain) ? scriptID : nil
             }),
-            selectedScriptIDs: Set(dataManager.getUserScriptAllowedHosts().compactMap { $0.value.contains(domain) ? $0.key : nil })
+            selectedScriptIDs: Set(dataManager.getUserScriptAllowedHosts().compactMap { $0.value.contains(domain) ? $0.key : nil }),
+            excludedFilterIDs: excludedFilterIDs(on: domain)
         )
+    }
+
+    private func excludedFilterIDs(on domain: String) -> Set<UUID> {
+        Set(filterManager.filterLists.filter { $0.excludedSites.contains(domain) }.map(\.id))
+    }
+
+    private func setFilterExclusions(_ ids: Set<UUID>, on domain: String) {
+        for filter in filterManager.filterLists where filter.excludedSites.contains(domain) != ids.contains(filter.id) {
+            let others = filter.excludedSites.filter { $0 != domain }
+            filterManager.setExcludedSites(ids.contains(filter.id) ? others + [domain] : others, for: filter.id)
+        }
     }
 
     private func mutateSite(_ domain: String, operation: @escaping @MainActor () async -> Void) {
@@ -489,8 +515,8 @@ struct SiteSettingsView: View {
             guard generation == mutationGeneration else { return }
             let after = siteSnapshot(domain)
             guard before != after else { return }
-            pendingUndo = SiteUndoState(domain: domain, before: before, after: after)
-            pendingRedo = nil
+            undoStack.append(SiteUndoState(domain: domain, before: before, after: after))
+            redoStack = []
         }
     }
 
@@ -517,6 +543,7 @@ struct SiteSettingsView: View {
         await dataManager.setNoAutoplayBlockedSites(snapshot.autoplayOverride == false ? blockedSites + [domain] : blockedSites)
         await dataManager.setUserScriptsDisabled(snapshot.areUserScriptsDisabled, onHost: domain)
         await restoreSelectedSites(snapshot.selectedScriptIDs, on: domain)
+        setFilterExclusions(snapshot.excludedFilterIDs, on: domain)
         let disabledHosts = dataManager.getUserScriptDisabledHosts()
         for scriptID in Set(disabledHosts.keys).union(snapshot.disabledScriptIDs) {
             var hosts = disabledHosts[scriptID] ?? []
@@ -616,14 +643,14 @@ struct SiteSettingsView: View {
             for (id, hosts) in dataManager.getUserScriptAllowedHosts() where hosts.contains(domain) {
                 await dataManager.setUserScriptSiteAccess(.init(onlySelectedSites: true, hosts: hosts.filter { $0 != domain }), forScriptID: id)
             }
+            setFilterExclusions([], on: domain)
             expandedDomains.remove(domain)
         }
     }
 
-    private func localizedScriptsOffCount(_ count: Int) -> String {
-        let key = count == 1 ? "%d script off" : "%d scripts off"
-        return String.localizedStringWithFormat(
-            NSLocalizedString(key, comment: "Per-site disabled userscript count"),
+    private func localizedCount(_ count: Int, one: String, other: String) -> String {
+        String.localizedStringWithFormat(
+            NSLocalizedString(count == 1 ? one : other, comment: "Per-site disabled count badge"),
             count
         )
     }

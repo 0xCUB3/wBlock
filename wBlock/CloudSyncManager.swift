@@ -115,6 +115,8 @@ final class CloudSyncManager: ObservableObject {
         let userScripts: UInt64
         let userScriptDisabledHosts: [String: [String]]
         let userScriptAllowedHosts: [String: [String]]
+        let filterOrder: Data
+        let scriptOrder: Data
     }
 
     private func localMutationRevisionSnapshot() -> LocalMutationRevisionSnapshot {
@@ -122,19 +124,19 @@ final class CloudSyncManager: ObservableObject {
             filterSelection: filterManager?.selectionMutationRevision ?? 0,
             userScripts: userScriptManager.localMutationRevision,
             userScriptDisabledHosts: dataManager.getUserScriptDisabledHosts(),
-            userScriptAllowedHosts: dataManager.getUserScriptAllowedHosts()
+            userScriptAllowedHosts: dataManager.getUserScriptAllowedHosts(),
+            filterOrder: ListDisplayOrder.saved(ListDisplayOrder.filtersKey),
+            scriptOrder: ListDisplayOrder.saved(ListDisplayOrder.scriptsKey)
         )
     }
 
     private func stableLocalPayloadAndMutationBaseline() async -> (
         payload: SyncPayload, baseline: LocalMutationRevisionSnapshot
     ) {
-        while true {
-            let baseline = localMutationRevisionSnapshot()
-            let payload = await buildPayloadRefreshingSnapshot()
-            guard localMutationRevisionSnapshot() == baseline else { continue }
-            return (payload, baseline)
-        }
+        let stable = await StableSnapshot.build(
+            state: { self.localMutationRevisionSnapshot() },
+            value: { await self.buildPayloadRefreshingSnapshot() })
+        return (stable.value, stable.state)
     }
 
     private var uploadCoordinator = CloudSyncUploadCoordinator()
@@ -438,6 +440,17 @@ final class CloudSyncManager: ObservableObject {
     }
 
     private func observeLocalUserScriptChanges() {
+        // Reordering only writes UserDefaults, so watch the two order blobs directly.
+        NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)
+            .prepend(Notification(name: UserDefaults.didChangeNotification))
+            .map { _ in [ListDisplayOrder.filtersKey, ListDisplayOrder.scriptsKey].map(ListDisplayOrder.saved) }
+            .removeDuplicates()
+            .dropFirst()
+            .filter { [weak self] _ in self?.isApplyingRemoteChanges == false }
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .sink { [weak self] _ in self?.handleLocalSave() }
+            .store(in: &cancellables)
+
         userScriptManager.$tubeCleanerFeatures
             .combineLatest(userScriptManager.$tubeCleanerDeArrow, userScriptManager.$playerCleanerFeatures)
             .dropFirst()
@@ -617,7 +630,7 @@ final class CloudSyncManager: ObservableObject {
         // to push. Checking before the fetch avoids a CloudKit round trip for the routine
         // save notifications fired by non-sync-visible state (e.g. filter version/count
         // refreshes). Remote-newer changes are still converged by two-way sync.
-        let preCheckPayload = await buildPayloadRefreshingSnapshot()
+        let preCheckPayload = await stableLocalPayloadAndMutationBaseline().payload
         if pendingRemoteScriptAdditions().isEmpty,
            preCheckPayload.contentHash == defaults.string(forKey: Keys.lastUploadedHash) {
             markUpToDate(from: preCheckPayload)
@@ -633,13 +646,14 @@ final class CloudSyncManager: ObservableObject {
             }
 
             let additionsForUpload = pendingRemoteScriptAdditions()
-            let payload = await buildPayloadRefreshingSnapshot()
+            let payload = await stableLocalPayloadAndMutationBaseline().payload
 
             let payloadURL = try await applyPayloadFields(payload, to: &record)
             defer { try? FileManager.default.removeItem(at: payloadURL) }
 
             let savedPayload = try await saveRecordWithConflictResolution(record, payload: payload)
             acknowledgeRemoteScriptAdditions(additionsForUpload, syncedPayload: savedPayload)
+            markDisplayOrdersSynced(savedPayload)
 
             defaults.set(savedPayload.contentHash, forKey: Keys.lastUploadedHash)
             defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastUploadedAt)
@@ -865,6 +879,7 @@ final class CloudSyncManager: ObservableObject {
             allowedHostsBaseline: localMutationBaseline.userScriptAllowedHosts,
             localMutationRevisionAtStart: userScriptMutationRevisionAtStart
         )
+        applyRemoteDisplayOrders(payload, filters: localMutationBaseline.filterOrder, scripts: localMutationBaseline.scriptOrder)
 
         if let filterManager,
            filterManager.selectionMutationRevision != filterSelectionRevisionAtStart
@@ -880,17 +895,17 @@ final class CloudSyncManager: ObservableObject {
             await filterManager.applyChanges(allowUserInteraction: true)
         }
 
-        let localMutationDuringApply =
-            (filterManager?.selectionMutationRevision ?? filterSelectionRevisionAtStart)
-                != filterSelectionRevisionAtStart
-            || userScriptManager.localMutationRevision != userScriptMutationRevisionAtStart
-
-        let finalLocalPayload = await buildPayloadRefreshingSnapshot()
+        // Finalize from a payload that no mutation slipped past: drags made during its awaits are
+        // suppressed by isApplyingRemoteChanges, so only the rebuilt payload's hash can reveal them.
+        let (finalLocalPayload, finalMutations) = await stableLocalPayloadAndMutationBaseline()
+        let localMutationDuringApply = finalMutations.filterSelection != filterSelectionRevisionAtStart
+            || finalMutations.userScripts != userScriptMutationRevisionAtStart
         let localPayloadDiffersFromRemote = finalLocalPayload.contentHash != payload.contentHash
 
         // Only a fully converged apply can advance the known-synced script baseline.
         if !localMutationDuringApply && !localPayloadDiffersFromRemote {
             acknowledgeRemoteScriptAdditions(additionsAtStart, syncedPayload: payload)
+            markDisplayOrdersSynced(payload)
             setLastSyncedLocalUserScriptNames(localUserScriptNames(in: payload))
             setLastSyncedLocalUserScriptIdentities(localUserScriptIdentities(in: payload))
         }
@@ -1131,6 +1146,45 @@ final class CloudSyncManager: ObservableObject {
             nonSelectionChanged: nonSelectionChanged
         )
     }
+
+    private static func filterOrderKey(_ filter: FilterList) -> String {
+        FilterListLoader.canonicalFilterURLString(filter.url.absoluteString)
+    }
+
+    private var orderableUserScripts: [UserScript] {
+        userScriptManager.userScripts.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    /// Display order is local unless the remote has one and this device has not reordered since the baseline.
+    /// Compares against the blobs from sync start at write time, so a reorder made during the awaits survives.
+    private func applyRemoteDisplayOrders(_ payload: SyncPayload, filters: Data, scripts: Data) {
+        ListDisplayOrder.adopt(
+            payload.filters.order, to: orderableFilters, key: ListDisplayOrder.filtersKey,
+            baseline: filters, itemKey: Self.filterOrderKey)
+        ListDisplayOrder.adopt(
+            payload.userScripts.order, to: orderableUserScripts, key: ListDisplayOrder.scriptsKey,
+            baseline: scripts, itemKey: CloudSyncUserScriptEnabledStatePolicy.key(for:))
+    }
+
+    /// Uploads and conflict retries: a device that has not reordered since the last agreement adopts the
+    /// server's order (including the [] reset) rather than exporting nil over it.
+    private func adoptServerDisplayOrders(_ payload: SyncPayload) {
+        isApplyingRemoteChanges = true
+        applyRemoteDisplayOrders(
+            payload, filters: ListDisplayOrder.synced(ListDisplayOrder.filtersKey),
+            scripts: ListDisplayOrder.synced(ListDisplayOrder.scriptsKey))
+        isApplyingRemoteChanges = false
+    }
+
+    private func markDisplayOrdersSynced(_ payload: SyncPayload) {
+        ListDisplayOrder.markSynced(
+            payload.filters.order, items: orderableFilters, key: ListDisplayOrder.filtersKey, itemKey: Self.filterOrderKey)
+        ListDisplayOrder.markSynced(
+            payload.userScripts.order, items: orderableUserScripts, key: ListDisplayOrder.scriptsKey,
+            itemKey: CloudSyncUserScriptEnabledStatePolicy.key(for:))
+    }
+
+    private var orderableFilters: [FilterList] { currentFilterLists().filter { $0.category != .foreign } }
 
     private func applyRemoteUserScriptState(
         _ script: UserScript,
@@ -1482,6 +1536,8 @@ final class CloudSyncManager: ObservableObject {
         // accidentally drop them from the single shared CloudKit payload.
         let filterSelectionRevisionAtStart = filterManager?.selectionMutationRevision ?? 0
         let userScriptMutationRevisionAtStart = userScriptManager.localMutationRevision
+        // After the imports below, so newly imported items are ordered too.
+        defer { adoptServerDisplayOrders(remotePayload) }
 
         let localCustomURLs = currentLocalCustomURLs()
         let remoteCustomURLs = Set(remotePayload.filters.customLists.map(\.url))
@@ -1826,7 +1882,10 @@ final class CloudSyncManager: ObservableObject {
             knownURLs: knownURLs,
             selectedURLs: selectedURLs,
             customLists: customLists,
-            deletedCustomURLs: deletedCustomURLs.isEmpty ? nil : deletedCustomURLs
+            deletedCustomURLs: deletedCustomURLs.isEmpty ? nil : deletedCustomURLs,
+            order: ListDisplayOrder.exportedKeys(
+                filterLists.filter { $0.category != .foreign },
+                order: ListDisplayOrder.saved(ListDisplayOrder.filtersKey), key: Self.filterOrderKey)
         )
 
         let userScriptDisabledHosts = dataManager.getUserScriptDisabledHosts()
@@ -1897,7 +1956,10 @@ final class CloudSyncManager: ObservableObject {
             local: localScripts,
             deletedLocalNames: deletedLocalNames.isEmpty ? nil : deletedLocalNames,
             deletedLocalIdentities: deletedLocalIdentities.isEmpty ? nil : deletedLocalIdentities,
-            deletedRemoteURLs: deletedRemoteURLs.isEmpty ? nil : deletedRemoteURLs
+            deletedRemoteURLs: deletedRemoteURLs.isEmpty ? nil : deletedRemoteURLs,
+            order: ListDisplayOrder.exportedKeys(
+                orderableUserScripts, order: ListDisplayOrder.saved(ListDisplayOrder.scriptsKey),
+                key: CloudSyncUserScriptEnabledStatePolicy.key(for:))
         )
 
         let whitelistDomains = dataManager.getWhitelistedDomains().sorted()
@@ -2098,6 +2160,7 @@ final class CloudSyncManager: ObservableObject {
     /// userscript name as known-synced, and surfaces the up-to-date status.
     private func markUpToDate(from localPayload: SyncPayload, acknowledging additions: [String: String] = [:]) {
         acknowledgeRemoteScriptAdditions(additions, syncedPayload: localPayload)
+        markDisplayOrdersSynced(localPayload)
         setLastSyncedLocalUserScriptNames(localUserScriptNames(in: localPayload))
         setLastSyncedLocalUserScriptIdentities(localUserScriptIdentities(in: localPayload))
         defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
@@ -2161,10 +2224,7 @@ final class CloudSyncManager: ObservableObject {
     private func freezeCurrentUserScriptEnabledStates() {
         var states = loadSharedUserScriptEnabledStates()
         for script in userScriptManager.userScripts {
-            let key = script.isLocal
-                ? CloudSyncUserScriptEnabledStatePolicy.localKey(identity: script.localImportIdentity, name: script.name)
-                : script.url.flatMap { CloudSyncUserScriptEnabledStatePolicy.remoteKey($0.absoluteString) }
-            if let key { states[key] = script.isEnabled }
+            if let key = CloudSyncUserScriptEnabledStatePolicy.key(for: script) { states[key] = script.isEnabled }
         }
         saveSharedUserScriptEnabledStates(states)
     }
@@ -2481,6 +2541,8 @@ private struct SyncPayload: Codable {
         let customLists: [CustomFilterList]
         /// Custom list URLs deleted by the user. Used to prevent resurrection during sync.
         let deletedCustomURLs: [String]?
+        /// Canonical URLs in the user's display order; nil until they reorder.
+        var order: [String]? = nil
     }
 
     struct RemoteUserScript: Codable, Sendable {
@@ -2513,6 +2575,8 @@ private struct SyncPayload: Codable {
         let deletedLocalNames: [String]?
         let deletedLocalIdentities: [String]?
         let deletedRemoteURLs: [String]?
+        /// Script keys in the user's display order; nil until they reorder.
+        var order: [String]? = nil
     }
 
     struct Content: Codable {

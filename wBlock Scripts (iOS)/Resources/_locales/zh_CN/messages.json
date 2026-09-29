@@ -87,10 +87,6 @@
     "message": "此页面无法使用元素清除器。",
     "description": "Error shown when zapper cannot be activated on the current tab."
   },
-  "popup_error_open_app": {
-    "message": "打开应用失败。",
-    "description": "Error shown when popup fails to open the containing app."
-  },
   "popup_error_clear_rules": {
     "message": "清除元素清除规则失败。",
     "description": "Error shown when popup fails to clear zapper rules for the current site."

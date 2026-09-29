@@ -171,21 +171,6 @@ body {
   white-space: normal;
 }
 
-.top-open {
-  flex: 0 0 auto;
-  white-space: nowrap;
-  appearance: none;
-  border: 0;
-  border-radius: 999px;
-  padding: 3px 8px;
-  min-height: 22px;
-  background: var(--fill);
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1;
-}
-
 .pill {
   font-size: 12px;
   font-weight: 650;

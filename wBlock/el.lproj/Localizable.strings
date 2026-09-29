@@ -33,6 +33,8 @@
 "%@." = "%@.";
 "%@: %@" = "%@: %@";
 "%d entries" = "Εγγραφές %d";
+"%d list off" = "%d λίστα ανενεργή";
+"%d lists off" = "%d λίστες ανενεργές";
 "%d rule" = "%d κανόνας";
 "%d rules" = "%d κανόνες";
 "%d script off" = "%d κώδικας ανενεργός";
@@ -1177,3 +1179,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Next update" = "Επόμενη ενημέρωση";
 "Enable Experimental Filter?" = "Ενεργοποίηση πειραματικού φίλτρου;";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Τα πειραματικά φίλτρα δοκιμάζουν νέους κανόνες πριν φτάσουν στις κύριες λίστες και μπορεί να χαλάσουν ιστότοπους. Ενεργοποιήστε τα μόνο αν σας βολεύει να εντοπίζετε και να αναφέρετε προβλήματα.";
+"Enable HaGeZi Pro Mini?" = "Ενεργοποίηση του HaGeZi Pro Mini;";
+"HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "Το HaGeZi Pro Mini είναι λίστα αποκλεισμού για DNS και όχι λίστα φίλτρων σχεδιασμένη ειδικά για προγράμματα αποκλεισμού διαφημίσεων. Μπορεί να είναι λιγότερο σταθερό από τις άλλες λίστες και να προκαλεί περισσότερα ψευδώς θετικά που χαλάνε ιστότοπους.";
+"Reset Ordering" = "Επαναφορά σειράς";
+"Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Επαναφέρει τις ενσωματωμένες λίστες και τα userscripts στις προεπιλεγμένες κατηγορίες και σειρά τους και μετακινεί τα προσαρμοσμένα στο «Άλλα».";

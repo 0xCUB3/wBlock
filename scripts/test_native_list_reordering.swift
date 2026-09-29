@@ -176,6 +176,15 @@ import SwiftUI
         precondition(coordinator.outlineView(outline, validateDrop: info, proposedItem: concealedParent, proposedChildIndex: -1) == .move)
         coordinator.endDragging()
         precondition(concealedHeight() < 1, "An empty drag-only section must hide again after a drag")
+        // The header view built during the drag is retained, hidden, once the section is empty again.
+        outline.scrollRowToVisible(outline.row(forItem: concealedParent))
+        let retained = outline.view(atColumn: 0, row: outline.row(forItem: concealedParent), makeIfNecessary: true)
+        precondition(retained?.isHidden == true, "The empty drag-only header must stay retained and hidden")
+        host.rootView = list(base + [fixed, section("concealed", [UUID()])])
+        try await settle(host)
+        precondition(retained?.isHidden == false, "A retained header must reappear when its drag-only section gains a row")
+        host.rootView = model
+        try await settle(host)
         coordinator.beginDragging()
         for _ in 0..<100 {
             precondition(coordinator.outlineView(outline, validateDrop: info, proposedItem: parentB, proposedChildIndex: 0) == .move)
@@ -293,6 +302,20 @@ import SwiftUI
         let viewportAfterExpansion = shortScroll.contentView.bounds.origin
         precondition(abs(viewportAfterExpansion.y - viewportBeforeExpansion.y) < 1,
                      "rebuilding an expanded category must preserve the scrolled viewport")
+
+        // Search and category expansion patch the outline: untouched rows keep
+        // their hosted cells instead of being rebuilt (flickering switches).
+        host.rootView = list([section("long", few)])
+        try await settle(host)
+        let keptCells = (2..<5).map { outline.view(atColumn: 0, row: $0, makeIfNecessary: false) }
+        precondition(keptCells.allSatisfy { $0 != nil })
+        host.rootView = list([section("long", few + [UUID()])])
+        try await settle(host)
+        precondition(outline.numberOfRows == 6)
+        for (offset, cell) in keptCells.enumerated() {
+            precondition(outline.view(atColumn: 0, row: offset + 2, makeIfNecessary: false) === cell,
+                         "a structure change must not rebuild untouched rows")
+        }
 
         // Rapid filter-like replacements must remain valid for both empty and
         // non-empty results, including returning to a short list at the top.

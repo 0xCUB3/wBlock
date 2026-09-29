@@ -29,7 +29,7 @@ struct ContentView: View {
     @State private var downloadedFilterIDs: Set<UUID> = []
     @State private var showingFilterDownloadError = false
     @AppStorage("filtersShowEnabledOnly") private var showOnlyEnabledLists = false
-    @AppStorage("filterDisplayOrder") private var filterDisplayOrder = Data()
+    @AppStorage(ListDisplayOrder.filtersKey) private var filterDisplayOrder = Data()
     @State private var filterSearchText = ""
     @State private var showFilterSearch = false
     @State private var editingCustomFilter: FilterList?
@@ -56,7 +56,7 @@ struct ContentView: View {
               localeIdentifier: locale.identifier)
     }
     @State private var pendingEssentialFilter: FilterList?
-    @State private var pendingExperimentalEnable: (() -> Void)?
+    @State private var pendingRiskyEnable: RiskyFilterEnable?
     /// Monotonic tokens handed to the Userscripts tab so a ⌘⇧N or ⌘L that
     /// arrives before that tab has been built is still honored on appear.
     @State private var addUserScriptRequest = 0
@@ -285,7 +285,7 @@ struct ContentView: View {
         } message: {
             Text("This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage.")
         }
-        .experimentalFilterAlert($pendingExperimentalEnable)
+        .riskyFilterAlert($pendingRiskyEnable)
         .onChangeCompat(of: dataManager.isForeignFiltersExpanded) { _, newValue in
             guard isForeignFiltersExpanded != newValue else { return }
             isForeignFiltersExpanded = newValue
@@ -385,6 +385,7 @@ struct ContentView: View {
                                 Label("Search", systemImage: "magnifyingglass")
                             }
                         }
+                        PauseBlockingMenu(filterManager: filterManager)
                         Button {
                             showingAddFilterSheet = true
                         } label: {
@@ -526,6 +527,9 @@ struct ContentView: View {
                             applyChangesToolbarButton
                         }
                         .toolbarVisibilityPriorityCompat(.high)
+                        ToolbarItem(placement: .topBarTrailing) {
+                            PauseBlockingMenu(filterManager: filterManager)
+                        }
                     }
                 #endif
         }
@@ -715,11 +719,11 @@ struct ContentView: View {
         downloadedFilterIDs = Set(filterManager.filterLists.lazy.filter { loader.filterFileExists($0) }.map(\.id))
     }
 
-    /// Built-in experimental lists can break sites, so enabling one asks first (#878).
+    /// Built-in experimental lists and HaGeZi Pro Mini can break sites, so enabling one asks first (#878, #886).
     /// The alert is attached to the info sheet too, because an open sheet blocks alerts from the view underneath.
     private func confirmingExperimental(_ filter: FilterList, _ enable: @escaping () -> Void) {
-        if filter.category == .experimental && !filter.isCustom {
-            pendingExperimentalEnable = enable
+        if let warning = RiskyFilterEnable(filter: filter, enable: enable) {
+            pendingRiskyEnable = warning
         } else {
             enable()
         }
@@ -732,16 +736,18 @@ struct ContentView: View {
         downloadingFilterIDs.insert(filter.id)
         Task {
             let succeeded = await filterManager.filterUpdater.fetchAndProcessFilter(filter)
+            let current = filterManager.filterLists.first(where: { $0.id == filter.id })
+            // One transaction, so the switch fades in already on instead of snapping.
             withAnimation(.easeInOut(duration: 0.2)) {
                 downloadingFilterIDs.remove(filter.id)
-            }
-            guard let current = filterManager.filterLists.first(where: { $0.id == filter.id }) else { return }
-            if succeeded {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                if succeeded, let current {
                     downloadedFilterIDs.insert(filter.id)
+                    // Get also enables the list after its content is safely persisted.
+                    filterManager.setFilterListSelection(id: current.id, selected: true)
                 }
-                // Get also enables the list after its content is safely persisted.
-                filterManager.setFilterListSelection(id: current.id, selected: true)
+            }
+            guard let current else { return }
+            if succeeded {
                 filterManager.saveFilterListsCoalesced()
                 if current.isSelected { filterManager.markNonSelectionChangesPending() }
             } else {
@@ -817,7 +823,7 @@ struct ContentView: View {
             isDownloading: downloadingFilterIDs.contains(filter.id),
             onDownload: { confirmingExperimental(filter) { downloadFilter(filter) } }
         )
-        .experimentalFilterAlert($pendingExperimentalEnable)
+        .riskyFilterAlert($pendingRiskyEnable)
         .infoSheetPresentationCompat()
     }
 
@@ -1062,7 +1068,7 @@ struct FilterRowView: View {
     }
 
     private var ruleCountSummary: String? {
-        if filter.isCustom && !filter.isInlineUserList && filter.sourceRuleCount == nil {
+        if filter.isCustom && !filter.isInlineUserList && filter.isSelected && filter.sourceRuleCount == nil {
             return NSLocalizedString("Not Downloaded", comment: "Filter has no local content")
         }
         if let rawCount = filter.rawSourceRuleCount,
@@ -1199,6 +1205,15 @@ struct ContentModifiers: ViewModifier {
     @State private var showOnboardingSheet = false
     // Track if initial presentation check has been done to avoid re-showing after dismiss
     @State private var hasPerformedInitialCheck = false
+    // False from the moment the progress sheet appears until its dismissal finishes.
+    // An alert requested while the sheet is up is held until then; SwiftUI drops an
+    // alert presented over a sheet that is still on screen or animating away.
+    @State private var progressSheetSettled = true
+
+    private var progressSheetPresented: Bool {
+        filterManager.showingApplyProgressSheet
+            || (filterManager.isLoading && !filterManager.suppressBlockingOverlay)
+    }
 
     func body(content: Content) -> some View {
         content
@@ -1206,16 +1221,13 @@ struct ContentModifiers: ViewModifier {
                 AddFilterListView(filterManager: filterManager)
             }
             .sheet(isPresented: Binding(
-                get: {
-                    filterManager.showingApplyProgressSheet
-                        || (filterManager.isLoading && !filterManager.suppressBlockingOverlay)
-                },
+                get: { progressSheetPresented },
                 set: { presented in
                     if !presented && !filterManager.isLoading {
                         filterManager.showingApplyProgressSheet = false
                     }
                 }
-            )) {
+            ), onDismiss: { progressSheetSettled = true }) {
                 if filterManager.showingApplyProgressSheet {
                     ApplyChangesProgressView(
                         filterManager: filterManager,
@@ -1227,14 +1239,17 @@ struct ContentModifiers: ViewModifier {
                         .interactiveDismissDisabled()
                 }
             }
-            // Closing the progress sheet must not dismiss the non-blocking result toast.
-            .overlay(alignment: .top) {
-                if filterManager.showingNoUpdatesAlert {
-                    NoUpdatesToast { filterManager.showingNoUpdatesAlert = false }
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                }
+            .onChangeCompat(of: progressSheetPresented) { _, presented in
+                if presented { progressSheetSettled = false }
             }
-            .animation(.easeInOut(duration: 0.25), value: filterManager.showingNoUpdatesAlert)
+            .alert("No Updates Found", isPresented: Binding(
+                get: { filterManager.showingNoUpdatesAlert && !progressSheetPresented && progressSheetSettled },
+                set: { if !$0 { filterManager.showingNoUpdatesAlert = false } }
+            )) {
+                Button("OK") {}
+            } message: {
+                Text("You're already using the latest filters.")
+            }
             .alert(
                 filterManager.ruleLimitWarningTitle,
                 isPresented: $filterManager.showingRuleLimitWarningAlert
@@ -2869,19 +2884,39 @@ struct RuleCapacityPopoverView: View {
     }
 }
 
+private struct RiskyFilterEnable {
+    let title: LocalizedStringKey
+    let message: LocalizedStringKey
+    let enable: () -> Void
+
+    init?(filter: FilterList, enable: @escaping () -> Void) {
+        guard !filter.isCustom else { return nil }
+        self.enable = enable
+        if filter.category == .experimental {
+            title = "Enable Experimental Filter?"
+            message = "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage."
+        } else if filter.name == "HaGeZi Pro Mini" {
+            title = "Enable HaGeZi Pro Mini?"
+            message = "HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites."
+        } else {
+            return nil
+        }
+    }
+}
+
 private extension View {
-    func experimentalFilterAlert(_ pending: Binding<(() -> Void)?>) -> some View {
-        alert("Enable Experimental Filter?", isPresented: Binding(
+    func riskyFilterAlert(_ pending: Binding<RiskyFilterEnable?>) -> some View {
+        alert(pending.wrappedValue?.title ?? "", isPresented: Binding(
             get: { pending.wrappedValue != nil },
             set: { if !$0 { pending.wrappedValue = nil } }
         )) {
             Button("Cancel", role: .cancel) { pending.wrappedValue = nil }
             Button("Enable") {
-                pending.wrappedValue?()
+                pending.wrappedValue?.enable()
                 pending.wrappedValue = nil
             }
         } message: {
-            Text("Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage.")
+            if let message = pending.wrappedValue?.message { Text(message) }
         }
     }
 }
