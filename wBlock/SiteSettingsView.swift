@@ -40,8 +40,9 @@ struct SiteSettingsView: View {
     }
 
     @State private var pendingConfirmation: PendingConfirmation?
-    @State private var pendingUndo: SiteUndoState?
-    @State private var pendingRedo: SiteUndoState?
+    /// Every site edit is kept, so adding several domains can each be undone.
+    @State private var undoStack: [SiteUndoState] = []
+    @State private var redoStack: [SiteUndoState] = []
     @State private var isMutationInFlight = false
     @State private var mutationGeneration = 0
     @FocusState private var isTextFieldFocused: Bool
@@ -80,8 +81,8 @@ struct SiteSettingsView: View {
         #if os(iOS)
         .toolbar {
             UndoRedoToolbar(
-                canUndo: pendingUndo != nil && !isMutationInFlight,
-                canRedo: pendingRedo != nil && !isMutationInFlight,
+                canUndo: !undoStack.isEmpty && !isMutationInFlight,
+                canRedo: !redoStack.isEmpty && !isMutationInFlight,
                 undo: undoSiteMutation,
                 redo: redoSiteMutation
             )
@@ -91,8 +92,8 @@ struct SiteSettingsView: View {
         #else
         .modifier(MacPushedActionsToolbar() {
             UndoRedoButtons(
-                canUndo: pendingUndo != nil && !isMutationInFlight,
-                canRedo: pendingRedo != nil && !isMutationInFlight,
+                canUndo: !undoStack.isEmpty && !isMutationInFlight,
+                canRedo: !redoStack.isEmpty && !isMutationInFlight,
                 undo: undoSiteMutation,
                 redo: redoSiteMutation
             )
@@ -441,24 +442,24 @@ struct SiteSettingsView: View {
     // MARK: - Undo and redo
 
     private func undoSiteMutation() {
-        guard let state = pendingUndo, let generation = beginMutation() else { return }
+        guard let state = undoStack.last, let generation = beginMutation() else { return }
         Task { @MainActor in
             defer { finishMutation(generation) }
             await apply(state.before, to: state.domain)
             guard generation == mutationGeneration else { return }
-            pendingUndo = nil
-            pendingRedo = state
+            undoStack.removeLast()
+            redoStack.append(state)
         }
     }
 
     private func redoSiteMutation() {
-        guard let state = pendingRedo, let generation = beginMutation() else { return }
+        guard let state = redoStack.last, let generation = beginMutation() else { return }
         Task { @MainActor in
             defer { finishMutation(generation) }
             await apply(state.after, to: state.domain)
             guard generation == mutationGeneration else { return }
-            pendingRedo = nil
-            pendingUndo = state
+            redoStack.removeLast()
+            undoStack.append(state)
         }
     }
 
@@ -489,8 +490,8 @@ struct SiteSettingsView: View {
             guard generation == mutationGeneration else { return }
             let after = siteSnapshot(domain)
             guard before != after else { return }
-            pendingUndo = SiteUndoState(domain: domain, before: before, after: after)
-            pendingRedo = nil
+            undoStack.append(SiteUndoState(domain: domain, before: before, after: after))
+            redoStack = []
         }
     }
 
