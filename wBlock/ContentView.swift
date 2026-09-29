@@ -736,16 +736,18 @@ struct ContentView: View {
         downloadingFilterIDs.insert(filter.id)
         Task {
             let succeeded = await filterManager.filterUpdater.fetchAndProcessFilter(filter)
+            let current = filterManager.filterLists.first(where: { $0.id == filter.id })
+            // One transaction, so the switch fades in already on instead of snapping.
             withAnimation(.easeInOut(duration: 0.2)) {
                 downloadingFilterIDs.remove(filter.id)
-            }
-            guard let current = filterManager.filterLists.first(where: { $0.id == filter.id }) else { return }
-            if succeeded {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                if succeeded, let current {
                     downloadedFilterIDs.insert(filter.id)
+                    // Get also enables the list after its content is safely persisted.
+                    filterManager.setFilterListSelection(id: current.id, selected: true)
                 }
-                // Get also enables the list after its content is safely persisted.
-                filterManager.setFilterListSelection(id: current.id, selected: true)
+            }
+            guard let current else { return }
+            if succeeded {
                 filterManager.saveFilterListsCoalesced()
                 if current.isSelected { filterManager.markNonSelectionChangesPending() }
             } else {
