@@ -1182,3 +1182,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "A HaGeZi Pro Mini DNS-tiltólista, nem kifejezetten reklámblokkolókhoz tervezett szűrőlista. Kevésbé lehet stabil, mint a többi lista, és több téves találatot okozhat, amelyek elrontják a weboldalakat.";
 "Reset Ordering" = "Sorrend visszaállítása";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Visszaállítja a beépített listákat és userscripteket az alapértelmezett kategóriájukba és sorrendjükbe, az egyéniekat pedig az Egyéb kategóriába helyezi.";
+"Cosmetic Filtering Sites" = "Kozmetikai szűrés webhelyei";
+"No sites selected. Cosmetic filtering will not apply." = "Nincs kiválasztott webhely. A kozmetikai szűrés nem lesz alkalmazva.";
+"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "A kozmetikai szűrés nem lesz alkalmazva ezeken a webhelyeken. A hálózati blokkolás továbbra is érvényes.";

@@ -28,6 +28,7 @@ struct WBlockBackup: Codable, Sendable {
     var lockPortraitOrientation: Bool?
     var appearance: String?
     var cosmeticFilteringEnabled: Bool?
+    var cosmeticFilteringSites: CosmeticFilteringPreference.Sites?
     var tubeCleanerFeatures: TubeCleanerDeArrowPreference.Features?
     var tubeCleanerDeArrow: TubeCleanerDeArrowPreference.Settings?
     var playerCleanerFeatures: PlayerCleanerPreference.Features?
@@ -219,6 +220,7 @@ struct WBlockBackup: Codable, Sendable {
         lockPortraitOrientation: Bool? = nil,
         appearance: String? = nil,
         cosmeticFilteringEnabled: Bool? = nil,
+        cosmeticFilteringSites: CosmeticFilteringPreference.Sites? = nil,
         tubeCleanerFeatures: TubeCleanerDeArrowPreference.Features? = nil,
         tubeCleanerDeArrow: TubeCleanerDeArrowPreference.Settings? = nil,
         playerCleanerFeatures: PlayerCleanerPreference.Features? = nil
@@ -242,6 +244,7 @@ struct WBlockBackup: Codable, Sendable {
         self.lockPortraitOrientation = lockPortraitOrientation
         self.appearance = appearance
         self.cosmeticFilteringEnabled = cosmeticFilteringEnabled
+        self.cosmeticFilteringSites = cosmeticFilteringSites
         self.tubeCleanerFeatures = tubeCleanerFeatures
         self.tubeCleanerDeArrow = tubeCleanerDeArrow
         self.playerCleanerFeatures = playerCleanerFeatures
@@ -266,7 +269,7 @@ struct WBlockBackup: Codable, Sendable {
         case autoUpdateIntervalHours
         case lockPortraitOrientation
         case appearance
-        case cosmeticFilteringEnabled, tubeCleanerFeatures, tubeCleanerDeArrow, playerCleanerFeatures
+        case cosmeticFilteringEnabled, cosmeticFilteringSites, tubeCleanerFeatures, tubeCleanerDeArrow, playerCleanerFeatures
     }
 
     init(from decoder: Decoder) throws {
@@ -290,6 +293,7 @@ struct WBlockBackup: Codable, Sendable {
         lockPortraitOrientation = try container.decodeIfPresent(Bool.self, forKey: .lockPortraitOrientation)
         appearance = try container.decodeIfPresent(String.self, forKey: .appearance)
         cosmeticFilteringEnabled = try container.decodeIfPresent(Bool.self, forKey: .cosmeticFilteringEnabled)
+        cosmeticFilteringSites = try container.decodeIfPresent(CosmeticFilteringPreference.Sites.self, forKey: .cosmeticFilteringSites)
         tubeCleanerFeatures = try container.decodeIfPresent(TubeCleanerDeArrowPreference.Features.self, forKey: .tubeCleanerFeatures)
         tubeCleanerDeArrow = try container.decodeIfPresent(TubeCleanerDeArrowPreference.Settings.self, forKey: .tubeCleanerDeArrow)
         playerCleanerFeatures = try container.decodeIfPresent(PlayerCleanerPreference.Features.self, forKey: .playerCleanerFeatures)
@@ -579,6 +583,7 @@ enum BackupManager {
             lockPortraitOrientation: PortraitOrientationLock.isEnabled,
             appearance: UserDefaults.standard.string(forKey: AppAppearance.storageKey),
             cosmeticFilteringEnabled: CosmeticFilteringPreference.isEnabled(),
+            cosmeticFilteringSites: CosmeticFilteringPreference.sites(),
             tubeCleanerFeatures: TubeCleanerDeArrowPreference.features(),
             tubeCleanerDeArrow: TubeCleanerDeArrowPreference.settings(),
             playerCleanerFeatures: PlayerCleanerPreference.features()
@@ -696,6 +701,9 @@ enum BackupManager {
         }
         if let cosmetic = backup.cosmeticFilteringEnabled {
             CosmeticFilteringPreference.setEnabled(cosmetic)
+        }
+        if let sites = backup.cosmeticFilteringSites {
+            CosmeticFilteringPreference.setSites(sites)
         }
 
         if let features = backup.tubeCleanerFeatures { UserScriptManager.shared.setTubeCleanerFeatures(features) }

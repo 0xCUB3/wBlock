@@ -1182,3 +1182,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Pro Mini este o listă de blocare DNS, nu o listă de filtre concepută special pentru blocatoarele de reclame. Poate fi mai puțin stabilă decât celelalte liste și poate provoca mai multe fals pozitive care strică site-urile.";
 "Reset Ordering" = "Resetează ordinea";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Readuce listele și userscripturile încorporate la categoriile și ordinea implicite și mută elementele personalizate în Altele.";
+"Cosmetic Filtering Sites" = "Site-uri pentru filtrarea cosmetică";
+"No sites selected. Cosmetic filtering will not apply." = "Niciun site selectat. Filtrarea cosmetică nu se va aplica.";
+"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Filtrarea cosmetică nu se va aplica pe aceste site-uri. Blocarea de rețea rămâne activă.";

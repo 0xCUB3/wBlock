@@ -34,6 +34,33 @@ public enum FilterListSiteExclusion {
             .joined(separator: "\n")
     }
 
+    /// Scopes only the cosmetic rules in `text`, leaving network rules and
+    /// scriptlets alone (#899). An empty selection removes every cosmetic rule.
+    static func restrictingCosmeticRules(_ text: String, excluding domains: [String], including selectedSites: [String]?) -> String {
+        let sites = normalizedDomains(from: domains)
+        let selected = selectedSites.map { normalizedDomains(from: $0) }
+        guard !text.isEmpty, !sites.isEmpty || selected != nil else { return text }
+
+        return text
+            .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+            .map { raw in
+                let line = String(raw)
+                guard CosmeticFilteringPreference.isCosmeticRule(line),
+                      let cosmetic = splitCosmetic(line.trimmingCharacters(in: .whitespacesAndNewlines))
+                else { return line }
+                return restrictCosmetic(cosmetic, excluding: sites, including: selected) ?? ""
+            }
+            .joined(separator: "\n")
+    }
+
+    /// Cache identity for a site scope, since it changes compiled output
+    /// without touching any list file.
+    static func scopeMarker(excluding excluded: [String], including selected: [String]?) -> String {
+        let marker = excluded.sorted().joined(separator: ",")
+        guard let selected else { return marker }
+        return marker + "|selected=" + selected.sorted().joined(separator: ",")
+    }
+
     private static let cosmeticSeparators = ["#@$?#", "#$?#", "#@%#", "#%#", "#@?#", "#@$#", "#?#", "#$#", "#@#", "##"]
 
     private static func restrictAdvancedLine(_ line: String, excluding sites: [String], including selected: [String]?) -> String {

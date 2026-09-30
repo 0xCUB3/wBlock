@@ -99,14 +99,12 @@ private struct SourceRuleAdmissionCounter {
     mutating func record(
         filterID: UUID,
         rulesText: String,
-        cosmeticFilteringEnabled: Bool,
+        cosmeticSites: CosmeticFilteringPreference.Sites,
         isCancelled: () -> Bool
     ) throws {
         if isCancelled() { throw CancellationError() }
         countsByFilterID[filterID, default: 0] += 0
-        let effectiveRules = cosmeticFilteringEnabled
-            ? rulesText
-            : CosmeticFilteringPreference.strippingCosmeticRules(from: rulesText)
+        let effectiveRules = cosmeticSites.restricting(rulesText)
         for raw in effectiveRules.split(whereSeparator: \.isNewline).map(String.init) {
             if isCancelled() { throw CancellationError() }
             let trimmed = raw.trimmingCharacters(in: .whitespaces)
@@ -496,13 +494,11 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     /// when embedded compatibility rules change.
     private static func effectiveRulesHashHex(
         baseRulesHashHex: String,
-        cosmeticFilteringEnabled: Bool = true
+        cosmeticSites: CosmeticFilteringPreference.Sites = .all
     ) -> String {
         let fingerprint = compatibilityRulesFingerprintHex() + "|identity-v2"
-        // Only the disabled state is folded in so existing caches stay valid.
-        let material = cosmeticFilteringEnabled
-            ? "\(baseRulesHashHex)|\(fingerprint)"
-            : "\(baseRulesHashHex)|\(fingerprint)|nocosmetic"
+        let material = cosmeticSites.cacheMarker.map { "\(baseRulesHashHex)|\(fingerprint)|cosmetic=\($0)" }
+            ?? "\(baseRulesHashHex)|\(fingerprint)"
         let digest = SHA256.hash(data: Data(material.utf8))
         return digest.map { String(format: "%02x", $0) }.joined()
     }
@@ -1461,7 +1457,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         groupIdentifier: String,
         targetRulesFilename: String,
         disabledSites: [String],
-        cosmeticFilteringEnabled: Bool = true,
+        cosmeticSites: CosmeticFilteringPreference.Sites = .all,
         containerURL explicitContainerURL: URL? = nil,
         isCancelled: (() -> Bool)? = nil
     ) throws -> (safariRulesCount: Int, truncatedRuleCount: Int, advancedRulesText: String?, outputChanged: Bool) {
@@ -1471,7 +1467,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         let sitesToUse = disabledSites
         let effectiveRulesHash = effectiveRulesHashHex(
             baseRulesHashHex: rulesSHA256Hex,
-            cosmeticFilteringEnabled: cosmeticFilteringEnabled
+            cosmeticSites: cosmeticSites
         )
 
         guard let containerURL = explicitContainerURL ?? FileManager.default.containerURL(
@@ -1538,9 +1534,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         }
         let combinedRules = try String(contentsOf: rulesFileURL, encoding: .utf8)
         var effectiveRules = combinedRulesWithEmbeddedCompatibility(combinedRules)
-        if !cosmeticFilteringEnabled {
-            effectiveRules = CosmeticFilteringPreference.strippingCosmeticRules(from: effectiveRules)
-        }
+        effectiveRules = cosmeticSites.restricting(effectiveRules)
         if cancellationRequested() {
             throw CancellationError()
         }
@@ -1601,7 +1595,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         let orderedSelectedFilters = ContentBlockerMappingService.orderedForCompilation(orderedSelectedFilters)
         let filters = ContentBlockerIncrementalCache.canonicalFilterOrder(filters)
         let rulesFilename = targetInfo.rulesFilename
-        let cosmeticFilteringEnabled = CosmeticFilteringPreference.isEnabled(groupIdentifier: groupIdentifier)
+        let cosmeticSites = CosmeticFilteringPreference.effectiveSites(groupIdentifier: groupIdentifier)
         // Every selected list can change cross-slot ownership or exception
         // context, even without affinity. Include all of them in cache identity.
         let assignedIDs = Set(filters.map(\.id))
@@ -1613,7 +1607,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             affinityContributors: affinityContributors,
             groupIdentifier: groupIdentifier,
             extraRulesText: extraRulesText,
-            cosmeticFilteringEnabled: cosmeticFilteringEnabled,
+            cosmeticSites: cosmeticSites,
             compileOrder: orderedSelectedFilters,
             containerURL: containerURL
         )
@@ -1668,7 +1662,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             allTargets: allTargets,
             disabledSites: disabledSites,
             extraRulesText: extraRulesText,
-            cosmeticFilteringEnabled: cosmeticFilteringEnabled,
+            cosmeticSites: cosmeticSites,
             groupIdentifier: groupIdentifier,
             containerURL: containerURL,
             isCancelled: isCancelled
@@ -1829,7 +1823,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         allTargets: [ContentBlockerTargetInfo],
         disabledSites: [String],
         extraRulesText: String?,
-        cosmeticFilteringEnabled: Bool,
+        cosmeticSites: CosmeticFilteringPreference.Sites,
         groupIdentifier: String,
         containerURL explicitContainerURL: URL? = nil,
         isCancelled: (() -> Bool)?
@@ -1902,7 +1896,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 try sourceRuleAdmissions.record(
                     filterID: filter.id,
                     rulesText: restricted,
-                    cosmeticFilteringEnabled: cosmeticFilteringEnabled,
+                    cosmeticSites: cosmeticSites,
                     isCancelled: cancellationRequested
                 )
                 guard !restricted.isEmpty else { continue }
@@ -1929,7 +1923,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     try sourceRuleAdmissions.record(
                         filterID: filter.id,
                         rulesText: keptText,
-                        cosmeticFilteringEnabled: cosmeticFilteringEnabled,
+                        cosmeticSites: cosmeticSites,
                         isCancelled: cancellationRequested
                     )
                     try ContentBlockerInputWriter.appendInline(
@@ -1942,7 +1936,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     try sourceRuleAdmissions.record(
                         filterID: filter.id,
                         rulesText: rawContent,
-                        cosmeticFilteringEnabled: cosmeticFilteringEnabled,
+                        cosmeticSites: cosmeticSites,
                         isCancelled: cancellationRequested
                     )
                     try ContentBlockerInputWriter.appendFile(
@@ -1960,7 +1954,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     try sourceRuleAdmissions.record(
                         filterID: filter.id,
                         rulesText: restricted,
-                        cosmeticFilteringEnabled: cosmeticFilteringEnabled,
+                        cosmeticSites: cosmeticSites,
                         isCancelled: cancellationRequested
                     )
                     try ContentBlockerInputWriter.appendInline(
@@ -2009,7 +2003,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             groupIdentifier: groupIdentifier,
             targetRulesFilename: targetInfo.rulesFilename,
             disabledSites: disabledSites,
-            cosmeticFilteringEnabled: cosmeticFilteringEnabled,
+            cosmeticSites: cosmeticSites,
             containerURL: containerURL,
             isCancelled: cancellationRequested
         )

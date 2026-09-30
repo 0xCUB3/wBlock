@@ -296,6 +296,7 @@ struct SettingsView: View {
         }
     }
 
+    @ViewBuilder
     private var cosmeticFilteringControls: some View {
         Toggle(isOn: cosmeticFilteringBinding) {
             rowLabel(
@@ -304,6 +305,13 @@ struct SettingsView: View {
             )
         }
         .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
+
+        NavigationLink {
+            CosmeticFilteringSitesView(filterManager: filterManager)
+                .swipeBackNavigationCompat()
+        } label: {
+            SettingsRowLabel("Cosmetic Filtering Sites", systemImage: "paintbrush", accessory: .push)
+        }
     }
 
     private var cosmeticFilteringBinding: Binding<Bool> {

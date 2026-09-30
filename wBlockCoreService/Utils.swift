@@ -291,7 +291,7 @@ public enum ContentBlockerIncrementalCache {
         affinityContributors: [FilterList] = [],
         groupIdentifier: String,
         extraRulesText: String? = nil,
-        cosmeticFilteringEnabled: Bool = true,
+        cosmeticSites: CosmeticFilteringPreference.Sites = .all,
         compileOrder: [FilterList] = [],
         containerURL explicitContainerURL: URL? = nil
     ) -> String? {
@@ -329,9 +329,8 @@ public enum ContentBlockerIncrementalCache {
         if !compileOrder.isEmpty {
             canonical.append("compileOrder=\(compileOrder.map(\.id.uuidString).joined(separator: ","))\n")
         }
-        // Only the disabled state is recorded so existing signatures stay valid.
-        if !cosmeticFilteringEnabled {
-            canonical.append("cosmetic=off\n")
+        if let marker = cosmeticSites.cacheMarker {
+            canonical.append("cosmetic=\(marker)\n")
         }
 
         let digest = SHA256.hash(data: Data(canonical.utf8))
@@ -468,9 +467,7 @@ public enum ContentBlockerIncrementalCache {
     /// Per-list site scope changes the compiled output without touching
     /// the list file, so they must be part of the signature.
     private static func siteScopeMarker(for filter: FilterList) -> String {
-        let excluded = filter.excludedSites.sorted().joined(separator: ",")
-        guard let selected = filter.selectedSites else { return excluded }
-        return excluded + "|selected=" + selected.sorted().joined(separator: ",")
+        FilterListSiteExclusion.scopeMarker(excluding: filter.excludedSites, including: filter.selectedSites)
     }
 
     private static func localFileFingerprint(for filter: FilterList, containerURL: URL) -> String {
