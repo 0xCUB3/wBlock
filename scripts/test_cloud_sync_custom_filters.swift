@@ -9,7 +9,7 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
 
 @main
 struct CloudSyncCustomFilterTests {
-    static func main() {
+    static func main() async throws {
         let mergedWithLocalReAdd = CloudSyncCustomFilterReconciler.deletedURLsToMergeDuringUploadReconciliation(
             remoteDeletedURLs: ["https://example.com/filter.txt"],
             localCustomURLs: ["https://example.com/filter.txt"]
@@ -123,6 +123,27 @@ struct CloudSyncCustomFilterTests {
         )
         expect(selection.selected == ["https://example.com/base.txt"], "custom selection must stay independent of built-ins")
         expect(selection.known.contains(mirror), "an unselected built-in remains known so it is turned off")
+
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let readable = directory.appendingPathComponent("list.txt")
+        let empty = directory.appendingPathComponent("empty.txt")
+        let unreadable = directory.appendingPathComponent("invalid-utf8.txt")
+        try "||example.com^".write(to: readable, atomically: true, encoding: .utf8)
+        try "".write(to: empty, atomically: true, encoding: .utf8)
+        try Data([0xff]).write(to: unreadable)
+        let contents = try await CloudSyncInlineFilterContents.read([("list", readable), ("empty", empty)])
+        expect(contents == ["list": "||example.com^", "empty": ""], "readable and deliberately empty lists retain content")
+        for failedFile in [directory.appendingPathComponent("missing.txt"), unreadable] {
+            var failed = false
+            do {
+                _ = try await CloudSyncInlineFilterContents.read([("list", readable), ("failed", failedFile)])
+            } catch {
+                failed = true
+            }
+            expect(failed, "an unreadable inline list must fail the whole payload read")
+        }
 
         print("PASS")
     }

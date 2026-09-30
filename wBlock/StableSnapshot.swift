@@ -5,11 +5,11 @@ import Foundation
 @MainActor
 enum StableSnapshot {
     static func build<State: Equatable, Value>(
-        state: () -> State, value: () async -> Value
-    ) async -> (value: Value, state: State) {
+        state: () -> State, value: () async throws -> Value
+    ) async rethrows -> (value: Value, state: State) {
         while true {
             let before = state()
-            let built = await value()
+            let built = try await value()
             if state() == before { return (built, before) }
         }
     }

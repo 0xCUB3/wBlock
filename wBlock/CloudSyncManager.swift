@@ -130,12 +130,12 @@ final class CloudSyncManager: ObservableObject {
         )
     }
 
-    private func stableLocalPayloadAndMutationBaseline() async -> (
+    private func stableLocalPayloadAndMutationBaseline() async throws -> (
         payload: SyncPayload, baseline: LocalMutationRevisionSnapshot
     ) {
-        let stable = await StableSnapshot.build(
+        let stable = try await StableSnapshot.build(
             state: { self.localMutationRevisionSnapshot() },
-            value: { await self.buildPayloadRefreshingSnapshot() })
+            value: { try await self.buildPayloadRefreshingSnapshot() })
         return (stable.value, stable.state)
     }
 
@@ -395,11 +395,11 @@ final class CloudSyncManager: ObservableObject {
         await dataManager.waitUntilLoaded()
         await userScriptManager.waitUntilReady()
 
-        // Capture the actual local payload and revisions before CloudKit suspends us.
-        let stableLocal = await stableLocalPayloadAndMutationBaseline()
-        let localPayloadBaseline = stableLocal.payload
-        let localMutationBaseline = stableLocal.baseline
         do {
+            // Capture the actual local payload and revisions before CloudKit suspends us.
+            let stableLocal = try await stableLocalPayloadAndMutationBaseline()
+            let localPayloadBaseline = stableLocal.payload
+            let localMutationBaseline = stableLocal.baseline
             guard let record = try await fetchRecord() else { return false }
             guard let payload = try decodePayload(from: record) else { return false }
 
@@ -409,7 +409,7 @@ final class CloudSyncManager: ObservableObject {
             lastErrorMessage = nil
             defer { finishSyncCycle() }
 
-            await applyRemotePayload(
+            try await applyRemotePayload(
                 payload,
                 trigger: trigger,
                 localPayloadBaseline: localPayloadBaseline,
@@ -626,18 +626,18 @@ final class CloudSyncManager: ObservableObject {
         await dataManager.waitUntilLoaded()
         await userScriptManager.waitUntilReady()
 
-        // If local state hasn't changed since the last successful upload, there is nothing
-        // to push. Checking before the fetch avoids a CloudKit round trip for the routine
-        // save notifications fired by non-sync-visible state (e.g. filter version/count
-        // refreshes). Remote-newer changes are still converged by two-way sync.
-        let preCheckPayload = await stableLocalPayloadAndMutationBaseline().payload
-        if pendingRemoteScriptAdditions().isEmpty,
-           preCheckPayload.contentHash == defaults.string(forKey: Keys.lastUploadedHash) {
-            markUpToDate(from: preCheckPayload)
-            return
-        }
-
         do {
+            // If local state hasn't changed since the last successful upload, there is nothing
+            // to push. Checking before the fetch avoids a CloudKit round trip for the routine
+            // save notifications fired by non-sync-visible state (e.g. filter version/count
+            // refreshes). Remote-newer changes are still converged by two-way sync.
+            let preCheckPayload = try await stableLocalPayloadAndMutationBaseline().payload
+            if pendingRemoteScriptAdditions().isEmpty,
+               preCheckPayload.contentHash == defaults.string(forKey: Keys.lastUploadedHash) {
+                markUpToDate(from: preCheckPayload)
+                return
+            }
+
             var record = try await fetchRecord() ?? CKRecord(recordType: recordType, recordID: recordID)
 
             if let remotePayload = try? decodePayload(from: record) {
@@ -646,7 +646,7 @@ final class CloudSyncManager: ObservableObject {
             }
 
             let additionsForUpload = pendingRemoteScriptAdditions()
-            let payload = await stableLocalPayloadAndMutationBaseline().payload
+            let payload = try await stableLocalPayloadAndMutationBaseline().payload
 
             let payloadURL = try await applyPayloadFields(payload, to: &record)
             defer { try? FileManager.default.removeItem(at: payloadURL) }
@@ -689,7 +689,7 @@ final class CloudSyncManager: ObservableObject {
 
         do {
             let additionsAtStart = pendingRemoteScriptAdditions()
-            let stableLocal = await stableLocalPayloadAndMutationBaseline()
+            let stableLocal = try await stableLocalPayloadAndMutationBaseline()
             let localPayload = stableLocal.payload
             let localMutationBaseline = stableLocal.baseline
             let localUpdatedAt = localPayload.updatedAt
@@ -722,7 +722,7 @@ final class CloudSyncManager: ObservableObject {
                 return
             }
             setStatus(.downloading)
-            await applyRemotePayload(
+            try await applyRemotePayload(
                 remotePayload,
                 trigger: trigger,
                 localPayloadBaseline: localPayload,
@@ -740,7 +740,8 @@ final class CloudSyncManager: ObservableObject {
         trigger: String,
         localPayloadBaseline: SyncPayload,
         localMutationBaseline: LocalMutationRevisionSnapshot
-    ) async {
+    ) async throws {
+        let currentContent = try await buildPayloadContent()
         logger.info("⬇️ Applying remote payload (\(trigger, privacy: .public))")
         let additionsAtStart = pendingRemoteScriptAdditions()
         refreshSharedUserScriptEnabledStates(from: payload)
@@ -759,7 +760,6 @@ final class CloudSyncManager: ObservableObject {
 
         // Merge each settings field independently. Local changes win only their own
         // field; unrelated values from the newer remote payload still apply.
-        let currentContent = await buildPayloadContent()
         let currentSettings = currentContent.settings
         if currentSettings.selectedBlockingLevel == settingsBaseline.selectedBlockingLevel {
             await dataManager.setSelectedBlockingLevel(payload.settings.selectedBlockingLevel)
@@ -865,7 +865,7 @@ final class CloudSyncManager: ObservableObject {
         }
         await applyRemoteZapperRules(mergedZapperRules, disabledDomains: mergedZapperDisabled)
 
-        await applyRemoteFilters(
+        try await applyRemoteFilters(
             payload.filters,
             baselineFilters: filtersBaseline,
             localSelectionRevisionAtStart: filterSelectionRevisionAtStart
@@ -897,7 +897,7 @@ final class CloudSyncManager: ObservableObject {
 
         // Finalize from a payload that no mutation slipped past: drags made during its awaits are
         // suppressed by isApplyingRemoteChanges, so only the rebuilt payload's hash can reveal them.
-        let (finalLocalPayload, finalMutations) = await stableLocalPayloadAndMutationBaseline()
+        let (finalLocalPayload, finalMutations) = try await stableLocalPayloadAndMutationBaseline()
         let localMutationDuringApply = finalMutations.filterSelection != filterSelectionRevisionAtStart
             || finalMutations.userScripts != userScriptMutationRevisionAtStart
         let localPayloadDiffersFromRemote = finalLocalPayload.contentHash != payload.contentHash
@@ -1010,8 +1010,8 @@ final class CloudSyncManager: ObservableObject {
         _ filters: SyncPayload.Filters,
         baselineFilters: SyncPayload.Filters,
         localSelectionRevisionAtStart: UInt64
-    ) async {
-        let currentFilters = (await buildPayloadContent()).filters
+    ) async throws {
+        let currentFilters = (try await buildPayloadContent()).filters
         let baselineCustomByURL = Dictionary(
             baselineFilters.customLists.map { ($0.url, $0) },
             uniquingKeysWith: { _, latest in latest }
@@ -1792,8 +1792,8 @@ final class CloudSyncManager: ObservableObject {
 
     // MARK: - Payload construction
 
-    private func buildPayloadRefreshingSnapshot() async -> SyncPayload {
-        let content = await buildPayloadContent()
+    private func buildPayloadRefreshingSnapshot() async throws -> SyncPayload {
+        let content = try await buildPayloadContent()
         let contentData = try? sortedJSONEncoder.encode(content)
         let contentHash = contentData.map(Self.sha256Hex) ?? ""
 
@@ -1822,7 +1822,7 @@ final class CloudSyncManager: ObservableObject {
         )
     }
 
-    private func buildPayloadContent() async -> SyncPayload.Content {
+    private func buildPayloadContent() async throws -> SyncPayload.Content {
         // A popup can persist site choices while the app is suspended. Flush
         // local edits through the atomic disk merge before reading the snapshot.
         await dataManager.saveDataImmediately()
@@ -1857,7 +1857,7 @@ final class CloudSyncManager: ObservableObject {
 
         // Inline list contents are read from disk; fetch them off the main actor so
         // large lists don't block the UI while the payload is assembled.
-        let inlineContents = await Self.readInlineUserListContents(for: customListURLs)
+        let inlineContents = try await Self.readInlineUserListContents(for: customListURLs)
 
         let customLists = filterLists
             .filter(\.isCustom)
@@ -2091,7 +2091,7 @@ final class CloudSyncManager: ObservableObject {
                     refreshSharedUserScriptEnabledStates(from: serverPayload)
                     await reconcileMissingDefinitionsIfNeeded(from: serverPayload)
                 }
-                currentPayload = await buildPayloadRefreshingSnapshot()
+                currentPayload = try await buildPayloadRefreshingSnapshot()
                 var mutableRecord = serverRecord
                 let payloadURL = try await applyPayloadFields(currentPayload, to: &mutableRecord)
                 tempURLs.append(payloadURL)
@@ -2270,28 +2270,20 @@ final class CloudSyncManager: ObservableObject {
 
     /// Reads all inline user-list files in one off-actor pass so the main actor
     /// isn't blocked by synchronous disk I/O during payload assembly.
-    private static func readInlineUserListContents(for urlStringList: [String]) async -> [String: String] {
-        guard !urlStringList.isEmpty else { return [:] }
-        guard let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
-            return [:]
-        }
+    private static func readInlineUserListContents(for urlStringList: [String]) async throws -> [String: String] {
         // Resolve which files to read on the main actor (inlineUserListID is main-actor-isolated);
         // only the actual disk reads run off-actor.
-        let fileURLs: [(String, URL)] = urlStringList.compactMap { urlString in
+        let fileURLs: [(String, String)] = urlStringList.compactMap { urlString in
             guard let id = inlineUserListID(from: urlString) else { return nil }
-            return (urlString, containerURL.appendingPathComponent("custom-\(id.uuidString).txt"))
+            return (urlString, "custom-\(id.uuidString).txt")
         }
         guard !fileURLs.isEmpty else { return [:] }
-        return await Task.detached(priority: .utility) { () -> [String: String] in
-            var results: [String: String] = [:]
-            for (urlString, fileURL) in fileURLs {
-                if let content = try? String(contentsOf: fileURL, encoding: .utf8) {
-                    results[urlString] = content
-                }
-            }
-            return results
-        }.value
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
+            throw CocoaError(.fileReadNoSuchFile)
+        }
+        let resolvedFileURLs = fileURLs.map { ($0.0, containerURL.appendingPathComponent($0.1)) }
+        return try await CloudSyncInlineFilterContents.read(resolvedFileURLs)
     }
 
     private static func writeInlineUserListContent(id: UUID, content: String) {

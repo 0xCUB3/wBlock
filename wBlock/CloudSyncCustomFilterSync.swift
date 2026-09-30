@@ -1,5 +1,18 @@
 import Foundation
 
+/// An inline list is required payload content; a failed read must not become an empty cloud copy.
+enum CloudSyncInlineFilterContents {
+    static func read(_ fileURLs: [(String, URL)]) async throws -> [String: String] {
+        try await Task.detached(priority: .utility) {
+            var contents: [String: String] = [:]
+            for (urlString, fileURL) in fileURLs {
+                contents[urlString] = try String(contentsOf: fileURL, encoding: .utf8)
+            }
+            return contents
+        }.value
+    }
+}
+
 enum CloudSyncCustomFilterReconciler {
     static func normalizedURL(_ url: String) -> String {
         url.trimmingCharacters(in: .whitespacesAndNewlines)
