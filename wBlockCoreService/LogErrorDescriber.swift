@@ -63,6 +63,10 @@ public enum LogErrorDescriber {
         if let debug = nsError.userInfo[NSDebugDescriptionErrorKey] as? String, !debug.isEmpty {
             return debug
         }
+        // WebKit puts the content blocker compile failure reason here (#898).
+        if let anchor = nsError.userInfo[NSHelpAnchorErrorKey] as? String, !anchor.isEmpty {
+            return anchor
+        }
         if nsError.domain == NSPOSIXErrorDomain {
             // POSIX errors localize to "Error Domain=... Code=..." noise; strerror is the useful part.
             return String(cString: strerror(Int32(nsError.code)))
