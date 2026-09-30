@@ -8,6 +8,7 @@
 // Run via:
 //   swiftc -parse-as-library \
 //     wBlockCoreService/IncludeResolver.swift \
+//     wBlockCoreService/FilterPreprocessor.swift \
 //     wBlockCoreService/ConditionalEvaluator.swift \
 //     wBlockCoreService/PlatformConstants.swift \
 //     scripts/test_include_resolver_url_encoding.swift \
@@ -20,7 +21,7 @@ import Foundation
 
 @main
 struct IncludeResolverURLEncodingTests {
-    static func main() {
+    static func main() async {
         let base = URL(string: "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/")!
 
         // The live LegitimateURLShortener include path (spaces pre-encoded, em dash raw).
@@ -121,6 +122,21 @@ struct IncludeResolverURLEncodingTests {
         expectOrigin(URL(string: "https://example.com:444/sub.txt")!, https, false, "different HTTPS port")
         expectOrigin(URL(string: "http://example.com:81/sub.txt")!, http, false, "different HTTP port")
 
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [IncludeFailureProtocol.self]
+        let session = URLSession(configuration: config)
+        defer { session.invalidateAndCancel() }
+        let fetched = FetchedIncludes()
+        let preprocessor = FilterPreprocessor(urlSession: session, onFetchError: { url, _ in
+            await fetched.record(url)
+        })
+        let listURL = URL(string: "https://example.com/filters/Foo.txt")!
+        _ = await preprocessor.preprocess(content: "!#include foo.txt\n!#include Foo.txt", listURL: listURL)
+        let requests = await fetched.urls
+        guard requests == ["https://example.com/filters/foo.txt"] else {
+            fail("case-sensitive file must be fetched and self-include skipped: \(requests)")
+        }
+
         print("PASS")
     }
 
@@ -155,4 +171,18 @@ struct IncludeResolverURLEncodingTests {
         fputs("FAIL: \(message)\n", stderr)
         exit(1)
     }
+}
+
+private actor FetchedIncludes {
+    private(set) var urls: [String] = []
+    func record(_ url: URL) { urls.append(url.absoluteString) }
+}
+
+private final class IncludeFailureProtocol: URLProtocol, @unchecked Sendable {
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {
+        client?.urlProtocol(self, didFailWithError: URLError(.cannotConnectToHost))
+    }
+    override func stopLoading() {}
 }

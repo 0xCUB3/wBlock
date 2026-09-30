@@ -25,7 +25,7 @@ import Foundation
 /// Each include line is resolved relative to the base URL of the containing file.
 /// Safety guards:
 /// - **Same-origin**: the sub-list URL must share scheme, host, and port with the base URL.
-/// - **Cycle detection**: normalized (lowercased) absolute URL strings are tracked in a `Set<String>`
+/// - Cycle detection: URL keys preserve case-sensitive paths and queries in a `Set<String>`
 ///   passed by value; re-visiting a URL in the same chain returns `[]`.
 /// - **Depth limit**: chains deeper than `maxDepth` (5) are truncated and return `[]`.
 ///
@@ -122,7 +122,7 @@ public actor IncludeResolver {
     /// - Parameters:
     ///   - includeLine: The raw `!#include path/to/sub.txt` line (already trimmed).
     ///   - baseURL: URL of the directory containing the file with this include line.
-    ///   - visited: Normalized (lowercased absolute) URL strings already in the chain.
+    ///   - visited: URL keys already in the chain, built with `visitKey(for:)`.
     ///   - depth: Current recursion depth (guard against > `maxDepth`).
     /// - Returns: Expanded lines from the sub-list, or `[]` on any failure.
     public func resolve(
@@ -195,7 +195,7 @@ public actor IncludeResolver {
             return ExpansionResult(lines: [], bytes: 0)
         }
 
-        let normalizedKey = subURL.absoluteString.lowercased()
+        let normalizedKey = Self.visitKey(for: subURL)
         guard !visited.contains(normalizedKey) else {
             return ExpansionResult(lines: [], bytes: 0)
         }
@@ -265,6 +265,16 @@ public actor IncludeResolver {
         let allowed = CharacterSet.urlFragmentAllowed.union(CharacterSet(charactersIn: "%#[]"))
         guard let encoded = trimmed.addingPercentEncoding(withAllowedCharacters: allowed) else { return nil }
         return URL(string: encoded, relativeTo: baseURL)?.absoluteURL
+    }
+
+    static func visitKey(for url: URL) -> String {
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true) else {
+            return url.absoluteString
+        }
+        components.scheme = components.scheme?.lowercased()
+        components.host = components.host?.lowercased()
+        components.fragment = nil
+        return components.string ?? url.absoluteString
     }
 
     // MARK: - Private helpers

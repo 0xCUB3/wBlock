@@ -289,6 +289,7 @@ compile_and_run filter-diff \
 
 compile_and_run include-resolution \
   wBlockCoreService/IncludeResolver.swift \
+  wBlockCoreService/FilterPreprocessor.swift \
   wBlockCoreService/ConditionalEvaluator.swift \
   wBlockCoreService/PlatformConstants.swift \
   scripts/test_include_resolver_url_encoding.swift

@@ -81,8 +81,7 @@ public actor FilterPreprocessor {
         let baseURL = listURL.deletingLastPathComponent()
 
         // Step 4: Seed visited set with the parent URL to prevent A → A self-include.
-        // Normalized to lowercase for reliable equality matching (same as IncludeResolver).
-        let visited: Set<String> = [listURL.absoluteString.lowercased()]
+        let visited: Set<String> = [IncludeResolver.visitKey(for: listURL)]
 
         // Step 5: Expand all !#include directives recursively.
         // Depth starts at 0; IncludeResolver increments on each level of recursion.
