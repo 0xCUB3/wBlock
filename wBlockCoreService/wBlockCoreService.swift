@@ -496,7 +496,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         baseRulesHashHex: String,
         cosmeticSites: CosmeticFilteringPreference.Sites = .all
     ) -> String {
-        let fingerprint = compatibilityRulesFingerprintHex() + "|identity-v2"
+        let fingerprint = compatibilityRulesFingerprintHex() + "|identity-v3"
         let material = cosmeticSites.cacheMarker.map { "\(baseRulesHashHex)|\(fingerprint)|cosmetic=\($0)" }
             ?? "\(baseRulesHashHex)|\(fingerprint)"
         let digest = SHA256.hash(data: Data(material.utf8))
@@ -1545,9 +1545,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         if cancellationRequested() {
             throw CancellationError()
         }
+        let safariRulesJSON = lowercasingTriggerDomains(result.safariRulesJSON)
 
         _ = try saveContentBlockerIfChanged(
-            jsonRules: result.safariRulesJSON,
+            jsonRules: safariRulesJSON,
             groupIdentifier: groupIdentifier,
             targetRulesFilename: baseFilename,
             containerURL: containerURL
@@ -1556,7 +1557,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         try saveBlockerListFile(contents: result.advancedRulesText ?? "", groupIdentifier: groupIdentifier, filename: advancedFilename, containerURL: containerURL)
 
         let finalized = try finalizeAndSaveContentBlockerIfWithinLimit(
-            baseJSON: result.safariRulesJSON,
+            baseJSON: safariRulesJSON,
             disabledSites: sitesToUse,
             knownBaseCount: result.safariRulesCount,
             groupIdentifier: groupIdentifier,
@@ -2184,6 +2185,27 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         value
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
+    }
+
+    private static let triggerDomainListPattern = try! NSRegularExpression(
+        pattern: #""(?:if|unless)-domain":\[[^\]]*\]"#
+    )
+
+    /// SafariConverterLib keeps domains as written (`Karo.Studio##…`), but WebKit rejects the whole
+    /// list with "Domains must be lower case ASCII" (#898). Hostnames are case-insensitive.
+    static func lowercasingTriggerDomains(_ json: String) -> String {
+        let source = json as NSString
+        var output = ""
+        var cursor = 0
+        for match in triggerDomainListPattern.matches(in: json, range: NSRange(location: 0, length: source.length)) {
+            let list = source.substring(with: match.range)
+            let lowered = list.lowercased()
+            guard lowered != list else { continue }
+            output += source.substring(with: NSRange(location: cursor, length: match.range.location - cursor)) + lowered
+            cursor = NSMaxRange(match.range)
+        }
+        guard cursor > 0 else { return json }
+        return output + source.substring(from: cursor)
     }
 
     private static func disabledSiteIgnoreRuleJSON(for site: String) -> String {
