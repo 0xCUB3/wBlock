@@ -180,6 +180,7 @@ const siteScripts = [
 ];
 
 let zapperMutationResponse = { ok: true, disabled: true };
+let blockingStateDelayMs = 0;
 const sandbox = {
   browser: {
     i18n: { getMessage: () => "" },
@@ -201,6 +202,9 @@ const sandbox = {
       testNativeHandler: async (message) => {
         nativeMessages.push(message);
         if (message?.action === "getBlockingPausedState") {
+          if (blockingStateDelayMs > 0) {
+            await new Promise((resolve) => setTimeout(resolve, blockingStateDelayMs));
+          }
           return { paused: false, filtersPaused: false, userScriptsPaused: false, elementZapperPaused: false, resumeAvailable: false };
         }
         if (message?.action === "getSiteFilterDisabledState") return { disabled: true, whitelisted: false };
@@ -294,8 +298,11 @@ check("disabled per-script site state renders as unchecked", inputs[1].checked =
 check("running count ignores scripts disabled for the site", elements.get("userscripts-count").textContent === "1");
 check("main site toggle still reflects the disabled site", elements.get("enable-toggle").checked === false);
 
+blockingStateDelayMs = 4000;
 await sandbox.__refreshPopupForTest();
+blockingStateDelayMs = 0;
 const refreshedInputs = elements.get("userscripts-list").children.map((row) => row.children[1].children[0]);
+check("popup refresh tolerates a slow native blocking-state lookup", elements.get("error").textContent === "" && elements.get("enable-toggle").disabled === false);
 check("popup refresh keeps userscript controls configurable on disabled sites", refreshedInputs.every((input) => input.disabled === false));
 check("popup refresh preserves per-script disabled state", refreshedInputs[0].checked === true && refreshedInputs[1].checked === false);
 

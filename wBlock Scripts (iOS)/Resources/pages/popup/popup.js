@@ -7,7 +7,8 @@ const SUPPORT_PROBE_TIMEOUT_MS = 1200;
 const SUPPORT_PROBE_ATTEMPTS = 5;
 const SUPPORT_PROBE_RETRY_DELAY_MS = 200;
 const TOP_FRAME_ID = 0;
-const NATIVE_MESSAGE_TIMEOUT_MS = 3500;
+// Safari may need several seconds to launch the native app before popup state is available.
+const NATIVE_MESSAGE_TIMEOUT_MS = 10000;
 const FILTER_UPDATE_POLL_INTERVAL_MS = 500;
 const FILTER_UPDATE_POLL_ATTEMPTS = 120;
 let resumeInFlight = false;
