@@ -1122,7 +1122,10 @@ for (const source of [canonicalSource, bundleSource]) {
   const request = { action: "wblock:popup:nativeMessage", message: { action: "setSiteZapperDisabled", hostname: "example.com", disabled: true } };
   const result = await state.onMessage(request, popupSender);
   check("popup relay preserves native mutation responses", result.ok && result.response.disabled === true);
-  for (const sender of [undefined, topFrameSender("https://example.com/"), { url: "https://example.com/pages/popup/popup.html" }, { ...popupSender, tab: { id: 7 } }]) {
+  // Safari 17 sends popup messages without sender.url (#896).
+  const safari17 = await state.onMessage(request, { origin: "null" });
+  check("popup relay accepts Safari 17 popup senders without a URL", safari17.ok && safari17.response.disabled === true);
+  for (const sender of [undefined, {}, { origin: "https://example.com" }, { origin: "null", frameId: 0 }, { origin: "null", tab: { id: 7 } }, { url: "about:blank", origin: "null" }, topFrameSender("https://example.com/"), { url: "https://example.com/pages/popup/popup.html" }, { ...popupSender, tab: { id: 7 } }]) {
     const before = state.nativeMessages.filter(message => message.action === "setSiteZapperDisabled").length;
     const denied = await state.onMessage(request, sender);
     check("popup relay rejects non-popup senders without native mutations", denied.ok === false && state.nativeMessages.filter(message => message.action === "setSiteZapperDisabled").length === before);

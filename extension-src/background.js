@@ -26654,7 +26654,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       ]);
       const nativeRequest = message.message;
       // A content script must not gain the popup's native mutation privileges.
-      if (!sender || sender.tab || sender.url !== browser.runtime.getURL("pages/popup/popup.html")
+      // Safari 17 sends popup messages as { origin: "null" } with no URL (#896).
+      const isPopupSender = sender && !sender.tab && (sender.url === browser.runtime.getURL("pages/popup/popup.html")
+          || (sender.url === undefined && sender.origin === "null" && sender.frameId === undefined));
+      if (!isPopupSender
           || !nativeRequest || !allowedActions.has(nativeRequest.action)) {
         return { ok: false, error: "Invalid popup native request" };
       }
