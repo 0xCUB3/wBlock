@@ -751,7 +751,8 @@ struct UserScriptManagerView: View {
         else { return }
         let managedScript = userScriptManager.userScript(withId: script.id)
         let shouldDownloadBeforeEnabling =
-            newValue && !(managedScript?.isDownloaded ?? script.isDownloaded)
+            // Disabled scripts drop their content from memory, so check the file.
+            newValue && !(managedScript.map(userScriptManager.hasDownloadedContent) ?? script.isDownloaded)
                 && !(managedScript?.isLocal ?? script.isLocal)
                 && (managedScript?.url ?? script.url) != nil
         if shouldDownloadBeforeEnabling {

@@ -789,8 +789,11 @@ struct ContentView: View {
         }
     }
 
-    private func filterRowView(for filter: FilterList, showsFlags: Bool = true) -> some View {
-        FilterRowView(
+    private func filterRowView(for snapshot: FilterList, showsFlags: Bool = true) -> some View {
+        // The presentation snapshot lands after an off-main sort with animations
+        // off; reading it here made switches wait for it and then snap.
+        let filter = filterManager.filterListIndex(for: snapshot.id).map { filterManager.filterLists[$0] } ?? snapshot
+        return FilterRowView(
             filter: filter,
             showsFlags: showsFlags,
             isDownloaded: downloadedFilterIDs.contains(filter.id),
