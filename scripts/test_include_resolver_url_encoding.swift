@@ -61,6 +61,13 @@ struct IncludeResolverURLEncodingTests {
             "absolute same-host includes still resolve"
         )
 
+        for path in ["sub%23part.txt", "sub%3Fpart.txt", "sub%2Fpart.txt", "sub%2520part.txt"] {
+            expectResolved(
+                path, relativeTo: base, equals: base.absoluteString + path,
+                "encoded delimiters and literal percent escapes stay in the filename"
+            )
+        }
+
         // Empty / whitespace-only paths are rejected.
         if IncludeResolver.resolveSublistURL(path: "   ", relativeTo: base) != nil {
             fail("whitespace-only include path must be rejected")

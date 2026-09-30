@@ -13,8 +13,7 @@
 //  - Depth limit: maxDepth = 5; deeper chains return [] (PREP-04)
 //  - Sub-list conditionals: ConditionalEvaluator.evaluate() runs before recursion (Pitfall 2)
 //  - Failure policy: all error paths return [] — degraded-continue, never throw (Phase 5 SC3)
-//  - Percent-encoded include paths are decoded before URL resolution so Foundation
-//    does not double-encode `%` → `%25` (e.g. DandelionSprout LegitimateURLShortener)
+//  - Percent-encoded include paths preserve escaped filename characters.
 //
 
 import Foundation
@@ -259,21 +258,13 @@ public actor IncludeResolver {
 
     /// Resolves an `!#include` path against the parent list's directory URL.
     ///
-    /// Filter authors often ship pre-percent-encoded relative paths
-    /// (e.g. `uBO%20list%20extensions/file.txt`). `URL(string:relativeTo:)` treats
-    /// those `%` sequences as literal characters and re-encodes them (`%` → `%25`),
-    /// which produces a double-encoded request URL and a 404. Decode first so
-    /// Foundation performs a single, correct encoding pass — matching AdGuard
-    /// FiltersDownloader, which joins the origin and path as plain strings.
-    ///
-    /// Already-decoded paths, absolute `https://…` includes, and paths whose
-    /// percent-encoding is invalid (decode returns `nil`) are all handled.
+    /// Encode raw spaces and Unicode without decoding existing escapes into URL delimiters.
     public static func resolveSublistURL(path rawPath: String, relativeTo baseURL: URL) -> URL? {
         let trimmed = rawPath.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
-        // Invalid percent escapes leave the original string intact.
-        let path = trimmed.removingPercentEncoding ?? trimmed
-        return URL(string: path, relativeTo: baseURL)?.absoluteURL
+        let allowed = CharacterSet.urlFragmentAllowed.union(CharacterSet(charactersIn: "%#[]"))
+        guard let encoded = trimmed.addingPercentEncoding(withAllowedCharacters: allowed) else { return nil }
+        return URL(string: encoded, relativeTo: baseURL)?.absoluteURL
     }
 
     // MARK: - Private helpers
