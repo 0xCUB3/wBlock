@@ -140,7 +140,8 @@ private struct SourceRuleAdmissionCounter {
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
     // 8: defuse Urban Dictionary's AdShield fallback without triggering its sentinel redirect.
-    public static let embeddedCompatibilityRulesVersion = "8"
+    // 9: remove the Valnet sites' anti-adblock dialog (#895).
+    public static let embeddedCompatibilityRulesVersion = "9"
     private static let combinedEngineMarkerFileName = "combined-rules.sha256"
     private static let combinedEngineMarkerFormatVersion = 2
     private static let combinedEngineBuildLockFileName = "combined-engine-build.lock"
@@ -256,6 +257,11 @@ private struct SourceRuleAdmissionCounter {
 ! Keep the loader sentinel: suppressing eval outright triggers a reporting-page redirect.
 ||html-load.com^$script,domain=urbandictionary.com
 urbandictionary.com#%#//scriptlet('trusted-replace-argument', 'eval', '0', 'replace:/^(window[.][a-zA-Z0-9_$]+=true;)(?=[^]*Please allow ads on this site)[^]*/$1/', 'html-load.com')
+
+! Valnet anti-adblock dialog (howtogeek.com and sister sites), from AdGuard Popups
+topspeed.com,polygon.com,howtogeek.com,pocket-lint.com,cbr.com,thegamer.com,collider.com,xda-developers.com,gamerant.com,screenrant.com,makeuseof.com,androidpolice.com,fextralife.com#$?#.adblock { remove: true; }
+topspeed.com,polygon.com,howtogeek.com,pocket-lint.com,cbr.com,thegamer.com,collider.com,xda-developers.com,gamerant.com,screenrant.com,makeuseof.com,androidpolice.com,fextralife.com#$#body { overflow: auto !important; }
+topspeed.com,polygon.com,howtogeek.com,pocket-lint.com,cbr.com,thegamer.com,collider.com,xda-developers.com,gamerant.com,screenrant.com,makeuseof.com,androidpolice.com,fextralife.com#%#//scriptlet('prevent-fetch', 'adsbygoogle.js')
 
 ! NameMC Ad-Shield/Network N compatibility
 ||html-load.com^$script,domain=namemc.com
