@@ -103,6 +103,17 @@ struct IncludeResolverURLEncodingTests {
         expectOrigin(URL(string: "https://cdn.jsdelivr.net/gh/easylist/ruadlist@dev/file.txt")!, raw, false, "different revision is not a mirror")
         expectOrigin(URL(string: "https://cdn.jsdelivr.net:444/gh/easylist/ruadlist@master/file.txt")!, raw, false, "nonstandard port is not a mirror")
 
+        let https = URL(string: "https://example.com/list.txt")!
+        let httpsDefaultPort = URL(string: "https://example.com:443/sub.txt")!
+        expectOrigin(httpsDefaultPort, https, true, "explicit HTTPS default port")
+        expectOrigin(https, httpsDefaultPort, true, "implicit HTTPS default port")
+        let http = URL(string: "http://example.com/list.txt")!
+        let httpDefaultPort = URL(string: "http://example.com:80/sub.txt")!
+        expectOrigin(httpDefaultPort, http, true, "explicit HTTP default port")
+        expectOrigin(http, httpDefaultPort, true, "implicit HTTP default port")
+        expectOrigin(URL(string: "https://example.com:444/sub.txt")!, https, false, "different HTTPS port")
+        expectOrigin(URL(string: "http://example.com:81/sub.txt")!, http, false, "different HTTP port")
+
         print("PASS")
     }
 

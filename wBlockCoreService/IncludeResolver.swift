@@ -302,7 +302,7 @@ public actor IncludeResolver {
     /// Cross-host GitHub includes must stay within the same repository and revision.
     ///
     /// Nil host == nil host is treated as same-origin (covers the `file://` edge case).
-    /// Port optionals are compared directly: a nil port (scheme default) equals another nil port.
+    /// HTTP and HTTPS origins use their scheme default when no port is specified.
     static func isSameOrigin(_ url: URL, as base: URL) -> Bool {
         // Scheme must be present and equal (case-insensitive)
         guard let urlScheme = url.scheme?.lowercased(),
@@ -325,8 +325,8 @@ public actor IncludeResolver {
             return false
         }
 
-        // Port comparison; nil means the default port for the scheme
-        guard url.port == base.port else {
+        let defaultPort = urlScheme == "https" ? 443 : urlScheme == "http" ? 80 : nil
+        guard (url.port ?? defaultPort) == (base.port ?? defaultPort) else {
             return false
         }
 
