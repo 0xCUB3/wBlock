@@ -54,22 +54,19 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifier
         if #available(macOS 26.0, *) {
             // Every control is its own toolbar item so each one overflows into
             // the >> menu instead of collapsing into the first button (#886).
+            // Each control draws its own capsule; the system's shared glass groups
+            // need ToolbarSpacer between them, and that gap is far wider than 8pt.
             content.toolbar {
                 ToolbarItem(placement: .automatic) {
                     InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
                 }
                 .sharedBackgroundVisibility(.hidden)
-                ToolbarSpacer(.fixed, placement: .automatic)
-                ToolbarItemGroup(placement: .automatic) {
-                    compact { primary() }
-                    if !hasPendingChanges { compact { apply() } }
-                }
-                if hasPendingChanges {
-                    ToolbarSpacer(.fixed, placement: .automatic)
-                    ToolbarItem(placement: .automatic) { compact { apply() } }
-                }
-                ToolbarSpacer(.fixed, placement: .automatic)
+                ToolbarItem(placement: .automatic) { compact { primary() } }
+                    .sharedBackgroundVisibility(.hidden)
+                ToolbarItem(placement: .automatic) { compact { apply() } }
+                    .sharedBackgroundVisibility(.hidden)
                 ToolbarItem(placement: .automatic) { compact { filter() } }
+                    .sharedBackgroundVisibility(.hidden)
             }
             .toolbarBackground(.visible, for: .windowToolbar)
         } else {
@@ -90,8 +87,10 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifier
     private func compact<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         content()
             .labelStyle(.iconOnly)
-            .environment(\.compactToolbarGrouped, true)
             .buttonStyle(CompactToolbarButtonStyle())
+            .glassEffect(.regular.interactive(), in: .capsule)
+            // Items without the shared background sit flush; search always leads.
+            .padding(.leading, 8)
     }
 }
 
