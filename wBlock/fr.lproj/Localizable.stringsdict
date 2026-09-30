@@ -18,6 +18,22 @@
 			<string>Mises à jour %d téléchargées</string>
 		</dict>
 	</dict>
+	<key>Updated %d filters</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>%d filtre mis à jour</string>
+			<key>other</key>
+			<string>%d filtres mis à jour</string>
+		</dict>
+	</dict>
 	<key>Updated %d scripts</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

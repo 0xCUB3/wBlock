@@ -22,6 +22,26 @@
 			<string>Pobrano %d aktualizacji</string>
 		</dict>
 	</dict>
+	<key>Updated %d filters</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>Zaktualizowano %d filtr</string>
+			<key>few</key>
+			<string>Zaktualizowano %d filtry</string>
+			<key>many</key>
+			<string>Zaktualizowano %d filtrów</string>
+			<key>other</key>
+			<string>Zaktualizowano %d filtra</string>
+		</dict>
+	</dict>
 	<key>Updated %d scripts</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

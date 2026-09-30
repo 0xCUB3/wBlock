@@ -508,7 +508,7 @@ struct ApplyProgressPresentation: Equatable {
             if step.status == .complete {
                 var parts: [String] = []
                 if state.filterUpdatesFound > 0 {
-                    parts.append(localizedCount("Filter updates: %d", count: state.filterUpdatesFound))
+                    parts.append(localizedCount("Updated %d filters", count: state.filterUpdatesFound))
                 }
                 if state.scriptsUpdatedCount > 0 {
                     parts.append(localizedCount("Updated %d scripts", count: state.scriptsUpdatedCount))

@@ -18,6 +18,22 @@
 			<string>已下載 %d 更新</string>
 		</dict>
 	</dict>
+	<key>Updated %d filters</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>已更新 %d 個過濾器</string>
+			<key>other</key>
+			<string>已更新 %d 個過濾器</string>
+		</dict>
+	</dict>
 	<key>Updated %d scripts</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

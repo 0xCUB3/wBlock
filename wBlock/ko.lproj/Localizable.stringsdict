@@ -18,6 +18,22 @@
 			<string>업데이트 %d개 다운로드 완료</string>
 		</dict>
 	</dict>
+	<key>Updated %d filters</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>필터 %d개 업데이트됨</string>
+			<key>other</key>
+			<string>필터 %d개 업데이트됨</string>
+		</dict>
+	</dict>
 	<key>Updated %d scripts</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

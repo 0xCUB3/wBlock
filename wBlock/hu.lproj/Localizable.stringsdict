@@ -18,6 +18,22 @@
 			<string>%d frissítés letöltve</string>
 		</dict>
 	</dict>
+	<key>Updated %d filters</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>%d szűrő frissítve</string>
+			<key>other</key>
+			<string>%d szűrő frissítve</string>
+		</dict>
+	</dict>
 	<key>Updated %d scripts</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

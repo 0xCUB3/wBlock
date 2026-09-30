@@ -20,6 +20,24 @@
 			<string>S-au descărcat %d actualizări</string>
 		</dict>
 	</dict>
+	<key>Updated %d filters</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>S-a actualizat %d filtru</string>
+			<key>few</key>
+			<string>S-au actualizat %d filtre</string>
+			<key>other</key>
+			<string>S-au actualizat %d de filtre</string>
+		</dict>
+	</dict>
 	<key>Updated %d scripts</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>

@@ -18,6 +18,26 @@
 			<string>Скачано %d обновлений</string>
 		</dict>
 	</dict>
+	<key>Updated %d filters</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@count@</string>
+		<key>count</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>d</string>
+			<key>one</key>
+			<string>Обновлён %d фильтр</string>
+			<key>few</key>
+			<string>Обновлено %d фильтра</string>
+			<key>many</key>
+			<string>Обновлено %d фильтров</string>
+			<key>other</key>
+			<string>Обновлено %d фильтра</string>
+		</dict>
+	</dict>
 	<key>Updated %d scripts</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
