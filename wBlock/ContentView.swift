@@ -1417,6 +1417,8 @@ struct AddFilterListView: View {
     @State private var urlInput: String = ""
     @State private var customName: String = ""
     @State private var customDescription: String = ""
+    @State private var customNameWasEdited = false
+    @State private var customDescriptionWasEdited = false
     @State private var customURLNames: [String: String] = [:]
     @State private var customURLDescriptions: [String: String] = [:]
     @State private var fetchedURLMetadata: [String: URLMetadata] = [:]
@@ -2074,15 +2076,33 @@ struct AddFilterListView: View {
 
     private var singleCustomNameBinding: Binding<String> {
         Binding(
-            get: { customName },
-            set: { customName = Self.singleLineMetadataField($0) }
+            get: {
+                guard customNameWasEdited else {
+                    guard let url = newURLs.first else { return "" }
+                    return fetchedMetadata(for: url).title ?? defaultName(for: url)
+                }
+                return customName
+            },
+            set: {
+                customName = Self.singleLineMetadataField($0)
+                customNameWasEdited = true
+            }
         )
     }
 
     private var singleCustomDescriptionBinding: Binding<String> {
         Binding(
-            get: { customDescription },
-            set: { customDescription = Self.singleLineMetadataField($0) }
+            get: {
+                guard customDescriptionWasEdited else {
+                    guard let url = newURLs.first else { return "" }
+                    return fetchedMetadata(for: url).description ?? ""
+                }
+                return customDescription
+            },
+            set: {
+                customDescription = Self.singleLineMetadataField($0)
+                customDescriptionWasEdited = true
+            }
         )
     }
 
@@ -2124,6 +2144,9 @@ struct AddFilterListView: View {
     private func descriptionForURL(_ url: URL, singleMode: Bool) -> String? {
         let key = FilterListURLSupport.identityKey(for: url)
         let manualDescription = singleMode ? trimmedCustomDescription : trimmed(customURLDescriptions[key])
+        if singleMode && customDescriptionWasEdited {
+            return manualDescription.isEmpty ? nil : manualDescription
+        }
         if !manualDescription.isEmpty { return manualDescription }
         let metadataDescription = fetchedURLMetadata[key]?.description?.trimmingCharacters(in: .whitespacesAndNewlines)
         return metadataDescription?.isEmpty == false ? metadataDescription : nil
@@ -2138,8 +2161,14 @@ struct AddFilterListView: View {
             if !trimmedCustomName.isEmpty { customURLNames[key] = customName }
             if !trimmedCustomDescription.isEmpty { customURLDescriptions[key] = customDescription }
         } else if oldMode == .bulk, newMode == .single {
-            if let name = customURLNames[key] { customName = name }
-            if let description = customURLDescriptions[key] { customDescription = description }
+            if let name = customURLNames[key] {
+                customName = name
+                customNameWasEdited = true
+            }
+            if let description = customURLDescriptions[key] {
+                customDescription = description
+                customDescriptionWasEdited = true
+            }
         }
     }
 
