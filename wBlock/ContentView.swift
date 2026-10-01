@@ -45,6 +45,10 @@ struct ContentView: View {
         get { tabSelection.value }
         nonmutating set { tabSelection.value = newValue }
     }
+
+    private var shouldExpandForeignFilters: Bool {
+        showOnlyEnabledLists || isForeignFiltersExpanded
+    }
     // Prepared off the main actor: every progress publish re-renders this view,
     // and sorting the catalog there stalled older iPads until the watchdog fired (#860).
     @State private var filterPresentation = FilterListPresentation()
@@ -463,7 +467,7 @@ struct ContentView: View {
                     // Same section chrome as every other category; the header's
                     // chevron collapses the rows instead of a nested DisclosureGroup.
                     ContentListSection { categoryHeader(item.category) } content: {
-                        if isForeignFiltersExpanded {
+                        if shouldExpandForeignFilters {
                             ForEach(filterPresentation.foreignGroups) { group in
                                 foreignFilterGroupHeader(group.title)
                                 filterRows(group.filters, showsFlags: false)
@@ -656,7 +660,14 @@ struct ContentView: View {
     // in the header on both platforms now that macOS no longer renders
     // AppKit's outline cell.
     private func foreignExpansion(for category: FilterListCategory) -> Binding<Bool>? {
-        category == .foreign ? $isForeignFiltersExpanded : nil
+        guard category == .foreign else { return nil }
+        return Binding(
+            get: { shouldExpandForeignFilters },
+            set: { isExpanded in
+                guard !showOnlyEnabledLists else { return }
+                isForeignFiltersExpanded = isExpanded
+            }
+        )
     }
 
     private func defaultFilterNames(for category: FilterListCategory) -> [String] {
@@ -846,7 +857,7 @@ struct ContentView: View {
                 guard !filters.isEmpty else { return nil }
                 // Collapse is owned by the header's disclosure binding; the
                 // section simply carries its rows only while expanded.
-                let rows = isForeignFiltersExpanded ? filterPresentation.foreignGroups.flatMap { group in
+                let rows = shouldExpandForeignFilters ? filterPresentation.foreignGroups.flatMap { group in
                     [MacListRow(decoration: "foreign-\(group.id)") {
                         foreignFilterGroupHeader(group.title)
                             .frame(maxWidth: .infinity, alignment: .leading)
