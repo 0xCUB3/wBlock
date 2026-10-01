@@ -4,9 +4,7 @@ extension View {
     @ViewBuilder
     func infoPopoverAnchor(_ id: AnyHashable?) -> some View {
         #if os(macOS)
-        if let id {
-            background(InfoPopoverSlots(id: id))
-        } else { self }
+        if let id { modifier(InfoPopoverAnchor(id: id)) } else { self }
         #else
         self
         #endif
@@ -55,16 +53,23 @@ struct InfoPopoverState: Equatable {
         let frame: CGRect
     }
     private struct ClosingClick: Equatable { let token: UUID; let eventNumber: Int }
+    private struct Click: Equatable { let token: UUID; let id: AnyHashable }
 
     private(set) var presented: UUID?
     private var closingClick: ClosingClick?
+    private var click: Click?
 
-    /// The clicked anchor wins; without a click (a menu or keyboard) the topmost does.
-    static func anchor(for id: AnyHashable, in anchors: [Anchor],
-                       click: (windowNumber: Int, point: CGPoint)?) -> UUID? {
+    /// Records the info button the user just clicked. SwiftUI may report the
+    /// selection after the event has passed, so the anchor is named here.
+    mutating func clicked(_ token: UUID, id: AnyHashable) { click = Click(token: token, id: id) }
+
+    /// The next selection consumes the click: the clicked anchor wins when it
+    /// shows this item; otherwise (a menu or keyboard) the topmost does.
+    mutating func anchor(for id: AnyHashable, in anchors: [Anchor], fromKeyboard: Bool = false) -> UUID? {
+        defer { click = nil }
         let matches = anchors.filter { $0.id == id }
-        if let click, let hit = matches.first(where: { $0.windowNumber == click.windowNumber && $0.frame.contains(click.point) }) {
-            return hit.token
+        if !fromKeyboard, let click, click.id == id, matches.contains(where: { $0.token == click.token }) {
+            return click.token
         }
         return matches.max { $0.frame.maxY < $1.frame.maxY }?.token
     }
@@ -87,7 +92,7 @@ struct InfoPopoverState: Equatable {
         return true
     }
 
-    mutating func clear() { presented = nil }
+    mutating func clear() { presented = nil; click = nil }
 }
 
 @MainActor
@@ -116,8 +121,6 @@ final class InfoPopoverPresenter: ObservableObject {
     func select(_ id: AnyHashable?) {
         guard let id else { state.clear(); return }
         let event = NSApp.currentEvent
-        let isMouse = event.map { [.leftMouseDown, .leftMouseUp, .rightMouseDown, .rightMouseUp].contains($0.type) } ?? false
-        let click = isMouse ? event.flatMap { event in event.window.map { ($0.windowNumber, event.locationInWindow) } } : nil
         let visible = anchors.compactMap { token, anchor -> InfoPopoverState.Anchor? in
             let view = anchor.view
             guard anchor.id == id, let window = view.window, !view.isHiddenOrHasHiddenAncestor,
@@ -127,9 +130,11 @@ final class InfoPopoverPresenter: ObservableObject {
         let mouseUp = event?.type == .leftMouseUp ? event?.eventNumber : nil
         // An item with no visible anchor, or a closing click, must not leave
         // a selection behind that no popover shows.
-        guard let token = InfoPopoverState.anchor(for: id, in: visible, click: click),
+        guard let token = state.anchor(for: id, in: visible, fromKeyboard: event?.type == .keyDown),
               state.request(token, mouseUp: mouseUp) else { return clearSelection() }
     }
+
+    func clicked(_ token: UUID, id: AnyHashable) { state.clicked(token, id: id) }
 
     func dismiss(_ token: UUID) {
         let event = NSApp.currentEvent
@@ -182,24 +187,34 @@ private struct InfoPresentationModifier<Item: Identifiable, Info: View>: ViewMod
     }
 }
 
-private struct InfoPopoverSlots: View {
+/// One info button. Its click names this anchor to every enclosing presenter
+/// before the button's action changes the selection.
+private struct InfoPopoverAnchor: ViewModifier {
     let id: AnyHashable
+    @State private var token = UUID()
     @Environment(\.infoPopoverEntries) private var entries
 
-    var body: some View {
-        ZStack {
-            ForEach(entries.indices, id: \.self) { index in
-                InfoPopoverSlot(id: id, presenter: entries[index].presenter, content: entries[index].content)
+    func body(content: Content) -> some View {
+        content
+            .simultaneousGesture(TapGesture().onEnded {
+                for entry in entries { entry.presenter.clicked(token, id: id) }
+            })
+            .background {
+                ZStack {
+                    ForEach(entries.indices, id: \.self) { index in
+                        InfoPopoverSlot(id: id, token: token, presenter: entries[index].presenter,
+                                        content: entries[index].content)
+                    }
+                }
             }
-        }
     }
 }
 
 private struct InfoPopoverSlot: View {
     let id: AnyHashable
+    let token: UUID
     @ObservedObject var presenter: InfoPopoverPresenter
     let content: () -> AnyView
-    @State private var token = UUID()
 
     var body: some View {
         let isPresented = Binding(

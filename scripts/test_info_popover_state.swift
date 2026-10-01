@@ -11,15 +11,24 @@ struct InfoPopoverStateTests {
             .init(token: lower, id: "list", windowNumber: 1, frame: CGRect(x: 300, y: 100, width: 16, height: 16)),
             .init(token: other, id: "other", windowNumber: 1, frame: CGRect(x: 300, y: 250, width: 16, height: 16)),
         ]
-        precondition(InfoPopoverState.anchor(for: "list", in: anchors, click: (1, CGPoint(x: 305, y: 105))) == lower,
-                     "the clicked duplicate must present")
-        precondition(InfoPopoverState.anchor(for: "list", in: anchors, click: (1, CGPoint(x: 305, y: 405))) == upper)
-        precondition(InfoPopoverState.anchor(for: "list", in: anchors, click: (2, CGPoint(x: 305, y: 105))) == upper,
-                     "a menu click falls back to the topmost anchor")
-        precondition(InfoPopoverState.anchor(for: "list", in: anchors, click: nil) == upper)
-        precondition(InfoPopoverState.anchor(for: "missing", in: anchors, click: nil) == nil)
-
         var state = InfoPopoverState()
+        // The click names its anchor; a selection that SwiftUI reports later,
+        // with no mouse event current, still presents from that duplicate.
+        state.clicked(lower, id: "list")
+        precondition(state.anchor(for: "list", in: anchors) == lower, "the clicked duplicate must present")
+        precondition(state.anchor(for: "list", in: anchors) == upper, "a click is consumed by one selection")
+        // A menu or keyboard selection of another item drops the click.
+        state.clicked(lower, id: "list")
+        precondition(state.anchor(for: "other", in: anchors) == other)
+        precondition(state.anchor(for: "list", in: anchors) == upper, "no stale click after another selection")
+        state.clicked(lower, id: "list")
+        precondition(state.anchor(for: "list", in: anchors, fromKeyboard: true) == upper)
+        precondition(state.anchor(for: "list", in: anchors) == upper, "a keyboard selection drops the click")
+        precondition(state.anchor(for: "missing", in: anchors) == nil)
+        state.clicked(lower, id: "list")
+        state.clear()
+        precondition(state.anchor(for: "list", in: anchors) == upper, "clearing the selection drops the click")
+
         precondition(state.request(lower, mouseUp: 7) && state.presented == lower)
         // Clicking the open info button closes it; that click's mouse-up must not reopen it.
         precondition(state.dismiss(lower, mouseDown: 8) && state.presented == nil)
