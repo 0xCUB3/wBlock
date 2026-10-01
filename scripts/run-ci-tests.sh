@@ -82,6 +82,8 @@ compile_direct_test() {
 # Standalone Foundation and AppKit tests.
 compile_direct_test native-list-reordering \
   wBlock/MacReorderableList.swift wBlock/ListDisplayOrder.swift scripts/test_native_list_reordering.swift
+compile_direct_test native-list-header-heights \
+  wBlock/MacReorderableList.swift wBlock/ListDisplayOrder.swift scripts/test_native_list_header_heights.swift
 compile_direct_test list-display-order-sync \
   wBlock/ListDisplayOrder.swift wBlock/StableSnapshot.swift scripts/test_list_display_order_sync.swift
 compile_direct_test popover-window-shield \

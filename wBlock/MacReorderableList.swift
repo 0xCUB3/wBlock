@@ -333,6 +333,9 @@ struct MacReorderableList: NSViewRepresentable {
                         outline.expandItem(node)
                     }
                 }
+                // A drag-only header that gained or lost its rows may sit outside
+                // the visible rows refreshed below; AppKit keeps its old height.
+                noteConcealableSections(animated: false)
                 if let selected {
                     let row = outline.row(forItem: selected)
                     if row >= 0 { outline.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false) }
@@ -530,7 +533,7 @@ struct MacReorderableList: NSViewRepresentable {
 
         private func noteConcealableSections(animated: Bool) {
             guard let outline else { return }
-            let rows = IndexSet(roots.filter { section(for: $0)?.revealsOnlyWhileDragging == true && $0.children.isEmpty }
+            let rows = IndexSet(roots.filter { section(for: $0)?.revealsOnlyWhileDragging == true }
                 .map { outline.row(forItem: $0) }.filter { $0 >= 0 })
             guard !rows.isEmpty else { return }
             for row in rows {
