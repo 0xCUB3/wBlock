@@ -2036,6 +2036,9 @@ struct AddUserScriptView: View {
     @State private var stagedFile: StagedScriptFile?
     @State private var isStagingFile = false
     @State private var stagingGeneration = 0
+    @State private var isImportingURLList = false
+    @State private var urlListImportGeneration = 0
+    @State private var importsURLList = false
     @State private var stagedName = ""
     @State private var stagedDescription = ""
     @State private var selectedCategory: FilterListCategory = .scriptOther
@@ -2112,12 +2115,16 @@ struct AddUserScriptView: View {
             fetchURLMetadata()
         }
         .onChangeCompat(of: urlEntryMode) { _, mode in
+            urlListImportGeneration += 1
+            isImportingURLList = false
             isReviewingURLs = false
             if mode == .single { urlInput = FilterListURLSupport.normalizeSingleURLInput(urlInput) }
             validateInput(urlInput)
             fetchURLMetadata()
         }
         .onChangeCompat(of: addMode) { _, mode in
+            urlListImportGeneration += 1
+            isImportingURLList = false
             if mode == .url { fetchURLMetadata() } else {
                 urlMetadataTask?.cancel()
                 urlMetadataGeneration += 1
@@ -2161,10 +2168,10 @@ struct AddUserScriptView: View {
                 onPaste: pasteScriptFromClipboard
             )
         }
-        .fileImporter(isPresented: $showingFileImporter, allowedContentTypes: allowedImportTypes) { result in
+        .fileImporter(isPresented: $showingFileImporter, allowedContentTypes: importsURLList ? [.plainText, .text] : allowedImportTypes) { result in
             switch result {
             case .success(let url):
-                stageFile(at: url)
+                if importsURLList { importURLList(from: url) } else { stageFile(at: url) }
             case .failure(let error):
                 if (error as? CocoaError)?.code != .userCancelled {
                     fileImportError = error.localizedDescription
@@ -2179,7 +2186,7 @@ struct AddUserScriptView: View {
             title: "Add Userscript or Userstyle",
             isLoading: isAdding,
             buttonTitle: { LocalizedStringKey(addURLButtonTitle) },
-            isSubmitDisabled: !canSubmit || isAdding,
+            isSubmitDisabled: !canSubmit || isAdding || isImportingURLList,
             onDismiss: { dismiss() },
             onSubmit: submit
         ) {
@@ -2244,6 +2251,7 @@ struct AddUserScriptView: View {
             isLoading: isStagingFile,
             isDisabled: isAdding
         ) {
+            importsURLList = false
             showingFileImporter = true
             fileImportError = nil
         }
@@ -2478,7 +2486,9 @@ struct AddUserScriptView: View {
                 isDisabled: isAdding,
                 onPaste: pasteFromClipboard,
                 pasteTitle: urlEntryMode == .single ? "Paste URL" : "Paste URLs",
-                pasteButtonUsesRow: true
+                pasteButtonUsesRow: true,
+                onImportFile: { importsURLList = true; showingFileImporter = true },
+                isImportingFile: isImportingURLList
             )
         }
     }
@@ -2542,7 +2552,7 @@ struct AddUserScriptView: View {
             }
         }
         .primaryActionButtonStyle()
-        .disabled(!canSubmit || isAdding)
+        .disabled(!canSubmit || isAdding || isImportingURLList)
         .keyboardShortcut(.defaultAction)
     }
 
@@ -2686,6 +2696,33 @@ struct AddUserScriptView: View {
                     onScriptAdded()
                     dismiss()
                 }
+            }
+        }
+    }
+
+    private func importURLList(from url: URL) {
+        urlListImportGeneration += 1
+        let generation = urlListImportGeneration
+        // Drop anything prepared from the previous input before the async read.
+        isReviewingURLs = false
+        urlMetadataTask?.cancel()
+        isFetchingURLMetadata = false
+        isImportingURLList = true
+        urlImportError = nil
+        let didAccess = url.startAccessingSecurityScopedResource()
+        Task { @MainActor in
+            defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
+            do {
+                let text = try await Task.detached(priority: .userInitiated) {
+                    try UserScriptURLSupport.urlListText(fromFile: url)
+                }.value
+                guard generation == urlListImportGeneration else { return }
+                urlInput = UserScriptURLSupport.appendingPastedURLs(text, to: urlInput)
+                isImportingURLList = false
+            } catch {
+                guard generation == urlListImportGeneration else { return }
+                isImportingURLList = false
+                urlImportError = error.localizedDescription
             }
         }
     }

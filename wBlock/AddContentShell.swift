@@ -222,6 +222,8 @@ struct AddContentURLInput: View {
     let pasteTitle: LocalizedStringKey
     let pasteButtonUsesRow: Bool
     var macPlaceholderPadding: CGFloat = 1
+    var onImportFile: () -> Void = {}
+    var isImportingFile = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -269,10 +271,27 @@ struct AddContentURLInput: View {
                     .accessibilityLabel(accessibilityLabel)
             }
             if pasteButtonUsesRow {
-                HStack { pasteButton; Spacer() }
+                HStack { pasteButton; importButton; Spacer() }
+            } else if isBulk {
+                HStack { pasteButton; importButton; Spacer() }
             } else {
                 pasteButton
             }
+        }
+    }
+
+    @ViewBuilder
+    private var importButton: some View {
+        if isBulk {
+            Button(action: onImportFile) {
+                if isImportingFile {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Label("Import File", systemImage: "doc")
+                }
+            }
+            .buttonStyle(.bordered)
+            .disabled(isDisabled || isImportingFile)
         }
     }
 

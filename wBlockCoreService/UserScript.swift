@@ -57,6 +57,24 @@ public enum UserScriptURLSupport {
         return lines.joined(separator: "\n")
     }
 
+    /// Reads a plain-text URL list for bulk import: one URL per line. Blank lines,
+    /// `#` and `//` comment lines, and a leading BOM are ignored.
+    public static func urlListText(fromFile url: URL) throws -> String {
+        let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        guard size <= UserScriptImportLimits.maximumSourceFileBytes else {
+            throw NSError(domain: "wBlock.urlListImport", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: NSLocalizedString(
+                    "The selected file is too large. Maximum size is 10 MB.", comment: "URL list import size error")
+            ])
+        }
+        return try String(contentsOf: url, encoding: .utf8)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "\u{FEFF}"))
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty && !$0.hasPrefix("#") && !$0.hasPrefix("//") }
+            .joined(separator: "\n")
+    }
+
     /// Parses one wrapped URL or multiple complete URLs, one per line.
     public static func parseRemoteURLs(from rawValue: String) -> [URL] {
         let lines = rawValue.components(separatedBy: .newlines).compactMap { line -> String? in

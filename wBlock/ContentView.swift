@@ -1446,6 +1446,9 @@ struct AddFilterListView: View {
     @State private var stagedFile: StagedFilterFile?
     @State private var isStagingFile = false
     @State private var stagingGeneration = 0
+    @State private var isImportingURLList = false
+    @State private var urlListImportGeneration = 0
+    @State private var importsURLList = false
 
     private struct StagedFilterFile {
         let filename: String
@@ -1511,7 +1514,7 @@ struct AddFilterListView: View {
                     title: "Add Filter List",
                     isLoading: isSaving,
                     buttonTitle: { LocalizedStringKey(addButtonTitle) },
-                    isSubmitDisabled: !canSubmit || isSaving || (isReviewingURLs && isFetchingURLMetadata),
+                    isSubmitDisabled: !canSubmit || isSaving || isImportingURLList || (isReviewingURLs && isFetchingURLMetadata),
                     onDismiss: { dismiss() },
                     onSubmit: submit
                 ) {
@@ -1537,6 +1540,7 @@ struct AddFilterListView: View {
             }
         }
         .onChangeCompat(of: urlEntryMode) { oldValue, newValue in
+            cancelURLListImport()
             isReviewingURLs = false
             preserveURLMetadataFieldsForModeSwitch(from: oldValue, to: newValue)
             if newValue == .single {
@@ -1548,6 +1552,7 @@ struct AddFilterListView: View {
             fetchMetadataForCurrentURLs()
         }
         .onChangeCompat(of: addMode) { _, mode in
+            cancelURLListImport()
             if mode == .url { fetchMetadataForCurrentURLs() } else {
                 metadataFetchTask?.cancel()
                 metadataFetchGeneration += 1
@@ -1577,13 +1582,13 @@ struct AddFilterListView: View {
         }
         .fileImporter(
             isPresented: $showingFileImporter,
-            allowedContentTypes: filterImportTypes,
+            allowedContentTypes: importsURLList ? [.plainText, .text] : filterImportTypes,
             allowsMultipleSelection: false
         ) { result in
             switch result {
             case .success(let urls):
                 guard let url = urls.first else { return }
-                stageFile(at: url)
+                if importsURLList { importURLList(from: url) } else { stageFile(at: url) }
             case .failure(let error):
                 if (error as? CocoaError)?.code != .userCancelled {
                     importErrorMessage = error.localizedDescription
@@ -1628,7 +1633,7 @@ struct AddFilterListView: View {
 	                }
 	            }
 	            .primaryActionButtonStyle()
-	            .disabled(!canSubmit || isSaving || (isReviewingURLs && isFetchingURLMetadata))
+	            .disabled(!canSubmit || isSaving || isImportingURLList || (isReviewingURLs && isFetchingURLMetadata))
 	            .keyboardShortcut(.defaultAction)
 	        }
 
@@ -1698,6 +1703,7 @@ struct AddFilterListView: View {
                 isLoading: isStagingFile,
                 isDisabled: isSaving
             ) {
+                importsURLList = false
                 showingFileImporter = true
                 importErrorMessage = nil
             }
@@ -1873,7 +1879,9 @@ struct AddFilterListView: View {
             onPaste: pasteURLsFromClipboard,
             pasteTitle: pasteURLButtonTitle,
             pasteButtonUsesRow: false,
-            macPlaceholderPadding: 0
+            macPlaceholderPadding: 0,
+            onImportFile: { importsURLList = true; showingFileImporter = true },
+            isImportingFile: isImportingURLList
         )
     }
 
@@ -2204,6 +2212,38 @@ struct AddFilterListView: View {
 
     private func trimmed(_ value: String?) -> String {
         value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
+
+    private func cancelURLListImport() {
+        urlListImportGeneration += 1
+        isImportingURLList = false
+    }
+
+    private func importURLList(from url: URL) {
+        urlListImportGeneration += 1
+        let generation = urlListImportGeneration
+        // Drop anything prepared from the previous input before the async read.
+        isReviewingURLs = false
+        metadataFetchTask?.cancel()
+        isFetchingURLMetadata = false
+        isImportingURLList = true
+        importErrorMessage = nil
+        let didAccess = url.startAccessingSecurityScopedResource()
+        Task { @MainActor in
+            defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
+            do {
+                let text = try await Task.detached(priority: .userInitiated) {
+                    try UserScriptURLSupport.urlListText(fromFile: url)
+                }.value
+                guard generation == urlListImportGeneration else { return }
+                urlInput = UserScriptURLSupport.appendingPastedURLs(text, to: urlInput)
+                isImportingURLList = false
+            } catch {
+                guard generation == urlListImportGeneration else { return }
+                isImportingURLList = false
+                importErrorMessage = error.localizedDescription
+            }
+        }
     }
 
     private func stageFile(at url: URL) {
