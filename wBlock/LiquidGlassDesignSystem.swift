@@ -230,7 +230,8 @@ struct InlineGlassSearchField: View {
     var body: some View {
         HStack(spacing: -2) {
             Button(action: expandAndFocus) {
-                Image(systemName: "magnifyingglass")
+                Label(prompt, systemImage: "magnifyingglass")
+                    .labelStyle(.iconOnly)
                     .font(.system(size: 13))
                     .fixedSize()
                     .foregroundStyle(text.isEmpty ? Color.primary : Color.accentColor)
@@ -241,7 +242,6 @@ struct InlineGlassSearchField: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(prompt)
             .accessibilityValue(text)
             .help(prompt)
 

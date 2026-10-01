@@ -236,7 +236,7 @@ struct UserScriptManagerView: View {
             if hasPendingChanges {
                 Text("Apply").fontWeight(.semibold)
             } else {
-                Image(systemName: "arrow.triangle.2.circlepath")
+                Label("Update", systemImage: "arrow.triangle.2.circlepath")
             }
         }
         #if os(macOS)

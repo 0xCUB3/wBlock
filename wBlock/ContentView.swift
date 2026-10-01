@@ -330,7 +330,7 @@ struct ContentView: View {
             if hasPendingChanges {
                 Text("Apply").fontWeight(.semibold)
             } else {
-                Image(systemName: applyChangesSymbolName)
+                Label("Update", systemImage: applyChangesSymbolName)
             }
             #endif
         }
