@@ -90,37 +90,14 @@ private struct SponsorBlockTransferView: View {
     }
 
     var body: some View {
-        Group {
-            #if os(macOS)
-            VStack(spacing: 0) {
-                Text("SponsorBlock Backups")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(20)
-                Divider()
-                form
-                Divider()
-                HStack {
-                    Spacer()
-                    Button("Done") { dismiss() }
-                        .keyboardShortcut(.defaultAction)
-                        .disabled(busy)
-                }
-                .padding(20)
-            }
-            .frame(width: 520, height: 420)
-            #else
-            CompatibleNavigationStack {
-                form
-                    .navigationTitle("SponsorBlock Backups")
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") { dismiss() }.disabled(busy)
-                        }
-                    }
-            }
-            #endif
+        SheetContainer {
+            SheetHeader(title: "SponsorBlock Backups", isLoading: busy) { dismiss() }
+            form
         }
+        #if os(macOS)
+        .frame(width: 520, height: 420)
+        #endif
+        .interactiveDismissDisabled(busy)
         .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
             switch result {
             case .success(let url):

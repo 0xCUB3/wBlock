@@ -29,14 +29,14 @@ struct SiteScopeEditor: View {
             .disabled(isSaving)
             if let selectedSites {
                 VStack(alignment: .leading, spacing: 4) {
-                    SiteHostListEditor(title: "Selected Sites", hosts: selectedSites,
+                    StringListEditor(title: "Selected Sites", items: selectedSites,
                                        update: { updateSelected($0) }, isSaving: isSaving)
                     if selectedSites.isEmpty { hint(emptySelectionMessage) }
                 }
             }
             if selectedSites == nil || !excludedSites.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
-                    SiteHostListEditor(title: "Excluded Sites", hosts: excludedSites,
+                    StringListEditor(title: "Excluded Sites", items: excludedSites,
                                        update: updateExcluded, isSaving: isSaving)
                     hint(excludedMessage)
                 }

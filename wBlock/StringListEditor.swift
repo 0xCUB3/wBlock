@@ -1,30 +1,32 @@
 import SwiftUI
 import wBlockCoreService
 
-struct SiteHostListEditor: View {
-    let title: LocalizedStringKey
-    let hosts: [String]
+struct StringListEditor: View {
+    let title: LocalizedStringKey?
+    let items: [String]
     let update: ([String]) -> Void
     var isSaving = false
+    var placeholder: LocalizedStringKey = "example.com"
+    var normalize: (String) -> String? = DisabledSitesNormalizer.normalizedDomain
     @State private var input = ""
 
     private var candidate: String? {
-        guard let host = DisabledSitesNormalizer.normalizedDomain(input), !hosts.contains(host) else { return nil }
-        return host
+        guard let item = normalize(input), !items.contains(item) else { return nil }
+        return item
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.callout.weight(.medium))
+            if let title { Text(title).font(.callout.weight(.medium)) }
             HStack {
-                TextField("example.com", text: $input, onCommit: addSite)
+                TextField(placeholder, text: $input, onCommit: addItem)
                     .textFieldStyle(.roundedBorder)
                     .disableAutocorrection(true)
                     #if os(iOS)
                     .keyboardType(.URL)
                     .textInputAutocapitalization(.never)
                     #endif
-                Button(action: addSite) {
+                Button(action: addItem) {
                     Image(systemName: "plus.circle.fill").font(.title2)
                         #if os(macOS)
                         .frame(minWidth: 28, minHeight: 28)
@@ -37,27 +39,31 @@ struct SiteHostListEditor: View {
                 .accessibilityLabel("Add")
                 .disabled(candidate == nil || isSaving)
             }
-            ForEach(hosts, id: \.self) { site in
+            ForEach(items, id: \.self) { item in
                 HStack {
-                    Text(verbatim: site).font(.callout).textSelection(.enabled)
+                    Text(verbatim: item).font(.callout).textSelection(.enabled)
                     Spacer()
-                    Button { update(hosts.filter { $0 != site }) } label: {
+                    Button { update(items.filter { $0 != item }) } label: {
                         Image(systemName: "minus.circle").foregroundStyle(.secondary)
+                            #if os(macOS)
                             .frame(minWidth: 28, minHeight: 32)
+                            #else
+                            .frame(minWidth: 44, minHeight: 44)
+                            #endif
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Remove")
-                    .accessibilityValue(site)
+                    .accessibilityValue(item)
                     .disabled(isSaving)
                 }
             }
         }
     }
 
-    private func addSite() {
+    private func addItem() {
         guard !isSaving, let candidate else { return }
         input = ""
-        update((hosts + [candidate]).sorted())
+        update((items + [candidate]).sorted())
     }
 }

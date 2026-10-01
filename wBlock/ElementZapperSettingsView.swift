@@ -394,7 +394,7 @@ struct ElementZapperRuleEditor: View {
     private var trimmedDraft: String { draft.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     var body: some View {
-        VStack(spacing: 16) {
+        SheetContainer {
             SheetHeader(title: "Edit Element Rule", isLoading: isSaving) { dismiss() }
             VStack(alignment: .leading, spacing: 12) {
                 Text(domain).font(.headline).textSelection(.enabled)
@@ -419,6 +419,7 @@ struct ElementZapperRuleEditor: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+            .padding(.vertical, 16)
             SheetBottomToolbar {
                 Button("Cancel") { dismiss() }
                     .disabled(isSaving)

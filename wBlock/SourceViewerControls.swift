@@ -4,17 +4,28 @@ struct SourceViewerControls: View {
     @Binding var wrapsLines: Bool
     let onSearch: () -> Void
 
+    private var controlSize: CGFloat {
+        #if os(iOS)
+        44
+        #else
+        24
+        #endif
+    }
+
     var body: some View {
         HStack(spacing: 4) {
             Button(action: onSearch) {
-                Image(systemName: "magnifyingglass").frame(width: 24, height: 24)
+                Image(systemName: "magnifyingglass")
+                    .frame(width: controlSize, height: controlSize)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .noFocusRingCompat()
             .accessibilityLabel("Search")
             Button { wrapsLines.toggle() } label: {
                 Image(systemName: wrapsLines ? "text.justify.left" : "text.alignleft")
-                    .frame(width: 24, height: 24)
+                    .frame(width: controlSize, height: controlSize)
+                    .contentShape(Rectangle())
                     .foregroundStyle(wrapsLines ? Color.accentColor : Color.secondary)
             }
             .buttonStyle(.plain)
