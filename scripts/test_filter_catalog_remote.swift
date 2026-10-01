@@ -37,6 +37,11 @@ import wBlockCoreService
         check(safariMirrors.contains("https://filters.adtidy.org/extension/safari/filters/2_optimized.txt"), "adtidy mirror")
         check(safariMirrors.contains("https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/2_optimized.txt"), "jsdelivr mirror")
         check(!safariMirrors.contains(where: { $0.contains("ios/filters") }), "no ios safari mirror")
+        let mobile = URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/ios/filters/11_optimized.txt")!
+        check(FilterListURLMirror.fallbackURLs(for: mobile).map(\.absoluteString) == [
+            "https://filters.adtidy.org/ios/filters/11_optimized.txt",
+            "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/ios/filters/11_optimized.txt",
+        ], "ios registry mirrors")
         let nordic = URL(string: "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/NorwegianExperimentalList%20alternate%20versions/NorwegianExperimentalList.txt")!
         let nordicMirrors = FilterListURLMirror.fallbackURLs(for: nordic)
         check(nordicMirrors.contains(where: { $0.host == "cdn.jsdelivr.net" }), "Nordic jsdelivr fallback")

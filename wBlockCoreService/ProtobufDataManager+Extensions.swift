@@ -11,7 +11,7 @@ internal import SwiftProtobuf
 // MARK: - Filter List Management
 extension ProtobufDataManager {
     private static let adGuardMobileLegacyURLFragment = "filter_11_Mobile"
-    private static let adGuardMobileCurrentURL = "https://filters.adtidy.org/ios/filters/11_optimized.txt"
+    private static let adGuardMobileCurrentURL = "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/ios/filters/11_optimized.txt"
 
     @discardableResult
     public func updateFilterLists(_ filterLists: [FilterList]) async -> Bool {

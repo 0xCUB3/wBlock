@@ -53,10 +53,12 @@ class FilterListLoader {
             string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/25_optimized.txt")!,
         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/10.txt": URL(
             string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/10_optimized.txt")!,
+        // AdGuard Mobile Filter moved to the GitHub registry so it gets the same
+        // jsDelivr and adtidy fallbacks as the other AdGuard lists (#912).
         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt":
-            URL(string: "https://filters.adtidy.org/ios/filters/11_optimized.txt")!,
-        "https://filters.adtidy.org/ios/filters/11.txt":
-            URL(string: "https://filters.adtidy.org/ios/filters/11_optimized.txt")!,
+            URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/ios/filters/11_optimized.txt")!,
+        "https://filters.adtidy.org/ios/filters/11.txt": URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/ios/filters/11_optimized.txt")!,
+        "https://filters.adtidy.org/ios/filters/11_optimized.txt": URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/ios/filters/11_optimized.txt")!,
     ]
 
     /// Legacy names whose list came from a different source than the current
@@ -810,7 +812,7 @@ class FilterListLoader {
                     id: UUID(), name: "AdGuard Mobile Filter",
                     url: URL(
                         string:
-                            "https://filters.adtidy.org/ios/filters/11_optimized.txt"
+                            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/ios/filters/11_optimized.txt"
                     )!, category: FilterListCategory.ads, isSelected: true,
                     description: "Optimized for mobile ad blocking. Recommended for iOS/iPadOS."))
         #endif

@@ -44,14 +44,16 @@ public enum FilterListURLMirror {
         jsDelivrComponents.percentEncodedPath = "/gh/\(user)/\(repo)@\(jsRef)/\(jsPath)"
         guard let jsDelivr = jsDelivrComponents.url else { return [] }
         var result = [jsDelivr]
-        let isSafariRegistry = user == "AdguardTeam" && repo == "FiltersRegistry"
-            && jsPath.hasPrefix("platforms/extension/safari/filters/")
-        if isSafariRegistry {
-            let filename = String(jsPath.dropFirst("platforms/extension/safari/filters/".count))
+        // AdGuard publishes each registry platform at the same path on its own CDN.
+        let platforms = ["platforms/extension/safari/filters/": "extension/safari/filters/",
+                         "platforms/ios/filters/": "ios/filters/"]
+        if user == "AdguardTeam" && repo == "FiltersRegistry",
+           let (prefix, adtidyPath) = platforms.first(where: { jsPath.hasPrefix($0.key) }) {
+            let filename = String(jsPath.dropFirst(prefix.count))
             // filter 17 is not published at AdGuard's Safari endpoint.
             if filename != "filter.txt" && filename != "filter_17_TrackParam.txt"
                 && !filename.hasPrefix("17_") {
-                result.insert(URL(string: "https://filters.adtidy.org/extension/safari/filters/\(filename)")!, at: 0)
+                result.insert(URL(string: "https://filters.adtidy.org/\(adtidyPath)\(filename)")!, at: 0)
             }
         }
         var seen = Set<URL>()
