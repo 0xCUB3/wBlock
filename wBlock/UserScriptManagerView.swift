@@ -1120,14 +1120,11 @@ private struct ScriptMatchPatternRowView: View {
     }
 }
 
-private struct ScriptMatchPatternsView: View {
-    let script: UserScript
-    @Binding var isPatternsExpanded: Bool
-
+private extension UserScript {
     /// Userstyles persist serialized @-moz-document conditions in `matches`;
     /// render them in a human-readable form instead of the storage format.
-    private func displayPattern(_ pattern: String) -> String {
-        guard script.isUserStyle else { return pattern }
+    func displayMatchPattern(_ pattern: String) -> String {
+        guard isUserStyle else { return pattern }
         if pattern == "global" {
             return LocalizedStrings.text("All websites", comment: "Userstyle condition that applies everywhere")
         }
@@ -1138,60 +1135,69 @@ private struct ScriptMatchPatternsView: View {
         return pattern
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isPatternsExpanded.toggle()
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Text(
-                        script.isUserStyle
-                            ? LocalizedStrings.format(
-                                "Applies To (%d)",
-                                comment: "Userstyle condition section title",
-                                script.matches.count
-                            )
-                            : LocalizedStrings.format(
-                                "URL Patterns (%d)",
-                                comment: "Userscript URL pattern section title",
-                                script.matches.count
-                            )
-                    )
-                        .font(.caption).fontWeight(.medium).foregroundStyle(.secondary)
-                    Spacer()
-                    Image(systemName: isPatternsExpanded ? "chevron.down" : "chevron.right")
-                        .font(.caption2).foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .noFocusRingCompat()
-
-            if isPatternsExpanded {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 4) {
-                        ForEach(script.matches.indices, id: \.self) { indexInForEach in
-                            ScriptMatchPatternRowView(
-                                index: indexInForEach,
-                                total: script.matches.count,
-                                pattern: displayPattern(script.matches[indexInForEach])
-                            )
-                        }
-                    }
-                    .padding(.horizontal, 4)
-                }
-                .frame(maxHeight: 200)
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.5), lineWidth: 0.5))
-            }
-        }
+    var matchPatternsTitle: String {
+        isUserStyle
+            ? LocalizedStrings.format("Applies To (%d)", comment: "Userstyle condition section title", matches.count)
+            : LocalizedStrings.format("URL Patterns (%d)", comment: "Userscript URL pattern section title", matches.count)
     }
 }
 
+/// Opens the pattern list in its own sheet, so long lists no longer stretch the info panel.
+private struct ScriptMatchPatternsButton: View {
+    let script: UserScript
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: "list.bullet").frame(width: 22)
+                Text(script.matchPatternsTitle)
+                Spacer()
+                Image(systemName: "chevron.forward")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .foregroundStyle(Color.accentColor)
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .noFocusRingCompat()
+    }
+}
+
+private struct ScriptMatchPatternsSheet: View {
+    let script: UserScript
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            InfoSheetHeader {
+                Text(script.matchPatternsTitle)
+                    .font(.title2.weight(.semibold))
+                    .fixedSize(horizontal: false, vertical: true)
+            } onDismiss: { dismiss() }
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 4) {
+                    ForEach(script.matches.indices, id: \.self) { index in
+                        ScriptMatchPatternRowView(
+                            index: index,
+                            total: script.matches.count,
+                            pattern: script.displayMatchPattern(script.matches[index])
+                        )
+                    }
+                }
+                .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+                .padding(.bottom, SheetDesign.contentHorizontalPadding)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        #if os(macOS)
+        .frame(width: 460, height: 400)
+        #endif
+    }
+}
 
 struct UserScriptSettingsView: View {
     let scriptID: UUID
@@ -1241,7 +1247,7 @@ private struct ScriptUpdateSettingsView: View {
 struct UserScriptInfoSidebar: View {
     let script: UserScript
     let contentLength: Int
-    @Binding var isPatternsExpanded: Bool
+    let onShowPatterns: () -> Void
     let formatFileSize: (Int) -> String
     let isBuiltIn: Bool
     let builtInDisplayRole: BuiltInUserScriptDisplayRole?
@@ -1278,7 +1284,12 @@ struct UserScriptInfoSidebar: View {
                 if script.url != nil { ScriptURLView(script: script) }
                 if contentLength > 0 { InfoMetadataRow(title: "Size", value: formatFileSize(contentLength)) }
             }
-            if !script.matches.isEmpty { ScriptMatchPatternsView(script: script, isPatternsExpanded: $isPatternsExpanded) }
+            #if os(macOS)
+            if !script.matches.isEmpty {
+                ScriptMatchPatternsButton(script: script, action: onShowPatterns)
+                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+            #endif
         }
     }
 }
@@ -1293,7 +1304,7 @@ struct UserScriptInfoView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var script: UserScript?
-    @State private var isPatternsExpanded = false
+    @State private var showingPatterns = false
     @State private var isLoading = true
     @State private var showingMetadataEditor = false
     @State private var showingSettings = false
@@ -1320,7 +1331,7 @@ struct UserScriptInfoView: View {
                     UserScriptInfoSidebar(
                         script: script,
                         contentLength: script.content.utf8.count,
-                        isPatternsExpanded: $isPatternsExpanded,
+                        onShowPatterns: { showingPatterns = true },
                         formatFileSize: formatFileSize,
                         isBuiltIn: userScriptManager.isDefaultUserScript(script),
                         builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script)
@@ -1358,6 +1369,9 @@ struct UserScriptInfoView: View {
         }) {
             UserScriptContentView(scriptId: scriptId, userScriptManager: userScriptManager, metadataOnly: true)
         }
+        .sheet(isPresented: $showingPatterns) {
+            if let script { ScriptMatchPatternsSheet(script: script) }
+        }
         #if os(iOS)
         .sheet(isPresented: $showingSettings) {
             UserScriptSettingsView(scriptID: scriptId, userScriptManager: userScriptManager)
@@ -1388,6 +1402,9 @@ struct UserScriptInfoView: View {
             isDownloaded: userScriptManager.hasDownloadedContent(for: script)
         )
         InfoActionList {
+            if !script.matches.isEmpty {
+                ScriptMatchPatternsButton(script: script) { showingPatterns = true }
+            }
             if actions.contains(.settings) {
                 InfoActionRow("Settings", systemImage: "gearshape") { showingSettings = true }
             }
