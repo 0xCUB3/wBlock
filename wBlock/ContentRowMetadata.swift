@@ -109,10 +109,10 @@ struct InfoCategoryRow<Category: Hashable & Identifiable>: View {
         HStack(spacing: 12) {
             Image(systemName: "folder")
                 .frame(width: 22)
-            Text("Move to")
+            Text("Category")
             Spacer()
             Menu {
-                Picker("Move to", selection: $selection) {
+                Picker("Category", selection: $selection) {
                     ForEach(categories) { category in
                         Text(name(category)).tag(category)
                     }
