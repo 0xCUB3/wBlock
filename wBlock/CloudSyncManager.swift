@@ -1103,7 +1103,7 @@ final class CloudSyncManager: ObservableObject {
                         filterLists[index].hasUserProvidedName = remoteCustom.resolvedUserProvidedName
                         nonSelectionChanged = true
                     }
-                    if let description = remoteCustom.description,
+                    if let description = remoteCustom.resolvedDescription,
                        filterLists[index].description != description
                     {
                         filterLists[index].description = description
@@ -1131,7 +1131,7 @@ final class CloudSyncManager: ObservableObject {
                 category: category,
                 isCustom: true,
                 isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
-                description: remoteCustom.description ?? "User-added filter list.",
+                description: remoteCustom.resolvedDescription ?? "User-added filter list.",
                 sourceRuleCount: nil,
                 hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
                 hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
@@ -1725,7 +1725,7 @@ final class CloudSyncManager: ObservableObject {
                     category: remoteCustom.resolvedCategory,
                     isCustom: true,
                     isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
-                    description: remoteCustom.description ?? "User-added filter list.",
+                    description: remoteCustom.resolvedDescription ?? "User-added filter list.",
                     sourceRuleCount: nil,
                     hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
                     hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
@@ -2516,6 +2516,11 @@ private struct SyncPayload: Codable {
 
         var resolvedUserProvidedName: Bool {
             userProvidedName ?? true
+        }
+
+        /// Empty descriptions are sent as nil; a user-provided one is intentionally blank.
+        var resolvedDescription: String? {
+            description ?? (userProvidedDescription == true ? "" : nil)
         }
 
         var resolvedUserProvidedDescription: Bool {

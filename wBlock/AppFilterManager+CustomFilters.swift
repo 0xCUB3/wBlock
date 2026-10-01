@@ -54,12 +54,13 @@ extension AppFilterManager {
             category: category,
             isCustom: true,
             isSelected: isSelected,
-            description: trimmedDescription?.isEmpty == false
-                ? trimmedDescription!
+            // A user-provided empty description is an intentional choice.
+            description: trimmedDescription?.isEmpty == false || hasUserProvidedDescription
+                ? trimmedDescription ?? ""
                 : LocalizedStrings.text("User-added filter list.", comment: "Default custom filter description"),
             sourceRuleCount: nil,
             hasUserProvidedName: hasUserProvidedName,
-            hasUserProvidedDescription: hasUserProvidedDescription && trimmedDescription?.isEmpty == false)
+            hasUserProvidedDescription: hasUserProvidedDescription)
         addCustomFilterList(newFilter)
     }
 

@@ -1,4 +1,5 @@
 import Foundation
+import wBlockCoreService
 
 @main
 struct FilterListRemoteMetadataPolicyTests {
@@ -41,6 +42,24 @@ struct FilterListRemoteMetadataPolicyTests {
         expectEqual(preserved.name, "My List", "manual name should survive remote metadata")
         expectEqual(preserved.description, "My Description", "manual description should survive remote metadata")
         expectEqual(preserved.version, "Unknown", "missing remote version should remain the existing updater behavior")
+
+        expect(ImportMetadataReview.userProvided(nil, automatic: "Remote Description") == nil,
+               "untouched metadata should remain automatic")
+        expect(ImportMetadataReview.userProvided(" Remote Description ", automatic: "Remote Description") == nil,
+               "unchanged prefilled metadata should remain automatic")
+        let clearedDescription = ImportMetadataReview.userProvided("", automatic: "Remote Description")
+        expectEqual(clearedDescription, "", "a cleared prefill must remain an explicit empty override")
+        let cleared = FilterList(
+            name: "My List", url: url, category: .custom, isCustom: true,
+            description: clearedDescription ?? "Remote Description",
+            hasUserProvidedDescription: clearedDescription != nil
+        )
+        let restoredClear = try JSONDecoder().decode(FilterList.self, from: JSONEncoder().encode(cleared))
+        let refreshedClear = FilterListRemoteMetadataPolicy.applying(
+            title: nil, description: "New Remote Description", version: nil, to: restoredClear
+        )
+        expectEqual(refreshedClear.description, "", "refresh must not restore an intentionally cleared description")
+        expect(refreshedClear.hasUserProvidedDescription, "persistence must keep the explicit-empty flag")
 
         let builtIn = FilterList(name: "Built-in", url: url, category: .ads, description: "Catalog Description")
         let builtInHydrated = FilterListRemoteMetadataPolicy.applying(
