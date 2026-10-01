@@ -86,6 +86,8 @@ compile_direct_test list-display-order-sync \
   wBlock/ListDisplayOrder.swift wBlock/StableSnapshot.swift scripts/test_list_display_order_sync.swift
 compile_direct_test popover-window-shield \
   wBlock/InfoPresentation.swift scripts/test_popover_window_shield.swift
+compile_direct_test info-popover-state \
+  wBlock/InfoPresentation.swift scripts/test_info_popover_state.swift
 compile_direct_test compiler-timeout scripts/test_issue_511_compiler_timeout.swift
 compile_direct_test main-window-frame-restore \
   wBlock/MainWindowFrameRestorer.swift scripts/test_main_window_frame_restore.swift
