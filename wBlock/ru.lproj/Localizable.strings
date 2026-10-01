@@ -1102,7 +1102,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Site Actions" = "Действия для сайтов";
 
 "Pause All Components" = "Приостановить все компоненты";
-"Pause all components at once, or pause them individually." = "Приостановите все компоненты сразу или по отдельности.";
 
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "Заменяет заголовки и миниатюры YouTube вариантами, предложенными сообществом DeArrow.";
 

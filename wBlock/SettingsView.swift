@@ -697,22 +697,10 @@ struct SettingsView: View {
     }
 
 
-    #if os(macOS)
     @ToolbarContentBuilder
     private var pauseBlockingToolbar: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) { PauseBlockingMenu(filterManager: filterManager) }
     }
-    #else
-    private var pauseBlockingSection: some View {
-        Section {
-            PauseBlockingControls(filterManager: filterManager)
-        } header: {
-            Text("Pause Blocking")
-        } footer: {
-            Text("Pause all components at once, or pause them individually.")
-        }
-    }
-    #endif
 
     @ViewBuilder
     private var aboutSection: some View {
@@ -809,7 +797,6 @@ struct SettingsView: View {
                     statusPills
                         .unifiedTabCardSectionRow()
                 }
-                pauseBlockingSection
                 websitesSection
                 displaySection
                 autoUpdateSection
@@ -822,6 +809,7 @@ struct SettingsView: View {
             .unifiedTabListStyle()
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar { pauseBlockingToolbar }
         }
         #else
         // Settings fills the window in the same cards as Filters and

@@ -1102,7 +1102,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Site Actions" = "網站操作";
 
 "Pause All Components" = "暫停所有元件";
-"Pause all components at once, or pause them individually." = "一次暫停所有元件，或分別暫停各個元件。";
 
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "使用 DeArrow 社群提交的替代內容更換 YouTube 標題和縮圖。";
 

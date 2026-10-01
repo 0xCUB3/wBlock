@@ -1102,7 +1102,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Site Actions" = "Ενέργειες ιστοτόπων";
 
 "Pause All Components" = "Παύση όλων των στοιχείων";
-"Pause all components at once, or pause them individually." = "Κάντε παύση όλων των στοιχείων μαζί ή του καθενός ξεχωριστά.";
 
 "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "Αντικαθιστά τίτλους και μικρογραφίες του YouTube με εναλλακτικές από την κοινότητα DeArrow.";
 
