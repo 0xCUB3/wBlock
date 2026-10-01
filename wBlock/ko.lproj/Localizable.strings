@@ -1185,3 +1185,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Cosmetic Filtering Sites" = "코스메틱 필터링 사이트";
 "No sites selected. Cosmetic filtering will not apply." = "선택된 사이트가 없습니다. 코스메틱 필터링이 적용되지 않습니다.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "이 사이트에서는 코스메틱 필터링이 적용되지 않습니다. 네트워크 차단은 계속 적용됩니다.";
+"When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "켜면 유저스크립트의 켬/끔 상태가 iCloud로 동기화됩니다. 끄면 이 기기에만 유지됩니다.";
