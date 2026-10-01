@@ -1425,6 +1425,7 @@ struct AddFilterListView: View {
     @State private var isFetchingURLMetadata = false
     @State private var isSaving: Bool = false
     @State private var showingFileImporter = false
+    @State private var showingURLListImporter = false
     @State private var importErrorMessage: String?
     @State private var pastedRules: String = ""
     @State private var isShowingRulesEditor = false
@@ -1579,6 +1580,21 @@ struct AddFilterListView: View {
                 }
             }
         }
+        .fileImporter(
+            isPresented: $showingURLListImporter,
+            allowedContentTypes: [.plainText],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                guard let url = urls.first else { return }
+                importURLList(from: url)
+            case .failure(let error):
+                if (error as? CocoaError)?.code != .userCancelled {
+                    importErrorMessage = error.localizedDescription
+                }
+            }
+        }
         .alert(
             "Couldn’t Add List",
             isPresented: Binding(get: { importErrorMessage != nil }, set: { _ in importErrorMessage = nil })
@@ -1654,6 +1670,9 @@ struct AddFilterListView: View {
                 } else {
                     urlEntryModePicker
                     AddContentField(title: urlFieldTitle) { urlInputEditor }
+                    if urlEntryMode == .bulk {
+                        importURLListButton
+                    }
                     if urlEntryMode == .single {
                         urlMetadataFields
                         userListCategoryPicker(selection: $selectedCategory)
@@ -1717,6 +1736,9 @@ struct AddFilterListView: View {
                 } else {
                     urlEntryModePicker
                     AddContentField(title: urlFieldTitle) { urlInputEditor }
+                    if urlEntryMode == .bulk {
+                        importURLListButton
+                    }
                     if urlEntryMode == .single {
                         urlMetadataFields
                         userListCategoryPicker(selection: $selectedCategory)
@@ -1864,6 +1886,45 @@ struct AddFilterListView: View {
             pasteButtonUsesRow: false,
             macPlaceholderPadding: 0
         )
+    }
+
+    private var importURLListButton: some View {
+        Button {
+            showingURLListImporter = true
+            importErrorMessage = nil
+        } label: {
+            Label("Import File", systemImage: "doc")
+        }
+        .buttonStyle(.bordered)
+        .disabled(isSaving)
+    }
+
+    private func importURLList(from url: URL) {
+        let didAccess = url.startAccessingSecurityScopedResource()
+        Task { @MainActor in
+            defer {
+                if didAccess {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+            do {
+                let contents = try await Task.detached(priority: .userInitiated) {
+                    try String(contentsOf: url, encoding: .utf8)
+                }.value
+                guard !contents.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    importErrorMessage = LocalizedStrings.text(
+                        "The file is empty.",
+                        comment: "Empty bulk filter URL import error"
+                    )
+                    return
+                }
+                urlEntryMode = .bulk
+                isReviewingURLs = false
+                urlInput = FilterListURLSupport.normalizeURLInput(contents, rejoinWrappedLines: false)
+            } catch {
+                importErrorMessage = error.localizedDescription
+            }
+        }
     }
 
     // MARK: - Footer
