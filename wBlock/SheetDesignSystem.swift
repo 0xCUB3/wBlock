@@ -88,6 +88,8 @@ struct InfoSheetContainer<Header: View, Content: View>: View {
     let content: () -> Content
     #if os(macOS)
     @State private var headerHeight: CGFloat = 0
+    #else
+    @State private var isScrolled = false
     #endif
 
     init(@ViewBuilder header: @escaping () -> Header, @ViewBuilder content: @escaping () -> Content) {
@@ -108,11 +110,26 @@ struct InfoSheetContainer<Header: View, Content: View>: View {
                 scrollContent
             }
             #else
-            ScrollView { scrollContent }
-                .safeAreaInset(edge: .top, spacing: 0) {
-                    header()
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
+            ScrollView {
+                scrollContent
+                    .padding(.top, 4)
+                    .background(GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: InfoSheetScrollOffset.self,
+                            value: proxy.frame(in: .named(InfoSheetScrollOffset.space)).minY
+                        )
+                    })
+            }
+            .coordinateSpace(name: InfoSheetScrollOffset.space)
+            .onPreferenceChange(InfoSheetScrollOffset.self) { isScrolled = $0 < -1 }
+            .safeAreaInset(edge: .top, spacing: 0) {
+                // Frosted only once content scrolls beneath it, so the title and
+                // description do not sit against a divider at rest.
+                header()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(isScrolled ? AnyShapeStyle(.bar) : AnyShapeStyle(Color.clear))
+                    .animation(.easeInOut(duration: 0.15), value: isScrolled)
+            }
             #endif
         }
     }
@@ -124,6 +141,14 @@ struct InfoSheetContainer<Header: View, Content: View>: View {
             .padding(.bottom, SheetDesign.contentHorizontalPadding)
     }
 }
+
+#if os(iOS)
+private struct InfoSheetScrollOffset: PreferenceKey {
+    static let space = "InfoSheetScroll"
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
+}
+#endif
 
 #if os(macOS)
 private struct InfoSheetHeaderHeight: PreferenceKey {
@@ -146,10 +171,6 @@ struct InfoSheetHeader<Title: View>: View {
         .padding(.horizontal, SheetDesign.contentHorizontalPadding)
         .padding(.top, SheetDesign.contentHorizontalPadding)
         .padding(.bottom, 12)
-        #if os(iOS)
-        // Match the sheet body so the header does not read as a separate band.
-        .background(Color(uiColor: .systemBackground).ignoresSafeArea(.container, edges: .top))
-        #endif
     }
 }
 
