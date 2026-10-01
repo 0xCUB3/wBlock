@@ -1183,7 +1183,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Reset Ordering" = "Sorrend visszaállítása";
 "Reset" = "Visszaállítás";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Visszaállítja a beépített listákat és userscripteket az alapértelmezett kategóriájukba és sorrendjükbe, az egyéniekat pedig az Egyéb kategóriába helyezi.";
-"Cosmetic Filtering Sites" = "Kozmetikai szűrés webhelyei";
 "No sites selected. Cosmetic filtering will not apply." = "Nincs kiválasztott webhely. A kozmetikai szűrés nem lesz alkalmazva.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "A kozmetikai szűrés nem lesz alkalmazva ezeken a webhelyeken. A hálózati blokkolás továbbra is érvényes.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Bekapcsolva az iCloud szinkronizálja a userscriptek be- és kikapcsolt állapotát. Kapcsold ki, ha ezeket a beállításokat csak ezen az eszközön szeretnéd megtartani.";

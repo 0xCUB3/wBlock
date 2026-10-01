@@ -1183,7 +1183,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Reset Ordering" = "重設排序";
 "Reset" = "重設";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "將內建清單和使用者腳本恢復為預設分類與順序，並將自訂項目移至「其他」。";
-"Cosmetic Filtering Sites" = "外觀過濾網站";
 "No sites selected. Cosmetic filtering will not apply." = "未選取任何網站。外觀過濾將不會套用。";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "外觀過濾不會在這些網站上套用。網路封鎖仍然有效。";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "開啟後，使用者腳本的啟用狀態會透過 iCloud 同步。關閉後，這些狀態只保留在這部裝置上。";

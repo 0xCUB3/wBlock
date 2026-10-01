@@ -298,30 +298,12 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var cosmeticFilteringControls: some View {
-        Toggle(isOn: cosmeticFilteringBinding) {
-            rowLabel(
-                "Cosmetic Filtering",
-                detail: Text("Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU.")
-            )
-        }
-        .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
-
         NavigationLink {
             CosmeticFilteringSitesView(filterManager: filterManager)
                 .swipeBackNavigationCompat()
         } label: {
-            SettingsRowLabel("Cosmetic Filtering Sites", systemImage: "paintbrush", accessory: .push)
+            SettingsRowLabel("Cosmetic Filtering", systemImage: "paintbrush", accessory: .push)
         }
-    }
-
-    private var cosmeticFilteringBinding: Binding<Bool> {
-        Binding(
-            get: { CosmeticFilteringPreference.isEnabled() },
-            set: { newValue in
-                CosmeticFilteringPreference.setEnabled(newValue)
-                filterManager.markNonSelectionChangesPending()
-            }
-        )
     }
 
     private var logTimestampControls: some View {

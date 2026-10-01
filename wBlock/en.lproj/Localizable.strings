@@ -1192,7 +1192,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Reset Ordering" = "Reset Ordering";
 "Reset" = "Reset";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.";
-"Cosmetic Filtering Sites" = "Cosmetic Filtering Sites";
 "No sites selected. Cosmetic filtering will not apply." = "No sites selected. Cosmetic filtering will not apply.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Cosmetic filtering will not apply on these sites. Network blocking still applies.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device.";

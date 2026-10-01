@@ -1183,7 +1183,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Reset Ordering" = "Επαναφορά σειράς";
 "Reset" = "Επαναφορά";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Επαναφέρει τις ενσωματωμένες λίστες και τα userscripts στις προεπιλεγμένες κατηγορίες και σειρά τους και μετακινεί τα προσαρμοσμένα στο «Άλλα».";
-"Cosmetic Filtering Sites" = "Ιστότοποι αισθητικού φιλτραρίσματος";
 "No sites selected. Cosmetic filtering will not apply." = "Δεν έχουν επιλεγεί ιστότοποι. Το αισθητικό φιλτράρισμα δεν θα εφαρμόζεται.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Το αισθητικό φιλτράρισμα δεν θα εφαρμόζεται σε αυτούς τους ιστότοπους. Ο αποκλεισμός δικτύου εξακολουθεί να ισχύει.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Όταν είναι ενεργό, οι καταστάσεις ενεργοποίησης των userscript συγχρονίζονται μέσω iCloud. Απενεργοποιήστε το για να παραμείνουν αυτές οι ρυθμίσεις μόνο σε αυτή τη συσκευή.";

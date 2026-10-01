@@ -1183,7 +1183,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Reset Ordering" = "Сбросить порядок";
 "Reset" = "Сбросить";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Возвращает встроенные списки и пользовательские скрипты в категории и порядок по умолчанию, а собственные переносит в «Другое».";
-"Cosmetic Filtering Sites" = "Сайты косметической фильтрации";
 "No sites selected. Cosmetic filtering will not apply." = "Сайты не выбраны. Косметическая фильтрация не будет применяться.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "На этих сайтах косметическая фильтрация не будет применяться. Сетевая блокировка продолжит работать.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "При включении состояния userscript синхронизируются через iCloud. Отключите этот параметр, чтобы сохранить эти настройки только на этом устройстве.";

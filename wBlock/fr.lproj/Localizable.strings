@@ -1183,7 +1183,6 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Reset Ordering" = "Réinitialiser l’ordre";
 "Reset" = "Réinitialiser";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Remet les listes et userscripts intégrés dans leurs catégories et leur ordre par défaut, et déplace les éléments personnalisés vers Autres.";
-"Cosmetic Filtering Sites" = "Sites du filtrage cosmétique";
 "No sites selected. Cosmetic filtering will not apply." = "Aucun site sélectionné. Le filtrage cosmétique ne sera pas appliqué.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Le filtrage cosmétique ne sera pas appliqué sur ces sites. Le blocage réseau reste actif.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Lorsqu’elle est activée, cette option synchronise via iCloud l’état activé ou désactivé des userscripts. Désactivez-la pour conserver ces choix uniquement sur cet appareil.";

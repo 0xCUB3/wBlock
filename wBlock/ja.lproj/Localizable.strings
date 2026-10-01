@@ -1152,7 +1152,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Reset Ordering" = "並び順をリセット";
 "Reset" = "リセット";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "内蔵のリストとユーザースクリプトを既定のカテゴリと順序に戻し、カスタムのものを「その他」に移動します。";
-"Cosmetic Filtering Sites" = "コスメティックフィルタリングのサイト";
 "No sites selected. Cosmetic filtering will not apply." = "サイトが選択されていません。コスメティックフィルタリングは適用されません。";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "これらのサイトではコスメティックフィルタリングは適用されません。ネットワークブロックは引き続き適用されます。";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "オンにすると、ユーザースクリプトの有効／無効の状態が iCloud 経由で同期されます。オフにすると、このデバイス上だけに保存されます。";
