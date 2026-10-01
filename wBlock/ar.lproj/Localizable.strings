@@ -1186,3 +1186,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No sites selected. Cosmetic filtering will not apply." = "لم يتم تحديد أي مواقع. لن تُطبَّق التصفية التجميلية.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "لن تُطبَّق التصفية التجميلية على هذه المواقع. يظل حظر الشبكة مطبَّقًا.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "عند تفعيل هذا الخيار، تتم مزامنة حالات تشغيل وإيقاف البرامج النصية للمستخدم عبر iCloud. أوقفه للاحتفاظ بهذه الحالات على هذا الجهاز فقط.";
+"Rule Capacity" = "سعة القواعد";
+"Next Update" = "التحديث التالي";
+"Syncing…" = "جارٍ المزامنة…";
+"Never" = "أبدًا";
+"Just now" = "الآن";
+"Due Now" = "مستحق الآن";

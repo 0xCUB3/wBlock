@@ -96,13 +96,8 @@ struct ContentView: View {
         filterManager.hasUnappliedChanges
     }
 
-    private var totalSafariRuleCapacity: Int {
-        let blockers = ContentBlockerTargetManager.shared.allTargets(forPlatform: filterManager.currentPlatform)
-        return blockers.count * ContentBlockerService.safariContentBlockerRuleLimit
-    }
-
     private var shouldShowRuleLimitIndicator: Bool {
-        hasAppliedFilters && appliedSafariRulesCount >= totalSafariRuleCapacity
+        hasAppliedFilters && appliedSafariRulesCount >= filterManager.safariRuleCapacity
     }
 
     private var applyChangesSymbolName: String {
@@ -2678,7 +2673,7 @@ struct RuleCapacityPopoverView: View {
     }
 
     private var totalCapacity: Int {
-        targets.count * ContentBlockerService.safariContentBlockerRuleLimit
+        filterManager.safariRuleCapacity
     }
 
     /// Rules in the enabled source lists before Safari conversion. Conversion
@@ -2691,7 +2686,7 @@ struct RuleCapacityPopoverView: View {
     }
 
     private var overallFraction: Double {
-        totalCapacity > 0 ? min(Double(totalUsed) / Double(totalCapacity), 1.0) : 0.0
+        filterManager.safariRuleCapacityFraction
     }
 
     var body: some View {
@@ -2752,7 +2747,7 @@ struct RuleCapacityPopoverView: View {
                     Text("Total Capacity")
                         .font(.subheadline.weight(.medium))
                     Spacer()
-                    Text("\(totalUsed.formatted()) / \(totalCapacity.formatted()) rules (\(Int(overallFraction * 100))%)")
+                    Text("\(totalUsed.formatted()) / \(totalCapacity.formatted()) rules (\(LocalizedFormatting.percent(overallFraction)))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

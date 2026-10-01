@@ -17,6 +17,8 @@ struct SettingsView: View {
     private static let contactURL = URL(string: "https://discord.gg/5kmuEbwsut")!
     @AppStorage(LogTimeZonePreference.storageKey) private var logTimeZoneIdentifier: String = LogTimeZonePreference.deviceIdentifier
     @State private var nextScheduleLine = String(localized: "Waiting")
+    /// Short form of the schedule for the Next Update pill.
+    @State private var nextUpdateValue = String(localized: "Waiting")
     @State private var isOverdue = false
     @State private var scheduleRefreshTimer = ScheduleRefreshTimer()
     #if os(macOS)
@@ -360,33 +362,87 @@ struct SettingsView: View {
         }
     }
 
-    /// The Safari Rules stat card on the Filters tab opens the same view, but
-    /// nothing marks it as tappable, so give it a plain Settings entry too.
-    private var ruleCapacityRow: some View {
-        #if os(macOS)
-        // Same shape as the Check for Updates row: a labeled row with a
-        // compact button, which also anchors the popover.
-        CompatibleLabeledContent {
-            Button("View") {
-                showingRuleCapacity = true
+    /// The same stat pills the Filters and Userscripts tabs open with, so every
+    /// tab's list starts below one row of pills.
+    private var statusPills: some View {
+        let compact: Bool = {
+            #if os(iOS)
+            true
+            #else
+            false
+            #endif
+        }()
+        let capacity = filterManager.safariRuleCapacityFraction
+        // Relative times in the pills age while Settings stays open.
+        return TimelineView(.periodic(from: .now, by: 30)) { context in
+            HStack(spacing: compact ? 8 : 12) {
+                Button {
+                    showingRuleCapacity = true
+                } label: {
+                    StatCard(
+                        title: "Rule Capacity",
+                        value: LocalizedFormatting.percent(capacity),
+                        icon: "shield.lefthalf.filled",
+                        valueColor: capacity > 0.8 ? .orange : .primary,
+                        compact: compact,
+                        showsDisclosure: true
+                    )
+                    #if os(iOS)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    #endif
+                }
+                .buttonStyle(.plain)
+                .noFocusRingCompat()
+                #if os(macOS)
+                .modalPopover(isPresented: $showingRuleCapacity, arrowEdge: .top) {
+                    RuleCapacityPopoverView(filterManager: filterManager)
+                }
+                #else
+                .sheet(isPresented: $showingRuleCapacity) {
+                    RuleCapacityPopoverView(filterManager: filterManager)
+                }
+                #endif
+
+                StatCard(
+                    title: "Next Update",
+                    value: nextUpdateValue,
+                    icon: "clock.arrow.circlepath",
+                    valueColor: autoUpdateEnabled ? .primary : .secondary,
+                    compact: compact
+                )
+
+                if syncManager.isCloudKitAvailable {
+                    StatCard(
+                        title: "iCloud Sync",
+                        value: syncPillValue(now: context.date),
+                        icon: syncManager.status == .error ? "exclamationmark.icloud" : "icloud",
+                        valueColor: syncManager.status == .error ? .red
+                            : (syncManager.isEnabled ? .primary : .secondary),
+                        compact: compact
+                    )
+                }
             }
-            .buttonStyle(.bordered)
-            .modalPopover(isPresented: $showingRuleCapacity, arrowEdge: .top) {
-                RuleCapacityPopoverView(filterManager: filterManager)
-            }
-        } label: {
-            Text("Safari Rule Capacity")
         }
-        #else
-        Button {
-            showingRuleCapacity = true
-        } label: {
-            SettingsRowLabel("Safari Rule Capacity", systemImage: "shield.lefthalf.filled", accessory: .popover)
-        }
-        .sheet(isPresented: $showingRuleCapacity) {
-            RuleCapacityPopoverView(filterManager: filterManager)
-        }
+        #if os(iOS)
+        .fixedSize(horizontal: false, vertical: true)
         #endif
+        .padding(.horizontal)
+    }
+
+    private func syncPillValue(now: Date) -> String {
+        guard syncManager.isEnabled else { return String(localized: "Off") }
+        switch syncManager.status {
+        case .error:
+            return String(localized: "Error")
+        case .checking, .downloading, .uploading, .working:
+            return String(localized: "Syncing…")
+        default:
+            break
+        }
+        guard let date = syncManager.lastSyncDate else { return String(localized: "Never") }
+        if now.timeIntervalSince(date) < 60 { return String(localized: "Just now") }
+        return LocalizedFormatting.relativeDateTimeFormatter(unitsStyle: .abbreviated)
+            .localizedString(for: date, relativeTo: now)
     }
 
     @ViewBuilder
@@ -640,9 +696,6 @@ struct SettingsView: View {
         }
     }
 
-    private var ruleCapacitySection: some View {
-        Section { ruleCapacityRow }
-    }
 
     #if os(macOS)
     @ToolbarContentBuilder
@@ -752,7 +805,10 @@ struct SettingsView: View {
         #if os(iOS)
         CompatibleNavigationStack {
             List {
-                ruleCapacitySection
+                Section {
+                    statusPills
+                        .unifiedTabCardSectionRow()
+                }
                 pauseBlockingSection
                 websitesSection
                 displaySection
@@ -775,10 +831,13 @@ struct SettingsView: View {
         CompatibleNavigationStack {
             Group {
                 if #available(macOS 15.0, *) {
-                    MacSettingsCardList { settingsSections }
+                    MacSettingsCardList { statusPills } content: { settingsSections }
                 } else {
-                    Form { settingsSections }
-                        .groupedFormStyleCompat()
+                    VStack(spacing: 0) {
+                        statusPills.padding(.vertical, 16)
+                        Form { settingsSections }
+                            .groupedFormStyleCompat()
+                    }
                 }
             }
             .toolbar { pauseBlockingToolbar }
@@ -789,7 +848,6 @@ struct SettingsView: View {
     #if os(macOS)
     @ViewBuilder
     private var settingsSections: some View {
-        ruleCapacitySection
         websitesSection
         displaySection
         autoUpdateSection
@@ -961,6 +1019,7 @@ extension SettingsView {
             await filterManager.completeResetForOnboarding()
             await MainActor.run {
                 nextScheduleLine = String(localized: "Waiting")
+                nextUpdateValue = String(localized: "Waiting")
             }
             await updateScheduleLine()
         }
@@ -1003,6 +1062,16 @@ extension SettingsView {
             NSLocalizedString(key, comment: "Auto-update interval"),
             count
         )
+    }
+
+    private func shortSchedule(_ status: SharedAutoUpdateManager.AutoUpdateStatus) -> String {
+        if status.isRunning { return String(localized: "Updating…") }
+        guard let scheduledAt = status.scheduledAt, let remaining = status.remaining else {
+            return String(localized: "Waiting")
+        }
+        if status.isOverdue || remaining < 60 { return String(localized: "Due Now") }
+        return LocalizedFormatting.relativeDateTimeFormatter(unitsStyle: .abbreviated)
+            .localizedString(for: scheduledAt, relativeTo: Date())
     }
 
     private func formatSchedule(scheduledAt: Date?, remaining: TimeInterval?, isOverdue: Bool, isRunning: Bool)
@@ -1181,6 +1250,7 @@ extension SettingsView {
         guard autoUpdateEnabled else {
             await MainActor.run {
                 nextScheduleLine = String(localized: "Disabled")
+                nextUpdateValue = String(localized: "Off")
                 isOverdue = false
                 #if os(macOS)
                 launchAgentStatusLine = launchAgentDetail
@@ -1195,8 +1265,10 @@ extension SettingsView {
         let scheduleDescription = formatSchedule(
             scheduledAt: status.scheduledAt, remaining: status.remaining,
             isOverdue: status.isOverdue, isRunning: status.isRunning)
+        let shortDescription = shortSchedule(status)
         await MainActor.run {
             nextScheduleLine = scheduleDescription
+            nextUpdateValue = shortDescription
             isOverdue = status.isOverdue
             #if os(macOS)
             launchAgentStatusLine = launchAgentDetail

@@ -79,7 +79,8 @@ final class CloudSyncManager: ObservableObject {
     @Published private(set) var isSyncing: Bool = false
     @Published private(set) var status: SyncStatus = .off
     @Published private(set) var statusLine: String = String(localized: "Sync: Off")
-    @Published private(set) var lastSyncLine: String = String(localized: "Not synced yet")
+    @Published private(set) var lastSyncDate: Date?
+    var lastSyncLine: String { CloudSyncTimestampFormatter.lastSyncLine(for: lastSyncDate) }
     @Published private(set) var lastErrorMessage: String?
 
     private weak var filterManager: AppFilterManager?
@@ -2125,26 +2126,20 @@ final class CloudSyncManager: ObservableObject {
         if !isCloudKitAvailable {
             lastErrorMessage = nil
             setStatus(.off)
-            lastSyncLine = String(localized: "Not synced yet")
+            lastSyncDate = nil
             return
         }
 
         if !isEnabled {
             setStatus(.off)
-            lastSyncLine = String(localized: "Not synced yet")
+            lastSyncDate = nil
             return
         }
 
         setStatus(isSyncing ? .working : .on)
 
         let lastSyncAt = defaults.double(forKey: Keys.lastSyncAt)
-        if lastSyncAt > 0 {
-            lastSyncLine = CloudSyncTimestampFormatter.lastSyncLine(
-                for: Date(timeIntervalSince1970: lastSyncAt)
-            )
-        } else {
-            lastSyncLine = String(localized: "Not synced yet")
-        }
+        lastSyncDate = lastSyncAt > 0 ? Date(timeIntervalSince1970: lastSyncAt) : nil
     }
 
     private func setStatus(_ status: SyncStatus) {

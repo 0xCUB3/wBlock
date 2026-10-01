@@ -1186,3 +1186,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No sites selected. Cosmetic filtering will not apply." = "Сайты не выбраны. Косметическая фильтрация не будет применяться.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "На этих сайтах косметическая фильтрация не будет применяться. Сетевая блокировка продолжит работать.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "При включении состояния userscript синхронизируются через iCloud. Отключите этот параметр, чтобы сохранить эти настройки только на этом устройстве.";
+"Rule Capacity" = "Ёмкость правил";
+"Next Update" = "Следующее обновление";
+"Syncing…" = "Синхронизация…";
+"Never" = "Никогда";
+"Just now" = "Только что";
+"Due Now" = "Сейчас";

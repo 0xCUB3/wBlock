@@ -18,12 +18,16 @@ struct MacTrailingSwitchToggleStyle: ToggleStyle {
 /// Draws ordinary `Section`s as the full-width material cards the Filters
 /// and Userscripts tabs use, so Settings fills the window the same way.
 @available(macOS 15.0, *)
-struct MacSettingsCardList<Content: View>: View {
+struct MacSettingsCardList<Header: View, Content: View>: View {
+    /// Sits above the first card, where the other tabs show their stat pills.
+    @ViewBuilder let header: Header
     @ViewBuilder let content: Content
 
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
+                header
+                    .frame(maxWidth: .infinity)
                 Group(sections: content) { sections in
                     ForEach(sections) { section in
                         section.header

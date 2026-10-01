@@ -1186,3 +1186,9 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "No sites selected. Cosmetic filtering will not apply." = "Nessun sito selezionato. I filtri cosmetici non verranno applicati.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "I filtri cosmetici non verranno applicati su questi siti. Il blocco di rete resta attivo.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Quando è attiva, questa opzione sincronizza tramite iCloud lo stato di attivazione degli userscript. Disattivala per mantenere queste scelte solo su questo dispositivo.";
+"Rule Capacity" = "Capacità regole";
+"Next Update" = "Prossimo aggiornamento";
+"Syncing…" = "Sincronizzazione…";
+"Never" = "Mai";
+"Just now" = "Proprio ora";
+"Due Now" = "In scadenza";

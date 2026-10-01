@@ -2,6 +2,17 @@ import Foundation
 import wBlockCoreService
 
 extension AppFilterManager {
+    /// Rules Safari accepts across every content blocker slot on this platform.
+    var safariRuleCapacity: Int {
+        ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform).count
+            * ContentBlockerService.safariContentBlockerRuleLimit
+    }
+
+    var safariRuleCapacityFraction: Double {
+        let capacity = safariRuleCapacity
+        return capacity > 0 ? min(Double(lastRuleCount) / Double(capacity), 1.0) : 0.0
+    }
+
     func loadSavedRuleCounts() {
         // Load last known rule count from protobuf data
         lastRuleCount = dataManager.lastRuleCount

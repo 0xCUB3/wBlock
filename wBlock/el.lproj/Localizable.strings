@@ -1186,3 +1186,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No sites selected. Cosmetic filtering will not apply." = "Δεν έχουν επιλεγεί ιστότοποι. Το αισθητικό φιλτράρισμα δεν θα εφαρμόζεται.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Το αισθητικό φιλτράρισμα δεν θα εφαρμόζεται σε αυτούς τους ιστότοπους. Ο αποκλεισμός δικτύου εξακολουθεί να ισχύει.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Όταν είναι ενεργό, οι καταστάσεις ενεργοποίησης των userscript συγχρονίζονται μέσω iCloud. Απενεργοποιήστε το για να παραμείνουν αυτές οι ρυθμίσεις μόνο σε αυτή τη συσκευή.";
+"Rule Capacity" = "Χωρητικότητα κανόνων";
+"Next Update" = "Επόμενη ενημέρωση";
+"Syncing…" = "Συγχρονισμός…";
+"Never" = "Ποτέ";
+"Just now" = "Μόλις τώρα";
+"Due Now" = "Οφείλεται τώρα";
