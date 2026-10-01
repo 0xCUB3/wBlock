@@ -1201,3 +1201,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Never" = "Never";
 "Just now" = "Just now";
 "Due Now" = "Due Now";
+"Capacity" = "Capacity";

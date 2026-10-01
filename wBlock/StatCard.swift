@@ -56,6 +56,9 @@ struct StatCard: View {
                     switch title {
                     case "Enabled Lists": "Enabled"
                     case "Applied Rules": "Rules"
+                    case "Rule Capacity": "Capacity"
+                    case "Next Update": "Updates"
+                    case "iCloud Sync": "iCloud"
                     default: title
                     }
                     #else
