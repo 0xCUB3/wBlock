@@ -82,11 +82,16 @@ struct CopyURLButton: View {
                 withAnimation(.easeInOut(duration: 0.15)) { copied = false }
             }
         } label: {
-            if copied {
+            // Keep both localized labels in layout so acknowledgement cannot
+            // resize the button or its surrounding metadata row.
+            ZStack {
                 Label("Copied", systemImage: "checkmark")
                     .foregroundStyle(.green)
-            } else {
+                    .opacity(copied ? 1 : 0)
+                    .accessibilityHidden(!copied)
                 Label("Copy URL", systemImage: "doc.on.doc")
+                    .opacity(copied ? 0 : 1)
+                    .accessibilityHidden(copied)
             }
         }
         .buttonStyle(.borderless)
