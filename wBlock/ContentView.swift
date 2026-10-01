@@ -1426,8 +1426,8 @@ struct AddFilterListView: View {
     @State private var urlCategories: [String: FilterListCategory] = [:]
     @State private var urlEntryMode: URLEntryMode = .single
     @State private var urlInput: String = ""
-    @State private var customName: String = ""
-    @State private var customDescription: String = ""
+    @State private var isReviewingText = false
+    @State private var textMetadataState = EditorMetadataAutofillState()
     @State private var customURLNames: [String: String] = [:]
     @State private var customURLDescriptions: [String: String] = [:]
     @State private var fetchedURLMetadata: [String: URLMetadata] = [:]
@@ -1542,7 +1542,6 @@ struct AddFilterListView: View {
         .onChangeCompat(of: urlEntryMode) { oldValue, newValue in
             cancelURLListImport()
             isReviewingURLs = false
-            preserveURLMetadataFieldsForModeSwitch(from: oldValue, to: newValue)
             if newValue == .single {
                 urlInput = FilterListURLSupport.normalizeSingleURLInput(urlInput)
             } else {
@@ -1558,6 +1557,13 @@ struct AddFilterListView: View {
                 metadataFetchGeneration += 1
                 isFetchingURLMetadata = false
             }
+        }
+        .onChangeCompat(of: pastedRules) { _, _ in isReviewingText = false }
+        .onChangeCompat(of: userListTitle) { _, newValue in
+            if addMode == .paste { textMetadataState.noteNameEdit(newValue) }
+        }
+        .onChangeCompat(of: userListDescription) { _, newValue in
+            if addMode == .paste { textMetadataState.noteDescriptionEdit(newValue) }
         }
         .onDisappear {
             metadataFetchTask?.cancel()
@@ -1646,12 +1652,12 @@ struct AddFilterListView: View {
 	            switch addMode {
 	            case .url:
 	                VStack(alignment: .leading, spacing: 16) {
-	                    macosURLCard
+	                    urlCard
 	                    filterRequirementsPanel
 	                }
 	            case .paste:
                         VStack(alignment: .leading, spacing: 16) {
-                            macosPasteCard
+                            textStep
                             filterTextRequirementsPanel
                         }
                     case .file:
@@ -1662,29 +1668,6 @@ struct AddFilterListView: View {
 	            }
 	        }
 
-	        private var macosURLCard: some View {
-            AddContentCard {
-                if urlEntryMode == .bulk && isReviewingURLs {
-                    Button("Back") { isReviewingURLs = false; metadataFetchTask?.cancel(); isFetchingURLMetadata = false }
-                    urlMetadataFields
-                } else {
-                    urlEntryModePicker
-                    AddContentField(title: urlFieldTitle) { urlInputEditor }
-                    if urlEntryMode == .single {
-                        urlMetadataFields
-                        userListCategoryPicker(selection: $selectedCategory)
-                    }
-                }
-                if !isSaving { urlFooterMessage }
-            }
-        }
-
-        private var macosPasteCard: some View {
-            VStack(spacing: 16) {
-                AddContentCard { userListMetaFields }
-                filterSourceCard
-            }
-        }
 
 	        private var macosFileCard: some View {
 	            AddContentCard {
@@ -1725,31 +1708,43 @@ struct AddFilterListView: View {
 	        }
 	    }
 
-		    private var urlTab: some View {
+    private var urlTab: some View {
         AddContentPanelLayout {
-            AddContentCard {
-                if urlEntryMode == .bulk && isReviewingURLs {
-                    Button("Back") { isReviewingURLs = false; metadataFetchTask?.cancel(); isFetchingURLMetadata = false }
-                    urlMetadataFields
-                } else {
-                    urlEntryModePicker
-                    AddContentField(title: urlFieldTitle) { urlInputEditor }
-                    if urlEntryMode == .single {
-                        urlMetadataFields
-                        userListCategoryPicker(selection: $selectedCategory)
-                    }
-                }
-                if !isSaving { urlFooterMessage }
-            }
+            urlCard
             filterRequirementsPanel
         }
     }
 
     private var pasteTab: some View {
         AddContentPanelLayout {
-            AddContentCard { userListMetaFields }
-            filterSourceCard
+            textStep
             filterTextRequirementsPanel
+        }
+    }
+
+    /// Single and bulk URLs share a review step with real, editable metadata.
+    private var urlCard: some View {
+        AddContentCard {
+            if isReviewingURLs {
+                Button("Back") { isReviewingURLs = false; metadataFetchTask?.cancel(); isFetchingURLMetadata = false }
+                urlMetadataFields
+            } else {
+                urlEntryModePicker
+                AddContentField(title: urlFieldTitle) { urlInputEditor }
+            }
+            if !isSaving { urlFooterMessage }
+        }
+    }
+
+    @ViewBuilder
+    private var textStep: some View {
+        if isReviewingText {
+            AddContentCard {
+                Button("Back") { isReviewingText = false }
+                userListMetaFields
+            }
+        } else {
+            filterSourceCard
         }
     }
 
@@ -1791,62 +1786,29 @@ struct AddFilterListView: View {
         .disabled(isSaving)
     }
 
-    @ViewBuilder
     private var urlMetadataFields: some View {
-        if urlEntryMode == .single {
-            AddContentField(title: "Name") {
-                TextField(autoFilledNamePlaceholder, text: singleCustomNameBinding)
-                    .textFieldStyle(.roundedBorder)
-            }
-            AddContentField(title: "Description") {
-                TextField(autoFilledDescriptionPlaceholder, text: singleCustomDescriptionBinding)
-                    .textFieldStyle(.roundedBorder)
-            }
-        } else if newURLs.isEmpty {
-            Text("Enter URLs to edit each list’s name and description.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        } else {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 6) {
-                    Text("Names and descriptions")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    if isFetchingURLMetadata {
-                        ProgressView().controlSize(.small)
-                    }
-                }
-
-                ForEach(newURLs, id: \.absoluteString) { url in
-                    perURLMetadataFields(for: url)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 6) {
+                Text("Names and descriptions")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if isFetchingURLMetadata {
+                    ProgressView().controlSize(.small)
                 }
             }
+            ForEach(newURLs, id: \.absoluteString) { url in
+                AddContentURLMetadataCard(
+                    url: url,
+                    name: nameBinding(for: url),
+                    description: descriptionBinding(for: url),
+                    category: Binding(
+                        get: { urlCategories[url.absoluteString] ?? selectedCategory },
+                        set: { urlCategories[url.absoluteString] = $0 }
+                    ),
+                    categories: FilterListCategory.userListCategories
+                )
+            }
         }
-    }
-
-    private func perURLMetadataFields(for url: URL) -> some View {
-        let key = FilterListURLSupport.identityKey(for: url)
-        return VStack(alignment: .leading, spacing: 6) {
-            Text(url.absoluteString)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            TextField(bulkNamePlaceholder(for: url), text: nameBinding(for: key))
-                .textFieldStyle(.roundedBorder)
-            TextField(bulkDescriptionPlaceholder(for: url), text: descriptionBinding(for: key))
-                .textFieldStyle(.roundedBorder)
-            userListCategoryPicker(selection: Binding(
-                get: { urlCategories[url.absoluteString] ?? selectedCategory },
-                set: { urlCategories[url.absoluteString] = $0 }
-            ))
-        }
-        .padding(10)
-        .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(.quaternary, lineWidth: 1)
-        )
     }
 
     private var filterTextRequirementsPanel: some View {
@@ -1934,7 +1896,7 @@ struct AddFilterListView: View {
             if case .valid = validationState { return true }
             return false
         case .paste:
-            return !userListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            return (!isReviewingText || !userListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 && !pastedRules.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .file:
             return !isStagingFile
@@ -1947,7 +1909,7 @@ struct AddFilterListView: View {
         switch addMode {
         case .url:
             guard case .valid(let urls) = validationState else { return }
-            if urlEntryMode == .bulk && !isReviewingURLs {
+            if !isReviewingURLs {
                 isReviewingURLs = true
                 urlFieldIsFocused = false
                 fetchMetadataForCurrentURLs()
@@ -1955,24 +1917,39 @@ struct AddFilterListView: View {
             }
             isSaving = true
             Task { @MainActor in
-                let allowsCustomName = urlEntryMode == .single
-                let userProvidedName = allowsCustomName && !trimmedCustomName.isEmpty
                 for url in urls {
-                    let finalName = nameForURL(url, singleUserProvidedName: userProvidedName)
-                    let finalDescription = descriptionForURL(url, singleMode: allowsCustomName)
+                    let key = FilterListURLSupport.identityKey(for: url)
+                    let automaticName = automaticName(for: url)
+                    let name = ImportMetadataReview.userProvided(customURLNames[key], automatic: automaticName)
+                    let automaticDescription = fetchedURLMetadata[key]?.description
+                    let description = ImportMetadataReview.userProvided(
+                        customURLDescriptions[key], automatic: automaticDescription)
                     filterManager.addFilterList(
-                        name: finalName,
+                        name: name.flatMap { $0.isEmpty ? nil : $0 } ?? automaticName,
                         urlString: url.absoluteString,
                         category: urlCategories[url.absoluteString] ?? selectedCategory,
-                        hasUserProvidedName: userProvidedName || hasBulkName(for: url),
-                        hasUserProvidedDescription: hasManualDescription(for: url, singleMode: allowsCustomName),
-                        description: finalDescription
+                        hasUserProvidedName: name?.isEmpty == false,
+                        hasUserProvidedDescription: description != nil,
+                        description: description ?? automaticDescription
                     )
                 }
                 isSaving = false
                 dismiss()
             }
         case .paste:
+            if !isReviewingText {
+                let metadata = FilterListMetadataParser.parse(from: pastedRules, maxLines: 80)
+                let values = textMetadataState.autofill(
+                    name: metadata.title ?? "",
+                    description: metadata.description ?? "",
+                    currentName: userListTitle,
+                    currentDescription: userListDescription
+                )
+                userListTitle = values.name
+                userListDescription = values.description
+                isReviewingText = true
+                return
+            }
             isSaving = true
             Task { @MainActor in
                 let finalName = userListTitle.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2016,7 +1993,7 @@ struct AddFilterListView: View {
     }
 
     private var addButtonTitle: String {
-        if addMode == .url && urlEntryMode == .bulk && !isReviewingURLs { return "Next" }
+        if (addMode == .url && !isReviewingURLs) || (addMode == .paste && !isReviewingText) { return "Next" }
         switch addMode {
         case .url:
             if newURLs.count > 1 {
@@ -2065,101 +2042,25 @@ struct AddFilterListView: View {
         }
     }
 
-    private var autoFilledNamePlaceholder: String {
-        guard let url = newURLs.first else { return "Name" }
-        return fetchedMetadata(for: url).title ?? defaultName(for: url)
+    private func automaticName(for url: URL) -> String {
+        let title = trimmed(fetchedURLMetadata[FilterListURLSupport.identityKey(for: url)]?.title)
+        return title.isEmpty ? defaultName(for: url) : title
     }
 
-    private var autoFilledDescriptionPlaceholder: String {
-        guard let url = newURLs.first,
-              let description = fetchedMetadata(for: url).description,
-              !description.isEmpty else {
-            return "Description"
-        }
-        return description
-    }
-
-    private func bulkNamePlaceholder(for url: URL) -> String {
-        fetchedMetadata(for: url).title ?? defaultName(for: url)
-    }
-
-    private func bulkDescriptionPlaceholder(for url: URL) -> String {
-        fetchedMetadata(for: url).description ?? "Description"
-    }
-
-    private func fetchedMetadata(for url: URL) -> URLMetadata {
-        fetchedURLMetadata[FilterListURLSupport.identityKey(for: url)] ?? URLMetadata()
-    }
-
-    private var singleCustomNameBinding: Binding<String> {
-        Binding(
-            get: { customName },
-            set: { customName = Self.singleLineMetadataField($0) }
-        )
-    }
-
-    private var singleCustomDescriptionBinding: Binding<String> {
-        Binding(
-            get: { customDescription },
-            set: { customDescription = Self.singleLineMetadataField($0) }
-        )
-    }
-
-    private func nameBinding(for key: String) -> Binding<String> {
-        Binding(
-            get: { customURLNames[key] ?? (isReviewingURLs ? fetchedURLMetadata[key]?.title : nil) ?? "" },
+    private func nameBinding(for url: URL) -> Binding<String> {
+        let key = FilterListURLSupport.identityKey(for: url)
+        return Binding(
+            get: { customURLNames[key] ?? automaticName(for: url) },
             set: { customURLNames[key] = Self.singleLineMetadataField($0) }
         )
     }
 
-    private func descriptionBinding(for key: String) -> Binding<String> {
-        Binding(
-            get: { customURLDescriptions[key] ?? (isReviewingURLs ? fetchedURLMetadata[key]?.description : nil) ?? "" },
+    private func descriptionBinding(for url: URL) -> Binding<String> {
+        let key = FilterListURLSupport.identityKey(for: url)
+        return Binding(
+            get: { customURLDescriptions[key] ?? fetchedURLMetadata[key]?.description ?? "" },
             set: { customURLDescriptions[key] = Self.singleLineMetadataField($0) }
         )
-    }
-
-    private func hasBulkName(for url: URL) -> Bool {
-        !trimmed(customURLNames[FilterListURLSupport.identityKey(for: url)]).isEmpty
-    }
-
-    private func hasManualDescription(for url: URL, singleMode: Bool) -> Bool {
-        let key = FilterListURLSupport.identityKey(for: url)
-        let manualDescription = singleMode ? trimmedCustomDescription : trimmed(customURLDescriptions[key])
-        return !manualDescription.isEmpty
-    }
-
-    private func nameForURL(_ url: URL, singleUserProvidedName: Bool) -> String {
-        let key = FilterListURLSupport.identityKey(for: url)
-        let manualName = urlEntryMode == .single ? trimmedCustomName : trimmed(customURLNames[key])
-        if !manualName.isEmpty { return manualName }
-        if let title = fetchedURLMetadata[key]?.title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty {
-            return title
-        }
-        if singleUserProvidedName { return trimmedCustomName }
-        return defaultName(for: url)
-    }
-
-    private func descriptionForURL(_ url: URL, singleMode: Bool) -> String? {
-        let key = FilterListURLSupport.identityKey(for: url)
-        let manualDescription = singleMode ? trimmedCustomDescription : trimmed(customURLDescriptions[key])
-        if !manualDescription.isEmpty { return manualDescription }
-        let metadataDescription = fetchedURLMetadata[key]?.description?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return metadataDescription?.isEmpty == false ? metadataDescription : nil
-    }
-
-    private func preserveURLMetadataFieldsForModeSwitch(from oldMode: URLEntryMode, to newMode: URLEntryMode) {
-        guard oldMode != newMode else { return }
-        let urls = FilterListURLSupport.parseRemoteURLs(from: urlInput).urls
-        guard let firstURL = urls.first else { return }
-        let key = FilterListURLSupport.identityKey(for: firstURL)
-        if oldMode == .single, newMode == .bulk {
-            if !trimmedCustomName.isEmpty { customURLNames[key] = customName }
-            if !trimmedCustomDescription.isEmpty { customURLDescriptions[key] = customDescription }
-        } else if oldMode == .bulk, newMode == .single {
-            if let name = customURLNames[key] { customName = name }
-            if let description = customURLDescriptions[key] { customDescription = description }
-        }
     }
 
     private func syncURLMetadataFields() {
@@ -2176,7 +2077,7 @@ struct AddFilterListView: View {
     }
 
     private func fetchMetadataForCurrentURLs() {
-        guard urlEntryMode == .single || isReviewingURLs else {
+        guard isReviewingURLs else {
             metadataFetchTask?.cancel()
             metadataFetchGeneration += 1
             isFetchingURLMetadata = false
@@ -2347,14 +2248,6 @@ struct AddFilterListView: View {
         .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var trimmedCustomName: String {
-        customName.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var trimmedCustomDescription: String {
-        customDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
     private var isCustomNameDuplicate: Bool {
         FilterListAddValidation.isDuplicateName(
             candidate: duplicateNameCandidate,
@@ -2366,7 +2259,7 @@ struct AddFilterListView: View {
 
     private var duplicateNameCandidate: String {
         switch addMode {
-        case .url: return customName
+        case .url: return newURLs.first.flatMap { customURLNames[FilterListURLSupport.identityKey(for: $0)] } ?? ""
         case .paste, .file: return userListTitle
         }
     }

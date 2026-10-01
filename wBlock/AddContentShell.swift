@@ -136,6 +136,70 @@ struct AddContentMetadataFields: View {
     }
 }
 
+/// Fills metadata fields from source headers until the user edits them.
+struct EditorMetadataAutofillState: Equatable {
+    private(set) var lastAutofilledName = ""
+    private(set) var lastAutofilledDescription = ""
+    private(set) var nameWasManuallyEdited = false
+    private(set) var descriptionWasManuallyEdited = false
+
+    mutating func autofill(
+        name metadataName: String,
+        description metadataDescription: String,
+        currentName: String,
+        currentDescription: String
+    ) -> (name: String, description: String) {
+        let name = metadataName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let description = metadataDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !nameWasManuallyEdited {
+            lastAutofilledName = name
+        }
+        if !descriptionWasManuallyEdited {
+            lastAutofilledDescription = description
+        }
+        return (
+            nameWasManuallyEdited ? currentName : lastAutofilledName,
+            descriptionWasManuallyEdited ? currentDescription : lastAutofilledDescription
+        )
+    }
+
+    mutating func noteNameEdit(_ value: String) {
+        if value != lastAutofilledName { nameWasManuallyEdited = true }
+    }
+
+    mutating func noteDescriptionEdit(_ value: String) {
+        if value != lastAutofilledDescription { descriptionWasManuallyEdited = true }
+    }
+}
+
+/// One reviewed URL with the same metadata fields as local imports.
+struct AddContentURLMetadataCard: View {
+    let url: URL
+    @Binding var name: String
+    @Binding var description: String
+    @Binding var category: FilterListCategory
+    let categories: [FilterListCategory]
+    var categoryName: (FilterListCategory) -> String = { $0.localizedName }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(url.absoluteString)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            AddContentMetadataFields(name: $name, description: $description, category: $category,
+                                     categories: categories, categoryName: categoryName)
+        }
+        .padding(10)
+        .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(.quaternary, lineWidth: 1)
+        )
+    }
+}
+
 /// All add modes share the Text tab's glass cards and space for their shadows.
 struct AddContentPanelLayout<Content: View>: View {
     @ViewBuilder var content: () -> Content

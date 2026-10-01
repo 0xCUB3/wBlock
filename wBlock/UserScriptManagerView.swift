@@ -128,41 +128,6 @@ private struct SelectedUserScript: Identifiable {
     let action: UserScriptContextMenuAction
 }
 
-private struct EditorMetadataAutofillState: Equatable {
-    private(set) var lastAutofilledName = ""
-    private(set) var lastAutofilledDescription = ""
-    private(set) var nameWasManuallyEdited = false
-    private(set) var descriptionWasManuallyEdited = false
-
-    mutating func autofill(
-        name metadataName: String,
-        description metadataDescription: String,
-        currentName: String,
-        currentDescription: String
-    ) -> (name: String, description: String) {
-        let name = metadataName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let description = metadataDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !nameWasManuallyEdited {
-            lastAutofilledName = name
-        }
-        if !descriptionWasManuallyEdited {
-            lastAutofilledDescription = description
-        }
-        return (
-            nameWasManuallyEdited ? currentName : lastAutofilledName,
-            descriptionWasManuallyEdited ? currentDescription : lastAutofilledDescription
-        )
-    }
-
-    mutating func noteNameEdit(_ value: String) {
-        if value != lastAutofilledName { nameWasManuallyEdited = true }
-    }
-
-    mutating func noteDescriptionEdit(_ value: String) {
-        if value != lastAutofilledDescription { descriptionWasManuallyEdited = true }
-    }
-}
-
 private enum BetaUserscriptWarning {
     static let acknowledgedKey = "wBlock.hasAcknowledgedBetaUserscriptWarning"
 
@@ -2018,6 +1983,7 @@ struct AddUserScriptView: View {
     private struct URLMetadata: Sendable { var title: String?; var description: String? }
     @State private var urlEntryMode: URLEntryMode = .single
     @State private var isReviewingURLs = false
+    @State private var isReviewingText = false
     @State private var urlNames: [String: String] = [:]
     @State private var urlDescriptions: [String: String] = [:]
     @State private var urlCategories: [String: FilterListCategory] = [:]
@@ -2132,6 +2098,7 @@ struct AddUserScriptView: View {
             }
         }
         .onChangeCompat(of: textInput) { _, _ in
+            isReviewingText = false
             guard addMode == .text else { return }
             scheduleEditorMetadataRefresh()
         }
@@ -2223,8 +2190,7 @@ struct AddUserScriptView: View {
 
     private var textTab: some View {
         AddContentPanelLayout {
-            AddContentCard { userScriptMetaFields }
-            simpleTextContent
+            textStep
             editorRequirementsPanel
         }
         .task {
@@ -2268,6 +2234,18 @@ struct AddUserScriptView: View {
             }
     }
 
+    @ViewBuilder
+    private var textStep: some View {
+        if isReviewingText {
+            AddContentCard {
+                Button("Back") { isReviewingText = false }
+                userScriptMetaFields
+            }
+        } else {
+            simpleTextContent
+        }
+    }
+
     private var scriptTextEditor: some View {
         TextEditor(text: $textInput)
             .font(.system(.body, design: .monospaced))
@@ -2307,7 +2285,7 @@ struct AddUserScriptView: View {
             }
         case .text:
             VStack(alignment: .leading, spacing: 16) {
-                macosTextCard
+                textStep
                 editorRequirementsPanel
             }
         case .file:
@@ -2330,12 +2308,6 @@ struct AddUserScriptView: View {
         }
     }
 
-    private var macosTextCard: some View {
-        VStack(spacing: 16) {
-            AddContentCard { userScriptMetaFields }
-            simpleTextContent
-        }
-    }
 
     private var macosFileCard: some View {
         AddContentCard {
@@ -2413,15 +2385,13 @@ struct AddUserScriptView: View {
     }
 
     private var addURLButtonTitle: String {
-        if addMode == .url && urlEntryMode == .bulk {
-            return isReviewingURLs ? "Add URLs" : "Next"
-        }
-        return "Add"
+        if (addMode == .url && !isReviewingURLs) || (addMode == .text && !isReviewingText) { return "Next" }
+        return addMode == .url && parsedURLs.count > 1 ? "Add URLs" : "Add"
     }
 
     private var urlFormFields: some View {
         Group {
-            if urlEntryMode == .bulk && isReviewingURLs {
+            if isReviewingURLs {
                 Button("Back") { isReviewingURLs = false; urlMetadataTask?.cancel(); isFetchingURLMetadata = false }
             } else {
                 Picker("URL entry mode", selection: $urlEntryMode) {
@@ -2432,21 +2402,18 @@ struct AddUserScriptView: View {
                 .disabled(isAdding)
                 urlInputEditor
             }
-            if urlEntryMode == .single || isReviewingURLs {
+            if isReviewingURLs {
                 if isFetchingURLMetadata { ProgressView().controlSize(.small) }
                 ForEach(parsedURLs, id: \.absoluteString) { url in
-                    VStack(alignment: .leading, spacing: 6) {
-                        if urlEntryMode == .bulk {
-                            Text(url.absoluteString).font(.caption2).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
-                        }
-                        AddContentMetadataFields(
-                            name: Binding(get: { urlNames[url.absoluteString] ?? urlMetadata[url.absoluteString]?.title ?? "" }, set: { urlNames[url.absoluteString] = $0 }),
-                            description: Binding(get: { urlDescriptions[url.absoluteString] ?? urlMetadata[url.absoluteString]?.description ?? "" }, set: { urlDescriptions[url.absoluteString] = $0 }),
-                            category: Binding(get: { urlCategories[url.absoluteString] ?? selectedCategory }, set: { urlCategories[url.absoluteString] = $0 }),
-                            categories: FilterListCategory.userScriptCategories,
-                            categoryName: { $0.userScriptCategoryName }
-                        )
-                    }
+                    let key = url.absoluteString
+                    AddContentURLMetadataCard(
+                        url: url,
+                        name: Binding(get: { urlNames[key] ?? automaticURLName(for: url) }, set: { urlNames[key] = $0 }),
+                        description: Binding(get: { urlDescriptions[key] ?? urlMetadata[key]?.description ?? "" }, set: { urlDescriptions[key] = $0 }),
+                        category: Binding(get: { urlCategories[key] ?? selectedCategory }, set: { urlCategories[key] = $0 }),
+                        categories: FilterListCategory.userScriptCategories,
+                        categoryName: { $0.userScriptCategoryName }
+                    )
                 }
             }
         }
@@ -2456,7 +2423,7 @@ struct AddUserScriptView: View {
         urlMetadataTask?.cancel()
         urlMetadataGeneration += 1
         let generation = urlMetadataGeneration
-        guard urlEntryMode == .single || isReviewingURLs else { isFetchingURLMetadata = false; return }
+        guard isReviewingURLs else { isFetchingURLMetadata = false; return }
         let targets = parsedURLs.filter { urlMetadata[$0.absoluteString] == nil }
         guard !targets.isEmpty else { isFetchingURLMetadata = false; return }
         isFetchingURLMetadata = true
@@ -2472,6 +2439,11 @@ struct AddUserScriptView: View {
             })
             if generation == urlMetadataGeneration { isFetchingURLMetadata = false }
         }
+    }
+
+    private func automaticURLName(for url: URL) -> String {
+        let title = urlMetadata[url.absoluteString]?.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return title.isEmpty ? UserScriptURLSupport.displayName(forRemoteURL: url) : title
     }
 
     private var urlInputEditor: some View {
@@ -2575,7 +2547,7 @@ struct AddUserScriptView: View {
         switch addMode {
         case .url:
             guard case .valid(let urls) = validationState else { return }
-            if urlEntryMode == .bulk && !isReviewingURLs {
+            if !isReviewingURLs {
                 isReviewingURLs = true
                 urlFieldFocused = false
                 fetchURLMetadata()
@@ -2588,7 +2560,10 @@ struct AddUserScriptView: View {
             Task(priority: .userInitiated) {
                 for url in urls {
                     await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Adding new userscript from URL"), metadata: ["url": url.absoluteString])
-                    if let error = await userScriptManager.addUserScript(from: url, nameOverride: urlNames[url.absoluteString], descriptionOverride: urlDescriptions[url.absoluteString], category: urlCategories[url.absoluteString] ?? selectedCategory) {
+                    let key = url.absoluteString
+                    let name = ImportMetadataReview.userProvided(urlNames[key], automatic: automaticURLName(for: url))
+                    let description = ImportMetadataReview.userProvided(urlDescriptions[key], automatic: urlMetadata[key]?.description)
+                    if let error = await userScriptManager.addUserScript(from: url, nameOverride: name, descriptionOverride: description, category: urlCategories[key] ?? selectedCategory) {
                         let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
                         await ConcurrentLogManager.shared.error(.userScript, LocalizedStrings.text("Failed to add userscript from URL"), metadata: ["url": url.absoluteString, "error": message])
                         await MainActor.run {
@@ -2607,6 +2582,11 @@ struct AddUserScriptView: View {
                 }
             }
         case .text:
+            if !isReviewingText {
+                _ = editorMetadataOverrides(for: textInput)
+                isReviewingText = true
+                return
+            }
             addScriptFromText()
         case .file:
             guard let stagedFile else { return }
