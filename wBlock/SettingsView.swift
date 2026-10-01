@@ -702,7 +702,6 @@ struct SettingsView: View {
     @ViewBuilder
     private var dangerZoneSection: some View {
         Section {
-            #if os(macOS)
             CompatibleLabeledContent {
                 Button("Reset", action: resetOrdering)
                     .buttonStyle(.bordered)
@@ -712,6 +711,7 @@ struct SettingsView: View {
                     detail: Text("Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.")
                 )
             }
+            #if os(macOS)
             CompatibleLabeledContent {
                 Button(isRestarting ? "Restarting…" : "Restart…") {
                     showingRestartConfirmation = true
@@ -725,9 +725,6 @@ struct SettingsView: View {
                 )
             }
             #else
-            Button(action: resetOrdering) {
-                Label("Reset Ordering", systemImage: "arrow.up.arrow.down")
-            }
             Button(role: .destructive) {
                 showingRestartConfirmation = true
             } label: {
@@ -745,7 +742,6 @@ struct SettingsView: View {
             Text("Danger Zone")
         } footer: {
             #if os(iOS)
-            Text("Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.")
             Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
             #endif
         }
