@@ -1194,3 +1194,4 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Cosmetic Filtering Sites" = "Kozmetik filtreleme siteleri";
 "No sites selected. Cosmetic filtering will not apply." = "Hiçbir site seçilmedi. Kozmetik filtreleme uygulanmayacak.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Bu sitelerde kozmetik filtreleme uygulanmayacak. Ağ engelleme uygulanmaya devam eder.";
+"When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Açıkken userscript etkinlik durumları iCloud üzerinden eşitlenir. Bu seçimleri yalnızca bu aygıtta tutmak için kapatın.";

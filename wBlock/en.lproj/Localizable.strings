@@ -1194,3 +1194,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Cosmetic Filtering Sites" = "Cosmetic Filtering Sites";
 "No sites selected. Cosmetic filtering will not apply." = "No sites selected. Cosmetic filtering will not apply.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Cosmetic filtering will not apply on these sites. Network blocking still applies.";
+"When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device.";

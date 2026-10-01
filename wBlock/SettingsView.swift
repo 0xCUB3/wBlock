@@ -593,11 +593,19 @@ struct SettingsView: View {
                 .disabled(!syncManager.isCloudKitAvailable)
 
             if syncManager.isCloudKitAvailable && syncManager.isEnabled {
-                Toggle("Sync Userscript Enabled States", isOn: Binding(
+                Toggle(isOn: Binding(
                     get: { syncManager.syncUserScriptEnabledStates },
                     set: { syncManager.setSyncUserScriptEnabledStates($0) }
-                ))
-                    .disabled(syncManager.isSyncing)
+                )) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Sync Userscript Enabled States")
+                        Text("When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .disabled(syncManager.isSyncing)
 
                 #if os(macOS)
                 CompatibleLabeledContent {

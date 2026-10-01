@@ -1185,3 +1185,4 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Cosmetic Filtering Sites" = "Sites da filtragem cosmética";
 "No sites selected. Cosmetic filtering will not apply." = "Nenhum site selecionado. A filtragem cosmética não será aplicada.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "A filtragem cosmética não será aplicada nestes sites. O bloqueio de rede continua ativo.";
+"When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Quando ativada, esta opção sincroniza pelo iCloud o estado de ativação dos userscripts. Desative-a para manter essas escolhas somente neste dispositivo.";

@@ -1185,3 +1185,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Cosmetic Filtering Sites" = "外观过滤网站";
 "No sites selected. Cosmetic filtering will not apply." = "未选择任何网站。外观过滤将不会应用。";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "外观过滤不会在这些网站上应用。网络拦截仍然有效。";
+"When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "开启后，用户脚本的启用状态会通过 iCloud 同步。关闭后，这些状态仅保留在此设备上。";

@@ -1185,3 +1185,4 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Cosmetic Filtering Sites" = "Site-uri pentru filtrarea cosmetică";
 "No sites selected. Cosmetic filtering will not apply." = "Niciun site selectat. Filtrarea cosmetică nu se va aplica.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Filtrarea cosmetică nu se va aplica pe aceste site-uri. Blocarea de rețea rămâne activă.";
+"When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Când este activată, această opțiune sincronizează prin iCloud starea de activare a userscripturilor. Dezactiveaz-o pentru a păstra aceste alegeri doar pe acest dispozitiv.";
