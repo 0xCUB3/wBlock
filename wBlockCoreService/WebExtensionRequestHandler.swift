@@ -130,6 +130,7 @@ public enum WebExtensionRequestHandler {
                 return
             case "setUserScriptsSiteDisabled":
                 handleSetUserScriptsSiteDisabled(message: message!, context: context)
+                return
             case "setUserScriptSiteDisabledState":
                 handleSetUserScriptSiteDisabledState(message: message!, context: context)
                 return
@@ -153,8 +154,10 @@ public enum WebExtensionRequestHandler {
                 return
             case "getSiteFilterDisabledState":
                 handleGetSiteFilterDisabledState(message: message!, context: context)
+                return
             case "setSiteFilterDisabledState":
                 handleSetSiteFilterDisabledState(message: message!, context: context)
+                return
             case "setSiteDisabledState":
                 handleSetSiteDisabledState(message: message!, context: context)
                 return
