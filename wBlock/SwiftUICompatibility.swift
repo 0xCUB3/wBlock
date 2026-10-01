@@ -417,14 +417,15 @@ private final class ApplyChangesHoldTracker {
     }
 }
 
-/// Overflow order for iPhone Duo's vertical bars. Items overflow from the
-/// bottom up; high priority keeps an item visible longest. A no-op before
-/// iOS 27 so the deployment target stays where it is.
+/// Toolbar overflow order: high priority keeps an item visible longest, such as
+/// on iPhone Duo's vertical bars or a narrow Mac window. A no-op before iOS 27
+/// and macOS 26.1 so the deployment targets stay where they are.
 enum ToolbarVisibilityPriorityCompat {
     case high
     case low
 }
 
+@available(macOS 13.0, *)
 extension ToolbarContent {
     func toolbarVisibilityPriorityCompat(_ priority: ToolbarVisibilityPriorityCompat) -> some ToolbarContent {
         ToolbarVisibilityPriorityContent(base: self, priority: priority)
@@ -433,6 +434,7 @@ extension ToolbarContent {
 
 /// ToolbarContentBuilder has no branching before iOS 16, so the availability
 /// check lives in a wrapper's body rather than inside the builder.
+@available(macOS 13.0, *)
 private struct ToolbarVisibilityPriorityContent<Base: ToolbarContent>: ToolbarContent {
     let base: Base
     let priority: ToolbarVisibilityPriorityCompat
@@ -440,6 +442,12 @@ private struct ToolbarVisibilityPriorityContent<Base: ToolbarContent>: ToolbarCo
     var body: some ToolbarContent {
         #if os(iOS) && compiler(>=6.4)
         if #available(iOS 27.0, *) {
+            base.visibilityPriority(priority == .high ? .high : .low)
+        } else {
+            base
+        }
+        #elseif os(macOS) && compiler(>=6.2.1)
+        if #available(macOS 26.1, *) {
             base.visibilityPriority(priority == .high ? .high : .low)
         } else {
             base

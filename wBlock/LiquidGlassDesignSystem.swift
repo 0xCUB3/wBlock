@@ -61,6 +61,8 @@ struct MacActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifier
                     InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
                 }
                 .sharedBackgroundVisibility(.hidden)
+                // The tab picker overflows first so expanded search stays visible.
+                .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItem(placement: .automatic) { compact { primary() } }
                     .sharedBackgroundVisibility(.hidden)
                 ToolbarItem(placement: .automatic) { compact { apply() } }
