@@ -917,6 +917,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Recommended Scripts" = "推薦腳本";
 "Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "移除 Cookie 通知、彈出式視窗、橫幅和其他干擾元素。若要完整套件，請啟用全部五個 AdGuard Annoyances 列表。";
 "Reset to Default" = "重設為預設值";
+"Reset" = "重設";
 "Shows all filter lists across every category." = "顯示所有類別中的過濾器清單。";
 "Adds rules tailored to websites and languages from specific regions." = "為特定地區的網站和語言新增適用規則。";
 "The end of Safari ad-blocking B.S." = "告別 Safari 廣告攔截的糟心事";

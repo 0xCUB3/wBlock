@@ -914,6 +914,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Recommended Scripts" = "Scripturi recomandate";
 "Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Elimină notificările despre cookie-uri, ferestrele pop-up, bannerele și alte elemente deranjante. Activează toate cele cinci liste AdGuard Annoyances pentru setul complet.";
 "Reset to Default" = "Resetează la valorile implicite";
+"Reset" = "Resetează";
 "Shows all filter lists across every category." = "Afișează toate listele de filtre din fiecare categorie.";
 "Adds rules tailored to websites and languages from specific regions." = "Adaugă reguli adaptate site-urilor și limbilor din anumite regiuni.";
 "The end of Safari ad-blocking B.S." = "Sfârșitul prostiilor blocării reclamelor în Safari";

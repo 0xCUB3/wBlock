@@ -917,6 +917,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Recommended Scripts" = "النصوص الموصى بها";
 "Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "يزيل إشعارات ملفات تعريف الارتباط والنوافذ المنبثقة واللافتات والعناصر المشتتة الأخرى. فعّل قوائم AdGuard Annoyances الخمس كلها للمجموعة الكاملة.";
 "Reset to Default" = "إعادة التعيين إلى الإعدادات الافتراضية";
+"Reset" = "إعادة تعيين";
 "Shows all filter lists across every category." = "يعرض جميع قوائم المرشحات في كل الفئات";
 "Adds rules tailored to websites and languages from specific regions." = "يضيف قواعد مخصصة لمواقع ولغات مناطق محددة";
 "The end of Safari ad-blocking B.S." = "نهاية هراء حجب الإعلانات في Safari";
