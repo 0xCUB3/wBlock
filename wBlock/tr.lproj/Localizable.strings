@@ -1190,6 +1190,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Enable HaGeZi Pro Mini?" = "HaGeZi Pro Mini açılsın mı?";
 "HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Pro Mini bir DNS engelleme listesidir; özellikle reklam engelleyiciler için tasarlanmış bir filtre listesi değildir. Diğer listelere göre daha az kararlı olabilir ve web sitelerini bozan daha fazla yanlış pozitife yol açabilir.";
 "Reset Ordering" = "Sıralamayı sıfırla";
+"Reset" = "Sıfırla";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Yerleşik listeleri ve kullanıcı betiklerini varsayılan kategori ve sıralamalarına döndürür, özel olanları Diğer’e taşır.";
 "Cosmetic Filtering Sites" = "Kozmetik filtreleme siteleri";
 "No sites selected. Cosmetic filtering will not apply." = "Hiçbir site seçilmedi. Kozmetik filtreleme uygulanmayacak.";

@@ -722,6 +722,15 @@ struct SettingsView: View {
         Section {
             #if os(macOS)
             CompatibleLabeledContent {
+                Button("Reset", action: resetOrdering)
+                    .buttonStyle(.bordered)
+            } label: {
+                rowLabel(
+                    "Reset Ordering",
+                    detail: Text("Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.")
+                )
+            }
+            CompatibleLabeledContent {
                 Button(isRestarting ? "Restarting…" : "Restart…") {
                     showingRestartConfirmation = true
                 }
@@ -733,16 +742,10 @@ struct SettingsView: View {
                     detail: Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
                 )
             }
-            CompatibleLabeledContent {
-                Button("Reset Ordering", action: resetOrdering)
-                    .buttonStyle(.bordered)
-            } label: {
-                rowLabel(
-                    "Reset Ordering",
-                    detail: Text("Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.")
-                )
-            }
             #else
+            Button(action: resetOrdering) {
+                Label("Reset Ordering", systemImage: "arrow.up.arrow.down")
+            }
             Button(role: .destructive) {
                 showingRestartConfirmation = true
             } label: {
@@ -755,16 +758,13 @@ struct SettingsView: View {
             }
             .tint(.red)
             .disabled(isRestarting)
-            Button(action: resetOrdering) {
-                Label("Reset Ordering", systemImage: "arrow.up.arrow.down")
-            }
             #endif
         } header: {
             Text("Danger Zone")
         } footer: {
             #if os(iOS)
-            Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
             Text("Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.")
+            Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
             #endif
         }
     }
