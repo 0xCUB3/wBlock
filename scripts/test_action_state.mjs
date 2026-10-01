@@ -14,6 +14,7 @@ for (const file of ['extension-src/background.js', 'wBlock Scripts (iOS)/Resourc
   const tabs = [{ id: 1, url: 'https://example.com/' }, { id: 2, url: 'https://other.example/' }];
   const disabledHosts = new Set();
   let paused = false;
+  let nativeDelayMs = 0;
   const states = new Map();
   const state = id => {
     if (!states.has(id)) states.set(id, {});
@@ -24,6 +25,9 @@ for (const file of ['extension-src/background.js', 'wBlock Scripts (iOS)/Resourc
     runtime: {
       onMessage: event(), onInstalled: event(), onStartup: event(),
       sendNativeMessage: async (_app, message) => {
+        if (nativeDelayMs && (message.action === 'getBlockingPausedState' || message.action === 'getSiteDisabledState')) {
+          await new Promise(resolve => setTimeout(resolve, nativeDelayMs));
+        }
         if (message.action === 'getBlockingPausedState') return { paused };
         if (message.action === 'getSiteDisabledState') return { disabled: disabledHosts.has(message.host) };
         if (message.action === 'getRemoveParamDNRRules') return { ok: true, version: 'test', rules: [], count: 0 };
@@ -94,5 +98,14 @@ for (const file of ['extension-src/background.js', 'wBlock Scripts (iOS)/Resourc
   tabs[0].url = 'https://example.com/';
   for (const listener of browser.tabs.onActivated.listeners) await listener({ tabId: 1 });
   check(1, false);
+  // A slow lookup for the page being left must not overwrite the start page.
+  nativeDelayMs = 20;
+  tabs[0].url = 'https://example.com/next';
+  for (const listener of browser.tabs.onUpdated.listeners) listener(1, { status: 'complete' }, tabs[0]);
+  tabs[0].url = 'favorites://';
+  for (const listener of browser.tabs.onUpdated.listeners) listener(1, { url: tabs[0].url }, tabs[0]);
+  await new Promise(resolve => setTimeout(resolve, 100));
+  check(1, true, false, 'Unsupported');
+  nativeDelayMs = 0;
   console.log(`PASS: ${file}: startup, per-site disable/re-enable, tab isolation, pause/resume, unsupported navigation, activation`);
 }

@@ -27238,6 +27238,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const canSetActionBadgeBackgroundColor = typeof browser !== "undefined" && !!(browser.action && browser.action.setBadgeBackgroundColor);
   const canObserveTabs = typeof browser !== "undefined" && !!browser.tabs;
   const supportStateByTab = new Map();
+  const actionSyncGenerationByTab = new Map();
   const menuCommandsByTab = new Map();
   const normalizeMenuCommands = commands => Array.isArray(commands) ? commands.filter(command => command && typeof command === "object").map(command => ({
     bridgeId: typeof command.bridgeId === "string" ? command.bridgeId : "",
@@ -27461,10 +27462,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (!tab || typeof tab.id !== "number") {
       return;
     }
+    // Native lookups are slow; a newer sync for this tab (e.g. navigating to the
+    // unsupported start page) must not be overwritten by one that started earlier.
+    const generation = (actionSyncGenerationByTab.get(tab.id) || 0) + 1;
+    actionSyncGenerationByTab.set(tab.id, generation);
     const support = await resolveTabSupport(tab);
     const supported = support.supported;
     const blockingPaused = supported ? await getBlockingPausedForAction() : false;
     const siteDisabled = supported && !blockingPaused ? await getSiteDisabledForAction(support.host || "") : false;
+    if (actionSyncGenerationByTab.get(tab.id) !== generation) {
+      return;
+    }
     const updates = [];
     if (canControlActionState) {
       updates.push((supported ? browser.action.enable(tab.id) : browser.action.disable(tab.id)).catch(error => {
@@ -27638,6 +27646,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (browser.tabs.onRemoved) {
       browser.tabs.onRemoved.addListener(tabId => {
         supportStateByTab.delete(tabId);
+        actionSyncGenerationByTab.delete(tabId);
         menuCommandsByTab.delete(tabId);
       });
     }
