@@ -60,14 +60,19 @@ public enum UserScriptURLSupport {
     /// Reads a plain-text URL list for bulk import: one URL per line. Blank lines,
     /// `#` and `//` comment lines, and a leading BOM are ignored.
     public static func urlListText(fromFile url: URL) throws -> String {
-        let size = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
-        guard size <= UserScriptImportLimits.maximumSourceFileBytes else {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        let data = try handle.read(upToCount: UserScriptImportLimits.maximumSourceFileBytes + 1) ?? Data()
+        guard data.count <= UserScriptImportLimits.maximumSourceFileBytes else {
             throw NSError(domain: "wBlock.urlListImport", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: NSLocalizedString(
                     "The selected file is too large. Maximum size is 10 MB.", comment: "URL list import size error")
             ])
         }
-        return try String(contentsOf: url, encoding: .utf8)
+        guard let text = String(data: data, encoding: .utf8) else {
+            throw CocoaError(.fileReadInapplicableStringEncoding)
+        }
+        return text
             .trimmingCharacters(in: CharacterSet(charactersIn: "\u{FEFF}"))
             .components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }

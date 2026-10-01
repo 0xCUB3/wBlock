@@ -1,8 +1,9 @@
 import Foundation
+import wBlockCoreService
 
 @main
 struct UserScriptURLSupportTests {
-    static func main() {
+    static func main() throws {
         expectValid(
             "https://example.com/script.js",
             expectedPath: "/script.js",
@@ -110,6 +111,21 @@ struct UserScriptURLSupportTests {
             "https://example.com/wrapped/script.user.js",
             "expected paste into an empty box to rejoin a wrapped URL"
         )
+
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".txt")
+        defer { try? FileManager.default.removeItem(at: file) }
+        try "\u{FEFF}# URL list\n https://example.com/one.user.js \n\n// comment\n".write(to: file, atomically: true, encoding: .utf8)
+        let imported = try UserScriptURLSupport.urlListText(fromFile: file)
+        expectEqual(imported, "https://example.com/one.user.js", "URL lists should ignore BOM, comments, and whitespace")
+        // Reading again must reject the actual size, even when this URL cached a smaller file size.
+        _ = try file.resourceValues(forKeys: [.fileSizeKey])
+        try Data(repeating: 32, count: UserScriptImportLimits.maximumSourceFileBytes + 1).write(to: file)
+        do {
+            _ = try UserScriptURLSupport.urlListText(fromFile: file)
+            fatalError("oversized URL lists must be rejected")
+        } catch {
+            expectEqual((error as NSError).domain, "wBlock.urlListImport", "oversized files should report the size error")
+        }
 
         print("PASS")
     }
