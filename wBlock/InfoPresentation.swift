@@ -225,7 +225,11 @@ private struct InfoPopoverSlot: View {
             .background {
                 if isPresented.wrappedValue { PopoverWindowShield { presenter.dismiss(token) } }
             }
-            .popover(isPresented: isPresented, attachmentAnchor: .rect(.bounds), arrowEdge: .top, content: content)
+            // Popovers inherit the anchor's environment; a category header's
+            // headline font would otherwise make the whole popover semibold.
+            .popover(isPresented: isPresented, attachmentAnchor: .rect(.bounds), arrowEdge: .top) {
+                content().font(.body)
+            }
     }
 }
 
