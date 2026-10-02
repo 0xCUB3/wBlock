@@ -287,6 +287,7 @@ struct UserScriptManagerView: View {
 
     var body: some View {
         userScriptContent
+        .modifier(scriptsToolbar)
         .sheet(isPresented: $showingAddScriptSheet, onDismiss: {
             refreshScripts()
         }) {
@@ -432,7 +433,6 @@ struct UserScriptManagerView: View {
             }
         }
         #endif
-        .modifier(scriptsToolbar)
     }
 
     #if os(macOS)
