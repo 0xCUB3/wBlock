@@ -540,7 +540,11 @@ struct ApplyChangesHoldButton<Label: View>: View {
 
     var body: some View {
         Button(action: handleTap) {
+            // A background apply shows no sheet, so the button itself says it
+            // is working instead of reading Apply until the run ends (#921).
             label
+                .opacity(isDisabled ? 0 : 1)
+                .overlay { if isDisabled { ProgressView().controlSize(.small) } }
         }
         .disabled(isDisabled)
         .accessibilityLabel(hasPendingChanges ? Text("Apply Changes") : Text("Check for Updates"))
