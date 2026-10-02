@@ -1113,9 +1113,10 @@ final class CloudSyncManager: ObservableObject {
                     index = filterLists.endIndex
                 }
                 if index < filterLists.endIndex {
-                    if filterLists[index].updatesAutomatically == (baselineCustomByURL[remoteCustom.url]?.resolvedUpdatesAutomatically ?? true),
-                       filterLists[index].updatesAutomatically != remoteCustom.resolvedUpdatesAutomatically {
-                        filterLists[index].updatesAutomatically = remoteCustom.resolvedUpdatesAutomatically
+                    if let enabled = remoteCustom.updatesAutomatically,
+                       filterLists[index].updatesAutomatically == (baselineCustomByURL[remoteCustom.url]?.resolvedUpdatesAutomatically ?? true),
+                       filterLists[index].updatesAutomatically != enabled {
+                        filterLists[index].updatesAutomatically = enabled
                         updateSettingsChanged = true
                     }
                     if filterLists[index].name != remoteCustom.name {
