@@ -744,6 +744,7 @@
 "Fallbacks" = "Zapasowe adresy URL";
 "If the source URL fails, wBlock tries these URLs in order." = "Jeśli źródłowy adres URL nie działa, wBlock próbuje tych adresów URL po kolei.";
 "No fallback URLs are configured for this list." = "Dla tej listy nie skonfigurowano zapasowych adresów URL.";
+"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "Listy regionalne uzupełniają domyślne filtry dla stron anglojęzycznych i międzynarodowych o reguły dla konkretnych języków. Jeśli brakuje Twojego języka, nie ma dla niego osobnej listy regionalnej.";
 "Start Fresh" = "Zacznij od nowa";
 "Started %@" = "Uruchomiono %@";
 "Starting conversion..." = "Rozpoczęcie konwersji...";

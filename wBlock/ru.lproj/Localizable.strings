@@ -747,6 +747,7 @@
 "Fallbacks" = "Резервные URL";
 "If the source URL fails, wBlock tries these URLs in order." = "Если URL источника недоступен, wBlock пробует эти URL по порядку.";
 "No fallback URLs are configured for this list." = "Для этого списка не настроены резервные URL.";
+"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "Региональные списки дополняют стандартные фильтры для англоязычных и международных сайтов правилами для отдельных языков. Если вашего языка нет, для него недоступен отдельный региональный список.";
 "Start Fresh" = "Начать заново";
 "Started %@" = "Запущено %@";
 "Starting conversion..." = "Начинаем преобразование...";

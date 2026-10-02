@@ -744,6 +744,7 @@
 "Fallbacks" = "Yedek URL’ler";
 "If the source URL fails, wBlock tries these URLs in order." = "Kaynak URL başarısız olursa wBlock bu URL’leri sırayla dener.";
 "No fallback URLs are configured for this list." = "Bu liste için yedek URL yapılandırılmamış.";
+"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "Bölgesel listeler, İngilizce ve uluslararası siteler için varsayılan filtrelere dile özgü kapsam ekler. Diliniz görünmüyorsa ayrı bir bölgesel liste mevcut değildir.";
 "Start Fresh" = "Sıfırdan başla";
 "Started %@" = "%@ başlatıldı";
 "Starting conversion..." = "Dönüşüm başlatılıyor...";

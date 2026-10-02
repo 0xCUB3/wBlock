@@ -527,12 +527,16 @@ struct OnboardingView: View {
 
             languagePicker
 
+            Text("Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
             if !regionalFilters.isEmpty || !languagesWithoutRegionalFilters.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(LocalizedStrings.text("Regional", comment: "Filter list category"))
                         .font(.headline)
                     ForEach(ForeignFilterOrganizer.groups(for: regionalFilters, preferredLanguages: selectedLanguages)) { group in
-                        regionalFilterGroup(group, expandsCommunity: false)
+                        regionalFilterGroup(group)
                     }
                     ForEach(languagesWithoutRegionalFilters) { lang in
                         emptyRegionalFilterGroup(for: lang)
@@ -601,7 +605,7 @@ struct OnboardingView: View {
         }
     }
 
-    private func regionalFilterGroup(_ group: ForeignFilterGroup, expandsCommunity: Bool) -> some View {
+    private func regionalFilterGroup(_ group: ForeignFilterGroup) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(group.title)
                 .font(.caption.weight(.semibold))

@@ -44,27 +44,36 @@ enum ForeignFilterOrganizer {
         preferredLanguages: Set<String>? = nil
     ) -> [ForeignFilterGroup] {
         let preferred = preferredLanguages.map { Set($0.map { $0.lowercased() }) }
-        var filtersByLanguage: [String: [FilterList]] = [:]
+        var groups: [(languages: Set<String>, filters: [FilterList])] = []
+        var seen = Set<UUID>()
 
-        for filter in filters {
-            var languageCodes = Set(filter.languages.map { $0.lowercased() })
+        for filter in filters where seen.insert(filter.id).inserted {
+            var languages = Set(filter.languages.map { $0.lowercased() })
             if let preferred {
-                languageCodes = languageCodes.intersection(preferred)
+                languages.formIntersection(preferred)
+                guard !languages.isEmpty else { continue }
             }
-            if languageCodes.isEmpty {
-                languageCodes = [ungroupedLanguageCode]
-            }
+            if languages.isEmpty { languages = [ungroupedLanguageCode] }
 
-            for languageCode in languageCodes {
-                filtersByLanguage[languageCode, default: []].append(filter)
+            // Merge overlapping coverage, including a language-specific list
+            // alongside a shared list (Icelandic + Nordic, for example).
+            var members = [filter]
+            for index in groups.indices.reversed() where !groups[index].languages.isDisjoint(with: languages) {
+                let overlapping = groups.remove(at: index)
+                languages.formUnion(overlapping.languages)
+                members.append(contentsOf: overlapping.filters)
             }
+            groups.append((languages, members))
         }
 
-        return filtersByLanguage.map { languageCode, filters in
-            ForeignFilterGroup(
-                languageCode: languageCode,
-                title: languageTitle(for: languageCode),
-                sortTitle: languageSortTitle(for: languageCode),
+        return groups.map { languages, filters in
+            let ordered = languages.sorted {
+                languageSortTitle(for: $0).localizedCaseInsensitiveCompare(languageSortTitle(for: $1)) == .orderedAscending
+            }
+            return ForeignFilterGroup(
+                languageCode: languages.sorted().joined(separator: "+"),
+                title: ordered.map { languageTitle(for: $0) }.joined(separator: ", "),
+                sortTitle: ordered.map { languageSortTitle(for: $0) }.joined(separator: ", "),
                 filters: sortedFilters(filters)
             )
         }
@@ -139,7 +148,7 @@ enum ForeignFilterOrganizer {
             return LocalizedStrings.text("Regional", comment: "Filter list category")
         }
 
-        return Locale.current.localizedString(forLanguageCode: languageCode) ?? languageCode.uppercased()
+        return Locale.appCurrent.localizedString(forLanguageCode: languageCode) ?? languageCode.uppercased()
     }
 }
 

@@ -744,6 +744,7 @@
 "Fallbacks" = "URL-uri alternative";
 "If the source URL fails, wBlock tries these URLs in order." = "Dacă URL-ul sursă nu funcționează, wBlock încearcă aceste URL-uri în ordine.";
 "No fallback URLs are configured for this list." = "Nu sunt configurate URL-uri alternative pentru această listă.";
+"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "Listele regionale adaugă acoperire specifică limbii la filtrele implicite pentru site-uri în engleză și internaționale. Dacă limba ta lipsește, nu este disponibilă o listă regională separată.";
 "Start Fresh" = "Pornește de la zero";
 "Started %@" = "Pornit %@";
 "Starting conversion..." = "Se începe conversia...";

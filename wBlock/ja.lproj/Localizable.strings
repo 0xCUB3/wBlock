@@ -747,6 +747,7 @@
 "Fallbacks" = "代替URL";
 "If the source URL fails, wBlock tries these URLs in order." = "ソースURLにアクセスできない場合、wBlockはこれらのURLを順番に試します。";
 "No fallback URLs are configured for this list." = "このリストには代替URLが設定されていません。";
+"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "地域別リストは、英語および国際的なサイト向けの既定フィルタに、言語固有のフィルタリングを追加します。言語が見つからない場合、その言語専用の地域別リストはありません。";
 "Start Fresh" = "最初から始める";
 "Started %@" = "開始 %@";
 "Starting conversion..." = "変換を開始しています...";

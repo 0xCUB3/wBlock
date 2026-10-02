@@ -744,6 +744,7 @@
 "Fallbacks" = "备用 URL";
 "If the source URL fails, wBlock tries these URLs in order." = "如果来源 URL 访问失败，wBlock 会依次尝试这些 URL。";
 "No fallback URLs are configured for this list." = "此列表未配置备用 URL。";
+"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "区域列表在适用于英语和国际网站的默认过滤器基础上，添加针对特定语言的过滤规则。如果找不到你的语言，说明没有单独的区域列表可用。";
 "Start Fresh" = "重新开始";
 "Started %@" = "已开始 %@";
 "Starting conversion..." = "开始转换...";

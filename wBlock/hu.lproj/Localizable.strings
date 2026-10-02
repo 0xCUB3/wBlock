@@ -747,6 +747,7 @@
 "Fallbacks" = "Tartalék URL-ek";
 "If the source URL fails, wBlock tries these URLs in order." = "Ha a forrás URL nem működik, a wBlock sorban megpróbálja ezeket az URL-eket.";
 "No fallback URLs are configured for this list." = "Ehhez a listához nincsenek beállítva tartalék URL-ek.";
+"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "A regionális listák nyelvspecifikus lefedettséggel egészítik ki az angol és nemzetközi oldalak alapértelmezett szűrőit. Ha a nyelve nem szerepel, nem érhető el hozzá külön regionális lista.";
 "Start Fresh" = "Tiszta indulás";
 "Started %@" = "Elindult %@";
 "Starting conversion..." = "Konverzió indítása...";

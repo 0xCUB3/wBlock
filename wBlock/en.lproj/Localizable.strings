@@ -744,6 +744,7 @@
 "Fallbacks" = "Fallbacks";
 "If the source URL fails, wBlock tries these URLs in order." = "If the source URL fails, wBlock tries these URLs in order.";
 "No fallback URLs are configured for this list." = "No fallback URLs are configured for this list.";
+"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available.";
 "Start Fresh" = "Start Fresh";
 "Started %@" = "Started %@";
 "Starting conversion..." = "Starting conversion...";
