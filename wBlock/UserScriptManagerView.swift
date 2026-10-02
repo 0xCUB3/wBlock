@@ -198,11 +198,18 @@ struct UserScriptManagerView: View {
             onTap: onApplyChanges,
             onForceApply: onForceApplyChanges
         ) {
+            #if os(iOS)
+            ApplyChangesToolbarLabel(
+                hasPendingChanges: hasPendingChanges,
+                symbolName: "arrow.triangle.2.circlepath"
+            )
+            #else
             if hasPendingChanges {
                 Text("Apply").fontWeight(.semibold)
             } else {
                 Label("Update", systemImage: "arrow.triangle.2.circlepath")
             }
+            #endif
         }
         #if os(macOS)
         .contextMenu {
@@ -382,32 +389,6 @@ struct UserScriptManagerView: View {
         .refreshable {
             await onRefresh()
         }
-        .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                if #unavailable(iOS 26.0) {
-                    Button {
-                        showSearch = true
-                    } label: {
-                        Label("Search", systemImage: "magnifyingglass")
-                    }
-                }
-                Button {
-                    showingAddScriptSheet = true
-                } label: {
-                    Label("Add Userscript or Userstyle", systemImage: "plus")
-                }
-                Button {
-                    showOnlyEnabled.toggle()
-                    ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
-                } label: {
-                    Label(
-                        "Show Enabled Only",
-                        systemImage: showOnlyEnabled
-                            ? "line.3.horizontal.decrease.circle.fill"
-                            : "line.3.horizontal.decrease.circle")
-                }
-            }
-        }
         .searchableCompat(
             text: $searchText,
             isPresented: $showSearch,
@@ -450,8 +431,8 @@ struct UserScriptManagerView: View {
                 }
             }
         }
-        .modifier(macScriptsToolbar)
         #endif
+        .modifier(scriptsToolbar)
     }
 
     #if os(macOS)
@@ -482,12 +463,13 @@ struct UserScriptManagerView: View {
         return true
     }
 
-    private var macScriptsToolbar: some ViewModifier {
-        MacActionsToolbar(
+    #endif
+
+    private var scriptsToolbar: some ViewModifier {
+        ListActionsToolbar(
             searchText: $searchText,
             focusRequest: $showSearch,
-            searchPrompt: "Search scripts",
-            hasPendingChanges: hasPendingChanges
+            searchPrompt: "Search scripts"
         ) {
             Button {
                 showingAddScriptSheet = true
@@ -503,13 +485,12 @@ struct UserScriptManagerView: View {
             } label: {
                 Label(
                     "Show Enabled Only",
-                    systemImage: showOnlyEnabled
-                        ? "line.3.horizontal.decrease.circle.fill"
-                        : "line.3.horizontal.decrease.circle")
+                    systemImage: "line.3.horizontal.decrease")
+                    .foregroundStyle(showOnlyEnabled ? Color.accentColor : Color.primary)
             }
+            .accessibilityAddTraits(showOnlyEnabled ? .isSelected : [])
         }
     }
-    #endif
 
     private func refreshScripts() {
         refreshScripts(userScriptManager.userScripts)

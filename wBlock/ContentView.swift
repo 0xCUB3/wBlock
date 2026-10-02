@@ -369,38 +369,6 @@ struct ContentView: View {
                 }
             #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        applyChangesToolbarButton
-                    }
-                    .toolbarVisibilityPriorityCompat(.high)
-                    // Titles alongside symbols let the vertical bars on iPhone
-                    // Duo show the icon and name the item in the overflow menu.
-                    ToolbarItemGroup(placement: .topBarTrailing) {
-                        if #unavailable(iOS 26.0) {
-                            Button {
-                                showFilterSearch = true
-                            } label: {
-                                Label("Search", systemImage: "magnifyingglass")
-                            }
-                        }
-                        PauseBlockingMenu(filterManager: filterManager)
-                        Button {
-                            showingAddFilterSheet = true
-                        } label: {
-                            Label("Add Filter", systemImage: "plus")
-                        }
-                        Button {
-                            showOnlyEnabledLists.toggle()
-                        } label: {
-                            Label(
-                                "Show Enabled Only",
-                                systemImage: showOnlyEnabledLists
-                                    ? "line.3.horizontal.decrease.circle.fill"
-                                    : "line.3.horizontal.decrease.circle")
-                        }
-                    }
-                }
             #endif
         }
         #if os(iOS)
@@ -415,17 +383,15 @@ struct ContentView: View {
                 minWidth: 480, idealWidth: 540, maxWidth: .infinity,
                 minHeight: 550, idealHeight: 720, maxHeight: .infinity
             )
-            .modifier(macFiltersToolbar)
         #endif
+        .modifier(filtersToolbar)
     }
 
-    #if os(macOS)
-    private var macFiltersToolbar: some ViewModifier {
-        MacActionsToolbar(
+    private var filtersToolbar: some ViewModifier {
+        ListActionsToolbar(
             searchText: $filterSearchText,
             focusRequest: $showFilterSearch,
-            searchPrompt: "Search filters",
-            hasPendingChanges: hasPendingChanges
+            searchPrompt: "Search filters"
         ) {
             Button {
                 showingAddFilterSheet = true
@@ -440,13 +406,12 @@ struct ContentView: View {
             } label: {
                 Label(
                     "Show Enabled Only",
-                    systemImage: showOnlyEnabledLists
-                        ? "line.3.horizontal.decrease.circle.fill"
-                        : "line.3.horizontal.decrease.circle")
+                    systemImage: "line.3.horizontal.decrease")
+                    .foregroundStyle(showOnlyEnabledLists ? Color.accentColor : Color.primary)
             }
+            .accessibilityAddTraits(showOnlyEnabledLists ? .isSelected : [])
         }
     }
-    #endif
 
     private var nativeFiltersListView: some View {
         #if os(iOS)
@@ -521,15 +486,6 @@ struct ContentView: View {
                 }
                 #if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            applyChangesToolbarButton
-                        }
-                        .toolbarVisibilityPriorityCompat(.high)
-                        ToolbarItem(placement: .topBarTrailing) {
-                            PauseBlockingMenu(filterManager: filterManager)
-                        }
-                    }
                 #endif
         }
     }

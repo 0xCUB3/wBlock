@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import wBlockCoreService
 
 extension View {
     @ViewBuilder
@@ -34,68 +33,92 @@ extension View {
     }
 }
 
-#if os(macOS)
-/// Filters and Userscripts share the same toolbar order: search, Add and
-/// Update together, pending Apply on its own, then the enabled-only filter.
-/// On macOS 26 each control is a separate toolbar item with fixed spacing;
-/// older releases retain their flat action group and trailing search field.
-///
-/// Native list tabs pin the window-toolbar material behind the tab picker.
-struct MacActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifier {
+/// List actions stay trailing: Update and Show Enabled share a group;
+/// Search and Add each have their own container.
+struct ListActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifier {
     @Binding var searchText: String
     @Binding var focusRequest: Bool
     let searchPrompt: LocalizedStringKey
-    let hasPendingChanges: Bool
     @ViewBuilder let primary: () -> Primary
     @ViewBuilder let apply: () -> Apply
     @ViewBuilder let filter: () -> Filter
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
 
     func body(content: Content) -> some View {
+        #if os(macOS)
         if #available(macOS 26.0, *) {
-            // Every control is its own toolbar item so each one overflows into
-            // the >> menu instead of collapsing into the first button (#886).
-            // Each control draws its own capsule; the system's shared glass groups
-            // need ToolbarSpacer between them, and that gap is far wider than 8pt.
             content.toolbar {
-                ToolbarItem(placement: .automatic) {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    apply()
+                    filter()
+                }
+                .toolbarVisibilityPriorityCompat(.high)
+                ToolbarItem(placement: .primaryAction) {
                     InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
+                        .padding(.leading, 4)
                 }
                 .sharedBackgroundVisibility(.hidden)
-                // The tab picker overflows first so expanded search stays visible.
                 .toolbarVisibilityPriorityCompat(.high)
-                ToolbarItem(placement: .automatic) { compact { primary() } }
-                    .sharedBackgroundVisibility(.hidden)
-                ToolbarItem(placement: .automatic) { compact { apply() } }
-                    .sharedBackgroundVisibility(.hidden)
-                ToolbarItem(placement: .automatic) { compact { filter() } }
-                    .sharedBackgroundVisibility(.hidden)
+                ToolbarItem(placement: .primaryAction) {
+                    primary()
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(CompactToolbarButtonStyle())
+                        .glassEffect(.regular.interactive(), in: .capsule)
+                        .padding(.leading, 4)
+                }
+                .sharedBackgroundVisibility(.hidden)
             }
             .toolbarBackground(.visible, for: .windowToolbar)
         } else {
             content.toolbar {
-                ToolbarItemGroup(placement: .automatic) {
-                    primary()
+                ToolbarItemGroup(placement: .primaryAction) {
                     apply()
                     filter()
                 }
-                ToolbarItem(placement: .automatic) {
+                ToolbarItem(placement: .primaryAction) {
                     ToolbarSearchField(text: $searchText, isExpanded: $focusRequest, prompt: searchPrompt)
                 }
+                ToolbarItem(placement: .primaryAction) { primary() }
             }
         }
-    }
-
-    @available(macOS 26.0, *)
-    private func compact<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        content()
-            .labelStyle(.iconOnly)
-            .buttonStyle(CompactToolbarButtonStyle())
-            .glassEffect(.regular.interactive(), in: .capsule)
-            // Items without the shared background sit flush; search always leads.
-            .padding(.leading, 8)
+        #else
+        if #available(iOS 26.0, *) {
+            content.toolbar {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    apply()
+                    filter()
+                }
+                .toolbarVisibilityPriorityCompat(.high)
+                ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                if horizontalSizeClass != .regular {
+                    DefaultToolbarItem(kind: .search, placement: .topBarTrailing)
+                    ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                }
+                ToolbarItem(placement: .topBarTrailing) { primary() }
+            }
+        } else {
+            content.toolbar {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    apply()
+                    filter()
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    if horizontalSizeClass != .regular {
+                        Button { focusRequest = true } label: {
+                            Label("Search", systemImage: "magnifyingglass")
+                        }
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) { primary() }
+            }
+        }
+        #endif
     }
 }
 
+#if os(macOS)
 /// Toolbar for pages pushed inside the navigation stack (Site Settings,
 /// Element Zapper, Logs): the action buttons retain their native toolbar
 /// grouping; search is supplied separately by `toolbarSearch`.
