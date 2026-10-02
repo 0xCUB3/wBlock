@@ -38,9 +38,7 @@ enum ContentRowMetadata {
     }
 }
 
-#if os(iOS)
-/// Secondary actions at the bottom of an iOS Info sheet. macOS keeps these in
-/// the row's context menu, so the list only exists on iOS.
+/// Secondary actions shared by info sheets and popovers.
 struct InfoActionList<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
@@ -133,4 +131,3 @@ struct InfoCategoryRow<Category: Hashable & Identifiable>: View {
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
     }
 }
-#endif

@@ -1213,7 +1213,7 @@ private struct ScriptUpdateSettingsView: View {
 struct UserScriptInfoSidebar: View {
     let script: UserScript
     let contentLength: Int
-    let onShowPatterns: () -> Void
+    let isDownloaded: Bool
     let formatFileSize: (Int) -> String
     let isBuiltIn: Bool
     let builtInDisplayRole: BuiltInUserScriptDisplayRole?
@@ -1233,7 +1233,7 @@ struct UserScriptInfoSidebar: View {
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                ScriptStatusBadgesView(script: script, isDownloaded: contentLength > 0, isBuiltIn: isBuiltIn)
+                ScriptStatusBadgesView(script: script, isDownloaded: isDownloaded, isBuiltIn: isBuiltIn)
             }
             InfoMetadataList {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString(
@@ -1246,16 +1246,10 @@ struct UserScriptInfoSidebar: View {
                     value: metadata.homepage?.absoluteString ?? String(localized: "Not provided"),
                     url: metadata.homepage
                 )
-                if !script.version.isEmpty { InfoMetadataRow(title: "Version", value: script.version) }
+                if isDownloaded, !script.version.isEmpty { InfoMetadataRow(title: "Version", value: script.version) }
                 if script.url != nil { ScriptURLView(script: script) }
                 if contentLength > 0 { InfoMetadataRow(title: "Size", value: formatFileSize(contentLength)) }
             }
-            #if os(macOS)
-            if !script.matches.isEmpty {
-                ScriptMatchPatternsButton(script: script, action: onShowPatterns)
-                    .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            }
-            #endif
         }
     }
 }
@@ -1263,8 +1257,6 @@ struct UserScriptInfoSidebar: View {
 struct UserScriptInfoView: View {
     let scriptId: UUID
     var userScriptManager: UserScriptManager
-    /// iOS only. Rows have no overflow menu there, so the sheet hosts the
-    /// secondary actions macOS keeps in the context menu.
     var onChangeDisplayCategory: ((UserScriptDisplayCategory) -> Void)? = nil
     var onDownload: (() -> Void)? = nil
 
@@ -1297,14 +1289,12 @@ struct UserScriptInfoView: View {
                     UserScriptInfoSidebar(
                         script: script,
                         contentLength: script.content.utf8.count,
-                        onShowPatterns: { showingPatterns = true },
+                        isDownloaded: userScriptManager.hasDownloadedContent(for: script),
                         formatFileSize: formatFileSize,
                         isBuiltIn: userScriptManager.isDefaultUserScript(script),
                         builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script)
                     )
-                    #if os(iOS)
                     actionList(for: script)
-                    #endif
                 }
                 #if os(macOS)
                 .frame(width: 460)
@@ -1338,7 +1328,6 @@ struct UserScriptInfoView: View {
         .sheet(isPresented: $showingPatterns) {
             if let script { ScriptMatchPatternsSheet(script: script) }
         }
-        #if os(iOS)
         .sheet(isPresented: $showingSettings) {
             UserScriptSettingsView(scriptID: scriptId, userScriptManager: userScriptManager)
                 .infoSheetPresentationCompat()
@@ -1351,7 +1340,6 @@ struct UserScriptInfoView: View {
                 startsEditing: script.map { !userScriptManager.isDefaultUserScript($0) && $0.isLocal } ?? false
             )
         }
-        #endif
         .task(id: scriptId) {
             isLoading = true
             script = await userScriptManager.userScriptEditorSnapshot(withId: scriptId)
@@ -1359,7 +1347,6 @@ struct UserScriptInfoView: View {
         }
     }
 
-    #if os(iOS)
     @ViewBuilder
     private func actionList(for script: UserScript) -> some View {
         let isBuiltIn = userScriptManager.isDefaultUserScript(script)
@@ -1427,7 +1414,6 @@ struct UserScriptInfoView: View {
             }
         }
     }
-    #endif
 
     private func setDisplayCategory(_ category: UserScriptDisplayCategory) {
         guard var currentScript = script,

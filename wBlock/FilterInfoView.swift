@@ -4,8 +4,6 @@ import wBlockCoreService
 struct FilterInfoView: View {
     let filter: FilterList
     @ObservedObject var filterManager: AppFilterManager
-    /// iOS only. Rows have no overflow menu there, so the sheet hosts the
-    /// category move alongside the other secondary actions.
     var onChangeCategory: ((FilterListCategory) -> Void)? = nil
     var isDownloading = false
     var onDownload: (() -> Void)? = nil
@@ -17,7 +15,8 @@ struct FilterInfoView: View {
     @State private var confirmingDelete = false
     @State private var cachedMetadata = ContentInfoMetadata()
     @State private var cachedByteCount: Int?
-    @State private var hasLoadedMetadata = false
+
+    private var isDownloaded: Bool { filterManager.loader.filterFileExists(liveFilter) }
 
     private var liveFilter: FilterList {
         filterManager.filterLists.first(where: { $0.id == filter.id }) ?? filter
@@ -42,7 +41,6 @@ struct FilterInfoView: View {
         .sheet(isPresented: $showingMetadataEditor) {
             EditCustomFilterView(filterManager: filterManager, filter: liveFilter)
         }
-        #if os(iOS)
         .sheet(isPresented: $showingSettings) {
             FilterSettingsView(filter: liveFilter, filterManager: filterManager)
                 .infoSheetPresentationCompat()
@@ -54,7 +52,6 @@ struct FilterInfoView: View {
                 FilterRulesView(filter: liveFilter, filterManager: filterManager)
             }
         }
-        #endif
         .task(id: liveFilter.lastUpdated) {
             let snapshot = liveFilter
             let cached = await Task.detached(priority: .userInitiated) { () -> (Int, String)? in
@@ -64,7 +61,6 @@ struct FilterInfoView: View {
             guard !Task.isCancelled else { return }
             cachedByteCount = cached?.0
             cachedMetadata = ContentInfoMetadata.filterHeader(cached?.1 ?? "")
-            hasLoadedMetadata = true
         }
     }
 
@@ -77,7 +73,7 @@ struct FilterInfoView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 HStack(spacing: 8) {
-                    ForEach(Array(InfoBadgeSupport.filterBadges(liveFilter, isDownloaded: hasLoadedMetadata ? cachedByteCount != nil : nil).enumerated()), id: \.offset) { _, badge in
+                    ForEach(Array(InfoBadgeSupport.filterBadges(liveFilter, isDownloaded: isDownloaded).enumerated()), id: \.offset) { _, badge in
                         InfoBadgeView(kind: badge)
                     }
                 }
@@ -98,7 +94,7 @@ struct FilterInfoView: View {
                     value: cachedMetadata.homepage?.absoluteString ?? String(localized: "Not provided"),
                     url: cachedMetadata.homepage
                 )
-                if !liveFilter.version.isEmpty { InfoMetadataRow(title: "Version", value: liveFilter.version) }
+                if isDownloaded, !liveFilter.version.isEmpty { InfoMetadataRow(title: "Version", value: liveFilter.version) }
                 if liveFilter.url.scheme?.lowercased() == "http" || liveFilter.url.scheme?.lowercased() == "https" {
                     VStack(alignment: .leading, spacing: 6) {
                         InfoMetadataRow(title: "Source URL", value: liveFilter.url.absoluteString, url: liveFilter.url)
@@ -109,16 +105,12 @@ struct FilterInfoView: View {
                     InfoMetadataRow(title: "Size", value: ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
                 }
             }
-            #if os(iOS)
             actionList
-            #endif
         }
     }
 
-    #if os(iOS)
-    /// The secondary actions macOS offers in the row's context menu.
     private var actionList: some View {
-        let actions = ContextMenuActionAvailability.filterActions(for: liveFilter, isDownloaded: hasLoadedMetadata ? cachedByteCount != nil : true)
+        let actions = ContextMenuActionAvailability.filterActions(for: liveFilter, isDownloaded: isDownloaded)
         return InfoActionList {
             if actions.contains(.download), let onDownload {
                 Button {
@@ -178,7 +170,6 @@ struct FilterInfoView: View {
             }
         }
     }
-    #endif
 
 }
 
