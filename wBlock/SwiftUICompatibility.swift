@@ -166,6 +166,20 @@ extension View {
         modifier(SearchableCompatModifier(text: text, isPresented: isPresented, prompt: prompt))
     }
 
+    /// Keeps a menu open while its toggles are flipped, where the OS allows it.
+    @ViewBuilder
+    func menuStaysOpenCompat() -> some View {
+        #if os(iOS)
+        if #available(iOS 16.4, *) {
+            menuActionDismissBehavior(.disabled)
+        } else {
+            self
+        }
+        #else
+        self
+        #endif
+    }
+
     @ViewBuilder
     func scrollDismissesKeyboardCompat() -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {

@@ -323,6 +323,7 @@ struct FilterRulesView: View {
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
+        .menuStaysOpenCompat()
         .buttonStyle(.plain)
         .fixedSize()
         .accessibilityLabel("View")
