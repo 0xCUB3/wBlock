@@ -205,6 +205,12 @@ func mergeFilterListsForPersistence(
         mergeField(&merged.url, baseline: base.url, persisted: theirs.url)
         mergeField(&merged.category, baseline: base.category, persisted: theirs.category)
         mergeField(&merged.isSelected, baseline: base.isSelected, persisted: theirs.isSelected)
+        if merged.hasUpdatesAutomatically == base.hasUpdatesAutomatically
+            && merged.updatesAutomatically == base.updatesAutomatically
+        {
+            if theirs.hasUpdatesAutomatically { merged.updatesAutomatically = theirs.updatesAutomatically }
+            else { merged.clearUpdatesAutomatically() }
+        }
         mergeField(&merged.description_p, baseline: base.description_p, persisted: theirs.description_p)
         mergeField(&merged.version, baseline: base.version, persisted: theirs.version)
         if merged.hasSourceRuleCount == base.hasSourceRuleCount

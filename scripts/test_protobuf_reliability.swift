@@ -10,6 +10,7 @@ struct ProtobufReliabilityTests {
         try! FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
 
+        await testFilterAutomaticUpdates(root: root.appendingPathComponent("filter-updates"))
         await testInlineFilterSelection(root: root.appendingPathComponent("inline-filters"))
         await testDurableMigrationAndCorruptionRecovery(root: root.appendingPathComponent("recovery"))
         await testMissingMainAndScriptTimestamp(root: root.appendingPathComponent("missing-main"))
@@ -21,6 +22,49 @@ struct ProtobufReliabilityTests {
         await testUserScriptMetadataOverrides(root: root.appendingPathComponent("metadata-overrides"))
         await testLegacyBpcURLMigration(root: root.appendingPathComponent("bpc-url"))
         print("PASS")
+    }
+
+    private static func testFilterAutomaticUpdates(root: URL) async {
+        let suite = "test.wblock.filter-updates.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let writer = await makeManager(root: root, standard: defaults, group: defaults)
+        await writer.loadData()
+        let lists = [false, true].map { custom in
+            FilterList(name: custom ? "Custom" : "Built-in",
+                       url: URL(string: "https://example.com/\(custom).txt")!,
+                       category: .ads, isCustom: custom, isSelected: true)
+        }
+        await writer.updateFilterLists(lists)
+        let background = await makeManager(root: root, standard: defaults, group: defaults)
+        await background.loadData()
+        expect(background.getFilterLists().count == lists.count, "both list kinds must persist")
+        expect(background.getFilterLists().allSatisfy(\.updatesAutomatically),
+               "absent protobuf preference must keep automatic updates enabled")
+        var optedOut = writer.getFilterLists()
+        for index in optedOut.indices { optedOut[index].updatesAutomatically = false }
+        await writer.updateFilterLists(optedOut)
+        var metadata = background.getFilterLists()
+        for index in metadata.indices { metadata[index].version = "2" }
+        await background.updateFilterLists(metadata)
+        let restarted = await makeManager(root: root, standard: defaults, group: defaults)
+        await restarted.loadData()
+        expect(restarted.getFilterLists().count == lists.count, "metadata saves must retain both lists")
+        expect(restarted.getFilterLists().allSatisfy { !$0.updatesAutomatically && $0.version == "2" },
+               "an unrelated metadata writer must preserve per-filter update opt-outs")
+        var enabled = restarted.getFilterLists()
+        for index in enabled.indices { enabled[index].updatesAutomatically = true }
+        await restarted.updateFilterLists(enabled)
+        let verifier = await makeManager(root: root, standard: defaults, group: defaults)
+        await verifier.loadData()
+        expect(verifier.getFilterLists().allSatisfy(\.updatesAutomatically), "re-enabling must persist")
+        await restarted.removeFilterList(withId: lists[1].id)
+        verifier.setUserScriptShowEnabledOnly(true)
+        await verifier.saveDataImmediately()
+        let afterDeletion = await makeManager(root: root, standard: defaults, group: defaults)
+        await afterDeletion.loadData()
+        expect(!afterDeletion.getFilterLists().contains { $0.id == lists[1].id },
+               "a stale writer must not resurrect a removed subscription")
     }
 
     private static func testInlineFilterSelection(root: URL) async {

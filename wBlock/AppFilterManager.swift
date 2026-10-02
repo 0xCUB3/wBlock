@@ -1044,6 +1044,13 @@ class AppFilterManager: ObservableObject {
         return true
     }
 
+    func setFilterList(_ id: UUID, updatesAutomatically: Bool) {
+        guard let index = filterListIndex(for: id),
+              filterLists[index].updatesAutomatically != updatesAutomatically else { return }
+        filterLists[index].updatesAutomatically = updatesAutomatically
+        saveFilterListsCoalesced()
+    }
+
     @discardableResult
     func setExcludedSites(_ sites: [String], for id: UUID) -> Bool {
         guard let index = filterListIndex(for: id) else { return false }

@@ -8,8 +8,8 @@
 import Foundation
 
 public enum FilterSelectionRebaser {
-    /// Keeps downloaded metadata while taking live selection, per-list site
-    /// exclusions, and explicit user name/description edits from persisted state.
+    /// Keeps downloaded metadata while taking live selection, update preferences,
+    /// site exclusions, and explicit user name/description edits from persisted state.
     public static func rebaseSelection(
         snapshot: [FilterList],
         latestPersisted: [FilterList]
@@ -21,6 +21,7 @@ public enum FilterSelectionRebaser {
             guard let latest = latestByID[filter.id] else { return filter }
             var rebased = filter
             rebased.isSelected = latest.isSelected
+            rebased.updatesAutomatically = latest.updatesAutomatically
             rebased.category = latest.category
             rebased.excludedSites = latest.excludedSites
             rebased.selectedSites = latest.selectedSites
@@ -71,6 +72,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     public var category: FilterListCategory
     public var isCustom: Bool = false
     public var isSelected: Bool = false
+    public var updatesAutomatically: Bool = true
     public var description: String = ""
     public var version: String = ""
     public var sourceRuleCount: Int?
@@ -92,7 +94,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     public var uniqueRuleCount: Int?
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, url, category, isCustom, isSelected, description,
+        case id, name, url, category, isCustom, isSelected, updatesAutomatically, description,
              version, sourceRuleCount, lastUpdated, languages, trustLevel,
              etag, serverLastModified, limitExceededReason, hasUserProvidedName,
              hasUserProvidedDescription, excludedSites, selectedSites, admittedSourceRuleCount,
@@ -107,6 +109,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
                 category: FilterListCategory,
                 isCustom: Bool = false,
                 isSelected: Bool = false,
+                updatesAutomatically: Bool = true,
                 description: String = "",
                 version: String = "",
                 sourceRuleCount: Int? = nil,
@@ -128,6 +131,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         self.category = category
         self.isCustom = isCustom
         self.isSelected = isSelected
+        self.updatesAutomatically = updatesAutomatically
         self.description = description
         self.version = version
         self.sourceRuleCount = sourceRuleCount
@@ -153,6 +157,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         category = try container.decode(FilterListCategory.self, forKey: .category)
         isCustom = try container.decodeIfPresent(Bool.self, forKey: .isCustom) ?? false
         isSelected = try container.decodeIfPresent(Bool.self, forKey: .isSelected) ?? false
+        updatesAutomatically = try container.decodeIfPresent(Bool.self, forKey: .updatesAutomatically) ?? true
         description = try container.decodeIfPresent(String.self, forKey: .description) ?? ""
         version = try container.decodeIfPresent(String.self, forKey: .version) ?? ""
         sourceRuleCount = try container.decodeIfPresent(Int.self, forKey: .sourceRuleCount)
@@ -180,6 +185,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         try container.encode(category, forKey: .category)
         try container.encode(isCustom, forKey: .isCustom)
         try container.encode(isSelected, forKey: .isSelected)
+        try container.encode(updatesAutomatically, forKey: .updatesAutomatically)
         try container.encode(description, forKey: .description)
         try container.encode(version, forKey: .version)
         try container.encodeIfPresent(sourceRuleCount, forKey: .sourceRuleCount)
@@ -248,6 +254,10 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         return scheme == "http" || scheme == "https"
     }
 
+    public var canUpdateAutomatically: Bool {
+        isRemoteURL && updatesAutomatically
+    }
+
     /// Counts effective (non-comment, non-header, non-empty) rules in filter content.
     public static func countRules(in content: String) -> Int {
         var count = 0
@@ -295,7 +305,8 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
 
 public enum FilterRefreshPlanner {
     /// Apply should not re-download lists that already exist when a successful
-    /// check happened inside the auto-update interval. Missing files still fetch.
+    /// check happened inside the auto-update interval or the list has opted out.
+    /// Missing files still fetch regardless of the automatic update preference.
     /// `lastChecked` is the per-list time of the last successful check, so a run
     /// that partly failed resumes with only the lists that were not verified.
     public static func filtersRequiringNetworkRefresh(
@@ -318,7 +329,7 @@ public enum FilterRefreshPlanner {
             guard filter.isRemoteURL else { continue }
             if !fileExists(filter) {
                 missing.append(filter)
-            } else if needsRefresh(filter) {
+            } else if filter.canUpdateAutomatically && needsRefresh(filter) {
                 refreshes.append(filter)
             }
         }

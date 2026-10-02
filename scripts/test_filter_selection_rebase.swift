@@ -16,6 +16,7 @@ struct FilterSelectionRebaseTests {
                 url: URL(string: "https://example.com")!,
                 category: .security,
                 isSelected: false,
+                updatesAutomatically: false,
                 description: "User Description",
                 hasUserProvidedName: true,
                 hasUserProvidedDescription: true,
@@ -35,6 +36,9 @@ struct FilterSelectionRebaseTests {
         guard rebased.first?.isSelected == false else {
             fputs("FAIL: latest persisted selection must win\n", stderr)
             exit(1)
+        }
+        guard rebased.first?.updatesAutomatically == false, rebased.last?.updatesAutomatically == true else {
+            fatalError("A preference changed during download must survive metadata writeback")
         }
         guard rebased.first?.category == .security, rebased.last?.category == .privacy else {
             fatalError("Category edits must survive updates without changing newly added lists")

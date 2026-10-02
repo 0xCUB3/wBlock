@@ -192,6 +192,12 @@ struct FilterSettingsView: View {
 
     var body: some View {
         ContentSettingsView(name: liveFilter.localizedDisplayName) {
+            if liveFilter.isRemoteURL {
+                Toggle("Automatic Updates", isOn: Binding(
+                    get: { liveFilter.updatesAutomatically },
+                    set: { filterManager.setFilterList(liveFilter.id, updatesAutomatically: $0) }
+                ))
+            }
             SiteScopeEditor(
                 title: "Apply on", selectedSites: liveFilter.selectedSites, excludedSites: liveFilter.excludedSites,
                 emptySelectionMessage: "No sites selected. This list will not apply.",

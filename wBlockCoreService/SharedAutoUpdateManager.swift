@@ -1510,10 +1510,7 @@ public actor SharedAutoUpdateManager {
 
     private func checkAndFetchUpdates(filters: [FilterList]) async throws -> UpdateFetchResult {
         try Task.checkCancellation()
-        let remoteFilters = filters.filter {
-            guard let scheme = $0.url.scheme?.lowercased() else { return false }
-            return scheme == "http" || scheme == "https"
-        }
+        let remoteFilters = filters.filter(\.canUpdateAutomatically)
         FilterCatalogRemote.loadCached(defaultURLs: Set(remoteFilters.map { $0.url }))
 
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {

@@ -944,6 +944,7 @@ final class CloudSyncManager: ObservableObject {
                 && left.description == right.description
                 && left.category == right.category
                 && left.isSelected == right.isSelected
+                && left.resolvedUpdatesAutomatically == right.resolvedUpdatesAutomatically
                 && left.content == right.content
                 && left.resolvedUserProvidedName == right.resolvedUserProvidedName
                 && left.resolvedUserProvidedDescription == right.resolvedUserProvidedDescription
@@ -1050,6 +1051,13 @@ final class CloudSyncManager: ObservableObject {
             storage.selectionMutationRevision.map { $0 == localSelectionRevisionAtStart } ?? true
         var selectionChanged = false
         var nonSelectionChanged = false
+        var updateSettingsChanged = false
+        let liveAutomaticUpdates = Self.builtInAutomaticUpdates(filterLists)
+        let automaticUpdates = Self.mergeDictionary(
+            local: liveAutomaticUpdates,
+            baseline: baselineFilters.automaticUpdates ?? [:],
+            remote: filters.automaticUpdates ?? liveAutomaticUpdates
+        )
 
         let liveCustomURLs = Set(filterLists.filter(\.isCustom).map { $0.url.absoluteString })
         let urlsToDelete = CloudSyncCustomFilterReconciler.tombstonedURLsToDelete(
@@ -1066,6 +1074,10 @@ final class CloudSyncManager: ObservableObject {
 
         for index in filterLists.indices where !filterLists[index].isCustom {
             let url = FilterListLoader.canonicalFilterURLString(filterLists[index].url.absoluteString)
+            if let enabled = automaticUpdates[url], filterLists[index].updatesAutomatically != enabled {
+                filterLists[index].updatesAutomatically = enabled
+                updateSettingsChanged = true
+            }
             guard knownURLs.contains(url), mayApplyRemoteSelection else { continue }
             let selected = desiredSelected.contains(url)
             if filterLists[index].isSelected != selected {
@@ -1096,6 +1108,11 @@ final class CloudSyncManager: ObservableObject {
                     index = filterLists.endIndex
                 }
                 if index < filterLists.endIndex {
+                    if filterLists[index].updatesAutomatically == (baselineCustomByURL[remoteCustom.url]?.resolvedUpdatesAutomatically ?? true),
+                       filterLists[index].updatesAutomatically != remoteCustom.resolvedUpdatesAutomatically {
+                        filterLists[index].updatesAutomatically = remoteCustom.resolvedUpdatesAutomatically
+                        updateSettingsChanged = true
+                    }
                     if filterLists[index].name != remoteCustom.name {
                         filterLists[index].name = remoteCustom.name
                         nonSelectionChanged = true
@@ -1132,6 +1149,7 @@ final class CloudSyncManager: ObservableObject {
                 category: category,
                 isCustom: true,
                 isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
+                updatesAutomatically: remoteCustom.resolvedUpdatesAutomatically,
                 description: remoteCustom.resolvedDescription ?? "User-added filter list.",
                 sourceRuleCount: nil,
                 hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
@@ -1140,11 +1158,18 @@ final class CloudSyncManager: ObservableObject {
             nonSelectionChanged = true
         }
 
-        guard selectionChanged || nonSelectionChanged else { return }
+        guard selectionChanged || nonSelectionChanged || updateSettingsChanged else { return }
         await storage.commit(
             filterLists,
             selectionChanged: selectionChanged,
             nonSelectionChanged: nonSelectionChanged
+        )
+    }
+
+    private static func builtInAutomaticUpdates(_ filters: [FilterList]) -> [String: Bool] {
+        Dictionary(
+            filters.filter { !$0.isCustom }.map { (filterOrderKey($0), $0.updatesAutomatically) },
+            uniquingKeysWith: { _, latest in latest }
         )
     }
 
@@ -1726,6 +1751,7 @@ final class CloudSyncManager: ObservableObject {
                     category: remoteCustom.resolvedCategory,
                     isCustom: true,
                     isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
+                    updatesAutomatically: remoteCustom.resolvedUpdatesAutomatically,
                     description: remoteCustom.resolvedDescription ?? "User-added filter list.",
                     sourceRuleCount: nil,
                     hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
@@ -1870,6 +1896,7 @@ final class CloudSyncManager: ObservableObject {
                     description: list.description.isEmpty ? nil : list.description,
                     category: list.category.rawValue,
                     isSelected: list.isSelected,
+                    updatesAutomatically: list.updatesAutomatically,
                     userProvidedName: list.hasUserProvidedName,
                     userProvidedDescription: list.hasUserProvidedDescription,
                     content: inlineContents[list.url.absoluteString]
@@ -1884,6 +1911,7 @@ final class CloudSyncManager: ObservableObject {
             selectedURLs: selectedURLs,
             customLists: customLists,
             deletedCustomURLs: deletedCustomURLs.isEmpty ? nil : deletedCustomURLs,
+            automaticUpdates: Self.builtInAutomaticUpdates(filterLists),
             order: ListDisplayOrder.exportedKeys(
                 filterLists.filter { $0.category != .foreign },
                 order: ListDisplayOrder.saved(ListDisplayOrder.filtersKey), key: Self.filterOrderKey)
@@ -2504,10 +2532,13 @@ private struct SyncPayload: Codable {
         let description: String?
         let category: String?
         let isSelected: Bool
+        let updatesAutomatically: Bool?
         let userProvidedName: Bool?
         let userProvidedDescription: Bool?
         /// Inline user list content (for wblock://userlist/<uuid> lists). Nil for URL-hosted lists.
         let content: String?
+
+        var resolvedUpdatesAutomatically: Bool { updatesAutomatically ?? true }
 
         var resolvedUserProvidedName: Bool {
             userProvidedName ?? true
@@ -2533,6 +2564,8 @@ private struct SyncPayload: Codable {
         let customLists: [CustomFilterList]
         /// Custom list URLs deleted by the user. Used to prevent resurrection during sync.
         let deletedCustomURLs: [String]?
+        /// Per-built-in-list update settings keyed by canonical URL.
+        var automaticUpdates: [String: Bool]? = nil
         /// Canonical URLs in the user's display order; nil until they reorder.
         var order: [String]? = nil
     }

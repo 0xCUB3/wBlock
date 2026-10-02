@@ -21,6 +21,7 @@ extension AppFilterManager {
                 merged.category = current.category
                 merged.isCustom = current.isCustom
                 merged.isSelected = current.isSelected
+                merged.updatesAutomatically = current.updatesAutomatically
                 merged.hasUserProvidedName = current.hasUserProvidedName
                 merged.description = current.description
                 merged.hasUserProvidedDescription = current.hasUserProvidedDescription

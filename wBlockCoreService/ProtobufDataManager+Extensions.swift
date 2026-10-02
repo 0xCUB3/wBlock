@@ -29,6 +29,8 @@ extension ProtobufDataManager {
             protoFilterList.url = filter.url.absoluteString
             protoFilterList.category = mapFilterListCategoryToProto(filter.category)
             protoFilterList.isSelected = filter.isSelected
+            // Keep the default absent so a stale metadata save is not mistaken for a preference edit.
+            if !filter.updatesAutomatically { protoFilterList.updatesAutomatically = false }
             protoFilterList.description_p = filter.description
             protoFilterList.version = filter.version
             if let sourceRuleCount = filter.sourceRuleCount {
@@ -134,6 +136,7 @@ extension ProtobufDataManager {
                 category: category,
                 isCustom: isCustom,
                 isSelected: protoData.isSelected && storedURL.isUsable,
+                updatesAutomatically: protoData.hasUpdatesAutomatically ? protoData.updatesAutomatically : true,
                 description: protoData.description_p,
                 version: protoData.version,
                 sourceRuleCount: protoData.hasSourceRuleCount ? Int(protoData.sourceRuleCount) : nil,

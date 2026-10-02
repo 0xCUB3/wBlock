@@ -74,6 +74,28 @@ struct FilterRefreshPlannerTests {
         )
         check(expired.map { $0.id } == [verified.id], "a per-list check older than the interval must refresh again")
 
+        var pinned = existing
+        pinned.updatesAutomatically = false
+        check(!pinned.canUpdateAutomatically, "automatic checks must skip opted-out lists")
+        check(existing.canUpdateAutomatically, "remote lists must default to automatic updates")
+        check(!local.canUpdateAutomatically, "local lists must never be automatically fetched")
+        let pinnedRefresh = FilterRefreshPlanner.filtersRequiringNetworkRefresh(
+            [pinned, missing], fileExists: exists, lastSuccessfulCheck: nil, interval: 0, now: now
+        )
+        check(pinnedRefresh.map(\.id) == [missing.id], "Apply must retain the cached version of an opted-out list")
+        let missingPinned = FilterRefreshPlanner.filtersRequiringNetworkRefresh(
+            [pinned], fileExists: { _ in false }, lastSuccessfulCheck: recent, interval: 3600, now: now
+        )
+        check(missingPinned.map(\.id) == [pinned.id], "Apply must still download missing content for opted-out lists")
+        let encoded = try! JSONEncoder().encode(pinned)
+        check(try! JSONDecoder().decode(FilterList.self, from: encoded).updatesAutomatically == false,
+              "JSON round trip must retain opt-out")
+        var json = try! JSONSerialization.jsonObject(with: encoded) as! [String: Any]
+        json.removeValue(forKey: "updatesAutomatically")
+        let oldData = try! JSONSerialization.data(withJSONObject: json)
+        check(try! JSONDecoder().decode(FilterList.self, from: oldData).updatesAutomatically,
+              "absent JSON preference must keep automatic updates enabled")
+
         let updater = try! String(
             contentsOf: URL(fileURLWithPath: "wBlock/FilterListUpdater.swift"),
             encoding: .utf8
