@@ -1101,9 +1101,11 @@ final class CloudSyncManager: ObservableObject {
                 Self.writeInlineUserListContent(id: inlineID, content: content)
             }
             let category = remoteCustom.resolvedCategory
+            var existingUpdatesAutomatically: Bool?
             if var index = filterLists.firstIndex(where: {
                 $0.isCustom && $0.url.absoluteString == remoteCustom.url
             }) {
+                existingUpdatesAutomatically = filterLists[index].updatesAutomatically
                 if let inlineID = Self.inlineUserListID(from: remoteCustom.url),
                    filterLists[index].id != inlineID
                 {
@@ -1155,7 +1157,7 @@ final class CloudSyncManager: ObservableObject {
                 category: category,
                 isCustom: true,
                 isSelected: mayApplyRemoteSelection ? remoteCustom.isSelected : false,
-                updatesAutomatically: remoteCustom.resolvedUpdatesAutomatically,
+                updatesAutomatically: remoteCustom.updatesAutomatically ?? existingUpdatesAutomatically ?? true,
                 description: remoteCustom.resolvedDescription ?? "User-added filter list.",
                 sourceRuleCount: nil,
                 hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
