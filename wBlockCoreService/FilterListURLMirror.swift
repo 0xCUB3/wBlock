@@ -3,6 +3,10 @@ import Foundation
 /// Fallback endpoints derived from a built-in list's primary URL.
 public enum FilterListURLMirror {
     public static func allowsFallback(primary: URL, fallback: URL) -> Bool {
+        // A mirror must keep the same platform, list, and optimized/full variant.
+        if let source = registryPath(for: primary), let mirror = registryPath(for: fallback), source != mirror {
+            return false
+        }
         guard fallback.host?.lowercased() == "filters.adtidy.org" else { return true }
         let primaryPath = primary.path.lowercased()
         let fallbackPath = fallback.path.lowercased()
@@ -10,8 +14,20 @@ public enum FilterListURLMirror {
             return false
         }
         let isSafariPrimary = primaryPath.contains("/platforms/extension/safari/filters/")
-            || primary.host?.lowercased() == "filters.adtidy.org"
+            || (primary.host?.lowercased() == "filters.adtidy.org" && primaryPath.hasPrefix("/extension/safari/filters/"))
         return !(isSafariPrimary && fallbackPath.contains("/ios/filters/"))
+    }
+
+    private static func registryPath(for url: URL) -> String? {
+        let host = url.host?.lowercased()
+        let path = url.path.lowercased()
+        if host == "filters.adtidy.org" {
+            return path.hasPrefix("/extension/safari/filters/") || path.hasPrefix("/ios/filters/") ? path : nil
+        }
+        guard (host == "raw.githubusercontent.com" && path.hasPrefix("/adguardteam/filtersregistry/"))
+            || (host == "cdn.jsdelivr.net" && path.hasPrefix("/gh/adguardteam/filtersregistry@")),
+              let range = path.range(of: "/platforms") else { return nil }
+        return String(path[range.upperBound...])
     }
 
     /// R2 public bucket for the Bypass Paywalls Clean list; the worker serves the
@@ -23,7 +39,14 @@ public enum FilterListURLMirror {
         guard primary.scheme?.lowercased() == "https",
               let host = primary.host?.lowercased() else { return [] }
         if primary == bpcBucketURL { return [bpcWorkerURL] }
-        if host == "cdn.jsdelivr.net" || host == "filters.adtidy.org" { return [] }
+        if host == "filters.adtidy.org" {
+            guard let path = registryPath(for: primary),
+                  let registry = URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms\(path)") else { return [] }
+            return ([registry] + fallbackURLs(for: registry)).filter {
+                $0 != primary && allowsFallback(primary: primary, fallback: $0)
+            }
+        }
+        if host == "cdn.jsdelivr.net" { return [] }
         guard host == "raw.githubusercontent.com" else { return [] }
         // Use the encoded path: URL.path decodes spaces and other characters, which
         // would make the derived URL invalid when it is rebuilt from a string.

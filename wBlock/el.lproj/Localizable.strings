@@ -744,6 +744,9 @@
 "Source Code" = "Πηγαίος κώδικας";
 "Source Rules" = "Κανόνες Πηγής";
 "Source URL" = "Διεύθυνση URL Πηγής";
+"Fallbacks" = "Εναλλακτικές διευθύνσεις";
+"If the source URL fails, wBlock tries these URLs in order." = "Αν η διεύθυνση πηγής αποτύχει, το wBlock δοκιμάζει αυτές τις διευθύνσεις με τη σειρά.";
+"No fallback URLs are configured for this list." = "Δεν έχουν οριστεί εναλλακτικές διευθύνσεις για αυτή τη λίστα.";
 "Start Fresh" = "Νέα αρχή";
 "Started %@" = "Ξεκίνησε %@";
 "Starting conversion..." = "Έναρξη μετατροπής...";

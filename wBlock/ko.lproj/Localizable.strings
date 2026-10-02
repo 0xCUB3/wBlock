@@ -744,6 +744,9 @@
 "Source Code" = "소스 코드";
 "Source Rules" = "소스 규칙";
 "Source URL" = "출처 URL";
+"Fallbacks" = "대체 URL";
+"If the source URL fails, wBlock tries these URLs in order." = "원본 URL에 연결할 수 없으면 wBlock이 다음 URL을 순서대로 시도합니다.";
+"No fallback URLs are configured for this list." = "이 목록에는 대체 URL이 설정되어 있지 않습니다.";
 "Start Fresh" = "새로 시작";
 "Started %@" = "시작됨 %@";
 "Starting conversion..." = "변환 시작 중...";

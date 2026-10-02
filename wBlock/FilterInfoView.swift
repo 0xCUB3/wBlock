@@ -98,7 +98,10 @@ struct FilterInfoView: View {
                 if liveFilter.url.scheme?.lowercased() == "http" || liveFilter.url.scheme?.lowercased() == "https" {
                     VStack(alignment: .leading, spacing: 6) {
                         InfoMetadataRow(title: "Source URL", value: liveFilter.url.absoluteString, url: liveFilter.url)
-                        CopyURLButton(url: liveFilter.url)
+                        HStack {
+                            CopyURLButton(url: liveFilter.url)
+                            FilterFallbacksButton(filter: liveFilter)
+                        }
                     }
                 }
                 if let size = cachedByteCount {

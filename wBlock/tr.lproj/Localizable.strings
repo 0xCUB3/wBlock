@@ -741,6 +741,9 @@
 "Source Code" = "Kaynak kodu";
 "Source Rules" = "Kaynak kural";
 "Source URL" = "Kaynak URL'si";
+"Fallbacks" = "Yedek URL’ler";
+"If the source URL fails, wBlock tries these URLs in order." = "Kaynak URL başarısız olursa wBlock bu URL’leri sırayla dener.";
+"No fallback URLs are configured for this list." = "Bu liste için yedek URL yapılandırılmamış.";
 "Start Fresh" = "Sıfırdan başla";
 "Started %@" = "%@ başlatıldı";
 "Starting conversion..." = "Dönüşüm başlatılıyor...";

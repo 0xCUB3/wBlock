@@ -744,6 +744,9 @@
 "Source Code" = "Исходный код";
 "Source Rules" = "Исходные правила";
 "Source URL" = "URL источника";
+"Fallbacks" = "Резервные URL";
+"If the source URL fails, wBlock tries these URLs in order." = "Если URL источника недоступен, wBlock пробует эти URL по порядку.";
+"No fallback URLs are configured for this list." = "Для этого списка не настроены резервные URL.";
 "Start Fresh" = "Начать заново";
 "Started %@" = "Запущено %@";
 "Starting conversion..." = "Начинаем преобразование...";

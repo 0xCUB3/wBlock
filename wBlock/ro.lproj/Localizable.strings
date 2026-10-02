@@ -741,6 +741,9 @@
 "Source Code" = "Cod sursă";
 "Source Rules" = "Reguli sursă";
 "Source URL" = "URL sursă";
+"Fallbacks" = "URL-uri alternative";
+"If the source URL fails, wBlock tries these URLs in order." = "Dacă URL-ul sursă nu funcționează, wBlock încearcă aceste URL-uri în ordine.";
+"No fallback URLs are configured for this list." = "Nu sunt configurate URL-uri alternative pentru această listă.";
 "Start Fresh" = "Pornește de la zero";
 "Started %@" = "Pornit %@";
 "Starting conversion..." = "Se începe conversia...";

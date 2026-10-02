@@ -741,6 +741,9 @@
 "Source Code" = "源代码";
 "Source Rules" = "源规则";
 "Source URL" = "来源 URL";
+"Fallbacks" = "备用 URL";
+"If the source URL fails, wBlock tries these URLs in order." = "如果来源 URL 访问失败，wBlock 会依次尝试这些 URL。";
+"No fallback URLs are configured for this list." = "此列表未配置备用 URL。";
 "Start Fresh" = "重新开始";
 "Started %@" = "已开始 %@";
 "Starting conversion..." = "开始转换...";

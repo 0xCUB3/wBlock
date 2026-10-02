@@ -744,6 +744,9 @@
 "Source Code" = "Quellcode";
 "Source Rules" = "Quellregeln";
 "Source URL" = "Quell-URL";
+"Fallbacks" = "Ersatz-URLs";
+"If the source URL fails, wBlock tries these URLs in order." = "Wenn die Quell-URL fehlschlägt, versucht wBlock diese URLs der Reihe nach.";
+"No fallback URLs are configured for this list." = "Für diese Liste sind keine Ersatz-URLs eingerichtet.";
 "Start Fresh" = "Neu beginnen";
 "Started %@" = "Gestartet %@";
 "Starting conversion..." = "Konvertierung wird gestartet...";

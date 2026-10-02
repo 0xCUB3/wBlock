@@ -56,7 +56,34 @@ import wBlockCoreService
         let mixed = FilterCatalogOverlay.parse(Data(mixedJSON.utf8), defaultURLs: [safari])!
         let mixedFallbacks = mixed.fallbacks(for: FilterList(name: "AdGuard Base Filter", url: safari, category: .ads))
         check(!mixedFallbacks.contains { $0.host == "evil.example" }, "attacker overlay fallback stripped")
-        check(mixedFallbacks.contains { $0.absoluteString == extraJs }, "trusted jsdelivr overlay fallback kept")
+        check(!mixedFallbacks.contains { $0.absoluteString == extraJs }, "full fallback cannot replace optimized source")
+        for filename in ["2.txt", "2_optimized.txt"] {
+            let cdn = URL(string: "https://filters.adtidy.org/extension/safari/filters/\(filename)")!
+            let registry = URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/\(filename)")!
+            let js = URL(string: "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/\(filename)")!
+            check(FilterListURLMirror.fallbackURLs(for: cdn) == [registry, js], "CDN primary keeps variant and order")
+        }
+        let mobileCDN = URL(string: "https://filters.adtidy.org/ios/filters/11_optimized.txt")!
+        check(FilterListURLMirror.fallbackURLs(for: mobileCDN).first == mobile, "iOS CDN primary keeps platform")
+        check(FilterListURLMirror.allowsFallback(primary: mobile, fallback: mobileCDN), "iOS registry can use iOS CDN")
+        check(!FilterListURLMirror.allowsFallback(primary: safari, fallback: mobileCDN), "Safari never uses iOS mirror")
+        let wrongList = URL(string: "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/3_optimized.txt")!
+        check(!FilterListURLMirror.allowsFallback(primary: safari, fallback: wrongList), "mirror keeps list identity")
+        check(FilterListURLMirror.fallbackURLs(for: URL(string: "https://filters.adtidy.org/unknown.txt")!).isEmpty, "unknown CDN path has no inferred mirror")
+        let generated = FilterListURLMirror.fallbackURLs(for: safari)
+        let orderedJSON = """
+        {"schemaVersion":1,"lists":[{"name":"Base","url":"\(safari)","fallbacks":["\(generated[1])","\(generated[0])","\(generated[1])"]}]}
+        """
+        let ordered = FilterCatalogOverlay.parse(Data(orderedJSON.utf8), defaultURLs: [safari])!
+        let builtIn = FilterList(name: "Base", url: safari, category: .ads)
+        check(ordered.fallbacks(for: builtIn) == generated.reversed(), "explicit order precedes inferred mirrors without duplicates")
+        FilterCatalogRemote.install(ordered)
+        check(FilterCatalogRemote.fallbacks(for: builtIn) == ordered.fallbacks(for: builtIn), "presentation and downloader share resolved chain")
+        var customCopy = builtIn
+        customCopy.isCustom = true
+        check(FilterCatalogRemote.fallbacks(for: customCopy) == generated, "overlay ordering does not change custom lists")
+        FilterCatalogRemote.install(nil)
+
         let custom = FilterList(name: "AdGuard Base Filter", url: URL(string: "https://example.com/custom.txt")!, category: .ads, isCustom: true)
         check(!mixed.fallbacks(for: custom).contains { $0.host == "filters.adtidy.org" }, "custom list does not inherit built-in fallbacks")
         check(FilterCatalogRemote.fallbacks(for: custom) == FilterListURLMirror.fallbackURLs(for: custom.url), "custom remote fallbacks are mirrors only")

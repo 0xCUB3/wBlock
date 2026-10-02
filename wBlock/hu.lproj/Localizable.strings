@@ -744,6 +744,9 @@
 "Source Code" = "Forráskód";
 "Source Rules" = "Forrásszabályok";
 "Source URL" = "Forrás URL";
+"Fallbacks" = "Tartalék URL-ek";
+"If the source URL fails, wBlock tries these URLs in order." = "Ha a forrás URL nem működik, a wBlock sorban megpróbálja ezeket az URL-eket.";
+"No fallback URLs are configured for this list." = "Ehhez a listához nincsenek beállítva tartalék URL-ek.";
 "Start Fresh" = "Tiszta indulás";
 "Started %@" = "Elindult %@";
 "Starting conversion..." = "Konverzió indítása...";

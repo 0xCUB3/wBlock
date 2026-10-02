@@ -55,10 +55,9 @@ public struct FilterCatalogOverlay: Codable, Equatable, Sendable {
         if filter.isCustom {
             return FilterListURLMirror.fallbackURLs(for: filter.url)
         }
-        var result = FilterListURLMirror.fallbackURLs(for: filter.url)
-        if let match = lists.first(where: { $0.url == filter.url }) {
-            result.append(contentsOf: match.fallbacks)
-        }
+        // Explicit catalog order takes precedence; derived mirrors fill any gaps.
+        var result = lists.first(where: { $0.url == filter.url })?.fallbacks ?? []
+        result.append(contentsOf: FilterListURLMirror.fallbackURLs(for: filter.url))
         var seen = Set<URL>()
         return result.filter {
             $0 != filter.url
