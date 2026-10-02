@@ -44,21 +44,7 @@ public enum SafariContentBlockerAffinityProcessor {
     fileprivate static let directivePrefix = "!#safari_cb_affinity"
 
     public static func sourceURL(for filter: FilterList, containerURL: URL) -> URL? {
-        let primaryURL = containerURL.appendingPathComponent(
-            ContentBlockerIncrementalCache.localFilename(for: filter)
-        )
-        if FileManager.default.fileExists(atPath: primaryURL.path) {
-            return primaryURL
-        }
-
-        guard filter.isCustom,
-              let legacyURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
-                  name: filter.name,
-                  containerURL: containerURL
-              ),
-              FileManager.default.fileExists(atPath: legacyURL.path)
-        else { return nil }
-        return legacyURL
+        ContentBlockerIncrementalCache.existingLocalFileURL(for: filter, containerURL: containerURL)
     }
 
     public static func snapshot(

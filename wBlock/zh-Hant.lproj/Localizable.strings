@@ -371,7 +371,6 @@
 "Extensions" = "擴充功能";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "針對廣告、追蹤器和其他不需要的內容的廣泛阻止清單。";
 "Failed" = "失敗";
-"Failed migrating custom filter filename" = "遷移自訂過濾器檔名失敗";
 "Failed reading user list file" = "讀取使用者列表檔案失敗";
 "Failed saving user list" = "儲存使用者列表失敗";
 "Failed saving user list edits" = "儲存使用者列表編輯失敗";
@@ -529,7 +528,6 @@
 "Content will be checked when you tap Add." = "點一下「加入」時將檢查內容。";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "區分大小寫";
-"Migrated custom filter filename" = "已遷移自訂過濾器檔名";
 "Minimal" = "精簡";
 "Missing conversion result for blocker" = "缺少攔截器的轉換結果";
 "More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "更多清單很少代表更好的攔截：大多數清單與建議的預設清單重疊，主要只是佔用規則容量。惱人內容過濾器和區域過濾器是主要的例外。";

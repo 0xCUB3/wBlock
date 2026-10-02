@@ -371,7 +371,6 @@
 "Extensions" = "拡張機能";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "広告、トラッカー、その他の望ましくないコンテンツを対象とした広範なブロックリスト。";
 "Failed" = "失敗";
-"Failed migrating custom filter filename" = "カスタムフィルターのファイル名の移行に失敗しました";
 "Failed reading user list file" = "ユーザーリストファイルの読み込みに失敗しました";
 "Failed saving user list" = "ユーザーリストの保存に失敗しました";
 "Failed saving user list edits" = "ユーザーリストの編集内容の保存に失敗しました";
@@ -529,7 +528,6 @@
 "Content will be checked when you tap Add." = "「追加」をタップすると内容が確認されます。";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "大文字と小文字を区別";
-"Migrated custom filter filename" = "カスタムフィルターのファイル名を移行しました";
 "Minimal" = "最小";
 "Missing conversion result for blocker" = "ブロッカーの変換結果が見つかりません";
 "More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "リストを増やしてもブロック効果が上がることはほとんどありません。大半は推奨デフォルトと重複し、主にルール容量を消費するだけです。迷惑要素フィルターと地域フィルターが主な例外です。";

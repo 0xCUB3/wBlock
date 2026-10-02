@@ -371,7 +371,6 @@
 "Extensions" = "Genişletmeler";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "Reklamları, izleyicileri ve diğer istenmeyen içerikleri hedefleyen kapsamlı engelleme listesi.";
 "Failed" = "Başarısız";
-"Failed migrating custom filter filename" = "Özel filtre dosya adı taşınamadı";
 "Failed reading user list file" = "Kullanıcı liste dosyası okunamadı";
 "Failed saving user list" = "Kullanıcı listesi kaydedilemedi";
 "Failed saving user list edits" = "Kullanıcı listesi düzenlemeleri kaydedilemedi";
@@ -529,7 +528,6 @@
 "Content will be checked when you tap Add." = "İçerik, Ekle öğesine dokunduğunuzda kontrol edilecektir.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "büyük/küçük harf";
-"Migrated custom filter filename" = "Özel filtre dosya adı taşındı";
 "Minimal" = "Sade";
 "Missing conversion result for blocker" = "Engelleyici için dönüşüm sonucu bulunamadı";
 "More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "Daha çok liste, daha iyi engelleme demek değildir. Çoğu liste, önerilen varsayılan filtrelere dâhildir ve sadece kural sınırınızı doldurur. Can sıkıcı öğeler ile bölgesel filtreler bu duruma dâhil değildir.";

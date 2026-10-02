@@ -101,41 +101,6 @@ class FilterListLoader {
         )
     }
 
-    /// Migrates legacy custom filter filenames (`<name>.txt`) to the current ID-based filename.
-    func migrateCustomFilterFileIfNeeded(_ filter: FilterList) {
-        guard filter.isCustom else { return }
-        guard let containerURL = getSharedContainerURL() else { return }
-
-        let newURL = containerURL.appendingPathComponent(
-            ContentBlockerIncrementalCache.localFilename(for: filter)
-        )
-        guard let oldURL = ContentBlockerIncrementalCache.safeLegacyFileURL(
-            name: filter.name,
-            containerURL: containerURL
-        ) else { return }
-
-        guard !FileManager.default.fileExists(atPath: newURL.path),
-            FileManager.default.fileExists(atPath: oldURL.path)
-        else { return }
-
-        do {
-            try FileManager.default.moveItem(at: oldURL, to: newURL)
-            Task {
-                await ConcurrentLogManager.shared.info(
-                    .system, LocalizedStrings.text("Migrated custom filter filename"),
-                    metadata: ["filter": filter.name, "to": newURL.lastPathComponent]
-                )
-            }
-        } catch {
-            Task {
-                await ConcurrentLogManager.shared.error(
-                    .system, LocalizedStrings.text("Failed migrating custom filter filename"),
-                    metadata: ["filter": filter.name, "error": LogErrorDescriber.describe(error)]
-                )
-            }
-        }
-    }
-
     /// Renames cached built-in content and delta baselines before catalog metadata is hydrated.
     func migrateBuiltInFilterFilesIfNeeded(_ filter: FilterList) {
         guard !filter.isCustom,
@@ -854,7 +819,6 @@ class FilterListLoader {
     /// Reads the content of a filter list from the local file system
     func readLocalFilterContent(_ filter: FilterList) -> String? {
         guard let containerURL = getSharedContainerURL() else { return nil }
-        migrateCustomFilterFileIfNeeded(filter)
         guard let fileURL = ContentBlockerIncrementalCache.existingLocalFileURL(
             for: filter,
             containerURL: containerURL

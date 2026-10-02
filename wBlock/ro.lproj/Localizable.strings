@@ -371,7 +371,6 @@
 "Extensions" = "Extensii";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "Lista extinsă de blocare care vizează reclame, instrumente de urmărire și alt conținut nedorit.";
 "Failed" = "Eșuat";
-"Failed migrating custom filter filename" = "Migrarea numelui fișierului filtrului personalizat a eșuat";
 "Failed reading user list file" = "Citirea fișierului listei de utilizator a eșuat";
 "Failed saving user list" = "Salvarea listei de utilizator a eșuat";
 "Failed saving user list edits" = "Salvarea modificărilor din lista de utilizator a eșuat";
@@ -529,7 +528,6 @@
 "Content will be checked when you tap Add." = "Conținutul va fi verificat când apeși Adaugă.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "ține cont de majuscule";
-"Migrated custom filter filename" = "Numele fișierului filtrului personalizat a fost migrat";
 "Minimal" = "Minim";
 "Missing conversion result for blocker" = "Lipsește rezultatul conversiei pentru blocant";
 "More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "Mai multe liste înseamnă rareori o blocare mai bună: majoritatea se suprapun cu listele implicite recomandate și consumă în principal capacitatea de reguli. Filtrele pentru elemente enervante și cele regionale sunt principalele excepții.";

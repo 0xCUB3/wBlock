@@ -371,7 +371,6 @@
 "Extensions" = "الإضافات";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "قائمة حظر واسعة النطاق تستهدف الإعلانات وأجهزة التتبع والمحتويات الأخرى غير المرغوب فيها.";
 "Failed" = "فشل";
-"Failed migrating custom filter filename" = "تعذّر ترحيل اسم ملف الفلتر المخصّص";
 "Failed reading user list file" = "تعذّر قراءة ملف قائمة المستخدم";
 "Failed saving user list" = "تعذّر حفظ قائمة المستخدم";
 "Failed saving user list edits" = "تعذّر حفظ تعديلات قائمة المستخدم";
@@ -529,7 +528,6 @@
 "Content will be checked when you tap Add." = "سيتم التحقق من المحتوى عند الضغط على إضافة.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "مطابقة حالة الأحرف";
-"Migrated custom filter filename" = "تمت ترحيل اسم ملف الفلتر المخصّص";
 "Minimal" = "الحد الأدنى";
 "Missing conversion result for blocker" = "نتيجة التحويل مفقودة لأداة الحظر";
 "More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "نادرًا ما يعني المزيد من القوائم حظرًا أفضل: فمعظمها يتداخل مع القوائم الافتراضية الموصى بها ويستهلك سعة القواعد بشكل أساسي. مرشحات الإزعاجات والمرشحات الإقليمية هي الاستثناءات الرئيسية.";

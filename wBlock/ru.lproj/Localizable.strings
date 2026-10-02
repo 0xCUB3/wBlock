@@ -371,7 +371,6 @@
 "Extensions" = "Расширения";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "Обширный черный список с таргетингом на рекламу, трекеры и другой нежелательный контент.";
 "Failed" = "Не удалось";
-"Failed migrating custom filter filename" = "Не удалось перенести имя файла пользовательского фильтра";
 "Failed reading user list file" = "Не удалось прочитать файл списка пользователя";
 "Failed saving user list" = "Не удалось сохранить список пользователя";
 "Failed saving user list edits" = "Не удалось сохранить изменения списка пользователя";
@@ -529,7 +528,6 @@
 "Content will be checked when you tap Add." = "Содержимое будет проверено после нажатия «Добавить».";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "учитывать регистр";
-"Migrated custom filter filename" = "Имя файла пользовательского фильтра перенесено";
 "Minimal" = "Минимальный";
 "Missing conversion result for blocker" = "Отсутствует результат преобразования для блокировщика";
 "More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "Больше списков редко означает лучшую блокировку: большинство пересекается с рекомендуемыми списками по умолчанию и в основном расходует емкость правил. Фильтры раздражителей и региональные фильтры — главные исключения.";

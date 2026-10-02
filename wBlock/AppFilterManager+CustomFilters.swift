@@ -343,8 +343,6 @@ extension AppFilterManager {
         }
 
         if let containerURL = loader.getSharedContainerURL() {
-            // The shared helper also removes safeLegacyFileURL paths with
-            // prefix: "diff-baseline-" so custom removal cannot drift from apply cleanup.
             _ = try? ContentBlockerIncrementalCache.removeFilterCacheFiles(
                 for: filter,
                 containerURL: containerURL
@@ -471,7 +469,6 @@ extension AppFilterManager {
             return
         }
 
-        loader.migrateCustomFilterFileIfNeeded(filter)
         guard let destinationURL = loader.localFileURL(for: filter) else {
             statusDescription = LocalizedStrings.text(
                 "Failed to access shared storage.",

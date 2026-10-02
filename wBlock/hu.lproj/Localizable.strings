@@ -371,7 +371,6 @@
 "Extensions" = "Bővítmények";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "Kiterjedt tiltólista hirdetések, nyomkövetők és egyéb nem kívánt tartalmak célzására.";
 "Failed" = "Sikertelen";
-"Failed migrating custom filter filename" = "Az egyéni szűrő fájlnevének migrációja sikertelen";
 "Failed reading user list file" = "A felhasználólista-fájl olvasása sikertelen";
 "Failed saving user list" = "A felhasználói lista mentése sikertelen";
 "Failed saving user list edits" = "A felhasználólista szerkesztéseinek mentése sikertelen";
@@ -529,7 +528,6 @@
 "Content will be checked when you tap Add." = "A tartalmat a Hozzáadás gomb megérintésekor ellenőrizzük.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "kis- és nagybetű";
-"Migrated custom filter filename" = "Az egyéni szűrő fájlnevének migrációja";
 "Minimal" = "Minimális";
 "Missing conversion result for blocker" = "Hiányzik a blokkoló konvertálási eredménye";
 "More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "A több lista ritkán jelent jobb blokkolást: a legtöbb átfedésben van az ajánlott alapértelmezett listákkal, és főleg a szabálykapacitást fogyasztja. A zavaró elemek szűrői és a regionális szűrők a fő kivételek.";

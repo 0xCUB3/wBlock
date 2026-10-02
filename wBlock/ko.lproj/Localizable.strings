@@ -371,7 +371,6 @@
 "Extensions" = "확장 프로그램";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "광고, 추적기 및 기타 원치 않는 콘텐츠를 타겟팅하는 광범위한 차단 목록입니다.";
 "Failed" = "실패";
-"Failed migrating custom filter filename" = "맞춤 필터 파일 이름 마이그레이션에 실패했습니다";
 "Failed reading user list file" = "사용자 목록 파일 읽기에 실패했습니다";
 "Failed saving user list" = "사용자 목록 저장에 실패했습니다";
 "Failed saving user list edits" = "사용자 목록 편집 내용 저장에 실패했습니다";
@@ -529,7 +528,6 @@
 "Content will be checked when you tap Add." = "추가를 탭하면 콘텐츠를 확인합니다.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "대소문자 구분";
-"Migrated custom filter filename" = "맞춤 필터 파일 이름을 마이그레이션했습니다";
 "Minimal" = "최소";
 "Missing conversion result for blocker" = "차단기의 변환 결과가 없습니다";
 "More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "목록을 늘린다고 차단이 더 잘되는 경우는 드뭅니다. 대부분 권장 기본 목록과 겹치며 주로 규칙 용량만 차지합니다. 방해 요소 필터와 지역 필터가 주요 예외입니다.";

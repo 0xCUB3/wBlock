@@ -371,7 +371,6 @@
 "Extensions" = "Rozszerzenia";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "Obszerna lista blokowania skierowana na reklamy, moduły śledzące i inne niechciane treści.";
 "Failed" = "Niepowodzenie";
-"Failed migrating custom filter filename" = "Nie udało się zmigrować nazwy pliku filtru niestandardowego";
 "Failed reading user list file" = "Nie udało się odczytać pliku listy użytkownika";
 "Failed saving user list" = "Nie udało się zapisać listy użytkownika";
 "Failed saving user list edits" = "Nie udało się zapisać zmian na liście użytkownika";
@@ -529,7 +528,6 @@
 "Content will be checked when you tap Add." = "Zawartość zostanie sprawdzona po stuknięciu Dodaj.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "uwzględnij wielkość liter";
-"Migrated custom filter filename" = "Zmigrowano nazwę pliku filtru niestandardowego";
 "Minimal" = "Minimalny";
 "Missing conversion result for blocker" = "Brak wyniku konwersji dla blokera";
 "More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "Więcej list rzadko oznacza lepsze blokowanie: większość pokrywa się z zalecanymi domyślnymi listami i głównie zużywa pojemność reguł. Filtry uciążliwości i filtry regionalne to główne wyjątki.";

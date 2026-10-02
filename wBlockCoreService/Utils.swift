@@ -475,14 +475,6 @@ public enum ContentBlockerIncrementalCache {
         if let fingerprint = fileFingerprint(at: primaryURL) {
             return "p|\(fingerprint)"
         }
-
-        guard filter.isCustom,
-              let legacyURL = safeLegacyFileURL(name: filter.name, containerURL: containerURL)
-        else { return "missing" }
-        if let fingerprint = fileFingerprint(at: legacyURL) {
-            return "l|\(fingerprint)"
-        }
-
         return "missing"
     }
 
@@ -531,20 +523,10 @@ public enum ContentBlockerIncrementalCache {
         fileManager: FileManager = .default
     ) throws -> [URL] {
         let filename = localFilename(for: filter)
-        var urls = [
+        let urls = [
             containerURL.appendingPathComponent(filename),
             containerURL.appendingPathComponent("diff-baseline-\(filename)")
         ]
-        if let legacyURL = safeLegacyFileURL(name: filter.name, containerURL: containerURL) {
-            urls.append(legacyURL)
-        }
-        if let legacyBaselineURL = safeLegacyFileURL(
-            name: filter.name,
-            containerURL: containerURL,
-            prefix: "diff-baseline-"
-        ) {
-            urls.append(legacyBaselineURL)
-        }
 
         var firstError: Error?
         for url in urls {
@@ -571,22 +553,12 @@ public enum ContentBlockerIncrementalCache {
             && !name.contains("\0")
     }
 
-    /// Resolves the current ID-based cache first, then a safe legacy name-based
-    /// cache. Callers can use the legacy result during startup while migration
-    /// finishes asynchronously.
     public static func existingLocalFileURL(
         for filter: FilterList,
         containerURL: URL
     ) -> URL? {
-        let currentURL = containerURL.appendingPathComponent(localFilename(for: filter))
-        if FileManager.default.fileExists(atPath: currentURL.path) {
-            return currentURL
-        }
-        guard filter.isCustom,
-              let legacyURL = safeLegacyFileURL(name: filter.name, containerURL: containerURL),
-              FileManager.default.fileExists(atPath: legacyURL.path)
-        else { return nil }
-        return legacyURL
+        let url = containerURL.appendingPathComponent(localFilename(for: filter))
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
     /// Returns a legacy name-based cache/baseline path only when the name is a

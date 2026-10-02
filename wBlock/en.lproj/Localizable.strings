@@ -371,7 +371,6 @@
 "Extensions" = "Extensions";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "Extensive blocklist targeting ads, trackers, and other unwanted content.";
 "Failed" = "Failed";
-"Failed migrating custom filter filename" = "Failed migrating custom filter filename";
 "Failed reading user list file" = "Failed reading user list file";
 "Failed saving user list" = "Failed saving user list";
 "Failed saving user list edits" = "Failed saving user list edits";
@@ -529,7 +528,6 @@
 "Content will be checked when you tap Add." = "Content will be checked when you tap Add.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "match case";
-"Migrated custom filter filename" = "Migrated custom filter filename";
 "Minimal" = "Minimal";
 "Missing conversion result for blocker" = "Missing conversion result for blocker";
 "More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions.";

@@ -702,13 +702,6 @@ class AppFilterManager: ObservableObject {
         filterLists = migratedFilterLists
         markCurrentStateApplied()
 
-        // Ensure custom filter files use ID-based filenames so users can rename lists safely.
-        Task.detached(priority: .utility) { [loader, migratedFilterLists] in
-            for filter in migratedFilterLists where filter.isCustom {
-                loader.migrateCustomFilterFileIfNeeded(filter)
-            }
-        }
-
         // Persist URL migrations and newly added defaults. Catalog metadata is hydrated in memory
         // because older app data does not store languages/trust levels.
         let hasURLMigrations = migratedFilterLists.contains { filter in
