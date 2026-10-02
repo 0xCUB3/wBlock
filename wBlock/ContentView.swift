@@ -1429,6 +1429,7 @@ struct AddFilterListView: View {
     @State private var metadataFetchGeneration = 0
     @State private var metadataFetchTask: Task<Void, Never>?
     @State private var isFetchingURLMetadata = false
+    @State private var submittedURLs: [URL]?
     @State private var isSaving: Bool = false
     @State private var showingFileImporter = false
     @State private var importErrorMessage: String?
@@ -1486,6 +1487,7 @@ struct AddFilterListView: View {
     }
 
     private var newURLs: [URL] {
+        if let submittedURLs { return submittedURLs }
         let existingKeys = Set(filterManager.filterLists.map { FilterListURLSupport.identityKey(for: $0.url) })
         var seen = Set<String>()
         return parsedURLInput.urls.filter { url in
@@ -1910,6 +1912,7 @@ struct AddFilterListView: View {
                 fetchMetadataForCurrentURLs()
                 return
             }
+            submittedURLs = urls
             isSaving = true
             Task { @MainActor in
                 for url in urls {
@@ -1928,7 +1931,6 @@ struct AddFilterListView: View {
                         description: description ?? automaticDescription
                     )
                 }
-                isSaving = false
                 dismiss()
             }
         case .paste:
