@@ -1269,9 +1269,14 @@ struct UserScriptInfoView: View {
     @State private var showingSource = false
     @State private var confirmingDelete = false
 
+    // Persisted metadata is already available; disk hydration only enriches it.
+    private var liveScript: UserScript? {
+        script ?? userScriptManager.userScript(withId: scriptId)
+    }
+
     var body: some View {
         Group {
-            if let script {
+            if let script = liveScript {
                 InfoSheetContainer {
                     InfoSheetHeader {
                         HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -1326,7 +1331,7 @@ struct UserScriptInfoView: View {
             UserScriptContentView(scriptId: scriptId, userScriptManager: userScriptManager, metadataOnly: true)
         }
         .sheet(isPresented: $showingPatterns) {
-            if let script { ScriptMatchPatternsSheet(script: script) }
+            if let script = liveScript { ScriptMatchPatternsSheet(script: script) }
         }
         .sheet(isPresented: $showingSettings) {
             UserScriptSettingsView(scriptID: scriptId, userScriptManager: userScriptManager)
@@ -1337,12 +1342,15 @@ struct UserScriptInfoView: View {
         }) {
             UserScriptContentView(
                 scriptId: scriptId, userScriptManager: userScriptManager,
-                startsEditing: script.map { !userScriptManager.isDefaultUserScript($0) && $0.isLocal } ?? false
+                startsEditing: liveScript.map { !userScriptManager.isDefaultUserScript($0) && $0.isLocal } ?? false
             )
         }
         .task(id: scriptId) {
             isLoading = true
-            script = await userScriptManager.userScriptEditorSnapshot(withId: scriptId)
+            let previous = script
+            let snapshot = await userScriptManager.userScriptEditorSnapshot(withId: scriptId)
+            guard !Task.isCancelled, script == previous else { return }
+            script = snapshot
             isLoading = false
         }
     }
@@ -1416,7 +1424,7 @@ struct UserScriptInfoView: View {
     }
 
     private func setDisplayCategory(_ category: UserScriptDisplayCategory) {
-        guard var currentScript = script,
+        guard var currentScript = liveScript,
               let mappedCategory = FilterListCategory.allCases.first(where: { $0.userScriptDisplayCategory == category })
         else { return }
         currentScript.category = mappedCategory
