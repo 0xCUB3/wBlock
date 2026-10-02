@@ -247,11 +247,14 @@ struct ApplyChangesProgressView: View {
 
     private var progressToolbar: some View {
         SheetBottomToolbar {
+            #if os(macOS)
+            Spacer()
+            #endif
             Button {
                 filterManager.cancelInFlightApply()
             } label: {
                 Text(String(localized: "Cancel"))
-                    .frame(maxWidth: .infinity)
+                    .sheetActionWidth()
             }
             .keyboardShortcut(.cancelAction)
         }
@@ -259,6 +262,9 @@ struct ApplyChangesProgressView: View {
 
     private var reviewToolbar: some View {
         SheetBottomToolbar {
+            #if os(macOS)
+            Spacer()
+            #endif
             Button {
                 Task { await startSelectedUpdates() }
             } label: {
@@ -270,7 +276,7 @@ struct ApplyChangesProgressView: View {
                             .controlSize(.small)
                     }
                 }
-                .frame(maxWidth: .infinity)
+                .sheetActionWidth()
             }
             .updateAndApplyButtonStyle()
             .disabled(selectedUpdateCount == 0 || isStartingSelectedUpdates)
@@ -510,6 +516,16 @@ private extension View {
             }
         #else
         self.liquidGlassCompat(cornerRadius: cornerRadius, material: .regularMaterial)
+        #endif
+    }
+
+    /// iOS sheet actions span the sheet; macOS buttons keep their natural width.
+    @ViewBuilder
+    func sheetActionWidth() -> some View {
+        #if os(iOS)
+        self.frame(maxWidth: .infinity)
+        #else
+        self
         #endif
     }
 
