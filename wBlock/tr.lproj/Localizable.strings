@@ -33,8 +33,8 @@
 "%@." = "%@.";
 "%@: %@" = "%@: %@";
 "%d entries" = "%d girdi";
-"%d list off" = "%d liste kapalı";
-"%d lists off" = "%d liste kapalı";
+"%d list off" = "%d liste devre dışı";
+"%d lists off" = "%d liste devre dışı";
 "%d rule" = "%d kural";
 "%d rules" = "%d kural";
 "%d script off" = "%d betik kapalı";
@@ -93,11 +93,11 @@
 "Adding…" = "Ekleniyor…";
 "Additional filter list for websites in Arabic." = "Arapça siteler için ek filtre listesi.";
 "Additional filter list for websites in Bulgarian." = "Bulgarca siteler için ek filtre listesi.";
-"Additional filter list for websites in Chinese. Already included in AdGuard Chinese filter." = "Çince siteler için ek filtre listesi. AdGuard Çince filtresine dâhildir.";
+"Additional filter list for websites in Chinese. Already included in AdGuard Chinese filter." = "Çince siteler için ek filtre listesi. AdGuard Çince filtresine dahildir.";
 "Additional filter list for websites in Czech and Slovak." = "Çekçe ve Slovakça siteler için ek filtre listesi.";
-"Additional filter list for websites in Dutch. Already included in AdGuard Dutch filter." = "Hollandaca siteler için ek filtre listesi. AdGuard Hollandaca filtresine dâhildir.";
-"Additional filter list for websites in French. Already included in AdGuard French filter." = "Fransızca siteler için ek filtre listesi. AdGuard Fransızca filtresine dâhildir.";
-"Additional filter list for websites in German. Already included in AdGuard German filter." = "Almanca siteler için ek filtre listesi. AdGuard Almanca filtresine dâhildir.";
+"Additional filter list for websites in Dutch. Already included in AdGuard Dutch filter." = "Hollandaca siteler için ek filtre listesi. AdGuard Hollandaca filtresine dahildir.";
+"Additional filter list for websites in French. Already included in AdGuard French filter." = "Fransızca siteler için ek filtre listesi. AdGuard Fransızca filtresine dahildir.";
+"Additional filter list for websites in German. Already included in AdGuard German filter." = "Almanca siteler için ek filtre listesi. AdGuard Almanca filtresine dahildir.";
 "Additional filter list for websites in Greek." = "Yunanca siteler için ek filtre listesi.";
 "Additional filter list for websites in Hebrew." = "İbranice siteler için ek filtre listesi.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "Hintçe, Tamilce ve diğer Dravid dilleri ile Hint dillerindeki siteler için ek filtre listesi.";
@@ -202,7 +202,7 @@
 "Blocks ads and trackers on various Macedonian websites." = "Çeşitli Makedon sitelerindeki reklamları ve izleyicileri engeller.";
 "Blocks ads and tracking servers to enhance privacy." = "Gizliliği artırmak için reklamları ve izleme sunucularını engeller.";
 "Blocks ads on the Chinese video platforms (MangoTV, DouYu and others)." = "Çin merkezli video platformlarındaki (MangoTV, DouYu ve diğerleri) reklamları engeller.";
-"Blocks website features that use generative AI and content labeled as AI-generated." = "Üretken yapay zeka kullanan web sitesi özelliklerini ve yapay zeka tarafından oluşturulduğu belirtilen içerikleri engeller.";
+"Blocks website features that use generative AI and content labeled as AI-generated." = "Üretken yapay zeka kullanan web sitesi özelliklerini ve yapay zeka tarafından üretildiği belirtilen içerikleri engeller.";
 "Blocks banners promoting mobile app downloads." = "Mobil uygulama indirmelerini teşvik eden afişleri engeller.";
 "Blocks cookie consent notices on web pages." = "Web sayfalarındaki çerez onay bildirimlerini engeller.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Diğer filtrelerin kapsamadığı çeşitli rahatsız edici öğeleri engeller.";
@@ -253,7 +253,7 @@
 "Completed" = "Tamamlandı";
 "Comprehensive ad-blocking rules by AdGuard." = "AdGuard tarafından sunulan kapsamlı reklam engelleme kuralları.";
 "Conditional check failed" = "Koşullu denetim başarısız oldu";
-"Contains new rules and fixes not yet included in other filters." = "Diğer filtrelere henüz dâhil edilmemiş yeni kuralları ve düzeltmeleri içerir.";
+"Contains new rules and fixes not yet included in other filters." = "Diğer filtrelere henüz dahil edilmemiş yeni kuralları ve düzeltmeleri içerir.";
 "Content filtering" = "İçerik filtreleme";
 "Continue" = "Devam";
 "Continue Setup" = "Kuruluma devam et";
@@ -420,7 +420,7 @@
 "Filter for ad blocking on Estonian sites." = "Estonya siteleri için reklam engelleme filtresi.";
 "Filter list for blocking ads and trackers on websites in Persian." = "Farsça sitelerde reklamları ve izleyicileri engellemek için filtre listesi.";
 "Filter list not found." = "Filtre listesi bulunamadı.";
-"Filter list that hides and blocks pop-ups, widgets, newsletters, push notifications, arrows, tagged internal links that are off-topic, and other irritating elements. Polish GDPR-Cookies Filters is already in it." = "Açılır pencereleri, araçları, bültenleri, anlık bildirimleri, okları, konu dışı etiketlenmiş dâhili bağlantıları ve diğer rahatsız edici öğeleri gizleyen ve engelleyen filtre listesi. Polish GDPR-Cookies Filters bu listeye dâhildir.";
+"Filter list that hides and blocks pop-ups, widgets, newsletters, push notifications, arrows, tagged internal links that are off-topic, and other irritating elements. Polish GDPR-Cookies Filters is already in it." = "Açılır pencereleri, araçları, bültenleri, anlık bildirimleri, okları, konu dışı etiketlenmiş dâhili bağlantıları ve diğer rahatsız edici öğeleri gizleyen ve engelleyen filtre listesi. Polish GDPR-Cookies Filters bu listeye dahildir.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "İspanyolca, Portekizce ve Brezilya Portekizcesi dillerindeki sitelerde reklamları özel olarak kaldıran filtre listesi.";
 "Filter list that specifically removes ads on websites in Turkish language." = "Türkçe dilindeki sitelerde reklamları özel olarak kaldıran filtre listesi.";
 "Filter list updated. Apply changes to enable it." = "Filtre listesi güncellendi. Etkinleştirmek için değişiklikleri uygulayın.";
@@ -469,16 +469,16 @@
 "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "Hufilter. Macarca dilindeki sitelerde reklamları özel olarak kaldıran filtre listesi.";
 "Hungarian filter" = "Hungarian filter";
 "Icelandic ABP List" = "Icelandic ABP List";
-"iCloud Sync" = "iCloud Eşitlemesi";
+"iCloud Sync" = "iCloud eşitlemesi";
 "This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can." = "iCloud eşitlemesi yalnızca App Store ve TestFlight sürümlerinde geçerlidir. GitHub/Homebrew sürümlerinde kullanılamaz.";
-"iCloud Sync couldn't access your iCloud account. Try again, then check your iCloud sign-in in Settings." = "iCloud Sync, iCloud hesabınıza erişemedi. Tekrar deneyin, ardından Ayarlar'da iCloud oturumunuzu kontrol edin.";
+"iCloud Sync couldn't access your iCloud account. Try again, then check your iCloud sign-in in Settings." = "iCloud Eşitlemesi, iCloud hesabınıza erişemedi. Lütfen tekrar deneyin, ardından Ayarlar menüsünden iCloud oturumunuzu kontrol edin.";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "iCloud Eşitlemesi, iCloud'a bağlanamadı. Bağlantınızı kontrol edin ve tekrar deneyin.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "iCloud saklama alanınız dolu olduğu için iCloud Eşitlemesi kaydedilemedi.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud Eşitlemesinin iCloud hesabınıza yazma izni yok.";
 "iCloud Sync hit an iCloud server error. Try again in a moment." = "iCloud Eşitlemesi sırasında bir iCloud sunucu hatası oluştu. Lütfen birazdan tekrar deneyin.";
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud Eşitlemesi geçici olarak kullanılamıyor. Lütfen birazdan tekrar deneyin.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "wBlock'u uygulanmamış değişikliklerle kapatırsanız, hiçbir şeyin unutulmaması için size bir hatırlatma göndereceğiz.";
-"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Özel Dolaşma kullanıyorsanız, wBlock Scripts ve 5 içerik engelleyici için Özel Dolaşmada İzin Ver seçeneğini de etkinleştirin. Bu ayar olmadan çerez bildirimleri ve diğer betikler Gizli pencerelerde çalışmaz.";
+"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Özel Dolaşma kullanıyorsanız, wBlock Scripts ve 5 içerik engelleyici için Özel Dolaşmada İzin Ver seçeneğini de etkinleştirin. Bu olmadan çerez bildirimleri ve diğer betikler Gizli pencerelerde çalışmaz.";
 "Ignoring invalid filter response" = "Geçersiz filtre yanıtı yok sayılıyor";
 "Import" = "İçe aktar";
 "Import Failed" = "İçe aktarılamadı";
@@ -491,7 +491,7 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "wBlock'un adı ve URL kalıplarını okuyabilmesi için // ==UserScript== meta veri bloğunu (veya kullanıcı stilleri için /* ==UserStyle== */) ekleyin.";
 "IndianList" = "IndianList";
 "Info" = "Bilgi";
-"Integrated" = "Dâhili";
+"Integrated" = "Yerleşik";
 "Info.plist missing" = "Info.plist eksik";
 "Initialized with %d filter list(s)." = "%d filtre listesiyle başlatıldı.";
 "International" = "Uluslararası";
@@ -532,7 +532,7 @@
 "Migrated custom filter filename" = "Özel filtre dosya adı taşındı";
 "Minimal" = "Sade";
 "Missing conversion result for blocker" = "Engelleyici için dönüşüm sonucu bulunamadı";
-"More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "Daha çok liste, daha iyi engelleme demek değildir. Çoğu liste, önerilen varsayılan filtrelere dâhildir ve sadece kural sınırınızı doldurur. Can sıkıcı öğeler ile bölgesel filtreler bu duruma dâhil değildir.";
+"More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "Daha çok liste, daha iyi engelleme demek değildir. Çoğu liste, önerilen varsayılan filtrelere dâhildir ve sadece kural sınırınızı doldurur. Can sıkıcı öğeler ile bölgesel filtreler bu duruma dahil değildir.";
 "Multipurpose" = "Çok amaçlı";
 "N/A" = "N/A";
 "Name" = "Ad";
@@ -604,7 +604,7 @@
 "Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
-"Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "Kötü amaçlı yazılım ve dolandırıcılık alan adlarını, kötü amaçlı yönlendirmeleri ve istenmeyen yazılım uyarılarını engeller.";
+"Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "Kötü amaçlı yazılım ve dolandırıcılık alan adlarını, kötü niyetli yönlendirmeleri ve istenmeyen yazılım uyarılarını engeller.";
 "Pick your base blocking level." = "Temel engelleme düzeyinizi seçin.";
 "Polish Annoyances Filters" = "Polish Annoyances Filters";
 "Polish Anti Adblock Filters" = "Polish Anti Adblock Filters";
@@ -694,7 +694,7 @@
 "Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites." = "Ukrayna, Kazak ve Özbek sitelerini de kapsayan Rusça filtre listesi.";
 "Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "Safari, her içerik engelleyici genişletmesini %@ kural ile sınırlar.\nToplam kapasite (tüm wBlock engelleyicileri): %@ kural.\n\n%@\n\nwBlock, kapasiteyi en üst düzeye çıkarmak için etkinleştirdiğiniz filtre listelerini birden fazla engelleyiciye dağıtır, ancak çok fazla büyük liste etkinleştirirseniz, Safari'nin sınırlamalarına takılabilirsiniz.";
 "Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari her içerik engelleyici genişletmesini 150.000 kuralla sınırlar. wBlock, kuralları 5 genişletme modülünün tamamına otomatik olarak dağıtır ve derler.";
-"Safari Rule Capacity" = "Safari Kural Kapasitesi";
+"Safari Rule Capacity" = "Safari kural kapasitesi";
 "Safari Rules" = "Safari kuralı";
 "Safari → Settings → Extensions" = "Safari → Ayarlar → Genişletmeler";
 "Save" = "Kaydet";
@@ -740,10 +740,10 @@
 "Source Code" = "Kaynak kodu";
 "Source Rules" = "Kaynak kural";
 "Source URL" = "Kaynak URL'si";
-"Fallbacks" = "Yedek URL’ler";
-"If the source URL fails, wBlock tries these URLs in order." = "Kaynak URL başarısız olursa wBlock bu URL’leri sırayla dener.";
-"No fallback URLs are configured for this list." = "Bu liste için yedek URL yapılandırılmamış.";
-"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "Bölgesel listeler, İngilizce ve uluslararası siteler için varsayılan filtrelere dile özgü kapsam ekler. Diliniz görünmüyorsa ayrı bir bölgesel liste mevcut değildir.";
+"Fallbacks" = "Yedekler";
+"If the source URL fails, wBlock tries these URLs in order." = "Kaynak URL'ye ulaşılamazsa wBlock şu URL'leri sırayla dener.";
+"No fallback URLs are configured for this list." = "Bu liste için tanımlanmış yedek URL bulunmuyor.";
+"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "Bölgesel listeler, İngilizce ve uluslararası siteler için geçerli olan varsayılan filtrelere dile özgü koruma ekler. Diliniz listede yoksa, ayrı bir bölgesel liste bulunmuyor demektir.";
 "Start Fresh" = "Sıfırdan başla";
 "Started %@" = "%@ başlatıldı";
 "Starting conversion..." = "Dönüşüm başlatılıyor...";
@@ -766,7 +766,7 @@
 "Sync Now" = "Şimdi eşitle";
 "Sync settings across devices" = "Ayarları cihazlar arasında eşitle";
 "Sync Timestamps with Device Time Zone" = "Zaman damgalarını cihaz saat dilimiyle eşitle";
-"Sync Userscript Enabled States" = "Kullanıcı betiği etkinleştirme durumlarını eşitle";
+"Sync Userscript Enabled States" = "Kullanıcı betiği etkin durumlarını eşitle";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Filtre seçimlerinizi, özel listelerinizi, kullanıcı betiklerinizi ve izin listenizi tüm cihazlarınızda eşitleyin.";
 "Sync: Checking…" = "Eşitleme: Kontrol ediliyor…";
 "Sync: Downloading…" = "Eşitleme: İndiriliyor…";
@@ -785,7 +785,7 @@
 "Tap to review userscript guidelines." = "Kullanıcı betiği yönergelerini incelemek için dokunun.";
 "Auto-update: %@" = "Otomatik güncelleme: %@";
 "Tell us where you browse so we can enable the right regional filters." = "Doğru bölgesel filtreleri etkinleştirebilmemiz için lütfen hangi sitelerde gezindiğinizi belirtin.";
-"Temporarily disable all content blockers without turning them off in Safari Settings." = "Safari ayarlarından genişletmeleri kapatmadan; içerik engelleyiciler, kullanıcı betikleri ve stiller dâhil tüm engellemeleri geçici olarak devre dışı bırakır.";
+"Temporarily disable all content blockers without turning them off in Safari Settings." = "Safari ayarlarından genişletmeleri kapatmadan; içerik engelleyiciler, kullanıcı betikleri ve stiller dahil tüm engellemeleri geçici olarak devre dışı bırakır.";
 "That doesn't look like a filter list." = "Bu bir filtre listesine benzemiyor.";
 "That name is already used by another filter list." = "Bu isim başka bir filtre listesi tarafından zaten kullanılıyor.";
 "That title is already used by another filter list." = "Bu başlık zaten başka bir filtre listesi tarafından kullanılıyor.";
@@ -918,7 +918,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Çerez bildirimlerini, açılır pencereleri, afişleri ve dikkat dağıtan diğer öğeleri kaldırır. Eksiksiz koruma için tüm AdGuard Can Sıkıcı Öğeler listesini etkinleştirin.";
 "Reset to Default" = "Varsayılana sıfırla";
 "Shows all filter lists across every category." = "Tüm kategorilerdeki bütün filtre listelerini gösterir.";
-"Adds rules tailored to websites and languages from specific regions." = "Belirli bölgelere ait sitelere ve dillere özel kurallar ekler. Önerilen listeler seçtiğiniz dillerle eşleşir; düşük güven düzeyindeki ve başka bir listeye zaten dahil olduğu belirtilen listeler hariç tutulur. Bir AdGuard bölgesel listesi EasyList tabanlı veya bağımsız bir listeyi içeriyorsa, AdGuard kullanırken bu ayrı listeyi kapalı bırakın.";
+"Adds rules tailored to websites and languages from specific regions." = "Belirli bölgelere ait web sitelerine ve dillere özel kurallar ekler. Önerilen listeler seçtiğiniz dillerle eşleşir; güvenilirliği düşük olan veya başka bir listeye dahil edildiği belirtilen listeleri hariç tutar. Bir AdGuard bölgesel listesi, EasyList tabanlı veya bağımsız bir liste içeriyorsa AdGuard'ı kullanırken o ayrı listeyi kapalı tutun.";
 "The end of Safari ad-blocking B.S." = "Safari'deki reklam engelleme dertlerine son.";
 "Welcome to wBlock!" = "wBlock'a hoş geldiniz!";
 "Whitelist" = "İzin listesi";
@@ -952,7 +952,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 /* Filter catalog additions */
 "Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
 "Adblock Warning Removal List" = "Adblock Warning Removal List";
-"AdGuard Mail Tracking Protection Filter" = "E-Posta İzleme Koruması Filtresi";
+"AdGuard Mail Tracking Protection Filter" = "AdGuard E-Posta İzleme Koruması Filtresi";
 "Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
 "AdGuard Allowlist" = "AdGuard İzin Listesi";
@@ -962,7 +962,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 
 /* Auto-update controls */
-"Auto-Update" = "Otomatik Güncelleme";
+"Auto-Update" = "Otomatik güncelleme";
 "Auto-Update Filters & Userscripts" = "Filtreleri ve kullanıcı betiklerini otomatik güncelle";
 "Update Now" = "Güncelle";
 
@@ -1006,7 +1006,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 "The file must include userscript or userstyle metadata." = "Dosya, kullanıcı betiği veya kullanıcı stili üst verilerini içermelidir.";
 
-"Failed to clear downloaded content; apply again to retry." = "İndirilen içerik temizlenemedi; tekrar denemek için yeniden uygulayın.";
+"Failed to clear downloaded content; apply again to retry." = "İndirilen içerik temizlenemedi. Tekrar denemek için yeniden uygulayın.";
 "Failed to resume blocking." = "Engelleme sürdürülemedi.";
 /* Userscript display categories */
 "Functionality" = "İşlevsellik";
@@ -1015,8 +1015,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Userscripts and scripts that add or restore useful website functionality." = "Sitelere yararlı işlevler kazandıran veya kaybolan işlevleri geri getiren kullanıcı betikleri.";
 "Userstyles and scripts that change the appearance of websites." = "Sitelerinin görünümünü değiştiren kullanıcı stilleri ve betikler.";
 "Custom, remote, and local scripts that do not have a more specific display category." = "Belirli bir kategoride yer almayan özel, harici ve yerel betikler.";
-"Beta userscripts and scripts that are still being evaluated or may change." = "Hâlâ değerlendirilen veya değişebilecek beta kullanıcı betikleri ve betikler.";
-"Enabled Userscripts & Userstyles" = "Etkin Kullanıcı Betikleri ve Kullanıcı Stilleri";
+"Beta userscripts and scripts that are still being evaluated or may change." = "Beta kullanıcı betikleri ve halen değerlendirilen veya değişebilecek betikler.";
+"Enabled Userscripts & Userstyles" = "Etkin kullanıcı betikleri ve kullanıcı stilleri";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Engellemeyi Duraklat özelliği, seçilen herhangi bir bileşen duraklatıldığı sürece etkindir. Sürdür seçeneği tüm bileşenleri eski haline getirir.";
 "Temporarily pause selected components without changing their enabled settings." = "Seçilen bileşenleri, etkin durumlarını değiştirmeden geçici olarak duraklatır.";
 
@@ -1089,11 +1089,11 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Enable All" = "Tümünü etkinleştir";
 
 
-"Supported" = "Destekleniyor";
-"Unsupported" = "Desteklenmiyor";
-"Duplicates" = "Tekrarlar";
+"Supported" = "Desteklenen";
+"Unsupported" = "Desteklenmeyen";
+"Duplicates" = "Tekrarlanan";
 "Comments" = "Yorumlar";
-"Needs wBlock Scripts" = "wBlock betiklerini gerektirir";
+"Needs wBlock Scripts" = "wBlock betiklerini gerektiren";
 "URL Parameters" = "URL parametreleri";
 "View" = "Görüntüle";
 
@@ -1182,25 +1182,25 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Overrides the Autoplay setting in the Safari extension." = "Safari genişletmesindeki Otomatik Oynatma ayarını geçersiz kılar.";
 "Runs every enabled userscript that matches this site." = "Bu siteyle eşleşen tüm etkin kullanıcı betiklerini çalıştırır.";
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Filtre listelerine ve betiklere uygular. Kullanıcı betikleri, öğe gizleyici ve otomatik oynatma ayarlarının açma/kapatma düğmeleri vardır.";
-"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "Eklenen siteler için filtre listelerini ve betikleri atlar. Kullanıcı betikleri, öğe gizleyici ve otomatik oynatma ayarlarının açma/kapatma düğmeleri vardır. Her site alt alan adlarını da kapsar.";
-"Websites" = "Web Siteleri";
+"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "Eklenen siteler filtre listelerini ve betikleri atlar. Kullanıcı betiklerinin, öğe gizleyicinin ve otomatik oynatmanın kendi açma kapatma ayarı vardır. Eklenen her site kendi alt alan adlarını da kapsar.";
+"Websites" = "Web siteleri";
 "Restart…" = "Yeniden başlat…";
 "Next update: %@" = "Sonraki güncelleme: %@";
 "Next update" = "Sonraki güncelleme";
 "Enable Experimental Filter?" = "Deneysel filtre etkinleştirilsin mi?";
-"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Deneysel filtreler, yeni kuralları ana listelere girmeden önce dener ve web sitelerini bozabilir. Yalnızca sorunları bulup bildirmeye hazırsan etkinleştir.";
-"Enable HaGeZi Pro Mini?" = "HaGeZi Pro Mini açılsın mı?";
-"HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Pro Mini bir DNS engelleme listesidir; özellikle reklam engelleyiciler için tasarlanmış bir filtre listesi değildir. Diğer listelere göre daha az kararlı olabilir ve web sitelerini bozan daha fazla yanlış pozitife yol açabilir.";
+"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Deneysel filtreler yeni kuralları ana listelere eklenmeden önce test etmek içindir ve sitelerin düzgün çalışmasını engelleyebilir. Bunları sadece site bozulmalarını tespit edip bildirebilecek düzeydeyseniz açın.";
+"Enable HaGeZi Pro Mini?" = "HaGeZi Pro Mini etkinleştirilsin mi?";
+"HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Pro Mini, reklam engelleyicilere özel bir filtre listesi değil, bir DNS engelleme listesidir. Diğer listelere göre daha kararsız çalışabilir ve siteleri bozabilecek yanlış engellemelere yol açabilir.";
 "Reset Ordering" = "Sıralamayı sıfırla";
 "Reset" = "Sıfırla";
-"Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Yerleşik listeleri ve kullanıcı betiklerini varsayılan kategori ve sıralamalarına döndürür, özel olanları Diğer’e taşır.";
+"Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Yerleşik listeleri ve kullanıcı betiklerini varsayılan kategorilerine ve sıralamalarına döndürür, özel olanları ise Diğer kategorisine taşır.";
 "No sites selected. Cosmetic filtering will not apply." = "Hiçbir site seçilmedi. Kozmetik filtreleme uygulanmayacak.";
-"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Bu sitelerde kozmetik filtreleme uygulanmayacak. Ağ engelleme uygulanmaya devam eder.";
-"When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Açıkken userscript etkinlik durumları iCloud üzerinden eşitlenir. Bu seçimleri yalnızca bu aygıtta tutmak için kapatın.";
+"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Bu sitelerde kozmetik filtreleme uygulanmayacak. Ağ düzeyinde engelleme ise devam eder.";
+"When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Etkinleştirildiğinde, kullanıcı betiği durum tercihleri iCloud ile eşitlenir. Tercihlerinizi sadece bu cihazda saklamak için bu ayarı kapatın.";
 "Rule Capacity" = "Kural Kapasitesi";
 "Next Update" = "Sonraki Güncelleme";
-"Syncing…" = "Eşzamanlanıyor…";
-"Never" = "Hiç";
+"Syncing…" = "Eşitleniyor…";
+"Never" = "Hiçbir zaman";
 "Just now" = "Az önce";
 "Due Now" = "Şimdi";
 "Capacity" = "Kapasite";
