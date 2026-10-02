@@ -469,6 +469,13 @@ struct UserScriptManagerView: View {
         ListActionsToolbar(
             searchText: $searchText,
             focusRequest: $showSearch,
+            showEnabledOnly: Binding(
+                get: { showOnlyEnabled },
+                set: {
+                    showOnlyEnabled = $0
+                    ProtobufDataManager.shared.setUserScriptShowEnabledOnly($0)
+                }
+            ),
             searchPrompt: "Search scripts"
         ) {
             Button {
@@ -478,17 +485,6 @@ struct UserScriptManagerView: View {
             }
         } apply: {
             applyChangesToolbarButton
-        } filter: {
-            Button {
-                showOnlyEnabled.toggle()
-                ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
-            } label: {
-                Label(
-                    "Show Enabled Only",
-                    systemImage: "line.3.horizontal.decrease")
-                    .foregroundStyle(showOnlyEnabled ? Color.accentColor : Color.primary)
-            }
-            .accessibilityAddTraits(showOnlyEnabled ? .isSelected : [])
         }
     }
 

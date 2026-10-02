@@ -392,6 +392,7 @@ struct ContentView: View {
         ListActionsToolbar(
             searchText: $filterSearchText,
             focusRequest: $showFilterSearch,
+            showEnabledOnly: $showOnlyEnabledLists,
             searchPrompt: "Search filters"
         ) {
             Button {
@@ -401,16 +402,6 @@ struct ContentView: View {
             }
         } apply: {
             applyChangesToolbarButton
-        } filter: {
-            Button {
-                showOnlyEnabledLists.toggle()
-            } label: {
-                Label(
-                    "Show Enabled Only",
-                    systemImage: "line.3.horizontal.decrease")
-                    .foregroundStyle(showOnlyEnabledLists ? Color.accentColor : Color.primary)
-            }
-            .accessibilityAddTraits(showOnlyEnabledLists ? .isSelected : [])
         }
     }
 

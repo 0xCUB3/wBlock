@@ -35,16 +35,24 @@ extension View {
 
 /// Search leads the macOS actions; on iOS Update/Apply sits leading and
 /// Show Enabled, Search and Add stay trailing in their own containers.
-struct ListActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifier {
+struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
     @Binding var searchText: String
     @Binding var focusRequest: Bool
+    @Binding var showEnabledOnly: Bool
     let searchPrompt: LocalizedStringKey
     @ViewBuilder let primary: () -> Primary
     @ViewBuilder let apply: () -> Apply
-    @ViewBuilder let filter: () -> Filter
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
+
+    /// A button-style toggle, so the system draws the selected state.
+    private var filter: some View {
+        Toggle(isOn: $showEnabledOnly) {
+            Label("Show Enabled Only", systemImage: "line.3.horizontal.decrease")
+        }
+        .toggleStyle(.button)
+    }
 
     func body(content: Content) -> some View {
         #if os(macOS)
@@ -57,7 +65,7 @@ struct ListActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifie
                 .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItemGroup(placement: .primaryAction) {
                     apply()
-                    filter()
+                    filter
                 }
                 .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItem(placement: .primaryAction) {
@@ -77,7 +85,7 @@ struct ListActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifie
                 }
                 ToolbarItemGroup(placement: .primaryAction) {
                     apply()
-                    filter()
+                    filter
                 }
                 ToolbarItem(placement: .primaryAction) { primary() }
             }
@@ -87,7 +95,7 @@ struct ListActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifie
             content.toolbar {
                 ToolbarItem(placement: .topBarLeading) { apply() }
                     .toolbarVisibilityPriorityCompat(.high)
-                ToolbarItem(placement: .topBarTrailing) { filter() }
+                ToolbarItem(placement: .topBarTrailing) { filter }
                 ToolbarSpacer(.fixed, placement: .topBarTrailing)
                 if horizontalSizeClass != .regular {
                     DefaultToolbarItem(kind: .search, placement: .topBarTrailing)
@@ -98,7 +106,7 @@ struct ListActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifie
         } else {
             content.toolbar {
                 ToolbarItem(placement: .navigationBarLeading) { apply() }
-                ToolbarItem(placement: .navigationBarTrailing) { filter() }
+                ToolbarItem(placement: .navigationBarTrailing) { filter }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if horizontalSizeClass != .regular {
                         Button { focusRequest = true } label: {
