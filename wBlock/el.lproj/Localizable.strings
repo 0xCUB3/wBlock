@@ -1011,7 +1011,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "The file must include userscript or userstyle metadata." = "Το αρχείο πρέπει να περιλαμβάνει μεταδεδομένα userscript ή userstyle.";
 
-"Failed to clear downloaded custom filter state; apply again to retry." = "Δεν ήταν δυνατή η εκκαθάριση της κατάστασης του ληφθέντος προσαρμοσμένου φίλτρου· εφαρμόστε ξανά για νέα προσπάθεια.";
+"Failed to clear downloaded content; apply again to retry." = "Δεν ήταν δυνατή η εκκαθάριση του ληφθέντος περιεχομένου· εφαρμόστε ξανά για νέα προσπάθεια.";
 "Failed to resume blocking." = "Αποτυχία συνέχισης του αποκλεισμού.";
 /* Userscript display categories */
 "Functionality" = "Λειτουργικότητα";

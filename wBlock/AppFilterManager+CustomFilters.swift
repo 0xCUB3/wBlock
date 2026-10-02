@@ -305,8 +305,8 @@ extension AppFilterManager {
     private func recordDownloadedStateCleanupFailure(filters: [FilterList], error: String) async {
         let names = filters.map(\.name).joined(separator: ", ")
         let message = LocalizedStrings.text(
-            "Failed to clear downloaded custom filter state; apply again to retry.",
-            comment: "Remote custom filter cleanup failure status"
+            "Failed to clear downloaded content; apply again to retry.",
+            comment: "Remote filter or userscript download cleanup failure status"
         )
         hasError = true
         statusDescription = message

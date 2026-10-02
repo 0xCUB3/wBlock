@@ -1008,7 +1008,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 
 "The file must include userscript or userstyle metadata." = "Le fichier doit contenir les métadonnées d’un userscript ou d’un userstyle.";
 
-"Failed to clear downloaded custom filter state; apply again to retry." = "Impossible d’effacer l’état du filtre personnalisé téléchargé ; appliquez à nouveau pour réessayer.";
+"Failed to clear downloaded content; apply again to retry." = "Impossible d’effacer le contenu téléchargé ; appliquez à nouveau pour réessayer.";
 "Failed to resume blocking." = "Impossible de reprendre le blocage.";
 /* Userscript display categories */
 "Functionality" = "Fonctionnalités";

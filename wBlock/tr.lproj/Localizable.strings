@@ -1007,7 +1007,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 "The file must include userscript or userstyle metadata." = "Dosya, kullanıcı betiği veya kullanıcı stili üst verilerini içermelidir.";
 
-"Failed to clear downloaded custom filter state; apply again to retry." = "İndirilen özel filtre durumu temizlenemedi; tekrar denemek için yeniden uygulayın.";
+"Failed to clear downloaded content; apply again to retry." = "İndirilen içerik temizlenemedi; tekrar denemek için yeniden uygulayın.";
 "Failed to resume blocking." = "Engelleme sürdürülemedi.";
 /* Userscript display categories */
 "Functionality" = "İşlevsellik";

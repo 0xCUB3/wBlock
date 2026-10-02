@@ -1011,7 +1011,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 "The file must include userscript or userstyle metadata." = "A fájlnak userscript- vagy userstyle-metaadatokat kell tartalmaznia.";
 
-"Failed to clear downloaded custom filter state; apply again to retry." = "Nem sikerült törölni a letöltött egyéni szűrő állapotát; az újrapróbálkozáshoz alkalmazza ismét a módosításokat.";
+"Failed to clear downloaded content; apply again to retry." = "Nem sikerült törölni a letöltött tartalmat; az újrapróbálkozáshoz alkalmazza ismét a módosításokat.";
 "Failed to resume blocking." = "Nem sikerült folytatni a blokkolást.";
 /* Userscript display categories */
 "Functionality" = "Funkciók";

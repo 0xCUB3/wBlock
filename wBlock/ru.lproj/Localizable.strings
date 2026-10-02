@@ -1011,7 +1011,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "The file must include userscript or userstyle metadata." = "Файл должен содержать метаданные userscript или userstyle.";
 
-"Failed to clear downloaded custom filter state; apply again to retry." = "Не удалось очистить состояние загруженного пользовательского фильтра; примените изменения ещё раз, чтобы повторить попытку.";
+"Failed to clear downloaded content; apply again to retry." = "Не удалось очистить загруженное содержимое; примените изменения ещё раз, чтобы повторить попытку.";
 "Failed to resume blocking." = "Не удалось возобновить блокировку.";
 /* Userscript display categories */
 "Functionality" = "Функциональность";

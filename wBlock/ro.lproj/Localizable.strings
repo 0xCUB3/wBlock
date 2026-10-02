@@ -1008,7 +1008,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 "The file must include userscript or userstyle metadata." = "Fișierul trebuie să includă metadate pentru userscript sau userstyle.";
 
-"Failed to clear downloaded custom filter state; apply again to retry." = "Starea filtrului personalizat descărcat nu a putut fi eliminată; aplică din nou pentru a reîncerca.";
+"Failed to clear downloaded content; apply again to retry." = "Conținutul descărcat nu a putut fi eliminat; aplică din nou pentru a reîncerca.";
 "Failed to resume blocking." = "Reluarea blocării a eșuat.";
 /* Userscript display categories */
 "Functionality" = "Funcționalitate";

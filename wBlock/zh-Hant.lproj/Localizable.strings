@@ -1011,7 +1011,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "The file must include userscript or userstyle metadata." = "檔案必須包含使用者腳本或使用者樣式中繼資料。";
 
-"Failed to clear downloaded custom filter state; apply again to retry." = "無法清除已下載自訂過濾器的狀態；請重新套用以重試。";
+"Failed to clear downloaded content; apply again to retry." = "無法清除已下載的內容；請重新套用以重試。";
 "Failed to resume blocking." = "無法恢復封鎖。";
 /* Userscript display categories */
 "Functionality" = "功能";

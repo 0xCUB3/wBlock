@@ -1008,7 +1008,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 
 "The file must include userscript or userstyle metadata." = "Plik musi zawierać metadane userscriptu lub userstyle.";
 
-"Failed to clear downloaded custom filter state; apply again to retry." = "Nie udało się wyczyścić stanu pobranego niestandardowego filtra; zastosuj ponownie, aby spróbować jeszcze raz.";
+"Failed to clear downloaded content; apply again to retry." = "Nie udało się wyczyścić pobranej zawartości; zastosuj ponownie, aby spróbować jeszcze raz.";
 "Failed to resume blocking." = "Nie udało się wznowić blokowania.";
 /* Userscript display categories */
 "Functionality" = "Funkcjonalność";
