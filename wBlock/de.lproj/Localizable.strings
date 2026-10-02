@@ -769,7 +769,7 @@
 "Sync across devices" = "Geräteübergreifend synchronisieren";
 "Sync Now" = "Jetzt synchronisieren";
 "Sync settings across devices" = "Einstellungen geräteübergreifend synchronisieren";
-"Sync timestamps with device timezone" = "Zeitstempel mit der Gerätezeitzone synchronisieren";
+"Sync Timestamps with Device Time Zone" = "Zeitstempel mit der Gerätezeitzone synchronisieren";
 "Sync Userscript Enabled States" = "Aktivierungsstatus von Userscripts synchronisieren";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Synchronisiere deine Filterauswahl, benutzerdefinierte Listen, Userskripte und Whitelist geräteübergreifend.";
 "Sync: Checking…" = "Sync: Prüft…";

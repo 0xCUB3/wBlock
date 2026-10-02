@@ -318,7 +318,7 @@ struct SettingsView: View {
     private var logTimestampControls: some View {
         Toggle(isOn: usesDeviceTimeZoneBinding) {
             rowLabel(
-                "Sync timestamps with device timezone",
+                "Sync Timestamps with Device Time Zone",
                 detail: Text("Controls the time zone used when displaying and exporting log timestamps.")
             )
         }

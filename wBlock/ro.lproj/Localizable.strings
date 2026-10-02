@@ -766,7 +766,7 @@
 "Sync across devices" = "Sincronizare între dispozitive";
 "Sync Now" = "Sincronizează acum";
 "Sync settings across devices" = "Sincronizează setările între dispozitive";
-"Sync timestamps with device timezone" = "Sincronizează marcajele temporale cu fusul orar al dispozitivului";
+"Sync Timestamps with Device Time Zone" = "Sincronizează marcajele temporale cu fusul orar al dispozitivului";
 "Sync Userscript Enabled States" = "Sincronizează stările de activare ale userscripturilor";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Sincronizează între dispozitive selecțiile de filtre, listele personalizate, scripturile utilizator și lista albă.";
 "Sync: Checking…" = "Sincronizare: Se verifică…";

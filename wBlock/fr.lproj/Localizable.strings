@@ -766,7 +766,7 @@
 "Sync across devices" = "Synchroniser sur tous les appareils";
 "Sync Now" = "Synchroniser maintenant";
 "Sync settings across devices" = "Synchroniser les réglages entre appareils";
-"Sync timestamps with device timezone" = "Synchroniser les horodatages avec le fuseau horaire de l’appareil";
+"Sync Timestamps with Device Time Zone" = "Synchroniser les horodatages avec le fuseau horaire de l’appareil";
 "Sync Userscript Enabled States" = "Synchroniser les états d'activation des userscripts";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Synchronisez vos sélections de filtres, listes personnalisées, scripts utilisateur et liste blanche entre vos appareils.";
 "Sync: Checking…" = "Synchronisation : Vérification…";

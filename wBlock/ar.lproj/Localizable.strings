@@ -769,7 +769,7 @@
 "Sync across devices" = "المزامنة عبر الأجهزة";
 "Sync Now" = "المزامنة الآن";
 "Sync settings across devices" = "مزامنة الإعدادات عبر الأجهزة";
-"Sync timestamps with device timezone" = "مزامنة الطوابع الزمنية مع المنطقة الزمنية للجهاز";
+"Sync Timestamps with Device Time Zone" = "مزامنة الطوابع الزمنية مع المنطقة الزمنية للجهاز";
 "Sync Userscript Enabled States" = "مزامنة حالات تفعيل سكربتات المستخدم";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "زامن اختيارات الفلاتر والقوائم المخصصة وسكريبتات المستخدم والقائمة البيضاء عبر الأجهزة.";
 "Sync: Checking…" = "المزامنة: جارٍ التحقق…";

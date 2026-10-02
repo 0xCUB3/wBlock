@@ -769,7 +769,7 @@
 "Sync across devices" = "Синхронизация между устройствами";
 "Sync Now" = "Синхронизировать сейчас";
 "Sync settings across devices" = "Синхронизировать настройки между устройствами";
-"Sync timestamps with device timezone" = "Синхронизировать метки времени с часовым поясом устройства";
+"Sync Timestamps with Device Time Zone" = "Синхронизировать метки времени с часовым поясом устройства";
 "Sync Userscript Enabled States" = "Синхронизировать состояния включения пользовательских скриптов";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Синхронизируйте выбранные фильтры, пользовательские списки, пользовательские скрипты и белый список между устройствами.";
 "Sync: Checking…" = "Синхронизация: Проверка…";

@@ -769,7 +769,7 @@
 "Sync across devices" = "Szinkronizálás az eszközök között";
 "Sync Now" = "Szinkronizálás most";
 "Sync settings across devices" = "Beállítások szinkronizálása az eszközök között";
-"Sync timestamps with device timezone" = "Időbélyegek szinkronizálása az eszköz időzónájával";
+"Sync Timestamps with Device Time Zone" = "Időbélyegek szinkronizálása az eszköz időzónájával";
 "Sync Userscript Enabled States" = "Userscript-bekapcsolási állapotok szinkronizálása";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Szinkronizáld az eszközök között a szűrőválasztásaidat, egyéni listáidat, felhasználói szkriptjeidet és az engedélyezőlistádat.";
 "Sync: Checking…" = "Szinkronizálás: Ellenőrzés…";

@@ -769,7 +769,7 @@
 "Sync across devices" = "여러 기기에서 동기화";
 "Sync Now" = "지금 동기화";
 "Sync settings across devices" = "기기 간 설정 동기화";
-"Sync timestamps with device timezone" = "타임스탬프를 기기 시간대와 동기화";
+"Sync Timestamps with Device Time Zone" = "타임스탬프를 기기 시간대와 동기화";
 "Sync Userscript Enabled States" = "유저스크립트 활성화 상태 동기화";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "필터 선택, 사용자 지정 목록, 유저스크립트, 허용 목록을 기기 간에 동기화하세요.";
 "Sync: Checking…" = "동기화: 확인 중…";

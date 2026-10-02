@@ -769,7 +769,7 @@
 "Sync across devices" = "跨裝置同步";
 "Sync Now" = "立即同步";
 "Sync settings across devices" = "跨裝置同步設定";
-"Sync timestamps with device timezone" = "將時間戳記與裝置時區同步";
+"Sync Timestamps with Device Time Zone" = "將時間戳記與裝置時區同步";
 "Sync Userscript Enabled States" = "同步使用者腳本啟用狀態";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "在裝置間同步你的過濾器選擇、自訂清單、使用者腳本與白名單。";
 "Sync: Checking…" = "同步：檢查中…";

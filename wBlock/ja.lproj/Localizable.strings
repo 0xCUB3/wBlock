@@ -769,7 +769,7 @@
 "Sync across devices" = "デバイス間で同期する";
 "Sync Now" = "今すぐ同期";
 "Sync settings across devices" = "設定をデバイス間で同期";
-"Sync timestamps with device timezone" = "タイムスタンプをデバイスのタイムゾーンに同期";
+"Sync Timestamps with Device Time Zone" = "タイムスタンプをデバイスのタイムゾーンに同期";
 "Sync Userscript Enabled States" = "ユーザースクリプトの有効状態を同期";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "フィルターの選択、カスタムリスト、ユーザースクリプト、ホワイトリストをデバイス間で同期します。";
 "Sync: Checking…" = "同期: 確認中…";
