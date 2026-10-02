@@ -23,8 +23,9 @@ enum FilterMetadataPersistence {
                 if let count = update.sourceRuleCount { record.sourceRuleCount = Int32(count) }
                 else { record.clearSourceRuleCount() }
             }
-            // Admission alone does not change when the source was last updated.
-            if record != records[index] { record.lastUpdated = Int64(Date().timeIntervalSince1970) }
+            if update.lastUpdated != original.lastUpdated, let date = update.lastUpdated {
+                record.lastUpdated = Int64(date.timeIntervalSince1970)
+            }
             if update.uniqueRuleCount != original.uniqueRuleCount {
                 if let count = update.uniqueRuleCount { record.admittedSourceRuleCount = Int32(count) }
                 else { record.clearAdmittedSourceRuleCount() }

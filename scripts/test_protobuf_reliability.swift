@@ -13,6 +13,7 @@ struct ProtobufReliabilityTests {
         await testFilterAutomaticUpdates(root: root.appendingPathComponent("filter-updates"))
         await testBackgroundMetadataPreservesConfiguration(root: root.appendingPathComponent("background-metadata"))
         await testUnchangedMetadataPreservesForegroundDownload(root: root.appendingPathComponent("untouched-metadata"))
+        await testSourceTimestampOwnership(root: root.appendingPathComponent("source-timestamp"))
         await testInlineFilterSelection(root: root.appendingPathComponent("inline-filters"))
         await testDurableMigrationAndCorruptionRecovery(root: root.appendingPathComponent("recovery"))
         await testMissingMainAndScriptTimestamp(root: root.appendingPathComponent("missing-main"))
@@ -178,6 +179,7 @@ struct ProtobufReliabilityTests {
         downloaded[0].version = "v2"
         downloaded[0].sourceRuleCount = 200
         downloaded[0].uniqueRuleCount = 150
+        downloaded[0].lastUpdated = Date(timeIntervalSince1970: 2_000)
         await foreground.updateFilterLists(downloaded)
         let expected = foreground.getFilterLists()[0]
         // This refresh must not turn an old operation snapshot into an explicit edit.
@@ -194,6 +196,43 @@ struct ProtobufReliabilityTests {
         let result = foreground.getFilterLists()[0]
         expect(result.version == "v2" && result.sourceRuleCount == 200 && result.uniqueRuleCount == 80
                && result.lastUpdated == expected.lastUpdated, "admission changes only its count")
+    }
+
+    private static func testSourceTimestampOwnership(root: URL) async {
+        let suite = "test.wblock.source-timestamp.\(UUID())"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let manager = await makeManager(root: root, standard: defaults, group: defaults)
+        await manager.loadData()
+        var seed = FilterList(name: "Unversioned", url: URL(string: "https://example.com/unversioned.txt")!,
+                              category: .custom, isCustom: true)
+        seed.sourceRuleCount = 10
+        seed.lastUpdated = Date(timeIntervalSince1970: 1_000)
+        await manager.updateFilterLists([seed])
+        let baseline = manager.getFilterLists()
+        var fetched = baseline
+        let fetchedAt = Date(timeIntervalSince1970: 1_600)
+        fetched[0].lastUpdated = fetchedAt
+        let fetchedSave = await manager.updateFilterMetadata(fetched, baseline: baseline)
+        expect(fetchedSave, "same-version source download persists")
+        expect(manager.getFilterLists()[0].lastUpdated == fetchedAt,
+               "a same-version, same-count download records its fetch timestamp")
+        let hydrationBaseline = manager.getFilterLists()
+        var hydrated = hydrationBaseline
+        hydrated[0].sourceRuleCount = 11
+        let hydrationSave = await manager.updateFilterMetadata(hydrated, baseline: hydrationBaseline)
+        expect(hydrationSave, "source count hydration persists")
+        var configured = manager.getFilterLists()
+        configured[0].isSelected = true
+        configured[0].updatesAutomatically = false
+        configured[0].lastUpdated = nil
+        let configurationSave = await manager.updateFilterLists(configured)
+        expect(configurationSave, "configuration with an absent date persists")
+        let restarted = await makeManager(root: root, standard: defaults, group: defaults)
+        await restarted.loadData()
+        expect(restarted.getFilterLists()[0].sourceRuleCount == 11
+               && restarted.getFilterLists()[0].lastUpdated == fetchedAt,
+               "hydration and configuration preserve the fetch timestamp across restart")
     }
 
     private static func testInlineFilterSelection(root: URL) async {

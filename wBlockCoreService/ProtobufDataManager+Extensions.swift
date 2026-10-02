@@ -20,7 +20,8 @@ extension ProtobufDataManager {
         // cross-process disk snapshot. Otherwise a concurrently inserted filter that
         // this caller has never seen can be mistaken for a local deletion.
         let localBaseline = appData.filterLists
-        let localBaselineIDs = Set(localBaseline.map(\.id))
+        let localBaselineByID = Dictionary(localBaseline.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
+        let localBaselineIDs = Set(localBaselineByID.keys)
         let deletedIDs = localBaselineIDs.subtracting(incomingIDs)
         let protoFilterLists = filterLists.map { filter -> Wblock_Data_FilterListData in
             var protoFilterList = Wblock_Data_FilterListData()
@@ -36,7 +37,8 @@ extension ProtobufDataManager {
             if let sourceRuleCount = filter.sourceRuleCount {
                 protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
             }
-            protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
+            protoFilterList.lastUpdated = filter.lastUpdated.map { Int64($0.timeIntervalSince1970) }
+                ?? localBaselineByID[protoFilterList.id]?.lastUpdated ?? 0
             protoFilterList.isCustom = shouldPersistCustomFlag(for: filter)
             protoFilterList.userProvidedName = filter.hasUserProvidedName
             protoFilterList.userProvidedDescription = filter.hasUserProvidedDescription
@@ -149,6 +151,7 @@ extension ProtobufDataManager {
                 description: protoData.description_p,
                 version: protoData.version,
                 sourceRuleCount: protoData.hasSourceRuleCount ? Int(protoData.sourceRuleCount) : nil,
+                lastUpdated: protoData.lastUpdated > 0 ? Date(timeIntervalSince1970: TimeInterval(protoData.lastUpdated)) : nil,
                 hasUserProvidedName: protoData.hasUserProvidedName
                     ? protoData.userProvidedName
                     : Self.inferLegacyUserProvidedName(protoData, isCustom: isCustom),
