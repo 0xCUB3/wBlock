@@ -58,6 +58,17 @@ struct CloudSyncRemoteUserScriptTests {
             CloudSyncRemoteUserScriptReconciler.canonicalURL(retiredYouTubeClassicVariant) == nil,
             "YouTube Classic path variants must not produce a restorable URL"
         )
+        for maintainedURL in [
+            "https://codeberg.org/adamlui/youtube-classic/raw/branch/main/greasemonkey/youtube-classic.user.js",
+            "https://scriptcat.org/scripts/code/6345/youtube-classic.user.js",
+            "https://example.com/adamlui/youtube-classic/custom.user.js",
+        ] {
+            expect(
+                CloudSyncRemoteUserScriptReconciler.normalizedURL(maintainedURL) == maintainedURL
+                    && CloudSyncRemoteUserScriptReconciler.canonicalURL(maintainedURL)?.absoluteString == maintainedURL,
+                "custom copies on maintained hosts must keep their source identity"
+            )
+        }
         let globalTinyShield =
             "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
         expect(

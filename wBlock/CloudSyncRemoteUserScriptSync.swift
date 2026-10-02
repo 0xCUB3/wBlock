@@ -1,13 +1,11 @@
 import Foundation
+import wBlockCoreService
 
 enum CloudSyncRemoteUserScriptReconciler {
     private static let retiredTinyShieldPrefix =
         "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/"
     private static let retiredYouTubeAdBlockURL =
         "https://raw.githubusercontent.com/SysAdminDoc/YoutubeAdblock/main/YoutubeAdblock.user.js"
-    private static let retiredYouTubeClassicURL =
-        "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/greasemonkey/youtube-classic.user.js"
-    private static let retiredYouTubeClassicPath = "/adamlui/youtube-classic"
     private static let legacyBundledURLs: [String: String] = [
         "https://bundled.wblock.invalid/tube-cleaner.user.js": "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js",
         "https://bundled.wblock.invalid/player-cleaner.user.js": "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/player-cleaner/dist/player-cleaner.user.js",
@@ -23,18 +21,8 @@ enum CloudSyncRemoteUserScriptReconciler {
     }
 
     private static func isRetiredYouTubeScript(_ urlString: String) -> Bool {
-        if urlString == retiredYouTubeAdBlockURL || urlString == retiredYouTubeClassicURL {
-            return true
-        }
-        guard let path = URL(string: urlString)?.path else { return false }
-        if path.contains("\(retiredYouTubeClassicPath)/") {
-            return true
-        }
-        if path.hasPrefix(retiredYouTubeClassicPath) {
-            let remainder = path.dropFirst(retiredYouTubeClassicPath.count)
-            return remainder.isEmpty || remainder.hasPrefix("/")
-        }
-        return false
+        urlString == retiredYouTubeAdBlockURL
+            || URL(string: urlString).map(RetiredUserScriptSources.isYouTubeClassic) == true
     }
 
     static func canonicalURL(_ url: String) -> URL? {

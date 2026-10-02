@@ -140,8 +140,6 @@ enum BuiltInUserScripts {
         "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them."
     static let retiredYouTubeAdBlockURL =
         "https://raw.githubusercontent.com/SysAdminDoc/YoutubeAdblock/main/YoutubeAdblock.user.js"
-    static let retiredYouTubeClassicURL =
-        "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/greasemonkey/youtube-classic.user.js"
 
     static let tubeCleanerURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js"
     static let deArrowURL = DeArrowPreference.scriptURL
@@ -1853,19 +1851,7 @@ public class UserScriptManager: ObservableObject {
     }
 
     private func isRetiredYouTubeClassicScript(_ script: UserScript) -> Bool {
-        guard let url = script.url else { return false }
-        if url.absoluteString == BuiltInUserScripts.retiredYouTubeClassicURL {
-            return true
-        }
-        let path = url.path
-        if path.contains("/adamlui/youtube-classic/") {
-            return true
-        }
-        if path.hasPrefix("/adamlui/youtube-classic") {
-            let suffix = path.dropFirst("/adamlui/youtube-classic".count)
-            return suffix.isEmpty || suffix.hasPrefix("/")
-        }
-        return false
+        script.url.map(RetiredUserScriptSources.isYouTubeClassic) ?? false
     }
 
     private func removeRetiredYouTubeAdBlockIfNeeded() async {
