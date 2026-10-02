@@ -97,14 +97,12 @@ enum ForeignFilterOrganizer {
         }
     }
 
+    static func isRecommended(_ filter: FilterList) -> Bool {
+        trustRank(for: filter) < trustRank(forTrustLevel: "low") && !isSuperseded(filter)
+    }
+
     static func recommendationBuckets(from filters: [FilterList]) -> (recommended: [FilterList], optional: [FilterList]) {
-        let recommended = filters.filter { filter in
-            trustRank(for: filter) < trustRank(forTrustLevel: "low") && !isSuperseded(filter)
-        }
-        let optional = filters.filter { filter in
-            trustRank(for: filter) >= trustRank(forTrustLevel: "low") || isSuperseded(filter)
-        }
-        return (sortedFilters(recommended), sortedFilters(optional))
+        (sortedFilters(filters.filter(isRecommended)), sortedFilters(filters.filter { !isRecommended($0) }))
     }
 
     static func isSuperseded(_ filter: FilterList) -> Bool {
@@ -208,6 +206,19 @@ enum LocalizedFormatting {
 }
 
 extension FilterList {
+    func localizedLanguageNames(locale: Locale = .appCurrent) -> [String] {
+        Set(languages.map { $0.lowercased() }).map {
+            locale.localizedString(forLanguageCode: $0) ?? $0.uppercased()
+        }.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+    }
+
+    func matchesLanguage(_ query: String, locale: Locale) -> Bool {
+        let nativeNames = languages.compactMap { Locale(identifier: $0).localizedString(forLanguageCode: $0) }
+        return (languages + nativeNames + localizedLanguageNames(locale: locale)).contains {
+            $0.localizedCaseInsensitiveContains(query)
+        }
+    }
+
     var localizedDisplayName: String {
         LocalizedStrings.text(name, comment: "Filter list name")
     }

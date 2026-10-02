@@ -17,7 +17,6 @@ struct FilterListPresentation: Sendable {
     }
 
     var sections: [Section] = []
-    var foreignGroups: [ForeignFilterGroup] = []
 
     static func prepare(_ input: Input) async throws -> Self {
         let worker = Task.detached(priority: .userInitiated) {
@@ -27,7 +26,8 @@ struct FilterListPresentation: Sendable {
                 (!input.enabledOnly || filter.isSelected) && (query.isEmpty
                     || filter.localizedDisplayName.localizedCaseInsensitiveContains(query)
                     || filter.localizedDisplayDescription.localizedCaseInsensitiveContains(query)
-                    || filter.url.absoluteString.localizedCaseInsensitiveContains(query))
+                    || filter.url.absoluteString.localizedCaseInsensitiveContains(query)
+                    || filter.matchesLanguage(query, locale: Locale(identifier: input.localeIdentifier)))
             }
             let ordered = ListDisplayOrder.sorted(visible.filter { $0.category != .foreign }, order: input.order)
                 + ForeignFilterOrganizer.sortedFilters(visible.filter { $0.category == .foreign })
@@ -38,9 +38,8 @@ struct FilterListPresentation: Sendable {
                     guard let filters = byCategory[category] else { return nil }
                     return Section(category: category, filters: filters)
                 }
-            let foreignGroups = ForeignFilterOrganizer.groups(for: byCategory[.foreign] ?? [])
             try Task.checkCancellation()
-            return Self(sections: sections, foreignGroups: foreignGroups)
+            return Self(sections: sections)
         }
         return try await withTaskCancellationHandler {
             let result = try await worker.value

@@ -180,6 +180,9 @@ compile_core_test target-compilation scripts/test_target_compilation.swift
 compile_core_test issue-729-headless-rebuild-gate scripts/test_issue_729_headless_rebuild_gate.swift
 compile_core_test foreign-filter-groups scripts/test_foreign_filter_groups.swift \
   wBlock/LocalizationHelpers.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
+compile_core_test filter-list-presentation scripts/test_filter_list_presentation.swift \
+  wBlock/FilterListPresentation.swift wBlock/ListDisplayOrder.swift \
+  wBlock/LocalizationHelpers.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test filter-catalog-remote scripts/test_filter_catalog_remote.swift
 compile_core_test filter-list-fetch-chain scripts/test_filter_list_fetch_chain.swift
 compile_core_test filter-download-processor scripts/test_filter_download_processor.swift

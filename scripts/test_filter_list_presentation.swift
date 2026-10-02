@@ -16,6 +16,9 @@ struct FilterListPresentationTests {
                                   isSelected: true, languages: ["fr", "de"], trustLevel: "high")
         let superseded = FilterList(name: "Old regional", url: URL(string: "https://example.com/old")!, category: .foreign,
                                     description: "Already included in Regional", languages: ["fr"], trustLevel: "full")
+        precondition(ForeignFilterOrganizer.isRecommended(regional))
+        precondition(!ForeignFilterOrganizer.isRecommended(superseded))
+        precondition(regional.localizedLanguageNames(locale: Locale(identifier: "en")) == ["French", "German"])
         let filters = [a, privacy, b, superseded, regional]
         let order = try JSONEncoder().encode([b.id, a.id])
         func input(_ filters: [FilterList], query: String = "", enabled: Bool = false) -> FilterListPresentation.Input {
@@ -28,8 +31,7 @@ struct FilterListPresentationTests {
         let all = try await FilterListPresentation.prepare(input(filters))
         precondition(all.sections.first { $0.category == .ads }!.filters.map(\.id) == [b.id, a.id])
         precondition(all.sections.first { $0.category == .foreign }!.filters.map(\.id) == [regional.id, superseded.id])
-        precondition(all.foreignGroups.first { $0.languageCode == "fr" }!.filters.map(\.id) == [regional.id, superseded.id])
-        precondition(all.foreignGroups.first { $0.languageCode == "de" }!.filters.map(\.id) == [regional.id])
+        precondition(ids(all).count == Set(ids(all)).count, "Each catalog list has one row")
 
         let enabled = try await FilterListPresentation.prepare(input(filters, enabled: true))
         precondition(Set(ids(enabled)) == [a.id, regional.id])
@@ -38,7 +40,11 @@ struct FilterListPresentationTests {
         let urlSearch = try await FilterListPresentation.prepare(input(filters, query: "EXAMPLE.COM/B"))
         precondition(ids(urlSearch) == [b.id])
         let empty = try await FilterListPresentation.prepare(input(filters, query: "no match"))
-        precondition(empty.sections.isEmpty && empty.foreignGroups.isEmpty)
+        precondition(empty.sections.isEmpty)
+        let languageSearch = try await FilterListPresentation.prepare(input(filters, query: "German"))
+        precondition(ids(languageSearch) == [regional.id], "Search finds every language a shared list covers")
+        let nativeSearch = try await FilterListPresentation.prepare(input(filters, query: "Deutsch"))
+        precondition(ids(nativeSearch) == [regional.id], "Search accepts the language’s native name")
 
         var changed = a
         changed.category = .privacy
@@ -46,7 +52,7 @@ struct FilterListPresentationTests {
         changed.isSelected = false
         let refreshed = try await FilterListPresentation.prepare(input([changed, b]))
         precondition(refreshed.sections.first { $0.category == .privacy }!.filters == [changed])
-        precondition(refreshed.foreignGroups.isEmpty, "Removed filters must leave no cached groups")
+        precondition(refreshed.sections.allSatisfy { $0.category != .foreign }, "Removed filters must leave no cached regional rows")
         let disabled = try await FilterListPresentation.prepare(input([changed, b], enabled: true))
         precondition(ids(disabled).isEmpty)
 
@@ -57,6 +63,6 @@ struct FilterListPresentationTests {
             preconditionFailure("Cancelled preparation must not publish a stale result")
         } catch is CancellationError {}
 
-        print("PASS — display order, regional grouping, search, selection, metadata refresh, and cancellation")
+        print("PASS — display order, flat regional catalog, language search, selection, metadata refresh, and cancellation")
     }
 }

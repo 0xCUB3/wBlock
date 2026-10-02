@@ -428,10 +428,7 @@ struct ContentView: View {
                     // chevron collapses the rows instead of a nested DisclosureGroup.
                     ContentListSection { categoryHeader(item.category) } content: {
                         if shouldExpandForeignFilters {
-                            ForEach(filterPresentation.foreignGroups) { group in
-                                foreignFilterGroupHeader(group.title)
-                                filterRows(group.filters, showsFlags: false)
-                            }
+                            filterRows(item.filters)
                         }
                     }
                 } else {
@@ -668,14 +665,6 @@ struct ContentView: View {
         filterManager.flushPendingSave()
     }
 
-    private func foreignFilterGroupHeader(_ title: String) -> some View {
-        Text(title)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.secondary)
-            .textCase(.uppercase)
-            .padding(.top, 6)
-    }
-
     private func refreshDownloadedFilterIDs() {
         let loader = filterManager.loader
         downloadedFilterIDs = Set(filterManager.filterLists.lazy.filter { loader.filterFileExists($0) }.map(\.id))
@@ -735,10 +724,10 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    private func filterRows(_ filters: [FilterList], showsFlags: Bool = true) -> some View {
+    private func filterRows(_ filters: [FilterList]) -> some View {
         if filters.first?.category == .foreign {
             ForEach(filters) { filter in
-                filterRowView(for: filter, showsFlags: showsFlags)
+                filterRowView(for: filter)
                 #if os(macOS)
                 if filter.id != filters.last?.id { Divider().padding(.leading, 16) }
                 #endif
@@ -746,18 +735,17 @@ struct ContentView: View {
         } else {
             ReorderableRows(items: filters,
                             allItems: { orderedFilters }, order: $filterDisplayOrder) { filter in
-                filterRowView(for: filter, showsFlags: showsFlags)
+                filterRowView(for: filter)
             }
         }
     }
 
-    private func filterRowView(for snapshot: FilterList, showsFlags: Bool = true) -> some View {
+    private func filterRowView(for snapshot: FilterList) -> some View {
         // The presentation snapshot lands after an off-main sort with animations
         // off; reading it here made switches wait for it and then snap.
         let filter = filterManager.filterListIndex(for: snapshot.id).map { filterManager.filterLists[$0] } ?? snapshot
         return FilterRowView(
             filter: filter,
-            showsFlags: showsFlags,
             isDownloaded: downloadedFilterIDs.contains(filter.id),
             isDownloading: downloadingFilterIDs.contains(filter.id),
             onDownload: { confirmingExperimental(filter) { downloadFilter(filter) } },
@@ -808,15 +796,8 @@ struct ContentView: View {
                 guard !filters.isEmpty else { return nil }
                 // Collapse is owned by the header's disclosure binding; the
                 // section simply carries its rows only while expanded.
-                let rows = shouldExpandForeignFilters ? filterPresentation.foreignGroups.flatMap { group in
-                    [MacListRow(decoration: "foreign-\(group.id)") {
-                        foreignFilterGroupHeader(group.title)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16).padding(.vertical, 8)
-                    }] + group.filters.map { filter in
-                        MacListRow(filter.id, movable: false, group: group.id)
-                        { filterRowView(for: filter, showsFlags: false) }
-                    }
+                let rows = shouldExpandForeignFilters ? filters.map { filter in
+                    MacListRow(filter.id, movable: false) { filterRowView(for: filter) }
                 } : []
                 return MacListSection(id: category.id, header: AnyView(categoryHeader(category)),
                                       rows: rows, acceptsMoves: false)
@@ -856,7 +837,6 @@ struct ContentView: View {
 
 struct FilterRowView: View {
     let filter: FilterList
-    let showsFlags: Bool
     let isDownloaded: Bool
     let isDownloading: Bool
     var onDownload: () -> Void
@@ -979,8 +959,13 @@ struct FilterRowView: View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    if showsFlags, let flags = filter.flagEmojis {
-                        Text(flags)
+                    if let flags = filter.flagEmojis {
+                        Text(flags).accessibilityHidden(true)
+                    }
+                    if filter.category == .foreign, ForeignFilterOrganizer.isRecommended(filter) {
+                        Image(systemName: "checkmark.circle")
+                            .foregroundStyle(Color.accentColor)
+                            .accessibilityLabel(Text("Recommended"))
                     }
                     Text(filter.localizedDisplayName)
                         .fontWeight(.medium)
@@ -1006,6 +991,13 @@ struct FilterRowView: View {
                     }
                 }
                 .font(.body)
+
+                if filter.category == .foreign, !filter.languages.isEmpty {
+                    Text(filter.localizedLanguageNames().joined(separator: ", "))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 if !filter.localizedDisplayDescription.isEmpty {
                     Text(filter.localizedDisplayDescription)
