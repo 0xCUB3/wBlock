@@ -218,49 +218,20 @@ public enum WebExtensionRequestHandler {
                         if disabled {
                             message?["payload"] = emptyRulesPayload(disabled: true, paused: false)
                         } else {
-                            do {
-                                var topUrl: URL?
-                                if let topUrlString = payload["topUrl"] as? String {
-                                    topUrl = URL(string: topUrlString)
-                                }
-
-                                #if os(iOS)
-                                // Reading the engine holds a kernel flock on the app
-                                // group; if Safari backgrounds mid-read the extension
-                                // is killed with 0xDEAD10CC. Defer suspension until
-                                // the lookup returns.
-                                let shield = SuspensionShield(reason: "wBlock engine lookup") {}
-                                defer { shield.release() }
-                                #endif
-                                let configuration: WebExtension.Configuration? = try WebExtensionGate.shared.withLock {
-                                    let webExtension = try WebExtension.shared(
-                                        groupID: GroupIdentifier.shared.value
-                                    )
-                                    return webExtension.lookup(pageUrl: url, topUrl: topUrl)
-                                }
-
-                                if let configuration {
-                                    message?["payload"] = convertToPayload(
-                                        configuration,
-                                        disabled: false,
-                                        paused: false
-                                    )
-                                } else {
-                                    let errorMessage = "No WebExtension configuration available"
-                                    os_log(.error, "%@", errorMessage)
-                                    message?["payload"] = nil
-                                    message?["state"] = "error"
-                                    message?["error"] = errorMessage
-                                }
-                            } catch {
-                                os_log(
-                                    .error,
-                                    "Failed to get WebExtension instance: %@",
-                                    error.localizedDescription
-                                )
+                            let topUrl = (payload["topUrl"] as? String).flatMap(URL.init(string:))
+                            // The engine read can block on its file lock or a cold
+                            // deserialize; keep it off the main actor so state and
+                            // userscript requests are not stuck behind it.
+                            let lookup = await Task.detached(priority: .userInitiated) {
+                                lookupEnginePayload(url: url, topUrl: topUrl)
+                            }.value
+                            if let errorMessage = lookup.error {
+                                os_log(.error, "%@", errorMessage)
                                 message?["payload"] = nil
                                 message?["state"] = "error"
-                                message?["error"] = error.localizedDescription
+                                message?["error"] = errorMessage
+                            } else {
+                                message?["payload"] = lookup.payload
                             }
                         }
                     }
@@ -307,6 +278,28 @@ public enum WebExtensionRequestHandler {
             context.completeRequest(returningItems: [response], completionHandler: nil)
         } else {
             context.completeRequest(returningItems: [], completionHandler: nil)
+        }
+    }
+
+    private static func lookupEnginePayload(url: URL, topUrl: URL?) -> (payload: [String: Any]?, error: String?) {
+        #if os(iOS)
+        // Reading the engine holds a kernel flock on the app group; if Safari
+        // backgrounds mid-read the extension is killed with 0xDEAD10CC. Defer
+        // suspension until the lookup returns.
+        let shield = SuspensionShield(reason: "wBlock engine lookup") {}
+        defer { shield.release() }
+        #endif
+        do {
+            let configuration = try WebExtensionGate.shared.withLock {
+                try WebExtension.shared(groupID: GroupIdentifier.shared.value)
+                    .lookup(pageUrl: url, topUrl: topUrl)
+            }
+            guard let configuration else {
+                return (nil, "No WebExtension configuration available")
+            }
+            return (convertToPayload(configuration, disabled: false, paused: false), nil)
+        } catch {
+            return (nil, "Failed to get WebExtension instance: \(error.localizedDescription)")
         }
     }
 
