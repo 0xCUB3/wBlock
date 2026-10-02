@@ -552,6 +552,18 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         parseMetadata()
     }
 
+    /// Content refreshes preserve custom display edits, but built-ins use catalog metadata.
+    mutating func restoreDisplayMetadata(from existing: UserScript) {
+        if BuiltInUserScripts.definition(for: url) != nil {
+            BuiltInUserScripts.applyDisplayMetadata(to: &self)
+        } else {
+            if !existing.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                name = existing.name
+            }
+            description = existing.description
+        }
+    }
+
     /// Resolves metadata against the source URL, falling back to its .meta.js sibling.
     public var resolvedMetaURL: URL? {
         guard !isLocal else { return nil }
@@ -771,6 +783,7 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
 
     /// Extract metadata from userscript or userstyle content
     public mutating func parseMetadata() {
+        defer { BuiltInUserScripts.applyDisplayMetadata(to: &self) }
         // Reset metadata-backed fields so repeated parsing stays idempotent.
         description = ""
         author = nil

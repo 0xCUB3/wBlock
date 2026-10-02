@@ -46,6 +46,11 @@ swiftc -D DEBUG -framework WebKit -framework CryptoKit \
   wBlockCoreService/UserStyle.swift \
   wBlockCoreService/UserStyleRemoteImportInliner.swift \
   wBlockCoreService/UserScript.swift \
+  wBlockCoreService/BuiltInUserScripts.swift \
+  wBlockCoreService/UserScriptDisplayCategory.swift \
+  wBlockCoreService/DeArrowPreference.swift \
+  wBlockCoreService/TubeCleanerDeArrowPreference.swift \
+  wBlockCoreService/DarkReaderAppearancePreference.swift \
   wBlockCoreService/FilterListCategory.swift \
   -o "$TEST_TMP/userstyle-tests"
 
@@ -55,6 +60,11 @@ swiftc -D DEBUG -framework WebKit -framework CryptoKit \
   wBlockCoreService/UserStyleCompiler.swift \
   wBlockCoreService/UserStyle.swift \
   wBlockCoreService/UserScript.swift \
+  wBlockCoreService/BuiltInUserScripts.swift \
+  wBlockCoreService/UserScriptDisplayCategory.swift \
+  wBlockCoreService/DeArrowPreference.swift \
+  wBlockCoreService/TubeCleanerDeArrowPreference.swift \
+  wBlockCoreService/DarkReaderAppearancePreference.swift \
   wBlockCoreService/FilterListCategory.swift \
   -o "$TEST_TMP/timeout-tests"
 "$TEST_TMP/timeout-tests"

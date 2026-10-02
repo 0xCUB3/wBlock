@@ -221,6 +221,11 @@ compile_direct_test stable-record-identifiers \
 compile_direct_test userscript-matching-payload \
   wBlockCoreService/FilterListCategory.swift \
   wBlockCoreService/UserScript.swift \
+  wBlockCoreService/BuiltInUserScripts.swift \
+  wBlockCoreService/UserScriptDisplayCategory.swift \
+  wBlockCoreService/DeArrowPreference.swift \
+  wBlockCoreService/TubeCleanerDeArrowPreference.swift \
+  wBlockCoreService/DarkReaderAppearancePreference.swift \
   wBlockCoreService/UserStyle.swift \
   wBlockCoreService/UserStyleCompiler.swift \
   wBlockCoreService/UserStyleCompilerExecutionHost.swift \
@@ -228,14 +233,36 @@ compile_direct_test userscript-matching-payload \
 compile_direct_test userscript-metadata-emoji \
   wBlockCoreService/FilterListCategory.swift \
   wBlockCoreService/UserScript.swift \
+  wBlockCoreService/BuiltInUserScripts.swift \
+  wBlockCoreService/UserScriptDisplayCategory.swift \
+  wBlockCoreService/DeArrowPreference.swift \
+  wBlockCoreService/TubeCleanerDeArrowPreference.swift \
+  wBlockCoreService/DarkReaderAppearancePreference.swift \
   wBlockCoreService/UserStyle.swift \
   wBlockCoreService/UserStyleCompiler.swift \
   wBlockCoreService/UserStyleCompilerExecutionHost.swift \
   scripts/test_userscript_metadata_emoji_strip.swift
+compile_direct_test userscript-display-metadata \
+  wBlockCoreService/FilterListCategory.swift \
+  wBlockCoreService/UserScript.swift \
+  wBlockCoreService/BuiltInUserScripts.swift \
+  wBlockCoreService/UserScriptDisplayCategory.swift \
+  wBlockCoreService/DeArrowPreference.swift \
+  wBlockCoreService/TubeCleanerDeArrowPreference.swift \
+  wBlockCoreService/DarkReaderAppearancePreference.swift \
+  wBlockCoreService/UserStyle.swift \
+  wBlockCoreService/UserStyleCompiler.swift \
+  wBlockCoreService/UserStyleCompilerExecutionHost.swift \
+  scripts/test_userscript_display_metadata.swift
 echo "[test] userstyle-parsing-matching (scripts/test_userstyle_parsing_and_matching.swift)"
 swiftc -parse-as-library -D DEBUG \
   wBlockCoreService/FilterListCategory.swift \
   wBlockCoreService/UserScript.swift \
+  wBlockCoreService/BuiltInUserScripts.swift \
+  wBlockCoreService/UserScriptDisplayCategory.swift \
+  wBlockCoreService/DeArrowPreference.swift \
+  wBlockCoreService/TubeCleanerDeArrowPreference.swift \
+  wBlockCoreService/DarkReaderAppearancePreference.swift \
   wBlockCoreService/UserStyle.swift \
   wBlockCoreService/UserStyleCompiler.swift \
   wBlockCoreService/UserStyleCompilerExecutionHost.swift \
