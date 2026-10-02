@@ -436,7 +436,7 @@ struct SiteSettingsView: View {
     private var emptyStateView: some View {
         VStack(spacing: 16) {
             Image(systemName: "globe")
-                .font(.system(size: 48))
+                .scaledSystemFont(size: 48, relativeTo: .largeTitle)
                 .foregroundStyle(.secondary.opacity(0.6))
 
             Text("No Site Settings")

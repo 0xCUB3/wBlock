@@ -90,7 +90,7 @@ struct StatCard: View {
         HStack(spacing: 10) {
             if !compact {
                 Image(systemName: icon)
-                    .font(.system(size: 22))
+                    .scaledSystemFont(size: 22, relativeTo: .title2)
                     .foregroundStyle(valueColor)
                     .frame(width: 30)
                     .symbolRenderingMode(.hierarchical)

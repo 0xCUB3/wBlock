@@ -179,7 +179,7 @@ struct ElementZapperSettingsView: View {
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.secondary)
-                            .font(.system(size: 18))
+                            .scaledSystemFont(size: 18)
                     }
                     .buttonStyle(.plain)
                     .noFocusRingCompat()
@@ -244,7 +244,7 @@ struct ElementZapperSettingsView: View {
     private var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "wand.and.stars")
-                .font(.system(size: 44))
+                .scaledSystemFont(size: 44, relativeTo: .largeTitle)
                 .foregroundStyle(.secondary.opacity(0.6))
             Text("No Element Zapper Rules")
                 .font(.headline)

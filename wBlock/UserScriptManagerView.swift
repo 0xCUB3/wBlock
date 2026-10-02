@@ -961,7 +961,7 @@ struct UserScriptManagerView: View {
     private var emptyStateView: some View {
         VStack(spacing: 16) {
             Image(systemName: "doc.text.magnifyingglass")
-                .font(.system(size: 48))
+                .scaledSystemFont(size: 48, relativeTo: .largeTitle)
                 .foregroundStyle(.secondary.opacity(0.6))
             Text("No Userscripts")
                 .font(.headline)
@@ -982,7 +982,7 @@ struct UserScriptManagerView: View {
     private var noSearchResultsView: some View {
         VStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 36))
+                .scaledSystemFont(size: 36, relativeTo: .largeTitle)
                 .foregroundStyle(.secondary.opacity(0.7))
             Text("No matching userscripts")
                 .font(.headline)
@@ -1460,7 +1460,7 @@ struct UserScriptContentView: View {
             } else {
                 VStack(spacing: 12) {
                     Image(systemName: "doc.text")
-                        .font(.system(size: 40))
+                        .scaledSystemFont(size: 40, relativeTo: .largeTitle)
                         .foregroundStyle(.secondary)
                     Text("Unable to load script")
                         .font(.headline)

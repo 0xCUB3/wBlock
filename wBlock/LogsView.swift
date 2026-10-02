@@ -237,7 +237,7 @@ struct LogsView: View {
     private var emptyStateView: some View {
         VStack(spacing: 16) {
             Image(systemName: "doc.text.magnifyingglass")
-                .font(.system(size: 48))
+                .scaledSystemFont(size: 48, relativeTo: .largeTitle)
                 .foregroundStyle(.secondary)
             Text("No logs found")
                 .font(.headline)
@@ -321,7 +321,7 @@ struct LogEntryRow: View {
                         NSLocalizedString("×%d", comment: "Collapsed duplicate log entry count"),
                         entry.count
                     ))
-                    .font(.system(size: 9))
+                    .scaledSystemFont(size: 9, relativeTo: .caption2)
                     .foregroundStyle(.secondary)
                 }
             }
