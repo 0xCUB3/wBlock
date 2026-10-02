@@ -202,7 +202,7 @@
 "Blocks ads and trackers on various Macedonian websites." = "封鎖各種馬其頓網站上的廣告和追蹤器。";
 "Blocks ads and tracking servers to enhance privacy." = "阻止廣告和追蹤伺服器以增強隱私。";
 "Blocks ads on the Chinese video platforms (MangoTV, DouYu and others)." = "封鎖中國影音平台（芒果TV、鬥魚等）上的廣告。";
-"Blocks AI-generated suggestions and recommendations on search engines and websites." = "阻止人工智慧在搜尋引擎和網站上產生的建議和推薦。";
+"Blocks website features that use generative AI and content labeled as AI-generated." = "封鎖使用生成式人工智慧的網站功能，以及標示為人工智慧生成的內容。";
 "Blocks banners promoting mobile app downloads." = "阻止宣傳行動應用程式下載的橫幅。";
 "Blocks cookie consent notices on web pages." = "封鎖網頁上的 cookie 同意通知。";
 "Blocks miscellaneous irritating elements not covered by other filters." = "阻擋其他過濾器未覆蓋的各種刺激性元素。";

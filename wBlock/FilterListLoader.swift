@@ -36,6 +36,10 @@ class FilterListLoader {
     // Cookie Notices is on by default (#655) but is a convenience, not protection.
     static let essentialFilterNames: Set<String> = recommendedFilterNames.subtracting(["AdGuard Cookie Notices"])
 
+    private static let stevoAIBlocklistURL = URL(
+        string: "https://raw.githubusercontent.com/Stevoisiak/Stevos-AI-Blocklist/refs/heads/main/GenAI-Blocklist.txt"
+    )!
+
     private static let filterURLMigrations: [String: URL] = [
         // 2026-09: the worker now mirrors BPC into R2; reads go to the bucket so
         // update checks stop counting against the worker's daily quota.
@@ -45,10 +49,9 @@ class FilterListLoader {
             URL(string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
         "https://raw.githubusercontent.com/List-KR/List-KR/master/filter-AdGuard-forward.txt": URL(
             string: "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt")!,
-        "https://raw.githubusercontent.com/easylist/easylist/refs/heads/master/fanboy-addon/fanboy_ai_suggestions.txt": URL(
-            string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260_optimized.txt")!,
-        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260.txt": URL(
-            string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260_optimized.txt")!,
+        "https://raw.githubusercontent.com/easylist/easylist/refs/heads/master/fanboy-addon/fanboy_ai_suggestions.txt": stevoAIBlocklistURL,
+        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260.txt": stevoAIBlocklistURL,
+        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260_optimized.txt": stevoAIBlocklistURL,
         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/25.txt": URL(
             string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/25_optimized.txt")!,
         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/10.txt": URL(
@@ -293,12 +296,9 @@ class FilterListLoader {
                 description: "Blocks social media widgets and buttons."),
             FilterList(
                 id: UUID(), name: "Stevo's AI Blocklist",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260_optimized.txt"
-                )!, category: FilterListCategory.annoyances,
+                url: Self.stevoAIBlocklistURL, category: FilterListCategory.annoyances,
                 description:
-                    "Blocks AI-generated suggestions and recommendations on search engines and websites."
+                    "Blocks website features that use generative AI and content labeled as AI-generated."
             ),
             FilterList(
                 id: UUID(), name: "AdGuard Mail Tracking Protection Filter",

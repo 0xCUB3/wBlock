@@ -202,7 +202,7 @@
 "Blocks ads and trackers on various Macedonian websites." = "Blockiert Werbung und Tracker auf verschiedenen mazedonischen Websites.";
 "Blocks ads and tracking servers to enhance privacy." = "Blockiert Werbung und Tracking-Server, um den Datenschutz zu verbessern.";
 "Blocks ads on the Chinese video platforms (MangoTV, DouYu and others)." = "Blockiert Werbung auf den chinesischen Videoplattformen (MangoTV, DouYu und andere).";
-"Blocks AI-generated suggestions and recommendations on search engines and websites." = "Blockiert KI-generierte Vorschläge und Empfehlungen in Suchmaschinen und Websites.";
+"Blocks website features that use generative AI and content labeled as AI-generated." = "Blockiert Website-Funktionen, die generative KI verwenden, sowie als KI-generiert gekennzeichnete Inhalte.";
 "Blocks banners promoting mobile app downloads." = "Blockiert Banner, die für das Herunterladen mobiler Apps werben.";
 "Blocks cookie consent notices on web pages." = "Blockiert Cookie-Einwilligungshinweise auf Webseiten.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Blockiert verschiedene störende Elemente, die von anderen Filtern nicht abgedeckt werden.";
