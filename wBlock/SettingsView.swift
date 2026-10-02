@@ -743,6 +743,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var dangerZoneSection: some View {
         Section {
+            #if os(macOS)
             CompatibleLabeledContent {
                 Button("Reset", action: resetOrdering)
                     .buttonStyle(.bordered)
@@ -752,7 +753,6 @@ struct SettingsView: View {
                     detail: Text("Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.")
                 )
             }
-            #if os(macOS)
             CompatibleLabeledContent {
                 Button(isRestarting ? "Restarting…" : "Restart…") {
                     showingRestartConfirmation = true
@@ -766,25 +766,36 @@ struct SettingsView: View {
                 )
             }
             #else
+            Button(action: resetOrdering) {
+                Label {
+                    rowLabel(
+                        "Reset Ordering",
+                        detail: Text("Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.")
+                    )
+                } icon: {
+                    Image(systemName: "arrow.up.arrow.down")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
             Button(role: .destructive) {
                 showingRestartConfirmation = true
             } label: {
                 Label {
-                    Text(isRestarting ? "Restarting…" : "Restart Onboarding")
+                    rowLabel(
+                        isRestarting ? "Restarting…" : "Restart Onboarding",
+                        detail: Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
+                    )
                 } icon: {
                     Image(systemName: isRestarting ? "hourglass" : "arrow.counterclockwise")
                         .foregroundStyle(.red)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .tint(.red)
             .disabled(isRestarting)
             #endif
         } header: {
             Text("Danger Zone")
-        } footer: {
-            #if os(iOS)
-            Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
-            #endif
         }
     }
 
