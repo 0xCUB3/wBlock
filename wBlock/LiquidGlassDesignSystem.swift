@@ -253,23 +253,7 @@ struct InlineGlassSearchField: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(spacing: -2) {
-            Button(action: expandAndFocus) {
-                Label(prompt, systemImage: "magnifyingglass")
-                    .labelStyle(.iconOnly)
-                    .font(.system(size: 13))
-                    .fixedSize()
-                    .foregroundStyle(text.isEmpty ? Color.primary : Color.accentColor)
-                    .contentTransition(.identity)
-                    .transaction { transaction in transaction.animation = nil }
-                    .frame(width: 20, height: 36)
-                    .padding(.horizontal, 8)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityValue(text)
-            .help(prompt)
-
+        HStack(spacing: 0) {
             // The field stays mounted at its last expanded width while collapsed, so
             // the capsule clips it instead of re-laying out the text mid-animation.
             HStack(spacing: 6) {
@@ -301,9 +285,10 @@ struct InlineGlassSearchField: View {
             .opacity(isExpanded ? 1 : 0)
             .allowsHitTesting(isExpanded)
             .accessibilityHidden(!isExpanded)
-            .padding(.trailing, 8)
+            .padding(.leading, 8)
+            .padding(.trailing, 36)
         }
-        .frame(width: isExpanded ? Self.expandedWidth : 36, height: 36, alignment: .leading)
+        .frame(width: isExpanded ? Self.expandedWidth : 36, height: 36, alignment: .trailing)
         .clipShape(.capsule)
         .background {
             if isExpanded {
@@ -315,9 +300,28 @@ struct InlineGlassSearchField: View {
             }
         }
         .glassEffect(.regular.interactive(), in: .capsule)
-        .animation(reduceMotion ? nil : .bouncy(duration: Self.duration, extraBounce: 0.25), value: isExpanded)
+        .animation(reduceMotion ? nil : .smooth(duration: Self.duration), value: isExpanded)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: text.isEmpty)
         .frame(width: holdsExpandedSlot ? Self.expandedWidth : 36, alignment: .trailing)
+        .overlay(alignment: .trailing) {
+            // The magnifier is outside the animated field so it stays anchored
+            // while AppKit reserves or releases the wider toolbar slot.
+            Button(action: expandAndFocus) {
+                Label(prompt, systemImage: "magnifyingglass")
+                    .labelStyle(.iconOnly)
+                    .font(.system(size: 13))
+                    .fixedSize()
+                    .foregroundStyle(text.isEmpty ? Color.primary : Color.accentColor)
+                    .contentTransition(.identity)
+                    .transaction { transaction in transaction.animation = nil }
+                    .frame(width: 20, height: 36)
+                    .padding(.horizontal, 8)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(text)
+            .help(prompt)
+        }
         .onAppear {
             isVisible = true
             if !text.isEmpty { expand() }
