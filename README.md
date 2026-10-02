@@ -124,6 +124,12 @@ It's one app on macOS, iOS, iPadOS, and visionOS. iCloud syncs your lists, custo
 
 All three are the same build. On first launch wBlock walks you through turning the extensions on in Safari.
 
+### TestFlight betas
+
+[TestFlight](https://testflight.apple.com/) is Apple's optional beta distribution service. I use it to distribute signed beta builds and get feedback before a stable release. You don't need TestFlight or a paid Apple Developer membership to install the stable builds above.
+
+Apple automatically collects beta crash logs and usage information and shares them with the developer. You cannot opt out of that collection while testing. Feedback and screenshots you submit are shared too and can contain private content. Read [Apple's TestFlight privacy notice](https://www.apple.com/legal/privacy/data/en/test-flight/) and the [TestFlight section of wBlock's privacy policy](PRIVACY_POLICY.md#testflight-beta-testing) before joining.
+
 <br>
 
 ## How it works

@@ -1,6 +1,6 @@
 # Privacy Policy for wBlock
 
-Last updated: September 2026
+Last updated: October 2026
 
 ## Introduction
 
@@ -16,7 +16,7 @@ If you turn on iCloud Sync, wBlock stores a copy of your configuration in your p
 
 ## Information We Do NOT Collect
 
-wBlock is designed to respect your privacy. We do NOT collect, store, or transmit:
+wBlock does not include its own analytics or crash-reporting service. The statements below describe the app's own data handling; Apple's separate [TestFlight collection](#testflight-beta-testing) applies to beta testing. wBlock does NOT collect, store, or transmit:
 
 - Your browsing history
 - Websites you visit
@@ -206,7 +206,7 @@ wBlock does not knowingly collect or process information from children under 13 
 
 ## Data Retention
 
-The developer does not receive your personal data, so there is nothing for the developer to retain. Filter lists, preferences, and userscripts stay on your device until you:
+wBlock does not upload your local configuration to the developer. Apple's retention of TestFlight data is described [below](#testflight-beta-testing). Filter lists, preferences, and userscripts stay on your device until you:
 
 - Manually delete the data within the app
 - Uninstall wBlock from your device
@@ -245,11 +245,15 @@ For major changes affecting how data is processed, we will make reasonable effor
 
 ## TestFlight Beta Testing
 
-If you participate in wBlock's TestFlight beta program:
+TestFlight is Apple's optional service for distributing signed beta builds and gathering feedback before a stable release. You can use the stable App Store or macOS DMG/Homebrew release without joining TestFlight.
 
-- Apple may collect crash logs and diagnostic data according to Apple's TestFlight privacy policy
-- This is managed by Apple, not wBlock
-- You can control TestFlight data sharing in your device settings
+[Apple's TestFlight privacy notice](https://www.apple.com/legal/privacy/data/en/test-flight/) says crash logs and usage information are automatically collected by Apple and shared with the developer. You cannot opt out of this collection while testing. This is separate from wBlock's own data handling.
+
+Apple says your name and email address are not visible to the developer if you join through a public link only. You can still disclose personal information in feedback. Comments and screenshots you submit through TestFlight are shared with Apple and the developer. Apple can associate that feedback with your Apple Account.
+
+Apple describes symbolicated crash logs and beta usage information, but does not guarantee that reports cannot contain sensitive content. Screenshots and comments you send can include private webpage content or other personal information. Review them before submitting. These documents do not establish routine collection of the webpages wBlock filters.
+
+Apple says it retains beta feedback for one year and may retain crash logs and usage data until bugs are resolved. [Stopping testing](https://testflight.apple.com/) ends your participation; it is not a promise to delete previously collected data.
 
 ## Contact Information
 
@@ -273,4 +277,4 @@ We are grateful to these contributors who make privacy-focused browsing possible
 
 ## Summary
 
-In simple terms, wBlock works on your device. It downloads the filter lists and userscripts you choose and applies them locally. It never sends your browsing history to the developer. The exceptions are ones you opt into: iCloud Sync stores your settings in your own iCloud account, and a few built-in scripts ask their own services about the YouTube video you're watching.
+In simple terms, wBlock works on your device. It downloads the filter lists and userscripts you choose and applies them locally. It never sends your browsing history to the developer. If you opt in, iCloud Sync stores your settings in your own iCloud account, and a few built-in scripts ask their own services about the YouTube video you're watching. TestFlight beta testing has separate automatic crash-log and usage collection as described above.
