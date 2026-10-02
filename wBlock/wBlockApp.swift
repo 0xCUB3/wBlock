@@ -72,7 +72,7 @@ struct wBlockApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(filterManager: filterManager)
-                .preferredColorScheme(appearance.colorScheme)
+                .modifier(AppAppearanceModifier(appearance: appearance))
                 .onAppear {
                     #if os(macOS)
                     if HeadlessLaunch.isHeadlessProcess {
