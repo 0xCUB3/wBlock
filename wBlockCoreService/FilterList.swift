@@ -227,6 +227,9 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         }
     }
 
+    /// Every language with a flag, so a custom regional list can name any of them.
+    public static var flaggedLanguageCodes: [String] { Array(languageRegions.keys) }
+
     /// The first flag for a language, used where one language is shown on its own.
     public static func flag(forLanguage code: String) -> String? {
         flags(forLanguage: code).first

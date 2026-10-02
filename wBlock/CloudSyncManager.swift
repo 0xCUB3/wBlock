@@ -946,6 +946,7 @@ final class CloudSyncManager: ObservableObject {
                 && left.isSelected == right.isSelected
                 && left.resolvedUpdatesAutomatically == right.resolvedUpdatesAutomatically
                 && left.content == right.content
+                && (left.languages ?? []) == (right.languages ?? [])
                 && left.resolvedUserProvidedName == right.resolvedUserProvidedName
                 && left.resolvedUserProvidedDescription == right.resolvedUserProvidedDescription
         default: return false
@@ -1143,6 +1144,10 @@ final class CloudSyncManager: ObservableObject {
                         filterLists[index].category = category
                         nonSelectionChanged = true
                     }
+                    if let languages = remoteCustom.languages, filterLists[index].languages != languages {
+                        filterLists[index].languages = languages
+                        nonSelectionChanged = true
+                    }
                     if mayApplyRemoteSelection, filterLists[index].isSelected != remoteCustom.isSelected {
                         filterLists[index].isSelected = remoteCustom.isSelected
                         selectionChanged = true
@@ -1160,6 +1165,7 @@ final class CloudSyncManager: ObservableObject {
                 updatesAutomatically: remoteCustom.updatesAutomatically ?? existingUpdatesAutomatically ?? true,
                 description: remoteCustom.resolvedDescription ?? "User-added filter list.",
                 sourceRuleCount: nil,
+                languages: remoteCustom.languages ?? [],
                 hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
                 hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
             ))
@@ -1762,6 +1768,7 @@ final class CloudSyncManager: ObservableObject {
                     updatesAutomatically: remoteCustom.resolvedUpdatesAutomatically,
                     description: remoteCustom.resolvedDescription ?? "User-added filter list.",
                     sourceRuleCount: nil,
+                    languages: remoteCustom.languages ?? [],
                     hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
                     hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
                 ))
@@ -1907,7 +1914,8 @@ final class CloudSyncManager: ObservableObject {
                     updatesAutomatically: list.updatesAutomatically,
                     userProvidedName: list.hasUserProvidedName,
                     userProvidedDescription: list.hasUserProvidedDescription,
-                    content: inlineContents[list.url.absoluteString]
+                    content: inlineContents[list.url.absoluteString],
+                    languages: list.languages.isEmpty ? nil : list.languages
                 )
             }
             .sorted { $0.url < $1.url }
@@ -2545,6 +2553,8 @@ private struct SyncPayload: Codable {
         let userProvidedDescription: Bool?
         /// Inline user list content (for wblock://userlist/<uuid> lists). Nil for URL-hosted lists.
         let content: String?
+        /// Languages a custom regional list covers; nil from older clients.
+        var languages: [String]? = nil
 
         var resolvedUpdatesAutomatically: Bool { updatesAutomatically ?? true }
 

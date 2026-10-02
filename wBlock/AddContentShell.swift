@@ -112,6 +112,8 @@ struct AddContentMetadataFields: View {
     @Binding var category: FilterListCategory
     let categories: [FilterListCategory]
     var categoryName: (FilterListCategory) -> String = { $0.localizedName }
+    /// Filter lists pass this so a Regional list can name its languages.
+    var languages: Binding<Set<String>>? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -132,6 +134,9 @@ struct AddContentMetadataFields: View {
                     #endif
             }
             ContentCategoryPicker(selection: $category, categories: categories, categoryName: categoryName)
+            if let languages {
+                RegionalListLanguagesField(category: category, languages: languages)
+            }
         }
     }
 }
@@ -180,6 +185,7 @@ struct AddContentURLMetadataCard: View {
     @Binding var category: FilterListCategory
     let categories: [FilterListCategory]
     var categoryName: (FilterListCategory) -> String = { $0.localizedName }
+    var languages: Binding<Set<String>>? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -189,7 +195,7 @@ struct AddContentURLMetadataCard: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
             AddContentMetadataFields(name: $name, description: $description, category: $category,
-                                     categories: categories, categoryName: categoryName)
+                                     categories: categories, categoryName: categoryName, languages: languages)
         }
         .padding(10)
         .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))

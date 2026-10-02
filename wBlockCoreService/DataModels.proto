@@ -79,6 +79,9 @@ message FilterListData {
   HostList selected_sites = 17;
   // Absent keeps automatic updates enabled, like UserScriptData.
   optional bool updates_automatically = 18;
+  // ISO 639 codes a custom regional list covers. Built-ins take theirs from
+  // the catalog.
+  repeated string languages = 19;
 }
 
 // Filter list categories

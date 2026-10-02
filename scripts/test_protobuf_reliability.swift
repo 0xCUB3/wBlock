@@ -11,6 +11,7 @@ struct ProtobufReliabilityTests {
         defer { try? FileManager.default.removeItem(at: root) }
 
         await testFilterAutomaticUpdates(root: root.appendingPathComponent("filter-updates"))
+        await testCustomRegionalLanguages(root: root.appendingPathComponent("custom-languages"))
         await testBackgroundMetadataPreservesConfiguration(root: root.appendingPathComponent("background-metadata"))
         await testUnchangedMetadataPreservesForegroundDownload(root: root.appendingPathComponent("untouched-metadata"))
         await testSourceTimestampOwnership(root: root.appendingPathComponent("source-timestamp"))
@@ -68,6 +69,25 @@ struct ProtobufReliabilityTests {
         await afterDeletion.loadData()
         expect(!afterDeletion.getFilterLists().contains { $0.id == lists[1].id },
                "a stale writer must not resurrect a removed subscription")
+    }
+
+    private static func testCustomRegionalLanguages(root: URL) async {
+        let suite = "test.wblock.custom-languages.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let custom = FilterList(name: "Custom", url: URL(string: "https://example.com/fa.txt")!,
+                                category: .foreign, isCustom: true, isSelected: true, languages: ["fa", "ps"])
+        let builtIn = FilterList(name: "Built-in", url: URL(string: "https://example.com/de.txt")!,
+                                 category: .foreign, isSelected: true, languages: ["de"])
+        let writer = await makeManager(root: root, standard: defaults, group: defaults)
+        await writer.loadData()
+        await writer.updateFilterLists([custom, builtIn])
+        let reloaded = await makeManager(root: root, standard: defaults, group: defaults)
+        await reloaded.loadData()
+        expect(reloaded.getFilterLists().first { $0.id == custom.id }?.languages == ["fa", "ps"],
+               "custom regional languages must persist across launches")
+        expect(reloaded.getFilterLists().first { $0.id == builtIn.id }?.languages == [],
+               "built-in languages stay catalog-owned rather than stored")
     }
 
     private static func testBackgroundMetadataPreservesConfiguration(root: URL) async {

@@ -10,7 +10,8 @@ extension AppFilterManager {
         hasUserProvidedName: Bool = false,
         hasUserProvidedDescription: Bool = false,
         isSelected: Bool = true,
-        description: String? = nil
+        description: String? = nil,
+        languages: [String] = []
     ) {
         guard let url = FilterListURLSupport.validatedRemoteURL(from: urlString)
         else {
@@ -59,9 +60,16 @@ extension AppFilterManager {
                 ? trimmedDescription ?? ""
                 : LocalizedStrings.text("User-added filter list.", comment: "Default custom filter description"),
             sourceRuleCount: nil,
+            languages: Self.regionalLanguages(languages, category: category),
             hasUserProvidedName: hasUserProvidedName,
             hasUserProvidedDescription: hasUserProvidedDescription)
         addCustomFilterList(newFilter)
+    }
+
+    /// Only Regional lists carry languages; they drive the flags and the
+    /// Regional recommendations (#921).
+    static func regionalLanguages(_ languages: [String], category: FilterListCategory) -> [String] {
+        category == .foreign ? Array(Set(languages.map { $0.lowercased() })).sorted() : []
     }
 
     private static func singleLineUserMetadata(_ value: String) -> String {
@@ -77,7 +85,8 @@ extension AppFilterManager {
         content: String,
         category: FilterListCategory = .custom,
         isSelected: Bool = true,
-        lastUpdated: Date = Date()
+        lastUpdated: Date = Date(),
+        languages: [String] = []
     ) {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedDescription = description?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -119,7 +128,8 @@ extension AppFilterManager {
             isSelected: isSelected,
             description: trimmedDescription?.isEmpty == false ? trimmedDescription! : "",
             sourceRuleCount: Self.countRulesInUserListContent(trimmedContent),
-            lastUpdated: lastUpdated
+            lastUpdated: lastUpdated,
+            languages: Self.regionalLanguages(languages, category: category)
         )
 
         guard let destinationURL = loader.localFileURL(for: newFilter) else {
@@ -359,7 +369,9 @@ extension AppFilterManager {
     }
 
     @discardableResult
-    func updateCustomFilterList(id: UUID, name: String, category: FilterListCategory, description: String? = nil) -> Bool {
+    func updateCustomFilterList(
+        id: UUID, name: String, category: FilterListCategory, description: String? = nil, languages: [String] = []
+    ) -> Bool {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
 
@@ -385,8 +397,10 @@ extension AppFilterManager {
         }
 
         let oldCategory = filterLists[index].category
+        let oldLanguages = filterLists[index].languages
         filterLists[index].name = trimmed
         filterLists[index].category = category
+        filterLists[index].languages = Self.regionalLanguages(languages, category: category)
         filterLists[index].hasUserProvidedName = true
         if let description {
             filterLists[index].description = description.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -394,7 +408,7 @@ extension AppFilterManager {
         }
         saveFilterListsCoalesced()
 
-        if oldCategory != category {
+        if oldCategory != category || oldLanguages != filterLists[index].languages {
             markNonSelectionChangesPending()
             statusDescription = LocalizedStrings.text(
                 "Filter list updated. Apply changes to enable it.",

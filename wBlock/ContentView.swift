@@ -1303,6 +1303,8 @@ struct AddFilterListView: View {
 
     @State private var isReviewingURLs = false
     @State private var urlCategories: [String: FilterListCategory] = [:]
+    @State private var urlLanguages: [String: Set<String>] = [:]
+    @State private var userListLanguages: Set<String> = []
     @State private var urlEntryMode: URLEntryMode = .single
     @State private var urlInput: String = ""
     @State private var isReviewingText = false
@@ -1679,7 +1681,11 @@ struct AddFilterListView: View {
                         get: { urlCategories[url.absoluteString] ?? selectedCategory },
                         set: { urlCategories[url.absoluteString] = $0 }
                     ),
-                    categories: FilterListCategory.userListCategories
+                    categories: FilterListCategory.userListCategories,
+                    languages: Binding(
+                        get: { urlLanguages[url.absoluteString] ?? [] },
+                        set: { urlLanguages[url.absoluteString] = $0 }
+                    )
                 )
             }
         }
@@ -1805,7 +1811,8 @@ struct AddFilterListView: View {
                         category: urlCategories[url.absoluteString] ?? selectedCategory,
                         hasUserProvidedName: name?.isEmpty == false,
                         hasUserProvidedDescription: description != nil,
-                        description: description ?? automaticDescription
+                        description: description ?? automaticDescription,
+                        languages: Array(urlLanguages[url.absoluteString] ?? [])
                     )
                 }
                 dismiss()
@@ -1834,7 +1841,8 @@ struct AddFilterListView: View {
                     description: finalDescription.isEmpty ? nil : finalDescription,
                     content: finalRules,
                     category: selectedCategory,
-                    isSelected: true
+                    isSelected: true,
+                    languages: Array(userListLanguages)
                 )
                 isSaving = false
                 if !filterManager.hasError {
@@ -1854,7 +1862,8 @@ struct AddFilterListView: View {
                     description: finalDescription.isEmpty ? nil : finalDescription,
                     content: stagedFile.content,
                     category: selectedCategory,
-                    isSelected: true
+                    isSelected: true,
+                    languages: Array(userListLanguages)
                 )
                 isSaving = false
                 if !filterManager.hasError {
@@ -1883,7 +1892,8 @@ struct AddFilterListView: View {
 
     private var userListMetaFields: some View {
         AddContentMetadataFields(name: $userListTitle, description: $userListDescription,
-                                 category: $selectedCategory, categories: FilterListCategory.userListCategories)
+                                 category: $selectedCategory, categories: FilterListCategory.userListCategories,
+                                 languages: $userListLanguages)
     }
 
     private var filterImportTypes: [UTType] {
@@ -2165,6 +2175,7 @@ struct EditCustomFilterView: View {
     @State private var name: String
     @State private var description: String
     @State private var selectedCategory: FilterListCategory
+    @State private var languages: Set<String>
     @State private var errorMessage: String?
 
     init(filterManager: AppFilterManager, filter: FilterList) {
@@ -2173,6 +2184,7 @@ struct EditCustomFilterView: View {
         self._name = State(initialValue: filter.name)
         self._description = State(initialValue: filter.description)
         self._selectedCategory = State(initialValue: filter.category)
+        self._languages = State(initialValue: Set(filter.languages))
     }
 
     var body: some View {
@@ -2195,6 +2207,7 @@ struct EditCustomFilterView: View {
 
                             TextField("Description", text: $description)
                             userListCategoryPicker(selection: $selectedCategory)
+                            RegionalListLanguagesField(category: selectedCategory, languages: $languages)
 
                             if !filter.isInlineUserList {
                                 Text(filter.url.absoluteString)
@@ -2251,6 +2264,7 @@ struct EditCustomFilterView: View {
                                 TextField("Description", text: $description)
                                     .textFieldStyle(.roundedBorder)
                                 userListCategoryPicker(selection: $selectedCategory)
+                                RegionalListLanguagesField(category: selectedCategory, languages: $languages)
 
                                 if !filter.isInlineUserList {
                                     Text(filter.url.absoluteString)
@@ -2327,7 +2341,8 @@ struct EditCustomFilterView: View {
             id: filter.id,
             name: trimmedName,
             category: selectedCategory,
-            description: description
+            description: description,
+            languages: Array(languages)
         ) {
             dismiss()
         } else {
