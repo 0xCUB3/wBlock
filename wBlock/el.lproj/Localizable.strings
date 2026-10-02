@@ -88,7 +88,7 @@
 "Added custom filter" = "Προστέθηκε προσαρμοσμένο φίλτρο";
 "Added sites are whitelisted: wBlock is completely turned off on them." = "Οι ιστότοποι που προστίθενται μπαίνουν στη λευκή λίστα: το wBlock απενεργοποιείται πλήρως σε αυτούς.";
 "Added user list" = "Προστέθηκε λίστα χρήστη";
-"Added userscript from editor" = "Προστέθηκε σενάριο χρήστη από τον επεξεργαστή";
+"Added userscript from editor" = "Προστέθηκε κώδικας χρήστη από τον επεξεργαστή";
 "Adding new userscript from URL" = "Προσθήκη νέου σεναρίου χρήστη από URL";
 "Adding…" = "Adding…";
 "Additional filter list for websites in Arabic." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα αραβικά.";
@@ -180,8 +180,8 @@
 "Balanced defaults." = "Ισορροπημένες προεπιλογές.";
 "Base and mobile filters only." = "Μόνο βασικό φίλτρο και φίλτρο κινητών.";
 "Base filter only." = "Μόνο βασικό φίλτρο.";
-"Baseline Userscripts" = "Βασικά σενάρια χρήστη";
-"Baseline userscripts are enabled by default. You can adjust them here." = "Τα βασικά σενάρια χρήστη είναι ενεργοποιημένα από προεπιλογή. Μπορείτε να τα προσαρμόσετε εδώ.";
+"Baseline Userscripts" = "Βασικοί κώδικες χρήστη";
+"Baseline userscripts are enabled by default. You can adjust them here." = "Οι βασικοί κώδικες χρήστη είναι ενεργοποιημένοι από προεπιλογή. Μπορείτε να τα προσαρμόσετε εδώ.";
 "Best default" = "Καλύτερη προεπιλογή";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Τα beta userscripts βρίσκονται ακόμη υπό δοκιμή και μπορεί να χαλάσουν σελίδες ή να συμπεριφερθούν απρόσμενα. Μπορείτε να τα απενεργοποιήσετε ανά πάσα στιγμή.";
@@ -207,13 +207,13 @@
 "Blocks cookie consent notices on web pages." = "Αποκλείει τις ειδοποιήσεις συναίνεσης για cookie σε ιστοσελίδες.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Αποκλείει διάφορα ερεθιστικά στοιχεία που δεν καλύπτονται από άλλα φίλτρα.";
 "Blocks online tracking and web analytics systems." = "Αποκλείει τα διαδικτυακά συστήματα παρακολούθησης και ανάλυσης ιστού.";
-"Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Το Safari δεν μπορεί να εφαρμόσει τους κανόνες inline-script αυτής της λίστας. Ενεργοποιήστε το Bypass Paywalls Clean στα σενάρια χρήστη για τους υποστηριζόμενους αγγλόφωνους ιστοτόπους.";
+"Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Το Safari δεν μπορεί να εφαρμόσει τους κανόνες inline-script αυτής της λίστας. Ενεργοποιήστε το Bypass Paywalls Clean στον κώδικα χρήστη για τους υποστηριζόμενους αγγλόφωνους ιστοτόπους.";
 "Blocks pop-up ads on web pages." = "Αποκλείει τα αναδυόμενα παράθυρα στις ιστοσελίδες.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Αποκλείει διαφημιστικά αναδυόμενα παράθυρα, εγγραφές σε ενημερωτικά δελτία και αιτήματα ειδοποιήσεων.";
 "Blocks social media content on webpages." = "Αποκλείει το περιεχόμενο των μέσων κοινωνικής δικτύωσης σε ιστοσελίδες.";
 "Blocks social media widgets and buttons." = "Αποκλείει γραφικά στοιχεία και κουμπιά μέσων κοινωνικής δικτύωσης.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Αποκλείει γραφικά στοιχεία τρίτων, βοηθούς συνομιλίας και γραφικά στοιχεία υποστήριξης.";
-"Blocks tracking scripts, web beacons, and other privacy-invasive elements." = "Αποκλείει σενάρια παρακολούθησης, web beacons και άλλα στοιχεία που παραβιάζουν το απόρρητο.";
+"Blocks tracking scripts, web beacons, and other privacy-invasive elements." = "Αποκλείει κώδικες παρακολούθησης, web beacons και άλλα στοιχεία που παραβιάζουν το απόρρητο.";
 "Building combined filter engine..." = "Κατασκευή κινητήρα συνδυασμένου φίλτρου...";
 "Building filter engine" = "Δημιουργία μηχανής φίλτρων";
 "Bulgarian list" = "Bulgarian list";
@@ -221,7 +221,7 @@
 "by word" = "ολόκληρες λέξεις";
 "Bypass Paywalls Clean Filter" = "Bypass Paywalls Clean Filter";
 "Bypass paywalls of news sites." = "Παράκαμψη paywalls ειδησεογραφικών τοποθεσιών.";
-"Bypasses Anti-Adblock scripts used on some websites." = "Παρακάμπτει τα σενάρια Anti-Adblock που χρησιμοποιούνται σε ορισμένους ιστότοπους.";
+"Bypasses Anti-Adblock scripts used on some websites." = "Παρακάμπτει τους κώδικες Anti-Adblock που χρησιμοποιούνται σε ορισμένους ιστότοπους.";
 "Calculated source rule count for filter" = "Υπολογισμός αριθμού κανόνων πηγής για το φίλτρο";
 "Cancel" = "Ακύρωση";
 "Category" = "Κατηγορία";
@@ -238,8 +238,8 @@
 "Checking for script updates... (%d/%d)" = "Έλεγχος για ενημερώσεις σεναρίων (%d/%d)";
 "Checks for wBlock filter updates and applies them when available." = "Ελέγχει για ενημερώσεις φίλτρων του wBlock και τις εφαρμόζει όταν είναι διαθέσιμες.";
 "Choose File…" = "Επιλογή Αρχείου…";
-"Choose optional userscripts. These are disabled by default." = "Επιλέξτε προαιρετικά σενάρια χρήστη. Αυτά είναι απενεργοποιημένα από προεπιλογή.";
-"Choose which filters and scripts to download, then apply changes." = "Επιλέξτε ποια φίλτρα και σενάρια θα ληφθούν και, στη συνέχεια, εφαρμόστε τις αλλαγές.";
+"Choose optional userscripts. These are disabled by default." = "Επιλέξτε προαιρετικά κώδικες χρήστη. Αυτά είναι απενεργοποιημένα από προεπιλογή.";
+"Choose which filters and scripts to download, then apply changes." = "Επιλέξτε ποια φίλτρα και κώδικες θα ληφθούν και, στη συνέχεια, εφαρμόστε τις αλλαγές.";
 "Choose your preferred blocking level. You can adjust enabled filters later." = "Επιλέξτε το προτιμώμενο επίπεδο αποκλεισμού. Μπορείτε να προσαρμόσετε τα ενεργοποιημένα φίλτρα αργότερα.";
 "CJX's Annoyances List" = "CJX's Annoyances List";
 "Clear" = " Εκκαθάριση";
@@ -301,13 +301,13 @@
 "Downloaded" = "Λήφθηκε";
 "Downloaded %d update" = "Λήψη %d ενημέρωσης";
 "Downloaded %d updates" = "Λήψεις %d ενημερώσεων";
-"Downloaded content does not appear to be a valid filter list" = "Το ληφθέν περιεχόμενο δεν φαίνεται να είναι έγκυρη λίστα φίλτρων";
+"Downloaded content does not appear to be a valid filter list" = "Το περιεχόμενο που λήφθηκε δεν φαίνεται να είναι έγκυρη λίστα φίλτρων";
 "Downloaded updates before applying" = "Λήψη ενημερώσεων πριν την εφαρμογή";
 "Downloading %d update(s)..." = "Λήψη ενημερώσεων %d...";
 "Downloading and applying filter lists…" = "Λήψη και εφαρμογή λιστών φίλτρων…";
 "Downloading filter updates..." = "Λήψη ενημερώσεων φίλτρων...";
-"Downloading selected scripts..." = "Downloading selected scripts...";
-"Downloading selected updates..." = "Downloading selected updates...";
+"Downloading selected scripts..." = "Λήψη επιλεγμένου κώδικα...";
+"Downloading selected updates..." = "Λήψη επιλεγμένων ενημερώσεων...";
 "Downloading Updates" = "Λήψη ενημερώσεων";
 "due now" = "λήγει τώρα";
 "Due soon catch-up" = "Επίκειται σύντομα ανάκτηση";
@@ -435,12 +435,12 @@
 "Filter that enables ad blocking on websites in Russian language." = "Φίλτρο που επιτρέπει τον αποκλεισμό διαφημίσεων σε ιστότοπους στη ρωσική γλώσσα.";
 "Filter that enables ad blocking on websites in Ukrainian language." = "Φίλτρο που επιτρέπει τον αποκλεισμό διαφημίσεων σε ιστότοπους στην ουκρανική γλώσσα.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Φίλτρο που προστατεύει από διάφορους τύπους απάτες στο πολωνικό δίκτυο, όπως μαζικά μηνύματα κειμένου, πλαστά ηλεκτρονικά καταστήματα κ.λπ.";
-"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Φίλτρο που αφαιρεί διαφημίσεις και διάφορα σενάρια από ιστότοπους με κορεατικό περιεχόμενο. Συνδυάζεται και επαυξάνεται με κανόνες που αφορούν ειδικά το AdGuard για βελτιωμένο φιλτράρισμα. Αυτό το φίλτρο αναμένεται να χρησιμοποιηθεί μαζί με το φίλτρο AdGuard Base.";
+"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Φίλτρο που αφαιρεί διαφημίσεις και διάφορους κώδικες από ιστότοπους με κορεατικό περιεχόμενο. Συνδυάζεται και επαυξάνεται με κανόνες που αφορούν ειδικά το AdGuard για βελτιωμένο φιλτράρισμα. Αυτό το φίλτρο αναμένεται να χρησιμοποιηθεί μαζί με το φίλτρο AdGuard Base.";
 "Filter Update" = "Φίλτρο Ενημέρωσης";
 "FilterApply" = "Εφαρμογή φίλτρου";
 "Filtering off" = "Το φιλτράρισμα είναι απενεργοποιημένο";
 "Filters" = "Φίλτρα";
-"Filters: %d / Userscripts: %d" = "Φίλτρα: %d / Σενάρια χρήστη: %d";
+"Filters: %d / Userscripts: %d" = "Φίλτρα: %d / Κώδικες χρήστη: %d";
 "Filters and scripts applied successfully." = "Filters and scripts applied successfully.";
 "Filters applied successfully." = "Τα φίλτρα εφαρμόστηκαν με επιτυχία.";
 "Filters Auto-Disabled" = "Φίλτρα αυτόματα απενεργοποιημένα";
@@ -552,7 +552,7 @@
 "No blocked requests yet." = "Δεν υπάρχουν ακόμη αποκλεισμένα αιτήματα.";
 "No Content Available" = "Δεν υπάρχει διαθέσιμο περιεχόμενο";
 "No description provided by the script metadata." = "Δεν παρέχεται περιγραφή από τα μεταδεδομένα κώδικα.";
-"No download URL for script" = "Δεν υπάρχει URL λήψης για το σενάριο";
+"No download URL for script" = "Δεν υπάρχει URL λήψης για τον κώδικα";
 "No filter lists selected. Clearing rules from all extensions." = "Δεν έχουν επιλεγεί λίστες φίλτρων. Εκκαθάριση κανόνων από όλες τις επεκτάσεις.";
 "No filters selected - clearing all extensions" = "Δεν επιλέχθηκαν φίλτρα - εκκαθάριση όλων των επεκτάσεων";
 "No foreground catch-up recorded" = "Δεν έχει καταγραφεί ανάκτηση στο προσκήνιο";
@@ -597,11 +597,11 @@
 "Paste from Clipboard" = "Επικόλληση από το Πρόχειρο";
 "Paste one or more filter URLs, one per line." = "Επικολλήστε μία ή περισσότερες διευθύνσεις URL φίλτρου, μία ανά γραμμή.";
 "Paste or write a userscript or userstyle with a standard metadata block." = "Επικολλήστε ή γράψτε ένα κώδικα χρήστη ή ένα στύλ χρήστη με ένα τυπικό αποκλεισμό μεταδεδομένων.";
-"Paste the direct .user.js link. wBlock will download and install it for you." = "Επικολλήστε τον άμεσο σύνδεσμο .user.js. Το wBlock θα τον κατεβάσει και θα τον εγκαταστήσει για εσάς.";
-"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Επικολλήστε τον άμεσο σύνδεσμο .user.js, .js, .user.css, .less, .sass, .scss, .styl ή .pcss. Το wBlock θα τον κατεβάσει και θα τον εγκαταστήσει.";
+"Paste the direct .user.js link. wBlock will download and install it for you." = "Επικολλήστε τον άμεσο σύνδεσμο .user.js. Το wBlock θα κάνει λήψη και θα τον εγκαταστήσει για εσάς.";
+"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Επικολλήστε τον άμεσο σύνδεσμο .user.js, .js, .user.css, .less, .sass, .scss, .styl ή .pcss. Το wBlock θα κάνει λήψη και θα τον εγκαταστήσει.";
 "Pause Blocking" = "Παύση αποκλεισμού";
 "Paused Components" = "Σε παύση στοιχεία";
-"Enabled Userscripts & Userstyles" = "Ενεργά σενάρια και στύλ χρήστη";
+"Enabled Userscripts & Userstyles" = "Ενεργά Κώδικας χρήστη και Στύλ χρήστη";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Η παύση αποκλεισμού είναι ενεργή όσο οποιοδήποτε επιλεγμένο στοιχείο βρίσκεται σε παύση. Η συνέχιση επαναφέρει όλα τα στοιχεία.";
 "Temporarily pause selected components without changing their enabled settings." = "Παύση των επιλεγμένων στοιχείων προσωρινά χωρίς αλλαγή των ρυθμίσεων ενεργοποίησής τους.";
 "Pausing blocking..." = "Παύση αποκλεισμού…";
@@ -759,9 +759,9 @@
 "Styles" = "Στύλ";
 "Submit failed" = "Η υποβολή απέτυχε";
 "Submitted" = "Υποβλήθηκε";
-"Successfully added userscript from URL" = "Το σενάριο χρήστη προστέθηκε επιτυχώς από URL";
+"Successfully added userscript from URL" = "Ο κώδικας χρήστη προστέθηκε επιτυχώς από URL";
 "Successfully downloaded custom filter" = "Επιτυχής λήψη προσαρμοσμένου φίλτρου";
-"Successfully updated script" = "Το σενάριο ενημερώθηκε επιτυχώς";
+"Successfully updated script" = "Ο κώδικας ενημερώθηκε επιτυχώς";
 "Summary" = "Σύνοψη";
 "Supplement for EasyList China+EasyList and EasyPrivacy." = "Συμπλήρωμα για EasyList China+EasyList και EasyPrivacy.";
 "Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "Υποστηρίζει αρχεία .user.js, .js, .user.css και .less. Οι τοπικές εισαγωγές δεν ενημερώνονται αυτόματα· εισαγάγετέ τες ξανά για αντικατάσταση.";
@@ -830,7 +830,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Trust: %@" = "Αξιόπιστο: %@";
 "Trust: \\(trust.capitalized)" = "Εμπιστοσύνη: \(trust.capitalized)";
 "Tune filters for your country and language." = "TΡύθμιση φίλτρων για τη χώρα και τη γλώσσα σας.";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Απενεργοποιήστε το για να διατηρήσετε την τρέχουσα έκδοση όταν το wBlock ενημερώνει σενάρια μαζικά ή βάσει προγράμματος.";
+"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Απενεργοποιήστε το για να διατηρήσετε την τρέχουσα έκδοση όταν το wBlock ενημερώνει τον κώδικα μαζικά ή βάσει προγράμματος.";
 "Unable to access shared container" = "Δεν είναι δυνατή η πρόσβαση στο κοινόχρηστο κοντέινερ";
 "Unapplied Filter Changes" = "Μη εφαρμοσμένες αλλαγές φίλτρου";
 "Unavailable" = "Μη διαθέσιμο";
@@ -914,11 +914,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Contains filter lists that you added or imported yourself." = "Περιέχει λίστες φίλτρων που προσθέσατε ή εισαγάγατε.";
 "Get Started" = "Έναρξη";
 "No default filters" = "Δεν υπάρχουν προεπιλεγμένα φίλτρα";
-"No default scripts" = "Δεν υπάρχουν προεπιλεγμένα σενάρια";
+"No default scripts" = "Δεν υπάρχουν προεπιλεγμένοι κώδικες";
 "Organizes userscripts and userstyles added to wBlock." = "Οργανώνει τα userscripts και userstyles που προσθέσατε στο wBlock.";
 "Provides newer rules and fixes that are still being tested." = "Παρέχει νεότερους κανόνες και διορθώσεις που δοκιμάζονται ακόμη.";
-"Recommended Filters" = "Προτεινόμενα φίλτρα";
-"Recommended Scripts" = "Προτεινόμενα σενάρια";
+"Recommended Filters" = "Προτεινόμενα Φίλτρα";
+"Recommended Scripts" = "Προτεινόμενοι Κώδικες";
 "Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Αφαιρεί ειδοποιήσεις cookie, αναδυόμενα παράθυρα, banner και άλλα ενοχλητικά στοιχεία. Ενεργοποίησε και τις πέντε λίστες AdGuard Annoyances για το πλήρες σύνολο.";
 "Reset to Default" = "Επαναφορά στις προεπιλογές";
 "Shows all filter lists across every category." = "Εμφανίζει όλες τις λίστες φίλτρων από κάθε κατηγορία.";
@@ -933,7 +933,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Off" = "Ανενεργό";
 "Xfiles" = "Xfiles";
 "xinggsf" = "xinggsf";
-"You're already using the latest filters." = "Χρησιμοποιείτε ήδη τα πιο πρόσφατα φίλτρα.";
+"You're already using the latest filters." = "Έχετε ήδη τα τελευταία φίλτρα.";
 "You can always add regional filters later from Settings." = "Μπορείτε πάντα να προσθέσετε τοπικά φίλτρα αργότερα από τις Ρυθμίσεις.";
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "Έχετε μη εφαρμοσμένες αλλαγές φίλτρου στο wBlock. Πατήστε για να τις εφαρμόσετε τώρα!";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Έχετε μη εφαρμοσμένες αλλαγές φίλτρων. Θέλετε να τα εφαρμόσετε πριν τα παρατήσετε;";
@@ -976,7 +976,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "Αλλαγή αρχείου";
 "Local imports won't auto-update; re-import to replace." = "Οι τοπικές εισαγωγές δεν ενημερώνονται αυτόματα· εισαγάγετε ξανά για αντικατάσταση.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "Το AdGuard Extra αποκλείει διαφημίσεις στο Twitch και αντιμετωπίζει σύνθετες περιπτώσεις anti-adblock.";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "Αποκλείει διαφημίσεις στο Twitch με το σενάριο vaft του TwitchAdSolutions. Μην το εκτελείτε μαζί με το AdGuard Extra.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "Αποκλείει διαφημίσεις στο Twitch με τον κώδικα vaft του TwitchAdSolutions. Μην το εκτελείτε μαζί με το AdGuard Extra.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Απενεργοποίηση βασικού φίλτρου;";
@@ -1127,7 +1127,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Automatic" = "Αυτόματα";
 
-"This script will not run on these sites. Other scripts still run." = "Αυτό το σενάριο δεν θα εκτελείται σε αυτούς τους ιστοτόπους. Τα άλλα σενάρια θα συνεχίσουν να εκτελούνται.";
+"This script will not run on these sites. Other scripts still run." = "Αυτός ο κώδικας δεν θα εκτελείται σε αυτούς τους ιστοτόπους. Οι άλλοι κώδικες θα συνεχίσουν να εκτελούνται.";
 
 "Operation details" = "Λεπτομέρειες λειτουργίας";
 

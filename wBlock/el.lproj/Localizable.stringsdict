@@ -13,9 +13,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Ληφθέν %d update</string>
+			<string>Λήφθηκε %d update</string>
 			<key>other</key>
-			<string>Ληφθέν %d updates</string>
+			<string>Λήφθηκε %d updates</string>
 		</dict>
 	</dict>
 	<key>Updated %d filters</key>
