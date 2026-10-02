@@ -73,7 +73,6 @@
 "Activate" = "启用";
 "Active" = "活跃";
 "Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
-"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
 "Adblock List for Finland" = "Adblock List for Finland";
 "AdBlockID" = "AdBlockID";
 "Add" = "Add";
@@ -238,8 +237,6 @@
 "Click an element on the page to hide it." = "点击页面上的元素以将其隐藏。";
 "close" = "关闭";
 "Close search" = "关闭搜索";
-"Community filter list that blocks ads on Albanian and Kosovar websites." = "由社区维护的过滤器列表，用于拦截阿尔巴尼亚语和科索沃网站上的广告。";
-"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "由社区维护的过滤器列表，用于拦截迪维希语（马尔代夫语）网站上的广告。";
 "Community options" = "社区选项";
 "Community-maintained options for additional regional coverage." = "由社区维护的额外地区覆盖选项。";
 "Completed" = "已完成";
@@ -594,7 +591,6 @@
 "Provide a valid https:// link ending in .user.js" = "请提供以 .user.js 结尾的有效 https:// 链接";
 "Psst! You forgot something!" = "嘘！你忘了点什么！";
 "Quit Without Applying" = "不申请就退出";
-"Raajje AdList" = "Raajje AdList";
 "Reading Files" = "正在读取文件";
 "Ready" = "就绪";
 "Ready." = "准备好。";

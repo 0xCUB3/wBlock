@@ -73,7 +73,6 @@
 "Activate" = "Aktivieren";
 "Active" = "Aktiv";
 "Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
-"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
 "Adblock List for Finland" = "Adblock List for Finland";
 "AdBlockID" = "AdBlockID";
 "Add" = "Add";
@@ -238,8 +237,6 @@
 "Click an element on the page to hide it." = "Klicke auf ein Element auf der Seite, um es auszublenden.";
 "close" = "schließen";
 "Close search" = "Suche schließen";
-"Community filter list that blocks ads on Albanian and Kosovar websites." = "Von der Community gepflegte Filterliste, die Werbung auf albanischen und kosovarischen Websites blockiert.";
-"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Von der Community gepflegte Filterliste, die Werbung auf Websites in Dhivehi (Maledivisch) blockiert.";
 "Community options" = "Community-Optionen";
 "Community-maintained options for additional regional coverage." = "Von der Community gepflegte Optionen für zusätzliche regionale Abdeckung.";
 "Completed" = "Abgeschlossen";
@@ -597,7 +594,6 @@
 "Provide a valid https:// link ending in .user.js" = "Gib einen gültigen https://-Link ein, der auf .user.js endet";
 "Psst! You forgot something!" = "Psst! Du hast etwas vergessen!";
 "Quit Without Applying" = "Kündigen, ohne sich zu bewerben";
-"Raajje AdList" = "Raajje AdList";
 "Reading Files" = "Dateien werden gelesen";
 "Ready" = "Bereit";
 "Ready." = "Bereit.";

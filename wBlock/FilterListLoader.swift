@@ -100,6 +100,8 @@ class FilterListLoader {
         "raw.githubusercontent.com/xinggsf/Adblock-Plus-Rule/master/rule.txt",  // xinggsf (#882)
         "raw.githubusercontent.com/yous/YousList/master/youslist.txt",  // YousList (#882)
         "raw.githubusercontent.com/MasterKia/PersianBlocker/main/PersianBlocker.txt",  // Persian Blocker, maintainer passed away (#921)
+        "raw.githubusercontent.com/AnXh3L0/blocklist/master/albanian-easylist-addition/Albania.txt",  // Adblock List for Albania and Kosovo, unmaintained (#921)
+        "raw.githubusercontent.com/lonum1rus/Raajje-AdList/master/filter.txt",  // Raajje AdList, unmaintained (#921)
     ]
 
     static func isRetiredBuiltIn(_ filter: FilterList) -> Bool {
@@ -381,14 +383,6 @@ class FilterListLoader {
                 description: "Additional filter list for websites in Indonesian.",
                 languages: ["id"], trustLevel: "high"),
             FilterList(
-                id: UUID(), name: "Adblock List for Albania and Kosovo",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AnXh3L0/blocklist/master/albanian-easylist-addition/Albania.txt"
-                )!, category: .foreign,
-                description: "Community filter list that blocks ads on Albanian and Kosovar websites.",
-                languages: ["sq"], trustLevel: "low"),
-            FilterList(
                 id: UUID(), name: "AdGuard Chinese filter",
                 url: URL(
                     string:
@@ -618,14 +612,6 @@ class FilterListLoader {
                     string: "https://raw.githubusercontent.com/betterwebleon/slovenian-list/master/filters.txt")!,
                 category: .foreign, description: "Additional filter list for websites in Slovenian.",
                 languages: ["sl"], trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "Raajje AdList",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/lonum1rus/Raajje-AdList/master/filter.txt"
-                )!, category: .foreign,
-                description: "Community filter list that blocks ads on Dhivehi (Maldivian) websites.",
-                languages: ["dv"], trustLevel: "low"),
             FilterList(
                 id: UUID(), name: "road-block light",
                 url: URL(

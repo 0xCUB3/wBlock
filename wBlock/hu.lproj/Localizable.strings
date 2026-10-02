@@ -73,7 +73,6 @@
 "Activate" = "Aktiválás";
 "Active" = "Aktív";
 "Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
-"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
 "Adblock List for Finland" = "Adblock List for Finland";
 "AdBlockID" = "AdBlockID";
 "Add" = "Add";
@@ -238,8 +237,6 @@
 "Click an element on the page to hide it." = "Kattints egy elemre az oldalon az elrejtéséhez.";
 "close" = "bezárás";
 "Close search" = "Keresés bezárása";
-"Community filter list that blocks ads on Albanian and Kosovar websites." = "Közösség által karbantartott szűrőlista, amely blokkolja a hirdetéseket az albán és koszovói webhelyeken.";
-"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Közösség által karbantartott szűrőlista, amely blokkolja a hirdetéseket a divehi (maldív) nyelvű webhelyeken.";
 "Community options" = "Közösségi lehetőségek";
 "Community-maintained options for additional regional coverage." = "Közösség által karbantartott lehetőségek további regionális lefedettséghez.";
 "Completed" = "Befejezve";
@@ -597,7 +594,6 @@
 "Provide a valid https:// link ending in .user.js" = "Adj meg egy érvényes, .user.js végű https:// hivatkozást";
 "Psst! You forgot something!" = "Pszt! Elfelejtettél valamit!";
 "Quit Without Applying" = "Kilépés jelentkezés nélkül";
-"Raajje AdList" = "Raajje AdList";
 "Reading Files" = "Fájlok olvasása";
 "Ready" = "Kész";
 "Ready." = "Kész.";

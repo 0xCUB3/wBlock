@@ -73,7 +73,6 @@
 "Activate" = "활성화";
 "Active" = "활성";
 "Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
-"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
 "Adblock List for Finland" = "Adblock List for Finland";
 "AdBlockID" = "AdBlockID";
 "Add" = "Add";
@@ -238,8 +237,6 @@
 "Click an element on the page to hide it." = "페이지에서 숨길 요소를 클릭하세요.";
 "close" = "닫기";
 "Close search" = "검색 닫기";
-"Community filter list that blocks ads on Albanian and Kosovar websites." = "알바니아 및 코소보 웹사이트에서 광고를 차단하는 커뮤니티 필터 목록입니다.";
-"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "디베히어(몰디브어) 웹사이트에서 광고를 차단하는 커뮤니티 필터 목록입니다.";
 "Community options" = "커뮤니티 옵션";
 "Community-maintained options for additional regional coverage." = "추가 지역 커버리지를 위한 커뮤니티 유지 옵션.";
 "Completed" = "완료됨";
@@ -597,7 +594,6 @@
 "Provide a valid https:// link ending in .user.js" = ".user.js로 끝나는 유효한 https:// 링크를 입력하세요";
 "Psst! You forgot something!" = "잠시만요! 잊으신 게 있네요!";
 "Quit Without Applying" = "신청하지 않고 종료";
-"Raajje AdList" = "Raajje AdList";
 "Reading Files" = "파일 읽는 중";
 "Ready" = "준비됨";
 "Ready." = "준비가 된.";

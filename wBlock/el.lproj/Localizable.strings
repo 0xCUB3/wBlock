@@ -73,7 +73,6 @@
 "Activate" = "Ενεργοποίηση";
 "Active" = "Ενεργή";
 "Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
-"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
 "Adblock List for Finland" = "Adblock List for Finland";
 "AdBlockID" = "AdBlockID";
 "Add" = "Add";
@@ -238,8 +237,6 @@
 "Click an element on the page to hide it." = "Κάντε κλικ σε ένα στοιχείο στη σελίδα για να το αποκρύψετε";
 "close" = "κλείσιμο";
 "Close search" = "Κλείσιμο αναζήτησης";
-"Community filter list that blocks ads on Albanian and Kosovar websites." = "Λίστα φίλτρων που διατηρείται από την κοινότητα και αποκλείει διαφημίσεις σε αλβανικούς και κοσοβάρικους ιστότοπους.";
-"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Λίστα φίλτρων που διατηρείται από την κοινότητα και αποκλείει διαφημίσεις σε ιστότοπους στα ντιβέχι (μαλδιβικά).";
 "Community options" = "Επιλογές Κοινότητας";
 "Community-maintained options for additional regional coverage." = "Επιλογές που διατηρούνται από την κοινότητα για πρόσθετη περιφερειακή κάλυψη.";
 "Completed" = "Ολοκληρώθηκε";
@@ -597,7 +594,6 @@
 "Provide a valid https:// link ending in .user.js" = "Παρέχετε έναν έγκυρο σύνδεσμο https:// που τελειώνει σε .user.js";
 "Psst! You forgot something!" = "Ψστ! Ξέχασες κάτι!";
 "Quit Without Applying" = "Κλείστε χωρίς να κάνετε αίτηση";
-"Raajje AdList" = "Raajje AdList";
 "Reading Files" = "Ανάγνωση αρχείων";
 "Ready" = "Έτοιμο";
 "Ready." = "Ετοιμος.";
