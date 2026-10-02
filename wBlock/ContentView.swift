@@ -370,6 +370,8 @@ struct ContentView: View {
             #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
             #endif
+                // Inside the stack, like Userscripts; iOS ignores toolbar items attached outside it.
+                .modifier(filtersToolbar)
         }
         #if os(iOS)
             .searchableCompat(
@@ -384,7 +386,6 @@ struct ContentView: View {
                 minHeight: 550, idealHeight: 720, maxHeight: .infinity
             )
         #endif
-        .modifier(filtersToolbar)
     }
 
     private var filtersToolbar: some ViewModifier {

@@ -33,8 +33,8 @@ extension View {
     }
 }
 
-/// List actions stay trailing: Update and Show Enabled share a group;
-/// Search and Add each have their own container.
+/// Search leads the macOS actions; on iOS Update/Apply sits leading and
+/// Show Enabled, Search and Add stay trailing in their own containers.
 struct ListActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifier {
     @Binding var searchText: String
     @Binding var focusRequest: Bool
@@ -50,16 +50,15 @@ struct ListActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifie
         #if os(macOS)
         if #available(macOS 26.0, *) {
             content.toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
+                }
+                .sharedBackgroundVisibility(.hidden)
+                .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItemGroup(placement: .primaryAction) {
                     apply()
                     filter()
                 }
-                .toolbarVisibilityPriorityCompat(.high)
-                ToolbarItem(placement: .primaryAction) {
-                    InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
-                        .padding(.leading, 4)
-                }
-                .sharedBackgroundVisibility(.hidden)
                 .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItem(placement: .primaryAction) {
                     primary()
@@ -73,12 +72,12 @@ struct ListActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifie
             .toolbarBackground(.visible, for: .windowToolbar)
         } else {
             content.toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    ToolbarSearchField(text: $searchText, isExpanded: $focusRequest, prompt: searchPrompt)
+                }
                 ToolbarItemGroup(placement: .primaryAction) {
                     apply()
                     filter()
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    ToolbarSearchField(text: $searchText, isExpanded: $focusRequest, prompt: searchPrompt)
                 }
                 ToolbarItem(placement: .primaryAction) { primary() }
             }
@@ -86,11 +85,9 @@ struct ListActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifie
         #else
         if #available(iOS 26.0, *) {
             content.toolbar {
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    apply()
-                    filter()
-                }
-                .toolbarVisibilityPriorityCompat(.high)
+                ToolbarItem(placement: .topBarLeading) { apply() }
+                    .toolbarVisibilityPriorityCompat(.high)
+                ToolbarItem(placement: .topBarTrailing) { filter() }
                 ToolbarSpacer(.fixed, placement: .topBarTrailing)
                 if horizontalSizeClass != .regular {
                     DefaultToolbarItem(kind: .search, placement: .topBarTrailing)
@@ -100,10 +97,8 @@ struct ListActionsToolbar<Primary: View, Apply: View, Filter: View>: ViewModifie
             }
         } else {
             content.toolbar {
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    apply()
-                    filter()
-                }
+                ToolbarItem(placement: .navigationBarLeading) { apply() }
+                ToolbarItem(placement: .navigationBarTrailing) { filter() }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if horizontalSizeClass != .regular {
                         Button { focusRequest = true } label: {
