@@ -60,11 +60,11 @@ extension ProtobufDataManager {
     }
 
     /// Background work may outlive several user edits and disk refreshes. Merge
-    /// only downloaded metadata into the current records under the store lock.
+    /// only metadata changed from the operation snapshot, never the manager's refreshed baseline.
     @discardableResult
-    public func updateFilterMetadata(_ filterLists: [FilterList]) async -> Bool {
+    public func updateFilterMetadata(_ filterLists: [FilterList], baseline: [FilterList]) async -> Bool {
         await updateDataImmediately { data in
-            FilterMetadataPersistence.merge(filterLists, into: &data.filterLists)
+            FilterMetadataPersistence.merge(filterLists, baseline: baseline, into: &data.filterLists)
         }
     }
 

@@ -1,28 +1,34 @@
 import Foundation
 
-/// A download owns metadata, never the user's configuration or the collection's membership.
+/// An operation owns only its metadata delta, never configuration or membership.
 enum FilterMetadataPersistence {
-    static func merge(_ downloads: [FilterList], into records: inout [Wblock_Data_FilterListData]) {
-        let byID = Dictionary(downloads.map { ($0.id.uuidString, $0) }, uniquingKeysWith: { _, last in last })
+    static func merge(_ updates: [FilterList], baseline: [FilterList], into records: inout [Wblock_Data_FilterListData]) {
+        let byID = Dictionary(updates.map { ($0.id.uuidString, $0) }, uniquingKeysWith: { _, last in last })
+        let baselineByID = Dictionary(baseline.map { ($0.id.uuidString, $0) }, uniquingKeysWith: { _, last in last })
         for index in records.indices {
             var record = records[index]
-            guard let download = byID[record.id], record.url == download.url.absoluteString else { continue }
-            // Missing ownership flags belong to legacy records. Keep their titles
-            // until the ordinary migration/save path has resolved those flags.
+            guard let update = byID[record.id], let original = baselineByID[record.id],
+                  record.url == update.url.absoluteString, original.url == update.url else { continue }
+            // Missing ownership flags have no opinion about remotely supplied text.
             if record.isCustom, record.hasUserProvidedName, !record.userProvidedName,
-               !download.hasUserProvidedName {
-                record.name = download.name
+               !update.hasUserProvidedName, update.name != original.name {
+                record.name = update.name
             }
             if record.isCustom, record.hasUserProvidedDescription, !record.userProvidedDescription,
-               !download.hasUserProvidedDescription {
-                record.description_p = download.description
+               !update.hasUserProvidedDescription, update.description != original.description {
+                record.description_p = update.description
             }
-            record.version = download.version
-            if let count = download.sourceRuleCount { record.sourceRuleCount = Int32(count) }
-            else { record.clearSourceRuleCount() }
-            if let count = download.uniqueRuleCount { record.admittedSourceRuleCount = Int32(count) }
-            else { record.clearAdmittedSourceRuleCount() }
-            record.lastUpdated = Int64(Date().timeIntervalSince1970)
+            if update.version != original.version { record.version = update.version }
+            if update.sourceRuleCount != original.sourceRuleCount {
+                if let count = update.sourceRuleCount { record.sourceRuleCount = Int32(count) }
+                else { record.clearSourceRuleCount() }
+            }
+            // Admission alone does not change when the source was last updated.
+            if record != records[index] { record.lastUpdated = Int64(Date().timeIntervalSince1970) }
+            if update.uniqueRuleCount != original.uniqueRuleCount {
+                if let count = update.uniqueRuleCount { record.admittedSourceRuleCount = Int32(count) }
+                else { record.clearAdmittedSourceRuleCount() }
+            }
             records[index] = record
         }
     }

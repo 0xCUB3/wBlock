@@ -1102,7 +1102,8 @@ public actor SharedAutoUpdateManager {
                 latestPersisted: latestPersistedFilters
             )
             try requireFinalSaveBudget()
-            await saveFilterListsToProtobuf(merged)
+            await saveFilterListsToProtobuf(updateResult.updatedFilters, baseline: allFilters)
+            let admissionBaseline = merged
             try await saveAutoUpdateStateImmediately(context: AutoUpdateBudgetPhase.finalStateSave)
             try throwIfCancelled()
             let helperStagedUpdates = isExternalHelperTrigger(trigger)
@@ -1136,7 +1137,7 @@ public actor SharedAutoUpdateManager {
 
             let successTime = Date().timeIntervalSince1970
             try requireFinalSaveBudget()
-            await saveFilterListsToProtobuf(merged)
+            await saveFilterListsToProtobuf(merged, baseline: admissionBaseline)
             let nextCheckInSeconds: Int
             if helperStagedUpdates {
                 await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
@@ -1402,16 +1403,8 @@ public actor SharedAutoUpdateManager {
             return .noUpdates(checkedFilters: updateResult.checkedCount, hadErrors: updateResult.hadErrors)
         }
 
-        var merged = allFilters
-        for updated in updateResult.updatedFilters {
-            if let idx = merged.firstIndex(where: { $0.id == updated.id }) { merged[idx] = updated }
-        }
         try Task.checkCancellation()
-        let latestPersisted = await ProtobufDataManager.shared.getFilterLists()
-        try Task.checkCancellation()
-        merged = FilterSelectionRebaser.rebaseSelection(snapshot: merged, latestPersisted: latestPersisted)
-        try Task.checkCancellation()
-        await saveFilterListsToProtobuf(merged)
+        await saveFilterListsToProtobuf(updateResult.updatedFilters, baseline: allFilters)
         try Task.checkCancellation()
         _ = StagedFilterDownloads.save(filterIDs: updateResult.updatedFilters.map { $0.id.uuidString })
         try Task.checkCancellation()
@@ -1449,8 +1442,8 @@ public actor SharedAutoUpdateManager {
         return (allFilters, selectedFilters)
     }
 
-    private func saveFilterListsToProtobuf(_ lists: [FilterList]) async {
-        await ProtobufDataManager.shared.updateFilterMetadata(lists)
+    private func saveFilterListsToProtobuf(_ lists: [FilterList], baseline: [FilterList]) async {
+        await ProtobufDataManager.shared.updateFilterMetadata(lists, baseline: baseline)
     }
 
     private func hydrateMissingSourceRuleCountsIfNeeded(_ filters: [FilterList]) async -> [FilterList] {
@@ -1486,7 +1479,7 @@ public actor SharedAutoUpdateManager {
                 snapshot: hydratedFilters,
                 latestPersisted: latestPersistedFilters
             )
-            await saveFilterListsToProtobuf(rebasedFilters)
+            await saveFilterListsToProtobuf(hydratedFilters, baseline: filters)
             return rebasedFilters
         }
 

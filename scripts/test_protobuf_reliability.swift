@@ -12,6 +12,7 @@ struct ProtobufReliabilityTests {
 
         await testFilterAutomaticUpdates(root: root.appendingPathComponent("filter-updates"))
         await testBackgroundMetadataPreservesConfiguration(root: root.appendingPathComponent("background-metadata"))
+        await testUnchangedMetadataPreservesForegroundDownload(root: root.appendingPathComponent("untouched-metadata"))
         await testInlineFilterSelection(root: root.appendingPathComponent("inline-filters"))
         await testDurableMigrationAndCorruptionRecovery(root: root.appendingPathComponent("recovery"))
         await testMissingMainAndScriptTimestamp(root: root.appendingPathComponent("missing-main"))
@@ -81,9 +82,10 @@ struct ProtobufReliabilityTests {
                                 category: .custom, isCustom: true)
         let seeded = await background.updateFilterLists([filter, inline])
         expect(seeded, "seed background snapshot")
-        var downloaded = background.getFilterLists()
+        let downloadBaseline = background.getFilterLists()
+        var downloaded = downloadBaseline
         downloaded[0].version = "downloaded"
-        let firstSave = await background.updateFilterMetadata(downloaded)
+        let firstSave = await background.updateFilterMetadata(downloaded, baseline: downloadBaseline)
         expect(firstSave, "first metadata save")
 
         let editor = await makeManager(root: root, standard: defaults, group: defaults)
@@ -95,6 +97,12 @@ struct ProtobufReliabilityTests {
         edited[0].hasUserProvidedName = true
         edited[0].isSelected = false
         edited[0].excludedSites = ["example.com"]
+        edited[0].selectedSites = ["selected.example"]
+        edited[0].updatesAutomatically = false
+        // Foreground Get finishes for a row this background operation never fetched.
+        edited[1].version = "v2-foreground"
+        edited[1].sourceRuleCount = 200
+        edited[1].uniqueRuleCount = 150
         let inserted = FilterList(name: "Added during compilation", url: URL(string: "https://example.com/new.txt")!,
                                   category: .security, isCustom: true)
         edited.append(inserted)
@@ -104,8 +112,9 @@ struct ProtobufReliabilityTests {
         // whole-list save would now mistake the old category for an explicit edit.
         await background.setFilterValidators(filter.id.uuidString, etag: "new", lastModified: nil)
         expect(background.getFilterLists()[0].category == .privacy, "background baseline sees user edit")
+        let admissionBaseline = downloaded
         downloaded[0].uniqueRuleCount = 7
-        let secondSave = await background.updateFilterMetadata(downloaded)
+        let secondSave = await background.updateFilterMetadata(downloaded, baseline: admissionBaseline)
         expect(secondSave, "second metadata save after compilation")
 
         let restarted = await makeManager(root: root, standard: defaults, group: defaults)
@@ -113,7 +122,12 @@ struct ProtobufReliabilityTests {
         let result = restarted.getFilterLists().first { $0.id == filter.id }!
         expect(result.category == .privacy && result.name == "My title" && result.hasUserProvidedName,
                "metadata must not revert a category or explicit title after a baseline refresh")
-        expect(!result.isSelected && result.excludedSites == ["example.com"], "metadata must preserve configuration")
+        expect(!result.isSelected && !result.updatesAutomatically
+               && result.excludedSites == ["example.com"] && result.selectedSites == ["selected.example"],
+               "metadata must preserve configuration")
+        let foreground = restarted.getFilterLists().first { $0.id == inlineID }!
+        expect(foreground.version == "v2-foreground" && foreground.sourceRuleCount == 200
+               && foreground.uniqueRuleCount == 150, "admission save must preserve an untouched foreground Get")
         expect(result.version == "downloaded" && result.uniqueRuleCount == 7, "downloaded metadata must survive restart")
         expect(restarted.getFilterLists().first { $0.id == inlineID }?.category == .annoyances,
                "background saves must also preserve a moved inline user list")
@@ -121,7 +135,7 @@ struct ProtobufReliabilityTests {
 
         var concurrentEdit = restarted.getFilterLists()
         concurrentEdit[0].category = .security
-        async let metadataSave = background.updateFilterMetadata(downloaded)
+        async let metadataSave = background.updateFilterMetadata(downloaded, baseline: admissionBaseline)
         async let categorySave = restarted.updateFilterLists(concurrentEdit)
         let saves = await (metadataSave, categorySave)
         expect(saves.0 && saves.1, "concurrent metadata and category writes succeed")
@@ -134,17 +148,52 @@ struct ProtobufReliabilityTests {
         retargeted[0].version = "replacement"
         let retargetSave = await restarted.updateFilterLists(retargeted)
         expect(retargetSave, "retarget fixture")
-        let obsoleteDownload = await background.updateFilterMetadata(downloaded)
+        let obsoleteDownload = await background.updateFilterMetadata(downloaded, baseline: admissionBaseline)
         expect(obsoleteDownload, "obsolete download save")
         await restarted.refreshFromDiskIfModified(forceRead: true)
         expect(restarted.getFilterLists().first { $0.id == filter.id }?.version == "replacement",
                "metadata must match both ID and current source URL")
 
         await restarted.removeFilterList(withId: filter.id)
-        let staleSave = await background.updateFilterMetadata(downloaded)
+        let staleSave = await background.updateFilterMetadata(downloaded, baseline: admissionBaseline)
         expect(staleSave, "metadata after deletion")
         await restarted.refreshFromDiskIfModified(forceRead: true)
         expect(!restarted.getFilterLists().contains { $0.id == filter.id }, "metadata must not resurrect a deleted list")
+    }
+
+    private static func testUnchangedMetadataPreservesForegroundDownload(root: URL) async {
+        let suite = "test.wblock.untouched-metadata.\(UUID())"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let background = await makeManager(root: root, standard: defaults, group: defaults)
+        await background.loadData()
+        var old = FilterList(name: "Untouched", url: URL(string: "https://example.com/untouched.txt")!,
+                             category: .ads, isCustom: true, isSelected: true)
+        old.version = "v1"; old.sourceRuleCount = 100; old.uniqueRuleCount = 90
+        await background.updateFilterLists([old])
+        let baseline = background.getFilterLists()
+        let foreground = await makeManager(root: root, standard: defaults, group: defaults)
+        await foreground.loadData()
+        var downloaded = foreground.getFilterLists()
+        downloaded[0].version = "v2"
+        downloaded[0].sourceRuleCount = 200
+        downloaded[0].uniqueRuleCount = 150
+        await foreground.updateFilterLists(downloaded)
+        let expected = foreground.getFilterLists()[0]
+        // This refresh must not turn an old operation snapshot into an explicit edit.
+        await background.setFilterValidators(old.id.uuidString, etag: "refresh", lastModified: nil)
+        let saved = await background.updateFilterMetadata(baseline, baseline: baseline)
+        expect(saved, "unchanged metadata save")
+        await foreground.refreshFromDiskIfModified(forceRead: true)
+        expect(foreground.getFilterLists()[0] == expected, "unchanged row preserves newer metadata and timestamp")
+
+        var admitted = baseline
+        admitted[0].uniqueRuleCount = 80
+        await background.updateFilterMetadata(admitted, baseline: baseline)
+        await foreground.refreshFromDiskIfModified(forceRead: true)
+        let result = foreground.getFilterLists()[0]
+        expect(result.version == "v2" && result.sourceRuleCount == 200 && result.uniqueRuleCount == 80
+               && result.lastUpdated == expected.lastUpdated, "admission changes only its count")
     }
 
     private static func testInlineFilterSelection(root: URL) async {
