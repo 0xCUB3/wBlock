@@ -767,12 +767,7 @@ public class UserScriptManager: ObservableObject {
         if let httpResponse = response as? HTTPURLResponse {
             UserScriptModifiedStore.record(httpResponse.value(forHTTPHeaderField: "Last-Modified"), for: url)
         }
-        guard let content = String(data: data, encoding: .utf8),
-              !content.isEmpty,
-              !isDDoSProtectionPage(content)
-        else {
-            throw URLError(.cannotParseResponse)
-        }
+        let content = try UserScriptContentValidation.downloadedSource(from: data)
         return try await inlineRemoteStyleImports(in: content)
     }
 

@@ -2325,6 +2325,9 @@ struct AddUserScriptView: View {
 
     private var editorRequirementsPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
+            Text("Local imports won't auto-update; re-import to replace.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
             AddContentRequirementsPanel(requirements: AddContentRequirement.localImport(fromFile: false) + [
                 AddContentRequirement(systemImage: "doc.badge.gearshape", text: metadataRequirementText)
             ])
