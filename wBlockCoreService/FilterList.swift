@@ -202,37 +202,40 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         try container.encodeIfPresent(uniqueRuleCount, forKey: .admittedSourceRuleCount)
     }
     
-    /// Maps ISO 639 language codes to their primary region's flag emoji
-    public static let languageToFlag: [String: String] = [
-        "ar": "\u{1F1F8}\u{1F1E6}", "as": "\u{1F1EE}\u{1F1F3}", "bg": "\u{1F1E7}\u{1F1EC}",
-        "bn": "\u{1F1E7}\u{1F1E9}", "bs": "\u{1F1E7}\u{1F1E6}", "cnr": "\u{1F1F2}\u{1F1EA}",
-        "cs": "\u{1F1E8}\u{1F1FF}", "da": "\u{1F1E9}\u{1F1F0}", "de": "\u{1F1E9}\u{1F1EA}",
-        "dv": "\u{1F1F2}\u{1F1FB}", "el": "\u{1F1EC}\u{1F1F7}", "es": "\u{1F1EA}\u{1F1F8}",
-        "et": "\u{1F1EA}\u{1F1EA}", "fa": "\u{1F1EE}\u{1F1F7}", "fi": "\u{1F1EB}\u{1F1EE}",
-        "fil": "\u{1F1F5}\u{1F1ED}", "fo": "\u{1F1EB}\u{1F1F4}", "fr": "\u{1F1EB}\u{1F1F7}",
-        "gu": "\u{1F1EE}\u{1F1F3}", "he": "\u{1F1EE}\u{1F1F1}", "hi": "\u{1F1EE}\u{1F1F3}",
-        "hr": "\u{1F1ED}\u{1F1F7}", "hu": "\u{1F1ED}\u{1F1FA}", "id": "\u{1F1EE}\u{1F1E9}",
-        "is": "\u{1F1EE}\u{1F1F8}", "it": "\u{1F1EE}\u{1F1F9}", "ja": "\u{1F1EF}\u{1F1F5}",
-        "kk": "\u{1F1F0}\u{1F1FF}", "kl": "\u{1F1EC}\u{1F1F1}", "kn": "\u{1F1EE}\u{1F1F3}",
-        "ko": "\u{1F1F0}\u{1F1F7}", "lt": "\u{1F1F1}\u{1F1F9}", "lv": "\u{1F1F1}\u{1F1FB}",
-        "mai": "\u{1F1EE}\u{1F1F3}", "mk": "\u{1F1F2}\u{1F1F0}", "ml": "\u{1F1EE}\u{1F1F3}",
-        "mr": "\u{1F1EE}\u{1F1F3}", "ne": "\u{1F1F3}\u{1F1F5}", "nl": "\u{1F1F3}\u{1F1F1}",
-        "nb": "\u{1F1F3}\u{1F1F4}", "nn": "\u{1F1F3}\u{1F1F4}", "or": "\u{1F1EE}\u{1F1F3}", "pa": "\u{1F1EE}\u{1F1F3}",
-        "pl": "\u{1F1F5}\u{1F1F1}", "ps": "\u{1F1E6}\u{1F1EB}", "pt": "\u{1F1E7}\u{1F1F7}",
-        "ro": "\u{1F1F7}\u{1F1F4}", "ru": "\u{1F1F7}\u{1F1FA}", "si": "\u{1F1F1}\u{1F1F0}",
-        "sk": "\u{1F1F8}\u{1F1F0}", "sl": "\u{1F1F8}\u{1F1EE}", "sq": "\u{1F1E6}\u{1F1F1}",
-        "sr": "\u{1F1F7}\u{1F1F8}", "sv": "\u{1F1F8}\u{1F1EA}", "ta": "\u{1F1EE}\u{1F1F3}",
-        "te": "\u{1F1EE}\u{1F1F3}", "tg": "\u{1F1F9}\u{1F1EF}", "th": "\u{1F1F9}\u{1F1ED}",
-        "tr": "\u{1F1F9}\u{1F1F7}", "uk": "\u{1F1FA}\u{1F1E6}", "uz": "\u{1F1FA}\u{1F1FF}",
-        "vi": "\u{1F1FB}\u{1F1F3}", "zh": "\u{1F1E8}\u{1F1F3}",
+    /// Regions whose flags mark each ISO 639 language code. Flags are a visual aid;
+    /// they don't claim a list covers every site in those countries.
+    private static let languageRegions: [String: String] = [
+        "ar": "EG SA MA DZ", "as": "IN", "bg": "BG", "bn": "BD", "bs": "BA",
+        "cnr": "ME", "cs": "CZ", "da": "DK", "de": "DE CH AT", "dv": "MV",
+        "el": "GR CY", "es": "ES AR", "et": "EE", "fa": "IR", "fi": "FI",
+        "fr": "FR BE CA", "gu": "IN", "he": "IL", "hi": "IN", "hr": "HR",
+        "hu": "HU", "id": "ID", "is": "IS", "it": "IT", "ja": "JP",
+        "kn": "IN", "ko": "KR", "lt": "LT", "lv": "LV", "mai": "IN",
+        "mk": "MK", "ml": "IN", "mr": "IN", "ms": "MY", "nb": "NO",
+        "ne": "NP", "nl": "NL BE", "nn": "NO", "or": "IN", "pa": "IN",
+        "pl": "PL", "ps": "AF", "pt": "BR PT", "ro": "RO MD", "ru": "RU",
+        "si": "LK", "sk": "SK", "sl": "SI", "sq": "AL XK", "sr": "RS",
+        "sv": "SE", "ta": "IN", "te": "IN", "tg": "TJ", "th": "TH",
+        "tr": "TR", "uk": "UA", "vi": "VN", "zh": "CN TW HK MO",
     ]
+
+    private static func flags(forLanguage code: String) -> [String] {
+        (languageRegions[code] ?? "").split(separator: " ").map { region in
+            String(String.UnicodeScalarView(region.unicodeScalars.compactMap {
+                Unicode.Scalar(0x1F1A5 + $0.value)
+            }))
+        }
+    }
+
+    /// The first flag for a language, used where one language is shown on its own.
+    public static func flag(forLanguage code: String) -> String? {
+        flags(forLanguage: code).first
+    }
 
     /// Returns flag emojis for this filter's languages, or nil if none
     public var flagEmojis: String? {
-        guard !languages.isEmpty else { return nil }
         var seen = Set<String>()
-        let flags = languages.compactMap { Self.languageToFlag[$0] }
-            .filter { seen.insert($0).inserted }
+        let flags = languages.flatMap(Self.flags(forLanguage:)).filter { seen.insert($0).inserted }
         return flags.isEmpty ? nil : flags.joined(separator: " ")
     }
 

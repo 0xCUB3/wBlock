@@ -62,7 +62,7 @@ struct RegionalLanguageOption: Identifiable, Hashable {
                     RegionalLanguageOption(
                         code: code,
                         name: locale.localizedString(forLanguageCode: code) ?? code,
-                        flag: FilterList.languageToFlag[code] ?? ""
+                        flag: FilterList.flag(forLanguage: code) ?? ""
                     )
                 )
             }

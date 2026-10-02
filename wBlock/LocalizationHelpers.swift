@@ -137,7 +137,7 @@ enum ForeignFilterOrganizer {
         }
 
         let name = languageSortTitle(for: languageCode)
-        guard let flag = FilterList.languageToFlag[languageCode], !flag.isEmpty else { return name }
+        guard let flag = FilterList.flag(forLanguage: languageCode) else { return name }
         return "\(flag) \(name)"
     }
 
