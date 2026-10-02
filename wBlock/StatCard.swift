@@ -36,7 +36,8 @@ private extension EnvironmentValues {
 }
 
 /// Both tab summaries share spacing and horizontal clearance. On macOS every
-/// card takes the widest card's natural width, content kept leading.
+/// card takes the widest card's natural width, but never less than the 155pt
+/// every other pill uses, so short counts don't shrink a tab's pills (#921).
 struct StatsCardsView<Content: View>: View {
     var compact = false
     @ViewBuilder var content: Content
@@ -154,7 +155,7 @@ struct StatCard: View {
                 GeometryReader { Color.clear.preference(key: StatCardWidthPreference.self, value: $0.size.width) }
             }
         }
-        .frame(minWidth: isStatsSummary ? summaryWidth : 155, alignment: .leading)
+        .frame(minWidth: max(isStatsSummary ? summaryWidth ?? 0 : 0, 155), alignment: .leading)
         #endif
         .background {
             #if os(iOS)
