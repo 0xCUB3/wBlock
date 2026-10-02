@@ -27211,7 +27211,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     // tab) has no injection target either, so it takes the same path.
     if (!blankFrame && tabId) {
       if (!fromCache || !(cachedBlockingState.disabled || cachedBlockingState.paused)) {
-        await backgroundScript.applyConfiguration(tabId, frameId, configuration);
+        // Injection may have partly landed; an error here would make the
+        // content script retry and inject twice.
+        try {
+          await backgroundScript.applyConfiguration(tabId, frameId, configuration);
+        } catch (error) {
+          wBlockLogger.error('Failed to apply configuration for ', url, String(error && error.message ? error.message : error));
+        }
       }
     } else {
       // Pass precompiled scriptlet source to the content script. The content
