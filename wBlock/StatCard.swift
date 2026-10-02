@@ -7,6 +7,20 @@
 
 import SwiftUI
 
+/// Both tab summaries share spacing and horizontal clearance.
+struct StatsCardsView<Content: View>: View {
+    var compact = false
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        HStack(spacing: compact ? 8 : 12) { content }
+        #if os(iOS)
+        .fixedSize(horizontal: false, vertical: true)
+        #endif
+        .padding(.horizontal)
+    }
+}
+
 struct StatCard: View {
     let title: String
     let value: String
@@ -84,15 +98,15 @@ struct StatCard: View {
                     .truncationMode(.tail)
                     .minimumScaleFactor(0.6)
                     .allowsTightening(true)
+                    #if os(iOS)
                     .frame(minWidth: compact ? 0 : 60, alignment: .leading)
+                    #endif
             }
         }
         .padding(.vertical, 12)
         .padding(.horizontal, compact ? 14 : 20)
         #if os(iOS)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        #else
-        .frame(minWidth: 155)
         #endif
         .background {
             #if os(iOS)

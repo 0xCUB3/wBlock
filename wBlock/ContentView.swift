@@ -536,7 +536,7 @@ struct ContentView: View {
     }
 
     private var statsCardsView: some View {
-        HStack(spacing: 12) {
+        StatsCardsView {
             Button {
                 showingCapacityPopover = true
             } label: {
@@ -591,10 +591,6 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             #endif
         }
-        #if os(iOS)
-        .fixedSize(horizontal: false, vertical: true)
-        #endif
-        .padding(.horizontal)
     }
 
     private func categoryHeader(_ category: FilterListCategory) -> some View {

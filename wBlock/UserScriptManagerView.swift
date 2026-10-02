@@ -573,7 +573,7 @@ struct UserScriptManagerView: View {
             false
             #endif
         }()
-        return HStack(spacing: compact ? 8 : 12) {
+        return StatsCardsView(compact: compact) {
             StatCard(
                 title: "Scripts",
                 value: "\(totalScriptsCount)",
@@ -597,10 +597,6 @@ struct UserScriptManagerView: View {
                 compact: compact
             )
         }
-        #if os(iOS)
-        .fixedSize(horizontal: false, vertical: true)
-        #endif
-        .padding(.horizontal)
     }
 
     private func displaySectionHeader(_ section: UserScriptDisplaySection) -> some View {

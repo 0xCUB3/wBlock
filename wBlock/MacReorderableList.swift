@@ -400,7 +400,12 @@ struct MacReorderableList: NSViewRepresentable {
 
         /// A live resize re-measures only visible rows; the rest follow once it ends.
         func widthChanged() {
-            guard let outline, !heights.isEmpty else { return }
+            guard let outline else { return }
+            if let header = roots.first,
+               let view = outline.view(atColumn: 0, row: 0, makeIfNecessary: false) as? MacListHostingView {
+                view.setContent(hosted(header))
+            }
+            guard !heights.isEmpty else { return }
             let rows: IndexSet
             if outline.inLiveResize {
                 let visible = outline.rows(in: outline.visibleRect)
@@ -460,6 +465,14 @@ struct MacReorderableList: NSViewRepresentable {
                             if node.showsSeparator { Divider().padding(.leading, 16) }
                         }
                         .padding(.horizontal, 16)
+                } else if case .header = node.id, let scroll = outline?.enclosingScrollView {
+                    // Center on the whole scroll surface, not the clip view that
+                    // narrows when a legacy scrollbar appears on a longer tab.
+                    let right = max(0, scroll.bounds.maxX - scroll.contentView.frame.maxX)
+                    let left = max(0, scroll.contentView.frame.minX - scroll.bounds.minX)
+                    node.content
+                        .padding(.leading, environment.layoutDirection == .leftToRight ? right : left)
+                        .padding(.trailing, environment.layoutDirection == .leftToRight ? left : right)
                 } else {
                     node.content
                 }
