@@ -82,7 +82,7 @@ struct ApplyChangesProgressView: View {
         .applySheetPresentationCompat(
             prefersLarge: fillsAvailableHeight,
             contentHeight: fittedHeight,
-            fitsHorizontally: mode == .result
+            fitsHorizontally: false
         )
         .onPreferenceChange(ApplySheetHeightsKey.self) { measuredHeights = $0 }
         .interactiveDismissDisabled(isDismissDisabled)
