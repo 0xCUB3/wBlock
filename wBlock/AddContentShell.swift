@@ -249,6 +249,21 @@ struct AddContentSourceCard<Content: View>: View {
     }
 }
 
+/// The add button keeps its title's size while working: the title stays in
+/// layout, hidden, under a small spinner (#921).
+struct AddContentSubmitLabel: View {
+    let title: LocalizedStringKey
+    let isLoading: Bool
+    var isProminent = false
+
+    var body: some View {
+        Text(title)
+            .fontWeight(isProminent ? .semibold : nil)
+            .opacity(isLoading ? 0 : 1)
+            .overlay { if isLoading { ProgressView().controlSize(.small) } }
+    }
+}
+
 struct ContentCategoryPicker: View {
     @Binding var selection: FilterListCategory
     let categories: [FilterListCategory]
@@ -428,11 +443,7 @@ struct AddContentIOSSheet<Content: View>: View {
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         Button(action: onSubmit) {
-                            if isLoading {
-                                ProgressView()
-                            } else {
-                                Text(buttonTitle())
-                            }
+                            AddContentSubmitLabel(title: buttonTitle(), isLoading: isLoading)
                         }
                         .disabled(isSubmitDisabled)
                     }

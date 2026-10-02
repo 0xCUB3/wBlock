@@ -2485,14 +2485,7 @@ struct AddUserScriptView: View {
 
     private var addButton: some View {
         Button(action: submit) {
-            HStack(spacing: 8) {
-                if isAdding {
-                    ProgressView()
-                        .scaleEffect(0.9)
-                }
-                Text(LocalizedStringKey(isAdding ? "Adding…" : addURLButtonTitle))
-                    .fontWeight(.semibold)
-            }
+            AddContentSubmitLabel(title: LocalizedStringKey(addURLButtonTitle), isLoading: isAdding, isProminent: true)
         }
         .primaryActionButtonStyle()
         .disabled(!canSubmit || isAdding || isImportingURLList)

@@ -1510,14 +1510,7 @@ struct AddFilterListView: View {
 
 	        private var macosAddButton: some View {
 	            Button(action: submit) {
-	                HStack(spacing: 8) {
-	                    if isSaving {
-	                        ProgressView()
-	                            .scaleEffect(0.9)
-	                    }
-	                    Text(LocalizedStringKey(isSaving ? "Adding…" : addButtonTitle))
-	                        .fontWeight(.semibold)
-	                }
+	                AddContentSubmitLabel(title: LocalizedStringKey(addButtonTitle), isLoading: isSaving, isProminent: true)
 	            }
 	            .primaryActionButtonStyle()
 	            .disabled(!canSubmit || isSaving || isImportingURLList || (isReviewingURLs && isFetchingURLMetadata))
