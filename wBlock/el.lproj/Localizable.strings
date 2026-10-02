@@ -251,7 +251,7 @@
 "Community options" = "Επιλογές Κοινότητας";
 "Community-maintained options for additional regional coverage." = "Επιλογές που διατηρούνται από την κοινότητα για πρόσθετη περιφερειακή κάλυψη.";
 "Completed" = "Ολοκληρώθηκε";
-"Comprehensive ad-blocking rules by AdGuard." = "Πλήρεις κανόνες αποκλεισμού διαφημίσεων από το AdGuard.";
+"Comprehensive ad-blocking rules by AdGuard." = "Ολοκληρωμένοι κανόνες αποκλεισμού διαφημίσεων από το AdGuard.";
 "Conditional check failed" = "Αποτυχία υπό όρους ελέγχου";
 "Contains new rules and fixes not yet included in other filters." = "Περιέχει νέους κανόνες και διορθώσεις που δεν περιλαμβάνονται ακόμη σε άλλα φίλτρα.";
 "Content filtering" = "Φιλτράρισμα περιεχομένου";
@@ -960,7 +960,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
 "AdGuard Allowlist" = "AdGuard Allowlist";
-"Blocks tracking pixels and other mail tracking techniques." = "Αποκλείει pixel παρακολούθησης και άλλες τεχνικές παρακολούθησης email.";
+"Blocks tracking pixels and other mail tracking techniques." = "Αποκλείει εικονοστοιχεία παρακολούθησης και άλλες τεχνικές παρακολούθησης αλληλογραφίας.";
 "Blocks public websites from reaching local network addresses and router admin pages. Can break some local apps." = "Εμποδίζει δημόσιους ιστότοπους να φτάσουν σε διευθύνσεις τοπικού δικτύου και σελίδες διαχείρισης του δρομολογητή. Μπορεί να χαλάσει ορισμένες τοπικές εφαρμογές.";
 "Allows sites and resources that should not be blocked." = "Επιτρέπει ιστότοπους και πόρους που δεν πρέπει να αποκλείονται.";
 
