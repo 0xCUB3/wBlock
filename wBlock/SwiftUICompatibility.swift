@@ -513,7 +513,7 @@ struct ApplyChangesToolbarLabel: View {
 }
 #endif
 
-/// Toolbar Apply control: tap checks for updates, 3s hold force-applies.
+/// Toolbar Apply control: tap applies pending changes or checks for updates; 3s hold force-applies.
 struct ApplyChangesHoldButton<Label: View>: View {
     let isDisabled: Bool
     let hasPendingChanges: Bool
@@ -543,7 +543,7 @@ struct ApplyChangesHoldButton<Label: View>: View {
             label
         }
         .disabled(isDisabled)
-        .accessibilityLabel("Apply Changes")
+        .accessibilityLabel(hasPendingChanges ? Text("Apply Changes") : Text("Check for Updates"))
         .accessibilityHint("Hold for 3 seconds to apply without checking for updates.")
         .help(helpText)
         #if os(macOS)
@@ -560,7 +560,7 @@ struct ApplyChangesHoldButton<Label: View>: View {
     private var helpText: String {
         let action = hasPendingChanges
             ? String(localized: "Apply your pending changes")
-            : String(localized: "Apply changes")
+            : String(localized: "Check for Updates")
         return action
             + " "
             + String(localized: "Hold for 3 seconds to apply without checking for updates.")
