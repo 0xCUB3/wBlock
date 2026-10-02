@@ -11,22 +11,46 @@ private struct StatsSummaryLayoutKey: EnvironmentKey {
     static let defaultValue = false
 }
 
+private struct StatsSummaryWidthKey: EnvironmentKey {
+    static let defaultValue: CGFloat? = nil
+}
+
+/// The widest summary card's natural width.
+private struct StatCardWidthPreference: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 private extension EnvironmentValues {
     var isStatsSummary: Bool {
         get { self[StatsSummaryLayoutKey.self] }
         set { self[StatsSummaryLayoutKey.self] = newValue }
     }
+
+    var statsSummaryWidth: CGFloat? {
+        get { self[StatsSummaryWidthKey.self] }
+        set { self[StatsSummaryWidthKey.self] = newValue }
+    }
 }
 
-/// Both tab summaries share spacing and horizontal clearance.
+/// Both tab summaries share spacing and horizontal clearance. On macOS every
+/// card takes the widest card's natural width, content kept leading.
 struct StatsCardsView<Content: View>: View {
     var compact = false
     @ViewBuilder var content: Content
+    @State private var cardWidth: CGFloat?
 
     var body: some View {
         HStack(spacing: compact ? 8 : 12) { content }
         #if os(iOS)
         .fixedSize(horizontal: false, vertical: true)
+        #else
+        .environment(\.statsSummaryWidth, cardWidth)
+        .onPreferenceChange(StatCardWidthPreference.self) { width in
+            if width > 0, width != cardWidth { cardWidth = width }
+        }
         #endif
         .padding(.horizontal)
         .environment(\.isStatsSummary, true)
@@ -35,6 +59,7 @@ struct StatsCardsView<Content: View>: View {
 
 struct StatCard: View {
     @Environment(\.isStatsSummary) private var isStatsSummary
+    @Environment(\.statsSummaryWidth) private var summaryWidth
     let title: String
     let value: String
     let icon: String
@@ -123,7 +148,13 @@ struct StatCard: View {
         #if os(iOS)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         #else
-        .frame(minWidth: isStatsSummary ? nil : 155)
+        .fixedSize()
+        .background {
+            if isStatsSummary {
+                GeometryReader { Color.clear.preference(key: StatCardWidthPreference.self, value: $0.size.width) }
+            }
+        }
+        .frame(minWidth: isStatsSummary ? summaryWidth : 155, alignment: .leading)
         #endif
         .background {
             #if os(iOS)
