@@ -1013,7 +1013,12 @@ final class CloudSyncManager: ObservableObject {
         baselineFilters: SyncPayload.Filters,
         localSelectionRevisionAtStart: UInt64
     ) async throws {
-        let currentFilters = (try await buildPayloadContent()).filters
+        // Inline-content reads suspend after capturing filter metadata. Retry if
+        // a category edit would otherwise be invisible to conflict detection.
+        let currentFilters = try await StableSnapshot.build(
+            state: { self.currentFilterLists() },
+            value: { try await self.buildPayloadContent().filters }
+        ).value
         let baselineCustomByURL = Dictionary(
             baselineFilters.customLists.map { ($0.url, $0) },
             uniquingKeysWith: { _, latest in latest }

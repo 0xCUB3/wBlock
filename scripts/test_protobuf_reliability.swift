@@ -11,6 +11,7 @@ struct ProtobufReliabilityTests {
         defer { try? FileManager.default.removeItem(at: root) }
 
         await testFilterAutomaticUpdates(root: root.appendingPathComponent("filter-updates"))
+        await testBackgroundMetadataPreservesConfiguration(root: root.appendingPathComponent("background-metadata"))
         await testInlineFilterSelection(root: root.appendingPathComponent("inline-filters"))
         await testDurableMigrationAndCorruptionRecovery(root: root.appendingPathComponent("recovery"))
         await testMissingMainAndScriptTimestamp(root: root.appendingPathComponent("missing-main"))
@@ -65,6 +66,85 @@ struct ProtobufReliabilityTests {
         await afterDeletion.loadData()
         expect(!afterDeletion.getFilterLists().contains { $0.id == lists[1].id },
                "a stale writer must not resurrect a removed subscription")
+    }
+
+    private static func testBackgroundMetadataPreservesConfiguration(root: URL) async {
+        let suite = "test.wblock.filter-metadata.\(UUID())"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let background = await makeManager(root: root, standard: defaults, group: defaults)
+        await background.loadData()
+        let filter = FilterList(name: "Remote title", url: URL(string: "https://example.com/list.txt")!,
+                                category: .custom, isCustom: true, isSelected: true)
+        let inlineID = UUID()
+        let inline = FilterList(id: inlineID, name: "Local rules", url: URL(string: "wblock://userlist/\(inlineID)")!,
+                                category: .custom, isCustom: true)
+        let seeded = await background.updateFilterLists([filter, inline])
+        expect(seeded, "seed background snapshot")
+        var downloaded = background.getFilterLists()
+        downloaded[0].version = "downloaded"
+        let firstSave = await background.updateFilterMetadata(downloaded)
+        expect(firstSave, "first metadata save")
+
+        let editor = await makeManager(root: root, standard: defaults, group: defaults)
+        await editor.loadData()
+        var edited = editor.getFilterLists()
+        edited[0].category = .privacy
+        edited[1].category = .annoyances
+        edited[0].name = "My title"
+        edited[0].hasUserProvidedName = true
+        edited[0].isSelected = false
+        edited[0].excludedSites = ["example.com"]
+        let inserted = FilterList(name: "Added during compilation", url: URL(string: "https://example.com/new.txt")!,
+                                  category: .security, isCustom: true)
+        edited.append(inserted)
+        let userSave = await editor.updateFilterLists(edited)
+        expect(userSave, "user edits while compilation is suspended")
+        // An unrelated write refreshes the background process's baseline. A
+        // whole-list save would now mistake the old category for an explicit edit.
+        await background.setFilterValidators(filter.id.uuidString, etag: "new", lastModified: nil)
+        expect(background.getFilterLists()[0].category == .privacy, "background baseline sees user edit")
+        downloaded[0].uniqueRuleCount = 7
+        let secondSave = await background.updateFilterMetadata(downloaded)
+        expect(secondSave, "second metadata save after compilation")
+
+        let restarted = await makeManager(root: root, standard: defaults, group: defaults)
+        await restarted.loadData()
+        let result = restarted.getFilterLists().first { $0.id == filter.id }!
+        expect(result.category == .privacy && result.name == "My title" && result.hasUserProvidedName,
+               "metadata must not revert a category or explicit title after a baseline refresh")
+        expect(!result.isSelected && result.excludedSites == ["example.com"], "metadata must preserve configuration")
+        expect(result.version == "downloaded" && result.uniqueRuleCount == 7, "downloaded metadata must survive restart")
+        expect(restarted.getFilterLists().first { $0.id == inlineID }?.category == .annoyances,
+               "background saves must also preserve a moved inline user list")
+        expect(restarted.getFilterLists().contains { $0.id == inserted.id }, "metadata must not delete concurrent additions")
+
+        var concurrentEdit = restarted.getFilterLists()
+        concurrentEdit[0].category = .security
+        async let metadataSave = background.updateFilterMetadata(downloaded)
+        async let categorySave = restarted.updateFilterLists(concurrentEdit)
+        let saves = await (metadataSave, categorySave)
+        expect(saves.0 && saves.1, "concurrent metadata and category writes succeed")
+        await restarted.refreshFromDiskIfModified(forceRead: true)
+        expect(restarted.getFilterLists().first { $0.id == filter.id }?.category == .security,
+               "category survives either atomic write order")
+
+        var retargeted = restarted.getFilterLists()
+        retargeted[0].url = URL(string: "https://example.com/replacement.txt")!
+        retargeted[0].version = "replacement"
+        let retargetSave = await restarted.updateFilterLists(retargeted)
+        expect(retargetSave, "retarget fixture")
+        let obsoleteDownload = await background.updateFilterMetadata(downloaded)
+        expect(obsoleteDownload, "obsolete download save")
+        await restarted.refreshFromDiskIfModified(forceRead: true)
+        expect(restarted.getFilterLists().first { $0.id == filter.id }?.version == "replacement",
+               "metadata must match both ID and current source URL")
+
+        await restarted.removeFilterList(withId: filter.id)
+        let staleSave = await background.updateFilterMetadata(downloaded)
+        expect(staleSave, "metadata after deletion")
+        await restarted.refreshFromDiskIfModified(forceRead: true)
+        expect(!restarted.getFilterLists().contains { $0.id == filter.id }, "metadata must not resurrect a deleted list")
     }
 
     private static func testInlineFilterSelection(root: URL) async {

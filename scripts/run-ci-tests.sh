@@ -169,6 +169,7 @@ compile_direct_test filter-update-popup-status \
   wBlockCoreService/FilterUpdatePopupStatus.swift \
   scripts/test_filter_update_popup_status.swift
 compile_core_test filter-selection-rebase scripts/test_filter_selection_rebase.swift
+compile_core_test filter-list-setup scripts/test_filter_list_setup.swift wBlock/FilterListSetup.swift
 compile_core_test apply-baseline-acknowledgement scripts/test_apply_baseline_acknowledgement.swift \
   wBlock/ApplyFilterConfiguration.swift
 compile_core_test filter-list-site-exclusion scripts/test_filter_list_site_exclusion.swift

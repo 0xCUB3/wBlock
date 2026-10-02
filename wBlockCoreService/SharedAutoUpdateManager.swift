@@ -1450,7 +1450,7 @@ public actor SharedAutoUpdateManager {
     }
 
     private func saveFilterListsToProtobuf(_ lists: [FilterList]) async {
-        await ProtobufDataManager.shared.updateFilterLists(lists)
+        await ProtobufDataManager.shared.updateFilterMetadata(lists)
     }
 
     private func hydrateMissingSourceRuleCountsIfNeeded(_ filters: [FilterList]) async -> [FilterList] {

@@ -692,8 +692,7 @@ class AppFilterManager: ObservableObject {
                 }
             }
         }
-        migratedFilterLists = hydrateBuiltInFilterMetadata(in: migratedFilterLists, defaultLists: defaultLists)
-        migratedFilterLists = collapseDuplicateBuiltInURLs(migratedFilterLists)
+        migratedFilterLists = FilterListSetup.hydrate(migratedFilterLists, defaults: defaultLists)
         migratedFilterLists = deduplicateFilterIDs(migratedFilterLists)
         validatorClearIDs = migratedFilterLists.compactMap { filter in
             guard let originalURL = originalURLsByID[filter.id], originalURL != filter.url else { return nil }
@@ -757,17 +756,6 @@ class AppFilterManager: ObservableObject {
     }
 
 
-    private func collapseDuplicateBuiltInURLs(_ filters: [FilterList]) -> [FilterList] {
-        var result: [FilterList] = []
-        for filter in filters {
-            if let index = result.firstIndex(where: { $0.url == filter.url }) {
-                result[index].isSelected = result[index].isSelected || filter.isSelected
-            } else {
-                result.append(filter)
-            }
-        }
-        return result
-    }
     func deduplicateFilterIDs(_ filters: [FilterList]) -> [FilterList] {
         var latestByID: [UUID: FilterList] = [:]
         var firstIDs: [UUID] = []
@@ -781,27 +769,6 @@ class AppFilterManager: ObservableObject {
         return firstIDs.compactMap { latestByID[$0] }
     }
 
-
-    private func hydrateBuiltInFilterMetadata(in filters: [FilterList], defaultLists: [FilterList]) -> [FilterList] {
-        let defaultsByURL = Dictionary(
-            defaultLists.map { ($0.url, $0) },
-            uniquingKeysWith: { first, _ in first }
-        )
-
-        return filters.map { filter in
-            guard !filter.isCustom, let catalogFilter = defaultsByURL[filter.url] else {
-                return filter
-            }
-
-            var hydrated = filter
-            hydrated.name = catalogFilter.name
-            // Category is user-owned; the catalog only supplies descriptive metadata.
-            hydrated.description = catalogFilter.description
-            hydrated.languages = catalogFilter.languages
-            hydrated.trustLevel = catalogFilter.trustLevel
-            return hydrated
-        }
-    }
 
     /// Puts built-in lists back in their catalog categories and moves custom lists to Other.
     func resetCategories() {

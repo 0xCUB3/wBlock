@@ -59,6 +59,15 @@ extension ProtobufDataManager {
         }
     }
 
+    /// Background work may outlive several user edits and disk refreshes. Merge
+    /// only downloaded metadata into the current records under the store lock.
+    @discardableResult
+    public func updateFilterMetadata(_ filterLists: [FilterList]) async -> Bool {
+        await updateDataImmediately { data in
+            FilterMetadataPersistence.merge(filterLists, into: &data.filterLists)
+        }
+    }
+
     // MARK: - Data Migration
     public func migrateLegacyFilterURLs() async {
         var updatedData = appData
