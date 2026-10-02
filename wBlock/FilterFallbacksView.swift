@@ -12,8 +12,7 @@ struct FilterFallbacksButton: View {
         } label: {
             Label("Fallbacks", systemImage: "ellipsis")
         }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
+        .buttonStyle(.borderless)
         .sheet(isPresented: $showingFallbacks) {
             FilterFallbacksView(filter: filter, urls: FilterCatalogRemote.fallbacks(for: filter))
                 .infoSheetPresentationCompat()
