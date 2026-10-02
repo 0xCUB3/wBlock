@@ -242,9 +242,15 @@ extension AppFilterManager {
     /// The definition metadata remains so re-enabling can fetch the same source again.
     @discardableResult
     func clearDownloadedStateForDeselectedRemoteFilters(
-        appliedFilters: [FilterList]
+        appliedFilters: [FilterList],
+        disabledScriptIDs: Set<UUID>
     ) async -> Bool {
-        await (filterUpdater.userScriptManager ?? UserScriptManager.shared).removeDisabledRemoteScriptDownloads()
+        let scriptsCleared = await (filterUpdater.userScriptManager ?? UserScriptManager.shared)
+            .removeDisabledRemoteScriptDownloads(disabledScriptIDs: disabledScriptIDs)
+        if !scriptsCleared {
+            await recordDownloadedStateCleanupFailure(filters: [], error: "Remote userscript cache cleanup failed")
+            return false
+        }
         let deselectedIDs = Set(appliedFilters.filter { !$0.isSelected }.map(\.id))
         let filtersToClear = filterLists.filter {
             deselectedIDs.contains($0.id) && !$0.isSelected && $0.isRemoteURL

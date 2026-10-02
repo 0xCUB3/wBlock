@@ -2,6 +2,24 @@ import Foundation
 
 /// Shared files precede process-private fallbacks so app updates reach extensions.
 enum UserScriptFileStorage {
+    /// Missing copies are already removed; try every artifact even if one fails.
+    nonisolated static func remove(fileNames: [String], directories: [URL], fileManager: FileManager = .default) throws {
+        var firstError: Error?
+        for directory in directories {
+            for name in fileNames {
+                do {
+                    try fileManager.removeItem(at: directory.appendingPathComponent(name))
+                } catch {
+                    let error = error as NSError
+                    if !(error.domain == NSCocoaErrorDomain && error.code == NSFileNoSuchFileError), firstError == nil {
+                        firstError = error
+                    }
+                }
+            }
+        }
+        if let firstError { throw firstError }
+    }
+
     nonisolated static func read<Value>(
         fileName: String,
         directories: [URL],

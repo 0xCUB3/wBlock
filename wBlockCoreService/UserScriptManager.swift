@@ -1289,45 +1289,25 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    /// Remove the file associated with a userscript from ALL possible locations to prevent resurrection
-    private func removeUserScriptFile(_ userScript: UserScript) {
+    /// Remove source and sidecars from every app storage location before clearing metadata.
+    @discardableResult
+    private func removeUserScriptFile(_ userScript: UserScript) -> Bool {
         invalidateUserScriptFileExistsCache(for: userScript.id)
-        let fileName = "\(userScript.id.uuidString).user.js"
-        var totalRemoved = 0
-
-        // Remove from ALL possible directory locations to prevent resurrection
-        [groupScriptsDirectoryURL, fallbackScriptsDirectoryURL].compactMap { $0 }.forEach {
-            dirURL in
-            let fileURL = dirURL.appendingPathComponent(fileName)
-            let locationName =
-                dirURL.path.contains("Group Containers") ? "group container" : "application support"
-
-            if FileManager.default.fileExists(atPath: fileURL.path) {
-                do {
-                    try FileManager.default.removeItem(at: fileURL)
-                    totalRemoved += 1
-                    logger.info("🗑️ Successfully removed file from \(locationName): \(fileURL.path)")
-                } catch {
-                    logger.error(
-                        "❌ Failed to remove file from \(locationName) \(fileURL.path): \(error)")
-                }
-            } else {
-                logger.info("ℹ️ File not found in \(locationName): \(fileURL.path)")
-            }
-        }
-
-        if totalRemoved == 0 {
-            logger.warning(
-                "⚠️ No files were found to remove for userscript: \(userScript.name) (ID: \(userScript.id))"
+        let directories = [groupScriptsDirectoryURL, fallbackScriptsDirectoryURL].compactMap { $0 }
+        do {
+            try UserScriptFileStorage.remove(
+                fileNames: [
+                    "\(userScript.id.uuidString).user.js",
+                    userScriptResourcesFileName(for: userScript),
+                    "\(userScript.id.uuidString)\(Self.compiledStyleSidecarSuffix)"
+                ],
+                directories: directories
             )
-        } else {
-            logger.info(
-                "✅ Completely removed \(totalRemoved) file(s) for userscript: \(userScript.name) - no resurrection possible"
-            )
+            return true
+        } catch {
+            logger.error("❌ Failed to remove downloads for \(userScript.name): \(error)")
+            return false
         }
-
-        removeUserScriptResourcesFile(userScript)
-        Self.removeCompiledStyleArtifact(scriptID: userScript.id)
     }
 
     private func setup() async {
@@ -3724,32 +3704,46 @@ public class UserScriptManager: ObservableObject {
         return intervalHours * 3600
     }
 
-    /// Evicts downloaded copies, never local imports or the script record.
-    public func removeDisabledRemoteScriptDownloads() async {
-        var changed = false
+    /// Evicts downloaded copies at a successful checkpoint, never local imports or the record.
+    @discardableResult
+    public func removeDisabledRemoteScriptDownloads(disabledScriptIDs: Set<UUID>) async -> Bool {
+        let eligibleIDs = Set(userScripts.filter {
+            !$0.isEnabled && !$0.isLocal && $0.resolvedDownloadURL != nil
+                && disabledScriptIDs.contains($0.id)
+        }.map(\.id))
+        var clearedIDs = userScriptsPendingPersistence.intersection(eligibleIDs)
+        var succeeded = true
         for index in userScripts.indices {
             let script = userScripts[index]
-            guard !script.isEnabled, !script.isLocal,
-                  script.resolvedDownloadURL != nil, hasDownloadedContent(for: script) else { continue }
-            removeUserScriptFile(script)
-            guard !userScriptFileExists(script) else { continue }
+            guard eligibleIDs.contains(script.id), hasDownloadedContent(for: script) else { continue }
+            guard removeUserScriptFile(script) else {
+                succeeded = false
+                continue
+            }
+            recordScriptMutation(script.id)
+            userScripts[index].compiledStyleBody = nil
             userScripts[index].content = ""
             userScripts[index].resourceContents = [:]
-            userScripts[index].compiledStyleBody = nil
+            userScripts[index].version = ""
             userScripts[index].lastUpdated = nil
-            changed = true
+            clearedIDs.insert(script.id)
         }
-        if changed { await persistUserScriptsNow() }
+        if !clearedIDs.isEmpty {
+            userScriptsPendingPersistence.formUnion(clearedIDs)
+            guard await persistUserScriptsNow() else { return false }
+            userScriptsPendingPersistence.subtract(clearedIDs)
+        }
+        return succeeded
     }
 
     public func autoUpdateEnabledUserScripts(
         skipFresh: Bool = false,
+        removeDisabledDownloads: Bool = true,
         progressCallback: (@MainActor (AutoUpdateProgress) async -> Void)? = nil
     ) async -> AutoUpdateResult {
         await waitUntilReady()
 
-        await removeDisabledRemoteScriptDownloads()
-
+        let disabledScriptIDs = Set(userScripts.filter { !$0.isEnabled }.map(\.id))
         var candidates = userScripts.filter { $0.isEnabled && $0.canUpdateAutomatically }
 
         if skipFresh {
@@ -3762,11 +3756,6 @@ public class UserScriptManager: ObservableObject {
                 },
                 interval: interval
             )
-        }
-
-        guard !candidates.isEmpty else {
-            await progressCallback?(AutoUpdateProgress(completed: 0, total: 0, currentScriptName: ""))
-            return AutoUpdateResult(updated: 0, failed: 0)
         }
 
         var updatedCount = 0
@@ -3823,6 +3812,11 @@ public class UserScriptManager: ObservableObject {
             logger.info("✅ Auto-updated \(updatedCount) userscripts (\(failedCount) failed)")
         }
 
+        if removeDisabledDownloads && failedCount == 0,
+           !(await removeDisabledRemoteScriptDownloads(disabledScriptIDs: disabledScriptIDs)) {
+            failedCount += 1
+            errors.append(CocoaError(.fileWriteUnknown).localizedDescription)
+        }
         return AutoUpdateResult(updated: updatedCount, failed: failedCount, errors: errors)
     }
 

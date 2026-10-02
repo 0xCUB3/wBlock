@@ -356,6 +356,9 @@ extension AppFilterManager {
         suppressBlockingOverlay = allowUserInteraction
         defer { suppressBlockingOverlay = false }
         let previouslyAppliedFilterIDs = appliedSelectedFilterIDs
+        let userScriptManager = filterUpdater.userScriptManager ?? UserScriptManager.shared
+        await userScriptManager.waitUntilReady()
+        let disabledScriptIDs = Set(userScriptManager.userScripts.filter { !$0.isEnabled }.map(\.id))
 
         if prepareState {
             await MainActor.run {
@@ -402,7 +405,8 @@ extension AppFilterManager {
             let cleanupSucceeded: Bool
             if cleared {
                 cleanupSucceeded = await clearDownloadedStateForDeselectedRemoteFilters(
-                    appliedFilters: runSnapshot.filters
+                    appliedFilters: runSnapshot.filters,
+                    disabledScriptIDs: disabledScriptIDs
                 )
             } else {
                 cleanupSucceeded = false
@@ -530,6 +534,7 @@ extension AppFilterManager {
                let userScriptManager = filterUpdater.userScriptManager {
                 let scriptsResult = await userScriptManager.autoUpdateEnabledUserScripts(
                     skipFresh: true,
+                    removeDisabledDownloads: false,
                     progressCallback: { prog in
                         let fraction: Float = prog.total > 0 ? Float(prog.completed) / Float(prog.total) : 1
                         self.progress = 0.1 + fraction * 0.05
@@ -595,7 +600,8 @@ extension AppFilterManager {
             let cleanupSucceeded: Bool
             if cleared {
                 cleanupSucceeded = await clearDownloadedStateForDeselectedRemoteFilters(
-                    appliedFilters: runSnapshot.filters
+                    appliedFilters: runSnapshot.filters,
+                    disabledScriptIDs: disabledScriptIDs
                 )
             } else {
                 cleanupSucceeded = false
@@ -1111,7 +1117,8 @@ extension AppFilterManager {
             // Cleanup is deliberately post-success: a failed conversion/reload/engine publish
             // must leave the previous downloadable baseline and validators intact.
             let cleanupSucceeded = await clearDownloadedStateForDeselectedRemoteFilters(
-                appliedFilters: runSnapshot.filters
+                appliedFilters: runSnapshot.filters,
+                disabledScriptIDs: disabledScriptIDs
             )
             if cleanupSucceeded {
                 await MainActor.run {

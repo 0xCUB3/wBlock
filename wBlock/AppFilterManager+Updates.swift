@@ -123,7 +123,6 @@ extension AppFilterManager {
         if filterUpdater.userScriptManager == nil {
             setUserScriptManager(userScriptManager)
         }
-        await userScriptManager.removeDisabledRemoteScriptDownloads()
         availableScriptUpdates = await filterUpdater.checkForScriptUpdates(
             scripts: userScriptManager.userScripts,
             progressCallback: { checkProgress in

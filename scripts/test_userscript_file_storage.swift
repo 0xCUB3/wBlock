@@ -1,5 +1,13 @@
 import Foundation
 
+private final class FailingRemovalFileManager: FileManager, @unchecked Sendable {
+    var blockedURL: URL?
+    override func removeItem(at URL: URL) throws {
+        if URL == blockedURL { throw CocoaError(.fileWriteNoPermission) }
+        try super.removeItem(at: URL)
+    }
+}
+
 @main
 struct UserScriptFileStorageTests {
     static func main() throws {
@@ -39,7 +47,34 @@ struct UserScriptFileStorageTests {
         expect(read([extensionCache]) == "old", "private-only storage still works without an app group")
         expect(read([shared, extensionCache], "missing") == nil, "missing source stays missing")
         expect(read([]) == nil, "no available directories is safe")
-        print("PASS: shared updates supersede private source and resources; legacy migration preserved")
+        let artifacts = ["script.user.js", "script.resources.json", "script.user.css.compiled.v1.json"]
+        for directory in [shared, app] {
+            for name in artifacts { try write("cache", directory, name) }
+            try write("local source", directory, "local.user.js")
+        }
+        let manager = FailingRemovalFileManager()
+        let blocked = shared.appendingPathComponent(artifacts[1])
+        manager.blockedURL = blocked
+        do {
+            try UserScriptFileStorage.remove(fileNames: artifacts, directories: [shared, app], fileManager: manager)
+            fatalError("A failed sidecar removal must not be reported as successful eviction")
+        } catch let error as CocoaError {
+            expect(error.code == .fileWriteNoPermission, "report the deletion failure")
+        }
+        expect(FileManager.default.fileExists(atPath: blocked.path), "the blocked sidecar remains retryable")
+        expect(!FileManager.default.fileExists(atPath: app.appendingPathComponent(artifacts[2]).path),
+               "continue removing other copies after a failure")
+        manager.blockedURL = nil
+        try UserScriptFileStorage.remove(fileNames: artifacts, directories: [shared, app], fileManager: manager)
+        try UserScriptFileStorage.remove(fileNames: artifacts, directories: [shared, app], fileManager: manager)
+        for directory in [shared, app] {
+            for name in artifacts {
+                expect(!FileManager.default.fileExists(atPath: directory.appendingPathComponent(name).path),
+                       "all downloaded source and sidecar copies must be removed")
+            }
+            expect(read([directory], "local.user.js") == "local source", "unrelated local imports survive eviction")
+        }
+        print("PASS: shared-first reads, migration, complete eviction, failure reporting and safe retry")
     }
 
     private static func expect(_ condition: Bool, _ message: String) {
