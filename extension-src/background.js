@@ -26089,6 +26089,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * in the background.
    */
   const cache = new Map();
+  // Include frame configurations in the bound: their URLs can change on every
+  // navigation even when the top-level URL stays the same.
+  const CONFIG_CACHE_LIMIT = 128;
   /**
    * Persistent copy of the configuration cache (top frames only).
    *
@@ -26157,7 +26160,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return;
       }
       engineTimestamp = persisted.engineTimestamp;
-      for (const entry of persisted.entries) {
+      for (const entry of persisted.entries.slice(-PERSISTED_CONFIG_CACHE_LIMIT)) {
         if (Array.isArray(entry) && typeof entry[0] === "string" && entry[1] && typeof entry[1] === "object") {
           cache.set(entry[0], entry[1]);
         }
@@ -26309,6 +26312,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const key = cacheKey(url, topUrl);
     cache.delete(key);
     cache.set(key, configuration);
+    if (cache.size > CONFIG_CACHE_LIMIT) {
+      cache.delete(cache.keys().next().value);
+    }
     persistConfigCache();
     return configuration;
   };
