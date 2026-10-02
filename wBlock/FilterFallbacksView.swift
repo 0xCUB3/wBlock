@@ -10,7 +10,7 @@ struct FilterFallbacksButton: View {
         Button {
             showingFallbacks = true
         } label: {
-            Label("Fallbacks", systemImage: "arrow.triangle.swap")
+            Label("Fallbacks", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
         }
         .buttonStyle(.borderless)
         .sheet(isPresented: $showingFallbacks) {
