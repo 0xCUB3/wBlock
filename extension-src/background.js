@@ -26682,8 +26682,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (message && frameActions.has(message.action)) {
       // Content code never chooses its origin or top-frame status. This does
       // not authenticate individual installed scripts within the content world.
-      if (!sender || !sender.tab || !Number.isSafeInteger(sender.tab.id)
-          || !Number.isSafeInteger(sender.frameId) || sender.frameId < 0
+      if (!sender || !Number.isSafeInteger(sender.frameId) || sender.frameId < 0
           || typeof sender.url !== "string" || !/^https?:\/\//.test(sender.url)) {
         return {ok:false, error:"Userscript request requires a verified frame"};
       }
@@ -27208,8 +27207,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     //
     // In this case we fallback to using the content script to apply rules.
     // The downside here is that the content script cannot override website's
-    // CSPs.
-    if (!blankFrame) {
+    // CSPs. A sender without a tab (e.g. a page Safari loads before it joins a
+    // tab) has no injection target either, so it takes the same path.
+    if (!blankFrame && tabId) {
       if (!fromCache || !(cachedBlockingState.disabled || cachedBlockingState.paused)) {
         await backgroundScript.applyConfiguration(tabId, frameId, configuration);
       }
