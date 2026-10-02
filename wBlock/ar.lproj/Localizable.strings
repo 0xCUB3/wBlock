@@ -1196,3 +1196,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Just now" = "الآن";
 "Due Now" = "مستحق الآن";
 "Capacity" = "السعة";
+
+"Reset…" = "إعادة تعيين…";

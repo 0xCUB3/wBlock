@@ -1196,3 +1196,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Just now" = "방금";
 "Due Now" = "지금 예정";
 "Capacity" = "용량";
+
+"Reset…" = "초기화…";

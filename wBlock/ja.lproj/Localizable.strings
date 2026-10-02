@@ -1165,3 +1165,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Just now" = "たった今";
 "Due Now" = "今すぐ";
 "Capacity" = "容量";
+
+"Reset…" = "リセット…";

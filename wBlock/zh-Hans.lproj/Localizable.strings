@@ -1196,3 +1196,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Just now" = "刚刚";
 "Due Now" = "即将更新";
 "Capacity" = "容量";
+
+"Reset…" = "重置…";

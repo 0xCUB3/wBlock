@@ -26,6 +26,7 @@ struct SettingsView: View {
     @State private var launchAgentNeedsApproval = false
     #endif
     @State private var showingRestartConfirmation = false
+    @State private var showingResetOrderingConfirmation = false
     @State private var isRestarting = false
     @State private var showingImportDialog = false
     @State private var showingRestoreBackupConfirmation = false
@@ -72,6 +73,12 @@ struct SettingsView: View {
             await MainActor.run { startTimer() }
         }
         .onDisappear { stopTimer() }
+        .alert("Reset Ordering", isPresented: $showingResetOrderingConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Reset", role: .destructive, action: resetOrdering)
+        } message: {
+            Text("Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.")
+        }
         .alert("Restart Onboarding?", isPresented: $showingRestartConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Restart", role: .destructive) { restartOnboarding() }
@@ -745,7 +752,7 @@ struct SettingsView: View {
         Section {
             #if os(macOS)
             CompatibleLabeledContent {
-                Button("Reset", action: resetOrdering)
+                Button("Reset…", role: .destructive) { showingResetOrderingConfirmation = true }
                     .buttonStyle(.bordered)
             } label: {
                 rowLabel(
@@ -754,7 +761,7 @@ struct SettingsView: View {
                 )
             }
             CompatibleLabeledContent {
-                Button(isRestarting ? "Restarting…" : "Restart…") {
+                Button(isRestarting ? "Restarting…" : "Restart…", role: .destructive) {
                     showingRestartConfirmation = true
                 }
                 .buttonStyle(.bordered)
@@ -766,7 +773,7 @@ struct SettingsView: View {
                 )
             }
             #else
-            Button(action: resetOrdering) {
+            Button { showingResetOrderingConfirmation = true } label: {
                 Label {
                     rowLabel(
                         "Reset Ordering",
