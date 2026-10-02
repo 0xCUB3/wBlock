@@ -252,6 +252,10 @@ struct InlineGlassSearchField: View {
     @State private var focusRequests = 0
     @State private var isVisible = false
     @State private var fieldWidth: CGFloat = 140
+    /// In a narrow window AppKit lays the item out at the leading edge, so the slot
+    /// widens toward the trailing side and the capsule must grow from its leading edge.
+    @State private var growsTrailing = false
+    @State private var anchor = ToolbarItemAnchor()
     @FocusState private var isFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -288,10 +292,10 @@ struct InlineGlassSearchField: View {
             .opacity(isExpanded ? 1 : 0)
             .allowsHitTesting(isExpanded)
             .accessibilityHidden(!isExpanded)
-            .padding(.leading, 8)
-            .padding(.trailing, 36)
+            .padding(.leading, growsTrailing ? 36 : 8)
+            .padding(.trailing, growsTrailing ? 8 : 36)
         }
-        .frame(width: isExpanded ? Self.expandedWidth : 36, height: 36, alignment: .trailing)
+        .frame(width: isExpanded ? Self.expandedWidth : 36, height: 36, alignment: buttonEdge)
         .clipShape(.capsule)
         .background {
             if isExpanded {
@@ -305,8 +309,9 @@ struct InlineGlassSearchField: View {
         .glassEffect(.regular.interactive(), in: .capsule)
         .animation(reduceMotion ? nil : .smooth(duration: Self.duration), value: isExpanded)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: text.isEmpty)
-        .frame(width: holdsExpandedSlot ? Self.expandedWidth : 36, alignment: .trailing)
-        .overlay(alignment: .trailing) {
+        .frame(width: holdsExpandedSlot ? Self.expandedWidth : 36, alignment: buttonEdge)
+        .background(ToolbarItemAnchorReader(anchor: anchor))
+        .overlay(alignment: buttonEdge) {
             // The magnifier is outside the animated field so it stays anchored
             // while AppKit reserves or releases the wider toolbar slot.
             Button(action: expandAndFocus) {
@@ -348,6 +353,8 @@ struct InlineGlassSearchField: View {
     private static let expandedWidth: CGFloat = 180
     private static let duration = 0.32
 
+    private var buttonEdge: Alignment { growsTrailing ? .leading : .trailing }
+
     private func handleFocusRequest() {
         guard focusRequest, isVisible else { return }
         expand()
@@ -366,6 +373,7 @@ struct InlineGlassSearchField: View {
             isExpanded = true
             return
         }
+        growsTrailing = anchor.isInLeadingHalf
         holdsExpandedSlot = true
         DispatchQueue.main.async { if holdsExpandedSlot { isExpanded = true } }
     }
@@ -513,6 +521,30 @@ private struct ToolbarSearchFieldChrome: ViewModifier {
 /// Toolbar items live in AppKit's toolbar view hierarchy, where SwiftUI's
 /// `@FocusState` does not reliably move the caret (#613). Each new focus
 /// request makes the sibling NSTextField the first responder directly.
+/// Where the collapsed search item sits in its window, read before it widens.
+final class ToolbarItemAnchor {
+    weak var view: NSView?
+
+    var isInLeadingHalf: Bool {
+        guard let view, let window = view.window else { return false }
+        let midX = view.convert(view.bounds, to: nil).midX
+        let leading = midX < window.frame.width / 2
+        return window.windowTitlebarLayoutDirection == .rightToLeft ? !leading : leading
+    }
+}
+
+private struct ToolbarItemAnchorReader: NSViewRepresentable {
+    let anchor: ToolbarItemAnchor
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        anchor.view = view
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) { anchor.view = nsView }
+}
+
 private struct ToolbarFieldFocuser: NSViewRepresentable {
     let request: Int
     let onClickOutside: (() -> Void)?
