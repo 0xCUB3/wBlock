@@ -69,6 +69,32 @@ public struct FilterRuleAnalysis: Sendable {
         return exception + pattern.lowercased() + (options.map { "$" + $0 } ?? "")
     }
 
+    /// uBO's `##selector:remove-attr(name)` and `:remove-class(name)` read
+    /// as plain CSS to the converter, which merges them into the site's hiding
+    /// selector and invalidates every sibling rule there (#918). Rewrite them
+    /// as the equivalent AdGuard scriptlets; regex arguments stay unchanged.
+    public static func adGuardEquivalent(_ rule: String) -> String {
+        let trimmed = rule.trimmingCharacters(in: .whitespaces)
+        guard trimmed.hasSuffix(")"),
+              let marker = ["#@#", "##"].lazy.compactMap({ trimmed.range(of: $0) }).first else { return rule }
+        let body = trimmed[marker.upperBound...].dropLast()
+        for name in ["remove-attr", "remove-class"] {
+            guard let pseudo = body.range(of: ":\(name)(", options: .backwards) else { continue }
+            let selector = body[..<pseudo.lowerBound].trimmingCharacters(in: .whitespaces)
+            let argument = body[pseudo.upperBound...].trimmingCharacters(in: .whitespaces)
+            guard !selector.isEmpty, !argument.isEmpty, !argument.hasPrefix("/"),
+                  !argument.contains("("), !argument.contains(")") else { return rule }
+            let quoted = { (value: String) in
+                "'" + value.replacingOccurrences(of: "\\", with: "\\\\")
+                    .replacingOccurrences(of: "'", with: "\\'") + "'"
+            }
+            let scriptletMarker = trimmed[marker] == "#@#" ? "#@%#" : "#%#"
+            return trimmed[..<marker.lowerBound] + scriptletMarker
+                + "//scriptlet(\(quoted(name)), \(quoted(argument)), \(quoted(selector)))"
+        }
+        return rule
+    }
+
     public static func isRuleLine(_ trimmed: String) -> Bool {
         if trimmed.isEmpty || trimmed.hasPrefix("!") || trimmed.hasPrefix("[") { return false }
         // "# comment" lines in hosts-style lists, but not "##selector" rules.
@@ -98,7 +124,7 @@ public struct FilterRuleAnalysis: Sendable {
                 lines.append(Line(text: raw, kind: .duplicate))
                 return
             }
-            lines.append(Line(text: raw, kind: classify(trimmed, safariVersion: safariVersion)))
+            lines.append(Line(text: raw, kind: classify(adGuardEquivalent(trimmed), safariVersion: safariVersion)))
         }
         if stop { return FilterRuleAnalysis(lines: []) }
         return FilterRuleAnalysis(lines: lines)
