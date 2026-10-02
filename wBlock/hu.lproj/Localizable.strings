@@ -402,7 +402,6 @@
 "Filter Apply" = "Szűrők alkalmazása";
 "Filter Auto-Update" = "Szűrők automatikus frissítése";
 "Filter for ad blocking on Estonian sites." = "Szűrő hirdetésblokkoláshoz az észt webhelyeken.";
-"Filter list for blocking ads and trackers on websites in Persian." = "Szűrőlista a hirdetések és nyomkövetők blokkolásához perzsa nyelvű webhelyeken.";
 "Filter list not found." = "Szűrőlista nem található.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a spanyol, portugál és brazil portugál nyelvű webhelyekről.";
 "Filter list that specifically removes ads on websites in Turkish language." = "Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a török ​​nyelvű webhelyekről.";
@@ -580,7 +579,6 @@
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "A blokkolás szünetel, amíg legalább egy kiválasztott összetevő szüneteltetve van. A folytatás minden összetevőt visszaállít.";
 "Temporarily pause selected components without changing their enabled settings." = "A kiválasztott összetevők ideiglenes szüneteltetése az engedélyezési beállításaik módosítása nélkül.";
 "Pausing blocking..." = "Blokkolás szüneteltetése…";
-"Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
 "Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "Letiltja a kártevő- és csalódomaineket, a rosszindulatú átirányításokat és a nem kívánt szoftverek felugró kéréseit.";

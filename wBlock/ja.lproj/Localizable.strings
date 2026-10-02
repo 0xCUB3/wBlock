@@ -402,7 +402,6 @@
 "Filter Apply" = "フィルター適用";
 "Filter Auto-Update" = "フィルター自動更新";
 "Filter for ad blocking on Estonian sites." = "エストニアのサイトで広告をブロックするフィルター。";
-"Filter list for blocking ads and trackers on websites in Persian." = "ペルシア語の ウェブサイト上の広告とトラッカーをブロックするためのフィルターリスト。";
 "Filter list not found." = "フィルターリストが見つかりません。";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "スペイン語、ポルトガル語、ブラジル系ポルトガル語の ウェブサイト上の広告を特に削除するフィルターリスト。";
 "Filter list that specifically removes ads on websites in Turkish language." = "トルコ語の ウェブサイト上の広告を特に削除するフィルターリスト。";
@@ -580,7 +579,6 @@
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "選択した機能が一時停止している間は、「ブロックを一時停止」が有効になります。再開すると、全ての機能の一時停止が解除されます。";
 "Temporarily pause selected components without changing their enabled settings." = "フィルター、ユーザースクリプト・スタイル、要素ブロックの有効/無効の設定は変えずに、一時的に選択した機能を停止します。";
 "Pausing blocking..." = "ブロックを一時停止しています…";
-"Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
 "Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "マルウェアや詐欺のドメイン、悪意のあるリダイレクト、不要なソフトウェアの勧誘をブロックします。";

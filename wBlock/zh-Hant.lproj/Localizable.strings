@@ -402,7 +402,6 @@
 "Filter Apply" = "套用過濾器";
 "Filter Auto-Update" = "過濾器自動更新";
 "Filter for ad blocking on Estonian sites." = "愛沙尼亞網站上的廣告攔截過濾器。";
-"Filter list for blocking ads and trackers on websites in Persian." = "用於阻止波斯語網站上的廣告和追蹤器的過濾器列表。";
 "Filter list not found." = "未找到過濾器清單。";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "專門刪除西班牙語、葡萄牙語和巴西葡萄牙語網站上的廣告的過濾器清單。";
 "Filter list that specifically removes ads on websites in Turkish language." = "專門刪除土耳其語網站上的廣告的過濾器清單。";
@@ -580,7 +579,6 @@
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "只要有選取的元件處於暫停狀態，暫停封鎖就會開啟。恢復後會還原所有元件。";
 "Temporarily pause selected components without changing their enabled settings." = "暫時暫停選取的元件，但不變更其啟用設定。";
 "Pausing blocking..." = "正在暫停封鎖…";
-"Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
 "Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "封鎖惡意軟體與詐騙網域、惡意重新導向，以及不需要的軟體推廣提示。";

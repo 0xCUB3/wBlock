@@ -402,7 +402,6 @@
 "Filter Apply" = "应用过滤器";
 "Filter Auto-Update" = "过滤器自动更新";
 "Filter for ad blocking on Estonian sites." = "爱沙尼亚网站上的广告拦截过滤器。";
-"Filter list for blocking ads and trackers on websites in Persian." = "用于阻止波斯语网站上的广告和跟踪器的过滤器列表。";
 "Filter list not found." = "未找到过滤器列表。";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "专门删除西班牙语、葡萄牙语和巴西葡萄牙语网站上的广告的过滤器列表。";
 "Filter list that specifically removes ads on websites in Turkish language." = "专门删除土耳其语网站上的广告的过滤器列表。";
@@ -577,7 +576,6 @@
 "Pause Blocking" = "暂停拦截";
 "Paused Components" = "已暂停的组件";
 "Pausing blocking..." = "正在暂停拦截…";
-"Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
 "Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "拦截恶意软件和诈骗域名、恶意重定向以及不需要的软件推广提示。";

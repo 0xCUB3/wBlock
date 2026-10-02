@@ -99,6 +99,7 @@ class FilterListLoader {
         "raw.githubusercontent.com/gioxx/xfiles/master/filtri.txt",  // Xfiles (#882)
         "raw.githubusercontent.com/xinggsf/Adblock-Plus-Rule/master/rule.txt",  // xinggsf (#882)
         "raw.githubusercontent.com/yous/YousList/master/youslist.txt",  // YousList (#882)
+        "raw.githubusercontent.com/MasterKia/PersianBlocker/main/PersianBlocker.txt",  // Persian Blocker, maintainer passed away (#921)
     ]
 
     static func isRetiredBuiltIn(_ filter: FilterList) -> Bool {
@@ -611,14 +612,6 @@ class FilterListLoader {
                 )!, category: .foreign,
                 description: "Additional filter list for websites in Polish.", languages: ["pl"],
                 trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "Persian Blocker",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/MasterKia/PersianBlocker/main/PersianBlocker.txt"
-                )!, category: .foreign,
-                description: "Filter list for blocking ads and trackers on websites in Persian.",
-                languages: ["fa", "ps", "tg"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "Slovenian List",
                 url: URL(

@@ -402,7 +402,6 @@
 "Filter Apply" = "Εφαρμογή Φίλτρου";
 "Filter Auto-Update" = "Φίλτρο Αυτόματης Ενημέρωσης";
 "Filter for ad blocking on Estonian sites." = "Φίλτρο για αποκλεισμό διαφημίσεων σε εσθονικούς ιστότοπους.";
-"Filter list for blocking ads and trackers on websites in Persian." = "Λίστα φίλτρων για τον αποκλεισμό διαφημίσεων και παρακολούθησης σε ιστότοπους στα περσικά.";
 "Filter list not found." = "Η λίστα φίλτρων δεν βρέθηκε.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "Λίστα φίλτρων που καταργεί ειδικά τις διαφημίσεις σε ιστότοπους στα ισπανικά, πορτογαλικά και πορτογαλικά βραζιλιάνικα.";
 "Filter list that specifically removes ads on websites in Turkish language." = "Λίστα φίλτρων που αφαιρεί συγκεκριμένα διαφημίσεις σε ιστότοπους στην τουρκική γλώσσα.";
@@ -580,7 +579,6 @@
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Η παύση αποκλεισμού είναι ενεργή όσο οποιοδήποτε επιλεγμένο στοιχείο βρίσκεται σε παύση. Η συνέχιση επαναφέρει όλα τα στοιχεία.";
 "Temporarily pause selected components without changing their enabled settings." = "Παύση των επιλεγμένων στοιχείων προσωρινά χωρίς αλλαγή των ρυθμίσεων ενεργοποίησής τους.";
 "Pausing blocking..." = "Παύση αποκλεισμού…";
-"Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
 "Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "Αποκλείει τομείς κακόβουλου λογισμικού και απάτης, κακόβουλες ανακατευθύνσεις και προτροπές για ανεπιθύμητο λογισμικό.";

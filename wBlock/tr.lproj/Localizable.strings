@@ -402,7 +402,6 @@
 "Filter Apply" = "Filtreyi Uygula";
 "Filter Auto-Update" = "Otomatik Filtre Güncelleme";
 "Filter for ad blocking on Estonian sites." = "Estonya siteleri için reklam engelleme filtresi.";
-"Filter list for blocking ads and trackers on websites in Persian." = "Farsça sitelerde reklamları ve izleyicileri engellemek için filtre listesi.";
 "Filter list not found." = "Filtre listesi bulunamadı.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "İspanyolca, Portekizce ve Brezilya Portekizcesi dillerindeki sitelerde reklamları özel olarak kaldıran filtre listesi.";
 "Filter list that specifically removes ads on websites in Turkish language." = "Türkçe dilindeki sitelerde reklamları özel olarak kaldıran filtre listesi.";
@@ -577,7 +576,6 @@
 "Pause Blocking" = "Engellemeyi duraklat";
 "Paused Components" = "Duraklatılan bileşenler";
 "Pausing blocking..." = "Engelleme duraklatılıyor...";
-"Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
 "Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "Kötü amaçlı yazılım ve dolandırıcılık alan adlarını, kötü niyetli yönlendirmeleri ve istenmeyen yazılım uyarılarını engeller.";
