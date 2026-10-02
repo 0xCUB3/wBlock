@@ -7,6 +7,17 @@
 
 import SwiftUI
 
+private struct StatsSummaryLayoutKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+private extension EnvironmentValues {
+    var isStatsSummary: Bool {
+        get { self[StatsSummaryLayoutKey.self] }
+        set { self[StatsSummaryLayoutKey.self] = newValue }
+    }
+}
+
 /// Both tab summaries share spacing and horizontal clearance.
 struct StatsCardsView<Content: View>: View {
     var compact = false
@@ -18,10 +29,12 @@ struct StatsCardsView<Content: View>: View {
         .fixedSize(horizontal: false, vertical: true)
         #endif
         .padding(.horizontal)
+        .environment(\.isStatsSummary, true)
     }
 }
 
 struct StatCard: View {
+    @Environment(\.isStatsSummary) private var isStatsSummary
     let title: String
     let value: String
     let icon: String
@@ -100,6 +113,8 @@ struct StatCard: View {
                     .allowsTightening(true)
                     #if os(iOS)
                     .frame(minWidth: compact ? 0 : 60, alignment: .leading)
+                    #else
+                    .frame(minWidth: isStatsSummary ? nil : (compact ? 0 : 60), alignment: .leading)
                     #endif
             }
         }
@@ -107,6 +122,8 @@ struct StatCard: View {
         .padding(.horizontal, compact ? 14 : 20)
         #if os(iOS)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        #else
+        .frame(minWidth: isStatsSummary ? nil : 155)
         #endif
         .background {
             #if os(iOS)
