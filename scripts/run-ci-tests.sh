@@ -254,6 +254,21 @@ compile_direct_test userscript-display-metadata \
   wBlockCoreService/UserStyleCompiler.swift \
   wBlockCoreService/UserStyleCompilerExecutionHost.swift \
   scripts/test_userscript_display_metadata.swift
+compile_direct_test userscript-download \
+  wBlockCoreService/FilterListCategory.swift \
+  wBlockCoreService/UserScript.swift \
+  wBlockCoreService/BuiltInUserScripts.swift \
+  wBlockCoreService/UserScriptDisplayCategory.swift \
+  wBlockCoreService/DeArrowPreference.swift \
+  wBlockCoreService/TubeCleanerDeArrowPreference.swift \
+  wBlockCoreService/DarkReaderAppearancePreference.swift \
+  wBlockCoreService/UserStyle.swift \
+  wBlockCoreService/UserStyleCompiler.swift \
+  wBlockCoreService/UserStyleCompilerExecutionHost.swift \
+  wBlockCoreService/FilterListURLMirror.swift \
+  wBlockCoreService/UserScriptContentValidation.swift \
+  wBlockCoreService/UserScriptDownload.swift \
+  scripts/test_userscript_download.swift
 echo "[test] userstyle-parsing-matching (scripts/test_userstyle_parsing_and_matching.swift)"
 swiftc -parse-as-library -D DEBUG \
   wBlockCoreService/FilterListCategory.swift \

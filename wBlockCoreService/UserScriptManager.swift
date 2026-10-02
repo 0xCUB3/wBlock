@@ -608,12 +608,15 @@ public class UserScriptManager: ObservableObject {
     }
 
     private func downloadUserScriptContent(from url: URL) async throws -> String {
-        let (data, response) = try await downloadData(from: url, maximumBytes: Self.maximumUserScriptBytes)
-        if let httpResponse = response as? HTTPURLResponse {
-            UserScriptModifiedStore.record(httpResponse.value(forHTTPHeaderField: "Last-Modified"), for: url)
+        let downloaded = try await UserScriptDownload.fetch(from: url) { endpoint in
+            try await self.downloadData(from: endpoint, maximumBytes: Self.maximumUserScriptBytes)
         }
-        let content = try UserScriptContentValidation.downloadedSource(from: data)
-        return try await inlineRemoteStyleImports(in: content)
+        let content = try await inlineRemoteStyleImports(in: downloaded.text)
+        // A mirror's timestamp is not an upstream Last-Modified value.
+        if downloaded.sourceURL == url, let response = downloaded.response as? HTTPURLResponse {
+            UserScriptModifiedStore.record(response.value(forHTTPHeaderField: "Last-Modified"), for: url)
+        }
+        return content
     }
 
     /// Resolves remote Less `@import`s when userstyle source enters the app
