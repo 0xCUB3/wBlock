@@ -802,7 +802,7 @@ struct SettingsView: View {
             .disabled(isRestarting)
             #endif
         } header: {
-            Text("Danger Zone")
+            Text("Reset")
         }
     }
 
