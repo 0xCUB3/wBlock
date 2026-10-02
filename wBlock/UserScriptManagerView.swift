@@ -1417,8 +1417,8 @@ struct UserScriptInfoView: View {
     }
 }
 
-/// Custom scripts share metadata fields with filters; their local source can
-/// also be edited inline or opened in the full source editor.
+/// Edit Content opens the shared source editor, View Content the read-only
+/// viewer, and Edit Info only the metadata fields (#921).
 struct UserScriptContentView: View {
     let scriptId: UUID
     var userScriptManager: UserScriptManager
@@ -1431,16 +1431,8 @@ struct UserScriptContentView: View {
     var body: some View {
         Group {
             if let script {
-                UserScriptSourceSheet(
-                    script: script,
-                    initialContent: loadedContent,
-                    canEdit: !userScriptManager.isDefaultUserScript(script),
-                    metadataOnly: metadataOnly,
-                    onSave: { newContent, name, description, author, homepage, category in
-                        if script.isLocal && !metadataOnly && newContent != loadedContent,
-                           let error = await userScriptManager.saveEditedContent(for: script.id, newContent: newContent) {
-                            return error
-                        }
+                if metadataOnly {
+                    UserScriptMetadataSheet(script: script) { name, description, author, homepage, category in
                         guard await userScriptManager.setUserScriptMetadataOverrides(
                             for: script.id, name: name, description: description,
                             author: author, homepage: homepage
@@ -1450,7 +1442,15 @@ struct UserScriptContentView: View {
                         await userScriptManager.setUserScript(script, category: category)
                         return nil
                     }
-                )
+                } else {
+                    UserScriptSourceSheet(
+                        script: script, content: loadedContent,
+                        canEdit: startsEditing && script.isLocal && !userScriptManager.isDefaultUserScript(script)
+                    ) { newContent in
+                        guard newContent != loadedContent else { return nil }
+                        return await userScriptManager.saveEditedContent(for: script.id, newContent: newContent)
+                    }
+                }
             } else if isLoadingContent {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -1486,35 +1486,67 @@ struct UserScriptContentView: View {
     }
 }
 
+/// Script source: the shared editor for local custom scripts, the read-only
+/// viewer for everything else.
 private struct UserScriptSourceSheet: View {
     let script: UserScript
-    let initialContent: String
     let canEdit: Bool
-    let metadataOnly: Bool
-    let onSave: (String, String, String, String?, String?, FilterListCategory) async -> String?
+    let onSave: (String) async -> String?
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var editorController: CodeMirrorEditorController
-    @State private var editedContent: String
+    @State private var wrapsLines = false
+
+    init(script: UserScript, content: String, canEdit: Bool, onSave: @escaping (String) async -> String?) {
+        self.script = script
+        self.canEdit = canEdit
+        self.onSave = onSave
+        _editorController = StateObject(
+            wrappedValue: CodeMirrorEditorController(text: content, isUserStyle: script.isUserStyle))
+    }
+
+    var body: some View {
+        if canEdit {
+            SourceEditorSheet(title: script.localizedDisplayName, editorController: editorController, onDone: onSave)
+        } else {
+            VStack(spacing: 0) {
+                HStack(spacing: 12) {
+                    Text(script.localizedDisplayName).font(.headline).lineLimit(1)
+                    Spacer()
+                    SourceViewerControls(wrapsLines: $wrapsLines, onSearch: editorController.openSearch)
+                    SheetDoneButton { dismiss() }
+                }
+                .padding(16)
+                Divider()
+                CodeMirrorTextEditor(controller: editorController, isEditable: false, isLineWrappingEnabled: wrapsLines)
+            }
+            #if os(macOS)
+            .frame(width: 1000, height: 700)
+            #else
+            .sourceSheetPresentationCompat()
+            #endif
+        }
+    }
+}
+
+/// Edit Info for custom scripts: the metadata fields filters use, plus author
+/// and homepage.
+private struct UserScriptMetadataSheet: View {
+    let script: UserScript
+    let onSave: (String, String, String?, String?, FilterListCategory) async -> String?
+
+    @Environment(\.dismiss) private var dismiss
     @State private var editedName: String
     @State private var editedDescription: String
     @State private var editedAuthor: String
     @State private var editedHomepage: String
     @State private var selectedCategory: FilterListCategory
-    @State private var isShowingEditor = false
-    @State private var isLineWrappingEnabled = false
     @State private var isSaving = false
     @State private var validationMessage: String?
 
-    init(script: UserScript, initialContent: String, canEdit: Bool, metadataOnly: Bool = false,
-         onSave: @escaping (String, String, String, String?, String?, FilterListCategory) async -> String?) {
+    init(script: UserScript, onSave: @escaping (String, String, String?, String?, FilterListCategory) async -> String?) {
         self.script = script
-        self.initialContent = initialContent
-        self.canEdit = canEdit
-        self.metadataOnly = metadataOnly
         self.onSave = onSave
-        _editorController = StateObject(wrappedValue: CodeMirrorEditorController(text: initialContent, isUserStyle: script.isUserStyle))
-        _editedContent = State(initialValue: initialContent)
         _editedName = State(initialValue: script.name)
         _editedDescription = State(initialValue: script.description)
         _editedAuthor = State(initialValue: script.author ?? "")
@@ -1527,108 +1559,47 @@ private struct UserScriptSourceSheet: View {
             HStack(spacing: 12) {
                 Text(script.localizedDisplayName).font(.headline).lineLimit(1)
                 Spacer()
-                if !canEdit && !metadataOnly {
-                    SourceViewerControls(wrapsLines: $isLineWrappingEnabled) { editorController.openSearch() }
-                }
-                if canEdit {
-                    Button("Save") { Task { await saveChanges() } }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(isSaving || !hasChanges || editedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
+                Button("Save") { Task { await save() } }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isSaving || !hasChanges || editedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 SheetDoneButton { dismiss() }
                     .disabled(isSaving)
             }
             .padding(16)
             Divider()
-            if canEdit {
-                GeometryReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        AddContentMetadataFields(name: $editedName, description: $editedDescription,
-                            category: $selectedCategory, categories: FilterListCategory.userScriptCategories)
-                        AddContentField(title: "Author") {
-                            TextField("Author", text: $editedAuthor).textFieldStyle(.roundedBorder)
-                        }
-                        AddContentField(title: "Homepage") {
-                            TextField("Homepage", text: $editedHomepage).textFieldStyle(.roundedBorder)
-                        }
-                        if let validationMessage {
-                            Text(validationMessage).foregroundStyle(.red).font(.caption)
-                        }
-                        if !metadataOnly {
-                            HStack {
-                                (script.isUserStyle ? Text("Style Content") : Text("Script Content"))
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                if script.isLocal {
-                                    Button { pasteContent() } label: { Label("Paste", systemImage: "doc.on.clipboard") }
-                                    Button {
-                                        editorController.replaceText(editedContent, markClean: true)
-                                        isShowingEditor = true
-                                    } label: { Label("Use Editor", systemImage: "curlybraces") }
-                                } else {
-                                    SourceViewerControls(wrapsLines: $isLineWrappingEnabled) { editorController.openSearch() }
-                                }
-                            }
-                            if script.isLocal {
-                                TextEditor(text: $editedContent)
-                                    .font(.system(.body, design: .monospaced))
-                                    .disableAutocorrection(true)
-                                    #if os(iOS)
-                                    .textInputAutocapitalization(.never)
-                                    #endif
-                                    .frame(minHeight: 260, maxHeight: .infinity)
-                            } else {
-                                CodeMirrorTextEditor(controller: editorController, isEditable: false,
-                                    isLineWrappingEnabled: isLineWrappingEnabled)
-                                    .frame(minHeight: 260, maxHeight: .infinity)
-                            }
-                        }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    AddContentMetadataFields(name: $editedName, description: $editedDescription,
+                        category: $selectedCategory, categories: FilterListCategory.userScriptCategories)
+                    AddContentField(title: "Author") {
+                        TextField("Author", text: $editedAuthor).textFieldStyle(.roundedBorder)
                     }
-                    .padding(20)
-                    // Stretch the content to the sheet so the source editor takes
-                    // the space under the metadata fields instead of a fixed 260pt.
-                    .frame(minHeight: proxy.size.height, alignment: .top)
-                    .disabled(isSaving)
+                    AddContentField(title: "Homepage") {
+                        TextField("Homepage", text: $editedHomepage).textFieldStyle(.roundedBorder)
+                    }
+                    if let validationMessage {
+                        Text(validationMessage).foregroundStyle(.red).font(.caption)
+                    }
                 }
-                }
-            } else {
-                CodeMirrorTextEditor(controller: editorController, isEditable: false,
-                    isLineWrappingEnabled: isLineWrappingEnabled)
+                .padding(20)
+                .disabled(isSaving)
             }
         }
         #if os(macOS)
-        .frame(width: metadataOnly ? 460 : 1000, height: metadataOnly ? 360 : 700)
+        .frame(width: 460, height: 360)
         #endif
         .interactiveDismissDisabled(isSaving)
-        .sheet(isPresented: $isShowingEditor) {
-            CodeEditorSheet(editorController: editorController, onTextChanged: { editedContent = $0 }, onPaste: {
-                if let text = clipboardText { editorController.replaceText(text) }
-            })
-        }
-    }
-
-    private var clipboardText: String? {
-        #if os(iOS)
-        UIPasteboard.general.string
-        #else
-        NSPasteboard.general.string(forType: .string)
-        #endif
-    }
-
-    private func pasteContent() {
-        if let text = clipboardText { editedContent = text }
     }
 
     private var hasChanges: Bool {
-        editedContent != initialContent || editedName != script.name || editedDescription != script.description
+        editedName != script.name || editedDescription != script.description
             || editedAuthor != (script.author ?? "") || editedHomepage != (script.homepage ?? "")
             || selectedCategory != (script.category.isUserScriptOnly ? script.category : .scriptOther)
     }
 
-    @MainActor private func saveChanges() async {
+    @MainActor private func save() async {
         isSaving = true
-        let error = await onSave(editedContent, editedName.trimmingCharacters(in: .whitespacesAndNewlines),
+        let error = await onSave(editedName.trimmingCharacters(in: .whitespacesAndNewlines),
                                  editedDescription, editedAuthor, editedHomepage, selectedCategory)
         isSaving = false
         if let error { validationMessage = error } else { dismiss() }
@@ -1852,93 +1823,6 @@ private struct DeArrowSettingsPicker: View {
 /// Full-size CodeMirror sheet used by the Add flows and the user list editor.
 /// The caller owns the controller; text flows back through `onTextChanged`
 /// when the sheet closes.
-struct CodeEditorSheet: View {
-    @ObservedObject var editorController: CodeMirrorEditorController
-    let onTextChanged: (String) -> Void
-    let onPaste: () -> Void
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var isLineWrappingEnabled = false
-    @State private var originalText: String?
-    @State private var didFinish = false
-
-    var body: some View {
-        Group {
-            #if os(iOS)
-            CompatibleNavigationStack {
-                if #available(iOS 16.0, *) {
-                    editorBody
-                        .background(Color(.systemGray6))
-                        .navigationTitle("Editor")
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbarBackground(.hidden, for: .navigationBar)
-                } else {
-                    editorBody
-                        .background(Color(.systemGray6))
-                        .navigationTitle("Editor")
-                        .navigationBarTitleDisplayMode(.inline)
-                }
-            }
-            #else
-            editorBody
-                .frame(width: 1000, height: 700)
-            #endif
-        }
-        .task { originalText = await editorController.currentText() }
-        .interactiveDismissDisabled()
-        .onDisappear {
-            if !didFinish, let originalText { editorController.replaceText(originalText, markClean: true) }
-        }
-    }
-
-    private var editorBody: some View {
-        VStack(spacing: 0) {
-            VStack(spacing: 10) {
-                HStack {
-                    Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
-                    Spacer()
-                    Button("Done", action: finish).keyboardShortcut(.defaultAction)
-                }
-                HStack(spacing: 10) {
-                    Spacer()
-                    SourceViewerControls(wrapsLines: $isLineWrappingEnabled) { editorController.openSearch() }
-                    Button(action: editorController.undo) { Label("Undo", systemImage: "arrow.uturn.backward") }
-                    Button(action: editorController.redo) { Label("Redo", systemImage: "arrow.uturn.forward") }
-                    Button(action: onPaste) { Label("Paste", systemImage: "doc.on.clipboard") }
-                }
-                .labelStyle(.iconOnly)
-            }
-            .disabled(originalText == nil)
-            .padding(12)
-            #if os(macOS)
-            .liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)
-            #endif
-            .padding(12)
-
-            CodeMirrorTextEditor(
-                controller: editorController,
-                isEditable: true,
-                isLineWrappingEnabled: isLineWrappingEnabled
-            )
-            #if os(macOS)
-            .frame(minWidth: 420, minHeight: 360)
-            #else
-            .frame(minHeight: 260)
-            #endif
-            .padding(.horizontal, 12)
-            .padding(.bottom, 12)
-        }
-    }
-
-    private func finish() {
-        Task { @MainActor in
-            didFinish = true
-            onTextChanged(await editorController.currentText())
-            dismiss()
-        }
-    }
-}
-
 struct AddUserScriptView: View {
     var userScriptManager: UserScriptManager
     var onScriptAdded: () -> Void
@@ -2097,11 +1981,10 @@ struct AddUserScriptView: View {
             Text("Pasting will replace the existing content.")
         }
         .sheet(isPresented: $isShowingEditor) {
-            CodeEditorSheet(
-                editorController: editorController,
-                onTextChanged: applyEditorText,
-                onPaste: pasteScriptFromClipboard
-            )
+            SourceEditorSheet(title: "Script Content", editorController: editorController, onDone: { text in
+                applyEditorText(text)
+                return nil
+            }, onPaste: pasteScriptFromClipboard)
         }
         .fileImporter(isPresented: $showingFileImporter, allowedContentTypes: importsURLList ? [.plainText, .text] : allowedImportTypes) { result in
             switch result {

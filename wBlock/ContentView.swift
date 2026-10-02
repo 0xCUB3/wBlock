@@ -1460,14 +1460,10 @@ struct AddFilterListView: View {
         }
         #endif
         .sheet(isPresented: $isShowingRulesEditor) {
-            CodeEditorSheet(
-                editorController: rulesEditorController,
-                onTextChanged: { pastedRules = $0 },
-                onPaste: {
-                    pasteRulesFromClipboard()
-                    rulesEditorController.replaceText(pastedRules, markClean: true)
-                }
-            )
+            SourceEditorSheet(title: "Rules", editorController: rulesEditorController) { text in
+                pastedRules = text
+                return nil
+            }
         }
         .fileImporter(
             isPresented: $showingFileImporter,
@@ -2351,205 +2347,37 @@ struct EditCustomFilterView: View {
     }
 }
 
+/// Inline user lists open straight into the shared source editor (#921).
 struct EditUserListView: View {
     @ObservedObject var filterManager: AppFilterManager
     let filter: FilterList
 
-    @Environment(\.dismiss) private var dismiss
-
-    @State private var rules: String = ""
-    @State private var isLoadingContent: Bool = true
-    @State private var errorMessage: String?
-    @State private var isShowingEditor = false
     @StateObject private var editorController = CodeMirrorEditorController(text: "")
-
-    init(filterManager: AppFilterManager, filter: FilterList) {
-        self.filterManager = filterManager
-        self.filter = filter
-    }
+    @State private var isLoaded = false
 
     var body: some View {
         Group {
-            #if os(iOS)
-                CompatibleNavigationStack {
-                    Form {
-                        Section("Rules") {
-                            SyntaxHighlightingTextView(text: $rules)
-                                .frame(minHeight: 260)
-                            sourceActions
-                        }
-                    }
-                    .navigationTitle(filter.localizedDisplayName)
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Cancel") { dismiss() }
-                                .disabled(isLoadingContent)
-                        }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Save") { save() }
-                                .disabled(!canSave)
-                        }
-                        ToolbarItem(placement: .principal) {
-                            if isLoadingContent {
-                                ProgressView()
-                            }
-                        }
-                    }
+            if isLoaded {
+                SourceEditorSheet(title: filter.localizedDisplayName, editorController: editorController) { text in
+                    filterManager.updateUserList(
+                        id: filter.id, name: filter.name, description: filter.description,
+                        category: filter.category, content: text
+                    )
+                    return filterManager.hasError ? filterManager.statusDescription : nil
                 }
-            #else
-                SheetContainer {
-                    SheetHeader(title: filter.localizedDisplayName, isLoading: isLoadingContent) {
-                        dismiss()
-                    }
-
-                    VStack(alignment: .leading, spacing: 16) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack {
-                                Text("Rules")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                sourceActions
-                                    .controlSize(.small)
-                            }
-
-                            SyntaxHighlightingTextView(text: $rules)
-                                .frame(minHeight: 260, maxHeight: .infinity)
-                                .padding(10)
-                                .background(
-                                    .background,
-                                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .stroke(.quaternary, lineWidth: 1)
-                                )
-                        }
-                        .padding(20)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-                    }
-                    .padding(.horizontal, SheetDesign.contentHorizontalPadding)
-                    .padding(.top, 12)
-                    .padding(.bottom, 40)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-
-                    SheetBottomToolbar {
-                        Spacer()
-                        saveButton
-                    }
-                }
-            #endif
-        }
-        .interactiveDismissDisabled(isLoadingContent)
-        .onAppear(perform: loadContent)
-        .alert(
-            "Couldn’t Save",
-            isPresented: Binding(
-                get: { errorMessage != nil },
-                set: { _ in errorMessage = nil }
-            )
-        ) {
-            Button("OK", role: .cancel) { errorMessage = nil }
-        } message: {
-            Text(errorMessage ?? "")
-        }
-        #if os(iOS)
-        .largeSheetPresentationCompat()
-        #endif
-        .sheet(isPresented: $isShowingEditor) {
-            CodeEditorSheet(
-                editorController: editorController,
-                onTextChanged: { rules = $0 },
-                onPaste: pasteRulesIntoEditor
-            )
-        }
-    }
-
-    private var sourceActions: some View {
-        HStack {
-            Button {
-                #if os(iOS)
-                if let text = UIPasteboard.general.string { rules = text }
-                #else
-                if let text = NSPasteboard.general.string(forType: .string) { rules = text }
-                #endif
-            } label: { Label("Paste", systemImage: "doc.on.clipboard") }
-            useEditorButton
-        }
-        .disabled(isLoadingContent)
-    }
-
-    private var useEditorButton: some View {
-        Button {
-            editorController.replaceText(rules, markClean: true)
-            isShowingEditor = true
-        } label: {
-            Label("Use Editor", systemImage: "curlybraces")
-        }
-        .disabled(isLoadingContent)
-    }
-
-    private func pasteRulesIntoEditor() {
-        #if os(iOS)
-        guard let string = UIPasteboard.general.string else { return }
-        #else
-        guard let string = NSPasteboard.general.string(forType: .string) else { return }
-        #endif
-        editorController.replaceText(string, markClean: true)
-    }
-
-    private var trimmedRules: String {
-        rules.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var canSave: Bool {
-        !trimmedRules.isEmpty && !isLoadingContent
-    }
-
-    private var saveButton: some View {
-        Button("Save") {
-            save()
-        }
-        .primaryActionButtonStyle()
-        .disabled(!canSave)
-        .keyboardShortcut(.defaultAction)
-    }
-
-    private func loadContent() {
-        isLoadingContent = true
-        Task {
-            let loadedRules = await Task.detached { () -> String? in
-                guard let containerURL = FileManager.default.containerURL(
-                    forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
-                ),
-                let fileURL = ContentBlockerIncrementalCache.existingLocalFileURL(
-                    for: filter,
-                    containerURL: containerURL
-                ) else { return nil }
-                return try? String(contentsOf: fileURL, encoding: .utf8)
-            }.value
-
-            await MainActor.run {
-                rules = loadedRules ?? ""
-                isLoadingContent = false
+            } else {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    #if os(macOS)
+                    .frame(width: 1000, height: 700)
+                    #endif
             }
         }
-    }
-
-    private func save() {
-        filterManager.updateUserList(
-            id: filter.id,
-            name: filter.name,
-            description: filter.description,
-            category: filter.category,
-            content: trimmedRules
-        )
-        if filterManager.hasError {
-            errorMessage = filterManager.statusDescription
-        } else {
-            dismiss()
+        .task {
+            let snapshot = filter
+            let rules = await Task.detached { FilterListLoader().readLocalFilterContent(snapshot) ?? "" }.value
+            editorController.replaceText(rules, markClean: true)
+            isLoaded = true
         }
     }
 }

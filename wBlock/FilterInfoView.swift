@@ -226,11 +226,10 @@ struct FilterRulesView: View {
                 Text(filter.localizedDisplayName)
                     .font(.headline)
                 Spacer()
-                SourceViewerControls(wrapsLines: $wrapsLines) { editorController.openSearch() }
-                    .disabled(isLoading)
-                if analysis != nil {
-                    filterMenu
+                SourceViewerControls(wrapsLines: $wrapsLines, onSearch: editorController.openSearch) {
+                    if analysis != nil { filterMenu }
                 }
+                .disabled(isLoading)
                 SheetDoneButton { dismiss() }
             }
             .padding(16)
@@ -259,6 +258,7 @@ struct FilterRulesView: View {
         .frame(width: 1000, height: 700)
         #else
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .sourceSheetPresentationCompat()
         #endif
         .task {
             rules = FilterListLoader().readLocalFilterContent(filter) ?? ""
@@ -317,12 +317,16 @@ struct FilterRulesView: View {
                 Label("Comments", systemImage: "text.quote")
             }
         } label: {
-            Label("View", systemImage: shownKinds.count == FilterRuleKind.allCases.count
-                ? "line.3.horizontal.decrease.circle"
-                : "line.3.horizontal.decrease.circle.fill")
+            // An icon like Search and Wrap beside it; filled while some kinds are hidden.
+            SourceControlIcon(systemImage: shownKinds.count == FilterRuleKind.allCases.count
+                ? "line.3.horizontal.decrease" : "line.3.horizontal.decrease.circle.fill")
         }
         .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .buttonStyle(.plain)
         .fixedSize()
+        .accessibilityLabel("View")
+        .help("View")
     }
 
     private func legend(_ analysis: FilterRuleAnalysis) -> some View {
