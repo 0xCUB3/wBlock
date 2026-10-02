@@ -35,6 +35,7 @@ struct WBlockBackup: Codable, Sendable {
     struct FilterSelection: Codable, Sendable {
         var url: String
         var isSelected: Bool
+        var updatesAutomatically: Bool?
     }
 
     struct CustomFilterEntry: Codable, Sendable {
@@ -43,6 +44,7 @@ struct WBlockBackup: Codable, Sendable {
         var category: String
         var isSelected: Bool
         var description: String
+        var updatesAutomatically: Bool?
         var userProvidedName: Bool?
         var userProvidedDescription: Bool?
         var admittedSourceRuleCount: Int?
@@ -429,7 +431,9 @@ enum BackupCustomFilterRestorer {
             var restored = FilterList(
                 id: id, name: entry.name, url: url,
                 category: FilterListCategory(rawValue: entry.category) ?? .custom,
-                isCustom: true, isSelected: entry.isSelected, description: entry.description,
+                isCustom: true, isSelected: entry.isSelected,
+                updatesAutomatically: entry.updatesAutomatically ?? old?.updatesAutomatically ?? true,
+                description: entry.description,
                 version: inline ? "" : (old?.version ?? ""),
                 sourceRuleCount: inline ? entry.content.map(FilterList.countRules) : old?.sourceRuleCount,
                 lastUpdated: inline ? Date() : old?.lastUpdated,
@@ -512,7 +516,8 @@ enum BackupManager {
         // Built-in filter selections (non-custom)
         let filterSelections = filterManager.filterLists
             .filter { !$0.isCustom }
-            .map { WBlockBackup.FilterSelection(url: $0.url.absoluteString, isSelected: $0.isSelected) }
+            .map { WBlockBackup.FilterSelection(url: $0.url.absoluteString, isSelected: $0.isSelected,
+                                               updatesAutomatically: $0.updatesAutomatically) }
 
         // Custom filter lists
         let customEntries = try filterManager.filterLists
@@ -536,6 +541,7 @@ enum BackupManager {
                     category: filter.category.rawValue,
                     isSelected: filter.isSelected,
                     description: filter.description,
+                    updatesAutomatically: filter.updatesAutomatically,
                     userProvidedName: filter.hasUserProvidedName,
                     userProvidedDescription: filter.hasUserProvidedDescription,
                     admittedSourceRuleCount: filter.uniqueRuleCount,
@@ -622,6 +628,9 @@ enum BackupManager {
         for selection in backup.filterSelections {
             if let index = lists.firstIndex(where: { !$0.isCustom && $0.url.absoluteString == selection.url }) {
                 lists[index].isSelected = selection.isSelected
+                if let enabled = selection.updatesAutomatically {
+                    lists[index].updatesAutomatically = enabled
+                }
                 lists[index].uniqueRuleCount = nil
             }
         }

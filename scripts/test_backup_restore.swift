@@ -1,6 +1,30 @@
 import Foundation
 import wBlockCoreService
 
+// Keep export/restore preference side effects entirely in memory.
+@MainActor final class UserDefaults {
+    static let standard = UserDefaults()
+    func string(forKey key: String) -> String? { nil }
+    func set(_ value: Any?, forKey key: String) {}
+}
+enum CosmeticFilteringPreference {
+    typealias Sites = wBlockCoreService.CosmeticFilteringPreference.Sites
+    static func isEnabled() -> Bool { true }
+    static func sites() -> Sites { .all }
+    static func setEnabled(_ value: Bool) {}
+    static func setSites(_ value: Sites) {}
+}
+enum TubeCleanerDeArrowPreference {
+    typealias Features = wBlockCoreService.TubeCleanerDeArrowPreference.Features
+    typealias Settings = wBlockCoreService.TubeCleanerDeArrowPreference.Settings
+    static func features() -> Features { .init() }
+    static func settings() -> Settings { .init() }
+}
+enum PlayerCleanerPreference {
+    typealias Features = wBlockCoreService.PlayerCleanerPreference.Features
+    static func features() -> Features { .init() }
+}
+
 // Compile the production BackupManager with in-memory service doubles. Only
 // the identity-derived inline files are real, and live inside a unique temp dir.
 struct FilterListLoader {
@@ -95,6 +119,53 @@ enum AppAppearance: String {
 }
 
 @main struct BackupRestoreTests {
+    @MainActor static func testAutomaticUpdatePreferences() async throws {
+        for enabled in [false, true] {
+            let manager = AppFilterManager()
+            let id = UUID()
+            let builtin = FilterList(name: "Built-in", url: URL(string: "https://example.com/builtin.txt")!,
+                                     category: .ads, isSelected: false, updatesAutomatically: enabled)
+            let remote = FilterList(name: "Remote", url: URL(string: "https://example.com/custom.txt")!,
+                                    category: .privacy, isCustom: true, isSelected: true, updatesAutomatically: enabled,
+                                    excludedSites: ["keep.example"], selectedSites: ["only.example"])
+            let inline = FilterList(id: id, name: "Inline", url: URL(string: "wblock://userlist/\(id.uuidString)")!,
+                                    category: .ads, isCustom: true, updatesAutomatically: enabled)
+            let file = FilterListLoader().localFileURL(for: inline)!
+            try "||backup.example^".write(to: file, atomically: true, encoding: .utf8)
+            defer { try? FileManager.default.removeItem(at: file) }
+            manager.filterLists = [builtin, remote, inline]
+            let data = try await BackupManager.exportData(backup: BackupManager.createBackup(filterManager: manager))
+            let backup = try BackupManager.importData(from: data)
+            for index in manager.filterLists.indices { manager.filterLists[index].updatesAutomatically = !enabled }
+            try await BackupManager.restoreBackup(backup, filterManager: manager)
+            precondition(manager.filterLists.allSatisfy { $0.updatesAutomatically == enabled },
+                         "built-in, remote custom and inline automatic-update choices must round-trip")
+            precondition(manager.filterLists.map(\.id) == [builtin.id, remote.id, inline.id])
+            precondition(manager.filterLists[1].excludedSites == ["keep.example"] && manager.filterLists[1].selectedSites == ["only.example"])
+            precondition(manager.filterLists[1].category == .privacy && manager.filterLists[1].isSelected)
+
+            // An omitted setting is no opinion, regardless of backup app version.
+            var json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+            for key in ["filterSelections", "customFilterLists"] {
+                json[key] = (json[key] as! [[String: Any]]).map { entry in
+                    var entry = entry
+                    entry.removeValue(forKey: "updatesAutomatically")
+                    return entry
+                }
+            }
+            let missing = try BackupManager.importData(from: JSONSerialization.data(withJSONObject: json))
+            for index in manager.filterLists.indices { manager.filterLists[index].updatesAutomatically = !enabled }
+            try await BackupManager.restoreBackup(missing, filterManager: manager)
+            precondition(manager.filterLists.allSatisfy { $0.updatesAutomatically == !enabled },
+                         "missing settings must preserve existing choices")
+            manager.filterLists = [builtin]
+            try await BackupManager.restoreBackup(missing, filterManager: manager)
+            precondition(manager.filterLists.filter(\.isCustom).allSatisfy(\.updatesAutomatically),
+                         "new custom records without settings use the model default")
+        }
+        print("PASS backup automatic updates: false/true round trips, missing-field preservation, new defaults, identity/site/category state")
+    }
+
     @MainActor static func testLocalSourceAvailability() async throws {
         let manager = AppFilterManager()
         let id = UUID()
@@ -169,6 +240,7 @@ enum AppAppearance: String {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
         FilterListLoader.directory = directory
+        try await testAutomaticUpdatePreferences()
         try await testLocalSourceAvailability()
         for content: String? in [nil, "", "||example.com^"] {
             let manager = AppFilterManager()
