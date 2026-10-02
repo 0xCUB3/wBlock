@@ -402,7 +402,7 @@ extension AppFilterManager {
             let cleanupSucceeded: Bool
             if cleared {
                 cleanupSucceeded = await clearDownloadedStateForDeselectedRemoteFilters(
-                    previouslyAppliedFilterIDs: previouslyAppliedFilterIDs
+                    appliedFilters: runSnapshot.filters
                 )
             } else {
                 cleanupSucceeded = false
@@ -595,7 +595,7 @@ extension AppFilterManager {
             let cleanupSucceeded: Bool
             if cleared {
                 cleanupSucceeded = await clearDownloadedStateForDeselectedRemoteFilters(
-                    previouslyAppliedFilterIDs: previouslyAppliedFilterIDs
+                    appliedFilters: runSnapshot.filters
                 )
             } else {
                 cleanupSucceeded = false
@@ -1111,7 +1111,7 @@ extension AppFilterManager {
             // Cleanup is deliberately post-success: a failed conversion/reload/engine publish
             // must leave the previous downloadable baseline and validators intact.
             let cleanupSucceeded = await clearDownloadedStateForDeselectedRemoteFilters(
-                previouslyAppliedFilterIDs: previouslyAppliedFilterIDs
+                appliedFilters: runSnapshot.filters
             )
             if cleanupSucceeded {
                 await MainActor.run {

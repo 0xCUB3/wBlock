@@ -242,16 +242,12 @@ extension AppFilterManager {
     /// The definition metadata remains so re-enabling can fetch the same source again.
     @discardableResult
     func clearDownloadedStateForDeselectedRemoteFilters(
-        previouslyAppliedFilterIDs: Set<UUID>? = nil
+        appliedFilters: [FilterList]
     ) async -> Bool {
         await (filterUpdater.userScriptManager ?? UserScriptManager.shared).removeDisabledRemoteScriptDownloads()
-        let appliedIDs = previouslyAppliedFilterIDs ?? appliedSelectedFilterIDs
-        let filtersToClear = filterLists.filter { filter in
-            guard appliedIDs.contains(filter.id), !filter.isSelected,
-                  !filter.isInlineUserList
-            else { return false }
-            let scheme = filter.url.scheme?.lowercased()
-            return scheme == "http" || scheme == "https"
+        let deselectedIDs = Set(appliedFilters.filter { !$0.isSelected }.map(\.id))
+        let filtersToClear = filterLists.filter {
+            deselectedIDs.contains($0.id) && !$0.isSelected && $0.isRemoteURL
         }
         guard !filtersToClear.isEmpty else { return true }
 
