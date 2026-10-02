@@ -425,7 +425,7 @@ enum ToolbarVisibilityPriorityCompat {
     case low
 }
 
-@available(macOS 13.0, *)
+@available(iOS 16.0, macOS 13.0, *)
 extension ToolbarContent {
     func toolbarVisibilityPriorityCompat(_ priority: ToolbarVisibilityPriorityCompat) -> some ToolbarContent {
         ToolbarVisibilityPriorityContent(base: self, priority: priority)
@@ -434,7 +434,7 @@ extension ToolbarContent {
 
 /// ToolbarContentBuilder has no branching before iOS 16, so the availability
 /// check lives in a wrapper's body rather than inside the builder.
-@available(macOS 13.0, *)
+@available(iOS 16.0, macOS 13.0, *)
 private struct ToolbarVisibilityPriorityContent<Base: ToolbarContent>: ToolbarContent {
     let base: Base
     let priority: ToolbarVisibilityPriorityCompat
@@ -457,6 +457,61 @@ private struct ToolbarVisibilityPriorityContent<Base: ToolbarContent>: ToolbarCo
         #endif
     }
 }
+
+#if os(iOS)
+/// Pending changes read as the word Apply on a horizontal bar. When iPhone Duo
+/// stacks the bar vertically only symbols are shown, so the label carries a
+/// symbol there and keeps the word everywhere else.
+struct ApplyChangesToolbarLabel: View {
+    let hasPendingChanges: Bool
+    let symbolName: String
+
+    var body: some View {
+        // toolbarVerticalEdge ships with SwiftUI 8.1 (the iOS 27.1 SDK); older
+        // SDKs compile the horizontal label only.
+        #if canImport(SwiftUI, _version: 8.1)
+        if #available(iOS 27.1, *) {
+            VerticalBarAwareApplyLabel(hasPendingChanges: hasPendingChanges, symbolName: symbolName)
+        } else {
+            horizontalLabel
+        }
+        #else
+        horizontalLabel
+        #endif
+    }
+
+    @ViewBuilder
+    private var horizontalLabel: some View {
+        if hasPendingChanges {
+            Text("Apply").fontWeight(.semibold)
+        } else {
+            Image(systemName: symbolName)
+        }
+    }
+
+    #if canImport(SwiftUI, _version: 8.1)
+    @available(iOS 27.1, *)
+    private struct VerticalBarAwareApplyLabel: View {
+        let hasPendingChanges: Bool
+        let symbolName: String
+        @Environment(\.toolbarVerticalEdge) private var verticalEdge
+
+        var body: some View {
+            if verticalEdge != nil {
+                Label(
+                    "Apply",
+                    systemImage: hasPendingChanges ? "checkmark.arrow.trianglehead.counterclockwise" : symbolName
+                )
+            } else if hasPendingChanges {
+                Text("Apply").fontWeight(.semibold)
+            } else {
+                Image(systemName: symbolName)
+            }
+        }
+    }
+    #endif
+}
+#endif
 
 /// Toolbar Apply control: tap checks for updates, 3s hold force-applies.
 struct ApplyChangesHoldButton<Label: View>: View {

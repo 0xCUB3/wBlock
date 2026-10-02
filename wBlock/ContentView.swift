@@ -1085,59 +1085,6 @@ struct FilterRowView: View {
 }
 
 #if os(iOS)
-/// Pending changes read as the word Apply on a horizontal bar. When iPhone Duo
-/// stacks the bar vertically only symbols are shown, so the label carries a
-/// symbol there and keeps the word everywhere else.
-private struct ApplyChangesToolbarLabel: View {
-    let hasPendingChanges: Bool
-    let symbolName: String
-
-    var body: some View {
-        // toolbarVerticalEdge ships with SwiftUI 8.1 (the iOS 27.1 SDK); older
-        // SDKs compile the horizontal label only.
-        #if canImport(SwiftUI, _version: 8.1)
-        if #available(iOS 27.1, *) {
-            VerticalBarAwareApplyLabel(hasPendingChanges: hasPendingChanges, symbolName: symbolName)
-        } else {
-            horizontalLabel
-        }
-        #else
-        horizontalLabel
-        #endif
-    }
-
-    @ViewBuilder
-    private var horizontalLabel: some View {
-        if hasPendingChanges {
-            Text("Apply").fontWeight(.semibold)
-        } else {
-            Image(systemName: symbolName)
-        }
-    }
-
-    #if canImport(SwiftUI, _version: 8.1)
-    @available(iOS 27.1, *)
-    private struct VerticalBarAwareApplyLabel: View {
-        let hasPendingChanges: Bool
-        let symbolName: String
-        @Environment(\.toolbarVerticalEdge) private var verticalEdge
-
-        var body: some View {
-            if verticalEdge != nil {
-                Label(
-                    "Apply",
-                    systemImage: hasPendingChanges ? "checkmark.arrow.trianglehead.counterclockwise" : symbolName
-                )
-            } else if hasPendingChanges {
-                Text("Apply").fontWeight(.semibold)
-            } else {
-                Image(systemName: symbolName)
-            }
-        }
-    }
-    #endif
-}
-
 /// Size class rather than idiom decides the presentation, so the regular-width
 /// inner display of iPhone Duo gets the sheet iPad already uses.
 private struct OnboardingPresentationModifier: ViewModifier {
