@@ -10,7 +10,7 @@ import wBlockCoreService
             FilterList(name: name, url: URL(string: "https://example.com/\(name).txt")!, category: .foreign,
                        languages: languages, trustLevel: trust)
         }
-        let nordic = list("Nordic", ["no", "da", "is", "fo", "kl"])
+        let nordic = list("Nordic", ["nb", "nn", "da", "is", "fo", "kl"])
         let icelandic = list("Icelandic", ["is"])
         let optional = list("Optional", ["is"], trust: "low")
         let german = list("German", ["de"], trust: "full")

@@ -217,7 +217,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         "ko": "\u{1F1F0}\u{1F1F7}", "lt": "\u{1F1F1}\u{1F1F9}", "lv": "\u{1F1F1}\u{1F1FB}",
         "mai": "\u{1F1EE}\u{1F1F3}", "mk": "\u{1F1F2}\u{1F1F0}", "ml": "\u{1F1EE}\u{1F1F3}",
         "mr": "\u{1F1EE}\u{1F1F3}", "ne": "\u{1F1F3}\u{1F1F5}", "nl": "\u{1F1F3}\u{1F1F1}",
-        "no": "\u{1F1F3}\u{1F1F4}", "or": "\u{1F1EE}\u{1F1F3}", "pa": "\u{1F1EE}\u{1F1F3}",
+        "nb": "\u{1F1F3}\u{1F1F4}", "nn": "\u{1F1F3}\u{1F1F4}", "or": "\u{1F1EE}\u{1F1F3}", "pa": "\u{1F1EE}\u{1F1F3}",
         "pl": "\u{1F1F5}\u{1F1F1}", "ps": "\u{1F1E6}\u{1F1EB}", "pt": "\u{1F1E7}\u{1F1F7}",
         "ro": "\u{1F1F7}\u{1F1F4}", "ru": "\u{1F1F7}\u{1F1FA}", "si": "\u{1F1F1}\u{1F1F0}",
         "sk": "\u{1F1F8}\u{1F1F0}", "sl": "\u{1F1F8}\u{1F1EE}", "sq": "\u{1F1E6}\u{1F1F1}",
