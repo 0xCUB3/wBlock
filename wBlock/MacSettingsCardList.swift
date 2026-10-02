@@ -25,7 +25,7 @@ struct MacSettingsCardList<Header: View, Content: View>: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
                 header
                     .frame(maxWidth: .infinity)
                 Group(sections: content) { sections in
