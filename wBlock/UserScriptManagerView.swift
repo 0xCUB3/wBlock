@@ -89,8 +89,8 @@ private struct UserScriptListItem: Identifiable, Hashable {
         url = script.url
         updateURL = script.updateURL
         isEnabled = script.isEnabled
-        version = script.version
-        lastUpdated = script.lastUpdated
+        version = isDownloaded || script.isLocal ? script.version : ""
+        lastUpdated = isDownloaded || script.isLocal ? script.lastUpdated : nil
         isLocal = script.isLocal
         self.isDownloaded = isDownloaded
         updatesAutomatically = script.updatesAutomatically
@@ -790,7 +790,8 @@ struct UserScriptManagerView: View {
                     ),
                     ContentRowMetadata.versionLabel(script.version),
                     ContentRowMetadata.updatedLabel(
-                        UserScriptModifiedStore.date(for: script.url) ?? script.lastUpdated
+                        script.isDownloaded || script.isLocal
+                            ? (UserScriptModifiedStore.date(for: script.url) ?? script.lastUpdated) : nil
                     ),
                 ]))
                     .font(.caption2)

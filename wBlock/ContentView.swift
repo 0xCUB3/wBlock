@@ -1109,7 +1109,8 @@ struct FilterRowView: View {
     }
 
     private var metadataSummary: String {
-        ContentRowMetadata.summary([
+        guard !filter.isRemoteURL || isDownloaded else { return "" }
+        return ContentRowMetadata.summary([
             ruleCountSummary,
             ContentRowMetadata.versionLabel(filter.version),
             ContentRowMetadata.updatedLabel(filterUpdatedDate),
