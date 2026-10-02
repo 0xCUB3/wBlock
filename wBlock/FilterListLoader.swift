@@ -78,6 +78,27 @@ class FilterListLoader {
         "platforms/extension/safari/filters/208_optimized.txt",  // Online Malicious URL Blocklist (#864)
         "platforms/extension/safari/filters/122_optimized.txt",  // Fanboy's Annoyances Filter (#877)
         "easylist.to/easylist/fanboy-social.txt",  // Fanboy's Social Blocking List (#877)
+        "raw.githubusercontent.com/cjx82630/cjxlist/master/cjx-annoyance.txt",  // CJX's Annoyances List (#882)
+        "raw.githubusercontent.com/easylist/easylistchina/master/easylistchina.txt",  // EasyList China (#882)
+        "easylist-downloads.adblockplus.org/easylistdutch.txt",  // EasyList Dutch (#882)
+        "easylist.to/easylistgermany/easylistgermany.txt",  // EasyList Germany (#882)
+        "easylist-downloads.adblockplus.org/easylistpolish.txt",  // EasyList Polish (#882)
+        "easylist-downloads.adblockplus.org/easylistportuguese.txt",  // EasyList Portuguese (#882)
+        "easylist-downloads.adblockplus.org/easylistspanish.txt",  // EasyList Spanish (#882)
+        "easylist-downloads.adblockplus.org/global-filters.txt",  // Global Filters (#882)
+        "easylist-downloads.adblockplus.org/liste_fr.txt",  // Liste FR (#882)
+        "raw.githubusercontent.com/PolishFiltersTeam/PolishAnnoyanceFilters/master/PPB.txt",  // Polish Annoyances Filters (#882)
+        "raw.githubusercontent.com/olegwukr/polish-privacy-filters/master/anti-adblock.txt",  // Polish Anti Adblock Filters (#882)
+        "raw.githubusercontent.com/FiltersHeroes/PolishAntiAnnoyingSpecialSupplement/master/polish_rss_filters.txt",  // Polish Anti-Annoying Special Supplement (#882)
+        "raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/cookies_filters/adblock_cookies.txt",  // Polish GDPR-Cookies Filters (#882)
+        "raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/adblock_social_filters/adblock_social_list.txt",  // Polish Social Filters (#882)
+        "www.zoso.ro/pages/rolist.txt",  // ROList (#882)
+        "www.zoso.ro/pages/rolist2.txt",  // ROLIST2 (#882)
+        "easylist-downloads.adblockplus.org/advblock.txt",  // RU AdList (#882)
+        "easylist-downloads.adblockplus.org/cntblock.txt",  // RU AdList: Counters (#882)
+        "raw.githubusercontent.com/gioxx/xfiles/master/filtri.txt",  // Xfiles (#882)
+        "raw.githubusercontent.com/xinggsf/Adblock-Plus-Rule/master/rule.txt",  // xinggsf (#882)
+        "raw.githubusercontent.com/yous/YousList/master/youslist.txt",  // YousList (#882)
     ]
 
     static func isRetiredBuiltIn(_ filter: FilterList) -> Bool {
@@ -335,7 +356,7 @@ class FilterListLoader {
                         "https://raw.githubusercontent.com/ABPindo/indonesianadblockrules/master/subscriptions/abpindo.txt"
                 )!, category: .foreign,
                 description: "Additional filter list for websites in Indonesian.",
-                languages: ["id"], trustLevel: "high"),
+                languages: ["id", "ms"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "ABPVN List",
                 url: URL(
@@ -450,14 +471,6 @@ class FilterListLoader {
                 description: "Additional filter list for websites in Bulgarian.", languages: ["bg"],
                 trustLevel: "high"),
             FilterList(
-                id: UUID(), name: "CJX's Annoyances List",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/cjx82630/cjxlist/master/cjx-annoyance.txt"
-                )!, category: .foreign,
-                description: "Supplement for EasyList China+EasyList and EasyPrivacy.",
-                languages: ["zh"], trustLevel: "low"),
-            FilterList(
                 id: UUID(), name: "Dandelion Sprout's Nordic Filters",
                 url: URL(
                     string:
@@ -465,7 +478,7 @@ class FilterListLoader {
                 )!, category: .foreign,
                 description:
                     "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population.",
-                languages: ["nb", "nn", "da", "is", "fo", "kl"], trustLevel: "high"),
+                languages: ["nb", "nn", "da", "is", "se", "fo", "kl"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "Dandelion Sprout's Serbo-Croatian List",
                 url: URL(
@@ -474,16 +487,7 @@ class FilterListLoader {
                 )!, category: .foreign,
                 description:
                     "A filter list for websites in Serbian, Montenegrin, Croatian, and Bosnian.",
-                languages: ["sr", "hr", "bs", "cnr"], trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "EasyList China",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/easylist/easylistchina/master/easylistchina.txt"
-                )!, category: .foreign,
-                description:
-                    "Additional filter list for websites in Chinese. Already included in AdGuard Chinese filter.",
-                languages: ["zh"], trustLevel: "high"),
+                languages: ["sr", "cnr", "hr", "bs"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "EasyList Czech and Slovak",
                 url: URL(
@@ -492,20 +496,6 @@ class FilterListLoader {
                 )!, category: .foreign,
                 description: "Additional filter list for websites in Czech and Slovak.",
                 languages: ["cs", "sk"], trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "EasyList Dutch",
-                url: URL(string: "https://easylist-downloads.adblockplus.org/easylistdutch.txt")!,
-                category: .foreign,
-                description:
-                    "Additional filter list for websites in Dutch. Already included in AdGuard Dutch filter.",
-                languages: ["nl"], trustLevel: "low"),
-            FilterList(
-                id: UUID(), name: "EasyList Germany",
-                url: URL(string: "https://easylist.to/easylistgermany/easylistgermany.txt")!,
-                category: .foreign,
-                description:
-                    "Additional filter list for websites in German. Already included in AdGuard German filter.",
-                languages: ["de"], trustLevel: "low"),
             FilterList(
                 id: UUID(), name: "EasyList Hebrew",
                 url: URL(
@@ -528,23 +518,6 @@ class FilterListLoader {
                 description: "Additional filter list for websites in Lithuanian.",
                 languages: ["lt"], trustLevel: "high"),
             FilterList(
-                id: UUID(), name: "EasyList Polish",
-                url: URL(string: "https://easylist-downloads.adblockplus.org/easylistpolish.txt")!,
-                category: .foreign, description: "Additional filter list for websites in Polish.",
-                languages: ["pl"], trustLevel: "low"),
-            FilterList(
-                id: UUID(), name: "EasyList Portuguese",
-                url: URL(
-                    string: "https://easylist-downloads.adblockplus.org/easylistportuguese.txt")!,
-                category: .foreign,
-                description: "Additional filter list for websites in Spanish and Portuguese.",
-                languages: ["es", "pt"], trustLevel: "low"),
-            FilterList(
-                id: UUID(), name: "EasyList Spanish",
-                url: URL(string: "https://easylist-downloads.adblockplus.org/easylistspanish.txt")!,
-                category: .foreign, description: "Additional filter list for websites in Spanish.",
-                languages: ["es"], trustLevel: "low"),
-            FilterList(
                 id: UUID(), name: "EasyList Thailand",
                 url: URL(
                     string:
@@ -564,14 +537,6 @@ class FilterListLoader {
                 description:
                     "Filter that aims to remove regional Swedish ads, tracking, social media, annoyances, sponsored articles etc.",
                 languages: ["sv"], trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "Global Filters",
-                url: URL(
-                    string: "https://easylist-downloads.adblockplus.org/global-filters.txt")!,
-                category: .foreign,
-                description:
-                    "EasyList supplement by eyeo for websites in Thai, Greek, Slovenian, Croatian, Serbian, Bosnian, and Filipino.",
-                languages: ["th", "el", "sl", "hr", "sr", "bs", "fil"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "Greek AdBlock Filter",
                 url: URL(string: "https://www.void.gr/kargig/void-gr-filters.txt")!,
@@ -598,7 +563,7 @@ class FilterListLoader {
                 description:
                     "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages.",
                 languages: [
-                    "hi", "as", "bn", "gu", "kn", "mai", "ml", "mr", "ne", "or", "pa", "si",
+                    "hi", "si", "ne", "bn", "as", "gu", "kn", "mai", "ml", "mr", "or", "pa",
                     "ta", "te"
                 ], trustLevel: "low"),
             FilterList(
@@ -631,13 +596,6 @@ class FilterListLoader {
                 category: .foreign, description: "Additional filter list for websites in Arabic.",
                 languages: ["ar"], trustLevel: "high"),
             FilterList(
-                id: UUID(), name: "Liste FR",
-                url: URL(string: "https://easylist-downloads.adblockplus.org/liste_fr.txt")!,
-                category: .foreign,
-                description:
-                    "Additional filter list for websites in French. Already included in AdGuard French filter.",
-                languages: ["fr"], trustLevel: "low"),
-            FilterList(
                 id: UUID(), name: "Macedonian adBlock Filters",
                 url: URL(
                     string:
@@ -660,48 +618,13 @@ class FilterListLoader {
                         "https://raw.githubusercontent.com/MasterKia/PersianBlocker/main/PersianBlocker.txt"
                 )!, category: .foreign,
                 description: "Filter list for blocking ads and trackers on websites in Persian.",
-                languages: ["fa", "tg", "ps"], trustLevel: "high"),
+                languages: ["fa", "ps", "tg"], trustLevel: "high"),
             FilterList(
-                id: UUID(), name: "Polish Annoyances Filters",
+                id: UUID(), name: "Slovenian List",
                 url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/PolishFiltersTeam/PolishAnnoyanceFilters/master/PPB.txt"
-                )!, category: .foreign,
-                description:
-                    "Filter list that hides and blocks pop-ups, widgets, newsletters, push notifications, arrows, tagged internal links that are off-topic, and other irritating elements. Polish GDPR-Cookies Filters is already in it.",
-                languages: ["pl"], trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "Polish Anti Adblock Filters",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/olegwukr/polish-privacy-filters/master/anti-adblock.txt"
-                )!, category: .foreign,
-                description: "Official Polish filters against Adblock alerts.", languages: ["pl"],
-                trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "Polish Anti-Annoying Special Supplement",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/FiltersHeroes/PolishAntiAnnoyingSpecialSupplement/master/polish_rss_filters.txt"
-                )!, category: .foreign,
-                description:
-                    "Filters that block and hide RSS elements and remnants of hidden newsletters combined with social elements on Polish websites.",
-                languages: ["pl"], trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "Polish GDPR-Cookies Filters",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/cookies_filters/adblock_cookies.txt"
-                )!, category: .foreign, description: "Polish filter list for cookies blocking.",
-                languages: ["pl"], trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "Polish Social Filters",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/adblock_social_filters/adblock_social_list.txt"
-                )!, category: .foreign,
-                description: "Polish filter list for social widgets, popups, etc.",
-                languages: ["pl"], trustLevel: "high"),
+                    string: "https://raw.githubusercontent.com/betterwebleon/slovenian-list/master/filters.txt")!,
+                category: .foreign, description: "Additional filter list for websites in Slovenian.",
+                languages: ["sl"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "Raajje AdList",
                 url: URL(
@@ -717,50 +640,6 @@ class FilterListLoader {
                         "https://raw.githubusercontent.com/tcptomato/ROad-Block/master/road-block-filters-light.txt"
                 )!, category: .foreign, description: "Romanian ad blocking filter subscription.",
                 languages: ["ro"], trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "ROList",
-                url: URL(string: "https://www.zoso.ro/pages/rolist.txt")!, category: .foreign,
-                description: "Additional filter list for websites in Romanian.", languages: ["ro"],
-                trustLevel: "low"),
-            FilterList(
-                id: UUID(), name: "ROLIST2",
-                url: URL(string: "https://www.zoso.ro/pages/rolist2.txt")!, category: .foreign,
-                description:
-                    "This is a complementary list for ROList with annoyances that are not necessarily banners. It is a very aggressive list and not recommended for beginners.",
-                languages: ["ro"], trustLevel: "low"),
-            FilterList(
-                id: UUID(), name: "RU AdList",
-                url: URL(string: "https://easylist-downloads.adblockplus.org/advblock.txt")!,
-                category: .foreign,
-                description:
-                    "Russian-language filter list that also covers Ukrainian, Kazakh, and Uzbek websites.",
-                languages: ["ru", "uk", "kk", "uz"], trustLevel: "low"),
-            FilterList(
-                id: UUID(), name: "RU AdList: Counters",
-                url: URL(string: "https://easylist-downloads.adblockplus.org/cntblock.txt")!,
-                category: .foreign, description: "RU AdList supplement for trackers blocking.",
-                languages: ["ru"], trustLevel: "low"),
-            FilterList(
-                id: UUID(), name: "Xfiles",
-                url: URL(
-                    string: "https://raw.githubusercontent.com/gioxx/xfiles/master/filtri.txt")!,
-                category: .foreign, description: "Italian adblock filter list.", languages: ["it"],
-                trustLevel: "low"),
-            FilterList(
-                id: UUID(), name: "xinggsf",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/xinggsf/Adblock-Plus-Rule/master/rule.txt"
-                )!, category: .foreign,
-                description:
-                    "Blocks ads on the Chinese video platforms (MangoTV, DouYu and others).",
-                languages: ["zh"], trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "YousList",
-                url: URL(
-                    string: "https://raw.githubusercontent.com/yous/YousList/master/youslist.txt")!,
-                category: .foreign, description: "Filter that blocks ads on Korean sites.",
-                languages: ["ko"], trustLevel: "high"),
         ])
         filterLists.append(
             FilterList(
