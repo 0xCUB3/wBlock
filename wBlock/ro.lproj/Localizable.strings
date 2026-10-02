@@ -919,7 +919,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Elimină notificările despre cookie-uri, ferestrele pop-up, bannerele și alte elemente deranjante. Activează toate cele cinci liste AdGuard Annoyances pentru setul complet.";
 "Reset to Default" = "Resetează la valorile implicite";
 "Shows all filter lists across every category." = "Afișează toate listele de filtre din fiecare categorie.";
-"Adds rules tailored to websites and languages from specific regions." = "Adaugă reguli adaptate site-urilor și limbilor din anumite regiuni.";
+"Adds rules tailored to websites and languages from specific regions." = "Adaugă reguli adaptate site-urilor și limbilor din anumite regiuni. Listele recomandate corespund limbilor alese și exclud listele cu încredere scăzută și pe cele marcate ca fiind deja incluse în altă listă. Dacă o listă regională AdGuard include o listă bazată pe EasyList sau una independentă, lasă acea listă separată dezactivată cât timp folosești AdGuard.";
 "The end of Safari ad-blocking B.S." = "Sfârșitul prostiilor blocării reclamelor în Safari";
 "Welcome to wBlock!" = "Bine ai venit în wBlock!";
 "Whitelist" = "Listă albă";

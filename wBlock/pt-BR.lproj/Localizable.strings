@@ -919,7 +919,7 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Remove avisos de cookies, pop-ups, banners e outros elementos que distraem. Ative as cinco listas AdGuard Annoyances para o conjunto completo.";
 "Reset to Default" = "Redefinir para o padrão";
 "Shows all filter lists across every category." = "Mostra todas as listas de filtros de todas as categorias.";
-"Adds rules tailored to websites and languages from specific regions." = "Adiciona regras adaptadas a sites e idiomas de regiões específicas.";
+"Adds rules tailored to websites and languages from specific regions." = "Adiciona regras adaptadas a sites e idiomas de regiões específicas. As listas recomendadas correspondem aos idiomas escolhidos e excluem listas de baixa confiança e aquelas marcadas como já incluídas em outra lista. Se uma lista regional do AdGuard incluir uma lista baseada no EasyList ou uma independente, deixe essa lista separada desativada enquanto usar o AdGuard.";
 "The end of Safari ad-blocking B.S." = "Chega de bobagens no bloqueio de anúncios do Safari";
 "Welcome to wBlock!" = "Bem-vindo ao wBlock!";
 "Whitelist" = "Lista de permissões";

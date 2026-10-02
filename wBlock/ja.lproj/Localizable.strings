@@ -922,7 +922,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Cookie通知、ポップアップ、バナーなどの気を散らす要素を削除します。フルセットには 5 つの AdGuard Annoyances リストを全て有効にしてください。";
 "Reset to Default" = "デフォルトに戻す";
 "Shows all filter lists across every category." = "全てのカテゴリのフィルターリストを表示します。";
-"Adds rules tailored to websites and languages from specific regions." = "特定の地域のウェブサイトや言語に合わせたルールを追加します。";
+"Adds rules tailored to websites and languages from specific regions." = "特定の地域のウェブサイトや言語に合わせたルールを追加します。 推奨リストは選択した言語に対応し、信頼度が低いリストや別のリストにすでに含まれると記載されたリストを除外します。AdGuard の地域別リストに EasyList ベースのリストや独立したリストが含まれる場合、AdGuard の使用中はその個別リストをオフにしてください。";
 "The end of Safari ad-blocking B.S." = "Safariの広告ブロックのくだらない問題に終止符を";
 "Welcome to wBlock!" = "wBlockへようこそ！";
 "Whitelist" = "ホワイトリスト";
