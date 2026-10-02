@@ -107,7 +107,7 @@ private struct SearchableCompatModifier: ViewModifier {
             content
                 .searchable(text: text, isPresented: isPresented, placement: placement, prompt: prompt)
                 #if os(iOS)
-                .searchToolbarBehavior(.minimize)
+                .searchToolbarBehavior(horizontalSizeClass == .regular ? .automatic : .minimize)
                 #endif
                 .modifier(SearchKeyboardDismissal(isPresented: isPresented))
         } else if #available(iOS 17.0, macOS 14.0, *) {
