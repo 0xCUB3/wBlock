@@ -52,16 +52,16 @@ struct FilterInfoView: View {
                 FilterRulesView(filter: liveFilter, filterManager: filterManager)
             }
         }
-        .task(id: liveFilter.lastUpdated) {
-            let snapshot = liveFilter
-            let cached = await Task.detached(priority: .userInitiated) { () -> (Int, String)? in
-                guard let content = FilterListLoader().readLocalFilterContent(snapshot) else { return nil }
-                return (content.utf8.count, String(content.prefix(8192)))
-            }.value
-            guard !Task.isCancelled else { return }
-            cachedByteCount = cached?.0
-            cachedMetadata = ContentInfoMetadata.filterHeader(cached?.1 ?? "")
-        }
+        .onAppear(perform: loadLocalHeader)
+        .onChangeCompat(of: liveFilter.lastUpdated) { _ in loadLocalHeader() }
+    }
+
+    /// Read before the first frame: rows that arrive after the popover opens
+    /// resize it mid-animation, and AppKit slides it diagonally to refit.
+    private func loadLocalHeader() {
+        let local = FilterListLoader().localFilterHeader(liveFilter)
+        cachedByteCount = local?.size
+        cachedMetadata = ContentInfoMetadata.filterHeader(local?.header ?? "")
     }
 
     private var infoContent: some View {

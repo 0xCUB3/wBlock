@@ -675,6 +675,16 @@ class FilterListLoader {
         ) != nil
     }
 
+    /// Size and leading header of the local copy, without reading the whole list.
+    func localFilterHeader(_ filter: FilterList, length: Int = 8192) -> (size: Int, header: String)? {
+        guard let containerURL = getSharedContainerURL(),
+              let url = ContentBlockerIncrementalCache.existingLocalFileURL(for: filter, containerURL: containerURL),
+              let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+              let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+        return (size, String(decoding: (try? handle.read(upToCount: length)) ?? Data(), as: UTF8.self))
+    }
+
     /// Gets the URL for the shared container
     func getSharedContainerURL() -> URL? {
         FileManager.default.containerURL(
