@@ -96,12 +96,12 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
 
 /// One short line under the input instead of a requirements list.
 struct AddContentNote: View {
-    let text: LocalizedStringKey
+    var text: LocalizedStringKey? = nil
     var error: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(text).foregroundStyle(.secondary)
+            if let text { Text(text).foregroundStyle(.secondary) }
             if let error { Text(error).foregroundStyle(.orange) }
         }
         #if os(macOS)

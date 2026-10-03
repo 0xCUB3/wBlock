@@ -2051,7 +2051,7 @@ struct AddUserScriptView: View {
                 Section {
                     AddContentBackButton { isReviewingText = false }
                 }
-                Section { userScriptMetaFields }
+                Section { userScriptMetaFields } footer: { AddContentNote(error: editorImportError) }
             } else {
                 AddContentSourceSection(title: "Script Content",
                     placeholder: "Paste or write a userscript or userstyle with a standard metadata block.",
