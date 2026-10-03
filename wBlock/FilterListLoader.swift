@@ -408,7 +408,7 @@ class FilterListLoader {
                 )!, category: .foreign,
                 description:
                     "Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language.",
-                languages: ["fr"], trustLevel: "full"),
+                languages: ["fr", "ar"], trustLevel: "full"),
             FilterList(
                 id: UUID(), name: "AdGuard German filter",
                 url: URL(
@@ -536,7 +536,7 @@ class FilterListLoader {
                 id: UUID(), name: "Greek AdBlock Filter",
                 url: URL(string: "https://www.void.gr/kargig/void-gr-filters.txt")!,
                 category: .foreign, description: "Additional filter list for websites in Greek.",
-                languages: ["el"], trustLevel: "low"),
+                languages: ["el"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "Hungarian filter",
                 url: URL(
@@ -560,7 +560,7 @@ class FilterListLoader {
                 languages: [
                     "hi", "si", "ne", "bn", "as", "gu", "kn", "mai", "ml", "mr", "or", "pa",
                     "ta", "te"
-                ], trustLevel: "low"),
+                ], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "KAD - Anti-Scam",
                 url: URL(
@@ -568,6 +568,13 @@ class FilterListLoader {
                 category: .foreign,
                 description:
                     "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc.",
+                languages: ["pl"], trustLevel: "high"),
+            FilterList(
+                id: UUID(), name: "CERT.PL's Warning List",
+                url: URL(string: "https://hole.cert.pl/domains/v2/domains_adblock.txt")!,
+                category: .foreign,
+                description:
+                    "CERT Polska's list of dangerous domains that impersonate real sites to steal data or money.",
                 languages: ["pl"], trustLevel: "low"),
             FilterList(
                 id: UUID(), name: "Latvian List",
@@ -597,7 +604,7 @@ class FilterListLoader {
                         "https://raw.githubusercontent.com/RandomAdversary/Macedonian-adBlock-Filters/master/Filters"
                 )!, category: .foreign,
                 description: "Blocks ads and trackers on various Macedonian websites.",
-                languages: ["mk"], trustLevel: "low"),
+                languages: ["mk"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "Official Polish filters for AdBlock, uBlock Origin & AdGuard",
                 url: URL(

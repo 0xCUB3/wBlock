@@ -411,6 +411,7 @@
 "Filter that enables ad blocking on websites in Russian language." = "عامل التصفية الذي يتيح حظر الإعلانات على مواقع الويب باللغة الروسية.";
 "Filter that enables ad blocking on websites in Ukrainian language." = "عامل التصفية الذي يتيح حظر الإعلانات على مواقع الويب باللغة الأوكرانية.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "عامل تصفية يحمي من أنواع مختلفة من عمليات الاحتيال في الشبكة البولندية، مثل الرسائل النصية الجماعية والمتاجر المزيفة عبر الإنترنت وما إلى ذلك.";
+"CERT Polska's list of dangerous domains that impersonate real sites to steal data or money." = "قائمة CERT Polska للنطاقات الخطرة التي تنتحل صفة مواقع حقيقية لسرقة البيانات أو الأموال.";
 "Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "عامل تصفية يزيل الإعلانات والنصوص المتنوعة من مواقع الويب ذات المحتوى الكوري. تم دمجها وزيادتها مع القواعد الخاصة بـ AdGuard لتحسين التصفية. من المتوقع أن يتم استخدام هذا الفلتر جنبًا إلى جنب مع مرشح AdGuard Base.";
 "Filter Update" = "تحديث الفلتر";
 "FilterApply" = "تطبيق الفلتر";

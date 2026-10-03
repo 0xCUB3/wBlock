@@ -411,6 +411,7 @@
 "Filter that enables ad blocking on websites in Russian language." = "Filtro que permite o bloqueio de anúncios em sites em russo.";
 "Filter that enables ad blocking on websites in Ukrainian language." = "Filtro que permite o bloqueio de anúncios em sites em idioma ucraniano.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Filtro que protege contra vários tipos de golpes na rede polonesa, como mensagens de texto em massa, lojas online falsas, etc.";
+"CERT Polska's list of dangerous domains that impersonate real sites to steal data or money." = "Lista da CERT Polska com domínios perigosos que se passam por sites reais para roubar dados ou dinheiro.";
 "Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Filtro que remove anúncios e scripts diversos de sites com conteúdo coreano. Combinado e aumentado com regras específicas do AdGuard para filtragem aprimorada. Espera-se que este filtro seja usado junto com o filtro AdGuard Base.";
 "Filter Update" = "Atualização de filtros";
 "FilterApply" = "Aplicação de filtros";
