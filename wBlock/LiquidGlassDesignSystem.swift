@@ -33,7 +33,8 @@ extension View {
     }
 }
 
-/// On macOS, Update and Show Enabled share a container, then Search and Add.
+/// On macOS, Search leads the actions (see `InlineGlassSearchField`), then
+/// Update and Show Enabled in one container, then Add.
 /// On iOS and iPadOS, Update/Apply sits alone at the leading edge. That is a
 /// settled decision: do not regroup it with the trailing actions again.
 struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
@@ -59,16 +60,16 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
         #if os(macOS)
         if #available(macOS 26.0, *) {
             content.toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
+                        .padding(.trailing, 4)
+                }
+                .sharedBackgroundVisibility(.hidden)
+                .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItemGroup(placement: .primaryAction) {
                     apply()
                     filter
                 }
-                .toolbarVisibilityPriorityCompat(.high)
-                ToolbarItem(placement: .primaryAction) {
-                    InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
-                        .padding(.leading, 4)
-                }
-                .sharedBackgroundVisibility(.hidden)
                 .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItem(placement: .primaryAction) {
                     primary()
@@ -82,12 +83,12 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
             .toolbarBackground(.visible, for: .windowToolbar)
         } else {
             content.toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    ToolbarSearchField(text: $searchText, isExpanded: $focusRequest, prompt: searchPrompt)
+                }
                 ToolbarItemGroup(placement: .primaryAction) {
                     apply()
                     filter
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    ToolbarSearchField(text: $searchText, isExpanded: $focusRequest, prompt: searchPrompt)
                 }
                 ToolbarItem(placement: .primaryAction) { primary() }
             }
@@ -254,8 +255,9 @@ struct InlineGlassSearchField: View {
     @State private var focusRequests = 0
     @State private var isVisible = false
     @State private var fieldWidth: CGFloat = 140
-    /// In a narrow window the search field stays on the left and grows rightward.
-    /// This is deliberate and settled; do not "fix" it.
+    /// Search is the leftmost list action on macOS, and in a narrow window it moves
+    /// to the far left and grows rightward. Both are deliberate and settled, chosen
+    /// so the expand animation stays simple; do not "fix" either.
     ///
     /// Once the window is too narrow for the tab picker, AppKit moves this item to
     /// the leading edge of the toolbar and owns that slot. The slot then widens
