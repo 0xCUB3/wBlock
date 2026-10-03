@@ -257,8 +257,19 @@ struct InlineGlassSearchField: View {
     @State private var focusRequests = 0
     @State private var isVisible = false
     @State private var fieldWidth: CGFloat = 140
-    /// In a narrow window AppKit lays the item out at the leading edge, so the slot
-    /// widens toward the trailing side and the capsule must grow from its leading edge.
+    /// In a narrow window the search field stays on the left and grows rightward.
+    /// This is deliberate and settled; do not "fix" it.
+    ///
+    /// Once the window is too narrow for the tab picker, AppKit moves this item to
+    /// the leading edge of the toolbar and owns that slot. The slot then widens
+    /// toward the trailing side, so the capsule has to grow from its leading edge
+    /// to stay inside it. Keeping the field anchored on the right (where the button
+    /// sits in a wide window) would mean animating against AppKit's placement: the
+    /// toolbar resizes the item without animating, so a right-anchored capsule
+    /// either jumps on the first frame, overruns its slot until layout catches up,
+    /// or fights the toolbar's own relayout. Every attempt to fake it has done one
+    /// of those. Growing from where AppKit already put the item is the only
+    /// version that stays smooth, and smooth beats symmetric here.
     @State private var growsTrailing = false
     @State private var anchor = ToolbarItemAnchor()
     @FocusState private var isFocused: Bool
