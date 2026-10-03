@@ -166,6 +166,20 @@ extension View {
         modifier(SearchableCompatModifier(text: text, isPresented: isPresented, prompt: prompt))
     }
 
+    /// Keeps a menu open while its toggles are flipped, where the OS allows it.
+    @ViewBuilder
+    func menuStaysOpenCompat() -> some View {
+        #if os(iOS)
+        if #available(iOS 16.4, *) {
+            menuActionDismissBehavior(.disabled)
+        } else {
+            self
+        }
+        #else
+        self
+        #endif
+    }
+
     @ViewBuilder
     func scrollDismissesKeyboardCompat() -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {
@@ -305,6 +319,15 @@ extension View {
     func groupedFormStyleCompat() -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {
             formStyle(.grouped)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func columnsFormStyleCompat() -> some View {
+        if #available(iOS 16.0, macOS 13.0, *) {
+            formStyle(.columns)
         } else {
             self
         }
@@ -540,7 +563,11 @@ struct ApplyChangesHoldButton<Label: View>: View {
 
     var body: some View {
         Button(action: handleTap) {
+            // A background apply shows no sheet, so the button itself says it
+            // is working instead of reading Apply until the run ends (#921).
             label
+                .opacity(isDisabled ? 0 : 1)
+                .overlay { if isDisabled { ProgressView().controlSize(.small) } }
         }
         .disabled(isDisabled)
         .accessibilityLabel(hasPendingChanges ? Text("Apply Changes") : Text("Check for Updates"))

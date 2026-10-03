@@ -73,7 +73,6 @@
 "Activate" = "Activează";
 "Active" = "Activ";
 "Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
-"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
 "Adblock List for Finland" = "Adblock List for Finland";
 "AdBlockID" = "AdBlockID";
 "Add" = "Add";
@@ -90,7 +89,6 @@
 "Added user list" = "Listă de utilizator adăugată";
 "Added userscript from editor" = "Script utilizator adăugat din editor";
 "Adding new userscript from URL" = "Adăugare script utilizator nou din URL";
-"Adding…" = "Adding…";
 "Additional filter list for websites in Arabic." = "Listă suplimentară de filtre pentru site-urile web în arabă.";
 "Additional filter list for websites in Bulgarian." = "Listă suplimentară de filtre pentru site-urile web în limba bulgară.";
 "Additional filter list for websites in Czech and Slovak." = "Listă suplimentară de filtre pentru site-uri web în cehă și slovacă.";
@@ -238,8 +236,6 @@
 "Click an element on the page to hide it." = "Fă clic pe un element din pagină pentru a-l ascunde.";
 "close" = "închide";
 "Close search" = "Închide căutarea";
-"Community filter list that blocks ads on Albanian and Kosovar websites." = "Listă de filtre menținută de comunitate care blochează reclamele pe site-uri albaneze și kosovare.";
-"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Listă de filtre menținută de comunitate care blochează reclamele pe site-uri în divehi (maldiveană).";
 "Community options" = "Opțiuni ale comunității";
 "Community-maintained options for additional regional coverage." = "Opțiuni întreținute de comunitate pentru acoperire regională suplimentară.";
 "Completed" = "Finalizat";
@@ -402,7 +398,6 @@
 "Filter Apply" = "Aplicare filtre";
 "Filter Auto-Update" = "Actualizare automată filtre";
 "Filter for ad blocking on Estonian sites." = "Filtrați pentru blocarea anunțurilor pe site-urile din Estonia.";
-"Filter list for blocking ads and trackers on websites in Persian." = "Listă de filtre pentru blocarea reclamelor și a instrumentelor de urmărire pe site-uri web în persană.";
 "Filter list not found." = "Lista de filtre nu a fost găsită.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "Listă de filtrare care elimină în mod specific anunțurile de pe site-uri web în limbile spaniolă, portugheză și portugheză braziliană.";
 "Filter list that specifically removes ads on websites in Turkish language." = "Listă de filtre care elimină în mod specific anunțurile de pe site-uri web în limba turcă.";
@@ -416,6 +411,7 @@
 "Filter that enables ad blocking on websites in Russian language." = "Filtru care permite blocarea reclamelor pe site-uri web în limba rusă.";
 "Filter that enables ad blocking on websites in Ukrainian language." = "Filtru care permite blocarea reclamelor pe site-uri web în limba ucraineană.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Filtru care protejează împotriva diferitelor tipuri de escrocherii din rețeaua poloneză, cum ar fi mesaje text în masă, magazine online false etc.";
+"CERT Polska's list of dangerous domains that impersonate real sites to steal data or money." = "Lista CERT Polska cu domenii periculoase care imită site-uri reale pentru a fura date sau bani.";
 "Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Filtru care elimină reclamele și diverse scripturi de pe site-urile web cu conținut coreean. Combinat și îmbunătățit cu reguli specifice AdGuard pentru filtrare îmbunătățită. Acest filtru este de așteptat să fie utilizat împreună cu filtrul AdGuard Base.";
 "Filter Update" = "Actualizare filtre";
 "FilterApply" = "Aplicare filtre";
@@ -577,7 +573,6 @@
 "Pause Blocking" = "Pauză blocare";
 "Paused Components" = "Componente în pauză";
 "Pausing blocking..." = "Se pun în pauză blocarea…";
-"Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
 "Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "Blochează domeniile de malware și înșelătorii, redirecționările rău intenționate și solicitările de software nedorit.";
@@ -596,7 +591,6 @@
 "Provide a valid https:// link ending in .user.js" = "Furnizează un link https:// valid care se termină în .user.js";
 "Psst! You forgot something!" = "Psst! Ai uitat ceva!";
 "Quit Without Applying" = "Ieșiți fără a aplica";
-"Raajje AdList" = "Raajje AdList";
 "Reading Files" = "Se citesc fișierele";
 "Ready" = "Gata";
 "Ready." = "Gata.";
@@ -776,7 +770,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "This will reset all filters, userscripts, and preferences." = "Acest lucru va reseta toate filtrele, scripturile utilizator și preferințele.";
 "Timed out" = "Timp expirat";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield ajută la blocarea reclamelor reintroduse de Ad-Shield pe site-urile corespunzătoare.";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Blochează reclamele pe care Ad-Shield le reintroduce pe site-urile corespunzătoare după ce listele de filtre le-au ascuns.";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Permite blocantelor de reclame să reziste rapid la Ad-Shield, care reinserează reclame pe site-urile corespunzătoare după ce listele de filtre le ascund.";
 "Title" = "Titlu";
 "Title (optional)" = "Titlu (opțional)";
 "Title is required." = "Numele este obligatoriu.";
@@ -930,7 +924,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Change File" = "Schimbă fișierul";
 "Local imports won't auto-update; re-import to replace." = "Importurile locale nu se actualizează automat; importă din nou pentru înlocuire.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra blochează reclamele Twitch și gestionează cazuri complicate de anti-adblock.";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "Blochează reclamele de pe Twitch cu scriptul vaft de la TwitchAdSolutions. Nu-l rula împreună cu AdGuard Extra.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Blochează reclamele Twitch cu scriptul vaft din TwitchAdSolutions.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Dezactivezi filtrul esențial?";
@@ -1155,3 +1149,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Capacity" = "Capacitate";
 
 "Reset…" = "Resetează…";
+"Languages" = "Limbi";
+"Add Script" = "Adaugă script";
+"Paste or type filter rules." = "Lipește sau scrie reguli de filtrare.";

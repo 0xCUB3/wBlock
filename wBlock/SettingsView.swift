@@ -371,14 +371,25 @@ struct SettingsView: View {
 
     /// The same stat pills the Filters and Userscripts tabs open with, so every
     /// tab's list starts below one row of pills.
+    /// A narrow Mac window can't fit three full pills; the row then turns compact
+    /// instead of widening the cards past the window's edges (#924).
+    @ViewBuilder
     private var statusPills: some View {
-        let compact: Bool = {
-            #if os(iOS)
-            true
-            #else
-            false
-            #endif
-        }()
+        #if os(iOS)
+        statusPills(compact: true)
+        #else
+        if #available(macOS 13.0, *) {
+            ViewThatFits(in: .horizontal) {
+                statusPills(compact: false)
+                statusPills(compact: true)
+            }
+        } else {
+            statusPills(compact: false)
+        }
+        #endif
+    }
+
+    private func statusPills(compact: Bool) -> some View {
         let capacity = filterManager.safariRuleCapacityFraction
         // Relative times in the pills age while Settings stays open.
         return TimelineView(.periodic(from: .now, by: 30)) { context in

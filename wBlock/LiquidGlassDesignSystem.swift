@@ -33,8 +33,10 @@ extension View {
     }
 }
 
-/// Search leads the macOS actions; on iOS Update/Apply sits leading and
-/// Show Enabled, Search and Add stay trailing in their own containers.
+/// On macOS, Search leads the actions (see `InlineGlassSearchField`), then
+/// Update and Show Enabled in one container, then Add.
+/// On iOS and iPadOS, Update/Apply sits alone at the leading edge. That is a
+/// settled decision: do not regroup it with the trailing actions again.
 struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
     @Binding var searchText: String
     @Binding var focusRequest: Bool
@@ -60,6 +62,7 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
             content.toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
+                        .padding(.trailing, 4)
                 }
                 .sharedBackgroundVisibility(.hidden)
                 .toolbarVisibilityPriorityCompat(.high)
@@ -252,8 +255,20 @@ struct InlineGlassSearchField: View {
     @State private var focusRequests = 0
     @State private var isVisible = false
     @State private var fieldWidth: CGFloat = 140
-    /// In a narrow window AppKit lays the item out at the leading edge, so the slot
-    /// widens toward the trailing side and the capsule must grow from its leading edge.
+    /// Search is the leftmost list action on macOS, and in a narrow window it moves
+    /// to the far left and grows rightward. Both are deliberate and settled, chosen
+    /// so the expand animation stays simple; do not "fix" either.
+    ///
+    /// Once the window is too narrow for the tab picker, AppKit moves this item to
+    /// the leading edge of the toolbar and owns that slot. The slot then widens
+    /// toward the trailing side, so the capsule has to grow from its leading edge
+    /// to stay inside it. Keeping the field anchored on the right (where the button
+    /// sits in a wide window) would mean animating against AppKit's placement: the
+    /// toolbar resizes the item without animating, so a right-anchored capsule
+    /// either jumps on the first frame, overruns its slot until layout catches up,
+    /// or fights the toolbar's own relayout. Every attempt to fake it has done one
+    /// of those. Growing from where AppKit already put the item is the only
+    /// version that stays smooth, and smooth beats symmetric here.
     @State private var growsTrailing = false
     @State private var anchor = ToolbarItemAnchor()
     @FocusState private var isFocused: Bool

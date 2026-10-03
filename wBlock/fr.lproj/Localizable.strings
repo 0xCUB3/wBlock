@@ -73,7 +73,6 @@
 "Activate" = "Activer";
 "Active" = "Actif";
 "Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
-"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
 "Adblock List for Finland" = "Adblock List for Finland";
 "AdBlockID" = "AdBlockID";
 "Add" = "Add";
@@ -90,7 +89,6 @@
 "Added user list" = "Liste utilisateur ajoutée";
 "Added userscript from editor" = "Script utilisateur ajouté depuis l'éditeur";
 "Adding new userscript from URL" = "Ajout d'un nouveau script utilisateur depuis une URL";
-"Adding…" = "Adding…";
 "Additional filter list for websites in Arabic." = "Liste de filtres supplémentaire pour les sites Web en arabe.";
 "Additional filter list for websites in Bulgarian." = "Liste de filtres supplémentaire pour les sites Web en bulgare.";
 "Additional filter list for websites in Czech and Slovak." = "Liste de filtres supplémentaire pour les sites Web en tchèque et slovaque.";
@@ -238,8 +236,6 @@
 "Click an element on the page to hide it." = "Cliquez sur un élément de la page pour le masquer.";
 "close" = "fermer";
 "Close search" = "Fermer la recherche";
-"Community filter list that blocks ads on Albanian and Kosovar websites." = "Liste de filtres maintenue par la communauté qui bloque les publicités sur les sites web albanais et kosovars.";
-"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Liste de filtres maintenue par la communauté qui bloque les publicités sur les sites web en dhivehi (maldivien).";
 "Community options" = "Options de la communauté";
 "Community-maintained options for additional regional coverage." = "Options maintenues par la communauté pour une couverture régionale supplémentaire.";
 "Completed" = "Terminé";
@@ -402,7 +398,6 @@
 "Filter Apply" = "Application des filtres";
 "Filter Auto-Update" = "Mise à jour automatique des filtres";
 "Filter for ad blocking on Estonian sites." = "Filtrez le blocage des publicités sur les sites estoniens.";
-"Filter list for blocking ads and trackers on websites in Persian." = "Liste de filtres pour bloquer les publicités et les trackers sur les sites Web en persan.";
 "Filter list not found." = "Liste de filtres introuvable.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "Liste de filtres qui supprime spécifiquement les publicités sur les sites Web en espagnol, portugais et portugais brésilien.";
 "Filter list that specifically removes ads on websites in Turkish language." = "Liste de filtres qui supprime spécifiquement les publicités sur les sites Web en langue turque.";
@@ -416,6 +411,7 @@
 "Filter that enables ad blocking on websites in Russian language." = "Filtre qui permet le blocage des publicités sur les sites Web en langue russe.";
 "Filter that enables ad blocking on websites in Ukrainian language." = "Filtre qui permet le blocage des publicités sur les sites Web en langue ukrainienne.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Filtre qui protège contre divers types d'arnaques sur le réseau polonais, telles que la messagerie texte de masse, les fausses boutiques en ligne, etc.";
+"CERT Polska's list of dangerous domains that impersonate real sites to steal data or money." = "Liste de CERT Polska recensant les domaines dangereux qui usurpent de vrais sites pour voler des données ou de l’argent.";
 "Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Filtre qui supprime les publicités et divers scripts des sites Web au contenu coréen. Combiné et augmenté avec des règles spécifiques à AdGuard pour un filtrage amélioré. Ce filtre devrait être utilisé avec le filtre AdGuard Base.";
 "Filter Update" = "Mise à jour des filtres";
 "FilterApply" = "Application des filtres";
@@ -577,7 +573,6 @@
 "Pause Blocking" = "Mettre en pause le blocage";
 "Paused Components" = "Composants en pause";
 "Pausing blocking..." = "Mise en pause du blocage…";
-"Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
 "Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "Bloque les domaines de logiciels malveillants et d’arnaque, les redirections malveillantes et les invites de logiciels indésirables.";
@@ -596,7 +591,6 @@
 "Provide a valid https:// link ending in .user.js" = "Fournissez un lien https:// valide se terminant par .user.js";
 "Psst! You forgot something!" = "Psst ! Vous avez oublié quelque chose !";
 "Quit Without Applying" = "Quitter sans postuler";
-"Raajje AdList" = "Raajje AdList";
 "Reading Files" = "Lecture des fichiers";
 "Ready" = "Prêt";
 "Ready." = "Prêt.";
@@ -776,7 +770,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "This will reset all filters, userscripts, and preferences." = "Cela réinitialisera tous les filtres, scripts utilisateur et préférences.";
 "Timed out" = "Délai dépassé";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield aide à bloquer les publicités réinsérées par Ad-Shield sur les sites correspondants.";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Bloque les publicités qu’Ad-Shield réinsère sur les sites correspondants après que les listes de filtres les ont masquées.";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Permet aux bloqueurs de publicités de résister rapidement à Ad-Shield, qui réinsère des publicités sur les sites correspondants après que les listes de filtres les ont masquées.";
 "Title" = "Titre";
 "Title (optional)" = "Titre (facultatif)";
 "Title is required." = "Le nom est obligatoire.";
@@ -930,7 +924,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Change File" = "Changer de fichier";
 "Local imports won't auto-update; re-import to replace." = "Les importations locales ne sont pas mises à jour automatiquement ; réimportez pour remplacer.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra bloque les publicités Twitch et gère les cas complexes d’anti-blocage.";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "Bloque les publicités Twitch avec le script vaft de TwitchAdSolutions. Ne l'utilisez pas en même temps qu'AdGuard Extra.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Bloque les publicités Twitch avec le script vaft de TwitchAdSolutions.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Désactiver le filtre essentiel ?";
@@ -1155,3 +1149,6 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Capacity" = "Capacité";
 
 "Reset…" = "Réinitialiser…";
+"Languages" = "Langues";
+"Add Script" = "Ajouter un script";
+"Paste or type filter rules." = "Collez ou saisissez des règles de filtrage.";

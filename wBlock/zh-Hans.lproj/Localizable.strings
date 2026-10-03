@@ -73,7 +73,6 @@
 "Activate" = "启用";
 "Active" = "活跃";
 "Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
-"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
 "Adblock List for Finland" = "Adblock List for Finland";
 "AdBlockID" = "AdBlockID";
 "Add" = "Add";
@@ -90,7 +89,6 @@
 "Added user list" = "已添加用户列表";
 "Added userscript from editor" = "已从编辑器添加用户脚本";
 "Adding new userscript from URL" = "正在从 URL 添加新的用户脚本";
-"Adding…" = "Adding…";
 "Additional filter list for websites in Arabic." = "阿拉伯语网站的附加过滤器列表。";
 "Additional filter list for websites in Bulgarian." = "保加利亚语网站的附加过滤器列表。";
 "Additional filter list for websites in Czech and Slovak." = "捷克语和斯洛伐克语网站的附加过滤器列表。";
@@ -238,8 +236,6 @@
 "Click an element on the page to hide it." = "点击页面上的元素以将其隐藏。";
 "close" = "关闭";
 "Close search" = "关闭搜索";
-"Community filter list that blocks ads on Albanian and Kosovar websites." = "由社区维护的过滤器列表，用于拦截阿尔巴尼亚语和科索沃网站上的广告。";
-"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "由社区维护的过滤器列表，用于拦截迪维希语（马尔代夫语）网站上的广告。";
 "Community options" = "社区选项";
 "Community-maintained options for additional regional coverage." = "由社区维护的额外地区覆盖选项。";
 "Completed" = "已完成";
@@ -402,7 +398,6 @@
 "Filter Apply" = "应用过滤器";
 "Filter Auto-Update" = "过滤器自动更新";
 "Filter for ad blocking on Estonian sites." = "爱沙尼亚网站上的广告拦截过滤器。";
-"Filter list for blocking ads and trackers on websites in Persian." = "用于阻止波斯语网站上的广告和跟踪器的过滤器列表。";
 "Filter list not found." = "未找到过滤器列表。";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "专门删除西班牙语、葡萄牙语和巴西葡萄牙语网站上的广告的过滤器列表。";
 "Filter list that specifically removes ads on websites in Turkish language." = "专门删除土耳其语网站上的广告的过滤器列表。";
@@ -416,6 +411,7 @@
 "Filter that enables ad blocking on websites in Russian language." = "可在俄语网站上拦截广告的过滤器。";
 "Filter that enables ad blocking on websites in Ukrainian language." = "可在乌克兰语网站上启用广告拦截的过滤器。";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "过滤器可防止波兰网络中的各种类型的诈骗，例如群发短信、虚假在线商店等。";
+"CERT Polska's list of dangerous domains that impersonate real sites to steal data or money." = "CERT Polska 维护的危险域名列表，这些域名冒充真实网站以窃取数据或钱财。";
 "Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "过滤器可从包含韩语内容的网站中删除广告和各种脚本。与 AdGuard 特定规则相结合和增强，以增强过滤功能。该过滤器预计将与 AdGuard Base 过滤器一起使用。";
 "Filter Update" = "过滤器更新";
 "FilterApply" = "应用过滤器";
@@ -577,7 +573,6 @@
 "Pause Blocking" = "暂停拦截";
 "Paused Components" = "已暂停的组件";
 "Pausing blocking..." = "正在暂停拦截…";
-"Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
 "Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "拦截恶意软件和诈骗域名、恶意重定向以及不需要的软件推广提示。";
@@ -596,7 +591,6 @@
 "Provide a valid https:// link ending in .user.js" = "请提供以 .user.js 结尾的有效 https:// 链接";
 "Psst! You forgot something!" = "嘘！你忘了点什么！";
 "Quit Without Applying" = "不申请就退出";
-"Raajje AdList" = "Raajje AdList";
 "Reading Files" = "正在读取文件";
 "Ready" = "就绪";
 "Ready." = "准备好。";
@@ -776,7 +770,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will reset all filters, userscripts, and preferences." = "这将重置所有过滤器、用户脚本和偏好设置。";
 "Timed out" = "超时";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield 可帮助拦截 Ad-Shield 在匹配站点上重新插入的广告。";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "拦截 Ad-Shield 在匹配网站上、于过滤列表隐藏广告之后重新插入的广告。";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "让广告拦截器快速对抗 Ad-Shield；它会在过滤列表隐藏广告后，在匹配的网站上重新插入广告。";
 "Title" = "标题";
 "Title (optional)" = "标题（可选）";
 "Title is required." = "必须填写名称。";
@@ -930,7 +924,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "更改文件";
 "Local imports won't auto-update; re-import to replace." = "本地导入不会自动更新；请重新导入以替换。";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra 可拦截 Twitch 广告，并处理复杂的反广告拦截情况。";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "使用 TwitchAdSolutions 的 vaft 脚本拦截 Twitch 广告。请勿与 AdGuard Extra 同时运行。";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "使用 TwitchAdSolutions 的 vaft 脚本拦截 Twitch 广告。";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "要停用必要过滤器吗？";
@@ -1155,3 +1149,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Capacity" = "容量";
 
 "Reset…" = "重置…";
+"Languages" = "语言";
+"Add Script" = "添加脚本";
+"Paste or type filter rules." = "粘贴或输入过滤规则。";

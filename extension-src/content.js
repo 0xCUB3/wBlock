@@ -6205,6 +6205,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    *    captured events.
    */
   let initializationStatePromise;
+  const INIT_RETRY_DELAYS_MS = [250, 1000, 3000];
   const stateFromInitResponse = response => {
     if (response && response.state === "error") {
       return Promise.resolve(true);
@@ -6229,11 +6230,24 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const message = {
       type: MessageType.InitContentScript
     };
-    const configPromise = browser.runtime.sendMessage(message).catch(error => ({
-      type: MessageType.InitContentScript,
-      state: "error",
-      error: String(error && error.message ? error.message : error)
-    }));
+    // A failed lookup (native timeout, background waking up) is not a
+    // disabled site; retry it so the document still gets its rules.
+    const requestInitialization = async () => {
+      for (let attempt = 0; ; attempt += 1) {
+        const response = await browser.runtime.sendMessage(message).catch(error => ({
+          type: MessageType.InitContentScript,
+          state: "error",
+          error: String(error && error.message ? error.message : error)
+        }));
+        if (!(response && response.state === "error")
+          || attempt >= INIT_RETRY_DELAYS_MS.length
+          || cloudflareChallengeContext) {
+          return response;
+        }
+        await new Promise(resolve => setTimeout(resolve, INIT_RETRY_DELAYS_MS[attempt]));
+      }
+    };
+    const configPromise = requestInitialization();
     initializationStatePromise = configPromise.then(stateFromInitResponse);
     const response = await configPromise;
     if (await initializationStatePromise) return;

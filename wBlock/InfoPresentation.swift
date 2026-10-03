@@ -1,5 +1,15 @@
 import SwiftUI
 
+/// On macOS, info opens in a popover, so its action sheets must come from the
+/// window. On iOS info is already a sheet and presents its own.
+func macOSWindowAction<Action>(_ route: @escaping (Action) -> Void) -> ((Action) -> Void)? {
+    #if os(macOS)
+    route
+    #else
+    nil
+    #endif
+}
+
 extension View {
     @ViewBuilder
     func infoPopoverAnchor(_ id: AnyHashable?) -> some View {
@@ -225,7 +235,11 @@ private struct InfoPopoverSlot: View {
             .background {
                 if isPresented.wrappedValue { PopoverWindowShield { presenter.dismiss(token) } }
             }
-            .popover(isPresented: isPresented, attachmentAnchor: .rect(.bounds), arrowEdge: .top, content: content)
+            // Popovers inherit the anchor's environment; a category header's
+            // headline font would otherwise make the whole popover semibold.
+            .popover(isPresented: isPresented, attachmentAnchor: .rect(.bounds), arrowEdge: .top) {
+                content().font(.body)
+            }
     }
 }
 

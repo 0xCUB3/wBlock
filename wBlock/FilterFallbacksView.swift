@@ -47,9 +47,12 @@ private struct FilterFallbacksView: View {
                         Text(verbatim: "\(index + 1).")
                             .foregroundStyle(.secondary)
                         VStack(alignment: .leading, spacing: 6) {
-                            Link(url.absoluteString, destination: url)
-                                .textSelection(.enabled)
-                                .fixedSize(horizontal: false, vertical: true)
+                            Link(destination: url) {
+                                Text(verbatim: url.absoluteString)
+                                    .multilineTextAlignment(.leading)
+                            }
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
                             CopyURLButton(url: url)
                         }
                     }

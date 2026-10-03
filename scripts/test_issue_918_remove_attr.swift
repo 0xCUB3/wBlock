@@ -17,6 +17,12 @@ struct Main {
              "example.com#@%#//scriptlet('remove-class', 'a|b', 'div[data-x=\\'y\\']')"),
             ("example.com##a:remove-attr(/^data-/)", "example.com##a:remove-attr(/^data-/)"),
             ("example.com###answers-nav-button", "example.com###answers-nav-button"),
+            // Unknown pseudo-classes would poison the merged selector; they run as extended CSS.
+            ("example.com##div:made-up(x)", "example.com#?#div:made-up(x)"),
+            ("example.com#@#div:upward(2)", "example.com#@?#div:upward(2)"),
+            ("example.com##div:has(> a):not(.b)", "example.com##div:has(> a):not(.b)"),
+            ("example.com##a[title=':odd(x)']", "example.com##a[title=':odd(x)']"),
+            ("example.com##li:nth-child(2n+1)", "example.com##li:nth-child(2n+1)"),
         ]
         for (input, expected) in cases {
             let output = FilterRuleAnalysis.adGuardEquivalent(input)

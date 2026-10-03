@@ -37,12 +37,13 @@ extension ProtobufDataManager {
             if let sourceRuleCount = filter.sourceRuleCount {
                 protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
             }
-            protoFilterList.lastUpdated = filter.lastUpdated.map { Int64($0.timeIntervalSince1970) }
+            protoFilterList.lastUpdated = filter.lastUpdated.map(\.epochSeconds)
                 ?? localBaselineByID[protoFilterList.id]?.lastUpdated ?? 0
             protoFilterList.isCustom = shouldPersistCustomFlag(for: filter)
             protoFilterList.userProvidedName = filter.hasUserProvidedName
             protoFilterList.userProvidedDescription = filter.hasUserProvidedDescription
             protoFilterList.excludedSites = filter.excludedSites
+            if filter.isCustom { protoFilterList.languages = filter.languages }
             if let sites = filter.selectedSites { protoFilterList.selectedSites.hosts = sites }
             if let uniqueRuleCount = filter.uniqueRuleCount {
                 protoFilterList.admittedSourceRuleCount = Int32(uniqueRuleCount)
@@ -152,6 +153,7 @@ extension ProtobufDataManager {
                 version: protoData.version,
                 sourceRuleCount: protoData.hasSourceRuleCount ? Int(protoData.sourceRuleCount) : nil,
                 lastUpdated: protoData.lastUpdated > 0 ? Date(timeIntervalSince1970: TimeInterval(protoData.lastUpdated)) : nil,
+                languages: protoData.languages,
                 hasUserProvidedName: protoData.hasUserProvidedName
                     ? protoData.userProvidedName
                     : Self.inferLegacyUserProvidedName(protoData, isCustom: isCustom),

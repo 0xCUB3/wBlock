@@ -39,7 +39,7 @@ enum BuiltInUserScripts {
     static let legacyTinyShieldGroupedURLPrefix =
         "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/"
     static let tinyShieldDescription =
-        "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them."
+        "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them."
     static let retiredYouTubeAdBlockURL =
         "https://raw.githubusercontent.com/SysAdminDoc/YoutubeAdblock/main/YoutubeAdblock.user.js"
 
@@ -117,7 +117,7 @@ enum BuiltInUserScripts {
             name: "TwitchAdSolutions (vaft)",
             url: "https://raw.githubusercontent.com/ryanbr/TwitchAdSolutions/master/vaft/vaft.user.js",
             isEnabledByDefault: false,
-            description: "Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra.",
+            description: "Blocks Twitch ads with the vaft script from TwitchAdSolutions.",
             displayRole: .blocking
         ),
         BuiltInUserScriptDefinition(

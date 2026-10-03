@@ -99,6 +99,83 @@ input {
   opacity: 0.55 !important;
 }
 
+/* One centered row of controls (#921). Mobile WebKit draws native checkboxes
+   and form fonts that don't line up with the buttons, so every control gets
+   the same height and the checkboxes are drawn here. */
+.cm-panel.cm-search {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 48px 8px 12px !important;
+}
+/* A <br> is not a flex item, so a full-width ::after sits between the find
+   row and the replace controls, which are ordered after it. */
+.cm-panel.cm-search br { display: none; }
+.cm-panel.cm-search::after {
+  content: "";
+  order: 1;
+  flex-basis: 100%;
+  height: 0;
+}
+.cm-panel.cm-search br ~ * { order: 2; }
+.cm-panel.cm-search input,
+.cm-panel.cm-search button,
+.cm-panel.cm-search label {
+  margin: 0 !important;
+  box-sizing: border-box;
+  font-size: 13px !important;
+  line-height: 1 !important;
+}
+.cm-panel.cm-search .cm-textfield,
+.cm-panel.cm-search .cm-button {
+  height: 32px;
+}
+.cm-panel.cm-search label {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  color: var(--cm-foreground);
+}
+.cm-panel.cm-search input[type=checkbox] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border: 1.5px solid var(--cm-gutter-foreground);
+  border-radius: 5px;
+  background: var(--cm-input-background);
+  display: inline-grid;
+  place-content: center;
+}
+.cm-panel.cm-search input[type=checkbox]:checked {
+  background: var(--cm-caret);
+  border-color: var(--cm-caret);
+}
+.cm-panel.cm-search input[type=checkbox]:checked::after {
+  content: "";
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: translateY(-1px) rotate(-45deg);
+}
+.cm-panels .cm-search button[name=close] {
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  width: 32px;
+  height: 32px;
+  padding: 0 !important;
+  border-radius: 16px !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+  display: inline-grid;
+  place-content: center;
+}
+
 body.cm-wrap-lines .cm-scroller {
   overflow-x: hidden !important;
 }

@@ -73,5 +73,10 @@ struct ListDisplayOrderSyncTests {
         }
         precondition(final.value == ["b", "a"], "the final payload must include the mid-build reorder")
         precondition(final.value != ["a", "b"], "the reorder must differ from the remote payload")
+
+        // Two rows sharing an ID must not exhaust the moved order and trap.
+        let shared = Item(key: "x")
+        let duplicated = [shared, deviceB[0], shared]
+        precondition(!ListDisplayOrder.merging(["x", "a"], into: duplicated, key: key).isEmpty)
     }
 }

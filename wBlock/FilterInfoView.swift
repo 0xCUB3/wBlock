@@ -7,6 +7,9 @@ struct FilterInfoView: View {
     var onChangeCategory: ((FilterListCategory) -> Void)? = nil
     var isDownloading = false
     var onDownload: (() -> Void)? = nil
+    /// Presents an action's sheet from the window instead of this view. A
+    /// macOS popover would otherwise anchor the sheet to itself (#923).
+    var onAction: ((FilterContextMenuAction) -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var showingMetadataEditor = false
@@ -52,16 +55,22 @@ struct FilterInfoView: View {
                 FilterRulesView(filter: liveFilter, filterManager: filterManager)
             }
         }
-        .task(id: liveFilter.lastUpdated) {
-            let snapshot = liveFilter
-            let cached = await Task.detached(priority: .userInitiated) { () -> (Int, String)? in
-                guard let content = FilterListLoader().readLocalFilterContent(snapshot) else { return nil }
-                return (content.utf8.count, String(content.prefix(8192)))
-            }.value
-            guard !Task.isCancelled else { return }
-            cachedByteCount = cached?.0
-            cachedMetadata = ContentInfoMetadata.filterHeader(cached?.1 ?? "")
-        }
+        .onAppear(perform: loadLocalHeader)
+        .onChangeCompat(of: liveFilter.lastUpdated) { _ in loadLocalHeader() }
+    }
+
+    /// Read before the first frame: rows that arrive after the popover opens
+    /// resize it mid-animation, and AppKit slides it diagonally to refit.
+    private func loadLocalHeader() {
+        let local = FilterListLoader().localFilterHeader(liveFilter)
+        cachedByteCount = local?.size
+        cachedMetadata = ContentInfoMetadata.filterHeader(local?.header ?? "")
+    }
+
+    private func perform(_ action: FilterContextMenuAction, locally: () -> Void) {
+        guard let onAction else { return locally() }
+        dismiss()
+        onAction(action)
     }
 
     private var infoContent: some View {
@@ -143,16 +152,16 @@ struct FilterInfoView: View {
                 .disabled(isDownloading)
             }
             if actions.contains(.settings) {
-                InfoActionRow("Settings", systemImage: "gearshape") { showingSettings = true }
+                InfoActionRow("Settings", systemImage: "gearshape") { perform(.settings) { showingSettings = true } }
             }
             if actions.contains(.viewRules) {
-                InfoActionRow("View Rules", systemImage: "doc.text") { showingRules = true }
+                InfoActionRow("View Rules", systemImage: "doc.text") { perform(.viewRules) { showingRules = true } }
             }
             if actions.contains(.editRules) {
-                InfoActionRow("Edit Rules", systemImage: "pencil") { showingRules = true }
+                InfoActionRow("Edit Rules", systemImage: "pencil") { perform(.editRules) { showingRules = true } }
             }
             if actions.contains(.editInfo) {
-                InfoActionRow("Edit Info", systemImage: "square.and.pencil") { showingMetadataEditor = true }
+                InfoActionRow("Edit Info", systemImage: "square.and.pencil") { perform(.editInfo) { showingMetadataEditor = true } }
             }
             if actions.contains(.moveTo), let onChangeCategory {
                 InfoCategoryRow(
@@ -226,11 +235,10 @@ struct FilterRulesView: View {
                 Text(filter.localizedDisplayName)
                     .font(.headline)
                 Spacer()
-                SourceViewerControls(wrapsLines: $wrapsLines) { editorController.openSearch() }
-                    .disabled(isLoading)
-                if analysis != nil {
-                    filterMenu
+                SourceViewerControls(wrapsLines: $wrapsLines, onSearch: editorController.openSearch) {
+                    if analysis != nil { filterMenu }
                 }
+                .disabled(isLoading)
                 SheetDoneButton { dismiss() }
             }
             .padding(16)
@@ -259,6 +267,7 @@ struct FilterRulesView: View {
         .frame(width: 1000, height: 700)
         #else
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .sourceSheetPresentationCompat()
         #endif
         .task {
             rules = FilterListLoader().readLocalFilterContent(filter) ?? ""
@@ -317,12 +326,17 @@ struct FilterRulesView: View {
                 Label("Comments", systemImage: "text.quote")
             }
         } label: {
-            Label("View", systemImage: shownKinds.count == FilterRuleKind.allCases.count
-                ? "line.3.horizontal.decrease.circle"
-                : "line.3.horizontal.decrease.circle.fill")
+            // An icon like Search and Wrap beside it; filled while some kinds are hidden.
+            SourceControlIcon(systemImage: shownKinds.count == FilterRuleKind.allCases.count
+                ? "line.3.horizontal.decrease" : "line.3.horizontal.decrease.circle.fill")
         }
         .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .menuStaysOpenCompat()
+        .buttonStyle(.plain)
         .fixedSize()
+        .accessibilityLabel("View")
+        .help("View")
     }
 
     private func legend(_ analysis: FilterRuleAnalysis) -> some View {

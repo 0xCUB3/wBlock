@@ -153,6 +153,13 @@ struct FilterListValidationTests {
             "expected hosts entries to become domain rules"
         )
         precondition(
+            FilterListContentProcessing.normalizedContent(from: "! Title: Domains\nAds.example\n\nb.example")
+                == "! Title: Domains\n||ads.example^\n\n||b.example^"
+                && FilterListContentProcessing.normalizedContent(from: "||a.example^\n_werbung.php")
+                == "||a.example^\n_werbung.php",
+            "expected only domain-only lists to become domain rules"
+        )
+        precondition(
             FilterListMetadataParser.parse(from: "# Note: prose\n# Title: Hosts").title == "Hosts",
             "expected # Title headers to be read"
         )

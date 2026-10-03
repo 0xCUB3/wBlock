@@ -74,7 +74,7 @@ enum ListDisplayOrder {
         let moved = moved.filter { liveIDs.contains($0.id) }
         let movedIDs = Set(moved.map(\.id))
         var iterator = moved.makeIterator()
-        let ids = filters.map { movedIDs.contains($0.id) ? iterator.next()!.id : $0.id }
+        let ids = filters.map { movedIDs.contains($0.id) ? iterator.next()?.id ?? $0.id : $0.id }
         return (try? JSONEncoder().encode(ids)) ?? Data()
     }
 }

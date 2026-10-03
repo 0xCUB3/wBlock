@@ -52,22 +52,39 @@ struct RegionalLanguageOption: Identifiable, Hashable {
         _ filters: [FilterList],
         locale: Locale = displayLocale
     ) -> [RegionalLanguageOption] {
+        options(for: filters.filter { $0.category == .foreign }.flatMap(\.languages), locale: locale)
+    }
+
+    /// Every language a custom regional list can cover (#921).
+    static func assignable(locale: Locale = displayLocale) -> [RegionalLanguageOption] {
+        options(for: FilterList.flaggedLanguageCodes, locale: locale)
+    }
+
+    private static func options(for codes: [String], locale: Locale) -> [RegionalLanguageOption] {
         var seen = Set<String>()
-        var result: [RegionalLanguageOption] = []
-        for filter in filters where filter.category == .foreign {
-            for language in filter.languages {
-                let code = language.lowercased()
-                guard seen.insert(code).inserted else { continue }
-                result.append(
-                    RegionalLanguageOption(
-                        code: code,
-                        name: locale.localizedString(forLanguageCode: code) ?? code,
-                        flag: FilterList.flag(forLanguage: code) ?? ""
-                    )
-                )
+        return codes.map { $0.lowercased() }.filter { seen.insert($0).inserted }.map { code in
+            RegionalLanguageOption(
+                code: code,
+                name: locale.localizedString(forLanguageCode: code) ?? code,
+                flag: FilterList.flag(forLanguage: code) ?? ""
+            )
+        }
+        .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+}
+
+/// Picks the languages a custom list covers once Regional is its category.
+struct RegionalListLanguagesField: View {
+    let category: FilterListCategory
+    @Binding var languages: Set<String>
+
+    var body: some View {
+        if category == .foreign {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Languages").font(.caption).foregroundStyle(.secondary)
+                RegionalLanguagePickerView(selectedLanguages: $languages, options: RegionalLanguageOption.assignable())
             }
         }
-        return result.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 }
 

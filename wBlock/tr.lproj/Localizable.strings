@@ -73,7 +73,6 @@
 "Activate" = "Etkinleştir";
 "Active" = "Etkin";
 "Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
-"Adblock List for Albania and Kosovo" = "Arnavutluk ve Kosova için reklam engelleme listesi";
 "Adblock List for Finland" = "Adblock List for Finland";
 "AdBlockID" = "AdBlockID";
 "Add" = "Ekle";
@@ -90,7 +89,6 @@
 "Added user list" = "Kullanıcı listesi eklendi";
 "Added userscript from editor" = "Kullanıcı betiği, düzenleyiciden eklendi";
 "Adding new userscript from URL" = "URL üzerinden yeni kullanıcı betiği ekleniyor";
-"Adding…" = "Ekleniyor…";
 "Additional filter list for websites in Arabic." = "Arapça siteler için ek filtre listesi.";
 "Additional filter list for websites in Bulgarian." = "Bulgarca siteler için ek filtre listesi.";
 "Additional filter list for websites in Czech and Slovak." = "Çekçe ve Slovakça siteler için ek filtre listesi.";
@@ -238,8 +236,6 @@
 "Click an element on the page to hide it." = "Sayfadaki bir öğeyi gizlemek için üzerine tıklayın.";
 "close" = "kapat";
 "Close search" = "Aramayı kapat";
-"Community filter list that blocks ads on Albanian and Kosovar websites." = "Arnavutluk ve Kosova sitelerindeki reklamları engelleyen topluluk filtre listesi.";
-"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Maldivce sitelerindeki reklamları engelleyen topluluk filtre listesi.";
 "Community options" = "Topluluk seçenekleri";
 "Community-maintained options for additional regional coverage." = "Ek bölgesel kapsam için topluluk tarafından yönetilen seçenekler.";
 "Completed" = "Tamamlandı";
@@ -402,7 +398,6 @@
 "Filter Apply" = "Filtreyi Uygula";
 "Filter Auto-Update" = "Otomatik Filtre Güncelleme";
 "Filter for ad blocking on Estonian sites." = "Estonya siteleri için reklam engelleme filtresi.";
-"Filter list for blocking ads and trackers on websites in Persian." = "Farsça sitelerde reklamları ve izleyicileri engellemek için filtre listesi.";
 "Filter list not found." = "Filtre listesi bulunamadı.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "İspanyolca, Portekizce ve Brezilya Portekizcesi dillerindeki sitelerde reklamları özel olarak kaldıran filtre listesi.";
 "Filter list that specifically removes ads on websites in Turkish language." = "Türkçe dilindeki sitelerde reklamları özel olarak kaldıran filtre listesi.";
@@ -416,6 +411,7 @@
 "Filter that enables ad blocking on websites in Russian language." = "Rusça dilindeki sitelerde reklam engellemeyi sağlayan filtre.";
 "Filter that enables ad blocking on websites in Ukrainian language." = "Ukraynaca dilindeki sitelerde reklam engellemeyi sağlayan filtre.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Polonya ağındaki toplu kısa mesajlar, sahte çevrimiçi mağazalar vb. gibi çeşitli dolandırıcılık türlerine karşı koruma sağlayan filtre.";
+"CERT Polska's list of dangerous domains that impersonate real sites to steal data or money." = "Gerçek siteleri taklit ederek veri veya para çalan tehlikeli alan adlarını içeren CERT Polska listesi.";
 "Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Korece içerikli sitelerdeki reklamları ve çeşitli betikleri kaldıran filtre. Gelişmiş filtreleme için AdGuard'a özgü kurallarla birleştirilmiş ve güçlendirilmiştir. Bu filtrenin, AdGuard Temel filtresi ile birlikte kullanılması amaçlanmıştır.";
 "Filter Update" = "Filtre Güncelleme";
 "FilterApply" = "Filtreyi Uygula";
@@ -577,7 +573,6 @@
 "Pause Blocking" = "Engellemeyi duraklat";
 "Paused Components" = "Duraklatılan bileşenler";
 "Pausing blocking..." = "Engelleme duraklatılıyor...";
-"Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
 "Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "Kötü amaçlı yazılım ve dolandırıcılık alan adlarını, kötü niyetli yönlendirmeleri ve istenmeyen yazılım uyarılarını engeller.";
@@ -596,7 +591,6 @@
 "Provide a valid https:// link ending in .user.js" = ".user.js ile biten geçerli bir https:// bağlantısı sağlayın";
 "Psst! You forgot something!" = "Psst! Bir şeyi unuttun!";
 "Quit Without Applying" = "Değişiklikleri uygulamadan çık";
-"Raajje AdList" = "Raajje AdList";
 "Reading Files" = "Dosyalar okunuyor";
 "Ready" = "Hazır";
 "Ready." = "Hazır.";
@@ -776,7 +770,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "This will reset all filters, userscripts, and preferences." = "Bu işlem tüm filtreleri, kullanıcı betiklerini ve tercihleri sıfırlayacaktır.";
 "Timed out" = "Zaman aşımı";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield, Ad-Shield tarafından eşleşen sitelerde yeniden eklenen reklamları engellemeye yardımcı olur.";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Filtrelerin gizlediği ancak Ad-Shield'ın sitelere geri getirdiği reklamları engeller.";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Reklam engelleyicilerin, filtre listeleri gizledikten sonra eşleşen sitelere reklamları yeniden ekleyen Ad-Shield'a hızla direnmesini sağlar.";
 "Title" = "Başlık";
 "Title (optional)" = "Başlık (isteğe bağlı)";
 "Title is required." = "Ad gereklidir.";
@@ -930,7 +924,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Change File" = "Dosyayı değiştir";
 "Local imports won't auto-update; re-import to replace." = "Yerelden içe aktarmalar otomatik güncellenmez; güncellemek için yeniden içe aktarın.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra, Twitch reklamlarını engeller ve karmaşık reklam engelleyici karşıtı durumları çözer.";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "TwitchAdSolutions'ın vaft betiğiyle Twitch reklamlarını engeller. AdGuard Extra ile birlikte çalıştırmayın.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Twitch reklamlarını TwitchAdSolutions'ın vaft betiğiyle engeller.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Temel filtre devre dışı bırakılsın mı?";
@@ -1164,3 +1158,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Capacity" = "Kapasite";
 
 "Reset…" = "Sıfırla…";
+"Languages" = "Diller";
+"Add Script" = "Betik Ekle";
+"Paste or type filter rules." = "Filtre kurallarını yapıştırın veya yazın.";

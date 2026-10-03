@@ -6,133 +6,145 @@ protocol AddContentMode: CaseIterable, Identifiable, Hashable {
     var systemImage: String { get }
 }
 
-struct AddContentModePicker<Mode: AddContentMode>: View {
-    @Binding private var selection: Mode
-
-    init(selection: Binding<Mode>) {
-        _selection = selection
-    }
-
-    var body: some View {
-        Picker("", selection: $selection) {
-            ForEach(Array(Mode.allCases)) { mode in
-                Label(mode.localizedTitle, systemImage: mode.systemImage)
-                    .tag(mode)
-            }
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .controlSize(.small)
-        .animation(.easeInOut(duration: 0.15), value: selection)
-        .padding(16)
-        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
-    }
-}
-
-struct AddContentRequirement: Identifiable {
-    let id: String
-    let systemImage: String
-    let text: LocalizedStringKey
-
-    init(systemImage: String, text: LocalizedStringKey) {
-        self.id = "\(systemImage):\(String(describing: text))"
-        self.systemImage = systemImage
-        self.text = text
-    }
-}
-
-extension AddContentRequirement {
-    static func localImport(fromFile: Bool) -> [AddContentRequirement] {
-        [
-            AddContentRequirement(systemImage: "character.cursor.ibeam", text: "Title is required."),
-            AddContentRequirement(systemImage: fromFile ? "doc" : "doc.on.clipboard", text: fromFile
-                ? "Choose a non-empty text file and review it before adding."
-                : "Paste non-empty plain text and review it before adding."),
-            AddContentRequirement(systemImage: "arrow.triangle.2.circlepath", text: "Local imports won't auto-update; re-import to replace.")
-        ]
-    }
-}
-
-struct AddContentRequirementsPanel: View {
-    let requirements: [AddContentRequirement]
-    let footer: LocalizedStringKey?
-
-    init(requirements: [AddContentRequirement], footer: LocalizedStringKey? = nil) {
-        self.requirements = requirements
-        self.footer = footer
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Requirements", systemImage: "info.circle")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-
-            ForEach(requirements) { requirement in
-                HStack(spacing: 10) {
-                    Image(systemName: requirement.systemImage)
-                        .foregroundStyle(.secondary)
-                    Text(requirement.text)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            if let footer {
-                Text(footer)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
-        .listRowInsets(EdgeInsets())
-        .listRowBackground(Color.clear)
-        .hiddenListRowSeparatorCompat()
-    }
-}
-
-struct AddContentField<Content: View>: View {
+/// Both Add sheets: a native TabView of grouped forms (bottom tab bar on iOS,
+/// top tabs on macOS), with Cancel and the primary action where each
+/// platform puts them.
+struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
     let title: LocalizedStringKey
-    @ViewBuilder var content: () -> Content
+    @Binding var mode: Mode
+    let isLoading: Bool
+    let submitTitle: LocalizedStringKey
+    let isSubmitDisabled: Bool
+    let onDismiss: () -> Void
+    let onSubmit: () -> Void
+    @ViewBuilder let content: (Mode) -> Content
+    #if os(macOS)
+    /// A TabView built while its sheet is still sizing lays every tab label
+    /// out at zero width, stacked on top of each other (macOS 27). Mounting it
+    /// one run-loop turn later gets real tabs.
+    @State private var isSheetSized = false
+    #endif
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
-            content()
+        #if os(iOS)
+        CompatibleNavigationStack {
+            tabs
+                .navigationTitle(title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { cancelButton }
+                    ToolbarItem(placement: .confirmationAction) { submitButton }
+                }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .interactiveDismissDisabled(isLoading)
+        .largeSheetPresentationCompat()
+        #else
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title).font(.headline)
+            if isSheetSized { tabs } else { Spacer() }
+            HStack {
+                Spacer()
+                cancelButton.keyboardShortcut(.cancelAction)
+                submitButton
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+            }
+            .controlSize(.large)
+        }
+        .padding(20)
+        .frame(minWidth: 540, idealWidth: 560, minHeight: 480, idealHeight: 520)
+        .interactiveDismissDisabled(isLoading)
+        .task {
+            await Task.yield()
+            isSheetSized = true
+        }
+        #endif
+    }
+
+    private var tabs: some View {
+        TabView(selection: $mode) {
+            ForEach(Array(Mode.allCases)) { tab($0) }
+        }
+    }
+
+    private func tab(_ mode: Mode) -> some View {
+        Form { content(mode) }
+            #if os(macOS)
+            .columnsFormStyleCompat()
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            #else
+            .groupedFormStyleCompat()
+            #endif
+            .disabled(isLoading)
+            .tabItem { Label(mode.localizedTitle, systemImage: mode.systemImage) }
+            .tag(mode)
+    }
+
+    private var cancelButton: some View {
+        Button("Cancel", action: onDismiss).disabled(isLoading)
+    }
+
+    private var submitButton: some View {
+        Button(action: onSubmit) {
+            AddContentSubmitLabel(title: submitTitle, isLoading: isLoading)
+        }
+        .disabled(isSubmitDisabled)
     }
 }
 
+/// One short line under the input instead of a requirements list.
+struct AddContentNote: View {
+    var text: LocalizedStringKey? = nil
+    var error: String? = nil
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if let text { Text(text).foregroundStyle(.secondary) }
+            if let error { Text(error).foregroundStyle(.orange) }
+        }
+        #if os(macOS)
+        .font(.caption)
+        #else
+        .font(.footnote)
+        #endif
+    }
+}
+
+/// Form rows for a list's name, description, category, and Regional languages.
 struct AddContentMetadataFields: View {
     @Binding var name: String
     @Binding var description: String
     @Binding var category: FilterListCategory
     let categories: [FilterListCategory]
     var categoryName: (FilterListCategory) -> String = { $0.localizedName }
+    /// Filter lists pass this so a Regional list can name its languages.
+    var languages: Binding<Set<String>>? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            AddContentField(title: "Name") {
-                TextField("Name", text: $name)
-                    .textFieldStyle(.roundedBorder)
-                    .disableAutocorrection(true)
-                    #if os(iOS)
-                    .textInputAutocapitalization(.words)
-                    #endif
-            }
-            AddContentField(title: "Description (optional)") {
-                TextField("Description", text: $description)
-                    .textFieldStyle(.roundedBorder)
-                    .disableAutocorrection(true)
-                    #if os(iOS)
-                    .textInputAutocapitalization(.sentences)
-                    #endif
-            }
-            ContentCategoryPicker(selection: $category, categories: categories, categoryName: categoryName)
+        TextField("Name", text: $name)
+            .disableAutocorrection(true)
+            #if os(iOS)
+            .textInputAutocapitalization(.words)
+            #endif
+        TextField("Description", text: $description)
+            .disableAutocorrection(true)
+            #if os(iOS)
+            .textInputAutocapitalization(.sentences)
+            #endif
+        ContentCategoryPicker(selection: $category, categories: categories, categoryName: categoryName)
+        if let languages {
+            RegionalListLanguagesField(category: category, languages: languages)
         }
+    }
+}
+
+struct AddContentBackButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) { Label("Back", systemImage: "chevron.left") }
     }
 }
 
@@ -173,79 +185,76 @@ struct EditorMetadataAutofillState: Equatable {
 }
 
 /// One reviewed URL with the same metadata fields as local imports.
-struct AddContentURLMetadataCard: View {
+struct AddContentURLMetadataSection: View {
     let url: URL
     @Binding var name: String
     @Binding var description: String
     @Binding var category: FilterListCategory
     let categories: [FilterListCategory]
     var categoryName: (FilterListCategory) -> String = { $0.localizedName }
+    var languages: Binding<Set<String>>? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(url.absoluteString)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+        Section {
+            AddContentMetadataFields(name: $name, description: $description, category: $category,
+                                     categories: categories, categoryName: categoryName, languages: languages)
+        } header: {
+            Text(verbatim: url.absoluteString)
+                .textCase(nil)
                 .lineLimit(1)
                 .truncationMode(.middle)
-            AddContentMetadataFields(name: $name, description: $description, category: $category,
-                                     categories: categories, categoryName: categoryName)
-        }
-        .padding(10)
-        .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(.quaternary, lineWidth: 1)
-        )
-    }
-}
-
-/// All add modes share the Text tab's glass cards and space for their shadows.
-struct AddContentPanelLayout<Content: View>: View {
-    @ViewBuilder var content: () -> Content
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) { content() }
-                .padding(.horizontal, SheetDesign.contentHorizontalPadding)
-                .padding(.vertical, 16)
         }
     }
 }
 
-struct AddContentCard<Content: View>: View {
-    @ViewBuilder var content: () -> Content
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) { content() }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
-    }
-}
-
-struct AddContentSourceCard<Content: View>: View {
+/// Text mode: the pasted source, then Paste and Use Editor.
+struct AddContentSourceSection<Content: View, Footer: View>: View {
     let title: LocalizedStringKey
+    let placeholder: LocalizedStringKey
+    let isEmpty: Bool
     let isDisabled: Bool
     let onPaste: () -> Void
     let onOpenEditor: () -> Void
     @ViewBuilder var content: () -> Content
+    @ViewBuilder var footer: () -> Footer
 
     var body: some View {
-        AddContentCard {
-            Text(title).font(.caption).foregroundStyle(.secondary)
-            content().frame(minHeight: 260)
-            Divider()
-            HStack(spacing: 10) {
+        Section {
+            content()
+                .overlay(alignment: .topLeading) {
+                    if isEmpty {
+                        Text(placeholder)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 8)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .addContentEditorBox()
+                .frame(minHeight: 200)
+            AddContentActionRow {
                 Button(action: onPaste) { Label("Paste", systemImage: "doc.on.clipboard") }
                 Button(action: onOpenEditor) { Label("Use Editor", systemImage: "curlybraces") }
-                Spacer()
             }
-            .buttonStyle(.bordered)
-            .controlSize(.regular)
-            .tint(.accentColor)
             .disabled(isDisabled)
+        } header: {
+            Text(title)
+        } footer: {
+            footer()
         }
+    }
+}
+
+/// The add button keeps its title's size while working: the title stays in
+/// layout, hidden, under a small spinner (#921).
+struct AddContentSubmitLabel: View {
+    let title: LocalizedStringKey
+    let isLoading: Bool
+
+    var body: some View {
+        Text(title)
+            .opacity(isLoading ? 0 : 1)
+            .overlay { if isLoading { ProgressView().controlSize(.small) } }
     }
 }
 
@@ -253,118 +262,94 @@ struct ContentCategoryPicker: View {
     @Binding var selection: FilterListCategory
     let categories: [FilterListCategory]
     var categoryName: (FilterListCategory) -> String = { $0.localizedName }
+
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 4) {
-            HStack(spacing: 0) {
-                Text("Category")
-                Text(verbatim: ":")
+        Picker("Category", selection: $selection) {
+            ForEach(categories) { category in
+                Text(categoryName(category)).tag(category)
             }
-            .foregroundStyle(.secondary)
-            .fixedSize()
-            Picker("Category", selection: $selection) {
-                ForEach(categories) { category in
-                    Text(categoryName(category)).tag(category)
-                }
-            }
-            .pickerStyle(.menu)
-            .labelsHidden()
         }
-        .font(.callout)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .pickerStyle(.menu)
     }
 }
 
+/// URL rows: one field or a multi-line editor, then Paste and, for bulk
+/// entry, Import File.
 struct AddContentURLInput: View {
     @Binding var text: String
     @FocusState.Binding var isFocused: Bool
     let isBulk: Bool
-    let singlePlaceholder: () -> Text
-    let bulkPlaceholder: () -> Text
-    let accessibilityLabel: LocalizedStringKey
+    let placeholder: Text
+    let label: LocalizedStringKey
     let isDisabled: Bool
     let onPaste: () -> Void
     let pasteTitle: LocalizedStringKey
-    let pasteButtonUsesRow: Bool
-    var macPlaceholderPadding: CGFloat = 1
     var onImportFile: () -> Void = {}
     var isImportingFile = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            if isBulk {
-                ZStack(alignment: .topLeading) {
-                    TextEditor(text: $text)
-                        .hideEditorBackgroundCompat()
-                        .font(.body)
-                        .autocorrectionDisabled()
-                        .focused($isFocused)
-                        #if os(iOS)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.URL)
-                        #endif
-                    if text.isEmpty {
-                        bulkPlaceholder()
-                            .font(.body)
-                            .foregroundStyle(.tertiary)
-                            #if os(macOS)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, macPlaceholderPadding)
-                            #else
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 8)
-                            #endif
-                            .allowsHitTesting(false)
-                    }
-                }
-                .frame(minHeight: 64, maxHeight: 96)
-                .background(Color.urlEditorBackground, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(.quaternary, lineWidth: 1)
-                )
-                .accessibilityLabel(accessibilityLabel)
-            } else {
-                TextField("", text: $text, prompt: singlePlaceholder())
-                    .textFieldStyle(.roundedBorder)
+        if isBulk {
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: $text)
+                    .hideEditorBackgroundCompat()
+                    .font(.body)
                     .autocorrectionDisabled()
                     .focused($isFocused)
                     #if os(iOS)
                     .textInputAutocapitalization(.never)
                     .keyboardType(.URL)
                     #endif
-                    .accessibilityLabel(accessibilityLabel)
-            }
-            if pasteButtonUsesRow {
-                HStack { pasteButton; importButton; Spacer() }
-            } else if isBulk {
-                HStack { pasteButton; importButton; Spacer() }
-            } else {
-                pasteButton
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var importButton: some View {
-        if isBulk {
-            Button(action: onImportFile) {
-                if isImportingFile {
-                    ProgressView().controlSize(.small)
-                } else {
-                    Label("Import File", systemImage: "doc")
+                if text.isEmpty {
+                    placeholder
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 5)
+                        #if os(iOS)
+                        .padding(.vertical, 8)
+                        #endif
+                        .allowsHitTesting(false)
                 }
             }
-            .buttonStyle(.bordered)
-            .disabled(isDisabled || isImportingFile)
+            .addContentEditorBox()
+            .frame(minHeight: 96, maxHeight: 140)
+            .accessibilityLabel(label)
+        } else {
+            TextField(label, text: $text, prompt: placeholder)
+                #if os(macOS)
+                .textFieldStyle(.roundedBorder)
+                #endif
+                .autocorrectionDisabled()
+                .focused($isFocused)
+                #if os(iOS)
+                .textInputAutocapitalization(.never)
+                .keyboardType(.URL)
+                #endif
+        }
+        AddContentActionRow {
+            Button(action: onPaste) { Label(pasteTitle, systemImage: "doc.on.clipboard") }
+                .disabled(isDisabled)
+            if isBulk {
+                Button(action: onImportFile) {
+                    HStack {
+                        Label("Import File", systemImage: "doc")
+                        if isImportingFile { ProgressView().controlSize(.small) }
+                    }
+                }
+                .disabled(isDisabled || isImportingFile)
+            }
         }
     }
+}
 
-    private var pasteButton: some View {
-        Button(action: onPaste) {
-            Label(pasteTitle, systemImage: "doc.on.clipboard")
-        }
-        .buttonStyle(.bordered)
-        .disabled(isDisabled)
+/// Secondary actions: one row per button on iOS, side by side on macOS.
+struct AddContentActionRow<Content: View>: View {
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        #if os(macOS)
+        HStack { content() }
+        #else
+        content()
+        #endif
     }
 }
 
@@ -375,113 +360,38 @@ struct AddContentFileSelectionButton: View {
     let onSelect: () -> Void
 
     var body: some View {
-        Button(action: onSelect) {
-            HStack(spacing: 10) {
-                Image(systemName: "doc")
-                if let filename {
-                    Text(filename)
+        HStack {
+            if let filename {
+                Label { Text(verbatim: filename) } icon: { Image(systemName: "doc") }
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer()
+            }
+            if isLoading { ProgressView().controlSize(.small) }
+            Button(action: onSelect) {
+                if filename == nil {
+                    Label("Choose File", systemImage: "doc")
                 } else {
-                    Text("Choose File")
+                    Text("Change File")
                 }
-                if isLoading { ProgressView().controlSize(.small) }
-                Spacer()
-                if filename != nil { Text("Change File").foregroundStyle(.secondary) }
             }
-            #if os(macOS)
-            .padding(.vertical, 10)
-            .padding(.horizontal, 12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(.quaternary, lineWidth: 1)
-            )
-            #endif
+            .disabled(isDisabled)
         }
+    }
+}
+
+extension View {
+    /// On macOS a multi-line editor needs the text background and a hairline
+    /// border to read as editable; iOS Form rows already provide that.
+    @ViewBuilder
+    func addContentEditorBox() -> some View {
         #if os(macOS)
-        .buttonStyle(.plain)
-        .noFocusRingCompat()
-        #endif
-        .disabled(isDisabled)
-    }
-}
-
-#if os(iOS)
-struct AddContentIOSSheet<Content: View>: View {
-    let title: LocalizedStringKey
-    let isLoading: Bool
-    let buttonTitle: () -> LocalizedStringKey
-    let isSubmitDisabled: Bool
-    let onDismiss: () -> Void
-    let onSubmit: () -> Void
-    @ViewBuilder let content: () -> Content
-
-    var body: some View {
-        CompatibleNavigationStack {
-            content()
-                .navigationTitle(title)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel", action: onDismiss)
-                            .disabled(isLoading)
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button(action: onSubmit) {
-                            if isLoading {
-                                ProgressView()
-                            } else {
-                                Text(buttonTitle())
-                            }
-                        }
-                        .disabled(isSubmitDisabled)
-                    }
-                }
-        }
-        .interactiveDismissDisabled(isLoading)
-        .largeSheetPresentationCompat()
-    }
-}
-
-#endif
-
-#if os(macOS)
-struct AddContentMacSheet<Content: View, Action: View>: View {
-    let title: String
-    let isLoading: Bool
-    let minHeight: CGFloat
-    let onDismiss: () -> Void
-    let isDismissDisabled: Bool
-    @ViewBuilder let content: () -> Content
-    @ViewBuilder let action: () -> Action
-
-    var body: some View {
-        SheetContainer {
-            SheetHeader(title: title, isLoading: isLoading) { onDismiss() }
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) { content() }
-                    .padding(.horizontal, SheetDesign.contentHorizontalPadding)
-                    .padding(.top, 12)
-                    .padding(.bottom, 40)
-            }
-            SheetBottomToolbar {
-                Spacer()
-                action()
-            }
-        }
-        .interactiveDismissDisabled(isDismissDisabled)
-        .frame(minWidth: 560, minHeight: minHeight)
-    }
-}
-
-#endif
-
-extension Color {
-    static var urlEditorBackground: Color {
-        #if os(iOS)
-        Color(uiColor: .systemBackground)
+        self
+            .padding(4)
+            .background(Color(nsColor: .textBackgroundColor))
+            .overlay(Rectangle().stroke(Color(nsColor: .separatorColor), lineWidth: 1))
         #else
-        Color(nsColor: .textBackgroundColor)
+        self
         #endif
     }
 }

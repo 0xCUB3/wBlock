@@ -73,7 +73,6 @@
 "Activate" = "Ενεργοποίηση";
 "Active" = "Ενεργή";
 "Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
-"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
 "Adblock List for Finland" = "Adblock List for Finland";
 "AdBlockID" = "AdBlockID";
 "Add" = "Add";
@@ -90,7 +89,6 @@
 "Added user list" = "Προστέθηκε λίστα χρήστη";
 "Added userscript from editor" = "Προστέθηκε κώδικας χρήστη από τον επεξεργαστή";
 "Adding new userscript from URL" = "Προσθήκη νέου σεναρίου χρήστη από URL";
-"Adding…" = "Adding…";
 "Additional filter list for websites in Arabic." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα αραβικά.";
 "Additional filter list for websites in Bulgarian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα βουλγαρικά.";
 "Additional filter list for websites in Czech and Slovak." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα Τσεχικά και τα Σλοβακικά.";
@@ -238,8 +236,6 @@
 "Click an element on the page to hide it." = "Κάντε κλικ σε ένα στοιχείο στη σελίδα για να το αποκρύψετε";
 "close" = "κλείσιμο";
 "Close search" = "Κλείσιμο αναζήτησης";
-"Community filter list that blocks ads on Albanian and Kosovar websites." = "Λίστα φίλτρων που διατηρείται από την κοινότητα και αποκλείει διαφημίσεις σε αλβανικούς και κοσοβάρικους ιστότοπους.";
-"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Λίστα φίλτρων που διατηρείται από την κοινότητα και αποκλείει διαφημίσεις σε ιστότοπους στα ντιβέχι (μαλδιβικά).";
 "Community options" = "Επιλογές Κοινότητας";
 "Community-maintained options for additional regional coverage." = "Επιλογές που διατηρούνται από την κοινότητα για πρόσθετη περιφερειακή κάλυψη.";
 "Completed" = "Ολοκληρώθηκε";
@@ -402,7 +398,6 @@
 "Filter Apply" = "Εφαρμογή Φίλτρου";
 "Filter Auto-Update" = "Φίλτρο Αυτόματης Ενημέρωσης";
 "Filter for ad blocking on Estonian sites." = "Φίλτρο για αποκλεισμό διαφημίσεων σε εσθονικούς ιστότοπους.";
-"Filter list for blocking ads and trackers on websites in Persian." = "Λίστα φίλτρων για τον αποκλεισμό διαφημίσεων και παρακολούθησης σε ιστότοπους στα περσικά.";
 "Filter list not found." = "Η λίστα φίλτρων δεν βρέθηκε.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "Λίστα φίλτρων που καταργεί ειδικά τις διαφημίσεις σε ιστότοπους στα ισπανικά, πορτογαλικά και πορτογαλικά βραζιλιάνικα.";
 "Filter list that specifically removes ads on websites in Turkish language." = "Λίστα φίλτρων που αφαιρεί συγκεκριμένα διαφημίσεις σε ιστότοπους στην τουρκική γλώσσα.";
@@ -416,6 +411,7 @@
 "Filter that enables ad blocking on websites in Russian language." = "Φίλτρο που επιτρέπει τον αποκλεισμό διαφημίσεων σε ιστότοπους στη ρωσική γλώσσα.";
 "Filter that enables ad blocking on websites in Ukrainian language." = "Φίλτρο που επιτρέπει τον αποκλεισμό διαφημίσεων σε ιστότοπους στην ουκρανική γλώσσα.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Φίλτρο που προστατεύει από διάφορους τύπους απάτες στο πολωνικό δίκτυο, όπως μαζικά μηνύματα κειμένου, πλαστά ηλεκτρονικά καταστήματα κ.λπ.";
+"CERT Polska's list of dangerous domains that impersonate real sites to steal data or money." = "Λίστα της CERT Polska με επικίνδυνους τομείς που μιμούνται πραγματικούς ιστότοπους για να κλέψουν δεδομένα ή χρήματα.";
 "Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Φίλτρο που αφαιρεί διαφημίσεις και διάφορους κώδικες από ιστότοπους με κορεατικό περιεχόμενο. Συνδυάζεται και επαυξάνεται με κανόνες που αφορούν ειδικά το AdGuard για βελτιωμένο φιλτράρισμα. Αυτό το φίλτρο αναμένεται να χρησιμοποιηθεί μαζί με το φίλτρο AdGuard Base.";
 "Filter Update" = "Φίλτρο Ενημέρωσης";
 "FilterApply" = "Εφαρμογή φίλτρου";
@@ -580,7 +576,6 @@
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Η παύση αποκλεισμού είναι ενεργή όσο οποιοδήποτε επιλεγμένο στοιχείο βρίσκεται σε παύση. Η συνέχιση επαναφέρει όλα τα στοιχεία.";
 "Temporarily pause selected components without changing their enabled settings." = "Παύση των επιλεγμένων στοιχείων προσωρινά χωρίς αλλαγή των ρυθμίσεων ενεργοποίησής τους.";
 "Pausing blocking..." = "Παύση αποκλεισμού…";
-"Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
 "Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "Αποκλείει τομείς κακόβουλου λογισμικού και απάτης, κακόβουλες ανακατευθύνσεις και προτροπές για ανεπιθύμητο λογισμικό.";
@@ -599,7 +594,6 @@
 "Provide a valid https:// link ending in .user.js" = "Παρέχετε έναν έγκυρο σύνδεσμο https:// που τελειώνει σε .user.js";
 "Psst! You forgot something!" = "Ψστ! Ξέχασες κάτι!";
 "Quit Without Applying" = "Κλείστε χωρίς να κάνετε αίτηση";
-"Raajje AdList" = "Raajje AdList";
 "Reading Files" = "Ανάγνωση αρχείων";
 "Ready" = "Έτοιμο";
 "Ready." = "Ετοιμος.";
@@ -779,7 +773,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will reset all filters, userscripts, and preferences." = "Αυτό θα επαναφέρει όλα τα φίλτρα, τον κώδικα χρήστη και τις προτιμήσεις.";
 "Timed out" = "Έληξε ο χρόνος";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "Το tinyShield βοηθά στον αποκλεισμό διαφημίσεων που επανεισάγονται από το Ad-Shield σε αντίστοιχους ιστότοπους.";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Αποκλείει διαφημίσεις που το Ad-Shield επαναφέρει σε αντίστοιχους ιστότοπους αφού τις αποκρύψουν οι λίστες φίλτρων.";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Επιτρέπει στους αποκλειστές διαφημίσεων να αντιστέκονται γρήγορα στο Ad-Shield, το οποίο επαναφέρει διαφημίσεις σε αντίστοιχους ιστότοπους αφού τις αποκρύψουν οι λίστες φίλτρων.";
 "Title" = "Τίτλος";
 "Title (optional)" = "Τίτλος (προαιρετικό)";
 "Title is required." = "Απαιτείται όνομα.";
@@ -933,7 +927,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "Αλλαγή αρχείου";
 "Local imports won't auto-update; re-import to replace." = "Οι τοπικές εισαγωγές δεν ενημερώνονται αυτόματα· εισαγάγετε ξανά για αντικατάσταση.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "Το AdGuard Extra αποκλείει διαφημίσεις στο Twitch και αντιμετωπίζει σύνθετες περιπτώσεις anti-adblock.";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "Αποκλείει διαφημίσεις στο Twitch με τον κώδικα vaft του TwitchAdSolutions. Μην το εκτελείτε μαζί με το AdGuard Extra.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Αποκλείει τις διαφημίσεις του Twitch με το σενάριο vaft από το TwitchAdSolutions.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Απενεργοποίηση βασικού φίλτρου;";
@@ -1155,3 +1149,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Capacity" = "Χωρητικότητα";
 
 "Reset…" = "Επαναφορά…";
+"Languages" = "Γλώσσες";
+"Add Script" = "Προσθήκη σεναρίου";
+"Paste or type filter rules." = "Επικολλήστε ή πληκτρολογήστε κανόνες φίλτρου.";

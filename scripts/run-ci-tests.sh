@@ -174,6 +174,7 @@ compile_core_test filter-list-setup scripts/test_filter_list_setup.swift wBlock/
 compile_core_test apply-baseline-acknowledgement scripts/test_apply_baseline_acknowledgement.swift \
   wBlock/ApplyFilterConfiguration.swift
 compile_core_test filter-list-site-exclusion scripts/test_filter_list_site_exclusion.swift
+compile_core_test site-exclusion-ignore-segment scripts/test_site_exclusion_ignore_segment.swift
 compile_core_test userscript-pattern-budget scripts/test_userscript_pattern_budget.swift
 compile_core_test userscript-duplicates scripts/test_userscript_duplicates.swift \
   wBlock/CloudSyncUserScriptSync.swift \

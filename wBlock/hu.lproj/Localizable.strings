@@ -73,7 +73,6 @@
 "Activate" = "Aktiválás";
 "Active" = "Aktív";
 "Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
-"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
 "Adblock List for Finland" = "Adblock List for Finland";
 "AdBlockID" = "AdBlockID";
 "Add" = "Add";
@@ -90,7 +89,6 @@
 "Added user list" = "Felhasználói lista hozzáadva";
 "Added userscript from editor" = "Felhasználói szkript hozzáadva a szerkesztőből";
 "Adding new userscript from URL" = "Új felhasználói szkript hozzáadása URL-ből";
-"Adding…" = "Adding…";
 "Additional filter list for websites in Arabic." = "További szűrőlista arab nyelvű webhelyekhez.";
 "Additional filter list for websites in Bulgarian." = "További szűrőlista bolgár nyelvű webhelyekhez.";
 "Additional filter list for websites in Czech and Slovak." = "További szűrőlista cseh és szlovák nyelvű webhelyekhez.";
@@ -238,8 +236,6 @@
 "Click an element on the page to hide it." = "Kattints egy elemre az oldalon az elrejtéséhez.";
 "close" = "bezárás";
 "Close search" = "Keresés bezárása";
-"Community filter list that blocks ads on Albanian and Kosovar websites." = "Közösség által karbantartott szűrőlista, amely blokkolja a hirdetéseket az albán és koszovói webhelyeken.";
-"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Közösség által karbantartott szűrőlista, amely blokkolja a hirdetéseket a divehi (maldív) nyelvű webhelyeken.";
 "Community options" = "Közösségi lehetőségek";
 "Community-maintained options for additional regional coverage." = "Közösség által karbantartott lehetőségek további regionális lefedettséghez.";
 "Completed" = "Befejezve";
@@ -402,7 +398,6 @@
 "Filter Apply" = "Szűrők alkalmazása";
 "Filter Auto-Update" = "Szűrők automatikus frissítése";
 "Filter for ad blocking on Estonian sites." = "Szűrő hirdetésblokkoláshoz az észt webhelyeken.";
-"Filter list for blocking ads and trackers on websites in Persian." = "Szűrőlista a hirdetések és nyomkövetők blokkolásához perzsa nyelvű webhelyeken.";
 "Filter list not found." = "Szűrőlista nem található.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a spanyol, portugál és brazil portugál nyelvű webhelyekről.";
 "Filter list that specifically removes ads on websites in Turkish language." = "Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a török ​​nyelvű webhelyekről.";
@@ -416,6 +411,7 @@
 "Filter that enables ad blocking on websites in Russian language." = "Szűrő, amely lehetővé teszi a hirdetések blokkolását orosz nyelvű webhelyeken.";
 "Filter that enables ad blocking on websites in Ukrainian language." = "Szűrő, amely lehetővé teszi a hirdetések blokkolását az ukrán nyelvű webhelyeken.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Szűrő, amely megvéd a lengyel hálózat különböző típusú csalásaitól, például tömeges szöveges üzenetektől, hamis online áruházaktól stb.";
+"CERT Polska's list of dangerous domains that impersonate real sites to steal data or money." = "A CERT Polska listája azokról a veszélyes domainekről, amelyek valódi oldalaknak adják ki magukat, hogy adatokat vagy pénzt lopjanak.";
 "Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Szűrő, amely eltávolítja a hirdetéseket és a különféle szkripteket a koreai tartalmú webhelyekről. AdGuard-specifikus szabályokkal kombinálva és kiegészítve a továbbfejlesztett szűrés érdekében. Ezt a szűrőt várhatóan az AdGuard Base szűrővel együtt kell használni.";
 "Filter Update" = "Szűrőfrissítés";
 "FilterApply" = "Szűrő Alkalmaz";
@@ -580,7 +576,6 @@
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "A blokkolás szünetel, amíg legalább egy kiválasztott összetevő szüneteltetve van. A folytatás minden összetevőt visszaállít.";
 "Temporarily pause selected components without changing their enabled settings." = "A kiválasztott összetevők ideiglenes szüneteltetése az engedélyezési beállításaik módosítása nélkül.";
 "Pausing blocking..." = "Blokkolás szüneteltetése…";
-"Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
 "Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "Letiltja a kártevő- és csalódomaineket, a rosszindulatú átirányításokat és a nem kívánt szoftverek felugró kéréseit.";
@@ -599,7 +594,6 @@
 "Provide a valid https:// link ending in .user.js" = "Adj meg egy érvényes, .user.js végű https:// hivatkozást";
 "Psst! You forgot something!" = "Pszt! Elfelejtettél valamit!";
 "Quit Without Applying" = "Kilépés jelentkezés nélkül";
-"Raajje AdList" = "Raajje AdList";
 "Reading Files" = "Fájlok olvasása";
 "Ready" = "Kész";
 "Ready." = "Kész.";
@@ -779,7 +773,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "This will reset all filters, userscripts, and preferences." = "Ez visszaállít minden szűrőt, felhasználói szkriptet és beállítást.";
 "Timed out" = "Időtúllépés";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "A tinyShield segít blokkolni az Ad-Shield által a megfelelő oldalakra újra beillesztett hirdetéseket.";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Blokkolja azokat a hirdetéseket, amelyeket az Ad-Shield a megfelelő oldalakra újra beilleszt, miután a szűrőlisták elrejtették őket.";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Lehetővé teszi, hogy a reklámblokkolók gyorsan ellenálljanak az Ad-Shieldnek, amely a szűrőlisták által elrejtett hirdetéseket visszahelyezi az érintett oldalakon.";
 "Title" = "Cím";
 "Title (optional)" = "Cím (opcionális)";
 "Title is required." = "A név megadása kötelező.";
@@ -933,7 +927,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Change File" = "Fájl módosítása";
 "Local imports won't auto-update; re-import to replace." = "A helyi importok nem frissülnek automatikusan; az új importálással cserélhetők.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "Az AdGuard Extra blokkolja a Twitch-hirdetéseket, és kezeli a bonyolult reklámblokkolás-ellenes eseteket.";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "Twitch-hirdetések blokkolása a TwitchAdSolutions vaft parancsával. Ne futtasd együtt az AdGuard Extra bővítménnyel.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Blokkolja a Twitch-hirdetéseket a TwitchAdSolutions vaft szkriptjével.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Letiltja az alapvető szűrőt?";
@@ -1155,3 +1149,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Capacity" = "Kapacitás";
 
 "Reset…" = "Visszaállítás…";
+"Languages" = "Nyelvek";
+"Add Script" = "Szkript hozzáadása";
+"Paste or type filter rules." = "Illessz be vagy írj be szűrőszabályokat.";

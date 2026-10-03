@@ -73,7 +73,6 @@
 "Activate" = "Aktivieren";
 "Active" = "Aktiv";
 "Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
-"Adblock List for Albania and Kosovo" = "Adblock List for Albania and Kosovo";
 "Adblock List for Finland" = "Adblock List for Finland";
 "AdBlockID" = "AdBlockID";
 "Add" = "Hinzufügen";
@@ -90,7 +89,6 @@
 "Added user list" = "Benutzerliste hinzugefügt";
 "Added userscript from editor" = "Userskript aus Editor hinzugefügt";
 "Adding new userscript from URL" = "Neues Userskript aus URL wird hinzugefügt";
-"Adding…" = "Wird hinzugefügt…";
 "Additional filter list for websites in Arabic." = "Zusätzliche Filterliste für Websites auf Arabisch.";
 "Additional filter list for websites in Bulgarian." = "Zusätzliche Filterliste für Websites auf Bulgarisch.";
 "Additional filter list for websites in Czech and Slovak." = "Zusätzliche Filterliste für Websites in Tschechisch und Slowakisch.";
@@ -238,8 +236,6 @@
 "Click an element on the page to hide it." = "Klicke auf ein Element auf der Seite, um es auszublenden.";
 "close" = "schließen";
 "Close search" = "Suche schließen";
-"Community filter list that blocks ads on Albanian and Kosovar websites." = "Von der Community gepflegte Filterliste, die Werbung auf albanischen und kosovarischen Websites blockiert.";
-"Community filter list that blocks ads on Dhivehi (Maldivian) websites." = "Von der Community gepflegte Filterliste, die Werbung auf Websites in Dhivehi (Maledivisch) blockiert.";
 "Community options" = "Community-Optionen";
 "Community-maintained options for additional regional coverage." = "Von der Community gepflegte Optionen für zusätzliche regionale Abdeckung.";
 "Completed" = "Abgeschlossen";
@@ -360,7 +356,7 @@
 "Failed saving user list" = "Speichern der Benutzerliste fehlgeschlagen";
 "Failed saving user list edits" = "Speichern der Benutzerlisten-Bearbeitungen fehlgeschlagen";
 "Failed to access shared storage." = "Zugriff auf den freigegebenen Speicher fehlgeschlagen.";
-"Couldn't download this filter list. It was kept as not downloaded." = "Diese Filterliste konnte nicht heruntergeladen werden. Sie wurde als "nicht heruntergeladen" markiert.";
+"Couldn't download this filter list. It was kept as not downloaded." = "Diese Filterliste konnte nicht heruntergeladen werden. Sie wurde als „nicht heruntergeladen“ markiert.";
 "Failed to add userscript from URL" = "Hinzufügen des Userskripts aus URL fehlgeschlagen";
 "Failed to clear extensions and advanced engine" = "Löschen der Erweiterungen und der erweiterten Engine fehlgeschlagen";
 "Failed to clear filter engine during onboarding reset" = "Löschen der Filter-Engine beim Zurücksetzen der Einrichtung fehlgeschlagen";
@@ -372,7 +368,7 @@
 "Failed to fetch filter - HTTP error" = "Filter konnte nicht abgerufen werden – HTTP-Fehler";
 "Failed to fetch script" = "Skript konnte nicht abgerufen werden";
 "Failed to import dropped userscript" = "Importieren des abgelegten Userskripts fehlgeschlagen";
-"Failed to load dropped item" = "Ablegtes Element konnte nicht geladen werden";
+"Failed to load dropped item" = "Abgelegtes Element konnte nicht geladen werden";
 "Failed to prepare removeparam DNR rules" = "Vorbereitung der removeparam DNR-Regeln fehlgeschlagen";
 "Failed to process one or more pre-apply filter updates" = "Verarbeitung einer oder mehrerer Filter-Updates vor dem Anwenden fehlgeschlagen";
 "Failed to read backup: %@" = "Backup konnte nicht gelesen werden: %@";
@@ -402,7 +398,6 @@
 "Filter Apply" = "Filter anwenden";
 "Filter Auto-Update" = "Automatische Filter-Updates";
 "Filter for ad blocking on Estonian sites." = "Filter gegen Werbung auf estnischen Websites.";
-"Filter list for blocking ads and trackers on websites in Persian." = "Filterliste zum Blockieren von Anzeigen und Trackern auf Websites auf Persisch.";
 "Filter list not found." = "Filterliste nicht gefunden.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "Filterliste, die gezielt Anzeigen auf Websites in den Sprachen Spanisch, Portugiesisch und Brasilianisches Portugiesisch entfernt.";
 "Filter list that specifically removes ads on websites in Turkish language." = "Filterliste, die gezielt Anzeigen auf Websites in türkischer Sprache entfernt.";
@@ -416,7 +411,8 @@
 "Filter that enables ad blocking on websites in Russian language." = "Filter, der das Blockieren von Werbung auf Websites in russischer Sprache ermöglicht.";
 "Filter that enables ad blocking on websites in Ukrainian language." = "Filter, der das Blockieren von Werbung auf Websites in ukrainischer Sprache ermöglicht.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Filter, der vor verschiedenen Arten von Betrug im polnischen Internet schützt, wie z. B. Massen-SMS, gefälschte Online-Shops usw.";
-"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Filter, der Werbung und verschiedene Skripte von Websites mit koreanischen Inhalten entfernt. Kombiniert und erweitert mit AdGuard-spezifischen Regeln für verbesserte Filterung. Dieser Filter ist für die Verwendung zusammen mit dem Adguard Base filter gedacht.";
+"CERT Polska's list of dangerous domains that impersonate real sites to steal data or money." = "Liste von CERT Polska mit gefährlichen Domains, die echte Websites nachahmen, um Daten oder Geld zu stehlen.";
+"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Filter, der Werbung und verschiedene Skripte von Websites mit koreanischen Inhalten entfernt. Kombiniert und erweitert mit AdGuard-spezifischen Regeln für verbesserte Filterung. Dieser Filter ist für die Verwendung zusammen mit dem AdGuard Base filter gedacht.";
 "Filter Update" = "Filter-Update";
 "FilterApply" = "Filter anwenden";
 "Filtering off" = "Filterung aus";
@@ -580,7 +576,6 @@
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pause Blocking ist aktiv, solange eine ausgewählte Komponente pausiert ist. Fortsetzen aktiviert alle Komponenten wieder.";
 "Temporarily pause selected components without changing their enabled settings." = "Ausgewählte Komponenten vorübergehend pausieren, ohne ihre Aktivierungseinstellungen zu ändern.";
 "Pausing blocking..." = "Blockieren wird pausiert …";
-"Persian Blocker" = "Persian Blocker";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
 "Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "Blockiert Malware- und Betrugsdomains, schädliche Weiterleitungen und unerwünschte Software-Hinweise.";
@@ -598,8 +593,7 @@
 "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Gib einen gültigen http://- oder https://-Link an, der auf .js, .user.js, .user.css, .less, .sass, .scss, .styl oder .pcss endet";
 "Provide a valid https:// link ending in .user.js" = "Gib einen gültigen https://-Link ein, der auf .user.js endet";
 "Psst! You forgot something!" = "Psst! Du hast etwas vergessen!";
-"Quit Without Applying" = "Ohne anwenden beenden";
-"Raajje AdList" = "Raajje AdList";
+"Quit Without Applying" = "Ohne Anwenden beenden";
 "Reading Files" = "Dateien werden gelesen";
 "Ready" = "Bereit";
 "Ready." = "Bereit.";
@@ -765,7 +759,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 %@
 
 Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende die Änderungen erneut an.";
-"The following filters were automatically disabled:\\n\\n%@\\n\\nTo re-enable these filters, disable other large filters and apply changes again." = "Die folgenden Filter wurden automatisch deaktiviert:\\n\\n%@\\n\\nUm diese Filter wieder zu aktivieren, deaktiviere andere große Filter und übernehme die Änderungen erneut.";
+"The following filters were automatically disabled:\\n\\n%@\\n\\nTo re-enable these filters, disable other large filters and apply changes again." = "Die folgenden Filter wurden automatisch deaktiviert:\\n\\n%@\\n\\nUm diese Filter wieder zu aktivieren, deaktiviere andere große Filter und übernimm die Änderungen erneut.";
 "These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later." = "Diese Filter sorgen zusätzlich zu den Standardfilterlisten, die englische und internationale Websites bereits abdecken, für mehr Blockierleistung in deinen Sprachen. Du kannst sie später feinabstimmen.";
 "These lists are community-maintained. Enable them if you still see regional ads." = "Diese Listen werden von der Community gepflegt. Aktiviere sie, wenn du weiterhin regionale Werbung siehst.";
 "This doesn't change the app's display language, which always follows your device settings." = "Das ändert nicht die Anzeigesprache der App. Sie folgt immer den Einstellungen deines Geräts.";
@@ -779,7 +773,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "This will reset all filters, userscripts, and preferences." = "Dadurch werden alle Filter, Userskripte und Einstellungen zurückgesetzt.";
 "Timed out" = "Zeitüberschreitung";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield hilft, Anzeigen zu blockieren, die von Ad-Shield auf passenden Seiten erneut eingefügt werden.";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Blockiert Anzeigen, die Ad-Shield auf passenden Seiten wieder einfügt, nachdem Filterlisten sie ausgeblendet haben.";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Lässt Werbeblocker schnell gegen Ad-Shield vorgehen, das Anzeigen auf passenden Websites wieder einfügt, nachdem Filterlisten sie ausgeblendet haben.";
 "Title" = "Titel";
 "Title (optional)" = "Titel (optional)";
 "Title is required." = "Ein Titel ist erforderlich.";
@@ -933,7 +927,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Change File" = "Datei ändern";
 "Local imports won't auto-update; re-import to replace." = "Lokale Importe werden nicht automatisch aktualisiert; zum Ersetzen erneut importieren.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra blockiert Twitch-Werbung und bewältigt komplizierte Anti-Adblock-Fälle.";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "Blockiert Twitch-Werbung mit dem vaft-Skript von TwitchAdSolutions. Nicht zusammen mit AdGuard Extra ausführen.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Blockiert Twitch-Werbung mit dem vaft-Skript von TwitchAdSolutions.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Wichtigen Filter deaktivieren?";
@@ -1155,3 +1149,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Capacity" = "Kapazität";
 
 "Reset…" = "Zurücksetzen…";
+"Languages" = "Sprachen";
+"Add Script" = "Skript hinzufügen";
+"Paste or type filter rules." = "Filterregeln einfügen oder eingeben.";
