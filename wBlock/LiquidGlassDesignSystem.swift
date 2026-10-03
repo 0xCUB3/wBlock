@@ -33,8 +33,9 @@ extension View {
     }
 }
 
-/// List actions stay trailing in the order Update, Show Enabled, Search, Add.
-/// Update and Show Enabled share a container; Search and Add get their own.
+/// On macOS, Update and Show Enabled share a container, then Search and Add.
+/// On iOS and iPadOS, Update/Apply sits alone at the leading edge. That is a
+/// settled decision: do not regroup it with the trailing actions again.
 struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
     @Binding var searchText: String
     @Binding var focusRequest: Bool
@@ -94,11 +95,9 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
         #else
         if #available(iOS 26.0, *) {
             content.toolbar {
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    apply()
-                    filter
-                }
-                .toolbarVisibilityPriorityCompat(.high)
+                ToolbarItem(placement: .topBarLeading) { apply() }
+                    .toolbarVisibilityPriorityCompat(.high)
+                ToolbarItem(placement: .topBarTrailing) { filter }
                 ToolbarSpacer(.fixed, placement: .topBarTrailing)
                 if horizontalSizeClass != .regular {
                     DefaultToolbarItem(kind: .search, placement: .topBarTrailing)
@@ -108,10 +107,8 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
             }
         } else {
             content.toolbar {
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    apply()
-                    filter
-                }
+                ToolbarItem(placement: .navigationBarLeading) { apply() }
+                ToolbarItem(placement: .navigationBarTrailing) { filter }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if horizontalSizeClass != .regular {
                         Button { focusRequest = true } label: {
