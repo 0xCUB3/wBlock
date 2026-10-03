@@ -1453,6 +1453,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     /// This avoids re-running SafariConverterLib when the combined rules for a target haven't changed.
     static func convertFilterFromFileWithOutputChange(
         rulesFileURL: URL,
+        ignoreSegment: (rules: String, sites: [String])? = nil,
         rulesSHA256Hex: String,
         groupIdentifier: String,
         targetRulesFilename: String,
@@ -1532,7 +1533,11 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         if cancellationRequested() {
             throw CancellationError()
         }
-        let combinedRules = try String(contentsOf: rulesFileURL, encoding: .utf8)
+        var combinedRules = try String(contentsOf: rulesFileURL, encoding: .utf8)
+        if let ignoreSegment {
+            // The segment was written to the file only for the cache hash.
+            combinedRules = combinedRules.replacingOccurrences(of: ignoreSegment.rules, with: "")
+        }
         var effectiveRules = combinedRulesWithEmbeddedCompatibility(combinedRules)
         effectiveRules = cosmeticSites.restricting(effectiveRules)
         if cancellationRequested() {
@@ -1545,7 +1550,17 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         if cancellationRequested() {
             throw CancellationError()
         }
-        let safariRulesJSON = lowercasingTriggerDomains(result.safariRulesJSON)
+        var safariRulesJSON = lowercasingTriggerDomains(result.safariRulesJSON)
+        var safariRulesCount = result.safariRulesCount
+        if let ignoreSegment, !ignoreSegment.rules.isEmpty {
+            let segment = try convertRules(rules: ignoreSegment.rules, isCancelled: cancellationRequested)
+            let sites = DisabledSitesNormalizer.normalizedDomains(from: ignoreSegment.sites)
+            let segmentJSON = injectIgnoreRulesForDisabledSites(
+                json: lowercasingTriggerDomains(segment.safariRulesJSON), disabledSites: sites
+            )
+            safariRulesJSON = concatenatedRuleArrays(segmentJSON, safariRulesJSON)
+            safariRulesCount += segment.safariRulesCount + sites.count
+        }
 
         _ = try saveContentBlockerIfChanged(
             jsonRules: safariRulesJSON,
@@ -1553,13 +1568,13 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             targetRulesFilename: baseFilename,
             containerURL: containerURL
         )
-        try saveBlockerListFile(contents: String(result.safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename, containerURL: containerURL)
+        try saveBlockerListFile(contents: String(safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename, containerURL: containerURL)
         try saveBlockerListFile(contents: result.advancedRulesText ?? "", groupIdentifier: groupIdentifier, filename: advancedFilename, containerURL: containerURL)
 
         let finalized = try finalizeAndSaveContentBlockerIfWithinLimit(
             baseJSON: safariRulesJSON,
             disabledSites: sitesToUse,
-            knownBaseCount: result.safariRulesCount,
+            knownBaseCount: safariRulesCount,
             groupIdentifier: groupIdentifier,
             targetRulesFilename: targetRulesFilename,
             containerURL: containerURL,
@@ -1869,6 +1884,30 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         // can cancel one of this target's blocks (#836).
         var writtenSources: [String] = []
         var otherSources: [String] = []
+        // The largest excluded list compiles its unscoped blocks ahead of one
+        // ignore rule instead of negating each of them (#925). Only one list per
+        // blocker can: a second ignore would also cancel the first list's rules.
+        let ignoreSegmentFilterID = orderedSelectedFilters
+            .filter {
+                assignedFilterIDs.contains($0.id) && !$0.excludedSites.isEmpty && $0.selectedSites == nil
+                    && exclusions[$0.id]?.isEmpty != false
+            }
+            .max { ($0.sourceRuleCount ?? 0) < ($1.sourceRuleCount ?? 0) }?.id
+        var ignoreSegment: (rules: String, sites: [String])?
+        // The segment joins the input file only so the cache hash covers it;
+        // conversion lifts it back out.
+        func appendIgnoreSegment(_ rules: String, for filter: FilterList) throws {
+            ignoreSegment = (rules, filter.excludedSites)
+            writtenSources.append(rules)
+            try sourceRuleAdmissions.record(
+                filterID: filter.id, rulesText: rules,
+                cosmeticSites: cosmeticSites, isCancelled: cancellationRequested
+            )
+            try ContentBlockerInputWriter.appendInline(
+                rules, to: fileHandle, hasher: &hasher,
+                newlineData: newlineData, isCancelled: cancellationRequested
+            )
+        }
 
         for filter in orderedSelectedFilters {
             if cancellationRequested() {
@@ -1893,7 +1932,14 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     allTargets: allTargets,
                     isCancelled: cancellationRequested
                 )
-                let restricted = FilterListSiteExclusion.restrictingAdvancedRules(filtered, excluding: filter.excludedSites, including: filter.selectedSites)
+                var restricted: String
+                if filter.id == ignoreSegmentFilterID {
+                    let split = FilterListSiteExclusion.ignoreSegment(filtered, excluding: filter.excludedSites)
+                    restricted = split.restricted
+                    try appendIgnoreSegment(split.unscoped, for: filter)
+                } else {
+                    restricted = FilterListSiteExclusion.restrictingAdvancedRules(filtered, excluding: filter.excludedSites, including: filter.selectedSites)
+                }
                 try sourceRuleAdmissions.record(
                     filterID: filter.id,
                     rulesText: restricted,
@@ -1950,7 +1996,14 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     )
                 } else {
                     let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
-                    let restricted = FilterListSiteExclusion.restrictingAdvancedRules(rawContent, excluding: filter.excludedSites, including: filter.selectedSites)
+                    var restricted: String
+                    if filter.id == ignoreSegmentFilterID {
+                        let split = FilterListSiteExclusion.ignoreSegment(rawContent, excluding: filter.excludedSites)
+                        restricted = split.restricted
+                        try appendIgnoreSegment(split.unscoped, for: filter)
+                    } else {
+                        restricted = FilterListSiteExclusion.restrictingAdvancedRules(rawContent, excluding: filter.excludedSites, including: filter.selectedSites)
+                    }
                     writtenSources.append(restricted)
                     try sourceRuleAdmissions.record(
                         filterID: filter.id,
@@ -2000,6 +2053,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
 
         let conversion = try ContentBlockerService.convertFilterFromFileWithOutputChange(
             rulesFileURL: tempURL,
+            ignoreSegment: ignoreSegment,
             rulesSHA256Hex: rulesSHA256Hex,
             groupIdentifier: groupIdentifier,
             targetRulesFilename: targetInfo.rulesFilename,
@@ -2243,6 +2297,17 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         return String(trimmed[..<closeBracket]) + "," + ignoreRules + "]"
     }
     
+    /// Joins two content blocker rule arrays, keeping their order.
+    static func concatenatedRuleArrays(_ first: String, _ second: String) -> String {
+        func inner(_ json: String) -> Substring {
+            let trimmed = json.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let open = trimmed.firstIndex(of: "["), let close = trimmed.lastIndex(of: "]"), open < close else { return "" }
+            return trimmed[trimmed.index(after: open)..<close]
+        }
+        let parts = [inner(first), inner(second)].filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        return "[" + parts.joined(separator: ",") + "]"
+    }
+
     /// Parses `json` once and returns its rule count, or nil when it is not a
     /// content blocker rule array. Cache hits compare this against the `.count`
     /// sidecar so a stale sidecar can never skip rule-limit truncation.

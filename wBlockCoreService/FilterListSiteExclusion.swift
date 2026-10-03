@@ -14,6 +14,11 @@
 //  per-domain entries) and network rules get a companion exception scoped to
 //  the excluded subdomain.
 //
+//  Negating every unscoped rule of a large list (issue #925) gives WebKit tens
+//  of thousands of conditioned rules, and its compiler dies building them. Those
+//  rules are instead compiled unconditioned ahead of one ignore-previous-rules
+//  rule for the excluded sites; see `ignoreSegment`.
+//
 
 import Foundation
 
@@ -32,6 +37,36 @@ public enum FilterListSiteExclusion {
             .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
             .map { restrictAdvancedLine(String($0), excluding: sites, including: selected) }
             .joined(separator: "\n")
+    }
+
+    /// Splits a list into its unscoped, Safari-native blocking rules, which a
+    /// following ignore-previous-rules rule can cancel for `sites`, and the rest,
+    /// which keeps per-rule restriction. Exceptions, cosmetic rules and anything
+    /// with another option stay per rule.
+    static func ignoreSegment(_ text: String, excluding sites: [String]) -> (unscoped: String, restricted: String) {
+        var unscoped: [Substring] = []
+        var rest: [Substring] = []
+        for line in text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline) {
+            isPlainUnscopedBlock(line.trimmingCharacters(in: .whitespaces)) ? unscoped.append(line) : rest.append(line)
+        }
+        return (unscoped.joined(separator: "\n"), restrictingAdvancedRules(rest.joined(separator: "\n"), excluding: sites))
+    }
+
+    /// Options Safari applies natively, so the rule never becomes an advanced
+    /// (script-side) rule that a content blocker ignore could not cancel.
+    private static let nativeNetworkOptions: Set<String> = [
+        "script", "image", "stylesheet", "xmlhttprequest", "subdocument", "ping", "media", "font",
+        "websocket", "other", "document", "third-party", "first-party", "3p", "1p", "match-case", "all",
+    ]
+
+    private static func isPlainUnscopedBlock(_ line: String) -> Bool {
+        guard !line.isEmpty, !line.hasPrefix("!"), !line.hasPrefix("["), !line.hasPrefix("@@"),
+              splitCosmetic(line) == nil else { return false }
+        let network = networkParts(line)
+        return network.parts.indices.allSatisfy { index in
+            index == network.domainIndex
+                || nativeNetworkOptions.contains(String(network.parts[index].trimmingCharacters(in: .whitespaces).lowercased().drop { $0 == "~" }))
+        } && !network.domains.contains { !$0.hasPrefix("~") }
     }
 
     /// Scopes only the cosmetic rules in `text`, leaving network rules and
@@ -152,6 +187,20 @@ public enum FilterListSiteExclusion {
     }
 
     private static func restrictNetworkLine(_ line: String, excluding sites: [String], including selected: [String]?) -> String? {
+        var (body, parts, domainIndex, rawDomains) = networkParts(line)
+        guard let restricted = restrictDomainList(rawDomains, excluding: sites, including: selected) else { return nil }
+        let domainOption = "domain=" + restricted.joined.joined(separator: "|")
+        if domainIndex == parts.count { parts.append(domainOption) } else { parts[domainIndex] = domainOption }
+        let rule = "\(body)$\(parts.joined(separator: ","))"
+        guard !restricted.uncoveredSubdomains.isEmpty,
+              let companion = companionException(
+                body: body, options: parts, domainIndex: domainIndex, sites: restricted.uncoveredSubdomains
+              ) else { return rule }
+        return rule + "\n" + companion
+    }
+
+    /// A network rule's pattern, its options, and the position and entries of its domain option.
+    private static func networkParts(_ line: String) -> (body: String, parts: [String], domainIndex: Int, domains: [String]) {
         var dollar = line.lastIndex(of: "$")
         if line.hasPrefix("/") || line.hasPrefix("@@/") {
             let start = line.index(line.startIndex, offsetBy: line.hasPrefix("@@") ? 3 : 1)
@@ -173,15 +222,7 @@ public enum FilterListSiteExclusion {
         let rawDomains = domainIndex < parts.count
             ? parts[domainIndex].split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)[1].split(separator: "|")
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty } : []
-        guard let restricted = restrictDomainList(rawDomains, excluding: sites, including: selected) else { return nil }
-        let domainOption = "domain=" + restricted.joined.joined(separator: "|")
-        if domainIndex == parts.count { parts.append(domainOption) } else { parts[domainIndex] = domainOption }
-        let rule = "\(body)$\(parts.joined(separator: ","))"
-        guard !restricted.uncoveredSubdomains.isEmpty,
-              let companion = companionException(
-                body: body, options: parts, domainIndex: domainIndex, sites: restricted.uncoveredSubdomains
-              ) else { return rule }
-        return rule + "\n" + companion
+        return (body, parts, domainIndex, rawDomains)
     }
 
     /// Safari cannot express "smth.com but not m.smth.com" on a network rule, so a
