@@ -3361,14 +3361,15 @@ public class UserScriptManager: ObservableObject {
     }
 
     public func saveEditedContent(for scriptId: UUID, newContent rawNewContent: String) async -> String? {
-        guard let index = indexOfUserScript(withId: scriptId) else { return nil }
+        guard indexOfUserScript(withId: scriptId) != nil else { return nil }
         let newContent: String
         do {
             newContent = try await inlineRemoteStyleImports(in: rawNewContent)
         } catch {
             return (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
-        let existing = userScripts[index]
+        // The script list can change while the imports download; resolve by ID afterward.
+        guard let existing = indexOfUserScript(withId: scriptId).map({ userScripts[$0] }) else { return nil }
         var candidate = existing
         candidate.replaceContentAndParseMetadata(newContent)
         if existing.isUserStyle && !candidate.isUserStyle {
@@ -3400,13 +3401,14 @@ public class UserScriptManager: ObservableObject {
             candidate.compiledStyleBody = style.compiledArtifact?.body
         }
         candidate.lastUpdated = Date()
+        guard let index = indexOfUserScript(withId: scriptId) else { return nil }
         guard writeUserScriptFiles(candidate) else {
             return String(localized: "Couldn't save the edited source.", comment: "Userstyle editor save error")
         }
         userScripts[index] = candidate
         recordScriptMutation(candidate.id)
         await persistUserScriptsNow()
-        logger.info("Saved edited content for \(self.userScripts[index].name)")
+        logger.info("Saved edited content for \(candidate.name)")
         return nil
     }
 

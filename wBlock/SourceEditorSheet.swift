@@ -23,6 +23,7 @@ struct SourceEditorSheet: View {
             HStack(spacing: 12) {
                 Button("Cancel", action: cancel)
                     .keyboardShortcut(.cancelAction)
+                    .disabled(isSaving)
                 Text(LocalizedStringKey(title))
                     .font(.headline)
                     .lineLimit(1)

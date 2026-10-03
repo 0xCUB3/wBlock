@@ -37,7 +37,7 @@ extension ProtobufDataManager {
             if let sourceRuleCount = filter.sourceRuleCount {
                 protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
             }
-            protoFilterList.lastUpdated = filter.lastUpdated.map { Int64($0.timeIntervalSince1970) }
+            protoFilterList.lastUpdated = filter.lastUpdated.map(\.epochSeconds)
                 ?? localBaselineByID[protoFilterList.id]?.lastUpdated ?? 0
             protoFilterList.isCustom = shouldPersistCustomFlag(for: filter)
             protoFilterList.userProvidedName = filter.hasUserProvidedName

@@ -997,6 +997,7 @@ final class CloudSyncManager: ObservableObject {
             selectionChanged: Bool = false,
             nonSelectionChanged: Bool = false
         ) async {
+            let filterLists = filterManager?.deduplicateFilterIDs(filterLists) ?? filterLists
             if let filterManager {
                 filterManager.filterLists = filterLists
                 if nonSelectionChanged {

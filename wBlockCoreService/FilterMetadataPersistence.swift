@@ -1,5 +1,10 @@
 import Foundation
 
+extension Date {
+    /// Whole epoch seconds, or 0 when a corrupt stored date is outside Int64.
+    var epochSeconds: Int64 { Int64(exactly: timeIntervalSince1970.rounded(.towardZero)) ?? 0 }
+}
+
 /// An operation owns only its metadata delta, never configuration or membership.
 enum FilterMetadataPersistence {
     static func merge(_ updates: [FilterList], baseline: [FilterList], into records: inout [Wblock_Data_FilterListData]) {
@@ -24,7 +29,7 @@ enum FilterMetadataPersistence {
                 else { record.clearSourceRuleCount() }
             }
             if update.lastUpdated != original.lastUpdated, let date = update.lastUpdated {
-                record.lastUpdated = Int64(date.timeIntervalSince1970)
+                record.lastUpdated = date.epochSeconds
             }
             if update.uniqueRuleCount != original.uniqueRuleCount {
                 if let count = update.uniqueRuleCount { record.admittedSourceRuleCount = Int32(count) }
