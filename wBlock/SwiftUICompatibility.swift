@@ -325,6 +325,15 @@ extension View {
     }
 
     @ViewBuilder
+    func columnsFormStyleCompat() -> some View {
+        if #available(iOS 16.0, macOS 13.0, *) {
+            formStyle(.columns)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
     func hiddenListRowSeparatorCompat() -> some View {
         if #available(iOS 15.0, macOS 13.0, *) {
             listRowSeparator(.hidden)

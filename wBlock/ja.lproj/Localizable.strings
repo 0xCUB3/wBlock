@@ -1119,3 +1119,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Reset…" = "リセット…";
 "Languages" = "言語";
+"Add Script" = "スクリプトを追加";
+"Paste or type filter rules." = "フィルタルールをペーストまたは入力してください。";
