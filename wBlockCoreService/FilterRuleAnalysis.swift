@@ -92,7 +92,40 @@ public struct FilterRuleAnalysis: Sendable {
             return trimmed[..<marker.lowerBound] + scriptletMarker
                 + "//scriptlet(\(quoted(name)), \(quoted(argument)), \(quoted(selector)))"
         }
+        // Any other functional pseudo-class Safari's CSS engine does not know
+        // would be merged into the site's shared hiding selector, and Safari
+        // rejects the merged selector whole. Run it as extended CSS instead.
+        if hasUnknownFunctionalPseudo(body) {
+            let extendedMarker = trimmed[marker] == "#@#" ? "#@?#" : "#?#"
+            return trimmed[..<marker.lowerBound] + extendedMarker + body + ")"
+        }
         return rule
+    }
+
+    /// Functional pseudo-classes WebKit compiles in content blocker selectors.
+    private static let nativeFunctionalPseudos: Set<String> = [
+        "has", "is", "not", "where", "matches", "lang", "dir",
+        "nth-child", "nth-last-child", "nth-of-type", "nth-last-of-type",
+    ]
+
+    private static func hasUnknownFunctionalPseudo<S: StringProtocol>(_ selector: S) -> Bool {
+        var quote: Character?
+        var name: String?
+        for character in selector {
+            if let open = quote { if character == open { quote = nil }; continue }
+            switch character {
+            case "\"", "'": quote = character; name = nil
+            case ":": name = ""
+            case "(":
+                if let pseudo = name?.lowercased(), !pseudo.isEmpty, !nativeFunctionalPseudos.contains(pseudo) { return true }
+                name = nil
+            default:
+                if name != nil {
+                    if character.isLetter || character.isNumber || character == "-" { name?.append(character) } else { name = nil }
+                }
+            }
+        }
+        return false
     }
 
     public static func isRuleLine(_ trimmed: String) -> Bool {
