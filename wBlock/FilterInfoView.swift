@@ -7,6 +7,9 @@ struct FilterInfoView: View {
     var onChangeCategory: ((FilterListCategory) -> Void)? = nil
     var isDownloading = false
     var onDownload: (() -> Void)? = nil
+    /// Presents an action's sheet from the window instead of this view. A
+    /// macOS popover would otherwise anchor the sheet to itself (#923).
+    var onAction: ((FilterContextMenuAction) -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var showingMetadataEditor = false
@@ -62,6 +65,12 @@ struct FilterInfoView: View {
         let local = FilterListLoader().localFilterHeader(liveFilter)
         cachedByteCount = local?.size
         cachedMetadata = ContentInfoMetadata.filterHeader(local?.header ?? "")
+    }
+
+    private func perform(_ action: FilterContextMenuAction, locally: () -> Void) {
+        guard let onAction else { return locally() }
+        dismiss()
+        onAction(action)
     }
 
     private var infoContent: some View {
@@ -143,16 +152,16 @@ struct FilterInfoView: View {
                 .disabled(isDownloading)
             }
             if actions.contains(.settings) {
-                InfoActionRow("Settings", systemImage: "gearshape") { showingSettings = true }
+                InfoActionRow("Settings", systemImage: "gearshape") { perform(.settings) { showingSettings = true } }
             }
             if actions.contains(.viewRules) {
-                InfoActionRow("View Rules", systemImage: "doc.text") { showingRules = true }
+                InfoActionRow("View Rules", systemImage: "doc.text") { perform(.viewRules) { showingRules = true } }
             }
             if actions.contains(.editRules) {
-                InfoActionRow("Edit Rules", systemImage: "pencil") { showingRules = true }
+                InfoActionRow("Edit Rules", systemImage: "pencil") { perform(.editRules) { showingRules = true } }
             }
             if actions.contains(.editInfo) {
-                InfoActionRow("Edit Info", systemImage: "square.and.pencil") { showingMetadataEditor = true }
+                InfoActionRow("Edit Info", systemImage: "square.and.pencil") { perform(.editInfo) { showingMetadataEditor = true } }
             }
             if actions.contains(.moveTo), let onChangeCategory {
                 InfoCategoryRow(

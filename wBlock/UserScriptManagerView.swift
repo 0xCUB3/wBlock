@@ -605,6 +605,10 @@ struct UserScriptManagerView: View {
             onChangeDisplayCategory: { moveScript(selection.id, to: $0) },
             onDownload: {
                 if let item = scripts.first(where: { $0.id == selection.id }) { downloadScript(item) }
+            },
+            onAction: macOSWindowAction { action in
+                let routed = SelectedUserScript(id: selection.id, action: action)
+                if action == .settings { selectedScriptSettings = routed } else { selectedScript = routed }
             }
         ).tallInfoSheetPresentationCompat()
     }
@@ -1232,6 +1236,9 @@ struct UserScriptInfoView: View {
     var userScriptManager: UserScriptManager
     var onChangeDisplayCategory: ((UserScriptDisplayCategory) -> Void)? = nil
     var onDownload: (() -> Void)? = nil
+    /// Presents an action's sheet from the window instead of this view. A
+    /// macOS popover would otherwise anchor the sheet to itself (#923).
+    var onAction: ((UserScriptContextMenuAction) -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @State private var script: UserScript?
@@ -1328,6 +1335,12 @@ struct UserScriptInfoView: View {
         }
     }
 
+    private func perform(_ action: UserScriptContextMenuAction, locally: () -> Void) {
+        guard let onAction else { return locally() }
+        dismiss()
+        onAction(action)
+    }
+
     @ViewBuilder
     private func actionList(for script: UserScript) -> some View {
         let isBuiltIn = userScriptManager.isDefaultUserScript(script)
@@ -1340,16 +1353,16 @@ struct UserScriptInfoView: View {
                 ScriptMatchPatternsButton(script: script) { showingPatterns = true }
             }
             if actions.contains(.settings) {
-                InfoActionRow("Settings", systemImage: "gearshape") { showingSettings = true }
+                InfoActionRow("Settings", systemImage: "gearshape") { perform(.settings) { showingSettings = true } }
             }
             if actions.contains(.viewContent) {
-                InfoActionRow("View Content", systemImage: "doc.text") { showingSource = true }
+                InfoActionRow("View Content", systemImage: "doc.text") { perform(.viewContent) { showingSource = true } }
             }
             if actions.contains(.editContent) {
-                InfoActionRow("Edit Content", systemImage: "pencil") { showingSource = true }
+                InfoActionRow("Edit Content", systemImage: "pencil") { perform(.editContent) { showingSource = true } }
             }
             if actions.contains(.editInfo) {
-                InfoActionRow("Edit Info", systemImage: "square.and.pencil") { showingMetadataEditor = true }
+                InfoActionRow("Edit Info", systemImage: "square.and.pencil") { perform(.editInfo) { showingMetadataEditor = true } }
             }
             if actions.contains(.download), let onDownload {
                 InfoActionRow("Download", systemImage: "arrow.down.circle") {

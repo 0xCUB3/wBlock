@@ -762,7 +762,14 @@ struct ContentView: View {
             filter: filter, filterManager: filterManager,
             onChangeCategory: filter.category == .foreign ? nil : { moveFilter(filter.id, to: $0) },
             isDownloading: downloadingFilterIDs.contains(filter.id),
-            onDownload: { confirmingExperimental(filter) { downloadFilter(filter) } }
+            onDownload: { confirmingExperimental(filter) { downloadFilter(filter) } },
+            onAction: macOSWindowAction { action in
+                switch action {
+                case .settings: selectedFilterSettings = filter
+                case .editInfo: editingCustomFilter = filter
+                default: selectedFilterRules = filter
+                }
+            }
         )
         .riskyFilterAlert($pendingRiskyEnable)
         .infoSheetPresentationCompat()
