@@ -69,6 +69,26 @@ enum UserScriptPersistence {
         return result
     }
 
+    /// Rebases an in-memory snapshot onto disk. An ID in `baseline` but missing
+    /// from `persisted` was deleted by another writer and must stay deleted.
+    static func rebase(
+        persisted: [Wblock_Data_UserScriptData],
+        incoming: [Wblock_Data_UserScriptData],
+        baseline: [Wblock_Data_UserScriptData]
+    ) -> [Wblock_Data_UserScriptData] {
+        let baselineByID = Dictionary(baseline.map { ($0.id, $0) }, uniquingKeysWith: { _, latest in latest })
+        var explicitEnabledStates: [String: Bool] = [:]
+        for script in incoming where baselineByID[script.id]?.isEnabled != script.isEnabled {
+            explicitEnabledStates[script.id] = script.isEnabled
+        }
+        return merge(
+            persisted: persisted,
+            incoming: incoming,
+            explicitEnabledStates: explicitEnabledStates,
+            allowedInsertIDs: Set(incoming.map(\.id)).subtracting(baselineByID.keys)
+        )
+    }
+
     static func merge(
         persisted: [Wblock_Data_UserScriptData],
         incoming: [Wblock_Data_UserScriptData],

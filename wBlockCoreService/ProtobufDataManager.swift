@@ -270,12 +270,11 @@ private func mergePersistedChanges(
         deletedIDs: explicitlyDeletedFilterIDs
     )
 
-    var explicitEnabledStates: [String: Bool] = [:]
-    let previousScriptsByID = Dictionary(uniqueKeysWithValues: previous.userScripts.map { ($0.id, $0) })
-    for script in snapshot.userScripts where previousScriptsByID[script.id]?.isEnabled != script.isEnabled {
-        explicitEnabledStates[script.id] = script.isEnabled
-    }
-    snapshot.userScripts = UserScriptPersistence.merge(persisted: persisted.userScripts, incoming: snapshot.userScripts, explicitEnabledStates: explicitEnabledStates)
+    snapshot.userScripts = UserScriptPersistence.rebase(
+        persisted: persisted.userScripts,
+        incoming: snapshot.userScripts,
+        baseline: previous.userScripts
+    )
 
     var whitelist = snapshot.whitelist
     mergeStringSet(
