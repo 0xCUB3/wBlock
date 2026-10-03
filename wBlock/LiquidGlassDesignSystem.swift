@@ -34,7 +34,7 @@ extension View {
 }
 
 /// List actions stay trailing in the order Update, Show Enabled, Search, Add.
-/// macOS gives each its own container; iOS groups Update with Show Enabled.
+/// Update and Show Enabled share a container; Search and Add get their own.
 struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
     @Binding var searchText: String
     @Binding var focusRequest: Bool
@@ -58,11 +58,11 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
         #if os(macOS)
         if #available(macOS 26.0, *) {
             content.toolbar {
-                ToolbarItem(placement: .primaryAction) { apply() }
-                    .toolbarVisibilityPriorityCompat(.high)
-                ToolbarSpacer(.fixed, placement: .primaryAction)
-                ToolbarItem(placement: .primaryAction) { filter }
-                    .toolbarVisibilityPriorityCompat(.high)
+                ToolbarItemGroup(placement: .primaryAction) {
+                    apply()
+                    filter
+                }
+                .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItem(placement: .primaryAction) {
                     InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
                         .padding(.leading, 4)
@@ -81,8 +81,10 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
             .toolbarBackground(.visible, for: .windowToolbar)
         } else {
             content.toolbar {
-                ToolbarItem(placement: .primaryAction) { apply() }
-                ToolbarItem(placement: .primaryAction) { filter }
+                ToolbarItemGroup(placement: .primaryAction) {
+                    apply()
+                    filter
+                }
                 ToolbarItem(placement: .primaryAction) {
                     ToolbarSearchField(text: $searchText, isExpanded: $focusRequest, prompt: searchPrompt)
                 }
