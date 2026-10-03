@@ -773,7 +773,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will reset all filters, userscripts, and preferences." = "這將重設所有過濾器、使用者腳本與偏好設定。";
 "Timed out" = "逾時";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield 可協助封鎖 Ad-Shield 在相符網站上重新插入的廣告。";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "攔截 Ad-Shield 在相符網站上、於過濾清單隱藏廣告之後重新插入的廣告。";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "讓廣告封鎖器快速對抗 Ad-Shield；它會在過濾清單隱藏廣告後，在相符的網站上重新插入廣告。";
 "Title" = "標題";
 "Title (optional)" = "標題（選填）";
 "Title is required." = "必須填寫名稱。";
@@ -927,7 +927,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "更改檔案";
 "Local imports won't auto-update; re-import to replace." = "本機匯入不會自動更新；請重新匯入以取代。";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra 可封鎖 Twitch 廣告，並處理複雜的反廣告封鎖情況。";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "使用 TwitchAdSolutions 的 vaft 腳本封鎖 Twitch 廣告。請勿與 AdGuard Extra 同時執行。";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "使用 TwitchAdSolutions 的 vaft 腳本封鎖 Twitch 廣告。";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "要停用必要過濾器嗎？";

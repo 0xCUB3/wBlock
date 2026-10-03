@@ -119,7 +119,7 @@ struct OnboardingView: View {
             ),
         "tinyshield":
             LocalizedStrings.text(
-                "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them.",
+                "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them.",
                 comment: "Default userscript description"
             ),
         "adguard popup blocker":

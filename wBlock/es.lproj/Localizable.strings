@@ -770,7 +770,7 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "This will reset all filters, userscripts, and preferences." = "Esto restablecerá todos los filtros, scripts de usuario y preferencias.";
 "Timed out" = "Se agotó el tiempo";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield ayuda a bloquear anuncios reinsertados por Ad-Shield en los sitios coincidentes.";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Bloquea los anuncios que Ad-Shield vuelve a insertar en los sitios coincidentes después de que las listas de filtros los oculten.";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Permite que los bloqueadores de anuncios resistan rápidamente a Ad-Shield, que vuelve a insertar anuncios en los sitios coincidentes después de que las listas de filtros los ocultan.";
 "Title" = "Título";
 "Title (optional)" = "Título (opcional)";
 "Title is required." = "El nombre es obligatorio.";
@@ -924,7 +924,7 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Change File" = "Cambiar archivo";
 "Local imports won't auto-update; re-import to replace." = "Las importaciones locales no se actualizan automáticamente; vuelve a importar para reemplazarlas.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra bloquea anuncios de Twitch y gestiona casos complicados de anti-bloqueo.";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "Bloquea anuncios de Twitch con el script vaft de TwitchAdSolutions. No lo ejecutes junto con AdGuard Extra.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Bloquea los anuncios de Twitch con el script vaft de TwitchAdSolutions.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "¿Desactivar el filtro esencial?";

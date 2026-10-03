@@ -770,7 +770,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "This will reset all filters, userscripts, and preferences." = "Bu işlem tüm filtreleri, kullanıcı betiklerini ve tercihleri sıfırlayacaktır.";
 "Timed out" = "Zaman aşımı";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield, Ad-Shield tarafından eşleşen sitelerde yeniden eklenen reklamları engellemeye yardımcı olur.";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Filtrelerin gizlediği ancak Ad-Shield'ın sitelere geri getirdiği reklamları engeller.";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Reklam engelleyicilerin, filtre listeleri gizledikten sonra eşleşen sitelere reklamları yeniden ekleyen Ad-Shield'a hızla direnmesini sağlar.";
 "Title" = "Başlık";
 "Title (optional)" = "Başlık (isteğe bağlı)";
 "Title is required." = "Ad gereklidir.";
@@ -924,7 +924,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Change File" = "Dosyayı değiştir";
 "Local imports won't auto-update; re-import to replace." = "Yerelden içe aktarmalar otomatik güncellenmez; güncellemek için yeniden içe aktarın.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra, Twitch reklamlarını engeller ve karmaşık reklam engelleyici karşıtı durumları çözer.";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "TwitchAdSolutions'ın vaft betiğiyle Twitch reklamlarını engeller. AdGuard Extra ile birlikte çalıştırmayın.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Twitch reklamlarını TwitchAdSolutions'ın vaft betiğiyle engeller.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Temel filtre devre dışı bırakılsın mı?";

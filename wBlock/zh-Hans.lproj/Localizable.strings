@@ -770,7 +770,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will reset all filters, userscripts, and preferences." = "这将重置所有过滤器、用户脚本和偏好设置。";
 "Timed out" = "超时";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield 可帮助拦截 Ad-Shield 在匹配站点上重新插入的广告。";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "拦截 Ad-Shield 在匹配网站上、于过滤列表隐藏广告之后重新插入的广告。";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "让广告拦截器快速对抗 Ad-Shield；它会在过滤列表隐藏广告后，在匹配的网站上重新插入广告。";
 "Title" = "标题";
 "Title (optional)" = "标题（可选）";
 "Title is required." = "必须填写名称。";
@@ -924,7 +924,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "更改文件";
 "Local imports won't auto-update; re-import to replace." = "本地导入不会自动更新；请重新导入以替换。";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra 可拦截 Twitch 广告，并处理复杂的反广告拦截情况。";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "使用 TwitchAdSolutions 的 vaft 脚本拦截 Twitch 广告。请勿与 AdGuard Extra 同时运行。";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "使用 TwitchAdSolutions 的 vaft 脚本拦截 Twitch 广告。";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "要停用必要过滤器吗？";

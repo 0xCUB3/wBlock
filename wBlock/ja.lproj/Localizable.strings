@@ -773,7 +773,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will reset all filters, userscripts, and preferences." = "これにより、全てのフィルター、ユーザースクリプト、設定がリセットされます。";
 "Timed out" = "タイムアウト";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield は、該当するサイト上で Ad-Shield によって再挿入された広告のブロックを支援します。";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "フィルターリストで非表示にした広告を、該当サイトで Ad-Shield が再挿入するのをブロックします。";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "フィルターリストで非表示にした広告を該当サイトで再挿入する Ad-Shield に、広告ブロッカーがすばやく対抗できるようにします。";
 "Title" = "タイトル";
 "Title (optional)" = "タイトル（任意）";
 "Title is required." = "名前が必要です。";
@@ -923,7 +923,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "ファイルを変更";
 "Local imports won't auto-update; re-import to replace." = "ローカルインポートは自動更新されません。置き換えるには再インポートしてください。";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard ExtraはTwitchの広告をブロックし、複雑な広告ブロック対策に対応します。";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "TwitchAdSolutionsのvaftスクリプトでTwitchの広告をブロックします。AdGuard Extraと一緒に実行しないでください。";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "TwitchAdSolutions の vaft スクリプトで Twitch の広告をブロックします。";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "必須フィルタを無効にしますか？";

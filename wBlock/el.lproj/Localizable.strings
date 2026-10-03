@@ -773,7 +773,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will reset all filters, userscripts, and preferences." = "Αυτό θα επαναφέρει όλα τα φίλτρα, τον κώδικα χρήστη και τις προτιμήσεις.";
 "Timed out" = "Έληξε ο χρόνος";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "Το tinyShield βοηθά στον αποκλεισμό διαφημίσεων που επανεισάγονται από το Ad-Shield σε αντίστοιχους ιστότοπους.";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Αποκλείει διαφημίσεις που το Ad-Shield επαναφέρει σε αντίστοιχους ιστότοπους αφού τις αποκρύψουν οι λίστες φίλτρων.";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Επιτρέπει στους αποκλειστές διαφημίσεων να αντιστέκονται γρήγορα στο Ad-Shield, το οποίο επαναφέρει διαφημίσεις σε αντίστοιχους ιστότοπους αφού τις αποκρύψουν οι λίστες φίλτρων.";
 "Title" = "Τίτλος";
 "Title (optional)" = "Τίτλος (προαιρετικό)";
 "Title is required." = "Απαιτείται όνομα.";
@@ -927,7 +927,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "Αλλαγή αρχείου";
 "Local imports won't auto-update; re-import to replace." = "Οι τοπικές εισαγωγές δεν ενημερώνονται αυτόματα· εισαγάγετε ξανά για αντικατάσταση.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "Το AdGuard Extra αποκλείει διαφημίσεις στο Twitch και αντιμετωπίζει σύνθετες περιπτώσεις anti-adblock.";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "Αποκλείει διαφημίσεις στο Twitch με τον κώδικα vaft του TwitchAdSolutions. Μην το εκτελείτε μαζί με το AdGuard Extra.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Αποκλείει τις διαφημίσεις του Twitch με το σενάριο vaft από το TwitchAdSolutions.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Απενεργοποίηση βασικού φίλτρου;";

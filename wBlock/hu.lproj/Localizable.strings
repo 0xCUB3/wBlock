@@ -773,7 +773,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "This will reset all filters, userscripts, and preferences." = "Ez visszaállít minden szűrőt, felhasználói szkriptet és beállítást.";
 "Timed out" = "Időtúllépés";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "A tinyShield segít blokkolni az Ad-Shield által a megfelelő oldalakra újra beillesztett hirdetéseket.";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Blokkolja azokat a hirdetéseket, amelyeket az Ad-Shield a megfelelő oldalakra újra beilleszt, miután a szűrőlisták elrejtették őket.";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Lehetővé teszi, hogy a reklámblokkolók gyorsan ellenálljanak az Ad-Shieldnek, amely a szűrőlisták által elrejtett hirdetéseket visszahelyezi az érintett oldalakon.";
 "Title" = "Cím";
 "Title (optional)" = "Cím (opcionális)";
 "Title is required." = "A név megadása kötelező.";
@@ -927,7 +927,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Change File" = "Fájl módosítása";
 "Local imports won't auto-update; re-import to replace." = "A helyi importok nem frissülnek automatikusan; az új importálással cserélhetők.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "Az AdGuard Extra blokkolja a Twitch-hirdetéseket, és kezeli a bonyolult reklámblokkolás-ellenes eseteket.";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "Twitch-hirdetések blokkolása a TwitchAdSolutions vaft parancsával. Ne futtasd együtt az AdGuard Extra bővítménnyel.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Blokkolja a Twitch-hirdetéseket a TwitchAdSolutions vaft szkriptjével.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Letiltja az alapvető szűrőt?";

@@ -770,7 +770,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will reset all filters, userscripts, and preferences." = "This will reset all filters, userscripts, and preferences.";
 "Timed out" = "Timed out";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them.";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them.";
 "Title" = "Title";
 "Title (optional)" = "Title (optional)";
 "Title is required." = "Name is required.";
@@ -924,7 +924,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "Change File";
 "Local imports won't auto-update; re-import to replace." = "Local imports won't auto-update; re-import to replace.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases.";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Blocks Twitch ads with the vaft script from TwitchAdSolutions.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Disable Essential Filter?";

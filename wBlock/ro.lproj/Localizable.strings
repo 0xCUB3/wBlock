@@ -770,7 +770,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "This will reset all filters, userscripts, and preferences." = "Acest lucru va reseta toate filtrele, scripturile utilizator și preferințele.";
 "Timed out" = "Timp expirat";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield ajută la blocarea reclamelor reintroduse de Ad-Shield pe site-urile corespunzătoare.";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "Blochează reclamele pe care Ad-Shield le reintroduce pe site-urile corespunzătoare după ce listele de filtre le-au ascuns.";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Permite blocantelor de reclame să reziste rapid la Ad-Shield, care reinserează reclame pe site-urile corespunzătoare după ce listele de filtre le ascund.";
 "Title" = "Titlu";
 "Title (optional)" = "Titlu (opțional)";
 "Title is required." = "Numele este obligatoriu.";
@@ -924,7 +924,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Change File" = "Schimbă fișierul";
 "Local imports won't auto-update; re-import to replace." = "Importurile locale nu se actualizează automat; importă din nou pentru înlocuire.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra blochează reclamele Twitch și gestionează cazuri complicate de anti-adblock.";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "Blochează reclamele de pe Twitch cu scriptul vaft de la TwitchAdSolutions. Nu-l rula împreună cu AdGuard Extra.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Blochează reclamele Twitch cu scriptul vaft din TwitchAdSolutions.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Dezactivezi filtrul esențial?";

@@ -773,7 +773,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will reset all filters, userscripts, and preferences." = "모든 필터, 유저스크립트 및 환경설정이 초기화됩니다.";
 "Timed out" = "시간 초과";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield는 해당 사이트에서 Ad-Shield가 다시 삽입한 광고를 차단하는 데 도움이 됩니다.";
-"Blocks ads that Ad-Shield puts back on matching sites after filter lists hide them." = "필터 목록이 숨긴 광고를 해당 사이트에서 Ad-Shield가 다시 넣지 못하게 차단합니다.";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "필터 목록이 숨긴 광고를 해당 사이트에 다시 삽입하는 Ad-Shield에 광고 차단기가 빠르게 대응할 수 있게 합니다.";
 "Title" = "제목";
 "Title (optional)" = "제목 (선택 사항)";
 "Title is required." = "이름이 필요합니다.";
@@ -927,7 +927,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "파일 변경";
 "Local imports won't auto-update; re-import to replace." = "로컬 가져오기는 자동으로 업데이트되지 않습니다. 교체하려면 다시 가져오세요.";
 "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra는 Twitch 광고를 차단하고 복잡한 안티 광고 차단 사례를 처리합니다.";
-"Blocks Twitch ads with the vaft script from TwitchAdSolutions. Do not run it together with AdGuard Extra." = "TwitchAdSolutions의 vaft 스크립트로 Twitch 광고를 차단합니다. AdGuard Extra와 함께 실행하지 마세요.";
+"Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "TwitchAdSolutions의 vaft 스크립트로 Twitch 광고를 차단합니다.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "필수 필터를 비활성화할까요?";
