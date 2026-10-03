@@ -1150,3 +1150,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Reset…" = "重置…";
 "Languages" = "语言";
+"Add Script" = "添加脚本";
+"Paste or type filter rules." = "粘贴或输入过滤规则。";

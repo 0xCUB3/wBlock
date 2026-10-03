@@ -1150,3 +1150,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Reset…" = "Сбросить…";
 "Languages" = "Языки";
+"Add Script" = "Добавить скрипт";
+"Paste or type filter rules." = "Вставьте или введите правила фильтрации.";

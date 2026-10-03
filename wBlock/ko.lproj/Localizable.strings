@@ -1150,3 +1150,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Reset…" = "초기화…";
 "Languages" = "언어";
+"Add Script" = "스크립트 추가";
+"Paste or type filter rules." = "필터 규칙을 붙여넣거나 입력하세요.";

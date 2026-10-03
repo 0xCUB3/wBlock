@@ -1150,3 +1150,5 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 
 "Reset…" = "Restablecer…";
 "Languages" = "Idiomas";
+"Add Script" = "Añadir script";
+"Paste or type filter rules." = "Pega o escribe reglas de filtro.";

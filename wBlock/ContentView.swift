@@ -1397,23 +1397,18 @@ struct AddFilterListView: View {
         validationState(for: urlInput)
     }
 
-		var body: some View {
-		    Group {
-		        #if os(iOS)
-		            AddContentIOSSheet(
-                    title: "Add Filter List",
-                    isLoading: isSaving,
-                    buttonTitle: { LocalizedStringKey(addButtonTitle) },
-                    isSubmitDisabled: !canSubmit || isSaving || isImportingURLList || (isReviewingURLs && isFetchingURLMetadata),
-                    onDismiss: { dismiss() },
-                    onSubmit: submit
-                ) {
-                    addTabs
-                }
-                #elseif os(macOS)
-	            macosBody
-	        #endif
-	    }
+    var body: some View {
+        AddContentSheet(
+            title: "Add Filter List",
+            mode: $addMode,
+            isLoading: isSaving,
+            submitTitle: LocalizedStringKey(addButtonTitle),
+            isSubmitDisabled: !canSubmit || isSaving || isImportingURLList || (isReviewingURLs && isFetchingURLMetadata),
+            onDismiss: { dismiss() },
+            onSubmit: submit
+        ) { mode in
+            modeContent(mode)
+        }
         .onChangeCompat(of: urlInput) { oldValue, newValue in
             isReviewingURLs = false
             let normalized: String
@@ -1497,163 +1492,64 @@ struct AddFilterListView: View {
 	        }
 	    }
 
-	    #if os(macOS)
-        private var macosBody: some View {
-            AddContentMacSheet(
-                title: "Add Filter List",
-                isLoading: isSaving,
-                minHeight: addMode == .paste ? 620 : 520,
-                onDismiss: { dismiss() },
-                isDismissDisabled: isSaving
-            ) {
-                modePickerCard
-                macosModeContent
-            } action: {
-                macosAddButton
-            }
-        }
-
-	        private var macosAddButton: some View {
-	            Button(action: submit) {
-	                AddContentSubmitLabel(title: LocalizedStringKey(addButtonTitle), isLoading: isSaving, isProminent: true)
-	            }
-	            .primaryActionButtonStyle()
-	            .disabled(!canSubmit || isSaving || isImportingURLList || (isReviewingURLs && isFetchingURLMetadata))
-	            .keyboardShortcut(.defaultAction)
-	        }
-
-	        private var modePickerCard: some View {
-	            AddContentModePicker(selection: $addMode)
-	        }
-
-	        @ViewBuilder
-	        private var macosModeContent: some View {
-	            switch addMode {
-	            case .url:
-	                VStack(alignment: .leading, spacing: 16) {
-	                    urlCard
-	                    filterRequirementsPanel
-	                }
-	            case .paste:
-                        VStack(alignment: .leading, spacing: 16) {
-                            textStep
-                            filterTextRequirementsPanel
-                        }
-                    case .file:
-                        VStack(alignment: .leading, spacing: 16) {
-                            macosFileCard
-                            filterFileRequirementsPanel
-                        }
-	            }
-	        }
-
-
-	        private var macosFileCard: some View {
-	            AddContentCard {
-                    fileSelectionButton
-                    if stagedFile != nil {
-                        userListMetaFields
-                    }
-	            }
-	        }
-
-    #endif
-
-        private var fileSelectionButton: some View {
-            AddContentFileSelectionButton(
-                filename: stagedFile?.filename,
-                isLoading: isStagingFile,
-                isDisabled: isSaving
-            ) {
-                importsURLList = false
-                showingFileImporter = true
-                importErrorMessage = nil
-            }
-        }
-
-	    private var addTabs: some View {
-	        TabView(selection: $addMode) {
-	            urlTab
-	                .tag(AddMode.url)
-	                .tabItem { Label("URL", systemImage: "link") }
-
-	            pasteTab
-	                .tag(AddMode.paste)
-	                .tabItem { Label("Text", systemImage: "text.alignleft") }
-
-	            fileTab
-	                .tag(AddMode.file)
-	                .tabItem { Label("File", systemImage: "doc") }
-	        }
-	    }
-
-    private var urlTab: some View {
-        AddContentPanelLayout {
-            urlCard
-            filterRequirementsPanel
-        }
-    }
-
-    private var pasteTab: some View {
-        AddContentPanelLayout {
-            textStep
-            filterTextRequirementsPanel
-        }
-    }
-
-    /// Single and bulk URLs share a review step with real, editable metadata.
-    private var urlCard: some View {
-        AddContentCard {
-            if isReviewingURLs {
-                Button("Back") { isReviewingURLs = false; metadataFetchTask?.cancel(); isFetchingURLMetadata = false }
-                urlMetadataFields
-            } else {
-                urlEntryModePicker
-                AddContentField(title: urlFieldTitle) { urlInputEditor }
-            }
-            if !isSaving { urlFooterMessage }
-        }
-    }
-
     @ViewBuilder
-    private var textStep: some View {
-        if isReviewingText {
-            AddContentCard {
-                Button("Back") { isReviewingText = false }
-                userListMetaFields
+    private func modeContent(_ mode: AddMode) -> some View {
+        switch mode {
+        case .url:
+            if isReviewingURLs {
+                Section {
+                    AddContentBackButton {
+                        isReviewingURLs = false
+                        metadataFetchTask?.cancel()
+                        isFetchingURLMetadata = false
+                    }
+                    if isFetchingURLMetadata { ProgressView().controlSize(.small) }
+                } footer: {
+                    if !isSaving { urlFooterMessage }
+                }
+                urlMetadataSections
+            } else {
+                Section {
+                    urlEntryModePicker
+                    urlInputEditor
+                } footer: {
+                    if !isSaving { urlFooterMessage }
+                }
             }
-        } else {
-            filterSourceCard
-        }
-    }
-
-    private var fileTab: some View {
-        AddContentPanelLayout {
-            AddContentCard {
-                fileSelectionButton
+        case .paste:
+            if isReviewingText {
+                Section {
+                    AddContentBackButton { isReviewingText = false }
+                }
+                Section { userListMetaFields }
+            } else {
+                AddContentSourceSection(title: "Rules", placeholder: "Paste or type filter rules.",
+                    isEmpty: pastedRules.isEmpty, isDisabled: isSaving, onPaste: pasteRulesFromClipboard,
+                    onOpenEditor: {
+                        rulesEditorController.replaceText(pastedRules, markClean: true)
+                        isShowingRulesEditor = true
+                    }) {
+                        SyntaxHighlightingTextView(text: $pastedRules)
+                    } footer: {
+                        AddContentNote(text: "Local imports won't auto-update; re-import to replace.")
+                    }
+            }
+        case .file:
+            Section {
+                AddContentFileSelectionButton(
+                    filename: stagedFile?.filename,
+                    isLoading: isStagingFile,
+                    isDisabled: isSaving
+                ) {
+                    importsURLList = false
+                    showingFileImporter = true
+                    importErrorMessage = nil
+                }
                 if stagedFile != nil { userListMetaFields }
+            } footer: {
+                AddContentNote(text: "Local imports won't auto-update; re-import to replace.", error: importErrorMessage)
             }
-            filterFileRequirementsPanel
-            if let importErrorMessage { Text(importErrorMessage).foregroundStyle(.orange) }
         }
-    }
-
-    private var filterSourceCard: some View {
-        AddContentSourceCard(title: "Rules", isDisabled: isSaving, onPaste: pasteRulesFromClipboard,
-            onOpenEditor: {
-                rulesEditorController.replaceText(pastedRules, markClean: true)
-                isShowingRulesEditor = true
-            }) {
-                SyntaxHighlightingTextView(text: $pastedRules)
-            }
-    }
-
-    private var urlFieldTitle: LocalizedStringKey {
-        urlEntryMode == .single ? "URL" : "URLs"
-    }
-
-    private var pasteURLButtonTitle: LocalizedStringKey {
-        urlEntryMode == .single ? "Paste URL" : "Paste URLs"
     }
 
     private var urlEntryModePicker: some View {
@@ -1662,69 +1558,41 @@ struct AddFilterListView: View {
             Text("Bulk URLs").tag(URLEntryMode.bulk)
         }
         .pickerStyle(.segmented)
+        .labelsHidden()
         .disabled(isSaving)
     }
 
-    private var urlMetadataFields: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 6) {
-                Text("Names and descriptions")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                if isFetchingURLMetadata {
-                    ProgressView().controlSize(.small)
-                }
-            }
-            ForEach(newURLs, id: \.absoluteString) { url in
-                AddContentURLMetadataCard(
-                    url: url,
-                    name: nameBinding(for: url),
-                    description: descriptionBinding(for: url),
-                    category: Binding(
-                        get: { urlCategories[url.absoluteString] ?? selectedCategory },
-                        set: { urlCategories[url.absoluteString] = $0 }
-                    ),
-                    categories: FilterListCategory.userListCategories,
-                    languages: Binding(
-                        get: { urlLanguages[url.absoluteString] ?? [] },
-                        set: { urlLanguages[url.absoluteString] = $0 }
-                    )
+    private var urlMetadataSections: some View {
+        ForEach(newURLs, id: \.absoluteString) { url in
+            AddContentURLMetadataSection(
+                url: url,
+                name: nameBinding(for: url),
+                description: descriptionBinding(for: url),
+                category: Binding(
+                    get: { urlCategories[url.absoluteString] ?? selectedCategory },
+                    set: { urlCategories[url.absoluteString] = $0 }
+                ),
+                categories: FilterListCategory.userListCategories,
+                languages: Binding(
+                    get: { urlLanguages[url.absoluteString] ?? [] },
+                    set: { urlLanguages[url.absoluteString] = $0 }
                 )
-            }
+            )
         }
     }
 
-    private var filterTextRequirementsPanel: some View {
-        AddContentRequirementsPanel(requirements: AddContentRequirement.localImport(fromFile: false))
-    }
-
-    private var filterFileRequirementsPanel: some View {
-        AddContentRequirementsPanel(requirements: AddContentRequirement.localImport(fromFile: true))
-    }
-
-	    private var filterRequirementsPanel: some View {
-        AddContentRequirementsPanel(
-            requirements: [
-                AddContentRequirement(systemImage: "link", text: "Starts with http:// or https://"),
-                AddContentRequirement(systemImage: "globe", text: "Include a host name"),
-                AddContentRequirement(systemImage: "checkmark.circle", text: "Do not use a userscript URL ending in .js, .mjs, or .cjs")
-            ]
-        )
-    }
-
-	    private var urlInputEditor: some View {
+    private var urlInputEditor: some View {
         AddContentURLInput(
             text: $urlInput,
             isFocused: $urlFieldIsFocused,
             isBulk: urlEntryMode == .bulk,
-            singlePlaceholder: { Text("https://example.com/filter.txt") },
-            bulkPlaceholder: { Text("Paste one or more filter URLs, one per line.") },
-            accessibilityLabel: urlEntryMode == .single ? "URL" : "URLs",
+            placeholder: urlEntryMode == .single
+                ? Text(verbatim: "https://example.com/filter.txt")
+                : Text("Paste one or more filter URLs, one per line."),
+            label: urlEntryMode == .single ? "URL" : "URLs",
             isDisabled: isSaving,
             onPaste: pasteURLsFromClipboard,
-            pasteTitle: pasteURLButtonTitle,
-            pasteButtonUsesRow: false,
-            macPlaceholderPadding: 0,
+            pasteTitle: urlEntryMode == .single ? "Paste URL" : "Paste URLs",
             onImportFile: { importsURLList = true; showingFileImporter = true },
             isImportingFile: isImportingURLList
         )

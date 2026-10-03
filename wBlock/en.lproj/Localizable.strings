@@ -1159,3 +1159,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Reset…" = "Reset…";
 "Languages" = "Languages";
+"Add Script" = "Add Script";
+"Paste or type filter rules." = "Paste or type filter rules.";

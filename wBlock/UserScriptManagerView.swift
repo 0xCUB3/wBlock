@@ -1580,23 +1580,18 @@ private struct UserScriptMetadataSheet: View {
             }
             .padding(16)
             Divider()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+            Form {
+                Section {
                     AddContentMetadataFields(name: $editedName, description: $editedDescription,
                         category: $selectedCategory, categories: FilterListCategory.userScriptCategories)
-                    AddContentField(title: "Author") {
-                        TextField("Author", text: $editedAuthor).textFieldStyle(.roundedBorder)
-                    }
-                    AddContentField(title: "Homepage") {
-                        TextField("Homepage", text: $editedHomepage).textFieldStyle(.roundedBorder)
-                    }
-                    if let validationMessage {
-                        Text(validationMessage).foregroundStyle(.red).font(.caption)
-                    }
+                    TextField("Author", text: $editedAuthor)
+                    TextField("Homepage", text: $editedHomepage)
+                } footer: {
+                    if let validationMessage { Text(validationMessage).foregroundStyle(.red) }
                 }
-                .padding(20)
-                .disabled(isSaving)
             }
+            .groupedFormStyleCompat()
+            .disabled(isSaving)
         }
         #if os(macOS)
         .frame(width: 460, height: 360)
@@ -1914,23 +1909,23 @@ struct AddUserScriptView: View {
     }
 
     var body: some View {
-        Group {
-            #if os(iOS)
-            iosBody
-            #elseif os(macOS)
-            macosBody
-            #endif
+        AddContentSheet(
+            title: "Add Script",
+            mode: $addMode,
+            isLoading: isAdding,
+            submitTitle: LocalizedStringKey(addURLButtonTitle),
+            isSubmitDisabled: !canSubmit || isAdding || isImportingURLList,
+            onDismiss: { dismiss() },
+            onSubmit: submit
+        ) { mode in
+            modeContent(mode)
         }
-        .interactiveDismissDisabled(isAdding)
         #if os(macOS)
         .onAppear {
             urlFieldFocused = addMode == .url
         }
         .onChangeCompat(of: addMode) { _, newValue in
             urlFieldFocused = newValue == .url
-            if newValue == .text {
-                scheduleEditorMetadataRefresh()
-            }
         }
         #endif
         .onChangeCompat(of: urlInput) { _, newValue in
@@ -1956,6 +1951,7 @@ struct AddUserScriptView: View {
         .onChangeCompat(of: addMode) { _, mode in
             urlListImportGeneration += 1
             isImportingURLList = false
+            if mode == .text { scheduleEditorMetadataRefresh() }
             if mode == .url { fetchURLMetadata() } else {
                 urlMetadataTask?.cancel()
                 urlMetadataGeneration += 1
@@ -2010,270 +2006,24 @@ struct AddUserScriptView: View {
             }
         }
     }
-
-    #if os(iOS)
-    private var iosBody: some View {
-        AddContentIOSSheet(
-            title: "Add Userscript or Userstyle",
-            isLoading: isAdding,
-            buttonTitle: { LocalizedStringKey(addURLButtonTitle) },
-            isSubmitDisabled: !canSubmit || isAdding || isImportingURLList,
-            onDismiss: { dismiss() },
-            onSubmit: submit
-        ) {
-            addTabs
-        }
-    }
-    #endif
-
-    private var addTabs: some View {
-        TabView(selection: $addMode) {
-            urlTab
-                .tag(AddMode.url)
-                .tabItem { Label("URL", systemImage: "link") }
-
-            textTab
-                .tag(AddMode.text)
-                .tabItem { Label("Text", systemImage: "text.alignleft") }
-
-            fileTab
-                .tag(AddMode.file)
-                .tabItem { Label("File", systemImage: "doc") }
-        }
-    }
-
-    private var urlTab: some View {
-        AddContentPanelLayout {
-            AddContentCard {
-                urlFormFields
-                validationMessage
-            }
-            requirementsPanel
-        }
-    }
-
-    private var textTab: some View {
-        AddContentPanelLayout {
-            textStep
-            editorRequirementsPanel
-        }
-        .task {
-            scheduleEditorMetadataRefresh()
-        }
-    }
-
-    private var fileTab: some View {
-        AddContentPanelLayout {
-            AddContentCard {
-                fileSelectionButton
-                if stagedFile != nil {
-                    userScriptMetaFields
-                }
-                fileImportMessage
-            }
-            fileRequirementsPanel
-        }
-    }
-
-    private var fileSelectionButton: some View {
-        AddContentFileSelectionButton(
-            filename: stagedFile?.filename,
-            isLoading: isStagingFile,
-            isDisabled: isAdding
-        ) {
-            importsURLList = false
-            showingFileImporter = true
-            fileImportError = nil
-        }
-    }
-
-    private var simpleTextContent: some View {
-        AddContentSourceCard(title: "Script Content", isDisabled: isAdding,
-            onPaste: pasteScriptFromClipboard, onOpenEditor: openEditorSheet) {
-                if #available(iOS 16.0, macOS 13.0, *) {
-                    scriptTextEditor.scrollContentBackground(.hidden)
-                } else {
-                    scriptTextEditor
-                }
-            }
-    }
-
     @ViewBuilder
-    private var textStep: some View {
-        if isReviewingText {
-            AddContentCard {
-                Button("Back") { isReviewingText = false }
-                userScriptMetaFields
-            }
-        } else {
-            simpleTextContent
-        }
-    }
-
-    private var scriptTextEditor: some View {
-        TextEditor(text: $textInput)
-            .font(.system(.body, design: .monospaced))
-            .autocorrectionDisabled()
-            .focused($textInputFocused)
-            .frame(minHeight: 260, idealHeight: 320, maxHeight: 500)
-            .accessibilityLabel(Text("Script Content"))
-    }
-
-    #if os(macOS)
-    private var macosBody: some View {
-        AddContentMacSheet(
-            title: "Add Userscript or Userstyle",
-            isLoading: isAdding,
-            minHeight: 500,
-            onDismiss: { dismiss() },
-            isDismissDisabled: isAdding
-        ) {
-            modePickerCard
-            macosModeContent
-        } action: {
-            addButton
-        }
-    }
-
-    private var modePickerCard: some View {
-        AddContentModePicker(selection: $addMode)
-    }
-
-    @ViewBuilder
-    private var macosModeContent: some View {
-        switch addMode {
+    private func modeContent(_ mode: AddMode) -> some View {
+        switch mode {
         case .url:
-            VStack(alignment: .leading, spacing: 16) {
-                macosURLCard
-                requirementsPanel
-            }
-        case .text:
-            VStack(alignment: .leading, spacing: 16) {
-                textStep
-                editorRequirementsPanel
-            }
-        case .file:
-            VStack(alignment: .leading, spacing: 16) {
-                macosFileCard
-                fileRequirementsPanel
-            }
-        }
-    }
-
-    private var macosURLCard: some View {
-        AddContentCard {
-            urlFormFields
-
-            HStack {
-                Spacer()
-                validationBadge
-            }
-            validationMessage
-        }
-    }
-
-
-    private var macosFileCard: some View {
-        AddContentCard {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Import File")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text("Local imports won't auto-update; re-import to replace.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            fileSelectionButton
-            if stagedFile != nil {
-                userScriptMetaFields
-            }
-            if let fileImportError {
-                Text(fileImportError)
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            }
-        }
-    }
-
-    #endif
-
-    private var metadataRequirementText: LocalizedStringKey {
-        "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns."
-    }
-
-    private var requirementsPanel: some View {
-        AddContentRequirementsPanel(requirements: [
-            AddContentRequirement(systemImage: "link", text: "Starts with http:// or https://"),
-            AddContentRequirement(systemImage: "doc.text", text: "Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss"),
-            AddContentRequirement(systemImage: "globe", text: "Include a host name"),
-            AddContentRequirement(systemImage: "doc.badge.gearshape", text: metadataRequirementText)
-        ])
-    }
-
-    private var editorRequirementsPanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Local imports won't auto-update; re-import to replace.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            AddContentRequirementsPanel(requirements: AddContentRequirement.localImport(fromFile: false) + [
-                AddContentRequirement(systemImage: "doc.badge.gearshape", text: metadataRequirementText)
-            ])
-            if let editorImportError {
-                Text(editorImportError)
-                    .font(.footnote)
-                    .foregroundStyle(.orange)
-            }
-        }
-    }
-
-    private var userScriptMetaFields: some View {
-        AddContentMetadataFields(name: $stagedName, description: $stagedDescription,
-                                 category: $selectedCategory, categories: FilterListCategory.userScriptCategories,
-                                  categoryName: { $0.userScriptCategoryName })
-    }
-
-    private var fileImportMessage: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Local imports won't auto-update; re-import to replace.")
-                .foregroundStyle(.secondary)
-            if let fileImportError {
-                Text(fileImportError)
-                    .foregroundStyle(.orange)
-            }
-        }
-        .font(.footnote)
-    }
-
-    private var fileRequirementsPanel: some View {
-        AddContentRequirementsPanel(requirements: AddContentRequirement.localImport(fromFile: true) + [
-            AddContentRequirement(systemImage: "doc.badge.gearshape", text: metadataRequirementText)
-        ])
-    }
-
-    private var addURLButtonTitle: String {
-        if (addMode == .url && !isReviewingURLs) || (addMode == .text && !isReviewingText) { return "Next" }
-        return addMode == .url && parsedURLs.count > 1 ? "Add URLs" : "Add"
-    }
-
-    private var urlFormFields: some View {
-        Group {
             if isReviewingURLs {
-                Button("Back") { isReviewingURLs = false; urlMetadataTask?.cancel(); isFetchingURLMetadata = false }
-            } else {
-                Picker("URL entry mode", selection: $urlEntryMode) {
-                    Text("Single URL").tag(URLEntryMode.single)
-                    Text("Bulk URLs").tag(URLEntryMode.bulk)
+                Section {
+                    AddContentBackButton {
+                        isReviewingURLs = false
+                        urlMetadataTask?.cancel()
+                        isFetchingURLMetadata = false
+                    }
+                    if isFetchingURLMetadata { ProgressView().controlSize(.small) }
+                } footer: {
+                    validationMessage
                 }
-                .pickerStyle(.segmented)
-                .disabled(isAdding)
-                urlInputEditor
-            }
-            if isReviewingURLs {
-                if isFetchingURLMetadata { ProgressView().controlSize(.small) }
                 ForEach(parsedURLs, id: \.absoluteString) { url in
                     let key = url.absoluteString
-                    AddContentURLMetadataCard(
+                    AddContentURLMetadataSection(
                         url: url,
                         name: Binding(get: { urlNames[key] ?? automaticURLName(for: url) }, set: { urlNames[key] = $0 }),
                         description: Binding(get: { urlDescriptions[key] ?? urlMetadata[key]?.description ?? "" }, set: { urlDescriptions[key] = $0 }),
@@ -2282,8 +2032,72 @@ struct AddUserScriptView: View {
                         categoryName: { $0.userScriptCategoryName }
                     )
                 }
+            } else {
+                Section {
+                    Picker("URL entry mode", selection: $urlEntryMode) {
+                        Text("Single URL").tag(URLEntryMode.single)
+                        Text("Bulk URLs").tag(URLEntryMode.bulk)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .disabled(isAdding)
+                    urlInputEditor
+                } footer: {
+                    validationMessage
+                }
+            }
+        case .text:
+            if isReviewingText {
+                Section {
+                    AddContentBackButton { isReviewingText = false }
+                }
+                Section { userScriptMetaFields } footer: { AddContentNote(error: editorImportError) }
+            } else {
+                AddContentSourceSection(title: "Script Content",
+                    placeholder: "Paste or write a userscript or userstyle with a standard metadata block.",
+                    isEmpty: textInput.isEmpty, isDisabled: isAdding,
+                    onPaste: pasteScriptFromClipboard, onOpenEditor: openEditorSheet) {
+                        TextEditor(text: $textInput)
+                            .hideEditorBackgroundCompat()
+                            .font(.system(.body, design: .monospaced))
+                            .autocorrectionDisabled()
+                            .focused($textInputFocused)
+                            .accessibilityLabel(Text("Script Content"))
+                    } footer: {
+                        AddContentNote(text: metadataRequirementText, error: editorImportError)
+                    }
+            }
+        case .file:
+            Section {
+                AddContentFileSelectionButton(
+                    filename: stagedFile?.filename,
+                    isLoading: isStagingFile,
+                    isDisabled: isAdding
+                ) {
+                    importsURLList = false
+                    showingFileImporter = true
+                    fileImportError = nil
+                }
+                if stagedFile != nil { userScriptMetaFields }
+            } footer: {
+                AddContentNote(text: "Local imports won't auto-update; re-import to replace.", error: fileImportError)
             }
         }
+    }
+
+    private var metadataRequirementText: LocalizedStringKey {
+        "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns."
+    }
+
+    private var userScriptMetaFields: some View {
+        AddContentMetadataFields(name: $stagedName, description: $stagedDescription,
+                                 category: $selectedCategory, categories: FilterListCategory.userScriptCategories,
+                                 categoryName: { $0.userScriptCategoryName })
+    }
+
+    private var addURLButtonTitle: String {
+        if (addMode == .url && !isReviewingURLs) || (addMode == .text && !isReviewingText) { return "Next" }
+        return addMode == .url && parsedURLs.count > 1 ? "Add URLs" : "Add"
     }
 
     private func fetchURLMetadata() {
@@ -2314,46 +2128,23 @@ struct AddUserScriptView: View {
     }
 
     private var urlInputEditor: some View {
-        AddContentField(title: urlEntryMode == .single ? "URL" : "URLs") {
-            AddContentURLInput(
-                text: $urlInput,
-                isFocused: $urlFieldFocused,
-                isBulk: urlEntryMode == .bulk,
-                singlePlaceholder: { Text(verbatim: "https://example.com/script.user.js") },
-                bulkPlaceholder: { Text(verbatim: "https://example.com/script.user.js") },
-                accessibilityLabel: urlEntryMode == .single ? "URL" : "URLs",
-                isDisabled: isAdding,
-                onPaste: pasteFromClipboard,
-                pasteTitle: urlEntryMode == .single ? "Paste URL" : "Paste URLs",
-                pasteButtonUsesRow: true,
-                onImportFile: { importsURLList = true; showingFileImporter = true },
-                isImportingFile: isImportingURLList
-            )
-        }
+        AddContentURLInput(
+            text: $urlInput,
+            isFocused: $urlFieldFocused,
+            isBulk: urlEntryMode == .bulk,
+            placeholder: Text(verbatim: "https://example.com/script.user.js"),
+            label: urlEntryMode == .single ? "URL" : "URLs",
+            isDisabled: isAdding,
+            onPaste: pasteFromClipboard,
+            pasteTitle: urlEntryMode == .single ? "Paste URL" : "Paste URLs",
+            onImportFile: { importsURLList = true; showingFileImporter = true },
+            isImportingFile: isImportingURLList
+        )
     }
-
 
     private var urlValidationFeedback: ValidationState {
         if let urlImportError { return .invalid(urlImportError) }
         return validationState
-    }
-
-    private var validationBadge: some View {
-        Group {
-            switch urlValidationFeedback {
-            case .idle:
-                EmptyView()
-            case .invalid:
-                Label("Invalid", systemImage: "exclamationmark.triangle")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            case .valid:
-                Label("Ready", systemImage: "checkmark.circle")
-                    .font(.caption)
-                    .foregroundStyle(.green)
-            }
-        }
-        .animation(.easeInOut(duration: 0.15), value: validationState)
     }
 
     private var validationMessage: some View {
@@ -2378,15 +2169,6 @@ struct AddUserScriptView: View {
         .animation(.easeInOut(duration: 0.15), value: validationState)
     }
 
-
-    private var addButton: some View {
-        Button(action: submit) {
-            AddContentSubmitLabel(title: LocalizedStringKey(addURLButtonTitle), isLoading: isAdding, isProminent: true)
-        }
-        .primaryActionButtonStyle()
-        .disabled(!canSubmit || isAdding || isImportingURLList)
-        .keyboardShortcut(.defaultAction)
-    }
 
     private var canSubmit: Bool {
         if isAdding || (addMode == .url && isReviewingURLs && isFetchingURLMetadata) { return false }

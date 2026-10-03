@@ -1150,3 +1150,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Reset…" = "Επαναφορά…";
 "Languages" = "Γλώσσες";
+"Add Script" = "Προσθήκη σεναρίου";
+"Paste or type filter rules." = "Επικολλήστε ή πληκτρολογήστε κανόνες φίλτρου.";
