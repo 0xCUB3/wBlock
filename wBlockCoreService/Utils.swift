@@ -174,15 +174,24 @@ public enum FilterListContentProcessing {
     }
 
     /// Drops unsupported `!#` directives and rewrites hosts-file entries
-    /// (`0.0.0.0 ads.example`) as `||ads.example^` rules.
+    /// (`0.0.0.0 ads.example`) and the lines of domain-only lists
+    /// (`ads.example`) as `||ads.example^` rules.
     public static func normalizedContent(
         from content: String,
         onStrip: ((String) -> Void)? = nil
     ) -> String {
+        let lines = content.split(omittingEmptySubsequences: false, whereSeparator: { $0.isNewline })
+            .map { ($0, $0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        // Converted as-is, a bare hostname is a substring match anywhere in the URL.
+        // Only anchor it when the whole list is hostnames, since ABP lists use
+        // hostname-shaped substrings such as `_werbung.php` on purpose.
+        let isDomainList = lines.contains { matches(hostsHostname, $0.1) }
+            && lines.allSatisfy { $0.1.isEmpty || "!#[".contains($0.1.first!) || matches(hostsHostname, $0.1) }
         var result: [String] = []
-        for line in content.split(omittingEmptySubsequences: false, whereSeparator: { $0.isNewline }) {
-            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            if let hosts = hostsEntryHosts(trimmed) {
+        for (line, trimmed) in lines {
+            if isDomainList, matches(hostsHostname, trimmed) {
+                result.append("||\(trimmed.lowercased())^")
+            } else if let hosts = hostsEntryHosts(trimmed) {
                 result += hosts.map { "||\($0)^" }
             } else if FilterDirectivePolicy.shouldStripUnsupportedDirective(trimmed) {
                 onStrip?(String(trimmed.prefix(60)))

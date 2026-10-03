@@ -571,7 +571,7 @@ class FilterListLoader {
                 languages: ["pl"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "CERT.PL's Warning List",
-                url: URL(string: "https://hole.cert.pl/domains/v2/domains_adblock.txt")!,
+                url: URL(string: "https://hole.cert.pl/domains/v2/domains_ublock.txt")!,
                 category: .foreign,
                 description:
                     "CERT Polska's list of dangerous domains that impersonate real sites to steal data or money.",
