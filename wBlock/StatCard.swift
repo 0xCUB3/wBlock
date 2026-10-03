@@ -155,7 +155,7 @@ struct StatCard: View {
                 GeometryReader { Color.clear.preference(key: StatCardWidthPreference.self, value: $0.size.width) }
             }
         }
-        .frame(minWidth: max(isStatsSummary ? summaryWidth ?? 0 : 0, 155), alignment: .leading)
+        .frame(minWidth: max(isStatsSummary ? summaryWidth ?? 0 : 0, compact ? 0 : 155), alignment: .leading)
         #endif
         .background {
             #if os(iOS)
