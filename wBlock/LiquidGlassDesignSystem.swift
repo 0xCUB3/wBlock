@@ -185,6 +185,7 @@ private struct CompactToolbarButtonStyle: ButtonStyle {
     @State private var isHovered = false
     @Environment(\.compactToolbarTextLabel) private var isTextLabel
     @Environment(\.compactToolbarGrouped) private var isGrouped
+    @Environment(\.controlActiveState) private var controlActiveState
 
     private var side: CGFloat { isGrouped ? 30 : 36 }
 
@@ -195,7 +196,8 @@ private struct CompactToolbarButtonStyle: ButtonStyle {
             .frame(width: isTextLabel ? nil : side, height: side)
             .padding(.horizontal, isTextLabel ? 10 : 0)
             .contentShape(Rectangle())
-            .foregroundStyle(.primary)
+            // Background windows gray their toolbar, as native items do.
+            .foregroundStyle(controlActiveState == .inactive ? .secondary : .primary)
             .background(Color.primary.opacity(isEnabled ? (configuration.isPressed ? 0.12 : (isHovered ? 0.08 : 0)) : 0), in: .capsule)
             .opacity(isEnabled ? (configuration.isPressed ? 0.6 : 1) : 0.35)
             .onHover { isHovered = $0 }
@@ -273,6 +275,7 @@ struct InlineGlassSearchField: View {
     @State private var anchor = ToolbarItemAnchor()
     @FocusState private var isFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.controlActiveState) private var controlActiveState
 
     var body: some View {
         HStack(spacing: 0) {
@@ -307,8 +310,8 @@ struct InlineGlassSearchField: View {
             .opacity(isExpanded ? 1 : 0)
             .allowsHitTesting(isExpanded)
             .accessibilityHidden(!isExpanded)
-            .padding(.leading, growsTrailing ? 36 : 8)
-            .padding(.trailing, growsTrailing ? 8 : 36)
+            .padding(.leading, 36)
+            .padding(.trailing, 8)
         }
         .frame(width: isExpanded ? Self.expandedWidth : 36, height: 36, alignment: buttonEdge)
         .clipShape(.capsule)
@@ -322,21 +325,17 @@ struct InlineGlassSearchField: View {
             }
         }
         .glassEffect(.regular.interactive(), in: .capsule)
-        .animation(reduceMotion ? nil : .smooth(duration: Self.duration), value: isExpanded)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: text.isEmpty)
-        .frame(width: holdsExpandedSlot ? Self.expandedWidth : 36, alignment: buttonEdge)
-        .background(ToolbarItemAnchorReader(anchor: anchor))
-        .overlay(alignment: buttonEdge) {
-            // The magnifier is outside the animated field so it stays anchored
-            // while AppKit reserves or releases the wider toolbar slot.
+        // The magnifier sits on the capsule's leading edge, outside the field, so
+        // it rides that edge as the capsule grows and ends in front of the text,
+        // the way Notes and Mail place it.
+        .overlay(alignment: .leading) {
             Button(action: expandAndFocus) {
                 Label(prompt, systemImage: "magnifyingglass")
                     .labelStyle(.iconOnly)
                     .font(.system(size: 13))
                     .fixedSize()
-                    .foregroundStyle(text.isEmpty ? Color.primary : Color.accentColor)
+                    .foregroundStyle(text.isEmpty ? (controlActiveState == .inactive ? Color.secondary : Color.primary) : Color.accentColor)
                     .contentTransition(.identity)
-                    .transaction { transaction in transaction.animation = nil }
                     .frame(width: 20, height: 36)
                     .padding(.horizontal, 8)
                     .contentShape(Rectangle())
@@ -345,6 +344,10 @@ struct InlineGlassSearchField: View {
             .accessibilityValue(text)
             .help(prompt)
         }
+        .animation(reduceMotion ? nil : .smooth(duration: Self.duration), value: isExpanded)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: text.isEmpty)
+        .frame(width: holdsExpandedSlot ? Self.expandedWidth : 36, alignment: buttonEdge)
+        .background(ToolbarItemAnchorReader(anchor: anchor))
         .onAppear {
             isVisible = true
             if !text.isEmpty { expand() }
