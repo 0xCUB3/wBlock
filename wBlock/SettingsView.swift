@@ -763,7 +763,7 @@ struct SettingsView: View {
         Section {
             #if os(macOS)
             CompatibleLabeledContent {
-                Button("Reset…", role: .destructive) { showingResetOrderingConfirmation = true }
+                Button("Reset", role: .destructive) { showingResetOrderingConfirmation = true }
                     .buttonStyle(.bordered)
             } label: {
                 rowLabel(
@@ -772,7 +772,7 @@ struct SettingsView: View {
                 )
             }
             CompatibleLabeledContent {
-                Button(isRestarting ? "Restarting…" : "Restart…", role: .destructive) {
+                Button(isRestarting ? "Restarting…" : "Restart", role: .destructive) {
                     showingRestartConfirmation = true
                 }
                 .buttonStyle(.bordered)

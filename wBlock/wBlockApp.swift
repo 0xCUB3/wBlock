@@ -127,7 +127,7 @@ struct wBlockApp: App {
         #if os(macOS)
         .commands {
             CommandGroup(after: .appInfo) {
-                Button("Restart Onboarding…") {
+                Button("Restart Onboarding") {
                     showingRestartConfirmation = true
                 }
             }
