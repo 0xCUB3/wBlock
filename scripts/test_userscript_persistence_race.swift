@@ -61,6 +61,16 @@ struct UserScriptPersistenceRaceTests {
             fatalError("genuinely new ID was not inserted")
         }
 
+        let disabledB = record("B", false, "old B")
+        let staleSnapshot = UserScriptPersistence.rebase(
+            persisted: [b],
+            incoming: [a, disabledB, c],
+            baseline: [a, b]
+        )
+        guard staleSnapshot.map(\.id) == ["B", "C"],
+              staleSnapshot.first?.isEnabled == false
+        else { fatalError("stale snapshot rebase resurrected a deleted ID or lost an enable change") }
+
         let remoteX = "https://example.com/scripts/x.user.js"
         let persistedRemote = record(
             "remote-A", false, "persisted X", url: "HTTPS://EXAMPLE.COM:443/scripts/x.user.js#old"
