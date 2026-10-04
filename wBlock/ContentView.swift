@@ -28,7 +28,7 @@ struct ContentView: View {
     /// tick; now the set is rebuilt only when the list or an apply run changes.
     @State private var downloadedFilterIDs: Set<UUID> = []
     @State private var showingFilterDownloadError = false
-    @AppStorage("filtersShowEnabledOnly") private var showOnlyEnabledLists = false
+    @AppStorage(ListDisplayOrder.filtersEnabledOnlyKey) private var showOnlyEnabledLists = false
     @AppStorage(ListDisplayOrder.filtersKey) private var filterDisplayOrder = Data()
     @State private var filterSearchText = ""
     @State private var showFilterSearch = false

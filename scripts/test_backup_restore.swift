@@ -4,8 +4,13 @@ import wBlockCoreService
 // Keep export/restore preference side effects entirely in memory.
 @MainActor final class UserDefaults {
     static let standard = UserDefaults()
+    var values: [String: Any] = [:]
     func string(forKey key: String) -> String? { nil }
-    func set(_ value: Any?, forKey key: String) {}
+    func bool(forKey key: String) -> Bool { values[key] as? Bool ?? false }
+    func set(_ value: Any?, forKey key: String) { values[key] = value }
+}
+enum ListDisplayOrder {
+    static let filtersEnabledOnlyKey = "filtersShowEnabledOnly"
 }
 enum CosmeticFilteringPreference {
     typealias Sites = wBlockCoreService.CosmeticFilteringPreference.Sites
@@ -77,7 +82,9 @@ actor ConcurrentLogManager {
     func setUserScriptsDisabledSites(_ value: [String]) async { userScriptsDisabledSites = value }
     func setAutoUpdateEnabled(_ value: Bool) async { autoUpdateEnabled = value }
     func setAutoUpdateIntervalHours(_ value: Double) async { autoUpdateIntervalHours = value }
-    func setHasCompletedOnboarding(_ value: Bool) async {}
+    var userScriptShowEnabledOnly = false
+    func getUserScriptShowEnabledOnly() -> Bool { userScriptShowEnabledOnly }
+    func setUserScriptShowEnabledOnly(_ value: Bool) { userScriptShowEnabledOnly = value }
     func applyZapperRulesBatch(rulesByHost: [String: [String]], disabledByHost: [String: Bool]?) async {
         for (host, rules) in rulesByHost { zapper[host] = rules }
         for (host, value) in disabledByHost ?? [:] { zapperDisabled[host] = value }
@@ -91,7 +98,6 @@ actor ConcurrentLogManager {
     func setTubeCleanerFeatures(_ value: TubeCleanerDeArrowPreference.Features) {}
     func setTubeCleanerDeArrow(_ value: TubeCleanerDeArrowPreference.Settings) {}
     func setPlayerCleanerFeatures(_ value: PlayerCleanerPreference.Features) {}
-    func markInitialSetupComplete() {}
 }
 @MainActor final class AppFilterManager {
     var filterLists: [FilterList] = []
@@ -134,10 +140,18 @@ enum AppAppearance: String {
             try "||backup.example^".write(to: file, atomically: true, encoding: .utf8)
             defer { try? FileManager.default.removeItem(at: file) }
             manager.filterLists = [builtin, remote, inline]
+            UserDefaults.standard.set(!enabled, forKey: ListDisplayOrder.filtersEnabledOnlyKey)
+            manager.dataManager.userScriptShowEnabledOnly = enabled
             let data = try await BackupManager.exportData(backup: BackupManager.createBackup(filterManager: manager))
             let backup = try BackupManager.importData(from: data)
             for index in manager.filterLists.indices { manager.filterLists[index].updatesAutomatically = !enabled }
+            precondition(backup.filtersShowEnabledOnly == !enabled && backup.userScriptsShowEnabledOnly == enabled)
+            UserDefaults.standard.set(enabled, forKey: ListDisplayOrder.filtersEnabledOnlyKey)
+            manager.dataManager.userScriptShowEnabledOnly = !enabled
             try await BackupManager.restoreBackup(backup, filterManager: manager)
+            precondition(UserDefaults.standard.bool(forKey: ListDisplayOrder.filtersEnabledOnlyKey) == !enabled
+                         && manager.dataManager.userScriptShowEnabledOnly == enabled,
+                         "show-active toggles for filters and userscripts must round-trip")
             precondition(manager.filterLists.allSatisfy { $0.updatesAutomatically == enabled },
                          "built-in, remote custom and inline automatic-update choices must round-trip")
             precondition(manager.filterLists.map(\.id) == [builtin.id, remote.id, inline.id])

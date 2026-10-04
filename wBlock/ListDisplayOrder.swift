@@ -3,6 +3,7 @@ import Foundation
 enum ListDisplayOrder {
     static let filtersKey = "filterDisplayOrder"
     static let scriptsKey = "userScriptDisplayOrder"
+    static let filtersEnabledOnlyKey = "filtersShowEnabledOnly"
 
     /// An explicit reset to the default order. Unlike an absent blob ("never reordered"), it syncs.
     static let cleared = Data("[]".utf8)

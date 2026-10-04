@@ -57,6 +57,9 @@ struct OnboardingView: View {
     @State private var showingBackupImporter = false
     @State private var showingRestoreBackupConfirmation = false
     @State private var pendingBackup: WBlockBackup?
+    /// A restored backup already carries the user's choices, so it only needs the Safari setup step.
+    /// Stored so relaunching mid-setup can't send the user through choices that would overwrite it.
+    @AppStorage("onboardingRestoredFromBackup") private var restoredFromBackup = false
     @State private var backupRestoreError: String?
     @State private var isApplyingSettings = false
 
@@ -201,6 +204,7 @@ struct OnboardingView: View {
         )
     #endif
         .onAppear {
+            if restoredFromBackup { step = .setup }
             syncStoredCriticalSetupState()
             updateRegionalRecommendations(for: selectedLanguages)
             probeForExistingICloudSetupIfNeeded()
@@ -346,7 +350,7 @@ struct OnboardingView: View {
                 }
                 .buttonStyle(.bordered)
             }
-            if step != .welcome {
+            if step != .welcome && !restoredFromBackup {
                 Button("Back") {
                     retreatToPreviousStep()
                 }
@@ -942,7 +946,23 @@ struct OnboardingView: View {
         defer { isApplyingSettings = false }
         await filterManager.waitUntilReady()
         await userScriptManager.waitUntilReady()
+        if !restoredFromBackup { await applyOnboardingChoices() }
+        userScriptManager.markInitialSetupComplete()
 
+        await dataManager.setHasEnabledContentBlockers(hasEnabledContentBlockers)
+        await dataManager.setHasEnabledPlatformExtension(hasEnabledAdvanced)
+        await dataManager.setHasSetAllWebsitesPermission(hasEnabledAdvanced)
+
+        if !restoredFromBackup { CloudSyncManager.shared.setEnabled(wantsCloudSync) }
+        guard await dataManager.setHasCompletedOnboarding(true) else { return }
+        restoredFromBackup = false
+
+        // Dismiss onboarding and let the main view handle download + apply
+        dismiss()
+        filterManager.checkAndEnableFilters(forceReload: true)
+    }
+
+    private func applyOnboardingChoices() async {
         // Snapshot the then-current manager array and apply choices by stable IDs.
         let currentFilters = filterManager.filterLists
         let normalizedLevel = selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -973,22 +993,6 @@ struct OnboardingView: View {
         let selectedScriptIDs = Set(selectedUserscripts.compactMap { UUID(uuidString: $0) })
         // Single, deterministic batch apply
         await userScriptManager.setEnabledScripts(withIDs: selectedScriptIDs)
-        
-        // 2.5. Mark userscript initial setup as complete
-        userScriptManager.markInitialSetupComplete()
-
-        // 3. Save setup checklist state
-        await dataManager.setHasEnabledContentBlockers(hasEnabledContentBlockers)
-        await dataManager.setHasEnabledPlatformExtension(hasEnabledAdvanced)
-        await dataManager.setHasSetAllWebsitesPermission(hasEnabledAdvanced)
-
-        // 4. Set sync and mark onboarding complete
-        CloudSyncManager.shared.setEnabled(wantsCloudSync)
-        guard await dataManager.setHasCompletedOnboarding(true) else { return }
-
-        // 5. Dismiss onboarding and let the main view handle download + apply
-        dismiss()
-        filterManager.checkAndEnableFilters(forceReload: true)
     }
 
     private func probeForExistingICloudSetupIfNeeded() {
@@ -1189,9 +1193,7 @@ struct OnboardingView: View {
             )
             return
         }
-        userScriptManager.markInitialSetupComplete()
-        guard await dataManager.setHasCompletedOnboarding(true) else { return }
-        dismiss()
-        filterManager.checkAndEnableFilters(forceReload: true)
+        restoredFromBackup = true
+        withAnimation(.easeInOut(duration: 0.2)) { step = .setup }
     }
 }
