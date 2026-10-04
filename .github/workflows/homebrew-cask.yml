@@ -21,11 +21,16 @@ permissions:
 
 jobs:
   verify:
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Select released Xcode 27
+        run: |
+          sudo xcode-select -s /Applications/Xcode_27.app
+          xcodebuild -version
 
       - name: Fetch main
         run: git fetch --no-tags --depth=1 origin main
@@ -46,10 +51,15 @@ jobs:
 
   build-and-release:
     needs: verify
-    runs-on: macos-26
+    runs-on: xcode-27
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Select released Xcode 27
+        run: |
+          sudo xcode-select -s /Applications/Xcode_27.app
+          xcodebuild -version
 
       - name: Extract version
         run: |

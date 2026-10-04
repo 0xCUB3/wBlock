@@ -22,16 +22,16 @@ permissions:
 
 jobs:
   upload:
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 180
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Select Xcode 26.6 and confirm a release host OS
+      - name: Select released Xcode 27 and confirm a release host OS
         run: |
           set -euo pipefail
-          sudo xcode-select -s /Applications/Xcode_26.6.app
+          sudo xcode-select -s /Applications/Xcode_27.app
           xcodebuild -version
           sw_vers
           host_build="$(sw_vers -buildVersion)"
@@ -114,6 +114,20 @@ jobs:
               printf '%s=' "${key}"; /usr/libexec/PlistBuddy -c "Print :${key}" "${plist}"
             done
             [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "${plist}")" == "${BUILD_NUMBER}" ]]
+            if [[ "${platform}" == "macOS" ]]; then
+              echo "== Smoke launching macOS archive"
+              "${app}/Contents/MacOS/wBlock" > "${RUNNER_TEMP}/smoke-macOS.log" 2>&1 &
+              app_pid=$!
+              sleep 10
+              if ! kill -0 "${app_pid}" 2>/dev/null; then
+                echo "macOS archive exited during smoke launch" >&2
+                tail -60 "${RUNNER_TEMP}/smoke-macOS.log"
+                exit 1
+              fi
+              kill "${app_pid}"
+              wait "${app_pid}" || true
+              echo "macOS smoke launch passed"
+            fi
             echo "== Uploading ${platform}"
             xcodebuild -exportArchive -archivePath "${archive}" \
               -exportOptionsPlist "${RUNNER_TEMP}/UploadOptions.plist" \
