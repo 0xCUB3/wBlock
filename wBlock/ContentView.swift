@@ -1074,22 +1074,31 @@ struct FilterRowView: View {
 #if os(iOS)
 /// Size class rather than idiom decides the presentation, so the regular-width
 /// inner display of iPhone Duo gets the sheet iPad already uses.
+/// Onboarding is a sheet in regular width and full screen in compact width.
+/// Both presenters stay attached and only their bindings follow the size class.
+/// Branching on the size class swapped the whole view tree when Stage Manager
+/// crossed the compact width, and the Apply sheet hosted on that tree came back
+/// with no dimming behind it (#923).
 private struct OnboardingPresentationModifier: ViewModifier {
     @Binding var isPresented: Bool
     let filterManager: AppFilterManager
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
-    @ViewBuilder
     func body(content: Content) -> some View {
-        if horizontalSizeClass == .regular {
-            content.sheet(isPresented: $isPresented) {
+        content
+            .sheet(isPresented: presented(when: true)) {
                 OnboardingView(filterManager: filterManager)
             }
-        } else {
-            content.fullScreenCover(isPresented: $isPresented) {
+            .fullScreenCover(isPresented: presented(when: false)) {
                 OnboardingView(filterManager: filterManager)
             }
-        }
+    }
+
+    private func presented(when regular: Bool) -> Binding<Bool> {
+        Binding(
+            get: { isPresented && (horizontalSizeClass == .regular) == regular },
+            set: { if !$0 { isPresented = false } }
+        )
     }
 }
 #endif
