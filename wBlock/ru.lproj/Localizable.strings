@@ -1152,3 +1152,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Languages" = "Языки";
 "Add Script" = "Добавить скрипт";
 "Paste or type filter rules." = "Вставьте или введите правила фильтрации.";
+
+"Sámi" = "саамский";
+"sámegiella" = "sámegiella";

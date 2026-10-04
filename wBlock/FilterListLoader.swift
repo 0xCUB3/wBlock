@@ -102,6 +102,8 @@ class FilterListLoader {
         "raw.githubusercontent.com/MasterKia/PersianBlocker/main/PersianBlocker.txt",  // Persian Blocker, maintainer passed away (#921)
         "raw.githubusercontent.com/AnXh3L0/blocklist/master/albanian-easylist-addition/Albania.txt",  // Adblock List for Albania and Kosovo, unmaintained (#921)
         "raw.githubusercontent.com/lonum1rus/Raajje-AdList/master/filter.txt",  // Raajje AdList, unmaintained (#921)
+        "raw.githubusercontent.com/betterwebleon/slovenian-list/master/filters.txt",  // Slovenian List, unmaintained since 2024 (#931)
+        "hole.cert.pl/domains/",  // CERT.PL's Warning List, almost entirely inside KAD (#931)
     ]
 
     static func isRetiredBuiltIn(_ filter: FilterList) -> Bool {
@@ -381,7 +383,7 @@ class FilterListLoader {
                         "https://raw.githubusercontent.com/realodix/AdBlockID/main/dist/adblockid.adfl.txt"
                 )!, category: .foreign,
                 description: "Additional filter list for websites in Indonesian.",
-                languages: ["id"], trustLevel: "high"),
+                languages: ["id", "ms"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "AdGuard Chinese filter",
                 url: URL(
@@ -522,7 +524,7 @@ class FilterListLoader {
             FilterList(
                 id: UUID(), name: "Estonian List", url: URL(string: "https://adblock.ee/list.txt")!,
                 category: .foreign, description: "Filter for ad blocking on Estonian sites.",
-                languages: ["et"], trustLevel: "low"),
+                languages: ["et"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "Frellwit's Swedish Filter",
                 url: URL(
@@ -570,13 +572,6 @@ class FilterListLoader {
                     "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc.",
                 languages: ["pl"], trustLevel: "high"),
             FilterList(
-                id: UUID(), name: "CERT.PL's Warning List",
-                url: URL(string: "https://hole.cert.pl/domains/v2/domains_ublock.txt")!,
-                category: .foreign,
-                description:
-                    "CERT Polska's list of dangerous domains that impersonate real sites to steal data or money.",
-                languages: ["pl"], trustLevel: "low"),
-            FilterList(
                 id: UUID(), name: "Latvian List",
                 url: URL(
                     string:
@@ -613,12 +608,6 @@ class FilterListLoader {
                 )!, category: .foreign,
                 description: "Additional filter list for websites in Polish.", languages: ["pl"],
                 trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "Slovenian List",
-                url: URL(
-                    string: "https://raw.githubusercontent.com/betterwebleon/slovenian-list/master/filters.txt")!,
-                category: .foreign, description: "Additional filter list for websites in Slovenian.",
-                languages: ["sl"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "road-block light",
                 url: URL(

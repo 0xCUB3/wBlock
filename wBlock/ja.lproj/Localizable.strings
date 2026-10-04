@@ -1121,3 +1121,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Languages" = "言語";
 "Add Script" = "スクリプトを追加";
 "Paste or type filter rules." = "フィルタルールをペーストまたは入力してください。";
+
+"Sámi" = "サーミ語";
+"sámegiella" = "sámegiella";

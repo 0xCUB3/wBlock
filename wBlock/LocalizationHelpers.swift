@@ -9,6 +9,13 @@ import Foundation
 import wBlockCoreService
 
 extension Locale {
+    /// Display name for a regional language code. The Nordic list covers every
+    /// Sámi language, but ICU names `se` North Sámi, so it gets the umbrella name.
+    func regionalLanguageName(for code: String) -> String? {
+        if code.lowercased() == "se" { return NSLocalizedString("Sámi", comment: "Language name") }
+        return localizedString(forLanguageCode: code)
+    }
+
     static var appCurrent: Locale {
         guard let preferredLocalization = Bundle.main.preferredLocalizations.first else {
             return .autoupdatingCurrent
@@ -146,7 +153,7 @@ enum ForeignFilterOrganizer {
             return LocalizedStrings.text("Regional", comment: "Filter list category")
         }
 
-        return Locale.appCurrent.localizedString(forLanguageCode: languageCode) ?? languageCode.uppercased()
+        return Locale.appCurrent.regionalLanguageName(for: languageCode) ?? languageCode.uppercased()
     }
 }
 
@@ -208,12 +215,12 @@ enum LocalizedFormatting {
 extension FilterList {
     func localizedLanguageNames(locale: Locale = .appCurrent) -> [String] {
         Set(languages.map { $0.lowercased() }).map {
-            locale.localizedString(forLanguageCode: $0) ?? $0.uppercased()
+            locale.regionalLanguageName(for: $0) ?? $0.uppercased()
         }.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
     }
 
     func matchesLanguage(_ query: String, locale: Locale) -> Bool {
-        let nativeNames = languages.compactMap { Locale(identifier: $0).localizedString(forLanguageCode: $0) }
+        let nativeNames = languages.compactMap { Locale(identifier: $0).regionalLanguageName(for: $0) }
         return (languages + nativeNames + localizedLanguageNames(locale: locale)).contains {
             $0.localizedCaseInsensitiveContains(query)
         }

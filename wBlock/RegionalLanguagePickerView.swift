@@ -28,6 +28,7 @@ struct RegionalLanguageOption: Identifiable, Hashable {
     var nativeName: String {
         // ICU does not provide a native display name for Montenegrin.
         if code == "cnr" { return String(localized: "crnogorski") }
+        if code == "se" { return String(localized: "sámegiella") }
         return Locale(identifier: code).localizedString(forLanguageCode: code) ?? name
     }
 
@@ -65,7 +66,7 @@ struct RegionalLanguageOption: Identifiable, Hashable {
         return codes.map { $0.lowercased() }.filter { seen.insert($0).inserted }.map { code in
             RegionalLanguageOption(
                 code: code,
-                name: locale.localizedString(forLanguageCode: code) ?? code,
+                name: locale.regionalLanguageName(for: code) ?? code,
                 flag: FilterList.flag(forLanguage: code) ?? ""
             )
         }
