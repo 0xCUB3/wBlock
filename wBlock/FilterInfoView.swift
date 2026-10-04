@@ -200,6 +200,7 @@ struct FilterSettingsView: View {
                     get: { liveFilter.updatesAutomatically },
                     set: { filterManager.setFilterList(liveFilter.id, updatesAutomatically: $0) }
                 ))
+                .toggleStyle(.switch)
             }
             SiteScopeEditor(
                 title: "Apply on", selectedSites: liveFilter.selectedSites, excludedSites: liveFilter.excludedSites,
