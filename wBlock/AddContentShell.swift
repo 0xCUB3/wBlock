@@ -8,7 +8,8 @@ protocol AddContentMode: CaseIterable, Identifiable, Hashable {
 
 /// Both Add sheets: a native TabView of grouped forms (bottom tab bar on iOS,
 /// top tabs on macOS), with Cancel and the primary action where each
-/// platform puts them.
+/// platform puts them. On iOS each tab owns its navigation bar, so a bar's
+/// scroll-edge blur sized for one form never lingers over another.
 struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
     let title: LocalizedStringKey
     @Binding var mode: Mode
@@ -27,15 +28,7 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
 
     var body: some View {
         #if os(iOS)
-        CompatibleNavigationStack {
-            tabs
-                .navigationTitle(title)
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { cancelButton }
-                    ToolbarItem(placement: .confirmationAction) { submitButton }
-                }
-        }
+        tabs
         .interactiveDismissDisabled(isLoading)
         .largeSheetPresentationCompat()
         #else
@@ -68,18 +61,33 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
     }
 
     private func tab(_ mode: Mode) -> some View {
+        page(mode)
+            .tabItem { Label(mode.localizedTitle, systemImage: mode.systemImage) }
+            .tag(mode)
+    }
+
+    @ViewBuilder
+    private func page(_ mode: Mode) -> some View {
+        #if os(iOS)
+        CompatibleNavigationStack {
+            Form { content(mode) }
+                .groupedFormStyleCompat()
+                .disabled(isLoading)
+                .navigationTitle(title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { cancelButton }
+                    ToolbarItem(placement: .confirmationAction) { submitButton }
+                }
+        }
+        #else
         Form { content(mode) }
-            #if os(macOS)
             .columnsFormStyleCompat()
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            #else
-            .groupedFormStyleCompat()
-            #endif
             .disabled(isLoading)
-            .tabItem { Label(mode.localizedTitle, systemImage: mode.systemImage) }
-            .tag(mode)
+        #endif
     }
 
     private var cancelButton: some View {
