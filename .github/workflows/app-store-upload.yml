@@ -115,18 +115,30 @@ jobs:
             done
             [[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "${plist}")" == "${BUILD_NUMBER}" ]]
             if [[ "${platform}" == "macOS" ]]; then
-              echo "== Smoke launching macOS archive"
-              "${app}/Contents/MacOS/wBlock" > "${RUNNER_TEMP}/smoke-macOS.log" 2>&1 &
-              app_pid=$!
-              sleep 10
-              if ! kill -0 "${app_pid}" 2>/dev/null; then
-                echo "macOS archive exited during smoke launch" >&2
-                tail -60 "${RUNNER_TEMP}/smoke-macOS.log"
+              echo "== Checking macOS toolbar weak links"
+              xcrun nm -arch all -m "${app}/Contents/MacOS/wBlock" | xcrun swift-demangle | \
+                grep -E '\(undefined\).*(visibilityPriority|ToolbarItemVisibilityPriority)' > "${RUNNER_TEMP}/toolbar-imports.log"
+              cat "${RUNNER_TEMP}/toolbar-imports.log"
+              for expected in 'visibilityPriority' 'opaque type descriptor' 'ToolbarItemVisibilityPriority.low.getter' 'ToolbarItemVisibilityPriority.high.getter' 'type metadata accessor for SwiftUI.ToolbarItemVisibilityPriority'; do
+                grep -Fq "$expected" "${RUNNER_TEMP}/toolbar-imports.log"
+              done
+              if grep -v 'weak external' "${RUNNER_TEMP}/toolbar-imports.log"; then
+                echo "Strong toolbar import found" >&2
                 exit 1
               fi
-              kill "${app_pid}"
-              wait "${app_pid}" || true
-              echo "macOS smoke launch passed"
+              codesign -dvv "${app}" 2>&1 | grep -E '^(Authority|TeamIdentifier)='
+              profile="${app}/Contents/embedded.provisionprofile"
+              if [[ -f "${profile}" ]]; then
+                security cms -D -i "${profile}" > "${RUNNER_TEMP}/archive-profile.plist"
+                if /usr/libexec/PlistBuddy -c 'Print :ProvisionedDevices' "${RUNNER_TEMP}/archive-profile.plist" >/dev/null 2>&1; then
+                  echo "Embedded profile lists provisioned devices"
+                else
+                  echo "Embedded profile has no provisioned device list"
+                fi
+              else
+                echo "No embedded provisioning profile"
+              fi
+              echo "macOS toolbar weak-link check passed"
             fi
             echo "== Uploading ${platform}"
             xcodebuild -exportArchive -archivePath "${archive}" \
