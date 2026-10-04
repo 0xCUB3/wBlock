@@ -506,7 +506,7 @@ struct ApplyChangesToolbarLabel: View {
     @ViewBuilder
     private var horizontalLabel: some View {
         if hasPendingChanges {
-            Text("Apply").fontWeight(.semibold)
+            ApplyText()
         } else {
             Image(systemName: symbolName)
         }
@@ -526,13 +526,57 @@ struct ApplyChangesToolbarLabel: View {
                     systemImage: hasPendingChanges ? "checkmark.arrow.trianglehead.counterclockwise" : symbolName
                 )
             } else if hasPendingChanges {
-                Text("Apply").fontWeight(.semibold)
+                ApplyText()
             } else {
                 Image(systemName: symbolName)
             }
         }
     }
     #endif
+}
+
+/// UIKit grays toolbar symbols through tint dimming while a sheet or alert is
+/// up, but SwiftUI text ignores it, so Apply stayed black beside the grayed
+/// icons (#931). The text follows UIKit's dimming state instead.
+private struct ApplyText: View {
+    @State private var isDimmed = false
+
+    var body: some View {
+        Text("Apply").fontWeight(.semibold)
+            .foregroundStyle(isDimmed ? .secondary : .primary)
+            .background(TintDimmingReader(isDimmed: $isDimmed))
+    }
+}
+
+private struct TintDimmingReader: UIViewRepresentable {
+    @Binding var isDimmed: Bool
+
+    func makeUIView(context: Context) -> ReaderView {
+        let view = ReaderView()
+        view.isUserInteractionEnabled = false
+        return view
+    }
+
+    func updateUIView(_ view: ReaderView, context: Context) {
+        view.onChange = { dimmed in
+            if isDimmed != dimmed { isDimmed = dimmed }
+        }
+    }
+
+    final class ReaderView: UIView {
+        var onChange: (Bool) -> Void = { _ in }
+
+        // Reads the effective mode, inherited from the nearest ancestor that sets one.
+        override func tintColorDidChange() {
+            super.tintColorDidChange()
+            onChange(tintAdjustmentMode == .dimmed)
+        }
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            onChange(tintAdjustmentMode == .dimmed)
+        }
+    }
 }
 #endif
 
