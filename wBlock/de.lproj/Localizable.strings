@@ -22,7 +22,7 @@
 "Replace SponsorBlock settings?" = "SponsorBlock-Einstellungen ersetzen?";
 "Settings imported. Reload YouTube to apply them." = "Einstellungen importiert. YouTube neu laden, um sie anzuwenden.";
 "Could not transfer SponsorBlock settings. Use a valid settings JSON file and check available storage." = "SponsorBlock-Einstellungen konnten nicht übertragen werden. Eine gültige JSON-Einstellungsdatei verwenden und den verfügbaren Speicher prüfen.";
-" · Last success: %@" = " · Letzter Erfolg: %@";
+" · Last success: %@" = " · Zuletzt erfolgreich: %@";
 " · Scheduled: %@" = " · Geplant: %@";
 "!#include fetch failed" = "!#include-Abruf fehlgeschlagen";
 "%@ %@" = "%@ %@";
@@ -32,7 +32,7 @@
 "%@)%" = "%@)%";
 "%@." = "%@.";
 "%@: %@" = "%@: %@";
-"%d entries" = "%d-Einträge";
+"%d entries" = "%d Einträge";
 "%d list off" = "%d Liste aus";
 "%d lists off" = "%d Listen aus";
 "%d rule" = "%d Regel";
@@ -59,7 +59,7 @@
 "7d" = "7d";
 "Autoplay on" = "Autoplay an";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) Einträge";
-"\\(index + 1)." = "\\(Index + 1).";
+"\\(index + 1)." = "\\(index + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
 "\\(level.emoji) \\(level.localizedName)" = "\\(level.emoji) \\(level.localizedName)";
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
@@ -176,7 +176,7 @@
 "Baseline userscripts are enabled by default. You can adjust them here." = "Basis-Benutzerskripte sind standardmäßig aktiviert. Du kannst sie hier anpassen.";
 "Best default" = "Beste Voreinstellung";
 "Beta" = "Beta";
-"Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Beta-Userscripts werden noch getestet und können Seiten beschädigen oder sich unerwartet verhalten. Du kannst sie jederzeit wieder ausschalten.";
+"Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Beta-Userscripts werden noch getestet und können zu Fehlern auf Seiten führen oder sich unerwartet verhalten. Du kannst sie jederzeit wieder ausschalten.";
 "BGAppRefresh" = "Hintergrund-App-Aktualisierung";
 "BGProcessing" = "Hintergrundverarbeitung";
 "Blocked requests (%d)" = "Blockierte Anfragen (%d)";
@@ -249,14 +249,14 @@
 "Conversion" = "Konvertierung";
 "Conversion phase summary" = "Zusammenfassung der Konvertierungsphase";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Regeln wurden konvertiert, aber eine oder mehrere Erweiterungen konnten nach 5 Versuchen nicht neu geladen werden.";
-"Converting %@…" = "Konvertieren von %@â¦";
+"Converting %@…" = "Konvertieren von %@…";
 "Converting Rules" = "Regeln werden konvertiert";
 "Copy URL" = "URL kopieren";
 "Copied" = "Kopiert";
 "Could not resolve URL from dropped item." = "URL des abgelegten Elements konnte nicht ermittelt werden.";
 "Country or region" = "Land oder Region";
 "Country: %@" = "Land: %@";
-"Critical Setup Required" = "Kritische Einrichtung erforderlich";
+"Critical Setup Required" = "Wichtige Einrichtung erforderlich";
 "current match" = "aktueller Treffer";
 "Current Safari rules: %@" = "Aktuelle Safari-Regeln: %@";
 "Current Safari rules: %@ (near limit)" = "Aktuelle Safari-Regeln: %@ (nahe dem Limit)";
@@ -290,18 +290,18 @@
 "Downloaded %d updates" = "%d Updates heruntergeladen";
 "Downloaded content does not appear to be a valid filter list" = "Heruntergeladener Inhalt scheint keine gültige Filterliste zu sein";
 "Downloaded updates before applying" = "Updates vor dem Anwenden heruntergeladen";
-"Downloading %d update(s)..." = "%d-Update(s) werden heruntergeladen...";
+"Downloading %d update(s)..." = "%d Update(s) werden heruntergeladen...";
 "Downloading and applying filter lists…" = "Filterlisten werden heruntergeladen und angewendet…";
 "Downloading filter updates..." = "Filteraktualisierungen werden heruntergeladen...";
 "Downloading selected scripts..." = "Ausgewählte Skripte werden heruntergeladen...";
 "Downloading selected updates..." = "Ausgewählte Updates werden heruntergeladen...";
 "Downloading Updates" = "Updates werden heruntergeladen";
 "due now" = "jetzt fällig";
-"Due soon catch-up" = "Bald fällige Aufholung";
+"Due soon catch-up" = "Bald fälliges Nachholen";
 "Duplicate Userscripts Found" = "Doppelte Userskripte gefunden";
-"EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard Chinesisch-Filter. Filterliste, die gezielt Werbung auf chinesischsprachigen Websites entfernt.";
+"EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard Chinese Filter. Filterliste, die gezielt Werbung auf chinesischsprachigen Websites entfernt.";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
-"EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList Dutch + AdGuard Dutch-Filter. Filterliste, die gezielt Anzeigen auf niederländischsprachigen Websites entfernt.";
+"EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList Dutch + AdGuard Dutch Filter. Filterliste, die gezielt Anzeigen auf niederländischsprachigen Websites entfernt.";
 "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList Germany + AdGuard German filter. Filterliste, die gezielt Werbung auf deutschsprachigen Websites entfernt.";
 "EasyList Hebrew" = "EasyList Hebrew";
 "EasyList Italy" = "EasyList Italy";
@@ -394,7 +394,7 @@
 "Fast disabled sites update completed" = "Schnelle Aktualisierung deaktivierter Seiten abgeschlossen";
 "File" = "Datei";
 "File Information" = "Dateiinformationen";
-"Filter '%@' added successfully. Apply changes to enable it." = "Filter „%@“ erfolgreich hinzugefügt. Wende die Änderungen an, um es zu aktivieren.";
+"Filter '%@' added successfully. Apply changes to enable it." = "Filter „%@“ erfolgreich hinzugefügt. Wende die Änderungen an, um ihn zu aktivieren.";
 "Filter Apply" = "Filter anwenden";
 "Filter Auto-Update" = "Automatische Filter-Updates";
 "Filter for ad blocking on Estonian sites." = "Filter gegen Werbung auf estnischen Websites.";
@@ -428,7 +428,7 @@
 "For complete ad blocking" = "Für vollständige Werbeblockierung";
 "Foreground Catch-up" = "Nachholen im Vordergrund";
 "Foreign" = "Länderspezifisch";
-"Found %d update(s) available." = "Es wurden %d-Updates gefunden.";
+"Found %d update(s) available." = "Es wurden %d Updates gefunden.";
 "Frellwit's Swedish Filter" = "Frellwit's Swedish Filter";
 "Full content loaded" = "Vollständiger Inhalt geladen";
 "go" = "OK";
@@ -449,9 +449,9 @@
 "This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can." = "Dieser GitHub/Homebrew-Build kann iCloud Sync nicht verwenden. Der App Store/TestFlight-Build kann es verwenden.";
 "iCloud Sync couldn't access your iCloud account. Try again, then check your iCloud sign-in in Settings." = "iCloud Sync konnte nicht auf deinen iCloud-Account zugreifen. Versuche es erneut und prüfe dann deine iCloud-Anmeldung in den Einstellungen.";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "iCloud Sync konnte iCloud nicht erreichen. Überprüfe deine Verbindung und versuche es erneut.";
-"iCloud Sync couldn't save because your iCloud storage is full." = "iCloud Sync konnte nicht speichern, da Ihr iCloud-Speicher voll ist.";
-"iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud Sync verfügt nicht über die Berechtigung, auf Ihr iCloud-Konto zu schreiben.";
-"iCloud Sync hit an iCloud server error. Try again in a moment." = "Bei der iCloud-Synchronisierung ist ein iCloud-Serverfehler aufgetreten. Versuche es gleich noch einmal.";
+"iCloud Sync couldn't save because your iCloud storage is full." = "iCloud Sync konnte nicht speichern, da dein iCloud-Speicher voll ist.";
+"iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud Sync verfügt nicht über die Berechtigung, auf dein iCloud-Konto zu schreiben.";
+"iCloud Sync hit an iCloud server error. Try again in a moment." = "Bei iCloud Sync ist ein iCloud-Serverfehler aufgetreten. Versuche es gleich noch einmal.";
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud Sync ist vorübergehend nicht verfügbar. Versuche es gleich noch einmal.";
 "If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "Wenn du wBlock mit nicht angewendeten Änderungen schließt, schicken wir dir eine sanfte Erinnerung, damit nichts vergessen wird.";
 "If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Wenn du den Privaten Modus nutzt, aktiviere außerdem „Im privaten Surfen erlauben“ für wBlock Scripts und die 5 Content-Blocker. Cookie-Hinweise und andere Scriptlets laufen in privaten Fenstern sonst nicht.";
@@ -469,7 +469,7 @@
 "Info" = "Info";
 "Integrated" = "Integriert";
 "Info.plist missing" = "Info.plist fehlt";
-"Initialized with %d filter list(s)." = "Initialisiert mit %d-Filterliste(n).";
+"Initialized with %d filter list(s)." = "Mit %d Filterliste(n) initialisiert.";
 "International" = "International";
 "Invalid" = "Ungültig";
 "Invalid URL provided for new filter list" = "Ungültige URL für neue Filterliste angegeben";
@@ -506,7 +506,7 @@
 "Minimal" = "Minimal";
 "Missing conversion result for blocker" = "Konvertierungsergebnis für Blocker fehlt";
 "More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "Mehr Listen bedeuten selten besseres Blockieren: Die meisten überschneiden sich mit den empfohlenen Standardlisten und verbrauchen vor allem Regelkapazität. Filter für Belästigungen und regionale Filter sind die wichtigsten Ausnahmen.";
-"Multipurpose" = "Vielseitig";
+"Multipurpose" = "Mehrzweck";
 "N/A" = "N/A";
 "Name" = "Name";
 "Near Safari limit: %@" = "Nahe am Safari-Limit: %@";
@@ -555,14 +555,14 @@
 "OK" = "OK";
 "on line" = "in Zeile";
 "Online Security Filter" = "Online Security Filter";
-"Only AdGuard Base filter. Lightest protection, best compatibility." = "Nur der AdGuard-Base-Filter. Leichtester Schutz, beste Kompatibilität.";
+"Only AdGuard Base filter. Lightest protection, best compatibility." = "Nur der AdGuard Base filter. Leichtester Schutz, beste Kompatibilität.";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Für %@ sind nur von der Community gepflegte Listen verfügbar. Aktiviere sie, wenn du dich damit wohlfühlst.";
 "Only community-maintained lists available. Enable them if you're comfortable." = "Es sind nur von der Community gepflegte Listen verfügbar. Aktiviere sie, wenn dir das recht ist.";
 "Only pasted user lists can be edited." = "Nur eingefügte Benutzerlisten können bearbeitet werden.";
 "Open Login Items" = "Anmeldeobjekte öffnen";
 "Open Safari Settings" = "Safari-Einstellungen öffnen";
 "Optimized for mobile ad blocking. Recommended for iOS/iPadOS." = "Optimiert für die Blockierung mobiler Werbung. Empfohlen für iOS/iPadOS.";
-"Other" = "Andere";
+"Other" = "Sonstige";
 "Overdue catch-up" = "Überfällige Aufholung";
 "Paste" = "Einfügen";
 "Paste from Clipboard" = "Aus Zwischenablage einfügen";
@@ -573,13 +573,13 @@
 "Pause Blocking" = "Blockieren pausieren";
 "Paused Components" = "Pausierte Komponenten";
 "Enabled Userscripts & Userstyles" = "Aktivierte Userscripts und Userstyles";
-"Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pause Blocking ist aktiv, solange eine ausgewählte Komponente pausiert ist. Fortsetzen aktiviert alle Komponenten wieder.";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "Blockieren pausieren ist aktiv, solange eine ausgewählte Komponente pausiert ist. Fortsetzen aktiviert alle Komponenten wieder.";
 "Temporarily pause selected components without changing their enabled settings." = "Ausgewählte Komponenten vorübergehend pausieren, ohne ihre Aktivierungseinstellungen zu ändern.";
 "Pausing blocking..." = "Blockieren wird pausiert …";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
 "Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "Blockiert Malware- und Betrugsdomains, schädliche Weiterleitungen und unerwünschte Software-Hinweise.";
-"Pick your base blocking level." = "Wähle dein grundlegendes Blockierungsniveau.";
+"Pick your base blocking level." = "Wähle deine grundlegendes Blockierungsstufe.";
 "Prepared removeparam DNR rules" = "removeparam DNR-Regeln vorbereitet";
 "Preparing %d extension" = "%d Erweiterung wird vorbereitet";
 "Preparing %d extensions" = "%d Erweiterungen werden vorbereitet";
@@ -652,7 +652,7 @@
 "Rule Limit Warning" = "Warnung zur Regelbegrenzung";
 "Rules" = "Regeln";
 "Run on this site" = "Auf dieser Website ausführen";
-"Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "Safari beschränkt jede Inhaltsblocker-Erweiterung auf %@-Regeln.\\nGesamtkapazität (alle wBlock-Blocker): %@-Regeln.\\n\\n%@\\n\\nwBlock verteilt Ihre aktivierten Filterlisten auf mehrere Blocker, um die Kapazität zu maximieren. Du kannst jedoch trotzdem an die Grenzen von Safari stoßen, wenn du zu viele große Listen aktivierst.";
+"Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "Safari beschränkt jede Inhaltsblocker-Erweiterung auf %@ Regeln.\\nGesamtkapazität (alle wBlock-Blocker): %@ Regeln.\\n\\n%@\\n\\nwBlock verteilt deine aktivierten Filterlisten auf mehrere Blocker, um die Kapazität zu maximieren. Du kannst jedoch trotzdem an die Grenzen von Safari stoßen, wenn du zu viele große Listen aktivierst.";
 "Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari beschränkt jede Inhaltsblocker-Erweiterung auf 150.000 Regeln. wBlock verteilt und kompiliert die Regeln automatisch auf alle 5 Slots.";
 "Safari Rule Capacity" = "Safari-Regelkapazität";
 "Safari Rules" = "Safari-Regeln";
@@ -672,7 +672,7 @@
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Wähle die Userskripte aus, die du aktivieren möchtest. Diese fügen zusätzliche Funktionen oder Korrekturen hinzu. Du kannst später in den Einstellungen jederzeit weitere hinzufügen.";
 "Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "Wähle die Sprachen (eine oder mehrere) aus, in denen du Websites besuchst. wBlock nutzt das nur, um regionale Werbefilter zu empfehlen.";
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Wähle die Sprachen aus, in denen du surfst. wBlock empfiehlt automatisch passende regionale Filter und Funktionen.";
-"Send me reminders about unapplied changes" = "Sende mir Erinnerungen zu nicht angewendeten Änderungen";
+"Send me reminders about unapplied changes" = "Sende mir Erinnerungen zu nicht angewendeten Änderungen";  
 "Set up wBlock" = "wBlock einrichten";
 "Setting userscript enabled state" = "Aktivierungsstatus des Userskripts wird gesetzt";
 "Settings" = "Einstellungen";
@@ -694,7 +694,7 @@
 "Skipped pause request while apply is in progress" = "Pause-Anfrage übersprungen, da gerade angewendet wird";
 "Skipping update signal due to non-filter response body" = "Update-Signal übersprungen, da der Antwortkörper kein Filter ist";
 "Some filters were automatically disabled because Safari's rule limits were exceeded." = "Einige Filter wurden automatisch deaktiviert, weil Safaris Regellimits überschritten wurden.";
-"Some pre-apply filter updates failed; continuing with available lists" = "Einige Filter-Updates vor dem Anwenden sind fehlgeschlagen; es wird mit den verfügbaren Listen fortgefahren";
+"Some pre-apply filter updates failed; continuing with available lists" = "Einige Filter-Updates vor der Anwendung sind fehlgeschlagen; es wird mit den verfügbaren Listen fortgefahren";
 "Something went wrong while applying changes." = "Beim Anwenden der Änderungen ist ein Fehler aufgetreten.";
 "soon" = "bald";
 "Source Code" = "Quellcode";
@@ -748,7 +748,7 @@
 "That doesn't look like a filter list." = "Das sieht nicht nach einer Filterliste aus.";
 "That name is already used by another filter list." = "Dieser Name wird bereits von einer anderen Filterliste verwendet.";
 "That title is already used by another filter list." = "Dieser Titel wird bereits von einer anderen Filterliste verwendet.";
-"The %@ userscript requires the %@" = "Das %@-Userskript erfordert %@";
+"The %@ userscript requires the %@" = "Das %@ Userskript erfordert %@";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Das Userskript \\(bypassScript.name) erfordert \\(filterName)";
 "The following filters were automatically disabled:
 
@@ -803,7 +803,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Updated %d script" = "%d Skript aktualisiert";
 "Updated %d scripts" = "%d Skripte aktualisiert";
 "Updated %d, %d failed" = "%d aktualisiert, %d fehlgeschlagen";
-"Updated %d/%d extensions in %@" = "Aktualisierte %d/%d-Erweiterungen in %@";
+"Updated %d/%d extensions in %@" = "%d/%d Erweiterungen in %@ aktualisiert";
 "Updated custom filter list" = "Benutzerdefinierte Filterliste aktualisiert";
 "Updates" = "Aktualisierungen";
 "Updates Paused" = "Updates pausiert";
@@ -819,10 +819,10 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Use existing iCloud setup?" = "Vorhandene iCloud-Einrichtung verwenden?";
 "Use iCloud Setup" = "iCloud-Einrichtung verwenden";
 "User List" = "Benutzerliste";
-"User list added. Apply changes to enable it." = "Benutzerliste hinzugefügt. Wende die Änderungen an, um es zu aktivieren.";
+"User list added. Apply changes to enable it." = "Benutzerliste hinzugefügt. Wende die Änderungen an, um sie zu aktivieren.";
 "User list is empty." = "Die Benutzerliste ist leer.";
 "User list not found." = "Benutzerliste nicht gefunden.";
-"User list updated. Apply changes to enable it." = "Benutzerliste aktualisiert. Wende die Änderungen an, um es zu aktivieren.";
+"User list updated. Apply changes to enable it." = "Benutzerliste aktualisiert. Wende die Änderungen an, um sie zu aktivieren.";
 "User list." = "Benutzerliste.";
 "User-added filter list." = "Vom Benutzer hinzugefügte Filterliste.";
 "Userscript" = "Userskript";
@@ -877,7 +877,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Reset to Default" = "Auf Standard zurücksetzen";
 "Shows all filter lists across every category." = "Zeigt alle Filterlisten aus allen Kategorien.";
 "Adds rules tailored to websites and languages from specific regions." = "Fügt Regeln für Websites und Sprachen bestimmter Regionen hinzu. Empfohlene Listen passen zu den gewählten Sprachen und schließen Listen mit niedrigem Vertrauen sowie bereits in anderen Listen enthaltene Listen aus. Wenn eine regionale AdGuard-Liste eine EasyList-basierte oder unabhängige Liste enthält, lasse diese separate Liste bei Verwendung von AdGuard ausgeschaltet.";
-"The end of Safari ad-blocking B.S." = "Schluss mit dem Safari-Werbe­blockier-Unsinn";
+"The end of Safari ad-blocking B.S." = "Das Ende des Safari-Werbe­blocker-Wahnsinns";
 "Welcome to wBlock!" = "Willkommen bei wBlock!";
 "Whitelist" = "Whitelist";
 "Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Füge hier eine Website als Ausnahme hinzu oder passe Userskripte pro Website über das wBlock-Popup in Safari an.";
@@ -891,7 +891,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Du hast nicht angewendete Filteränderungen. Möchtest du sie vor dem Beenden anwenden?";
 "Zapper rules (%d)" = "Zapper-Regeln (%d)";
 "·" = "·";
-"×%d" = "Ã%d";
+"×%d" = "×%d";
 "⚠️ Auto-update: overdue (will run on next trigger)" = "⚠️ Automatische Aktualisierung: überfällig (läuft beim nächsten Trigger)";
 "🔄 Auto-update: currently running" = "🔄 Automatische Aktualisierung: läuft aktuell";
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Automatische Aktualisierung: fällig (läuft beim nächsten Trigger)";
@@ -1131,7 +1131,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Next update: %@" = "Nächstes Update: %@";
 "Next update" = "Nächstes Update";
 "Enable Experimental Filter?" = "Experimentellen Filter aktivieren?";
-"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Experimentelle Filter testen neue Regeln, bevor sie in die Hauptlisten aufgenommen werden, und können Websites beschädigen. Aktiviere sie nur, wenn du Fehler selbst finden und melden möchtest.";
+"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Experimentelle Filter testen neue Regeln, bevor sie in die Hauptlisten aufgenommen werden, und können zu Fehlern auf Seiten führen. Aktiviere sie nur, wenn du bereit bist, Fehler zu finden und melden.";
 "Enable HaGeZi Pro Mini?" = "HaGeZi Pro Mini aktivieren?";
 "HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Pro Mini ist eine DNS-Blockliste und keine Filterliste, die speziell für Werbeblocker entwickelt wurde. Sie ist möglicherweise weniger stabil als die anderen Listen und verursacht mehr Fehlalarme, die Websites beschädigen können.";
 "Reset Ordering" = "Reihenfolge zurücksetzen";
