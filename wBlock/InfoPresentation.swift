@@ -113,8 +113,12 @@ final class InfoPopoverPresenter: ObservableObject {
     private var anchors: [UUID: (id: AnyHashable, view: InfoPopoverAnchorView)] = [:]
 
     func register(_ token: UUID, id: AnyHashable, view: InfoPopoverAnchorView) { anchors[token] = (id, view) }
-    func unregister(_ token: UUID) {
-        guard let id = anchors.removeValue(forKey: token)?.id else { return }
+    /// SwiftUI can host a second, window-less copy of an anchor with the same
+    /// token while it rebuilds a row. Only the view that owns the registration
+    /// may remove it, or the copy evicts the live button and its popover is
+    /// cleared before it opens (#931).
+    func unregister(_ token: UUID, view: InfoPopoverAnchorView) {
+        guard anchors[token]?.view === view, let id = anchors.removeValue(forKey: token)?.id else { return }
         // A presented row that moves (a category change from its own popover)
         // follows its new anchor; one that leaves the list closes its popover.
         DispatchQueue.main.async { [self] in
@@ -259,7 +263,7 @@ final class InfoPopoverAnchorView: NSView {
     fileprivate var registration: (token: UUID, id: AnyHashable, presenter: InfoPopoverPresenter)? {
         didSet {
             if let oldValue, oldValue.token != registration?.token || oldValue.presenter !== registration?.presenter {
-                oldValue.presenter.unregister(oldValue.token)
+                oldValue.presenter.unregister(oldValue.token, view: self)
             }
             register()
         }
@@ -274,7 +278,7 @@ final class InfoPopoverAnchorView: NSView {
     private func register() {
         guard let registration else { return }
         if window == nil {
-            registration.presenter.unregister(registration.token)
+            registration.presenter.unregister(registration.token, view: self)
         } else {
             registration.presenter.register(registration.token, id: registration.id, view: self)
         }
