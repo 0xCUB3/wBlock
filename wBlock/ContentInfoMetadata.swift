@@ -223,26 +223,21 @@ struct InfoMetadataRow: View {
 }
 
 #if os(macOS)
-private struct InfoContentHeight: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
-}
-
+/// Sizes to its content up to a cap in the first layout pass. A measured
+/// height fed back through state reached the popover a frame late, so AppKit
+/// opened it at a placeholder size and slid it diagonally to refit (#916).
 struct InfoContentScrollView<Content: View>: View {
-    var maximumHeight: CGFloat = 640
     @ViewBuilder var content: () -> Content
-    @State private var contentHeight: CGFloat = 360
 
     var body: some View {
-        ScrollView {
-            content().background(GeometryReader { proxy in
-                Color.clear.preference(key: InfoContentHeight.self, value: proxy.size.height)
-            })
-        }
-        .frame(height: min(contentHeight, maximumHeight))
-        .onPreferenceChange(InfoContentHeight.self) { height in
-            if height > 0 { contentHeight = height }
-        }
+        ScrollView { content() }
+            .infoPopoverHeightCap()
+    }
+}
+
+extension View {
+    func infoPopoverHeightCap() -> some View {
+        frame(maxHeight: 640).fixedSize(horizontal: false, vertical: true)
     }
 }
 #endif

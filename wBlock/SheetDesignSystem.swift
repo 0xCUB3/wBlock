@@ -86,9 +86,7 @@ extension View {
 struct InfoSheetContainer<Header: View, Content: View>: View {
     let header: () -> Header
     let content: () -> Content
-    #if os(macOS)
-    @State private var headerHeight: CGFloat = 0
-    #else
+    #if os(iOS)
     @State private var isScrolled = false
     #endif
 
@@ -102,13 +100,7 @@ struct InfoSheetContainer<Header: View, Content: View>: View {
             #if os(macOS)
             header()
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(GeometryReader { proxy in
-                    Color.clear.preference(key: InfoSheetHeaderHeight.self, value: proxy.size.height)
-                })
-                .onPreferenceChange(InfoSheetHeaderHeight.self) { headerHeight = $0 }
-            InfoContentScrollView(maximumHeight: max(0, 640 - headerHeight)) {
-                scrollContent
-            }
+            ScrollView { scrollContent }
             #else
             ScrollView {
                 scrollContent
@@ -121,7 +113,10 @@ struct InfoSheetContainer<Header: View, Content: View>: View {
                     })
             }
             .coordinateSpace(name: InfoSheetScrollOffset.space)
-            .onPreferenceChange(InfoSheetScrollOffset.self) { isScrolled = $0 < -1 }
+            .onPreferenceChange(InfoSheetScrollOffset.self) { top in
+                if #unavailable(iOS 18.0) { isScrolled = top < -1 }
+            }
+            .infoSheetScrolledCompat($isScrolled)
             .safeAreaInset(edge: .top, spacing: 0) {
                 // Frosted only once content scrolls beneath it, so the title and
                 // description do not sit against a divider at rest.
@@ -132,6 +127,9 @@ struct InfoSheetContainer<Header: View, Content: View>: View {
             }
             #endif
         }
+        #if os(macOS)
+        .infoPopoverHeightCap()
+        #endif
     }
 
     private var scrollContent: some View {
@@ -148,12 +146,23 @@ private struct InfoSheetScrollOffset: PreferenceKey {
     static let defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
-#endif
 
-#if os(macOS)
-private struct InfoSheetHeaderHeight: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+private extension View {
+    /// Content offset measured against the top inset. On iPad form sheets the
+    /// content's frame never goes negative while the header inset covers it,
+    /// so the frame test alone left the title unfrosted over the rows (#916).
+    @ViewBuilder
+    func infoSheetScrolledCompat(_ isScrolled: Binding<Bool>) -> some View {
+        if #available(iOS 18.0, *) {
+            onScrollGeometryChange(for: Bool.self) { geometry in
+                geometry.contentOffset.y + geometry.contentInsets.top > 1
+            } action: { _, scrolled in
+                isScrolled.wrappedValue = scrolled
+            }
+        } else {
+            self
+        }
+    }
 }
 #endif
 
