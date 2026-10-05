@@ -393,7 +393,7 @@ struct SettingsView: View {
         let capacity = filterManager.safariRuleCapacityFraction
         // Relative times in the pills age while Settings stays open.
         return TimelineView(.periodic(from: .now, by: 30)) { context in
-            HStack(spacing: compact ? 8 : 12) {
+            StatsCardsView(compact: compact) {
                 Button {
                     showingRuleCapacity = true
                 } label: {
@@ -441,10 +441,6 @@ struct SettingsView: View {
                 }
             }
         }
-        #if os(iOS)
-        .fixedSize(horizontal: false, vertical: true)
-        #endif
-        .padding(.horizontal)
     }
 
     private func syncPillValue(now: Date) -> String {

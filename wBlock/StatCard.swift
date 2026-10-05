@@ -35,8 +35,8 @@ private extension EnvironmentValues {
     }
 }
 
-/// Both tab summaries share spacing and horizontal clearance. On macOS every
-/// card takes the widest card's natural width, but never less than the 155pt
+/// Every tab's summary row shares spacing and horizontal clearance. On macOS
+/// each card takes the widest card in its row's natural width, but never less than the 155pt
 /// every other pill uses, so short counts don't shrink a tab's pills (#921).
 struct StatsCardsView<Content: View>: View {
     var compact = false
