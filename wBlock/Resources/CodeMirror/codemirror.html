@@ -106,8 +106,8 @@ input {
   display: flex !important;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  padding: 8px 48px 8px 12px !important;
+  gap: 6px;
+  padding: 6px 40px 6px 10px !important;
 }
 /* A <br> is not a flex item, so a full-width ::after sits between the find
    row and the replace controls, which are ordered after it. */
@@ -124,25 +124,27 @@ input {
 .cm-panel.cm-search label {
   margin: 0 !important;
   box-sizing: border-box;
-  font-size: 13px !important;
+  font-size: 12px !important;
   line-height: 1 !important;
 }
+/* Kept compact so the panel covers less of the document (#932). */
 .cm-panel.cm-search .cm-textfield,
 .cm-panel.cm-search .cm-button {
-  height: 32px;
+  height: 26px;
+  padding: 0 8px !important;
 }
 .cm-panel.cm-search label {
   display: inline-flex !important;
   align-items: center;
-  gap: 6px;
-  height: 32px;
+  gap: 4px;
+  height: 26px;
   color: var(--cm-foreground);
 }
 .cm-panel.cm-search input[type=checkbox] {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   flex: none;
   border: 1.5px solid var(--cm-gutter-foreground);
   border-radius: 5px;
@@ -164,13 +166,13 @@ input {
 }
 .cm-panels .cm-search button[name=close] {
   position: absolute !important;
-  top: 8px !important;
-  right: 8px !important;
-  width: 32px;
-  height: 32px;
+  top: 6px !important;
+  right: 6px !important;
+  width: 26px;
+  height: 26px;
   padding: 0 !important;
-  border-radius: 16px !important;
-  font-size: 22px !important;
+  border-radius: 13px !important;
+  font-size: 18px !important;
   line-height: 1 !important;
   display: inline-grid;
   place-content: center;
