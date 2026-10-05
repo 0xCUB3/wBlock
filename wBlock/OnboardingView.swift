@@ -89,7 +89,12 @@ struct OnboardingView: View {
             let systemLangs = Locale.preferredLanguages.compactMap {
                 Locale(identifier: $0).languageCode?.lowercased()
             }
-            _selectedLanguages = State(initialValue: Set(systemLangs))
+            // A system language no regional list covers is picked as Other (#935).
+            let covered = Set(filterManager.filterLists.filter { $0.category == .foreign }
+                .flatMap { $0.languages.map { $0.lowercased() } })
+            _selectedLanguages = State(initialValue: Set(systemLangs.map {
+                $0 == Self.englishLanguageCode || covered.contains($0) ? $0 : Self.otherLanguagesCode
+            }))
         }
 
         _selectedRegionalFilters = State(initialValue: [])
@@ -501,16 +506,6 @@ struct OnboardingView: View {
         languagePickerOptions.contains { selectedLanguages.contains($0.code) }
     }
 
-    private var languagesWithoutRegionalFilters: [RegionalLanguageOption] {
-        let matchedCodes = Set(
-            regionalFilters
-                .flatMap { filter in filter.languages.map { $0.lowercased() } }
-        )
-        return languagePickerOptions.filter {
-            selectedLanguages.contains($0.code) && !matchedCodes.contains($0.code)
-        }
-    }
-
     private var selectedLanguagePickerOptions: [RegionalLanguageOption] {
         languagePickerOptions.filter { selectedLanguages.contains($0.code) }
     }
@@ -530,22 +525,22 @@ struct OnboardingView: View {
 
             languagePicker
 
-            Text("Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            if !regionalFilters.isEmpty || !languagesWithoutRegionalFilters.isEmpty {
+            // One flat list for the chosen languages (#935); the flags and
+            // language line on each row already say which language it serves.
+            if !regionalFilters.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(LocalizedStrings.text("Regional", comment: "Filter list category"))
                         .font(.headline)
-                    ForEach(ForeignFilterOrganizer.groups(for: regionalFilters, preferredLanguages: selectedLanguages)) { group in
-                        regionalFilterGroup(group)
-                    }
-                    ForEach(languagesWithoutRegionalFilters) { lang in
-                        emptyRegionalFilterGroup(for: lang)
+                    ForEach(ForeignFilterOrganizer.sortedFilters(regionalFilters)) { filter in
+                        regionalToggle(for: filter)
                     }
                 }
             }
+
+            Text("English and languages without a regional list are covered by the default filters.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
 
         }
     }
@@ -587,46 +582,12 @@ struct OnboardingView: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 
-    private func emptyRegionalFilterGroup(for lang: RegionalLanguageOption) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(lang.name)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-                .padding(.horizontal, 4)
-
-            Group {
-                if lang.code == Self.englishLanguageCode {
-                    Text("No regional filters needed. The default filter lists already cover English and international sites.")
-                } else {
-                    Text("No regional filters available. However, the default filter lists already cover English and international sites.")
-                }
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 4)
-        }
-    }
-
-    private func regionalFilterGroup(_ group: ForeignFilterGroup) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(group.title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-                .padding(.horizontal, 4)
-
-            ForEach(group.filters) { filter in
-                regionalToggle(for: filter)
-            }
-        }
-    }
-
     private func regionalToggle(for filter: FilterList) -> some View {
         let isSelected = selectedRegionalFilters.contains(filter.id)
 
+        let flags = filter.flagEmojis.map { Text($0 + " ") } ?? Text("")
         return SelectableRow(
-            title: Text(filter.localizedDisplayName),
+            title: flags + Text(filter.localizedDisplayName),
             subtitle: filter.localizedDisplayDescription,
             isSelected: isSelected,
             style: .card

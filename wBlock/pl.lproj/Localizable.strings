@@ -1164,3 +1164,6 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 
 /* Regional category info placeholder before any language is chosen */
 "Choose a language to see its lists." = "Wybierz język, aby zobaczyć jego listy.";
+
+/* Onboarding footer under the regional filter list */
+"English and languages without a regional list are covered by the default filters." = "Angielski i języki bez listy regionalnej są objęte domyślnymi filtrami.";

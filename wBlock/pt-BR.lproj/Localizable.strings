@@ -1164,3 +1164,6 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 
 /* Regional category info placeholder before any language is chosen */
 "Choose a language to see its lists." = "Escolha um idioma para ver as listas dele.";
+
+/* Onboarding footer under the regional filter list */
+"English and languages without a regional list are covered by the default filters." = "O inglês e os idiomas sem lista regional são cobertos pelos filtros padrão.";

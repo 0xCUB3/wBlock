@@ -1164,3 +1164,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Regional category info placeholder before any language is chosen */
 "Choose a language to see its lists." = "选择一种语言以查看其列表。";
+
+/* Onboarding footer under the regional filter list */
+"English and languages without a regional list are covered by the default filters." = "英语以及没有区域列表的语言由默认过滤器覆盖。";

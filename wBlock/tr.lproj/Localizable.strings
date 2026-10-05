@@ -1173,3 +1173,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 /* Regional category info placeholder before any language is chosen */
 "Choose a language to see its lists." = "Listelerini görmek için bir dil seçin.";
+
+/* Onboarding footer under the regional filter list */
+"English and languages without a regional list are covered by the default filters." = "İngilizce ve bölgesel listesi olmayan diller varsayılan filtrelerle kapsanır.";

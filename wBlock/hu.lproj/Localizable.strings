@@ -1164,3 +1164,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 /* Regional category info placeholder before any language is chosen */
 "Choose a language to see its lists." = "Válassz egy nyelvet a listái megtekintéséhez.";
+
+/* Onboarding footer under the regional filter list */
+"English and languages without a regional list are covered by the default filters." = "Az angolt és a regionális lista nélküli nyelveket az alapértelmezett szűrők lefedik.";

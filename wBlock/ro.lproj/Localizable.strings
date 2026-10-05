@@ -1164,3 +1164,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 /* Regional category info placeholder before any language is chosen */
 "Choose a language to see its lists." = "Alege o limbă pentru a-i vedea listele.";
+
+/* Onboarding footer under the regional filter list */
+"English and languages without a regional list are covered by the default filters." = "Engleza și limbile fără listă regională sunt acoperite de filtrele implicite.";

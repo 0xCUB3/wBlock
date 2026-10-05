@@ -1164,3 +1164,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Regional category info placeholder before any language is chosen */
 "Choose a language to see its lists." = "Επιλέξτε μια γλώσσα για να δείτε τις λίστες της.";
+
+/* Onboarding footer under the regional filter list */
+"English and languages without a regional list are covered by the default filters." = "Τα αγγλικά και οι γλώσσες χωρίς περιφερειακή λίστα καλύπτονται από τα προεπιλεγμένα φίλτρα.";

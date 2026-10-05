@@ -1164,3 +1164,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Regional category info placeholder before any language is chosen */
 "Choose a language to see its lists." = "언어를 선택하면 해당 목록이 표시됩니다.";
+
+/* Onboarding footer under the regional filter list */
+"English and languages without a regional list are covered by the default filters." = "영어와 지역별 목록이 없는 언어는 기본 필터가 처리합니다.";

@@ -1164,3 +1164,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Regional category info placeholder before any language is chosen */
 "Choose a language to see its lists." = "Выберите язык, чтобы увидеть его списки.";
+
+/* Onboarding footer under the regional filter list */
+"English and languages without a regional list are covered by the default filters." = "Английский и языки без регионального списка покрываются фильтрами по умолчанию.";
