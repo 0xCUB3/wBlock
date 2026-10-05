@@ -6,6 +6,34 @@ import Foundation
 final class CompilationScope: @unchecked Sendable {
     @TaskLocal static var current: CompilationScope?
 
+    /// Workers one large list may be parsed with. Above one only for an
+    /// interactive Apply on a Mac with room to spare.
+    let parseWorkers: Int
+
+    init(parseWorkers: Int = 1) {
+        self.parseWorkers = max(1, parseWorkers)
+    }
+
+    /// Blockers compiled at once and parse workers per list. Past freezes,
+    /// watchdog kills, and Safari compiler crashes came from memory and time
+    /// pressure on phones, background refreshes, and smaller Macs, so only a
+    /// foreground Apply on a Mac with at least 16 GB, 8 cores, normal thermal
+    /// state, and Low Power Mode off gets more. Everything else keeps the
+    /// limits that shipped before.
+    static func capacity(interactive: Bool) -> (targets: Int, parseWorkers: Int) {
+        #if os(macOS)
+        let info = ProcessInfo.processInfo
+        let roomy = interactive
+            && info.physicalMemory >= 16 << 30
+            && info.activeProcessorCount >= 8
+            && info.thermalState.rawValue <= ProcessInfo.ThermalState.fair.rawValue
+            && !info.isLowPowerModeEnabled
+        return roomy ? (5, 2) : (3, 1)
+        #else
+        return (2, 1)
+        #endif
+    }
+
     private final class Entry {
         let lock = NSLock()
         var value: Any?

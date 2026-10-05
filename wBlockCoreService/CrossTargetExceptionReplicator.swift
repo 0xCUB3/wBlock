@@ -153,10 +153,31 @@ public enum CrossTargetExceptionReplicator {
             return try scope.memoized(source) { try parse(source, isCancelled: isCancelled) }
         }
 
+        /// Large lists split into contiguous chunks that are joined in order,
+        /// so the result is identical to a single pass.
         private static func parse(_ source: String, isCancelled: () -> Bool) throws -> ParsedSource {
+            let lines = source.split(whereSeparator: \.isNewline)
+            let workers = lines.count < 10_000 ? 1 : CompilationScope.current?.parseWorkers ?? 1
+            var chunks = [Result<ParsedSource, Error>?](repeating: nil, count: workers)
+            let lock = NSLock()
+            withoutActuallyEscaping(isCancelled) { isCancelled in
+                DispatchQueue.concurrentPerform(iterations: workers) { chunk in
+                    let range = lines.count * chunk / workers..<lines.count * (chunk + 1) / workers
+                    let parsed = Result { try parse(lines[range], isCancelled: isCancelled) }
+                    lock.withLock { chunks[chunk] = parsed }
+                }
+            }
+            let parts = try chunks.map { try $0!.get() }
+            if isCancelled() { throw CancellationError() }
+            return parts.count == 1 ? parts[0] : ParsedSource(
+                blocks: parts.flatMap(\.blocks), exceptions: parts.flatMap(\.exceptions)
+            )
+        }
+
+        private static func parse(_ lines: ArraySlice<Substring>, isCancelled: () -> Bool) throws -> ParsedSource {
             var blocks: [NetworkRule] = []
             var exceptions: [(line: String, rule: NetworkRule)] = []
-            for raw in source.split(whereSeparator: \.isNewline) {
+            for raw in lines {
                 if isCancelled() { throw CancellationError() }
                 let line = String(raw).trimmingCharacters(in: .whitespaces)
                 guard let rule = NetworkRule(line: line) else { continue }

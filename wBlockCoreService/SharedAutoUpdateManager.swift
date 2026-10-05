@@ -2052,14 +2052,17 @@ public actor SharedAutoUpdateManager {
         public let durationMs: Int
     }
 
-    /// Compiles independent targets with bounded concurrency and serial result delivery.
+    /// Compiles independent targets with bounded concurrency and serial result
+    /// delivery. `interactive` marks a foreground Apply the user is waiting on.
     public nonisolated static func compileTargets(
         _ requests: [TargetCompilationRequest],
+        interactive: Bool = false,
         onResult: ((TargetCompilationResult) async -> Void)? = nil
     ) async -> [TargetCompilationResult] {
         var results: [TargetCompilationResult] = []
-        await CompilationScope.$current.withValue(CompilationScope()) {
-        await boundedConcurrentForEach(requests, operation: { request in
+        let capacity = CompilationScope.capacity(interactive: interactive)
+        await CompilationScope.$current.withValue(CompilationScope(parseWorkers: capacity.parseWorkers)) {
+        await boundedConcurrentForEach(requests, maxConcurrent: capacity.targets, operation: { request in
             let started = Date()
             func result(
                 outcome: ContentBlockerService.ContentBlockerTargetOutcome? = nil,

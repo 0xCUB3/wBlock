@@ -770,7 +770,7 @@ extension AppFilterManager {
         var conversionCompletions: [ContentBlockerTargetInfo: SharedAutoUpdateManager.TargetCompilationResult] = [:]
         var appliedSourceRuleCountsByFilterID: [UUID: Int] = [:]
 
-        _ = await SharedAutoUpdateManager.compileTargets(compilationRequests) { completion in
+        _ = await SharedAutoUpdateManager.compileTargets(compilationRequests, interactive: true) { completion in
             conversionCompletions[completion.target] = completion
             #if os(iOS)
             if ApplyCancellation.isCancelled || Task.isCancelled { return }
