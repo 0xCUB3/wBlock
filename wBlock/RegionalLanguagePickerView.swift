@@ -58,9 +58,13 @@ struct RegionalLanguageOption: Identifiable, Hashable {
         options(for: filters.filter { $0.category == .foreign }.flatMap(\.languages), locale: locale)
     }
 
-    /// Every language a custom regional list can cover (#921).
+    /// Every language a custom regional list can cover (#921), including ones
+    /// wBlock has no flag for, so any list can name its language (#932).
     static func assignable(locale: Locale = displayLocale) -> [RegionalLanguageOption] {
-        options(for: FilterList.flaggedLanguageCodes, locale: locale)
+        let named = NSLocale.isoLanguageCodes.filter { code in
+            locale.localizedString(forLanguageCode: code).map { $0.lowercased() != code } ?? false
+        }
+        return options(for: FilterList.flaggedLanguageCodes + named, locale: locale)
     }
 
     private static func options(for codes: [String], locale: Locale) -> [RegionalLanguageOption] {
@@ -141,8 +145,11 @@ struct RegionalLanguagePickerView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
                     .frame(width: 20)
+                // Hidden label: a macOS Form lifts a field's label into its label
+                // column, which pushed every other row to the right (#932).
                 TextField("Search languages", text: $searchQuery)
                     .textFieldStyle(.plain)
+                    .labelsHidden()
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
