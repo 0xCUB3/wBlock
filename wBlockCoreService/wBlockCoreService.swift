@@ -2241,25 +2241,30 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             .replacingOccurrences(of: "\"", with: "\\\"")
     }
 
-    private static let triggerDomainListPattern = try! NSRegularExpression(
-        pattern: #""(?:if|unless)-domain":\[[^\]]*\]"#
-    )
-
     /// SafariConverterLib keeps domains as written (`Karo.Studio##…`), but WebKit rejects the whole
     /// list with "Domains must be lower case ASCII" (#898). Hostnames are case-insensitive.
+    /// Scans bytes because a regex over the full JSON cost as much as the rest of
+    /// the wrapper around conversion. Domains are punycoded ASCII.
     static func lowercasingTriggerDomains(_ json: String) -> String {
-        let source = json as NSString
-        var output = ""
-        var cursor = 0
-        for match in triggerDomainListPattern.matches(in: json, range: NSRange(location: 0, length: source.length)) {
-            let list = source.substring(with: match.range)
-            let lowered = list.lowercased()
-            guard lowered != list else { continue }
-            output += source.substring(with: NSRange(location: cursor, length: match.range.location - cursor)) + lowered
-            cursor = NSMaxRange(match.range)
+        var bytes = Array(json.utf8)
+        let key = Array(#"-domain":["#.utf8)
+        var changed = false
+        var index = 0
+        while index + key.count <= bytes.count {
+            guard bytes[index] == key[0], bytes[index..<(index + key.count)].elementsEqual(key) else {
+                index += 1
+                continue
+            }
+            index += key.count
+            while index < bytes.count, bytes[index] != UInt8(ascii: "]") {
+                if (UInt8(ascii: "A")...UInt8(ascii: "Z")).contains(bytes[index]) {
+                    bytes[index] += 32
+                    changed = true
+                }
+                index += 1
+            }
         }
-        guard cursor > 0 else { return json }
-        return output + source.substring(from: cursor)
+        return changed ? String(decoding: bytes, as: UTF8.self) : json
     }
 
     private static func disabledSiteIgnoreRuleJSON(for site: String) -> String {
