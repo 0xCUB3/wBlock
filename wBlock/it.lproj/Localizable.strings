@@ -1167,3 +1167,6 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 
 /* Onboarding footer under the regional filter list */
 "English and languages without a regional list are covered by the default filters." = "L’inglese e le lingue senza una lista regionale sono coperti dai filtri predefiniti.";
+
+/* Invalid single filter URL */
+"This isn’t a valid http(s) filter URL." = "Questo non è un URL di filtro http(s) valido.";

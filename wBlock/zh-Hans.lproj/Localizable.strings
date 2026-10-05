@@ -1167,3 +1167,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Onboarding footer under the regional filter list */
 "English and languages without a regional list are covered by the default filters." = "英语以及没有区域列表的语言由默认过滤器覆盖。";
+
+/* Invalid single filter URL */
+"This isn’t a valid http(s) filter URL." = "这不是有效的 http(s) 过滤器 URL。";

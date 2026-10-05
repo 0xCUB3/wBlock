@@ -1167,3 +1167,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 /* Onboarding footer under the regional filter list */
 "English and languages without a regional list are covered by the default filters." = "Engleza și limbile fără listă regională sunt acoperite de filtrele implicite.";
+
+/* Invalid single filter URL */
+"This isn’t a valid http(s) filter URL." = "Aceasta nu este o adresă URL de filtru http(s) validă.";

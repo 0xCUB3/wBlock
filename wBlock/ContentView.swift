@@ -1614,7 +1614,10 @@ struct AddFilterListView: View {
 	                    Text("wBlock will fetch and enable the filter list automatically")
                             .foregroundStyle(.secondary)
 	                case .invalid:
-                        if let lineNumber = parsedURLInput.invalidLineNumbers.first {
+                        if urlEntryMode == .single {
+                            Text("This isn’t a valid http(s) filter URL.")
+                                .foregroundStyle(.orange)
+                        } else if let lineNumber = parsedURLInput.invalidLineNumbers.first {
                             Text(LocalizedStrings.format(
                                 "Line %d isn’t a valid http(s) filter URL.",
                                 comment: "Invalid bulk filter URL line",

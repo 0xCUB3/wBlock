@@ -1136,3 +1136,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Onboarding footer under the regional filter list */
 "English and languages without a regional list are covered by the default filters." = "英語と地域別リストのない言語は、デフォルトのフィルタで対応します。";
+
+/* Invalid single filter URL */
+"This isn’t a valid http(s) filter URL." = "有効な http(s) フィルタ URL ではありません。";

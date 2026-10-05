@@ -1167,3 +1167,6 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 
 /* Onboarding footer under the regional filter list */
 "English and languages without a regional list are covered by the default filters." = "El inglés y los idiomas sin lista regional quedan cubiertos por los filtros predeterminados.";
+
+/* Invalid single filter URL */
+"This isn’t a valid http(s) filter URL." = "Esta no es una URL de filtro http(s) válida.";

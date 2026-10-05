@@ -1176,3 +1176,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 /* Onboarding footer under the regional filter list */
 "English and languages without a regional list are covered by the default filters." = "İngilizce ve bölgesel listesi olmayan diller varsayılan filtrelerle kapsanır.";
+
+/* Invalid single filter URL */
+"This isn’t a valid http(s) filter URL." = "Bu geçerli bir http(s) filtre URL’si değil.";

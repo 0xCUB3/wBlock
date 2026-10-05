@@ -1167,3 +1167,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Onboarding footer under the regional filter list */
 "English and languages without a regional list are covered by the default filters." = "영어와 지역별 목록이 없는 언어는 기본 필터가 처리합니다.";
+
+/* Invalid single filter URL */
+"This isn’t a valid http(s) filter URL." = "유효한 http(s) 필터 URL이 아닙니다.";
