@@ -22,6 +22,8 @@ final class CodeMirrorEditorController: ObservableObject {
     /// Increments for document edits so consumers can debounce bounded metadata scans.
     @Published private(set) var documentRevision = 0
     @Published private(set) var analysis: CodeMirrorDocumentAnalysis?
+    @Published private(set) var canUndo = false
+    @Published private(set) var canRedo = false
 
     init(text: String, isUserStyle: Bool = false) {
         self.initialText = text
@@ -73,6 +75,11 @@ final class CodeMirrorEditorController: ObservableObject {
 
     fileprivate func noteDocumentChanged() {
         documentRevision &+= 1
+    }
+
+    fileprivate func updateHistory(canUndo: Bool, canRedo: Bool) {
+        if self.canUndo != canUndo { self.canUndo = canUndo }
+        if self.canRedo != canRedo { self.canRedo = canRedo }
     }
 
     fileprivate func updateAnalysis(_ analysis: CodeMirrorDocumentAnalysis) {
@@ -385,6 +392,11 @@ extension CodeMirrorTextEditor {
                 }
             case "documentChanged":
                 controller.noteDocumentChanged()
+            case "historyChanged":
+                controller.updateHistory(
+                    canUndo: payload["canUndo"] as? Bool ?? false,
+                    canRedo: payload["canRedo"] as? Bool ?? false
+                )
             default:
                 break
             }

@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The icon controls every source window shares, viewing or editing (#921):
-/// one size, one spacing, no tint beyond the wrap toggle's on state.
+/// one size, one spacing. Enabled controls draw in the primary color and
+/// unavailable ones gray out, so gray always means "can't press" (#932).
 struct SourceViewerControls<Extra: View>: View {
     @Binding var wrapsLines: Bool
     let onSearch: () -> Void
@@ -42,9 +43,9 @@ enum SourceControlMetrics {
 
     static var spacing: CGFloat {
         #if os(iOS)
-        4
-        #else
         8
+        #else
+        12
         #endif
     }
 }
@@ -77,11 +78,12 @@ struct SourceControlButton: View {
 struct SourceControlIcon: View {
     let systemImage: String
     var isOn = false
+    @Environment(\.isEnabled) private var isEnabled
 
     var body: some View {
         Image(systemName: systemImage)
             .frame(width: SourceControlMetrics.size, height: SourceControlMetrics.size)
             .contentShape(Rectangle())
-            .foregroundStyle(isOn ? Color.accentColor : Color.secondary)
+            .foregroundStyle(isOn ? Color.accentColor : (isEnabled ? Color.primary : Color.secondary.opacity(0.5)))
     }
 }

@@ -3,7 +3,7 @@
 //  - keep syntax highlighting on for typical userscripts instead of disabling
 //    it whenever a single line exceeds 8192 chars; only drop it for genuinely
 //    large documents, and fall back to a stream highlighter rather than none.
-import { EditorState, Compartment } from "@codemirror/state";
+import { EditorState, Compartment, Transaction } from "@codemirror/state";
 import {
   EditorView,
   ViewPlugin,
@@ -24,6 +24,8 @@ import {
   historyKeymap,
   undo,
   redo,
+  undoDepth,
+  redoDepth,
 } from "@codemirror/commands";
 import {
   searchKeymap,
@@ -103,6 +105,17 @@ let baselineText = "";
 let dirtyKnown = false;
 let suppressDirty = false;
 let view = null;
+let lastHistory = "";
+
+// Undo and Redo gray out when there is nothing to step through (#932).
+function postHistory(state) {
+  const canUndo = !state.readOnly && undoDepth(state) > 0;
+  const canRedo = !state.readOnly && redoDepth(state) > 0;
+  const key = `${canUndo}${canRedo}`;
+  if (key === lastHistory) return;
+  lastHistory = key;
+  post({ type: "historyChanged", canUndo, canRedo });
+}
 
 function post(message) {
   window.webkit?.messageHandlers?.[HANDLER]?.postMessage(message);
@@ -168,6 +181,7 @@ function baseExtensions() {
     search({ top: true }),
     theme(),
     EditorView.updateListener.of((update) => {
+      if (update.transactions.length) postHistory(update.state);
       if (!update.docChanged || suppressDirty) return;
       post({ type: "documentChanged" });
       if (!dirtyKnown) {
@@ -264,6 +278,8 @@ window.wblockEditor = {
     const parent = document.getElementById("editor");
     view?.destroy();
     view = new EditorView({ state, parent });
+    lastHistory = "";
+    postHistory(view.state);
     post({
       type: "ready",
       analysis: {
@@ -277,6 +293,7 @@ window.wblockEditor = {
   setEditable(editable) {
     reconfigure(editableCompartment, EditorView.editable.of(!!editable));
     reconfigure(readOnlyCompartment, EditorState.readOnly.of(!editable));
+    if (view) postHistory(view.state);
     if (editable) view?.focus();
   },
   setLineWrapping(enabled) {
@@ -290,6 +307,8 @@ window.wblockEditor = {
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: nextText },
       effects: lineKindsCompartment.reconfigure(categoryDecorations(lineKinds)),
+      // Loading a document is not an edit the user can undo back out of.
+      annotations: markClean ? Transaction.addToHistory.of(false) : [],
     });
     suppressDirty = false;
     if (markClean) {

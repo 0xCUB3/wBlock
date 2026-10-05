@@ -327,9 +327,10 @@ struct FilterRulesView: View {
                 Label("Comments", systemImage: "text.quote")
             }
         } label: {
-            // An icon like Search and Wrap beside it; filled while some kinds are hidden.
+            // The circle keeps it apart from Wrap Lines' similar bars; filled
+            // while some kinds are hidden.
             SourceControlIcon(systemImage: shownKinds.count == FilterRuleKind.allCases.count
-                ? "line.3.horizontal.decrease" : "line.3.horizontal.decrease.circle.fill")
+                ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
