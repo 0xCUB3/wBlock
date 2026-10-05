@@ -97,9 +97,7 @@ public enum CrossTargetExceptionReplicator {
 
         init(sources: [String], isCancelled: () -> Bool) throws {
             for source in sources {
-                for line in source.split(whereSeparator: \.isNewline) {
-                    if isCancelled() { throw CancellationError() }
-                    guard let rule = NetworkRule(line: String(line)), !rule.isException else { continue }
+                for rule in try ParsedSource.of(source, isCancelled: isCancelled).blocks {
                     patterns.insert(rule.pattern)
                     if rule.isBareHost, let host = rule.anchoredHost { bareHosts.insert(host) }
                 }
@@ -139,6 +137,35 @@ public enum CrossTargetExceptionReplicator {
         }
     }
 
+    /// Network rules of one list text. Every blocker of an Apply parses every
+    /// other blocker's lists, so an Apply parses each text once.
+    final class ParsedSource {
+        let blocks: [NetworkRule]
+        let exceptions: [(line: String, rule: NetworkRule)]
+
+        private init(blocks: [NetworkRule], exceptions: [(line: String, rule: NetworkRule)]) {
+            self.blocks = blocks
+            self.exceptions = exceptions
+        }
+
+        static func of(_ source: String, isCancelled: () -> Bool) throws -> ParsedSource {
+            guard let scope = CompilationScope.current else { return try parse(source, isCancelled: isCancelled) }
+            return try scope.memoized(source) { try parse(source, isCancelled: isCancelled) }
+        }
+
+        private static func parse(_ source: String, isCancelled: () -> Bool) throws -> ParsedSource {
+            var blocks: [NetworkRule] = []
+            var exceptions: [(line: String, rule: NetworkRule)] = []
+            for raw in source.split(whereSeparator: \.isNewline) {
+                if isCancelled() { throw CancellationError() }
+                let line = String(raw).trimmingCharacters(in: .whitespaces)
+                guard let rule = NetworkRule(line: line) else { continue }
+                if rule.isException { exceptions.append((line, rule)) } else { blocks.append(rule) }
+            }
+            return ParsedSource(blocks: blocks, exceptions: exceptions)
+        }
+    }
+
     /// Exception lines from `candidateSources` that a target compiling
     /// `targetSources` should also receive, in rule-identity order of first
     /// appearance and without duplicates.
@@ -153,11 +180,9 @@ public enum CrossTargetExceptionReplicator {
         var seen = Set<String>()
         var output: [String] = []
         for source in candidateSources {
-            for raw in source.split(whereSeparator: \.isNewline) {
+            for (line, rule) in try ParsedSource.of(source, isCancelled: isCancelled).exceptions {
                 if isCancelled() { throw CancellationError() }
-                let line = String(raw).trimmingCharacters(in: .whitespaces)
-                guard let rule = NetworkRule(line: line), rule.isException,
-                      index.canBeCancelled(by: rule),
+                guard index.canBeCancelled(by: rule),
                       seen.insert(FilterRuleAnalysis.ruleIdentity(line)).inserted
                 else { continue }
                 output.append(line)

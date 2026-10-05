@@ -2050,6 +2050,7 @@ public actor SharedAutoUpdateManager {
         onResult: ((TargetCompilationResult) async -> Void)? = nil
     ) async -> [TargetCompilationResult] {
         var results: [TargetCompilationResult] = []
+        await CompilationScope.$current.withValue(CompilationScope()) {
         await boundedConcurrentForEach(requests, operation: { request in
             let started = Date()
             func result(
@@ -2089,6 +2090,7 @@ public actor SharedAutoUpdateManager {
             results.append(result)
             await onResult?(result)
         })
+        }
         return results
     }
 

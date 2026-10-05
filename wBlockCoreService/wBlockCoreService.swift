@@ -1780,6 +1780,33 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             guard let url = SafariContentBlockerAffinityProcessor.sourceURL(for: filter, containerURL: containerURL) else { continue }
             sources[filter.id] = try String(contentsOf: url, encoding: .utf8)
         }
+        // The result covers every blocker, and each blocker of an Apply asks
+        // for it with the same inputs.
+        let inputs = CrossTargetDuplicateInputs(
+            filters: orderedFilters, targets: targets, affinity: snapshot.contentsByFilterID, sources: sources
+        )
+        func compute() throws -> [UUID: Set<String>] {
+            try crossTargetDuplicateRules(
+                orderedFilters: orderedFilters, snapshot: snapshot, distribution: distribution,
+                sources: sources, targets: targets, isCancelled: isCancelled
+            )
+        }
+        guard let scope = CompilationScope.current else { return try compute() }
+        return try scope.memoized(inputs, compute)
+    }
+
+    private struct CrossTargetDuplicateInputs: Hashable {
+        let filters: [FilterList]
+        let targets: [ContentBlockerTargetInfo]
+        let affinity: [UUID: String]
+        let sources: [UUID: String]
+    }
+
+    private static func crossTargetDuplicateRules(
+        orderedFilters: [FilterList], snapshot: SafariContentBlockerAffinitySnapshot,
+        distribution: [ContentBlockerTargetInfo: [FilterList]], sources: [UUID: String],
+        targets: [ContentBlockerTargetInfo], isCancelled: () -> Bool
+    ) throws -> [UUID: Set<String>] {
         var contexts: [ContentBlockerTargetInfo: String] = [:]
         var owners: [UUID: ContentBlockerTargetInfo] = [:]
         for slot in targets {
