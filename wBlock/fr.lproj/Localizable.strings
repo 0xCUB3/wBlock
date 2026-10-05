@@ -1170,3 +1170,6 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 
 /* Invalid single filter URL */
 "This isn’t a valid http(s) filter URL." = "Ceci n’est pas une URL de filtre http(s) valide.";
+
+/* Filter list Automatic Updates setting description */
+"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "Désactivez cette option pour conserver la version actuelle lorsque wBlock met à jour les listes de filtres en masse ou selon un planning.";

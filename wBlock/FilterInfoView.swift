@@ -196,11 +196,10 @@ struct FilterSettingsView: View {
     var body: some View {
         ContentSettingsView(name: liveFilter.localizedDisplayName) {
             if liveFilter.isRemoteURL {
-                Toggle("Automatic Updates", isOn: Binding(
-                    get: { liveFilter.updatesAutomatically },
-                    set: { filterManager.setFilterList(liveFilter.id, updatesAutomatically: $0) }
-                ))
-                .toggleStyle(.switch)
+                AutomaticUpdatesToggle(
+                    isOn: liveFilter.updatesAutomatically,
+                    description: "Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule."
+                ) { filterManager.setFilterList(liveFilter.id, updatesAutomatically: $0) }
             }
             SiteScopeEditor(
                 title: "Apply on", selectedSites: liveFilter.selectedSites, excludedSites: liveFilter.excludedSites,

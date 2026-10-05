@@ -29,3 +29,30 @@ struct ContentSettingsView<Content: View>: View {
         }
     }
 }
+
+/// The Automatic Updates switch both settings sheets lead with, so filter
+/// lists and userscripts read the same (#932).
+struct AutomaticUpdatesToggle: View {
+    let isOn: Bool
+    let description: LocalizedStringKey
+    let onChange: (Bool) -> Void
+
+    var body: some View {
+        Toggle(isOn: Binding(get: { isOn }, set: onChange)) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Automatic Updates")
+                Text(description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .toggleStyle(.switch)
+        .padding(.vertical, 6)
+        .padding(.horizontal, 8)
+        // A shape background instead of cornerRadius: the latter clips, and on
+        // iOS 26 the switch's glass thumb extends past the row's bounds.
+        .background(Color.orange.opacity(isOn ? 0 : 0.08), in: RoundedRectangle(cornerRadius: 8))
+        .padding(.horizontal, -8)
+    }
+}

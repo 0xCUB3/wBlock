@@ -1170,3 +1170,6 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 
 /* Invalid single filter URL */
 "This isn’t a valid http(s) filter URL." = "Questo non è un URL di filtro http(s) valido.";
+
+/* Filter list Automatic Updates setting description */
+"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "Disattivalo per mantenere la versione attuale quando wBlock aggiorna le liste di filtri in blocco o in base a una pianificazione.";

@@ -1179,3 +1179,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Invalid single filter URL */
 "This isn’t a valid http(s) filter URL." = "This isn’t a valid http(s) filter URL.";
+
+/* Filter list Automatic Updates setting description */
+"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule.";

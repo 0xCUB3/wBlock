@@ -1149,40 +1149,19 @@ struct UserScriptSettingsView: View {
     var body: some View {
         if let script = userScriptManager.userScript(withId: scriptID) {
             ContentSettingsView(name: script.localizedDisplayName) {
-                UserScriptWebsiteExceptionsView(scriptID: scriptID, userScriptManager: userScriptManager)
                 if !script.isLocal && script.resolvedDownloadURL != nil {
-                    ScriptUpdateSettingsView(updatesAutomatically: script.updatesAutomatically) { enabled in
+                    AutomaticUpdatesToggle(
+                        isOn: script.updatesAutomatically,
+                        description: "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule."
+                    ) { enabled in
                         Task { await userScriptManager.setUserScript(script, updatesAutomatically: enabled) }
                     }
                 }
+                UserScriptWebsiteExceptionsView(scriptID: scriptID, userScriptManager: userScriptManager)
             }
         } else {
             Text("Unable to load script")
         }
-    }
-}
-
-private struct ScriptUpdateSettingsView: View {
-    let updatesAutomatically: Bool
-    let onChange: (Bool) -> Void
-
-    var body: some View {
-        Toggle(isOn: Binding(get: { updatesAutomatically }, set: onChange)) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Automatic Updates")
-                Text("Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .toggleStyle(.switch)
-        .padding(.vertical, 6)
-        .padding(.horizontal, 8)
-        // A shape background instead of cornerRadius: the latter clips, and on
-        // iOS 26 the switch's glass thumb extends past the row's bounds.
-        .background(Color.orange.opacity(updatesAutomatically ? 0 : 0.08), in: RoundedRectangle(cornerRadius: 8))
-        .padding(.horizontal, -8)
     }
 }
 

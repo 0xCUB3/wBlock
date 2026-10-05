@@ -1179,3 +1179,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 /* Invalid single filter URL */
 "This isn’t a valid http(s) filter URL." = "Bu geçerli bir http(s) filtre URL’si değil.";
+
+/* Filter list Automatic Updates setting description */
+"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "wBlock filtre listelerini toplu olarak veya zamanlanmış şekilde güncellediğinde mevcut sürümü korumak için bunu kapatın.";

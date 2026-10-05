@@ -1170,3 +1170,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 /* Invalid single filter URL */
 "This isn’t a valid http(s) filter URL." = "Ez nem érvényes http(s) szűrő-URL.";
+
+/* Filter list Automatic Updates setting description */
+"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "Kapcsold ki, ha meg akarod tartani a jelenlegi verziót, amikor a wBlock tömegesen vagy ütemezetten frissíti a szűrőlistákat.";

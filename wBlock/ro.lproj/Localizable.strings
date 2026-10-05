@@ -1170,3 +1170,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 /* Invalid single filter URL */
 "This isn’t a valid http(s) filter URL." = "Aceasta nu este o adresă URL de filtru http(s) validă.";
+
+/* Filter list Automatic Updates setting description */
+"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "Dezactivează această opțiune pentru a păstra versiunea curentă când wBlock actualizează listele de filtre în masă sau după un program.";

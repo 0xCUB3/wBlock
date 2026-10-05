@@ -1170,3 +1170,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Invalid single filter URL */
 "This isn’t a valid http(s) filter URL." = "Αυτή δεν είναι έγκυρη διεύθυνση URL φίλτρου http(s).";
+
+/* Filter list Automatic Updates setting description */
+"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "Απενεργοποιήστε το για να διατηρήσετε την τρέχουσα έκδοση όταν το wBlock ενημερώνει τις λίστες φίλτρων μαζικά ή βάσει προγράμματος.";
