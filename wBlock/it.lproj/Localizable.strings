@@ -873,7 +873,7 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Rimuove avvisi sui cookie, popup, banner e altri elementi distraenti. Attiva tutte e cinque le liste AdGuard Annoyances per il set completo.";
 "Reset to Default" = "Ripristina impostazioni predefinite";
 "Shows all filter lists across every category." = "Mostra tutti gli elenchi di filtri di ogni categoria.";
-"Adds rules tailored to websites and languages from specific regions." = "Aggiunge regole adattate ai siti web e alle lingue di regioni specifiche. Le liste consigliate corrispondono alle lingue scelte ed escludono quelle con bassa affidabilità e quelle indicate come già incluse in un’altra lista. Se una lista regionale AdGuard include una lista basata su EasyList o una indipendente, lascia disattivata quella lista separata mentre usi AdGuard.";
+"Adds rules tailored to websites and languages from specific regions." = "Aggiunge regole adattate ai siti web e alle lingue di regioni specifiche. Scegliendo le tue lingue si attivano tutte le liste che le coprono. Le liste già incluse in una lista regionale AdGuard non sono nel catalogo.";
 "The end of Safari ad-blocking B.S." = "Basta con le stupidaggini del blocco pubblicità in Safari";
 "Welcome to wBlock!" = "Benvenuto in wBlock!";
 "Whitelist" = "Lista bianca";
@@ -1158,3 +1158,9 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 
 /* Native name of the Indonesian language */
 "Bahasa Indonesia" = "Bahasa Indonesia";
+
+/* Regional category info heading for the lists that match the chosen languages */
+"Lists for Your Languages" = "Liste per le tue lingue";
+
+/* Regional category info placeholder before any language is chosen */
+"Choose a language to see its lists." = "Scegli una lingua per vedere le sue liste.";

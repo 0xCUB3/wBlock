@@ -876,7 +876,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Αφαιρεί ειδοποιήσεις cookie, αναδυόμενα παράθυρα, banner και άλλα ενοχλητικά στοιχεία. Ενεργοποίησε και τις πέντε λίστες AdGuard Annoyances για το πλήρες σύνολο.";
 "Reset to Default" = "Επαναφορά στις προεπιλογές";
 "Shows all filter lists across every category." = "Εμφανίζει όλες τις λίστες φίλτρων από κάθε κατηγορία.";
-"Adds rules tailored to websites and languages from specific regions." = "Προσθέτει κανόνες για ιστοτόπους και γλώσσες συγκεκριμένων περιοχών. Οι προτεινόμενες λίστες ταιριάζουν στις επιλεγμένες γλώσσες και εξαιρούν λίστες χαμηλής εμπιστοσύνης ή με ένδειξη ότι περιλαμβάνονται ήδη σε άλλη λίστα. Αν μια περιφερειακή λίστα AdGuard περιλαμβάνει μια λίστα βασισμένη στο EasyList ή μια ανεξάρτητη λίστα, άφησε τη χωριστή λίστα απενεργοποιημένη όσο χρησιμοποιείς το AdGuard.";
+"Adds rules tailored to websites and languages from specific regions." = "Προσθέτει κανόνες για ιστοτόπους και γλώσσες συγκεκριμένων περιοχών. Όταν επιλέγετε τις γλώσσες σας, ενεργοποιούνται όλες οι λίστες που τις καλύπτουν. Οι λίστες που περιλαμβάνονται ήδη σε περιφερειακή λίστα AdGuard δεν υπάρχουν στον κατάλογο.";
 "The end of Safari ad-blocking B.S." = "Το τέλος της ανοησίας με τον αποκλεισμό διαφημίσεων στο Safari";
 "Welcome to wBlock!" = "Καλώς ορίσατε στο wBlock!";
 "Whitelist" = "Λίστα επιτρεπόμενων";
@@ -1158,3 +1158,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Native name of the Indonesian language */
 "Bahasa Indonesia" = "Bahasa Indonesia";
+
+/* Regional category info heading for the lists that match the chosen languages */
+"Lists for Your Languages" = "Λίστες για τις γλώσσες σας";
+
+/* Regional category info placeholder before any language is chosen */
+"Choose a language to see its lists." = "Επιλέξτε μια γλώσσα για να δείτε τις λίστες της.";

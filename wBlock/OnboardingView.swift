@@ -38,7 +38,6 @@ struct OnboardingView: View {
     @State private var selectedLanguages: Set<String>
     @State private var selectedRegionalFilters: Set<UUID> = []
     @State private var regionalFilters: [FilterList] = []
-    @State private var recommendedRegionalFilterIDs: Set<UUID> = []
     @State private var hasManuallyEditedRegionalSelection = false
     @State private var wantsCloudSync: Bool = false
     @State private var hasProbedRemoteConfig: Bool = false
@@ -626,11 +625,8 @@ struct OnboardingView: View {
     private func regionalToggle(for filter: FilterList) -> some View {
         let isSelected = selectedRegionalFilters.contains(filter.id)
 
-        let name = Text(filter.localizedDisplayName)
         return SelectableRow(
-            title: recommendedRegionalFilterIDs.contains(filter.id)
-                ? Text(Image(systemName: "checkmark.circle")).foregroundColor(.accentColor) + Text(" ") + name
-                : name,
+            title: Text(filter.localizedDisplayName),
             subtitle: filter.localizedDisplayDescription,
             isSelected: isSelected,
             style: .card
@@ -1083,7 +1079,6 @@ struct OnboardingView: View {
         let primary = buckets.recommended
 
         regionalFilters = primary + buckets.optional
-        recommendedRegionalFilterIDs = Set(primary.map(\.id))
 
         let matchingIDs = Set(matchingFilters.map { $0.id })
         if hasManuallyEditedRegionalSelection {

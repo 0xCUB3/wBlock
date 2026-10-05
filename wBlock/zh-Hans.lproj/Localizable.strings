@@ -873,7 +873,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "移除 Cookie 提示、弹窗、横幅及其他干扰元素。要使用完整套装，请启用全部五个 AdGuard Annoyances 列表。";
 "Reset to Default" = "恢复默认设置";
 "Shows all filter lists across every category." = "显示所有类别中的过滤器列表。";
-"Adds rules tailored to websites and languages from specific regions." = "为特定地区的网站和语言添加定制规则。 推荐列表符合你选择的语言，并排除信任度低的列表以及标明已包含在其他列表中的列表。如果 AdGuard 区域列表已包含基于 EasyList 的列表或独立列表，在使用 AdGuard 时请关闭该单独列表。";
+"Adds rules tailored to websites and languages from specific regions." = "为特定地区的网站和语言添加定制规则。选择语言后，会开启所有覆盖这些语言的列表。已包含在 AdGuard 区域列表中的列表不在目录中。";
 "The end of Safari ad-blocking B.S." = "告别 Safari 广告拦截的糟心事";
 "Welcome to wBlock!" = "欢迎使用 wBlock！";
 "Whitelist" = "白名单";
@@ -1158,3 +1158,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Native name of the Indonesian language */
 "Bahasa Indonesia" = "Bahasa Indonesia";
+
+/* Regional category info heading for the lists that match the chosen languages */
+"Lists for Your Languages" = "适用于你的语言的列表";
+
+/* Regional category info placeholder before any language is chosen */
+"Choose a language to see its lists." = "选择一种语言以查看其列表。";

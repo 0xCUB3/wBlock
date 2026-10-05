@@ -56,10 +56,10 @@ struct FilterCategoryInfoView: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("Recommended Filters")
+                Text(category == .foreign ? "Lists for Your Languages" : "Recommended Filters")
                     .font(.headline)
                 if recommendedFilterNames.isEmpty {
-                    Text("No default filters")
+                    Text(category == .foreign ? "Choose a language to see its lists." : "No default filters")
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(recommendedFilterNames, id: \.self) { name in

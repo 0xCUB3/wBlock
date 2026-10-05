@@ -954,11 +954,6 @@ struct FilterRowView: View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    if filter.category == .foreign, ForeignFilterOrganizer.isRecommended(filter) {
-                        Image(systemName: "checkmark.circle")
-                            .foregroundStyle(Color.accentColor)
-                            .accessibilityLabel(Text("Recommended"))
-                    }
                     if let flags = filter.flagEmojis {
                         Text(flags).accessibilityHidden(true)
                     }

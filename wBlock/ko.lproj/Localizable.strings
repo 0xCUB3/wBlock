@@ -876,7 +876,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "쿠키 알림, 팝업, 배너 및 기타 방해 요소를 제거합니다. 전체 세트를 쓰려면 AdGuard Annoyances 목록 5개를 모두 켜세요.";
 "Reset to Default" = "기본값으로 재설정";
 "Shows all filter lists across every category." = "모든 카테고리의 필터 목록을 표시합니다.";
-"Adds rules tailored to websites and languages from specific regions." = "특정 지역의 웹사이트와 언어에 맞춘 규칙을 추가합니다. 추천 목록은 선택한 언어에 맞으며, 신뢰도가 낮은 목록과 다른 목록에 이미 포함되어 있다고 표시된 목록은 제외합니다. AdGuard 지역별 목록에 EasyList 기반 목록이나 독립 목록이 포함되어 있다면, AdGuard를 사용하는 동안 해당 개별 목록은 꺼 두세요.";
+"Adds rules tailored to websites and languages from specific regions." = "특정 지역의 웹사이트와 언어에 맞춘 규칙을 추가합니다. 언어를 선택하면 해당 언어를 다루는 모든 목록이 켜집니다. AdGuard 지역별 목록에 이미 포함된 목록은 카탈로그에 없습니다.";
 "The end of Safari ad-blocking B.S." = "Safari 광고 차단의 말도 안 되는 문제를 끝내세요";
 "Welcome to wBlock!" = "wBlock에 오신 것을 환영합니다!";
 "Whitelist" = "허용 목록";
@@ -1158,3 +1158,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Native name of the Indonesian language */
 "Bahasa Indonesia" = "Bahasa Indonesia";
+
+/* Regional category info heading for the lists that match the chosen languages */
+"Lists for Your Languages" = "선택한 언어의 목록";
+
+/* Regional category info placeholder before any language is chosen */
+"Choose a language to see its lists." = "언어를 선택하면 해당 목록이 표시됩니다.";
