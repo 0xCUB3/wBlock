@@ -1498,13 +1498,15 @@ public class UserScriptManager: ObservableObject {
     private func refreshDefaultUserScriptDescriptionsIfNeeded() async {
         var didUpdate = false
 
-        for index in userScripts.indices {
-            if BuiltInUserScripts.applyDisplayMetadata(to: &userScripts[index]) {
+        var scripts = userScripts
+        for index in scripts.indices {
+            if BuiltInUserScripts.applyDisplayMetadata(to: &scripts[index]) {
                 didUpdate = true
             }
         }
 
         if didUpdate {
+            userScripts = scripts
             await persistUserScriptsNow()
         }
     }
@@ -3029,14 +3031,18 @@ public class UserScriptManager: ObservableObject {
     /// Puts built-in userscripts back in their default categories and moves custom ones to Other.
     public func resetCategories() async {
         var changed = false
-        for index in userScripts.indices {
-            let category: FilterListCategory = isDefaultUserScript(userScripts[index]) ? .scripts : .scriptOther
-            guard userScripts[index].category != category else { continue }
-            userScripts[index].category = category
-            recordScriptMutation(userScripts[index].id)
+        var scripts = userScripts
+        for index in scripts.indices {
+            let category: FilterListCategory = isDefaultUserScript(scripts[index]) ? .scripts : .scriptOther
+            guard scripts[index].category != category else { continue }
+            scripts[index].category = category
+            recordScriptMutation(scripts[index].id)
             changed = true
         }
-        if changed { await persistUserScriptsNow(invalidateExecutionCache: false) }
+        if changed {
+            userScripts = scripts
+            await persistUserScriptsNow(invalidateExecutionCache: false)
+        }
     }
 
     /// Sets whether bulk and scheduled updates should include this userscript.
@@ -3157,30 +3163,34 @@ public class UserScriptManager: ObservableObject {
         }
 
         var changed = false
-        for i in userScripts.indices {
-            guard let revision = batchRevisions[userScripts[i].id],
-                  isCurrentUserScriptIntent(userScripts[i].id, revision: revision)
+        // Edited as one copy: each element write on the published array
+        // re-renders every observer.
+        var scripts = userScripts
+        for i in scripts.indices {
+            guard let revision = batchRevisions[scripts[i].id],
+                  isCurrentUserScriptIntent(scripts[i].id, revision: revision)
             else { continue }
 
-            let requestedEnable = enabledIDs.contains(userScripts[i].id)
+            let requestedEnable = enabledIDs.contains(scripts[i].id)
             // A script that is already on stays on, as with a single toggle. Only a
             // fresh enable needs its source to exist.
-            let canEnable = userScripts[i].isLocal || userScripts[i].isDownloaded || userScripts[i].isEnabled
+            let canEnable = scripts[i].isLocal || scripts[i].isDownloaded || scripts[i].isEnabled
             let shouldEnable = requestedEnable && canEnable
             // A failed enable must not be replayed as True by a later disk sync.
-            latestUserScriptIntentValues[userScripts[i].id] = shouldEnable
+            latestUserScriptIntentValues[scripts[i].id] = shouldEnable
 
-            if requestedEnable && !canEnable && !userScripts[i].isLocal {
-                failedRemoteEnables.insert(userScripts[i].name)
+            if requestedEnable && !canEnable && !scripts[i].isLocal {
+                failedRemoteEnables.insert(scripts[i].name)
             }
 
-            if userScripts[i].isEnabled != shouldEnable {
-                userScripts[i].isEnabled = shouldEnable
+            if scripts[i].isEnabled != shouldEnable {
+                scripts[i].isEnabled = shouldEnable
                 changed = true
             }
         }
 
         if changed {
+            userScripts = scripts
             logger.info("💾 Persisting batch userscript enable states for \(enabledIDs.count) scripts")
             await persistUserScriptsNow(
                 explicitEnabledStates: Dictionary(
@@ -3526,21 +3536,25 @@ public class UserScriptManager: ObservableObject {
         }.map(\.id))
         var clearedIDs = userScriptsPendingPersistence.intersection(eligibleIDs)
         var succeeded = true
-        for index in userScripts.indices {
-            let script = userScripts[index]
+        var scripts = userScripts
+        var didClear = false
+        for index in scripts.indices {
+            let script = scripts[index]
             guard eligibleIDs.contains(script.id), hasDownloadedContent(for: script) else { continue }
             guard removeUserScriptFile(script) else {
                 succeeded = false
                 continue
             }
             recordScriptMutation(script.id)
-            userScripts[index].compiledStyleBody = nil
-            userScripts[index].content = ""
-            userScripts[index].resourceContents = [:]
-            userScripts[index].version = ""
-            userScripts[index].lastUpdated = nil
+            scripts[index].compiledStyleBody = nil
+            scripts[index].content = ""
+            scripts[index].resourceContents = [:]
+            scripts[index].version = ""
+            scripts[index].lastUpdated = nil
             clearedIDs.insert(script.id)
+            didClear = true
         }
+        if didClear { userScripts = scripts }
         if !clearedIDs.isEmpty {
             userScriptsPendingPersistence.formUnion(clearedIDs)
             guard await persistUserScriptsNow() else { return false }
