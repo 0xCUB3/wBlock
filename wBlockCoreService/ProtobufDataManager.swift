@@ -1730,10 +1730,20 @@ public class ProtobufDataManager: ObservableObject {
         // Try to read the persisted file first to incorporate recent writes from extensions or helper processes.
         if await diskStore.fileExists(at: dataFileURL),
            let loaded = try? await diskStore.readAppData(from: dataFileURL) {
+            var snapshot = loaded.appData
+            // Edits still waiting on the save debounce sit on top of the disk copy;
+            // returning the disk copy alone reverted them (a just-expanded Regional
+            // section closed itself after another process wrote).
+            if let previousData = lastSavedData,
+               let previous = try? decodeAppData(previousData),
+               previous != appData {
+                snapshot = appData
+                mergePersistedChanges(in: &snapshot, comparedTo: previous, from: loaded.appData)
+            }
             lastLoadedDataFileModificationDate = loaded.modificationDate ?? currentModDate
             lastSavedData = loaded.rawData
             lastLoadedDataVersion = currentVersion
-            return loaded.appData
+            return snapshot
         }
 
         // Fallback to current in-memory state if file is missing or unreadable.

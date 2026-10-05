@@ -25,6 +25,7 @@ struct ProtobufReliabilityTests {
         await testSelectedSites(root: root.appendingPathComponent("selected-sites"))
         await testUserScriptMetadataOverrides(root: root.appendingPathComponent("metadata-overrides"))
         await testLegacyBpcURLMigration(root: root.appendingPathComponent("bpc-url"))
+        await testDebouncedEditSurvivesExternalWrite(root: root.appendingPathComponent("debounced-edit"))
         print("PASS")
     }
 
@@ -727,6 +728,23 @@ struct ProtobufReliabilityTests {
         expect(lists.first { $0.id == custom.id }?.url == gitflic, "a user-added gitflic BPC list must keep its URL (#871)")
         expect(lists.first { $0.id == builtIn.id }?.url.host == "pub-d303b9085c0b41b5aa749fc74609d4d9.r2.dev",
                "the built-in gitflic BPC list must still migrate")
+    }
+
+    /// A setting still waiting on the save debounce must survive the next
+    /// update after another process wrote the store.
+    private static func testDebouncedEditSurvivesExternalWrite(root: URL) async {
+        let suite = "test.wblock.debounced-edit.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let app = await makeManager(root: root, standard: defaults, group: defaults)
+        await app.loadData()
+        let ext = await makeManager(root: root, standard: defaults, group: defaults)
+        await ext.loadData()
+        await app.setIsForeignFiltersExpanded(true)
+        await ext.setZapperRules(forHost: "example.com", rules: ["#ad"])
+        await app.setIsBadgeCounterEnabled(true)
+        expect(app.isForeignFiltersExpanded, "a debounced edit must survive a later update after an external write")
+        expect(app.getZapperRules(forHost: "example.com") == ["#ad"], "the external write must still be merged in")
     }
 
     private static func makeManager(
