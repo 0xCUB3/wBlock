@@ -110,6 +110,7 @@ actor ConcurrentLogManager {
         return saveFilterListsResult
     }
     func markNonSelectionChangesPending() {}
+    func removeCustomFilterList(_ filter: FilterList) {}
 }
 @MainActor final class ZapperRuleManager {
     static let shared = ZapperRuleManager()
@@ -399,6 +400,10 @@ enum AppAppearance: String {
         let restored = try BackupCustomFilterRestorer.restoreWithReceipt([remoteEntry], into: [remote], localFileURL: { _ in nil }).lists
         precondition(restored.count == 1 && restored[0].id == remoteID && restored[0].name == "Restored")
         precondition(restored[0].category == .privacy && restored[0].uniqueRuleCount == nil)
+        // Custom lists added after the backup was taken don't survive restoring it (#938).
+        let added = FilterList(name: "Added later", url: URL(string: "https://example.com/added.txt")!, category: .custom, isCustom: true)
+        let replaced = try BackupCustomFilterRestorer.restoreWithReceipt([remoteEntry], into: [remote, added], localFileURL: { _ in nil }).lists
+        precondition(replaced.map(\.id) == [remoteID], "restore must drop custom lists the backup doesn't have")
 
         // A failure after the first inline publish must roll back every file and
         // leave the caller's metadata untouched because restore never returned.

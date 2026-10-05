@@ -396,6 +396,10 @@ enum BackupCustomFilterRestorer {
 
         var lists = existing
         var writes: [URL: Data] = [:]
+        // A restore replaces the custom set. Lists the backup can't restore stay.
+        var keptCustomIDs = Set(entries.filter(\.isUnavailable).flatMap { entry in
+            existing.filter { $0.isCustom && FilterListURLSupport.isSameList($0.url, PersistedFilterURL.resolve(entry.url).url) }.map(\.id)
+        })
         for entry in entries where !entry.isUnavailable {
             let resolvedURL = PersistedFilterURL.resolve(entry.url).url
             guard let components = URLComponents(url: resolvedURL, resolvingAgainstBaseURL: false),
@@ -458,6 +462,7 @@ enum BackupCustomFilterRestorer {
                 }
                 writes[destination] = Data(content.utf8)
             }
+            keptCustomIDs.insert(id)
             if let index = lists.firstIndex(where: matches) {
                 lists[index] = restored
                 lists = lists.enumerated().filter { $0.offset == index || !matches($0.element) }.map(\.element)
@@ -465,6 +470,7 @@ enum BackupCustomFilterRestorer {
                 lists.append(restored)
             }
         }
+        lists.removeAll { $0.isCustom && !keptCustomIDs.contains($0.id) }
         // This synchronous MainActor section does not interleave with app-side
         // edits. Rollback is best effort and leaves externally changed bytes
         // alone; any rollback I/O failures are returned with the original error.
@@ -659,6 +665,10 @@ enum BackupManager {
             )
         }
         let currentLists = filterManager.filterLists
+        let keptIDs = Set(lists.map(\.id))
+        for dropped in originalLists where dropped.isCustom && !keptIDs.contains(dropped.id) {
+            filterManager.removeCustomFilterList(dropped)
+        }
         for entry in backup.customFilterLists where !entry.isUnavailable {
             let url = PersistedFilterURL.resolve(entry.url).url
             if let filter = currentLists.first(where: { $0.isCustom && FilterListURLSupport.isSameList($0.url, url) }) {
