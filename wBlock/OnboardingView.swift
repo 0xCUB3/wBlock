@@ -667,7 +667,9 @@ struct OnboardingView: View {
                     }
 
                     if !detectedContentBlockerStates.isEmpty {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 76), spacing: 6, alignment: .leading)], alignment: .leading, spacing: 6) {
+                        // Adaptive columns stretch to fill the row, which spread the
+                        // chips apart and pushed the last one onto its own line (#932).
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 76, maximum: 84), spacing: 6, alignment: .leading)], alignment: .leading, spacing: 6) {
                                 ForEach(detectedContentBlockerStates) { slotState in
                                     HStack(spacing: 3) {
                                         Image(systemName: slotState.isEnabled ? "checkmark.circle.fill" : "xmark.circle")
