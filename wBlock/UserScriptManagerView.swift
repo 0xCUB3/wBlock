@@ -37,15 +37,6 @@ import UIKit
 import AppKit
 #endif
 
-private func isIntegratedUserScript(
-    _ script: UserScript,
-    isBuiltIn: Bool,
-    builtInDisplayRole: BuiltInUserScriptDisplayRole?
-) -> Bool {
-    isBuiltIn && builtInDisplayRole == .functionality
-        && (script.name == "Dark Reader" || script.name == "Tube Cleaner" || script.name == "Player Cleaner")
-}
-
 private struct UserScriptListItem: Identifiable, Hashable {
     let id: UUID
     let name: String
@@ -63,7 +54,6 @@ private struct UserScriptListItem: Identifiable, Hashable {
     var category: FilterListCategory
     var displayCategory: UserScriptDisplayCategory
     let isBuiltIn: Bool
-    let isIntegrated: Bool
     let isCustom: Bool
     let isBeta: Bool
     let isDarkReader: Bool
@@ -103,11 +93,6 @@ private struct UserScriptListItem: Identifiable, Hashable {
             isBeta: isBeta
         )
         self.isBuiltIn = isBuiltIn
-        isIntegrated = isIntegratedUserScript(
-            script,
-            isBuiltIn: isBuiltIn,
-            builtInDisplayRole: builtInDisplayRole
-        )
         isCustom = !isBuiltIn
         self.isBeta = isBeta
         self.isDarkReader = isDarkReader
@@ -773,7 +758,7 @@ struct UserScriptManagerView: View {
                 // sheet carries the full detail.
                 Text(ContentRowMetadata.summary([
                     NSLocalizedString(
-                        script.isIntegrated ? "Integrated" : (script.isUserStyle ? "Userstyle" : "Userscript"),
+                        script.isUserStyle ? "Userstyle" : "Userscript",
                         comment: "Content type"
                     ),
                     ContentRowMetadata.versionLabel(script.version),
@@ -1179,7 +1164,6 @@ struct UserScriptInfoSidebar: View {
     let isDownloaded: Bool
     let formatFileSize: (Int) -> String
     let isBuiltIn: Bool
-    let builtInDisplayRole: BuiltInUserScriptDisplayRole?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -1200,7 +1184,7 @@ struct UserScriptInfoSidebar: View {
             }
             InfoMetadataList {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString(
-                    script.isUserStyle ? "Userstyle" : (isIntegratedUserScript(script, isBuiltIn: isBuiltIn, builtInDisplayRole: builtInDisplayRole) ? "Integrated" : "Userscript"),
+                    script.isUserStyle ? "Userstyle" : "Userscript",
                     comment: "Content type"
                 ), valueStyle: .typeBadge)
                 InfoMetadataRow(title: "Author", value: metadata.author ?? String(localized: "Not provided"))
@@ -1262,8 +1246,7 @@ struct UserScriptInfoView: View {
                         contentLength: script.content.utf8.count,
                         isDownloaded: userScriptManager.hasDownloadedContent(for: script),
                         formatFileSize: formatFileSize,
-                        isBuiltIn: userScriptManager.isDefaultUserScript(script),
-                        builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script)
+                        isBuiltIn: userScriptManager.isDefaultUserScript(script)
                     )
                     actionList(for: script)
                 }

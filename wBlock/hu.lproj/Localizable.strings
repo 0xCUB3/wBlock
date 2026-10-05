@@ -467,7 +467,6 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "Add meg a // ==UserScript== metaadatblokkot (vagy /* ==UserStyle== */ blokkot felhasználói stílusokhoz), hogy a wBlock ki tudja olvasni a nevet és az URL mintákat.";
 "IndianList" = "IndianList";
 "Info" = "Információ";
-"Integrated" = "Integrált";
 "Info.plist missing" = "Hiányzik az Info.plist";
 "Initialized with %d filter list(s)." = "%d szűrőlistával inicializálva.";
 "International" = "Nemzetközi";

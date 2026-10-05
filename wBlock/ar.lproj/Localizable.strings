@@ -467,7 +467,6 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "ضمّن كتلة البيانات الوصفية // ==UserScript== (أو /* ==UserStyle== */ لأنماط المستخدم) حتى يتمكن wBlock من قراءة الاسم وأنماط عناوين URL.";
 "IndianList" = "IndianList";
 "Info" = "معلومات";
-"Integrated" = "مدمج";
 "Info.plist missing" = "ملف Info.plist مفقود";
 "Initialized with %d filter list(s)." = "تمت التهيئة باستخدام قائمة (قوائم) عوامل التصفية %d.";
 "International" = "دولية";

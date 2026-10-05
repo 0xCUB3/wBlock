@@ -467,7 +467,6 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "Συμπεριλάβετε το μπλοκ μεταδεδομένων // ==UserScript== (ή /* ==UserStyle== */ για στύλ χρήστη), ώστε το wBlock να μπορεί να διαβάσει το όνομα και τα μοτίβα URL.";
 "IndianList" = "IndianList";
 "Info" = "Πληροφορίες";
-"Integrated" = "Ενσωματωμένο";
 "Info.plist missing" = "Λείπει το Info.plist";
 "Initialized with %d filter list(s)." = "Αρχικοποιήθηκε με λίστες φίλτρων %d.";
 "International" = "Διεθνή";
