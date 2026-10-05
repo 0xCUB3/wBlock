@@ -168,8 +168,9 @@ struct ElementZapperSettingsView: View {
                     Button {
                         editingRule = RuleSelection(domain: domain, rule: rule)
                     } label: {
-                        Image(systemName: "pencil")
-                            .frame(minWidth: 44, minHeight: 44)
+                        Image(systemName: "pencil.circle.fill")
+                            .foregroundStyle(Color.accentColor)
+                            .scaledSystemFont(size: 18)
                     }
                     .buttonStyle(.plain)
                     .noFocusRingCompat()
@@ -190,14 +191,19 @@ struct ElementZapperSettingsView: View {
             }
         }
         Divider().padding(.leading, 16)
+        // The note sits under the button the way Site Settings captions sit
+        // under their titles.
         Button {
             pendingConfirmation = .clear(domain: domain)
         } label: {
-            HStack {
+            VStack(alignment: .leading, spacing: 2) {
                 Text("Clear Element Zapper Rules")
                     .foregroundStyle(.red)
-                Spacer()
+                Text("Element Zapper changes take full effect after the next apply.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 10)
             .padding(.leading, 32)
             .padding(.trailing, 16)
@@ -205,13 +211,6 @@ struct ElementZapperSettingsView: View {
         }
         .buttonStyle(.plain)
         .noFocusRingCompat()
-        Text("Element Zapper changes take full effect after the next apply.")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.leading, 32)
-            .padding(.trailing, 16)
-            .padding(.bottom, 12)
     }
 
     private func zapperToggle(_ domain: String) -> some View {
