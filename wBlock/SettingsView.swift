@@ -659,6 +659,13 @@ struct SettingsView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
+                        // Changing what syncs mid-cycle would change what that cycle
+                        // merges, so the switch waits; say so instead of looking stuck (#936).
+                        if syncManager.isSyncing {
+                            Text("Available when the current sync finishes.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .disabled(syncManager.isSyncing)

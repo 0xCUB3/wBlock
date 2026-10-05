@@ -8,8 +8,6 @@ struct CosmeticFilteringSitesView: View {
     @State private var isEnabled = CosmeticFilteringPreference.isEnabled()
     @State private var sites = CosmeticFilteringPreference.sites()
 
-    private var isSaving: Bool { filterManager.isLoading || filterManager.isApplyInFlight }
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -25,7 +23,8 @@ struct CosmeticFilteringSitesView: View {
                 #if os(macOS)
                 .toggleStyle(MacTrailingSwitchToggleStyle())
                 #endif
-                .disabled(isSaving)
+                // Not locked during an apply (#936): the run snapshots this setting
+                // and a change made meanwhile stays pending for the next one.
                 // The scope only matters while the switch is on, so it is
                 // hidden rather than left editable with no effect.
                 if isEnabled {
@@ -34,7 +33,6 @@ struct CosmeticFilteringSitesView: View {
                         emptySelectionMessage: "No sites selected. Cosmetic filtering will not apply.",
                         excludedMessage: "Cosmetic filtering will not apply on these sites. Network blocking still applies.",
                         footer: "Sites include their subdomains. Apply changes to update filtering.",
-                        isSaving: isSaving,
                         updateSelected: { update(CosmeticFilteringPreference.Sites(selectedSites: $0, excludedSites: sites.excludedSites)) },
                         updateExcluded: { update(CosmeticFilteringPreference.Sites(selectedSites: sites.selectedSites, excludedSites: $0)) }
                     )

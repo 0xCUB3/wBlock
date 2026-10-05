@@ -1148,3 +1148,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Paste or write a userstyle with a /* ==UserStyle== */ metadata block." = "/* ==UserStyle== */ メタデータブロック付きのユーザスタイルをペーストするか書いてください。";
 
 "Paste or write a userscript with a // ==UserScript== metadata block." = "// ==UserScript== メタデータブロック付きのユーザスクリプトをペーストするか書いてください。";
+
+/* Shown under a sync setting while a sync is running */
+"Available when the current sync finishes." = "現在の同期が終わると使用できます。";

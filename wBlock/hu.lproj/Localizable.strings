@@ -1179,3 +1179,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Paste or write a userstyle with a /* ==UserStyle== */ metadata block." = "Illessz be vagy írj egy /* ==UserStyle== */ metaadatblokkal rendelkező stílust.";
 
 "Paste or write a userscript with a // ==UserScript== metadata block." = "Illessz be vagy írj egy // ==UserScript== metaadatblokkal rendelkező szkriptet.";
+
+/* Shown under a sync setting while a sync is running */
+"Available when the current sync finishes." = "Az aktuális szinkronizálás befejezése után érhető el.";

@@ -1188,3 +1188,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Paste or write a userstyle with a /* ==UserStyle== */ metadata block." = "/* ==UserStyle== */ meta veri bloğu içeren bir kullanıcı stili yapıştırın veya yazın.";
 
 "Paste or write a userscript with a // ==UserScript== metadata block." = "// ==UserScript== meta veri bloğu içeren bir kullanıcı betiği yapıştırın veya yazın.";
+
+/* Shown under a sync setting while a sync is running */
+"Available when the current sync finishes." = "Geçerli eşitleme bittiğinde kullanılabilir.";

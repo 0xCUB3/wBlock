@@ -1179,3 +1179,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Paste or write a userstyle with a /* ==UserStyle== */ metadata block." = "貼上或撰寫帶有 /* ==UserStyle== */ 中繼資料區塊的使用者樣式。";
 
 "Paste or write a userscript with a // ==UserScript== metadata block." = "貼上或撰寫帶有 // ==UserScript== 中繼資料區塊的使用者腳本。";
+
+/* Shown under a sync setting while a sync is running */
+"Available when the current sync finishes." = "目前同步完成後可用。";

@@ -1179,3 +1179,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Paste or write a userstyle with a /* ==UserStyle== */ metadata block." = "Füge einen Userstyle mit einem /* ==UserStyle== */-Metadatenblock ein oder schreibe ihn.";
 
 "Paste or write a userscript with a // ==UserScript== metadata block." = "Füge ein Userscript mit einem // ==UserScript==-Metadatenblock ein oder schreibe es.";
+
+/* Shown under a sync setting while a sync is running */
+"Available when the current sync finishes." = "Verfügbar, sobald die aktuelle Synchronisierung abgeschlossen ist.";
