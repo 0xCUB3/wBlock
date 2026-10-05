@@ -567,7 +567,6 @@
 "Paste" = "Beillesztés";
 "Paste from Clipboard" = "Beillesztés vágólapról";
 "Paste one or more filter URLs, one per line." = "Illesszen be egy vagy több szűrő URL-t, soronként egyet.";
-"Paste or write a userscript or userstyle with a standard metadata block." = "Illessz be vagy írj egy felhasználói szkriptet vagy stílust szabványos metaadatblokkal.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Illeszd be a közvetlen .user.js linket. A wBlock letölti és telepíti neked.";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Illeszd be a közvetlen .user.js-, .js-, .user.css-, .less-, .sass-, .scss-, .styl- vagy .pcss-hivatkozást. A wBlock letölti és telepíti.";
 "Pause Blocking" = "Blokkolás szüneteltetése";
@@ -1150,7 +1149,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 "Reset…" = "Visszaállítás…";
 "Languages" = "Nyelvek";
-"Add Script" = "Szkript hozzáadása";
 "Paste or type filter rules." = "Illessz be vagy írj be szűrőszabályokat.";
 
 "Sámi" = "számi";
@@ -1173,3 +1171,11 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 /* Filter list Automatic Updates setting description */
 "Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "Kapcsold ki, ha meg akarod tartani a jelenlegi verziót, amikor a wBlock tömegesen vagy ütemezetten frissíti a szűrőlistákat.";
+
+"Add Userscript" = "Felhasználói szkript hozzáadása";
+
+"Add Userstyle" = "Felhasználói stílus hozzáadása";
+
+"Paste or write a userstyle with a /* ==UserStyle== */ metadata block." = "Illessz be vagy írj egy /* ==UserStyle== */ metaadatblokkal rendelkező stílust.";
+
+"Paste or write a userscript with a // ==UserScript== metadata block." = "Illessz be vagy írj egy // ==UserScript== metaadatblokkal rendelkező szkriptet.";

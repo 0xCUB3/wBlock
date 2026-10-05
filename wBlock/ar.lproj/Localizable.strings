@@ -567,7 +567,6 @@
 "Paste" = "لصق";
 "Paste from Clipboard" = "لصق من الحافظة";
 "Paste one or more filter URLs, one per line." = "الصق عنوان URL لفلتر واحد أو أكثر، عنوان واحد في كل سطر.";
-"Paste or write a userscript or userstyle with a standard metadata block." = "الصق أو اكتب سكريبت مستخدم أو نمط مستخدم مع كتلة بيانات وصفية قياسية.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "الصق رابط .user.js المباشر. سيقوم wBlock بتنزيله وتثبيته لك.";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "الصق رابط .user.js أو .js أو .user.css أو .less أو .sass أو .scss أو .styl أو .pcss المباشر. سيقوم wBlock بتنزيله وتثبيته لك.";
 "Pause Blocking" = "إيقاف الحظر مؤقتًا";
@@ -1150,7 +1149,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Reset…" = "إعادة تعيين…";
 "Languages" = "اللغات";
-"Add Script" = "إضافة سكربت";
 "Paste or type filter rules." = "الصق قواعد التصفية أو اكتبها.";
 
 "Sámi" = "السامية";
@@ -1173,3 +1171,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Filter list Automatic Updates setting description */
 "Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "أوقف هذا الخيار للاحتفاظ بالإصدار الحالي عندما يحدّث wBlock قوائم الفلاتر دفعة واحدة أو وفق جدول.";
+
+"Add Userscript" = "إضافة سكربت مستخدم";
+
+"Add Userstyle" = "إضافة نمط مستخدم";
+
+"Paste or write a userstyle with a /* ==UserStyle== */ metadata block." = "الصق نمط مستخدم أو اكتبه مع كتلة بيانات /* ==UserStyle== */.";
+
+"Paste or write a userscript with a // ==UserScript== metadata block." = "الصق سكربت مستخدم أو اكتبه مع كتلة بيانات // ==UserScript==.";

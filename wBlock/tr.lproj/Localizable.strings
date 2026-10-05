@@ -567,7 +567,6 @@
 "Paste" = "Yapıştır";
 "Paste from Clipboard" = "Panodan yapıştır";
 "Paste one or more filter URLs, one per line." = "Her satıra bir tane gelecek şekilde, bir veya daha fazla filtre URL'si yapıştırın.";
-"Paste or write a userscript or userstyle with a standard metadata block." = "Standart bir meta veri bloğu içeren bir kullanıcı betiği veya kullanıcı stili yapıştırın ya da yazın.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = ".user.js bağlantısını doğrudan buraya yapıştırın. wBlock sizin için indirip yükleyecektir.";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Doğrudan .user.js, .js, .user.css, .less, .sass, .scss, .styl veya .pcss bağlantısını yapıştırın. wBlock sizin için indirip kuracaktır.";
 "Pause Blocking" = "Engellemeyi duraklat";
@@ -1159,7 +1158,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 "Reset…" = "Sıfırla…";
 "Languages" = "Diller";
-"Add Script" = "Betik Ekle";
 "Paste or type filter rules." = "Filtre kurallarını yapıştırın veya yazın.";
 
 "Sámi" = "Laponca";
@@ -1182,3 +1180,11 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 /* Filter list Automatic Updates setting description */
 "Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "wBlock filtre listelerini toplu olarak veya zamanlanmış şekilde güncellediğinde mevcut sürümü korumak için bunu kapatın.";
+
+"Add Userscript" = "Kullanıcı betiği ekle";
+
+"Add Userstyle" = "Kullanıcı stili ekle";
+
+"Paste or write a userstyle with a /* ==UserStyle== */ metadata block." = "/* ==UserStyle== */ meta veri bloğu içeren bir kullanıcı stili yapıştırın veya yazın.";
+
+"Paste or write a userscript with a // ==UserScript== metadata block." = "// ==UserScript== meta veri bloğu içeren bir kullanıcı betiği yapıştırın veya yazın.";

@@ -567,7 +567,6 @@
 "Paste" = "Вставить";
 "Paste from Clipboard" = "Вставить из буфера обмена";
 "Paste one or more filter URLs, one per line." = "Вставьте один или несколько URL-адресов фильтров, по одному в строке.";
-"Paste or write a userscript or userstyle with a standard metadata block." = "Вставьте или напишите пользовательский скрипт или стиль со стандартным блоком метаданных.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Вставьте прямую ссылку на .user.js. wBlock загрузит и установит его автоматически.";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Вставьте прямую ссылку на .user.js, .js, .user.css, .less, .sass, .scss, .styl или .pcss. wBlock скачает и установит файл.";
 "Pause Blocking" = "Приостановить блокировку";
@@ -1150,7 +1149,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Reset…" = "Сбросить…";
 "Languages" = "Языки";
-"Add Script" = "Добавить скрипт";
 "Paste or type filter rules." = "Вставьте или введите правила фильтрации.";
 
 "Sámi" = "саамский";
@@ -1173,3 +1171,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Filter list Automatic Updates setting description */
 "Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "Отключите это, чтобы сохранить текущую версию, когда wBlock обновляет списки фильтров массово или по расписанию.";
+
+"Add Userscript" = "Добавить скрипт";
+
+"Add Userstyle" = "Добавить стиль";
+
+"Paste or write a userstyle with a /* ==UserStyle== */ metadata block." = "Вставьте или напишите стиль с блоком метаданных /* ==UserStyle== */.";
+
+"Paste or write a userscript with a // ==UserScript== metadata block." = "Вставьте или напишите скрипт с блоком метаданных // ==UserScript==.";

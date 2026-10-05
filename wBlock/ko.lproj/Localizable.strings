@@ -567,7 +567,6 @@
 "Paste" = "붙여넣기";
 "Paste from Clipboard" = "클립보드에서 붙여넣기";
 "Paste one or more filter URLs, one per line." = "한 줄에 하나씩, 하나 이상의 필터 URL을 붙여넣으세요.";
-"Paste or write a userscript or userstyle with a standard metadata block." = "표준 메타데이터 블록이 포함된 유저스크립트 또는 유저스타일을 붙여넣거나 작성하세요.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "직접 .user.js 링크를 붙여넣으세요. wBlock이 다운로드 및 설치를 진행합니다.";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "직접 .user.js, .js, .user.css, .less, .sass, .scss, .styl 또는 .pcss 링크를 붙여넣으세요. wBlock이 다운로드하여 설치합니다.";
 "Pause Blocking" = "차단 일시정지";
@@ -1150,7 +1149,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Reset…" = "초기화…";
 "Languages" = "언어";
-"Add Script" = "스크립트 추가";
 "Paste or type filter rules." = "필터 규칙을 붙여넣거나 입력하세요.";
 
 "Sámi" = "사미어";
@@ -1173,3 +1171,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Filter list Automatic Updates setting description */
 "Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "wBlock이 필터 목록을 일괄 또는 예약 업데이트할 때 현재 버전을 유지하려면 이 옵션을 끄세요.";
+
+"Add Userscript" = "유저스크립트 추가";
+
+"Add Userstyle" = "유저스타일 추가";
+
+"Paste or write a userstyle with a /* ==UserStyle== */ metadata block." = "/* ==UserStyle== */ 메타데이터 블록이 있는 유저스타일을 붙여넣거나 작성하세요.";
+
+"Paste or write a userscript with a // ==UserScript== metadata block." = "// ==UserScript== 메타데이터 블록이 있는 유저스크립트를 붙여넣거나 작성하세요.";

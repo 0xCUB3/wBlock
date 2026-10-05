@@ -163,7 +163,7 @@ struct UserScriptManagerView: View {
 
     @State private var scripts: [UserScriptListItem] = []
     @AppStorage(ListDisplayOrder.scriptsKey) private var scriptDisplayOrder = Data()
-    @State private var showingAddScriptSheet = false
+    @State private var addingKind: AddUserScriptView.Kind?
     @State private var selectedScript: SelectedUserScript?
     @State private var selectedScriptInfo: SelectedUserScript?
     @State private var selectedScriptSettings: SelectedUserScript?
@@ -288,10 +288,10 @@ struct UserScriptManagerView: View {
     var body: some View {
         userScriptContent
         .modifier(scriptsToolbar)
-        .sheet(isPresented: $showingAddScriptSheet, onDismiss: {
+        .sheet(item: $addingKind, onDismiss: {
             refreshScripts()
-        }) {
-            AddUserScriptView(userScriptManager: userScriptManager, onScriptAdded: {
+        }) { kind in
+            AddUserScriptView(userScriptManager: userScriptManager, kind: kind, onScriptAdded: {
                 refreshScripts()
             })
         }
@@ -327,7 +327,7 @@ struct UserScriptManagerView: View {
         .task(id: addRequest) {
             guard addRequest > 0, addRequest != handledAddRequest else { return }
             handledAddRequest = addRequest
-            showingAddScriptSheet = true
+            addingKind = .script
         }
         .task(id: searchRequest) {
             guard searchRequest > 0, searchRequest != handledSearchRequest else { return }
@@ -478,13 +478,24 @@ struct UserScriptManagerView: View {
             ),
             searchPrompt: "Search scripts"
         ) {
-            Button {
-                showingAddScriptSheet = true
-            } label: {
-                Label("Add Userscript or Userstyle", systemImage: "plus")
-            }
+            addMenu
         } apply: {
             applyChangesToolbarButton
+        }
+    }
+
+    /// Add asks which kind first so the sheet can name it and start the
+    /// editor from the right metadata block (#933).
+    private var addMenu: some View {
+        Menu {
+            Button { addingKind = .script } label: {
+                Label("Userscript", systemImage: "curlybraces")
+            }
+            Button { addingKind = .style } label: {
+                Label("Userstyle", systemImage: "paintbrush")
+            }
+        } label: {
+            Label("Add Userscript or Userstyle", systemImage: "plus")
         }
     }
 
@@ -973,12 +984,8 @@ struct UserScriptManagerView: View {
             Text("Add userscripts and userstyles to customize your browsing experience")
                 .font(.body)
                 .foregroundStyle(.secondary)
-            Button {
-                showingAddScriptSheet = true
-            } label: {
-                Label("Add Userscript or Userstyle", systemImage: "plus")
-            }
-            .buttonStyle(.borderedProminent)
+            addMenu
+                .buttonStyle(.borderedProminent)
         }
         .frame(maxWidth: .infinity)
     }
@@ -1855,10 +1862,28 @@ struct AddUserScriptView: View {
     @FocusState private var urlFieldFocused: Bool
     @FocusState private var textInputFocused: Bool
 
-    init(userScriptManager: UserScriptManager, onScriptAdded: @escaping () -> Void) {
+    enum Kind: String, Identifiable {
+        case script, style
+        var id: String { rawValue }
+
+        /// A minimal metadata block, so a new script or style starts valid.
+        var template: String {
+            switch self {
+            case .script:
+                return "// ==UserScript==\n// @name        New Userscript\n// @match       *://*/*\n// ==/UserScript==\n\n"
+            case .style:
+                return "/* ==UserStyle==\n@name        New Userstyle\n@namespace   wblock\n==/UserStyle== */\n\n@-moz-document domain(\"example.com\") {\n\n}\n"
+            }
+        }
+    }
+
+    let kind: Kind
+
+    init(userScriptManager: UserScriptManager, kind: Kind = .script, onScriptAdded: @escaping () -> Void) {
         self.userScriptManager = userScriptManager
+        self.kind = kind
         self.onScriptAdded = onScriptAdded
-        _editorController = StateObject(wrappedValue: CodeMirrorEditorController(text: ""))
+        _editorController = StateObject(wrappedValue: CodeMirrorEditorController(text: "", isUserStyle: kind == .style))
     }
 
     private struct StagedScriptFile {
@@ -1889,7 +1914,7 @@ struct AddUserScriptView: View {
 
     var body: some View {
         AddContentSheet(
-            title: "Add Script",
+            title: kind == .style ? "Add Userstyle" : "Add Userscript",
             mode: $addMode,
             isLoading: isAdding,
             submitTitle: LocalizedStringKey(addURLButtonTitle),
@@ -1969,7 +1994,7 @@ struct AddUserScriptView: View {
             Text("Pasting will replace the existing content.")
         }
         .sheet(isPresented: $isShowingEditor) {
-            SourceEditorSheet(title: "Script Content", editorController: editorController, onDone: { text in
+            SourceEditorSheet(title: kind == .style ? "Style Content" : "Script Content", editorController: editorController, onDone: { text in
                 applyEditorText(text)
                 return nil
             }, onPaste: pasteScriptFromClipboard)
@@ -2032,8 +2057,10 @@ struct AddUserScriptView: View {
                 }
                 Section { userScriptMetaFields } footer: { AddContentNote(error: editorImportError) }
             } else {
-                AddContentSourceSection(title: "Script Content",
-                    placeholder: "Paste or write a userscript or userstyle with a standard metadata block.",
+                AddContentSourceSection(title: kind == .style ? "Style Content" : "Script Content",
+                    placeholder: kind == .style
+                        ? "Paste or write a userstyle with a /* ==UserStyle== */ metadata block."
+                        : "Paste or write a userscript with a // ==UserScript== metadata block.",
                     isEmpty: textInput.isEmpty, isDisabled: isAdding,
                     onPaste: pasteScriptFromClipboard, onOpenEditor: openEditorSheet) {
                         TextEditor(text: $textInput)
@@ -2488,7 +2515,8 @@ struct AddUserScriptView: View {
 
     private func openEditorSheet() {
         addMode = .text
-        editorController.replaceText(textInput, markClean: true)
+        // An empty editor starts from the chosen kind's metadata block.
+        editorController.replaceText(textInput.isEmpty ? kind.template : textInput, markClean: textInput.isEmpty == false)
         isShowingEditor = true
     }
 

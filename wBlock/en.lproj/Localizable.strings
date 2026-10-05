@@ -567,7 +567,6 @@
 "Paste" = "Paste";
 "Paste from Clipboard" = "Paste from Clipboard";
 "Paste one or more filter URLs, one per line." = "Paste one or more filter URLs, one per line.";
-"Paste or write a userscript or userstyle with a standard metadata block." = "Paste or write a userscript or userstyle with a standard metadata block.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Paste the direct .user.js link. wBlock will download and install it for you.";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you.";
 "Pause Blocking" = "Pause Blocking";
@@ -1159,7 +1158,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Reset…" = "Reset…";
 "Languages" = "Languages";
-"Add Script" = "Add Script";
 "Paste or type filter rules." = "Paste or type filter rules.";
 
 "Sámi" = "Sámi";
@@ -1182,3 +1180,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Filter list Automatic Updates setting description */
 "Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule.";
+
+"Add Userscript" = "Add Userscript";
+
+"Add Userstyle" = "Add Userstyle";
+
+"Paste or write a userstyle with a /* ==UserStyle== */ metadata block." = "Paste or write a userstyle with a /* ==UserStyle== */ metadata block.";
+
+"Paste or write a userscript with a // ==UserScript== metadata block." = "Paste or write a userscript with a // ==UserScript== metadata block.";

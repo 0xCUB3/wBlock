@@ -567,7 +567,6 @@
 "Paste" = "Επικόλληση";
 "Paste from Clipboard" = "Επικόλληση από το Πρόχειρο";
 "Paste one or more filter URLs, one per line." = "Επικολλήστε μία ή περισσότερες διευθύνσεις URL φίλτρου, μία ανά γραμμή.";
-"Paste or write a userscript or userstyle with a standard metadata block." = "Επικολλήστε ή γράψτε ένα κώδικα χρήστη ή ένα στύλ χρήστη με ένα τυπικό αποκλεισμό μεταδεδομένων.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Επικολλήστε τον άμεσο σύνδεσμο .user.js. Το wBlock θα κάνει λήψη και θα τον εγκαταστήσει για εσάς.";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Επικολλήστε τον άμεσο σύνδεσμο .user.js, .js, .user.css, .less, .sass, .scss, .styl ή .pcss. Το wBlock θα κάνει λήψη και θα τον εγκαταστήσει.";
 "Pause Blocking" = "Παύση αποκλεισμού";
@@ -1150,7 +1149,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Reset…" = "Επαναφορά…";
 "Languages" = "Γλώσσες";
-"Add Script" = "Προσθήκη σεναρίου";
 "Paste or type filter rules." = "Επικολλήστε ή πληκτρολογήστε κανόνες φίλτρου.";
 
 "Sámi" = "Σάμι";
@@ -1173,3 +1171,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Filter list Automatic Updates setting description */
 "Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "Απενεργοποιήστε το για να διατηρήσετε την τρέχουσα έκδοση όταν το wBlock ενημερώνει τις λίστες φίλτρων μαζικά ή βάσει προγράμματος.";
+
+"Add Userscript" = "Προσθήκη userscript";
+
+"Add Userstyle" = "Προσθήκη userstyle";
+
+"Paste or write a userstyle with a /* ==UserStyle== */ metadata block." = "Επικολλήστε ή γράψτε ένα userstyle με μπλοκ μεταδεδομένων /* ==UserStyle== */.";
+
+"Paste or write a userscript with a // ==UserScript== metadata block." = "Επικολλήστε ή γράψτε ένα userscript με μπλοκ μεταδεδομένων // ==UserScript==.";

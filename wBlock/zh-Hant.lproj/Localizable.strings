@@ -567,7 +567,6 @@
 "Paste" = "貼上";
 "Paste from Clipboard" = "從剪貼簿貼上";
 "Paste one or more filter URLs, one per line." = "貼上一個或多個篩選器 URL，每行一個。";
-"Paste or write a userscript or userstyle with a standard metadata block." = "貼上或撰寫含標準中繼資料區塊的使用者腳本或使用者樣式。";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "貼上直接的 .user.js 連結。wBlock 會為你下載並安裝。";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "貼上直接的 .user.js、.js、.user.css、.less、.sass、.scss、.styl 或 .pcss 連結。wBlock 會為你下載並安裝。";
 "Pause Blocking" = "暫停封鎖";
@@ -1150,7 +1149,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Reset…" = "重設…";
 "Languages" = "語言";
-"Add Script" = "加入腳本";
 "Paste or type filter rules." = "貼上或輸入過濾規則。";
 
 "Sámi" = "薩米語";
@@ -1173,3 +1171,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Filter list Automatic Updates setting description */
 "Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "關閉此項可在 wBlock 批次或依排程更新過濾清單時保留目前版本。";
+
+"Add Userscript" = "新增使用者腳本";
+
+"Add Userstyle" = "新增使用者樣式";
+
+"Paste or write a userstyle with a /* ==UserStyle== */ metadata block." = "貼上或撰寫帶有 /* ==UserStyle== */ 中繼資料區塊的使用者樣式。";
+
+"Paste or write a userscript with a // ==UserScript== metadata block." = "貼上或撰寫帶有 // ==UserScript== 中繼資料區塊的使用者腳本。";

@@ -567,7 +567,6 @@
 "Paste" = "Lipește";
 "Paste from Clipboard" = "Lipește din clipboard";
 "Paste one or more filter URLs, one per line." = "Lipește unul sau mai multe URL-uri de filtru, câte unul pe linie.";
-"Paste or write a userscript or userstyle with a standard metadata block." = "Lipește sau scrie un script ori stil utilizator cu un bloc standard de metadate.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Lipește linkul direct .user.js. wBlock îl va descărca și instala pentru tine.";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Lipește linkul direct .user.js, .js, .user.css, .less, .sass, .scss, .styl sau .pcss. wBlock îl va descărca și instala.";
 "Pause Blocking" = "Pauză blocare";
@@ -1150,7 +1149,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 "Reset…" = "Resetează…";
 "Languages" = "Limbi";
-"Add Script" = "Adaugă script";
 "Paste or type filter rules." = "Lipește sau scrie reguli de filtrare.";
 
 "Sámi" = "sami";
@@ -1173,3 +1171,11 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 /* Filter list Automatic Updates setting description */
 "Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "Dezactivează această opțiune pentru a păstra versiunea curentă când wBlock actualizează listele de filtre în masă sau după un program.";
+
+"Add Userscript" = "Adaugă script de utilizator";
+
+"Add Userstyle" = "Adaugă stil de utilizator";
+
+"Paste or write a userstyle with a /* ==UserStyle== */ metadata block." = "Lipește sau scrie un stil cu un bloc de metadate /* ==UserStyle== */.";
+
+"Paste or write a userscript with a // ==UserScript== metadata block." = "Lipește sau scrie un script cu un bloc de metadate // ==UserScript==.";

@@ -567,7 +567,6 @@
 "Paste" = "Coller";
 "Paste from Clipboard" = "Coller depuis le presse-papiers";
 "Paste one or more filter URLs, one per line." = "Collez une ou plusieurs URL de filtre, une par ligne.";
-"Paste or write a userscript or userstyle with a standard metadata block." = "Collez ou écrivez un script utilisateur ou un style utilisateur avec un bloc de métadonnées standard.";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "Collez le lien direct .user.js. wBlock le téléchargera et l'installera pour vous.";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Collez le lien direct .user.js, .js, .user.css, .less, .sass, .scss, .styl ou .pcss. wBlock le téléchargera et l’installera pour vous.";
 "Pause Blocking" = "Mettre en pause le blocage";
@@ -1150,7 +1149,6 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 
 "Reset…" = "Réinitialiser…";
 "Languages" = "Langues";
-"Add Script" = "Ajouter un script";
 "Paste or type filter rules." = "Collez ou saisissez des règles de filtrage.";
 
 "Sámi" = "same";
@@ -1173,3 +1171,11 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 
 /* Filter list Automatic Updates setting description */
 "Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "Désactivez cette option pour conserver la version actuelle lorsque wBlock met à jour les listes de filtres en masse ou selon un planning.";
+
+"Add Userscript" = "Ajouter un script utilisateur";
+
+"Add Userstyle" = "Ajouter un style utilisateur";
+
+"Paste or write a userstyle with a /* ==UserStyle== */ metadata block." = "Collez ou écrivez un style utilisateur avec un bloc de métadonnées /* ==UserStyle== */.";
+
+"Paste or write a userscript with a // ==UserScript== metadata block." = "Collez ou écrivez un script utilisateur avec un bloc de métadonnées // ==UserScript==.";

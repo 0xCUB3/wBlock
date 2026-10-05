@@ -567,7 +567,6 @@
 "Paste" = "貼り付け";
 "Paste from Clipboard" = "クリップボードから貼り付け";
 "Paste one or more filter URLs, one per line." = "1行に1つずつ、1つ以上のフィルターURLを貼り付けてください。";
-"Paste or write a userscript or userstyle with a standard metadata block." = "標準のメタデータブロックを含むユーザースクリプトまたはユーザースタイルを貼り付けるか記述してください。";
 "Paste the direct .user.js link. wBlock will download and install it for you." = "直接の .user.js リンクを貼り付けてください。wBlockがダウンロードしてインストールします。";
 "Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "直接の .user.js、.js、.user.css、.less、.sass、.scss、.styl、または .pcss リンクを貼り付けてください。wBlock がダウンロードしてインストールします。";
 "Pause Blocking" = "ブロックを一時停止";
@@ -1119,7 +1118,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Reset…" = "リセット…";
 "Languages" = "言語";
-"Add Script" = "スクリプトを追加";
 "Paste or type filter rules." = "フィルタルールをペーストまたは入力してください。";
 
 "Sámi" = "サーミ語";
@@ -1142,3 +1140,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Filter list Automatic Updates setting description */
 "Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "wBlock がフィルタリストをまとめて、またはスケジュールに従ってアップデートする際に、現在のバージョンを維持するにはこれをオフにしてください。";
+
+"Add Userscript" = "ユーザスクリプトを追加";
+
+"Add Userstyle" = "ユーザスタイルを追加";
+
+"Paste or write a userstyle with a /* ==UserStyle== */ metadata block." = "/* ==UserStyle== */ メタデータブロック付きのユーザスタイルをペーストするか書いてください。";
+
+"Paste or write a userscript with a // ==UserScript== metadata block." = "// ==UserScript== メタデータブロック付きのユーザスクリプトをペーストするか書いてください。";
