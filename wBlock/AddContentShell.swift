@@ -321,7 +321,10 @@ struct AddContentURLInput: View {
             .frame(minHeight: 96, maxHeight: 140)
             .accessibilityLabel(label)
         } else {
+            // Forms on macOS put the label beside the field, which pushed it out
+            // of line with the bulk and text editors; the placeholder names it.
             TextField(label, text: $text, prompt: placeholder)
+                .labelsHidden()
                 #if os(macOS)
                 .textFieldStyle(.roundedBorder)
                 #endif
