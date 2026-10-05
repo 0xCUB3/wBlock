@@ -154,23 +154,32 @@ struct RegionalLanguagePickerView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
 
-            ForEach(matchingOptions) { language in
-                Divider().padding(.leading, 42)
-                Button {
-                    selectedLanguages.insert(language.code)
-                    searchQuery = ""
-                } label: {
-                    HStack(spacing: 10) {
-                        languageLeading(language)
-                        Text(language.nativeName)
-                        Spacer()
+            // Results scroll in a fixed band, so the sheet around the picker
+            // keeps its size while each keystroke changes the match count (#932).
+            if !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(matchingOptions) { language in
+                            Divider().padding(.leading, 42)
+                            Button {
+                                selectedLanguages.insert(language.code)
+                                searchQuery = ""
+                            } label: {
+                                HStack(spacing: 10) {
+                                    languageLeading(language)
+                                    Text(language.nativeName)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 9)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .noFocusRingCompat()
+                        }
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 9)
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
-                .noFocusRingCompat()
+                .frame(height: 190)
             }
         }
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
