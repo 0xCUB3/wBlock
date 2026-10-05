@@ -295,17 +295,23 @@ extension AppFilterManager {
             return false
         }
 
+        // Every field write on the published array re-renders the whole list, and
+        // seven per disabled filter froze the UI after each Apply. Publish once.
+        var lists = filterLists
         for filter in filtersToClear {
-            guard let index = filterLists.firstIndex(where: { $0.id == filter.id }) else { continue }
-            filterLists[index].version = ""
-            filterLists[index].sourceRuleCount = nil
-            filterLists[index].rawSourceRuleCount = nil
-            filterLists[index].lastUpdated = nil
-            filterLists[index].etag = nil
-            filterLists[index].serverLastModified = nil
-            filterLists[index].limitExceededReason = nil
-            await dataManager.setFilterValidators(filter.id.uuidString, etag: nil, lastModified: nil)
+            guard let index = lists.firstIndex(where: { $0.id == filter.id }) else { continue }
+            lists[index].version = ""
+            lists[index].sourceRuleCount = nil
+            lists[index].rawSourceRuleCount = nil
+            lists[index].lastUpdated = nil
+            lists[index].etag = nil
+            lists[index].serverLastModified = nil
+            lists[index].limitExceededReason = nil
         }
+        if lists != filterLists { filterLists = lists }
+        await dataManager.setFilterValidators(Dictionary(uniqueKeysWithValues: filtersToClear.map {
+            ($0.id.uuidString, (etag: String?.none, lastModified: String?.none))
+        }))
 
         await saveFilterLists()
         publishDownloadedFilter()
