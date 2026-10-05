@@ -381,7 +381,7 @@ final class FilterListUpdater: @unchecked Sendable {
         recovered.etag = revision.etag
         recovered.serverLastModified = revision.lastModified
 
-        await MainActor.run {
+        await MainActor.run { [recovered] in
             guard let index = filterListManager?.filterLists.firstIndex(where: { $0.id == recovered.id }) else {
                 return
             }

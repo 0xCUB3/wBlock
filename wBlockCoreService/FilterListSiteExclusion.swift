@@ -217,7 +217,7 @@ public enum FilterListSiteExclusion {
         }
         let body = dollar.map { String(line[..<$0]) } ?? line
         let options = dollar.map { String(line[line.index(after: $0)...]) } ?? ""
-        var parts = options.isEmpty ? [] : options.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
+        let parts = options.isEmpty ? [] : options.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
         let domainIndex = parts.firstIndex(where: { $0.hasPrefix("domain=") || $0.hasPrefix("from=") }) ?? parts.count
         let rawDomains = domainIndex < parts.count
             ? parts[domainIndex].split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)[1].split(separator: "|")
