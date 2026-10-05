@@ -1,6 +1,5 @@
 import SwiftUI
 
-#if os(iOS)
 /// The disclosure glyph every Settings row uses. Tapping a filter or script
 /// row opens its Info sheet, which lists all of the row's actions, and this
 /// is what tells the user the row opens at all. The switch stays flush
@@ -13,4 +12,3 @@ struct RowDisclosureChevron: View {
             .accessibilityHidden(true)
     }
 }
-#endif

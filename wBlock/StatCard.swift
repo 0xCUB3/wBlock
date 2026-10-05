@@ -122,11 +122,9 @@ struct StatCard: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
-                    #if os(iOS)
                     if showsDisclosure {
                         RowDisclosureChevron()
                     }
-                    #endif
                 }
 
                 Text(value)
