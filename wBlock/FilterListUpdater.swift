@@ -325,10 +325,17 @@ final class FilterListUpdater: @unchecked Sendable {
         if let cached = await pendingDownloads.take(filter.id) {
             return await processDownloadedFilter(filter, download: cached)
         }
-        if let pending = PendingFilterUpdateRevisions.publishedRevision(filterID: filter.id.uuidString),
-           await applyPublishedPendingRevision(pending, to: filter) {
+        // A helper's staged copy may already be stale; prefer the server and
+        // fall back to the staged copy only when nothing newer arrives.
+        let pending = PendingFilterUpdateRevisions.publishedRevision(filterID: filter.id.uuidString)
+        let fetched = await fetchFromServer(filter)
+        if fetched != .updated, let pending, await applyPublishedPendingRevision(pending, to: filter) {
             return .updated
         }
+        return fetched
+    }
+
+    private func fetchFromServer(_ filter: FilterList) async -> FilterFetchResult {
         do {
             let validators = loader.filterFileExists(filter)
                 ? await storedValidators(for: filter)

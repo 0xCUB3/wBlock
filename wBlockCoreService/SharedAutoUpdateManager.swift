@@ -1553,24 +1553,32 @@ public actor SharedAutoUpdateManager {
         )
     }
 
+    /// A list a helper downloaded but could not apply is still checked against
+    /// the server, so the app never installs a copy that is already stale. The
+    /// staged copy is used only when nothing newer can be fetched.
     private func fetchIfUpdated(_ filter: FilterList, containerURL: URL) async -> FilterFetchOutcome {
-        let uuid = filter.id.uuidString
-        if let pending = PendingFilterUpdateRevisions.publishedRevision(filterID: uuid) {
-            var updated = filter
-            if let data = localDataForComparison(filter: filter, containerURL: containerURL) {
-                updated.sourceRuleCount = countRulesInData(data: data)
-            }
-            if let version = pending.version, !version.isEmpty {
-                updated.version = version
-            }
-            updated.lastUpdated = Date(timeIntervalSince1970: pending.downloadedAt)
-            updated.etag = pending.etag
-            updated.serverLastModified = pending.lastModified
-            return .updated(
-                filter: updated,
-                validators: (etag: pending.etag, lastModified: pending.lastModified)
-            )
+        let pending = PendingFilterUpdateRevisions.publishedRevision(filterID: filter.id.uuidString)
+        let fetched = await fetchFromServer(filter, containerURL: containerURL)
+        if case .updated = fetched { return fetched }
+        guard let pending else { return fetched }
+        var updated = filter
+        if let data = localDataForComparison(filter: filter, containerURL: containerURL) {
+            updated.sourceRuleCount = countRulesInData(data: data)
         }
+        if let version = pending.version, !version.isEmpty {
+            updated.version = version
+        }
+        updated.lastUpdated = Date(timeIntervalSince1970: pending.downloadedAt)
+        updated.etag = pending.etag
+        updated.serverLastModified = pending.lastModified
+        return .updated(
+            filter: updated,
+            validators: (etag: pending.etag, lastModified: pending.lastModified)
+        )
+    }
+
+    private func fetchFromServer(_ filter: FilterList, containerURL: URL) async -> FilterFetchOutcome {
+        let uuid = filter.id.uuidString
         let etag = await getFilterEtag(uuid)
         let lastModified = await getFilterLastModified(uuid)
         // Attempt a uBlock-Origin-style delta/differential update first. A nil
