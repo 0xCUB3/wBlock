@@ -1124,3 +1124,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Sámi" = "サーミ語";
 "sámegiella" = "sámegiella";
+
+/* Native name of the Indonesian language */
+"Bahasa Indonesia" = "Bahasa Indonesia";

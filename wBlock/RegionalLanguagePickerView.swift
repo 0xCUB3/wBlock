@@ -29,6 +29,8 @@ struct RegionalLanguageOption: Identifiable, Hashable {
         // ICU does not provide a native display name for Montenegrin.
         if code == "cnr" { return String(localized: "crnogorski") }
         if code == "se" { return String(localized: "sámegiella") }
+        // ICU calls Indonesian "Indonesia", the name of the country.
+        if code == "id" { return String(localized: "Bahasa Indonesia") }
         return Locale(identifier: code).localizedString(forLanguageCode: code) ?? name
     }
 

@@ -1155,3 +1155,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Sámi" = "السامية";
 "sámegiella" = "sámegiella";
+
+/* Native name of the Indonesian language */
+"Bahasa Indonesia" = "Bahasa Indonesia";

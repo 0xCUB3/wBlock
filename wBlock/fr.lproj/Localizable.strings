@@ -1155,3 +1155,6 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 
 "Sámi" = "same";
 "sámegiella" = "sámegiella";
+
+/* Native name of the Indonesian language */
+"Bahasa Indonesia" = "Bahasa Indonesia";
