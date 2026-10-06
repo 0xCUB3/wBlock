@@ -1062,6 +1062,9 @@ public class ProtobufDataManager: ObservableObject {
         appData.autoUpdate.filterLastModified[uuid]
     }
 
+    /// Every stored Last-Modified header, keyed by filter UUID string.
+    public var filterLastModified: [String: String] { appData.autoUpdate.filterLastModified }
+
     @MainActor
     public func setFilterLastModified(_ uuid: String, lastModified: String?) async {
         await setFilterValidators(uuid, etag: nil, lastModified: lastModified, updateETag: false)

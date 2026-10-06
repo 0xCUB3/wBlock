@@ -57,7 +57,8 @@ struct ContentView: View {
     private var filterPresentationInput: FilterListPresentation.Input {
         .init(filters: filterManager.filterLists, order: filterDisplayOrder,
               searchText: filterSearchText, enabledOnly: showOnlyEnabledLists,
-              localeIdentifier: locale.identifier)
+              localeIdentifier: locale.identifier, downloadedIDs: downloadedFilterIDs,
+              lastModified: dataManager.filterLastModified)
     }
     @State private var pendingEssentialFilter: FilterList?
     @State private var pendingRiskyEnable: RiskyFilterEnable?
@@ -732,9 +733,13 @@ struct ContentView: View {
         // The presentation snapshot lands after an off-main sort with animations
         // off; reading it here made switches wait for it and then snap.
         let filter = filterManager.filterListIndex(for: snapshot.id).map { filterManager.filterLists[$0] } ?? snapshot
+        let isDownloaded = downloadedFilterIDs.contains(filter.id)
         return FilterRowView(
             filter: filter,
-            isDownloaded: downloadedFilterIDs.contains(filter.id),
+            text: filterPresentation.rowText[filter.id] ?? .init(
+                filter, isDownloaded: isDownloaded,
+                lastModified: dataManager.getFilterLastModified(filter.id.uuidString)),
+            isDownloaded: isDownloaded,
             isDownloading: downloadingFilterIDs.contains(filter.id),
             onDownload: { confirmingExperimental(filter) { downloadFilter(filter) } },
             onInfo: { selectedFilterInfo = filter },
@@ -832,6 +837,7 @@ struct ContentView: View {
 
 struct FilterRowView: View {
     let filter: FilterList
+    let text: FilterListPresentation.RowText
     let isDownloaded: Bool
     let isDownloading: Bool
     var onDownload: () -> Void
@@ -915,7 +921,7 @@ struct FilterRowView: View {
                 // offers Get in its place.
                 ContentDownloadControl(
                     isDownloaded: isDownloaded, isDownloading: isDownloading,
-                    name: filter.localizedDisplayName, action: onDownload
+                    name: text.name, action: onDownload
                 )
             } else {
                 Toggle(
@@ -954,7 +960,7 @@ struct FilterRowView: View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    Text(filter.localizedDisplayName)
+                    Text(text.name)
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -979,15 +985,15 @@ struct FilterRowView: View {
                 }
                 .font(.body)
 
-                if filter.category == .foreign, !filter.languages.isEmpty {
-                    Text(filter.nativeLanguageNames().joined(separator: ", "))
+                if !text.languages.isEmpty {
+                    Text(text.languages)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                if !filter.localizedDisplayDescription.isEmpty {
-                    Text(filter.localizedDisplayDescription)
+                if !text.description.isEmpty {
+                    Text(text.description)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         #if os(iOS)
@@ -998,69 +1004,19 @@ struct FilterRowView: View {
 
                 // One metadata line: rule count, version, and update time. The
                 // Info sheet carries the full detail.
-                if !metadataSummary.isEmpty {
-                    Text(metadataSummary)
+                if !text.metadata.isEmpty {
+                    Text(text.metadata)
                         .font(.caption2)
                         .foregroundStyle(.gray)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
-                        .help(submittedRuleCountHelp(for: filter))
+                        .help(text.help)
                 }
             }
             Spacer(minLength: 0)
         }
     }
 
-    private var ruleCountSummary: String? {
-        if filter.isCustom && !filter.isInlineUserList && filter.isSelected && filter.sourceRuleCount == nil {
-            return NSLocalizedString("Not Downloaded", comment: "Filter has no local content")
-        }
-        if let rawCount = filter.rawSourceRuleCount,
-           let expandedCount = filter.sourceRuleCount,
-           rawCount != expandedCount {
-            return String.localizedStringWithFormat(
-                NSLocalizedString("%@ source → %@ expanded rules", comment: "Filter rule expansion summary"),
-                rawCount.formatted(),
-                expandedCount.formatted()
-            )
-        }
-        if let count = filter.sourceRuleCount, count > 0 {
-            return String.localizedStringWithFormat(
-                NSLocalizedString("%@ rules", comment: "Filter rule count summary"),
-                count.formatted()
-            )
-        }
-        return nil
-    }
-
-    /// The upstream Last-Modified date when the server reported one, so the
-    /// row reflects the list's own age rather than the last local download.
-    private var filterUpdatedDate: Date? {
-        if let header = ProtobufDataManager.shared.getFilterLastModified(filter.id.uuidString),
-           let serverDate = HTTPModifiedDate.date(from: header) {
-            return serverDate
-        }
-        return filter.lastUpdated
-    }
-
-    private var metadataSummary: String {
-        guard !filter.isRemoteURL || isDownloaded else { return "" }
-        return ContentRowMetadata.summary([
-            ruleCountSummary,
-            ContentRowMetadata.versionLabel(filter.version),
-            ContentRowMetadata.updatedLabel(filterUpdatedDate),
-        ])
-    }
-
-    /// Hover text for the rule count: how many source rules the last
-    /// successful apply actually handed to the converter (#742).
-    private func submittedRuleCountHelp(for filter: FilterList) -> String {
-        guard filter.isSelected, let submitted = filter.uniqueRuleCount else { return "" }
-        return String.localizedStringWithFormat(
-            NSLocalizedString("%@ submitted at last apply", comment: "Actual source rules admitted to the last successful compilation"),
-            submitted.formatted()
-        )
-    }
 }
 
 #if os(iOS)

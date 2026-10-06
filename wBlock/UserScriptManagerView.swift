@@ -42,6 +42,8 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let name: String
     let localizedDisplayName: String
     let localizedDisplayDescription: String
+    /// Built once here so rows that scroll in skip the defaults read and formatting.
+    let metadataSummary: String
     let url: URL?
     let updateURL: String?
     let isEnabled: Bool
@@ -76,6 +78,13 @@ private struct UserScriptListItem: Identifiable, Hashable {
         name = script.name
         localizedDisplayName = script.localizedDisplayName
         localizedDisplayDescription = script.localizedDisplayDescription
+        metadataSummary = ContentRowMetadata.summary([
+            NSLocalizedString(script.isUserStyle ? "Userstyle" : "Userscript", comment: "Content type"),
+            ContentRowMetadata.versionLabel(isDownloaded || script.isLocal ? script.version : ""),
+            ContentRowMetadata.updatedLabel(
+                isDownloaded || script.isLocal ? (UserScriptModifiedStore.date(for: script.url) ?? script.lastUpdated) : nil
+            ),
+        ])
         url = script.url
         updateURL = script.updateURL
         isEnabled = script.isEnabled
@@ -748,17 +757,7 @@ struct UserScriptManagerView: View {
 
                 // One metadata line: kind, version, and update time. The Info
                 // sheet carries the full detail.
-                Text(ContentRowMetadata.summary([
-                    NSLocalizedString(
-                        script.isUserStyle ? "Userstyle" : "Userscript",
-                        comment: "Content type"
-                    ),
-                    ContentRowMetadata.versionLabel(script.version),
-                    ContentRowMetadata.updatedLabel(
-                        script.isDownloaded || script.isLocal
-                            ? (UserScriptModifiedStore.date(for: script.url) ?? script.lastUpdated) : nil
-                    ),
-                ]))
+                Text(script.metadataSummary)
                     .font(.caption2)
                     .foregroundStyle(.gray)
                     .lineLimit(2)

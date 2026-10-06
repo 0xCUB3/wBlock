@@ -55,6 +55,12 @@ struct FilterListPresentationTests {
         let refreshed = try await FilterListPresentation.prepare(input([changed, b]))
         precondition(refreshed.sections.first { $0.category == .privacy }!.filters == [changed])
         precondition(refreshed.sections.allSatisfy { $0.category != .foreign }, "Removed filters must leave no cached regional rows")
+        precondition(refreshed.rowText[changed.id]!.metadata.isEmpty, "A remote list shows no metadata before it downloads")
+        var downloaded = input([changed, b])
+        downloaded.downloadedIDs = [changed.id]
+        let downloadedText = try await FilterListPresentation.prepare(downloaded).rowText[changed.id]!
+        precondition(downloadedText.name == "Alpha" && downloadedText.metadata.contains("123"), "Row text follows the refreshed snapshot")
+        precondition(all.rowText[regional.id]!.languages == "Deutsch, français" && all.rowText[a.id]!.languages.isEmpty)
         let disabled = try await FilterListPresentation.prepare(input([changed, b], enabled: true))
         precondition(ids(disabled).isEmpty)
 
