@@ -106,11 +106,8 @@ extension AppFilterManager {
             return
         }
 
-        guard FilterListContentValidator.appearsToBeFilterList(trimmedContent) else {
-            statusDescription = LocalizedStrings.text(
-                "That doesn't look like a filter list.",
-                comment: "User list validation error"
-            )
+        if let message = Self.userListContentError(content) {
+            statusDescription = message
             hasError = true
             return
         }
@@ -370,6 +367,19 @@ extension AppFilterManager {
         }
     }
 
+    /// Why pasted, imported, or edited rules can't be saved, or nil. Every
+    /// line must be a rule, not just one of them (#943).
+    nonisolated static func userListContentError(_ content: String) -> String? {
+        if let line = FilterListContentValidator.firstInvalidRuleLine(in: content) {
+            return LocalizedStrings.format(
+                "Line %d isn’t a valid filter rule.", comment: "User list validation error", line)
+        }
+        guard FilterListContentValidator.appearsToBeFilterList(content) else {
+            return LocalizedStrings.text("That doesn't look like a filter list.", comment: "User list validation error")
+        }
+        return nil
+    }
+
     nonisolated private static func countRulesInUserListContent(_ content: String) -> Int {
         FilterList.countRules(in: content)
     }
@@ -458,6 +468,12 @@ extension AppFilterManager {
 
         guard !trimmedContent.isEmpty else {
             statusDescription = LocalizedStrings.text("User list is empty.", comment: "User list validation error")
+            hasError = true
+            return
+        }
+
+        if let message = Self.userListContentError(content) {
+            statusDescription = message
             hasError = true
             return
         }

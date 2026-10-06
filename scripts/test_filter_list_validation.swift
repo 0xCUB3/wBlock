@@ -224,6 +224,13 @@ struct FilterListValidationTests {
             "expected userscript metadata blocks to be rejected as filters"
         )
         expectInvalidContent("<html><body>challenge</body></html>", "expected HTML to be rejected")
+        expectEqual(FilterListContentValidator.firstInvalidRuleLine(in: "||ads.example^\nnot a rule\nexample.com##.ad"), 2,
+                    "expected a prose line to fail even beside valid rules")
+        expectEqual(FilterListContentValidator.firstInvalidRuleLine(in: [
+            "! comment", "# hosts comment", "[Adblock Plus 2.0]", "0.0.0.0 ads.example", "127.0.0.1\ttracker.example",
+            "example.com##div[title=\"a b\"]", "example.com#$#body { color: red !important; }",
+            "example.com##+js(set, a b)", "/ad banner/$script", "||a.com^$domain=x.com|y.com", "",
+        ].joined(separator: "\n")), nil, "expected selectors, scriptlets, regexes, and hosts entries to stay valid")
         expectInvalidContent(
             "[{\"trigger\":{\"url-filter\":\"example\"},\"action\":{\"type\":\"block\"}}]",
             "expected Safari content blocker JSON to be rejected without a semantic importer"

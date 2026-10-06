@@ -247,6 +247,33 @@ public enum FilterListContentValidator {
         return sawFilterSyntax
     }
 
+    /// The first line a filter engine can't read as a rule. A rule's pattern
+    /// never contains whitespace; only cosmetic bodies, regex patterns, and
+    /// hosts entries may. One stray sentence used to pass as long as another
+    /// line was a valid rule (#943).
+    public static func firstInvalidRuleLine(in content: String) -> Int? {
+        var lineNumber = 0
+        var invalid: Int?
+        content.enumerateLines { line, stop in
+            lineNumber += 1
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard FilterRuleAnalysis.isRuleLine(trimmed),
+                  FilterListContentProcessing.hostsEntryHosts(trimmed) == nil,
+                  !trimmed.hasPrefix("/") else { return }
+            let pattern: Substring
+            if let marker = trimmed.firstIndex(of: "#"),
+               cosmeticMarkers.contains(where: { trimmed[marker...].hasPrefix($0) }) {
+                pattern = trimmed[..<marker]
+            } else {
+                pattern = trimmed.split(separator: "$", maxSplits: 1, omittingEmptySubsequences: false)[0]
+            }
+            if pattern.contains(where: \.isWhitespace) { invalid = lineNumber; stop = true }
+        }
+        return invalid
+    }
+
+    private static let cosmeticMarkers = ["##", "#@#", "#?#", "#@?#", "#$#", "#@$#", "#$?#", "#@$?#", "#%#", "#@%#"]
+
     private static func isFilterSyntaxLine(_ line: String) -> Bool {
         if line.hasPrefix("!") { return true } // ABP comment/directive
         if FilterListContentProcessing.hostsEntryHosts(line) != nil { return true }

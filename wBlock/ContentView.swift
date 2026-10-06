@@ -1697,6 +1697,10 @@ struct AddFilterListView: View {
             }
         case .paste:
             if !isReviewingText {
+                if let message = AppFilterManager.userListContentError(pastedRules) {
+                    importErrorMessage = message
+                    return
+                }
                 let metadata = FilterListMetadataParser.parse(from: pastedRules, maxLines: 80)
                 let values = textMetadataState.autofill(
                     name: metadata.title ?? "",
@@ -1944,15 +1948,12 @@ struct AddFilterListView: View {
                         ])
                     }
                     let content = try String(contentsOf: url, encoding: .utf8)
-                    let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !trimmedContent.isEmpty,
-                          FilterListContentValidator.appearsToBeFilterList(trimmedContent)
-                    else {
+                    let error = content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        ? LocalizedStrings.text("That doesn't look like a filter list.", comment: "User list validation error")
+                        : AppFilterManager.userListContentError(content)
+                    if let error {
                         throw NSError(domain: "wBlock.filterImport", code: 1, userInfo: [
-                            NSLocalizedDescriptionKey: LocalizedStrings.text(
-                                "That doesn't look like a filter list.",
-                                comment: "User list validation error"
-                            )
+                            NSLocalizedDescriptionKey: error
                         ])
                     }
 

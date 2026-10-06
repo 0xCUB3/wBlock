@@ -485,6 +485,7 @@
 "last updated %@" = "τελευταία ενημέρωση %@";
 "Last: Never" = "Τελευταίο: Ποτέ";
 "Latvian List" = "Latvian List";
+"Line %d isn’t a valid filter rule." = "Η γραμμή %d δεν είναι έγκυρος κανόνας φίλτρου.";
 "Line %d isn’t a valid http(s) filter URL." = "Η γραμμή %d δεν είναι έγκυρη διεύθυνση URL φίλτρου http(s).";
 "filterslists-KO" = "filterslists-KO";
 "Liste AR" = "Liste AR";

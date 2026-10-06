@@ -485,6 +485,7 @@
 "last updated %@" = "actualizat ultima dată %@";
 "Last: Never" = "Ultima: Niciodată";
 "Latvian List" = "Latvian List";
+"Line %d isn’t a valid filter rule." = "Linia %d nu este o regulă de filtru validă.";
 "Line %d isn’t a valid http(s) filter URL." = "Linia %d nu este un URL de filtru http(s) valid.";
 "filterslists-KO" = "filterslists-KO";
 "Liste AR" = "Liste AR";
