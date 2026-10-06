@@ -106,7 +106,9 @@ input {
   display: flex !important;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  /* The zero-height break between the rows is its own flex line, so each
+     row gap counts twice (#943). */
+  gap: 3px 6px;
   padding: 6px 40px 6px 10px !important;
 }
 /* A <br> is not a flex item, so a full-width ::after sits between the find
@@ -145,6 +147,8 @@ input {
   appearance: none;
   width: 16px;
   height: 16px;
+  /* The theme pads search inputs, which stretched the box on macOS (#943). */
+  padding: 0 !important;
   flex: none;
   border: 1.5px solid var(--cm-gutter-foreground);
   border-radius: 5px;

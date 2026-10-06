@@ -30,6 +30,7 @@ import {
 import {
   searchKeymap,
   openSearchPanel,
+  searchPanelOpen,
   search,
   highlightSelectionMatches,
 } from "@codemirror/search";
@@ -179,6 +180,16 @@ function baseExtensions() {
       ...completionKeymap,
     ]),
     search({ top: true }),
+    // The search panel's fields are built without the editor's content
+    // attributes, so autocorrect rewrote search terms (#943).
+    EditorView.updateListener.of((update) => {
+      if (!searchPanelOpen(update.state) || searchPanelOpen(update.startState)) return;
+      for (const field of update.view.dom.querySelectorAll(".cm-search .cm-textfield")) {
+        field.setAttribute("autocorrect", "off");
+        field.setAttribute("autocapitalize", "off");
+        field.setAttribute("spellcheck", "false");
+      }
+    }),
     theme(),
     EditorView.updateListener.of((update) => {
       if (update.transactions.length) postHistory(update.state);
