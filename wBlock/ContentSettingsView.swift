@@ -15,7 +15,7 @@ struct ContentSettingsView<Content: View>: View {
     }
 
     private var settingsContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Settings").font(.title2.weight(.semibold))
@@ -47,12 +47,53 @@ struct AutomaticUpdatesToggle: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .toggleStyle(.switch)
-        .padding(.vertical, 6)
-        .padding(.horizontal, 8)
-        // A shape background instead of cornerRadius: the latter clips, and on
-        // iOS 26 the switch's glass thumb extends past the row's bounds.
-        .background(Color.orange.opacity(isOn ? 0 : 0.08), in: RoundedRectangle(cornerRadius: 8))
-        .padding(.horizontal, -8)
+        .settingsSwitch()
+        .settingsGroup(tint: isOn ? nil : .orange)
+    }
+}
+
+/// A titled, rounded group for settings sheets and pages, so every control
+/// sits on the same leading edge with one header and one footer style (#943).
+struct SettingsGroup<Content: View>: View {
+    var header: LocalizedStringKey? = nil
+    var footer: [LocalizedStringKey] = []
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let header {
+                Text(header).font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
+                    .padding(.horizontal, 12)
+            }
+            VStack(alignment: .leading, spacing: 8, content: content).settingsGroup()
+            ForEach(Array(footer.enumerated()), id: \.offset) { _, line in
+                Text(line).font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 12)
+            }
+        }
+    }
+}
+
+extension View {
+    /// Pins the switch to the group's trailing edge on macOS too, where the
+    /// plain switch style draws it right after the label.
+    @ViewBuilder
+    func settingsSwitch() -> some View {
+        #if os(macOS)
+        toggleStyle(MacTrailingSwitchToggleStyle())
+        #else
+        toggleStyle(.switch)
+        #endif
+    }
+
+    /// A shape background instead of cornerRadius: the latter clips, and on
+    /// iOS 26 a switch's glass thumb extends past the row's bounds.
+    func settingsGroup(tint: Color? = nil) -> some View {
+        padding(.vertical, 10)
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background((tint ?? .primary).opacity(tint == nil ? 0.05 : 0.08),
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }

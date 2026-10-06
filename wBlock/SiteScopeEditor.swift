@@ -12,42 +12,41 @@ struct SiteScopeEditor: View {
     let updateExcluded: ([String]) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // A menu picker outside a Form drops its label on iOS, so the
-            // label is drawn as text and the picker's own label hidden.
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(title).foregroundStyle(.secondary).fixedSize()
-                Picker(title, selection: Binding(
-                    get: { selectedSites != nil }, set: { updateSelected($0 ? [] : nil) }
-                )) {
-                    Text("All matching sites").tag(false)
-                    Text("Only selected sites").tag(true)
+        VStack(alignment: .leading, spacing: 18) {
+            SettingsGroup {
+                // A menu picker outside a Form drops its label on iOS, so the
+                // label is drawn as text and the picker's own label hidden.
+                HStack {
+                    Text(title)
+                    Spacer(minLength: 12)
+                    Picker(title, selection: Binding(
+                        get: { selectedSites != nil }, set: { updateSelected($0 ? [] : nil) }
+                    )) {
+                        Text("All matching sites").tag(false)
+                        Text("Only selected sites").tag(true)
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .fixedSize()
                 }
-                .pickerStyle(.menu)
-                .labelsHidden()
+                .disabled(isSaving)
             }
-            .disabled(isSaving)
             if let selectedSites {
-                VStack(alignment: .leading, spacing: 4) {
-                    StringListEditor(title: "Selected Sites", items: selectedSites,
-                                       update: { updateSelected($0) }, isSaving: isSaving)
-                    if selectedSites.isEmpty { hint(emptySelectionMessage) }
+                SettingsGroup(header: "Selected Sites", footer: selectedSites.isEmpty ? [emptySelectionMessage] : []) {
+                    StringListEditor(title: nil, items: selectedSites,
+                                     update: { updateSelected($0) }, isSaving: isSaving)
                 }
             }
             if selectedSites == nil || !excludedSites.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    StringListEditor(title: "Excluded Sites", items: excludedSites,
-                                       update: updateExcluded, isSaving: isSaving)
-                    hint(excludedMessage)
+                SettingsGroup(header: "Excluded Sites", footer: [excludedMessage]) {
+                    StringListEditor(title: nil, items: excludedSites,
+                                     update: updateExcluded, isSaving: isSaving)
                 }
             }
-            hint(footer)
+            Text(footer).font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 12)
         }
         .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private func hint(_ text: LocalizedStringKey) -> some View {
-        Text(text).font(.caption).foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
     }
 }

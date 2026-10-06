@@ -20,9 +20,8 @@ struct CosmeticFilteringSitesView: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                #if os(macOS)
-                .toggleStyle(MacTrailingSwitchToggleStyle())
-                #endif
+                .settingsSwitch()
+                .settingsGroup()
                 // Not locked during an apply (#936): the run snapshots this setting
                 // and a change made meanwhile stays pending for the next one.
                 // The scope only matters while the switch is on, so it is
