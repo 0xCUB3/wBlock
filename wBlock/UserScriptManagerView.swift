@@ -600,7 +600,7 @@ struct UserScriptManagerView: View {
             scriptId: selection.id, userScriptManager: userScriptManager,
             onChangeDisplayCategory: { moveScript(selection.id, to: $0) },
             onDownload: {
-                if let item = scripts.first(where: { $0.id == selection.id }) { downloadScript(item) }
+                if let item = scripts.first(where: { $0.id == selection.id }) { requestEnable(item) }
             },
             onAction: macOSWindowAction { action in
                 let routed = SelectedUserScript(id: selection.id, action: action)
@@ -664,23 +664,15 @@ struct UserScriptManagerView: View {
     }
 
     /// Fetches a remote script's content without changing its enabled state (#665).
-    private func downloadScript(_ script: UserScriptListItem) {
-        guard !script.isLocal, !script.isDownloaded,
-              !downloadingScriptIDs.contains(script.id),
-              let managedScript = userScriptManager.userScript(withId: script.id)
-        else { return }
-        downloadingScriptIDs.insert(script.id)
-        Task {
-            await ConcurrentLogManager.shared.info(
-                .userScript, LocalizedStrings.text("Downloading userscript"), metadata: ["script": script.name])
-            _ = await userScriptManager.downloadUserScript(managedScript)
-            await MainActor.run {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    downloadingScriptIDs.remove(script.id)
-                    refreshScripts()
-                }
-            }
+    /// Get and the switch both enable through here, so Get turns the script
+    /// on as it does for filter lists, and a beta warns before downloading (#941).
+    private func requestEnable(_ script: UserScriptListItem) {
+        guard !downloadingScriptIDs.contains(script.id) else { return }
+        if script.isBeta, !BetaUserscriptWarning.hasAcknowledged {
+            pendingBetaEnableScript = script
+            return
         }
+        applyEnabledState(for: script, newValue: true)
     }
 
     private func applyEnabledState(for script: UserScriptListItem, newValue: Bool) {
@@ -852,17 +844,13 @@ struct UserScriptManagerView: View {
                 ContentDownloadControl(
                     isDownloaded: script.isDownloaded,
                     isDownloading: downloadingScriptIDs.contains(script.id),
-                    name: script.name, action: { downloadScript(script) }
+                    name: script.name, action: { requestEnable(script) }
                 )
             } else {
                 Toggle("", isOn: Binding(
                     get: { displayedEnabled },
                     set: { newValue in
-                        if newValue, script.isBeta, !BetaUserscriptWarning.hasAcknowledged {
-                            pendingBetaEnableScript = script
-                            return
-                        }
-                        applyEnabledState(for: script, newValue: newValue)
+                        if newValue { requestEnable(script) } else { applyEnabledState(for: script, newValue: false) }
                     }
                 ))
                 .labelsHidden()
@@ -931,7 +919,7 @@ struct UserScriptManagerView: View {
             }
         }
         if actions.contains(.download) {
-            Button { downloadScript(script) } label: {
+            Button { requestEnable(script) } label: {
                 Label("Download", systemImage: "arrow.down.circle")
             }
             .disabled(downloadingScriptIDs.contains(script.id))
