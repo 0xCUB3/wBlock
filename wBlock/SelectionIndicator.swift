@@ -41,6 +41,8 @@ struct SelectableRow: View {
     }
 
     let title: Text
+    /// A short line under the title, such as the languages a list covers.
+    var caption: String = ""
     var subtitle: String = ""
     var badge: Text? = nil
     let isSelected: Bool
@@ -69,6 +71,13 @@ struct SelectableRow: View {
                                 .foregroundStyle(.orange)
                                 .cornerRadius(4)
                         }
+                    }
+
+                    if !caption.isEmpty {
+                        Text(caption)
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.leading)
                     }
 
                     if !subtitle.isEmpty {

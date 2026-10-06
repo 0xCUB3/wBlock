@@ -201,46 +201,6 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         try container.encodeIfPresent(selectedSites, forKey: .selectedSites)
         try container.encodeIfPresent(uniqueRuleCount, forKey: .admittedSourceRuleCount)
     }
-    
-    /// Regions whose flags mark each ISO 639 language code. Flags are a visual aid;
-    /// they don't claim a list covers every site in those countries.
-    private static let languageRegions: [String: String] = [
-        "ar": "EG SA MA DZ", "as": "IN", "bg": "BG", "bn": "BD", "bs": "BA",
-        "cnr": "ME", "cs": "CZ", "da": "DK", "de": "DE CH AT", "dv": "MV",
-        "el": "GR CY", "es": "ES AR", "et": "EE", "fa": "IR", "fi": "FI",
-        "fr": "FR BE CA", "gu": "IN", "he": "IL", "hi": "IN", "hr": "HR",
-        "hu": "HU", "id": "ID", "is": "IS", "it": "IT", "ja": "JP",
-        "kn": "IN", "ko": "KR", "lt": "LT", "lv": "LV", "mai": "IN",
-        "mk": "MK", "ml": "IN", "mr": "IN", "ms": "MY", "nb": "NO",
-        "ne": "NP", "nl": "NL BE", "nn": "NO", "or": "IN", "pa": "IN",
-        "pl": "PL", "ps": "AF", "pt": "BR PT", "ro": "RO MD", "ru": "RU",
-        "si": "LK", "sk": "SK", "sl": "SI", "sq": "AL XK", "sr": "RS",
-        "sv": "SE", "ta": "IN", "te": "IN", "tg": "TJ", "th": "TH",
-        "tr": "TR", "uk": "UA", "vi": "VN", "zh": "CN TW HK MO",
-    ]
-
-    private static func flags(forLanguage code: String) -> [String] {
-        (languageRegions[code] ?? "").split(separator: " ").map { region in
-            String(String.UnicodeScalarView(region.unicodeScalars.compactMap {
-                Unicode.Scalar(0x1F1A5 + $0.value)
-            }))
-        }
-    }
-
-    /// Every language with a flag, so a custom regional list can name any of them.
-    public static var flaggedLanguageCodes: [String] { Array(languageRegions.keys) }
-
-    /// The first flag for a language, used where one language is shown on its own.
-    public static func flag(forLanguage code: String) -> String? {
-        flags(forLanguage: code).first
-    }
-
-    /// Returns flag emojis for this filter's languages, or nil if none
-    public var flagEmojis: String? {
-        var seen = Set<String>()
-        let flags = languages.flatMap(Self.flags(forLanguage:)).filter { seen.insert($0).inserted }
-        return flags.isEmpty ? nil : flags.joined(separator: " ")
-    }
 
     /// Whether this is a built-in list pre-expanded by AdGuard's registry.
     /// These lists already have includes resolved and conditionals evaluated,

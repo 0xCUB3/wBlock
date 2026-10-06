@@ -19,6 +19,8 @@ struct FilterListPresentationTests {
         precondition(ForeignFilterOrganizer.isRecommended(regional))
         precondition(!ForeignFilterOrganizer.isRecommended(superseded))
         precondition(regional.localizedLanguageNames(locale: Locale(identifier: "en")) == ["French", "German"])
+        precondition(regional.nativeLanguageNames() == ["Deutsch", "français"])
+        precondition(regional.nativeLanguageNames(among: ["fr"]) == ["français"])
         let filters = [a, privacy, b, superseded, regional]
         let order = try JSONEncoder().encode([b.id, a.id])
         func input(_ filters: [FilterList], query: String = "", enabled: Bool = false) -> FilterListPresentation.Input {

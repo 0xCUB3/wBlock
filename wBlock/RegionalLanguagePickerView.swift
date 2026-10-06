@@ -20,19 +20,11 @@ struct RegionalLanguageOption: Identifiable, Hashable {
     let code: String
     /// The name in the app's display language, used for sorting and search.
     let name: String
-    let flag: String
 
     var id: String { code }
 
     /// The language's own name, which is what the rows show.
-    var nativeName: String {
-        // ICU does not provide a native display name for Montenegrin.
-        if code == "cnr" { return String(localized: "crnogorski") }
-        if code == "se" { return String(localized: "sámegiella") }
-        // ICU calls Indonesian "Indonesia", the name of the country.
-        if code == "id" { return String(localized: "Bahasa Indonesia") }
-        return Locale(identifier: code).localizedString(forLanguageCode: code) ?? name
-    }
+    var nativeName: String { Locale.nativeLanguageName(for: code) ?? name }
 
     var aliases: [String] { Self.aliasesByCode[code] ?? [] }
 
@@ -58,23 +50,18 @@ struct RegionalLanguageOption: Identifiable, Hashable {
         options(for: filters.filter { $0.category == .foreign }.flatMap(\.languages), locale: locale)
     }
 
-    /// Every language a custom regional list can cover (#921), including ones
-    /// wBlock has no flag for, so any list can name its language (#932).
+    /// Every language a custom regional list can cover (#921, #932): the
+    /// languages the system has a locale for, plus those built-in lists name.
+    /// ISO 639 alone also lists historical ones such as Old English (#943).
     static func assignable(locale: Locale = displayLocale) -> [RegionalLanguageOption] {
-        let named = NSLocale.isoLanguageCodes.filter { code in
-            locale.localizedString(forLanguageCode: code).map { $0.lowercased() != code } ?? false
-        }
-        return options(for: FilterList.flaggedLanguageCodes + named, locale: locale)
+        let living = Locale.availableIdentifiers.compactMap { Locale(identifier: $0).languageCode }
+        return options(for: living + ["cnr", "se"], locale: locale)
     }
 
     private static func options(for codes: [String], locale: Locale) -> [RegionalLanguageOption] {
         var seen = Set<String>()
         return codes.map { $0.lowercased() }.filter { seen.insert($0).inserted }.map { code in
-            RegionalLanguageOption(
-                code: code,
-                name: locale.regionalLanguageName(for: code) ?? code,
-                flag: FilterList.flag(forLanguage: code) ?? ""
-            )
+            RegionalLanguageOption(code: code, name: locale.regionalLanguageName(for: code) ?? code)
         }
         .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
@@ -154,8 +141,9 @@ struct RegionalLanguagePickerView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
 
-            // Results scroll in a fixed band, so the sheet around the picker
-            // keeps its size while each keystroke changes the match count (#932).
+            // Results scroll in a band capped at five rows, so the sheet around
+            // the picker stops growing while typing (#932) without leaving empty
+            // space under a short match list (#940).
             if !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 ScrollView {
                     VStack(spacing: 0) {
@@ -179,15 +167,41 @@ struct RegionalLanguagePickerView: View {
                         }
                     }
                 }
-                .frame(height: 190)
+                .frame(height: min(CGFloat(max(matchingOptions.count, 1)), 5) * rowHeight)
             }
         }
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 
+    @ScaledMetric(relativeTo: .body) private var rowHeight: CGFloat = 37
+
+    /// The language code rather than a flag: a flag names a country, and many
+    /// languages have none of their own (#940).
     private func languageLeading(_ language: RegionalLanguageOption) -> some View {
-        Text(language.flag.isEmpty ? String(language.nativeName.prefix(1)) : language.flag)
-            .fontWeight(language.flag.isEmpty ? .semibold : .regular)
-            .frame(width: 20)
+        LanguageCodeBadge(code: language.code)
+    }
+}
+
+/// A language's short code in a small capsule, shown where flags used to be.
+/// "other" is the onboarding choice for languages without a list.
+struct LanguageCodeBadge: View {
+    let code: String
+
+    var body: some View {
+        Group {
+            if code == "other" {
+                Image(systemName: "globe")
+            } else {
+                Text(code.uppercased())
+                    .font(.caption2.weight(.semibold).monospaced())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+        }
+        .foregroundStyle(.secondary)
+        .frame(minWidth: 28, minHeight: 18)
+        .padding(.horizontal, 2)
+        .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 5))
+        .accessibilityHidden(true)
     }
 }

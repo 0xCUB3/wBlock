@@ -185,6 +185,16 @@ struct OnboardingView: View {
                     .padding(.vertical, 2)
             }
 
+            // Outside the scroll view so it stays in sight however many
+            // languages and lists the step shows (#940).
+            if step == .regional {
+                Label("English and languages without a regional list are covered by the default filters.",
+                      systemImage: "info.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             onboardingFooter
         }
         .padding()
@@ -485,15 +495,11 @@ struct OnboardingView: View {
             let englishName =
                 RegionalLanguageOption.displayLocale.localizedString(forLanguageCode: Self.englishLanguageCode) ?? "English"
             options.append(
-                RegionalLanguageOption(code: Self.englishLanguageCode, name: englishName, flag: "")
+                RegionalLanguageOption(code: Self.englishLanguageCode, name: englishName)
             )
         }
         options.append(
-            RegionalLanguageOption(
-                code: Self.otherLanguagesCode,
-                name: String(localized: "Other"),
-                flag: "\u{1F310}"
-            )
+            RegionalLanguageOption(code: Self.otherLanguagesCode, name: String(localized: "Other"))
         )
         return options
     }
@@ -525,8 +531,8 @@ struct OnboardingView: View {
 
             languagePicker
 
-            // One flat list for the chosen languages (#935); the flags and
-            // language line on each row already say which language it serves.
+            // One flat list for the chosen languages (#935); each row names the
+            // selected languages it covers (#940).
             if !regionalFilters.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(LocalizedStrings.text("Regional", comment: "Filter list category"))
@@ -536,11 +542,6 @@ struct OnboardingView: View {
                     }
                 }
             }
-
-            Text("English and languages without a regional list are covered by the default filters.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
 
         }
     }
@@ -585,9 +586,10 @@ struct OnboardingView: View {
     private func regionalToggle(for filter: FilterList) -> some View {
         let isSelected = selectedRegionalFilters.contains(filter.id)
 
-        let flags = filter.flagEmojis.map { Text($0 + " ") } ?? Text("")
+        let languages = filter.nativeLanguageNames(among: selectedLanguages).joined(separator: ", ")
         return SelectableRow(
-            title: flags + Text(filter.localizedDisplayName),
+            title: Text(filter.localizedDisplayName),
+            caption: languages,
             subtitle: filter.localizedDisplayDescription,
             isSelected: isSelected,
             style: .card

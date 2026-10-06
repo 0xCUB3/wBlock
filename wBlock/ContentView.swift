@@ -954,9 +954,6 @@ struct FilterRowView: View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    if let flags = filter.flagEmojis {
-                        Text(flags).accessibilityHidden(true)
-                    }
                     Text(filter.localizedDisplayName)
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
@@ -983,7 +980,7 @@ struct FilterRowView: View {
                 .font(.body)
 
                 if filter.category == .foreign, !filter.languages.isEmpty {
-                    Text(filter.localizedLanguageNames().joined(separator: ", "))
+                    Text(filter.nativeLanguageNames().joined(separator: ", "))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)

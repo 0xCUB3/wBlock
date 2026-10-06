@@ -16,6 +16,16 @@ extension Locale {
         return localizedString(forLanguageCode: code)
     }
 
+    /// A language in its own name ("Deutsch" for de).
+    static func nativeLanguageName(for code: String) -> String? {
+        // ICU does not provide a native display name for Montenegrin.
+        if code == "cnr" { return String(localized: "crnogorski") }
+        if code == "se" { return String(localized: "sámegiella") }
+        // ICU calls Indonesian "Indonesia", the name of the country.
+        if code == "id" { return String(localized: "Bahasa Indonesia") }
+        return Locale(identifier: code).localizedString(forLanguageCode: code)
+    }
+
     static var appCurrent: Locale {
         guard let preferredLocalization = Bundle.main.preferredLocalizations.first else {
             return .autoupdatingCurrent
@@ -79,7 +89,7 @@ enum ForeignFilterOrganizer {
             }
             return ForeignFilterGroup(
                 languageCode: languages.sorted().joined(separator: "+"),
-                title: ordered.map { languageTitle(for: $0) }.joined(separator: ", "),
+                title: ordered.map { languageSortTitle(for: $0) }.joined(separator: ", "),
                 sortTitle: ordered.map { languageSortTitle(for: $0) }.joined(separator: ", "),
                 filters: sortedFilters(filters)
             )
@@ -136,16 +146,6 @@ enum ForeignFilterOrganizer {
         case "low": return 4
         default: return 3
         }
-    }
-
-    private static func languageTitle(for languageCode: String) -> String {
-        guard languageCode != ungroupedLanguageCode else {
-            return LocalizedStrings.text("Regional", comment: "Filter list category")
-        }
-
-        let name = languageSortTitle(for: languageCode)
-        guard let flag = FilterList.flag(forLanguage: languageCode) else { return name }
-        return "\(flag) \(name)"
     }
 
     private static func languageSortTitle(for languageCode: String) -> String {
@@ -217,6 +217,15 @@ extension FilterList {
         Set(languages.map { $0.lowercased() }).map {
             locale.regionalLanguageName(for: $0) ?? $0.uppercased()
         }.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+    }
+
+    /// Each language in its own name, as the language picker shows it (#940).
+    /// `among` limits the list to the languages the user selected.
+    func nativeLanguageNames(among selected: Set<String>? = nil) -> [String] {
+        Set(languages.map { $0.lowercased() })
+            .filter { selected?.contains($0) ?? true }
+            .map { Locale.nativeLanguageName(for: $0) ?? $0 }
+            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
     }
 
     func matchesLanguage(_ query: String, locale: Locale) -> Bool {
