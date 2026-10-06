@@ -669,23 +669,18 @@ struct OnboardingView: View {
                     }
 
                     if !detectedContentBlockerStates.isEmpty {
-                        // Adaptive columns stretch to fill the row, which spread the
-                        // chips apart and pushed the last one onto its own line (#932).
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 76, maximum: 84), spacing: 6, alignment: .leading)], alignment: .leading, spacing: 6) {
-                                ForEach(detectedContentBlockerStates) { slotState in
-                                    HStack(spacing: 3) {
-                                        Image(systemName: slotState.isEnabled ? "checkmark.circle.fill" : "xmark.circle")
-                                            .foregroundStyle(slotState.isEnabled ? .green : .orange)
-                                            .font(.caption2)
-                                        Text(slotState.name)
-                                            .font(.caption2)
-                                            .foregroundStyle(slotState.isEnabled ? .primary : .secondary)
-                                    }
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 3)
-                                    .background(Color.secondary.opacity(0.1))
-                                    .cornerRadius(6)
+                        // All five on one line where they fit (the Mac sheet, #932);
+                        // otherwise a grid. Adaptive columns alone stretched to fill
+                        // the row and pushed the last chip onto its own line.
+                        Group {
+                            if #available(iOS 16.0, macOS 13.0, *) {
+                                ViewThatFits(in: .horizontal) {
+                                    HStack(spacing: 6) { contentBlockerChips }
+                                    contentBlockerChipGrid
                                 }
+                            } else {
+                                contentBlockerChipGrid
+                            }
                         }
                         .padding(.leading, 30)
                     }
@@ -781,6 +776,30 @@ struct OnboardingView: View {
         detectedContentBlockerStates = states
         if !states.isEmpty && states.allSatisfy(\.isEnabled) {
             hasEnabledContentBlockers = true
+        }
+    }
+
+    private var contentBlockerChipGrid: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 76, maximum: 84), spacing: 6, alignment: .leading)], alignment: .leading, spacing: 6) {
+            contentBlockerChips
+        }
+    }
+
+    private var contentBlockerChips: some View {
+        ForEach(detectedContentBlockerStates) { slotState in
+            HStack(spacing: 3) {
+                Image(systemName: slotState.isEnabled ? "checkmark.circle.fill" : "xmark.circle")
+                    .foregroundStyle(slotState.isEnabled ? .green : .orange)
+                Text(slotState.name)
+                    .foregroundStyle(slotState.isEnabled ? .primary : .secondary)
+            }
+            .font(.caption2)
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(Color.secondary.opacity(0.1))
+            .cornerRadius(6)
         }
     }
 
