@@ -12,6 +12,9 @@ struct SiteScopeEditor: View {
     let updateExcluded: ([String]) -> Void
 
     var body: some View {
+        // The footer joins the last group's notes so it doesn't float a full
+        // group gap below them (#948).
+        let showsExcluded = selectedSites == nil || !excludedSites.isEmpty
         VStack(alignment: .leading, spacing: 18) {
             SettingsGroup {
                 // A menu picker outside a Form drops its label on iOS, so the
@@ -32,20 +35,18 @@ struct SiteScopeEditor: View {
                 .disabled(isSaving)
             }
             if let selectedSites {
-                SettingsGroup(header: "Selected Sites", footer: selectedSites.isEmpty ? [emptySelectionMessage] : []) {
+                SettingsGroup(header: "Selected Sites",
+                              footer: (selectedSites.isEmpty ? [emptySelectionMessage] : []) + (showsExcluded ? [] : [footer])) {
                     StringListEditor(title: nil, items: selectedSites,
                                      update: { updateSelected($0) }, isSaving: isSaving)
                 }
             }
-            if selectedSites == nil || !excludedSites.isEmpty {
-                SettingsGroup(header: "Excluded Sites", footer: [excludedMessage]) {
+            if showsExcluded {
+                SettingsGroup(header: "Excluded Sites", footer: [excludedMessage, footer]) {
                     StringListEditor(title: nil, items: excludedSites,
                                      update: updateExcluded, isSaving: isSaving)
                 }
             }
-            Text(footer).font(.caption).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 12)
         }
         .fixedSize(horizontal: false, vertical: true)
     }

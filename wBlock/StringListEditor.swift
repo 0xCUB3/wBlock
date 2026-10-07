@@ -19,7 +19,11 @@ struct StringListEditor: View {
         VStack(alignment: .leading, spacing: 4) {
             if let title { Text(title).font(.callout.weight(.medium)) }
             HStack {
-                TextField(placeholder, text: $input, onCommit: addItem)
+                // onSubmit rather than onCommit: on macOS the onCommit closure kept
+                // the list from the first render, so a second Return replaced the
+                // first site instead of adding to it (#948).
+                TextField(placeholder, text: $input)
+                    .onSubmit(addItem)
                     .textFieldStyle(.roundedBorder)
                     .disableAutocorrection(true)
                     #if os(iOS)
@@ -44,7 +48,7 @@ struct StringListEditor: View {
                     Text(verbatim: item).font(.callout).textSelection(.enabled)
                     Spacer()
                     Button { update(items.filter { $0 != item }) } label: {
-                        Image(systemName: "minus.circle").foregroundStyle(.secondary)
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
                             #if os(macOS)
                             .frame(minWidth: 28, minHeight: 32)
                             #else
