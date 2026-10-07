@@ -1002,7 +1002,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Dark" = "Koyu";
 "Light" = "Açık";
 "%@ → %@ Safari rules" = "%@ → %@ Safari kuralı";
-"Settings restored. Applying now." = "Ayarlar geri yüklendi. Değişiklikler uygulanıyor.";
 "Cosmetic Filtering" = "Kozmetik filtreleme";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "CSS kullanarak reklam alanlarını ve diğer sayfa öğelerini gizler. Kapatılırsa yalnızca daha az kural ve CPU kullanan ağ engellemesi çalışır.";
 "Enable DeArrow" = "DeArrow'u etkinleştir";

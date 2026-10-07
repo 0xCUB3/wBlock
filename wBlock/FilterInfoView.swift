@@ -6,7 +6,8 @@ struct FilterInfoView: View {
     @ObservedObject var filterManager: AppFilterManager
     var onChangeCategory: ((FilterListCategory) -> Void)? = nil
     var isDownloading = false
-    var onDownload: (() -> Void)? = nil
+    /// Returns false when the download waits on a confirmation shown from this sheet.
+    var onDownload: (() -> Bool)? = nil
     /// Presents an action's sheet from the window instead of this view. A
     /// macOS popover would otherwise anchor the sheet to itself (#923).
     var onAction: ((FilterContextMenuAction) -> Void)? = nil
@@ -126,8 +127,7 @@ struct FilterInfoView: View {
         return InfoActionList {
             if actions.contains(.download), let onDownload {
                 Button {
-                    onDownload()
-                    dismiss()
+                    if onDownload() { dismiss() }
                 } label: {
                     HStack(spacing: 12) {
                         Image(systemName: "arrow.down.circle").frame(width: 22)

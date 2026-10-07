@@ -661,12 +661,15 @@ struct ContentView: View {
 
     /// Built-in experimental lists and HaGeZi Pro Mini can break sites, so enabling one asks first (#878, #886).
     /// The alert is attached to the info sheet too, because an open sheet blocks alerts from the view underneath.
-    private func confirmingExperimental(_ filter: FilterList, _ enable: @escaping () -> Void) {
+    /// Returns whether `enable` ran now, so the info sheet stays open for the alert instead of dismissing under it.
+    @discardableResult
+    private func confirmingExperimental(_ filter: FilterList, _ enable: @escaping () -> Void) -> Bool {
         if let warning = RiskyFilterEnable(filter: filter, enable: enable) {
             pendingRiskyEnable = warning
-        } else {
-            enable()
+            return false
         }
+        enable()
+        return true
     }
 
     private func downloadFilter(_ filter: FilterList) {
@@ -1030,14 +1033,15 @@ struct FilterRowView: View {
 private struct OnboardingPresentationModifier: ViewModifier {
     @Binding var isPresented: Bool
     let filterManager: AppFilterManager
+    let onDismiss: () -> Void
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     func body(content: Content) -> some View {
         content
-            .sheet(isPresented: presented(when: true)) {
+            .sheet(isPresented: presented(when: true), onDismiss: onDismiss) {
                 OnboardingView(filterManager: filterManager)
             }
-            .fullScreenCover(isPresented: presented(when: false)) {
+            .fullScreenCover(isPresented: presented(when: false), onDismiss: onDismiss) {
                 OnboardingView(filterManager: filterManager)
             }
     }
@@ -1066,10 +1070,14 @@ struct ContentModifiers: ViewModifier {
     // An alert requested while the sheet is up is held until then; SwiftUI drops an
     // alert presented over a sheet that is still on screen or animating away.
     @State private var progressSheetSettled = true
+    // False from the moment onboarding is requested until its dismissal finishes.
+    // Onboarding requests Apply as it dismisses; presenting Apply on the same
+    // host mid-dismissal crashed UIKit on iOS 16.
+    @State private var onboardingSettled = true
 
     private var progressSheetPresented: Bool {
-        filterManager.showingApplyProgressSheet
-            || (filterManager.isLoading && !filterManager.suppressBlockingOverlay)
+        onboardingSettled && (filterManager.showingApplyProgressSheet
+            || (filterManager.isLoading && !filterManager.suppressBlockingOverlay))
     }
 
     func body(content: Content) -> some View {
@@ -1098,6 +1106,9 @@ struct ContentModifiers: ViewModifier {
             }
             .onChangeCompat(of: progressSheetPresented) { _, presented in
                 if presented { progressSheetSettled = false }
+            }
+            .onChangeCompat(of: showOnboardingSheet) { _, presented in
+                if presented { onboardingSettled = false }
             }
             .alert("No Updates Found", isPresented: Binding(
                 get: { filterManager.showingNoUpdatesAlert && !progressSheetPresented && progressSheetSettled },
@@ -1182,13 +1193,19 @@ struct ContentModifiers: ViewModifier {
                 }
                 .modifier(OnboardingPresentationModifier(
                     isPresented: $showOnboardingSheet,
-                    filterManager: filterManager
+                    filterManager: filterManager,
+                    onDismiss: onboardingDismissed
                 ))
             #elseif os(macOS)
-                .sheet(isPresented: $showOnboardingSheet) {
+                .sheet(isPresented: $showOnboardingSheet, onDismiss: onboardingDismissed) {
                     OnboardingView(filterManager: filterManager)
                 }
             #endif
+    }
+
+    /// A size-class swap dismisses one onboarding presenter while the other stays up.
+    private func onboardingDismissed() {
+        onboardingSettled = !showOnboardingSheet
     }
 
     /// Determines which sheet (if any) should be shown on initial app load.
