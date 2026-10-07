@@ -143,8 +143,8 @@ struct RegionalLanguagePickerView: View {
 
             // Results scroll in a band capped at five rows, so the sheet around
             // the picker stops growing while typing (#932) without leaving empty
-            // space under a short match list (#940).
-            if !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            // space under a short or empty match list (#940, #945).
+            if !matchingOptions.isEmpty {
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(matchingOptions) { language in
@@ -167,7 +167,7 @@ struct RegionalLanguagePickerView: View {
                         }
                     }
                 }
-                .frame(height: min(CGFloat(max(matchingOptions.count, 1)), 5) * rowHeight)
+                .frame(height: CGFloat(min(matchingOptions.count, 5)) * rowHeight)
             }
         }
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
