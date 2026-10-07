@@ -1237,22 +1237,10 @@ private func userListCategoryPicker(selection: Binding<FilterListCategory>) -> s
 }
 
 
-enum FilterListAddValidationMode {
-    case url
-    case text
-    case file
-}
-
 struct FilterListAddValidation {
-    static func isDuplicateName(
-        candidate: String,
-        mode: FilterListAddValidationMode,
-        urlCount: Int,
-        existingNames: [String]
-    ) -> Bool {
+    static func isDuplicateName(candidate: String, existingNames: [String]) -> Bool {
         let trimmedCandidate = candidate.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedCandidate.isEmpty else { return false }
-        guard mode != .url || urlCount <= 1 else { return false }
         return existingNames.contains {
             $0.caseInsensitiveCompare(trimmedCandidate) == .orderedSame
         }
@@ -1965,26 +1953,18 @@ struct AddFilterListView: View {
     }
 
     private var isCustomNameDuplicate: Bool {
-        FilterListAddValidation.isDuplicateName(
-            candidate: duplicateNameCandidate,
-            mode: validationMode,
-            urlCount: newURLs.count,
-            existingNames: filterManager.filterLists.map(\.name)
-        )
-    }
-
-    private var duplicateNameCandidate: String {
-        switch addMode {
-        case .url: return newURLs.first.flatMap { customURLNames[FilterListURLSupport.identityKey(for: $0)] } ?? ""
-        case .paste, .file: return userListTitle
+        let existingNames = filterManager.filterLists.map(\.name)
+        return duplicateNameCandidates.contains {
+            FilterListAddValidation.isDuplicateName(candidate: $0, existingNames: existingNames)
         }
     }
 
-    private var validationMode: FilterListAddValidationMode {
+    /// Every name the add would save. Reviewed URLs count with their fetched
+    /// titles too, not just typed names, and every URL is checked (#948).
+    private var duplicateNameCandidates: [String] {
         switch addMode {
-        case .url: return .url
-        case .paste: return .text
-        case .file: return .file
+        case .url: return isReviewingURLs ? newURLs.map { nameBinding(for: $0).wrappedValue } : []
+        case .paste, .file: return [userListTitle]
         }
     }
 
