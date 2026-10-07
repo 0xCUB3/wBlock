@@ -27,58 +27,67 @@ import UIKit
 #endif
 
 #if os(iOS)
-/// Holds a suspension-deferring assertion (`performExpiringActivity`) while an
-/// auto-update run holds kernel file locks in the app group container. If the
-/// system decides to suspend the app anyway, the expiration callback aborts
-/// the run so the locks are released before suspension instead of the process
-/// being killed with 0xDEAD10CC. Also used by the Scripts extension around the
-/// engine read, which holds the engine flock and cannot be cancelled.
-final class SuspensionShield: @unchecked Sendable {
+/// Defers suspension while a process holds kernel file locks in the app group
+/// container. iOS kills any process that suspends while holding one
+/// (0xDEAD10CC). When suspension becomes imminent, `onExpiration` runs and
+/// `isExpired` flips so the holder can unwind; the callback then waits briefly
+/// for `release()` before letting the system suspend the process.
+///
+/// `performExpiringActivity` takes its assertion on a background queue, so
+/// `init` waits until the callback has started. Otherwise lock work that
+/// begins right after `init` can run before the assertion exists.
+public final class SuspensionShield: @unchecked Sendable {
     private static let expirationUnwindTimeout: TimeInterval = 3
+    private static let startTimeout: TimeInterval = 1
 
     private let condition = NSCondition()
+    private var started = false
+    private var expired = false
     private var released = false
 
-    init(reason: String, onExpiration: @escaping @Sendable () -> Void) {
-        ProcessInfo.processInfo.performExpiringActivity(withReason: reason) { [weak self] expired in
-            if expired {
-                // Runs when suspension is imminent: immediately when no
-                // background time is available, otherwise concurrently with
-                // the blocked non-expired invocation below. Give cancellation
-                // a bounded window to unwind and release app-group locks before
-                // this callback returns and iOS suspends the process.
+    public init(reason: String, onExpiration: @escaping @Sendable () -> Void = {}) {
+        ProcessInfo.processInfo.performExpiringActivity(withReason: reason) { [weak self] isExpired in
+            guard let self else { return }
+            if isExpired {
+                // Runs immediately when no background time is available,
+                // otherwise concurrently with the blocked call below.
+                self.update { $0.started = true; $0.expired = true }
                 onExpiration()
-                self?.waitUntilReleased(timeout: SuspensionShield.expirationUnwindTimeout)
+                self.waitUntilReleased(timeout: Self.expirationUnwindTimeout)
             } else {
                 // The assertion holds for as long as this invocation blocks.
-                self?.waitUntilReleased()
+                self.update { $0.started = true }
+                self.waitUntilReleased()
             }
         }
+        condition.lock()
+        let deadline = Date().addingTimeInterval(Self.startTimeout)
+        while !started && condition.wait(until: deadline) {}
+        condition.unlock()
+    }
+
+    public var isExpired: Bool {
+        condition.lock()
+        defer { condition.unlock() }
+        return expired
+    }
+
+    public func release() {
+        update { $0.released = true }
+    }
+
+    private func update(_ change: (SuspensionShield) -> Void) {
+        condition.lock()
+        change(self)
+        condition.broadcast()
+        condition.unlock()
     }
 
     private func waitUntilReleased(timeout: TimeInterval? = nil) {
         condition.lock()
         defer { condition.unlock() }
-
-        if let timeout {
-            let deadline = Date().addingTimeInterval(timeout)
-            while !released && condition.wait(until: deadline) {}
-        } else {
-            while !released {
-                condition.wait()
-            }
-        }
-    }
-
-    func release() {
-        condition.lock()
-        guard !released else {
-            condition.unlock()
-            return
-        }
-        released = true
-        condition.broadcast()
-        condition.unlock()
+        let deadline = timeout.map { Date().addingTimeInterval($0) } ?? .distantFuture
+        while !released && condition.wait(until: deadline) {}
     }
 }
 #endif

@@ -161,77 +161,6 @@ private struct SourceRuleAdmissionCounter {
         case suspensionImminent
     }
 
-    #if os(iOS)
-    /// Defers app suspension while a combined-engine publish holds kernel file
-    /// locks in the app group container. iOS kills any app that suspends while
-    /// holding a file lock in a shared container (0xDEAD10CC). If the system
-    /// decides to suspend anyway, the expiration callback flips a flag that the
-    /// publish checkpoints observe to unwind and release the locks first.
-    private final class EnginePublishSuspensionShield: @unchecked Sendable {
-        private static let expirationUnwindTimeout: TimeInterval = 3
-
-        private let condition = NSCondition()
-        private var expired = false
-        private var released = false
-
-        init(reason: String) {
-            ProcessInfo.processInfo.performExpiringActivity(withReason: reason) { [weak self] isExpired in
-                if isExpired {
-                    // Runs when suspension is imminent: immediately when no
-                    // background time is available, otherwise concurrently
-                    // with the blocked non-expired invocation below. Build
-                    // checkpoints unwind the publish; wait briefly for its
-                    // deferred release before allowing suspension.
-                    self?.markExpired()
-                    self?.waitUntilReleased(
-                        timeout: EnginePublishSuspensionShield.expirationUnwindTimeout
-                    )
-                } else {
-                    // The assertion holds for as long as this invocation blocks.
-                    self?.waitUntilReleased()
-                }
-            }
-        }
-
-        var isExpired: Bool {
-            condition.lock()
-            defer { condition.unlock() }
-            return expired
-        }
-
-        private func markExpired() {
-            condition.lock()
-            expired = true
-            condition.unlock()
-        }
-
-        private func waitUntilReleased(timeout: TimeInterval? = nil) {
-            condition.lock()
-            defer { condition.unlock() }
-
-            if let timeout {
-                let deadline = Date().addingTimeInterval(timeout)
-                while !released && condition.wait(until: deadline) {}
-            } else {
-                while !released {
-                    condition.wait()
-                }
-            }
-        }
-
-        func release() {
-            condition.lock()
-            guard !released else {
-                condition.unlock()
-                return
-            }
-            released = true
-            condition.broadcast()
-            condition.unlock()
-        }
-    }
-    #endif
-
     /// Built-in compatibility rules that improve blocking of common dynamic ad script
     /// patterns and dynamic ad containers across filter sets.
     ///
@@ -652,15 +581,44 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     private struct ReloadSnapshot {
         let marker: ReloadMarker?
         let outputDigest: String?
+        let outputIdentity: OutputIdentity?
         let context: ReloadContext
     }
 
     private enum ReloadMarkerWriteResult {
         case written
         case paused
-        case changed(ReloadSnapshot)
-        case invalid
+        case changed
         case failed
+    }
+
+    /// Identifies one published output file. Every writer replaces the output
+    /// atomically, so new bytes always get a new identity and an existing
+    /// mapping keeps the bytes it was opened with.
+    private struct OutputIdentity: Equatable {
+        let fileNumber: Int
+        let size: Int
+        let modified: Date?
+    }
+
+    private static func outputIdentity(_ url: URL) -> OutputIdentity? {
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let fileNumber = (attributes[.systemFileNumber] as? NSNumber)?.intValue,
+              let size = (attributes[.size] as? NSNumber)?.intValue
+        else { return nil }
+        return OutputIdentity(fileNumber: fileNumber, size: size, modified: attributes[.modificationDate] as? Date)
+    }
+
+    /// Maps the output without reading it. Parsing and hashing a large output
+    /// takes seconds, and a process suspended while holding the output lock is
+    /// killed (0xDEAD10CC), so callers take the lock only around this and
+    /// identity checks, then parse after unlocking.
+    private static func mapOutput(_ url: URL) -> (data: Data, identity: OutputIdentity)? {
+        guard let identity = outputIdentity(url),
+              let data = try? Data(contentsOf: url, options: .alwaysMapped),
+              outputIdentity(url) == identity
+        else { return nil }
+        return (data, identity)
     }
 
     private static let reloadMarkerSchema = 1
@@ -775,23 +733,29 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         outputURL: URL,
         appGroupURL: URL
     ) throws -> ReloadSnapshot {
-        try withContentBlockerOutputLock(at: appGroupURL, targetRulesFilename: outputURL.lastPathComponent) {
+        let (marker, output, context) = try withContentBlockerOutputLock(
+            at: appGroupURL,
+            targetRulesFilename: outputURL.lastPathComponent
+        ) {
             let marker = (try? Data(contentsOf: markerURL)).flatMap {
                 try? JSONDecoder().decode(ReloadMarker.self, from: $0)
             }
-            return ReloadSnapshot(
-                marker: marker,
-                outputDigest: try validOutputDigest(try? Data(contentsOf: outputURL)),
-                context: currentReloadContext
-            )
+            return (marker, mapOutput(outputURL), currentReloadContext)
         }
+        return ReloadSnapshot(
+            marker: marker,
+            outputDigest: try validOutputDigest(output?.data),
+            outputIdentity: output?.identity,
+            context: context
+        )
     }
 
     private static func writeReloadMarkerIfUnchanged(
         markerURL: URL,
         outputURL: URL,
         appGroupURL: URL,
-        expectedDigest: String?,
+        expectedDigest: String,
+        expectedIdentity: OutputIdentity?,
         expectedContext: ReloadContext,
         groupIdentifier: String
     ) throws -> ReloadMarkerWriteResult {
@@ -801,23 +765,17 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 return .paused
             }
 
-            let snapshot = ReloadSnapshot(
-                marker: nil,
-                outputDigest: try validOutputDigest(try? Data(contentsOf: outputURL)),
-                context: currentReloadContext
-            )
-            guard let outputDigest = snapshot.outputDigest else {
+            guard let expectedIdentity,
+                  outputIdentity(outputURL) == expectedIdentity,
+                  currentReloadContext == expectedContext
+            else {
                 try? FileManager.default.removeItem(at: markerURL)
-                return .invalid
-            }
-            guard outputDigest == expectedDigest, snapshot.context == expectedContext else {
-                try? FileManager.default.removeItem(at: markerURL)
-                return .changed(snapshot)
+                return .changed
             }
 
             let newMarker = ReloadMarker(
                 schema: reloadMarkerSchema,
-                outputDigest: outputDigest,
+                outputDigest: expectedDigest,
                 context: expectedContext
             )
             do {
@@ -921,13 +879,15 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         if recovering {
             // Read and republish under the same output lock. Never rewrite an
             // earlier snapshot over a concurrent pause or disabled-site update.
-            let rewritten = (try? withContentBlockerOutputLock(at: containerURL, targetRulesFilename: targetRulesFilename) {
-                let data = try Data(contentsOf: outputURL, options: .mappedIfSafe)
-                guard try validOutputDigest(data) != nil else { return false }
-                try data.write(to: outputURL, options: .atomic)
-                try? FileManager.default.removeItem(at: markerURL)
-                return true
-            }) ?? false
+            var rewritten = false
+            if let output = mapOutput(outputURL), (try? validOutputDigest(output.data)) != nil {
+                rewritten = (try? withContentBlockerOutputLock(at: containerURL, targetRulesFilename: targetRulesFilename) {
+                    guard outputIdentity(outputURL) == output.identity else { return false }
+                    try output.data.write(to: outputURL, options: .atomic)
+                    try? FileManager.default.removeItem(at: markerURL)
+                    return true
+                }) ?? false
+            }
             await SharedAutoUpdateManager.shared.recordOperation("reload-recovery", fields: [
                 "target": identifier, "result": rewritten ? "rewritten" : "failed"
             ])
@@ -1040,6 +1000,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 outputURL: outputURL,
                 appGroupURL: containerURL,
                 expectedDigest: expectedDigest,
+                expectedIdentity: verified.outputIdentity,
                 expectedContext: snapshot.context,
                 groupIdentifier: groupIdentifier
             ) {
@@ -1049,8 +1010,12 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     attempts: totalAttempts,
                     durationMs: elapsedMs()
                 )
-            case .some(.changed(let changed)):
-                guard changed.outputDigest != nil else {
+            case .some(.changed):
+                guard let changed = try? readReloadSnapshot(
+                    markerURL: markerURL,
+                    outputURL: outputURL,
+                    appGroupURL: containerURL
+                ), changed.outputDigest != nil else {
                     return ReloadAttemptResult(
                         success: false,
                         attempts: totalAttempts,
@@ -1060,7 +1025,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 }
                 snapshot = changed
                 mustReloadNewestOutput = true
-            case .some(.invalid), .some(.failed), .none:
+            case .some(.failed), .none:
                 invalidateMarker()
                 return ReloadAttemptResult(
                     success: false,
@@ -1355,11 +1320,13 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         }
 
         let sharedFileURL = appGroupURL.appendingPathComponent(targetRulesFilename)
+        // Compare before locking; under the lock only confirm the compared file is still current.
+        let unchangedIdentity = mapOutput(sharedFileURL).flatMap { $0.data == data ? $0.identity : nil }
         let outputChanged = try withContentBlockerOutputLock(
             at: appGroupURL,
             targetRulesFilename: targetRulesFilename
         ) {
-            let outputChanged = (try? Data(contentsOf: sharedFileURL)) != data
+            let outputChanged = unchangedIdentity == nil || outputIdentity(sharedFileURL) != unchangedIdentity
             if outputChanged {
                 try data.write(to: sharedFileURL, options: .atomic)
                 os_log(.info, "Successfully saved rules to %@", sharedFileURL.path)
@@ -2391,7 +2358,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         // The section below holds exclusive kernel flocks on app group files for
         // the entire rebuild. Defer suspension while they are held and unwind
         // (releasing the locks) when suspension becomes imminent (0xDEAD10CC).
-        let shield = EnginePublishSuspensionShield(reason: "wBlock combined engine publish")
+        let shield = SuspensionShield(reason: "wBlock combined engine publish")
         defer { shield.release() }
         let ensureNotSuspending: () throws -> Void = {
             if shield.isExpired {

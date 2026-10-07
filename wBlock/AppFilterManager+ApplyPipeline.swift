@@ -44,72 +44,6 @@ private enum ApplyCancellation {
 }
 
 #if os(iOS)
-/// Holds `performExpiringActivity` while apply owns shared-container locks.
-/// The non-expired callback blocks on a background thread; `release()` wakes
-/// every callback waiting for the apply to unwind. When expiration starts, the
-/// callback waits briefly for the locks to drop before allowing suspension so
-/// iOS does not kill the process with 0xDEAD10CC.
-private final class ApplySuspensionShield: @unchecked Sendable {
-    private static let expirationUnwindTimeout: TimeInterval = 3
-
-    private let condition = NSCondition()
-    private var expired = false
-    private var released = false
-
-    init(reason: String, onExpiration: @escaping @Sendable () -> Void) {
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            ProcessInfo.processInfo.performExpiringActivity(withReason: reason) { [weak self] isExpired in
-                if isExpired {
-                    self?.markExpired()
-                    onExpiration()
-                    self?.waitUntilReleased(
-                        timeout: ApplySuspensionShield.expirationUnwindTimeout
-                    )
-                } else {
-                    self?.waitUntilReleased()
-                }
-            }
-        }
-    }
-
-    var isExpired: Bool {
-        condition.lock()
-        defer { condition.unlock() }
-        return expired
-    }
-
-    private func markExpired() {
-        condition.lock()
-        expired = true
-        condition.unlock()
-    }
-
-    private func waitUntilReleased(timeout: TimeInterval? = nil) {
-        condition.lock()
-        defer { condition.unlock() }
-
-        if let timeout {
-            let deadline = Date().addingTimeInterval(timeout)
-            while !released && condition.wait(until: deadline) {}
-        } else {
-            while !released {
-                condition.wait()
-            }
-        }
-    }
-
-    func release() {
-        condition.lock()
-        guard !released else {
-            condition.unlock()
-            return
-        }
-        released = true
-        condition.broadcast()
-        condition.unlock()
-    }
-}
-
 @MainActor
 private final class ApplyBackgroundTaskHandle {
     private let application: UIApplication
@@ -293,7 +227,7 @@ extension AppFilterManager {
         exclusiveApplyTask = applyTask
         defer { exclusiveApplyTask = nil }
         #if os(iOS)
-        let shield = ApplySuspensionShield(reason: "wBlock apply") {
+        let shield = SuspensionShield(reason: "wBlock apply") {
             ApplyCancellation.cancel()
             applyTask.cancel()
         }

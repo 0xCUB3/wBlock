@@ -286,7 +286,7 @@ public enum WebExtensionRequestHandler {
         // Reading the engine holds a kernel flock on the app group; if Safari
         // backgrounds mid-read the extension is killed with 0xDEAD10CC. Defer
         // suspension until the lookup returns.
-        let shield = SuspensionShield(reason: "wBlock engine lookup") {}
+        let shield = SuspensionShield(reason: "wBlock engine lookup")
         defer { shield.release() }
         #endif
         do {
