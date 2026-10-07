@@ -72,32 +72,31 @@ public struct FilterRuleAnalysis: Sendable {
     /// uBO's `##selector:remove-attr(name)` and `:remove-class(name)` read
     /// as plain CSS to the converter, which merges them into the site's hiding
     /// selector and invalidates every sibling rule there (#918). Rewrite them
-    /// as the equivalent AdGuard scriptlets; regex arguments stay unchanged.
+    /// as the equivalent AdGuard scriptlets.
     public static func adGuardEquivalent(_ rule: String) -> String {
         let trimmed = rule.trimmingCharacters(in: .whitespaces)
-        guard trimmed.hasSuffix(")"),
-              let marker = ["#@#", "##"].lazy.compactMap({ trimmed.range(of: $0) }).first else { return rule }
-        let body = trimmed[marker.upperBound...].dropLast()
-        for name in ["remove-attr", "remove-class"] {
+        guard let marker = ["#@#", "##"].lazy.compactMap({ trimmed.range(of: $0) }).first else { return rule }
+        let exception = trimmed[marker] == "#@#"
+        let body = trimmed[marker.upperBound...]
+        for name in ["remove-attr", "remove-class"] where body.hasSuffix(")") {
             guard let pseudo = body.range(of: ":\(name)(", options: .backwards) else { continue }
             let selector = body[..<pseudo.lowerBound].trimmingCharacters(in: .whitespaces)
-            let argument = body[pseudo.upperBound...].trimmingCharacters(in: .whitespaces)
+            let argument = body[pseudo.upperBound...].dropLast().trimmingCharacters(in: .whitespaces)
+            // Regex arguments have no scriptlet form; they run as extended CSS below.
             guard !selector.isEmpty, !argument.isEmpty, !argument.hasPrefix("/"),
-                  !argument.contains("("), !argument.contains(")") else { return rule }
+                  !argument.contains("("), !argument.contains(")") else { break }
             let quoted = { (value: String) in
                 "'" + value.replacingOccurrences(of: "\\", with: "\\\\")
                     .replacingOccurrences(of: "'", with: "\\'") + "'"
             }
-            let scriptletMarker = trimmed[marker] == "#@#" ? "#@%#" : "#%#"
-            return trimmed[..<marker.lowerBound] + scriptletMarker
+            return trimmed[..<marker.lowerBound] + (exception ? "#@%#" : "#%#")
                 + "//scriptlet(\(quoted(name)), \(quoted(argument)), \(quoted(selector)))"
         }
-        // Any other functional pseudo-class Safari's CSS engine does not know
-        // would be merged into the site's shared hiding selector, and Safari
-        // rejects the merged selector whole. Run it as extended CSS instead.
-        if hasUnknownFunctionalPseudo(body) {
-            let extendedMarker = trimmed[marker] == "#@#" ? "#@?#" : "#?#"
-            return trimmed[..<marker.lowerBound] + extendedMarker + body + ")"
+        // Syntax Safari's CSS engine does not know, anywhere in the selector
+        // (#949), would be merged into the site's shared hiding selector, and
+        // Safari rejects the merged selector whole. Run it as extended CSS instead.
+        if body.contains(">>>") || hasUnknownFunctionalPseudo(body) {
+            return trimmed[..<marker.lowerBound] + (exception ? "#@?#" : "#?#") + body
         }
         return rule
     }

@@ -276,7 +276,7 @@ public enum FilterListContentProcessing {
 public enum ContentBlockerIncrementalCache {
     // Bump when signature inputs/schema change so stale per-target signatures
     // do not suppress needed rebuilds.
-    private static let inputSignatureSchemaVersion = "9"
+    private static let inputSignatureSchemaVersion = "10"
 
     private struct State: Codable {
         var inputSignature: String
