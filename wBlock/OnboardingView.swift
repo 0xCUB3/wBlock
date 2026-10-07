@@ -669,17 +669,16 @@ struct OnboardingView: View {
                     }
 
                     if !detectedContentBlockerStates.isEmpty {
-                        // All five on one line where they fit (the Mac sheet, #932);
-                        // otherwise a grid. Adaptive columns alone stretched to fill
-                        // the row and pushed the last chip onto its own line.
+                        // All five on one line where they fit (the Mac sheet, #932, #944);
+                        // otherwise two tight rows. A grid spread the chips apart.
                         Group {
                             if #available(iOS 16.0, macOS 13.0, *) {
                                 ViewThatFits(in: .horizontal) {
-                                    HStack(spacing: 6) { contentBlockerChips }
-                                    contentBlockerChipGrid
+                                    contentBlockerChipRow(detectedContentBlockerStates[...])
+                                    contentBlockerChipRows
                                 }
                             } else {
-                                contentBlockerChipGrid
+                                contentBlockerChipRows
                             }
                         }
                         .padding(.leading, 30)
@@ -779,28 +778,36 @@ struct OnboardingView: View {
         }
     }
 
-    private var contentBlockerChipGrid: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 76, maximum: 84), spacing: 6, alignment: .leading)], alignment: .leading, spacing: 6) {
-            contentBlockerChips
+    private var contentBlockerChipRows: some View {
+        let split = (detectedContentBlockerStates.count + 1) / 2
+        return VStack(alignment: .leading, spacing: 4) {
+            contentBlockerChipRow(detectedContentBlockerStates.prefix(split))
+            contentBlockerChipRow(detectedContentBlockerStates.dropFirst(split))
         }
     }
 
-    private var contentBlockerChips: some View {
-        ForEach(detectedContentBlockerStates) { slotState in
-            HStack(spacing: 3) {
-                Image(systemName: slotState.isEnabled ? "checkmark.circle.fill" : "xmark.circle")
-                    .foregroundStyle(slotState.isEnabled ? .green : .orange)
-                Text(slotState.name)
-                    .foregroundStyle(slotState.isEnabled ? .primary : .secondary)
+    private func contentBlockerChipRow(_ states: ArraySlice<SafariExtensionSetupSupport.ContentBlockerSlotState>) -> some View {
+        HStack(spacing: 4) {
+            ForEach(states) { slotState in
+                contentBlockerChip(slotState)
             }
-            .font(.caption2)
-            .lineLimit(1)
-            .fixedSize()
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .background(Color.secondary.opacity(0.1))
-            .cornerRadius(6)
         }
+    }
+
+    private func contentBlockerChip(_ slotState: SafariExtensionSetupSupport.ContentBlockerSlotState) -> some View {
+        HStack(spacing: 2) {
+            Image(systemName: slotState.isEnabled ? "checkmark.circle.fill" : "xmark.circle")
+                .foregroundStyle(slotState.isEnabled ? .green : .orange)
+            Text(slotState.name)
+                .foregroundStyle(slotState.isEnabled ? .primary : .secondary)
+        }
+        .font(.caption2)
+        .lineLimit(1)
+        .fixedSize()
+        .padding(.horizontal, 5)
+        .padding(.vertical, 3)
+        .background(Color.secondary.opacity(0.1))
+        .cornerRadius(6)
     }
 
     @MainActor
