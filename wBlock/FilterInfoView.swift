@@ -326,13 +326,21 @@ struct FilterRulesView: View {
                 Label("Comments", systemImage: "text.quote")
             }
         } label: {
-            // The circle keeps it apart from Wrap Lines' similar bars; filled
-            // while some kinds are hidden.
-            SourceControlIcon(systemImage: shownKinds.count == FilterRuleKind.allCases.count
-                ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+            // The chevron marks it as a menu and keeps it apart from Wrap Lines'
+            // similar bars (#948); tinted while some kinds are hidden.
+            HStack(spacing: 2) {
+                Image(systemName: "line.3.horizontal.decrease")
+                #if os(iOS)
+                // macOS draws its own indicator and drops extra label images.
+                Image(systemName: "chevron.down").font(.caption2.weight(.semibold))
+                #endif
+            }
+            .frame(height: SourceControlMetrics.size)
+            .contentShape(Rectangle())
+            .foregroundStyle(shownKinds.count == FilterRuleKind.allCases.count ? Color.primary : Color.accentColor)
         }
         .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
+        .menuIndicator(.visible)
         .menuStaysOpenCompat()
         .buttonStyle(.plain)
         .fixedSize()
