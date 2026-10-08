@@ -2035,7 +2035,6 @@ struct AddUserScriptView: View {
                     onPaste: pasteScriptFromClipboard, onOpenEditor: openEditorSheet) {
                         TextEditor(text: $textInput)
                             .hideEditorBackgroundCompat()
-                            .font(.system(.body, design: .monospaced))
                             .autocorrectionDisabled()
                             .focused($textInputFocused)
                             .accessibilityLabel(Text("Script Content"))

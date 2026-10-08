@@ -223,18 +223,23 @@ struct AddContentSourceSection<Content: View, Footer: View>: View {
     let isDisabled: Bool
     let onPaste: () -> Void
     let onOpenEditor: () -> Void
+    /// The editor's font and where it draws its first glyph, so the placeholder
+    /// sits exactly where typed text will (#950). Defaults match TextEditor.
+    var font: Font = .system(.body, design: .monospaced)
+    var textInsets = textEditorTextInsets
     @ViewBuilder var content: () -> Content
     @ViewBuilder var footer: () -> Footer
 
     var body: some View {
         Section {
             content()
+                .font(font)
                 .overlay(alignment: .topLeading) {
                     if isEmpty {
                         Text(placeholder)
+                            .font(font)
                             .foregroundStyle(.secondary)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 8)
+                            .padding(textInsets)
                             .allowsHitTesting(false)
                     }
                 }
@@ -252,6 +257,12 @@ struct AddContentSourceSection<Content: View, Footer: View>: View {
         }
     }
 }
+
+#if os(macOS)
+private let textEditorTextInsets = EdgeInsets(top: 0, leading: 5, bottom: 0, trailing: 5)
+#else
+private let textEditorTextInsets = EdgeInsets(top: 8, leading: 5, bottom: 8, trailing: 5)
+#endif
 
 /// The add button keeps its title's size while working: the title stays in
 /// layout, hidden, under a small spinner (#921).

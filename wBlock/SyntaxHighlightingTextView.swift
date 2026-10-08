@@ -39,10 +39,10 @@ struct SyntaxHighlightingTextView: NSViewRepresentable {
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
         textView.isAutomaticSpellingCorrectionEnabled = false
-        textView.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+        textView.font = NSFont.monospacedSystemFont(ofSize: Self.fontSize, weight: .regular)
         textView.backgroundColor = .clear
         textView.drawsBackground = false
-        textView.textContainerInset = NSSize(width: 4, height: 6)
+        textView.textContainerInset = NSSize(width: Self.textInsets.leading, height: Self.textInsets.top)
         textView.isHorizontallyResizable = true
         textView.isVerticallyResizable = true
         textView.minSize = .zero
@@ -88,7 +88,7 @@ struct SyntaxHighlightingTextView: NSViewRepresentable {
             self.parent = parent
             highlighter = ViewportSyntaxHighlighter(baseAttributes: [
                 .foregroundColor: NSColor.labelColor,
-                .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular),
+                .font: NSFont.monospacedSystemFont(ofSize: SyntaxHighlightingTextView.fontSize, weight: .regular),
             ])
         }
 
@@ -135,7 +135,9 @@ struct SyntaxHighlightingTextView: UIViewRepresentable {
         } else {
             textView = UITextView()
         }
-        textView.font = UIFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+        textView.font = UIFont.monospacedSystemFont(ofSize: Self.fontSize, weight: .regular)
+        textView.textContainerInset = UIEdgeInsets(top: Self.textInsets.top, left: 0, bottom: Self.textInsets.bottom, right: 0)
+        textView.textContainer.lineFragmentPadding = Self.textInsets.leading
         textView.autocapitalizationType = .none
         textView.autocorrectionType = .no
         textView.smartDashesType = .no
@@ -165,7 +167,7 @@ struct SyntaxHighlightingTextView: UIViewRepresentable {
             self.parent = parent
             highlighter = ViewportSyntaxHighlighter(baseAttributes: [
                 .foregroundColor: UIColor.label,
-                .font: UIFont.monospacedSystemFont(ofSize: 13, weight: .regular),
+                .font: UIFont.monospacedSystemFont(ofSize: SyntaxHighlightingTextView.fontSize, weight: .regular),
             ])
         }
 
@@ -196,3 +198,14 @@ struct SyntaxHighlightingTextView: UIViewRepresentable {
 }
 
 #endif
+
+extension SyntaxHighlightingTextView {
+    static let fontSize: CGFloat = 13
+    /// Where the first glyph sits, so a placeholder over the editor lines up with typed text (#950).
+    #if os(macOS)
+    static let textInsets = EdgeInsets(top: 6, leading: 4, bottom: 6, trailing: 4)
+    #else
+    static let textInsets = EdgeInsets(top: 8, leading: 5, bottom: 8, trailing: 5)
+    #endif
+    static var font: Font { .system(size: fontSize, design: .monospaced) }
+}

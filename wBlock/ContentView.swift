@@ -1490,7 +1490,7 @@ struct AddFilterListView: View {
                     onOpenEditor: {
                         rulesEditorController.replaceText(pastedRules, markClean: true)
                         isShowingRulesEditor = true
-                    }) {
+                    }, font: SyntaxHighlightingTextView.font, textInsets: SyntaxHighlightingTextView.textInsets) {
                         SyntaxHighlightingTextView(text: $pastedRules)
                     } footer: {
                         AddContentNote(text: "Local imports won't auto-update; re-import to replace.")
