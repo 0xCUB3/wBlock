@@ -78,6 +78,7 @@ struct RegionalListLanguagesField: View {
                 Text("Languages").font(.caption).foregroundStyle(.secondary)
                 RegionalLanguagePickerView(selectedLanguages: $languages, options: RegionalLanguageOption.assignable())
             }
+            .spansFormLabelColumn()
         }
     }
 }

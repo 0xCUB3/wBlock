@@ -81,7 +81,7 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
                 }
         }
         #else
-        Form { content(mode) }
+        FormLabelColumnHost { content(mode) }
             .columnsFormStyleCompat()
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -131,12 +131,12 @@ struct AddContentMetadataFields: View {
     var languages: Binding<Set<String>>? = nil
 
     var body: some View {
-        TextField("Name", text: $name)
+        TextField(text: $name) { Text("Name").formLabel() }
             .disableAutocorrection(true)
             #if os(iOS)
             .textInputAutocapitalization(.words)
             #endif
-        TextField("Description", text: $description)
+        TextField(text: $description) { Text("Description").formLabel() }
             .disableAutocorrection(true)
             #if os(iOS)
             .textInputAutocapitalization(.sentences)
@@ -283,12 +283,79 @@ struct ContentCategoryPicker: View {
     var categoryName: (FilterListCategory) -> String = { $0.localizedName }
 
     var body: some View {
-        Picker("Category", selection: $selection) {
+        Picker(selection: $selection) {
             ForEach(categories) { category in
                 Text(categoryName(category)).tag(category)
             }
+        } label: {
+            Text("Category").formLabel()
         }
         .pickerStyle(.menu)
+    }
+}
+
+/// A macOS columns form keeps every row's content right of the label column.
+/// Rows marked `spansFormLabelColumn()` stretch back across it to the widest
+/// label's leading edge, which the labels marked `formLabel()` report. Both
+/// edges reach the form through preferences: a row inside a columns form never
+/// sees its own preference changes.
+private struct FormLabelLeadingKey: PreferenceKey {
+    static let defaultValue = CGFloat.infinity
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = min(value, nextValue()) }
+}
+
+private struct FormColumnLeadingKey: PreferenceKey {
+    static let defaultValue = CGFloat.infinity
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = min(value, nextValue()) }
+}
+
+private struct FormLabelColumnWidthKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 0
+}
+
+private extension EnvironmentValues {
+    var formLabelColumnWidth: CGFloat {
+        get { self[FormLabelColumnWidthKey.self] }
+        set { self[FormLabelColumnWidthKey.self] = newValue }
+    }
+}
+
+private struct FormLabelColumnHost<Content: View>: View {
+    @ViewBuilder let content: () -> Content
+    @State private var labelLeading = CGFloat.infinity
+    @State private var columnLeading = CGFloat.infinity
+
+    var body: some View {
+        Form { content() }
+            .onPreferenceChange(FormLabelLeadingKey.self) { labelLeading = $0 }
+            .onPreferenceChange(FormColumnLeadingKey.self) { columnLeading = $0 }
+            .environment(\.formLabelColumnWidth,
+                         labelLeading.isFinite && columnLeading.isFinite ? max(0, columnLeading - labelLeading) : 0)
+    }
+}
+
+private struct SpansFormLabelColumn: ViewModifier {
+    @Environment(\.formLabelColumnWidth) private var labelColumnWidth
+
+    func body(content: Content) -> some View {
+        content
+            .padding(.leading, -labelColumnWidth)
+            // Measured outside the padding, so the frame read is the column's own.
+            .background(GeometryReader { proxy in
+                Color.clear.preference(key: FormColumnLeadingKey.self, value: proxy.frame(in: .global).minX)
+            })
+    }
+}
+
+extension View {
+    func formLabel() -> some View {
+        background(GeometryReader { proxy in
+            Color.clear.preference(key: FormLabelLeadingKey.self, value: proxy.frame(in: .global).minX)
+        })
+    }
+
+    func spansFormLabelColumn() -> some View {
+        modifier(SpansFormLabelColumn())
     }
 }
 
