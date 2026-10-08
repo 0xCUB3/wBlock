@@ -434,7 +434,7 @@
 "go" = "Git";
 "Go to line" = "Satıra git";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"HaGeZi Pro Mini" = "HaGeZi Pro Mini";
+"HaGeZi Multi Pro Mini" = "HaGeZi Multi Pro Mini";
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Filtre kurallarının gözden kaçırdığı gelişmiş reklam engelleyici tespiti durumları yönetir.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Sayfa içi açılır pencereleri, afişleri ve diğer istenmeyen sayfa öğelerini gizler.";
@@ -1139,8 +1139,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Next update" = "Sonraki güncelleme";
 "Enable Experimental Filter?" = "Deneysel filtre etkinleştirilsin mi?";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Deneysel filtreler yeni kuralları ana listelere eklenmeden önce test etmek içindir ve sitelerin düzgün çalışmasını engelleyebilir. Bunları sadece site bozulmalarını tespit edip bildirebilecek düzeydeyseniz açın.";
-"Enable HaGeZi Pro Mini?" = "HaGeZi Pro Mini etkinleştirilsin mi?";
-"HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Pro Mini, reklam engelleyicilere özel bir filtre listesi değil, bir DNS engelleme listesidir. Diğer listelere göre daha kararsız çalışabilir ve siteleri bozabilecek yanlış engellemelere yol açabilir.";
+"Enable HaGeZi Multi Pro Mini?" = "HaGeZi Multi Pro Mini etkinleştirilsin mi?";
+"HaGeZi Multi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Multi Pro Mini, reklam engelleyicilere özel bir filtre listesi değil, bir DNS engelleme listesidir. Diğer listelere göre daha kararsız çalışabilir ve siteleri bozabilecek yanlış engellemelere yol açabilir.";
 "Reset Ordering" = "Sıralamayı sıfırla";
 "Reset" = "Sıfırla";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Yerleşik listeleri ve kullanıcı betiklerini varsayılan kategorilerine ve sıralamalarına döndürür, özel olanları ise Diğer kategorisine taşır.";

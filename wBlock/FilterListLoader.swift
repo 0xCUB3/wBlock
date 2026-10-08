@@ -116,7 +116,7 @@ class FilterListLoader {
     private static let filterNameMigrations: [String: [String]] = [
         "Adblock Warning Removal List": ["Anti-Adblock List"],
         "Stevo's AI Blocklist": ["Fanboy's Anti-AI Suggestions"],
-        "HaGeZi Pro Mini": ["Hagezi Pro Mini"],
+        "HaGeZi Multi Pro Mini": ["HaGeZi Pro Mini", "Hagezi Pro Mini"],
         "filterslists-KO": ["List-KR"],
     ]
 
@@ -636,11 +636,11 @@ class FilterListLoader {
                     description: "Optimized for mobile ad blocking. Recommended for iOS/iPadOS."))
         #endif
 
-        // Pro Mini is the size-optimized browser/mobile list. Keep its catalog
+        // Multi Pro Mini is the size-optimized browser/mobile list. Keep its catalog
         // identity on every platform; it remains opt-in like other extras.
         filterLists.append(
             FilterList(
-                id: UUID(), name: "HaGeZi Pro Mini",
+                id: UUID(), name: "HaGeZi Multi Pro Mini",
                 url: URL(
                     string:
                         "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt"

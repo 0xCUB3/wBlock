@@ -434,7 +434,7 @@
 "go" = "Ugrás";
 "Go to line" = "Ugrás sorra";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"HaGeZi Pro Mini" = "HaGeZi Pro Mini";
+"HaGeZi Multi Pro Mini" = "HaGeZi Multi Pro Mini";
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Kezeli a fejlett hirdetésblokkolás-ellenes eseteket, amelyek kihagyják a szabályokat.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Elrejti az oldalon belüli felugró ablakokat, szalaghirdetéseket és egyéb nem kívánt oldalelemeket.";
@@ -1130,8 +1130,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Next update" = "Következő frissítés";
 "Enable Experimental Filter?" = "Engedélyezed a kísérleti szűrőt?";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "A kísérleti szűrők új szabályokat tesztelnek, mielőtt azok a fő listákba kerülnének, és elronthatnak weboldalakat. Csak akkor engedélyezd őket, ha szívesen keresed és jelented a hibákat.";
-"Enable HaGeZi Pro Mini?" = "Bekapcsolod a HaGeZi Pro Mini listát?";
-"HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "A HaGeZi Pro Mini DNS-tiltólista, nem kifejezetten reklámblokkolókhoz tervezett szűrőlista. Kevésbé lehet stabil, mint a többi lista, és több téves találatot okozhat, amelyek elrontják a weboldalakat.";
+"Enable HaGeZi Multi Pro Mini?" = "Bekapcsolod a HaGeZi Multi Pro Mini listát?";
+"HaGeZi Multi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "A HaGeZi Multi Pro Mini DNS-tiltólista, nem kifejezetten reklámblokkolókhoz tervezett szűrőlista. Kevésbé lehet stabil, mint a többi lista, és több téves találatot okozhat, amelyek elrontják a weboldalakat.";
 "Reset Ordering" = "Sorrend visszaállítása";
 "Reset" = "Visszaállítás";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Visszaállítja a beépített listákat és userscripteket az alapértelmezett kategóriájukba és sorrendjükbe, az egyéniekat pedig az Egyéb kategóriába helyezi.";

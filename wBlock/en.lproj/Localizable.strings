@@ -434,7 +434,7 @@
 "go" = "Go";
 "Go to line" = "Go to line";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"HaGeZi Pro Mini" = "HaGeZi Pro Mini";
+"HaGeZi Multi Pro Mini" = "HaGeZi Multi Pro Mini";
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Handles advanced anti-adblock cases that filter rules miss.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Hides in-page pop-ups, banners, and other unwanted page elements.";
@@ -1139,8 +1139,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Next update" = "Next update";
 "Enable Experimental Filter?" = "Enable Experimental Filter?";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage.";
-"Enable HaGeZi Pro Mini?" = "Enable HaGeZi Pro Mini?";
-"HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites.";
+"Enable HaGeZi Multi Pro Mini?" = "Enable HaGeZi Multi Pro Mini?";
+"HaGeZi Multi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Multi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites.";
 "Reset Ordering" = "Reset Ordering";
 "Reset" = "Reset";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.";

@@ -434,7 +434,7 @@
 "go" = "Ir";
 "Go to line" = "Ir a la línea";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"HaGeZi Pro Mini" = "HaGeZi Pro Mini";
+"HaGeZi Multi Pro Mini" = "HaGeZi Multi Pro Mini";
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Maneja casos avanzados antibloqueo de publicidad en los que se pasan por alto las reglas de filtrado.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Oculta ventanas emergentes, pancartas y otros elementos de página no deseados en la página.";
@@ -1130,8 +1130,8 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Next update" = "Próxima actualización";
 "Enable Experimental Filter?" = "¿Activar filtro experimental?";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Los filtros experimentales prueban reglas nuevas antes de que lleguen a las listas principales y pueden romper sitios web. Actívalos solo si te sientes cómodo detectando y reportando fallos.";
-"Enable HaGeZi Pro Mini?" = "¿Activar HaGeZi Pro Mini?";
-"HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Pro Mini es una lista de bloqueo para DNS, no una lista de filtros diseñada específicamente para bloqueadores de anuncios. Puede ser menos estable que las demás listas y provocar más falsos positivos que rompan sitios web.";
+"Enable HaGeZi Multi Pro Mini?" = "¿Activar HaGeZi Multi Pro Mini?";
+"HaGeZi Multi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Multi Pro Mini es una lista de bloqueo para DNS, no una lista de filtros diseñada específicamente para bloqueadores de anuncios. Puede ser menos estable que las demás listas y provocar más falsos positivos que rompan sitios web.";
 "Reset Ordering" = "Restablecer orden";
 "Reset" = "Restablecer";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Devuelve las listas y los userscripts integrados a sus categorías y orden predeterminados, y mueve los personalizados a Otros.";

@@ -434,7 +434,7 @@
 "go" = "移動";
 "Go to line" = "行へ移動";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"HaGeZi Pro Mini" = "HaGeZi Pro Mini";
+"HaGeZi Multi Pro Mini" = "HaGeZi Multi Pro Mini";
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "フィルター ルールが見逃す高度な広告ブロック対策ケースを処理します。";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "ページ内のポップアップ、バナー、その他の不要なページ要素を非表示にします。";
@@ -1099,8 +1099,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Next update" = "次回のアップデート";
 "Enable Experimental Filter?" = "試験運用フィルタを有効にしますか？";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "試験運用フィルタは、メインのリストに入る前の新しいルールを試すもので、Webサイトが正しく表示されなくなることがあります。不具合を見つけて報告できる場合にのみ有効にしてください。";
-"Enable HaGeZi Pro Mini?" = "HaGeZi Pro Mini を有効にしますか？";
-"HaGeZi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Pro Mini は DNS 向けのブロックリストで、広告ブロッカー専用に設計されたフィルタリストではありません。他のリストより安定性が低く、Web サイトを壊す誤検出が増える場合があります。";
+"Enable HaGeZi Multi Pro Mini?" = "HaGeZi Multi Pro Mini を有効にしますか？";
+"HaGeZi Multi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Multi Pro Mini は DNS 向けのブロックリストで、広告ブロッカー専用に設計されたフィルタリストではありません。他のリストより安定性が低く、Web サイトを壊す誤検出が増える場合があります。";
 "Reset Ordering" = "並び順をリセット";
 "Reset" = "リセット";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "内蔵のリストとユーザースクリプトを既定のカテゴリと順序に戻し、カスタムのものを「その他」に移動します。";
