@@ -891,11 +891,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Zapper rules (%d)" = "Κανόνες αποκλεισμού (%d)";
 "·" = "·";
 "×%d" = "Ã%d";
-"⚠️ Auto-update: overdue (will run on next trigger)" = "⚠️ Αυτόματη ενημέρωση: εκπρόθεσμη (θα εκτελεστεί στο επόμενο έναυσμα)";
-"🔄 Auto-update: currently running" = "🔄 Αυτόματη ενημέρωση: εκτελείται";
-"🕒 Auto-update: due now (will run on next trigger)" = "🕒 Αυτόματη ενημέρωση: οφείλεται τώρα (θα εκτελεστεί στο επόμενο έναυσμα)";
+"⚠️ Auto-update: overdue (will run on next trigger)" = "⚠️ Αυτόματη ενημέρωση: εκπρόθεσμη (θα εκτελεστεί στην επόμενη ενεργοποίηση)";
+"🔄 Auto-update: currently running" = "🔄 Αυτόματη ενημέρωση: σε εξέλιξη";
+"🕒 Auto-update: due now (will run on next trigger)" = "🕒 Αυτόματη ενημέρωση: εκκρεμεί (θα εκτελεστεί στην επόμενη ενεργοποίηση)";
 "🕒 Auto-update: next in %dh %dm %ds" = "🕒 Αυτόματη ενημέρωση: επόμενη σε %dh %dm %ds";
-"🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Αυτόματη ενημέρωση: δεν έχει εκτελεστεί ξανά (διάστημα=%dh)";
+"🕒 Auto-update: no prior run yet (interval=%dh)" = "🕒 Αυτόματη ενημέρωση: δεν έχει πραγματοποιηθεί ακόμη προηγούμενη εκτέλεση (διάστημα=%d ώρες)";
 
 /* Language picker */
 "Selected" = "Επιλεγμένες";
@@ -1143,7 +1143,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Syncing…" = "Συγχρονισμός…";
 "Never" = "Ποτέ";
 "Just now" = "Μόλις τώρα";
-"Due Now" = "Οφείλεται τώρα";
+"Due Now" = "Λήγει τώρα";
 "Capacity" = "Χωρητικότητα";
 
 "Reset…" = "Επαναφορά…";
