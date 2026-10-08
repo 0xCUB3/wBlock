@@ -701,7 +701,8 @@ struct ContentView: View {
               filterManager.filterLists[index].category != category else { return }
         filterManager.filterLists[index].category = category
         filterManager.saveFilterListsCoalesced()
-        filterManager.markNonSelectionChangesPending()
+        // Moving a list back to where it was applied clears Apply again (#953).
+        filterManager.refreshPendingChanges()
     }
 
     @ViewBuilder

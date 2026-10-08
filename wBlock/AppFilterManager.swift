@@ -125,6 +125,9 @@ class AppFilterManager: ObservableObject {
     var activeApplySnapshot: ApplyRunSnapshot?
     private var hasPendingSelectionChanges = false
     private var hasPendingNonSelectionChanges = false
+    /// Pending work the filter list itself can't show, such as site or Zapper
+    /// edits. Kept apart so a list edit that's undone clears only its own part.
+    private var hasPendingExternalChanges = false
 
     var selectedFilterIDs: Set<UUID> {
         Set(filterLists.filter(\.isSelected).map(\.id))
@@ -151,7 +154,8 @@ class AppFilterManager: ObservableObject {
 
     func refreshPendingChanges() {
         hasPendingSelectionChanges = selectedFilterIDs != appliedSelectedFilterIDs
-        hasPendingNonSelectionChanges = filterConfigurations != appliedFilterConfigurations
+        hasPendingNonSelectionChanges = hasPendingExternalChanges
+            || filterConfigurations != appliedFilterConfigurations
             || customFilterKeys != appliedCustomFilterKeys
         refreshHasUnappliedChanges()
     }
@@ -169,6 +173,7 @@ class AppFilterManager: ObservableObject {
     }
 
     func markNonSelectionChangesPending() {
+        hasPendingExternalChanges = true
         hasPendingNonSelectionChanges = true
         refreshHasUnappliedChanges()
     }
@@ -181,6 +186,7 @@ class AppFilterManager: ObservableObject {
         appliedFilterConfigurations = filterConfigurations
         hasPendingSelectionChanges = false
         hasPendingNonSelectionChanges = false
+        hasPendingExternalChanges = false
         hasUnappliedChanges = false
         autoApplyTask?.cancel()
         autoApplyTask = nil
@@ -234,11 +240,11 @@ class AppFilterManager: ObservableObject {
         appliedCustomFilterKeys = snapshot.customFilterKeys
         appliedFilterConfigurations = snapshot.configurations
         hasPendingSelectionChanges = selectedFilterIDs != snapshot.selectedFilterIDs
-        hasPendingNonSelectionChanges = filterConfigurations != snapshot.configurations
-            || effectiveFilterDisabledSites() != snapshot.disabledSites
+        hasPendingExternalChanges = effectiveFilterDisabledSites() != snapshot.disabledSites
             || dataManager.getActiveZapperRulesByHost() != snapshot.activeZapperRules
             || Set(dataManager.getDisabledZapperDomains()) != snapshot.disabledZapperDomains
             || CosmeticFilteringPreference.effectiveSites() != snapshot.cosmeticSites
+        hasPendingNonSelectionChanges = hasPendingExternalChanges || filterConfigurations != snapshot.configurations
         refreshHasUnappliedChanges()
     }
 
@@ -774,7 +780,8 @@ class AppFilterManager: ObservableObject {
             filterLists[index].category = filter.isCustom ? .custom : defaults[filter.url] ?? filter.category
         }
         saveFilterListsCoalesced()
-        markNonSelectionChangesPending()
+        // Compared with what was applied, so a reset that moves nothing asks for no apply (#953).
+        refreshPendingChanges()
     }
 
     // MARK: - Migration
