@@ -390,7 +390,12 @@ struct AddContentURLInput: View {
                     #endif
                 if text.isEmpty {
                     placeholder
-                        .foregroundStyle(.secondary)
+                        .font(.body)
+                        #if os(iOS)
+                        .foregroundStyle(Color(uiColor: .placeholderText))
+                        #else
+                        .foregroundStyle(Color(nsColor: .placeholderTextColor))
+                        #endif
                         .padding(.horizontal, 5)
                         #if os(iOS)
                         .padding(.vertical, 8)
