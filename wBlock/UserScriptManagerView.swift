@@ -140,20 +140,11 @@ private enum BetaUserscriptWarning {
 
 struct UserScriptManagerView: View {
     @ObservedObject var userScriptManager: UserScriptManager
-    let hasPendingChanges: Bool
-    let isApplyingChanges: Bool
-    let onApplyChanges: () -> Void
-    let onForceApplyChanges: () -> Void
     let tabSelection: AppTabSelection
     /// Incremented by ContentView for ⌘⇧N / ⌘L; see `handledAddRequest`.
     let addRequest: Int
     let searchRequest: Int
     let onRefresh: () async -> Void
-    /// Scoped manual checks (#657) exposed from the Apply button's context menu.
-    var onCheckFilterUpdates: () -> Void = {}
-    var onCheckScriptUpdates: () -> Void = {}
-    var failedReloadCount: Int = 0
-    var onRetryFailedReloads: () -> Void = {}
 
     @State private var scripts: [UserScriptListItem] = []
     @AppStorage(ListDisplayOrder.scriptsKey) private var scriptDisplayOrder = Data()
@@ -183,48 +174,6 @@ struct UserScriptManagerView: View {
 
     private var enabledScriptsCount: Int {
         scripts.filter(\.isEnabled).count
-    }
-
-    private var applyChangesToolbarButton: some View {
-        ApplyChangesHoldButton(
-            isDisabled: isApplyingChanges,
-            hasPendingChanges: hasPendingChanges,
-            onTap: onApplyChanges,
-            onForceApply: onForceApplyChanges
-        ) {
-            #if os(iOS)
-            ApplyChangesToolbarLabel(
-                hasPendingChanges: hasPendingChanges,
-                symbolName: "arrow.triangle.2.circlepath"
-            )
-            #else
-            if hasPendingChanges {
-                Text("Apply").fontWeight(.semibold)
-            } else {
-                Label("Update", systemImage: "arrow.triangle.2.circlepath")
-            }
-            #endif
-        }
-        #if os(macOS)
-        .contextMenu {
-            Button("Check for Filter Updates", action: onCheckFilterUpdates)
-            Button("Check for Userscript Updates", action: onCheckScriptUpdates)
-            Divider()
-            Button("Apply Without Checking for Updates", action: onForceApplyChanges)
-                .disabled(isApplyingChanges)
-            if failedReloadCount > 0 {
-                Button(action: onRetryFailedReloads) {
-                    Text(
-                        String.localizedStringWithFormat(
-                            NSLocalizedString("Retry %d failed extension(s)", comment: "Summary button that reloads only the blockers that failed"),
-                            failedReloadCount
-                        )
-                    )
-                }
-                .disabled(isApplyingChanges)
-            }
-        }
-        #endif
     }
 
     private var trimmedSearchText: String {
@@ -474,7 +423,7 @@ struct UserScriptManagerView: View {
         ) {
             addMenu
         } apply: {
-            applyChangesToolbarButton
+            EmptyView()
         }
     }
 

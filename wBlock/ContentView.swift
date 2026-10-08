@@ -450,23 +450,12 @@ struct ContentView: View {
         CompatibleNavigationStack(requiresNavigationView: false) {
             UserScriptManagerView(
                 userScriptManager: userScriptManager,
-                hasPendingChanges: hasPendingChanges,
-                isApplyingChanges: filterManager.isLoading,
-                onApplyChanges: applyPendingChanges,
-                onForceApplyChanges: { filterManager.forceApplyChanges() },
                 tabSelection: tabSelection,
                 addRequest: addUserScriptRequest,
                 searchRequest: userScriptSearchRequest,
                 onRefresh: {
                     guard !filterManager.isLoading else { return }
                     await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
-                },
-                onCheckFilterUpdates: { checkForUpdates(scope: .filters) },
-                onCheckScriptUpdates: { checkForUpdates(scope: .scripts) },
-                failedReloadCount: filterManager.failedReloadTargets.count,
-                onRetryFailedReloads: {
-                    filterManager.showingApplyProgressSheet = true
-                    filterManager.retryFailedReloads()
                 }
             )
                 .safeAreaInset(edge: .top) {
@@ -1107,6 +1096,7 @@ struct ContentModifiers: ViewModifier {
             .onChangeCompat(of: progressSheetPresented) { _, presented in
                 if presented { progressSheetSettled = false }
             }
+
             .onChangeCompat(of: showOnboardingSheet) { _, presented in
                 if presented { onboardingSettled = false }
             }

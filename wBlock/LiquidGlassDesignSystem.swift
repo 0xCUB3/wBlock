@@ -37,6 +37,7 @@ extension View {
 /// Update and Show Enabled in one container, then Add.
 /// On iOS and iPadOS, Update/Apply sits alone at the leading edge. That is a
 /// settled decision: do not regroup it with the trailing actions again.
+/// Userscripts pass `EmptyView` for apply: they take effect without one (#953).
 struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
     @Binding var searchText: String
     @Binding var focusRequest: Bool
@@ -47,6 +48,8 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
+
+    private var hasApply: Bool { Apply.self != EmptyView.self }
 
     /// A button-style toggle, so the system draws the selected state.
     private var filter: some View {
@@ -96,8 +99,10 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
         #else
         if #available(iOS 26.0, *) {
             content.toolbar {
-                ToolbarItem(placement: .topBarLeading) { apply() }
-                    .toolbarVisibilityPriorityCompat(.high)
+                if hasApply {
+                    ToolbarItem(placement: .topBarLeading) { apply() }
+                        .toolbarVisibilityPriorityCompat(.high)
+                }
                 ToolbarItem(placement: .topBarTrailing) { filter }
                 ToolbarSpacer(.fixed, placement: .topBarTrailing)
                 if horizontalSizeClass != .regular {
@@ -108,7 +113,9 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
             }
         } else {
             content.toolbar {
-                ToolbarItem(placement: .navigationBarLeading) { apply() }
+                if hasApply {
+                    ToolbarItem(placement: .navigationBarLeading) { apply() }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) { filter }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if horizontalSizeClass != .regular {
