@@ -9,21 +9,20 @@ import Foundation
 import wBlockCoreService
 
 extension Locale {
-    /// Display name for a regional language code. The Nordic list covers every
-    /// Sámi language, but ICU names `se` North Sámi, so it gets the umbrella name.
-    func regionalLanguageName(for code: String) -> String? {
-        if code.lowercased() == "se" { return NSLocalizedString("Sámi", comment: "Language name") }
-        return localizedString(forLanguageCode: code)
-    }
+    /// Native names ICU lacks or gets wrong. It has no Montenegrin, Lule, South,
+    /// or Skolt Sámi name (those follow Apple's language list), and calls
+    /// Indonesian "Indonesia", the name of the country.
+    private static let nativeNameOverrides = [
+        "cnr": "crnogorski",
+        "id": "Bahasa Indonesia",
+        "sma": "åarjelsaemien gïele",
+        "smj": "julevsámegiella",
+        "sms": "nuõrttsääʹmǩiõll",
+    ]
 
     /// A language in its own name ("Deutsch" for de).
     static func nativeLanguageName(for code: String) -> String? {
-        // ICU does not provide a native display name for Montenegrin.
-        if code == "cnr" { return String(localized: "crnogorski") }
-        if code == "se" { return String(localized: "sámegiella") }
-        // ICU calls Indonesian "Indonesia", the name of the country.
-        if code == "id" { return String(localized: "Bahasa Indonesia") }
-        return Locale(identifier: code).localizedString(forLanguageCode: code)
+        nativeNameOverrides[code] ?? Locale(identifier: code).localizedString(forLanguageCode: code)
     }
 
     static var appCurrent: Locale {
@@ -31,6 +30,84 @@ extension Locale {
             return .autoupdatingCurrent
         }
         return Locale(identifier: preferredLocalization)
+    }
+}
+
+/// One language the regional picker can offer. Shared by onboarding and the
+/// Regional category Info sheet so both pick languages the same way (#687).
+struct RegionalLanguageOption: Identifiable, Hashable {
+    /// Names people search by that no locale gives (#951).
+    private static let synonymsByCode: [String: [String]] = [
+        "bn": ["Bengali"],
+        "cnr": ["црногорски"],
+        "fa": ["Farsi", "Dari", "پارسی", "دری", "فارسي", "پارسي"],
+        "fil": ["Tagalog"],
+        "ms": ["Bahasa Malaysia"],
+    ]
+
+    /// Each language's own name in every script the system writes it in, so
+    /// "srpski" finds Serbian as well as "српски" (#951).
+    private static let scriptNamesByCode: [String: Set<String>] = {
+        var names: [String: Set<String>] = [:]
+        for identifier in Locale.availableIdentifiers {
+            let locale = Locale(identifier: identifier)
+            guard let code = locale.languageCode, let script = locale.scriptCode,
+                  let name = Locale(identifier: "\(code)_\(script)").localizedString(forLanguageCode: code)
+            else { continue }
+            names[code, default: []].insert(name)
+        }
+        return names
+    }()
+
+    private static let english = Locale(identifier: "en")
+
+    let code: String
+    /// The name in the app's display language, used for sorting.
+    let name: String
+    /// The language's own name, which is what the rows show.
+    let nativeName: String
+    private let searchTerms: [String]
+
+    var id: String { code }
+
+    init(code: String, name: String? = nil, locale: Locale = displayLocale) {
+        self.code = code
+        self.name = name ?? locale.localizedString(forLanguageCode: code) ?? code
+        let nativeName: String = Locale.nativeLanguageName(for: code) ?? self.name
+        self.nativeName = nativeName
+        var terms: [String] = [nativeName, self.name, code, Self.english.localizedString(forLanguageCode: code) ?? code]
+        terms += Self.scriptNamesByCode[code] ?? []
+        terms += Self.synonymsByCode[code] ?? []
+        searchTerms = terms
+    }
+
+    /// Ignores case and accents, so "espanol" finds español (#951).
+    func matches(_ query: String) -> Bool {
+        let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return false }
+        return searchTerms.contains { $0.range(of: query, options: [.caseInsensitive, .diacriticInsensitive]) != nil }
+    }
+
+    /// The locale the app is actually displayed in, so names sort the way the
+    /// user reads them rather than by the system locale.
+    static var displayLocale: Locale {
+        Locale(identifier: Bundle.main.preferredLocalizations.first ?? Locale.current.identifier)
+    }
+
+    /// Every language that at least one regional filter list covers.
+    static func fromForeignFilters(
+        _ filters: [FilterList],
+        locale: Locale = displayLocale
+    ) -> [RegionalLanguageOption] {
+        options(for: filters.filter { $0.category == .foreign }.flatMap(\.languages), locale: locale)
+    }
+
+    static func options(for codes: [String], locale: Locale) -> [RegionalLanguageOption] {
+        var seen = Set<String>()
+        return codes.map { $0.lowercased() }.filter { seen.insert($0).inserted }.map {
+            RegionalLanguageOption(code: $0, locale: locale)
+        }
+        .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 }
 
@@ -153,7 +230,7 @@ enum ForeignFilterOrganizer {
             return LocalizedStrings.text("Regional", comment: "Filter list category")
         }
 
-        return Locale.appCurrent.regionalLanguageName(for: languageCode) ?? languageCode.uppercased()
+        return Locale.appCurrent.localizedString(forLanguageCode: languageCode) ?? languageCode.uppercased()
     }
 }
 
@@ -215,7 +292,7 @@ enum LocalizedFormatting {
 extension FilterList {
     func localizedLanguageNames(locale: Locale = .appCurrent) -> [String] {
         Set(languages.map { $0.lowercased() }).map {
-            locale.regionalLanguageName(for: $0) ?? $0.uppercased()
+            locale.localizedString(forLanguageCode: $0) ?? $0.uppercased()
         }.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
     }
 
@@ -229,10 +306,7 @@ extension FilterList {
     }
 
     func matchesLanguage(_ query: String, locale: Locale) -> Bool {
-        let nativeNames = languages.compactMap { Locale(identifier: $0).regionalLanguageName(for: $0) }
-        return (languages + nativeNames + localizedLanguageNames(locale: locale)).contains {
-            $0.localizedCaseInsensitiveContains(query)
-        }
+        languages.contains { RegionalLanguageOption(code: $0.lowercased(), locale: locale).matches(query) }
     }
 
     var localizedDisplayName: String {

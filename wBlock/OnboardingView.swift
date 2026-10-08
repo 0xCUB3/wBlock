@@ -492,11 +492,7 @@ struct OnboardingView: View {
     private var pinnedLanguagePickerOptions: [RegionalLanguageOption] {
         var options: [RegionalLanguageOption] = []
         if !availableFilterLanguages.contains(where: { $0.code == Self.englishLanguageCode }) {
-            let englishName =
-                RegionalLanguageOption.displayLocale.localizedString(forLanguageCode: Self.englishLanguageCode) ?? "English"
-            options.append(
-                RegionalLanguageOption(code: Self.englishLanguageCode, name: englishName)
-            )
+            options.append(RegionalLanguageOption(code: Self.englishLanguageCode))
         }
         options.append(
             RegionalLanguageOption(code: Self.otherLanguagesCode, name: String(localized: "Other"))

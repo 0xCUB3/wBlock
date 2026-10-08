@@ -1,69 +1,17 @@
 import SwiftUI
 import wBlockCoreService
 
-/// One language the regional picker can offer. Shared by onboarding and the
-/// Regional category Info sheet so both pick languages the same way (#687).
-struct RegionalLanguageOption: Identifiable, Hashable {
-    private static let aliasesByCode: [String: [String]] = [
-        "de": ["Deutsch", "German"],
-        "es": ["español", "Spanish", "espanol"],
-        "fr": ["français", "French", "francais"],
-        "ja": ["日本語", "Japanese"],
-        "zh": ["中文", "Chinese", "zh"],
-        "pt": ["português", "Portuguese", "portugues"],
-        "ru": ["русский", "Russian"],
-        "ar": ["العربية", "Arabic"],
-        "fa": ["Persian", "Farsi", "Dari", "فارسی", "پارسی", "دری", "فارسي", "پارسي"],
-        "cnr": ["Montenegrin", "crnogorski", "црногорски"]
-    ]
-
-    let code: String
-    /// The name in the app's display language, used for sorting and search.
-    let name: String
-
-    var id: String { code }
-
-    /// The language's own name, which is what the rows show.
-    var nativeName: String { Locale.nativeLanguageName(for: code) ?? name }
-
-    var aliases: [String] { Self.aliasesByCode[code] ?? [] }
-
-    func matches(_ query: String) -> Bool {
-        let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return false }
-        return ([nativeName, name, code] + aliases).contains {
-            $0.localizedCaseInsensitiveContains(query)
-        }
-    }
-
-    /// The locale the app is actually displayed in, so names sort the way the
-    /// user reads them rather than by the system locale.
-    static var displayLocale: Locale {
-        Locale(identifier: Bundle.main.preferredLocalizations.first ?? Locale.current.identifier)
-    }
-
-    /// Every language that at least one regional filter list covers.
-    static func fromForeignFilters(
-        _ filters: [FilterList],
-        locale: Locale = displayLocale
-    ) -> [RegionalLanguageOption] {
-        options(for: filters.filter { $0.category == .foreign }.flatMap(\.languages), locale: locale)
-    }
+extension RegionalLanguageOption {
+    /// Languages built-in lists name that the system has no locale for, such
+    /// as Montenegrin and some Sámi languages.
+    private static let builtInListLanguages = FilterListLoader().getDefaultFilterLists().flatMap(\.languages)
 
     /// Every language a custom regional list can cover (#921, #932): the
     /// languages the system has a locale for, plus those built-in lists name.
     /// ISO 639 alone also lists historical ones such as Old English (#943).
     static func assignable(locale: Locale = displayLocale) -> [RegionalLanguageOption] {
         let living = Locale.availableIdentifiers.compactMap { Locale(identifier: $0).languageCode }
-        return options(for: living + ["cnr", "se"], locale: locale)
-    }
-
-    private static func options(for codes: [String], locale: Locale) -> [RegionalLanguageOption] {
-        var seen = Set<String>()
-        return codes.map { $0.lowercased() }.filter { seen.insert($0).inserted }.map { code in
-            RegionalLanguageOption(code: code, name: locale.regionalLanguageName(for: code) ?? code)
-        }
-        .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        return options(for: living + builtInListLanguages, locale: locale)
     }
 }
 

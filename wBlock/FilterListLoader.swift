@@ -475,7 +475,7 @@ class FilterListLoader {
                 )!, category: .foreign,
                 description:
                     "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population.",
-                languages: ["nb", "nn", "da", "is", "se", "fo", "kl"], trustLevel: "high"),
+                languages: ["nb", "nn", "da", "is", "fo", "kl", "se", "smn", "sma", "smj", "sms", "sje", "sju", "sjd"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "Dandelion Sprout's Serbo-Croatian List",
                 url: URL(
